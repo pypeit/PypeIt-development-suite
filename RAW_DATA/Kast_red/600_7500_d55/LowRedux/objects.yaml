@@ -1,0 +1,5 @@
+'J0025-0312_000': 
+  'comment': 'Simple UVQS, low-z quasar'
+  'sci_file': 'sci-r153.fits.gz'
+  'wave_file': 'wave-r124.fits.gz'
+  'instrument': 'kast_red_600_7500_d55'

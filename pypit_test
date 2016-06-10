@@ -8,6 +8,7 @@
 This script runs the PYPIT development suite of tests
 """
 
+from __future__ import absolute_import, division, print_function
 import argparse
 import sys, os
 import pdb
@@ -19,15 +20,17 @@ def main() :
     import warnings
     parser = argparse.ArgumentParser(formatter_class=argparse.ArgumentDefaultsHelpFormatter)
 
-    parser.add_argument('tests', type=str, default=None, help='Tests to run.  Options are: all, kast')
+    parser.add_argument('tests', type=str, default=None, help='Tests to run.  Options are: all, kast, lris')
     parser.add_argument('-outputdir', type=str, help="Output folder.  Default is ./REDUX_OUT")
 
     pargs = parser.parse_args()
 
-    all_tests = ['kast']
+    all_tests = ['kast', 'lris']
 
     # Grab a list of all instruments
     raw_data = 'RAW_DATA/'
+    calib_data = 'PYPIT_CALIBS'
+    
     walk = os.walk(raw_data)
     all_instruments = next(walk)[1]
 
@@ -37,6 +40,8 @@ def main() :
     else:
         if pargs.tests == 'kast':
             instruments = [item for item in all_instruments if 'Kast' in item]
+        elif pargs.tests == 'lris':
+            instruments = [item for item in all_instruments if 'LRIS' in item]
         else:
             raise IOError("Not prepared for this test: {:s}".format(pargs.tests))
 
@@ -76,8 +81,7 @@ def main() :
                 elif 'reduce useflat' in iline:
                     cpth = lines[kk]
                     i0 = cpth.rfind('/')
-                    pdb.set_trace()  # NEED TO ADD THE FOLLOWING FIRST
-                    newcpth = 'PYPIT_CALIBS/'+cpth[i0:]
+                    newcpth = ' '+pwd+'/'+calib_data+cpth[i0:]
                     lines[kk] = 'reduce useflat '+newcpth
             # Generate folder as need be
             idir = outputdir+'/'+instr
@@ -96,7 +100,7 @@ def main() :
             logfile = wdir+'/'+instr.lower()+'_'+setup.lower()+'.log2'
             print('Running pypit on {:s} --- '.format(outfile))
             with open(logfile,'w') as f:
-                subprocess.call(['run_pypit', pypfile], stderr=f, cwd=wdir)#, shell=True)
+                subprocess.call(['run_pypit', pypfile, '-v 2'], stderr=f, cwd=wdir)#, shell=True)
             print('Done running pypit on {:s} --- '.format(outfile))
             subprocess.call(['tail', logfile])
             # Need some merit of success..
