@@ -19,7 +19,7 @@ def main() :
     import warnings
     parser = argparse.ArgumentParser(formatter_class=argparse.ArgumentDefaultsHelpFormatter)
 
-    parser.add_argument('tests', type=str, default=None, help='Tests to run.  Options are: all, kast')
+    parser.add_argument('tests', type=str, default=None, help='Tests to run.  Options are: all, kast, lris')
     parser.add_argument('-outputdir', type=str, help="Output folder.  Default is ./REDUX_OUT")
 
     pargs = parser.parse_args()
@@ -37,6 +37,8 @@ def main() :
     else:
         if pargs.tests == 'kast':
             instruments = [item for item in all_instruments if 'Kast' in item]
+        elif pargs.tests == 'lris':
+            instruments = [item for item in all_instruments if 'LRIS' in item]
         else:
             raise IOError("Not prepared for this test: {:s}".format(pargs.tests))
 
@@ -76,8 +78,7 @@ def main() :
                 elif 'reduce useflat' in iline:
                     cpth = lines[kk]
                     i0 = cpth.rfind('/')
-                    pdb.set_trace()  # NEED TO ADD THE FOLLOWING FIRST
-                    newcpth = 'PYPIT_CALIBS/'+cpth[i0:]
+                    newcpth = pwd+'/CALIBS/'+cpth[i0:]
                     lines[kk] = 'reduce useflat '+newcpth
             # Generate folder as need be
             idir = outputdir+'/'+instr
@@ -86,7 +87,7 @@ def main() :
             wdir = os.path.join(outputdir,instr,setup)
             if not os.path.exists(wdir):
                 os.makedirs(wdir)
-            # Write to TST_PYPIT
+            # Write to outputdir
             outfile = wdir+'/'+instr.lower()+'_'+setup.lower()+'.pypit'
             pypfile = instr.lower()+'_'+setup.lower()+'.pypit'
             with open(outfile, 'w') as ofile:

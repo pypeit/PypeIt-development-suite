@@ -11,4 +11,6 @@ the tests from this directory with:
 
 ./pypit_test
 
-Current allowed arguments include all and kast.
+Current allowed arguments include all, kast, and lris.
+
+Use -outputdir to choose a different output directory.
