@@ -14,7 +14,7 @@ import sys, os
 import pdb
 
 
-def main() :
+def main():
 
     import subprocess
     import warnings
