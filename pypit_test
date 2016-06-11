@@ -8,6 +8,7 @@
 This script runs the PYPIT development suite of tests
 """
 
+from __future__ import absolute_import, division, print_function
 import argparse
 import sys, os
 import pdb
@@ -24,10 +25,12 @@ def main() :
 
     pargs = parser.parse_args()
 
-    all_tests = ['kast']
+    all_tests = ['kast', 'lris']
 
     # Grab a list of all instruments
     raw_data = 'RAW_DATA/'
+    calib_data = 'PYPIT_CALIBS'
+
     walk = os.walk(raw_data)
     all_instruments = next(walk)[1]
 
@@ -97,7 +100,7 @@ def main() :
             logfile = wdir+'/'+instr.lower()+'_'+setup.lower()+'.log2'
             print('Running pypit on {:s} --- '.format(outfile))
             with open(logfile,'w') as f:
-                subprocess.call(['run_pypit', pypfile], stderr=f, cwd=wdir)#, shell=True)
+                subprocess.call(['run_pypit', pypfile, '-v 2'], stderr=f, cwd=wdir)#, shell=True)
             print('Done running pypit on {:s} --- '.format(outfile))
             subprocess.call(['tail', logfile])
             # Need some merit of success..
