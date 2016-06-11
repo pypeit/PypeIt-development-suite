@@ -22,6 +22,7 @@ def main() :
 
     parser.add_argument('tests', type=str, default=None, help='Tests to run.  Options are: all, kast, lris')
     parser.add_argument('-outputdir', type=str, help="Output folder.  Default is ./REDUX_OUT")
+    parser.add_argument('-setup', type=str, help="Single out a setup to run")
 
     pargs = parser.parse_args()
 
@@ -63,6 +64,9 @@ def main() :
         # Setups
         setups = next(os.walk(raw_data+'/'+instr))[1]
         for setup in setups:
+            if pargs.setup is not None:
+                if setup != pargs.setup:
+                    continue
             # Look for redux file in PYPIT
             redfile = 'pypit_files/'+instr.lower()+'_'+setup.lower()+'.pypit'
             if not os.path.exists(redfile):
