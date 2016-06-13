@@ -14,7 +14,7 @@ import sys, os
 import pdb
 
 
-def main() :
+def main():
 
     import subprocess
     import warnings
@@ -22,6 +22,7 @@ def main() :
 
     parser.add_argument('tests', type=str, default=None, help='Tests to run.  Options are: all, kast, lris')
     parser.add_argument('-outputdir', type=str, help="Output folder.  Default is ./REDUX_OUT")
+    parser.add_argument('-setup', type=str, help="Single out a setup to run")
 
     pargs = parser.parse_args()
 
@@ -30,7 +31,7 @@ def main() :
     # Grab a list of all instruments
     raw_data = 'RAW_DATA/'
     calib_data = 'PYPIT_CALIBS'
-    
+
     walk = os.walk(raw_data)
     all_instruments = next(walk)[1]
 
@@ -63,6 +64,9 @@ def main() :
         # Setups
         setups = next(os.walk(raw_data+'/'+instr))[1]
         for setup in setups:
+            if pargs.setup is not None:
+                if setup != pargs.setup:
+                    continue
             # Look for redux file in PYPIT
             redfile = 'pypit_files/'+instr.lower()+'_'+setup.lower()+'.pypit'
             if not os.path.exists(redfile):
@@ -81,7 +85,7 @@ def main() :
                 elif 'reduce useflat' in iline:
                     cpth = lines[kk]
                     i0 = cpth.rfind('/')
-                    newcpth = ' '+pwd+'/'+calib_data+cpth[i0:]
+                    newcpth = pwd+'/CALIBS/'+cpth[i0:]
                     lines[kk] = 'reduce useflat '+newcpth
             # Generate folder as need be
             idir = outputdir+'/'+instr
@@ -90,7 +94,7 @@ def main() :
             wdir = os.path.join(outputdir,instr,setup)
             if not os.path.exists(wdir):
                 os.makedirs(wdir)
-            # Write to TST_PYPIT
+            # Write to outputdir
             outfile = wdir+'/'+instr.lower()+'_'+setup.lower()+'.pypit'
             pypfile = instr.lower()+'_'+setup.lower()+'.pypit'
             with open(outfile, 'w') as ofile:

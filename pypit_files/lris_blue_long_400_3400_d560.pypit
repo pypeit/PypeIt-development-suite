@@ -20,7 +20,7 @@ reduce flexure archive_spec sky_LRISb_400.fits
 
 # Read in the data
 data read
- ~/Dropbox/PYPIT/TEST_SUITES/LRIS_blue/long_400_3400_d560/LB*.fits.gz
+ /Users/xavier/Dropbox/PYPIT/TEST_SUITES/LRIS_blue/long_400_3400_d560/LB*.fits.gz
 data end
 
 spect read
