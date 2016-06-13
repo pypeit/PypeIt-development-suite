@@ -1,4 +1,4 @@
-# PYPIT-development-suite v0.2
+# PYPIT-development-suite v0.2.1
 
 The Python Spectroscopic Data Reduction Pipeline development suite
 
