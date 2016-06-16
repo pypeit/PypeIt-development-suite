@@ -1,0 +1,34 @@
+# This is a comment line
+
+# Change the default settings
+run ncpus 1
+run spectrograph isis_blue
+out verbose 2
+out overwrite True
+out sorted isis_blue_R300B_d5300
+
+# reduce
+reduce oscanMethod median
+trace orders tilts spca
+trace orders pcatilt 1,1,1
+reduce bgsubtraction method bspline
+pixflat comb method median
+pixflat comb rej_level [10.0,10.0]
+pixflat norm recnorm False
+arc calibrate id_pix 871.062,901.7719,1930.0048,2451.620,3364.25658,3886.125
+arc calibrate id_wave 3248.4769,3274.905,4159.763,4610.656,5402.0634,5854.110
+science extraction max_nobj 3
+
+# Read in the data
+data read
+ /Users/xavier/local/Python/PYPIT-development-suite/RAW_DATA/WHT/data/r*.fit.gz
+data end
+
+spect read
+ fits calwin 12.
+ pixflat number 3
+ bias number 3
+ trace number 3
+ set standard r2324652.fit.gz
+spect end
+
