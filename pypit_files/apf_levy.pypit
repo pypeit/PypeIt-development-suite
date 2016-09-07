@@ -1,0 +1,30 @@
+# This is a comment line
+
+# Change the default settings
+run ncpus 1
+run spectrograph levy
+out verbose 2
+out overwrite True
+out sorted apf_levy
+
+# reduce
+reduce usebias overscan
+trace orders pcxpos 3
+trace orders pcxneg 3
+trace orders pcaparams [8,2,2,2,2,1,0,0]
+trace orders pcatilt [1,1]
+
+# Read in the data
+data read
+# /Users/xavier/local/Python/PYPIT-development-suite/RAW_DATA/APF_levy/*.fits.gz
+ /Users/rcooke/software/PYPIT-development-suite/RAW_DATA/APF_levy/*.fits.gz
+data end
+
+spect read
+ fits calwin 12.
+ pixflat number 3
+ bias number 0
+ trace number 2
+ standard number 0
+spect end
+
