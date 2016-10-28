@@ -8,10 +8,10 @@ output overwrite True
 output sorted kast_blue_600_4310_d55
 
 # reduce
-trace slits tilts spca
+trace slits tilts method spca
 reduce skysub method bspline
-pixelflat comb method median
-pixelflat comb rej_level [10.0,10.0]
+pixelflat combine method median
+pixelflat combine reject level [10.0,10.0]
 pixelflat norm recnorm False
 
 # Read in the data
