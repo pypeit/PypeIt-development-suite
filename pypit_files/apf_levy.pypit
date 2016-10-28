@@ -22,7 +22,7 @@ data end
 
 spect read
  fits calwin 12.
- pixflat number 3
+ pixelflat number 3
  bias number 0
  trace number 2
  standard number 0
