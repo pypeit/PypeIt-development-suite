@@ -10,12 +10,11 @@ output sorted lris_r_ls_600_7500_d560
 # Reduce
 arc calibrate IDpixels 140.93677186,542.27337912,739.04374828,1152.38285967,1767.86702435
 arc calibrate IDwaves 5771.210,6404.018,6718.8974,7386.014,8379.9093
-trace disp direction 0   # Manually specify the dispersion direction (0 for row, 1 for column) 0 for column, 1 for row????
 trace slits tilts params 1,1,1
-trace slits tilts spca
+trace slits tilts method spca
 reduce skysub method bspline
-pixelflat comb method median
-pixelflat comb rej_level [10.0,10.0]
+pixelflat combine method median
+pixelflat combine reject level [10.0,10.0]
 pixelflat norm recnorm False
 
 # Read in the data
@@ -26,9 +25,9 @@ data end
 spect read
  fits calwin 12.
  pixelflat number 5
+ slitflat number 5
  bias number 3
  arc number 1
- trace number 5
  set arc LR.20160216.05529.fits
  set arc LR.20160216.05589.fits
  set arc LR.20160216.05649.fits
@@ -44,12 +43,12 @@ spect read
  set bias LR.20160216.07820.fits
  set bias LR.20160216.07878.fits
  set bias LR.20160216.07937.fits
- set trace LR.20160216.13991.fits
- set trace LR.20160216.14090.fits
- set trace LR.20160216.14167.fits
- set trace LR.20160216.14244.fits
- set trace LR.20160216.14322.fits
- set trace LR.20160216.14399.fits
+ set slitflat LR.20160216.13991.fits
+ set slitflat LR.20160216.14090.fits
+ set slitflat LR.20160216.14167.fits
+ set slitflat LR.20160216.14244.fits
+ set slitflat LR.20160216.14322.fits
+ set slitflat LR.20160216.14399.fits
  set pixelflat LR.20160216.13991.fits
  set pixelflat LR.20160216.14090.fits
  set pixelflat LR.20160216.14167.fits

@@ -20,7 +20,8 @@ data end
 
 spect read
  fits calwin 12.
- trace number 3
+ trace number 0
+ slitflat number 3
  pixelflat number 3
  bias number 3
  set standard r136.fits.gz

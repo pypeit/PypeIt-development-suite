@@ -8,11 +8,11 @@ output overwrite True
 output sorted lris_blue_long_600_4000_d560
 
 # Reduce
-#trace disp direction 0   # Manually specify the dispersion direction (0 for row, 1 for column)
-trace slits tilts spca
+bias useframe overscan
+trace slits tilts method spca
 trace slits tilts params 1,1,1
 reduce skysub method bspline
-reduce flatfield useframe dummy/PYPIT_LRISb_pixelflat_B600_2x2_17sep2009.fits.gz
+reduce flatfield useframe dummy/PYPIT_LRISb_pixflat_B600_2x2_17sep2009.fits.gz
 
 # Read in the data
 data read
@@ -22,9 +22,8 @@ data end
 spect read
  fits calwin 12.
  pixelflat number 1
- bias number 3
+ slitflat number 1
  arc number 1
- trace number 1
  set bias     b150910_2036.fits.gz  
  set bias     b150910_2037.fits.gz 
  set bias     b150910_2038.fits.gz 
