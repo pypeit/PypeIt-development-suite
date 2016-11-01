@@ -84,11 +84,11 @@ def main():
                     i0 = dpth.rfind('/')
                     newdpth = ' '+pwd+'/'+raw_data+'/'+instr+'/'+setup+dpth[i0:]
                     lines[kk+1] = newdpth
-                elif 'reduce useflat' in iline:
+                elif 'reduce flatfield useframe' in iline:
                     cpth = lines[kk]
                     i0 = cpth.rfind('/')
                     newcpth = pwd+'/CALIBS/'+cpth[i0:]
-                    lines[kk] = 'reduce useflat '+newcpth
+                    lines[kk] = 'reduce flatfield useframe '+newcpth
             # Generate folder as need be
             idir = outputdir+'/'+instr
             if not os.path.exists(idir):
