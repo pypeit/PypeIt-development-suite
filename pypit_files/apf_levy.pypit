@@ -3,16 +3,16 @@
 # Change the default settings
 run ncpus 1
 run spectrograph levy
-out verbose 2
-out overwrite True
-out sorted apf_levy
+output verbosity 2
+output overwrite True
+output sorted apf_levy
 
 # reduce
-reduce usebias overscan
-trace orders pcxpos 3
-trace orders pcxneg 3
-trace orders pcaparams [8,2,2,2,2,1,0,0]
-trace orders pcatilt [1,1]
+bias useframe overscan
+trace slits pca extrapolate pos 3
+trace slits pca extrapolate neg 3
+trace slits pca params [8,2,2,2,2,1,0,0]
+trace slits tilts params [1,1]
 
 # Read in the data
 data read
@@ -22,7 +22,7 @@ data end
 
 spect read
  fits calwin 12.
- pixflat number 3
+ pixelflat number 3
  bias number 0
  trace number 2
  standard number 0
