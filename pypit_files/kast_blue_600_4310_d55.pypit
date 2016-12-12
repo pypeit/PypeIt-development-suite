@@ -23,6 +23,6 @@ spect read
  fits calwin 12.
  pixelflat number 3
  bias number 3
- slitflat number 3
+ trace number 3
  set standard b24.fits.gz 
 spect end

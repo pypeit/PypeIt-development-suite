@@ -27,7 +27,7 @@ data end
 spect read
  fits calwin 12.
  pixelflat number 3
- slitflat number 3
+ trace number 3
  bias number 2
  set standard r2324652.fit.gz
 spect end

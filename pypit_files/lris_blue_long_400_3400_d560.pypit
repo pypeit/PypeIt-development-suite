@@ -25,7 +25,7 @@ data end
 
 spect read
  pixelflat number 1
- slitflat number 3
+ trace number 3
  arc number 1
  set standard LB.20160109.58013.fits.gz
 spect end
