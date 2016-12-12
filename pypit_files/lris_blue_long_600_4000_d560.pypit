@@ -22,12 +22,12 @@ data end
 spect read
  fits calwin 12.
  pixelflat number 1
- slitflat number 1
+ trace number 1
  arc number 1
  set bias     b150910_2036.fits.gz  
  set bias     b150910_2037.fits.gz 
  set bias     b150910_2038.fits.gz 
  set pixelflat  b150910_2051.fits.gz
- set slitflat   b150910_2051.fits.gz 
+ set trace   b150910_2051.fits.gz 
  set standard b150910_2083.fits.gz
 spect end
