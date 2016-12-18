@@ -62,7 +62,7 @@ def main():
 
     # Loop on instruments
     for instr in instruments:
-        #if instr in ['Kast_blue','Kast_red']:  # For testing
+        #if instr in ['kast_blue','Kast_red']:  # For testing
         #    continue
         # Setups
         setups = next(os.walk(raw_data+'/'+instr))[1]
@@ -80,7 +80,7 @@ def main():
             # rawdata
             rawdir = os.path.join(pwd,'RAW_DATA',instr,setup)+'/'
             # Run setup?
-            if instr in ['kast_blue']:
+            if instr.lower() in ['kast_blue']:
                 logfile = wdir+'/'+instr.lower()+'_'+setup.lower()+'.log2'
                 with open(logfile,'w') as f:
                     subprocess.call(['pypit_setup', rawdir, instr.lower()], stderr=f, cwd=wdir)#, shell=True)
@@ -92,6 +92,8 @@ def main():
                     raise ValueError("Incorrect .pypit files")
                 else:
                     pyp_file = pyp_file[0]
+                    islsh = pyp_file.rfind('/')
+                    pyp_file = pyp_file[islsh+1:]
             else:
                 # Look for PYPIT file
                 redfile = 'pypit_files/'+instr.lower()+'_'+setup.lower()+'.pypit'
@@ -123,7 +125,6 @@ def main():
             # Run pypit
             logfile = wdir+'/'+instr.lower()+'_'+setup.lower()+'.log3'
             print('Running pypit on {:s} --- '.format(pyp_file))
-            pdb.set_trace()
             with open(logfile,'w') as f:
                 subprocess.call(['run_pypit', pyp_file, '-v 2'], stderr=f, cwd=wdir)#, shell=True)
 
