@@ -15,7 +15,7 @@ trace slits tilts method spca
 reduce skysub method bspline
 pixelflat combine method median
 pixelflat combine reject level [10.0,10.0]
-pixelflat norm recnorm False
+#pixelflat norm recnorm False
 
 # Read in the data
 data read
