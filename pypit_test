@@ -137,39 +137,4 @@ if __name__ == '__main__':
     # Giddy up
     main()
 
-'''
-            # Look for redux file in PYPIT
-            redfile = 'pypit_files/'+instr.lower()+'_'+setup.lower()+'.pypit'
-            if not os.path.exists(redfile):
-                warnings.warn('No redux file: {:s}'.format(redfile))
-                warnings.warn('Not testing..')
-                continue
-            # Edit data directory
-            with open(redfile, 'r') as infile:
-                lines = infile.readlines()
-            for kk,iline in enumerate(lines):
-                if 'data read' in iline:
-                    dpth = lines[kk+1]
-                    i0 = dpth.rfind('/')
-                    newdpth = ' '+pwd+'/'+raw_data+'/'+instr+'/'+setup+dpth[i0:]
-                    lines[kk+1] = newdpth
-                elif 'reduce flatfield useframe' in iline:
-                    cpth = lines[kk]
-                    i0 = cpth.rfind('/')
-                    newcpth = pwd+'/CALIBS/'+cpth[i0:]
-                    lines[kk] = 'reduce flatfield useframe '+newcpth
-            # Generate folder as need be
-            idir = outputdir+'/'+instr
-            if not os.path.exists(idir):
-                os.makedirs(idir)
-            wdir = os.path.join(outputdir,instr,setup)
-            if not os.path.exists(wdir):
-                os.makedirs(wdir)
-            # Write to outputdir
-            outfile = wdir+'/'+instr.lower()+'_'+setup.lower()+'.pypit'
-            pypfile = instr.lower()+'_'+setup.lower()+'.pypit'
-            with open(outfile, 'w') as ofile:
-                for iline in lines:
-                    ofile.writelines(iline)
 
-'''
