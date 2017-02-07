@@ -83,7 +83,8 @@ def main():
             if instr.lower() in ['kast_blue']:
                 logfile = wdir+'/'+instr.lower()+'_'+setup.lower()+'.log2'
                 with open(logfile,'w') as f:
-                    subprocess.call(['pypit_setup', rawdir, instr.lower()], stderr=f, cwd=wdir)#, shell=True)
+                    subprocess.call(['pypit_setup', rawdir, instr.lower(), '-c'], stderr=f, cwd=wdir)#, shell=True)
+                wdir = wdir+'/'+instr.lower()+'_setup_A'
                 #print('Done running pypit on {:s} --- '.format(outfile))
                 subprocess.call(['tail', logfile])
                 # Run pypit on setup_A.pypit
