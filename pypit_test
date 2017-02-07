@@ -124,7 +124,6 @@ def main():
                         ofile.writelines(iline)
 
             # Run pypit
-            pdb.set_trace()
             logfile = wdir+'/'+instr.lower()+'_'+setup.lower()+'.log3'
             print('Running pypit on {:s} --- '.format(pyp_file))
             with open(logfile,'w') as f:
