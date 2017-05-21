@@ -2,7 +2,7 @@
 
 # Change the default settings
 run ncpus 1
-run spectrograph kast_red
+run spectrograph kast_red_ret
 output verbosity 2
 output overwrite True
 output sorted kast_red_600_7500_d55
