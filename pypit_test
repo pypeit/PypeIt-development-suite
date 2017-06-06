@@ -62,14 +62,13 @@ def main():
     pwd = os.getcwd()
 
     # Loop on instruments
-    npass, ninst = 0, 0
+    npass, ntest = 0, 0
     for instr in instruments:
         # if instr in ['kast_blue','Kast_red']:  # For testing
         #    continue
         # Setups
         setups = next(os.walk(raw_data+'/'+instr))[1]
         for setup in setups:
-            ninst += 1
             if pargs.setup is not None:
                 if setup != pargs.setup:
                     continue
@@ -84,6 +83,7 @@ def main():
             rawdir = os.path.join(pwd, 'RAW_DATA', instr, setup)+'/'
             # Run setup?
             if instr.lower() in ['kast_blue']:
+                ntest += 1
                 outfile = instr.lower()+'_'+setup.lower()
                 logfile = wdir+'/'+instr.lower()+'_'+setup.lower()+'.log2'
                 with open(logfile, 'w') as f:
@@ -132,6 +132,7 @@ def main():
                         ofile.writelines(iline)
 
             # Run pypit
+            ntest += 1
             logfile = wdir+'/'+instr.lower()+'_'+setup.lower()+'.log3'
             print('Running pypit on {:s} --- '.format(pyp_file), file=sys.stderr, end='')
             with open(logfile, 'w') as f:
@@ -143,13 +144,13 @@ def main():
                     print("\x1B[" + "1;31m" + "FAILED" + "\x1B[" + "0m", file=sys.stderr)
                 subprocess.call(['tail', '-2', logfile])
                 print("\n", file=sys.stderr)
-    if npass == ninst:
+    if npass == ntest:
         print("\n" + "\x1B[" + "1;32m" +
-              "--- PYPIT DEVELOPMENT SUITE PASSED {0:d}/{1:d} TESTS ---".format(npass, ninst) +
+              "--- PYPIT DEVELOPMENT SUITE PASSED {0:d}/{1:d} TESTS ---".format(npass, ntest) +
               "\x1B[" + "0m" + "\r", file=sys.stderr)
     else:
         print("\n" + "\x1B[" + "1;31m" +
-              "--- PYPIT DEVELOPMENT SUITE FAILED {0:d}/{1:d} TESTS ---".format(ninst-npass, ninst) +
+              "--- PYPIT DEVELOPMENT SUITE FAILED {0:d}/{1:d} TESTS ---".format(ntest-npass, ntest) +
               "\x1B[" + "0m" + "\r", file=sys.stderr)
 
 if __name__ == '__main__':
