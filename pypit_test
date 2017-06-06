@@ -99,7 +99,7 @@ def main():
                     islsh = pyp_file.rfind('/')
                     pyp_file = pyp_file[islsh+1:]
                     if retval == 0:
-                        print("\r" + "\x1B[" + "1;32m" + "PASSED" + "\x1B[" + "0m", file=sys.stderr)
+                        print("\r" + "\x1B[" + "1;32m" + "--- PASSED ---" + "\x1B[" + "0m", file=sys.stderr)
                         npass += 1
             else:
                 # Look for PYPIT file
@@ -136,10 +136,10 @@ def main():
                 retval = subprocess.call(['run_pypit', pyp_file, '-v 2'], stderr=f, cwd=wdir)#, shell=True)
                 subprocess.call(['tail', '-2', logfile])
                 if retval == 0:
-                    print("\r" + "\x1B[" + "1;32m" + "PASSED" + "\x1B[" + "0m", file=sys.stderr)
+                    print("\r" + "\x1B[" + "1;32m" + "--- PASSED ---" + "\x1B[" + "0m", file=sys.stderr)
                     npass += 1
                 else:
-                    print("\r" + "\x1B[" + "1;31m" + "FAILED" + "\x1B[" + "0m", file=sys.stderr)
+                    print("\r" + "\x1B[" + "1;31m" + "--- FAILED ---" + "\x1B[" + "0m", file=sys.stderr)
     if npass == ninst:
         print("\n" + "\x1B[" + "1;32m" +
               "--- PYPIT DEVELOPMENT SUITE PASSED {0:d}/{1:d} TESTS ---".format(npass, ninst) +
