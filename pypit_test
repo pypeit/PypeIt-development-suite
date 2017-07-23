@@ -22,13 +22,13 @@ def main():
     import warnings
     parser = argparse.ArgumentParser(formatter_class=argparse.ArgumentDefaultsHelpFormatter)
 
-    parser.add_argument('tests', type=str, default=None, help='Tests to run.  Options are: all, kast, lris, isis')
+    parser.add_argument('tests', type=str, default=None, help='Tests to run.  Options are: all, kast, lris, isis, hires')
     parser.add_argument('-outputdir', type=str, help="Output folder.  Default is ./REDUX_OUT")
     parser.add_argument('-setup', type=str, help="Single out a setup to run")
 
     pargs = parser.parse_args()
 
-    all_tests = ['kast', 'lris', 'isis']
+    all_tests = ['kast', 'lris', 'isis', 'hires']
 
     # Grab a list of all instruments
     raw_data = 'RAW_DATA/'
@@ -47,6 +47,8 @@ def main():
             instruments = [item for item in all_instruments if 'LRIS' in item]
         elif pargs.tests == 'isis':
             instruments = [item for item in all_instruments if 'ISIS_blue' in item]
+        elif pargs.tests == 'hires':
+            instruments = [item for item in all_instruments if 'Keck_HIRES' in item]
         else:
             raise IOError("Not prepared for this test: {:s}".format(pargs.tests))
 
