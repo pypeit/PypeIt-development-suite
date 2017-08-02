@@ -176,6 +176,8 @@ if __name__ == '__main__':
     try:
         import arclines
     except ImportError:
+        print("\n" + "\x1B[" + "1;31m" +
+              "--- PYPIT DEVELOPMENT SUITE FAILED ---"+ "\x1B[" + "0m" + "\r", file=sys.stderr)
         raise RuntimeError("You need to install the arclines package")
     # Giddy up
     main()
