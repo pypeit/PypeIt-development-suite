@@ -66,7 +66,8 @@ def main():
     # Loop on instruments
     npass, ntest = 0, 0
     for instr in instruments:
-        # if instr in ['kast_blue','Kast_red']:  # For testing
+        #if instr in ['kast_blue','Kast_red']:  # For testing
+        #if instr in ['lris_blue']: # Testing
         #    continue
         # Setups
         setups = next(os.walk(raw_data+'/'+instr))[1]
@@ -84,7 +85,7 @@ def main():
             # rawdata
             rawdir = os.path.join(pwd, 'RAW_DATA', instr, setup)+'/'
             # Run setup?
-            if instr.lower() in ['kast_blue']:
+            if instr.lower() in ['kast_blue', 'lris_red']:
                 ntest += 1
                 outfile = instr.lower()+'_'+setup.lower()
                 logfile = wdir+'/'+instr.lower()+'_'+setup.lower()+'.log2'
@@ -105,8 +106,7 @@ def main():
                         npass += 1
                 subprocess.call(['tail', '-2', logfile])
                 print("\n", file=sys.stderr)
-            else:
-                # Look for PYPIT file
+            else: # Use pre-made PYPIT file
                 redfile = 'pypit_files/'+instr.lower()+'_'+setup.lower()+'.pypit'
                 if not os.path.exists(redfile):
                     warnings.warn('No redux file: {:s}'.format(redfile))
@@ -138,7 +138,7 @@ def main():
             logfile = wdir+'/'+instr.lower()+'_'+setup.lower()+'.log3'
             print('Running pypit on {:s} --- '.format(pyp_file), file=sys.stderr, end='')
             with open(logfile, 'w') as f:
-                retval = subprocess.call(['run_pypit', pyp_file, '-v 2'], stderr=f, cwd=wdir)#, shell=True)
+                retval = subprocess.call(['run_pypit', pyp_file, '--devtest', '-v 2'], stderr=f, cwd=wdir)#, shell=True)
                 if retval == 0:
                     print("\x1B[" + "1;32m" + "PASSED" + "\x1B[" + "0m", file=sys.stderr)
                     npass += 1
@@ -146,6 +146,20 @@ def main():
                     print("\x1B[" + "1;31m" + "FAILED" + "\x1B[" + "0m", file=sys.stderr)
                 subprocess.call(['tail', '-2', logfile])
                 print("\n", file=sys.stderr)
+            # Test master frame running
+            if instr in ['lris_red']:
+                ntest += 1
+                logfile = wdir+'/'+instr.lower()+'_'+setup.lower()+'.log4'
+                print('Running pypit with master frames on {:s} --- '.format(pyp_file), file=sys.stderr, end='')
+                with open(logfile, 'w') as f:
+                    retval = subprocess.call(['run_pypit', pyp_file, '--devtest', '-m', '-v 2'], stderr=f, cwd=wdir)#, shell=True)
+                    if retval == 0:
+                        print("\x1B[" + "1;32m" + "PASSED" + "\x1B[" + "0m", file=sys.stderr)
+                        npass += 1
+                    else:
+                        print("\x1B[" + "1;31m" + "FAILED" + "\x1B[" + "0m", file=sys.stderr)
+                    subprocess.call(['tail', '-2', logfile])
+                    print("\n", file=sys.stderr)
     if npass == ntest:
         print("\n" + "\x1B[" + "1;32m" +
               "--- PYPIT DEVELOPMENT SUITE PASSED {0:d}/{1:d} TESTS ---".format(npass, ntest) +
@@ -160,6 +174,13 @@ if __name__ == '__main__':
     if not any(os.access(os.path.join(
             path, 'run_pypit'), os.X_OK) for path in os.environ["PATH"].split(os.pathsep)):
         raise RuntimeError("You need to install run_pypit in your PATH")
+    # Check for arclines (now a dependency for these tests)
+    try:
+        import arclines
+    except ImportError:
+        print("\n" + "\x1B[" + "1;31m" +
+              "--- PYPIT DEVELOPMENT SUITE FAILED ---"+ "\x1B[" + "0m" + "\r", file=sys.stderr)
+        raise RuntimeError("You need to install the arclines package")
     # Giddy up
     main()
 
