@@ -10,30 +10,41 @@ This script runs the PYPIT development suite of tests
 
 from __future__ import absolute_import, division, print_function
 
-import argparse
-import os
-import sys
-import glob
 
-
-def main():
+def parser(options=None):
+    import argparse
 
     all_tests = ['kast', 'lris', 'isis', 'hires',  # Instuments
                  'keck', 'shane', 'wht']  # Observatories
     hlpstr = ", ".join(all_tests)
-    import subprocess
-    import warnings
+
     parser = argparse.ArgumentParser(formatter_class=argparse.ArgumentDefaultsHelpFormatter)
 
     parser.add_argument('tests', type=str, default=None, help='Tests to run.  Options include: all, {0:s}'.format(hlpstr))
     parser.add_argument('-outputdir', type=str, help="Output folder.  Default is ./REDUX_OUT")
     parser.add_argument('-setup', type=str, help="Single out a setup to run")
 
-    pargs = parser.parse_args()
+    if options is None:
+        pargs = parser.parse_args()
+    else:
+        pargs = parser.parse_args(options)
+    #
+    return pargs, hlpstr
+
+
+def main():
+    import os
+    import sys
+    import glob
+    import subprocess
+    import warnings
+    import pdb
+
+    pargs, hlpstr = parser()
 
     # Grab a list of all instruments
     raw_data = 'RAW_DATA/'
-    calib_data = 'PYPIT_CALIBS'
+    #calib_data = 'PYPIT_CALIBS'
 
     walk = os.walk(raw_data)
     all_instruments = next(walk)[1]
@@ -183,6 +194,7 @@ def main():
               "\x1B[" + "0m" + "\r", file=sys.stderr)
 
 if __name__ == '__main__':
+    import os
     # Check for pypit executable
     if not any(os.access(os.path.join(
             path, 'run_pypit'), os.X_OK) for path in os.environ["PATH"].split(os.pathsep)):
