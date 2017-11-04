@@ -8,8 +8,8 @@ output overwrite True
 output sorted lris_r_ls_600_7500_d560
 
 # Reduce
-arc calibrate IDpixels 140.93677186,542.27337912,739.04374828,1152.38285967,1767.86702435
-arc calibrate IDwaves 5771.210,6404.018,6718.8974,7386.014,8379.9093
+#arc calibrate IDpixels 140.93677186,542.27337912,739.04374828,1152.38285967,1767.86702435
+#arc calibrate IDwaves 5771.210,6404.018,6718.8974,7386.014,8379.9093
 trace slits tilts params 1,1,1
 trace slits tilts method spca
 reduce skysub method bspline
