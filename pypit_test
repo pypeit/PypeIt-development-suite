@@ -58,9 +58,9 @@ def main():
         elif pargs.tests == 'lris':
             instruments = [item for item in all_instruments if 'LRIS' in item]
         elif pargs.tests == 'isis':
-            instruments = [item for item in all_instruments if 'ISIS_blue' in item]
+            instruments = [item for item in all_instruments if 'ISIS' in item]
         elif pargs.tests == 'hires':
-            instruments = [item for item in all_instruments if 'Keck_HIRES' in item]
+            instruments = [item for item in all_instruments if 'HIRES' in item]
         elif pargs.tests == 'keck':
             instruments = [item for item in all_instruments if 'Keck' in item]
         elif pargs.tests == 'shane':
