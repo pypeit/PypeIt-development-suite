@@ -2,7 +2,7 @@
 
 # Change the default settings
 run ncpus 1
-run spectrograph kast_blue
+run spectrograph shane_kast_blue
 output verbosity 2
 output overwrite True
 output sorted kast_blue_600_4310_d55
