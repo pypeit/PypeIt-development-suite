@@ -11,13 +11,12 @@ This script runs the PYPIT development suite of tests
 from __future__ import absolute_import, division, print_function
 
 import argparse
-import os
-import sys
 import glob
 
 
 def main():
 
+    import os, sys
     import subprocess
     import warnings
     parser = argparse.ArgumentParser(formatter_class=argparse.ArgumentDefaultsHelpFormatter)
@@ -170,6 +169,7 @@ def main():
               "\x1B[" + "0m" + "\r", file=sys.stderr)
 
 if __name__ == '__main__':
+    import sys, os
     # Check for pypit executable
     if not any(os.access(os.path.join(
             path, 'run_pypit'), os.X_OK) for path in os.environ["PATH"].split(os.pathsep)):
