@@ -194,7 +194,8 @@ def main():
               "\x1B[" + "0m" + "\r", file=sys.stderr)
 
 if __name__ == '__main__':
-    import os
+    import sys, os
+
     # Check for pypit executable
     if not any(os.access(os.path.join(
             path, 'run_pypit'), os.X_OK) for path in os.environ["PATH"].split(os.pathsep)):
