@@ -14,7 +14,7 @@ from __future__ import absolute_import, division, print_function
 def parser(options=None):
     import argparse
 
-    all_tests = ['kast', 'lris', 'isis', 'hires',  # Instuments
+    all_tests = ['kast', 'lris', 'isis', 'hires', 'deimos',  # Instuments
                  'keck', 'shane', 'wht']  # Observatories
     hlpstr = ", ".join(all_tests)
 
@@ -55,6 +55,8 @@ def main():
     else:
         if pargs.tests == 'kast':
             instruments = [item for item in all_instruments if 'Kast' in item]
+        elif pargs.tests == 'deimos':
+            instruments = [item for item in all_instruments if 'DEIMOS' in item]
         elif pargs.tests == 'lris':
             instruments = [item for item in all_instruments if 'LRIS' in item]
         elif pargs.tests == 'isis':
@@ -142,8 +144,12 @@ def main():
                 for kk, iline in enumerate(lines):
                     if 'data read' in iline:
                         dpth = lines[kk+1]
+                        if 'path' in dpth:
+                            newdpth = ' path '
+                        else:
+                            newdpth = ' '
                         i0 = dpth.rfind('/')
-                        newdpth = ' '+pwd+'/'+raw_data+'/'+instr+'/'+setup+dpth[i0:]
+                        newdpth += pwd+'/'+raw_data+'/'+instr+'/'+setup+dpth[i0:]
                         lines[kk+1] = newdpth
                     elif 'reduce flatfield useframe' in iline:
                         cpth = lines[kk]
