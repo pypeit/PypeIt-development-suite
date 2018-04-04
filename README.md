@@ -1,4 +1,4 @@
-# PYPIT-development-suite v0.2.1
+# PYPIT-development-suite v0.3.0
 
 The Python Spectroscopic Data Reduction Pipeline development suite
 
@@ -21,7 +21,7 @@ those, you will need to download them.
     1. Download the tarball from here: https://drive.google.com/open?id=1frZk1VsF9PMvwkMQEGaKtwkvD5gRXJBx
     1. cd RAW_DATA
     1. Unpack the tarball here
-    1. Now the tests for DEIMOS will run as well
+    1. Now the tests for DEIMOS will be enabled
 
 
 Use -outputdir to choose a different output directory.
