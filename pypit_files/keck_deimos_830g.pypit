@@ -9,17 +9,9 @@ run calcheck False
 output sorted deimos_setup_A
 
 # Reduce
-bias useframe overscan
-arc calibrate method arclines
-trace slits tilts params 1,1,1
-trace slits tilts method spca
-reduce skysub method bspline
-pixelflat combine method median
-pixelflat combine reject level [10.0,10.0]
 
 # Reduce only these chips
 reduce detnum 3,7
-reduce calibrate flux False        # Perform a flux calibration?
 
 # Only extract 5 objects
 science extraction maxnumber 5
