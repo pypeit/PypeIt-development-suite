@@ -6,7 +6,7 @@ run spectrograph keck_deimos
 output verbosity 2 
 output overwrite True
 run calcheck False
-output sorted deimos_setup_A
+output sorted keck_deimos_830g
 
 # Reduce
 
@@ -34,7 +34,7 @@ setup end
 
 # Read in the data
 data read
- path /data/Projects/Python/PYPIT-development-suite/RAW_DATA/Keck_DEIMOS/830G/
+ path ../../../RAW_DATA/Keck_DEIMOS/830G/
 |        filename |                date |                    frametype |         target | exptime | dispname |   decker |
 | d0914_0011.fits | 2017-09-14T03:15:10 |                          arc |        unknown |       1 |     830G | LongMirr |
 #| d0914_0002.fits | 2017-09-14T01:48:07 |                         bias |        unknown |       1 |     830G |     None |

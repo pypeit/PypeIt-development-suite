@@ -14,7 +14,7 @@ from __future__ import absolute_import, division, print_function
 def parser(options=None):
     import argparse
 
-    all_tests = ['kast', 'lris', 'isis', 'hires', 'deimos',  # Instuments
+    all_tests = ['kast', 'lris', 'isis', 'hires', 'deimos',  # Insturments
                  'keck', 'shane', 'wht']  # Observatories
     hlpstr = ", ".join(all_tests)
 
@@ -168,7 +168,7 @@ def main():
             logfile = wdir+'/'+instr.lower()+'_'+setup.lower()+'.log3'
             print('Running pypit on {:s} --- '.format(pyp_file), file=sys.stderr, end='')
             with open(logfile, 'w') as f:
-                retval = subprocess.call(['run_pypit', pyp_file, '--devtest', '-v 2'], stderr=f, cwd=wdir)#, shell=True)
+                retval = subprocess.call(['run_pypit', pyp_file, '--devtest', '-v 2','-d'], stderr=f, cwd=wdir)#, shell=True)
                 if retval == 0:
                     print("\x1B[" + "1;32m" + "PASSED" + "\x1B[" + "0m", file=sys.stderr)
                     npass += 1
@@ -182,7 +182,7 @@ def main():
                 logfile = wdir+'/'+instr.lower()+'_'+setup.lower()+'.log4'
                 print('Running pypit with master frames on {:s} --- '.format(pyp_file), file=sys.stderr, end='')
                 with open(logfile, 'w') as f:
-                    retval = subprocess.call(['run_pypit', pyp_file, '--devtest', '-m', '-v 2'], stderr=f, cwd=wdir)#, shell=True)
+                    retval = subprocess.call(['run_pypit', pyp_file, '--devtest', '-m', '-v 2','-d'], stderr=f, cwd=wdir)#, shell=True)
                     if retval == 0:
                         print("\x1B[" + "1;32m" + "PASSED" + "\x1B[" + "0m", file=sys.stderr)
                         npass += 1
