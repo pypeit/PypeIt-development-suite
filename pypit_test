@@ -75,6 +75,12 @@ def main():
                   "Please select from one of the following options:\n" +
                   "all, {0:s}\n".format(hlpstr), file=sys.stderr)
             sys.exit()
+    # Check that instruments is not blank
+    if pargs.tests == 'deimos':
+        if len(instruments) == 0:
+            print("\x1B[" + "1;31m" + "\nERROR - " + "\x1B[" + "0m" +
+                  "Not prepared for DEIMOS test.  Odds are you need to download the RAW_DATA")
+            sys.exit()
 
     if pargs.outputdir is None:
         outputdir = 'REDUX_OUT/'
