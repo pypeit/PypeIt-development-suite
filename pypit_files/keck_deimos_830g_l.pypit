@@ -1,4 +1,4 @@
-# This is a comment line
+# Single-slit reduction for DEIMOS
 
 # Change the default settings
 run ncpus 4
@@ -12,6 +12,11 @@ output sorted keck_deimos_830g
 
 # Reduce only these chips
 reduce detnum 3,7
+
+# One slit
+trace slits number 1
+trace slits sobel mode constant    # JFH reports this is needed for slits running off the detector
+trace slits sigdetect 500.0        # I think this basically avoids any slit being found so a longslit is imposed
 
 # Only extract 5 objects
 science extraction maxnumber 5
@@ -34,7 +39,7 @@ setup end
 
 # Read in the data
 data read
- path ../../../RAW_DATA/Keck_DEIMOS/830G/
+ path ../../../RAW_DATA/Keck_DEIMOS/830G_L/
 |        filename |                date |                    frametype |         target | exptime | dispname |   decker |
 | d0914_0011.fits | 2017-09-14T03:15:10 |                          arc |        unknown |       1 |     830G | LongMirr |
 #| d0914_0002.fits | 2017-09-14T01:48:07 |                         bias |        unknown |       1 |     830G |     None |
