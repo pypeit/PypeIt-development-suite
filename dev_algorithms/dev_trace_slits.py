@@ -41,7 +41,7 @@ def parser(options=None):
     # Parse
     parser = argparse.ArgumentParser(description='Developing/testing/checking trace_slits [v1.1]')
     parser.add_argument("instr", type=str, help="Instrument [deimos]")
-    parser.add_argument("--det", default=1, action="store_true", help="Detector")
+    parser.add_argument("--det", default=1, type=int, help="Detector")
     parser.add_argument("--show", default=False, action="store_true", help="Show the image with traces")
 
     if options is None:
@@ -62,10 +62,12 @@ def main(pargs):
         spectrograph = 'keck_deimos'
         saturation = 65535.0              # The detector Saturation level
         files = glob.glob('data/DE*')
+        #files = ['../RAW_DATA/Keck_DEIMOS/830G_L/'+ifile for ifile in ['d0914_0014.fits', 'd0914_0015.fits']]
         numamplifiers=1
 
         # Grab data info
-        datasec, oscansec, naxis0, naxis1 = arproc.get_datasec(spectrograph, files[0], numamplifiers)
+        datasec, oscansec, naxis0, naxis1 = arproc.get_datasec(spectrograph, files[0],
+                                                               numamplifiers=numamplifiers, det=pargs.det)
 
         # Load + process images
         frames = []
