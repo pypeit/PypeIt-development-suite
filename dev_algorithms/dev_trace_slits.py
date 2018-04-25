@@ -10,6 +10,8 @@ from pypit import ginga
 from pypit import arload
 from pypit import arproc
 from pypit import arcomb
+from pypit import ardeimos
+from pypit import arlris
 
 debug = debugger.init()
 debug['develop'] = True
@@ -35,12 +37,40 @@ def_settings=dict(trace={'slits': {'single': [],
 def pypit_trace_slits():
     pass
 
+def combine_frames(spectrograph, files, det, settings, saturation=None, numamplifiers=None):
+    # Grab data info
+    datasec, oscansec, naxis0, naxis1 = arproc.get_datasec(spectrograph, files[0],
+                                                           numamplifiers=numamplifiers, det=det)
+
+    # Load + process images
+    frames = []
+    for ifile in files:
+        rawframe, head0 = arload.load_raw_frame(spectrograph, ifile, pargs.det, disp_dir=0)
+        # Bias subtract
+        newframe = arproc.sub_overscan(rawframe.copy(), numamplifiers, datasec, oscansec)
+        # Trim
+        frame = arproc.trim(newframe, numamplifiers, datasec)
+        # Append
+        frames.append(frame)
+
+    # Convert to array
+    frames_arr = np.zeros((frames[0].shape[0], frames[0].shape[1], len(frames)))
+    for ii in range(len(frames)):
+        frames_arr[:,:,ii] = frames[ii]
+
+    # Combine
+    mstrace = arcomb.comb_frames(frames_arr, frametype='Unknown',
+                                 method=settings['trace']['combine']['method'],
+                                 reject=settings['trace']['combine']['reject'],
+                                 satpix=None, saturation=saturation)
+    # Return
+    return mstrace
 
 def parser(options=None):
     import argparse
     # Parse
     parser = argparse.ArgumentParser(description='Developing/testing/checking trace_slits [v1.1]')
-    parser.add_argument("instr", type=str, help="Instrument [deimos]")
+    parser.add_argument("instr", type=str, help="Instrument [keck_deimos, keck_lris_red]")
     parser.add_argument("--det", default=1, type=int, help="Detector")
     parser.add_argument("--show", default=False, action="store_true", help="Show the image with traces")
 
@@ -56,56 +86,47 @@ def main(pargs):
     xgap = 0.0   # Gap between the square detector pixels (expressed as a fraction of the x pixel size)
     ygap = 0.0   # Gap between the square detector pixels (expressed as a fraction of the x pixel size)
     ysize = 1.0  # The size of a pixel in the y-direction as a multiple of the x pixel size
+    binbpx = None
 
     settings = def_settings.copy()
-    if pargs.instr == 'deimos':
+    if pargs.instr == 'keck_deimos':
         spectrograph = 'keck_deimos'
         saturation = 65535.0              # The detector Saturation level
-        files = glob.glob('data/DE*')
+        files = glob.glob('data/DEIMOS/DE*')
         #files = ['../RAW_DATA/Keck_DEIMOS/830G_L/'+ifile for ifile in ['d0914_0014.fits', 'd0914_0015.fits']]
         numamplifiers=1
 
-        # Grab data info
-        datasec, oscansec, naxis0, naxis1 = arproc.get_datasec(spectrograph, files[0],
-                                                               numamplifiers=numamplifiers, det=pargs.det)
-
-        # Load + process images
-        frames = []
-        for ifile in files:
-            rawframe, head0 = arload.load_raw_frame(spectrograph, ifile, pargs.det, disp_dir=0)
-            # Bias subtract
-            newframe = arproc.sub_overscan(rawframe.copy(), numamplifiers, datasec, oscansec)
-            # Trim
-            frame = arproc.trim(newframe, numamplifiers, datasec)
-            # Append
-            frames.append(frame)
-
-        # Convert to array
-        frames_arr = np.zeros((frames[0].shape[0], frames[0].shape[1], len(frames)))
-        for ii in range(len(frames)):
-            frames_arr[:,:,ii] = frames[ii]
-
         # Combine
-        mstrace = arcomb.comb_frames(frames_arr, frametype='Unknown',
-                                     method=settings['trace']['combine']['method'],
-                                     reject=settings['trace']['combine']['reject'],
-                                     satpix=None, saturation=saturation)
-        # binpx
-        binbpx = np.zeros_like(mstrace)
+        mstrace = combine_frames(spectrograph, files, pargs.det, settings,
+                                 saturation=saturation, numamplifiers=numamplifiers)
+        # Bad pixel mask (important!!)
+        binbpx = ardeimos.bpm(pargs.det)
 
         #hdul = fits.open('trace_slit.fits')
+        settings['trace']['slits']['sigdetect'] = 50.0
+        settings['trace']['slits']['pca']['params'] = [3,2,1,0]
+    elif pargs.instr == 'keck_lris_red':
+        spectrograph = 'keck_lris_red'
+        saturation = 65535.0              # The detector Saturation level
+        files = glob.glob('data/LRIS/Trace_flats/r15*')
+        numamplifiers=2
+        # Combine
+        mstrace = combine_frames(spectrograph, files, pargs.det, settings,
+                                 saturation=saturation, numamplifiers=numamplifiers)
+
         settings['trace']['slits']['sigdetect'] = 50.0
         settings['trace']['slits']['pca']['params'] = [3,2,1,0]
     else:
         debugger.set_trace()
 
+    # binpx
+    if binbpx is None:
+        binbpx = np.zeros_like(mstrace)
+
     # pixlocn
     pixlocn = artrace.gen_pixloc(mstrace, xgap, ygap, ysize)
 
-    #binbpx = hdul[0].data
-    #pixlocn = hdul[1].data
-    #mstrace = hdul[2].data
-
+    # Trace
     lcenint, rcenint, extrapord = artrace.refactor_trace_slits(pargs.det, mstrace, binbpx, pixlocn,
                                          settings=settings, pcadesc="", maskBadRows=False, min_sqm=30.)
     if pargs.show:
