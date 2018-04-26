@@ -74,7 +74,7 @@ def parser(options=None):
     parser.add_argument("instr", type=str, help="Instrument [keck_deimos, keck_lris_red]")
     parser.add_argument("--det", default=1, type=int, help="Detector")
     parser.add_argument("--show", default=False, action="store_true", help="Show the image with traces")
-    parser.add_argument("--driver", default=False, action="store_true", help="Show the image with traces")
+    #parser.add_argument("--driver", default=False, action="store_true", help="Show the image with traces")
 
     if options is None:
         pargs = parser.parse_args()
@@ -110,7 +110,11 @@ def main(pargs):
     elif pargs.instr == 'keck_lris_red':
         spectrograph = 'keck_lris_red'
         saturation = 65535.0              # The detector Saturation level
-        files = glob.glob('data/LRIS/Trace_flats/r15*')
+        #files = glob.glob('data/LRIS/Trace_flats/r15*')  # det=1 : Missed slit on amp;  det=2 : spot on
+        #files = ['data/LRIS/Trace_flats/LR.20160110.10103.fits.gz',
+        #         'data/LRIS/Trace_flats/LR.20160110.10273.fits.gz']  # Both are excellent
+        files = ['data/LRIS/Trace_flats/LR.20160110.10644.fits.gz',
+                 'data/LRIS/Trace_flats/LR.20160110.10717.fits.gz']  # Both are excellent
         numamplifiers=2
 
         settings['trace']['slits']['sigdetect'] = 50.0
@@ -119,7 +123,9 @@ def main(pargs):
         spectrograph = 'keck_lris_blue'
         saturation = 65535.0              # The detector Saturation level
         numamplifiers=2
-        files = glob.glob('../RAW_DATA/Keck_LRIS_blue/long_600_4000_d560/b150910_2051*') # Single Twilight
+        #files = glob.glob('../RAW_DATA/Keck_LRIS_blue/long_600_4000_d560/b150910_2051*') # Single Twilight
+        files = glob.glob('data/LRIS/Trace_flats/LB*')  # det=1; missed/rejected the first one -- explore!! det=2 : good
+        settings['trace']['slits']['pca']['params'] = [3,2,1,0]
     else:
         debugger.set_trace()
 
@@ -135,12 +141,12 @@ def main(pargs):
     pixlocn = artrace.gen_pixloc(mstrace, xgap, ygap, ysize)
 
     # Trace
-    if not pargs.driver:
-        lcenint, rcenint, extrapord = artrace.refactor_trace_slits(pargs.det, mstrace, binbpx, pixlocn,
-                                                               settings=settings, pcadesc="", maskBadRows=False, min_sqm=30.)
-    else:
-        lcenint, rcenint, extrapord = artrace.driver_trace_slits(pargs.det, mstrace, binbpx, pixlocn,
-                                                                 settings=settings)
+    #if not pargs.driver:
+    #    lcenint, rcenint, extrapord = artrace.refactor_trace_slits(pargs.det, mstrace, binbpx, pixlocn,
+    #                                                           settings=settings, pcadesc="", maskBadRows=False, min_sqm=30.)
+    #else:
+    lcenint, rcenint, extrapord = artrace.driver_trace_slits(pargs.det, mstrace, binbpx, pixlocn,
+                                                             settings=settings)
     if pargs.show:
         viewer, ch = ginga.show_image(mstrace)
         nslit = lcenint.shape[1]
