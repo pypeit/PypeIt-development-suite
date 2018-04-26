@@ -12,6 +12,7 @@ from pypit import arproc
 from pypit import arcomb
 from pypit import ardeimos
 from pypit import arlris
+from pypit import arsave
 
 debug = debugger.init()
 debug['develop'] = True
@@ -25,6 +26,7 @@ def_settings=dict(trace={'slits': {'single': [],
                                    'diffpolyorder': 2,
                                    'fracignore': 0.01,
                                    'medrep': 0,
+                                   'pad': 0,
                                    'number': -1,
                                    'maxgap': None,
                                    'sigdetect': 20.,
@@ -74,6 +76,7 @@ def parser(options=None):
     parser.add_argument("instr", type=str, help="Instrument [keck_deimos, keck_lris_red]")
     parser.add_argument("--det", default=1, type=int, help="Detector")
     parser.add_argument("--show", default=False, action="store_true", help="Show the image with traces")
+    parser.add_argument("--outfile", type=str, help="Output to a MasterFrame formatted FITS file")
     #parser.add_argument("--driver", default=False, action="store_true", help="Show the image with traces")
 
     if options is None:
@@ -145,12 +148,27 @@ def main(pargs):
     #    lcenint, rcenint, extrapord = artrace.refactor_trace_slits(pargs.det, mstrace, binbpx, pixlocn,
     #                                                           settings=settings, pcadesc="", maskBadRows=False, min_sqm=30.)
     #else:
-    lcenint, rcenint, extrapord = artrace.driver_trace_slits(pargs.det, mstrace, binbpx, pixlocn,
+    lordloc, rordloc, extrapord = artrace.driver_trace_slits(pargs.det, mstrace, binbpx, pixlocn,
                                                              settings=settings)
+    # Show in Ginga?
     if pargs.show:
         viewer, ch = ginga.show_image(mstrace)
-        nslit = lcenint.shape[1]
-        ginga.show_slits(viewer, ch, lcenint, rcenint, np.arange(nslit) + 1, pstep=50)
+        nslit = lordloc.shape[1]
+        ginga.show_slits(viewer, ch, lordloc, rordloc, np.arange(nslit) + 1, pstep=50)
+
+    # Output to a MasterFrame?
+    if pargs.outfile is not None:
+        pixcen = artrace.phys_to_pix(0.5*(lordloc+rordloc), pixlocn, 1)
+        pixwid = (rordloc-lordloc).mean(0).astype(np.int)
+        lordpix = artrace.phys_to_pix(lordloc, pixlocn, 1)
+        rordpix = artrace.phys_to_pix(rordloc, pixlocn, 1)
+        slitpix = arproc.core_slit_pixels(lordloc, rordloc, mstrace.shape, settings['trace']['slits']['pad'])
+        # Save
+        extensions = [lordloc, rordloc, pixcen, pixwid, lordpix, rordpix, slitpix]
+        names = ['LeftEdges_det', 'RightEdges_det', 'SlitCentre', 'SlitLength', 'LeftEdges_pix', 'RightEdges_pix', 'SlitPixels']
+        arsave.core_save_master(mstrace, filename=pargs.outfile,
+                           frametype='trace', extensions=extensions, names=names)
+
 
     debugger.set_trace()
 
