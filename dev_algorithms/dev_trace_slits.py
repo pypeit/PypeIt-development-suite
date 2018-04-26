@@ -24,6 +24,7 @@ def_settings=dict(trace={'slits': {'single': [],
                                    'polyorder': 3,
                                    'diffpolyorder': 2,
                                    'fracignore': 0.01,
+                                   'medrep': 0,
                                    'number': -1,
                                    'maxgap': None,
                                    'sigdetect': 20.,
@@ -73,6 +74,7 @@ def parser(options=None):
     parser.add_argument("instr", type=str, help="Instrument [keck_deimos, keck_lris_red]")
     parser.add_argument("--det", default=1, type=int, help="Detector")
     parser.add_argument("--show", default=False, action="store_true", help="Show the image with traces")
+    parser.add_argument("--driver", default=False, action="store_true", help="Show the image with traces")
 
     if options is None:
         pargs = parser.parse_args()
@@ -87,6 +89,8 @@ def main(pargs):
     ygap = 0.0   # Gap between the square detector pixels (expressed as a fraction of the x pixel size)
     ysize = 1.0  # The size of a pixel in the y-direction as a multiple of the x pixel size
     binbpx = None
+    numamplifiers = None
+    saturation = None
 
     settings = def_settings.copy()
     if pargs.instr == 'keck_deimos':
@@ -96,28 +100,32 @@ def main(pargs):
         #files = ['../RAW_DATA/Keck_DEIMOS/830G_L/'+ifile for ifile in ['d0914_0014.fits', 'd0914_0015.fits']]
         numamplifiers=1
 
-        # Combine
-        mstrace = combine_frames(spectrograph, files, pargs.det, settings,
-                                 saturation=saturation, numamplifiers=numamplifiers)
         # Bad pixel mask (important!!)
         binbpx = ardeimos.bpm(pargs.det)
 
         #hdul = fits.open('trace_slit.fits')
         settings['trace']['slits']['sigdetect'] = 50.0
+        settings['trace']['slits']['fracignore'] = 0.02
         settings['trace']['slits']['pca']['params'] = [3,2,1,0]
     elif pargs.instr == 'keck_lris_red':
         spectrograph = 'keck_lris_red'
         saturation = 65535.0              # The detector Saturation level
         files = glob.glob('data/LRIS/Trace_flats/r15*')
         numamplifiers=2
-        # Combine
-        mstrace = combine_frames(spectrograph, files, pargs.det, settings,
-                                 saturation=saturation, numamplifiers=numamplifiers)
 
         settings['trace']['slits']['sigdetect'] = 50.0
         settings['trace']['slits']['pca']['params'] = [3,2,1,0]
+    elif pargs.instr == 'keck_lris_blue':
+        spectrograph = 'keck_lris_blue'
+        saturation = 65535.0              # The detector Saturation level
+        numamplifiers=2
+        files = glob.glob('../RAW_DATA/Keck_LRIS_blue/long_600_4000_d560/b150910_2051*') # Single Twilight
     else:
         debugger.set_trace()
+
+    # Combine
+    mstrace = combine_frames(spectrograph, files, pargs.det, settings,
+                             saturation=saturation, numamplifiers=numamplifiers)
 
     # binpx
     if binbpx is None:
@@ -127,8 +135,12 @@ def main(pargs):
     pixlocn = artrace.gen_pixloc(mstrace, xgap, ygap, ysize)
 
     # Trace
-    lcenint, rcenint, extrapord = artrace.refactor_trace_slits(pargs.det, mstrace, binbpx, pixlocn,
-                                         settings=settings, pcadesc="", maskBadRows=False, min_sqm=30.)
+    if not pargs.driver:
+        lcenint, rcenint, extrapord = artrace.refactor_trace_slits(pargs.det, mstrace, binbpx, pixlocn,
+                                                               settings=settings, pcadesc="", maskBadRows=False, min_sqm=30.)
+    else:
+        lcenint, rcenint, extrapord = artrace.driver_trace_slits(pargs.det, mstrace, binbpx, pixlocn,
+                                                                 settings=settings)
     if pargs.show:
         viewer, ch = ginga.show_image(mstrace)
         nslit = lcenint.shape[1]
