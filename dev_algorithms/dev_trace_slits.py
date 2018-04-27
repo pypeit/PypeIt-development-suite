@@ -113,12 +113,16 @@ def main(pargs):
     elif pargs.instr == 'keck_lris_red':
         spectrograph = 'keck_lris_red'
         saturation = 65535.0              # The detector Saturation level
-        #files = glob.glob('data/LRIS/Trace_flats/r15*')  # det=1 : Missed slit on amp;  det=2 : spot on
-        #files = ['data/LRIS/Trace_flats/LR.20160110.10103.fits.gz',
-        #         'data/LRIS/Trace_flats/LR.20160110.10273.fits.gz']  # Both are excellent
-        files = ['data/LRIS/Trace_flats/LR.20160110.10644.fits.gz',
-                 'data/LRIS/Trace_flats/LR.20160110.10717.fits.gz']  # Both are excellent
+        #files = glob.glob('data/LRIS/Trace_flats/r15*')  # det=1 : Missed slit on amp but it wasn't the amp;  det=2 : spot on
+        #files = ['data/LRIS/Trace_flats/LR.20160110.10103.fits.gz',  # det=1: fine; det=2 : good
+        #         'data/LRIS/Trace_flats/LR.20160110.10273.fits.gz']
+        files = ['data/LRIS/Trace_flats/LR.20160110.10644.fits.gz',  # det=1: Need to add one in
+                 'data/LRIS/Trace_flats/LR.20160110.10717.fits.gz']  # det=2 better
         numamplifiers=2
+
+        head0 = fits.open(files[0])[0].header
+        xbin, ybin = [int(ii) for ii in head0['BINNING'].split(',')]
+        binbpx = arlris.bpm(xbin, ybin, 'red', pargs.det)
 
         settings['trace']['slits']['sigdetect'] = 50.0
         settings['trace']['slits']['pca']['params'] = [3,2,1,0]
@@ -129,6 +133,7 @@ def main(pargs):
         #files = glob.glob('../RAW_DATA/Keck_LRIS_blue/long_600_4000_d560/b150910_2051*') # Single Twilight
         files = glob.glob('data/LRIS/Trace_flats/LB*')  # det=1; missed/rejected the first one -- explore!! det=2 : good
         settings['trace']['slits']['pca']['params'] = [3,2,1,0]
+        settings['trace']['slits']['sigdetect'] = 30.0
     else:
         debugger.set_trace()
 
