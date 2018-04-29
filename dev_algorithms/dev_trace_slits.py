@@ -73,7 +73,8 @@ def parser(options=None):
     import argparse
     # Parse
     parser = argparse.ArgumentParser(description='Developing/testing/checking trace_slits [v1.1]')
-    parser.add_argument("instr", type=str, help="Instrument [keck_deimos, keck_lris_red]")
+    parser.add_argument("spectrograph", type=str, help="Instrument [keck_deimos, keck_lris_red, keck_lris_blue]")
+    parser.add_argument("--files", type=str, help="File(s) of trace flats")
     parser.add_argument("--det", default=1, type=int, help="Detector")
     parser.add_argument("--show", default=False, action="store_true", help="Show the image with traces")
     parser.add_argument("--outfile", type=str, help="Output to a MasterFrame formatted FITS file")
@@ -97,46 +98,57 @@ def main(pargs):
     add_user_slits = None
 
     settings = def_settings.copy()
-    if pargs.instr == 'keck_deimos':
-        spectrograph = 'keck_deimos'
+
+    # Read files
+    if pargs.files is not None:
+        files = glob.glob(pargs.files+'*')
+    else:
+        files = None
+
+    # Instrument specific
+    if pargs.spectrograph == 'keck_deimos':
+
         saturation = 65535.0              # The detector Saturation level
-        files = glob.glob('data/DEIMOS/DE.20100913.57*')  # Mask (57006, 57161)
-        #  The following are with sigdetect=20;  sigdetect=50 gets rid of the junk (I think)
-        #      det=1 :: 25 slits including star boxes
-        #      det=2 :: 26 slits including stars + short first one
-        #      det=3 :: 27 slits with a fake, short slit at the start
-        #      det=4 :: 27 slits with several junk slits in saturated star boxes
-        #      det=5 :: 25 slits with one junk slit on a saturated box
-        #      det=6 :: 26 slits with a short, legit first slit
-        #      det=7 :: 26 slits with stars
-        #      det=8 :: 25 slits well done slits including a short first one
-        #
-        #files = ['../RAW_DATA/Keck_DEIMOS/830G_L/'+ifile for ifile in [  # Longslit in dets 3,7
-        #    'd0914_0014.fits', 'd0914_0015.fits']]
         numamplifiers=1
+
+        if files is None:
+            files = glob.glob('data/DEIMOS/DE.20100913.57*')  # Mask (57006, 57161)
+            #  The following are with sigdetect=20;  sigdetect=50 gets rid of the junk (I think)
+            #      det=1 :: 25 slits including star boxes
+            #      det=2 :: 26 slits including stars + short first one
+            #      det=3 :: 27 slits with a fake, short slit at the start
+            #      det=4 :: 27 slits with several junk slits in saturated star boxes
+            #      det=5 :: 25 slits with one junk slit on a saturated box
+            #      det=6 :: 26 slits with a short, legit first slit
+            #      det=7 :: 26 slits with stars
+            #      det=8 :: 25 slits well done slits including a short first one
+            #
+            #files = ['../RAW_DATA/Keck_DEIMOS/830G_L/'+ifile for ifile in [  # Longslit in dets 3,7
+            #    'd0914_0014.fits', 'd0914_0015.fits']]
+
 
         # Bad pixel mask (important!!)
         binbpx = ardeimos.bpm(pargs.det)
 
         #hdul = fits.open('trace_slit.fits')
-        settings['trace']['slits']['sigdetect'] = 20.0
+        settings['trace']['slits']['sigdetect'] = 50.0
         settings['trace']['slits']['fracignore'] = 0.0001   # 0.02 removes star boxes
         settings['trace']['slits']['pca']['params'] = [3,2,1,0]
-    elif pargs.instr == 'keck_lris_red':
-        spectrograph = 'keck_lris_red'
+    elif pargs.spectrograph == 'keck_lris_red':
         saturation = 65535.0              # The detector Saturation level
         numamplifiers=2
 
-        files = glob.glob('data/LRIS/Trace_flats/r150420_402*')
-        #    det1 : Missing a slit between two standard stars
-        #    det2 : 12 solid slits
-        add_user_slits = [[489,563,1024]] # Goes with r150420_402*  ; and it works
+        if files is None:
+            files = glob.glob('data/LRIS/Trace_flats/r150420_402*')
+            #    det1 : Missing a slit between two standard stars
+            #    det2 : 12 solid slits
+            add_user_slits = [[489,563,1024]] # Goes with r150420_402*  ; and it works
 
-        #files = ['data/LRIS/Trace_flats/LR.20160110.10103.fits.gz',  # det=1: finds a ghost slit;  crazy edge case..
-        #         'data/LRIS/Trace_flats/LR.20160110.10273.fits.gz']  # det=2: solid
+            #files = ['data/LRIS/Trace_flats/LR.20160110.10103.fits.gz',  # det=1: finds a ghost slit;  crazy edge case..
+            #         'data/LRIS/Trace_flats/LR.20160110.10273.fits.gz']  # det=2: solid
 
-        #files = ['data/LRIS/Trace_flats/LR.20160110.10644.fits.gz',  # det=1:  Well done! including an overlapping slit
-        #         'data/LRIS/Trace_flats/LR.20160110.10717.fits.gz']  # det=2: 21 solid slits including stars
+            #files = ['data/LRIS/Trace_flats/LR.20160110.10644.fits.gz',  # det=1:  Well done! including an overlapping slit
+            #         'data/LRIS/Trace_flats/LR.20160110.10717.fits.gz']  # det=2: 21 solid slits including stars
 
         # Read
         head0 = fits.open(files[0])[0].header
@@ -145,19 +157,20 @@ def main(pargs):
 
         settings['trace']['slits']['sigdetect'] = 50.0
         settings['trace']['slits']['pca']['params'] = [3,2,1,0]
-    elif pargs.instr == 'keck_lris_blue':
-        spectrograph = 'keck_lris_blue'
+    elif pargs.spectrograph == 'keck_lris_blue':
         saturation = 65535.0              # The detector Saturation level
         numamplifiers=2
-        #files = glob.glob('../RAW_DATA/Keck_LRIS_blue/long_600_4000_d560/b150910_2051*') # Single Twilight
-        files = glob.glob('data/LRIS/Trace_flats/LB*')  # det=1 : solid; det=2 solid [sigdetect=30]
+        if files is None:
+            #files = glob.glob('../RAW_DATA/Keck_LRIS_blue/long_600_4000_d560/b150910_2051*') # Single Twilight
+            files = glob.glob('data/LRIS/Trace_flats/LB*')  # det=1 : solid; det=2 solid [sigdetect=30]
+
         settings['trace']['slits']['pca']['params'] = [3,2,1,0]
         settings['trace']['slits']['sigdetect'] = 30.0
     else:
         debugger.set_trace()
 
     # Combine
-    mstrace = combine_frames(spectrograph, files, pargs.det, settings,
+    mstrace = combine_frames(pargs.spectrograph, files, pargs.det, settings,
                              saturation=saturation, numamplifiers=numamplifiers)
 
     # binpx
