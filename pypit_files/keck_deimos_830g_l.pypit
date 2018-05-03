@@ -9,6 +9,7 @@ run calcheck False
 output sorted keck_deimos_830g
 
 # Reduce
+reduce calibrate flux False # Do not flux calibrate
 
 # Reduce only these chips
 reduce detnum 3,7
