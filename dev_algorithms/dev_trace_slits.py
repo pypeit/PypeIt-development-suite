@@ -164,7 +164,8 @@ def main(pargs):
         numamplifiers=2
         if files is None:
             #files = glob.glob('../RAW_DATA/Keck_LRIS_blue/long_600_4000_d560/b150910_2051*') # Single Twilight
-            files = glob.glob('data/LRIS/Trace_flats/LB*')  # det=1 : solid; det=2 solid [sigdetect=30]
+            #files = glob.glob('data/LRIS/Trace_flats/LB.20160109.*')  # det=1 : solid; det=2 solid [sigdetect=30]
+            files = glob.glob('data/LRIS/Trace_flats/LB.20160406.*')  # det=1 : solid;
 
         settings['trace']['slits']['pca']['params'] = [3,2,1,0]
         settings['trace']['slits']['sigdetect'] = 30.0
