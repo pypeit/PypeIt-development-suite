@@ -63,10 +63,11 @@ def combine_frames(spectrograph, files, det, settings, saturation=None, numampli
         frames_arr[:,:,ii] = frames[ii]
 
     # Combine
-    mstrace = arcomb.comb_frames(frames_arr, frametype='Unknown',
+    mstrace = arcomb.core_comb_frames(frames_arr, frametype='Unknown',
                                  method=settings['trace']['combine']['method'],
                                  reject=settings['trace']['combine']['reject'],
-                                 satpix=None, saturation=saturation)
+                                 satpix=settings['trace']['combine']['satpix'],
+                                 saturation=saturation)
     # Return
     return mstrace
 
@@ -113,7 +114,8 @@ def main(pargs):
         numamplifiers=1
 
         if files is None:
-            files = glob.glob('data/DEIMOS/DE.20100913.57*')  # Mask (57006, 57161)
+            files = glob.glob('../RAW_DATA/Keck_DEIMOS/830G_M/DE.20100913.57*')  # Mask (57006, 57161)
+            #files = glob.glob('data/DEIMOS/DE.20100913.57*')  # Mask (57006, 57161)
             #  The following are with sigdetect=20;  sigdetect=50 gets rid of the junk (I think)
             #      det=1 :: 25 slits including star boxes
             #      det=2 :: 26 slits including stars + short first one
@@ -141,9 +143,9 @@ def main(pargs):
 
         if files is None:
             files = glob.glob('data/LRIS/Trace_flats/r150420_402*')
+            add_user_slits = [[489,563,1024]] # Goes with r150420_402*  ; and it works
             #    det1 : Missing a slit between two standard stars
             #    det2 : 12 solid slits
-            add_user_slits = [[489,563,1024]] # Goes with r150420_402*  ; and it works
 
             #files = ['data/LRIS/Trace_flats/LR.20160110.10103.fits.gz',  # det=1: finds a ghost slit;  crazy edge case..
             #         'data/LRIS/Trace_flats/LR.20160110.10273.fits.gz']  # det=2: solid
@@ -154,7 +156,7 @@ def main(pargs):
         # Read
         head0 = fits.open(files[0])[0].header
         xbin, ybin = [int(ii) for ii in head0['BINNING'].split(',')]
-        binbpx = arlris.bpm(xbin, ybin, 'red', pargs.det)
+        binbpx = arlris.core_bpm(xbin, ybin, 'red', pargs.det)
 
         settings['trace']['slits']['sigdetect'] = 50.0
         settings['trace']['slits']['pca']['params'] = [3,2,1,0]
@@ -163,7 +165,8 @@ def main(pargs):
         numamplifiers=2
         if files is None:
             #files = glob.glob('../RAW_DATA/Keck_LRIS_blue/long_600_4000_d560/b150910_2051*') # Single Twilight
-            files = glob.glob('data/LRIS/Trace_flats/LB*')  # det=1 : solid; det=2 solid [sigdetect=30]
+            #files = glob.glob('data/LRIS/Trace_flats/LB.20160109.*')  # det=1 : solid; det=2 solid [sigdetect=30]
+            files = glob.glob('data/LRIS/Trace_flats/LB.20160406.*')  # det=1 : solid;
 
         settings['trace']['slits']['pca']['params'] = [3,2,1,0]
         settings['trace']['slits']['sigdetect'] = 30.0
@@ -179,7 +182,7 @@ def main(pargs):
         binbpx = np.zeros_like(mstrace)
 
     # pixlocn
-    pixlocn = artrace.gen_pixloc(mstrace, xgap, ygap, ysize)
+    pixlocn = artrace.core_gen_pixloc(mstrace)
 
     # Trace
     #lordloc, rordloc, extrapord = artrace.driver_trace_slits(mstrace, pixlocn, binbpx=binbpx,
