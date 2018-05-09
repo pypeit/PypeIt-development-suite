@@ -13,6 +13,7 @@ from pypit import arcomb
 from pypit import ardeimos
 from pypit import arlris
 from pypit import arsave
+from pypit import traceslits
 
 debug = debugger.init()
 debug['develop'] = True
@@ -181,8 +182,11 @@ def main(pargs):
     pixlocn = artrace.gen_pixloc(mstrace, xgap, ygap, ysize)
 
     # Trace
-    lordloc, rordloc, extrapord = artrace.driver_trace_slits(mstrace, pixlocn, binbpx=binbpx,
-                                                             settings=settings, add_user_slits=add_user_slits)
+    #lordloc, rordloc, extrapord = artrace.driver_trace_slits(mstrace, pixlocn, binbpx=binbpx,
+    #                                                         settings=settings, add_user_slits=add_user_slits)
+    lordloc, rordloc, extrapord = traceslits.run(mstrace, pixlocn, binbpx=binbpx,
+                                                 settings=settings,
+                                                 add_user_slits=add_user_slits)
     # Show in Ginga?
     nslit = lordloc.shape[1]
     print("Found {:d} slits".format(nslit))
