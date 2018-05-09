@@ -80,6 +80,7 @@ def parser(options=None):
     parser.add_argument("--det", default=1, type=int, help="Detector")
     parser.add_argument("--show", default=False, action="store_true", help="Show the image with traces")
     parser.add_argument("--outfile", type=str, help="Output to a MasterFrame formatted FITS file")
+    parser.add_argument("--tclass", default=False, action="store_true", help="Use TraceSlits class")
     #parser.add_argument("--driver", default=False, action="store_true", help="Show the image with traces")
 
     if options is None:
@@ -143,7 +144,7 @@ def main(pargs):
 
         if files is None:
             files = glob.glob('data/LRIS/Trace_flats/r150420_402*')
-            add_user_slits = [[489,563,1024]] # Goes with r150420_402*  ; and it works
+            #add_user_slits = [[489,563,1024]] # Goes with r150420_402*  ; and it works
             #    det1 : Missing a slit between two standard stars
             #    det2 : 12 solid slits
 
@@ -164,9 +165,9 @@ def main(pargs):
         saturation = 65535.0              # The detector Saturation level
         numamplifiers=2
         if files is None:
-            #files = glob.glob('../RAW_DATA/Keck_LRIS_blue/long_600_4000_d560/b150910_2051*') # Single Twilight
+            files = glob.glob('../RAW_DATA/Keck_LRIS_blue/long_600_4000_d560/b150910_2051*') # Single Twilight
             #files = glob.glob('data/LRIS/Trace_flats/LB.20160109.*')  # det=1 : solid; det=2 solid [sigdetect=30]
-            files = glob.glob('data/LRIS/Trace_flats/LB.20160406.*')  # det=1 : solid;
+            #files = glob.glob('data/LRIS/Trace_flats/LB.20160406.*')  # det=1 : solid;
 
         settings['trace']['slits']['pca']['params'] = [3,2,1,0]
         settings['trace']['slits']['sigdetect'] = 30.0
@@ -185,11 +186,14 @@ def main(pargs):
     pixlocn = artrace.core_gen_pixloc(mstrace)
 
     # Trace
-    #lordloc, rordloc, extrapord = artrace.driver_trace_slits(mstrace, pixlocn, binbpx=binbpx,
-    #                                                         settings=settings, add_user_slits=add_user_slits)
-    lordloc, rordloc, extrapord = traceslits.run(mstrace, pixlocn, binbpx=binbpx,
-                                                 settings=settings,
-                                                 add_user_slits=add_user_slits)
+    if pargs.tclass:
+        lordloc, rordloc, extrapord, tslits = traceslits.run(mstrace, pixlocn, binbpx=binbpx, settings=settings,
+                                                             add_user_slits=add_user_slits)
+    else:
+        lordloc, rordloc, extrapord = artrace.driver_trace_slits(mstrace, pixlocn, binbpx=binbpx,
+                                                             settings=settings, add_user_slits=add_user_slits)
+    tslits.write('tmp')
+    debugger.set_trace()
     # Show in Ginga?
     nslit = lordloc.shape[1]
     print("Found {:d} slits".format(nslit))
