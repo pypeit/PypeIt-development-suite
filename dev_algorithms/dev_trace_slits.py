@@ -1,3 +1,5 @@
+""" For the development and testing of TraceSlits
+"""
 from __future__ import (print_function, absolute_import, division, unicode_literals)
 
 import numpy as np
@@ -21,22 +23,23 @@ msgs.reset(debug=debug, verbosity=2)
 
 from pypit import artrace
 
-def_settings=dict(trace={'slits': {'single': [],
-                                   'function': 'legendre',
-                                   'polyorder': 3,
-                                   'diffpolyorder': 2,
-                                   'fracignore': 0.01,
-                                   'medrep': 0,
-                                   'pad': 0,
-                                   'number': -1,
-                                   'maxgap': None,
-                                   'sigdetect': 20.,
-                                   'pca': {'params': [3,2,1,0,0,0], 'type': 'pixel', 'extrapolate': {'pos': 0, 'neg':0}},
-                                   'sobel': {'mode': 'nearest'}},
-                         'combine': {'match': -1.,
-                                     'satpix': 'reject',
-                                     'method': 'weightmean',
-                                     'reject': {'cosmics': 20., 'lowhigh': [0,0], 'level': [3.,3.], 'replace': 'maxnonsat'}}})
+def_settings = traceslits.default_settings
+#def_settings=dict(trace={'slits': {'single': [],
+#                                   'function': 'legendre',
+#                                   'polyorder': 3,
+#                                   'diffpolyorder': 2,
+#                                   'fracignore': 0.01,
+#                                   'medrep': 0,
+#                                   'pad': 0,
+#                                   'number': -1,
+#                                   'maxgap': None,
+#                                   'sigdetect': 20.,
+#                                   'pca': {'params': [3,2,1,0,0,0], 'type': 'pixel', 'extrapolate': {'pos': 0, 'neg':0}},
+#                                   'sobel': {'mode': 'nearest'}},
+#                         'combine': {'match': -1.,
+#                                     'satpix': 'reject',
+#                                     'method': 'weightmean',
+#                                     'reject': {'cosmics': 20., 'lowhigh': [0,0], 'level': [3.,3.], 'replace': 'maxnonsat'}}})
 
 def pypit_trace_slits():
     pass
