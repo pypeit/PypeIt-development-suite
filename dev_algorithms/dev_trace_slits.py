@@ -187,8 +187,8 @@ def main(pargs):
 
     # Trace
     if pargs.tclass:
-        lordloc, rordloc, extrapord, tslits = traceslits.run(mstrace, pixlocn, binbpx=binbpx, settings=settings,
-                                                             add_user_slits=add_user_slits)
+        tslits = traceslits.TraceSlits(mstrace, pixlocn, binbpx=binbpx, settings=settings)
+        lordloc, rordloc, extrapord = tslits.run(armlsd=True, add_user_slits=add_user_slits)
         debugger.set_trace()
     else:
         lordloc, rordloc, extrapord = artrace.driver_trace_slits(mstrace, pixlocn, binbpx=binbpx,
