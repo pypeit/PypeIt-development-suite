@@ -143,13 +143,13 @@ def main(pargs):
         numamplifiers=2
 
         if files is None:
-            files = glob.glob('data/LRIS/Trace_flats/r150420_402*')
+            #files = glob.glob('data/LRIS/Trace_flats/r150420_402*')
             #add_user_slits = [[489,563,1024]] # Goes with r150420_402*  ; and it works
             #    det1 : Missing a slit between two standard stars
             #    det2 : 12 solid slits
 
-            #files = ['data/LRIS/Trace_flats/LR.20160110.10103.fits.gz',  # det=1: finds a ghost slit;  crazy edge case..
-            #         'data/LRIS/Trace_flats/LR.20160110.10273.fits.gz']  # det=2: solid
+            files = ['data/LRIS/Trace_flats/LR.20160110.10103.fits.gz',  # det=1: finds a ghost slit;  crazy edge case..
+                     'data/LRIS/Trace_flats/LR.20160110.10273.fits.gz']  # det=2: solid
 
             #files = ['data/LRIS/Trace_flats/LR.20160110.10644.fits.gz',  # det=1:  Well done! including an overlapping slit
             #         'data/LRIS/Trace_flats/LR.20160110.10717.fits.gz']  # det=2: 21 solid slits including stars
@@ -189,11 +189,10 @@ def main(pargs):
     if pargs.tclass:
         lordloc, rordloc, extrapord, tslits = traceslits.run(mstrace, pixlocn, binbpx=binbpx, settings=settings,
                                                              add_user_slits=add_user_slits)
+        debugger.set_trace()
     else:
         lordloc, rordloc, extrapord = artrace.driver_trace_slits(mstrace, pixlocn, binbpx=binbpx,
                                                              settings=settings, add_user_slits=add_user_slits)
-    tslits.write('tmp')
-    debugger.set_trace()
     # Show in Ginga?
     nslit = lordloc.shape[1]
     print("Found {:d} slits".format(nslit))
