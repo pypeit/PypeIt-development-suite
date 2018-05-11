@@ -14,6 +14,7 @@ from pypit import arproc
 from pypit import arcomb
 from pypit import ardeimos
 from pypit import arlris
+from pypit import arpixels
 from pypit import arsave
 from pypit import traceslits
 
@@ -36,10 +37,11 @@ def_settings = traceslits.default_settings
 #                                   'sigdetect': 20.,
 #                                   'pca': {'params': [3,2,1,0,0,0], 'type': 'pixel', 'extrapolate': {'pos': 0, 'neg':0}},
 #                                   'sobel': {'mode': 'nearest'}},
-#                         'combine': {'match': -1.,
-#                                     'satpix': 'reject',
-#                                     'method': 'weightmean',
-#                                     'reject': {'cosmics': 20., 'lowhigh': [0,0], 'level': [3.,3.], 'replace': 'maxnonsat'}}})
+def_settings['trace']['combine'] = {'match': -1.,
+                          'satpix': 'reject',
+                          'method': 'weightmean',
+                          'reject': {'cosmics': 20., 'lowhigh': [0,0], 'level': [3.,3.],
+                                     'replace': 'maxnonsat'}}
 
 def pypit_trace_slits():
     pass
@@ -83,7 +85,7 @@ def parser(options=None):
     parser.add_argument("--det", default=1, type=int, help="Detector")
     parser.add_argument("--show", default=False, action="store_true", help="Show the image with traces")
     parser.add_argument("--outfile", type=str, help="Output to a MasterFrame formatted FITS file")
-    parser.add_argument("--tclass", default=False, action="store_true", help="Use TraceSlits class")
+    parser.add_argument("--pclass", default=False, action="store_true", help="Use the ProcessImages class")
     #parser.add_argument("--driver", default=False, action="store_true", help="Show the image with traces")
 
     if options is None:
@@ -102,6 +104,7 @@ def main(pargs):
     numamplifiers = None
     saturation = None
     add_user_slits = None
+    user_settings = None
 
     settings = def_settings.copy()
 
@@ -118,7 +121,7 @@ def main(pargs):
         numamplifiers=1
 
         if files is None:
-            files = glob.glob('../RAW_DATA/Keck_DEIMOS/830G_M/DE.20100913.57*')  # Mask (57006, 57161)
+            #files = glob.glob('../RAW_DATA/Keck_DEIMOS/830G_M/DE.20100913.57*')  # Mask (57006, 57161)
             #files = glob.glob('data/DEIMOS/DE.20100913.57*')  # Mask (57006, 57161)
             #  The following are with sigdetect=20;  sigdetect=50 gets rid of the junk (I think)
             #      det=1 :: 25 slits including star boxes
@@ -130,8 +133,8 @@ def main(pargs):
             #      det=7 :: 26 slits with stars
             #      det=8 :: 25 slits well done slits including a short first one
             #
-            #files = ['../RAW_DATA/Keck_DEIMOS/830G_L/'+ifile for ifile in [  # Longslit in dets 3,7
-            #    'd0914_0014.fits', 'd0914_0015.fits']]
+            files = ['../RAW_DATA/Keck_DEIMOS/830G_L/'+ifile for ifile in [  # Longslit in dets 3,7
+                'd0914_0014.fits', 'd0914_0015.fits']]
 
 
         # Bad pixel mask (important!!)
@@ -141,6 +144,8 @@ def main(pargs):
         settings['trace']['slits']['sigdetect'] = 50.0
         settings['trace']['slits']['fracignore'] = 0.0001   # 0.02 removes star boxes
         settings['trace']['slits']['pca']['params'] = [3,2,1,0]
+        # For combine
+        user_settings = dict(run={'spectrograph': 'keck_deimos'})
     elif pargs.spectrograph == 'keck_lris_red':
         saturation = 65535.0              # The detector Saturation level
         numamplifiers=2
@@ -178,7 +183,12 @@ def main(pargs):
         debugger.set_trace()
 
     # Combine
-    mstrace = combine_frames(pargs.spectrograph, files, pargs.det, settings,
+    if pargs.pclass:
+        from pypit import processimages
+        tflats = processimages.ProcessImages(files, user_settings=user_settings)
+        mstrace = tflats.combine(bias_subtract='overscan', trim=True)
+    else:
+        mstrace = combine_frames(pargs.spectrograph, files, pargs.det, settings,
                              saturation=saturation, numamplifiers=numamplifiers)
 
     # binpx
@@ -186,16 +196,12 @@ def main(pargs):
         binbpx = np.zeros_like(mstrace)
 
     # pixlocn
-    pixlocn = artrace.core_gen_pixloc(mstrace)
+    pixlocn = arpixels.core_gen_pixloc(mstrace)
 
     # Trace
-    if pargs.tclass:
-        tslits = traceslits.TraceSlits(mstrace, pixlocn, binbpx=binbpx, settings=settings)
-        lordloc, rordloc, extrapord = tslits.run(armlsd=True, add_user_slits=add_user_slits)
-        debugger.set_trace()
-    else:
-        lordloc, rordloc, extrapord = artrace.driver_trace_slits(mstrace, pixlocn, binbpx=binbpx,
-                                                             settings=settings, add_user_slits=add_user_slits)
+    tslits = traceslits.TraceSlits(mstrace, pixlocn, binbpx=binbpx, settings=settings)
+    lordloc, rordloc, extrapord = tslits.run(armlsd=True)#, add_user_slits=add_user_slits)
+
     # Show in Ginga?
     nslit = lordloc.shape[1]
     print("Found {:d} slits".format(nslit))
@@ -207,8 +213,8 @@ def main(pargs):
     if pargs.outfile is not None:
         pixcen = artrace.phys_to_pix(0.5*(lordloc+rordloc), pixlocn, 1)
         pixwid = (rordloc-lordloc).mean(0).astype(np.int)
-        lordpix = artrace.phys_to_pix(lordloc, pixlocn, 1)
-        rordpix = artrace.phys_to_pix(rordloc, pixlocn, 1)
+        lordpix = arpixels.phys_to_pix(lordloc, pixlocn, 1)
+        rordpix = arpixels.phys_to_pix(rordloc, pixlocn, 1)
         slitpix = arproc.core_slit_pixels(lordloc, rordloc, mstrace.shape, settings['trace']['slits']['pad'])
         # Save
         extensions = [lordloc, rordloc, pixcen, pixwid, lordpix, rordpix, slitpix]
@@ -216,8 +222,6 @@ def main(pargs):
         arsave.core_save_master(mstrace, filename=pargs.outfile,
                            frametype='trace', extensions=extensions, names=names)
 
-
-    debugger.set_trace()
 
 if __name__ == '__main__':
     pargs = parser()
