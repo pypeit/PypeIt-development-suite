@@ -151,13 +151,13 @@ def main(pargs):
         numamplifiers=2
 
         if files is None:
-            files = glob.glob('data/LRIS/Trace_flats/r150420_402*')
+            #files = glob.glob('data/LRIS/Trace_flats/r150420_402*')
             #add_user_slits = [[489,563,1024]] # Goes with r150420_402*  ; and it works
             #    det1 : Missing a slit between two standard stars
             #    det2 : 12 solid slits
 
-            #files = ['data/LRIS/Trace_flats/LR.20160110.10103.fits.gz',  # det=1: finds a ghost slit;  crazy edge case..
-            #         'data/LRIS/Trace_flats/LR.20160110.10273.fits.gz']  # det=2: solid
+            files = ['data/LRIS/Trace_flats/LR.20160110.10103.fits.gz',  # det=1: finds a ghost slit;  crazy edge case..
+                     'data/LRIS/Trace_flats/LR.20160110.10273.fits.gz']  # det=2: solid
 
             #files = ['data/LRIS/Trace_flats/LR.20160110.10644.fits.gz',  # det=1:  Well done! including an overlapping slit
             #         'data/LRIS/Trace_flats/LR.20160110.10717.fits.gz']  # det=2: 21 solid slits including stars
@@ -215,17 +215,7 @@ def main(pargs):
 
     # Output to a MasterFrame?
     if pargs.outfile is not None:
-        pixcen = arpixels.phys_to_pix(0.5*(lordloc+rordloc), pixlocn, 1)
-        pixwid = (rordloc-lordloc).mean(0).astype(np.int)
-        lordpix = arpixels.phys_to_pix(lordloc, pixlocn, 1)
-        rordpix = arpixels.phys_to_pix(rordloc, pixlocn, 1)
-        slitpix = arpixels.core_slit_pixels(lordloc, rordloc, mstrace.shape, settings['trace']['slits']['pad'])
-        # Save
-        extensions = [lordloc, rordloc, pixcen, pixwid, lordpix, rordpix, slitpix]
-        names = ['LeftEdges_det', 'RightEdges_det', 'SlitCentre', 'SlitLength', 'LeftEdges_pix', 'RightEdges_pix', 'SlitPixels']
-        arsave.core_save_master(mstrace, filename=pargs.outfile,
-                           frametype='trace', extensions=extensions, names=names)
-
+        tslits.save_master(pargs.outfile)
 
 if __name__ == '__main__':
     pargs = parser()
