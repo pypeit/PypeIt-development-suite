@@ -215,11 +215,11 @@ def main(pargs):
 
     # Output to a MasterFrame?
     if pargs.outfile is not None:
-        pixcen = artrace.phys_to_pix(0.5*(lordloc+rordloc), pixlocn, 1)
+        pixcen = arpixels.phys_to_pix(0.5*(lordloc+rordloc), pixlocn, 1)
         pixwid = (rordloc-lordloc).mean(0).astype(np.int)
         lordpix = arpixels.phys_to_pix(lordloc, pixlocn, 1)
         rordpix = arpixels.phys_to_pix(rordloc, pixlocn, 1)
-        slitpix = arproc.core_slit_pixels(lordloc, rordloc, mstrace.shape, settings['trace']['slits']['pad'])
+        slitpix = arpixels.core_slit_pixels(lordloc, rordloc, mstrace.shape, settings['trace']['slits']['pad'])
         # Save
         extensions = [lordloc, rordloc, pixcen, pixwid, lordpix, rordpix, slitpix]
         names = ['LeftEdges_det', 'RightEdges_det', 'SlitCentre', 'SlitLength', 'LeftEdges_pix', 'RightEdges_pix', 'SlitPixels']
