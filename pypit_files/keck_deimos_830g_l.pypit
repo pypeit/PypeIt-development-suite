@@ -15,9 +15,9 @@ reduce calibrate flux False # Do not flux calibrate
 reduce detnum 3,7
 
 # One slit
-trace slits number 1
-trace slits sobel mode constant    # JFH reports this is needed for slits running off the detector
-trace slits sigdetect 500.0        # I think this basically avoids any slit being found so a longslit is imposed
+#trace slits number 1
+#trace slits sobel mode constant    # JFH reports this is needed for slits running off the detector
+#trace slits sigdetect 500.0        # I think this basically avoids any slit being found so a longslit is imposed
 
 # Only extract 5 objects
 science extraction maxnumber 5
