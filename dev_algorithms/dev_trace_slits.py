@@ -151,11 +151,13 @@ def main(pargs):
         numamplifiers=2
 
         if files is None:
+            #python dev_trace_slits.py keck_lris_red --outfile=../Cooked/Trace/MasterTrace_KeckLRISr_150420_402 --det=1
             #files = glob.glob('data/LRIS/Trace_flats/r150420_402*')
             #add_user_slits = [[489,563,1024]] # Goes with r150420_402*  ; and it works
             #    det1 : Missing a slit between two standard stars
             #    det2 : 12 solid slits
 
+            #python dev_trace_slits.py keck_lris_red --outfile=../Cooked/Trace/MasterTrace_KeckLRISr_20160110_A --det=1
             files = ['data/LRIS/Trace_flats/LR.20160110.10103.fits.gz',  # det=1: finds a ghost slit;  crazy edge case..
                      'data/LRIS/Trace_flats/LR.20160110.10273.fits.gz']  # det=2: solid
 
