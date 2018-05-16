@@ -149,7 +149,7 @@ def main(pargs):
         binbpx = ardeimos.bpm(pargs.det)
 
         #hdul = fits.open('trace_slit.fits')
-        settings['trace']['slits']['sigdetect'] = 200.0
+        settings['trace']['slits']['sigdetect'] = 50.0
         settings['trace']['slits']['fracignore'] = 0.02  # 0.02 removes star boxes
         settings['trace']['slits']['pca']['params'] = [3,2,1,0]
         # For combine
