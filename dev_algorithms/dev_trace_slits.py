@@ -136,14 +136,20 @@ def main(pargs):
             #files = ['../RAW_DATA/Keck_DEIMOS/830G_L/'+ifile for ifile in [  # Longslit in dets 3,7
             #    'd0914_0014.fits', 'd0914_0015.fits']]
             # Fred's latest
-            files = glob.glob('data/DEIMOS/Trace_flats/d0526_0*')
+            #files = glob.glob('data/DEIMOS/Trace_flats/d0526_0*')
+            # Longslit
+            files = glob.glob('data/DEIMOS/Trace_flats/d0423_0*')
+
+            if len(files) == 0:
+                print("No files!!")
+                debugger.set_trace()
 
 
         # Bad pixel mask (important!!)
         binbpx = ardeimos.bpm(pargs.det)
 
         #hdul = fits.open('trace_slit.fits')
-        settings['trace']['slits']['sigdetect'] = 50.0
+        settings['trace']['slits']['sigdetect'] = 200.0
         settings['trace']['slits']['fracignore'] = 0.02  # 0.02 removes star boxes
         settings['trace']['slits']['pca']['params'] = [3,2,1,0]
         # For combine
