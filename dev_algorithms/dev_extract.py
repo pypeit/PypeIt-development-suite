@@ -5,14 +5,13 @@ from __future__ import (print_function, absolute_import, division, unicode_liter
 
 
 
-from astropy.io import fits
 from astropy.table import Table
 from pydl.pydlutils.trace import TraceSet
 from pydl.pydlutils.image import djs_maskinterp
 
 #from pypit.idl_stats import djs_iterstat
 from pypit import ginga
-from pypit.extract_boxcar import extract_boxcar
+#from pypit.extract_boxcar import extract_boxcar
 from matplotlib import pyplot as plt
 from astropy.stats import sigma_clipped_stats
 
@@ -26,14 +25,14 @@ import glob
 from pypit import msgs
 from pypit import ardebug as debugger
 from pypit import ginga
-from pypit import arload
-from pypit import arproc
-from pypit import arcomb
-from pypit import ardeimos
-from pypit import arlris
-from pypit import arpixels
-from pypit import arsave
-from pypit import traceslits
+#from pypit import arload
+#from pypit import arproc
+#from pypit import arcomb
+#from pypit import ardeimos
+#from pypit import arlris
+#from pypit import arpixels
+#from pypit import arsave
+#from pypit import traceslits
 
 debug = debugger.init()
 debug['develop'] = True
@@ -43,6 +42,7 @@ msgs.reset(debug=debug, verbosity=2)
 from astropy.table import Table
 from pydl.pydlutils.trace import TraceSet
 from pydl.pydlutils.image import djs_maskinterp
+from scipy.special import erfcinv
 
 #from pypit.idl_stats import djs_iterstat
 from pypit import ginga
@@ -202,6 +202,7 @@ def extract_boxcar(image,trace, radius, ycen = None):
 
 
 ## Directory for IDL tests is /Users/joe/gprofile_develop/
+## Run long_reduce, islit=3
 
 path = '/Users/joe/REDUX/lris_redux/May_2008/0938+5317/Blue1200/'
 
@@ -264,7 +265,7 @@ nslits = tset_left.nTrace
 
 # parameters for extract_asymbox2
 box_rad = 7
-trace_in = trace_in[5:,:]
+trace_in = trace_in[5,:]
 #right = trace_in[5:,:] + box_rad
 image = sciimg - sky_model
 ivar = sciivar*(slitmask == 3)
@@ -274,9 +275,12 @@ fluxivar = objstruct['IVAR_BOX'][5]
 hwidth = objstruct['MASKWIDTH'][5]
 thisfwhm = objstruct['FWHM'][5]
 
+# This is the argument list
 SN_GAUSS = None
 MAX_TRACE_CORR = None
 wvmnx = None
+GAUSS = None # Do a Gaussian extraction
+PROF_NSIGMA = None
 
 if SN_GAUSS == None: SN_GAUSS = 3.0
 if thisfwhm == None: thisfwhm = 4.0
@@ -291,6 +295,7 @@ dims = image.shape
 nspat = dims[1]
 nspec = dims[0]
 
+# Right now I'm not dealing with sub-images, but I may do so in the future
 #top = np.fmin(np.max(np.where(np.sum(ivar == 0,0) < nspec)),nspat)
 #bot = np.fmax(np.min(np.where(np.sum(ivar == 0,0) < nspec)),0)
 #min_column = np.fmax(np.min(trace_in - hwidth)),bot)
@@ -336,7 +341,7 @@ ngd = np.sum(igood)
 if(ngd > 0):
     isrt = np.argsort(wave[indsp])
     sn2_sub[igood] = np.interp(sub_wave[igood],(wave[indsp])[isrt],sn2_med[isrt])
-print('sqrt(med(S/N)^2) = ', np.sqrt(med_sn2))
+msgs.info('sqrt(med(S/N)^2) = ' + "{:5.2f}".format(np.sqrt(med_sn2)))
 
 min_wave = np.min(wave[indsp])
 max_wave = np.max(wave[indsp])
@@ -382,7 +387,86 @@ else:
         spline_sub[igood] = np.interp(sub_wave[igood],wave[isrt],spline_flux1[isrt])
 
 
-#flux  = extract_boxcar(image,trace,box_rad)
+norm_obj = (spline_sub != 0.0)*sub_obj/(spline_sub + (spline_sub == 0.0))
+norm_ivar = sub_ivar*spline_sub**2
+
+# Cap very large inverse variances
+ivar_mask = (norm_obj > -0.2) & (norm_obj < 0.7) & (sub_ivar > 0.0) & np.isfinite(norm_obj) & np.isfinite(norm_ivar)
+norm_ivar = norm_ivar*ivar_mask
+good = (norm_ivar > 0.0)
+ngood = np.sum(good)
+
+
+xtemp = np.cumsum(np.outer(4.0 + np.sqrt(np.fmax(sn2_1, 0.0)),np.ones(nspat)))
+xtemp = xtemp/xtemp.max()
+
+# norm_x is the x position along the image centered on the object  trace
+norm_x = np.outer(np.ones(nspec), sub_x) - np.outer(sub_trace,np.ones(nspat))
+
+sigma = np.full(nspat, thisfwhm/2.3548)
+fwhmfit = sigma*2.3548
+trace_corr = np.zeros(nspat)
+
+# If we have too few pixels to fit a profile or S/N is too low, just use a Gaussian profile
+# TODO Clean up the logic below. It is formally correct but
+# redundant since no trace correction has been created or applied yet.  I'm only postponing doing it
+# to preserve this syntax for later when it is needed
+if((ngood < 10) or (med_sn2 < SN_GAUSS) or (GAUSS != None)):
+    msgs.info("Too few good pixels or S/N <" + "{:5.1f}".format(SN_GAUSS) + " or GAUSS flag set")
+    msgs.info("Returning Gaussian profile")
+    sigma_x = norm_x/(np.outer(sigma, np.ones(nspat)) - np.outer(trace_corr,np.ones(nspat)))
+    profile_model = np.exp(-0.5*sigma_x**2)/np.sqrt(2.0*np.pi)*(sigma_x**2 < 25.)
+    msgs.info("FWHM="  + "{:6.2f}".format(thisfwhm) + ", S/N=" + "{:8.3f}".format(np.sqrt(med_sn2)))
+    nxinf = np.sum(np.isfinite(xnew) == False)
+    if(nxinf != 0):
+        msgs.warn("Nan pixel values in trace correction")
+        msgs.warn("Returning original trace....")
+        xnew = trace_in
+    inf = np.isfinite(profile_model) == False
+    ninf = np.sum(inf)
+    if (ninf != 0):
+        msgs.warn("Nan pixel values in object profile... setting them to zero")
+        profile_model[inf] = 0.0
+    # Normalize profile
+    norm = np.outer(np.sum(profile_model,1),np.ones(nspat))
+    if(np.sum(norm) > 0.0):
+        profile_model = profile_model/norm
+    #TODO Put in call to QA here
+
+    # TODO Put in a return statement here? Code returns updated trace and profile
+    # return (xnew, profile_model)
+
+sigma_iter = 3
+msgs.info("Gaussian vs b-spline of width " + "{:6.2f}".format(thisfwhm) + " pixels")
+area = 1.0
+sigma_x = norm_x / (np.outer(sigma, np.ones(nspat)) - np.outer(trace_corr, np.ones(nspat)))
+
+mask = np.full((nspec, nspat), False, dtype=bool)
+skymask = np.full((nspec, nspat), True, dtype=bool)
+
+# The following lines set the limits for the b-spline fit
+limit = erfcinv(0.1/np.sqrt(med_sn2))*np.sqrt(2.0)
+if(PROF_NSIGMA==None):
+    sinh_space = 0.25*np.log10(np.fmax((1000./np.sqrt(med_sn2)),10.))
+    abs_sigma = np.fmin((np.abs(sigma_x[good])).max(),2.0*limit)
+    min_sigma = np.fmax(sigma_x[good].min(), (-abs_sigma))
+    max_sigma = np.fmin(sigma_x[good].max(), (abs_sigma))
+    nb = (np.arcsinh(abs_sigma)/sinh_space).astype(int) + 1
+else:
+    msgs.info("Using PROF_NSIGMA= " + "{:6.2f}".format(PROF_NSIGMA) + " for extended/bright objects")
+    nb = np.round(PROF_NSIGMA > 10)
+    max_sigma = PROF_NSIGMA
+    min_sigma = -1*PROF_NSIGMA
+    sinh_space = np.arcsinh(PROF_NSIGMA)/nb
+
+rb = np.sinh((np.arange(nb) + 0.5) * sinh_space)
+bkpt = np.concatenate([(-rb)[::-1], rb])
+keep = ((bkpt >= min_sigma) & (bkpt <= max_sigma))
+bkpt = bkpt[keep]
+
+# Attempt B-spline first
+
+        #flux  = extract_boxcar(image,trace,box_rad)
 
 
 
