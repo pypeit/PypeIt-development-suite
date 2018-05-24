@@ -12,14 +12,7 @@ output sorted keck_deimos_setup_A
 reduce calibrate flux False # Do not flux calibrate 
 
 # Slit tracing
-#trace slits sigdetect 50.0
-#trace slits number -1
-#trace slits pca params [3,2,1,0]
-#trace slits polyorder  3
-#trace slits tilts params 1,1,1
-#trace slits tilts method spca
-#trace slits sobel mode nearest
-trace slits fracignore 0.02  # Ignore star boxes
+#trace slits fracignore 0.02  # Ignore star boxes
 bias useframe overscan
 pixelflat combine method median
 pixelflat combine reject level [10.0,10.0]

@@ -1,0 +1,1 @@
+tar -zcvf cooked_pypit_dev.tar.gz Trace/
