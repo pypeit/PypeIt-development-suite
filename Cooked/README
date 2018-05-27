@@ -5,3 +5,12 @@ Trace/MasterTrace_KeckLRISr_150420_402
 Trace/MasterTrace_KeckLRISr_20160110
    -- MasterTrace produced by JXP on 2018 May 15
    -- finds a ghost slit;  crazy edge case..
+
+WaveCalib/MasterWaveCalib_ShaneKastBlue_A.json
+   -- MasterWaveCalib produced by JXP on 2018 May 26
+   -- For fussing
+
+MF_shane_kast_blue/
+   -- MF folder produced by JXP on 2018 May 26
+   -- For testing WaveCalib class
+
