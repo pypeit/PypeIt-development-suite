@@ -200,6 +200,52 @@ def extract_boxcar(image,trace, radius, ycen = None):
     return fextract
 
 
+def findfwhm(model, sig_x):
+    """ Calculate the spatial FWHM from an object profile.
+
+    Parameters
+    ----------
+    model :   numpy float 2-d array [nspec, nspat]
+    x :
+
+    Returns
+    -------
+    peak :  Peak value of the profile model
+    peak_x:  sig_x location where the peak value is obtained
+    lwhm:   Value of sig_x at the left width at half maximum
+    rwhm:   Value of sig_x at the right width at half maximum
+
+    Revision History
+    ----------------
+    11-Mar-2005  Written by J. Hennawi and S. Burles David Schlegel, Princeton.
+    28-May-2018  Ported to python by J. Hennawi
+    """
+
+
+    peak = (model*(np.abs(sig_x) < 1.)).max()
+    peak_x = sig_x[(model*(np.abs(sig_x) < 1.)).argmax()]
+
+    lrev = ((sig_x < peak_x) & (model < 0.5*peak))[::-1]
+    lind, = np.where(lrev)
+    if(lind.size > 0):
+        lh = lind.min()
+        lwhm = (sig_x[::-1])[lh]
+    else:
+        lwhm = -0.5*2.3548
+
+    rind, = np.where((sig_x > peak_x) & (model < 0.5*peak))
+    if(rind.size > 0):
+        rh = rind.min()
+        rwhm = sig_x[rh]
+    else:
+        rwhm = 0.5 * 2.3548
+
+    return (peak, peak_x, lwhm, rwhm)
+
+
+
+
+
 
 ## Directory for IDL tests is /Users/joe/gprofile_develop/
 ## Run long_reduce, islit=3
@@ -282,11 +328,11 @@ wvmnx = None
 GAUSS = None # Do a Gaussian extraction
 PROF_NSIGMA = None
 
-if SN_GAUSS == None: SN_GAUSS = 3.0
-if thisfwhm == None: thisfwhm = 4.0
-if hwidth == None: 3.0*(np.max(thisfwhm) + 1.0)
-if MAX_TRACE_CORR == None:  MAX_TRACE_CORR = 2.0
-if wvmnx == None: wvmnx = [2900., 30000]
+if SN_GAUSS is None: SN_GAUSS = 3.0
+if thisfwhm is None: thisfwhm = 4.0
+if hwidth is None: 3.0*(np.max(thisfwhm) + 1.0)
+if MAX_TRACE_CORR is None:  MAX_TRACE_CORR = 2.0
+if wvmnx is None: wvmnx = [2900., 30000]
 
 thisfwhm = np.fmax(thisfwhm,1.0) # require the FWHM to be greater than 1 pixel
 
@@ -436,13 +482,12 @@ if((ngood < 10) or (med_sn2 < SN_GAUSS) or (GAUSS != None)):
     # TODO Put in a return statement here? Code returns updated trace and profile
     # return (xnew, profile_model)
 
-sigma_iter = 3
 msgs.info("Gaussian vs b-spline of width " + "{:6.2f}".format(thisfwhm) + " pixels")
 area = 1.0
 sigma_x = norm_x / (np.outer(sigma, np.ones(nspat)) - np.outer(trace_corr, np.ones(nspat)))
 
-mask = np.full((nspec, nspat), False, dtype=bool)
-skymask = np.full((nspec, nspat), True, dtype=bool)
+mask = np.full(nspec*nspat, False, dtype=bool)
+skymask = np.full(nspec*nspat, True, dtype=bool)
 
 # The following lines set the limits for the b-spline fit
 limit = erfcinv(0.1/np.sqrt(med_sn2))*np.sqrt(2.0)
@@ -465,12 +510,114 @@ keep = ((bkpt >= min_sigma) & (bkpt <= max_sigma))
 bkpt = bkpt[keep]
 
 # Attempt B-spline first
+GOOD_PIX = (sn2_sub > SN_GAUSS) & (norm_ivar > 0)
+IN_PIX   = (sigma_x >= min_sigma) & (sigma_x <= max_sigma) & (norm_ivar > 0)
+ngoodpix = np.sum(GOOD_PIX)
+ninpix     = np.sum(IN_PIX)
 
-        #flux  = extract_boxcar(image,trace,box_rad)
+if (ngoodpix >= 0.2*ninpix):
+    inside, = np.where((GOOD_PIX & IN_PIX).flatten())
+else:
+    inside, = np.where(IN_PIX.flatten())
 
 
+sigma_x_flat = sigma_x.flatten()
+norm_obj_flat = norm_obj.flatten()
+norm_ivar_flat = norm_ivar.flatten()
 
 
+si = inside[np.argsort(sigma_x_flat[inside])]
+sr = si[::-1]
+
+bset, bmask = bspline_iterfit(sigma_x_flat[si],norm_obj_flat[si], invvar = norm_ivar_flat[si]
+                       , nord = 4, bkpt = bkpt, maxiter = 15, upper = 1, lower = 1)
+mode_fit, _ = bset.value(sigma_x_flat[si])
+median_fit = np.median(norm_obj[norm_ivar > 0.0])
+
+# TODO I don't follow the logic behind this statement but I'm leaving it for now. If the median is large it is used, otherwise we  user zero???
+if (np.abs(median_fit) > 0.01):
+    msgs.info("Median flux level in profile is not zero: median = " + "{:7.4f}".format(median_fit))
+else:
+    median_fit = 0.0
+
+# Find the peak and FWHM based this profile fit
+(peak, peak_x, lwhm, rwhm) = findfwhm(mode_fit - median_fit, sigma_x_flat[si])
+trace_corr = np.full(nspec, peak_x)
+min_level = peak*np.exp(-0.5*limit**2)
+
+bspline_fwhm = (rwhm - lwhm)*thisfwhm/2.3548
+msgs.info("Bspline FWHM: " + "{:7.4f}".format(bspline_fwhm) + ", compared to initial object finding FWHM: " + "{:7.4f}".format(thisfwhm) )
+sigma = sigma * (rwhm-lwhm)/2.3548
+
+limit = limit * (rwhm-lwhm)/2.3548
+
+rev_fit = mode_fit[::-1]
+lind, = np.where(((rev_fit < (min_level+median_fit)) & (sigma_x_flat[sr] < peak_x)) | (sigma_x_flat[sr] < (peak_x-limit)))
+if (lind.size > 0):
+    lp = lind.min()
+    l_limit = sigma_x_flat[sr[lp]]
+else:
+    l_limit = min_sigma
+
+rind, = np.where(((mode_fit < (min_level+median_fit)) & (sigma_x_flat[si] > peak_x)) | (sigma_x_flat[si] > (peak_x+limit)))
+if (rind.size > 0):
+    rp = rind.min()
+    r_limit = sigma_x_flat[si[rp]]
+else:
+    r_limit = max_sigma
+
+msgs.info("Trace limits: limit = " + "{:7.4f}".format(limit) + ", min_level = " + "{:7.4f}".format(min_level) +
+          ", l_limit = " + "{:7.4f}".format(l_limit) + ", r_limit = " + "{:7.4f}".format(r_limit))
+
+# Just grab the data points within the limits
+mask[si]=((norm_ivar_flat[si] > 0) & (np.abs(norm_obj_flat[si] - mode_fit) < 0.1))
+inside, = np.where((sigma_x_flat[si] > l_limit) & (sigma_x_flat[si] < r_limit) & mask[si])
+ninside = inside.size
+
+
+# If we have too few pixels after this step, then again just use a Gaussian profile and return. Note that
+# we are following the original IDL code here and not using the improved sigma and trace correction for the
+# profile at this stage since ninside is so small.
+if(ninside < 10):
+    msgs.info("Too few pixels inside l_limit and r_limit")
+    msgs.info("Returning Gaussian profile")
+    profile_model = np.exp(-0.5*sigma_x**2)/np.sqrt(2.0*np.pi)*(sigma_x**2 < 25.)
+    msgs.info("FWHM="  + "{:6.2f}".format(thisfwhm) + ", S/N=" + "{:8.3f}".format(np.sqrt(med_sn2)))
+    nxinf = np.sum(np.isfinite(xnew) == False)
+    if(nxinf != 0):
+        msgs.warn("Nan pixel values in trace correction")
+        msgs.warn("Returning original trace....")
+        xnew = trace_in
+    inf = np.isfinite(profile_model) == False
+    ninf = np.sum(inf)
+    if (ninf != 0):
+        msgs.warn("Nan pixel values in object profile... setting them to zero")
+        profile_model[inf] = 0.0
+    # Normalize profile
+    norm = np.outer(np.sum(profile_model,1),np.ones(nspat))
+    if(np.sum(norm) > 0.0):
+        profile_model = profile_model/norm
+    #TODO Put in call to QA here
+
+    # TODO Put in a return statement here? Code returns updated trace and profile
+    # return (xnew, profile_model)
+
+sigma_iter = 3
+isort =  (xtemp[si[inside]]).argsort()
+inside = si[inside[isort]]
+pb =np.ones(inside.size)
+
+for iiter in range(1,sigma_iter + 1):
+    mode_zero, _ = bset.value(sigma_x_flat[inside])
+    mode_zero = mode_zero*pb
+
+    mode_min05, _ = bset.value(sigma_x_flat[inside]-0.5)
+    mode_plu05, _ = bset.value(sigma_x_flat[inside]+0.5)
+    mode_shift = (mode_min05  - mode_plu05)*pb*((sigma_x_flat[inside] > (l_limit + 0.5)) &
+                                                (sigma_x_flat[inside] < (r_limit - 0.5)))
+
+    mode_by13, _ = bset.value(sigma_x_flat[inside]/1.3)
+    mode_stretch = mode_by13*pb/1.3 - mode_zero
 
 # Omit the model functionality right now
 #if model != None:
@@ -482,4 +629,4 @@ bkpt = bkpt[keep]
 #ncol =
 
 
-
+# flux  = extract_boxcar(image,trace,box_rad)
