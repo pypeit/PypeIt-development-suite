@@ -607,17 +607,35 @@ isort =  (xtemp[si[inside]]).argsort()
 inside = si[inside[isort]]
 pb =np.ones(inside.size)
 
-for iiter in range(1,sigma_iter + 1):
-    mode_zero, _ = bset.value(sigma_x_flat[inside])
-    mode_zero = mode_zero*pb
+# Add the loop later
+#for iiter in range(1,sigma_iter + 1):
+mode_zero, _ = bset.value(sigma_x_flat[inside])
+mode_zero = mode_zero*pb
 
-    mode_min05, _ = bset.value(sigma_x_flat[inside]-0.5)
-    mode_plu05, _ = bset.value(sigma_x_flat[inside]+0.5)
-    mode_shift = (mode_min05  - mode_plu05)*pb*((sigma_x_flat[inside] > (l_limit + 0.5)) &
-                                                (sigma_x_flat[inside] < (r_limit - 0.5)))
+mode_min05, _ = bset.value(sigma_x_flat[inside]-0.5)
+mode_plu05, _ = bset.value(sigma_x_flat[inside]+0.5)
+mode_shift = (mode_min05  - mode_plu05)*pb*((sigma_x_flat[inside] > (l_limit + 0.5)) &
+                                            (sigma_x_flat[inside] < (r_limit - 0.5)))
 
-    mode_by13, _ = bset.value(sigma_x_flat[inside]/1.3)
-    mode_stretch = mode_by13*pb/1.3 - mode_zero
+mode_by13, _ = bset.value(sigma_x_flat[inside]/1.3)
+mode_stretch = mode_by13*pb/1.3 - mode_zero
+
+## Everything below here is bspline_longslit development
+profile_basis = np.column_stack((mode_zero,mode_shift))
+xdata = xtemp[inside]
+ydata = norm_obj_flat[inside]
+invvar = norm_ivar_flat[inside]
+import pydl.pydlutils.bspline as bspline
+
+maxiter =1
+#def bspline_longslit(xdata, ydata, invvar, profile_basis, upper=5, lower=5,maxiter=10, **kwargs):
+from pydl.pydlutils.math import djs_reject
+
+nx = xdata.size
+if ydata.size != nx:
+    raise ValueError('Dimensions of xdata and ydata do not agree.')
+if invvar.size != nx:
+    raise ValueError('Dimensions of xdata and invvar do not agree.')
 
 # Omit the model functionality right now
 #if model != None:
