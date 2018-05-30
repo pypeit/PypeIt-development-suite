@@ -16,7 +16,6 @@ from matplotlib import pyplot as plt
 from astropy.stats import sigma_clipped_stats
 
 from pydl.pydlutils.math import djs_median
-from pydl.pydlutils.bspline import iterfit as bspline_iterfit
 
 import numpy as np
 from astropy.io import fits
@@ -52,6 +51,168 @@ from astropy.stats import sigma_clipped_stats
 
 from pydl.pydlutils.math import djs_median
 from pydl.pydlutils.bspline import iterfit as bspline_iterfit
+from IPython import embed
+
+
+def bspline_longslit(xdata, ydata, invvar, profile_basis, upper=5, lower=5,maxiter=10, nord = 4, bkpt=None, fullbkpt = None,
+                     relative = None, kwargs_bspline={}, kwargs_reject={}):
+
+    """Create a B-spline in the least squares sense with rejection, using a model profile
+
+     Parameters
+     ----------
+     xdata : :class:`numpy.ndarray`
+         Independent variable.
+     ydata : :class:`numpy.ndarray`
+         Dependent variable.
+     invvar : :class:`numpy.ndarray`
+         Inverse variance of `ydata`.
+     profile_basis : :class:`numpy.ndarray`
+         model profiles
+     upper : :class:`int` or :class:`float`, optional
+         Upper rejection threshold in units of sigma, defaults to 5 sigma.
+     lower : :class:`int` or :class:`float`, optional
+         Lower rejection threshold in units of sigma, defaults to 5 sigma.
+     maxiter : :class:`int`, optional
+         Maximum number of rejection iterations, default 10.  Set this to
+         zero to disable rejection.
+     nord : :class:`int`, optional
+         Order of B-spline fit
+     bkpt : :class:`numpy.ndarray`
+         Array of breakpoints to be used for the b-spline
+     fullbkpt : :class:`numpy.ndarray`
+         Full array of breakpoints to be used for the b-spline, without letting the b-spline class append on any extra bkpts
+     relative : class:`numpy.ndarray`
+        Array of integer indices to be used for computing the reduced chi^2 of the fits, which then is used as a scale factor for
+         the upper,lower rejection thresholds
+
+     Returns
+     -------
+     :func:`tuple`
+         A tuple containing the (sset, outmask, yfit, reduced_chi), where
+
+            sset: object
+               bspline object
+            outmask: : :class:`numpy.ndarray`
+               output mask which the same size as xdata
+            yfit  : :class:`numpy.ndarray`
+               result of the bspline fit (same size as xdata)
+            reduced_chi: float
+               value of the reduced chi^2
+     """
+
+    from pydl.pydlutils.math import djs_reject
+    from pydl.pydlutils.bspline import bspline
+
+    nx = xdata.size
+    if ydata.size != nx:
+        raise ValueError('Dimensions of xdata and ydata do not agree.')
+
+    # ToDO at the moment invvar is a required variable input
+    #    if invvar is not None:
+    #        if invvar.size != nx:
+    #            raise ValueError('Dimensions of xdata and invvar do not agree.')
+    #        else:
+    #            #
+    #            # This correction to the variance makes it the same
+    #            # as IDL's variance()
+    #            #
+    #            var = ydata.var()*(float(nx)/float(nx-1))
+    #            if var == 0:
+    #                var = 1.0
+    #            invvar = np.ones(ydata.shape, dtype=ydata.dtype)/var
+
+    npoly = profile_basis.shape[1]
+    if profile_basis.size != nx*npoly:
+        raise ValueError('Profile basis is not a multiple of the number of data points.')
+
+    msgs.info("Fitting npoly="  + "{:3d}".format(npoly) + " profile basis functions, nx=" + "{:3d}".format(nx) + " pixels")
+    yfit = np.zeros(ydata.shape)
+    reduced_chi = 0
+
+    if invvar.size == 1:
+        outmask = True
+    else:
+        outmask = np.ones(invvar.shape, dtype='bool')
+    maskwork = outmask & (invvar > 0)
+    ngood= maskwork.sum()
+    if not maskwork.any():
+        raise ValueError('No valid data points.')
+    else:
+        sset = bspline(xdata[maskwork], nord=nord, npoly=npoly, bkpt=bkpt, fullbkpt=fullbkpt,
+                       funcname='Bspline longslit special', **kwargs_bspline)
+        if(maskwork.sum() < sset.nord):
+            print('Number of good data points fewer than nord.')
+            # ToDO fix return values when code is done
+            return (sset, outmask, yfit, reduced_chi)
+    action_multiple = (np.outer(profile_basis.flatten(), np.ones(nord))).reshape(nx,npoly*nord)
+
+    #--------------------
+    # Iterate spline fit
+    iiter = 0
+    error = -1
+    qdone = -1
+
+    tempin = 0
+    while (error != 0 or qdone == -1) and iiter <= maxiter:
+        goodbk = sset.mask.nonzero()[0]
+        if ngood <= 1 or not sset.mask.any():
+            sset.coeff = 0
+            iiter = maxiter + 1 # End iterations
+        else:
+            # Do the fit. Return values for ERROR are as follows:
+            #    0: if fit sis good
+            #   -1: if all break points are masked
+            #   -2: if everything is screwed
+
+            # we'll do the fit right here..............
+            if error != 0:
+                bf1, laction, uaction = sset.action(xdata)
+                if(bf1.size !=nx*nord):
+                    raise ValueError("BSPLINE_ACTION failed!")
+                action = action_multiple
+                for ipoly in range(npoly):
+                    action[:, np.arange(nord)*npoly + ipoly] *= bf1
+                del bf1 # Clear the memory
+            if np.sum(np.isfinite(action)==False) > 0:
+                raise ValueError("Infinities in action matrix, wavelengths may be very messed up!!!")
+            error, yfit = sset.workit(xdata, ydata, invvar*maskwork,action, laction, uaction)
+        iiter += 1
+        if error == -2:
+            msgs.warn(" All break points have been dropped!!")
+            return (sset, outmask, yfit, reduced_chi)
+        elif error == 0:
+            # Iterate the fit -- next rejection iteration
+            chi_array = (ydata - yfit)*np.sqrt(invvar * maskwork)
+            reduced_chi = np.sum(chi_array**2)/(ngood - npoly*(len(goodbk) + nord)-1)
+            relative_factor = 1.0
+            if relative is not None:
+                nrel = len(relative)
+                if nrel == 1:
+                    relative_factor = np.sqrt(reduced_chi)
+                else:
+                    this_chi2 = (chi_array[relative]**2).sum()/(nrel - (len(goodbk) + nord) - 1)
+                    relative_factor = np.sqrt(this_chi2)
+                relative_factor = max(relative_factor,1.0)
+
+            maskwork, qdone = djs_reject(ydata, yfit, invvar=invvar,
+                                         inmask=tempin, outmask=maskwork,
+                                         upper=upper*relative_factor, lower=lower*relative_factor, **kwargs_reject)
+            tempin = maskwork
+            msgs.info("iteration = " + "{:4d}".format(iiter) + ", reduced_chi = " + "{:8.3f}".format(reduced_chi) +
+                      ", rejected = " + "{:7d}".format((maskwork == 0).sum()) + ", rel_factor = " + "{:6.2f}".format(relative_factor))
+
+        else:
+            pass
+
+        msgs.info("Final fit after " + "{:4d}".format(iiter) + "iterations:")
+        msgs.info("    reduced_chi = " + "{:8.3f}".format(reduced_chi) +
+                  ", rejected = " + "{:7d}".format((maskwork == 0).sum()))
+        outmask = maskwork
+        return (sset, outmask, yfit, reduced_chi)
+
+
+
 
 
 
@@ -311,15 +472,16 @@ nslits = tset_left.nTrace
 
 # parameters for extract_asymbox2
 box_rad = 7
-trace_in = trace_in[5,:]
+objind = 6
+trace_in = trace_in[objind,:]
 #right = trace_in[5:,:] + box_rad
 image = sciimg - sky_model
 ivar = sciivar*(slitmask == 3)
-wave = objstruct['WAVE_BOX'][5]
-flux = objstruct['FLUX_BOX'][5]
-fluxivar = objstruct['IVAR_BOX'][5]
-hwidth = objstruct['MASKWIDTH'][5]
-thisfwhm = objstruct['FWHM'][5]
+wave = objstruct['WAVE_BOX'][objind]
+flux = objstruct['FLUX_BOX'][objind]
+fluxivar = objstruct['IVAR_BOX'][objind]
+hwidth = objstruct['MASKWIDTH'][objind]
+thisfwhm = objstruct['FWHM'][objind]
 
 # This is the argument list
 SN_GAUSS = None
@@ -369,17 +531,21 @@ indsp = (wave > wvmnx[0]) & (wave < wvmnx[1]) & \
 nsp = np.sum(indsp)
 
 # Not all the djs_reject keywords args are implemented yet
-b_answer, bmask   = bspline_iterfit(wave[indsp], flux_sm[indsp], invvar = fluxivar_sm[indsp],everyn = 1.5)
-b_answer, bmask2  = bspline_iterfit(wave[indsp], flux_sm[indsp], invvar = fluxivar_sm[indsp]*bmask,everyn = 1.5)
-c_answer, cmask   = bspline_iterfit(wave[indsp], flux_sm[indsp], invvar = fluxivar_sm[indsp]*bmask2,everyn = 30)
+b_answer, bmask   = bspline_iterfit(wave[indsp], flux_sm[indsp], invvar = fluxivar_sm[indsp],
+                                    kwargs_bspline={'everyn': 1.5})
+b_answer, bmask2  = bspline_iterfit(wave[indsp], flux_sm[indsp], invvar = fluxivar_sm[indsp]*bmask,
+                                    kwargs_bspline={'everyn': 1.5})
+c_answer, cmask   = bspline_iterfit(wave[indsp], flux_sm[indsp], invvar = fluxivar_sm[indsp]*bmask2,
+                                    kwargs_bspline={'everyn': 30})
 spline_flux, _ = b_answer.value(wave[indsp])
 cont_flux, _ = c_answer.value(wave[indsp])
 
 sn2 = (np.fmax(spline_flux*(np.sqrt(np.fmax(fluxivar_sm[indsp], 0))*bmask2),0))**2
 ind_nonzero = (sn2 > 0)
 nonzero = np.sum(ind_nonzero)
+# TODO this appears to give rather different numbers than djs_iterstat.pro
 if(nonzero >0):
-    (mean, med_sn2, stddev) = sigma_clipped_stats(sn2)
+    (mean, med_sn2, stddev) = sigma_clipped_stats(sn2,sigma_lower=3.0,sigma_upper=5.0)
 else: med_sn2 = 0.0
 sn2_med = djs_median(sn2, width = 9, boundary = 'reflect')
 igood = (ivar > 0.0)
@@ -407,8 +573,9 @@ cmask2 = np.zeros(nspec,dtype='bool')
 cmask2[indsp] = cmask
 cont_flux1 = djs_maskinterp(cont_flux1,(cmask2 == False))
 
+(_, _, sigma1) = sigma_clipped_stats(flux[indsp],sigma_lower=3.0,sigma_upper=5.0)
+
 if(med_sn2 <= 2.0):
-    (_, _, sigma1) = sigma_clipped_stats(flux[indsp])
     spline_sub[igood]= np.fmax(sigma1,0)
 else:
     if((med_sn2 <=5.0) and (med_sn2 > 2.0)):
@@ -431,7 +598,8 @@ else:
     if(ngd > 0):
         isrt = np.argsort(wave)
         spline_sub[igood] = np.interp(sub_wave[igood],wave[isrt],spline_flux1[isrt])
-
+    else:
+        spline_sub[igood] = np.fmax(sigma1, 0)
 
 norm_obj = (spline_sub != 0.0)*sub_obj/(spline_sub + (spline_sub == 0.0))
 norm_ivar = sub_ivar*spline_sub**2
@@ -443,8 +611,9 @@ good = (norm_ivar > 0.0)
 ngood = np.sum(good)
 
 
-xtemp = np.cumsum(np.outer(4.0 + np.sqrt(np.fmax(sn2_1, 0.0)),np.ones(nspat)))
+xtemp = (np.cumsum(np.outer(4.0 + np.sqrt(np.fmax(sn2_1, 0.0)),np.ones(nspat)))).reshape((nspec,nspat))
 xtemp = xtemp/xtemp.max()
+
 
 # norm_x is the x position along the image centered on the object  trace
 norm_x = np.outer(np.ones(nspec), sub_x) - np.outer(sub_trace,np.ones(nspat))
@@ -521,17 +690,13 @@ else:
     inside, = np.where(IN_PIX.flatten())
 
 
-sigma_x_flat = sigma_x.flatten()
-norm_obj_flat = norm_obj.flatten()
-norm_ivar_flat = norm_ivar.flatten()
 
-
-si = inside[np.argsort(sigma_x_flat[inside])]
+si = inside[np.argsort(sigma_x.flat[inside])]
 sr = si[::-1]
 
-bset, bmask = bspline_iterfit(sigma_x_flat[si],norm_obj_flat[si], invvar = norm_ivar_flat[si]
+bset, bmask = bspline_iterfit(sigma_x.flat[si],norm_obj.flat[si], invvar = norm_ivar.flat[si]
                        , nord = 4, bkpt = bkpt, maxiter = 15, upper = 1, lower = 1)
-mode_fit, _ = bset.value(sigma_x_flat[si])
+mode_fit, _ = bset.value(sigma_x.flat[si])
 median_fit = np.median(norm_obj[norm_ivar > 0.0])
 
 # TODO I don't follow the logic behind this statement but I'm leaving it for now. If the median is large it is used, otherwise we  user zero???
@@ -541,7 +706,7 @@ else:
     median_fit = 0.0
 
 # Find the peak and FWHM based this profile fit
-(peak, peak_x, lwhm, rwhm) = findfwhm(mode_fit - median_fit, sigma_x_flat[si])
+(peak, peak_x, lwhm, rwhm) = findfwhm(mode_fit - median_fit, sigma_x.flat[si])
 trace_corr = np.full(nspec, peak_x)
 min_level = peak*np.exp(-0.5*limit**2)
 
@@ -552,17 +717,17 @@ sigma = sigma * (rwhm-lwhm)/2.3548
 limit = limit * (rwhm-lwhm)/2.3548
 
 rev_fit = mode_fit[::-1]
-lind, = np.where(((rev_fit < (min_level+median_fit)) & (sigma_x_flat[sr] < peak_x)) | (sigma_x_flat[sr] < (peak_x-limit)))
+lind, = np.where(((rev_fit < (min_level+median_fit)) & (sigma_x.flat[sr] < peak_x)) | (sigma_x.flat[sr] < (peak_x-limit)))
 if (lind.size > 0):
     lp = lind.min()
-    l_limit = sigma_x_flat[sr[lp]]
+    l_limit = sigma_x.flat[sr[lp]]
 else:
     l_limit = min_sigma
 
-rind, = np.where(((mode_fit < (min_level+median_fit)) & (sigma_x_flat[si] > peak_x)) | (sigma_x_flat[si] > (peak_x+limit)))
+rind, = np.where(((mode_fit < (min_level+median_fit)) & (sigma_x.flat[si] > peak_x)) | (sigma_x.flat[si] > (peak_x+limit)))
 if (rind.size > 0):
     rp = rind.min()
-    r_limit = sigma_x_flat[si[rp]]
+    r_limit = sigma_x.flat[si[rp]]
 else:
     r_limit = max_sigma
 
@@ -570,8 +735,8 @@ msgs.info("Trace limits: limit = " + "{:7.4f}".format(limit) + ", min_level = " 
           ", l_limit = " + "{:7.4f}".format(l_limit) + ", r_limit = " + "{:7.4f}".format(r_limit))
 
 # Just grab the data points within the limits
-mask[si]=((norm_ivar_flat[si] > 0) & (np.abs(norm_obj_flat[si] - mode_fit) < 0.1))
-inside, = np.where((sigma_x_flat[si] > l_limit) & (sigma_x_flat[si] < r_limit) & mask[si])
+mask[si]=((norm_ivar.flat[si] > 0) & (np.abs(norm_obj.flat[si] - mode_fit) < 0.1))
+inside, = np.where((sigma_x.flat[si] > l_limit) & (sigma_x.flat[si] < r_limit) & mask[si])
 ninside = inside.size
 
 
@@ -603,39 +768,40 @@ if(ninside < 10):
     # return (xnew, profile_model)
 
 sigma_iter = 3
-isort =  (xtemp[si[inside]]).argsort()
+isort =  (xtemp.flat[si[inside]]).argsort()
 inside = si[inside[isort]]
 pb =np.ones(inside.size)
 
-# Add the loop later
+# ADD the loop here later
 #for iiter in range(1,sigma_iter + 1):
-mode_zero, _ = bset.value(sigma_x_flat[inside])
+mode_zero, _ = bset.value(sigma_x.flat[inside])
 mode_zero = mode_zero*pb
 
-mode_min05, _ = bset.value(sigma_x_flat[inside]-0.5)
-mode_plu05, _ = bset.value(sigma_x_flat[inside]+0.5)
-mode_shift = (mode_min05  - mode_plu05)*pb*((sigma_x_flat[inside] > (l_limit + 0.5)) &
-                                            (sigma_x_flat[inside] < (r_limit - 0.5)))
+mode_min05, _ = bset.value(sigma_x.flat[inside]-0.5)
+mode_plu05, _ = bset.value(sigma_x.flat[inside]+0.5)
+mode_shift = (mode_min05  - mode_plu05)*pb*((sigma_x.flat[inside] > (l_limit + 0.5)) &
+                                            (sigma_x.flat[inside] < (r_limit - 0.5)))
 
-mode_by13, _ = bset.value(sigma_x_flat[inside]/1.3)
+mode_by13, _ = bset.value(sigma_x.flat[inside]/1.3)
 mode_stretch = mode_by13*pb/1.3 - mode_zero
 
-## Everything below here is bspline_longslit development
+nbkpts = (np.log10(np.fmax(med_sn2, 11.0))).astype(int)
+
+xx = np.sum(xtemp, 1)/nspat
 profile_basis = np.column_stack((mode_zero,mode_shift))
-xdata = xtemp[inside]
-ydata = norm_obj_flat[inside]
-invvar = norm_ivar_flat[inside]
-import pydl.pydlutils.bspline as bspline
 
-maxiter =1
-#def bspline_longslit(xdata, ydata, invvar, profile_basis, upper=5, lower=5,maxiter=10, **kwargs):
-from pydl.pydlutils.math import djs_reject
+#xdata = xtemp[inside]
+#ydata = norm_obj.flat[inside]
+#invvar = norm_ivar.flat[inside]
+#from pydl.pydlutils.bspline import bspline
 
-nx = xdata.size
-if ydata.size != nx:
-    raise ValueError('Dimensions of xdata and ydata do not agree.')
-if invvar.size != nx:
-    raise ValueError('Dimensions of xdata and invvar do not agree.')
+#maxiter =1
+#fullbkpt=None
+#kwargs = {}
+mode_shift_out = bspline_longslit(xtemp.flat[inside], norm_obj.flat[inside], norm_ivar.flat[inside], profile_basis,maxiter=1,kwargs_bspline= {'nbkpts':nbkpts})
+
+#(mode_shift_set, mode_shift_mask, mode_shift_fit, red_chi) = mode_shift_out
+
 
 # Omit the model functionality right now
 #if model != None:
