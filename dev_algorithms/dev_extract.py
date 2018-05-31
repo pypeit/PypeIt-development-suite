@@ -36,6 +36,7 @@ from pypit import ginga
 debug = debugger.init()
 debug['develop'] = True
 msgs.reset(debug=debug, verbosity=2)
+import sys
 
 
 from astropy.table import Table
@@ -52,6 +53,8 @@ from astropy.stats import sigma_clipped_stats
 from pydl.pydlutils.math import djs_median
 from pydl.pydlutils.bspline import iterfit as bspline_iterfit
 from IPython import embed
+from pydl.pydlutils.bspline import bspline
+
 
 
 def bspline_longslit(xdata, ydata, invvar, profile_basis, upper=5, lower=5,maxiter=10, nord = 4, bkpt=None, fullbkpt = None,
@@ -145,15 +148,15 @@ def bspline_longslit(xdata, ydata, invvar, profile_basis, upper=5, lower=5,maxit
             print('Number of good data points fewer than nord.')
             # ToDO fix return values when code is done
             return (sset, outmask, yfit, reduced_chi)
-    action_multiple = (np.outer(profile_basis.flatten(), np.ones(nord))).reshape(nx,npoly*nord)
 
+    action_multiple = (np.outer(profile_basis.flatten('F'), np.ones(nord))).reshape((nx,npoly*nord),order='F')
     #--------------------
     # Iterate spline fit
     iiter = 0
     error = -1
     qdone = -1
 
-    tempin = 0
+    tempin = None
     while (error != 0 or qdone == -1) and iiter <= maxiter:
         goodbk = sset.mask.nonzero()[0]
         if ngood <= 1 or not sset.mask.any():
@@ -798,7 +801,34 @@ profile_basis = np.column_stack((mode_zero,mode_shift))
 #maxiter =1
 #fullbkpt=None
 #kwargs = {}
-mode_shift_out = bspline_longslit(xtemp.flat[inside], norm_obj.flat[inside], norm_ivar.flat[inside], profile_basis,maxiter=1,kwargs_bspline= {'nbkpts':nbkpts})
+
+# Debugging bspline_longslit
+#from scipy.io import readsav
+#savefile='/Users/joe/gprofile_develop/bspline_out.sav'
+#idl_dict=readsav(savefile)
+#xdata = idl_dict['xdata']
+#ydata = idl_dict['ydata']
+#prof_basis = idl_dict['profile_basis'].T
+#invvar = idl_dict['invvar']
+#fullbkpt = idl_dict['fullbkpt']
+#mode_shift_out = bspline_longslit(xdata,ydata,invvar,prof_basis,maxiter=1,fullbkpt=fullbkpt)
+#sys.exit(-1)
+
+mode_shift_out = bspline_longslit(xtemp.flat[inside], norm_obj.flat[inside], norm_ivar.flat[inside], profile_basis,maxiter=1,
+                                  kwargs_bspline= {'nbkpts':nbkpts})
+mode_shift_set = mode_shift_out[0]
+temp_set = bspline(None, fullbkpt = mode_shift_set.breakpoints,nord=mode_shift_set.nord)
+temp_set.coeff = mode_shift_set.coeff[0, :]
+h0, _ = temp_set.value(xx)
+temp_set.coeff = mode_shift_set.coeff[1, :]
+h1, _ = temp_set.value(xx)
+ratio_10 = (h1/(h0 + (h0 == 0.0)))
+trace_corr = trace_corr + ratio_10/(1.0 + np.abs(ratio_10)/0.1)
+
+profile_basis = np.column_stack((mode_zero,mode_stretch))
+
+
+
 
 #(mode_shift_set, mode_shift_mask, mode_shift_fit, red_chi) = mode_shift_out
 
