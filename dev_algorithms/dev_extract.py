@@ -125,7 +125,7 @@ def bspline_longslit(xdata, ydata, invvar, profile_basis, upper=5, lower=5,maxit
     #                var = 1.0
     #            invvar = np.ones(ydata.shape, dtype=ydata.dtype)/var
 
-    npoly = profile_basis.shape[1]
+    npoly = int(profile_basis.size/nx)
     if profile_basis.size != nx*npoly:
         raise ValueError('Profile basis is not a multiple of the number of data points.')
 
@@ -146,7 +146,6 @@ def bspline_longslit(xdata, ydata, invvar, profile_basis, upper=5, lower=5,maxit
                        funcname='Bspline longslit special', **kwargs_bspline)
         if(maskwork.sum() < sset.nord):
             print('Number of good data points fewer than nord.')
-            # ToDO fix return values when code is done
             return (sset, outmask, yfit, reduced_chi)
 
     action_multiple = (np.outer(profile_basis.flatten('F'), np.ones(nord))).reshape((nx,npoly*nord),order='F')
@@ -208,7 +207,7 @@ def bspline_longslit(xdata, ydata, invvar, profile_basis, upper=5, lower=5,maxit
         else:
             pass
 
-        msgs.info("Final fit after " + "{:4d}".format(iiter) + "iterations:")
+        msgs.info("Final fit after " + "{:2d}".format(iiter) + " iterations:")
         msgs.info("    reduced_chi = " + "{:8.3f}".format(reduced_chi) +
                   ", rejected = " + "{:7d}".format((maskwork == 0).sum()))
         outmask = maskwork
@@ -487,17 +486,21 @@ hwidth = objstruct['MASKWIDTH'][objind]
 thisfwhm = objstruct['FWHM'][objind]
 
 # This is the argument list
-SN_GAUSS = None
-MAX_TRACE_CORR = None
-wvmnx = None
+SN_GAUSS = None # S/N threshold for giving up on profile fitting and using a Gaussian with the measured FWHM
+MAX_TRACE_CORR = None # Maximum trace correction that can be applied
+wvmnx = None # minimum and maximum wavelength to use for fits
 GAUSS = None # Do a Gaussian extraction
-PROF_NSIGMA = None
+PROF_NSIGMA = None # Width of profile specified by hand for extended objects
+NO_DERIV = False # disable profile derivative computation
+
 
 if SN_GAUSS is None: SN_GAUSS = 3.0
 if thisfwhm is None: thisfwhm = 4.0
 if hwidth is None: 3.0*(np.max(thisfwhm) + 1.0)
 if MAX_TRACE_CORR is None:  MAX_TRACE_CORR = 2.0
 if wvmnx is None: wvmnx = [2900., 30000]
+if PROF_NSIGMA is not NONE:
+    NO_DERIV = True
 
 thisfwhm = np.fmax(thisfwhm,1.0) # require the FWHM to be greater than 1 pixel
 
@@ -659,7 +662,6 @@ area = 1.0
 sigma_x = norm_x / (np.outer(sigma, np.ones(nspat)) - np.outer(trace_corr, np.ones(nspat)))
 
 mask = np.full(nspec*nspat, False, dtype=bool)
-skymask = np.full(nspec*nspat, True, dtype=bool)
 
 # The following lines set the limits for the b-spline fit
 limit = erfcinv(0.1/np.sqrt(med_sn2))*np.sqrt(2.0)
@@ -776,58 +778,132 @@ inside = si[inside[isort]]
 pb =np.ones(inside.size)
 
 # ADD the loop here later
-#for iiter in range(1,sigma_iter + 1):
-mode_zero, _ = bset.value(sigma_x.flat[inside])
-mode_zero = mode_zero*pb
+for iiter in range(1,sigma_iter + 1):
+    iiter =1
+    mode_zero, _ = bset.value(sigma_x.flat[inside])
+    mode_zero = mode_zero*pb
 
-mode_min05, _ = bset.value(sigma_x.flat[inside]-0.5)
-mode_plu05, _ = bset.value(sigma_x.flat[inside]+0.5)
-mode_shift = (mode_min05  - mode_plu05)*pb*((sigma_x.flat[inside] > (l_limit + 0.5)) &
+    mode_min05, _ = bset.value(sigma_x.flat[inside]-0.5)
+    mode_plu05, _ = bset.value(sigma_x.flat[inside]+0.5)
+    mode_shift = (mode_min05  - mode_plu05)*pb*((sigma_x.flat[inside] > (l_limit + 0.5)) &
                                             (sigma_x.flat[inside] < (r_limit - 0.5)))
 
-mode_by13, _ = bset.value(sigma_x.flat[inside]/1.3)
-mode_stretch = mode_by13*pb/1.3 - mode_zero
+    mode_by13, _ = bset.value(sigma_x.flat[inside]/1.3)
+    mode_stretch = mode_by13*pb/1.3 - mode_zero
 
-nbkpts = (np.log10(np.fmax(med_sn2, 11.0))).astype(int)
+    nbkpts = (np.log10(np.fmax(med_sn2, 11.0))).astype(int)
 
-xx = np.sum(xtemp, 1)/nspat
-profile_basis = np.column_stack((mode_zero,mode_shift))
+    xx = np.sum(xtemp, 1)/nspat
+    profile_basis = np.column_stack((mode_zero,mode_shift))
 
-#xdata = xtemp[inside]
-#ydata = norm_obj.flat[inside]
-#invvar = norm_ivar.flat[inside]
-#from pydl.pydlutils.bspline import bspline
+    mode_shift_out = bspline_longslit(xtemp.flat[inside], norm_obj.flat[inside], norm_ivar.flat[inside], profile_basis
+                                  ,maxiter=1,kwargs_bspline= {'nbkpts':nbkpts})
+    mode_shift_set = mode_shift_out[0]
+    temp_set = bspline(None, fullbkpt = mode_shift_set.breakpoints,nord=mode_shift_set.nord)
+    temp_set.coeff = mode_shift_set.coeff[0, :]
+    h0, _ = temp_set.value(xx)
+    temp_set.coeff = mode_shift_set.coeff[1, :]
+    h1, _ = temp_set.value(xx)
+    ratio_10 = (h1/(h0 + (h0 == 0.0)))
+    delta_trace_corr = ratio_10/(1.0 + np.abs(ratio_10)/0.1)
+    trace_corr = trace_corr + delta_trace_corr
 
-#maxiter =1
-#fullbkpt=None
-#kwargs = {}
+    profile_basis = np.column_stack((mode_zero,mode_stretch))
+    mode_stretch_out = bspline_longslit(xtemp.flat[inside], norm_obj.flat[inside], norm_ivar.flat[inside], profile_basis,
+                                        maxiter=1,fullbkpt = mode_shift_set.breakpoints)
+    mode_stretch_set = mode_stretch_out[0]
+    temp_set = bspline(None, fullbkpt = mode_stretch_set.breakpoints,nord=mode_stretch_set.nord)
+    temp_set.coeff = mode_stretch_set.coeff[0, :]
+    h0, _ = temp_set.value(xx)
+    temp_set.coeff = mode_stretch_set.coeff[1, :]
+    h2, _ = temp_set.value(xx)
+    h0 = np.fmax(h0 + h2*mode_stretch.sum()/mode_zero.sum(),0.1)
+    ratio_20 = (h2 / (h0 + (h0 == 0.0)))
+    sigma_factor = 0.3 * ratio_20 / (1.0 + np.abs(ratio_20))
 
-# Debugging bspline_longslit
-#from scipy.io import readsav
-#savefile='/Users/joe/gprofile_develop/bspline_out.sav'
-#idl_dict=readsav(savefile)
-#xdata = idl_dict['xdata']
-#ydata = idl_dict['ydata']
-#prof_basis = idl_dict['profile_basis'].T
-#invvar = idl_dict['invvar']
-#fullbkpt = idl_dict['fullbkpt']
-#mode_shift_out = bspline_longslit(xdata,ydata,invvar,prof_basis,maxiter=1,fullbkpt=fullbkpt)
-#sys.exit(-1)
+    msgs.info("Iteration# " + "{:3d}".format(iiter))
+    msgs.info("Median abs value of trace correction = " + "{:8.3f}".format(np.median(np.abs(delta_trace_corr))))
+    msgs.info("Median abs value of width correction = " + "{:8.3f}".format(np.median(np.abs(sigma_factor))))
 
-mode_shift_out = bspline_longslit(xtemp.flat[inside], norm_obj.flat[inside], norm_ivar.flat[inside], profile_basis,maxiter=1,
-                                  kwargs_bspline= {'nbkpts':nbkpts})
-mode_shift_set = mode_shift_out[0]
-temp_set = bspline(None, fullbkpt = mode_shift_set.breakpoints,nord=mode_shift_set.nord)
-temp_set.coeff = mode_shift_set.coeff[0, :]
-h0, _ = temp_set.value(xx)
-temp_set.coeff = mode_shift_set.coeff[1, :]
-h1, _ = temp_set.value(xx)
-ratio_10 = (h1/(h0 + (h0 == 0.0)))
-trace_corr = trace_corr + ratio_10/(1.0 + np.abs(ratio_10)/0.1)
+    sigma = sigma*(1.0 + sigma_factor)
+    area = area * h0/(1.0 + sigma_factor)
 
-profile_basis = np.column_stack((mode_zero,mode_stretch))
+    sigma_x = norm_x / (np.outer(sigma, np.ones(nspat)) - np.outer(trace_corr, np.ones(nspat)))
+
+    # Update the profile B-spline fit for the next iteration
+    if iiter < sigma_iter-1:
+        ss = sigma_x.flat[inside].argsort()
+        pb = (np.outer(area, np.ones(nspat,dtype=float))).flat[inside]
+        keep = (bkpt >= sigma_x.flat[inside].min()) & (bkpt <= sigma_x.flat[inside].max())
+        if keep.sum() == 0:
+            keep = np.ones(bkpt.size, type=bool)
+        bset_out = bspline_longslit(sigma_x.flat[inside[ss]],norm_obj.flat[inside[ss]],norm_ivar.flat[inside[ss]],pb[ss],
+                                nord = 4, bkpt=bkpt[keep],maxiter=2)
+        bset = bset_out[0] # This updated bset used for the next set of trace corrections
+
+# Apply trace corrections only if they are small (added by JFH)
+if np.median(np.abs(trace_corr*sigma)) < MAX_TRACE_CORR:
+    xnew = trace_corr * sigma + trace_in
+else:
+    xnew = trace_in
+
+fwhmfit = sigma*2.3548
+ss=sigma_x.flatten().argsort()
+inside, = np.where((sigma_x.flat[ss] >= min_sigma) &
+                   (sigma_x.flat[ss] <= max_sigma) &
+                   mask[ss] &
+                   np.isfinite(norm_obj.flat[ss]) &
+                   np.isfinite(norm_ivar.flat[ss]))
+pb = (np.outer(area, np.ones(nspat,dtype=float)))
+bset_out = bspline_longslit(sigma_x.flat[ss[inside]],norm_obj.flat[ss[inside]], norm_ivar.flat[ss[inside]], pb.flat[ss[inside]],
+                        nord=4, bkpt = bkpt, upper = 10, lower=10)
+bset = bset_out[0]
+
+# skymask = False for pixels within (min_sigma, max_sigma), True outside
+skymask = ~((sigma_x.flatten() > min_sigma) & (sigma_x.flatten() < max_sigma))
+full_bsp = np.zeros(nspec*nspat, dtype=float)
+yfit_out, _  = bset.value(sigma_x.flat[~skymask])
+full_bsp[~skymask] = yfit_out
+(peak, peak_x, lwhm, rwhm) = findfwhm(full_bsp[ss] - median_fit, sigma_x.flat[ss])
 
 
+left_bool = (((full_bsp[ss] < (min_level+median_fit)) & (sigma_x.flat[ss] < peak_x)) | (sigma_x.flat[ss] < (peak_x-limit)))[::-1]
+ind_left, = np.where(left_bool)
+lp = np.fmax(ind_left.min(), 0)
+righ_bool = ((full_bsp[ss] < (min_level+median_fit)) & (sigma_x.flat[ss] > peak_x))  | (sigma_x.flat[ss] > (peak_x+limit))
+ind_righ, = np.where(righ_bool)
+rp = np.fmax(ind_righ.min(), 0)
+l_limit = ((sigma_x.flat[ss])[::-1])[lp] - 0.1
+r_limit = sigma_x.flat[ss[rp]] + 0.1
+
+while True:
+    l_limit += 0.1
+    l_fit = bset.value(l_limit)
+    l2 = bset.value(l_limit * 0.9)
+    l_deriv = (np.log(l2) - np.log(l_fit))/(0.1*l_limit)
+    if (l_deriv < -1.0 | l_limit >= -1.0):
+        break
+
+while True:
+    r_limit -= 0.1
+    r_fit = bset.value(r_limit)
+    r2 = bset.value(r_limit * 0.9)
+    r_deriv = (np.log(r2) - np.log(r_fit))/(0.1*r_limit)
+    if (r_deriv > 1.0 | r_limit <= 1.0):
+        break
+
+
+# JXP kludge
+if PROF_NSIGMA is not None:
+   #By setting them to zero we ensure QA won't plot them in the profile QA.
+   l_limit = 0.0
+   r_limit = 0.0
+
+
+# Hack to fix degenerate profiles which have a positive derivative
+if (l_deriv < 0) and (r_deriv > 0) and NO_DERIV is False:
+    left = sigma_x.flatten() < l_limit
+    full_bsp[left] =  np.exp(-(sigma_x.flat[left]-l_limit)*l_deriv) * l_fit
 
 
 #(mode_shift_set, mode_shift_mask, mode_shift_fit, red_chi) = mode_shift_out
@@ -844,3 +920,15 @@ profile_basis = np.column_stack((mode_zero,mode_stretch))
 
 
 # flux  = extract_boxcar(image,trace,box_rad)
+
+# Debugging bspline_longslit
+#from scipy.io import readsav
+#savefile='/Users/joe/gprofile_develop/bspline_out.sav'
+#idl_dict=readsav(savefile)
+#xdata = idl_dict['xdata']
+#ydata = idl_dict['ydata']
+#prof_basis = idl_dict['profile_basis'].T
+#invvar = idl_dict['invvar']
+#fullbkpt = idl_dict['fullbkpt']
+#mode_shift_out = bspline_longslit(xdata,ydata,invvar,prof_basis,maxiter=1,fullbkpt=fullbkpt)
+#sys.exit(-1)
