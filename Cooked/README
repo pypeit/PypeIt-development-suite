@@ -14,3 +14,8 @@ MF_shane_kast_blue/
    -- MF folder produced by JXP on 2018 May 26
    -- For testing WaveCalib class
 
+Science/spec1d_Feige66_KASTb_2015May20T041246.96.fits
+Science/spec1d_J1217p3905_KASTb_2015May20T045733.56.fits
+Science/spec1d_G191B2B_DEIMOS_2017Sep14T152432.fits
+   -- 1D spectra for fluxing tests
+   -- Added by JXP on 2018 May 29
