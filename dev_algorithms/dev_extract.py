@@ -37,6 +37,8 @@ debug = debugger.init()
 debug['develop'] = True
 msgs.reset(debug=debug, verbosity=2)
 import sys
+from scipy.io import readsav
+
 
 
 from astropy.table import Table
@@ -55,6 +57,7 @@ from pydl.pydlutils.bspline import iterfit as bspline_iterfit
 from IPython import embed
 from pydl.pydlutils.bspline import bspline
 
+#
 
 
 def bspline_longslit(xdata, ydata, invvar, profile_basis, upper=5, lower=5,maxiter=10, nord = 4, bkpt=None, fullbkpt = None,
@@ -409,7 +412,562 @@ def findfwhm(model, sig_x):
 
 
 
+def fit_profile(image, ivar, waveimg, trace_in, wave, flux, fluxivar,
+                thisfwhm=4.0, MAX_TRACE_CORR = 2.0, SN_GAUSS = 3.0, wvmnx = [2900.0,30000.0],
+                hwidth = None, PROF_NSIGMA = None, NO_DERIV = False, GAUSS = False):
 
+    """Fit a non-parametric object profile to an object spectrum, unless the S/N ratio is low (> SN_GAUSS) in which
+    fit a simple Gaussian. Port of IDL LOWREDUX long_gprofile.pro
+
+     Parameters
+     ----------
+     image : numpy float 2-d array [nspec, nspat]
+         sky-subtracted image
+     ivar : numpy float 2-d array [nspec, nspat]
+         inverse variance of sky-subtracted image
+     waveimg numpy float 2-d array [nspec, nspat]
+         2-d wavelength map
+     trace_in : numpy 1-d array [nspec]
+         object trace
+     wave : numpy 1-d array [nspec]
+         extracted wavelength of spectrum
+     flux : numpy 1-d array [nspec]
+         extracted flux of spectrum
+     fluxivar : numpy 1-d array [nspec]
+         inverse variance of extracted flux spectrum
+
+
+    Optional Parameters
+    ----------
+    thisfwhm : float
+         fwhm of the object trace
+    MAX_TRACE_CORR : float [default = 2.0]
+         maximum trace correction to apply
+    SN_GAUSS : float [default = 3.0]
+         S/N ratio below which code just uses a Gaussian
+    wvmnx : float [default = [2900.0,30000.0]
+         wavelength range of usable part of spectrum
+    hwidth : float [default = None]
+         object maskwidth determined from object finding algorithm. If = None,
+         code defaults to use 3.0*(np.max(thisfwhm) + 1.0)
+    PROF_NSIGMA : float [default = None]
+         Number of sigma to include in the profile fitting. This option is only needed for bright objects that are not
+         point sources, which allows the profile fitting to fit the high S/N wings (rather than the default behavior
+         which truncates exponentially). This allows for extracting all the flux and results in better sky-subtraction
+         for bright extended objects.
+    NO_DERIV : boolean [default = False]
+         disables determination of derivatives and exponential tr
+
+     Returns
+     -------
+     :func:`tuple`
+         A tuple containing the (sset, outmask, yfit, reduced_chi), where
+
+            sset: object
+               bspline object
+            outmask: : :class:`numpy.ndarray`
+               output mask which the same size as xdata
+            yfit  : :class:`numpy.ndarray`
+               result of the bspline fit (same size as xdata)
+            reduced_chi: float
+               value of the reduced chi^2
+     """
+
+
+
+    if hwidth is None: 3.0*(np.max(thisfwhm) + 1.0)
+    if PROF_NSIGMA is not None:
+        NO_DERIV = True
+
+    thisfwhm = np.fmax(thisfwhm,1.0) # require the FWHM to be greater than 1 pixel
+
+    xnew = trace_in
+
+    nspat = image.shape[1]
+    nspec = image.shape[0]
+
+    # TODO Deal with sub-images
+    # Right now I'm not dealing with sub-images, but I may do so in the future
+    #top = np.fmin(np.max(np.where(np.sum(ivar == 0,0) < nspec)),nspat)
+    #bot = np.fmax(np.min(np.where(np.sum(ivar == 0,0) < nspec)),0)
+    #min_column = np.fmax(np.min(trace_in - hwidth)),bot)
+    #max_column = long(max(trace_in + hwidth)) <  top
+
+    # create some images we will need
+    profile_model = np.zeros((nspec,nspat))
+    sub_obj = image
+    sub_ivar = ivar
+    sub_wave = waveimg
+    sub_trace = trace_in
+    sub_x = np.arange(nspat)
+    sn2_sub = np.zeros((nspec,nspat))
+    spline_sub = np.zeros((nspec,nspat))
+
+
+
+    flux_sm = djs_median(flux, width = 5, boundary = 'reflect')
+    fluxivar_sm =  djs_median(fluxivar, width = 5, boundary = 'reflect')
+    fluxivar_sm = fluxivar_sm*(fluxivar > 0.0)
+
+    indsp = (wave > wvmnx[0]) & (wave < wvmnx[1]) & \
+             np.isfinite(flux_sm) & (flux_sm < 5.0e5) &  \
+             (flux_sm > -1000.0) & (fluxivar_sm > 0.0)
+    nsp = np.sum(indsp)
+
+    # Not all the djs_reject keywords args are implemented yet
+    b_answer, bmask   = bspline_iterfit(wave[indsp], flux_sm[indsp], invvar = fluxivar_sm[indsp],
+                                        kwargs_bspline={'everyn': 1.5})
+    b_answer, bmask2  = bspline_iterfit(wave[indsp], flux_sm[indsp], invvar = fluxivar_sm[indsp]*bmask,
+                                        kwargs_bspline={'everyn': 1.5})
+    c_answer, cmask   = bspline_iterfit(wave[indsp], flux_sm[indsp], invvar = fluxivar_sm[indsp]*bmask2,
+                                        kwargs_bspline={'everyn': 30})
+    spline_flux, _ = b_answer.value(wave[indsp])
+    cont_flux, _ = c_answer.value(wave[indsp])
+
+    sn2 = (np.fmax(spline_flux*(np.sqrt(np.fmax(fluxivar_sm[indsp], 0))*bmask2),0))**2
+    ind_nonzero = (sn2 > 0)
+    nonzero = np.sum(ind_nonzero)
+    # TODO this appears to give rather different numbers than djs_iterstat.pro
+    if(nonzero >0):
+        (mean, med_sn2, stddev) = sigma_clipped_stats(sn2,sigma_lower=3.0,sigma_upper=5.0)
+    else: med_sn2 = 0.0
+    sn2_med = djs_median(sn2, width = 9, boundary = 'reflect')
+    igood = (ivar > 0.0)
+    ngd = np.sum(igood)
+    if(ngd > 0):
+        isrt = np.argsort(wave[indsp])
+        sn2_sub[igood] = np.interp(sub_wave[igood],(wave[indsp])[isrt],sn2_med[isrt])
+    msgs.info('sqrt(med(S/N)^2) = ' + "{:5.2f}".format(np.sqrt(med_sn2)))
+
+    min_wave = np.min(wave[indsp])
+    max_wave = np.max(wave[indsp])
+    spline_flux1 = np.zeros(nspec)
+    cont_flux1 = np.zeros(nspec)
+    sn2_1 = np.zeros(nspec)
+    ispline = (wave >= min_wave) & (wave <= max_wave)
+    spline_tmp, _ = b_answer.value(wave[ispline])
+    spline_flux1[ispline] = spline_tmp
+    cont_tmp, _ = c_answer.value(wave[ispline])
+    cont_flux1[ispline] = cont_tmp
+    sn2_1[ispline] = np.interp(wave[ispline], (wave[indsp])[isrt], sn2[isrt])
+    bmask = np.zeros(nspec,dtype='bool')
+    bmask[indsp] = bmask2
+    spline_flux1 = djs_maskinterp(spline_flux1,(bmask == False))
+    cmask2 = np.zeros(nspec,dtype='bool')
+    cmask2[indsp] = cmask
+    cont_flux1 = djs_maskinterp(cont_flux1,(cmask2 == False))
+
+    (_, _, sigma1) = sigma_clipped_stats(flux[indsp],sigma_lower=3.0,sigma_upper=5.0)
+
+    if(med_sn2 <= 2.0):
+        spline_sub[igood]= np.fmax(sigma1,0)
+    else:
+        if((med_sn2 <=5.0) and (med_sn2 > 2.0)):
+            spline_flux1 = cont_flux1
+        # Interp over points <= 0 in boxcar flux or masked points using cont model
+        badpix = (spline_flux1 <= 0.5) | (bmask == False)
+        goodval = (cont_flux1 > 0.0) & (cont_flux1 < 5e5)
+        indbad1 = badpix & goodval
+        nbad1 = np.sum(indbad1)
+        if(nbad1 > 0):
+            spline_flux1[indbad1] = cont_flux1[indbad1]
+        indbad2 = badpix & ~goodval
+        nbad2 = np.sum(indbad2)
+        ngood0 = np.sum(~badpix)
+        if((nbad2 > 0) or (ngood0 > 0)):
+            spline_flux1[indbad2] = djs_median(spline_flux1[~badpix])
+        # take a 5-pixel median to filter out some hot pixels
+        spline_flux1 = djs_median(spline_flux1,width=5,boundary ='reflect')
+        # Create the normalized object image
+        if(ngd > 0):
+            isrt = np.argsort(wave)
+            spline_sub[igood] = np.interp(sub_wave[igood],wave[isrt],spline_flux1[isrt])
+        else:
+            spline_sub[igood] = np.fmax(sigma1, 0)
+
+    norm_obj = (spline_sub != 0.0)*sub_obj/(spline_sub + (spline_sub == 0.0))
+    norm_ivar = sub_ivar*spline_sub**2
+
+    # Cap very large inverse variances
+    ivar_mask = (norm_obj > -0.2) & (norm_obj < 0.7) & (sub_ivar > 0.0) & np.isfinite(norm_obj) & np.isfinite(norm_ivar)
+    norm_ivar = norm_ivar*ivar_mask
+    good = (norm_ivar > 0.0)
+    ngood = np.sum(good)
+
+
+    xtemp = (np.cumsum(np.outer(4.0 + np.sqrt(np.fmax(sn2_1, 0.0)),np.ones(nspat)))).reshape((nspec,nspat))
+    xtemp = xtemp/xtemp.max()
+
+
+    # norm_x is the x position along the image centered on the object  trace
+    norm_x = np.outer(np.ones(nspec), sub_x) - np.outer(sub_trace,np.ones(nspat))
+
+    sigma = np.full(nspat, thisfwhm/2.3548)
+    fwhmfit = sigma*2.3548
+    trace_corr = np.zeros(nspat)
+
+    # If we have too few pixels to fit a profile or S/N is too low, just use a Gaussian profile
+    # TODO Clean up the logic below. It is formally correct but
+    # redundant since no trace correction has been created or applied yet.  I'm only postponing doing it
+    # to preserve this syntax for later when it is needed
+    if((ngood < 10) or (med_sn2 < SN_GAUSS) or (GAUSS is True)):
+        msgs.info("Too few good pixels or S/N <" + "{:5.1f}".format(SN_GAUSS) + " or GAUSS flag set")
+        msgs.info("Returning Gaussian profile")
+        sigma_x = norm_x/(np.outer(sigma, np.ones(nspat)) - np.outer(trace_corr,np.ones(nspat)))
+        profile_model = np.exp(-0.5*sigma_x**2)/np.sqrt(2.0*np.pi)*(sigma_x**2 < 25.)
+        msgs.info("FWHM="  + "{:6.2f}".format(thisfwhm) + ", S/N=" + "{:8.3f}".format(np.sqrt(med_sn2)))
+        nxinf = np.sum(np.isfinite(xnew) == False)
+        if(nxinf != 0):
+            msgs.warn("Nan pixel values in trace correction")
+            msgs.warn("Returning original trace....")
+            xnew = trace_in
+        inf = np.isfinite(profile_model) == False
+        ninf = np.sum(inf)
+        if (ninf != 0):
+            msgs.warn("Nan pixel values in object profile... setting them to zero")
+            profile_model[inf] = 0.0
+        # Normalize profile
+        norm = np.outer(np.sum(profile_model,1),np.ones(nspat))
+        if(np.sum(norm) > 0.0):
+            profile_model = profile_model/norm
+        #TODO Put in call to QA here
+
+        # TODO Put in a return statement here? Code returns updated trace and profile
+        # return (xnew, profile_model)
+
+    msgs.info("Gaussian vs b-spline of width " + "{:6.2f}".format(thisfwhm) + " pixels")
+    area = 1.0
+    sigma_x = norm_x / (np.outer(sigma, np.ones(nspat)) - np.outer(trace_corr, np.ones(nspat)))
+
+    mask = np.full(nspec*nspat, False, dtype=bool)
+
+    # The following lines set the limits for the b-spline fit
+    limit = erfcinv(0.1/np.sqrt(med_sn2))*np.sqrt(2.0)
+    if(PROF_NSIGMA is None):
+        sinh_space = 0.25*np.log10(np.fmax((1000./np.sqrt(med_sn2)),10.))
+        abs_sigma = np.fmin((np.abs(sigma_x[good])).max(),2.0*limit)
+        min_sigma = np.fmax(sigma_x[good].min(), (-abs_sigma))
+        max_sigma = np.fmin(sigma_x[good].max(), (abs_sigma))
+        nb = (np.arcsinh(abs_sigma)/sinh_space).astype(int) + 1
+    else:
+        msgs.info("Using PROF_NSIGMA= " + "{:6.2f}".format(PROF_NSIGMA) + " for extended/bright objects")
+        nb = np.round(PROF_NSIGMA > 10)
+        max_sigma = PROF_NSIGMA
+        min_sigma = -1*PROF_NSIGMA
+        sinh_space = np.arcsinh(PROF_NSIGMA)/nb
+
+    rb = np.sinh((np.arange(nb) + 0.5) * sinh_space)
+    bkpt = np.concatenate([(-rb)[::-1], rb])
+    keep = ((bkpt >= min_sigma) & (bkpt <= max_sigma))
+    bkpt = bkpt[keep]
+
+    # Attempt B-spline first
+    GOOD_PIX = (sn2_sub > SN_GAUSS) & (norm_ivar > 0)
+    IN_PIX   = (sigma_x >= min_sigma) & (sigma_x <= max_sigma) & (norm_ivar > 0)
+    ngoodpix = np.sum(GOOD_PIX)
+    ninpix     = np.sum(IN_PIX)
+
+    if (ngoodpix >= 0.2*ninpix):
+        inside, = np.where((GOOD_PIX & IN_PIX).flatten())
+    else:
+        inside, = np.where(IN_PIX.flatten())
+
+
+
+    si = inside[np.argsort(sigma_x.flat[inside])]
+    sr = si[::-1]
+
+    bset, bmask = bspline_iterfit(sigma_x.flat[si],norm_obj.flat[si], invvar = norm_ivar.flat[si]
+                           , nord = 4, bkpt = bkpt, maxiter = 15, upper = 1, lower = 1)
+    mode_fit, _ = bset.value(sigma_x.flat[si])
+    median_fit = np.median(norm_obj[norm_ivar > 0.0])
+
+    # TODO I don't follow the logic behind this statement but I'm leaving it for now. If the median is large it is used, otherwise we  user zero???
+    if (np.abs(median_fit) > 0.01):
+        msgs.info("Median flux level in profile is not zero: median = " + "{:7.4f}".format(median_fit))
+    else:
+        median_fit = 0.0
+
+    # Find the peak and FWHM based this profile fit
+    (peak, peak_x, lwhm, rwhm) = findfwhm(mode_fit - median_fit, sigma_x.flat[si])
+    trace_corr = np.full(nspec, peak_x)
+    min_level = peak*np.exp(-0.5*limit**2)
+
+    bspline_fwhm = (rwhm - lwhm)*thisfwhm/2.3548
+    msgs.info("Bspline FWHM: " + "{:7.4f}".format(bspline_fwhm) + ", compared to initial object finding FWHM: " + "{:7.4f}".format(thisfwhm) )
+    sigma = sigma * (rwhm-lwhm)/2.3548
+
+    limit = limit * (rwhm-lwhm)/2.3548
+
+    rev_fit = mode_fit[::-1]
+    lind, = np.where(((rev_fit < (min_level+median_fit)) & (sigma_x.flat[sr] < peak_x)) | (sigma_x.flat[sr] < (peak_x-limit)))
+    if (lind.size > 0):
+        lp = lind.min()
+        l_limit = sigma_x.flat[sr[lp]]
+    else:
+        l_limit = min_sigma
+
+    rind, = np.where(((mode_fit < (min_level+median_fit)) & (sigma_x.flat[si] > peak_x)) | (sigma_x.flat[si] > (peak_x+limit)))
+    if (rind.size > 0):
+        rp = rind.min()
+        r_limit = sigma_x.flat[si[rp]]
+    else:
+        r_limit = max_sigma
+
+    msgs.info("Trace limits: limit = " + "{:7.4f}".format(limit) + ", min_level = " + "{:7.4f}".format(min_level) +
+              ", l_limit = " + "{:7.4f}".format(l_limit) + ", r_limit = " + "{:7.4f}".format(r_limit))
+
+    # Just grab the data points within the limits
+    mask[si]=((norm_ivar.flat[si] > 0) & (np.abs(norm_obj.flat[si] - mode_fit) < 0.1))
+    inside, = np.where((sigma_x.flat[si] > l_limit) & (sigma_x.flat[si] < r_limit) & mask[si])
+    ninside = inside.size
+
+
+    # If we have too few pixels after this step, then again just use a Gaussian profile and return. Note that
+    # we are following the original IDL code here and not using the improved sigma and trace correction for the
+    # profile at this stage since ninside is so small.
+    if(ninside < 10):
+        msgs.info("Too few pixels inside l_limit and r_limit")
+        msgs.info("Returning Gaussian profile")
+        profile_model = np.exp(-0.5*sigma_x**2)/np.sqrt(2.0*np.pi)*(sigma_x**2 < 25.)
+        msgs.info("FWHM="  + "{:6.2f}".format(thisfwhm) + ", S/N=" + "{:8.3f}".format(np.sqrt(med_sn2)))
+        nxinf = np.sum(np.isfinite(xnew) == False)
+        if(nxinf != 0):
+            msgs.warn("Nan pixel values in trace correction")
+            msgs.warn("Returning original trace....")
+            xnew = trace_in
+        inf = np.isfinite(profile_model) == False
+        ninf = np.sum(inf)
+        if (ninf != 0):
+            msgs.warn("Nan pixel values in object profile... setting them to zero")
+            profile_model[inf] = 0.0
+        # Normalize profile
+        norm = np.outer(np.sum(profile_model,1),np.ones(nspat))
+        if(np.sum(norm) > 0.0):
+            profile_model = profile_model/norm
+        #TODO Put in call to QA here
+
+        # TODO Put in a return statement here? Code returns updated trace and profile
+        # return (xnew, profile_model)
+
+    sigma_iter = 3
+    isort =  (xtemp.flat[si[inside]]).argsort()
+    inside = si[inside[isort]]
+    pb =np.ones(inside.size)
+
+    # ADD the loop here later
+    for iiter in range(1,sigma_iter + 1):
+        iiter =1
+        mode_zero, _ = bset.value(sigma_x.flat[inside])
+        mode_zero = mode_zero*pb
+
+        mode_min05, _ = bset.value(sigma_x.flat[inside]-0.5)
+        mode_plu05, _ = bset.value(sigma_x.flat[inside]+0.5)
+        mode_shift = (mode_min05  - mode_plu05)*pb*((sigma_x.flat[inside] > (l_limit + 0.5)) &
+                                                (sigma_x.flat[inside] < (r_limit - 0.5)))
+
+        mode_by13, _ = bset.value(sigma_x.flat[inside]/1.3)
+        mode_stretch = mode_by13*pb/1.3 - mode_zero
+
+        nbkpts = (np.log10(np.fmax(med_sn2, 11.0))).astype(int)
+
+        xx = np.sum(xtemp, 1)/nspat
+        profile_basis = np.column_stack((mode_zero,mode_shift))
+
+        mode_shift_out = bspline_longslit(xtemp.flat[inside], norm_obj.flat[inside], norm_ivar.flat[inside], profile_basis
+                                      ,maxiter=1,kwargs_bspline= {'nbkpts':nbkpts})
+        mode_shift_set = mode_shift_out[0]
+        temp_set = bspline(None, fullbkpt = mode_shift_set.breakpoints,nord=mode_shift_set.nord)
+        temp_set.coeff = mode_shift_set.coeff[0, :]
+        h0, _ = temp_set.value(xx)
+        temp_set.coeff = mode_shift_set.coeff[1, :]
+        h1, _ = temp_set.value(xx)
+        ratio_10 = (h1/(h0 + (h0 == 0.0)))
+        delta_trace_corr = ratio_10/(1.0 + np.abs(ratio_10)/0.1)
+        trace_corr = trace_corr + delta_trace_corr
+
+        profile_basis = np.column_stack((mode_zero,mode_stretch))
+        mode_stretch_out = bspline_longslit(xtemp.flat[inside], norm_obj.flat[inside], norm_ivar.flat[inside], profile_basis,
+                                            maxiter=1,fullbkpt = mode_shift_set.breakpoints)
+        mode_stretch_set = mode_stretch_out[0]
+        temp_set = bspline(None, fullbkpt = mode_stretch_set.breakpoints,nord=mode_stretch_set.nord)
+        temp_set.coeff = mode_stretch_set.coeff[0, :]
+        h0, _ = temp_set.value(xx)
+        temp_set.coeff = mode_stretch_set.coeff[1, :]
+        h2, _ = temp_set.value(xx)
+        h0 = np.fmax(h0 + h2*mode_stretch.sum()/mode_zero.sum(),0.1)
+        ratio_20 = (h2 / (h0 + (h0 == 0.0)))
+        sigma_factor = 0.3 * ratio_20 / (1.0 + np.abs(ratio_20))
+
+        msgs.info("Iteration# " + "{:3d}".format(iiter))
+        msgs.info("Median abs value of trace correction = " + "{:8.3f}".format(np.median(np.abs(delta_trace_corr))))
+        msgs.info("Median abs value of width correction = " + "{:8.3f}".format(np.median(np.abs(sigma_factor))))
+
+        sigma = sigma*(1.0 + sigma_factor)
+        area = area * h0/(1.0 + sigma_factor)
+
+        sigma_x = norm_x / (np.outer(sigma, np.ones(nspat)) - np.outer(trace_corr, np.ones(nspat)))
+
+        # Update the profile B-spline fit for the next iteration
+        if iiter < sigma_iter-1:
+            ss = sigma_x.flat[inside].argsort()
+            pb = (np.outer(area, np.ones(nspat,dtype=float))).flat[inside]
+            keep = (bkpt >= sigma_x.flat[inside].min()) & (bkpt <= sigma_x.flat[inside].max())
+            if keep.sum() == 0:
+                keep = np.ones(bkpt.size, type=bool)
+            bset_out = bspline_longslit(sigma_x.flat[inside[ss]],norm_obj.flat[inside[ss]],norm_ivar.flat[inside[ss]],pb[ss],
+                                    nord = 4, bkpt=bkpt[keep],maxiter=2)
+            bset = bset_out[0] # This updated bset used for the next set of trace corrections
+
+    # Apply trace corrections only if they are small (added by JFH)
+    if np.median(np.abs(trace_corr*sigma)) < MAX_TRACE_CORR:
+        xnew = trace_corr * sigma + trace_in
+    else:
+        xnew = trace_in
+
+    fwhmfit = sigma*2.3548
+    ss=sigma_x.flatten().argsort()
+    inside, = np.where((sigma_x.flat[ss] >= min_sigma) &
+                       (sigma_x.flat[ss] <= max_sigma) &
+                       mask[ss] &
+                       np.isfinite(norm_obj.flat[ss]) &
+                       np.isfinite(norm_ivar.flat[ss]))
+    pb = (np.outer(area, np.ones(nspat,dtype=float)))
+    bset_out = bspline_longslit(sigma_x.flat[ss[inside]],norm_obj.flat[ss[inside]], norm_ivar.flat[ss[inside]], pb.flat[ss[inside]],
+                            nord=4, bkpt = bkpt, upper = 10, lower=10)
+    bset = bset_out[0]
+    outmask = bset_out[1]
+
+    # skymask = False for pixels within (min_sigma, max_sigma), True outside
+    skymask = ~((sigma_x.flatten() > min_sigma) & (sigma_x.flatten() < max_sigma))
+    full_bsp = np.zeros(nspec*nspat, dtype=float)
+    yfit_out, _  = bset.value(sigma_x.flat[~skymask])
+    full_bsp[~skymask] = yfit_out
+    (peak, peak_x, lwhm, rwhm) = findfwhm(full_bsp[ss] - median_fit, sigma_x.flat[ss])
+
+
+    left_bool = (((full_bsp[ss] < (min_level+median_fit)) & (sigma_x.flat[ss] < peak_x)) | (sigma_x.flat[ss] < (peak_x-limit)))[::-1]
+    ind_left, = np.where(left_bool)
+    lp = np.fmax(ind_left.min(), 0)
+    righ_bool = ((full_bsp[ss] < (min_level+median_fit)) & (sigma_x.flat[ss] > peak_x))  | (sigma_x.flat[ss] > (peak_x+limit))
+    ind_righ, = np.where(righ_bool)
+    rp = np.fmax(ind_righ.min(), 0)
+    l_limit = ((sigma_x.flat[ss])[::-1])[lp] - 0.1
+    r_limit = sigma_x.flat[ss[rp]] + 0.1
+
+    while True:
+        l_limit += 0.1
+        l_fit, _ = bset.value(np.asarray([l_limit]))
+        l2, _ = bset.value(np.asarray([l_limit])* 0.9)
+        l_deriv = (np.log(l2[0]) - np.log(l_fit[0]))/(0.1*l_limit)
+        if (l_deriv < -1.0) | (l_limit >= -1.0):
+            break
+
+    while True:
+        r_limit -= 0.1
+        r_fit, _ = bset.value(np.asarray([r_limit]))
+        r2, _ = bset.value(np.asarray([r_limit])* 0.9)
+        r_deriv = (np.log(r2[0]) - np.log(r_fit[0]))/(0.1*r_limit)
+        if (r_deriv > 1.0) | (r_limit <= 1.0):
+            break
+
+
+    # JXP kludge
+    if PROF_NSIGMA is not None:
+       #By setting them to zero we ensure QA won't plot them in the profile QA.
+       l_limit = 0.0
+       r_limit = 0.0
+
+
+    # Hack to fix degenerate profiles which have a positive derivative
+    if (l_deriv < 0) and (r_deriv > 0) and NO_DERIV is False:
+        left = sigma_x.flatten() < l_limit
+        full_bsp[left] =  np.exp(-(sigma_x.flat[left]-l_limit)*l_deriv) * l_fit
+        right = sigma_x.flatten() > r_limit
+        full_bsp[right] = np.exp(-(sigma_x.flat[right] - r_limit) * r_deriv) * r_fit
+        internal = (sigma_x.flatten() >= l_limit) & (sigma_x.flatten() <=r_limit)
+        skymask[internal]=True
+
+    # Final object profile
+    profile_model = full_bsp.reshape(nspec,nspat)*pb
+    res_mode = (norm_obj.flat[ss[inside]] - profile_model.flat[ss[inside]])*np.sqrt(norm_ivar.flat[ss[inside]])
+    chi_good = (outmask == True) & (norm_ivar.flat[ss[inside]] > 0)
+    chi_med = np.median(res_mode[chi_good]**2)
+    chi_zero = np.median(norm_obj.flat[ss[inside]]**2*norm_ivar.flat[ss[inside]])
+
+    msgs.info("----------  Results of Profile Fit ----------")
+    msgs.info(" min(fwhmfit)={:5.2f}".format(fwhmfit.min()) +
+              " max(fwhmfit)={:5.2f}".format(fwhmfit.max()) + " median(chi)={:5.2f}".format(chi_med) +
+              " nbkpts={:2d}".format(bkpt.size))
+
+    nxinf = np.sum(np.isfinite(xnew) == False)
+    if (nxinf != 0):
+        msgs.warn("Nan pixel values in trace correction")
+        msgs.warn("Returning original trace....")
+        xnew = trace_in
+    inf = np.isfinite(profile_model) == False
+    ninf = np.sum(inf)
+    if (ninf != 0):
+        msgs.warn("Nan pixel values in object profile... setting them to zero")
+        profile_model[inf] = 0.0
+    # Normalize profile
+    norm = np.outer(np.sum(profile_model, 1), np.ones(nspat))
+    if (np.sum(norm) > 0.0):
+        profile_model = profile_model / norm
+    msgs.info("FWHM="  + "{:6.2f}".format(thisfwhm) + ", S/N=" + "{:8.3f}".format(np.sqrt(med_sn2)))
+    # TODO insert QA call here
+    return (profile_model, xnew, fwhmfit, med_sn2)
+
+
+savefile='/Users/joe/gprofile_develop/local_skysub_dev.sav'
+idl_dict=readsav(savefile)
+sciimg = idl_dict['sciimg']
+sciivar = idl_dict['sciivar']
+skyimage = idl_dict['skyimage']
+piximg = idl_dict['piximg']
+waveimg = idl_dict['waveimg']
+ximg = idl_dict['ximg']
+objstruct = idl_dict['objstruct']
+slitmask = idl_dict['slitmask']
+slitid = idl_dict['slitid']
+xx1 = idl_dict['xx1']
+xx2 = idl_dict['xx2']
+edgmask = idl_dict['edgmask']
+bsp = idl_dict['bsp']
+
+
+
+# This is the argument list
+#def localskysub(sciimg, sciivar, skyimage, piximg, waveimg, ximg, objstruct, thismask, xx1, xx2, edgmask, bsp,
+# niter=4, box_rad = 7, sigrej = 3.5, skysample = False, PROF_SIGMA= None):
+
+from pypit import arspecobj
+specobj = SpecObjExp((trc_img[0]['object'].shape[:2]), config, scidx, det, xslit, ypos, xobj, **kwargs)
+
+
+specobj= SpecObjExp()
+
+
+if(PROF_NSIGMA is None):
+    PROF_NSIGMA = np.zeros(len(objstruct))
+
+nspat =image.shape[1]
+nspec =image.shape[0]
+
+
+SN_GAUSS = None # S/N threshold for giving up on profile fitting and using a Gaussian with the measured FWHM
+MAX_TRACE_CORR = None # Maximum trace correction that can be applied
+wvmnx = None # minimum and maximum wavelength to use for fits
+GAUSS = None # Do a Gaussian extraction
+PROF_NSIGMA = None # Width of profile specified by hand for extended objects
+NO_DERIV = False # disable profile derivative computation
+
+if
+
+
+
+
+'''
 ## Directory for IDL tests is /Users/joe/gprofile_develop/
 ## Run long_reduce, islit=3
 
@@ -494,416 +1052,13 @@ PROF_NSIGMA = None # Width of profile specified by hand for extended objects
 NO_DERIV = False # disable profile derivative computation
 
 
-if SN_GAUSS is None: SN_GAUSS = 3.0
-if thisfwhm is None: thisfwhm = 4.0
-if hwidth is None: 3.0*(np.max(thisfwhm) + 1.0)
-if MAX_TRACE_CORR is None:  MAX_TRACE_CORR = 2.0
-if wvmnx is None: wvmnx = [2900., 30000]
-if PROF_NSIGMA is not NONE:
-    NO_DERIV = True
 
-thisfwhm = np.fmax(thisfwhm,1.0) # require the FWHM to be greater than 1 pixel
+# Check for infinities in trace correction
 
-xnew = trace_in
-dims = image.shape
-nspat = dims[1]
-nspec = dims[0]
 
-# Right now I'm not dealing with sub-images, but I may do so in the future
-#top = np.fmin(np.max(np.where(np.sum(ivar == 0,0) < nspec)),nspat)
-#bot = np.fmax(np.min(np.where(np.sum(ivar == 0,0) < nspec)),0)
-#min_column = np.fmax(np.min(trace_in - hwidth)),bot)
-#max_column = long(max(trace_in + hwidth)) <  top
 
-# create some images we will need
-profile_model = np.zeros((nspec,nspat))
-sub_obj = image
-sub_ivar = ivar
-sub_wave = waveimg
-sub_trace = trace_in
-sub_x = np.arange(nspat)
-sn2_sub = np.zeros((nspec,nspat))
-spline_sub = np.zeros((nspec,nspat))
 
-
-
-flux_sm = djs_median(flux, width = 5, boundary = 'reflect')
-fluxivar_sm =  djs_median(fluxivar, width = 5, boundary = 'reflect')
-fluxivar_sm = fluxivar_sm*(fluxivar > 0.0)
-
-indsp = (wave > wvmnx[0]) & (wave < wvmnx[1]) & \
-         np.isfinite(flux_sm) & (flux_sm < 5.0e5) &  \
-         (flux_sm > -1000.0) & (fluxivar_sm > 0.0)
-nsp = np.sum(indsp)
-
-# Not all the djs_reject keywords args are implemented yet
-b_answer, bmask   = bspline_iterfit(wave[indsp], flux_sm[indsp], invvar = fluxivar_sm[indsp],
-                                    kwargs_bspline={'everyn': 1.5})
-b_answer, bmask2  = bspline_iterfit(wave[indsp], flux_sm[indsp], invvar = fluxivar_sm[indsp]*bmask,
-                                    kwargs_bspline={'everyn': 1.5})
-c_answer, cmask   = bspline_iterfit(wave[indsp], flux_sm[indsp], invvar = fluxivar_sm[indsp]*bmask2,
-                                    kwargs_bspline={'everyn': 30})
-spline_flux, _ = b_answer.value(wave[indsp])
-cont_flux, _ = c_answer.value(wave[indsp])
-
-sn2 = (np.fmax(spline_flux*(np.sqrt(np.fmax(fluxivar_sm[indsp], 0))*bmask2),0))**2
-ind_nonzero = (sn2 > 0)
-nonzero = np.sum(ind_nonzero)
-# TODO this appears to give rather different numbers than djs_iterstat.pro
-if(nonzero >0):
-    (mean, med_sn2, stddev) = sigma_clipped_stats(sn2,sigma_lower=3.0,sigma_upper=5.0)
-else: med_sn2 = 0.0
-sn2_med = djs_median(sn2, width = 9, boundary = 'reflect')
-igood = (ivar > 0.0)
-ngd = np.sum(igood)
-if(ngd > 0):
-    isrt = np.argsort(wave[indsp])
-    sn2_sub[igood] = np.interp(sub_wave[igood],(wave[indsp])[isrt],sn2_med[isrt])
-msgs.info('sqrt(med(S/N)^2) = ' + "{:5.2f}".format(np.sqrt(med_sn2)))
-
-min_wave = np.min(wave[indsp])
-max_wave = np.max(wave[indsp])
-spline_flux1 = np.zeros(nspec)
-cont_flux1 = np.zeros(nspec)
-sn2_1 = np.zeros(nspec)
-ispline = (wave >= min_wave) & (wave <= max_wave)
-spline_tmp, _ = b_answer.value(wave[ispline])
-spline_flux1[ispline] = spline_tmp
-cont_tmp, _ = c_answer.value(wave[ispline])
-cont_flux1[ispline] = cont_tmp
-sn2_1[ispline] = np.interp(wave[ispline], (wave[indsp])[isrt], sn2[isrt])
-bmask = np.zeros(nspec,dtype='bool')
-bmask[indsp] = bmask2
-spline_flux1 = djs_maskinterp(spline_flux1,(bmask == False))
-cmask2 = np.zeros(nspec,dtype='bool')
-cmask2[indsp] = cmask
-cont_flux1 = djs_maskinterp(cont_flux1,(cmask2 == False))
-
-(_, _, sigma1) = sigma_clipped_stats(flux[indsp],sigma_lower=3.0,sigma_upper=5.0)
-
-if(med_sn2 <= 2.0):
-    spline_sub[igood]= np.fmax(sigma1,0)
-else:
-    if((med_sn2 <=5.0) and (med_sn2 > 2.0)):
-        spline_flux1 = cont_flux1
-    # Interp over points <= 0 in boxcar flux or masked points using cont model
-    badpix = (spline_flux1 <= 0.5) | (bmask == False)
-    goodval = (cont_flux1 > 0.0) & (cont_flux1 < 5e5)
-    indbad1 = badpix & goodval
-    nbad1 = np.sum(indbad1)
-    if(nbad1 > 0):
-        spline_flux1[indbad1] = cont_flux1[indbad1]
-    indbad2 = badpix & ~goodval
-    nbad2 = np.sum(indbad2)
-    ngood0 = np.sum(~badpix)
-    if((nbad2 > 0) or (ngood0 > 0)):
-        spline_flux1[indbad2] = djs_median(spline_flux1[~badpix])
-    # take a 5-pixel median to filter out some hot pixels
-    spline_flux1 = djs_median(spline_flux1,width=5,boundary ='reflect')
-    # Create the normalized object image
-    if(ngd > 0):
-        isrt = np.argsort(wave)
-        spline_sub[igood] = np.interp(sub_wave[igood],wave[isrt],spline_flux1[isrt])
-    else:
-        spline_sub[igood] = np.fmax(sigma1, 0)
-
-norm_obj = (spline_sub != 0.0)*sub_obj/(spline_sub + (spline_sub == 0.0))
-norm_ivar = sub_ivar*spline_sub**2
-
-# Cap very large inverse variances
-ivar_mask = (norm_obj > -0.2) & (norm_obj < 0.7) & (sub_ivar > 0.0) & np.isfinite(norm_obj) & np.isfinite(norm_ivar)
-norm_ivar = norm_ivar*ivar_mask
-good = (norm_ivar > 0.0)
-ngood = np.sum(good)
-
-
-xtemp = (np.cumsum(np.outer(4.0 + np.sqrt(np.fmax(sn2_1, 0.0)),np.ones(nspat)))).reshape((nspec,nspat))
-xtemp = xtemp/xtemp.max()
-
-
-# norm_x is the x position along the image centered on the object  trace
-norm_x = np.outer(np.ones(nspec), sub_x) - np.outer(sub_trace,np.ones(nspat))
-
-sigma = np.full(nspat, thisfwhm/2.3548)
-fwhmfit = sigma*2.3548
-trace_corr = np.zeros(nspat)
-
-# If we have too few pixels to fit a profile or S/N is too low, just use a Gaussian profile
-# TODO Clean up the logic below. It is formally correct but
-# redundant since no trace correction has been created or applied yet.  I'm only postponing doing it
-# to preserve this syntax for later when it is needed
-if((ngood < 10) or (med_sn2 < SN_GAUSS) or (GAUSS != None)):
-    msgs.info("Too few good pixels or S/N <" + "{:5.1f}".format(SN_GAUSS) + " or GAUSS flag set")
-    msgs.info("Returning Gaussian profile")
-    sigma_x = norm_x/(np.outer(sigma, np.ones(nspat)) - np.outer(trace_corr,np.ones(nspat)))
-    profile_model = np.exp(-0.5*sigma_x**2)/np.sqrt(2.0*np.pi)*(sigma_x**2 < 25.)
-    msgs.info("FWHM="  + "{:6.2f}".format(thisfwhm) + ", S/N=" + "{:8.3f}".format(np.sqrt(med_sn2)))
-    nxinf = np.sum(np.isfinite(xnew) == False)
-    if(nxinf != 0):
-        msgs.warn("Nan pixel values in trace correction")
-        msgs.warn("Returning original trace....")
-        xnew = trace_in
-    inf = np.isfinite(profile_model) == False
-    ninf = np.sum(inf)
-    if (ninf != 0):
-        msgs.warn("Nan pixel values in object profile... setting them to zero")
-        profile_model[inf] = 0.0
-    # Normalize profile
-    norm = np.outer(np.sum(profile_model,1),np.ones(nspat))
-    if(np.sum(norm) > 0.0):
-        profile_model = profile_model/norm
-    #TODO Put in call to QA here
-
-    # TODO Put in a return statement here? Code returns updated trace and profile
-    # return (xnew, profile_model)
-
-msgs.info("Gaussian vs b-spline of width " + "{:6.2f}".format(thisfwhm) + " pixels")
-area = 1.0
-sigma_x = norm_x / (np.outer(sigma, np.ones(nspat)) - np.outer(trace_corr, np.ones(nspat)))
-
-mask = np.full(nspec*nspat, False, dtype=bool)
-
-# The following lines set the limits for the b-spline fit
-limit = erfcinv(0.1/np.sqrt(med_sn2))*np.sqrt(2.0)
-if(PROF_NSIGMA==None):
-    sinh_space = 0.25*np.log10(np.fmax((1000./np.sqrt(med_sn2)),10.))
-    abs_sigma = np.fmin((np.abs(sigma_x[good])).max(),2.0*limit)
-    min_sigma = np.fmax(sigma_x[good].min(), (-abs_sigma))
-    max_sigma = np.fmin(sigma_x[good].max(), (abs_sigma))
-    nb = (np.arcsinh(abs_sigma)/sinh_space).astype(int) + 1
-else:
-    msgs.info("Using PROF_NSIGMA= " + "{:6.2f}".format(PROF_NSIGMA) + " for extended/bright objects")
-    nb = np.round(PROF_NSIGMA > 10)
-    max_sigma = PROF_NSIGMA
-    min_sigma = -1*PROF_NSIGMA
-    sinh_space = np.arcsinh(PROF_NSIGMA)/nb
-
-rb = np.sinh((np.arange(nb) + 0.5) * sinh_space)
-bkpt = np.concatenate([(-rb)[::-1], rb])
-keep = ((bkpt >= min_sigma) & (bkpt <= max_sigma))
-bkpt = bkpt[keep]
-
-# Attempt B-spline first
-GOOD_PIX = (sn2_sub > SN_GAUSS) & (norm_ivar > 0)
-IN_PIX   = (sigma_x >= min_sigma) & (sigma_x <= max_sigma) & (norm_ivar > 0)
-ngoodpix = np.sum(GOOD_PIX)
-ninpix     = np.sum(IN_PIX)
-
-if (ngoodpix >= 0.2*ninpix):
-    inside, = np.where((GOOD_PIX & IN_PIX).flatten())
-else:
-    inside, = np.where(IN_PIX.flatten())
-
-
-
-si = inside[np.argsort(sigma_x.flat[inside])]
-sr = si[::-1]
-
-bset, bmask = bspline_iterfit(sigma_x.flat[si],norm_obj.flat[si], invvar = norm_ivar.flat[si]
-                       , nord = 4, bkpt = bkpt, maxiter = 15, upper = 1, lower = 1)
-mode_fit, _ = bset.value(sigma_x.flat[si])
-median_fit = np.median(norm_obj[norm_ivar > 0.0])
-
-# TODO I don't follow the logic behind this statement but I'm leaving it for now. If the median is large it is used, otherwise we  user zero???
-if (np.abs(median_fit) > 0.01):
-    msgs.info("Median flux level in profile is not zero: median = " + "{:7.4f}".format(median_fit))
-else:
-    median_fit = 0.0
-
-# Find the peak and FWHM based this profile fit
-(peak, peak_x, lwhm, rwhm) = findfwhm(mode_fit - median_fit, sigma_x.flat[si])
-trace_corr = np.full(nspec, peak_x)
-min_level = peak*np.exp(-0.5*limit**2)
-
-bspline_fwhm = (rwhm - lwhm)*thisfwhm/2.3548
-msgs.info("Bspline FWHM: " + "{:7.4f}".format(bspline_fwhm) + ", compared to initial object finding FWHM: " + "{:7.4f}".format(thisfwhm) )
-sigma = sigma * (rwhm-lwhm)/2.3548
-
-limit = limit * (rwhm-lwhm)/2.3548
-
-rev_fit = mode_fit[::-1]
-lind, = np.where(((rev_fit < (min_level+median_fit)) & (sigma_x.flat[sr] < peak_x)) | (sigma_x.flat[sr] < (peak_x-limit)))
-if (lind.size > 0):
-    lp = lind.min()
-    l_limit = sigma_x.flat[sr[lp]]
-else:
-    l_limit = min_sigma
-
-rind, = np.where(((mode_fit < (min_level+median_fit)) & (sigma_x.flat[si] > peak_x)) | (sigma_x.flat[si] > (peak_x+limit)))
-if (rind.size > 0):
-    rp = rind.min()
-    r_limit = sigma_x.flat[si[rp]]
-else:
-    r_limit = max_sigma
-
-msgs.info("Trace limits: limit = " + "{:7.4f}".format(limit) + ", min_level = " + "{:7.4f}".format(min_level) +
-          ", l_limit = " + "{:7.4f}".format(l_limit) + ", r_limit = " + "{:7.4f}".format(r_limit))
-
-# Just grab the data points within the limits
-mask[si]=((norm_ivar.flat[si] > 0) & (np.abs(norm_obj.flat[si] - mode_fit) < 0.1))
-inside, = np.where((sigma_x.flat[si] > l_limit) & (sigma_x.flat[si] < r_limit) & mask[si])
-ninside = inside.size
-
-
-# If we have too few pixels after this step, then again just use a Gaussian profile and return. Note that
-# we are following the original IDL code here and not using the improved sigma and trace correction for the
-# profile at this stage since ninside is so small.
-if(ninside < 10):
-    msgs.info("Too few pixels inside l_limit and r_limit")
-    msgs.info("Returning Gaussian profile")
-    profile_model = np.exp(-0.5*sigma_x**2)/np.sqrt(2.0*np.pi)*(sigma_x**2 < 25.)
-    msgs.info("FWHM="  + "{:6.2f}".format(thisfwhm) + ", S/N=" + "{:8.3f}".format(np.sqrt(med_sn2)))
-    nxinf = np.sum(np.isfinite(xnew) == False)
-    if(nxinf != 0):
-        msgs.warn("Nan pixel values in trace correction")
-        msgs.warn("Returning original trace....")
-        xnew = trace_in
-    inf = np.isfinite(profile_model) == False
-    ninf = np.sum(inf)
-    if (ninf != 0):
-        msgs.warn("Nan pixel values in object profile... setting them to zero")
-        profile_model[inf] = 0.0
-    # Normalize profile
-    norm = np.outer(np.sum(profile_model,1),np.ones(nspat))
-    if(np.sum(norm) > 0.0):
-        profile_model = profile_model/norm
-    #TODO Put in call to QA here
-
-    # TODO Put in a return statement here? Code returns updated trace and profile
-    # return (xnew, profile_model)
-
-sigma_iter = 3
-isort =  (xtemp.flat[si[inside]]).argsort()
-inside = si[inside[isort]]
-pb =np.ones(inside.size)
-
-# ADD the loop here later
-for iiter in range(1,sigma_iter + 1):
-    iiter =1
-    mode_zero, _ = bset.value(sigma_x.flat[inside])
-    mode_zero = mode_zero*pb
-
-    mode_min05, _ = bset.value(sigma_x.flat[inside]-0.5)
-    mode_plu05, _ = bset.value(sigma_x.flat[inside]+0.5)
-    mode_shift = (mode_min05  - mode_plu05)*pb*((sigma_x.flat[inside] > (l_limit + 0.5)) &
-                                            (sigma_x.flat[inside] < (r_limit - 0.5)))
-
-    mode_by13, _ = bset.value(sigma_x.flat[inside]/1.3)
-    mode_stretch = mode_by13*pb/1.3 - mode_zero
-
-    nbkpts = (np.log10(np.fmax(med_sn2, 11.0))).astype(int)
-
-    xx = np.sum(xtemp, 1)/nspat
-    profile_basis = np.column_stack((mode_zero,mode_shift))
-
-    mode_shift_out = bspline_longslit(xtemp.flat[inside], norm_obj.flat[inside], norm_ivar.flat[inside], profile_basis
-                                  ,maxiter=1,kwargs_bspline= {'nbkpts':nbkpts})
-    mode_shift_set = mode_shift_out[0]
-    temp_set = bspline(None, fullbkpt = mode_shift_set.breakpoints,nord=mode_shift_set.nord)
-    temp_set.coeff = mode_shift_set.coeff[0, :]
-    h0, _ = temp_set.value(xx)
-    temp_set.coeff = mode_shift_set.coeff[1, :]
-    h1, _ = temp_set.value(xx)
-    ratio_10 = (h1/(h0 + (h0 == 0.0)))
-    delta_trace_corr = ratio_10/(1.0 + np.abs(ratio_10)/0.1)
-    trace_corr = trace_corr + delta_trace_corr
-
-    profile_basis = np.column_stack((mode_zero,mode_stretch))
-    mode_stretch_out = bspline_longslit(xtemp.flat[inside], norm_obj.flat[inside], norm_ivar.flat[inside], profile_basis,
-                                        maxiter=1,fullbkpt = mode_shift_set.breakpoints)
-    mode_stretch_set = mode_stretch_out[0]
-    temp_set = bspline(None, fullbkpt = mode_stretch_set.breakpoints,nord=mode_stretch_set.nord)
-    temp_set.coeff = mode_stretch_set.coeff[0, :]
-    h0, _ = temp_set.value(xx)
-    temp_set.coeff = mode_stretch_set.coeff[1, :]
-    h2, _ = temp_set.value(xx)
-    h0 = np.fmax(h0 + h2*mode_stretch.sum()/mode_zero.sum(),0.1)
-    ratio_20 = (h2 / (h0 + (h0 == 0.0)))
-    sigma_factor = 0.3 * ratio_20 / (1.0 + np.abs(ratio_20))
-
-    msgs.info("Iteration# " + "{:3d}".format(iiter))
-    msgs.info("Median abs value of trace correction = " + "{:8.3f}".format(np.median(np.abs(delta_trace_corr))))
-    msgs.info("Median abs value of width correction = " + "{:8.3f}".format(np.median(np.abs(sigma_factor))))
-
-    sigma = sigma*(1.0 + sigma_factor)
-    area = area * h0/(1.0 + sigma_factor)
-
-    sigma_x = norm_x / (np.outer(sigma, np.ones(nspat)) - np.outer(trace_corr, np.ones(nspat)))
-
-    # Update the profile B-spline fit for the next iteration
-    if iiter < sigma_iter-1:
-        ss = sigma_x.flat[inside].argsort()
-        pb = (np.outer(area, np.ones(nspat,dtype=float))).flat[inside]
-        keep = (bkpt >= sigma_x.flat[inside].min()) & (bkpt <= sigma_x.flat[inside].max())
-        if keep.sum() == 0:
-            keep = np.ones(bkpt.size, type=bool)
-        bset_out = bspline_longslit(sigma_x.flat[inside[ss]],norm_obj.flat[inside[ss]],norm_ivar.flat[inside[ss]],pb[ss],
-                                nord = 4, bkpt=bkpt[keep],maxiter=2)
-        bset = bset_out[0] # This updated bset used for the next set of trace corrections
-
-# Apply trace corrections only if they are small (added by JFH)
-if np.median(np.abs(trace_corr*sigma)) < MAX_TRACE_CORR:
-    xnew = trace_corr * sigma + trace_in
-else:
-    xnew = trace_in
-
-fwhmfit = sigma*2.3548
-ss=sigma_x.flatten().argsort()
-inside, = np.where((sigma_x.flat[ss] >= min_sigma) &
-                   (sigma_x.flat[ss] <= max_sigma) &
-                   mask[ss] &
-                   np.isfinite(norm_obj.flat[ss]) &
-                   np.isfinite(norm_ivar.flat[ss]))
-pb = (np.outer(area, np.ones(nspat,dtype=float)))
-bset_out = bspline_longslit(sigma_x.flat[ss[inside]],norm_obj.flat[ss[inside]], norm_ivar.flat[ss[inside]], pb.flat[ss[inside]],
-                        nord=4, bkpt = bkpt, upper = 10, lower=10)
-bset = bset_out[0]
-
-# skymask = False for pixels within (min_sigma, max_sigma), True outside
-skymask = ~((sigma_x.flatten() > min_sigma) & (sigma_x.flatten() < max_sigma))
-full_bsp = np.zeros(nspec*nspat, dtype=float)
-yfit_out, _  = bset.value(sigma_x.flat[~skymask])
-full_bsp[~skymask] = yfit_out
-(peak, peak_x, lwhm, rwhm) = findfwhm(full_bsp[ss] - median_fit, sigma_x.flat[ss])
-
-
-left_bool = (((full_bsp[ss] < (min_level+median_fit)) & (sigma_x.flat[ss] < peak_x)) | (sigma_x.flat[ss] < (peak_x-limit)))[::-1]
-ind_left, = np.where(left_bool)
-lp = np.fmax(ind_left.min(), 0)
-righ_bool = ((full_bsp[ss] < (min_level+median_fit)) & (sigma_x.flat[ss] > peak_x))  | (sigma_x.flat[ss] > (peak_x+limit))
-ind_righ, = np.where(righ_bool)
-rp = np.fmax(ind_righ.min(), 0)
-l_limit = ((sigma_x.flat[ss])[::-1])[lp] - 0.1
-r_limit = sigma_x.flat[ss[rp]] + 0.1
-
-while True:
-    l_limit += 0.1
-    l_fit = bset.value(l_limit)
-    l2 = bset.value(l_limit * 0.9)
-    l_deriv = (np.log(l2) - np.log(l_fit))/(0.1*l_limit)
-    if (l_deriv < -1.0 | l_limit >= -1.0):
-        break
-
-while True:
-    r_limit -= 0.1
-    r_fit = bset.value(r_limit)
-    r2 = bset.value(r_limit * 0.9)
-    r_deriv = (np.log(r2) - np.log(r_fit))/(0.1*r_limit)
-    if (r_deriv > 1.0 | r_limit <= 1.0):
-        break
-
-
-# JXP kludge
-if PROF_NSIGMA is not None:
-   #By setting them to zero we ensure QA won't plot them in the profile QA.
-   l_limit = 0.0
-   r_limit = 0.0
-
-
-# Hack to fix degenerate profiles which have a positive derivative
-if (l_deriv < 0) and (r_deriv > 0) and NO_DERIV is False:
-    left = sigma_x.flatten() < l_limit
-    full_bsp[left] =  np.exp(-(sigma_x.flat[left]-l_limit)*l_deriv) * l_fit
+#
 
 
 #(mode_shift_set, mode_shift_mask, mode_shift_fit, red_chi) = mode_shift_out
@@ -932,3 +1087,4 @@ if (l_deriv < 0) and (r_deriv > 0) and NO_DERIV is False:
 #fullbkpt = idl_dict['fullbkpt']
 #mode_shift_out = bspline_longslit(xdata,ydata,invvar,prof_basis,maxiter=1,fullbkpt=fullbkpt)
 #sys.exit(-1)
+'''
