@@ -935,34 +935,57 @@ xx2 = idl_dict['xx2']
 edgmask = idl_dict['edgmask']
 bsp = idl_dict['bsp']
 
-
+nspat =sciimg.shape[1]
+nspec =sciimg.shape[0]
+slitid = idl_dict['slitid']
+nobj = idl_dict['nobj']
 
 # This is the argument list
 #def localskysub(sciimg, sciivar, skyimage, piximg, waveimg, ximg, objstruct, thismask, xx1, xx2, edgmask, bsp,
-# niter=4, box_rad = 7, sigrej = 3.5, skysample = False, PROF_SIGMA= None):
-
-from pypit import arspecobj
-specobj = SpecObjExp((trc_img[0]['object'].shape[:2]), config, scidx, det, xslit, ypos, xobj, **kwargs)
+# niter=4, box_rad = 7, sigrej = 3.5, skysample = False, PROF_SIGMA= None, indx = None):
 
 
-specobj= SpecObjExp()
+# Optional arguments
+niter = 4
+box_rad = 7
+sigrej = 3.5
+skysample = False
+PROF_NSIGMA = None
+indx = None
 
+from pypit.arspecobj import SpecObjExp
+# Note sure what these are but I'm kludging them right now
+yvec = np.arange(nspec)/nspec
+ypos = 0.5
+xslit = (np.interp(0.5,yvec,xx1[slitid-1,:])/nspat, np.interp(0.5,yvec,xx2[slitid-1,:])/nspat)
+
+specobjs =[]
+for ii in range(nobj):
+    xobj = np.interp(0.5, yvec, objstruct[ii]['xpos'])
+    specobj = SpecObjExp(sciimg.shape, 'lris_b1200', 1, 1, xslit, ypos, xobj,objtype='science')
+    # Add some attributes that I will need
+    specobj.xtrace = objstruct[ii]['xpos']
+    specobj.ytrace = objstruct[ii]['ypos']
+    specobj.maskwidth = objstruct[ii]['maskwidth']
+    specobj.fwhm = objstruct[ii]['fwhm']
+    specobj.fwhmfit = np.zeros(nspec)
+    specobjs.append(specobj)
+
+
+
+
+
+#specobj= SpecObjExp()
 
 if(PROF_NSIGMA is None):
-    PROF_NSIGMA = np.zeros(len(objstruct))
+    PROF_NSIGMA = np.zeros(len(specobjs))
+if(indx is None):
+    indx = np.arange(len(specobjs))
 
-nspat =image.shape[1]
-nspec =image.shape[0]
+nspat =sciimg.shape[1]
+nspec =sciimg.shape[0]
 
 
-SN_GAUSS = None # S/N threshold for giving up on profile fitting and using a Gaussian with the measured FWHM
-MAX_TRACE_CORR = None # Maximum trace correction that can be applied
-wvmnx = None # minimum and maximum wavelength to use for fits
-GAUSS = None # Do a Gaussian extraction
-PROF_NSIGMA = None # Width of profile specified by hand for extended objects
-NO_DERIV = False # disable profile derivative computation
-
-if
 
 
 
