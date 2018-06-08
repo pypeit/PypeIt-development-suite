@@ -4,7 +4,7 @@
 from __future__ import (print_function, absolute_import, division, unicode_literals)
 
 
-
+import copy
 from astropy.table import Table
 from pydl.pydlutils.trace import TraceSet
 from pydl.pydlutils.image import djs_maskinterp
@@ -933,6 +933,7 @@ slitid = idl_dict['slitid']
 xx1 = idl_dict['xx1']
 xx2 = idl_dict['xx2']
 edgmask = idl_dict['edgmask']
+modelivar = idl_dict['modelivart']
 bsp = idl_dict['bsp']
 
 nspat =sciimg.shape[1]
@@ -940,26 +941,20 @@ nspec =sciimg.shape[0]
 slitid = idl_dict['slitid']
 nobj = idl_dict['nobj']
 
-# This is the argument list
-#def localskysub(sciimg, sciivar, skyimage, piximg, waveimg, ximg, objstruct, thismask, xx1, xx2, edgmask, bsp,
-# niter=4, box_rad = 7, sigrej = 3.5, skysample = False, PROF_SIGMA= None, indx = None):
+slit_left = xx1[2,:]
+slit_righ = xx2[2,:]
+
+thismask = (slitmask == slitid)
 
 
-# Optional arguments
-niter = 4
-box_rad = 7
-sigrej = 3.5
-skysample = False
-PROF_NSIGMA = None
-indx = None
-
+# Create the specobj object, which is an argument to localskysub
 from pypit.arspecobj import SpecObjExp
 # Note sure what these are but I'm kludging them right now
 yvec = np.arange(nspec)/nspec
 ypos = 0.5
 xslit = (np.interp(0.5,yvec,xx1[slitid-1,:])/nspat, np.interp(0.5,yvec,xx2[slitid-1,:])/nspat)
 
-specobjs =[]
+specobjs_in =[]
 for ii in range(nobj):
     xobj = np.interp(0.5, yvec, objstruct[ii]['xpos'])
     specobj = SpecObjExp(sciimg.shape, 'lris_b1200', 1, 1, xslit, ypos, xobj,objtype='science')
@@ -969,26 +964,77 @@ for ii in range(nobj):
     specobj.maskwidth = objstruct[ii]['maskwidth']
     specobj.fwhm = objstruct[ii]['fwhm']
     specobj.fwhmfit = np.zeros(nspec)
-    specobjs.append(specobj)
+    specobj.slitid = objstruct[ii]['slitid']
+    specobjs_in.append(specobj)
 
 
+# This is the argument list
+#def localskysub(sciimg, sciivar, modelivar, skyimage, piximg, waveimg, ximg, thismask, edgmask, slit_left, slit_righ, specobjs, bsp,
+# PROF_NSIGMA = None, niter=4, box_rad = 7, sigrej = 3.5, skysample = False):
 
+# Optional arguments
+niter = 4
+box_rad = 7
+sigrej = 3.5
+skysample = False
+PROF_NSIGMA = None
 
+# local skysub starts here
 
-#specobj= SpecObjExp()
+# Copy the specobjs that will be the output
+nobj = len(specobjs_in)
+specobjs = copy.deepcopy(specobjs_in)
 
 if(PROF_NSIGMA is None):
-    PROF_NSIGMA = np.zeros(len(specobjs))
-if(indx is None):
-    indx = np.arange(len(specobjs))
+    prof_nsigma1 = np.zeros(len(specobjs))
+elif len(PROF_NSIGMA) == 1:
+    prof_nsigma1 = np.full(PROF_NSIGMA,nobj)
+elif len(PROF_NSIGMA) == nobj:
+    prof_nsigma1 = PROF_NSIGMA
+else:
+    raise ValueError('Invalid size for PROF_NSIGMA.')
+
+for iobj in range(nobj):
+    specobjs[iobj].prof_nsigma = prof_nsigma1[iobj]
 
 nspat =sciimg.shape[1]
 nspec =sciimg.shape[0]
 
+outmask = np.ones(sciimg.shape, dtype='bool')
+varnoobj = 1.0/(modelivar + (modelivar == 0))
 
+xarr = np.outer(np.ones(nspec),np.arange(nspat))
+yarr = np.outer(np.arange(nspec),np.ones(nspat))
+xsize = slit_righ - slit_left
+spatial = thismask*ximg*(np.outer(xsize,np.ones(nspat)))
 
-
-
+# Loop over objects and group them
+i1 = 0
+while i1 < nobj:
+    group = []
+    group.append(i1)
+    # The default value of maskwidth = 3.0 * FWHM = 7.05 * sigma in long_objfind with a log(S/N) correction for bright objects
+    mincols = np.maximum(specobjs[i1].xtrace - specobjs[i1].maskwidth - 1,slit_left)
+    maxcols = np.minimum(specobjs[i1].xtrace + specobjs[i1].maskwidth + 1,slit_righ)
+    for i2 in range(i1+1,nobj):
+        left_edge = specobjs[i2].xtrace - specobjs[i2].maskwidth - 1
+        righ_edge = specobjs[i2].xtrace + specobjs[i2].maskwidth + 1
+        touch = (left_edge < maxcols) & (specobjs[i2].xtrace > slit_left) & (righ_edge > mincols)
+        if touch.any():
+            maxcols = np.minimum(np.maximum(righ_edge, maxcols),slit_righ)
+            mincols = np.maximum(np.minimum(left_edge, mincols),slit_left)
+            group.append(i2)
+    # Keep for next iteration
+    i1 = max(group) + 1
+    # Some bookeeping to define the sub-image and make sure it does not land off the mask
+    objwork = len(group)
+    scope = np.sum(thismask,axis=0)
+    iscp, = np.where(scope)
+    imin = min(iscp)
+    imax = max(iscp)
+    mincol = np.fmax(np.floor(min(mincols)),imin)
+    maxcol = np.fmin(np.ceil(max(maxcols)),imax)
+    nc = int(maxcol - mincol + 1)
 
 '''
 ## Directory for IDL tests is /Users/joe/gprofile_develop/
