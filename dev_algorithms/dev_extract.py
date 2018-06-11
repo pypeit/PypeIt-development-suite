@@ -254,11 +254,12 @@ def extract_asymbox2(image,left,right,ycen = None,weight_image = None):
 
     dim = left.shape
     ndim = len(dim)
-    npix = dim[1]
     if (ndim == 1):
         nTrace = 1
+        npix = dim[0]
     else:
         nTrace = dim[0]
+        npix = dim[1]
 
     if ycen == None:
         if ndim == 1:
@@ -268,6 +269,7 @@ def extract_asymbox2(image,left,right,ycen = None,weight_image = None):
         else:
             raise ValueError('left is not 1 or 2 dimensional')
 
+    ycen_out = ycen.astype(int)
     if np.size(left) != np.size(ycen):
         raise ValueError('Number of elements in left and ycen must be equal')
 
@@ -281,7 +283,7 @@ def extract_asymbox2(image,left,right,ycen = None,weight_image = None):
     bigleft = np.outer(left[:], np.ones(tempx))
     bigright = np.outer(right[:], np.ones(tempx))
     spot = np.outer(np.ones(npix * nTrace), np.arange(tempx)) + bigleft - 1
-    bigy = np.outer(ycen[:], np.ones(tempx, dtype='int'))
+    bigy = np.outer(ycen_out[:], np.ones(tempx, dtype='int'))
 
     fullspot = np.array(np.fmin(np.fmax(np.round(spot + 1) - 1, 0), nspat - 1), int)
     fracleft = np.fmax(np.fmin(fullspot - bigleft, 0.5), -0.5)
@@ -315,6 +317,8 @@ def extract_asymbox2(image,left,right,ycen = None,weight_image = None):
     # At the moment I'm not reutnring the f_ivar for the weight_image mode. I'm not sure that this functionality is even
     # ever used
 
+    if(nTrace ==1):
+        fextract = fextract.reshape(npix)
     return fextract
 
 def extract_boxcar(image,trace, radius, ycen = None):
@@ -340,13 +344,17 @@ def extract_boxcar(image,trace, radius, ycen = None):
     22-Apr-2018  Ported to python by Joe Hennawi
     """
 
+    if not (isinstance(radius,int) or isinstance(radius,float)):
+        raise ValueError('Boxcar radius must a be a floating point number')
+
     dim = trace.shape
     ndim = len(dim)
-    npix = dim[1]
     if (ndim == 1):
         nTrace = 1
+        npix = dim[0]
     else:
         nTrace = dim[0]
+        npix = dim[1]
 
     if ycen == None:
         if ndim == 1:
@@ -356,12 +364,13 @@ def extract_boxcar(image,trace, radius, ycen = None):
         else:
             raise ValueError('trace is not 1 or 2 dimensional')
 
-    if np.size(trace) != np.size(ycen):
+    ycen_out = ycen.astype(int)
+    if np.size(trace) != np.size(ycen_out):
         raise ValueError('Number of elements in trace and ycen must be equal')
 
     left = trace - radius
     right = trace + radius
-    fextract = extract_asymbox2(image, left, right, ycen)
+    fextract = extract_asymbox2(image, left, right, ycen_out)
 
     return fextract
 
@@ -970,7 +979,7 @@ for ii in range(nobj):
 
 # This is the argument list
 #def localskysub(sciimg, sciivar, modelivar, skyimage, piximg, waveimg, ximg, thismask, edgmask, slit_left, slit_righ, specobjs, bsp,
-# PROF_NSIGMA = None, niter=4, box_rad = 7, sigrej = 3.5, skysample = False):
+# PROF_NSIGMA = None, niter=4, box_rad = 7, sigrej = 3.5, skysample = False, FULLWELL = 5e5,MINWELL = -1000.0):
 
 # Optional arguments
 niter = 4
@@ -978,6 +987,8 @@ box_rad = 7
 sigrej = 3.5
 skysample = False
 PROF_NSIGMA = None
+FULLWELL = 5e5 # pixels above saturation level are masked
+MINWELL = -1000.0 # Extremely negative pixels are also masked
 
 # local skysub starts here
 
@@ -1035,6 +1046,38 @@ while i1 < nobj:
     mincol = np.fmax(np.floor(min(mincols)),imin)
     maxcol = np.fmin(np.ceil(max(maxcols)),imax)
     nc = int(maxcol - mincol + 1)
+    rows = np.arange(nspec, dtype=np.intp)
+    columns = np.arange(mincol, mincol + nc, dtype=np.intp)
+    ipix = np.ix_(rows,columns)
+    mask = thismask & (sciivar > 0) & np.isfinite(sciimg) & (sciimg < FULLWELL) & (sciimg > MINWELL)
+    skymask = mask & ~edgmask
+    if nc > 100:
+        npoly = 3
+    elif nc > 40:
+        npoly = 2
+    else:
+        npoly = 1
+    obj_profiles = np.zeros((nspec,nspat,objwork), dtype=float)
+    sigrej_eff = sigrej
+    for iiter in range(1,niter):
+        msgs.info("Iteration # " + "{:2d}".format(iiter) + " of " + "{:2d}".format(niter))
+        img_minsky = sciimg - skyimage
+        for ii in range(objwork):
+            iobj = group[ii]
+            if iiter == 1:
+                msgs.info("-------------------REDUCING-------------------")
+                msgs.info("Fitting profile for obj #: " + "{:d}".format(specobjs[iobj].objid) + " of {:d}".format(nobj))
+                msgs.info("At x = {:5.2f}".format(specobjs[iobj].xobj) + " on slit # {:d}".format(specobjs[iobj].slitid))
+                msgs.info("----------------------------------------------")
+                flux = extract_boxcar(img_minsky*mask, specobjs[iobj].xtrace, box_rad, ycen = specobjs[iobj].ytrace)
+                mvarimg = 1.0/(modelivar + (modelivar == 0))
+                mvar_box = extract_boxcar(mvarimg*mask, specobjs[iobj].xtrace, box_rad, ycen = specobjs[iobj].ytrace)
+                pixtot = extract_boxcar(0*mvarimg + 1.0, specobjs[iobj].xtrace, box_rad, ycen = specobjs[iobj].ytrace)
+                mask_box = (extract_boxcar(mask, specobjs[iobj].xtrace, box_rad, ycen=specobjs[iobj].ytrace) != pixtot)
+                # ToDO mask seems defined backwards
+
+
+                sys.exit(-1)
 
 '''
 ## Directory for IDL tests is /Users/joe/gprofile_develop/
