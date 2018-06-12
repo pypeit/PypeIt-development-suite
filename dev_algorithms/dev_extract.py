@@ -342,7 +342,7 @@ def extract_boxcar(image,trace, radius, ycen = None):
     Revision History
     ----------------
     24-Mar-1999  Written by David Schlegel, Princeton.
-    22-Apr-2018  Ported to python by Joe Hennawi
+    22-Apr-2018  Ported to python by Joe Hennawi, UCSB
     """
 
     if not (isinstance(radius,int) or isinstance(radius,float)):
@@ -389,7 +389,7 @@ def extract_optimal(waveimg, imgminsky, ivar, mask, oprof, skyimg, rn_img, box_r
     nsub = maxcol - mincol
 
     mask_sub = mask[:,mincol:maxcol]
-    wave_sub = waveimg[:,mincol,maxcol]
+    wave_sub = waveimg[:,mincol:maxcol]
     ivar_sub = np.fmax(ivar[:,mincol:maxcol],0.0) # enforce positivity since these are used as weights
     vno_sub = np.fmax(var_no[:,mincol:maxcol],0.0)
 
@@ -399,7 +399,7 @@ def extract_optimal(waveimg, imgminsky, ivar, mask, oprof, skyimg, rn_img, box_r
     oprof_sub = oprof[:,mincol:maxcol]
     # enforce normalization and positivity of object profiles
     norm = np.nansum(oprof_sub,axis = 1)
-    norm_oprof = np.outer(np.ones(nspec), norm)
+    norm_oprof = np.outer(norm, np.ones(nsub))
     oprof_sub = np.fmax(oprof_sub/norm_oprof, 0.0)
 
     ivar_denom = np.nansum(mask_sub*oprof_sub, axis=1)
@@ -440,6 +440,59 @@ def extract_optimal(waveimg, imgminsky, ivar, mask, oprof, skyimg, rn_img, box_r
         if oprof_bad.any():
             # For pixels with completely bad profile values, interpolate from trace.
             wave_opt[oprof_bad] = interp2d(specobj.trace_spec[oprof_bad], specobj.trace_spat[oprof_bad], waveimg, kind='linear')
+
+    flux_model = np.outer(flux_opt,np.ones(nsub))*oprof_sub
+    chi2_num = np.nansum((img_sub - flux_model)**2*ivar_sub*mask_sub,axis=1)
+    chi2_denom = np.fmax(np.nansum(ivar_sub*mask_sub > 0.0, axis=1) - 1.0, 1.0)
+    chi2 = chi2_num/chi2_denom
+
+    # Fill in the optimally extraction tags
+    specobj.optimal['WAVE_OPT'] = wave_opt    # Optimally extracted wavelengths
+    specobj.optimal['FLUX_OPT'] = flux_opt    # Optimally extracted flux
+    specobj.optimal['IVAR_OPT'] = mivar_opt   # Inverse variance of optimally extracted flux using modelivar image
+    specobj.optimal['NIVAR_OPT'] = nivar_opt  # Optimally extracted noise variance (sky + read noise) only
+    specobj.optimal['MASK_OPT'] = mask_opt    # Mask for optimally extracted flux
+    specobj.optimal['SKY_OPT'] = sky_opt      # Optimally extracted sky
+    specobj.optimal['RN_OPT'] = rn_opt        # Square root of optimally extracted read noise squared
+    specobj.optimal['FRAC_USE'] = frac_use    # Fraction of pixels in the object profile subimage used for this extraction
+    specobj.optimal['CHI2'] = chi2            # Reduced chi2 of the model fit for this spectral pixel
+
+    # Fill in the boxcar extraction tags
+    flux_box  = extract_boxcar(imgminsky*mask, specobj.trace_spat,box_radius, ycen = specobj.trace_spec)
+    # Denom is computed in case the trace goes off the edge of the image
+    box_denom = extract_boxcar(waveimg*mask > 0.0, specobj.trace_spat,box_radius, ycen = specobj.trace_spec)
+    wave_box  = extract_boxcar(waveimg*mask, specobj.trace_spat,box_radius, ycen = specobj.trace_spec)/(box_denom + (box_denom == 0.0))
+    varimg = 1.0/(ivar + (ivar == 0.0))
+    var_box  = extract_boxcar(varimg*mask, specobj.trace_spat,box_radius, ycen = specobj.trace_spec)
+    nvar_box  = extract_boxcar(var_no*mask, specobj.trace_spat,box_radius, ycen = specobj.trace_spec)
+    sky_box  = extract_boxcar(skyimage*mask, specobj.trace_spat,box_radius, ycen = specobj.trace_spec)
+    rn2_box  = extract_boxcar(rn_img**2*mask, specobj.trace_spat,box_radius, ycen = specobj.trace_spec)
+    rn_posind = (rn2_box > 0.0)
+    rn_box = np.zeros(rn2_box.shape,dtype=float)
+    rn_box[rn_posind] = np.sqrt(rn2_box[rn_posind])
+    pixtot  = extract_boxcar(ivar*0 + 1.0, specobj.trace_spat,box_radius, ycen = specobj.trace_spec)
+    # If every pixel is masked then mask the boxcar extraction
+    mask_box = (extract_boxcar(ivar*mask == 0.0, specobj.trace_spat,box_radius, ycen = specobj.trace_spec) != pixtot)
+
+    bad_box = (wave_box <= 0.0) | (np.isfinite(wave_box) == False) | (box_denom == 0.0)
+    # interpolate bad wavelengths over masked pixels
+    if bad_box.any():
+        wave_box[bad_box] = interp2d(specobj.trace_spec[bad_box], specobj.trace_spat[bad_box], waveimg, kind='linear')
+
+    ivar_box = 1.0/(var_box + (var_box == 0.0))
+    nivar_box = 1.0/(nvar_box + (nvar_box == 0.0))
+
+    specobj.boxcar['WAVE_BOX'] = wave_box
+    specobj.boxcar['FLUX_BOX'] = flux_box*mask_box
+    specobj.boxcar['IVAR_BOX'] = ivar_box*mask_box
+    specobj.boxcar['NIVAR_BOX'] = nivar_box*mask_box
+    specobj.boxcar['MASK_BOX'] = mask_box
+    specobj.boxcar['SKY_BOX'] = sky_box
+    specobj.boxcar['RN_BOX'] = rn_box
+
+    return
+
+
 
 
 
@@ -1012,6 +1065,8 @@ xx2 = idl_dict['xx2']
 edgmask = idl_dict['edgmask']
 bsp = idl_dict['bsp']
 rn_img = idl_dict['rn_img']
+outmask = idl_dict['outmaskt']
+modelivar = idl_dict['modelivart']
 
 nspat =sciimg.shape[1]
 nspec =sciimg.shape[0]
@@ -1031,7 +1086,7 @@ yvec = np.arange(nspec)/nspec
 ypos = 0.5
 xslit = (np.interp(0.5,yvec,xx1[slitid-1,:])/nspat, np.interp(0.5,yvec,xx2[slitid-1,:])/nspat)
 
-specobjs_in =[]
+specobjs =[]
 for ii in range(nobj):
     xobj = np.interp(0.5, yvec, objstruct[ii]['xpos'])
     specobj = SpecObjExp(sciimg.shape, 'lris_b1200', 1, 1, xslit, ypos, xobj,objtype='science')
@@ -1042,20 +1097,23 @@ for ii in range(nobj):
     specobj.fwhm = objstruct[ii]['fwhm']
     specobj.fwhmfit = np.zeros(nspec)
     specobj.slitid = objstruct[ii]['slitid']
-    specobjs_in.append(specobj)
+    specobjs.append(specobj)
 
 
 # This is the argument list
-#def localskysub(sciimg, sciivar, skyimage, rn_img, piximg, waveimg, ximg, thismask, edgmask, slit_left, slit_righ, bsp, specobjs,
-# PROF_NSIGMA = None, niter=4, box_rad = 7, sigrej = 3.5, skysample = False, FULLWELL = 5e5,MINWELL = -1000.0, modelivar = None):
+#def localskysub(sciimg, sciivar, skyimage, rn_img, piximg, waveimg, ximg, thismask, edgmask, slit_left, slit_righ, bsp, outmask, modelivar, specobjs,
+# PROF_NSIGMA = None, niter=4, box_rad = 7, sigrej = 3.5, skysample = False, FULLWELL = 5e5,MINWELL = -1000.0, SN_GAUSS = 3.0):
 
-## ximg and edgmask could be created in the routine
+# outmask modelivar, and specobjs are modified "in place"
+
+## ximg and edgmask should be created in the routine
 
 ## rn_img = Read noise image is created upstram in PYPIT from arprocimg
 
 ## slit_left and slit_right could be the trace slits object? Or maybe it easier to not have an object here
 
 # Optional arguments
+SN_GAUSS = 3.0
 niter = 4
 box_rad = 7
 sigrej = 3.5
@@ -1080,17 +1138,18 @@ elif len(PROF_NSIGMA) == nobj:
 else:
     raise ValueError('Invalid size for PROF_NSIGMA.')
 
-if modelivar is None:
-    modelivar = sciivar
-
 for iobj in range(nobj):
     specobjs[iobj].prof_nsigma = prof_nsigma1[iobj]
 
 nspat =sciimg.shape[1]
 nspec =sciimg.shape[0]
 
-outmask = np.ones(sciimg.shape, dtype='bool')
-varnoobj = 1.0/(modelivar + (modelivar == 0))
+# Initialize the output mask
+sciimg_this = sciimg[thismask]
+outmask[thismask] = thismask[thismask] & (sciivar[thismask] > 0.0) & np.isfinite(sciimg_this) & (sciimg_this < FULLWELL) & (sciimg_this > MINWELL)
+
+
+varnobobj = np.abs(skyimage - np.sqrt(2.0) * rn_img) + rn_img ** 2
 
 xarr = np.outer(np.ones(nspec),np.arange(nspat))
 yarr = np.outer(np.arange(nspec),np.ones(nspat))
@@ -1127,8 +1186,7 @@ while i1 < nobj:
     rows = np.arange(nspec, dtype=np.intp)
     columns = np.arange(mincol, mincol + nc, dtype=np.intp)
     ipix = np.ix_(rows,columns)
-    mask = thismask & (sciivar > 0) & np.isfinite(sciimg) & (sciimg < FULLWELL) & (sciimg > MINWELL)
-    skymask = mask & ~edgmask
+    skymask = outmask & ~edgmask
     if nc > 100:
         npoly = 3
     elif nc > 40:
@@ -1142,25 +1200,53 @@ while i1 < nobj:
         img_minsky = sciimg - skyimage
         for ii in range(objwork):
             iobj = group[ii]
-            if iiter == 1:
-                msgs.info("-------------------REDUCING-------------------")
+             if iiter == 1:
+                 # If this is the first iteration, print status message. Initiate profile fitting with a simple
+                 # boxcar extraction.
+                 msgs.info("-------------------REDUCING-------------------")
                 msgs.info("Fitting profile for obj #: " + "{:d}".format(specobjs[iobj].objid) + " of {:d}".format(nobj))
                 msgs.info("At x = {:5.2f}".format(specobjs[iobj].xobj) + " on slit # {:d}".format(specobjs[iobj].slitid))
                 msgs.info("----------------------------------------------")
-                flux = extract_boxcar(img_minsky*mask, specobjs[iobj].trace_spat, box_rad, ycen = specobjs[iobj].trace_spec)
+                flux = extract_boxcar(img_minsky*outmask, specobjs[iobj].trace_spat, box_rad, ycen = specobjs[iobj].trace_spec)
                 mvarimg = 1.0/(modelivar + (modelivar == 0))
-                mvar_box = extract_boxcar(mvarimg*mask, specobjs[iobj].trace_spat, box_rad, ycen = specobjs[iobj].trace_spec)
+                mvar_box = extract_boxcar(mvarimg*outmask, specobjs[iobj].trace_spat, box_rad, ycen = specobjs[iobj].trace_spec)
                 pixtot = extract_boxcar(0*mvarimg + 1.0, specobjs[iobj].trace_spat, box_rad, ycen = specobjs[iobj].trace_spec)
-                mask_box = (extract_boxcar(~mask, specobjs[iobj].trace_spat, box_rad, ycen=specobjs[iobj].trace_spec) != pixtot)
+                mask_box = (extract_boxcar(~outmask, specobjs[iobj].trace_spat, box_rad, ycen=specobjs[iobj].trace_spec) != pixtot)
                 box_denom = extract_boxcar(waveimg > 0.0, specobjs[iobj].trace_spat, box_rad, ycen = specobjs[iobj].trace_spec)
                 wave = extract_boxcar(waveimg, specobjs[iobj].trace_spat, box_rad, ycen = specobjs[iobj].trace_spec)/(box_denom + (box_denom == 0.0))
             else:
+                # For later iterations, profile fitting is based on a optimal extraction
+                last_profile = obj_profiles[ipix[0],ipix[1],ii]
+                trace = np.outer(specobjs[iobj].trace_spat, np.ones(nspat))
+                objmask = ((xarr >= (trace - 2.0*box_rad)) & (xarr <= (trace + 2.0*box_rad)))
+                extract_optimal(waveimg,img_minsky,modelivar, outmask, last_profile, skyimage,rn_img,box_rad, specobjs[iobj])
+                # If the extraction is bad do not update
+                if specobjs[iobj].optimal['MASK_OPT'].any():
+                    flux = specobjs[iobj].optimal['FLUX_OPT']
+                    fluxivar = specobjs[iobj].optimal['IVAR_OPT']
+                    wave = specobjs[iobj].optimal['WAVE_OPT']
+            if wave.any():
+                (profile_model, xnew, fwhmfit, med_sn2) = fit_profile(img_minsky[ipix], (modelivar*outmask)[ipix],
+                                                                      waveimg[ipix],specobjs[iobj].trace_spat,
+                                                                      wave, flux, fluxivar,
+                                                                      thisfwhm = specobjs[iobj].fwhm,
+                                                                      hwidth = specobjs[iobj].maskwidth,
+                                                                      PROF_NSIGMA = specobjs[iobj].prof_nsigma,
+                                                                      SN_GAUSS =SN_GAUSS)
+                obj_profiles[ipix[0], ipix[1], ii] = profile_model
+                specobjs[iobj].trace_spat = xnew + mincol
+                specobjs[iobj].fwhmfit = fwhmfit
+                specobjs[iobj].fwhm = np.median(fwhmfit)
+                mask_fact = 1.0 + 0.5*np.log10(np.fmax(np.sqrt(np.fmax(med_sn2,0.0)),1.0))
+                maskwidth = 3.0*np.median(fwhmfit)*mask_fact
+                if specobjs[iobj].prof_nsigma > 0.0:
 
 
 
-                sys.exit(-1)
 
-'''
+(profile_model, xnew, fwhmfit, med_sn2)
+
+    '''
 ## Directory for IDL tests is /Users/joe/gprofile_develop/
 ## Run long_reduce, islit=3
 
