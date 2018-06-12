@@ -38,6 +38,7 @@ debug['develop'] = True
 msgs.reset(debug=debug, verbosity=2)
 import sys
 from scipy.io import readsav
+from scipy.interpolate import interp2d
 
 
 
@@ -374,6 +375,73 @@ def extract_boxcar(image,trace, radius, ycen = None):
 
     return fextract
 
+def extract_optimal(waveimg, imgminsky, ivar, mask, oprof, skyimg, rn_img, box_radius, specobj):
+
+    nspat = imgminsky.shape[1]
+    nspec = imgminsky.shape[0]
+    nobj = len(specobjs)
+
+    var_no = np.abs(skyimg - np.sqrt(2.0) * rn_img) +rn_img**2
+
+    ispec, ispat = np.where(oprof > 0.0)
+    mincol = np.min(ispat)
+    maxcol = np.max(ispat) + 1
+    nsub = maxcol - mincol
+
+    mask_sub = mask[:,mincol:maxcol]
+    wave_sub = waveimg[:,mincol,maxcol]
+    ivar_sub = np.fmax(ivar[:,mincol:maxcol],0.0) # enforce positivity since these are used as weights
+    vno_sub = np.fmax(var_no[:,mincol:maxcol],0.0)
+
+    rn2_sub = rn_img[:,mincol:maxcol]**2
+    img_sub = imgminsky[:,mincol:maxcol]
+    sky_sub = skyimage[:,mincol:maxcol]
+    oprof_sub = oprof[:,mincol:maxcol]
+    # enforce normalization and positivity of object profiles
+    norm = np.nansum(oprof_sub,axis = 1)
+    norm_oprof = np.outer(np.ones(nspec), norm)
+    oprof_sub = np.fmax(oprof_sub/norm_oprof, 0.0)
+
+    ivar_denom = np.nansum(mask_sub*oprof_sub, axis=1)
+    mivar_num = np.nansum(mask_sub*ivar_sub*oprof_sub**2, axis=1)
+    mivar_opt = mivar_num/(ivar_denom + (ivar_denom == 0.0))
+    flux_opt = np.nansum(mask_sub*ivar_sub*img_sub*oprof_sub, axis=1)/(mivar_num + (mivar_num == 0.0))
+    # Optimally extracted noise variance (sky + read noise) only. Since
+    # this variance is not the same as that used for the weights, we
+    # don't get the usual cancellation. Additional denom factor is the
+    # analog of the numerator in Horne's variance formula. Note that we
+    # are only weighting by the profile (ivar_sub=1) because
+    # otherwise the result depends on the signal (bad).
+    nivar_num =np.nansum(mask_sub*oprof_sub**2, axis=1) # Uses unit weights
+    nvar_opt = ivar_denom*((mask_sub*vno_sub*oprof_sub**2).sum(axis=1))/(nivar_num**2 + (nivar_num**2 == 0.0))
+    nivar_opt = 1.0/(nvar_opt + (nvar_opt == 0.0))
+    # Optimally extract sky and (read noise)**2 in a similar way
+    sky_opt = ivar_denom*(np.nansum(mask_sub*sky_sub*oprof_sub**2, axis=1))/(nivar_num**2 + (nivar_num**2 == 0.0))
+    rn2_opt = ivar_denom*(np.nansum(mask_sub*rn2_sub*oprof_sub**2, axis=1))/(nivar_num**2 + (nivar_num**2 == 0.0))
+    rn_opt = np.sqrt(rn2_opt)
+    rn_opt[np.isnan(rn_opt)]=0.0
+
+    tot_weight = np.nansum(mask_sub*ivar_sub*oprof_sub, axis=1)
+    mask_opt = (tot_weight > 0.0) & (mivar_num > 0.0) & (ivar_denom > 0.0)
+    frac_use = np.nansum((mask_sub*ivar_sub > 0.0)*oprof_sub, axis=1)
+    # Use the same weights = oprof^2*mivar for the wavelenghts as the flux.
+    # Note that for the flux, one of the oprof factors cancels which does
+    # not for the wavelengths.
+    wave_opt = np.nansum(mask_sub*ivar_sub*wave_sub*oprof_sub**2, axis=1)/(mivar_num + (mivar_num == 0.0))
+    # Interpolate wavelengths over masked pixels
+    badwvs = (mivar_num <= 0) | (np.isfinite(wave_opt) == False) | (wave_opt <= 0.0)
+    if badwvs.any():
+        oprof_smash = np.nansum(oprof_sub**2, axis=1)
+        # Can we use the profile average wavelengths instead?
+        oprof_good = badwvs & (oprof_smash > 0.0)
+        if oprof_good.any():
+            wave_opt[oprof_good] = np.nansum(wave_sub[oprof_good,:]*oprof_sub[oprof_good,:]**2, axis=1)/np.nansum(oprof_sub[oprof_good,:]**2, axis=1)
+        oprof_bad = badwvs & ((oprof_smash <= 0.0) | (np.isfinite(oprof_smash) == False) | (wave_opt <= 0.0) | (np.isfinite(wave_opt) == False))
+        if oprof_bad.any():
+            # For pixels with completely bad profile values, interpolate from trace.
+            wave_opt[oprof_bad] = interp2d(specobj.trace_spec[oprof_bad], specobj.trace_spat[oprof_bad], waveimg, kind='linear')
+
+
 
 def findfwhm(model, sig_x):
     """ Calculate the spatial FWHM from an object profile.
@@ -482,7 +550,7 @@ def fit_profile(image, ivar, waveimg, trace_in, wave, flux, fluxivar,
                value of the reduced chi^2
      """
 
-
+    # ToDO fix my implentation of numpy where
 
     if hwidth is None: 3.0*(np.max(thisfwhm) + 1.0)
     if PROF_NSIGMA is not None:
@@ -942,8 +1010,8 @@ slitid = idl_dict['slitid']
 xx1 = idl_dict['xx1']
 xx2 = idl_dict['xx2']
 edgmask = idl_dict['edgmask']
-modelivar = idl_dict['modelivart']
 bsp = idl_dict['bsp']
+rn_img = idl_dict['rn_img']
 
 nspat =sciimg.shape[1]
 nspec =sciimg.shape[0]
@@ -968,8 +1036,8 @@ for ii in range(nobj):
     xobj = np.interp(0.5, yvec, objstruct[ii]['xpos'])
     specobj = SpecObjExp(sciimg.shape, 'lris_b1200', 1, 1, xslit, ypos, xobj,objtype='science')
     # Add some attributes that I will need
-    specobj.xtrace = objstruct[ii]['xpos']
-    specobj.ytrace = objstruct[ii]['ypos']
+    specobj.trace_spat = objstruct[ii]['xpos']
+    specobj.trace_spec = objstruct[ii]['ypos']
     specobj.maskwidth = objstruct[ii]['maskwidth']
     specobj.fwhm = objstruct[ii]['fwhm']
     specobj.fwhmfit = np.zeros(nspec)
@@ -978,8 +1046,14 @@ for ii in range(nobj):
 
 
 # This is the argument list
-#def localskysub(sciimg, sciivar, modelivar, skyimage, piximg, waveimg, ximg, thismask, edgmask, slit_left, slit_righ, specobjs, bsp,
-# PROF_NSIGMA = None, niter=4, box_rad = 7, sigrej = 3.5, skysample = False, FULLWELL = 5e5,MINWELL = -1000.0):
+#def localskysub(sciimg, sciivar, skyimage, rn_img, piximg, waveimg, ximg, thismask, edgmask, slit_left, slit_righ, bsp, specobjs,
+# PROF_NSIGMA = None, niter=4, box_rad = 7, sigrej = 3.5, skysample = False, FULLWELL = 5e5,MINWELL = -1000.0, modelivar = None):
+
+## ximg and edgmask could be created in the routine
+
+## rn_img = Read noise image is created upstram in PYPIT from arprocimg
+
+## slit_left and slit_right could be the trace slits object? Or maybe it easier to not have an object here
 
 # Optional arguments
 niter = 4
@@ -989,6 +1063,7 @@ skysample = False
 PROF_NSIGMA = None
 FULLWELL = 5e5 # pixels above saturation level are masked
 MINWELL = -1000.0 # Extremely negative pixels are also masked
+modelivar = None
 
 # local skysub starts here
 
@@ -1004,6 +1079,9 @@ elif len(PROF_NSIGMA) == nobj:
     prof_nsigma1 = PROF_NSIGMA
 else:
     raise ValueError('Invalid size for PROF_NSIGMA.')
+
+if modelivar is None:
+    modelivar = sciivar
 
 for iobj in range(nobj):
     specobjs[iobj].prof_nsigma = prof_nsigma1[iobj]
@@ -1025,12 +1103,12 @@ while i1 < nobj:
     group = []
     group.append(i1)
     # The default value of maskwidth = 3.0 * FWHM = 7.05 * sigma in long_objfind with a log(S/N) correction for bright objects
-    mincols = np.maximum(specobjs[i1].xtrace - specobjs[i1].maskwidth - 1,slit_left)
-    maxcols = np.minimum(specobjs[i1].xtrace + specobjs[i1].maskwidth + 1,slit_righ)
+    mincols = np.maximum(specobjs[i1].trace_spat - specobjs[i1].maskwidth - 1,slit_left)
+    maxcols = np.minimum(specobjs[i1].trace_spat + specobjs[i1].maskwidth + 1,slit_righ)
     for i2 in range(i1+1,nobj):
-        left_edge = specobjs[i2].xtrace - specobjs[i2].maskwidth - 1
-        righ_edge = specobjs[i2].xtrace + specobjs[i2].maskwidth + 1
-        touch = (left_edge < maxcols) & (specobjs[i2].xtrace > slit_left) & (righ_edge > mincols)
+        left_edge = specobjs[i2].trace_spat - specobjs[i2].maskwidth - 1
+        righ_edge = specobjs[i2].trace_spat + specobjs[i2].maskwidth + 1
+        touch = (left_edge < maxcols) & (specobjs[i2].trace_spat > slit_left) & (righ_edge > mincols)
         if touch.any():
             maxcols = np.minimum(np.maximum(righ_edge, maxcols),slit_righ)
             mincols = np.maximum(np.minimum(left_edge, mincols),slit_left)
@@ -1069,12 +1147,15 @@ while i1 < nobj:
                 msgs.info("Fitting profile for obj #: " + "{:d}".format(specobjs[iobj].objid) + " of {:d}".format(nobj))
                 msgs.info("At x = {:5.2f}".format(specobjs[iobj].xobj) + " on slit # {:d}".format(specobjs[iobj].slitid))
                 msgs.info("----------------------------------------------")
-                flux = extract_boxcar(img_minsky*mask, specobjs[iobj].xtrace, box_rad, ycen = specobjs[iobj].ytrace)
+                flux = extract_boxcar(img_minsky*mask, specobjs[iobj].trace_spat, box_rad, ycen = specobjs[iobj].trace_spec)
                 mvarimg = 1.0/(modelivar + (modelivar == 0))
-                mvar_box = extract_boxcar(mvarimg*mask, specobjs[iobj].xtrace, box_rad, ycen = specobjs[iobj].ytrace)
-                pixtot = extract_boxcar(0*mvarimg + 1.0, specobjs[iobj].xtrace, box_rad, ycen = specobjs[iobj].ytrace)
-                mask_box = (extract_boxcar(mask, specobjs[iobj].xtrace, box_rad, ycen=specobjs[iobj].ytrace) != pixtot)
-                # ToDO mask seems defined backwards
+                mvar_box = extract_boxcar(mvarimg*mask, specobjs[iobj].trace_spat, box_rad, ycen = specobjs[iobj].trace_spec)
+                pixtot = extract_boxcar(0*mvarimg + 1.0, specobjs[iobj].trace_spat, box_rad, ycen = specobjs[iobj].trace_spec)
+                mask_box = (extract_boxcar(~mask, specobjs[iobj].trace_spat, box_rad, ycen=specobjs[iobj].trace_spec) != pixtot)
+                box_denom = extract_boxcar(waveimg > 0.0, specobjs[iobj].trace_spat, box_rad, ycen = specobjs[iobj].trace_spec)
+                wave = extract_boxcar(waveimg, specobjs[iobj].trace_spat, box_rad, ycen = specobjs[iobj].trace_spec)/(box_denom + (box_denom == 0.0))
+            else:
+
 
 
                 sys.exit(-1)
