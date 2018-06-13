@@ -1121,13 +1121,13 @@ skysample = False
 PROF_NSIGMA = None
 FULLWELL = 5e5 # pixels above saturation level are masked
 MINWELL = -1000.0 # Extremely negative pixels are also masked
-modelivar = None
+#modelivar = None
 
 # local skysub starts here
 
 # Copy the specobjs that will be the output
-nobj = len(specobjs_in)
-specobjs = copy.deepcopy(specobjs_in)
+nobj = len(specobjs)
+#specobjs = copy.deepcopy(specobjs_in)
 
 if(PROF_NSIGMA is None):
     prof_nsigma1 = np.zeros(len(specobjs))
@@ -1200,10 +1200,10 @@ while i1 < nobj:
         img_minsky = sciimg - skyimage
         for ii in range(objwork):
             iobj = group[ii]
-             if iiter == 1:
-                 # If this is the first iteration, print status message. Initiate profile fitting with a simple
-                 # boxcar extraction.
-                 msgs.info("-------------------REDUCING-------------------")
+            if iiter == 1:
+                # If this is the first iteration, print status message. Initiate profile fitting with a simple
+                # boxcar extraction.
+                msgs.info("-------------------REDUCING-------------------")
                 msgs.info("Fitting profile for obj #: " + "{:d}".format(specobjs[iobj].objid) + " of {:d}".format(nobj))
                 msgs.info("At x = {:5.2f}".format(specobjs[iobj].xobj) + " on slit # {:d}".format(specobjs[iobj].slitid))
                 msgs.info("----------------------------------------------")
@@ -1214,17 +1214,19 @@ while i1 < nobj:
                 mask_box = (extract_boxcar(~outmask, specobjs[iobj].trace_spat, box_rad, ycen=specobjs[iobj].trace_spec) != pixtot)
                 box_denom = extract_boxcar(waveimg > 0.0, specobjs[iobj].trace_spat, box_rad, ycen = specobjs[iobj].trace_spec)
                 wave = extract_boxcar(waveimg, specobjs[iobj].trace_spat, box_rad, ycen = specobjs[iobj].trace_spec)/(box_denom + (box_denom == 0.0))
+                fluxivar = mask_box/(mvar_box + (mvar_box == 0.0))
             else:
-                # For later iterations, profile fitting is based on a optimal extraction
+                # For later iterations, profile fitting is based on an optimal extraction
                 last_profile = obj_profiles[ipix[0],ipix[1],ii]
                 trace = np.outer(specobjs[iobj].trace_spat, np.ones(nspat))
                 objmask = ((xarr >= (trace - 2.0*box_rad)) & (xarr <= (trace + 2.0*box_rad)))
-                extract_optimal(waveimg,img_minsky,modelivar, outmask, last_profile, skyimage,rn_img,box_rad, specobjs[iobj])
+                extract_optimal(waveimg,img_minsky,modelivar, (outmask & objmask), last_profile, skyimage,rn_img,box_rad, specobjs[iobj])
                 # If the extraction is bad do not update
                 if specobjs[iobj].optimal['MASK_OPT'].any():
                     flux = specobjs[iobj].optimal['FLUX_OPT']
                     fluxivar = specobjs[iobj].optimal['IVAR_OPT']
                     wave = specobjs[iobj].optimal['WAVE_OPT']
+
             if wave.any():
                 (profile_model, xnew, fwhmfit, med_sn2) = fit_profile(img_minsky[ipix], (modelivar*outmask)[ipix],
                                                                       waveimg[ipix],specobjs[iobj].trace_spat,
@@ -1233,6 +1235,7 @@ while i1 < nobj:
                                                                       hwidth = specobjs[iobj].maskwidth,
                                                                       PROF_NSIGMA = specobjs[iobj].prof_nsigma,
                                                                       SN_GAUSS =SN_GAUSS)
+                # Update the object profile and the fwhm and mask parameters
                 obj_profiles[ipix[0], ipix[1], ii] = profile_model
                 specobjs[iobj].trace_spat = xnew + mincol
                 specobjs[iobj].fwhmfit = fwhmfit
@@ -1240,11 +1243,15 @@ while i1 < nobj:
                 mask_fact = 1.0 + 0.5*np.log10(np.fmax(np.sqrt(np.fmax(med_sn2,0.0)),1.0))
                 maskwidth = 3.0*np.median(fwhmfit)*mask_fact
                 if specobjs[iobj].prof_nsigma > 0.0:
+                    specobjs[iobj].maskwidth = specobjs[iobj].prof_nsigma*(specobjs[iobj].fwhm/2.3548)
+                else:
+                    specobjs[iobj].maskwidth = maskwidth
+            else:
+                msgs.warn("Bad extracted wavelengths in local_skysub")
+                msgs.warn("Skipping this profile fit and continuing.....")
 
 
 
-
-(profile_model, xnew, fwhmfit, med_sn2)
 
     '''
 ## Directory for IDL tests is /Users/joe/gprofile_develop/
