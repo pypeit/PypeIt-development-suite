@@ -59,6 +59,7 @@ from IPython import embed
 from pydl.pydlutils.bspline import bspline
 
 from pydl.goddard.math import flegendre
+from scipy.special import ndtr
 
 #
 
@@ -651,12 +652,9 @@ def fit_profile(image, ivar, waveimg, trace_in, wave, flux, fluxivar,
     nsp = np.sum(indsp)
 
     # Not all the djs_reject keywords args are implemented yet
-    b_answer, bmask   = bspline_iterfit(wave[indsp], flux_sm[indsp], invvar = fluxivar_sm[indsp],
-                                        kwargs_bspline={'everyn': 1.5})
-    b_answer, bmask2  = bspline_iterfit(wave[indsp], flux_sm[indsp], invvar = fluxivar_sm[indsp]*bmask,
-                                        kwargs_bspline={'everyn': 1.5})
-    c_answer, cmask   = bspline_iterfit(wave[indsp], flux_sm[indsp], invvar = fluxivar_sm[indsp]*bmask2,
-                                        kwargs_bspline={'everyn': 30})
+    b_answer, bmask   = bspline_iterfit(wave[indsp], flux_sm[indsp], invvar = fluxivar_sm[indsp],kwargs_bspline={'everyn': 1.5}, kwargs_reject={'groupbadpix':True,'maxrej':1})
+    b_answer, bmask2  = bspline_iterfit(wave[indsp], flux_sm[indsp], invvar = fluxivar_sm[indsp]*bmask, kwargs_bspline={'everyn': 1.5}, kwargs_reject={'groupbadpix':True,'maxrej':1})
+    c_answer, cmask   = bspline_iterfit(wave[indsp], flux_sm[indsp], invvar = fluxivar_sm[indsp]*bmask2,kwargs_bspline={'everyn': 30}, kwargs_reject={'groupbadpix':True,'maxrej':1})
     spline_flux, _ = b_answer.value(wave[indsp])
     cont_flux, _ = c_answer.value(wave[indsp])
 
@@ -1152,6 +1150,80 @@ def fit_profile_qa(x_tot,y_tot, model_tot, l_limit = None, r_limit = None, ind =
     plt.show()
     return
 
+def skyoptimal(wave,data,ivar, oprof, sortpix, sigrej = 3.0, npoly = 1, spatial = None, fullbkpt = None):
+
+    nx = data.size
+    nc = oprof.shape[0]
+    nobj = int(oprof.size / nc)
+    if nc != nx:
+        raise ValueError('Object profile should have oprof.shape[0] equal to nx')
+
+    msgs.info('Iter     Chi^2     Rejected Pts')
+    xmin = 0.0
+    xmax = 1.0
+
+    if ((npoly == 1) | (spatial == None)):
+        profile_basis = np.column_stack((oprof, np.ones(nx)))
+    else:
+        xmin = spatial.min()
+        xmax = spatial.max()
+        x2 = 2.0 * (spatial - xmin) / (xmax - xmin) - 1
+        poly_basis = flegendre(x2, npoly).T
+        profile_basis = np.column_stack((oprof, poly_basis))
+
+    if nobj == 1:
+        relative_mask = (oprof > 0)
+    else:
+        relative_mask = (np.sum(oprof, axis=1) > 0.0)
+
+    indx, = np.where(ivar[sortpix] > 0.0)
+    ngood = indx.size
+    good = sortpix[indx]
+    good = good[wave[good].argsort()]
+    relative, = np.where(relative_mask[good])
+
+    (sset1, outmask_good1, yfit1, red_chi1) = bspline_longslit(wave[good], data[good], ivar[good], profile_basis[good, :],
+                                                               fullbkpt=fullbkpt, upper=sigrej, lower=sigrej,
+                                                               relative=relative,
+                                                               kwargs_reject={'groupbadpix': True, 'maxrej': 5})
+
+    chi2 = (data[good] - yfit1) ** 2 * ivar[good]
+    chi2_srt = chi2[chi2.argsort()]
+    gauss_prob = 1.0 - 2.0 * ndtr(-1.2 * sigrej)
+    sigind = int(np.fmin(np.rint(gauss_prob * float(ngood)), ngood - 1))
+    chi2_sigrej = chi2_srt[sigind]
+    mask1 = (chi2 < chi2_sigrej)
+    msgs.info('2nd round....')
+    msgs.info('Iter     Chi^2     Rejected Pts')
+
+    (sset, outmask_good, yfit, red_chi) = bspline_longslit(wave[good], data[good], ivar[good] * mask1,
+                                                           profile_basis[good, :],
+                                                           fullbkpt=fullbkpt, upper=sigrej, lower=sigrej,
+                                                           relative=relative,
+                                                           kwargs_reject={'groupbadpix': True, 'maxrej': 1})
+
+    ncoeff = npoly + nobj
+    skyset = bspline(None, fullbkpt=sset.breakpoints, nord=sset.nord, npoly=npoly)
+    skyset.coeff = sset.coeff[nobj:, :]  # Coefficients for the sky
+    skyset.mask = sset.mask
+    skyset.xmin = xmin
+    skyset.xmax = xmax
+
+    sky_bmodel, _ = skyset.value(wave, x2=spatial)
+
+    obj_bmodel = np.zeros(sky_bmodel.shape)
+    objset = bspline(None, fullbkpt=sset.breakpoints, nord=sset.nord)
+    objset.mask = sset.mask
+    for i in range(nobj):
+        objset.coeff = sset.coeff[i, :]
+        obj_bmodel1, _ = objset.value(wave)
+        obj_bmodel = obj_bmodel + obj_bmodel1 * profile_basis[:, i]
+
+    outmask = np.zeros(wave.shape, dtype=bool)
+    outmask[good] = outmask_good
+
+    return (sky_bmodel, obj_bmodel, outmask)
+
 
 
 savefile='/Users/joe/gprofile_develop/local_skysub_dev.sav'
@@ -1230,6 +1302,7 @@ PROF_NSIGMA = None
 FULLWELL = 5e5 # pixels above saturation level are masked
 MINWELL = -1000.0 # Extremely negative pixels are also masked
 SKYSAMPLE = False
+COADD_2D=False
 #modelivar = None
 
 # local skysub starts here
@@ -1257,13 +1330,15 @@ nspec =sciimg.shape[0]
 outmask = (sciivar > 0.0) & thismask & np.isfinite(sciimg) & (sciimg < FULLWELL) & (sciimg > MINWELL)
 # Initiatlize modelivar
 modelivar = sciivar
+objimage = np.zeros_like(sciimg)
+
 
 #sciimg_this = sciimg[thismask]
 #outmask[thismask] = thismask[thismask] & (sciivar[thismask] > 0.0)
 
 
 
-varnobobj = np.abs(skyimage - np.sqrt(2.0) * rn_img) + rn_img ** 2
+varnoobj = np.abs(skyimage - np.sqrt(2.0) * rn_img) + rn_img ** 2
 
 xarr = np.outer(np.ones(nspec),np.arange(nspat))
 yarr = np.outer(np.arange(nspec),np.ones(nspat))
@@ -1371,9 +1446,9 @@ while i1 < nobj:
                 msgs.warn("Bad extracted wavelengths in local_skysub")
                 msgs.warn("Skipping this profile fit and continuing.....")
 
-        sky_bmodel = 0.0
+        sky_bmodel = np.array(0.0)
         iterbsp = 0
-        while (np.sum(sky_bmodel) == 0.0) & (iterbsp <=5) & (NOLOCAL is False):
+        while (sky_bmodel.any()==False) & (iterbsp <=5):
             bsp_now = (1.2**iterbsp)*bsp
             # if skysample is set, determine optimal break-point spacing
             # directly measuring how well we are sampling of the sky. The
@@ -1397,49 +1472,40 @@ while i1 < nobj:
             keep = (fullbkpt >= piximg.flat[isub[ithis]].min()) & (fullbkpt <= piximg.flat[isub[ithis]].max())
             fullbkpt = fullbkpt[keep]
             obj_profiles_flat = obj_profiles.reshape(nspec*nspat, objwork)
-            # skyoptimal(wave,data,ivar oprof, sortpix, sigrej = 3.0, npoly = 1, spatial = None, fullbkpt = None) argument list
-            wave = piximg.flat[isub]
-            data = sciimg.flat[isub]
-            ivar = (modelivar*skymask).flat[isub]
-            oprof = obj_profiles_flat[isub,:]
-            sigrej = sigrej_eff
-            spatial = spatial_img.flat[isub]
-            # skyoptimal begins here
-            nx = data.size
-            nc = oprof.shape[0]
-            nobj = int(oprof.size/nc)
-            if nc != nx:
-                raise ValueError('Object profile should have oprof.shape[0] equal to nx')
+            (sky_bmodel, obj_bmodel, outmask_opt) = skyoptimal(piximg.flat[isub], sciimg.flat[isub],
+                                                               (modelivar*skymask).flat[isub],
+                                                               obj_profiles_flat[isub, :], sortpix, spatial=spatial_img.flat[isub],
+                                                               fullbkpt=fullbkpt, sigrej=sigrej_eff, npoly=npoly)
+            iterbsp = iterbsp + 1
+            if (sky_bmodel.any() is False) & (iterbsp <= 4):
+                msgs.warn('***************************************')
+                msgs.warn('WARNING: bspline sky-subtraction failed')
+                msgs.warn('Increasing bkpt spacing by 20%. Retry')
+                msgs.warn('Old bsp = {:5.2f}'.format(bsp_now) + '; New bsp = {:5.2f}'.format(1.2**(iterbsp)*bsp))
+                msgs.warn('***************************************')
 
-            msgs.info('Iter     Chi^2     Rejected Pts')
-            xmin = 0.0
-            xmax = 1.0
+        if(sky_bmodel.any() == True):
+            skyimage.flat[isub] = sky_bmodel
+            objimage.flat[isub] = obj_bmodel
+            img_minsky.flat[isub]=sciimg.flat[isub] - sky_bmodel
+            var = np.abs(sky_bmodel + obj_bmodel - np.sqrt(2.0)*rn_img.flat[isub]) + rn_img.flat[isub]**2
+            var_no = np.abs(sky_bmodel - np.sqrt(2.0)*rn_img.flat[isub]) + rn_img.flat[isub]**2
+            #  For weighted co-adds, the variance of the image is no longer equal to the image, and so the modelivar
+            #  eqn. below is not valid. However, co-adds already have the model noise propagated correctly in sciivar,
+            #  so no need to re-model the variance
+            if COADD_2D is False:
+                modelivar.flat[isub] = (var > 0.0)/(var + (var == 0.0))
+                varnoobj.flat[isub]  = var_no
 
-            if ((npoly == 1) | (spatial == None)):
-                profile_basis = np.column_stack((oprof, np.ones(nx)))
-            else:
-                xmin = spatial.min()
-                xmax = spatial.max()
-                x2 = 2.0*(spatial - xmin)/(xmax - xmin) - 1
-                poly_basis = flegendre(x2, npoly)
-                profile_basis = np.column_stack((oprof, poly_basis))
+            igood1 = skymask.flat[isub]
+            #  update the outmask for only those pixels that were fit. This prevents masking of slit edges in outmask
+            outmask.flat[isub[igood1]]=outmask_opt[igood1]
+        else:
+            msgs.warn('ERROR: Bspline sky subtraction failed after 4 iterations of bkpt spacing')
+            msgs.warn('       Moving on......')
+            obj_profiles= np.zeros_like(obj_profiles)
+        sys.exit(-1)
 
-            if nobj == 1:
-                relative_mask = (oprof > 0)
-            else:
-                relative_mask = (np.sum(oprof, axis=1) > 0.0)
-
-            indx, = np.where(ivar[sortpix] > 0.0)
-            ngood = indx.size
-            good = sortpix[indx]
-            good = good[wave[good].argsort()]
-            relative, = np.where(relative_mask[good])
-
-            sset_out = bspline_longslit(wave[good], data[good], ivar[good], profile_basis[good,:],
-                                        fullbkpt = fullbkpt, upper=sigrej, lower = sigrej)
-
-
-            sys.exit(-1)
 
     '''
 ## Directory for IDL tests is /Users/joe/gprofile_develop/
