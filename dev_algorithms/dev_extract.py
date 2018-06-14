@@ -64,7 +64,7 @@ from scipy.special import ndtr
 #
 
 
-def bspline_longslit(xdata, ydata, invvar, profile_basis, upper=5, lower=5,maxiter=10, nord = 4, bkpt=None, fullbkpt = None,
+def bspline_longslit(xdata, ydata, invvar, profile_basis, upper=5, lower=5,maxiter=25, nord = 4, bkpt=None, fullbkpt = None,
                      relative = None, kwargs_bspline={}, kwargs_reject={}):
 
     """Create a B-spline in the least squares sense with rejection, using a model profile
@@ -155,7 +155,13 @@ def bspline_longslit(xdata, ydata, invvar, profile_basis, upper=5, lower=5,maxit
             print('Number of good data points fewer than nord.')
             return (sset, outmask, yfit, reduced_chi)
 
-    action_multiple = (np.outer(profile_basis.flatten('F'), np.ones(nord))).reshape((nx,npoly*nord),order='F')
+    # incorrect but close way
+    #action_multiple = (np.outer(profile_basis.flatten('F'), np.ones(nord))).reshape((nx, npoly * nord), order='F')
+
+    # This was checked in detail against IDL for identical inputs
+    outer = (np.outer(np.ones(nord, dtype=float), profile_basis.flatten('F'))).T
+    action_multiple = outer.reshape((nx, npoly * nord), order='F')
+
     #--------------------
     # Iterate spline fit
     iiter = 0
@@ -1171,10 +1177,11 @@ def skyoptimal(wave,data,ivar, oprof, sortpix, sigrej = 3.0, npoly = 1, spatial 
         poly_basis = flegendre(x2, npoly).T
         profile_basis = np.column_stack((oprof, poly_basis))
 
+    #ToDo this seems different from IDL
     if nobj == 1:
-        relative_mask = (oprof > 0)
+        relative_mask = (oprof > 1e-10)
     else:
-        relative_mask = (np.sum(oprof, axis=1) > 0.0)
+        relative_mask = (np.sum(oprof, axis=1) > 1e-10)
 
     indx, = np.where(ivar[sortpix] > 0.0)
     ngood = indx.size
