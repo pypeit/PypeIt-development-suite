@@ -38,7 +38,7 @@ debug['develop'] = True
 msgs.reset(debug=debug, verbosity=2)
 import sys
 from scipy.io import readsav
-from scipy.interpolate import interp2d
+from scipy.interpolate import RectBivariateSpline
 
 
 
@@ -381,6 +381,9 @@ def extract_optimal(waveimg, imgminsky, ivar, mask, oprof, skyimg, rn_img, box_r
     nspec = imgminsky.shape[0]
     nobj = len(specobjs)
 
+    spec_vec = np.arange(nspec)
+    spat_vec = np.arange(nspat)
+
     var_no = np.abs(skyimg - np.sqrt(2.0) * rn_img) +rn_img**2
 
     ispec, ispat = np.where(oprof > 0.0)
@@ -439,7 +442,8 @@ def extract_optimal(waveimg, imgminsky, ivar, mask, oprof, skyimg, rn_img, box_r
         oprof_bad = badwvs & ((oprof_smash <= 0.0) | (np.isfinite(oprof_smash) == False) | (wave_opt <= 0.0) | (np.isfinite(wave_opt) == False))
         if oprof_bad.any():
             # For pixels with completely bad profile values, interpolate from trace.
-            wave_opt[oprof_bad] = interp2d(specobj.trace_spec[oprof_bad], specobj.trace_spat[oprof_bad], waveimg, kind='linear')
+            f_wave = RectBivariateSpline(spec_vec,spat_vec, waveimg)
+            wave_opt[oprof_bad] = f_wave(specobj.trace_spec[oprof_bad], specobj.trace_spat[oprof_bad],grid=False)
 
     flux_model = np.outer(flux_opt,np.ones(nsub))*oprof_sub
     chi2_num = np.nansum((img_sub - flux_model)**2*ivar_sub*mask_sub,axis=1)
@@ -477,7 +481,8 @@ def extract_optimal(waveimg, imgminsky, ivar, mask, oprof, skyimg, rn_img, box_r
     bad_box = (wave_box <= 0.0) | (np.isfinite(wave_box) == False) | (box_denom == 0.0)
     # interpolate bad wavelengths over masked pixels
     if bad_box.any():
-        wave_box[bad_box] = interp2d(specobj.trace_spec[bad_box], specobj.trace_spat[bad_box], waveimg, kind='linear')
+        f_wave = RectBivariateSpline(spec_vec, spat_vec, waveimg)
+        wave_box[bad_box] = f_wave(specobj.trace_spec[bad_box], specobj.trace_spat[bad_box],grid=False)
 
     ivar_box = 1.0/(var_box + (var_box == 0.0))
     nivar_box = 1.0/(nvar_box + (nvar_box == 0.0))
@@ -603,7 +608,6 @@ def fit_profile(image, ivar, waveimg, trace_in, wave, flux, fluxivar,
                value of the reduced chi^2
      """
 
-    # ToDO fix my implentation of numpy where
 
     if hwidth is None: 3.0*(np.max(thisfwhm) + 1.0)
     if PROF_NSIGMA is not None:
@@ -732,9 +736,9 @@ def fit_profile(image, ivar, waveimg, trace_in, wave, flux, fluxivar,
     # norm_x is the x position along the image centered on the object  trace
     norm_x = np.outer(np.ones(nspec), sub_x) - np.outer(sub_trace,np.ones(nspat))
 
-    sigma = np.full(nspat, thisfwhm/2.3548)
+    sigma = np.full(nspec, thisfwhm/2.3548)
     fwhmfit = sigma*2.3548
-    trace_corr = np.zeros(nspat)
+    trace_corr = np.zeros(nspec)
 
     # If we have too few pixels to fit a profile or S/N is too low, just use a Gaussian profile
     # TODO Clean up the logic below. It is formally correct but
@@ -798,11 +802,9 @@ def fit_profile(image, ivar, waveimg, trace_in, wave, flux, fluxivar,
     ninpix     = np.sum(IN_PIX)
 
     if (ngoodpix >= 0.2*ninpix):
-        inside, = np.where((GOOD_PIX & IN_PIX).flatten())
+        inside,  = np.where((GOOD_PIX & IN_PIX).flatten())
     else:
         inside, = np.where(IN_PIX.flatten())
-
-
 
     si = inside[np.argsort(sigma_x.flat[inside])]
     sr = si[::-1]
@@ -1019,7 +1021,8 @@ def fit_profile(image, ivar, waveimg, trace_in, wave, flux, fluxivar,
         skymask[internal]=True
 
     # Final object profile
-    profile_model = full_bsp.reshape(nspec,nspat)*pb
+    full_bsp = full_bsp.reshape(nspec,nspat)
+    profile_model = full_bsp*pb
     res_mode = (norm_obj.flat[ss[inside]] - profile_model.flat[ss[inside]])*np.sqrt(norm_ivar.flat[ss[inside]])
     chi_good = (outmask == True) & (norm_ivar.flat[ss[inside]] > 0)
     chi_med = np.median(res_mode[chi_good]**2)
@@ -1046,6 +1049,18 @@ def fit_profile(image, ivar, waveimg, trace_in, wave, flux, fluxivar,
         profile_model = profile_model / norm
     msgs.info("FWHM="  + "{:6.2f}".format(thisfwhm) + ", S/N=" + "{:8.3f}".format(np.sqrt(med_sn2)))
     # TODO insert QA call here
+    embed()
+    # Arguments for QA fit_profile_qa(x_tot,y_tot, model_tot, l_limit, r_limit, ind = None, title_string =' ', xtrunc = 1e6, xrange = None, yrange = None)
+    x_tot = sigma_x
+    y_tot = norm_obj/(pb + (pb == 0.0))
+    model_tot = full_bsp
+    ind = ss[inside]
+    title = ' '
+    xtrunc = 1e6
+
+
+
+
     return (profile_model, xnew, fwhmfit, med_sn2)
 
 
@@ -1130,9 +1145,9 @@ nobj = len(specobjs)
 #specobjs = copy.deepcopy(specobjs_in)
 
 if(PROF_NSIGMA is None):
-    prof_nsigma1 = np.zeros(len(specobjs))
+    prof_nsigma1 = np.full(len(specobjs),None)
 elif len(PROF_NSIGMA) == 1:
-    prof_nsigma1 = np.full(PROF_NSIGMA,nobj)
+    prof_nsigma1 = np.full(nobj, PROF_NSIGMA)
 elif len(PROF_NSIGMA) == nobj:
     prof_nsigma1 = PROF_NSIGMA
 else:
@@ -1217,9 +1232,10 @@ while i1 < nobj:
                 fluxivar = mask_box/(mvar_box + (mvar_box == 0.0))
             else:
                 # For later iterations, profile fitting is based on an optimal extraction
-                last_profile = obj_profiles[ipix[0],ipix[1],ii]
+                last_profile = obj_profiles[:,:,ii]
                 trace = np.outer(specobjs[iobj].trace_spat, np.ones(nspat))
                 objmask = ((xarr >= (trace - 2.0*box_rad)) & (xarr <= (trace + 2.0*box_rad)))
+                sys.exit(-1)
                 extract_optimal(waveimg,img_minsky,modelivar, (outmask & objmask), last_profile, skyimage,rn_img,box_rad, specobjs[iobj])
                 # If the extraction is bad do not update
                 if specobjs[iobj].optimal['MASK_OPT'].any():
@@ -1229,7 +1245,7 @@ while i1 < nobj:
 
             if wave.any():
                 (profile_model, xnew, fwhmfit, med_sn2) = fit_profile(img_minsky[ipix], (modelivar*outmask)[ipix],
-                                                                      waveimg[ipix],specobjs[iobj].trace_spat,
+                                                                      waveimg[ipix],specobjs[iobj].trace_spat - mincol,
                                                                       wave, flux, fluxivar,
                                                                       thisfwhm = specobjs[iobj].fwhm,
                                                                       hwidth = specobjs[iobj].maskwidth,
@@ -1242,10 +1258,11 @@ while i1 < nobj:
                 specobjs[iobj].fwhm = np.median(fwhmfit)
                 mask_fact = 1.0 + 0.5*np.log10(np.fmax(np.sqrt(np.fmax(med_sn2,0.0)),1.0))
                 maskwidth = 3.0*np.median(fwhmfit)*mask_fact
-                if specobjs[iobj].prof_nsigma > 0.0:
-                    specobjs[iobj].maskwidth = specobjs[iobj].prof_nsigma*(specobjs[iobj].fwhm/2.3548)
-                else:
+                if specobjs[iobj].prof_nsigma is None:
                     specobjs[iobj].maskwidth = maskwidth
+                else:
+                    specobjs[iobj].maskwidth = specobjs[iobj].prof_nsigma*(specobjs[iobj].fwhm/2.3548)
+
             else:
                 msgs.warn("Bad extracted wavelengths in local_skysub")
                 msgs.warn("Skipping this profile fit and continuing.....")
