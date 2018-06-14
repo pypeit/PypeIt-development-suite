@@ -58,6 +58,8 @@ from pydl.pydlutils.bspline import iterfit as bspline_iterfit
 from IPython import embed
 from pydl.pydlutils.bspline import bspline
 
+from pydl.goddard.math import flegendre
+
 #
 
 
@@ -725,7 +727,7 @@ def fit_profile(image, ivar, waveimg, trace_in, wave, flux, fluxivar,
     # Cap very large inverse variances
     ivar_mask = (norm_obj > -0.2) & (norm_obj < 0.7) & (sub_ivar > 0.0) & np.isfinite(norm_obj) & np.isfinite(norm_ivar)
     norm_ivar = norm_ivar*ivar_mask
-    good = (norm_ivar > 0.0)
+    good = (norm_ivar.flatten() > 0.0)
     ngood = np.sum(good)
 
 
@@ -744,7 +746,7 @@ def fit_profile(image, ivar, waveimg, trace_in, wave, flux, fluxivar,
     # TODO Clean up the logic below. It is formally correct but
     # redundant since no trace correction has been created or applied yet.  I'm only postponing doing it
     # to preserve this syntax for later when it is needed
-    if((ngood < 10) or (med_sn2 < SN_GAUSS) or (GAUSS is True)):
+    if((ngood < 10) or (med_sn2 < SN_GAUSS**2) or (GAUSS is True)):
         msgs.info("Too few good pixels or S/N <" + "{:5.1f}".format(SN_GAUSS) + " or GAUSS flag set")
         msgs.info("Returning Gaussian profile")
         sigma_x = norm_x/(np.outer(sigma, np.ones(nspat)) - np.outer(trace_corr,np.ones(nspat)))
@@ -764,10 +766,16 @@ def fit_profile(image, ivar, waveimg, trace_in, wave, flux, fluxivar,
         norm = np.outer(np.sum(profile_model,1),np.ones(nspat))
         if(np.sum(norm) > 0.0):
             profile_model = profile_model/norm
-        #TODO Put in call to QA here
+        if ngood > 0:
+            title_string = ' '
+            indx = good
+        else:
+            title_string = 'No good pixels, showing all'
+            indx = None
 
-        # TODO Put in a return statement here? Code returns updated trace and profile
-        # return (xnew, profile_model)
+        fit_profile_qa(sigma_x, norm_obj, profile_model, title = title_string, ind=indx, xtrunc= 7.0)
+        return (profile_model, xnew, fwhmfit, med_sn2)
+
 
     msgs.info("Gaussian vs b-spline of width " + "{:6.2f}".format(thisfwhm) + " pixels")
     area = 1.0
@@ -779,9 +787,9 @@ def fit_profile(image, ivar, waveimg, trace_in, wave, flux, fluxivar,
     limit = erfcinv(0.1/np.sqrt(med_sn2))*np.sqrt(2.0)
     if(PROF_NSIGMA is None):
         sinh_space = 0.25*np.log10(np.fmax((1000./np.sqrt(med_sn2)),10.))
-        abs_sigma = np.fmin((np.abs(sigma_x[good])).max(),2.0*limit)
-        min_sigma = np.fmax(sigma_x[good].min(), (-abs_sigma))
-        max_sigma = np.fmin(sigma_x[good].max(), (abs_sigma))
+        abs_sigma = np.fmin((np.abs(sigma_x.flat[good])).max(),2.0*limit)
+        min_sigma = np.fmax(sigma_x.flat[good].min(), (-abs_sigma))
+        max_sigma = np.fmin(sigma_x.flat[good].max(), (abs_sigma))
         nb = (np.arcsinh(abs_sigma)/sinh_space).astype(int) + 1
     else:
         msgs.info("Using PROF_NSIGMA= " + "{:6.2f}".format(PROF_NSIGMA) + " for extended/bright objects")
@@ -796,6 +804,7 @@ def fit_profile(image, ivar, waveimg, trace_in, wave, flux, fluxivar,
     bkpt = bkpt[keep]
 
     # Attempt B-spline first
+    # TODO this looks like a bug in the original code. sn2_sub is (S/N)**2 why is this compared to SN_GAUSS??
     GOOD_PIX = (sn2_sub > SN_GAUSS) & (norm_ivar > 0)
     IN_PIX   = (sigma_x >= min_sigma) & (sigma_x <= max_sigma) & (norm_ivar > 0)
     ngoodpix = np.sum(GOOD_PIX)
@@ -877,10 +886,9 @@ def fit_profile(image, ivar, waveimg, trace_in, wave, flux, fluxivar,
         norm = np.outer(np.sum(profile_model,1),np.ones(nspat))
         if(np.sum(norm) > 0.0):
             profile_model = profile_model/norm
-        #TODO Put in call to QA here
 
-        # TODO Put in a return statement here? Code returns updated trace and profile
-        # return (xnew, profile_model)
+        fit_profile_qa(sigma_x, norm_obj, profile_model, l_limit = l_limit, r_limit = r_limit, ind =good, xlim = 7.0)
+        return (profile_model, xnew, fwhmfit, med_sn2)
 
     sigma_iter = 3
     isort =  (xtemp.flat[si[inside]]).argsort()
@@ -889,7 +897,6 @@ def fit_profile(image, ivar, waveimg, trace_in, wave, flux, fluxivar,
 
     # ADD the loop here later
     for iiter in range(1,sigma_iter + 1):
-        iiter =1
         mode_zero, _ = bset.value(sigma_x.flat[inside])
         mode_zero = mode_zero*pb
 
@@ -971,11 +978,13 @@ def fit_profile(image, ivar, waveimg, trace_in, wave, flux, fluxivar,
     outmask = bset_out[1]
 
     # skymask = False for pixels within (min_sigma, max_sigma), True outside
-    skymask = ~((sigma_x.flatten() > min_sigma) & (sigma_x.flatten() < max_sigma))
+    inmask = (sigma_x.flatten() > min_sigma) & (sigma_x.flatten() < max_sigma)
     full_bsp = np.zeros(nspec*nspat, dtype=float)
-    yfit_out, _  = bset.value(sigma_x.flat[~skymask])
-    full_bsp[~skymask] = yfit_out
-    (peak, peak_x, lwhm, rwhm) = findfwhm(full_bsp[ss] - median_fit, sigma_x.flat[ss])
+    sigma_x_inmask = sigma_x.flat[inmask]
+    yfit_out, _  = bset.value(sigma_x_inmask)
+    full_bsp[inmask] = yfit_out
+    isrt = sigma_x_inmask.argsort()
+    (peak, peak_x, lwhm, rwhm) = findfwhm(yfit_out[isrt] - median_fit, sigma_x_inmask[isrt])
 
 
     left_bool = (((full_bsp[ss] < (min_level+median_fit)) & (sigma_x.flat[ss] < peak_x)) | (sigma_x.flat[ss] < (peak_x-limit)))[::-1]
@@ -1018,7 +1027,7 @@ def fit_profile(image, ivar, waveimg, trace_in, wave, flux, fluxivar,
         right = sigma_x.flatten() > r_limit
         full_bsp[right] = np.exp(-(sigma_x.flat[right] - r_limit) * r_deriv) * r_fit
         internal = (sigma_x.flatten() >= l_limit) & (sigma_x.flatten() <=r_limit)
-        skymask[internal]=True
+        #skymask[internal]=True #ToDo I don't think this modification does anything?
 
     # Final object profile
     full_bsp = full_bsp.reshape(nspec,nspat)
@@ -1048,20 +1057,101 @@ def fit_profile(image, ivar, waveimg, trace_in, wave, flux, fluxivar,
     if (np.sum(norm) > 0.0):
         profile_model = profile_model / norm
     msgs.info("FWHM="  + "{:6.2f}".format(thisfwhm) + ", S/N=" + "{:8.3f}".format(np.sqrt(med_sn2)))
-    # TODO insert QA call here
-    embed()
-    # Arguments for QA fit_profile_qa(x_tot,y_tot, model_tot, l_limit, r_limit, ind = None, title_string =' ', xtrunc = 1e6, xrange = None, yrange = None)
-    x_tot = sigma_x
-    y_tot = norm_obj/(pb + (pb == 0.0))
-    model_tot = full_bsp
-    ind = ss[inside]
-    title = ' '
-    xtrunc = 1e6
-
-
-
+    fit_profile_qa(sigma_x, norm_obj/(pb + (pb == 0.0)), full_bsp, l_limit = l_limit, r_limit = r_limit, ind = ss[inside], xlim = PROF_NSIGMA)
 
     return (profile_model, xnew, fwhmfit, med_sn2)
+
+def fit_profile_qa(x_tot,y_tot, model_tot, l_limit = None, r_limit = None, ind = None,
+                   title =' ', xtrunc = 1e6, xlim = None, ylim = None, qafile = None):
+
+
+    # Plotting pre-amble
+    plt.close("all")
+#    plt.rc('text', usetex=True)
+#    plt.rc('font', family='serif')
+    width = 10.0 # Golden ratio 1.618
+    fig, ax = plt.subplots(1, figsize=(width, width/1.618))
+
+    if ind is None:
+        ind = np.slice(x_tot.size)
+
+    x = x_tot.flat[ind]
+    y = y_tot.flat[ind]
+    model = model_tot.flat[ind]
+
+    ax.plot(x,y,color='k',marker='o',markersize= 0.3, mfc='k',fillstyle='full',linestyle='None')
+
+
+    max_model = np.fmin(model.max(), 2.0)
+    if xlim is None:
+        goodpix = model > 0.001*max_model
+        if goodpix.any():
+            minx = np.fmax(1.1*(x[goodpix]).min(), -xtrunc)
+            maxx = np.fmin(1.1*(x[goodpix]).max(),  xtrunc)
+        else:
+            minx = -5.0
+            maxx = 5.0
+    else:
+        minx = -xlim
+        maxx = xlim
+    xlimit = (minx, maxx)
+
+    nsamp = 150
+    half_bin = (maxx - minx)/nsamp/2.0
+    if ylim is None:
+        ymax = np.fmax(1.5*model.max(), 0.3)
+        ymin = np.fmin(-0.1*ymax, -0.05)
+        ylim = (ymin, ymax)
+    plot_mid = (np.arange(nsamp) + 0.5)/nsamp*(maxx - minx) + minx
+
+    y20 = np.zeros(nsamp)
+    y80 = np.zeros(nsamp)
+    y50 = np.zeros(nsamp)
+    model_samp = np.zeros(nsamp)
+    nbin = np.zeros(nsamp)
+
+    for i in range(nsamp):
+        dist = np.abs(x - plot_mid[i])
+        close = dist < half_bin
+        yclose = y[close]
+        nclose = close.sum()
+        nbin[i] = nclose
+        if close.any():
+            closest = (dist[close]).argmin()
+            model_samp[i] = (model[close])[closest]
+        if nclose > 3:
+            s = yclose.argsort()
+            y50[i] = yclose[s[int(np.rint((nclose - 1)*0.5))]]
+            y80[i] = yclose[s[int(np.rint((nclose - 1)*0.8))]]
+            y20[i] = yclose[s[int(np.rint((nclose - 1)*0.2))]]
+            ax.plot([plot_mid[i],plot_mid[i]], [y20[i],y80[i]], linewidth=1.0, color='cornflowerblue')
+
+    icl = nbin > 3
+    if icl.any():
+        ax.plot(plot_mid[icl],y50[icl],marker = 'o', color='lime', markersize=2, fillstyle='full', linestyle='None')
+    else:
+        ax.plot(plot_mid, y50, marker='o', color='lime', markersize=2, fillstyle = 'full', linestyle='None')
+
+    isort = x.argsort()
+    ax.plot(x[isort], model[isort], color='red', linewidth=1.0)
+
+
+
+    if l_limit is not None:
+        ax.axvline(x =l_limit, color='orange',linewidth=1.0)
+    if r_limit is not None:
+        ax.axvline(x=r_limit, color='orange',linewidth=1.0)
+
+    ax.set_xlim(xlimit)
+    ax.set_ylim(ylim)
+    ax.set_title(title)
+    ax.set_xlabel(r'$x/\sigma$')
+    ax.set_ylabel('Normalized Profile')
+
+    fig.subplots_adjust(left=0.15, right=0.9, top=0.9, bottom=0.15)
+    plt.show()
+    return
+
 
 
 savefile='/Users/joe/gprofile_develop/local_skysub_dev.sav'
@@ -1077,7 +1167,7 @@ slitmask = idl_dict['slitmask']
 slitid = idl_dict['slitid']
 xx1 = idl_dict['xx1']
 xx2 = idl_dict['xx2']
-edgmask = idl_dict['edgmask']
+edgmask = np.array(idl_dict['edgmask'],dtype=bool)
 bsp = idl_dict['bsp']
 rn_img = idl_dict['rn_img']
 outmask = idl_dict['outmaskt']
@@ -1112,6 +1202,7 @@ for ii in range(nobj):
     specobj.fwhm = objstruct[ii]['fwhm']
     specobj.fwhmfit = np.zeros(nspec)
     specobj.slitid = objstruct[ii]['slitid']
+    specobj.objid = objstruct[ii]['objid']
     specobjs.append(specobj)
 
 
@@ -1119,7 +1210,8 @@ for ii in range(nobj):
 #def localskysub(sciimg, sciivar, skyimage, rn_img, piximg, waveimg, ximg, thismask, edgmask, slit_left, slit_righ, bsp, outmask, modelivar, specobjs,
 # PROF_NSIGMA = None, niter=4, box_rad = 7, sigrej = 3.5, skysample = False, FULLWELL = 5e5,MINWELL = -1000.0, SN_GAUSS = 3.0):
 
-# outmask modelivar, and specobjs are modified "in place"
+# outmask modelivar are created in the return and returned
+# specobjs are modified "in place"
 
 ## ximg and edgmask should be created in the routine
 
@@ -1128,14 +1220,16 @@ for ii in range(nobj):
 ## slit_left and slit_right could be the trace slits object? Or maybe it easier to not have an object here
 
 # Optional arguments
-SN_GAUSS = 3.0
+SN_GAUSS = 4.0
 niter = 4
 box_rad = 7
 sigrej = 3.5
 skysample = False
+NOLOCAL = False
 PROF_NSIGMA = None
 FULLWELL = 5e5 # pixels above saturation level are masked
 MINWELL = -1000.0 # Extremely negative pixels are also masked
+SKYSAMPLE = False
 #modelivar = None
 
 # local skysub starts here
@@ -1160,16 +1254,27 @@ nspat =sciimg.shape[1]
 nspec =sciimg.shape[0]
 
 # Initialize the output mask
-sciimg_this = sciimg[thismask]
-outmask[thismask] = thismask[thismask] & (sciivar[thismask] > 0.0) & np.isfinite(sciimg_this) & (sciimg_this < FULLWELL) & (sciimg_this > MINWELL)
+outmask = (sciivar > 0.0) & thismask & np.isfinite(sciimg) & (sciimg < FULLWELL) & (sciimg > MINWELL)
+# Initiatlize modelivar
+modelivar = sciivar
+
+#sciimg_this = sciimg[thismask]
+#outmask[thismask] = thismask[thismask] & (sciivar[thismask] > 0.0)
+
 
 
 varnobobj = np.abs(skyimage - np.sqrt(2.0) * rn_img) + rn_img ** 2
 
 xarr = np.outer(np.ones(nspec),np.arange(nspat))
 yarr = np.outer(np.arange(nspec),np.ones(nspat))
+
+xa_min = xarr[thismask].min()
+xa_max = xarr[thismask].max()
+ya_min = yarr[thismask].min()
+ya_max = yarr[thismask].max()
+
 xsize = slit_righ - slit_left
-spatial = thismask*ximg*(np.outer(xsize,np.ones(nspat)))
+spatial_img = thismask*ximg*(np.outer(xsize,np.ones(nspat)))
 
 # Loop over objects and group them
 i1 = 0
@@ -1235,7 +1340,6 @@ while i1 < nobj:
                 last_profile = obj_profiles[:,:,ii]
                 trace = np.outer(specobjs[iobj].trace_spat, np.ones(nspat))
                 objmask = ((xarr >= (trace - 2.0*box_rad)) & (xarr <= (trace + 2.0*box_rad)))
-                sys.exit(-1)
                 extract_optimal(waveimg,img_minsky,modelivar, (outmask & objmask), last_profile, skyimage,rn_img,box_rad, specobjs[iobj])
                 # If the extraction is bad do not update
                 if specobjs[iobj].optimal['MASK_OPT'].any():
@@ -1267,8 +1371,75 @@ while i1 < nobj:
                 msgs.warn("Bad extracted wavelengths in local_skysub")
                 msgs.warn("Skipping this profile fit and continuing.....")
 
+        sky_bmodel = 0.0
+        iterbsp = 0
+        while (np.sum(sky_bmodel) == 0.0) & (iterbsp <=5) & (NOLOCAL is False):
+            bsp_now = (1.2**iterbsp)*bsp
+            # if skysample is set, determine optimal break-point spacing
+            # directly measuring how well we are sampling of the sky. The
+            # bsp in this case correspons to the minimum distance between
+            # breakpoints which we allow.
+            if SKYSAMPLE:
+                sampmask = (waveimg > 0.0) & (thismask == True)
+                # fullbkpt = skybkpts()
+                # TODO Port long_skybkpts.pro code and put it here.
+            else:
+                pixvec = piximg[skymask]
+                srt = pixvec.flatten().argsort()
+                bset0 = bspline(pixvec.flat[srt],nord=4, bkspace=bsp_now)
+                fullbkpt = bset0.breakpoints
+            # check to see if only a subset of the image is used.
+            # if so truncate input pixels since this can result in singular matrices
+            ibool = (yarr >= ya_min) & (yarr <= ya_max) & (xarr >= xa_min) & (xarr <= xa_max) & (xarr >= mincol) & (xarr <= maxcol) & thismask
+            isub, = np.where(ibool.flatten())
+            sortpix = (piximg.flat[isub]).argsort()
+            ithis, = np.where(thismask.flat[isub])
+            keep = (fullbkpt >= piximg.flat[isub[ithis]].min()) & (fullbkpt <= piximg.flat[isub[ithis]].max())
+            fullbkpt = fullbkpt[keep]
+            obj_profiles_flat = obj_profiles.reshape(nspec*nspat, objwork)
+            # skyoptimal(wave,data,ivar oprof, sortpix, sigrej = 3.0, npoly = 1, spatial = None, fullbkpt = None) argument list
+            wave = piximg.flat[isub]
+            data = sciimg.flat[isub]
+            ivar = (modelivar*skymask).flat[isub]
+            oprof = obj_profiles_flat[isub,:]
+            sigrej = sigrej_eff
+            spatial = spatial_img.flat[isub]
+            # skyoptimal begins here
+            nx = data.size
+            nc = oprof.shape[0]
+            nobj = int(oprof.size/nc)
+            if nc != nx:
+                raise ValueError('Object profile should have oprof.shape[0] equal to nx')
+
+            msgs.info('Iter     Chi^2     Rejected Pts')
+            xmin = 0.0
+            xmax = 1.0
+
+            if ((npoly == 1) | (spatial == None)):
+                profile_basis = np.column_stack((oprof, np.ones(nx)))
+            else:
+                xmin = spatial.min()
+                xmax = spatial.max()
+                x2 = 2.0*(spatial - xmin)/(xmax - xmin) - 1
+                poly_basis = flegendre(x2, npoly)
+                profile_basis = np.column_stack((oprof, poly_basis))
+
+            if nobj == 1:
+                relative_mask = (oprof > 0)
+            else:
+                relative_mask = (np.sum(oprof, axis=1) > 0.0)
+
+            indx, = np.where(ivar[sortpix] > 0.0)
+            ngood = indx.size
+            good = sortpix[indx]
+            good = good[wave[good].argsort()]
+            relative, = np.where(relative_mask[good])
+
+            sset_out = bspline_longslit(wave[good], data[good], ivar[good], profile_basis[good,:],
+                                        fullbkpt = fullbkpt, upper=sigrej, lower = sigrej)
 
 
+            sys.exit(-1)
 
     '''
 ## Directory for IDL tests is /Users/joe/gprofile_develop/
