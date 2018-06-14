@@ -166,10 +166,10 @@ def bspline_longslit(xdata, ydata, invvar, profile_basis, upper=5, lower=5,maxit
     # Iterate spline fit
     iiter = 0
     error = -1
-    qdone = -1
+    qdone = False
 
     tempin = None
-    while (error != 0 or qdone == -1) and iiter <= maxiter:
+    while (error != 0 or qdone == False) and iiter <= maxiter:
         goodbk = sset.mask.nonzero()[0]
         if ngood <= 1 or not sset.mask.any():
             sset.coeff = 0
