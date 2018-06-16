@@ -1304,7 +1304,7 @@ for ii in range(nobj):
 ## slit_left and slit_right could be the trace slits object? Or maybe it easier to not have an object here
 
 # Optional arguments
-SN_GAUSS = 4.0
+SN_GAUSS = 3.0
 niter = 4
 box_rad = 7
 sigrej = 3.5
@@ -1557,7 +1557,7 @@ while i1 < nobj:
     for ii in range(objwork):
         iobj = group[ii]
         msgs.info('Extracting for obj # {:d}'.format(iobj+1) + ' of {:d}'.format(nobj) +
-                  'on slit # {:d}'.format(specobjs[iobj].slitid) + 'at x = {:5.2f}'.format(np.median(specobjs[iobj].trace_spat)))
+                  ' on slit # {:d}'.format(specobjs[iobj].slitid) + ' at x = {:5.2f}'.format(np.median(specobjs[iobj].trace_spat)))
         this_profile = obj_profiles[:,:,ii]
         trace = np.outer(specobjs[iobj].trace_spat, np.ones(nspat))
         objmask = ((xarr >= (trace - 2.0 * box_rad)) & (xarr <= (trace + 2.0 * box_rad)))
@@ -1568,6 +1568,7 @@ while i1 < nobj:
     # If requested display the model fits for this grouping
     if CHK == True:
         viewer, ch = ginga.show_image((sciimg - skyimage)*np.sqrt(modelivar))
+        # TODO figure out a way to overplot the pixels that were masked in red like as a scatter plot
         for ii in range(objwork):
             iobj = group[ii]
             ginga.show_trace(viewer, ch, specobjs[iobj].trace_spat, specobjs[iobj].idx, color='green')
@@ -1589,7 +1590,7 @@ while i1 < nobj:
 
 
 
-    '''
+'''
 ## Directory for IDL tests is /Users/joe/gprofile_develop/
 ## Run long_reduce, islit=3
 
