@@ -136,7 +136,10 @@ def bspline_longslit(xdata, ydata, invvar, profile_basis, upper=5, lower=5,maxit
     if profile_basis.size != nx*npoly:
         raise ValueError('Profile basis is not a multiple of the number of data points.')
 
-    msgs.info("Fitting npoly="  + "{:3d}".format(npoly) + " profile basis functions, nx=" + "{:3d}".format(nx) + " pixels")
+    msgs.info("Fitting npoly =" + "{:3d}".format(npoly) + " profile basis functions, nx=" + "{:3d}".format(nx) + " pixels")
+    msgs.info("****************************  Iter  Chi^2  # rejected  Rel. fact   ****************************")
+    msgs.info("                              ----  -----  ----------  --------- ")
+
     yfit = np.zeros(ydata.shape)
     reduced_chi = 0
 
@@ -214,17 +217,19 @@ def bspline_longslit(xdata, ydata, invvar, profile_basis, upper=5, lower=5,maxit
                                          inmask=tempin, outmask=maskwork,
                                          upper=upper*relative_factor, lower=lower*relative_factor, **kwargs_reject)
             tempin = maskwork
-            msgs.info("iteration = " + "{:4d}".format(iiter) + ", reduced_chi = " + "{:8.3f}".format(reduced_chi) +
-                      ", rejected = " + "{:7d}".format((maskwork == 0).sum()) + ", rel_factor = " + "{:6.2f}".format(relative_factor))
+            msgs.info("                             {:4d}".format(iiter) + "{:8.3f}".format(reduced_chi) +
+                      "  {:7d}".format((maskwork == 0).sum()) + "      {:6.2f}".format(relative_factor))
 
         else:
             pass
 
-        msgs.info("Final fit after " + "{:2d}".format(iiter) + " iterations:")
-        msgs.info("    reduced_chi = " + "{:8.3f}".format(reduced_chi) +
-                  ", rejected = " + "{:7d}".format((maskwork == 0).sum()))
-        outmask = maskwork
-        return (sset, outmask, yfit, reduced_chi)
+    msgs.info("***********************************************************************************************")
+    msgs.info(
+        "Final fit after " + "{:2d}".format(iiter) + " iterations: reduced_chi = " + "{:8.3f}".format(reduced_chi) +
+        ", rejected = " + "{:7d}".format((maskwork == 0).sum()) + ", relative_factor = {:6.2f}".format(relative_factor))
+
+    outmask = maskwork
+    return (sset, outmask, yfit, reduced_chi)
 
 
 
@@ -1195,7 +1200,7 @@ def skyoptimal(wave,data,ivar, oprof, sortpix, sigrej = 3.0, npoly = 1, spatial 
                                                                kwargs_reject={'groupbadpix': True, 'maxrej': 5})
 
     chi2 = (data[good] - yfit1) ** 2 * ivar[good]
-    chi2_srt = chi2[chi2.argsort()]
+    chi2_srt = np.sort(chi2)
     gauss_prob = 1.0 - 2.0 * ndtr(-1.2 * sigrej)
     sigind = int(np.fmin(np.rint(gauss_prob * float(ngood)), ngood - 1))
     chi2_sigrej = chi2_srt[sigind]
@@ -1310,6 +1315,8 @@ FULLWELL = 5e5 # pixels above saturation level are masked
 MINWELL = -1000.0 # Extremely negative pixels are also masked
 SKYSAMPLE = False
 COADD_2D=False
+STD = False # is this a standard star?
+CHK = True # Inspect the model fits with ginga?
 #modelivar = None
 
 # local skysub starts here
@@ -1326,6 +1333,18 @@ elif len(PROF_NSIGMA) == nobj:
     prof_nsigma1 = PROF_NSIGMA
 else:
     raise ValueError('Invalid size for PROF_NSIGMA.')
+
+# Set some rejection parameters based on whether this is a STD or not. Only reject extreme outliers for standards
+# since super high S/N and low order profile models imply we will always have large outliers
+if STD is True:
+    chi2_sigrej = 100.0
+    sigrej_ceil = 1e10
+else:
+    chi2_sigrej = 6.0
+    sigrej_ceil = 10.0
+# We will use this number later
+gauss_prob = 1.0 - 2.0 * ndtr(-sigrej)
+
 
 for iobj in range(nobj):
     specobjs[iobj].prof_nsigma = prof_nsigma1[iobj]
@@ -1497,21 +1516,77 @@ while i1 < nobj:
             img_minsky.flat[isub]=sciimg.flat[isub] - sky_bmodel
             var = np.abs(sky_bmodel + obj_bmodel - np.sqrt(2.0)*rn_img.flat[isub]) + rn_img.flat[isub]**2
             var_no = np.abs(sky_bmodel - np.sqrt(2.0)*rn_img.flat[isub]) + rn_img.flat[isub]**2
+            igood1 = skymask.flat[isub]
+            #  update the outmask for only those pixels that were fit. This prevents masking of slit edges in outmask
+            outmask.flat[isub[igood1]]=outmask_opt[igood1]
             #  For weighted co-adds, the variance of the image is no longer equal to the image, and so the modelivar
             #  eqn. below is not valid. However, co-adds already have the model noise propagated correctly in sciivar,
             #  so no need to re-model the variance
             if COADD_2D is False:
                 modelivar.flat[isub] = (var > 0.0)/(var + (var == 0.0))
                 varnoobj.flat[isub]  = var_no
+            # Now do some masking based on this round of model fits
+            chi2 = (img_minsky.flat[isub] - obj_bmodel) ** 2 * modelivar.flat[isub]
+            igood = (skymask.flat[isub]) & (chi2 <= chi2_sigrej ** 2)
+            ngd = np.sum(igood)
+            if ngd > 0:
+                chi2_good = chi2[igood]
+                chi2_srt = np.sort(chi2_good)
+                sigind = np.fmin(int(np.rint(gauss_prob * float(ngd))), ngd - 1)
+                chi2_sigrej = chi2_srt[sigind]
+                sigrej_eff = np.fmax(np.sqrt(chi2_sigrej), sigrej)
+                #  Maximum sigrej is sigrej_ceil (unless this is a standard)
+                sigrej_eff = np.fmin(sigrej_eff, sigrej_ceil)
+                msgs.info('Measured effective rejection from distribution of chi^2')
+                msgs.info('Instead of rejecting sigrej = {:5.2f}'.format(sigrej) +
+                ', use threshold sigrej_eff = {:5.2f}'.format(sigrej_eff))
+                # Explicitly mask > sigrej outliers using the distribution of chi2 but only in the region that was actually fit.
+                # This prevents e.g. excessive masking of slit edges
+                outmask.flat[isub[igood1]] = outmask.flat[isub[igood1]] & (chi2[igood1] < chi2_sigrej) & (sciivar.flat[isub[igood1]] > 0.0)
+                nrej = outmask.flat[isub[igood1]].sum()
+                msgs.info('Iteration = {:d}'.format(iiter) + ', rejected {:d}'.format(nrej) + ' of ' + '{:d}'.format(igood1.sum()) + 'fit pixels')
 
-            igood1 = skymask.flat[isub]
-            #  update the outmask for only those pixels that were fit. This prevents masking of slit edges in outmask
-            outmask.flat[isub[igood1]]=outmask_opt[igood1]
         else:
             msgs.warn('ERROR: Bspline sky subtraction failed after 4 iterations of bkpt spacing')
             msgs.warn('       Moving on......')
             obj_profiles= np.zeros_like(obj_profiles)
-        sys.exit(-1)
+
+
+    # Now that the iterations of profile fitting and sky subtraction are completed,
+    # loop over the objwork objects in this grouping and perform the final extractions.
+    for ii in range(objwork):
+        iobj = group[ii]
+        msgs.info('Extracting for obj # {:d}'.format(iobj+1) + ' of {:d}'.format(nobj) +
+                  'on slit # {:d}'.format(specobjs[iobj].slitid) + 'at x = {:5.2f}'.format(np.median(specobjs[iobj].trace_spat)))
+        this_profile = obj_profiles[:,:,ii]
+        trace = np.outer(specobjs[iobj].trace_spat, np.ones(nspat))
+        objmask = ((xarr >= (trace - 2.0 * box_rad)) & (xarr <= (trace + 2.0 * box_rad)))
+        extract_optimal(waveimg, img_minsky, modelivar*thismask, (outmask & objmask), this_profile, skyimage, rn_img, box_rad, specobjs[iobj])
+        specobjs[iobj].mincol = mincol
+        specobjs[iobj].maxcol = maxcol
+
+    # If requested display the model fits for this grouping
+    if CHK == True:
+        viewer, ch = ginga.show_image((sciimg - skyimage)*np.sqrt(modelivar))
+        for ii in range(objwork):
+            iobj = group[ii]
+            ginga.show_trace(viewer, ch, specobjs[iobj].trace_spat, specobjs[iobj].idx, color='green')
+
+#    return None, need to think about what we return versus what is changed in place
+
+'''    #Alternative QA with hack to show traces
+    if CHK == True:
+        qaimg =sciimg - skyimage)*np.sqrt(modelivar)
+        samp = (np.rint(np.arange(nspec/4)*4)).astype(int)
+        for ii in range(objwork):
+            iobj = group[ii]
+            ispec = (specobjs[iobj].trace_spec[samp]).astype(int)
+            ispat = (specobjs[iobj].trace_spat[samp]).astype(int)
+            qaimg[ispec, ispat] = -10000
+        ginga.show_image(qaimg)
+'''
+# return something?
+
 
 
     '''
