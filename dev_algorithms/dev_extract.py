@@ -660,9 +660,8 @@ def fit_profile(image, ivar, waveimg, trace_in, wave, flux, fluxivar,
     indsp = (wave > wvmnx[0]) & (wave < wvmnx[1]) & \
              np.isfinite(flux_sm) & (flux_sm < 5.0e5) &  \
              (flux_sm > -1000.0) & (fluxivar_sm > 0.0)
-    nsp = np.sum(indsp)
 
-    # Not all the djs_reject keywords args are implemented yet
+
     b_answer, bmask   = bspline_iterfit(wave[indsp], flux_sm[indsp], invvar = fluxivar_sm[indsp],kwargs_bspline={'everyn': 1.5}, kwargs_reject={'groupbadpix':True,'maxrej':1})
     b_answer, bmask2  = bspline_iterfit(wave[indsp], flux_sm[indsp], invvar = fluxivar_sm[indsp]*bmask, kwargs_bspline={'everyn': 1.5}, kwargs_reject={'groupbadpix':True,'maxrej':1})
     c_answer, cmask   = bspline_iterfit(wave[indsp], flux_sm[indsp], invvar = fluxivar_sm[indsp]*bmask2,kwargs_bspline={'everyn': 30}, kwargs_reject={'groupbadpix':True,'maxrej':1})
@@ -813,8 +812,7 @@ def fit_profile(image, ivar, waveimg, trace_in, wave, flux, fluxivar,
     bkpt = bkpt[keep]
 
     # Attempt B-spline first
-    # TODO this looks like a bug in the original code. sn2_sub is (S/N)**2 why is this compared to SN_GAUSS??
-    GOOD_PIX = (sn2_sub > SN_GAUSS) & (norm_ivar > 0)
+    GOOD_PIX = (sn2_sub > SN_GAUSS**2) & (norm_ivar > 0)
     IN_PIX   = (sigma_x >= min_sigma) & (sigma_x <= max_sigma) & (norm_ivar > 0)
     ngoodpix = np.sum(GOOD_PIX)
     ninpix     = np.sum(IN_PIX)
@@ -824,6 +822,8 @@ def fit_profile(image, ivar, waveimg, trace_in, wave, flux, fluxivar,
     else:
         inside, = np.where(IN_PIX.flatten())
 
+    from IPython import embed
+    embed()
     si = inside[np.argsort(sigma_x.flat[inside])]
     sr = si[::-1]
 
