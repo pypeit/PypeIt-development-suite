@@ -15,14 +15,18 @@ debug = debugger.init()
 debug['develop'] = True
 msgs.reset(debug=debug, verbosity=2)
 
+from pypit import ginga
+
 from pydl.pydlutils.bspline import bspline
 
 sys.path.append(os.path.abspath("./"))
 import dev_extract
 
+maskval=-999999.9,
 
 def global_skysub(sciimg, sciivar, piximg, slitmask, edgmask,
-                  skymask=None, bsp=0.6, islit=None, sigrej=3.):
+                  skymask=None, bsp=0.6, islit=None, sigrej=3.,
+                  debug=False):
 
     # Python indexing
     ny = sciimg.shape[0]
@@ -34,7 +38,7 @@ def global_skysub(sciimg, sciivar, piximg, slitmask, edgmask,
         skymask = np.ones_like(slitmask, dtype=int)
 
     # Mask edges and more
-    sky_slitmask = slitmask * (skymask * (sciivar > 0) & (edgmask == 0))
+    sky_slitmask = slitmask * (skymask * (sciivar > 0) & (edgmask == 0) & (sciimg != maskval))
 
     if islit is None:
         nreduce = nslit
@@ -46,7 +50,7 @@ def global_skysub(sciimg, sciivar, piximg, slitmask, edgmask,
     for jj in range(nreduce):
         slitid = slit_vec[jj]
         # Select only the pixels on this slit
-        all = slitmask == slitid
+        all = (slitmask == slitid) & (sciimg != maskval) & (sciivar > 0.)
         isky = sky_slitmask == slitid
         if (np.sum(isky) < 10):
             msgs.warn('Not enough sky pixels found in slit ', slitid,
@@ -77,16 +81,23 @@ def global_skysub(sciimg, sciivar, piximg, slitmask, edgmask,
             res = (sky[pos_sky] - np.exp(lsky_fit)) * np.sqrt(sky_ivar[pos_sky])
             lmask = (res < 5.0) & (res > -4.0)
             sky_ivar[pos_sky] = sky_ivar[pos_sky] * lmask
-            debugger.set_trace()
 
         # Full
         full_bspline = bspline(wsky, nord=4, bkspace=bsp)
-        #fullbkpt = bspline_bkpts(wsky, nord=4, bkspace=bsp, / silent)
         skyset, full_out, yfit, _ = dev_extract.bspline_longslit(
-            wsky, sky, sky_ivar, np.ones_like(isky),
-            fullbkpt=full_bspline.breakbpoints,
+            wsky, sky, sky_ivar, np.ones_like(sky),
+            fullbkpt=full_bspline.breakpoints,
             upper=sigrej, lower=sigrej, kwargs_reject={'groupbadpix':True, 'maxrej': 10})
-        sky_image[all] = full_bspline.value(piximg[all])#, skyset)
+        sky_image[all] = skyset.value(piximg[all])[0] #, skyset)
+        #debugger.set_trace()
+        if debug:
+            from matplotlib import pyplot as plt
+            plt.clf()
+            ax = plt.gca()
+            ax.scatter(wsky[full_out], sky[full_out])
+            ax.scatter(wsky[~full_out], sky[~full_out], color='red')
+            ax.plot(wsky, yfit, color='green')
+            plt.show()
     # Return
     return sky_image
 
@@ -101,7 +112,9 @@ if __name__ == '__main__':
     #
     edgemask = np.zeros_like(scifrcp)
     # Run me
-    global_skysub(scifrcp, ivar, tilts, ordpix, edgemask)
+    sky_image = global_skysub(scifrcp, ivar, tilts, ordpix, edgemask)
+    # Show
+    ginga.show_image(scifrcp-sky_image)
     debugger.set_trace()
 
 
