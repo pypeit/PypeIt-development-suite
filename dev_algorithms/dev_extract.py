@@ -822,8 +822,7 @@ def fit_profile(image, ivar, waveimg, trace_in, wave, flux, fluxivar,
     else:
         inside, = np.where(IN_PIX.flatten())
 
-    from IPython import embed
-    embed()
+
     si = inside[np.argsort(sigma_x.flat[inside])]
     sr = si[::-1]
 
