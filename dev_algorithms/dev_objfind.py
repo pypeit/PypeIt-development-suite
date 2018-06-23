@@ -90,8 +90,39 @@ nspec = idims[0]
 viewer, ch = ginga.show_image((sciimg - skyimage) * (slitmask == slitid))
 ginga.show_slits(viewer, ch, np.reshape(slit_left,(nspec,1)), np.reshape(slit_righ, (nspec,1)),[slitid])
 
+#
 
-# Call to objfind
+# Call to objfind, objfind operates on a single slit. It will be called by a code which loops over the slits, or that
+# will occur in the driver routine
+
+
+# HAND_DICT parsing
+HAND_DICT={'HAND_SPEC':[1022.0,1024.0],'HAND_SPAT': [555.0, 557.0], 'HAND_FWHM': 4.0}
+
+if HAND_DICT is not None:
+    if ('HAND_SPEC' not in HAND_DICT.keys() | 'HAND_SPAT' not in HAND_DICT.keys()):
+        raise ValueError('HAND_SPEC and HAND_SPAT must be set in the HAND_DICT')
+
+    HAND_SPEC=np.asarray(HAND_DICT['HAND_SPEC'])
+    HAND_SPAT=np.asarray(HAND_DICT['HAND_SPAT'])
+    if(HAND_SPEC.size != HAND_SPAT.size):
+        raise ValueError('HAND_SPEC and HAND_SPAT must have the same size in the HAND_DICT')
+    nhand = HAND_SPEC.size
+    HAND_FLAG = np.ones_like(HAND_SPEC,dtype=bool)
+
+    HAND_FWHM = HAND_DICT.get('HAND_FWHM')
+    if HAND_FWHM is not None:
+        HAND_FWHM = np.asarray(HAND_FWHM)
+        if(HAND_FWHM.size==HAND_SPEC.size):
+            pass
+        elif (HAND_FWHM.size == 1):
+            HAND_FWHM = np.full(nhand, HAND_FWHM)
+        else:
+            raise ValueError('HAND_FWHM must either be a number of have the same size as HAND_SPEC and HAND_SPAT')
+
+
+    #handslits = thismask[int(np.rint(HAND_SPEC)), int(np.rint(HAND_SPAT))]
+
 # def objfind(sciimg, thismask, slit_left, slit_righ,  sciivar = None, fwhm=3.0 )
 
 #sciimg = science image
@@ -122,8 +153,7 @@ specmid = nspec/2
 skymask = thismask
 objmask = np.zeros_like(thismask)
 
-if HAND_DICT is not None:
-    
+
 
 
 
