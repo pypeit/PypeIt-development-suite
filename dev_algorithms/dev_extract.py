@@ -1288,6 +1288,7 @@ for ii in range(nobj):
     specobj.objid = objstruct[ii]['objid']
     specobjs.append(specobj)
 
+#TODO Remove djs_median dependency and replace with scipy.medfilt
 
 # This is the argument list
 #def localskysub(sciimg, sciivar, skyimage, rn_img, piximg, waveimg, ximg, thismask, edgmask, slit_left, slit_righ, bsp, outmask, modelivar, specobjs,
