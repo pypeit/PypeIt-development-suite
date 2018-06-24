@@ -92,8 +92,9 @@ def parse_hand_dict(HAND_DICT):
 
     HAND_SPEC=np.asarray(HAND_DICT['HAND_SPEC'])
     HAND_SPAT=np.asarray(HAND_DICT['HAND_SPAT'])
-    if(HAND_SPEC.size != HAND_SPAT.size):
-        raise ValueError('HAND_SPEC and HAND_SPAT must have the same size in the HAND_DICT')
+    HAND_DET = np.asarray(HAND_DICT['HAND_DET'])
+    if(HAND_SPEC.size == HAND_SPAT.size == HAND_DET.size) == False:
+        raise ValueError('HAND_SPEC, HAND_SPAT, and HAND_DET must have the same size in the HAND_DICT')
     nhand = HAND_SPEC.size
 
     HAND_FWHM = HAND_DICT.get('HAND_FWHM')
@@ -157,7 +158,7 @@ ginga.show_slits(viewer, ch, np.reshape(slit_left,(nspec,1)), np.reshape(slit_ri
 
     #handslits = thismask[int(np.rint(HAND_SPEC)), int(np.rint(HAND_SPAT))]
 
-# def objfind(image, slit_left, slit_righ, mask = None, thismask=None, ximg = None, fwhm=3.0, HAND_DICT = None)
+# def objfind(image, slit_left, slit_righ, mask = None, thismask=None, ximg = None, edgmask = None, fwhm=3.0, HAND_DICT = None)
 
 # Things that will presumably be in some settings import which are currently arguments to specobj
 config = 'lris_b1200'
@@ -169,7 +170,7 @@ mask = (sciivar > 0.0)
 image = sciimg - skyimage
 ximg = None
 thismask = None
-HAND_DICT={'HAND_SPEC':1024.0,'HAND_SPAT': 750.0, 'HAND_FWHM': 4.0}
+HAND_DICT={'HAND_SPEC':1024.0,'HAND_SPAT': 750.0, 'HAND_DET':1, 'HAND_FWHM': 4.0}
 
 #sciimg = science image
 # thismask is a mask which is true on the slit and false outside it
