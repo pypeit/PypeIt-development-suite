@@ -30,6 +30,7 @@ class SpecObjExp(object):
        Exposure index (max=9999)
     det: int
        Detector index (max=99)
+    #TODO I don't see the advantage of having these in fractinoal units? Why not match up pixel numbers which are easier to deal with.
     xslit: tuple
        float (0-1), float (0-1)
        left, right of slit in fraction of total (trimmed) detector size defined at ypos
@@ -52,6 +53,8 @@ class SpecObjExp(object):
     """
     # Attributes
     # Init
+
+    # ToDo I don't want to have to have all these quantities at instantion. They can set to note at instantionan and adde dlater when needed. I want to 
     def __init__(self, shape, config, scidx, det, xslit, ypos, xobj, objtype='unknown'):
         self.shape = shape
         self.config = config
