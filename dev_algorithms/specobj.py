@@ -18,16 +18,19 @@ from pypit import ardebug as debugger
 
 class SpecObjExp(object):
     """Class to handle object spectra from a single exposure
-    One generates one of these Objects for each spectrum in the exposure
+    One generates one of these Objects for each spectrum in the exposure. They are instantiated by the object
+    finding routine, and then all spectral extraction information for the object are assigned as attributes
 
     Parameters:
     ----------
     shape: tuple (nspec, nspat)
        dimensions of the spectral image that the object is identified on
     slit_spat_pos: tuple of floats (spat_left,spat_right)
-        The median value of the left and right slit edge arrays
+        The spatial pixel location of the left and right slit trace arrays evaluated at slit_spec_pos (see below). These
+        will be in the range (0,nspat)
     slit_spec_pos: float
-        The midpoint of the slit location in the spectral direction. This will typically be nspec/2
+        The midpoint of the slit location in the spectral direction. This will typically be nspec/2, but must be in the
+        range (0,nspec)
 
     Optional Parameters:
     -------------------
@@ -66,6 +69,14 @@ class SpecObjExp(object):
         # ToDo add all attributes here and to the documentaiton
         self.slitid = None
         self.objid = None
+
+        # Attributes for HAND apertures, which are object added to the extraction by hand
+        self.HAND_SPEC = None
+        self.HAND_SPAT = None
+        self.HAND_DET = None
+        self.HAND_FWHM = None
+        self.HAND_FLAG = False
+
 
         # Dictionaries holding boxcar and optimal extraction parameters
         self.boxcar = {}   # Boxcar extraction 'wave', 'counts', 'var', 'sky', 'mask', 'flam', 'flam_var'
