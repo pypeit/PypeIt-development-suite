@@ -16,7 +16,7 @@ from pypit import arparse
 from pypit.core import artraceslits
 from pypit import ardebug as debugger
 
-class SpecObjExp(object):
+class SpecObj(object):
     """Class to handle object spectra from a single exposure
     One generates one of these Objects for each spectrum in the exposure. They are instantiated by the object
     finding routine, and then all spectral extraction information for the object are assigned as attributes
@@ -67,8 +67,15 @@ class SpecObjExp(object):
         self.objtype = objtype
 
         # ToDo add all attributes here and to the documentaiton
-        self.slitid = None
-        self.objid = None
+        # slit id
+        self.slitid = -1
+
+        # Object finding attributes
+        self.objid = -1
+        self.spat_fracpos = -1.0
+        self.smash_peakflux = -1.0
+
+
 
         # Attributes for HAND apertures, which are object added to the extraction by hand
         self.HAND_SPEC = None
@@ -134,8 +141,8 @@ class SpecObjExp(object):
     def __repr__(self):
         # Generate sets string
         sdet = arparse.get_dnum(self.det, prefix=False)
-        return ('<SpecObjExp: {:s} == Setup {:s} Object at {:g} in Slit at {:g} with det={:s}, scidx={:d} and objtype={:s}>'.format(
-                self.idx, self.config, self.xobj, self.slitcen, sdet, self.scidx, self.objtype))
+        return ('<SpecObjExp: Setup = {:s}, Slit = {:d} at spec = {:7.2f} & spat = ({:7.2f},{:7.2f}) on det={:s}, scidx={:d} and objtype={:s}>'.format(
+            self.config, self.slitid, self.slit_spec_pos, self.slit_spat_pos[0], self.slit_spat_pos[1], sdet, self.scidx, self.objtype))
 
 
 def init_exp(lordloc, rordloc, shape, maskslits,

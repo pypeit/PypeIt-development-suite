@@ -49,7 +49,7 @@ import scipy
 from pydl.pydlutils.trace import TraceSet
 from pydl.pydlutils.image import djs_maskinterp
 
-
+from specobj import SpecObj
 #from pypit.idl_stats import djs_iterstat
 from pypit import ginga
 #from pypit.extract_boxcar import extract_boxcar
@@ -63,6 +63,7 @@ from pydl.pydlutils.bspline import bspline
 
 from pydl.goddard.math import flegendre
 from scipy.special import ndtr
+from scipy.interpolate import RectBivariateSpline
 
 
 
@@ -108,7 +109,7 @@ def parse_hand_dict(HAND_DICT):
             raise ValueError('HAND_FWHM must either be a number of have the same size as HAND_SPEC and HAND_SPAT')
 
 
-    return HAND_SPEC, HAND_SPAT, HAND_FWHM
+    return (HAND_SPEC, HAND_SPAT, HAND_DET, HAND_FWHM)
 
 
 savefile='/Users/joe/gprofile_develop/objfind.sav'
@@ -158,12 +159,14 @@ ginga.show_slits(viewer, ch, np.reshape(slit_left,(nspec,1)), np.reshape(slit_ri
 
     #handslits = thismask[int(np.rint(HAND_SPEC)), int(np.rint(HAND_SPAT))]
 
-# def objfind(image, slit_left, slit_righ, mask = None, thismask=None, ximg = None, edgmask = None, fwhm=3.0, HAND_DICT = None)
+# def objfind(image, slit_left, slit_righ, mask = None, thismask=None, ximg = None, edgmask = None, fwhm=3.0, HAND_DICT = None,
+# config = None, scidx = 1, det = 1, objtype = 'science')
 
 # Things that will presumably be in some settings import which are currently arguments to specobj
 config = 'lris_b1200'
 scidx = 1
 det = 1
+objtype= 'science'
 
 # arguments provided to the code
 mask = (sciivar > 0.0)
@@ -197,6 +200,12 @@ if ((PEAK_THRESH >=0.0) & (PEAK_THRESH <=1.0)) == False:
 frameshape = sciimg.shape
 nspec = frameshape[0]
 nspat = frameshape[1]
+
+# Some information about this slit we need for later when we instantiate specobj objects
+spec_vec = np.arange(nspec)
+spat_vec = np.arange(nspat)
+slit_spec_pos = nspec/2.0
+slit_spat_pos = (np.interp(slit_spec_pos, spec_vec, slit_left), np.interp(slit_spec_pos, spec_vec, slit_righ))
 
 # Synthesize necessary inputs if user did not provide them as optional arguments
 if thismask is None:
@@ -279,8 +288,6 @@ ypeak = ypeak[not_near_edge]
 npeak = len(xcen)
 
 specobjs =[]
-yvec = np.arange(nspec)/nspec
-ymid = 0.5
 
 # Choose which ones to keep and discard based on threshold params
 if npeak > 0:
@@ -295,14 +302,34 @@ if npeak > 0:
     nobj_real = len(xcen)
     # Now create SpecObjExp objects for all of these
     for iobj in range(nobj_real):
-        xslit = (np.interp(ymid, yvec, slit_left)/nspat, np.interp(ymid, yvec, slit_right)/nspat)
+        specobj = SpecObj(frameshape, slit_spat_pos, slit_spec_pos, det = det, config = config, scidx = scidx, objtype=objtype)
+        specobj.spat_fracpos = xcen[iobj]/nsamp
+        specobj.smash_peakflux = ypeak[iobj]
+        specobjs.append(specobj)
+
 
 # Now deal with the hand apertures if a HAND_DICT was passed in
 if HAND_DICT is not None:
     # First Parse the hand_dict
-    HAND_SPEC, HAND_SPAT, HAND_FWHM = parse_hand_dict(HAND_DICT)
+    HAND_SPEC, HAND_SPAT, HAND_DET, HAND_FWHM = parse_hand_dict(HAND_DICT)
     # Determine if these hand apertures land on the slit in question
+    hand_on_slit = thismask[int(np.rint(HAND_SPEC)),int(np.rint(HAND_SPAT))]
+    HAND_SPEC = HAND_SPEC[hand_on_slit]
+    HAND_SPAT = HAND_SPAT[hand_on_slit]
+    HAND_DET  = HAND_DET[hand_on_slit]
+    HAND_FWHM = HAND_FWHM[hand_on_slit]
+    nhand = len(HAND_SPEC)
+    for iobj in range(nhand):
+        specobj = SpecObj(frameshape, slit_spat_pos, slit_spec_pos, det = det, config = config, scidx = scidx, objtype=objtype)
+        specobj.HAND_SPEC = HAND_SPEC[iobj]
+        specobj.HAND_SPAT = HAND_SPAT[iobj]
+        specobj.HAND_DET = HAND_DET[iobj]
+        specobj.HAND_FWHM = HAND_FWHM[iobj]
+        specobj.HAND_FLAG = True
+        f_ximg = RectBivariateSpline(spec_vec, spat_vec, ximg)
+        specobj.spat_fracpos = f_ximg(specobj.HAND_SPEC, specobj.HAND_SPAT, grid=False) # interpolate from ximg
+        specobj.smash_peakflux = np.interp(specobj.spat_fracpos*nsamp,np.arange(nsamp),fluxconv) # interpolate from fluxconv
+        specobjs.append(specobj)
 
 
-#    specobj = SpecObjExp(sciimg.shape, config, scidx, date, xslit, ypos, xobj,objtype='science')
 
