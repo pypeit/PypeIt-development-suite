@@ -22,23 +22,21 @@ class SpecObjExp(object):
 
     Parameters:
     ----------
-    shape: tuple
-       row,col of the frame
+    shape: tuple (nspec, nspat)
+       dimensions of the spectral image that the object is identified on
+    slit_spat_pos: tuple of floats (spat_left,spat_right)
+        The median value of the left and right slit edge arrays
+    slit_spec_pos: float
+        The midpoint of the slit location in the spectral direction. This will typically be nspec/2
+
+    Optional Parameters:
+    -------------------
+    det:   int
+        Detector number. (default = 1, max = 99)
     config: str
-       Instrument configuration
+       Instrument configuration (default = None)
     scidx: int
-       Exposure index (max=9999)
-    det: int
-       Detector index (max=99)
-    #TODO I don't see the advantage of having these in fractinoal units? Why not match up pixel numbers which are easier to deal with.
-    xslit: tuple
-       float (0-1), float (0-1)
-       left, right of slit in fraction of total (trimmed) detector size defined at ypos
-    ypos: float
-       ypos of slit in fraction of total (trimmed) detector size
-    xobj: float
-       float (0-1)
-       Position of object in fraction of total slit at same ypos that defines the slit
+       Exposure index (deafult = 1, max=9999)
     objtype: str, optional
        Type of object ('unknown', 'standard', 'science')
 
@@ -54,28 +52,33 @@ class SpecObjExp(object):
     # Attributes
     # Init
 
-    # ToDo I don't want to have to have all these quantities at instantion. They can set to note at instantionan and adde dlater when needed. I want to 
-    def __init__(self, shape, config, scidx, det, xslit, ypos, xobj, objtype='unknown'):
+    def __init__(self, shape, slit_spat_pos, slit_spec_pos, det = 1, config = None, scidx = 1, objtype='unknown'):
+
+        #Assign from init parameters
         self.shape = shape
+        self.slit_spat_pos = slit_spat_pos
+        self.slit_spec_pos = slit_spec_pos
         self.config = config
         self.scidx = copy.deepcopy(scidx)
         self.det = det
-        self.xslit = xslit
-        self.ypos = ypos
-        self.slitcen = np.mean([xslit[0], xslit[1]])
-        self.xobj = xobj
         self.objtype = objtype
 
-        # Generate IDs
-        self.slitid = int(np.round(self.slitcen*1e4))
-        self.objid = int(np.round(xobj*1e3))
+        # ToDo add all attributes here and to the documentaiton
+        self.slitid = None
+        self.objid = None
 
-        # Set index
-        self.set_idx()
-
-        # Items that are generally filled
+        # Dictionaries holding boxcar and optimal extraction parameters
         self.boxcar = {}   # Boxcar extraction 'wave', 'counts', 'var', 'sky', 'mask', 'flam', 'flam_var'
         self.optimal = {}  # Optimal extraction 'wave', 'counts', 'var', 'sky', 'mask', 'flam', 'flam_var'
+
+
+        # Generate IDs
+        #self.slitid = int(np.round(self.slitcen*1e4))
+        #self.objid = int(np.round(xobj*1e3))
+
+        # Set index
+        #self.set_idx()
+
         #
 
     def set_idx(self):
@@ -356,3 +359,5 @@ def dummy_specobj(fitstbl, det=1, extraction=True):
         specobjs.append(specobj)
     # Return
     return specobjs
+
+#TODO We need a method to write these objects to a fits file
