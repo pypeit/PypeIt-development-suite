@@ -64,7 +64,50 @@ from pydl.pydlutils.bspline import bspline
 from pydl.goddard.math import flegendre
 from scipy.special import ndtr
 
-#
+
+
+
+
+def parse_hand_dict(HAND_DICT):
+    """ Utility routine to parase the HAND_DICT dictionary for hand selected apertures
+
+    Parameters
+    ----------
+    HAND_DICT:   dictionary
+
+    Returns
+    -------
+    hand_spec:  spectral pixel location, numpy float 1-d array with size equal to number of hand aperatures requested
+    hand_spat:  spatial pixel location, numpy float 1-d array with size equal to number of hand aperatures requested
+    hand_fwhm:  hand aperture fwhm, numpy float 1-d array with size equal to number of hand aperatures requested
+
+    Revision History
+    ----------------
+    23-June-2018  Written by J. Hennawi
+    """
+
+
+    if ('HAND_SPEC' not in HAND_DICT.keys() | 'HAND_SPAT' not in HAND_DICT.keys()):
+        raise ValueError('HAND_SPEC and HAND_SPAT must be set in the HAND_DICT')
+
+    HAND_SPEC=np.asarray(HAND_DICT['HAND_SPEC'])
+    HAND_SPAT=np.asarray(HAND_DICT['HAND_SPAT'])
+    if(HAND_SPEC.size != HAND_SPAT.size):
+        raise ValueError('HAND_SPEC and HAND_SPAT must have the same size in the HAND_DICT')
+    nhand = HAND_SPEC.size
+
+    HAND_FWHM = HAND_DICT.get('HAND_FWHM')
+    if HAND_FWHM is not None:
+        HAND_FWHM = np.asarray(HAND_FWHM)
+        if(HAND_FWHM.size==HAND_SPEC.size):
+            pass
+        elif (HAND_FWHM.size == 1):
+            HAND_FWHM = np.full(nhand, HAND_FWHM)
+        else:
+            raise ValueError('HAND_FWHM must either be a number of have the same size as HAND_SPEC and HAND_SPAT')
+
+
+    return HAND_SPEC, HAND_SPAT, HAND_FWHM
 
 
 savefile='/Users/joe/gprofile_develop/objfind.sav'
@@ -116,6 +159,12 @@ ginga.show_slits(viewer, ch, np.reshape(slit_left,(nspec,1)), np.reshape(slit_ri
 
 # def objfind(image, slit_left, slit_righ, mask = None, thismask=None, ximg = None, fwhm=3.0, HAND_DICT = None)
 
+# Things that will presumably be in some settings import which are currently arguments to specobj
+config = 'lris_b1200'
+scidx = 1
+det = 1
+
+# arguments provided to the code
 mask = (sciivar > 0.0)
 image = sciimg - skyimage
 ximg = None
@@ -193,72 +242,66 @@ else:
     if frac_bad > 0.9:
         fluxsub = flux_mean.data - np.median(flux_mean.data)
 
-    fluxconv = scipy.ndimage.filters.gaussian_filter1d(fluxsub, FWHM/2.3548,mode='reflect')
-    xcen, sigma, ledg, redg = find_nminima(-fluxconv,nfind=nperslit, width = PKWDTH, minsep = np.fmax(FWHM, PKWDTH))
-    ypeak = np.interp(xcen,np.arange(nsamp),fluxconv)
-    # Create a mask for pixels to use for a background flucutation level estimate. Mask spatial pixels that hit an object
-    imask = np.ones(int(nsamp), dtype=bool)
-    xvec = np.arange(nsamp)
-    for zz in range(len(xcen)):
-        ibad = (np.abs(xvec - xcen[zz]) <= 2.0*FWHM)
-        imask[ibad] = False
-    # Good pixels for flucutation level estimate. Omit edge pixels and pixels within a FWHM of a candidate object
-    igd = imask & (xvec > 3.0) & (xvec <= (nsamp-3.0))
-    if np.any(igd) == False:
-        igd = np.ones(int(nsamp),dtype=bool) # if all pixels are masked for some reason, don't mask
-    (mean, med_sn2, skythresh) = sigma_clipped_stats(fluxconv[igd], sigma=1.5)
-    (mean, med_sn2, sigma)     = sigma_clipped_stats(fluxconv[igd], sigma=2.5)
-    if(skythresh == 0.0) & (sigma != 0.0):
-        skythresh = sigma
-    elif(skythresh == 0.0) & (sigma==0.0):  # if both SKYTHRESH and sigma are zero mask out the zero pixels and reavaluate
-        good = fluxconv > 0.0
-        if np.any(good) == True:
-            (mean, med_sn2, skythresh) = sigma_clipped_stats(fluxconv[good], sigma=1.5)
-            (mean, med_sn2, sigma) = sigma_clipped_stats(fluxconv[good], sigma=2.5)
-        else:
-            raise ValueError('Object finding failed. All the elements of the fluxconv spatial profile array are zero')
+fluxconv = scipy.ndimage.filters.gaussian_filter1d(fluxsub, FWHM/2.3548,mode='reflect')
+xcen, sigma, ledg, redg = find_nminima(-fluxconv,nfind=nperslit, width = PKWDTH, minsep = np.fmax(FWHM, PKWDTH))
+ypeak = np.interp(xcen,np.arange(nsamp),fluxconv)
+# Create a mask for pixels to use for a background flucutation level estimate. Mask spatial pixels that hit an object
+imask = np.ones(int(nsamp), dtype=bool)
+xvec = np.arange(nsamp)
+for zz in range(len(xcen)):
+    ibad = (np.abs(xvec - xcen[zz]) <= 2.0*FWHM)
+    imask[ibad] = False
+
+# Good pixels for flucutation level estimate. Omit edge pixels and pixels within a FWHM of a candidate object
+igd = imask & (xvec > 3.0) & (xvec <= (nsamp-3.0))
+if np.any(igd) == False:
+    igd = np.ones(int(nsamp),dtype=bool) # if all pixels are masked for some reason, don't mask
+
+(mean, med_sn2, skythresh) = sigma_clipped_stats(fluxconv[igd], sigma=1.5)
+(mean, med_sn2, sigma)     = sigma_clipped_stats(fluxconv[igd], sigma=2.5)
+if(skythresh == 0.0) & (sigma != 0.0):
+    skythresh = sigma
+elif(skythresh == 0.0) & (sigma==0.0):  # if both SKYTHRESH and sigma are zero mask out the zero pixels and reavaluate
+    good = fluxconv > 0.0
+    if np.any(good) == True:
+        (mean, med_sn2, skythresh) = sigma_clipped_stats(fluxconv[good], sigma=1.5)
+        (mean, med_sn2, sigma) = sigma_clipped_stats(fluxconv[good], sigma=2.5)
     else:
-        pass
+        raise ValueError('Object finding failed. All the elements of the fluxconv spatial profile array are zero')
+else:
+    pass
 
-    # Remove edge cases from list of peaks
-    not_near_edge = (xcen > nsamp*0.03) & (xcen < nsamp*0.97)
-    xcen = xcen[not_near_edge]
-    ypeak = ypeak[not_near_edge]
-    npeak = len(xcen)
-    # If there are more than one object candidates, choose which ones to keep and discard based on threshold params
-    if npeak > 0:
-        # Possible thresholds    [significance,  fraction of brightest, absolute]
-        threshvec = np.array([SIG_THRESH*sigma, PEAK_THRESH*ypeak.max(), ABS_THRESH])
-        threshold = threshvec.max()
-        msgs.info('Using object finding threshold of: {:5.2f}'.format(threshold))
-        # Trim to only objects above this threshold
-        ikeep = (ypeak >= threshold)
-        xcen = xcen[ikeep]
-        ypeak = ypeak[ikeep]
-        npeak = len(xcen)
+# Get rid of peaks within 3% of slit edge which are almost always spurious
+not_near_edge = (xcen > nsamp*0.03) & (xcen < nsamp*0.97)
+xcen = xcen[not_near_edge]
+ypeak = ypeak[not_near_edge]
+npeak = len(xcen)
 
+specobjs =[]
+yvec = np.arange(nspec)/nspec
+ymid = 0.5
 
+# Choose which ones to keep and discard based on threshold params
+if npeak > 0:
+    # Possible thresholds    [significance,  fraction of brightest, absolute]
+    threshvec = np.array([SIG_THRESH*sigma, PEAK_THRESH*ypeak.max(), ABS_THRESH])
+    threshold = threshvec.max()
+    msgs.info('Using object finding threshold of: {:5.2f}'.format(threshold))
+    # Trim to only objects above this threshold
+    ikeep = (ypeak >= threshold)
+    xcen = xcen[ikeep]
+    ypeak = ypeak[ikeep]
+    nobj_real = len(xcen)
+    # Now create SpecObjExp objects for all of these
+    for iobj in range(nobj_real):
+        xslit = (np.interp(ymid, yvec, slit_left)/nspat, np.interp(ymid, yvec, slit_right)/nspat)
 
-# HAND_DICT parsing
+# Now deal with the hand apertures if a HAND_DICT was passed in
 if HAND_DICT is not None:
-    if ('HAND_SPEC' not in HAND_DICT.keys() | 'HAND_SPAT' not in HAND_DICT.keys()):
-        raise ValueError('HAND_SPEC and HAND_SPAT must be set in the HAND_DICT')
+    # First Parse the hand_dict
+    HAND_SPEC, HAND_SPAT, HAND_FWHM = parse_hand_dict(HAND_DICT)
+    # Determine if these hand apertures land on the slit in question
 
-    HAND_SPEC=np.asarray(HAND_DICT['HAND_SPEC'])
-    HAND_SPAT=np.asarray(HAND_DICT['HAND_SPAT'])
-    if(HAND_SPEC.size != HAND_SPAT.size):
-        raise ValueError('HAND_SPEC and HAND_SPAT must have the same size in the HAND_DICT')
-    nhand = HAND_SPEC.size
-    HAND_FLAG = np.ones_like(HAND_SPEC,dtype=bool)
 
-    HAND_FWHM = HAND_DICT.get('HAND_FWHM')
-    if HAND_FWHM is not None:
-        HAND_FWHM = np.asarray(HAND_FWHM)
-        if(HAND_FWHM.size==HAND_SPEC.size):
-            pass
-        elif (HAND_FWHM.size == 1):
-            HAND_FWHM = np.full(nhand, HAND_FWHM)
-        else:
-            raise ValueError('HAND_FWHM must either be a number of have the same size as HAND_SPEC and HAND_SPAT')
-
+#    specobj = SpecObjExp(sciimg.shape, config, scidx, date, xslit, ypos, xobj,objtype='science')
 
