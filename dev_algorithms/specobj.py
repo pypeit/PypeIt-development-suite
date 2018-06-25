@@ -55,27 +55,27 @@ class SpecObj(object):
     # Attributes
     # Init
 
-    def __init__(self, shape, slit_spat_pos, slit_spec_pos, det = 1, config = None, scidx = 1, objtype='unknown'):
+    def __init__(self, shape, slit_spat_pos, slit_spec_pos, det = 1, config = None, slitid = None, scidx = 1, objtype='unknown'):
 
         #Assign from init parameters
         self.shape = shape
         self.slit_spat_pos = slit_spat_pos
         self.slit_spec_pos = slit_spec_pos
         self.config = config
+        self.slitid = slitid
         self.scidx = copy.deepcopy(scidx)
         self.det = det
         self.objtype = objtype
 
         # ToDo add all attributes here and to the documentaiton
-        # slit id
-        self.slitid = -1
 
         # Object finding attributes
-        self.objid = -1
-        self.spat_fracpos = -1.0
-        self.smash_peakflux = -1.0
-
-
+        self.objid = None
+        self.spat_fracpos = None
+        self.smash_peakflux = None
+        self.trace_spat = None
+        self.trace_spec = None
+        self.fwhm = None
 
         # Attributes for HAND apertures, which are object added to the extraction by hand
         self.HAND_SPEC = None
@@ -141,8 +141,8 @@ class SpecObj(object):
     def __repr__(self):
         # Generate sets string
         sdet = arparse.get_dnum(self.det, prefix=False)
-        return ('<SpecObjExp: Setup = {:s}, Slit = {:d} at spec = {:7.2f} & spat = ({:7.2f},{:7.2f}) on det={:s}, scidx={:d} and objtype={:s}>'.format(
-            self.config, self.slitid, self.slit_spec_pos, self.slit_spat_pos[0], self.slit_spat_pos[1], sdet, self.scidx, self.objtype))
+        return ('<SpecObjExp: Setup = {:}, Slit = {:} at spec = {:7.2f} & spat = ({:7.2f},{:7.2f}) on det={:s}, scidx={:}, objid = {:} and objtype={:s}>'.format(
+            self.config, self.slitid, self.slit_spec_pos, self.slit_spat_pos[0], self.slit_spat_pos[1], sdet, self.scidx, self.objid, self.objtype))
 
 
 def init_exp(lordloc, rordloc, shape, maskslits,

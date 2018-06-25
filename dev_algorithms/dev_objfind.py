@@ -42,8 +42,6 @@ msgs.reset(debug=debug, verbosity=2)
 import sys
 from scipy.io import readsav
 import scipy
-#from scipy.interpolate import RectBivariateSpline
-#from scipy.signal import medfilt
 
 
 from pydl.pydlutils.trace import TraceSet
@@ -62,8 +60,7 @@ from IPython import embed
 from pydl.pydlutils.bspline import bspline
 
 from pydl.goddard.math import flegendre
-from scipy.special import ndtr
-from scipy.interpolate import RectBivariateSpline
+
 
 
 
@@ -107,7 +104,8 @@ def parse_hand_dict(HAND_DICT):
             HAND_FWHM = np.full(nhand, HAND_FWHM)
         else:
             raise ValueError('HAND_FWHM must either be a number of have the same size as HAND_SPEC and HAND_SPAT')
-
+    else:
+        HAND_FWHM = np.full(nhand, None)
 
     return (HAND_SPEC, HAND_SPAT, HAND_DET, HAND_FWHM)
 
@@ -160,13 +158,15 @@ ginga.show_slits(viewer, ch, np.reshape(slit_left,(nspec,1)), np.reshape(slit_ri
     #handslits = thismask[int(np.rint(HAND_SPEC)), int(np.rint(HAND_SPAT))]
 
 # def objfind(image, slit_left, slit_righ, mask = None, thismask=None, ximg = None, edgmask = None, fwhm=3.0, HAND_DICT = None,
-# config = None, scidx = 1, det = 1, objtype = 'science')
+# config = None, slitid = None, scidx = 1, det = 1, objtype = 'science', std_trace = None)
 
 # Things that will presumably be in some settings import which are currently arguments to specobj
 config = 'lris_b1200'
 scidx = 1
 det = 1
 objtype= 'science'
+std_trace = None
+slitid = None
 
 # arguments provided to the code
 mask = (sciivar > 0.0)
@@ -194,6 +194,7 @@ OBJTHRESH = 0.5 # threshold for object masking
 #HAND_DICT = None # dictionary with entires HAND_SPAT, HAND_SPEC, and HAND_FWHM which are np.arrays for hand apertures
 # Deprecated sky_fwhm, crude, sigma_sky, simple_sub is only used in the nirspec pipeline?
 
+
 if ((PEAK_THRESH >=0.0) & (PEAK_THRESH <=1.0)) == False:
     raise ValueError('Invalid value of PEAK_THRESH. It must be between 0.0 and 1.0')
 
@@ -205,6 +206,7 @@ nspat = frameshape[1]
 spec_vec = np.arange(nspec)
 spat_vec = np.arange(nspat)
 slit_spec_pos = nspec/2.0
+
 slit_spat_pos = (np.interp(slit_spec_pos, spec_vec, slit_left), np.interp(slit_spec_pos, spec_vec, slit_righ))
 
 # Synthesize necessary inputs if user did not provide them as optional arguments
@@ -289,7 +291,7 @@ npeak = len(xcen)
 
 specobjs =[]
 
-# Choose which ones to keep and discard based on threshold params
+# Choose which ones to keep and discard based on threshold params. Create SpecObj objects
 if npeak > 0:
     # Possible thresholds    [significance,  fraction of brightest, absolute]
     threshvec = np.array([SIG_THRESH*sigma, PEAK_THRESH*ypeak.max(), ABS_THRESH])
@@ -299,16 +301,16 @@ if npeak > 0:
     ikeep = (ypeak >= threshold)
     xcen = xcen[ikeep]
     ypeak = ypeak[ikeep]
-    nobj_real = len(xcen)
-    # Now create SpecObjExp objects for all of these
-    for iobj in range(nobj_real):
-        specobj = SpecObj(frameshape, slit_spat_pos, slit_spec_pos, det = det, config = config, scidx = scidx, objtype=objtype)
+    nobj_reg = len(xcen)
+    # Now create SpecObj objects for all of these
+    for iobj in range(nobj_reg):
+        specobj = SpecObj(frameshape, slit_spat_pos, slit_spec_pos, det = det, config = config, slitid = slitid, scidx = scidx, objtype=objtype)
         specobj.spat_fracpos = xcen[iobj]/nsamp
         specobj.smash_peakflux = ypeak[iobj]
         specobjs.append(specobj)
 
 
-# Now deal with the hand apertures if a HAND_DICT was passed in
+# Now deal with the hand apertures if a HAND_DICT was passed in. Add these to the SpecObj objects
 if HAND_DICT is not None:
     # First Parse the hand_dict
     HAND_SPEC, HAND_SPAT, HAND_DET, HAND_FWHM = parse_hand_dict(HAND_DICT)
@@ -318,18 +320,88 @@ if HAND_DICT is not None:
     HAND_SPAT = HAND_SPAT[hand_on_slit]
     HAND_DET  = HAND_DET[hand_on_slit]
     HAND_FWHM = HAND_FWHM[hand_on_slit]
-    nhand = len(HAND_SPEC)
-    for iobj in range(nhand):
-        specobj = SpecObj(frameshape, slit_spat_pos, slit_spec_pos, det = det, config = config, scidx = scidx, objtype=objtype)
+    nobj_hand = len(HAND_SPEC)
+    for iobj in range(nobj_hand):
+        specobj = SpecObj(frameshape, slit_spat_pos, slit_spec_pos, det = det, config = config, slitid = slitid, scidx = scidx, objtype=objtype)
         specobj.HAND_SPEC = HAND_SPEC[iobj]
         specobj.HAND_SPAT = HAND_SPAT[iobj]
         specobj.HAND_DET = HAND_DET[iobj]
         specobj.HAND_FWHM = HAND_FWHM[iobj]
         specobj.HAND_FLAG = True
-        f_ximg = RectBivariateSpline(spec_vec, spat_vec, ximg)
+        f_ximg = scipy.interpolate.RectBivariateSpline(spec_vec, spat_vec, ximg)
         specobj.spat_fracpos = f_ximg(specobj.HAND_SPEC, specobj.HAND_SPAT, grid=False) # interpolate from ximg
         specobj.smash_peakflux = np.interp(specobj.spat_fracpos*nsamp,np.arange(nsamp),fluxconv) # interpolate from fluxconv
         specobjs.append(specobj)
+
+
+nobj = nobj_reg + nobj_hand
+# Now loop over all apertures and assign preliminary traces to them. For the regular objects these will be refined below.
+# For the hand objects, we will also update these again later with brightest objects on the slit
+for iobj in range(nobj):
+    # Was a standard trace provided? If so, use that as a crutch.
+    if std_trace is not None:
+        msgs.info('Using input STANDARD star trace as crutch for object tracing'.format(threshold))
+        x_trace = np.interp(specmid, spec_vec, std_trace)
+        shift = slit_left + xsize*specobjs[iobj].spat_fracpos - x_trace
+        specobjs[iobj].trace_spat = std_trace + shift
+    else:    # If no standard is provided shift left slit boundary over to be initial trace
+        specobjs[iobj].trace_spat = slit_left  + xsize*specobjs[iobj].spat_fracpos
+    # Determine the FWHM max for the regular apertures
+    if specobjs[iobj].HAND_FLAG == False:
+        yhalf = 0.5*specobjs[iobj].smash_peakflux
+        xpk = specobjs[iobj].spat_fracpos*nsamp
+        x0 = int(np.rint(xpk))
+        # Find right location where smash profile croses yhalf
+        if x0 < (int(nsamp)-1):
+            ind_righ, = np.where(fluxconv[x0:] < yhalf)
+            if len(ind_righ) > 0:
+                i2 = ind_righ[0]
+                if i2 == 0:
+                    xrigh = None
+                else:
+                    xrigh_int = scipy.interpolate.interp1d(fluxconv[x0 + i2-1:x0 + i2 + 1], x0 + np.array([i2-1,i2],dtype=float),assume_sorted=False)
+                    xrigh = xrigh_int([yhalf])[0]
+            else:
+                xrigh = None
+        else:
+            xrigh = None
+        # Find left location where smash profile crosses yhalf
+        if x0 > 0:
+            ind_left, = np.where(fluxconv[0:np.fmin(x0+1,int(nsamp)-1)] < yhalf)
+            if len(ind_left) > 0:
+                i1 = (ind_left[::-1])[0]
+                if i1 == (int(nsamp)-1):
+                    xleft = None
+                else:
+                    xleft_int = scipy.interpolate.interp1d(fluxconv[i1:i1+2],np.array([i1,i1+1],dtype=float))
+                    xleft = xleft_int([yhalf])[0]
+            else:
+                xleft = None
+        else:
+            xleft = None
+
+        if (xleft is None) & (xrigh is None):
+            fwhm_measure = None
+        elif xrigh is None:
+            fwhm_measure = 2.0*(xpk- xleft)
+        elif xleft is None:
+            fwhm_measure = 2.0*(xrigh - xpk)
+        else:
+            fwhm_measure = (xrigh - xleft)
+
+        if fwhm_measure is not None:
+            specobjs[iobj].fwhm = np.sqrt(np.fmax(fwhm_measure**2 - FWHM**2, (FWHM/2.0)**2)) # Set a floor of FWHM/2 on FWHM
+        else:
+            specobjs[iobj].fwhm = FWHM
+
+# For hand apertures we presume there is not enough flux to measure a FWHM.  So we use:
+# 1) the specified HAND_FWHM, if it was provided
+# 2) if no HAND_FWHM was specified in the dict, or it was set to None we will give the hand apertures the median value of all the other objects
+# on this slit.
+# 3) If there are no other objects on the slit, we will use the value FWHM for the hand apertures
+
+
+    # TODO It seems we have two codes that do similar things, i.e. findfwhm in arextract.py. Could imagine having one
 
 
 
