@@ -5,7 +5,7 @@
 
 import copy
 from astropy.table import Table
-from pydl.pydlutils.trace import TraceSet
+#from pydl.pydlutils.trace import TraceSet
 from pydl.pydlutils.image import djs_maskinterp
 
 #from pypit.idl_stats import djs_iterstat
@@ -25,6 +25,7 @@ from pypit.arutils import find_nminima
 from pypit.core.arextract import extract_asymbox2, extract_boxcar
 
 from pypit.core.artraceslits import trace_fweight, trace_gweight
+from pypit.arutils import robust_polyfit, func_val
 
 from pypit import msgs
 from pypit import ardebug as debugger
@@ -46,7 +47,7 @@ from scipy.io import readsav
 import scipy
 
 
-from pydl.pydlutils.trace import traceset2xy, xy2traceset
+#from pydl.pydlutils.trace import traceset2xy, xy2traceset
 from pydl.pydlutils.image import djs_maskinterp
 
 from specobj import SpecObj
@@ -59,7 +60,7 @@ from astropy.stats import sigma_clipped_stats
 from pydl.pydlutils.math import djs_median
 from pydl.pydlutils.bspline import iterfit as bspline_iterfit
 from IPython import embed
-from pydl.pydlutils.trace import
+#from pydl.pydlutils.trace import
 
 from pydl.goddard.math import flegendre
 
@@ -417,18 +418,35 @@ xpos0 = np.stack([spec.trace_spat for spec in specobjs], axis=1)
 xfit1 = xpos0
 ypos = np.outer(spec_vec, np.ones(nobj))
 yind = np.arange(nspec,dtype=int)
+HAND_FLAG = [spec.HAND_FLAG for spec in specobjs]
+ireg = HAND_FLAG == False
 for iiter in range(niter):
-    xpos1, xerr1 = trace_fweight(image*mask,xfit1, radius = fwhm_vec[iiter])
+    xpos1, xerr1 = trace_fweight(image*mask,xfit1[:,ireg], radius = fwhm_vec[iiter])
     # Get the indices of the current trace
-    xinvvar = np.ones_like(xpos0) # invvar used only for masking, not for weighted fitting
-    # Loop over centroids and mask out anything that has left the slit/order.
-    xind = (np.fmax(np.fmin(np.rint(xpos1),nspat-1),0)).astype(int)
-    for iobj in range(nobj):
-        xinvvar[:,iobj] = thismask[yind, xind[:,iobj]].astype(float)
+    tracemask = np.zeros_like(xpos0,dtype=int)
+    xfit1[:,ireg] = 0.0 
     # Mask out anything that left the image.
     off_image = (xpos1 < -0.2*nspat) | (xpos1 > 1.2*nspat)
-    xinvvar[off_image] = 0.0
-    pos_set1 = xy2traceset(ypos,xpos1, ncoeff=ncoeff,maxdev = 5.0,invvar = xinvvar)
+    tracemask[off_image] = 1
+    xind = (np.fmax(np.fmin(np.rint(xpos1),nspat-1),0)).astype(int)
+    for iobj in range(nobj):
+        if specobjs[iobj].HAND_FLAG==False:
+            # Mask out anything that has left the slit/order.
+            tracemask[:,iobj] = (thismask[yind, xind[:,iobj]] == False).astype(int)
+            # ToDO add maxdev functionality?
+            polymask, coeff_fit1 = robust_polyfit(spec_vec,xpos1[:,iobj], ncoeff, function = 'legendre',
+                                                  initialmask= tracemask[:,iobj],forceimask=True)
+            xfit1[:,iobj] = func_val(coeff_fit1, spec_vec, 'legendre')
+            plt.plot(spec_vec,xpos1[:,iobj],c='k',marker='+',markersize=1.5,linestyle='None')
+            if (tracemask[:,iobj] == 1).any():
+                plt.plot(spec_vec[(tracemask[:,iobj] == 1)],xpos1[(tracemask[:,iobj] == 1),iobj],c='r',marker='+',markersize=1.5,linestyle='None')
+            plt.plot(spec_vec,xfit1[:,iobj],c='orange')
+            plt.show()
+        else:
+            pass
+
+
+#    pos_set1 = xy2traceset(ypos,xpos1, ncoeff=ncoeff,maxdev = 5.0,invvar = xinvvar)
 
 
 
