@@ -77,6 +77,7 @@ class SpecObj(object):
         self.trace_spat = None
         self.trace_spec = None
         self.fwhm = None
+        self.spat_medpos = None
 
         # Attributes for HAND apertures, which are object added to the extraction by hand
         self.HAND_SPEC = None

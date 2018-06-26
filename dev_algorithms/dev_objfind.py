@@ -378,7 +378,7 @@ for iobj in range(nobj):
                 if i1 == (int(nsamp)-1):
                     xleft = None
                 else:
-                    xleft_int = scipy.interpolate.interp1d(fluxconv[i1:i1+2],np.array([i1,i1+1],dtype=float))
+                    xleft_int = scipy.interpolate.interp1d(fluxconv[i1:i1+2],np.array([i1,i1+1],dtype=float), assume_sorted= False)
                     xleft = xleft_int([yhalf])[0]
             else:
                 xleft = None
@@ -424,7 +424,7 @@ for iiter in range(niter):
     xpos1, xerr1 = trace_fweight(image*mask,xfit1[:,ireg], radius = fwhm_vec[iiter])
     # Get the indices of the current trace
     tracemask = np.zeros_like(xpos0,dtype=int)
-    xfit1[:,ireg] = 0.0 
+    xfit1[:,ireg] = 0.0
     # Mask out anything that left the image.
     off_image = (xpos1 < -0.2*nspat) | (xpos1 > 1.2*nspat)
     tracemask[off_image] = 1
