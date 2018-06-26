@@ -71,6 +71,7 @@ class SpecObj(object):
 
         # Object finding attributes
         self.objid = None
+        self.idx = None
         self.spat_fracpos = None
         self.smash_peakflux = None
         self.trace_spat = None
