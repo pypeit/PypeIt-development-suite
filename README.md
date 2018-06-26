@@ -1,4 +1,4 @@
-# PYPIT-development-suite v0.4.0
+# PYPIT-development-suite v0.4.1
 
 The Python Spectroscopic Data Reduction Pipeline development suite
 
@@ -12,6 +12,8 @@ the tests from this directory with:
 ./pypit_test
 
 Current allowed arguments include all, kast, isis, deimos, wht, and lris.
+
+Use -outputdir to choose a different output directory.
 
 Many of the datasets are included as part of the Repository,
 but several exceed GitHub capacity.  To include testing on
@@ -28,4 +30,3 @@ those, you will need to download them.
     1. Unpack the tarball here
 
 
-Use -outputdir to choose a different output directory.
