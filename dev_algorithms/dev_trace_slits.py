@@ -10,13 +10,14 @@ from pypit import msgs
 from pypit import ardebug as debugger
 from pypit import ginga
 from pypit import arload
-from pypit import arproc
+from pypit.core import arprocimg
 from pypit import arcomb
-from pypit import ardeimos
-from pypit import arlris
+from pypit.core import ardeimos
+from pypit.core import arlris
 from pypit import arpixels
-from pypit import arsave
+#from pypit import arsave
 from pypit import traceslits
+from IPython import embed
 
 debug = debugger.init()
 debug['develop'] = True
@@ -24,7 +25,7 @@ msgs.reset(debug=debug, verbosity=2)
 
 from pypit import artrace
 
-def_settings = traceslits.default_settings
+def_settings = traceslits.default_settings()
 #def_settings=dict(trace={'slits': {'single': [],
 #                                   'function': 'legendre',
 #                                   'polyorder': 3,
@@ -40,23 +41,22 @@ def_settings = traceslits.default_settings
 def_settings['trace']['combine'] = {'match': -1.,
                           'satpix': 'reject',
                           'method': 'weightmean',
-                          'reject': {'cosmics': 20., 'lowhigh': [0,0], 'level': [3.,3.],
-                                     'replace': 'maxnonsat'}}
+                          'reject': {'cosmics': 20., 'lowhigh': [0,0], 'level': [3.,3.],'replace': 'maxnonsat'}}
 
 def pypit_trace_slits():
     pass
 
-def combine_frames(spectrograph, files, det, settings, saturation=None, numamplifiers=None):
+def combine_frames(spectrograph, files, det, settings, saturation=None, numamplifiers=None, dataext= None):
     # Grab data info
-    datasec, oscansec, naxis0, naxis1 = arproc.get_datasec(spectrograph, files[0],
+    datasec, oscansec, naxis0, naxis1 = arprocimg.get_datasec(spectrograph, files[0],
                                                            numamplifiers=numamplifiers, det=det)
 
     # Load + process images
     frames = []
     for ifile in files:
-        rawframe, head0 = arload.load_raw_frame(spectrograph, ifile, pargs.det, disp_dir=0)
+        rawframe, head0 = arload.load_raw_frame(spectrograph, ifile, pargs.det, disp_dir=0, dataext = dataext)
         # Bias subtract
-        newframe = arproc.sub_overscan(rawframe.copy(), numamplifiers, datasec, oscansec)
+        newframe = arprocimg.sub_overscan(rawframe.copy(), numamplifiers, datasec, oscansec)
         # Trim
         frame = arproc.trim(newframe, numamplifiers, datasec)
         # Append
@@ -80,7 +80,7 @@ def parser(options=None):
     import argparse
     # Parse
     parser = argparse.ArgumentParser(description='Developing/testing/checking trace_slits [v1.1]')
-    parser.add_argument("spectrograph", type=str, help="Instrument [keck_deimos, keck_lris_red, keck_lris_blue]")
+    parser.add_argument("spectrograph", type=str, help="Instrument [keck_deimos, keck_lris_red, keck_lris_blue, keck_nires]")
     parser.add_argument("--files", type=str, help="File(s) of trace flats")
     parser.add_argument("--det", default=1, type=int, help="Detector")
     parser.add_argument("--show", default=False, action="store_true", help="Show the image with traces")
@@ -105,6 +105,7 @@ def main(pargs):
     saturation = None
     add_user_slits = None
     user_settings = None
+    dataext = None
 
     settings = def_settings.copy()
 
@@ -189,17 +190,34 @@ def main(pargs):
 
         settings['trace']['slits']['pca']['params'] = [3,2,1,0]
         settings['trace']['slits']['sigdetect'] = 30.0
+    elif pargs.spectrograph == 'keck_nires':
+        saturation = 65535.0              # The detector Saturation level ??
+        numamplifiers=1
+        files = ['../RAW_DATA/Keck_NIRES/s180604_0023.fits']
+        settings['trace']['slits']['sigdetect'] = 50.0
+        settings['trace']['slits']['pca']['params'] = [3,2,1,0]
+#        embed()
+#        settings['detector']['dataext'] = 0
+        #dataext = 0
+        user_settings =  dict(run={'spectrograph': 'keck_nires'},
+                              detector={'dataext':0, 'dispaxis':1,'numamplifiers':1, 'datasec01': '[:,:]','oscansec01': '[:,:]'})
+
     else:
         debugger.set_trace()
+
 
     # Combine
     if pargs.pclass:
         from pypit import processimages
-        tflats = processimages.ProcessImages(files, user_settings=user_settings)
-        mstrace = tflats.combine(bias_subtract='overscan', trim=True)
+        tflats = processimages.ProcessImages(files, user_settings=user_settings, spectrograph=pargs.spectrograph)
+        embed()
+        mstrace = tflats.load_images()
+
+         #mstrace = tflats.combine()
+#        mstrace = tflats.combine(bias_subtract='overscan', trim=True)
     else:
         mstrace = combine_frames(pargs.spectrograph, files, pargs.det, settings,
-                             saturation=saturation, numamplifiers=numamplifiers)
+                             saturation=saturation, numamplifiers=numamplifiers, dataext = dataext)
 
     # binpx
     if binbpx is None:
