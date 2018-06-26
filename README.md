@@ -17,6 +17,10 @@ Many of the datasets are included as part of the Repository,
 but several exceed GitHub capacity.  To include testing on
 those, you will need to download them.
 
+* NIRES
+    1. Download the tarball from here: https://drive.google.com/drive/folders/1Re-He1a6k-flookumv431g5pasYL4HSO
+    1. cd RAW_DATA
+    1. Unpack the tarball here
 * DEIMOS
     1. Download the tarball from here: https://drive.google.com/open?id=1frZk1VsF9PMvwkMQEGaKtwkvD5gRXJBx
     1. cd RAW_DATA
