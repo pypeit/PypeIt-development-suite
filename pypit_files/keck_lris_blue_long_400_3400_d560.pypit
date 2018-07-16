@@ -11,7 +11,7 @@
     [[traceframe]]
         number = 3
     [[flatfield]]
-        useframe = /Users/xavier/Dropbox/PYPIT/CALIBS/PYPIT_LRISb_pixflat_B400_2x2_15apr2015.fits.gz
+        frame = /home/xavier/Projects/Python/PYPIT-development-suite/CALIBS/PYPIT_LRISb_pixflat_B400_2x2_15apr2015.fits.gz
     [[tilts]]
         idsonly = True
 
