@@ -14,22 +14,18 @@ from __future__ import absolute_import, division, print_function
 def parser(options=None):
     import argparse
 
-    all_tests = ['kast', 'lris', 'isis', 'hires', 'deimos',  # Insturments
+    all_tests = ['kast', 'lris', 'isis', 'hires', 'deimos',  # Instruments
                  'keck', 'shane', 'wht']  # Observatories
     hlpstr = ", ".join(all_tests)
 
     parser = argparse.ArgumentParser(formatter_class=argparse.ArgumentDefaultsHelpFormatter)
 
-    parser.add_argument('tests', type=str, default=None, help='Tests to run.  Options include: all, {0:s}'.format(hlpstr))
+    parser.add_argument('tests', type=str, default=None,
+                        help='Tests to run.  Options include: all, {0:s}'.format(hlpstr))
     parser.add_argument('-outputdir', type=str, help="Output folder.  Default is ./REDUX_OUT")
     parser.add_argument('-setup', type=str, help="Single out a setup to run")
 
-    if options is None:
-        pargs = parser.parse_args()
-    else:
-        pargs = parser.parse_args(options)
-    #
-    return pargs, hlpstr
+    return parser.parse_args() if options is None else parser.parse_args(options), hlpstr
 
 
 def main():
@@ -156,11 +152,11 @@ def main():
                         i0 = dpth.rfind('/')
                         newdpth += pwd+'/'+raw_data+'/'+instr+'/'+setup+dpth[i0:]
                         lines[kk+1] = newdpth
-                    elif 'reduce flatfield useframe' in iline:
-                        cpth = lines[kk]
+                    elif 'flatfield' in iline and 'frame' in lines[kk+1]:
+                        cpth = lines[kk+1]
                         i0 = cpth.rfind('/')
                         newcpth = pwd+'/CALIBS/'+cpth[i0:]
-                        lines[kk] = 'reduce flatfield useframe '+newcpth
+                        lines[kk+1] = '        frame = {0}'.format(newcpth)
                 # Write to outputdir
                 outfile = wdir+'/'+instr.lower()+'_'+setup.lower()+'.pypit'
                 pyp_file = instr.lower()+'_'+setup.lower()+'.pypit'
@@ -174,9 +170,10 @@ def main():
             print('Running pypit on {:s} --- '.format(pyp_file), file=sys.stderr, end='')
             with open(logfile, 'w') as f:
                 print(wdir)
-                print('run_pypit', pyp_file, '--devtest', '-v 2','-d')
-                retval = 0
+                print('run_pypit', pyp_file, '-v 2', '-d', '-o')
+#                retval = 0
 #                retval = subprocess.call(['run_pypit', pyp_file, '--devtest', '-v 2','-d'], stderr=f, cwd=wdir)#, shell=True)
+                retval = subprocess.call(['run_pypit', pyp_file, '-v 2', '-d', '-o'], stderr=f, cwd=wdir)#, shell=True)
                 if retval == 0:
                     print("\x1B[" + "1;32m" + "PASSED" + "\x1B[" + "0m", file=sys.stderr)
                     npass += 1
@@ -190,10 +187,11 @@ def main():
                 logfile = wdir+'/'+instr.lower()+'_'+setup.lower()+'.log4'
                 print('Running pypit with master frames on {:s} --- '.format(pyp_file), file=sys.stderr, end='')
                 with open(logfile, 'w') as f:
-                    print(wdir)
-                    print('run_pypit', pyp_file, '--devtest', '-m', '-v 2','-d')
-                    retval = 0
+#                    print(wdir)
+                    print('run_pypit', pyp_file, '-m', '-v 2', '-d', '-o')
+#                    retval = 0
 #                    retval = subprocess.call(['run_pypit', pyp_file, '--devtest', '-m', '-v 2','-d'], stderr=f, cwd=wdir)#, shell=True)
+                    retval = subprocess.call(['run_pypit', pyp_file, '-v 2', '-d', '-o', '-m'], stderr=f, cwd=wdir)#, shell=True)
                     if retval == 0:
                         print("\x1B[" + "1;32m" + "PASSED" + "\x1B[" + "0m", file=sys.stderr)
                         npass += 1
