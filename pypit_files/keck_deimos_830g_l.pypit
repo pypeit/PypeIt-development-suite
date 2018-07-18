@@ -5,14 +5,15 @@
     spectrograph = keck_deimos
     sortroot = keck_deimos_830g
     detnum = 3,7
-    [[extract]]
-        maxnumber = 5
 
 [calibrations]
     [[pixelflatframe]]
         number = 3
     [[traceframe]]
         number = 3
+
+[extract]
+    maxnumber = 5
 
 # Setup
 setup read
