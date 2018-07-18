@@ -1,32 +1,19 @@
 # Single-slit reduction for DEIMOS
 
-# Change the default settings
-run ncpus 4
-run spectrograph keck_deimos
-output verbosity 2 
-output overwrite True
-run calcheck False
-output sorted keck_deimos_830g
+# Parmaeters
+[rdx]
+    spectrograph = keck_deimos
+    sortroot = keck_deimos_830g
+    detnum = 3,7
 
-# Reduce
-reduce calibrate flux False # Do not flux calibrate
+[calibrations]
+    [[pixelflatframe]]
+        number = 3
+    [[traceframe]]
+        number = 3
 
-# Reduce only these chips
-reduce detnum 3,7
-
-# One slit
-#trace slits number 1
-#trace slits sobel mode constant    # JFH reports this is needed for slits running off the detector
-#trace slits sigdetect 500.0        # I think this basically avoids any slit being found so a longslit is imposed
-
-# Only extract 5 objects
-science extraction maxnumber 5
-
-
-# Spect
-spect read
- arc number 1
-spect end
+[extract]
+    maxnumber = 5
 
 # Setup
 setup read

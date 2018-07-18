@@ -1,31 +1,30 @@
-# This is a comment line
+# Parameters
+[rdx]
+    spectrograph = keck_lris_blue
+    sortroot = lris_blue_long_400_3400_d560
 
-# Change the default settings
-run ncpus 1
-run spectrograph keck_lris_blue
-output verbosity 2
-output overwrite True
-output sorted lris_blue_long_400_3400_d560
+[calibrations]
+    [[biasframe]]
+        useframe = overscan
+        [[[process]]]
+            sigrej = 20.
+    [[pixelflatframe]]
+        number = 1
+    [[traceframe]]
+        number = 3
+    [[flatfield]]
+        frame = /home/xavier/Projects/Python/PYPIT-development-suite/CALIBS/PYPIT_LRISb_pixflat_B400_2x2_15apr2015.fits.gz
+    [[tilts]]
+        idsonly = True
 
-# Reduce
-bias useframe overscan
-reduce flatfield useframe /Users/xavier/Dropbox/PYPIT/CALIBS/PYPIT_LRISb_pixflat_B400_2x2_15apr2015.fits.gz
-trace slits tilts method spca
-trace slits tilts params 1,1,1
-trace slits tilts idsonly True
-reduce skysub method bspline
-#arc calibrate IDpixels  884.13563064,1261.06792865,1552.09699198,1737.013,1907.07
-#arc calibrate IDwaves 3262.00,4047.71,4681.45,5087.24,5462.27
-reduce flexure spectrum sky_LRISb_400.fits
-
-# Read in the data
+# Data
 data read
- /Users/xavier/Dropbox/PYPIT/TEST_SUITES/LRIS_blue/long_400_3400_d560/LB*.fits.gz
+ path /home/xavier/Projects/Python/PYPIT-development-suite/RAW_DATA/Keck_LRIS_blue/long_400_3400_d560/
+|                  filename |                date |       frametype |       target | exptime | binning | dichroic | dispname | dispangle |   decker |
+| LB.20160109.14149.fits.gz | 2016-01-09T03:55:53 |             arc |      unknown |       1 |     2,2 |      560 | 400/3400 |      None | long_1.0 |
+| LB.20160109.57204.fits.gz | 2016-01-09T16:03:27 |         science | CIV1233-0031 |     600 |     2,2 |      560 | 400/3400 |      None | long_1.0 |
+| LB.20160109.58013.fits.gz | 2016-01-09T16:07:21 |        standard |     Feige 34 |      25 |     2,2 |      560 | 400/3400 |      None | long_1.0 |
+| LB.20160109.59923.fits.gz | 2016-01-09T16:38:53 | pixelflat,trace |          sky |       6 |     2,2 |      560 | 400/3400 |      None | long_1.0 |
+| LB.20160109.59975.fits.gz | 2016-01-09T16:39:45 | pixelflat,trace |          sky |       6 |     2,2 |      560 | 400/3400 |      None | long_1.0 |
+| LB.20160109.60019.fits.gz | 2016-01-09T16:40:26 | pixelflat,trace |          sky |       4 |     2,2 |      560 | 400/3400 |      None | long_1.0 |
 data end
-
-spect read
- pixelflat number 1
- trace number 3
- arc number 1
- set standard LB.20160109.58013.fits.gz
-spect end

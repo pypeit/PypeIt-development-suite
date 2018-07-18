@@ -1,28 +1,17 @@
-# This is a comment line
+# Multi-slit for DEIMOS
 
-# Change the default settings
-run ncpus 4
-output verbosity 2
-output overwrite True
-run spectrograph keck_deimos
-run calcheck False
-output sorted keck_deimos_setup_A
+[rdx]
+    spectrograph = keck_deimos
+    sortroot = keck_deimos_setup_A
+    detnum = 1,
 
-# Reduce
-reduce calibrate flux False # Do not flux calibrate 
-
-# Slit tracing
-#trace slits fracignore 0.02  # Ignore star boxes
-bias useframe overscan
-pixelflat combine method median
-pixelflat combine reject level [10.0,10.0]
-
-reduce detnum 1
-
-# Spect
-spect read
- arc number 1
-spect end
+[calibrations]
+    [[pixelflatframe]]
+        number = 2
+    [[traceframe]]
+        number = 2
+    [[standardframe]]
+        number = 0
 
 # Setup
 setup read
