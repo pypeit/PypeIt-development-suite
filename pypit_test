@@ -150,7 +150,11 @@ def main():
                         else:
                             newdpth = ' '
                         i0 = dpth.rfind('/')
-                        newdpth += pwd+'/'+raw_data+'/'+instr+'/'+setup+dpth[i0:]
+                        if setup.strip('/') == dpth[i0:].strip('/\n'):
+                            # TODO: Test is for WHT path issue...
+                            newdpth += pwd+'/'+raw_data+'/'+instr+'/'+setup+'\n'
+                        else:
+                            newdpth += pwd+'/'+raw_data+'/'+instr+'/'+setup+dpth[i0:]
                         lines[kk+1] = newdpth
                     elif 'flatfield' in iline and 'frame' in lines[kk+1]:
                         cpth = lines[kk+1]

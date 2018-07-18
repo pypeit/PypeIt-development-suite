@@ -19,7 +19,7 @@ pixelflat combine reject level [10.0,10.0]
 
 # Read in the data
 data read
-    /Users/westfall/Work/packages/PYPIT-development-suite/RAW_DATA/Keck_LRIS_red/long_600_7500_d560/LR*.fits
+ ~/Dropbox/PYPIT/LRIS_red_xmps_test/LR*.fits
 data end
 
 spect read
