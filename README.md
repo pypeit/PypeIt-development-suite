@@ -28,5 +28,10 @@ those, you will need to download them.
     1. Download the tarball from here: https://drive.google.com/open?id=1ZyZrk58N2peFvA7n_EmWIb42mmf33OIz
     1. cd Cooked
     1. Unpack the tarball here
+* XSHOOTER
+    1. Download the tarball from here: https://drive.google.com/open?id=1v84Sn0sqlDThDYWOn7H3FAHeXJKNCsu4
+    1. cd RAW_DATA/VLT_XSHOOTER
+    1. Unpack the tarball here
+    1. Now the tests for XSHOOTER will be enabled
 
 
