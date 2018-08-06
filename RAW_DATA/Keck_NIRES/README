@@ -1,0 +1,19 @@
+Download the tarball from here: https://drive.google.com/drive/folders/1Re-He1a6k-flookumv431g5pasYL4HSO
+
+s180604_0004.fits dark 300s
+s180604_0005.fits dark 300s
+s180604_0023.fits flat 100s
+s180604_0024.fits flat 100s
+s180604_0025.fits flat 100s
+s180604_0089.fits Sci  300s #A Faint Quasar
+s180604_0090.fits Sci  300s #B
+s180604_0091.fits Sci  300s #B
+s180604_0092.fits Sci  300s #A
+s180604_0107.fits Sci  200s #A Very Bright Quasar
+s180604_0108.fits Sci  200s #B
+s180604_0109.fits Sci  200s #B
+s180604_0110.fits Sci  200s #A
+s180604_0111.fits Tell 2*1.2s #A HIP107535 V=8.36
+s180604_0112.fits Tell 2*1.2s #B
+s180604_0113.fits Tell 2*1.2s #B
+s180604_0114.fits Tell 2*1.2s #A
