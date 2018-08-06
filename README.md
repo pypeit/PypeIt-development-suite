@@ -9,7 +9,7 @@ for some of the supported instruments.
 If you have PYPIT installed, you should be able to run
 the tests from this directory with:
 
-./pypit_test
+./pypit_test all
 
 Current allowed arguments include all, kast, isis, deimos, wht, and lris.
 
@@ -19,6 +19,8 @@ Many of the datasets are included as part of the Repository,
 but several exceed GitHub capacity.  To include testing on
 those, you will need to download them.
 
+* NIRES
+    1. Download the tarball from here: https://drive.google.com/drive/folders/1Re-He1a6k-flookumv431g5pasYL4HSO
 * DEIMOS
     1. Download the tarball from here: https://drive.google.com/open?id=1frZk1VsF9PMvwkMQEGaKtwkvD5gRXJBx
     1. cd RAW_DATA
