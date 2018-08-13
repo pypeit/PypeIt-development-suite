@@ -3,6 +3,7 @@ standard input spectra.  Generate summary output
 """
 from __future__ import (print_function, absolute_import, division, unicode_literals)
 
+from pathlib import Path
 import numpy as np
 import json
 import h5py
@@ -11,10 +12,7 @@ import pdb
 
 from pypeit.core.wavecal import autoid
 
-
-print(__file__)
-assert(False)
-test_arc_path = arclines.__path__[0]+'/data/test_arcs/'
+test_arc_path = str(Path().absolute()) + '/TEST_DATA/'
 outdir = 'OUTPUT/'
 
 
@@ -40,10 +38,10 @@ def test_wavecalib(name, spec_file, lines, wv_cen, disp, score, fidx, test='semi
     # Run
     outroot = outdir+name
     if test == 'semi_brute':
-        best_dict, final_fit = autoid.semi_brute(spec, lines, wv_cen, disp, siglev=siglev,
+        best_dict, final_fit = autoid.semi_brute(spec, lines, wv_cen, disp,
                                                 min_ampl=min_ampl, min_nmatch=10, outroot=outroot)
     elif test == 'general':
-        best_dict, final_fit = autoid.general(spec, lines, siglev=siglev,
+        best_dict, final_fit = autoid.general(spec.reshape((spec.size, 1)), lines,
                                              min_ampl=min_ampl, min_nmatch=10, outroot=outroot)
     else:
         pdb.set_trace()
