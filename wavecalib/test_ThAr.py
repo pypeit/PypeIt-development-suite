@@ -3,6 +3,7 @@ standard input spectra.  Generate summary output
 """
 from __future__ import (print_function, absolute_import, division, unicode_literals)
 
+from pathlib import Path
 import time
 import glob
 import astropy.io.fits as pyfits
@@ -10,14 +11,10 @@ import numpy as np
 import warnings
 import pdb
 
-from arclines.holy import grail
+from pypeit.core.wavecal import autoid
 
-#from xastropy.xutils import xdebug as xdb
-
-import arclines
-test_arc_path = arclines.__path__[0]+'/data/test_arcs/'
-outdir = 'TEST_SUITE_OUTPUT/'
-
+test_arc_path = str(Path().absolute()) + '/TEST_DATA/'
+outdir = 'OUTPUT/'
 
 def tst_holy(name, spec, wav_id, pix_id, test='semi_brute', toler=0.001):
     """
