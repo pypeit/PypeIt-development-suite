@@ -38,28 +38,29 @@ def test_wavecalib(name, spec_file, lines, wv_cen, disp, score, fidx, test='semi
     # Run
     outroot = outdir+name
     if test == 'semi_brute':
-        best_dict, final_fit = autoid.semi_brute(spec, lines, wv_cen, disp,
+        patt_dict, final_fit = autoid.semi_brute(spec, lines, wv_cen, disp,
                                                 min_ampl=min_ampl, min_nmatch=10, outroot=outroot)
     elif test == 'general':
-        best_dict, final_fit = autoid.general(spec.reshape((spec.size, 1)), lines,
+        patt_dict, final_fit = autoid.general(spec.reshape((spec.size, 1)), lines,
                                              min_ampl=min_ampl, min_nmatch=10, outroot=outroot)
     else:
         pdb.set_trace()
 
     # Score
     grade = 'PASSED'
-    if final_fit['rms'] > score['rms']:
+    slit = 0
+    if final_fit[slit]['rms'] > score['rms']:
         grade = 'FAILED'
-        warnings.warn("Solution for {:s} failed RMS!!".format(name))
-    if len(final_fit['xfit']) < score['nxfit']:
+        print("Solution for {:s} failed RMS!!".format(name))
+    if len(final_fit[slit]['xfit']) < score['nxfit']:
         grade = 'FAILED'
-        warnings.warn("Solution for {:s} failed N xfit!!".format(name))
-    if best_dict['nmatch'] < score['nmatch']:
+        print("Solution for {:s} failed N xfit!!".format(name))
+    if patt_dict[slit]['nmatch'] < score['nmatch']:
         grade = 'FAILED'
-        warnings.warn("Solution for {:s} failed N match!!".format(name))
+        print("Solution for {:s} failed N match!!".format(name))
 
     # Warn
-    return grade, best_dict, final_fit
+    return grade, patt_dict[slit], final_fit[slit]
 
 
 def main(flg_tst):
