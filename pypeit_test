@@ -93,8 +93,8 @@ def main():
     npass, ntest = 0, 0
     for instr in instruments:
         #if instr in ['kast_blue','Kast_red']:  # For testing
-        #if instr.lower() in ['keck_lris_blue']: # Testing
-        #    continue
+        if instr.lower() in ['keck_lris_blue']: # Testing
+            continue
         # Setups
         setups = next(os.walk(raw_data+'/'+instr))[1]
         for setup in setups:
@@ -116,13 +116,14 @@ def main():
                 outfile = instr.lower()+'_'+setup.lower()
                 logfile = wdir+'/'+instr.lower()+'_'+setup.lower()+'.log2'
                 with open(logfile, 'w') as f:
-                    retval = subprocess.call(['pypeit_setup', rawdir, instr.lower(), '-c', '-d'], stderr=f, cwd=wdir)
+                    retval = subprocess.call(['pypeit_setup', rawdir, instr.lower(), '-c', '-o'], stderr=f, cwd=wdir)
                 wdir = os.path.join(wdir, instr.lower()+'_setup_A')
                 print('Finished running pypeit on {:s} --- '.format(outfile), file=sys.stderr, end='')
                 # Run pypeit on setup_A.pypeit
                 pyp_file = glob.glob(os.path.join(wdir, '*setup_A.pypeit'))
-                print(pyp_file)
                 if len(pyp_file) != 1:
+                    print("Couldn't find PypeIt file")
+                    pdb.set_trace()
                     raise ValueError("Incorrect .pypeit files")
                 else:
                     pyp_file = pyp_file[0]
