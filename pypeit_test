@@ -5,7 +5,7 @@
 # -*- coding: utf-8 -*-
 
 """
-This script runs the PYPIT development suite of tests
+This script runs the PypeIt development suite of tests
 """
 
 from __future__ import absolute_import, division, print_function
@@ -40,7 +40,7 @@ def main():
 
     # Grab a list of all instruments
     raw_data = 'RAW_DATA/'
-    #calib_data = 'PYPIT_CALIBS'
+    #calib_data = 'PYPEIT_CALIBS'
 
     walk = os.walk(raw_data)
     all_instruments = next(walk)[1]
@@ -93,8 +93,8 @@ def main():
     npass, ntest = 0, 0
     for instr in instruments:
         #if instr in ['kast_blue','Kast_red']:  # For testing
-        #if instr.lower() in ['keck_lris_blue']: # Testing
-        #    continue
+#        if instr.lower() in ['keck_lris_blue']: # Testing
+#            continue
         # Setups
         setups = next(os.walk(raw_data+'/'+instr))[1]
         for setup in setups:
@@ -116,14 +116,15 @@ def main():
                 outfile = instr.lower()+'_'+setup.lower()
                 logfile = wdir+'/'+instr.lower()+'_'+setup.lower()+'.log2'
                 with open(logfile, 'w') as f:
-                    retval = subprocess.call(['pypit_setup', rawdir, instr.lower(), '-c', '-d'], stderr=f, cwd=wdir)
+                    retval = subprocess.call(['pypeit_setup', rawdir, instr.lower(), '-c', '-o'], stderr=f, cwd=wdir)
                 wdir = os.path.join(wdir, instr.lower()+'_setup_A')
-                print('Finished running pypit on {:s} --- '.format(outfile), file=sys.stderr, end='')
-                # Run pypit on setup_A.pypit
-                pyp_file = glob.glob(os.path.join(wdir, '*setup_A.pypit'))
-                print(pyp_file)
+                print('Finished running pypeit on {:s} --- '.format(outfile), file=sys.stderr, end='')
+                # Run pypeit on setup_A.pypeit
+                pyp_file = glob.glob(os.path.join(wdir, '*setup_A.pypeit'))
                 if len(pyp_file) != 1:
-                    raise ValueError("Incorrect .pypit files")
+                    print("Couldn't find PypeIt file")
+                    pdb.set_trace()
+                    raise ValueError("Incorrect .pypeit files")
                 else:
                     pyp_file = pyp_file[0]
                     islsh = pyp_file.rfind('/')
@@ -133,8 +134,8 @@ def main():
                         npass += 1
                 subprocess.call(['tail', '-2', logfile])
                 print("\n", file=sys.stderr)
-            else: # Use pre-made PYPIT file
-                redfile = 'pypit_files/'+instr.lower()+'_'+setup.lower()+'.pypit'
+            else: # Use pre-made PypeIt file
+                redfile = 'pypeit_files/'+instr.lower()+'_'+setup.lower()+'.pypeit'
                 if not os.path.exists(redfile):
                     warnings.warn('No redux file: {:s}'.format(redfile))
                     warnings.warn('Not testing..')
@@ -162,22 +163,22 @@ def main():
                         newcpth = pwd+'/CALIBS/'+cpth[i0:]
                         lines[kk+1] = '        frame = {0}'.format(newcpth)
                 # Write to outputdir
-                outfile = wdir+'/'+instr.lower()+'_'+setup.lower()+'.pypit'
-                pyp_file = instr.lower()+'_'+setup.lower()+'.pypit'
+                outfile = wdir+'/'+instr.lower()+'_'+setup.lower()+'.pypeit'
+                pyp_file = instr.lower()+'_'+setup.lower()+'.pypeit'
                 with open(outfile, 'w') as ofile:
                     for iline in lines:
                         ofile.writelines(iline)
 
-            # Run pypit
+            # Run pypeit
             ntest += 1
             logfile = wdir+'/'+instr.lower()+'_'+setup.lower()+'.log3'
-            print('Running pypit on {:s} --- '.format(pyp_file), file=sys.stderr, end='')
+            print('Running pypeit on {:s} --- '.format(pyp_file), file=sys.stderr, end='')
             with open(logfile, 'w') as f:
                 print(wdir)
-                print('run_pypit', pyp_file, '-v 2', '-d', '-o')
+                print('run_pypeit', pyp_file, '-o')
 #                retval = 0
-#                retval = subprocess.call(['run_pypit', pyp_file, '--devtest', '-v 2','-d'], stderr=f, cwd=wdir)#, shell=True)
-                retval = subprocess.call(['run_pypit', pyp_file, '-v 2', '-d', '-o'], stderr=f, cwd=wdir)#, shell=True)
+#                retval = subprocess.call(['run_pypeit', pyp_file, '--devtest', '-v 2','-d'], stderr=f, cwd=wdir)#, shell=True)
+                retval = subprocess.call(['run_pypeit', pyp_file, '-o'], stderr=f, cwd=wdir)#, shell=True)
                 if retval == 0:
                     print("\x1B[" + "1;32m" + "PASSED" + "\x1B[" + "0m", file=sys.stderr)
                     npass += 1
@@ -189,13 +190,13 @@ def main():
             if instr in ['keck_lris_red']:
                 ntest += 1
                 logfile = wdir+'/'+instr.lower()+'_'+setup.lower()+'.log4'
-                print('Running pypit with master frames on {:s} --- '.format(pyp_file), file=sys.stderr, end='')
+                print('Running pypeit with master frames on {:s} --- '.format(pyp_file), file=sys.stderr, end='')
                 with open(logfile, 'w') as f:
 #                    print(wdir)
-                    print('run_pypit', pyp_file, '-m', '-v 2', '-d', '-o')
+                    print('run_pypeit', pyp_file, '-m', '-o')
 #                    retval = 0
-#                    retval = subprocess.call(['run_pypit', pyp_file, '--devtest', '-m', '-v 2','-d'], stderr=f, cwd=wdir)#, shell=True)
-                    retval = subprocess.call(['run_pypit', pyp_file, '-v 2', '-d', '-o', '-m'], stderr=f, cwd=wdir)#, shell=True)
+#                    retval = subprocess.call(['run_pypeit', pyp_file, '--devtest', '-m', '-v 2','-d'], stderr=f, cwd=wdir)#, shell=True)
+                    retval = subprocess.call(['run_pypeit', pyp_file, '-o', '-m'], stderr=f, cwd=wdir)#, shell=True)
                     if retval == 0:
                         print("\x1B[" + "1;32m" + "PASSED" + "\x1B[" + "0m", file=sys.stderr)
                         npass += 1
@@ -205,26 +206,26 @@ def main():
                     print("\n", file=sys.stderr)
     if npass == ntest:
         print("\n" + "\x1B[" + "1;32m" +
-              "--- PYPIT DEVELOPMENT SUITE PASSED {0:d}/{1:d} TESTS ---".format(npass, ntest) +
+              "--- PYPEIT DEVELOPMENT SUITE PASSED {0:d}/{1:d} TESTS ---".format(npass, ntest) +
               "\x1B[" + "0m" + "\r", file=sys.stderr)
     else:
         print("\n" + "\x1B[" + "1;31m" +
-              "--- PYPIT DEVELOPMENT SUITE FAILED {0:d}/{1:d} TESTS ---".format(ntest-npass, ntest) +
+              "--- PYPEIT DEVELOPMENT SUITE FAILED {0:d}/{1:d} TESTS ---".format(ntest-npass, ntest) +
               "\x1B[" + "0m" + "\r", file=sys.stderr)
 
 if __name__ == '__main__':
     import sys, os
 
-    # Check for pypit executable
+    # Check for pypeit executable
     if not any(os.access(os.path.join(
-            path, 'run_pypit'), os.X_OK) for path in os.environ["PATH"].split(os.pathsep)):
-        raise RuntimeError("You need to install run_pypit in your PATH")
+            path, 'run_pypeit'), os.X_OK) for path in os.environ["PATH"].split(os.pathsep)):
+        raise RuntimeError("You need to install run_pypeit in your PATH")
     # Check for arclines (now a dependency for these tests)
     try:
         import arclines
     except ImportError:
         print("\n" + "\x1B[" + "1;31m" +
-              "--- PYPIT DEVELOPMENT SUITE FAILED ---"+ "\x1B[" + "0m" + "\r", file=sys.stderr)
+              "--- PYPEIT DEVELOPMENT SUITE FAILED ---"+ "\x1B[" + "0m" + "\r", file=sys.stderr)
         raise RuntimeError("You need to install the arclines package")
     # Giddy up
     main()

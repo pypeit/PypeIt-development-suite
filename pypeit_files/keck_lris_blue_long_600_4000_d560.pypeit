@@ -11,7 +11,7 @@
     [[traceframe]]
         number = 1
     [[flatfield]]
-        frame = /home/xavier/Projects/Python/PYPIT-development-suite/CALIBS/PYPIT_LRISb_pixflat_B600_2x2_17sep2009.fits.gz
+        frame = /home/xavier/Projects/Python/PypeIt-development-suite/CALIBS/PYPEIT_LRISb_pixflat_B600_2x2_17sep2009.fits.gz
 
 data read
  path /home/xavier/Projects/Python/PYPIT-development-suite/RAW_DATA/Keck_LRIS_blue/long_600_4000_d560/
