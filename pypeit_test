@@ -196,7 +196,7 @@ def main():
                     print('run_pypeit', pyp_file, '-m', '-o')
 #                    retval = 0
 #                    retval = subprocess.call(['run_pypeit', pyp_file, '--devtest', '-m', '-v 2','-d'], stderr=f, cwd=wdir)#, shell=True)
-                    retval = subprocess.call(['run_pypeit', pyp_file, '-v 2', '-d', '-o', '-m'], stderr=f, cwd=wdir)#, shell=True)
+                    retval = subprocess.call(['run_pypeit', pyp_file, '-o', '-m'], stderr=f, cwd=wdir)#, shell=True)
                     if retval == 0:
                         print("\x1B[" + "1;32m" + "PASSED" + "\x1B[" + "0m", file=sys.stderr)
                         npass += 1
