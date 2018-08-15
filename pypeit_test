@@ -220,13 +220,6 @@ if __name__ == '__main__':
     if not any(os.access(os.path.join(
             path, 'run_pypeit'), os.X_OK) for path in os.environ["PATH"].split(os.pathsep)):
         raise RuntimeError("You need to install run_pypeit in your PATH")
-    # Check for arclines (now a dependency for these tests)
-    try:
-        import arclines
-    except ImportError:
-        print("\n" + "\x1B[" + "1;31m" +
-              "--- PYPEIT DEVELOPMENT SUITE FAILED ---"+ "\x1B[" + "0m" + "\r", file=sys.stderr)
-        raise RuntimeError("You need to install the arclines package")
     # Giddy up
     main()
 
