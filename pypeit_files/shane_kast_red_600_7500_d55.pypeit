@@ -1,0 +1,27 @@
+# This is a comment line
+
+# Change the default settings
+[rdx]
+    spectrograph = shane_kast_red_ret
+    pipeline = ARMS
+    sortroot = kast_red_600_7500_d55
+
+[calibrations]
+    [[biasframe]]
+        number = 3
+    [[pixelflatframe]]
+        number = 3
+    [[standardframe]]
+        useframe = r136.fits.gz
+    [[tilts]]
+        method = spca
+        params = 1, 1, 1
+
+# Read in the data
+data read
+ ~/Dropbox/PYPIT/TEST_SUITES/Kast_red/600_7500_d55/r1*.fits.gz
+data end
+
+#spect read
+# set arc r124.fits.gz
+#spect end

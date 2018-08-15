@@ -1,0 +1,30 @@
+# Parameters
+[rdx]
+    spectrograph = keck_lris_blue
+    sortroot = lris_blue_long_400_3400_d560
+
+[calibrations]
+    [[biasframe]]
+        useframe = overscan
+        [[[process]]]
+            sigrej = 20.
+    [[pixelflatframe]]
+        number = 1
+    [[traceframe]]
+        number = 3
+    [[flatfield]]
+        frame = /home/xavier/Projects/Python/PypeIt-development-suite/CALIBS/PYPEIT_LRISb_pixflat_B400_2x2_15apr2015.fits.gz
+    [[tilts]]
+        idsonly = True
+
+# Data
+data read
+ path /home/xavier/Projects/Python/PYPIT-development-suite/RAW_DATA/Keck_LRIS_blue/long_400_3400_d560/
+|                  filename |                date |       frametype |       target | exptime | binning | dichroic | dispname | dispangle |   decker |
+| LB.20160109.14149.fits.gz | 2016-01-09T03:55:53 |             arc |      unknown |       1 |     2,2 |      560 | 400/3400 |      None | long_1.0 |
+| LB.20160109.57204.fits.gz | 2016-01-09T16:03:27 |         science | CIV1233-0031 |     600 |     2,2 |      560 | 400/3400 |      None | long_1.0 |
+| LB.20160109.58013.fits.gz | 2016-01-09T16:07:21 |        standard |     Feige 34 |      25 |     2,2 |      560 | 400/3400 |      None | long_1.0 |
+| LB.20160109.59923.fits.gz | 2016-01-09T16:38:53 | pixelflat,trace |          sky |       6 |     2,2 |      560 | 400/3400 |      None | long_1.0 |
+| LB.20160109.59975.fits.gz | 2016-01-09T16:39:45 | pixelflat,trace |          sky |       6 |     2,2 |      560 | 400/3400 |      None | long_1.0 |
+| LB.20160109.60019.fits.gz | 2016-01-09T16:40:26 | pixelflat,trace |          sky |       4 |     2,2 |      560 | 400/3400 |      None | long_1.0 |
+data end
