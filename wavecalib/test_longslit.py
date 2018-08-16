@@ -39,16 +39,16 @@ def test_wavecalib(name, spec_file, lines, wv_cen, disp, score, fidx, test='semi
     outroot = outdir+name
     if test == 'semi_brute':
         patt_dict, final_fit = autoid.semi_brute(spec, lines, wv_cen, disp,
-                                                min_ampl=min_ampl, min_nmatch=10, outroot=outroot)
+                                                 min_ampl=min_ampl, min_nmatch=10, outroot=outroot)
     elif test == 'general':
         patt_dict, final_fit = autoid.general(spec.reshape((spec.size, 1)), lines,
-                                             min_ampl=min_ampl, min_nmatch=10, outroot=outroot)
+                                              min_ampl=min_ampl, outroot=outroot)
     else:
         pdb.set_trace()
 
     # Score
     grade = 'PASSED'
-    slit = 0
+    slit = '0'
     if final_fit[slit]['rms'] > score['rms']:
         grade = 'FAILED'
         print("Solution for {:s} failed RMS!!".format(name))
