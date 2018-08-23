@@ -138,12 +138,21 @@ def main(flg_tst):
     fidxs += [0]
     scores += [dict(rms=0.1, nxfit=20, nmatch=20)]
 
+    names += ['keck_deimos_830g_l']
+    src_files += ['keck_deimos_830g_l_PYPIT.json']
+    all_lines += [['ArI', 'NeI', 'KrI', 'XeI']]
+    all_wvcen += [0.0]
+    all_disp += [1.0]
+    fidxs += [0]
+    scores += [dict(rms=0.1, nxfit=20, nmatch=20)]
+
     # Run it
     sv_grade = [] # for the end, just in case
     for name,src_file,lines,wvcen,disp,score,fidx in zip(
             names,src_files,all_lines,all_wvcen,all_disp,scores,fidxs):
         #if '8500' not in name:
         #    continue
+        print("\n\nRunning test: {0:s}".format(name))
         grade, best_dict, final_fit = test_wavecalib(name, src_file, lines, wvcen, disp, score, fidx,
                                                test=test)
         sv_grade.append(grade)

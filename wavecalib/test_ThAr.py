@@ -29,7 +29,6 @@ def tst_thar(name, specs, wav_id, pix_id, test='kdtree', toler=0.001):
 
     # Run
     outroot = outdir+name
-    #print(wav_id)
     if test == 'general':
         patt_dict, final_fit = autoid.general(specs, lines,
                                               min_ampl=min_ampl, outroot=outroot)
