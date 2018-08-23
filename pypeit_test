@@ -93,9 +93,9 @@ def main():
     npass, ntest = 0, 0
     for instr in instruments:
         #if instr in ['kast_blue','Kast_red']:  # For testing
-# TESTING!!
-        if instr.lower() in ['keck_lris_blue']: # Testing
-            continue
+        # TESTING!!
+        #if instr.lower() in ['keck_lris_blue']: # Testing
+        #    continue
         # Setups
         setups = next(os.walk(raw_data+'/'+instr))[1]
         for setup in setups:
