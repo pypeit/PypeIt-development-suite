@@ -1,5 +1,5 @@
-""" Run the current, favored holy grail routine on a set of
-standard input spectra.  Generate summary output
+""" Run the wavelength calibration routine on a set of
+standard input spectra.  Generate summary output.
 """
 from __future__ import (print_function, absolute_import, division, unicode_literals)
 
@@ -10,46 +10,52 @@ import astropy.io.fits as pyfits
 import numpy as np
 import warnings
 import pdb
+from matplotlib import pyplot as plt
 
 from pypeit.core.wavecal import autoid
 
 test_arc_path = str(Path().absolute()) + '/TEST_DATA/'
 outdir = 'OUTPUT/'
 
-def tst_holy(name, spec, wav_id, pix_id, test='semi_brute', toler=0.001):
+
+def tst_thar(name, specs, wav_id, pix_id, test='kdtree', toler=0.001):
     """
     toler : float
       Tolerance for scoring correct matches
     """
     # Favored parameters (should match those in the defaults)
-    siglev=20.
     min_ampl=1000.
-    min_match = 10
     lines = ['ThAr']
 
     # Run
     outroot = outdir+name
     #print(wav_id)
     if test == 'general':
-        best_dict, final_fit = grail.general(spec, lines, siglev=siglev,
-                                             min_ampl=min_ampl, min_nmatch=min_match, outroot=outroot)
-        if best_dict is None:
+        patt_dict, final_fit = autoid.general(specs, lines,
+                                              min_ampl=min_ampl, outroot=outroot)
+        if patt_dict is None:
+            return "FAILED", None, None
+    elif test == 'kdtree':
+        patt_dict, final_fit = autoid.kdtree(specs, lines,
+                                             min_ampl=min_ampl, outroot=outroot)
+        if patt_dict is None:
             return "FAILED", None, None
     else:
         pdb.set_trace()
 
     # Score
     grade = 'PASSED'
+    slit = '0'
     nfail = 0
     for pp in range(pix_id.size):
-        wid = np.argmin(np.abs(pix_id[pp]-final_fit['xfit']))
-        if np.abs(wav_id[pp]-final_fit['yfit'][wid]) > toler:
+        wid = np.argmin(np.abs(pix_id[pp]-final_fit[slit]['xfit']))
+        if np.abs(wav_id[pp]-final_fit[slit]['yfit'][wid]) > toler:
             nfail += 1
     if nfail != 0:
         grade = "FAILED"
     # Warn
     warnings.warn("Solution for {:s} failed {:d}/{:d} lines".format(name, nfail, pix_id.size))
-    return grade, best_dict, final_fit
+    return grade, patt_dict, final_fit
 
 
 def main(flg_tst):
@@ -58,6 +64,10 @@ def main(flg_tst):
         test = 'semi_brute'
     elif flg_tst in [2]:
         test = 'general'
+    elif flg_tst in [3]:
+        test = 'kdtree'
+    else:
+        pdb.set_trace()
 
     # Initialize
     names = []
@@ -74,15 +84,16 @@ def main(flg_tst):
             ids = pyfits.open(fn.replace("aspec.fits.gz", "lines.fits.gz"))
             pxs = ids[1].data["PIX"]
             wvs = ids[1].data["WV"]
-            ordspec, ordwavs, ordpixs = [], [], []
+            ordwavs, ordpixs = [], []
             for ord in range(fx.shape[0]):
                 # Store the spectrum
-                ordspec += [fx[ord, :]]
+                # ordspec += [fx[ord, :]]
                 # Store the 'true' line IDs
                 ww = np.where(wvs[ord, :] != 0.0)
                 ordwavs += [wvs[ord, ww[0]]]
                 ordpixs += [pxs[ord, ww[0]]]
-            specs += [ordspec]
+            # specs += [ordspec]
+            specs += [fx.T]
             wavid += [ordwavs]
             pixid += [ordpixs]
 
@@ -92,21 +103,16 @@ def main(flg_tst):
         grades = np.zeros(len(spec), dtype=np.int)
         bwave, bdisp = np.zeros(len(spec)), np.zeros(len(spec))
         timstart = time.time()
-        for ord in range(len(spec)):
-            print("Analyzing order {0:d}/{1:d}".format(ord, fx.shape[0]))
-            grade, best_dict, final_fit = tst_holy(name, spec[ord], wvid[ord], pxid[ord], test=test)
-            if best_dict is None:
-                grades = grades[:ord-1]
-                break
-            bwave[ord] = best_dict['bwv']
-            bdisp[ord] = best_dict['bdisp']
+        grade, patt_dict, final_fit = tst_thar(name, spec, wvid, pxid, test=test)
+        for ord in range(spec.shape[1]):
+            bwave[ord] = patt_dict[str(ord)]['bwv']
+            bdisp[ord] = patt_dict[str(ord)]['bdisp']
             if grade == 'PASSED':
                 grades[ord] = 1
         timfinish = time.time()
         sv_grade.append(grades.copy())
         pdb.set_trace()
         print("Completion time (minutes):", (timfinish-timstart)/60.0)
-        from matplotlib import pyplot as plt
         plt.plot(bwave, bdisp, 'bo')
         plt.show()
 
@@ -119,6 +125,7 @@ def main(flg_tst):
 # Test
 if __name__ == '__main__':
     # flg_tst = 1   # Run em all with semi-brute
-    flg_tst = 2   # Run em all with general
+    # flg_tst = 2   # Run em all with general
+    flg_tst = 3   # Run em all with KD Tree
 
     main(flg_tst)
