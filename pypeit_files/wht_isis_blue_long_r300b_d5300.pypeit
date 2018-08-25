@@ -23,7 +23,8 @@ data read
  path /home/xavier/local/Python/PYPIT-development-suite/RAW_DATA/WHT_ISIS_blue/long_R300B_d5300
 |        filename |       date |       frametype |             target | exptime | binning | dichroic | dispname | dispangle |    decker |
 | r2324566.fit.gz | 2016-02-09 |             arc | Blue Arc CuNe+Cuar |   60.01 |    None |     5300 |    R300B |    4225.0 | LONG_SLIT |
-| r2324580.fit.gz | 2016-02-09 | pixelflat,trace |         Flat field |    4.01 |    None |     5300 |    R300B |    4225.0 | LONG_SLIT |
+# Image 80 is saturated
+#| r2324580.fit.gz | 2016-02-09 | pixelflat,trace |         Flat field |    4.01 |    None |     5300 |    R300B |    4225.0 | LONG_SLIT |
 | r2324581.fit.gz | 2016-02-09 | pixelflat,trace |         Flat field |    2.01 |    None |     5300 |    R300B |    4225.0 | LONG_SLIT |
 | r2324582.fit.gz | 2016-02-09 | pixelflat,trace |         Flat field |    1.51 |    None |     5300 |    R300B |    4225.0 | LONG_SLIT |
 | r2324583.fit.gz | 2016-02-09 | pixelflat,trace |         Blue Flats |    1.51 |    None |     5300 |    R300B |    4225.0 | LONG_SLIT |
