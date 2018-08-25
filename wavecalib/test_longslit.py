@@ -28,7 +28,11 @@ def test_wavecalib(name, spec_file, lines, wv_cen, disp, score, fidx, test='semi
     if exten == 'json':
         with open(test_arc_path+spec_file, 'r') as f:
             pypit_fit = json.load(f)
-        spec = np.array(pypit_fit['spec'])
+        try:
+            spec = np.array(pypit_fit['spec'])
+        except KeyError:
+            # New format
+            spec = np.array(pypit_fit['0']['spec'])
     elif exten == 'hdf5':
         hdf = h5py.File(test_arc_path+spec_file,'r')
         spec = hdf['arcs/{:d}/spec'.format(fidx)].value
@@ -41,8 +45,8 @@ def test_wavecalib(name, spec_file, lines, wv_cen, disp, score, fidx, test='semi
         patt_dict, final_fit = autoid.semi_brute(spec, lines, wv_cen, disp,
                                                  min_ampl=min_ampl, min_nmatch=10, outroot=outroot)
     elif test == 'general':
-        patt_dict, final_fit = autoid.general(spec.reshape((spec.size, 1)), lines,
-                                              min_ampl=min_ampl, outroot=outroot)
+        arcfitter = autoid.General(spec.reshape((spec.size, 1)), lines, min_ampl=min_ampl, outroot=outroot)
+        patt_dict, final_fit = arcfitter.run()
     else:
         pdb.set_trace()
 
@@ -78,6 +82,15 @@ def main(flg_tst):
     all_disp = [1.26]
     fidxs = [0]
     scores = [dict(rms=0.13, nxfit=13, nmatch=10)]
+
+    # LRISb 400/3400 with the longslit
+    names += ['LRISb_400_3400_longslit']
+    src_files += ['lrisb_400_3400_PYPIT.json']
+    all_lines += [['NeI', 'ArI', 'CdI', 'KrI', 'XeI', 'ZnI', 'HgI']]
+    all_wvcen += [4400.]
+    all_disp += [1.26]
+    fidxs += [0]
+    scores += [dict(rms=0.13, nxfit=13, nmatch=10)]
 
     '''
     # LRISb off-center
