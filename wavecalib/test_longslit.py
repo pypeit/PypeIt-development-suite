@@ -46,7 +46,7 @@ def test_wavecalib(name, spec_file, lines, wv_cen, disp, score, fidx, test='semi
                                                  min_ampl=min_ampl, min_nmatch=10, outroot=outroot)
     elif test == 'general':
         arcfitter = autoid.General(spec.reshape((spec.size, 1)), lines, min_ampl=min_ampl, outroot=outroot)
-        patt_dict, final_fit = arcfitter.run()
+        patt_dict, final_fit = arcfitter._all_patt_dict, arcfitter._all_final_fit
     else:
         pdb.set_trace()
 
@@ -59,9 +59,9 @@ def test_wavecalib(name, spec_file, lines, wv_cen, disp, score, fidx, test='semi
     if len(final_fit[slit]['xfit']) < score['nxfit']:
         grade = 'FAILED'
         print("Solution for {:s} failed N xfit!!".format(name))
-    if patt_dict[slit]['nmatch'] < score['nmatch']:
-        grade = 'FAILED'
-        print("Solution for {:s} failed N match!!".format(name))
+#    if patt_dict[slit]['nmatch'] < score['nmatch']:
+#        grade = 'FAILED'
+#        print("Solution for {:s} failed N match!!".format(name))
 
     # Warn
     return grade, patt_dict[slit], final_fit[slit]
