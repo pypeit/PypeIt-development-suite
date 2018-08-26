@@ -120,6 +120,7 @@ def main():
             # rawdata
             rawdir = os.path.join(pwd, 'RAW_DATA', instr, setup)+'/'
             # Run setup?
+            passed = True
             if instr.lower() in ['shane_kast_blue', 'keck_lris_red']:
                 ntest += 1
                 outfile = instr.lower()+'_'+setup.lower()
@@ -132,8 +133,11 @@ def main():
                 pyp_file = glob.glob(os.path.join(wdir, '*setup_A.pypeit'))
                 if len(pyp_file) != 1:
                     print("Couldn't find PypeIt file")
-                    pdb.set_trace()
-                    raise ValueError("Incorrect .pypeit files")
+                    print("Incorrect .pypeit files")
+                    print("\x1B[" + "1;31m" + "FAILED" + "\x1B[" + "0m", file=sys.stderr)
+                    passed = False
+                    #pdb.set_trace()
+                    #raise ValueError("Incorrect .pypeit files")
                 else:
                     pyp_file = pyp_file[0]
                     islsh = pyp_file.rfind('/')
@@ -179,33 +183,16 @@ def main():
                         ofile.writelines(iline)
 
             # Run pypeit
-            ntest += 1
-            logfile = wdir+'/'+instr.lower()+'_'+setup.lower()+'.log3'
-            print('Running pypeit on {:s} --- '.format(pyp_file), file=sys.stderr, end='')
-            with open(logfile, 'w') as f:
-                print(wdir)
-                print('run_pypeit', pyp_file, '-o')
-#                retval = 0
-#                retval = subprocess.call(['run_pypeit', pyp_file, '--devtest', '-v 2','-d'], stderr=f, cwd=wdir)#, shell=True)
-                retval = subprocess.call(['run_pypeit', pyp_file, '-o'], stderr=f, cwd=wdir)#, shell=True)
-                if retval == 0:
-                    print("\x1B[" + "1;32m" + "PASSED" + "\x1B[" + "0m", file=sys.stderr)
-                    npass += 1
-                else:
-                    print("\x1B[" + "1;31m" + "FAILED" + "\x1B[" + "0m", file=sys.stderr)
-                subprocess.call(['tail', '-2', logfile])
-                print("\n", file=sys.stderr)
-            # Test master frame running
-            if instr in ['keck_lris_red']:
+            if passed:
                 ntest += 1
-                logfile = wdir+'/'+instr.lower()+'_'+setup.lower()+'.log4'
-                print('Running pypeit with master frames on {:s} --- '.format(pyp_file), file=sys.stderr, end='')
+                logfile = wdir+'/'+instr.lower()+'_'+setup.lower()+'.log3'
+                print('Running pypeit on {:s} --- '.format(pyp_file), file=sys.stderr, end='')
                 with open(logfile, 'w') as f:
-#                    print(wdir)
-                    print('run_pypeit', pyp_file, '-m', '-o')
-#                    retval = 0
-#                    retval = subprocess.call(['run_pypeit', pyp_file, '--devtest', '-m', '-v 2','-d'], stderr=f, cwd=wdir)#, shell=True)
-                    retval = subprocess.call(['run_pypeit', pyp_file, '-o', '-m'], stderr=f, cwd=wdir)#, shell=True)
+                    print(wdir)
+                    print('run_pypeit', pyp_file, '-o')
+    #                retval = 0
+    #                retval = subprocess.call(['run_pypeit', pyp_file, '--devtest', '-v 2','-d'], stderr=f, cwd=wdir)#, shell=True)
+                    retval = subprocess.call(['run_pypeit', pyp_file, '-o'], stderr=f, cwd=wdir)#, shell=True)
                     if retval == 0:
                         print("\x1B[" + "1;32m" + "PASSED" + "\x1B[" + "0m", file=sys.stderr)
                         npass += 1
@@ -213,6 +200,26 @@ def main():
                         print("\x1B[" + "1;31m" + "FAILED" + "\x1B[" + "0m", file=sys.stderr)
                     subprocess.call(['tail', '-2', logfile])
                     print("\n", file=sys.stderr)
+                # Test master frame running
+                if instr in ['keck_lris_red']:
+                    ntest += 1
+                    logfile = wdir+'/'+instr.lower()+'_'+setup.lower()+'.log4'
+                    print('Running pypeit with master frames on {:s} --- '.format(pyp_file), file=sys.stderr, end='')
+                    with open(logfile, 'w') as f:
+    #                    print(wdir)
+                        print('run_pypeit', pyp_file, '-m', '-o')
+    #                    retval = 0
+    #                    retval = subprocess.call(['run_pypeit', pyp_file, '--devtest', '-m', '-v 2','-d'], stderr=f, cwd=wdir)#, shell=True)
+                        retval = subprocess.call(['run_pypeit', pyp_file, '-o', '-m'], stderr=f, cwd=wdir)#, shell=True)
+                        if retval == 0:
+                            print("\x1B[" + "1;32m" + "PASSED" + "\x1B[" + "0m", file=sys.stderr)
+                            npass += 1
+                        else:
+                            print("\x1B[" + "1;31m" + "FAILED" + "\x1B[" + "0m", file=sys.stderr)
+                        subprocess.call(['tail', '-2', logfile])
+                        print("\n", file=sys.stderr)
+            else:
+                print("Couldn't run test for {0:s}".format(instr.lower()))
     if npass == ntest:
         print("\n" + "\x1B[" + "1;32m" +
               "--- PYPEIT DEVELOPMENT SUITE PASSED {0:d}/{1:d} TESTS ---".format(npass, ntest) +
@@ -222,6 +229,7 @@ def main():
               "--- PYPEIT DEVELOPMENT SUITE FAILED {0:d}/{1:d} TESTS ---".format(ntest-npass, ntest) +
               "\x1B[" + "0m" + "\r", file=sys.stderr)
 
+
 if __name__ == '__main__':
     import sys, os
 
@@ -229,13 +237,6 @@ if __name__ == '__main__':
     if not any(os.access(os.path.join(
             path, 'run_pypeit'), os.X_OK) for path in os.environ["PATH"].split(os.pathsep)):
         raise RuntimeError("You need to install run_pypeit in your PATH")
-    # Check for arclines (now a dependency for these tests)
-    try:
-        import arclines
-    except ImportError:
-        print("\n" + "\x1B[" + "1;31m" +
-              "--- PYPEIT DEVELOPMENT SUITE FAILED ---"+ "\x1B[" + "0m" + "\r", file=sys.stderr)
-        raise RuntimeError("You need to install the arclines package")
     # Giddy up
     main()
 
