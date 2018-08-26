@@ -21,7 +21,7 @@ def test_wavecalib(name, spec_file, lines, wv_cen, disp, score, fidx, test='semi
     # Favored parameters (should match those in the defaults)
     siglev=20.
     min_ampl=1000.
-    min_match = 10
+    min_nmatch = 10
 
     # Load spectrum
     exten = spec_file.split('.')[-1]
@@ -43,7 +43,7 @@ def test_wavecalib(name, spec_file, lines, wv_cen, disp, score, fidx, test='semi
     outroot = outdir+name
     if test == 'semi_brute':
         patt_dict, final_fit = autoid.semi_brute(spec, lines, wv_cen, disp,
-                                                 min_ampl=min_ampl, min_nmatch=10, outroot=outroot)
+                                                 min_ampl=min_ampl, min_nmatch=min_nmatch, outroot=outroot)
     elif test == 'general':
         arcfitter = autoid.General(spec.reshape((spec.size, 1)), lines, min_ampl=min_ampl, outroot=outroot)
         patt_dict, final_fit = arcfitter._all_patt_dict, arcfitter._all_final_fit
@@ -82,6 +82,15 @@ def main(flg_tst):
     all_disp = [1.26]
     fidxs = [0]
     scores = [dict(rms=0.13, nxfit=13, nmatch=10)]
+
+    # LRISb 400/3400 with the longslit
+    names += ['LRISb_400_3400_B_PYPIT.json']
+    src_files += ['lrisb_400_3400_B_PYPIT.json']
+    all_lines += [['NeI', 'ArI', 'CdI', 'KrI', 'XeI', 'ZnI', 'HgI']]
+    all_wvcen += [4400.]
+    all_disp += [1.26]
+    fidxs += [0]
+    scores += [dict(rms=0.13, nxfit=13, nmatch=10)]
 
     # LRISb 400/3400 with the longslit
     names += ['LRISb_400_3400_longslit']
