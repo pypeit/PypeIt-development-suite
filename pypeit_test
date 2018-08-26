@@ -14,8 +14,11 @@ from __future__ import absolute_import, division, print_function
 def parser(options=None):
     import argparse
 
-    all_tests = ['kast', 'lris', 'isis', 'hires', 'deimos',  # Instruments
-                 'keck', 'shane', 'wht']  # Observatories
+    all_tests = ['kast', 'lris', 'deimos',  # Instruments
+                 'keck', 'shane']  # Observatories
+#    all_tests = ['kast', 'lris', 'isis', 'hires', 'deimos',  # Instruments
+#                 'keck', 'shane', 'wht']  # Observatories
+
     hlpstr = ", ".join(all_tests)
 
     parser = argparse.ArgumentParser(formatter_class=argparse.ArgumentDefaultsHelpFormatter)
@@ -45,9 +48,10 @@ def main():
     walk = os.walk(raw_data)
     all_instruments = next(walk)[1]
 
+    valid_instruments = ['Kast','DEIMOS','LRIS']
     # Setup
     if pargs.tests == 'all':
-        instruments = all_instruments
+        instruments = [item for item in all_instruments for inst in valid_instruments if inst in item]
     else:
         if pargs.tests == 'kast':
             instruments = [item for item in all_instruments if 'Kast' in item]
@@ -55,16 +59,16 @@ def main():
             instruments = [item for item in all_instruments if 'DEIMOS' in item]
         elif pargs.tests == 'lris':
             instruments = [item for item in all_instruments if 'LRIS' in item]
-        elif pargs.tests == 'isis':
-            instruments = [item for item in all_instruments if 'ISIS' in item]
-        elif pargs.tests == 'hires':
-            instruments = [item for item in all_instruments if 'HIRES' in item]
         elif pargs.tests == 'keck':
             instruments = [item for item in all_instruments if 'Keck' in item]
         elif pargs.tests == 'shane':
             instruments = [item for item in all_instruments if 'Shane' in item]
-        elif pargs.tests == 'wht':
-            instruments = [item for item in all_instruments if 'WHT' in item]
+#        elif pargs.tests == 'wht':
+#            instruments = [item for item in all_instruments if 'WHT' in item]
+#        elif pargs.tests == 'isis':
+#            instruments = [item for item in all_instruments if 'ISIS' in item]
+#        elif pargs.tests == 'hires':
+#            instruments = [item for item in all_instruments if 'HIRES' in item]
         else:
             print("\x1B[" + "1;31m" + "\nERROR - " + "\x1B[" + "0m" +
                   "Not prepared for this test: {0:s}\n\n".format(pargs.tests) +
@@ -91,6 +95,10 @@ def main():
 
     # Loop on instruments
     npass, ntest = 0, 0
+
+    # Do them in order Shane, LRIS, DEIMOS, since DEIMOS takes the longest. To do this we sort and reverse
+    instruments.sort(reverse=True)
+
     for instr in instruments:
         #if instr in ['kast_blue','Kast_red']:  # For testing
         # TESTING!!
