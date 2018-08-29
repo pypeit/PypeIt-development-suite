@@ -1,0 +1,42 @@
+# Multi-slit for DEIMOS
+
+[rdx]
+    spectrograph = keck_deimos
+    sortroot = keck_deimos_setup_A
+    detnum = 3,7
+
+[calibrations]
+    [[pixelflatframe]]
+        number = 2
+    [[traceframe]]
+        number = 2
+    [[standardframe]]
+        number = 0
+
+# Setup
+setup read
+ Setup A
+ --:
+   dichroic: None
+   disperser: {angle: 8500.0078125, name: 830G}
+   slit: {decker: CFHQS1B, slitlen: None, slitwid: None}
+ '01': {binning: '1,1', det: 1, namp: 1}
+ '02': {binning: '1,1', det: 2, namp: 1}
+ '03': {binning: '1,1', det: 3, namp: 1}
+ '04': {binning: '1,1', det: 4, namp: 1}
+ '05': {binning: '1,1', det: 5, namp: 1}
+ '06': {binning: '1,1', det: 6, namp: 1}
+ '07': {binning: '1,1', det: 7, namp: 1}
+ '08': {binning: '1,1', det: 8, namp: 1}
+setup end
+
+# Read in the data
+data read
+ path ../../../RAW_DATA/Keck_DEIMOS/830G_M/8500_tilt/
+|                  filename |                date |       frametype |       target | exptime | dispname |  decker |
+| DE.20100913.56927.fits.gz | 2010-09-13T15:48:51 |             arc | HORIZON STOW |       1 |     830G | CFHQS1B |
+| DE.20100913.57161.fits.gz | 2010-09-13T15:52:51 | pixelflat,trace | HORIZON STOW |       8 |     830G | CFHQS1B |
+| DE.20100913.57006.fits.gz | 2010-09-13T15:50:15 | pixelflat,trace | HORIZON STOW |       8 |     830G | CFHQS1B |
+| DE.20100913.22358.fits.gz | 2010-09-13T06:42:39 |         science |       CFHQS1 |    1800 |     830G | CFHQS1B |
+data end
+
