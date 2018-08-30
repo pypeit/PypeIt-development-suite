@@ -32,13 +32,13 @@ setup end
 
 # Read in the data
 data read
- path ../../../RAW_DATA/Keck_DEIMOS/830G_M/8600_tilt/
+ path ../../../RAW_DATA/Keck_DEIMOS/830G_M_8600/
 |                  filename |                date |       frametype |          target | exptime | dispname |  decker |
 | DE.20130409.09996.fits.gz | 2013-04-09T02:46:30 |             arc |         unknown |       1 |     830G | Z6CL01B |
 | DE.20130409.10065.fits.gz | 2013-04-09T02:47:54 | pixelflat,trace |         unknown |       8 |     830G | Z6CL01B |
 | DE.20130409.10145.fits.gz | 2013-04-09T02:49:11 | pixelflat,trace |         unknown |       8 |     830G | Z6CL01B |
 | DE.20130409.10219.fits.gz | 2013-04-09T02:50:28 | pixelflat,trace |         unknown |       8 |     830G | Z6CL01B |
 | DE.20130409.20629.fits.gz | 2013-04-09T06:13:51 |         science | S13A-SDF-z6clus |    1800 |     830G | Z6CL01B |
-| DE.20130409.22509.fits.gz | 2013-04-09T06:45:07 |         science | S13A-SDF-z6clus |    1800 |     830G | Z6CL01B |
+#| DE.20130409.22509.fits.gz | 2013-04-09T06:45:07 |         science | S13A-SDF-z6clus |    1800 |     830G | Z6CL01B |
 data end
 

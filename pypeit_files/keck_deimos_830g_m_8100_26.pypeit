@@ -32,13 +32,13 @@ setup end
 
 # Read in the data
 data read
- path ../../../RAW_DATA/Keck_DEIMOS/830G_M/8100_tilt_det26/
+ path ../../../RAW_DATA/Keck_DEIMOS/830G_M_8100_26/
 |        filename |                date |       frametype |     target | exptime | dispname | decker |
 | d0526_0046.fits | 2017-05-26T03:12:49 |             arc | DOME PHLAT |       1 |     830G |   m231 |
 | d0526_0047.fits | 2017-05-26T03:14:09 | pixelflat,trace | DOME PHLAT |       4 |     830G |   m231 |
 | d0526_0048.fits | 2017-05-26T03:15:22 | pixelflat,trace | DOME PHLAT |       4 |     830G |   m231 |
 | d0526_0049.fits | 2017-05-26T03:16:36 | pixelflat,trace | DOME PHLAT |       4 |     830G |   m231 |
 | d0526_0109.fits | 2017-05-26T10:01:28 |         science |  mask_P231 |    1200 |     830G |   m231 |
-| d0526_0110.fits | 2017-05-26T10:22:40 |         science |  mask_P231 |    1200 |     830G |   m231 |
+#| d0526_0110.fits | 2017-05-26T10:22:40 |         science |  mask_P231 |    1200 |     830G |   m231 |
 data end
 

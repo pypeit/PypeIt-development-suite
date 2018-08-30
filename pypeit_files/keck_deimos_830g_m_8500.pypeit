@@ -32,7 +32,7 @@ setup end
 
 # Read in the data
 data read
- path ../../../RAW_DATA/Keck_DEIMOS/830G_M/8500_tilt/
+ path ../../../RAW_DATA/Keck_DEIMOS/830G_M_8500/
 |                  filename |                date |       frametype |       target | exptime | dispname |  decker |
 | DE.20100913.56927.fits.gz | 2010-09-13T15:48:51 |             arc | HORIZON STOW |       1 |     830G | CFHQS1B |
 | DE.20100913.57161.fits.gz | 2010-09-13T15:52:51 | pixelflat,trace | HORIZON STOW |       8 |     830G | CFHQS1B |
