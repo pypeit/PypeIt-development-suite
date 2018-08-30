@@ -45,7 +45,8 @@ def test_wavecalib(name, spec_file, lines, wv_cen, disp, score, fidx, test='semi
         patt_dict, final_fit = autoid.semi_brute(spec, lines, wv_cen, disp,
                                                  min_ampl=min_ampl, min_nmatch=min_nmatch, outroot=outroot)
     elif test == 'general':
-        arcfitter = autoid.General(spec.reshape((spec.size, 1)), lines, min_ampl=min_ampl, outroot=outroot)
+        arcfitter = autoid.General(spec.reshape((spec.size, 1)), lines, min_ampl=min_ampl,
+                                   outroot=outroot, rms_threshold=score['rms'])
         patt_dict, final_fit = arcfitter._all_patt_dict, arcfitter._all_final_fit
     else:
         pdb.set_trace()
@@ -81,7 +82,7 @@ def main(flg_tst):
     all_wvcen = [4400.]
     all_disp = [1.26]
     fidxs = [0]
-    scores = [dict(rms=0.13, nxfit=13, nmatch=10)]
+    scores = [dict(rms=0.1, nxfit=13, nmatch=10)]
 
     # LRISb 400/3400 with the longslit
     names += ['LRISb_400_3400_B_PYPIT.json']
@@ -90,7 +91,7 @@ def main(flg_tst):
     all_wvcen += [4400.]
     all_disp += [1.26]
     fidxs += [0]
-    scores += [dict(rms=0.13, nxfit=13, nmatch=10)]
+    scores += [dict(rms=0.1, nxfit=13, nmatch=10)]
 
     # LRISb 400/3400 with the longslit
     names += ['LRISb_400_3400_longslit']
@@ -99,7 +100,7 @@ def main(flg_tst):
     all_wvcen += [4400.]
     all_disp += [1.26]
     fidxs += [0]
-    scores += [dict(rms=0.13, nxfit=13, nmatch=10)]
+    scores += [dict(rms=0.1, nxfit=13, nmatch=10)]
 
     '''
     # LRISb off-center
@@ -140,7 +141,7 @@ def main(flg_tst):
     all_disp += [2.382]
     all_lines += [['ArI','HgI','KrI','NeI','XeI']]
     fidxs += [-1]
-    scores += [dict(rms=0.12, nxfit=40, nmatch=40)]
+    scores += [dict(rms=0.1, nxfit=40, nmatch=40)]
 
     # Kastb 600 grism
     names += ['KASTb_600_standard']
@@ -176,7 +177,7 @@ def main(flg_tst):
         #    continue
         print("\n\nRunning test: {0:s}".format(name))
         grade, best_dict, final_fit = test_wavecalib(name, src_file, lines, wvcen, disp, score, fidx,
-                                               test=test)
+                                                     test=test)
         sv_grade.append(grade)
         #if '900' in name:
         #    pdb.set_trace()

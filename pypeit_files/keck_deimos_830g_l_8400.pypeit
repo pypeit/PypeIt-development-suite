@@ -23,11 +23,18 @@ setup read
    disperser: {angle: 8399.93554688, name: 830G}
    slit: {decker: LongMirr, slitlen: None, slitwid: None}
  '01': {binning: '1,1', det: 1, namp: 1}
+ '02': {binning: '1,1', det: 2, namp: 1}
+ '03': {binning: '1,1', det: 3, namp: 1}
+ '04': {binning: '1,1', det: 4, namp: 1}
+ '05': {binning: '1,1', det: 5, namp: 1}
+ '06': {binning: '1,1', det: 6, namp: 1}
+ '07': {binning: '1,1', det: 7, namp: 1}
+ '08': {binning: '1,1', det: 8, namp: 1}
 setup end
 
 # Read in the data
 data read
- path ../../../RAW_DATA/Keck_DEIMOS/830G_L/
+ path ../../../RAW_DATA/Keck_DEIMOS/830G_L_8400/
 |        filename |                date |                    frametype |         target | exptime | dispname |   decker |
 | d0914_0011.fits | 2017-09-14T03:15:10 |                          arc |        unknown |       1 |     830G | LongMirr |
 #| d0914_0002.fits | 2017-09-14T01:48:07 |                         bias |        unknown |       1 |     830G |     None |
@@ -35,7 +42,7 @@ data read
 | d0914_0014.fits | 2017-09-14T03:19:06 |              pixelflat,trace |        unknown |       6 |     830G | LongMirr |
 | d0914_0015.fits | 2017-09-14T03:20:21 |              pixelflat,trace |        unknown |       6 |     830G | LongMirr |
 | d0914_0036.fits | 2017-09-14T11:58:33 |                      science | PSOJ011p09_OFF |    1200 |     830G | LongMirr |
-| d0914_0037.fits | 2017-09-14T12:20:01 |                      science | PSOJ011p09_OFF |    1200 |     830G | LongMirr |
+#| d0914_0037.fits | 2017-09-14T12:20:01 |                      science | PSOJ011p09_OFF |    1200 |     830G | LongMirr |
 #| d0914_0038.fits | 2017-09-14T12:41:16 |                      science | PSOJ011p09_OFF |    1200 |     830G | LongMirr |
 | d0914_0047.fits | 2017-09-14T15:24:32 |                     standard |        G191B2B |      60 |     830G | LongMirr |
 data end
