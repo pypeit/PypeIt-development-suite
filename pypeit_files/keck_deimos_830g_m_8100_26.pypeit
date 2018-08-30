@@ -19,7 +19,7 @@ setup read
  --:
    dichroic: None
    disperser: {angle: 8099.98291016, name: 830G}
-   slit: {decker: m247, slitlen: None, slitwid: None}
+   slit: {decker: m231, slitlen: None, slitwid: None}
  '01': {binning: '1,1', det: 1, namp: 1}
  '02': {binning: '1,1', det: 2, namp: 1}
  '03': {binning: '1,1', det: 3, namp: 1}
@@ -33,13 +33,12 @@ setup end
 # Read in the data
 data read
  path ../../../RAW_DATA/Keck_DEIMOS/830G_M/8100_tilt_det26/
-|                  filename |                date |       frametype |       target | exptime | dispname |  decker |
-| d0526_0066.fits | 2017-05-26T03:41:32 |             arc | DOME PHLAT |       1 |     830G |   m247 |
-| d0526_0067.fits | 2017-05-26T03:42:52 | pixelflat,trace | DOME PHLAT |       4 |     830G |   m247 |
-| d0526_0068.fits | 2017-05-26T03:44:07 | pixelflat,trace | DOME PHLAT |       4 |     830G |   m247 |
-| d0526_0069.fits | 2017-05-26T03:45:21 | pixelflat,trace | DOME PHLAT |       4 |     830G |   m247 |
-| d0526_0122.fits | 2017-05-26T12:33:14 |         science |  mask_P247 |    1200 |     830G |   m247 |
-| d0526_0123.fits | 2017-05-26T12:54:25 |         science |  mask_P247 |    1200 |     830G |   m247 |
-| d0526_0124.fits | 2017-05-26T13:15:38 |         science |  mask_P247 |    1200 |     830G |   m247 |
+|        filename |                date |       frametype |     target | exptime | dispname | decker |
+| d0526_0046.fits | 2017-05-26T03:12:49 |             arc | DOME PHLAT |       1 |     830G |   m231 |
+| d0526_0047.fits | 2017-05-26T03:14:09 | pixelflat,trace | DOME PHLAT |       4 |     830G |   m231 |
+| d0526_0048.fits | 2017-05-26T03:15:22 | pixelflat,trace | DOME PHLAT |       4 |     830G |   m231 |
+| d0526_0049.fits | 2017-05-26T03:16:36 | pixelflat,trace | DOME PHLAT |       4 |     830G |   m231 |
+| d0526_0109.fits | 2017-05-26T10:01:28 |         science |  mask_P231 |    1200 |     830G |   m231 |
+| d0526_0110.fits | 2017-05-26T10:22:40 |         science |  mask_P231 |    1200 |     830G |   m231 |
 data end
 

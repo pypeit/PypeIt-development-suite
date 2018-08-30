@@ -40,6 +40,5 @@ data read
 | DE.20130409.10219.fits.gz | 2013-04-09T02:50:28 | pixelflat,trace |         unknown |       8 |     830G | Z6CL01B |
 | DE.20130409.20629.fits.gz | 2013-04-09T06:13:51 |         science | S13A-SDF-z6clus |    1800 |     830G | Z6CL01B |
 | DE.20130409.22509.fits.gz | 2013-04-09T06:45:07 |         science | S13A-SDF-z6clus |    1800 |     830G | Z6CL01B |
-| DE.20130409.24404.fits.gz | 2013-04-09T07:16:40 |         science | S13A-SDF-z6clus |    1800 |     830G | Z6CL01B |
 data end
 
