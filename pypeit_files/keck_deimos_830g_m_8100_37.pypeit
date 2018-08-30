@@ -1,0 +1,43 @@
+# Multi-slit for DEIMOS
+
+[rdx]
+    spectrograph = keck_deimos
+    sortroot = keck_deimos_setup_A
+    detnum = 3,7
+
+[calibrations]
+    [[pixelflatframe]]
+        number = 3
+    [[traceframe]]
+        number = 3
+    [[standardframe]]
+        number = 0
+
+# Setup
+setup read
+ --:
+   dichroic: None
+   disperser: {angle: 8099.98291016, name: 830G}
+   slit: {decker: m247, slitlen: None, slitwid: None}
+ '01': {binning: '1,1', det: 1, namp: 1}
+ '02': {binning: '1,1', det: 2, namp: 1}
+ '03': {binning: '1,1', det: 3, namp: 1}
+ '04': {binning: '1,1', det: 4, namp: 1}
+ '05': {binning: '1,1', det: 5, namp: 1}
+ '06': {binning: '1,1', det: 6, namp: 1}
+ '07': {binning: '1,1', det: 7, namp: 1}
+ '08': {binning: '1,1', det: 8, namp: 1}
+setup end
+
+# Read in the data
+data read
+ path ../../../RAW_DATA/Keck_DEIMOS/830G_M_8100_37/
+|        filename |                date |       frametype |     target | exptime | dispname | decker |
+| d0526_0066.fits | 2017-05-26T03:41:32 |             arc | DOME PHLAT |       1 |     830G |   m247 |
+| d0526_0067.fits | 2017-05-26T03:42:52 | pixelflat,trace | DOME PHLAT |       4 |     830G |   m247 |
+| d0526_0068.fits | 2017-05-26T03:44:07 | pixelflat,trace | DOME PHLAT |       4 |     830G |   m247 |
+| d0526_0069.fits | 2017-05-26T03:45:21 | pixelflat,trace | DOME PHLAT |       4 |     830G |   m247 |
+| d0526_0122.fits | 2017-05-26T12:33:14 |         science |  mask_P247 |    1200 |     830G |   m247 |
+#| d0526_0123.fits | 2017-05-26T12:54:25 |         science |  mask_P247 |    1200 |     830G |   m247 |
+data end
+
