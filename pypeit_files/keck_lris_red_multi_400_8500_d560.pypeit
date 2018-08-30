@@ -1,0 +1,53 @@
+# This is a comment line
+
+# User-defined execution parameters
+[rdx]
+    spectrograph = keck_lris_red
+    sortroot = keck_lris_red_multi_400_8500_d560
+[calibrations]
+    [[biasframe]]
+#        number = 10
+    [[pixelflatframe]]
+        number = 3
+    [[arcframe]]
+        number = 1
+    [[pinholeframe]]
+        number = 0
+    [[traceframe]]
+        number = 1
+    [[standardframe]]
+        number = 0
+
+# Read in the data
+data read
+path /Users/joe/python/PypeIt-development-suite/RAW_DATA/Keck_LRIS_red/multi_400_8500_d560/
+|          filename |                date | frametype	  |   target | exptime | binning | dichroic | dispname |   decker |
+| r170320_2057.fits | 2017-03-20T02:23:02 | pixelflat,trace |  unknown |       7 |     2,2 |      560 | 400/8500 | c17_60L. |
+| r170320_2058.fits | 2017-03-20T02:24:06 | pixelflat,trace |  unknown |       7 |     2,2 |      560 | 400/8500 | c17_60L. |
+| r170320_2059.fits | 2017-03-20T02:25:10 | pixelflat,trace |  unknown |       7 |     2,2 |      560 | 400/8500 | c17_60L. |
+| r170320_2067.fits | 2017-03-20T03:14:13 |   bias 	  |  unknown |       0 |     2,2 |      560 | 400/8500 | sp15l.fi |
+| r170320_2068.fits | 2017-03-20T03:15:12 |   bias 	  |  unknown |       0 |     2,2 |      560 | 400/8500 | sp15l.fi |
+| r170320_2069.fits | 2017-03-20T03:16:11 |   bias 	  |  unknown |       0 |     2,2 |      560 | 400/8500 | sp15l.fi |
+| r170320_2070.fits | 2017-03-20T03:17:10 |   bias 	  |  unknown |       0 |     2,2 |      560 | 400/8500 | sp15l.fi |
+| r170320_2071.fits | 2017-03-20T03:18:07 |   bias 	  |  unknown |       0 |     2,2 |      560 | 400/8500 | sp15l.fi |
+| r170320_2072.fits | 2017-03-20T03:19:06 |   bias 	  |  unknown |       0 |     2,2 |      560 | 400/8500 | sp15l.fi |
+| r170320_2073.fits | 2017-03-20T03:20:04 |   bias 	  |  unknown |       0 |     2,2 |      560 | 400/8500 | sp15l.fi |
+| r170320_2074.fits | 2017-03-20T03:21:03 |   bias 	  |  unknown |       0 |     2,2 |      560 | 400/8500 | sp15l.fi |
+| r170320_2075.fits | 2017-03-20T03:22:01 |   bias 	  |  unknown |       0 |     2,2 |      560 | 400/8500 | sp15l.fi |
+| r170320_2076.fits | 2017-03-20T03:22:59 |   bias 	  |  unknown |       0 |     2,2 |      560 | 400/8500 | sp15l.fi |
+| r170320_2017.fits | 2017-03-20T00:57:59 |   arc 	  |  unknown |       1 |     2,2 |      560 | 400/8500 | c17_60L. |
+| r170320_2084.fits | 2017-03-20T06:08:26 |   science 	  | c17_60L. |     880 |     2,2 |      560 | 400/8500 | c17_60L. |
+| r170320_2085.fits | 2017-03-20T06:24:04 |   science 	  | c17_60L. |     880 |     2,2 |      560 | 400/8500 | c17_60L. |
+#| r170320_2086.fits | 2017-03-20T06:39:43 |   science 	  | c17_60L. |     880 |     2,2 |      560 | 400/8500 | c17_60L. |
+#| r170320_2087.fits | 2017-03-20T06:54:50 |   science 	  | c17_60L. |     850 |     2,2 |      560 | 400/8500 | c17_60L. |
+#| r170320_2088.fits | 2017-03-20T07:09:59 |   science 	  | c17_60L. |     850 |     2,2 |      560 | 400/8500 | c17_60L. |
+#| r170320_2089.fits | 2017-03-20T07:25:09 |   science 	  | c17_60L. |     850 |     2,2 |      560 | 400/8500 | c17_60L. |
+#| r170320_2090.fits | 2017-03-20T07:40:20 |   science 	  | c17_60L. |     850 |     2,2 |      560 | 400/8500 | c17_60L. |
+#| r170320_2091.fits | 2017-03-20T08:05:26 |   science 	  | c17_60L. |     850 |     2,2 |      560 | 400/8500 | c17_60L. |
+#| r170320_2092.fits | 2017-03-20T08:20:36 |   science 	  | c17_60L. |     850 |     2,2 |      560 | 400/8500 | c17_60L. |
+#| r170320_2093.fits | 2017-03-20T08:35:44 |   science 	  | c17_60L. |     850 |     2,2 |      560 | 400/8500 | c17_60L. |
+#| r170320_2094.fits | 2017-03-20T08:50:55 |   science 	  | c17_60L. |     850 |     2,2 |      560 | 400/8500 | c17_60L. |
+#| r170320_2095.fits | 2017-03-20T09:06:35 |   science 	  | c17_60L. |     880 |     2,2 |      560 | 400/8500 | c17_60L. |
+#| r170320_2096.fits | 2017-03-20T09:22:15 |   science 	  | c17_60L. |     880 |     2,2 |      560 | 400/8500 | c17_60L. |
+data end
+
