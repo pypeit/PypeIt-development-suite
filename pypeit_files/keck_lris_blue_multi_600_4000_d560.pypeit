@@ -17,6 +17,9 @@
         number = 1
     [[standardframe]]
         number = 0
+#    [[flatfield]]
+#        frame = /home/xavier/Projects/Python/PypeIt-development-suite/CALIBS/PYPEIT_LRISb_pixflat_B600_2x2_17sep2009.fits.gz
+
 
 # Read in the data
 data read

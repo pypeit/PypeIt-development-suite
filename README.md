@@ -26,11 +26,16 @@ those, you will need to download them.
     1. cd RAW_DATA
     1. Unpack the tarball here
     1. Now the tests for DEIMOS will be enabled
-* LRIS multislit
-    1. Download the tarball from here: https://drive.google.com/open?id=1V5lf0ow5SNlAAd7pyGnuH8xFje5kQ5xP
+* LRIS multislit blue
+    1. Download the blue side tarball from here: https://drive.google.com/open?id=1V5lf0ow5SNlAAd7pyGnuH8xFje5kQ5xP
     1. cd RAW_DATA/Keck_LRIS_blue/
     1. Unpack the tarball here
-    1. Now the multislit tests for LRIS will be enabled
+    1. Now the multislit tests for LRIS blue will be enabled
+* LRIS multislit red
+    1. Download the red side tarball from here: https://drive.google.com/file/d/10IoHRh-_3uR0tLJn_HuePPsvAd062jpV/view?usp=sharing
+    1. cd RAW_DATA/Keck_LRIS_red/
+    1. Unpack the tarball here
+    1. Now the multislit tests for LRIS red will be enabled
 * Cooked files [i.e. at least partly processed by PYPIT]
     1. Download the tarball from here: https://drive.google.com/open?id=1ZyZrk58N2peFvA7n_EmWIb42mmf33OIz
     1. cd Cooked
