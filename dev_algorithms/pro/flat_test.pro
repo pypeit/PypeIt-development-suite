@@ -1,5 +1,5 @@
 
-type = 'GNIRS'
+type = 'ESI'
 ;;
 CASE type OF
    'ESI': BEGIN
