@@ -120,6 +120,6 @@ def main(flg_tst):
 # Test
 if __name__ == '__main__':
     # flg_tst = 1   # Run em all with semi-brute
-     flg_tst = 2   # Run em all with general
+    flg_tst = 2   # Run em all with general
 
     main(flg_tst)
