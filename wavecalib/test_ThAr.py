@@ -18,7 +18,7 @@ test_arc_path = str(Path().absolute()) + '/TEST_DATA/'
 outdir = 'OUTPUT/'
 
 
-def tst_thar(name, specs, wav_id, pix_id, test='kdtree', toler=0.001):
+def tst_thar(name, specs, wav_id, pix_id, test='general', toler=0.001):
     """
     toler : float
       Tolerance for scoring correct matches
@@ -30,13 +30,9 @@ def tst_thar(name, specs, wav_id, pix_id, test='kdtree', toler=0.001):
     # Run
     outroot = outdir+name
     if test == 'general':
-        patt_dict, final_fit = autoid.general(specs, lines,
-                                              min_ampl=min_ampl, outroot=outroot)
-        if patt_dict is None:
-            return "FAILED", None, None
-    elif test == 'kdtree':
-        patt_dict, final_fit = autoid.kdtree(specs, lines,
-                                             min_ampl=min_ampl, outroot=outroot)
+        arcfitter = autoid.General(specs, lines, min_ampl=min_ampl,
+                                   outroot=outroot, rms_threshold=0.1)
+        patt_dict, final_fit = arcfitter.get_results()
         if patt_dict is None:
             return "FAILED", None, None
     else:
@@ -124,7 +120,6 @@ def main(flg_tst):
 # Test
 if __name__ == '__main__':
     # flg_tst = 1   # Run em all with semi-brute
-    # flg_tst = 2   # Run em all with general
-    flg_tst = 3   # Run em all with KD Tree
+     flg_tst = 2   # Run em all with general
 
     main(flg_tst)
