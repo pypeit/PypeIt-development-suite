@@ -16,7 +16,7 @@ from pypeit.core import pixels
 from pypeit import scienceimage
 from pypeit import utils
 from matplotlib import pyplot as plt
-imp
+import scipy
 
 type = 'LRIS_red'
 devpath = os.getenv('PYPEIT_DEV')
@@ -78,7 +78,9 @@ for slit in gdslits:
     # Function compute_flats(flat, mstilts, slit_left, sligt_righ, thismask, inmask = None
     # spec_samp_fine = 0.8, spec_samp_coarse = 50, spat_samp =  5.0, spat_illum_thresh = 0.03, trim_edg = (3.0,3.0), debug = True
     spec_samp_fine = 0.8
+    spat_samp = 5.0
     trim_edg = (3.0,3.0)
+    spat_illum_thresh = 0.03
     debug = True
 
 
@@ -98,7 +100,7 @@ for slit in gdslits:
     # Flat field pixels for fitting spectral direction
     fit_spec = thismask & inmask & (edgmask == False)
     isrt_spec = np.argsort(piximg[fit_spec])
-    pix_fit_spec = piximg[fit_spec][isrt_spec]
+    pix_fit = piximg[fit_spec][isrt_spec]
     log_flat_fit = log_flat[fit_spec][isrt_spec]
     log_ivar_fit = log_ivar[fit_spec][isrt_spec]
     nfit_spec = np.sum(fit_spec)
@@ -106,54 +108,98 @@ for slit in gdslits:
     msgs.info('Spectral fit of flatfield for {:}'.format(nfit_spec) + ' pixels')
 
     # Fit the Full fit now
-    spec_set_fine, outmask_spec, specfit, _ = utils.bspline_profile(pix_fit_spec, log_flat_fit, log_ivar_fit, np.ones_like(pix_fit),
-                                                     nord = 4, upper=logrej, lower=logrej,
-                                                     kwargs_bspline = {'bkspace':spec_samp_fine},
-                                                     kwargs_reject={'groupbadpix':True, 'maxrej': 5})
+    spec_set_fine, outmask_spec, specfit, _ = utils.bspline_profile(pix_fit, log_flat_fit, log_ivar_fit,
+                                                                    np.ones_like(pix_fit),
+                                                                    nord = 4, upper=logrej, lower=logrej,
+                                                                    kwargs_bspline = {'bkspace':spec_samp_fine},
+                                                                    kwargs_reject={'groupbadpix':True, 'maxrej': 5})
 
 
     # Debugging/checking
     if debug:
         goodbk = spec_set_fine.mask
-        yfit_bkpt = spec_set_fine.value(spec_set_fine.breakpoints[goodbk])
+        specfit_bkpt, _ = spec_set_fine.value(spec_set_fine.breakpoints[goodbk])
         plt.clf()
         ax = plt.gca()
         was_fit_and_masked = (outmask_spec == False)
-        ax.plot(pix_fit_spec,log_flat_fit, color='k', marker='o', markersize=0.4, mfc='k', fillstyle='full', linestyle='None')
-        ax.plot(pix_fit_spec[was_fit_and_masked],log_flat_fit[was_fit_and_masked], color='red', marker='+', markersize=1.5, mfc='red', fillstyle='full', linestyle='None')
-        ax.plot(pix_fit_spec, specfit, color='cornflowerblue')
-        ax.plot(spec_set_fine.breakpoints[goodbk], yfit_bkpt, color='lawngreen', marker='o', markersize=4.0, mfc='lawngreen', fillstyle='full', linestyle='None')
-        ax.set_ylim((0.99*specfit.min(),1.01*specfit.max()))
+        ax.plot(pix_fit,log_flat_fit, color='k', marker='o', markersize=0.4, mfc='k', fillstyle='full',
+                linestyle='None')
+        ax.plot(pix_fit[was_fit_and_masked],log_flat_fit[was_fit_and_masked], color='red', marker='+',
+                markersize=1.5, mfc='red', fillstyle='full', linestyle='None')
+        ax.plot(pix_fit, np.exp(specfit), color='cornflowerblue')
+        ax.plot(spec_set_fine.breakpoints[goodbk], np.exp(specfit_bkpt), color='lawngreen', marker='o', markersize=2.0, mfc='lawngreen', fillstyle='full', linestyle='None')
+        ax.set_ylim(np.exp((0.99*specfit.min(),1.01*specfit.max())))
         plt.show()
-
 
     # Evaluate and save
     spec_model = np.ones_like(flat)
     spec_model[thismask], _ = np.exp(spec_set_fine.value(piximg[thismask]))
-    norm_spec = flat/(np.fmax(spec_model, 1.0))
+    norm_spec = flat/np.fmax(spec_model, 1.0)
 
     # Flat field pixels for fitting spatial direction
+    slitwidth = np.median(slit_righ - slit_left) # How many pixels wide is the slit at each Y?
+
     fit_spat = thismask & inmask
-    isrt = np.argsort(piximg[fit_spat])
-    pix_fit_spat = piximg[fit_spat][isrt]
-    norm_spec_fit = norm_spec[fit_spat][isrt]
-    norm_spec_ivar = 1.0/(0.03**2)
+    isrt_spat = np.argsort(ximg[fit_spat])
+    ximg_fit = ximg[fit_spat][isrt_spat]
+    norm_spec_fit = norm_spec[fit_spat][isrt_spat]
+    norm_spec_ivar = np.ones_like(norm_spec_fit)/(0.03**2)
     sigrej_illum = 3.0
     nfit_spat = np.sum(fit_spat)
 
-    msgs.info('Spectral fit of flatfield for {:}'.format(nfit) + ' pixels')
-    logrej = 0.5
+    ximg_resln = spat_samp/slitwidth
+    isamp = (np.arange(nfit_spat//10)*10.0).astype(int)
+    samp_width = (np.ceil(isamp.size*ximg_resln)).astype(int)
+    illumquick1 = scipy.ndimage.filters.median_filter(norm_spec_fit[isamp], size=samp_width, mode = 'reflect')
+    statinds = (ximg_fit[isamp] > 0.1) & (ximg_fit[isamp] < 0.9)
+    mean = np.mean(illumquick1[statinds])
+    illum_max = np.max(np.abs(illumquick1[statinds]/mean-1.0))
+    npad = 10000
 
-    # Fit the Full fit now
-    spec_set_fine, outmask_spec, specfit, _ = utils.bspline_profile(pix_fit, log_flat_fit, log_ivar_fit, np.ones_like(pix_fit),
-                                                     nord = 4, upper=logrej, lower=logrej,
-                                                     kwargs_bspline = {'bkspace':spec_samp_fine},
-                                                     kwargs_reject={'groupbadpix':True, 'maxrej': 5})
+    if(illum_max <= spat_illum_thresh/3.0):
+        ximg_in = np.array([-0.2 + 0.2*np.arange(npad)/(npad - 1), ximg_fit, 1.0 + 0.2*np.arange(npad)/(npad - 1)])
+        normin = np.ones(2*npad + npix)
+        maskin = np.ones(2*npad + npix)
+    msgs.info('illum_max={:f7.3'}.format(illum_max))
+    msgs.info('Subsampled illum fluctuations < spat_illum_thresh/3={:f4.2}'.format(100.0*illum_thresh/3.0))
+    msgs.info('No illum function applied for this slit'()
+
+    bkspace = 1.0/nsamp # This is the spatial sampling interval in units of fractional slit width
 
 
+    fit_spat = thismask & inmask
+    isrt_spat = np.argsort(ximg[fit_spat])
+    ximg_fit = ximg[fit_spat][isrt_spat]
+    norm_spec_fit = norm_spec[fit_spat][isrt_spat]
+    norm_spec_ivar = np.ones_like(norm_spec_fit)/(0.03**2)
+    sigrej_illum = 3.0
+    nfit_spat = np.sum(fit_spat)
+    msgs.info('Fit to flatfield slit illumination function {:}'.format(nfit_spat) + ' pixels')
+    # Fit the slit illumination function now
+    spat_set, outmask_spat, spatfit, _ = utils.bspline_profile(ximg_fit, norm_spec_fit, norm_spec_ivar,
+                                                               np.ones_like(ximg_fit),nord = 4,
+                                                               upper=sigrej_illum,
+                                                               lower=sigrej_illum,
+                                                               kwargs_bspline = {'bkspace':bkspace},
+                                                               kwargs_reject={'groupbadpix':True, 'maxrej': 5})
 
-    # Now we divide out this model and perform a fit to the slit illumination function
-    msgs.info('Spectral fit of flatfield for {:}'.format(nfit) + ' pixels')
+
+    # Debugging/checking
+    if debug:
+        goodbk = spat_set.mask
+        spatfit_bkpt, _ = spat_set.value(spat_set.breakpoints[goodbk])
+        plt.clf()
+        ax = plt.gca()
+        was_fit_and_masked = (outmask_spat == False)
+        ax.plot(ximg_fit, norm_spec_fit, color='k', marker='o', markersize=0.4, mfc='k', fillstyle='full',
+                linestyle='None')
+        ax.plot(ximg_fit[was_fit_and_masked],norm_spec_fit[was_fit_and_masked], color='red', marker='+',
+                markersize=1.5, mfc='red', fillstyle='full', linestyle='None')
+        ax.plot(ximg_fit, spatfit, color='cornflowerblue')
+        ax.plot(spat_set.breakpoints[goodbk], spatfit_bkpt, color='lawngreen', marker='o', markersize=2.0, mfc='lawngreen', fillstyle='full', linestyle='None')
+        ax.set_ylim((np.fmax(0.99*spatfit.min(),0.5),1.5*spatfit.max()))
+        ax.set_xlim(-0.2, 1.2)
+        plt.show()
 
 
     sys.exit(-1)
