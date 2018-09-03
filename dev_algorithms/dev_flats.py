@@ -384,7 +384,7 @@ for slit in gdslits:
     thismask = (tslits_dict['slitpix'] == slit + 1)
     inmask = None # in the future set this to the bpm
     pixelflat[thismask], illumflat[thismask], flat_model[thismask] = fit_flat(flat, mstilts, slit_left, slit_righ, thismask,
-                                                                              inmask=inmask, debug = True)
+                                                                              inmask=inmask, debug = False)
 
 
 ginga.show_image(pixelflat,cuts = (0.9,1.1),chname='pixeflat', wcs_match=True, clear=True)
