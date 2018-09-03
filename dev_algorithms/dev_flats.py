@@ -319,7 +319,7 @@ def fit_flat(flat, mstilts, slit_left, slit_righ, thismask, inmask = None,spec_s
 
 
 
-type = 'ESI'
+type = 'LRIS_red'
 devpath = os.getenv('PYPEIT_DEV')
 
 if type == 'LRIS_red':
