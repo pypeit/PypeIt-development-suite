@@ -38,7 +38,7 @@ from itertools import islice
 from bisect import insort, bisect_left
 
 
-def running_median_insort(seq, window_size):
+'''def running_median_insort(seq, window_size):
     """Contributed by Peter Otten, made to be consistent with scipy.ndimage.filters.median_filter by Joe Hennawi"""
 
     # pad the array for the reflection
@@ -66,6 +66,7 @@ def running_median_insort(seq, window_size):
 
     result = np.roll(result, -window_size//2 + 1)
     return result[window_size:-window_size]
+'''
 
 def fit_flat(flat, mstilts, slit_left, slit_righ, thismask, inmask = None,spec_samp_fine = 0.8,  spec_samp_coarse = 50,
              spat_samp = 5.0, spat_illum_thresh = 0.02, npoly = None, trim_edg = (3.0,3.0), spat_bkpt = None, debug = False):
@@ -150,7 +151,7 @@ def fit_flat(flat, mstilts, slit_left, slit_righ, thismask, inmask = None,spec_s
     isamp = (np.arange(nfit_spat//10)*10.0).astype(int)
     samp_width = (np.ceil(isamp.size*ximg_resln)).astype(int)
 
-    illumquick1 = running_median_insort(norm_spec_fit[isamp], samp_width)
+    illumquick1 = utils.fast_running_median(norm_spec_fit[isamp], samp_width)
     #illumquick1 = scipy.ndimage.filters.median_filter(norm_spec_fit[isamp], size=samp_width, mode = 'reflect')
     statinds = (ximg_fit[isamp] > 0.1) & (ximg_fit[isamp] < 0.9)
     mean = np.mean(illumquick1[statinds])
@@ -173,7 +174,7 @@ def fit_flat(flat, mstilts, slit_left, slit_righ, thismask, inmask = None,spec_s
         imed = np.abs(chi_illum) < 10.0 # 10*spat_illum_thresh ouliters, i.e. 30%
         nmed = np.sum(imed)
         med_width = (np.ceil(nmed*ximg_resln)).astype(int)
-        normimg_raw = running_median_insort(norm_spec_fit[imed],med_width)
+        normimg_raw = utils.fast_running_median(norm_spec_fit[imed],med_width)
         #normimg_raw = scipy.ndimage.filters.median_filter(norm_spec_fit[imed], size=med_width, mode='reflect')
         sig_res = np.fmax(med_width/15.0,0.5)
         normimg = scipy.ndimage.filters.gaussian_filter1d(normimg_raw,sig_res, mode='nearest')
