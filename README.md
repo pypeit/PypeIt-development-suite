@@ -22,7 +22,7 @@ those, you will need to download them.
 * NIRES
     1. Download the tarball from here: https://drive.google.com/drive/folders/1Re-He1a6k-flookumv431g5pasYL4HSO
 * DEIMOS
-    1. Download the tarball from here: https://drive.google.com/open?id=1_-g74QpDS0vp7JIH8H41dm5xa1eVRgT0
+    1. Download the tarball from here: https://drive.google.com/file/d/1qoZQi58KL0arcTkfEq4rDsahaNjaDJNx/view?usp=sharing
     1. cd RAW_DATA
     1. Unpack the tarball here
     1. Now the tests for DEIMOS will be enabled
