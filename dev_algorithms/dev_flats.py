@@ -10,15 +10,12 @@ from astropy.io import fits
 import os
 from pypeit.spectrographs.util import load_spectrograph
 from pypeit import ginga
-from pypeit.core import trace_slits
 from pypeit import traceslits
 from pypeit.core import parse
 from pypeit.core import pixels
 from pypeit import scienceimage
-from pypeit import utils
-from pypeit.core import pydl
 from matplotlib import pyplot as plt
-import scipy
+from pypeit.core import flat
 
 # Function compute_flats(flat, mstilts, slit_left, sligt_righ, thismask, inmask = None
 # spec_samp_fine = 0.8, spec_samp_coarse = 50, spat_samp =  5.0, spat_illum_thresh = 0.03, trim_edg = (3.0,3.0), debug = True
@@ -68,7 +65,7 @@ from bisect import insort, bisect_left
     return result[window_size:-window_size]
 '''
 
-def fit_flat(flat, mstilts, slit_left, slit_righ, thismask, inmask = None,spec_samp_fine = 0.8,  spec_samp_coarse = 50,
+'''def fit_flat(flat, mstilts, slit_left, slit_righ, thismask, inmask = None,spec_samp_fine = 0.8,  spec_samp_coarse = 50,
              spat_samp = 5.0, spat_illum_thresh = 0.02, npoly = None, trim_edg = (3.0,3.0), spat_bkpt = None, debug = False):
 
 
@@ -317,7 +314,7 @@ def fit_flat(flat, mstilts, slit_left, slit_righ, thismask, inmask = None,spec_s
 
     return (pixelflat[thismask], illumflat[thismask], flat_model[thismask])
 
-
+'''
 
 type = 'LRIS_red'
 devpath = os.getenv('PYPEIT_DEV')
@@ -338,7 +335,7 @@ if type == 'LRIS_red':
     par = spectrograph.default_pypeit_par()
     flatField = flatfield.FlatField(spectrograph, file_list=pixflat_image_files,det=det, par=par['calibrations']['pixelflatframe']
                                     , msbias = msbias)
-    flat = flatField.build_pixflat()
+    flatimg = flatField.build_pixflat()
     # Read in the tilts
     tiltsfile = masterpath + 'MasterTilts_A_' + sdet + '_aa.fits'
     mstilts = fits.getdata(tiltsfile)
@@ -348,21 +345,21 @@ if type == 'LRIS_red':
     tslits_dict = {}
     tslits_dict['lcen']=Tslits.lcen
     tslits_dict['rcen']=Tslits.rcen
-    tslits_dict['slitpix'] = pixels.slit_pixels(tslits_dict['lcen'],tslits_dict['rcen'], flat.shape, Tslits.par['pad'])
+    tslits_dict['slitpix'] = pixels.slit_pixels(tslits_dict['lcen'],tslits_dict['rcen'], flatimg.shape, Tslits.par['pad'])
 elif type == 'ESI':
     flatfile = '/Users/joe/REDUX/esi_redux/Mar_2008/Flats/FlatECH10_1x1_D.fits.gz'
     piximgfile = '/Users/joe/REDUX/esi_redux/Mar_2008/Final/f_esi1044.fits.gz'
     waveimgfile = '/Users/joe/REDUX/esi_redux/Mar_2008/Arcs/ArcECH10_1x1IMG.fits.gz'
     sedg_file = '/Users/joe/REDUX/esi_redux/Mar_2008/Flats/SEdgECH10_1x1.fits.gz'
-    flat = fits.getdata(flatfile)
-    (nspec, nspat) = flat.shape
+    flatimg = fits.getdata(flatfile)
+    (nspec, nspat) = flatimg.shape
     piximg = fits.getdata(piximgfile, 3)
     mstilts = piximg/nspec
     slit_edges = fits.getdata(sedg_file,0)
     tslits_dict = {}
     tslits_dict['lcen']=slit_edges[0,:,:].T
     tslits_dict['rcen']=slit_edges[1,:,:].T
-    tslits_dict['slitpix'] = pixels.slit_pixels(tslits_dict['lcen'],tslits_dict['rcen'], flat.shape, 0)
+    tslits_dict['slitpix'] = pixels.slit_pixels(tslits_dict['lcen'],tslits_dict['rcen'], flatimg.shape, 0)
 
 # View the slits?
 #slit_ids = [trace_slits.get_slitid(flat.shape, tslits_dict['lcen'], tslits_dict['rcen'], ii)[0]
@@ -373,10 +370,11 @@ elif type == 'ESI':
 maskslits = np.zeros(tslits_dict['lcen'].shape[1], dtype=bool)
 gdslits = np.where(~maskslits)[0]
 
-pixelflat = np.ones_like(flat)
-illumflat = np.ones_like(flat)
-flat_model = np.zeros_like(flat)
+pixelflat = np.ones_like(flatimg)
+illumflat = np.ones_like(flatimg)
+flat_model = np.zeros_like(flatimg)
 
+debug = True
 # Loop on slits
 for slit in gdslits:
     msgs.info("Computing flat field image for slit: {:d}".format(slit + 1))
@@ -384,13 +382,14 @@ for slit in gdslits:
     slit_righ = tslits_dict['rcen'][:, slit]
     thismask = (tslits_dict['slitpix'] == slit + 1)
     inmask = None # in the future set this to the bpm
-    pixelflat[thismask], illumflat[thismask], flat_model[thismask] = fit_flat(flat, mstilts, slit_left, slit_righ, thismask,
-                                                                              inmask=inmask, debug = False)
+    pixelflat[thismask], illumflat[thismask], flat_model[thismask] = flat.fit_flat(flatimg, mstilts, thismask,
+                                                                                   slit_left, slit_righ,inmask=inmask,
+                                                                                   debug = debug)
 
 
 ginga.show_image(pixelflat,cuts = (0.9,1.1),chname='pixeflat', wcs_match=True, clear=True)
 ginga.show_image(illumflat,cuts = (0.9,1.1), chname='illumflat', wcs_match=True)
-ginga.show_image(flat,chname='flat', wcs_match=True)
+ginga.show_image(flatimg,chname='flat', wcs_match=True)
 ginga.show_image(flat_model,chname='flat_model',wcs_match = True)
 
 '''

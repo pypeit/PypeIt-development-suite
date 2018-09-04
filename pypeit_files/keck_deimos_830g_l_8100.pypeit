@@ -38,12 +38,12 @@ setup end
 # Read in the data
 data read
  path ../../../RAW_DATA/Keck_DEIMOS/830G_L_8100/
-|        filename |                date |       frametype |     target | exptime | dispname | decker |
-| d0527_0030.fits | 2017-05-27T01:51:57 |             arc | DOME PHLAT |       1 |     830G | LongMirr |
-| d0527_0031.fits | 2017-05-27T01:53:16 | pixelflat,trace | DOME PHLAT |       4 |     830G | LongMirr |
-| d0527_0032.fits | 2017-05-27T01:54:29 | pixelflat,trace | DOME PHLAT |       4 |     830G | LongMirr |
-| d0527_0033.fits | 2017-05-27T01:55:42 | pixelflat,trace | DOME PHLAT |       4 |     830G | LongMirr |
-| d0527_0081.fits | 2017-05-27T11:07:54 |         science |   P261_OFF |    1200 |     830G | LongMirr |
+|        filename    |                date |       frametype |     target | exptime | dispname | decker |
+| d0527_0030.fits.gz | 2017-05-27T01:51:57 |             arc | DOME PHLAT |       1 |     830G | LongMirr |
+| d0527_0031.fits.gz | 2017-05-27T01:53:16 | pixelflat,trace | DOME PHLAT |       4 |     830G | LongMirr |
+| d0527_0032.fits.gz | 2017-05-27T01:54:29 | pixelflat,trace | DOME PHLAT |       4 |     830G | LongMirr |
+| d0527_0033.fits.gz | 2017-05-27T01:55:42 | pixelflat,trace | DOME PHLAT |       4 |     830G | LongMirr |
+| d0527_0081.fits.gz | 2017-05-27T11:07:54 |         science |   P261_OFF |    1200 |     830G | LongMirr |
 #| d0527_0083.fits | 2017-05-27T11:56:16 |         science |   P261_OFF |    1200 |     830G | LongMirr |
 data end
 
