@@ -121,7 +121,8 @@ def main():
             rawdir = os.path.join(pwd, 'RAW_DATA', instr, setup)+'/'
             # Run setup?
             passed = True
-            if instr.lower() in ['shane_kast_blue', 'keck_lris_red']:
+            # Use pre-made pypeit file for keck_lris_red until someone fixes pypeit_setup which is currently broken. 
+            if instr.lower() in ['shane_kast_blue']: #, 'keck_lris_red']:
                 ntest += 1
                 outfile = instr.lower()+'_'+setup.lower()
                 logfile = wdir+'/'+instr.lower()+'_'+setup.lower()+'.log2'
