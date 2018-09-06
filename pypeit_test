@@ -113,7 +113,7 @@ def main():
             # Generate folder as need be
             idir = outputdir+'/'+instr
             if not os.path.exists(idir):
-                os.makedirs(idir)
+                os.makedirs(id
             wdir = os.path.join(outputdir, instr, setup)
             if not os.path.exists(wdir):
                 os.makedirs(wdir)
