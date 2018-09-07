@@ -15,35 +15,31 @@ Current allowed arguments include all, kast, isis, deimos, wht, and lris.
 
 Use -outputdir to choose a different output directory.
 
-Many of the datasets are included as part of the Repository,
-but several exceed GitHub capacity.  To include testing on
-those, you will need to download them.
+The datasets are stored on a Google Team Drive. Contact Joe Hennawi at joe@physics.ucsb.edu if
+you would like to have access to the drive.
 
-* NIRES
-    1. Download the tarball from here: https://drive.google.com/drive/folders/1Re-He1a6k-flookumv431g5pasYL4HSO
-* DEIMOS
-    1. Download the tarball from here: https://drive.google.com/file/d/1qoZQi58KL0arcTkfEq4rDsahaNjaDJNx/view?usp=sharing
-    1. cd RAW_DATA
-    1. Unpack the tarball here
-    1. Now the tests for DEIMOS will be enabled
-* LRIS multislit blue
-    1. Download the blue side tarball from here: https://drive.google.com/open?id=1V5lf0ow5SNlAAd7pyGnuH8xFje5kQ5xP
-    1. cd RAW_DATA/Keck_LRIS_blue/
-    1. Unpack the tarball here
-    1. Now the multislit tests for LRIS blue will be enabled
-* LRIS multislit red
-    1. Download the red side tarball from here: https://drive.google.com/file/d/10IoHRh-_3uR0tLJn_HuePPsvAd062jpV/view?usp=sharing
-    1. cd RAW_DATA/Keck_LRIS_red/
-    1. Unpack the tarball here
-    1. Now the multislit tests for LRIS red will be enabled
-* Cooked files [i.e. at least partly processed by PYPIT]
-    1. Download the tarball from here: https://drive.google.com/open?id=1ZyZrk58N2peFvA7n_EmWIb42mmf33OIz
-    1. cd Cooked
-    1. Unpack the tarball here
-* XSHOOTER
-    1. Download the tarball from here: https://drive.google.com/open?id=1v84Sn0sqlDThDYWOn7H3FAHeXJKNCsu4
-    1. cd RAW_DATA/VLT_XSHOOTER
-    1. Unpack the tarball here
-    1. Now the tests for XSHOOTER will be enabled
+The easiest way to use the RAW_DATA in the development suite is download Google File Stream
+for your architecture at (unfortunately not yet available for Linux): 
 
+https://support.google.com/drive/answer/7329379?hl=en
 
+File Stream is a Dropbox like application that syncs your Google Drive with a local directory
+on your machine. Then once you are added to the PypeIt team drive you will be able to access
+the development suite data at the path: 
+
+/Volumes/GoogleDrive/Team\ Drives/PHYS-GP-Hennawi/PypeIt/PypeIt-development-suite/RAW_DATA
+
+If you don't want to deal with File Stream, then just download the RAW_DATA directory
+above. However note that you will need to re-download it or parts of it if new datasets are
+added (whereas File Stream would just sync with it automatically).
+
+Once you have the RAW_DATA directory on your machine you need to set the PYPEIT_DEV environment
+variable to this location, i.e. if you use c-shell in your .cshrc add
+
+setenv PYPEIT_DEV /Volumes/GoogleDrive/Team\ Drives/PHYS-GP-Hennawi/PypeIt/PypeIt-development-suite/RAW_DATA/
+
+or for bash
+
+env PYPEIT_DEV=/Volumes/GoogleDrive/Team\ Drives/PHYS-GP-Hennawi/PypeIt/PypeIt-development-suite/RAW_DATA/
+
+The pypeit_test script should now run and will reduce the raw data in this RAW_DATA directory. 
