@@ -42,7 +42,7 @@ def main():
     pargs, hlpstr = parser()
 
     # Grab a list of all instruments
-    raw_data = 'RAW_DATA/'
+    raw_data = os.getenv('PYPEIT_DEV') 
     #calib_data = 'PYPEIT_CALIBS'
 
     walk = os.walk(raw_data)
