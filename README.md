@@ -27,7 +27,7 @@ File Stream is a Dropbox like application that syncs your Google Drive with a lo
 on your machine. Then once you are added to the PypeIt team drive you will be able to access
 the development suite data at the path: 
 
-/Volumes/GoogleDrive/Team\ Drives/PHYS-GP-Hennawi/PypeIt/PypeIt-development-suite/RAW_DATA
+/Volumes/GoogleDrive/Team\ Drives/PHYS-GP-Hennawi/PypeIt/PypeIt-development-suite/
 
 If you don't want to deal with File Stream, then just download the RAW_DATA directory
 above. However note that you will need to re-download it or parts of it if new datasets are
@@ -36,10 +36,12 @@ added (whereas File Stream would just sync with it automatically).
 Once you have the RAW_DATA directory on your machine you need to set the PYPEIT_DEV environment
 variable to this location, i.e. if you use c-shell in your .cshrc add
 
-setenv PYPEIT_DEV /Volumes/GoogleDrive/Team\ Drives/PHYS-GP-Hennawi/PypeIt/PypeIt-development-suite/RAW_DATA/
+setenv PYPEIT_DEV /Volumes/GoogleDrive/Team\ Drives/PHYS-GP-Hennawi/PypeIt/PypeIt-development-suite/
 
 or for bash
 
-env PYPEIT_DEV=/Volumes/GoogleDrive/Team\ Drives/PHYS-GP-Hennawi/PypeIt/PypeIt-development-suite/RAW_DATA/
+env PYPEIT_DEV=/Volumes/GoogleDrive/Team\ Drives/PHYS-GP-Hennawi/PypeIt/PypeIt-development-suite/
+
+(Be sure to include the \ in the Team\ Drives otherwise the space in "Team Drives" will cause problems)
 
 The pypeit_test script should now run and will reduce the raw data in this RAW_DATA directory. 

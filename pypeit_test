@@ -10,6 +10,8 @@ This script runs the PypeIt development suite of tests
 
 from __future__ import absolute_import, division, print_function
 
+from IPython import embed
+
 
 def parser(options=None):
     import argparse
@@ -42,7 +44,9 @@ def main():
     pargs, hlpstr = parser()
 
     # Grab a list of all instruments
-    raw_data = os.getenv('PYPEIT_DEV') 
+    dev_path = os.getenv('PYPEIT_DEV')
+    raw_data = dev_path + 'RAW_DATA/'
+
     #calib_data = 'PYPEIT_CALIBS'
 
     walk = os.walk(raw_data)
@@ -113,12 +117,12 @@ def main():
             # Generate folder as need be
             idir = outputdir+'/'+instr
             if not os.path.exists(idir):
-                os.makedirs(id
+                os.makedirs(idir)
             wdir = os.path.join(outputdir, instr, setup)
             if not os.path.exists(wdir):
                 os.makedirs(wdir)
             # rawdata
-            rawdir = os.path.join(pwd, 'RAW_DATA', instr, setup)+'/'
+            rawdir = os.path.join(raw_data, instr, setup)+'/'
             # Run setup?
             passed = True
             # Use pre-made pypeit file for keck_lris_red until someone fixes pypeit_setup which is currently broken.
@@ -167,14 +171,14 @@ def main():
                         i0 = dpth.rfind('/')
                         if setup.strip('/') == dpth[i0:].strip('/\n'):
                             # TODO: Test is for WHT path issue...
-                            newdpth += pwd+'/'+raw_data+'/'+instr+'/'+setup+'\n'
+                            newdpth += raw_data+'/'+instr+'/'+setup+'\n'
                         else:
-                            newdpth += pwd+'/'+raw_data+'/'+instr+'/'+setup+dpth[i0:]
+                            newdpth += raw_data+'/'+instr+'/'+setup+dpth[i0:]
                         lines[kk+1] = newdpth
                     elif 'flatfield' in iline and 'frame' in lines[kk+1]:
                         cpth = lines[kk+1]
                         i0 = cpth.rfind('/')
-                        newcpth = pwd+'/CALIBS/'+cpth[i0:]
+                        newcpth = dev_path +'/CALIBS/'+cpth[i0:]
                         lines[kk+1] = '        frame = {0}'.format(newcpth)
                 # Write to outputdir
                 outfile = wdir+'/'+instr.lower()+'_'+setup.lower()+'.pypeit'
