@@ -1,0 +1,53 @@
+# Single-slit reduction for DEIMOS
+
+# Parmaeters
+[rdx]
+    spectrograph = keck_deimos
+    detnum = 3,7
+
+#    sortroot = keck_deimos_830g
+
+[calibrations]
+    [[arcframe]]
+        number = 2
+    [[pixelflatframe]]
+        number = 5
+    [[traceframe]]
+        number = 5
+
+[extract]
+    maxnumber = 5
+
+# Setup
+setup read
+ Setup A
+ --:
+   dichroic: None
+   disperser: {angle: 8409.99511719, name: 830G}
+   slit: {decker: LongMirr, slitlen: None, slitwid: None}
+ '01': {binning: '1,1', det: 1, namp: 1}
+ '02': {binning: '1,1', det: 2, namp: 1}
+ '03': {binning: '1,1', det: 3, namp: 1}
+ '04': {binning: '1,1', det: 4, namp: 1}
+ '05': {binning: '1,1', det: 5, namp: 1}
+ '06': {binning: '1,1', det: 6, namp: 1}
+ '07': {binning: '1,1', det: 7, namp: 1}
+ '08': {binning: '1,1', det: 8, namp: 1}
+setup end
+
+# Read in the data
+data read
+ path ../../../RAW_DATA/Keck_DEIMOS/830G_L_8410/
+|        filename |                date |       frametype |         target | exptime | dispname |   decker |
+| d0913_0013.fits | 2017-09-13T03:06:57 |             arc |     DOME PHLAT |       1 |     830G | LongMirr |
+| d0913_0014.fits | 2017-09-13T03:08:08 |             arc |     DOME PHLAT |       1 |     830G | LongMirr |
+| d0913_0015.fits | 2017-09-13T03:09:30 | pixelflat,trace |     DOME PHLAT |       6 |     830G | LongMirr |
+| d0913_0016.fits | 2017-09-13T03:10:44 | pixelflat,trace |     DOME PHLAT |       6 |     830G | LongMirr |
+| d0913_0017.fits | 2017-09-13T03:11:58 | pixelflat,trace |     DOME PHLAT |       6 |     830G | LongMirr |
+| d0913_0018.fits | 2017-09-13T03:13:12 | pixelflat,trace |     DOME PHLAT |       6 |     830G | LongMirr |
+| d0913_0019.fits | 2017-09-13T03:14:26 | pixelflat,trace |     DOME PHLAT |       6 |     830G | LongMirr |
+| d0913_0024.fits | 2017-09-13T12:44:00 |         science | PSOJ006p39_OFF |    1200 |     830G | LongMirr |
+| d0913_0025.fits | 2017-09-13T13:05:12 |         science | PSOJ006p39_OFF |    1200 |     830G | LongMirr |
+| d0913_0033.fits | 2017-09-13T15:10:28 |        standard |        G191B2B |      60 |     830G | LongMirr |
+data end
+
