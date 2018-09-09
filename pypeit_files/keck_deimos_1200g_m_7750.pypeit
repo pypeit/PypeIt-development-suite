@@ -1,0 +1,29 @@
+# Multi-slit for DEIMOS
+
+[rdx]
+    spectrograph = keck_deimos
+    sortroot = keck_deimos_setup_A
+    detnum = 7
+
+[calibrations]
+    [[pixelflatframe]]
+        number = 2
+    [[traceframe]]
+        number = 2
+    [[standardframe]]
+        number = 0
+
+
+# Read in the data
+data read
+ path RAW_DATA/Keck_DEIMOS/1200G_M_7750/
+|                  filename |                date | frametype       |  target | exptime | dispname |  decker |
+| DE.20170425.09554.fits.gz | 2017-04-25T02:39:17 |   	        arc | unknown |       1 |     1,1 |     None |    1200G | 1096.89782715 |  dra11 |
+| DE.20170425.09632.fits.gz | 2017-04-25T02:40:44 | pixelflat,trace | unknown |      12 |     1,1 |     None |    1200G | 1096.89782715 |  dra11 |
+| DE.20170425.09722.fits.gz | 2017-04-25T02:42:15 | pixelflat,trace | unknown |      12 |     1,1 |     None |    1200G | 1096.89782715 |  dra11 |
+| DE.20170425.09803.fits.gz | 2017-04-25T02:43:36 | pixelflat,trace | unknown |      12 |     1,1 |     None |    1200G | 1096.89782715 |  dra11 |
+| DE.20170425.50487.fits.gz | 2017-04-25T14:21:27 |         science |   dra11 |    1200 |     1,1 |     None |    1200G | 1096.89782715 |  dra11 |
+#| DE.20170425.51771.fits.gz | 2017-04-25T14:43:10 |         science |   dra11 |    1200 |     1,1 |     None |    1200G | 1096.89782715 |  dra11 |
+#| DE.20170425.53065.fits.gz | 2017-04-25T15:01:06 |         science |   dra11 |    1000 |     1,1 |     None |    1200G | 1096.89782715 |  dra11 |
+data end
+
