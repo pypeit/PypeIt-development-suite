@@ -17,6 +17,7 @@ from pypeit import scienceimage
 from pypeit import arcimage
 from pypeit.core import arc
 from pypeit import wavecalib
+#from pypit import wavecalib
 from pypeit import wavetilts
 from pypeit import waveimage
 from pypeit import flatfield
@@ -89,7 +90,7 @@ def get_tslits_nires(flat_files,
                                    pixlocn,
                                    par=par['calibrations']['slits'],
                                    binbpx=bpm)
-    tslits_dict = tSlits.run()
+    tslits_dict = tSlits.run(plate_scale = 0.123)
 
     if gingashow:
         # Look at what TraceSlits was actually trying to trace
@@ -167,6 +168,11 @@ def parse_arguments():
 if __name__ == '__main__':
     args = parse_arguments()
 
+    if os.path.exists('mkdir -p QA/PNGs/'):
+        pass
+    else:
+        os.system('mkdir -p QA/PNGs/')
+
     # ToDo -- fix ifs
     if args.show:
         gingashow = True
@@ -209,10 +215,11 @@ if __name__ == '__main__':
     setup = 'NIRES'
     waveCalib = wavecalib.WaveCalib(msarc,
                                     spectrograph=spectrograph,
-                                    par=par['calibrations']['wavelengths'],
+                                    #par=par['calibrations']['wavelengths'],
                                     det=1,
                                     setup=setup,
                                     arcparam=arcparam)
+
     wv_calib, _ = waveCalib.run(tslits_dict['lcen'],
                                 tslits_dict['rcen'],
                                 pixlocn,
@@ -227,41 +234,46 @@ if __name__ == '__main__':
 
     # Process science images
     datasec_img = np.zeros_like(msarc) + 1
+
     # Hack, create the fitstbl from the header of one of the science frames
     # ToDo -- this step should not be necessary
-    from astropy.io import fits
-    from astropy.table import Table
+    #from astropy.io import fits
+    #from astropy.table import Table
+    #hdul = fits.open(args.sciAfiles[0])
+    #fitstbl = Table(rows=[(hdul[0].header['ITIME'], '1x1')], names=('exptime', 'binning',))
 
-    hdul = fits.open(args.sciAfiles[0])
-    fitstbl = Table(rows=[(hdul[0].header['ITIME'], '1x1')], names=('exptime', 'binning',))
     # Processing A
     sciIMG_A = scienceimage.ScienceImage(spectrograph,
                                          file_list=args.sciAfiles,
                                          frame_par=par['scienceframe'],
-                                         tslits_dict=tslits_dict,
-                                         tilts=mstilts,
+                                         #tslits_dict=tslits_dict,
+                                         #tilts=mstilts,
                                          det=1,
-                                         datasec_img=datasec_img,
-                                         bpm=bpm,
-                                         pixlocn=pixlocn,
-                                         fitstbl=fitstbl)
-    sciframe_A, rawvarframe_A, crmask_A = sciIMG_A.process(bias_subtract=None,
+                                         #datasec_img=datasec_img,
+                                         #bpm=bpm,
+                                         #pixlocn=pixlocn,
+                                         #fitstbl=fitstbl)
+                                         )
+    sciframe_A, sciivar_A, rawvarframe_A, crmask_A = sciIMG_A.process(bias_subtract=None,
                                                            pixel_flat=None,
+                                                           bpm=bpm,
                                                            apply_gain=True,
                                                            trim=False)
     # Processing B
     sciIMG_B = scienceimage.ScienceImage(spectrograph,
                                          file_list=args.sciBfiles,
                                          frame_par=par['scienceframe'],
-                                         tslits_dict=tslits_dict,
-                                         tilts=mstilts,
+                                         #tslits_dict=tslits_dict,
+                                         #tilts=mstilts,
                                          det=1,
-                                         datasec_img=datasec_img,
-                                         bpm=bpm,
-                                         pixlocn=pixlocn,
-                                         fitstbl=fitstbl)
-    sciframe_B, rawvarframe_B, crmask_B = sciIMG_B.process(bias_subtract=None,
+                                         #datasec_img=datasec_img,
+                                         #bpm=bpm,
+                                         #pixlocn=pixlocn,
+                                         #fitstbl=fitstbl)
+                                         )
+    sciframe_B, sciivar_B, rawvarframe_B, crmask_B = sciIMG_B.process(bias_subtract=None,
                                                            pixel_flat=None,
+                                                           bpm=bpm,
                                                            apply_gain=True,
                                                            trim=False)
     # This addition of a tiny bit of effor imposes a maximum S/N ratio which stabilizes the fits
@@ -305,41 +317,43 @@ if __name__ == '__main__':
                                                       ivar_AB,
                                                       mstilts,
                                                       thismask,
-                                                      lcen[:, islit - 1],
-                                                      rcen[:, islit - 1],
+                                                      lcen[:,islit-1],
+                                                      rcen[:,islit-1],
                                                       inmask=((edgmask == False) & (mask_AB == True)),
                                                       bsp=bsp,
-                                                      POS_MASK=False,
-                                                      PLOT_FIT=False)
+                                                      pos_mask=False,
+                                                      show_fit=False)
         image = diff_AB - residual_img
         # Extract negative trace
         specobj_slit_neg, skymask_neg, objmask_neg = extract.objfind(-image,
-                                                                     ivar_AB,
+                                                                     #ivar_AB,
                                                                      thismask,
-                                                                     lcen[:, islit - 1],
-                                                                     rcen[:, islit - 1],
+                                                                     lcen[:,islit-1],
+                                                                     rcen[:,islit-1],
+                                                                     sig_thresh=3.0,
                                                                      inmask=mask_AB,
                                                                      FWHM=FWHM,
                                                                      nperslit=1,
-                                                                     TRIM_EDG=(3, 3),
-                                                                     SHOW_TRACE=False,
-                                                                     SHOW_PEAKS=False,
-                                                                     SHOW_FITS=False)
+                                                                     trim_edg=(3, 3),
+                                                                     show_trace=False,
+                                                                     show_peaks=False,
+                                                                     show_fits =False)
         if specobj_slit_neg is not None:
             specobjs_neg.add_sobj(specobj_slit_neg.specobjs.tolist())
         # Extract positive trace
         specobj_slit_pos, skymask_pos, objmask_pos = extract.objfind(image,
-                                                                     ivar_AB,
+                                                                     #ivar_AB,
                                                                      thismask,
-                                                                     lcen[:, islit - 1],
-                                                                     rcen[:, islit - 1],
+                                                                     lcen[:,islit-1],
+                                                                     rcen[:,islit-1],
+                                                                     sig_thresh=3.0,
                                                                      inmask=mask_AB,
                                                                      FWHM=FWHM,
                                                                      nperslit=1,
-                                                                     TRIM_EDG=(3, 3),
-                                                                     SHOW_TRACE=False,
-                                                                     SHOW_PEAKS=False,
-                                                                     SHOW_FITS=False)
+                                                                     trim_edg=(3, 3),
+                                                                     show_trace=False,
+                                                                     show_peaks=False,
+                                                                     show_fits =False)
         if specobj_slit_pos is not None:
             specobjs_pos.add_sobj(specobj_slit_pos.specobjs.tolist())
         skymask[thismask] = (skymask_pos & skymask_neg)
@@ -425,15 +439,16 @@ if __name__ == '__main__':
     plt.close()
     for islit in range(1, nslits + 1):
         plt.plot(specobjs_neg[islit - 1].boxcar['wave'], specobjs_neg[islit - 1].boxcar['flux'], color='b')
-        plt.plot(specobjs_neg[islit - 1].boxcar['wave'], np.sqrt(specobjs_neg[islit - 1].boxcar['var']), color='b',
-                 alpha=0.5)
+        #plt.plot(specobjs_neg[islit - 1].boxcar['wave'], np.sqrt(specobjs_neg[islit - 1].boxcar['var']), color='b',
+        #         alpha=0.5)
         plt.plot(specobjs_pos[islit - 1].boxcar['wave'], specobjs_pos[islit - 1].boxcar['flux'], color='red')
-        plt.plot(specobjs_pos[islit - 1].boxcar['wave'], np.sqrt(specobjs_pos[islit - 1].boxcar['var']), color='red',
-                 alpha=0.5)
+        #plt.plot(specobjs_pos[islit - 1].boxcar['wave'], np.sqrt(specobjs_pos[islit - 1].boxcar['var']), color='red',
+        #         alpha=0.5)
     plt.legend()
     plt.title('Boxcar extraction')
     plt.xlabel('Wavelength')
     plt.ylabel('Counts')
+    plt.savefig('Extract.png', bbox_inches='tight')
     plt.show()
 
     """
