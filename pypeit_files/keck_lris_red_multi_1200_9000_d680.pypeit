@@ -1,12 +1,24 @@
 # This is a comment line
 
+
 # User-defined execution parameters
 [rdx]
-spectrograph = keck_lris_red
-    sortroot = keck_lris_red_setup_A
+    spectrograph = keck_lris_red
+    sortroot = keck_lris_red_multi_1200_9000_d680
 [calibrations]
+    [[biasframe]]
+#        number = 5
+    [[pixelflatframe]]
+        number = 3
     [[arcframe]]
         number = 1
+    [[pinholeframe]]
+        number = 0
+    [[traceframe]]
+        number = 1
+    [[standardframe]]
+        number = 0
+
 
 # Setup
 setup read
@@ -22,18 +34,21 @@ setup end
 # Read in the data
 data read
  path /Volumes/GoogleDrive/Team Drives/PHYS-GP-Hennawi/PypeIt/PypeIt-development-suite/RAW_DATA/Keck_LRIS_red/multi_1200_9000_d680/
-|          filename |                date | frametype |        target | exptime | dispname |   decker |
-| r170815_0021.fits | 2017-08-15T04:19:07 |       arc |       unknown |       5 | 300/5000 | EOD1.fil |
-| r170815_0087.fits | 2017-08-15T16:28:08 |      bias | LRIS (N wrap) |       0 | 300/5000 | SX173.fi |
-| r170815_0088.fits | 2017-08-15T16:30:16 |      bias | LRIS (N wrap) |       0 | 300/5000 | SX173.fi |
-| r170815_0089.fits | 2017-08-15T16:32:25 |      bias | LRIS (N wrap) |       0 | 300/5000 | SX173.fi |
-| r170815_0090.fits | 2017-08-15T16:34:34 |      bias | LRIS (N wrap) |       0 | 300/5000 | SX173.fi |
-| r170815_0091.fits | 2017-08-15T16:36:42 |      bias | LRIS (N wrap) |       0 | 300/5000 | SX173.fi |
-| r170815_0034.fits | 2017-08-15T06:28:19 |   science |          EOD1 |     900 | 300/5000 | EOD1.fil |
-| r170815_0035.fits | 2017-08-15T06:45:30 |   science |          EOD1 |     900 | 300/5000 | EOD1.fil |
-| r170815_0036.fits | 2017-08-15T07:02:38 |   science |          EOD1 |     900 | 300/5000 | EOD1.fil |
-| r170815_0037.fits | 2017-08-15T07:19:48 |   science |          EOD1 |     900 | 300/5000 | EOD1.fil |
-| r170815_0038.fits | 2017-08-15T07:36:58 |   science |          EOD1 |     900 | 300/5000 | EOD1.fil |
-| r170815_0039.fits | 2017-08-15T07:54:10 |   science |          EOD1 |     900 | 300/5000 | EOD1.fil |
+| r170815_0021.fits | 2017-08-15T04:19:07 |                      arc |       unknown |       5 |     1,1 |      680 | 300/5000 | EOD1.fil |
+| r170815_0087.fits | 2017-08-15T16:28:08 |                     bias | LRIS (N wrap) |       0 |     1,1 |      680 | 300/5000 | SX173.fi |
+| r170815_0088.fits | 2017-08-15T16:30:16 |                     bias | LRIS (N wrap) |       0 |     1,1 |      680 | 300/5000 | SX173.fi |
+| r170815_0089.fits | 2017-08-15T16:32:25 |                     bias | LRIS (N wrap) |       0 |     1,1 |      680 | 300/5000 | SX173.fi |
+| r170815_0090.fits | 2017-08-15T16:34:34 |                     bias | LRIS (N wrap) |       0 |     1,1 |      680 | 300/5000 | SX173.fi |
+| r170815_0091.fits | 2017-08-15T16:36:42 |                     bias | LRIS (N wrap) |       0 |     1,1 |      680 | 300/5000 | SX173.fi |
+| r170815_0029.fits | 2017-08-15T04:43:13 | pixelflat,trace 	     |       unknown |      10 |     1,1 |      680 | 300/5000 | EOD1.fil |
+| r170815_0030.fits | 2017-08-15T04:51:57 | pixelflat,trace 	     |       unknown |      10 |     1,1 |      680 | 300/5000 | EOD1.fil |
+| r170815_0031.fits | 2017-08-15T04:54:58 | pixelflat,trace 	     |       unknown |      10 |     1,1 |      680 | 300/5000 | EOD1.fil |
+| r170815_0032.fits | 2017-08-15T04:57:15 | pixelflat,trace 	     |       unknown |      10 |     1,1 |      680 | 300/5000 | EOD1.fil |
+| r170815_0034.fits | 2017-08-15T06:28:19 |                  science |          EOD1 |     900 |     1,1 |      680 | 300/5000 | EOD1.fil |
+#| r170815_0035.fits | 2017-08-15T06:45:30 |                  science |          EOD1 |     900 |     1,1 |      680 | 300/5000 | EOD1.fil |
+#| r170815_0036.fits | 2017-08-15T07:02:38 |                  science |          EOD1 |     900 |     1,1 |      680 | 300/5000 | EOD1.fil |
+#| r170815_0037.fits | 2017-08-15T07:19:48 |                  science |          EOD1 |     900 |     1,1 |      680 | 300/5000 | EOD1.fil |
+#| r170815_0038.fits | 2017-08-15T07:36:58 |                  science |          EOD1 |     900 |     1,1 |      680 | 300/5000 | EOD1.fil |
+#| r170815_0039.fits | 2017-08-15T07:54:10 |                  science |          EOD1 |     900 |     1,1 |      680 | 300/5000 | EOD1.fil |
 data end
 
