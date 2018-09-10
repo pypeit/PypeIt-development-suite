@@ -34,6 +34,7 @@ setup end
 # Read in the data
 data read
  path /Volumes/GoogleDrive/Team Drives/PHYS-GP-Hennawi/PypeIt/PypeIt-development-suite/RAW_DATA/Keck_LRIS_red/multi_1200_9000_d680/
+|          filename |                date |                frametype |        target | exptime | binning | dichroic | dispname |   decker |
 | r170815_0021.fits | 2017-08-15T04:19:07 |                      arc |       unknown |       5 |     1,1 |      680 | 300/5000 | EOD1.fil |
 | r170815_0087.fits | 2017-08-15T16:28:08 |                     bias | LRIS (N wrap) |       0 |     1,1 |      680 | 300/5000 | SX173.fi |
 | r170815_0088.fits | 2017-08-15T16:30:16 |                     bias | LRIS (N wrap) |       0 |     1,1 |      680 | 300/5000 | SX173.fi |
