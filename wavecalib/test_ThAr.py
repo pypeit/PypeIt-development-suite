@@ -31,7 +31,7 @@ def tst_thar(name, specs, wav_id, pix_id, test='general', toler=0.001):
     outroot = outdir+name
     if test == 'general':
         arcfitter = autoid.General(specs, lines, min_ampl=min_ampl,
-                                   outroot=outroot, rms_threshold=10.1)
+                                   outroot=outroot, rms_threshold=0.15)
         patt_dict, final_fit = arcfitter.get_results()
         if patt_dict is None:
             return "FAILED", None, None
