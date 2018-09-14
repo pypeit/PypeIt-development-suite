@@ -34,22 +34,18 @@ setup end
 # Read in the data
 data read
  path /Volumes/GoogleDrive/Team Drives/PHYS-GP-Hennawi/PypeIt/PypeIt-development-suite/RAW_DATA/Keck_LRIS_red/multi_1200_9000_d680/
-|          filename |                date |                frametype |        target | exptime | binning | dichroic | dispname |   decker |
-| r170815_0021.fits | 2017-08-15T04:19:07 |                      arc |       unknown |       5 |     1,1 |      680 | 300/5000 | EOD1.fil |
-| r170815_0087.fits | 2017-08-15T16:28:08 |                     bias | LRIS (N wrap) |       0 |     1,1 |      680 | 300/5000 | SX173.fi |
-| r170815_0088.fits | 2017-08-15T16:30:16 |                     bias | LRIS (N wrap) |       0 |     1,1 |      680 | 300/5000 | SX173.fi |
-| r170815_0089.fits | 2017-08-15T16:32:25 |                     bias | LRIS (N wrap) |       0 |     1,1 |      680 | 300/5000 | SX173.fi |
-| r170815_0090.fits | 2017-08-15T16:34:34 |                     bias | LRIS (N wrap) |       0 |     1,1 |      680 | 300/5000 | SX173.fi |
-| r170815_0091.fits | 2017-08-15T16:36:42 |                     bias | LRIS (N wrap) |       0 |     1,1 |      680 | 300/5000 | SX173.fi |
-| r170815_0029.fits | 2017-08-15T04:43:13 | pixelflat,trace 	     |       unknown |      10 |     1,1 |      680 | 300/5000 | EOD1.fil |
-| r170815_0030.fits | 2017-08-15T04:51:57 | pixelflat,trace 	     |       unknown |      10 |     1,1 |      680 | 300/5000 | EOD1.fil |
-| r170815_0031.fits | 2017-08-15T04:54:58 | pixelflat,trace 	     |       unknown |      10 |     1,1 |      680 | 300/5000 | EOD1.fil |
-| r170815_0032.fits | 2017-08-15T04:57:15 | pixelflat,trace 	     |       unknown |      10 |     1,1 |      680 | 300/5000 | EOD1.fil |
-| r170815_0034.fits | 2017-08-15T06:28:19 |                  science |          EOD1 |     900 |     1,1 |      680 | 300/5000 | EOD1.fil |
-#| r170815_0035.fits | 2017-08-15T06:45:30 |                  science |          EOD1 |     900 |     1,1 |      680 | 300/5000 | EOD1.fil |
-#| r170815_0036.fits | 2017-08-15T07:02:38 |                  science |          EOD1 |     900 |     1,1 |      680 | 300/5000 | EOD1.fil |
-#| r170815_0037.fits | 2017-08-15T07:19:48 |                  science |          EOD1 |     900 |     1,1 |      680 | 300/5000 | EOD1.fil |
-#| r170815_0038.fits | 2017-08-15T07:36:58 |                  science |          EOD1 |     900 |     1,1 |      680 | 300/5000 | EOD1.fil |
-#| r170815_0039.fits | 2017-08-15T07:54:10 |                  science |          EOD1 |     900 |     1,1 |      680 | 300/5000 | EOD1.fil |
-data end
+|          filename |                date | frametype       |  target | exptime | binning | dichroic | dispname |   decker |
+| r170816_0009.fits | 2017-08-16T02:56:14 | arc             | unknown |       3 |     1,1 |      680 | 300/5000 | E570.fil |
+| r170816_0018.fits | 2017-08-16T03:19:28 | pixelflat,trace | unknown |      10 |     1,1 |      680 | 300/5000 | E570.fil |
+| r170816_0019.fits | 2017-08-16T03:22:01 | pixelflat,trace | unknown |      10 |     1,1 |      680 | 300/5000 | E570.fil |
+| r170816_0020.fits | 2017-08-16T03:24:18 | pixelflat,trace | unknown |      10 |     1,1 |      680 | 300/5000 | E570.fil |
+| r170816_0021.fits | 2017-08-16T03:26:35 | pixelflat,trace | unknown |      10 |     1,1 |      680 | 300/5000 | E570.fil |
+| r170816_0022.fits | 2017-08-16T03:28:52 | pixelflat,trace | unknown |      10 |     1,1 |      680 | 300/5000 | E570.fil |
+| r170816_0045.fits | 2017-08-16T04:28:57 |      bias | unknown |       0 |     1,1 |      680 | 300/5000 | long_1.5 |
+| r170816_0046.fits | 2017-08-16T04:31:05 |      bias | unknown |       0 |     1,1 |      680 | 300/5000 | long_1.5 |
+| r170816_0047.fits | 2017-08-16T04:33:14 |      bias | unknown |       0 |     1,1 |      680 | 300/5000 | long_1.5 |
+| r170816_0048.fits | 2017-08-16T04:35:21 |      bias | unknown |       0 |     1,1 |      680 | 300/5000 | long_1.5 |
+| r170816_0057.fits | 2017-08-16T07:32:00 |   science |    E570 |     900 |     1,1 |      680 | 300/5000 | E570.fil |
+#| r170816_0058.fits | 2017-08-16T07:49:10 |   science |    E570 |     900 |     1,1 |      680 | 300/5000 | E570.fil |
+#| r170816_0059.fits | 2017-08-16T08:06:20 |   science |    E570 |     900 |     1,1 |      680 | 300/5000 | E570.fil |
 
