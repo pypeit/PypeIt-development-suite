@@ -18,25 +18,21 @@ test_arc_path = str(Path().absolute()) + '/TEST_DATA/'
 outdir = 'OUTPUT/'
 
 
-def tst_thar(name, specs, wav_id, pix_id, test='kdtree', toler=0.001):
+def tst_thar(name, specs, wav_id, pix_id, test='general', toler=0.001):
     """
     toler : float
       Tolerance for scoring correct matches
     """
     # Favored parameters (should match those in the defaults)
-    min_ampl=1000.
+    min_ampl = 200.
     lines = ['ThAr']
 
     # Run
     outroot = outdir+name
     if test == 'general':
-        patt_dict, final_fit = autoid.general(specs, lines,
-                                              min_ampl=min_ampl, outroot=outroot)
-        if patt_dict is None:
-            return "FAILED", None, None
-    elif test == 'kdtree':
-        patt_dict, final_fit = autoid.kdtree(specs, lines,
-                                             min_ampl=min_ampl, outroot=outroot)
+        arcfitter = autoid.General(specs, lines, min_ampl=min_ampl,
+                                   outroot=outroot, rms_threshold=0.15)
+        patt_dict, final_fit = arcfitter.get_results()
         if patt_dict is None:
             return "FAILED", None, None
     else:
@@ -83,16 +79,28 @@ def main(flg_tst):
             ids = pyfits.open(fn.replace("aspec.fits.gz", "lines.fits.gz"))
             pxs = ids[1].data["PIX"]
             wvs = ids[1].data["WV"]
+            ordflxs = None
             ordwavs, ordpixs = [], []
             for ord in range(fx.shape[0]):
                 # Store the spectrum
                 # ordspec += [fx[ord, :]]
                 # Store the 'true' line IDs
                 ww = np.where(wvs[ord, :] != 0.0)
+                if np.all(fx[ord, :]) == 0.0:# or len(ww[0]) == 0:
+                    continue
+                else:
+                    if ordflxs is None:
+                        ordflxs = fx[ord, :].flatten().reshape((fx.shape[1], 1))
+                    else:
+                        ordflxs = np.append(ordflxs, fx[ord, :].flatten().reshape((fx.shape[1], 1)), axis=1)
                 ordwavs += [wvs[ord, ww[0]]]
                 ordpixs += [pxs[ord, ww[0]]]
+                if len(specs) == 0:
+                    coeff = np.polyfit(pxs[ord, ww[0]], wvs[ord, ww[0]], 4)
+                    centwv = np.polyval(coeff, 0.5*fx.shape[1])
+                    print("Central wavelength order {0:d}, pixel {1:d} = {2:f}".format(ord+1, fx.shape[1]//2, centwv))
             # specs += [ordspec]
-            specs += [fx.T]
+            specs += [ordflxs]
             wavid += [ordwavs]
             pixid += [ordpixs]
 
@@ -124,7 +132,6 @@ def main(flg_tst):
 # Test
 if __name__ == '__main__':
     # flg_tst = 1   # Run em all with semi-brute
-    # flg_tst = 2   # Run em all with general
-    flg_tst = 3   # Run em all with KD Tree
+    flg_tst = 2   # Run em all with general
 
     main(flg_tst)
