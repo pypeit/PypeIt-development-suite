@@ -7,7 +7,7 @@
     sortroot = keck_lris_red_multi_1200_9000_d680
 [calibrations]
     [[biasframe]]
-#        number = 5
+#        number = 4
     [[pixelflatframe]]
         number = 3
     [[arcframe]]
