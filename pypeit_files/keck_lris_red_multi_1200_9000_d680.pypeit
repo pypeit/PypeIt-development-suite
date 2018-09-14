@@ -5,6 +5,7 @@
 [rdx]
     spectrograph = keck_lris_red
     sortroot = keck_lris_red_multi_1200_9000_d680
+    detnum = 2
 [calibrations]
     [[biasframe]]
         number = 4
@@ -18,6 +19,10 @@
         number = 1
     [[standardframe]]
         number = 0
+     [[slits]]
+       sigdetect = 30
+ # This is a hack to get bad slit to go away
+
 
 
 # Setup
