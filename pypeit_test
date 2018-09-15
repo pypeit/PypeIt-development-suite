@@ -129,7 +129,7 @@ def main():
             if instr.lower() in ['shane_kast_blue']: #, 'keck_lris_red']:
                 ntest += 1
                 outfile = instr.lower()+'_'+setup.lower()
-                logfile = wdir+'/'+instr.lower()+'_'+setup.lower()+'.log2'
+                logfile = wdir+'/'+instr.lower()+'_'+setup.lower()+'.test.log'
                 with open(logfile, 'w') as f:
                     retval = subprocess.call(['pypeit_setup', rawdir, instr.lower(), '-c', '-o'], stderr=f, cwd=wdir)
                 wdir = os.path.join(wdir, instr.lower()+'_setup_A')
@@ -190,7 +190,7 @@ def main():
             # Run pypeit
             if passed:
                 ntest += 1
-                logfile = wdir+'/'+instr.lower()+'_'+setup.lower()+'.log3'
+                logfile = wdir+'/'+instr.lower()+'_'+setup.lower()+'.test.log'
                 print('Running pypeit on {:s} --- '.format(pyp_file), file=sys.stderr, end='')
                 with open(logfile, 'w') as f:
                     print(wdir)
@@ -208,7 +208,7 @@ def main():
                 # Test master frame running
                 if instr in ['keck_lris_red']:
                     ntest += 1
-                    logfile = wdir+'/'+instr.lower()+'_'+setup.lower()+'.log4'
+                    logfile = wdir+'/'+instr.lower()+'_'+setup.lower()+'.test.log'
                     print('Running pypeit with master frames on {:s} --- '.format(pyp_file), file=sys.stderr, end='')
                     with open(logfile, 'w') as f:
     #                    print(wdir)
