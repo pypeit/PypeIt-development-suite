@@ -3,7 +3,8 @@
 [rdx]
     spectrograph = keck_deimos
     sortroot = keck_deimos_setup_A
-    detnum = 3,7
+    detnum = 7
+# Just restrict to 7 for now, since this is where the crash happens
 
 [calibrations]
     [[pixelflatframe]]
