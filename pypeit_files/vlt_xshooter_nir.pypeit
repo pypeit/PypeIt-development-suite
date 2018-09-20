@@ -29,16 +29,16 @@ spectrograph = vlt_xshooter_nir
 data read
  path /home/ema/Dropbox/XshooterTestBed/VLT_XSHOOTER/NIR
 | filename                              | date                    | frametype       | target    | exptime |
-| XSHOO.2016-08-02T12:22:12.800.fits.gz | 2016-08-02T12:22:12.800 | dark            | dark      |   900.0 |
-| XSHOO.2016-08-02T12:37:18.837.fits.gz | 2016-08-02T12:37:18.837 | dark            | dark      |   900.0 |
-| XSHOO.2016-08-02T12:52:26.869.fits.gz | 2016-08-02T12:52:26.869 | dark            | dark      |   900.0 |
+| XSHOO.2016-08-02T12:22:12.800.fits.gz | 2016-08-02T12:22:12.800 | bias            | dark      |   900.0 |
+| XSHOO.2016-08-02T12:37:18.837.fits.gz | 2016-08-02T12:37:18.837 | bias            | dark      |   900.0 |
+| XSHOO.2016-08-02T12:52:26.869.fits.gz | 2016-08-02T12:52:26.869 | bias            | dark      |   900.0 |
 | XSHOO.2016-08-03T14:41:06.410.fits.gz | 2016-08-03T14:41:06.410 | pixelflat,trace | flat      |   18.72 |
 | XSHOO.2016-08-03T14:41:59.007.fits.gz | 2016-08-03T14:41:59.007 | pixelflat,trace | flat      |   18.72 |
 | XSHOO.2016-08-03T14:42:54.280.fits.gz | 2016-08-03T14:42:54.280 | pixelflat,trace | flat      |   18.72 |
 | XSHOO.2016-08-02T08:45:49.494.fits.gz | 2016-08-02T08:45:49.494 | science,arc     | J0100     |   900.0 |
-| XSHOO.2016-08-02T09:00:56.860.fits.gz | 2016-08-02T09:00:56.860 | science,arc     | J0100     |   900.0 |
-| XSHOO.2016-08-02T09:16:54.772.fits.gz | 2016-08-02T09:16:54.772 | science,arc     | J0100     |   900.0 |
-| XSHOO.2016-08-02T09:32:03.463.fits.gz | 2016-08-02T09:32:03.463 | science,arc     | J0100     |   900.0 |
+# | XSHOO.2016-08-02T09:00:56.860.fits.gz | 2016-08-02T09:00:56.860 | science,arc     | J0100     |   900.0 |
+# | XSHOO.2016-08-02T09:16:54.772.fits.gz | 2016-08-02T09:16:54.772 | science,arc     | J0100     |   900.0 |
+# | XSHOO.2016-08-02T09:32:03.463.fits.gz | 2016-08-02T09:32:03.463 | science,arc     | J0100     |   900.0 |
 | XSHOO.2016-08-02T09:57:17.147.fits.gz | 2016-08-02T09:57:17.147 | science         | HIP022840 |   2.404 |
-| XSHOO.2016-08-02T09:57:56.903.fits.gz | 2016-08-02T09:57:56.903 | science         | HIP022840 |   2.404 |
+# | XSHOO.2016-08-02T09:57:56.903.fits.gz | 2016-08-02T09:57:56.903 | science         | HIP022840 |   2.404 |
 data end
