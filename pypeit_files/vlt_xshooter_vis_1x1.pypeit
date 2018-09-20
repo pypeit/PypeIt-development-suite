@@ -32,9 +32,9 @@ data read
 | XSHOO.2010-04-28T10:23:42.901.fits.gz | 2010-04-28T10:23:42.901 | bias	    | bias	|  0.0000 |
 | XSHOO.2010-04-28T10:26:26.465.fits.gz | 2010-04-28T10:26:26.465 | bias	    | bias	|  0.0000 |
 | XSHOO.2010-04-28T10:29:10.029.fits.gz | 2010-04-28T10:29:10.029 | bias	    | bias	|  0.0000 |
-| XSHOO.2016-08-02T14:01:19.368.fits.gz | 2016-08-02T14:01:19.368 | pixelflat,trace | flat	|  1.4625 |
-| XSHOO.2016-08-02T14:01:51.211.fits.gz | 2016-08-02T14:01:51.211 | pixelflat,trace | flat	|  1.4625 |
-| XSHOO.2016-08-02T14:02:23.684.fits.gz | 2016-08-02T14:02:23.684 | pixelflat,trace | flat	|  1.4625 |
+| XSHOO.2010-04-28T13:13:03.231.fits.gz | 2010-04-28T13:13:03.231 | pixelflat,trace | flat	|  1.4625 |
+| XSHOO.2010-04-28T13:14:40.159.fits.gz | 2010-04-28T13:14:40.159 | pixelflat,trace | flat	|  1.4625 |
+| XSHOO.2010-04-28T13:16:17.337.fits.gz | 2010-04-28T13:16:17.337 | pixelflat,trace | flat	|  1.4625 |
 | XSHOO.2010-04-28T14:36:27.000.fits.gz | 2010-04-28T14:36:27.000 | arc 	    | ThAr	|  2.0 |
 | XSHOO.2010-04-28T06:08:54.703.fits.gz | 2010-04-28T06:08:54.703 | science	    | PG1553p113	|  410.0 |
 | XSHOO.2010-04-28T06:17:21.495.fits.gz | 2010-04-28T06:17:21.495 | science	    | PG1553p113	|  410.0 |
