@@ -29,9 +29,9 @@ spectrograph = vlt_xshooter_vis
 data read
  path /home/ema/Dropbox/XshooterTestBed/VLT_XSHOOTER/VIS_1x2
 | filename                              | date                    | frametype       | target    | exptime |
-| XSHOO.2016-08-02T10:45:45.410.fits.gz | 2016-08-02T10:45:45.410 | bias	    | bias	|  0.0000 |
-| XSHOO.2016-08-02T10:47:16.857.fits.gz | 2016-08-02T10:47:16.857 | bias	    | bias	|  0.0000 |
-| XSHOO.2016-08-02T10:48:48.184.fits.gz | 2016-08-02T10:48:48.184 | bias	    | bias	|  0.0000 |
+| XSHOO.2016-08-02T10:45:45.410.fits.gz | 2016-08-02T10:45:45.410 | bias            | bias	|  0.0000 |
+| XSHOO.2016-08-02T10:47:16.857.fits.gz | 2016-08-02T10:47:16.857 | bias            | bias	|  0.0000 |
+| XSHOO.2016-08-02T10:48:48.184.fits.gz | 2016-08-02T10:48:48.184 | bias            | bias	|  0.0000 |
 | XSHOO.2016-08-02T13:36:24.258.fits.gz | 2016-08-02T13:36:24.258 | pixelflat,trace | flat	|  5.1340 |
 | XSHOO.2016-08-02T13:37:24.132.fits.gz | 2016-08-02T13:37:24.132 | pixelflat,trace | flat	|  5.1340 |
 | XSHOO.2016-08-02T13:38:24.917.fits.gz | 2016-08-02T13:38:24.917 | pixelflat,trace | flat	|  5.1340 |
