@@ -19,7 +19,7 @@ setup read
  Setup A
  --:
    dichroic: None
-   disperser: {angle: 7500.02246094, name: 830G}
+   disperser: {angle: 7500.02246094, name: 600ZD}
    slit: {decker: jcCIV2C, slitlen: None, slitwid: None}
  '01': {binning: '1,1', det: 1, namp: 1}
  '02': {binning: '1,1', det: 2, namp: 1}
@@ -42,6 +42,6 @@ data read
 | DE.20140226.61434.fits | 2014-02-26T17:03:57 |               arc | HORIZON STOW |       1 |    600ZD | jcCIV2C |
 | DE.20140226.61512.fits | 2014-02-26T17:05:19 |   pixelflat,trace | HORIZON STOW |       6 |    600ZD | jcCIV2C |
 | DE.20140226.61587.fits | 2014-02-26T17:06:35 |   pixelflat,trace | HORIZON STOW |       6 |    600ZD | jcCIV2C |
-| DE.20140226.61663.fits | 2014-02-26T17:07:51 |   pixelflat,trace | HORIZON STOW |       6 |    600ZD | jcCIV2C |=
+| DE.20140226.61663.fits | 2014-02-26T17:07:51 |   pixelflat,trace | HORIZON STOW |       6 |    600ZD | jcCIV2C |
 data end
 
