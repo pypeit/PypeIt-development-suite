@@ -39,12 +39,12 @@ data read
 | d1010_0005.fits.gz | 2015-10-10T01:31:58  |     bias          |     DOME PHLAT |       1 |     1,1 |     None |    600ZD | 1097.54162598 | mask04 |
 | d1010_0006.fits.gz | 2015-10-10T01:33:11  |     bias          |     DOME PHLAT |       1 |     1,1 |     None |    600ZD | 1097.54162598 | mask04 |
 | d1010_0040.fits.gz | 2015-10-10T03:28:23  |   arc             |     DOME PHLAT |       1 |     1,1 |     None |    600ZD | 6500.00634766 | mask03 |
-| d1010_0041.fits.gz | 2015-10-10T03:29:43  | pixelflat, trace  |     DOME PHLAT |       6 |     1,1 |     None |    600ZD | 6500.00634766 | mask03 |
-| d1010_0056.fits.gz | 2015-10-10T05:28:23  |   science | HIT2015-mask03 |    1800 |     1,1 |     None |    600ZD | 6500.00634766 | mask03 |
-| d1010_0057.fits.gz | 2015-10-10T05:59:33  |   science | HIT2015-mask03 |    1800 |     1,1 |     None |    600ZD | 6500.00634766 | mask03 |
+| d1010_0041.fits.gz | 2015-10-10T03:29:43  | pixelflat,trace   |     DOME PHLAT |       6 |     1,1 |     None |    600ZD | 6500.00634766 | mask03 |
+| d1010_0056.fits.gz | 2015-10-10T05:28:23  |   science 	| HIT2015-mask03 |    1800 |     1,1 |     None |    600ZD | 6500.00634766 | mask03 |
+| d1010_0057.fits.gz | 2015-10-10T05:59:33  |   science 	| HIT2015-mask03 |    1800 |     1,1 |     None |    600ZD | 6500.00634766 | mask03 |
 #| d1010_0019.fits.gz | 2015-10-10T02:43:58 |    arc            |     DOME PHLAT |      12 |     1,1 |     None |    600ZD | 6500.00634766 | mask03 |
-#| d1010_0022.fits.gz | 2015-10-10T02:48:55 | pixelflat, trace  |     DOME PHLAT |      12 |     1,1 |     None |    600ZD | 6500.00634766 | mask03 |
-#| d1010_0025.fits.gz | 2015-10-10T02:54:36 | pixelflat, trace  |     DOME PHLAT |      45 |     1,1 |     None |    600ZD | 6500.00634766 | mask03 |
+#| d1010_0022.fits.gz | 2015-10-10T02:48:55 | pixelflat,trace  |     DOME PHLAT |      12 |     1,1 |     None |    600ZD | 6500.00634766 | mask03 |
+#| d1010_0025.fits.gz | 2015-10-10T02:54:36 | pixelflat,trace  |     DOME PHLAT |      45 |     1,1 |     None |    600ZD | 6500.00634766 | mask03 |
 
 data end
 
