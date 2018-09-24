@@ -3,6 +3,7 @@
 # at the moment takes the star HD164716 as SCIENCE (and not as standard).
 # ginga --module=RC&
 # run_pypeit -v2 -o -m -s ./vlt_xshooter_vis_1x1.pypeit
+# run_pypeit -v2 -o -s ./vlt_xshooter_vis_1x1.pypeit
 
 # User-defined execution parameters
 [rdx]
