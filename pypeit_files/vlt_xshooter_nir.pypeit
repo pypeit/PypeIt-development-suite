@@ -6,8 +6,8 @@
 
 # User-defined execution parameters
 [rdx]
-spectrograph = vlt_xshooter_vis
-    sortroot = vlt_xshooter_vis
+spectrograph = vlt_xshooter_nir
+    sortroot = vlt_xshooter_nir
 
 [calibrations]
     [[arcframe]]
