@@ -2,7 +2,7 @@
 # This reduce data from vlt xshooter nir 
 # at the moment takes the star HIP022840 as SCIENCE (and not as standard).
 # ginga --module=RC&
-# run_pypeit -v2 -o -s ./vlt_xshooter_nir.pypeit
+# run_pypeit -v2 -o -m -s ./vlt_xshooter_nir.pypeit
 
 # User-defined execution parameters
 [rdx]
@@ -36,9 +36,9 @@ data read
 | XSHOO.2016-08-03T14:41:59.007.fits.gz | 2016-08-03T14:41:59.007 | pixelflat,trace | flat      |   18.72 |
 | XSHOO.2016-08-03T14:42:54.280.fits.gz | 2016-08-03T14:42:54.280 | pixelflat,trace | flat      |   18.72 |
 | XSHOO.2016-08-02T08:45:49.494.fits.gz | 2016-08-02T08:45:49.494 | science,arc     | J0100     |   900.0 |
-# | XSHOO.2016-08-02T09:00:56.860.fits.gz | 2016-08-02T09:00:56.860 | science,arc     | J0100     |   900.0 |
-# | XSHOO.2016-08-02T09:16:54.772.fits.gz | 2016-08-02T09:16:54.772 | science,arc     | J0100     |   900.0 |
-# | XSHOO.2016-08-02T09:32:03.463.fits.gz | 2016-08-02T09:32:03.463 | science,arc     | J0100     |   900.0 |
-# | XSHOO.2016-08-02T09:57:17.147.fits.gz | 2016-08-02T09:57:17.147 | science         | HIP022840 |   2.404 |
-# | XSHOO.2016-08-02T09:57:56.903.fits.gz | 2016-08-02T09:57:56.903 | science         | HIP022840 |   2.404 |
+#| XSHOO.2016-08-02T09:00:56.860.fits.gz | 2016-08-02T09:00:56.860 | science,arc     | J0100     |   900.0 |
+#| XSHOO.2016-08-02T09:16:54.772.fits.gz | 2016-08-02T09:16:54.772 | science,arc     | J0100     |   900.0 |
+#| XSHOO.2016-08-02T09:32:03.463.fits.gz | 2016-08-02T09:32:03.463 | science,arc     | J0100     |   900.0 |
+| XSHOO.2016-08-02T09:57:17.147.fits.gz | 2016-08-02T09:57:17.147 | science         | HIP022840 |   2.404 |
+#| XSHOO.2016-08-02T09:57:56.903.fits.gz | 2016-08-02T09:57:56.903 | science         | HIP022840 |   2.404 |
 data end

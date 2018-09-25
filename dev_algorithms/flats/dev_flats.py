@@ -35,36 +35,6 @@ from itertools import islice
 from bisect import insort, bisect_left
 
 
-'''def running_median_insort(seq, window_size):
-    """Contributed by Peter Otten, made to be consistent with scipy.ndimage.filters.median_filter by Joe Hennawi"""
-
-    # pad the array for the reflection
-    seq_pad = np.concatenate((seq[0:window_size][::-1],seq,seq[-1:(-1-window_size):-1]))
-
-    window_size= int(window_size)
-    seq_pad = iter(seq_pad)
-    d = deque()
-    s = []
-    result = []
-    for item in islice(seq_pad, window_size):
-        d.append(item)
-        insort(s, item)
-        result.append(s[len(d)//2])
-    m = window_size // 2
-    for item in seq_pad:
-        old = d.popleft()
-        d.append(item)
-        del s[bisect_left(s, old)]
-        insort(s, item)
-        result.append(s[m])
-
-    # This takes care of the offset produced by the original code deducec by trial and error comparison with
-    # scipy.ndimage.filters.medfilt
-
-    result = np.roll(result, -window_size//2 + 1)
-    return result[window_size:-window_size]
-'''
-
 '''def fit_flat(flat, mstilts, slit_left, slit_righ, thismask, inmask = None,spec_samp_fine = 0.8,  spec_samp_coarse = 50,
              spat_samp = 5.0, spat_illum_thresh = 0.02, npoly = None, trim_edg = (3.0,3.0), spat_bkpt = None, debug = False):
 
@@ -316,7 +286,7 @@ from bisect import insort, bisect_left
 
 '''
 
-type = 'LRIS_red'
+type = 'ESI'
 devpath = os.getenv('PYPEIT_DEV')
 
 if type == 'LRIS_red':
@@ -382,6 +352,7 @@ for slit in gdslits:
     slit_righ = tslits_dict['rcen'][:, slit]
     thismask = (tslits_dict['slitpix'] == slit + 1)
     inmask = None # in the future set this to the bpm
+    sys.exit(-1)
     pixelflat[thismask], illumflat[thismask], flat_model[thismask] = flat.fit_flat(flatimg, mstilts, thismask,
                                                                                    slit_left, slit_righ,inmask=inmask,
                                                                                    debug = debug)

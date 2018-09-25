@@ -3,8 +3,10 @@
 [rdx]
     spectrograph = keck_deimos
     sortroot = keck_deimos_setup_A
-    detnum = 7
-# Just restrict to 7 for now, since this is where the crash happens
+    detnum = 3
+#    detnum = 3,7
+# Just restrict to 3 for now. The crash happens for detector 7, which
+# completely crashes the script. 
 
 [calibrations]
     [[pixelflatframe]]

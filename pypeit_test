@@ -16,8 +16,8 @@ from IPython import embed
 def parser(options=None):
     import argparse
 
-    all_tests = ['kast', 'lris', 'deimos',  # Instruments
-                 'keck', 'shane']  # Observatories
+    all_tests = ['kast', 'lris', 'deimos', 'nires',  # Instruments
+                 'keck'] # Observatories
 #    all_tests = ['kast', 'lris', 'isis', 'hires', 'deimos',  # Instruments
 #                 'keck', 'shane', 'wht']  # Observatories
 
@@ -52,7 +52,7 @@ def main():
     walk = os.walk(raw_data)
     all_instruments = next(walk)[1]
 
-    valid_instruments = ['Kast','DEIMOS','LRIS']
+    valid_instruments = ['Kast','DEIMOS','LRIS', 'NIRES']
     # Setup
     if pargs.tests == 'all':
         instruments = [item for item in all_instruments for inst in valid_instruments if inst in item]
@@ -65,8 +65,10 @@ def main():
             instruments = [item for item in all_instruments if 'LRIS' in item]
         elif pargs.tests == 'keck':
             instruments = [item for item in all_instruments if 'Keck' in item]
-        elif pargs.tests == 'shane':
-            instruments = [item for item in all_instruments if 'Shane' in item]
+#        elif pargs.tests == 'shane':
+#            instruments = [item for item in all_instruments if 'Shane' in item]
+        elif pargs.tests == 'nires':
+            instruments = [item for item in all_instruments if 'NIRES' in item]
 #        elif pargs.tests == 'wht':
 #            instruments = [item for item in all_instruments if 'WHT' in item]
 #        elif pargs.tests == 'isis':
