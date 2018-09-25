@@ -15,7 +15,7 @@ spectrograph = keck_nires
     [[standardframe]]
         number = 0
     [[biasframe]]
-        number = 0
+        number = 2
     [[pixelflatframe]]
         number = 3
     [[tilts]]
