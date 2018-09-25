@@ -1,0 +1,44 @@
+# This is a comment line
+# This reduce data from vlt xshooter vis 
+# at the moment takes the standard star as SCIENCE (and not as standard).
+# Note that for these observations ESO did not provided an arc-lamp
+# ginga --module=RC&
+# run_pypeit -v2 -o -m -s ./vlt_xshooter_vis_2x2.pypeit
+# run_pypeit -v2 -o -s ./vlt_xshooter_vis_2x2.pypeit
+
+# User-defined execution parameters
+[rdx]
+spectrograph = vlt_xshooter_vis
+    sortroot = vlt_xshooter_vis
+
+[calibrations]
+    [[arcframe]]
+        number = 1
+    [[standardframe]]
+        number = 0
+    [[biasframe]]
+        number = 3
+    [[pixelflatframe]]
+        number = 3
+    [[tilts]]
+        method = spca
+        params = 1, 1, 1
+    [[traceframe]]
+        number = 1
+
+
+# Read in the data
+data read
+ path /home/ema/Dropbox/XshooterTestBed/VLT_XSHOOTER/VIS_2x2
+| filename                              | date                    | frametype       | target    | exptime |
+| XSHOO.2016-10-08T10:07:38.147.fits.gz | 2016-10-08T10:07:38.147 | bias	    | bias	|  0.0000 |
+| XSHOO.2016-10-08T10:08:35.051.fits.gz | 2016-10-08T10:08:35.051 | bias	    | bias	|  0.0000 |
+| XSHOO.2016-10-08T10:09:30.026.fits.gz | 2016-10-08T10:09:30.026 | bias	    | bias	|  0.0000 |
+| XSHOO.2016-10-08T13:03:20.598.fits.gz | 2016-10-08T13:03:20.598 | pixelflat,trace | flat	|  2.5670 |
+| XSHOO.2016-10-08T13:03:57.921.fits.gz | 2016-10-08T13:03:57.921 | pixelflat,trace | flat	|  2.5670 |
+| XSHOO.2016-10-08T13:04:35.024.fits.gz | 2016-10-08T13:04:35.024 | pixelflat,trace | flat	|  2.5670 |
+| XSHOO.2016-10-08T03:05:51.672.fits.gz | 2016-10-08T03:05:51.672 | science,arc     | J2310	|  1200.0 |
+| XSHOO.2016-10-08T03:26:38.134.fits.gz | 2016-10-08T03:26:38.134 | science	    | J2310	|  1200.0 |
+# | XSHOO.2016-10-08T00:51:04.703.fits.gz | 2016-10-08T00:51:04.703 | science	    | TELLURIC  |  3.1200 |
+# | XSHOO.2016-10-08T00:51:37.516.fits.gz | 2016-10-08T00:51:37.516 | science	    | TELLURIC  |  3.1200 |
+data end
