@@ -3,6 +3,7 @@
 # at the moment takes the star HIP022840 as SCIENCE (and not as standard).
 # ginga --module=RC&
 # run_pypeit -v2 -o -m -s ./vlt_xshooter_nir.pypeit
+# run_pypeit -v2 -o -s ./vlt_xshooter_nir.pypeit
 
 # User-defined execution parameters
 [rdx]
