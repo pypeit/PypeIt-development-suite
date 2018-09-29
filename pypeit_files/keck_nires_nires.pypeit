@@ -1,0 +1,50 @@
+# This is a comment line
+# This reduce data from shane kast red 
+# at the moment takes the star G191b2b as SCIENCE (and not as standard).
+# ginga --module=RC&
+# run_pypeit -v2 -o -m -s ./keck_nires.pypeit
+
+# User-defined execution parameters
+[rdx]
+spectrograph = keck_nires
+    sortroot = keck_nires
+
+[calibrations]
+    [[arcframe]]
+        number = 1
+    [[standardframe]]
+        number = 0
+    [[biasframe]]
+        number = 2
+    [[pixelflatframe]]
+        number = 3
+    [[tilts]]
+        method = spca
+        params = 1, 1, 1
+    [[traceframe]]
+        number = 1
+
+
+# Read in the data
+data read
+ path /Users/feige/Software/python3/PypeIt-development-suite/RAW_DATA/Keck_NIRES/
+|     filename         |                  date | frametype |      target | exptime |
+| s180604_0004.fits.gz | 2018-06-0401:28:12.98 |    bias   |        dark |   300.0 |
+| s180604_0005.fits.gz | 2018-06-0401:43:23.84 |    bias   |        dark |   300.0 |
+| s180604_0023.fits.gz | 2018-06-0402:34:40.67 |pixelflat,trace |        flat |   100.0 |
+| s180604_0024.fits.gz | 2018-06-0402:36:37.97 |pixelflat,trace |        flat |   100.0 |
+| s180604_0025.fits.gz | 2018-06-0402:38:34.76 |pixelflat,trace |        flat |   100.0 |
+| s180604_0089.fits.gz | 2018-06-0412:56:12.38 |    science,arc |  J1724+1901 |   300.0 |
+| s180604_0090.fits.gz | 2018-06-0413:02:07.85 |    science,arc |  J1724+1901 |   300.0 |
+#| s180604_0091.fits.gz | 2018-06-0413:08:00.26 |    science,arc |  J1724+1901 |   300.0 |
+#| s180604_0092.fits.gz | 2018-06-0413:13:54.71 |    science,arc |  J1724+1901 |   300.0 |
+#| s180604_0107.fits.gz | 2018-06-0414:46:28.10 |    science,arc |  J2125-1719 |   200.0 |
+#| s180604_0108.fits.gz | 2018-06-0414:50:22.70 |    science,arc |  J2125-1719 |   200.0 |
+#| s180604_0109.fits.gz | 2018-06-0414:54:14.75 |    science,arc |  J2125-1719 |   200.0 |
+#| s180604_0110.fits.gz | 2018-06-0414:58:09.86 |    science,arc |  J2125-1719 |   200.0 |
+#| s180604_0111.fits.gz | 2018-06-0415:04:56.33 |    standard |   HIP107535 |   2.404 |
+#| s180604_0112.fits.gz | 2018-06-0415:05:18.26 |    standard |   HIP107535 |   2.404 |
+#| s180604_0113.fits.gz | 2018-06-0415:05:37.64 |    standard |   HIP107535 |   2.404 |
+#| s180604_0114.fits.gz | 2018-06-0415:06:00.08 |    standard |   HIP107535 |   2.404 |
+data end
+

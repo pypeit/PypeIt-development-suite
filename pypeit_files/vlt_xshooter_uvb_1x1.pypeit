@@ -1,0 +1,59 @@
+# This is a comment line
+# This reduce data from vlt xshooter vis 
+# at the moment takes the star HIP022840 as SCIENCE (and not as standard).
+# ginga --module=RC&
+# run_pypeit -v2 -o -m -s ./vlt_xshooter_uvb_1x1.pypeit
+# run_pypeit -v2 -o -s ./vlt_xshooter_uvb_1x1.pypeit
+
+# User-defined execution parameters
+[rdx]
+spectrograph = vlt_xshooter_uvb
+    sortroot = vlt_xshooter_uvb
+
+[calibrations]
+    [[arcframe]]
+        number = 1
+    [[standardframe]]
+        number = 0
+    [[biasframe]]
+        number = 3
+    [[pixelflatframe]]
+        number = 3
+    [[tilts]]
+        method = spca
+        params = 1, 1, 1
+    [[traceframe]]
+        number = 1
+
+
+# Read in the data
+data read
+ path /home/ema/Dropbox/XshooterTestBed/VLT_XSHOOTER/UVB_1x1/
+| filename                              | date                    | frametype       | target    | exptime |
+| XSHOO.2010-04-28T10:22:31.905.fits.gz | 2010-04-28T10:22:31.905 | bias            | bias      |  0.0000 |
+| XSHOO.2010-04-28T10:25:15.469.fits.gz | 2010-04-28T10:25:15.469 | bias            | bias      |  0.0000 |
+| XSHOO.2010-04-28T10:27:59.033.fits.gz | 2010-04-28T10:27:59.033 | bias            | bias      |  0.0000 |
+| XSHOO.2010-04-28T13:43:14.163.fits.gz | 2010-04-28T13:43:14.163 | pixelflat,trace | flat      |  4.6250 |
+| XSHOO.2010-04-28T13:44:32.540.fits.gz | 2010-04-28T13:44:32.540 | pixelflat,trace | flat      |  4.6250 |
+| XSHOO.2010-04-28T13:45:51.386.fits.gz | 2010-04-28T13:45:51.386 | pixelflat,trace | flat      |  4.6250 |
+| XSHOO.2010-04-28T14:37:18.504.fits.gz | 2010-04-28T14:37:18.504 | arc             | arc       |  2.0000 |
+| XSHOO.2010-04-28T06:08:49.572.fits.gz | 2010-04-28T06:08:49.572 | science         | PG1553p113|  680.00 |
+| XSHOO.2010-04-28T06:21:25.165.fits.gz | 2010-04-28T06:21:25.165 | science         | PG1553p113|  680.00 |
+# | XSHOO.2010-04-28T05:34:32.723.fits.gz | 2010-04-28T05:34:32.723 | science       | GD153 |  600.0 |
+# | XSHOO.2010-04-28T05:47:25.757.fits.gz | 2010-04-28T05:47:25.757 | science       | GD153 |  600.0 |
+data end
+
+
+# XSHOO.2010-04-28T14:37:18.504.fits
+
+
+
+
+
+
+
+
+
+
+
+

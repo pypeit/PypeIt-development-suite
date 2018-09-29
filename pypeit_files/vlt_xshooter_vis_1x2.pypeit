@@ -1,0 +1,44 @@
+# This is a comment line
+# This reduce data from vlt xshooter vis 
+# at the moment takes the star HIP022840 as SCIENCE (and not as standard).
+# ginga --module=RC&
+# run_pypeit -v2 -o -m -s ./vlt_xshooter_vis_1x2.pypeit
+# run_pypeit -v2 -o -s ./vlt_xshooter_vis_1x2.pypeit
+
+# User-defined execution parameters
+[rdx]
+spectrograph = vlt_xshooter_vis
+    sortroot = vlt_xshooter_vis
+
+[calibrations]
+    [[arcframe]]
+        number = 1
+    [[standardframe]]
+        number = 0
+    [[biasframe]]
+        number = 3
+    [[pixelflatframe]]
+        number = 3
+    [[tilts]]
+        method = spca
+        params = 1, 1, 1
+    [[traceframe]]
+        number = 1
+
+
+# Read in the data
+data read
+ path /home/ema/Dropbox/XshooterTestBed/VLT_XSHOOTER/VIS_1x2
+| filename                              | date                    | frametype       | target    | exptime |
+| XSHOO.2016-08-02T10:45:45.410.fits.gz | 2016-08-02T10:45:45.410 | bias	    | bias	|  0.0000 |
+| XSHOO.2016-08-02T10:47:16.857.fits.gz | 2016-08-02T10:47:16.857 | bias	    | bias	|  0.0000 |
+| XSHOO.2016-08-02T10:48:48.184.fits.gz | 2016-08-02T10:48:48.184 | bias	    | bias	|  0.0000 |
+| XSHOO.2016-08-02T13:36:24.258.fits.gz | 2016-08-02T13:36:24.258 | pixelflat,trace | flat	|  5.1340 |
+| XSHOO.2016-08-02T13:37:24.132.fits.gz | 2016-08-02T13:37:24.132 | pixelflat,trace | flat	|  5.1340 |
+| XSHOO.2016-08-02T13:38:24.917.fits.gz | 2016-08-02T13:38:24.917 | pixelflat,trace | flat	|  5.1340 |
+| XSHOO.2016-08-02T16:25:56.791.fits.gz | 2016-08-02T16:25:56.791 | arc 	    | arc	|  0.6000 |
+| XSHOO.2016-08-02T08:45:46.510.fits.gz | 2016-08-02T08:45:46.510 | science	    | J0100	|  1800.0 |
+| XSHOO.2016-08-02T09:16:51.980.fits.gz | 2016-08-02T09:16:51.980 | science	    | J0100	|  1800.0 |
+# | XSHOO.2016-08-02T09:57:13.715.fits.gz | 2016-08-02T09:57:13.715 | science	    | HIP022840 |  4.0000 |
+# | XSHOO.2016-08-02T09:57:54.039.fits.gz | 2016-08-02T09:57:54.039 | science	    | HIP022840 |  4.0000 |
+data end

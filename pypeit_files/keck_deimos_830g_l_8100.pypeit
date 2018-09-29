@@ -1,0 +1,49 @@
+# Single-slit reduction for DEIMOS
+
+# Parmaeters
+[rdx]
+    spectrograph = keck_deimos
+    sortroot = keck_deimos_830g
+    detnum = 3,7
+
+[calibrations]
+    [[pixelflatframe]]
+        number = 3
+    [[traceframe]]
+        number = 3
+    [[standardframe]]
+        number = 0
+# No standard frame because we did not take a standard with the same slitmask.
+
+[extract]
+    maxnumber = 5
+
+# Setup
+setup read
+ Setup A
+ --:
+   dichroic: None
+   disperser: {angle: 8099.98291016, name: 830G}
+   slit: {decker: LongMirr, slitlen: None, slitwid: None}
+ '01': {binning: '1,1', det: 1, namp: 1}
+ '02': {binning: '1,1', det: 2, namp: 1}
+ '03': {binning: '1,1', det: 3, namp: 1}
+ '04': {binning: '1,1', det: 4, namp: 1}
+ '05': {binning: '1,1', det: 5, namp: 1}
+ '06': {binning: '1,1', det: 6, namp: 1}
+ '07': {binning: '1,1', det: 7, namp: 1}
+ '08': {binning: '1,1', det: 8, namp: 1}
+setup end
+
+# Read in the data
+data read
+ path ../../../RAW_DATA/Keck_DEIMOS/830G_L_8100/
+|        filename    |                date |       frametype |     target | exptime | dispname | decker |
+| d0527_0030.fits.gz | 2017-05-27T01:51:57 |             arc | DOME PHLAT |       1 |     830G | LongMirr |
+| d0527_0031.fits.gz | 2017-05-27T01:53:16 | pixelflat,trace | DOME PHLAT |       4 |     830G | LongMirr |
+| d0527_0032.fits.gz | 2017-05-27T01:54:29 | pixelflat,trace | DOME PHLAT |       4 |     830G | LongMirr |
+| d0527_0033.fits.gz | 2017-05-27T01:55:42 | pixelflat,trace | DOME PHLAT |       4 |     830G | LongMirr |
+| d0527_0081.fits.gz | 2017-05-27T11:07:54 |         science |   P261_OFF |    1200 |     830G | LongMirr |
+#| d0527_0083.fits | 2017-05-27T11:56:16 |         science |   P261_OFF |    1200 |     830G | LongMirr |
+data end
+

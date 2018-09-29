@@ -1,0 +1,47 @@
+# Multi-slit for DEIMOS
+
+[rdx]
+    spectrograph = keck_deimos
+    sortroot = keck_deimos_setup_A
+    detnum = 3
+#    detnum = 3,7
+# Just restrict to 3 for now. The crash happens for detector 7, which
+# completely crashes the script. 
+
+[calibrations]
+    [[pixelflatframe]]
+        number = 3
+    [[traceframe]]
+        number = 3
+    [[standardframe]]
+        number = 0
+
+# Setup
+setup read
+ Setup A
+ --:
+   dichroic: None
+   disperser: {angle: 8600.02148438, name: 830G}
+   slit: {decker: Z6CL01B, slitlen: None, slitwid: None}
+ '01': {binning: '1,1', det: 1, namp: 1}
+ '02': {binning: '1,1', det: 2, namp: 1}
+ '03': {binning: '1,1', det: 3, namp: 1}
+ '04': {binning: '1,1', det: 4, namp: 1}
+ '05': {binning: '1,1', det: 5, namp: 1}
+ '06': {binning: '1,1', det: 6, namp: 1}
+ '07': {binning: '1,1', det: 7, namp: 1}
+ '08': {binning: '1,1', det: 8, namp: 1}
+setup end
+
+# Read in the data
+data read
+ path ../../../RAW_DATA/Keck_DEIMOS/830G_M_8600/
+|                  filename |                date |       frametype |          target | exptime | dispname |  decker |
+| DE.20130409.09996.fits.gz | 2013-04-09T02:46:30 |             arc |         unknown |       1 |     830G | Z6CL01B |
+| DE.20130409.10065.fits.gz | 2013-04-09T02:47:54 | pixelflat,trace |         unknown |       8 |     830G | Z6CL01B |
+| DE.20130409.10145.fits.gz | 2013-04-09T02:49:11 | pixelflat,trace |         unknown |       8 |     830G | Z6CL01B |
+| DE.20130409.10219.fits.gz | 2013-04-09T02:50:28 | pixelflat,trace |         unknown |       8 |     830G | Z6CL01B |
+| DE.20130409.20629.fits.gz | 2013-04-09T06:13:51 |         science | S13A-SDF-z6clus |    1800 |     830G | Z6CL01B |
+#| DE.20130409.22509.fits.gz | 2013-04-09T06:45:07 |         science | S13A-SDF-z6clus |    1800 |     830G | Z6CL01B |
+data end
+
