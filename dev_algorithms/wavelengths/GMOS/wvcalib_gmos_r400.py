@@ -33,15 +33,27 @@ arcparam['Nstrong'] = 13
 
 arccen = np.array(jdict['arccen'])
 
-spec = arccen[:,1]
+slit = 15
+spec = arccen[:,slit]
 # Show me
-if False:
+if True:
     xspec = XSpectrum1D.from_tuple((np.arange(len(spec)), spec))
     xspec.plot(xspec=True)
 dummy = np.zeros((1024,10))
 
-IDpixels = [801.7, 636.01, 487.28, 322.49, 31.8]
-IDwaves = [5189.191, 4966.465, 4766.197, 4546.3258, 4159.762]
+#
+if slit == 1:
+    IDpixels = [801.7, 636.01, 487.28, 322.49, 31.8]
+    IDwaves = [5189.191, 4966.465, 4766.197, 4546.3258, 4159.762]
+    outfile = 'GMOS_R400_blue_1_fit.json'
+elif slit == 15:
+    IDpixels = [6.1, 173.5, 486.8, 713.8, 906.7]
+    IDwaves = [4966.465, 5189.191, 5608.290, 5913.723, 6173.9855]
+    outfile = 'GMOS_R400_blue_15_fit.json'
+elif slit == 38:
+    IDpixels = [899.76, 844.278, 650.629, 364.26, 44.7]
+    IDwaves = [6754.698, 6679.126, 6418.081, 6033.797, 5608.29]
+    outfile = 'GMOS_R400_blue_38_fit.json'
 
 # Line list
 CuI = waveio.load_line_list('CuI', use_ion=True, NIST=True)
@@ -52,10 +64,10 @@ arcparam['llist'] = llist
 
 
 # Simple calibration
-final_fit = arc.simple_calib(dummy, arcparam, spec, IDpixels=IDpixels, IDwaves=IDwaves, nfitpix=9, sigdetect=4.)
+final_fit = arc.simple_calib(dummy, arcparam, spec, IDpixels=IDpixels, IDwaves=IDwaves, nfitpix=9)#, sigdetect=4.)
 arc.arc_fit_qa(None, final_fit, None, outfile='GMOS_R400_wave.png')
 jdict = ltu.jsonify(final_fit)
-ltu.savejson('GMOS_R400_blue_1_fit.json', jdict)
+ltu.savejson(outfile, jdict)
 pdb.set_trace()
 
 # Arc fitter
