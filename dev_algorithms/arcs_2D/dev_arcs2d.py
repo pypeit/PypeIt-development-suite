@@ -16,6 +16,7 @@ import matplotlib.pyplot as plt
 # from IPython import embed
 
 # PYPEIT imports
+from pypeit.core import pydl
 
 ###############################################################
 # Porting XIDL code x_fit2darc to python
@@ -31,6 +32,9 @@ import matplotlib.pyplot as plt
 # Order vector
 order = [3, 4, 5, 6, 7, 8]
 
+# Number of identified lines per order
+npix = np.zeros_like(order)
+
 # Read pixels and wl from sv_lines_clean.txt
 f = open('sv_lines_clean.txt', 'r')
 PIXWL_str = f.readlines()
@@ -45,6 +49,7 @@ index = 0
 for ii in np.arange(0, 12, 2):
     all_pix[index] = full[ii][np.nonzero(full[ii])]
     all_wv[index] = full[ii+1][np.nonzero(full[ii+1])]
+    npix[index] = len(all_pix[index])
     index = index+1
 
 plt.figure()
@@ -92,18 +97,23 @@ nycoeff = 3
 # nocoeff is the order direction. 5 seems to give better rms.
 nocoeff = 5
 
+# python works with y,x instead of x,y
 
-work2s = np.zeros(,dtype=np.float64)
-   work2d = dblarr(npix,nycoeff*nocoeff)
-   worky = flegendre(pix_nrm[*], nycoeff)
-   workt = flegendre(t_nrm[*], nocoeff)
+work2d = np.zeros((nycoeff*nocoeff,np.sum(npix)),dtype=np.float64)
+
+worky = pydl.flegendre(pix_nrm, nycoeff)
+workt = pydl.flegendre(t_nrm, nocoeff)
+
+
+
+'''
    
    for i=0,nocoeff-1 do begin
        for j=0,nycoeff-1 do begin
            work2d[*,j*nocoeff+i] = worky[*, j] * workt[*,i]
        endfor
    endfor
-
+'''
 
 '''
 
