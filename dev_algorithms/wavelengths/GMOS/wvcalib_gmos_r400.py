@@ -17,7 +17,14 @@ from pypeit.core import arc
 from pypeit.spectrographs import gemini_gmos
 
 # Load the spectra
-jdict = ltu.loadjson('GMOS_R400_blue.json.gz')
+chip = 2
+if chip == 1:
+    jdict = ltu.loadjson('GMOS_R400_blue.json.gz')
+    outroot = 'GMOS_R400_blue_'
+elif chip == 2:
+    jdict = ltu.loadjson('GMOS_R400_chip2.json.gz')
+    outroot = 'GMOS_R400_chip2_'
+
 spectrograph = gemini_gmos.GeminiGMOSNE2VSpectrograph()
 arcparam = {}
 spectrograph.setup_arcparam(arcparam,disperser='R400')
@@ -33,7 +40,7 @@ arcparam['Nstrong'] = 13
 
 arccen = np.array(jdict['arccen'])
 
-slit = 15
+slit = 17
 spec = arccen[:,slit]
 # Show me
 if True:
@@ -43,17 +50,30 @@ dummy = np.zeros((1024,10))
 
 #
 if slit == 1:
-    IDpixels = [801.7, 636.01, 487.28, 322.49, 31.8]
-    IDwaves = [5189.191, 4966.465, 4766.197, 4546.3258, 4159.762]
-    outfile = 'GMOS_R400_blue_1_fit.json'
+    if chip == 1:
+        IDpixels = [801.7, 636.01, 487.28, 322.49, 31.8]
+        IDwaves = [5189.191, 4966.465, 4766.197, 4546.3258, 4159.762]
+    outfile = outroot+'1_fit.json'
+elif slit == 8:
+    if chip == 2:
+        IDpixels = [65.5, 298.47, 547.7, 711.4, 941.7]
+        IDwaves = [7069.167, 7386.014, 7725.887, 7950.362, 8266.793]
+    outfile = outroot+'8_fit.json'
+elif slit == 17:
+    if chip == 2:
+        IDpixels = [108.3, 368.4, 558.6, 736.88, 982.02]
+        IDwaves = [5144.1, 5913.723, 6173.9855, 6418.08, 6873.185]
+    outfile = outroot+'17_fit.json'
 elif slit == 15:
-    IDpixels = [6.1, 173.5, 486.8, 713.8, 906.7]
-    IDwaves = [4966.465, 5189.191, 5608.290, 5913.723, 6173.9855]
-    outfile = 'GMOS_R400_blue_15_fit.json'
+    if chip == 1:
+        IDpixels = [6.1, 173.5, 486.8, 713.8, 906.7]
+        IDwaves = [4966.465, 5189.191, 5608.290, 5913.723, 6173.9855]
+    outfile = outroot+'15_fit.json'
 elif slit == 38:
-    IDpixels = [899.76, 844.278, 650.629, 364.26, 44.7]
-    IDwaves = [6754.698, 6679.126, 6418.081, 6033.797, 5608.29]
-    outfile = 'GMOS_R400_blue_38_fit.json'
+    if chip == 1:
+        IDpixels = [899.76, 844.278, 650.629, 364.26, 44.7]
+        IDwaves = [6754.698, 6679.126, 6418.081, 6033.797, 5608.29]
+    outfile = outroot+'38_fit.json'
 
 # Line list
 CuI = waveio.load_line_list('CuI', use_ion=True, NIST=True)
@@ -64,10 +84,10 @@ arcparam['llist'] = llist
 
 
 # Simple calibration
-final_fit = arc.simple_calib(dummy, arcparam, spec, IDpixels=IDpixels, IDwaves=IDwaves, nfitpix=9)#, sigdetect=4.)
+final_fit = arc.simple_calib(dummy, arcparam, spec, IDpixels=IDpixels, IDwaves=IDwaves, nfitpix=9)#, sigdetect=5.) #sigdetect=7.)
 arc.arc_fit_qa(None, final_fit, None, outfile='GMOS_R400_wave.png')
 jdict = ltu.jsonify(final_fit)
-ltu.savejson(outfile, jdict)
+ltu.savejson(outfile, jdict, overwrite=True)
 pdb.set_trace()
 
 # Arc fitter
