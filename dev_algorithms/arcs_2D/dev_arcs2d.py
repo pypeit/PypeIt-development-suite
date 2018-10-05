@@ -116,6 +116,15 @@ workt = pydl.flegendre(t_nrm, nocoeff)
 '''
 
 '''
+from pydl
+def cholesky_band(l, mininf=0.0):
+    """Compute Cholesky decomposition of banded matrix.
+def cholesky_solve(a, bb):
+    """Solve the equation Ax=b where A is a Cholesky-banded matrix.
+'''
+
+
+'''
 
 ;  Setup the Functions
 
