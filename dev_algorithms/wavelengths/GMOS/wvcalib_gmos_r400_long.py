@@ -17,11 +17,13 @@ from pypeit.core import arc
 from pypeit.spectrographs import gemini_gmos
 
 # Load the spectra
-chip = 2
+chip = 3
 if chip == 1:
     jdict = ltu.loadjson('GMOS_R400_blue.json.gz')
 elif chip == 2:
     jdict = ltu.loadjson('MasterWaveCalib_A_02_aa.json')
+elif chip == 3:
+    jdict = ltu.loadjson('MasterWaveCalib_A_03_aa.json')
 
 outroot = 'GMOS_R400_long_'
 spectrograph = gemini_gmos.GeminiGMOSNE2VSpectrograph()
@@ -46,12 +48,15 @@ if True:
     xspec.plot(xspec=True)
 dummy = np.zeros((1024,10))
 
-pdb.set_trace()
 #
 if chip == 2:
     IDpixels = [1001.4, 942.6, 565.5, 355.3, 130.0]
     IDwaves = [7726.33, 7637.208, 7069.167, 6754.698, 6418.081]
     outfile = outroot+'2_fit.json'
+elif chip == 3:
+    IDpixels = [94.3, 302.6, 567.2, 864.5, 930.85]
+    IDwaves = [7950.362, 8266.794, 8670.32, 9125.471, 9227.03]
+    outfile = outroot+'3_fit.json'
 
 # Line list
 CuI = waveio.load_line_list('CuI', use_ion=True, NIST=True)
