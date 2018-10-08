@@ -1,6 +1,6 @@
-
 """ For the development and testing of 2D ARCS
 """
+
 from __future__ import (print_function, absolute_import, division,
                         unicode_literals)
 
@@ -8,15 +8,8 @@ from __future__ import (print_function, absolute_import, division,
 import numpy as np
 import scipy
 import matplotlib.pyplot as plt
-
+from scipy.io import readsav
 from astropy.io import ascii
-
-# import sys
-# from astropy.table import Table
-# from astropy.io import fits
-# from scipy.io import readsav
-# from scipy.special import ndtr
-# from IPython import embed
 
 # PYPEIT imports
 from pypeit.core import pydl
@@ -24,11 +17,11 @@ from pypeit.core import pydl
 ###############################################################
 # Porting XIDL code x_fit2darc to python
 
-# PURPOSE:
-#  To fit the arc lines identified in x_fitarc as a fucntion of
-#  their y-centroid and order number.  The main routine is in
-#  x_fit2darc.  The fit is a simple least-squares with one
-#  round of rejection.
+# PURPOSE of the XIDL code:
+#  To fit the arc lines identified in x_fitarc as a function of
+#  their y-centroid and order number. The main routine is in
+#  x_fit2darc. The fit is a simple least-squares with one round 
+#  of rejection.
 
 # Feige runned the code on his GNRIS data. I will use this to
 # test that the PYPEIT code will arrive to the same outputs of
@@ -39,17 +32,28 @@ from pypeit.core import pydl
 # The relevant vectors are:
 # - xidl['pix_nrm_xidl']
 # - xidl['t_nrm_xidl']
+# - xidl1['res_1_xidl'] -> This is the result after the first
+#                          round of fitting
+# - work2d1 -> This is the input matric for the first round
+#              of fitting.
 xidl = ascii.read('data.xidl')
 pix_nrm_xidl = np.array(xidl['pix_nrm_xidl'].data)
 t_nrm_xidl = np.array(xidl['t_nrm_xidl'].data)
+
+xidl1 = ascii.read('data1.xidl')
+res_1_xidl = np.array(xidl1['res_1_xidl'].data)
+
+work2d_1_dict = readsav('work2d1.sav', python_dict=True)
+work2d_1_xidl = work2d_1_dict['work2d']
 
 # Order vector
 order = [3, 4, 5, 6, 7, 8]
 
 # Number of identified lines per order
-npix = np.zeros_like(order)
+pixid = np.zeros_like(order)
 
 # Read pixels and wavelengths from sv_lines_clean.txt
+# this is just reading the file that Feige gave me.
 f = open('sv_lines_clean.txt', 'r')
 PIXWL_str = f.readlines()
 full = {}
@@ -63,12 +67,13 @@ index = 0
 for ii in np.arange(0, 12, 2):
     all_pix[index] = full[ii][np.nonzero(full[ii])]
     all_wv[index] = full[ii+1][np.nonzero(full[ii+1])]
-    npix[index] = len(all_pix[index])
+    pixid[index] = len(all_pix[index])
     index = index+1
 
+# Plot to check that everything works fine
 plt.figure()
-for jj in np.arange(0,5):
-    plt.scatter(all_pix[jj],all_wv[jj],
+for jj in np.arange(0, 5):
+    plt.scatter(all_pix[jj], all_wv[jj],
                 label='Order {}'.format(str(order[jj])))
 plt.legend()
 plt.xlabel(r'pixels')
@@ -78,20 +83,23 @@ plt.show()
 # Now I have a dict with pixels [all_pix] , one with
 # corresponding wavelengths [all_wl], and one vector with 
 # the orders [order].
-# I'm creating now the vectors resampling those in XIDL.
+# I'm creating now the vectors resambling those in XIDL.
 
 all_pix_pypeit = []
 t_pypeit = []
+all_wv_pypeit = []
 npix_pypeit = []
 index = 0
 
 for ii in all_pix.keys():
     all_pix_pypeit = np.concatenate((all_pix_pypeit,
                                      np.array(all_pix[ii])))
-    t_tmp = np.full_like(np.array(all_pix[ii]),np.float(order[index]))
-    t_pypeit = np.concatenate((t_pypeit,t_tmp))
-    npix_tmp = np.full_like(np.array(all_pix[ii]),np.size(all_pix[ii]))
-    npix_pypeit = np.concatenate((npix_pypeit,npix_tmp))
+    t_tmp = np.full_like(np.array(all_pix[ii]), np.float(order[index]))
+    t_pypeit = np.concatenate((t_pypeit, t_tmp))
+    all_wv_pypeit = np.concatenate((all_wv_pypeit,
+                                     np.array(all_wv[ii])))
+    npix_tmp = np.full_like(np.array(all_pix[ii]), np.size(all_pix[ii]))
+    npix_pypeit = np.concatenate((npix_pypeit, npix_tmp))
     index = index + 1
 
 # NORMALIZE PIX
@@ -121,8 +129,13 @@ print(" ")
 # The following stricktly resamble what is happening from
 # line 148 of x_fit2darc.pro
 
-# Do we actually need this?
-invvar = np.ones_like(npix_pypeit, dtype=float)
+# pixid is a vector that cointains the number of lines id in
+# each order. This means that sum(pixid) is the total number
+# of line identified.
+invvar = np.ones(np.sum(pixid), dtype=np.float64)
+print(" ")
+print(" The shape of invvar is: {}".format(invvar.shape))
+print(" ")
 
 # SETUP THE FUNCTIONS
 # these are input values of the function. nycoeff is along pixel
@@ -132,25 +145,59 @@ nycoeff = 3
 # nocoeff is the order direction. 5 seems to give better rms.
 nocoeff = 5
 
-# NOTE KEEP the idl convention on x and y
-
-work2d = np.zeros((nycoeff*nocoeff,np.sum(npix)),dtype=np.float64)
+work2d = np.zeros((nycoeff*nocoeff, np.sum(pixid)), dtype=np.float64)
 worky = pydl.flegendre(pix_nrm_pypeit, nycoeff)
 workt = pydl.flegendre(t_nrm_pypeit, nocoeff)
 
+print(" ")
+print(" The shape of work2d is: {}".format(work2d.shape))
+print(" while from XIDL the shape is: {}".format(work2d_1_xidl.shape))
+print(" ")
+print(" The shape of worky is: {}".format(worky.shape))
+print(" The shape of workt is: {}".format(workt.shape))
+print(" ")
+
 for i in range(nocoeff):
     for j in range (nycoeff):
-        work2d[j*nocoeff+1,:] = worky[j,:] * workt[i,:]
+        work2d[j*nocoeff+i,:] = worky[j,:] * workt[i,:]
 
-# Do the matrix algebra
-work2di = np.transpose(work2d * np.outer(invvar,
-                                          np.ones(nocoeff*nycoeff,
-                                          dtype=float)))
-alpha = np.matmul(work2di,word2d)
-beta = np.matmul(work2di,all_wv)
-p = scipy.linalg.cholesky(alpha,lower=False)
-res = scipy.linalg.cho_solve((p,False),beta)
-wv_mod = np.matmul(work2d,res)
+print(" ")
+print(" work2d PYPEIT vs. XIDL:")
+print("  - min={}".format(np.min(work2d-work2d_1_xidl)))
+print("  - max={}".format(np.max(work2d-work2d_1_xidl)))
+print(" ")
+
+
+#####     # Do the matrix algebra
+#####     work2di = np.transpose(work2d * np.outer(np.ones(nocoeff*nycoeff,
+#####                                              dtype=float),invvar))
+#####     alpha = np.matmul(work2d, work2di)
+#####     beta = np.matmul(all_wv_pypeit, work2di)
+#####     p = scipy.linalg.cholesky(alpha, lower=False)
+#####     res = scipy.linalg.cho_solve((p, False), beta)
+#####     
+#####     print(res)
+#####     print(res_1_xidl)
+#####     
+#####     
+#####     # Plot to check that everything works fine
+#####     plt.figure()
+#####     plt.scatter(res_1_xidl, res)
+#####     plt.xlabel(r'RESULTS from XIDL')
+#####     plt.ylabel(r'RESULTS from PYTHON')
+#####     plt.show()
+#####     
+#####################################################
+#####################################################
+#####################################################
+#####################################################
+
+### 
+### 
+### 
+### res = scipy.linalg.cho_solve((p, False), beta)
+### wv_mod = np.matmul(work2d, res)
+### 
 
 '''
    alpha = work2di # work2d
