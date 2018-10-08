@@ -8,6 +8,8 @@ from __future__ import (print_function, absolute_import, division,
 import numpy as np
 import matplotlib.pyplot as plt
 
+from astropy.io import ascii
+
 # import sys
 # from astropy.table import Table
 # from astropy.io import fits
@@ -27,7 +29,18 @@ from pypeit.core import pydl
 #  x_fit2darc.  The fit is a simple least-squares with one
 #  round of rejection.
 
-# Reading in the output from XIDL for GNRIS
+# Feige runned the code on his GNRIS data. I will use this to
+# test that the PYPEIT code will arrive to the same outputs of
+# XIDL
+
+# Reading in the output from XIDL for GNRIS.
+
+# The relevant vectors are:
+# - xidl['pix_nrm_xidl']
+# - xidl['t_nrm_xidl']
+xidl = ascii.read('data.xidl')
+pix_nrm_xidl = np.array(xidl['pix_nrm_xidl'].data)
+t_nrm_xidl = np.array(xidl['t_nrm_xidl'].data)
 
 # Order vector
 order = [3, 4, 5, 6, 7, 8]
@@ -35,7 +48,7 @@ order = [3, 4, 5, 6, 7, 8]
 # Number of identified lines per order
 npix = np.zeros_like(order)
 
-# Read pixels and wl from sv_lines_clean.txt
+# Read pixels and wavelengths from sv_lines_clean.txt
 f = open('sv_lines_clean.txt', 'r')
 PIXWL_str = f.readlines()
 full = {}
@@ -61,10 +74,18 @@ plt.xlabel(r'pixels')
 plt.ylabel(r'wavelength [$\AA$]')
 plt.show()
 
-# now I have a dict with pixels [all_pix] , one with corresponding
-# wavelengths [all_wl], and one vector with the orders [order]
+# Now I have a dict with pixels [all_pix] , one with
+# corresponding wavelengths [all_wl], and one vector with 
+# the orders [order].
+# I'm creating now the vectors resampling those in XIDL.
 
-# The following is what is happening from line 135 of x_fit2darc.pro
+all_pix_pypeit = []
+t_nrm_pypeit = []
+
+
+
+# The following stricktly resample what is happening from
+# line 135 of x_fit2darc.pro
 
 # NORMALIZE PIX
 mnx = 999999999.
