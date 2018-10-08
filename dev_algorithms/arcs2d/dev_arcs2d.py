@@ -6,6 +6,7 @@ from __future__ import (print_function, absolute_import, division,
 
 # General imports
 import numpy as np
+import scipy
 import matplotlib.pyplot as plt
 
 from astropy.io import ascii
@@ -80,77 +81,78 @@ plt.show()
 # I'm creating now the vectors resampling those in XIDL.
 
 all_pix_pypeit = []
-t_nrm_pypeit = []
+t_pypeit = []
+npix_pypeit = []
+index = 0
 
-
-
-# The following stricktly resample what is happening from
-# line 135 of x_fit2darc.pro
+for ii in all_pix.keys():
+    all_pix_pypeit = np.concatenate((all_pix_pypeit,
+                                     np.array(all_pix[ii])))
+    t_tmp = np.full_like(np.array(all_pix[ii]),np.float(order[index]))
+    t_pypeit = np.concatenate((t_pypeit,t_tmp))
+    npix_tmp = np.full_like(np.array(all_pix[ii]),np.size(all_pix[ii]))
+    npix_pypeit = np.concatenate((npix_pypeit,npix_tmp))
+    index = index + 1
 
 # NORMALIZE PIX
-mnx = 999999999.
-mxx = -mnx
-for ii in all_pix.keys():
-    if mnx > np.min(all_pix[ii]):
-        mnx = np.min(all_pix[ii])
-    if mxx < np.max(all_pix[ii]):
-        mxx = np.max(all_pix[ii])
+mnx = np.min(all_pix_pypeit)
+mxx = np.max(all_pix_pypeit)
 nrm = np.array([0.5 * (mnx + mxx), mxx - mnx])
-pix_nrm = {}
-for ii in all_pix.keys():
-    pix_nrm[ii] = 2. * (all_pix[ii] - nrm[0])/nrm[1]
+pix_nrm_pypeit = 2. * (all_pix_pypeit - nrm[0])/nrm[1]
 
-# NORMALIZE ORDER
-mnx = np.min(order)
-mxx = np.max(order)
+# NORMALIZE ORDERS
+mnx = np.min(t_pypeit)
+mxx = np.max(t_pypeit)
 nrmt = np.array([0.5 * (mnx + mxx), mxx - mnx])
-t_nrm = 2. * (order - nrmt[0])/nrmt[1]
+t_nrm_pypeit = 2. * (t_pypeit - nrmt[0])/nrmt[1]
+
+
+# Check that the vectors match the XIDL ones.
+print(" ")
+print(" pix_nrm PYPEIT vs. XIDL:")
+print("  - min={}".format(np.min(pix_nrm_pypeit-pix_nrm_xidl)))
+print("  - max={}".format(np.max(pix_nrm_pypeit-pix_nrm_xidl)))
+print(" ")
+print(" t_nrm PYPEIT vs. XIDL:")
+print("  - min={}".format(np.min(t_nrm_pypeit-t_nrm_xidl)))
+print("  - max={}".format(np.max(t_nrm_pypeit-t_nrm_xidl)))
+print(" ")
+
+# The following stricktly resamble what is happening from
+# line 148 of x_fit2darc.pro
 
 # Do we actually need this?
-
-## form XIDL   invvar = replicate(1., npix)
+invvar = np.ones_like(npix_pypeit, dtype=float)
 
 # SETUP THE FUNCTIONS
-# these are input values of the function
-# nycoeff is along pixel direction for each order. This should
-# be 3 since the maximum 1-d fits for any of the orders is 3.
+# these are input values of the function. nycoeff is along pixel
+# direction for each order. This should be 3 since the maximum 
+# 1-d fits for any of the orders is 3.
 nycoeff = 3
 # nocoeff is the order direction. 5 seems to give better rms.
 nocoeff = 5
 
-# python works with y,x instead of x,y
+# NOTE KEEP the idl convention on x and y
 
 work2d = np.zeros((nycoeff*nocoeff,np.sum(npix)),dtype=np.float64)
+worky = pydl.flegendre(pix_nrm_pypeit, nycoeff)
+workt = pydl.flegendre(t_nrm_pypeit, nocoeff)
 
-worky = pydl.flegendre(pix_nrm, nycoeff)
-workt = pydl.flegendre(t_nrm, nocoeff)
+for i in range(nocoeff):
+    for j in range (nycoeff):
+        work2d[j*nocoeff+1,:] = worky[j,:] * workt[i,:]
 
-
-
-'''
-   
-   for i=0,nocoeff-1 do begin
-       for j=0,nycoeff-1 do begin
-           work2d[*,j*nocoeff+i] = worky[*, j] * workt[*,i]
-       endfor
-   endfor
-'''
-
-'''
-from pydl
-def cholesky_band(l, mininf=0.0):
-    """Compute Cholesky decomposition of banded matrix.
-def cholesky_solve(a, bb):
-    """Solve the equation Ax=b where A is a Cholesky-banded matrix.
-'''
-
+# Do the matrix algebra
+work2di = np.transpose(work2d * np.outer(invvar,
+                                          np.ones(nocoeff*nycoeff,
+                                          dtype=float)))
+alpha = np.matmul(work2di,word2d)
+beta = np.matmul(work2di,all_wv)
+p = scipy.linalg.cholesky(alpha,lower=False)
+res = scipy.linalg.cho_solve((p,False),beta)
+wv_mod = np.matmul(work2d,res)
 
 '''
-
-;  Setup the Functions
-
-   ;; Do the matrix algebra
-   work2di = transpose(work2d * (invvar[*] # replicate(1,nocoeff*nycoeff)))
    alpha = work2di # work2d
    beta = work2di # all_wv[*]
 ;   beta = work2di # (alog10(all_wv[*]))
@@ -158,7 +160,15 @@ def cholesky_solve(a, bb):
    res = cholsol(alpha,p,beta, /double)
    wv_mod = dblarr(npix)
    wv_mod[*] = work2d # res
+'''
 
+# Get RMS
+
+
+### inoder = [slitpix == 3]
+
+
+'''
    ;; Get RMS
    gd_wv = where(invvar GT 0.0, ngd)
    msk = bytarr(npix)
