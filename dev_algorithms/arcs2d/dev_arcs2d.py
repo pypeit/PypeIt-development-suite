@@ -219,6 +219,18 @@ plt.xlabel(r'RESULTS from XIDL')
 plt.ylabel(r'(XIDL - PYTHON)$\times$10$^{-8}$')
 plt.show()
 
+plt.figure()
+plt.imshow((work2d_1_xidl-work2d)*1e8)
+cbar = plt.colorbar()
+cbar.set_label('(WORK2D XIDL - WORK2D PYTHON)x10${^-8}$', rotation=270)
+plt.show()
+
+plt.figure()
+plt.imshow((work2di_1_xidl-work2di)*1e8)
+cbar = plt.colorbar()
+cbar.set_label('(WORK2DI XIDL - WORK2DI PYTHON)x10${^-8}$', rotation=270)
+plt.show()
+
 alpha = np.matmul(work2di.T, work2d.T)
 beta = np.matmul(work2di.T, all_wv_pypeit)
 
