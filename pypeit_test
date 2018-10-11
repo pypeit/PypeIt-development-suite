@@ -44,6 +44,11 @@ def main():
 
     pargs, hlpstr = parser()
 
+    # TODO: Once we're satisfied than an instrument passes, add it to
+    # this list!  It must pass for every directory that includes these
+    # strings and all the sub-directory setups within!
+    valid_instruments = ['Kast', 'DEIMOS', 'LRIS', 'NIRES']
+
     # Grab a list of all instruments
     dev_path = os.getenv('PYPEIT_DEV')
     raw_data = os.path.join(dev_path, 'RAW_DATA')
@@ -56,7 +61,6 @@ def main():
     walk = os.walk(raw_data)
     all_instruments = next(walk)[1]
 
-    valid_instruments = ['Kast', 'DEIMOS', 'LRIS', 'NIRES']
     # Setup
     if pargs.tests == 'all':
         instruments = [item for item in all_instruments for inst in valid_instruments 
@@ -101,12 +105,7 @@ def main():
         print('    {0}'.format(instr))
     print('')
 
-    exit()
     for instr in instruments:
-        #if instr in ['kast_blue','Kast_red']:  # For testing
-        # TESTING!!
-        #if instr.lower() in ['keck_lris_blue']: # Testing
-        #    continue
         # Setups
         setups = next(os.walk(os.path.join(raw_data, instr)))[1]
 
@@ -182,6 +181,7 @@ def main():
             else:
                 # Use pre-made PypeIt file
                 pyp_file = os.path.join('pypeit_files', outfile_root+'.pypeit')
+
                 if not os.path.exists(pyp_file):
                     warnings.warn('PypeIt file {0} does not exist.  Continuing...'.format(pyp_file))
                     continue
