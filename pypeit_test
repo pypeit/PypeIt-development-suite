@@ -89,9 +89,6 @@ def main():
         os.mkdir(outputdir)
     outputdir = os.path.abspath(outputdir)
 
-    # Run
-    pwd = os.getcwd()
-
     # Loop on instruments
     npass, ntest = 0, 0
 
