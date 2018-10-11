@@ -27,6 +27,8 @@ from pypeit.core import pydl
 # test that the PYPEIT code will arrive to the same outputs of
 # XIDL
 
+debug = False
+
 # Reading in the output from XIDL for GNRIS.
 
 # The relevant vectors are:
@@ -206,30 +208,33 @@ print("  - min={}".format(np.min(work2di-work2di_1_xidl)))
 print("  - max={}".format(np.max(work2di-work2di_1_xidl)))
 print(" ")
 
-# Plot to check that everything works fine
-plt.figure()
-plt.scatter(np.ndarray.flatten(work2d_1_xidl),
-            np.ndarray.flatten((work2d_1_xidl-work2d) * 1e8),
-            label='work2d')
-plt.scatter(np.ndarray.flatten(work2di_1_xidl),
-            np.ndarray.flatten((work2di_1_xidl-work2di) * 1e8),
-            label='work2di')
-plt.legend()
-plt.xlabel(r'RESULTS from XIDL')
-plt.ylabel(r'(XIDL - PYTHON)$\times$10$^{-8}$')
-plt.show()
+if debug: 
+    # Plot to check that everything works fine
+    plt.figure()
+    plt.scatter(np.ndarray.flatten(work2d_1_xidl),
+                np.ndarray.flatten((work2d_1_xidl-work2d) * 1e8),
+                label='work2d')
+    plt.scatter(np.ndarray.flatten(work2di_1_xidl),
+                np.ndarray.flatten((work2di_1_xidl-work2di) * 1e8),
+                label='work2di')
+    plt.legend()
+    plt.xlabel(r'RESULTS from XIDL')
+    plt.ylabel(r'(XIDL - PYTHON)$\times$10$^{-8}$')
+    plt.show()
 
-plt.figure()
-plt.imshow((work2d_1_xidl-work2d)*1e8)
-cbar = plt.colorbar()
-cbar.set_label('(WORK2D XIDL - WORK2D PYTHON)x10${^-8}$', rotation=270)
-plt.show()
+    plt.figure()
+    plt.imshow((work2d_1_xidl-work2d)*1e8)
+    cbar = plt.colorbar()
+    cbar.set_label('(WORK2D XIDL - WORK2D PYTHON)x10${^-8}$',
+                    rotation=270)
+    plt.show()
 
-plt.figure()
-plt.imshow((work2di_1_xidl-work2di)*1e8)
-cbar = plt.colorbar()
-cbar.set_label('(WORK2DI XIDL - WORK2DI PYTHON)x10${^-8}$', rotation=270)
-plt.show()
+    plt.figure()
+    plt.imshow((work2di_1_xidl-work2di)*1e8)
+    cbar = plt.colorbar()
+    cbar.set_label('(WORK2DI XIDL - WORK2DI PYTHON)x10${^-8}$',
+                    rotation=270)
+    plt.show()
 
 alpha = np.matmul(work2di.T, work2d.T)
 beta = np.matmul(work2di.T, all_wv_pypeit)
