@@ -14,6 +14,8 @@ from IPython import embed
 import sys
 import os
 
+import numpy as np
+
 
 def parser(options=None):
     import argparse
@@ -34,13 +36,11 @@ def parser(options=None):
 
     return parser.parse_args() if options is None else parser.parse_args(options), hlpstr
 
-
 def main():
 #    import oslris
     import glob
     import subprocess
     import warnings
-    import pdb
 
     pargs, hlpstr = parser()
 
@@ -48,50 +48,37 @@ def main():
     dev_path = os.getenv('PYPEIT_DEV')
     raw_data = os.path.join(dev_path, 'RAW_DATA')
 
+    if not os.path.isdir(raw_data):
+        raise ValueError('No directory: {0}'.format(raw_data))
+
     #calib_data = 'PYPEIT_CALIBS'
 
     walk = os.walk(raw_data)
     all_instruments = next(walk)[1]
 
-    valid_instruments = ['Kast','DEIMOS','LRIS', 'NIRES']
+    valid_instruments = ['Kast', 'DEIMOS', 'LRIS', 'NIRES']
     # Setup
     if pargs.tests == 'all':
         instruments = [item for item in all_instruments for inst in valid_instruments 
-                            if inst in item]
+                            if inst.lower() in item.lower()]
+        invalid_selection = []
     else:
-        if pargs.tests == 'kast':
-            instruments = [item for item in all_instruments if 'Kast' in item]
-        elif pargs.tests == 'shane_kast_blue':
-            instruments = [item for item in all_instruments if 'Kast_blue' in item]
-        elif pargs.tests == 'deimos':
-            instruments = [item for item in all_instruments if 'DEIMOS' in item]
-        elif pargs.tests == 'lris':
-            instruments = [item for item in all_instruments if 'LRIS' in item]
-        elif pargs.tests == 'keck':
-            instruments = [item for item in all_instruments if 'Keck' in item]
-#        elif pargs.tests == 'shane':
-#            instruments = [item for item in all_instruments if 'Shane' in item]
-        elif pargs.tests == 'nires':
-            instruments = [item for item in all_instruments if 'NIRES' in item]
-#        elif pargs.tests == 'wht':
-#            instruments = [item for item in all_instruments if 'WHT' in item]
-#        elif pargs.tests == 'isis':
-#            instruments = [item for item in all_instruments if 'ISIS' in item]
-#        elif pargs.tests == 'hires':
-#            instruments = [item for item in all_instruments if 'HIRES' in item]
-        else:
-            print("\x1B[" + "1;31m" + "\nERROR - " + "\x1B[" + "0m" +
-                  "Not prepared for this test: {0:s}\n\n".format(pargs.tests) +
-                  "Please select from one of the following options:\n" +
-                  "all, {0:s}\n".format(hlpstr), file=sys.stderr)
-            return 1
+        instruments = [item for item in all_instruments if pargs.tests.lower() in item.lower()]
+        invalid_selection = [item for item in instruments if not np.any([inst.lower()
+                                    in item.lower() for inst in valid_instruments]) ]
 
     # Check that instruments is not blank
-    if pargs.tests == 'deimos':
-        if len(instruments) == 0:
-            print("\x1B[" + "1;31m" + "\nERROR - " + "\x1B[" + "0m" +
-                  "Not prepared for DEIMOS test.  Odds are you need to download the RAW_DATA")
-            return 1
+    if len(instruments) == 0:
+        print("\x1B[" + "1;31m" + "\nERROR - " + "\x1B[" + "0m" +
+              "Invalid test selected: {0:s}\n\n".format(pargs.tests) +
+              "Consult the help (pypeit_test -h) or select one of the " +
+              "available RAW_DATA directories: {0}".format(all_instruments))
+        return 1
+
+    if len(invalid_selection) > 0:
+        print("\x1B[" + "1;33m" + "\nWARNING - " + "\x1B[" + "0m" +
+              "The following tests have not been validated and may not pass: {0}\n\n".format(
+              invalid_selection))
 
     outputdir = 'REDUX_OUT' if pargs.outputdir is None else pargs.outputdir
     if not os.path.exists(outputdir):
@@ -114,6 +101,7 @@ def main():
         print('    {0}'.format(instr))
     print('')
 
+    exit()
     for instr in instruments:
         #if instr in ['kast_blue','Kast_red']:  # For testing
         # TESTING!!
