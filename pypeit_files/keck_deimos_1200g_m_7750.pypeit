@@ -17,7 +17,8 @@
 # Read in the data
 data read
  path /Volumes/GoogleDrive/Team Drives/PHYS-GP-Hennawi/PypeIt/PypeIt-development-suite/RAW_DATA/Keck_DEIMOS/1200G_M_7750/
-|                  filename |                date | frametype       |  target | exptime | dispname |  decker |
+|                  filename |                date | frametype       |  target | exptime | binning | dichroic | dispname |     dispangle | decker |
+ 
 | DE.20170425.09554.fits.gz | 2017-04-25T02:39:17 |   	        arc | unknown |       1 |     1,1 |     None |    1200G | 1096.89782715 |  dra11 |
 | DE.20170425.09632.fits.gz | 2017-04-25T02:40:44 | pixelflat,trace | unknown |      12 |     1,1 |     None |    1200G | 1096.89782715 |  dra11 |
 | DE.20170425.09722.fits.gz | 2017-04-25T02:42:15 | pixelflat,trace | unknown |      12 |     1,1 |     None |    1200G | 1096.89782715 |  dra11 |
