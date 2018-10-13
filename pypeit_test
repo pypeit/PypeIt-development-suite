@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+#!/usr/bin/env python3
 #
 # See top-level LICENSE.rst file for Copyright information
 #
@@ -11,6 +11,10 @@ This script runs the PypeIt development suite of tests
 from __future__ import absolute_import, division, print_function
 
 from IPython import embed
+import sys
+import os
+
+import numpy as np
 
 
 def parser(options=None):
@@ -32,217 +36,228 @@ def parser(options=None):
 
     return parser.parse_args() if options is None else parser.parse_args(options), hlpstr
 
-
 def main():
-    import os
-    import sys
+#    import oslris
     import glob
     import subprocess
     import warnings
-    import pdb
 
     pargs, hlpstr = parser()
 
+    # TODO: Once we're satisfied than an instrument passes, add it to
+    # this list!  It must pass for every directory that includes these
+    # strings and all the sub-directory setups within!
+    valid_instruments = ['Kast', 'DEIMOS', 'LRIS', 'NIRES']
+
     # Grab a list of all instruments
     dev_path = os.getenv('PYPEIT_DEV')
-    raw_data = dev_path + 'RAW_DATA/'
+    raw_data = os.path.join(dev_path, 'RAW_DATA')
+
+    if not os.path.isdir(raw_data):
+        raise ValueError('No directory: {0}'.format(raw_data))
 
     #calib_data = 'PYPEIT_CALIBS'
 
     walk = os.walk(raw_data)
     all_instruments = next(walk)[1]
 
-    valid_instruments = ['Kast','DEIMOS','LRIS', 'NIRES']
     # Setup
     if pargs.tests == 'all':
-        instruments = [item for item in all_instruments for inst in valid_instruments if inst in item]
+        instruments = [item for item in all_instruments for inst in valid_instruments 
+                            if inst.lower() in item.lower()]
+        invalid_selection = []
     else:
-        if pargs.tests == 'kast':
-            instruments = [item for item in all_instruments if 'Kast' in item]
-        elif pargs.tests == 'deimos':
-            instruments = [item for item in all_instruments if 'DEIMOS' in item]
-        elif pargs.tests == 'lris':
-            instruments = [item for item in all_instruments if 'LRIS' in item]
-        elif pargs.tests == 'keck':
-            instruments = [item for item in all_instruments if 'Keck' in item]
-#        elif pargs.tests == 'shane':
-#            instruments = [item for item in all_instruments if 'Shane' in item]
-        elif pargs.tests == 'nires':
-            instruments = [item for item in all_instruments if 'NIRES' in item]
-#        elif pargs.tests == 'wht':
-#            instruments = [item for item in all_instruments if 'WHT' in item]
-#        elif pargs.tests == 'isis':
-#            instruments = [item for item in all_instruments if 'ISIS' in item]
-#        elif pargs.tests == 'hires':
-#            instruments = [item for item in all_instruments if 'HIRES' in item]
-        else:
-            print("\x1B[" + "1;31m" + "\nERROR - " + "\x1B[" + "0m" +
-                  "Not prepared for this test: {0:s}\n\n".format(pargs.tests) +
-                  "Please select from one of the following options:\n" +
-                  "all, {0:s}\n".format(hlpstr), file=sys.stderr)
-            sys.exit()
-    # Check that instruments is not blank
-    if pargs.tests == 'deimos':
-        if len(instruments) == 0:
-            print("\x1B[" + "1;31m" + "\nERROR - " + "\x1B[" + "0m" +
-                  "Not prepared for DEIMOS test.  Odds are you need to download the RAW_DATA")
-            sys.exit()
+        instruments = [item for item in all_instruments if pargs.tests.lower() in item.lower()]
+        invalid_selection = [item for item in instruments if not np.any([inst.lower()
+                                    in item.lower() for inst in valid_instruments]) ]
 
-    if pargs.outputdir is None:
-        outputdir = 'REDUX_OUT/'
-    else:
-        outputdir = pargs.outputdir
+    # Check that instruments is not blank
+    if len(instruments) == 0:
+        print("\x1B[" + "1;31m" + "\nERROR - " + "\x1B[" + "0m" +
+              "Invalid test selected: {0:s}\n\n".format(pargs.tests) +
+              "Consult the help (pypeit_test -h) or select one of the " +
+              "available RAW_DATA directories: {0}".format(all_instruments))
+        return 1
+
+    if len(invalid_selection) > 0:
+        print("\x1B[" + "1;33m" + "\nWARNING - " + "\x1B[" + "0m" +
+              "The following tests have not been validated and may not pass: {0}\n\n".format(
+              invalid_selection))
+
+    outputdir = 'REDUX_OUT' if pargs.outputdir is None else pargs.outputdir
     if not os.path.exists(outputdir):
         os.mkdir(outputdir)
-    else:
-        print("Output directory exists.")
-    # Run
-    pwd = os.getcwd()
+    outputdir = os.path.abspath(outputdir)
 
     # Loop on instruments
     npass, ntest = 0, 0
 
-    # Do them in order Shane, LRIS, DEIMOS, since DEIMOS takes the longest. To do this we sort and reverse
+    # Do them in order Shane, LRIS, DEIMOS, since DEIMOS takes the
+    # longest. To do this we sort and reverse
     instruments.sort(reverse=True)
 
+    # Report
+    print('Running tests on the following instruments:')
     for instr in instruments:
-        #if instr in ['kast_blue','Kast_red']:  # For testing
-        # TESTING!!
-        #if instr.lower() in ['keck_lris_blue']: # Testing
-        #    continue
+        print('    {0}'.format(instr))
+    print('')
+
+    for instr in instruments:
         # Setups
-        setups = next(os.walk(raw_data+'/'+instr))[1]
+        setups = next(os.walk(os.path.join(raw_data, instr)))[1]
+
+        # Report
+        print('The following setups have been found for {0}:'.format(instr))
         for setup in setups:
-            if pargs.setup is not None:
-                if setup != pargs.setup:
-                    continue
+            print('    {0}'.format(setup))
+        print('')
+
+        for setup in setups:
+
+            if pargs.setup is not None and setup != pargs.setup:
+                print('Setup {0} not selected for testing.   Continuing...'.format(setup))
+                print('')
+                continue
+
             # Generate folder as need be
-            idir = outputdir+'/'+instr
+            idir = os.path.join(outputdir, instr)
             if not os.path.exists(idir):
                 os.makedirs(idir)
-            wdir = os.path.join(outputdir, instr, setup)
+            wdir = os.path.join(idir, setup)
             if not os.path.exists(wdir):
                 os.makedirs(wdir)
+
             # rawdata
-            rawdir = os.path.join(raw_data, instr, setup)+'/'
+            rawdir = os.path.join(raw_data, instr, setup)
+
+            # Report
+            print('Directories:')
+            print('         Raw data: {0}'.format(rawdir))
+            print('    PypeIt output: {0}'.format(wdir))
+            print('')
+
             # Run setup?
             passed = True
-            # Use pre-made pypeit file for keck_lris_red until someone fixes pypeit_setup which is currently broken.
+
+            # TODO: By default search for the appropriate pypeit file
+            # and run pypeit_setup if it doesn't exist
+            
+            # TODO: Include option that forces the tests to run
+            # pypeit_setup
+
+            outfile_root = instr.lower()+'_'+setup.lower()
+
             if instr.lower() in ['shane_kast_blue']: #, 'keck_lris_red']:
+                # Use pypeit_setup to get the pypeit file for Shane Kast
+                # Blue
                 ntest += 1
-                outfile = instr.lower()+'_'+setup.lower()
-                logfile = wdir+'/'+instr.lower()+'_'+setup.lower()+'.test.log'
+                logfile = os.path.join(wdir, outfile_root+'.test.log')
                 with open(logfile, 'w') as f:
-                    retval = subprocess.call(['pypeit_setup', rawdir, instr.lower(), '-c', '-o'], stderr=f, cwd=wdir)
+                    command_line = ['pypeit_setup', rawdir, instr.lower(), '-c', '-o',
+                                    '--setups_path', wdir ]
+                    print('Running command: {0}'.format(' '.join(command_line)))
+                    retval = subprocess.call(command_line, stderr=f, cwd=wdir)
+
                 wdir = os.path.join(wdir, instr.lower()+'_setup_A')
-                print('Finished running pypeit on {:s} --- '.format(outfile), file=sys.stderr, end='')
+                print('Finished running pypeit on {0} --- '.format(outfile_root),
+                      file=sys.stderr, end='')
+
                 # Run pypeit on setup_A.pypeit
                 pyp_file = glob.glob(os.path.join(wdir, '*setup_A.pypeit'))
                 if len(pyp_file) != 1:
-                    print("Couldn't find PypeIt file")
-                    print("Incorrect .pypeit files")
+                    print('Could not find expected pypeit file: {0}'.format(pyp_file))
                     print("\x1B[" + "1;31m" + "FAILED" + "\x1B[" + "0m", file=sys.stderr)
                     passed = False
-                    #pdb.set_trace()
-                    #raise ValueError("Incorrect .pypeit files")
                 else:
-                    pyp_file = pyp_file[0]
-                    islsh = pyp_file.rfind('/')
-                    pyp_file = pyp_file[islsh+1:]
+                    pyp_file = os.path.split(pyp_file[0])[1]
                     if retval == 0:
                         print("\x1B[" + "1;32m" + "PASSED" + "\x1B[" + "0m", file=sys.stderr)
                         npass += 1
                 subprocess.call(['tail', '-2', logfile])
                 print("\n", file=sys.stderr)
-            else: # Use pre-made PypeIt file
-                redfile = 'pypeit_files/'+instr.lower()+'_'+setup.lower()+'.pypeit'
-                if not os.path.exists(redfile):
-                    warnings.warn('No redux file: {:s}'.format(redfile))
-                    warnings.warn('Not testing..')
+            else:
+                # Use pre-made PypeIt file
+                pyp_file = os.path.join('pypeit_files', outfile_root+'.pypeit')
+
+                if not os.path.exists(pyp_file):
+                    warnings.warn('PypeIt file {0} does not exist.  Continuing...'.format(pyp_file))
                     continue
-                # Edit data directory
-                with open(redfile, 'r') as infile:
+
+                # Read the pypeit file
+                with open(pyp_file, 'r') as infile:
                     lines = infile.readlines()
+
+                # Replace the default path with the local one
                 for kk, iline in enumerate(lines):
                     if 'data read' in iline:
                         dpth = lines[kk+1]
-                        if 'path' in dpth:
-                            newdpth = ' path '
-                        else:
-                            newdpth = ' '
+                        newdpth = ' path ' if 'path' in dpth else ' '
                         i0 = dpth.rfind('/')
                         if setup.strip('/') == dpth[i0:].strip('/\n'):
                             # TODO: Test is for WHT path issue...
-                            newdpth += raw_data+'/'+instr+'/'+setup+'\n'
+                            newdpth += os.path.join(raw_data, instr, setup)+'\n'
                         else:
-                            newdpth += raw_data+'/'+instr+'/'+setup+dpth[i0:]
+                            newdpth += os.path.join(raw_data, instr, setup+dpth[i0:])
                         lines[kk+1] = newdpth
                     elif 'flatfield' in iline and 'frame' in lines[kk+1]:
-                        cpth = lines[kk+1]
-                        i0 = cpth.rfind('/')
-                        newcpth = dev_path +'/CALIBS/'+cpth[i0:]
+                        newcpth = os.path.join(dev_path, 'CALIBS', os.path.split(lines[kk+1])[1])
                         lines[kk+1] = '        frame = {0}'.format(newcpth)
-                # Write to outputdir
-                outfile = wdir+'/'+instr.lower()+'_'+setup.lower()+'.pypeit'
-                pyp_file = instr.lower()+'_'+setup.lower()+'.pypeit'
-                with open(outfile, 'w') as ofile:
-                    for iline in lines:
-                        ofile.writelines(iline)
 
+                # Write to outputdir
+                pyp_file = outfile_root+'.pypeit'
+                with open(os.path.join(wdir, pyp_file), 'w') as ofile:
+                    ofile.writelines(lines)
+             
             # Run pypeit
             if passed:
                 ntest += 1
-                logfile = wdir+'/'+instr.lower()+'_'+setup.lower()+'.test.log'
+                logfile = os.path.join(wdir, outfile_root+'.test.log')
                 print('Running pypeit on {:s} --- '.format(pyp_file), file=sys.stderr, end='')
                 with open(logfile, 'w') as f:
-                    print(wdir)
-                    print('run_pypeit', pyp_file, '-o')
-    #                retval = 0
-    #                retval = subprocess.call(['run_pypeit', pyp_file, '--devtest', '-v 2','-d'], stderr=f, cwd=wdir)#, shell=True)
-                    retval = subprocess.call(['run_pypeit', pyp_file, '-o'], stderr=f, cwd=wdir)#, shell=True)
-                    if retval == 0:
-                        print("\x1B[" + "1;32m" + "PASSED" + "\x1B[" + "0m", file=sys.stderr)
-                        npass += 1
-                    else:
-                        print("\x1B[" + "1;31m" + "FAILED" + "\x1B[" + "0m", file=sys.stderr)
+                    print('Directory: {0}'.format(wdir))
+                    command_line = [ 'run_pypeit', pyp_file, '-o' ]
+                    print('Command line: {0}'.format(' '.join(command_line)))
+                    retval = subprocess.call(command_line, stderr=f, cwd=wdir)
+                    npass = report_test(retval, npass)
                     subprocess.call(['tail', '-2', logfile])
                     print("\n", file=sys.stderr)
+
                 # Test master frame running
                 if instr in ['keck_lris_red']:
                     ntest += 1
-                    logfile = wdir+'/'+instr.lower()+'_'+setup.lower()+'.test.log'
-                    print('Running pypeit with master frames on {:s} --- '.format(pyp_file), file=sys.stderr, end='')
+                    print('Running pypeit with master frames on {0} --- '.format(pyp_file),
+                          file=sys.stderr, end='')
                     with open(logfile, 'w') as f:
-    #                    print(wdir)
-                        print('run_pypeit', pyp_file, '-m', '-o')
-    #                    retval = 0
-    #                    retval = subprocess.call(['run_pypeit', pyp_file, '--devtest', '-m', '-v 2','-d'], stderr=f, cwd=wdir)#, shell=True)
-                        retval = subprocess.call(['run_pypeit', pyp_file, '-o', '-m'], stderr=f, cwd=wdir)#, shell=True)
-                        if retval == 0:
-                            print("\x1B[" + "1;32m" + "PASSED" + "\x1B[" + "0m", file=sys.stderr)
-                            npass += 1
-                        else:
-                            print("\x1B[" + "1;31m" + "FAILED" + "\x1B[" + "0m", file=sys.stderr)
+                        print('Directory: {0}'.format(wdir))
+                        command_line = [ 'run_pypeit', pyp_file, '-m', '-o' ]
+                        print('Command line: {0}'.format(' '.join(command_line)))
+                        retval = subprocess.call(command_line, stderr=f, cwd=wdir)
+                        npass = report_test(retval, npass)
                         subprocess.call(['tail', '-2', logfile])
                         print("\n", file=sys.stderr)
             else:
                 print("Couldn't run test for {0:s}".format(instr.lower()))
+
     if npass == ntest:
         print("\n" + "\x1B[" + "1;32m" +
               "--- PYPEIT DEVELOPMENT SUITE PASSED {0:d}/{1:d} TESTS ---".format(npass, ntest) +
               "\x1B[" + "0m" + "\r", file=sys.stderr)
     else:
         print("\n" + "\x1B[" + "1;31m" +
-              "--- PYPEIT DEVELOPMENT SUITE FAILED {0:d}/{1:d} TESTS ---".format(ntest-npass, ntest) +
-              "\x1B[" + "0m" + "\r", file=sys.stderr)
+              "--- PYPEIT DEVELOPMENT SUITE FAILED {0:d}/{1:d} TESTS ---".format(ntest-npass,
+              ntest) + "\x1B[" + "0m" + "\r", file=sys.stderr)
 
+def report_test(retval, npass):
+    if retval == 0:
+        print("\x1B[" + "1;32m" + "PASSED" + "\x1B[" + "0m", file=sys.stderr)
+        return npass + 1
+    print("\x1B[" + "1;31m" + "FAILED" + "\x1B[" + "0m", file=sys.stderr)
+    return npass
 
 if __name__ == '__main__':
-    import sys, os
-
     # Check for pypeit executable
-    if not any(os.access(os.path.join(
-            path, 'run_pypeit'), os.X_OK) for path in os.environ["PATH"].split(os.pathsep)):
+    if not any([os.access(os.path.join(path, 'run_pypeit'), os.X_OK) 
+                for path in os.environ["PATH"].split(os.pathsep)]):
         raise RuntimeError("You need to install run_pypeit in your PATH")
     # Giddy up
     main()
