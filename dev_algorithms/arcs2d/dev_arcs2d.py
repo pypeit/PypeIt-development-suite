@@ -96,16 +96,6 @@ for ii in np.arange(0, 12, 2):
     pixid[index] = len(all_pix[index])
     index = index+1
 
-# Plot to check that everything works fine
-plt.figure()
-for jj in np.arange(0, 5):
-    plt.scatter(all_pix[jj], all_wv[jj],
-                label='Order {}'.format(str(order[jj])))
-plt.legend()
-plt.xlabel(r'pixels')
-plt.ylabel(r'wavelength [$\AA$]')
-plt.show()
-
 # Now I have a dict with pixels [all_pix] , one with
 # corresponding wavelengths [all_wl], and one vector with 
 # the orders [order].
@@ -140,7 +130,6 @@ mxx = np.max(t_pypeit)
 nrmt = np.array([0.5 * (mnx + mxx), mxx - mnx])
 t_nrm_pypeit = 2. * (t_pypeit - nrmt[0])/nrmt[1]
 
-
 # Check that the vectors match the XIDL ones.
 print(" ")
 print(" pix_nrm PYPEIT vs. XIDL:")
@@ -151,6 +140,21 @@ print(" t_nrm PYPEIT vs. XIDL:")
 print("  - min={}".format(np.min(t_nrm_pypeit-t_nrm_xidl)))
 print("  - max={}".format(np.max(t_nrm_pypeit-t_nrm_xidl)))
 print(" ")
+
+if debug: 
+    print(" ")
+    print(" Plot of wavelengths as a function of normalized orders and")
+    print(" pixels.")
+    print(" ")
+    plt.figure()
+    cm = plt.cm.get_cmap('RdYlBu_r')
+    sc = plt.scatter(t_nrm_pypeit, pix_nrm_pypeit, c=all_wv_pypeit, 
+                     cmap=cm)
+    cbar = plt.colorbar(sc)
+    cbar.set_label(r'WAVELENGTHS', rotation=270)
+    plt.xlabel(r'NORMALIZE ORDERS')
+    plt.ylabel(r'NORMALIZE PIX')
+    plt.show()
 
 # The following stricktly resamble what is happening from
 # line 148 of x_fit2darc.pro
@@ -203,6 +207,11 @@ print(" while from XIDL the shape is: {}".format(work2di_1_xidl.shape))
 print(" ")
 
 print(" ")
+print(" The shape of all_wv_pypeit.T is: {}".format(all_wv_pypeit.T.shape))
+print(" ")
+
+
+print(" ")
 print(" work2di PYPEIT vs. XIDL:")
 print("  - min={}".format(np.min(work2di-work2di_1_xidl)))
 print("  - max={}".format(np.max(work2di-work2di_1_xidl)))
@@ -210,59 +219,119 @@ print(" ")
 
 if debug: 
     # Plot to check that everything works fine
-    plt.figure()
-    plt.scatter(np.ndarray.flatten(work2d_1_xidl),
-                np.ndarray.flatten((work2d_1_xidl-work2d) * 1e8),
-                label='work2d')
-    plt.scatter(np.ndarray.flatten(work2di_1_xidl),
-                np.ndarray.flatten((work2di_1_xidl-work2di) * 1e8),
-                label='work2di')
-    plt.legend()
-    plt.xlabel(r'RESULTS from XIDL')
-    plt.ylabel(r'(XIDL - PYTHON)$\times$10$^{-8}$')
+
+    fig = plt.figure()
+    ax1 = fig.add_subplot(121)
+    im1 = ax1.imshow((work2d_1_xidl-work2d)*1e8)
+    cbar1 = fig.colorbar(im1)
+    cbar1.set_label(r'(WORK2D XIDL - WORK2D PYTHON)x10${^-8}$',
+                     rotation=270)
+    ax2 = fig.add_subplot(122)
+    ax2.hist(np.ndarray.flatten(work2d_1_xidl-work2d)*1e8)
+    ax2.set_xlabel(r'(WORK2D XIDL - WORK2D PYTHON)x10${^-8}$')
     plt.show()
 
-    plt.figure()
-    plt.imshow((work2d_1_xidl-work2d)*1e8)
-    cbar = plt.colorbar()
-    cbar.set_label('(WORK2D XIDL - WORK2D PYTHON)x10${^-8}$',
-                    rotation=270)
+    fig = plt.figure()
+    ax1 = fig.add_subplot(121)
+    im1 = ax1.imshow((work2di_1_xidl-work2di)*1e8)
+    cbar1 = fig.colorbar(im1)
+    cbar1.set_label(r'(WORK2DI XIDL - WORK2DI PYTHON)x10${^-8}$',
+                     rotation=270)
+    ax2 = fig.add_subplot(122)
+    ax2.hist(np.ndarray.flatten(work2di_1_xidl-work2di)*1e8)
+    ax2.set_xlabel(r'(WORK2DI XIDL - WORK2DI PYTHON)x10${^-8}$')
     plt.show()
 
-    plt.figure()
-    plt.imshow((work2di_1_xidl-work2di)*1e8)
-    cbar = plt.colorbar()
-    cbar.set_label('(WORK2DI XIDL - WORK2DI PYTHON)x10${^-8}$',
-                    rotation=270)
-    plt.show()
+alpha = np.dot(work2d, work2di)
 
-alpha = np.matmul(work2di.T, work2d.T)
-beta = np.matmul(work2di.T, all_wv_pypeit)
-
-# Plot to check that everything works fine
 plt.figure()
-plt.scatter(np.ndarray.flatten(alpha_1_xidl),
-            np.ndarray.flatten((alpha_1_xidl-alpha)),
-            label='alpha')
-plt.legend()
-plt.xlabel(r'RESULTS from XIDL')
-plt.ylabel(r'(XIDL - PYTHON)')
+plt.imshow(alpha)
+cbar = plt.colorbar()
+cbar.set_label('ALPHA PYTHON', rotation=270)
 plt.show()
 
 plt.figure()
-plt.scatter(np.ndarray.flatten(beta_1_xidl),
-            np.ndarray.flatten((beta_1_xidl-beta)),
+plt.imshow(alpha_1_xidl)
+cbar = plt.colorbar()
+cbar.set_label('ALPHA XIDL', rotation=270)
+plt.show()
+
+beta = np.matmul(work2di.T, all_wv_pypeit.T).T
+print(" The shape of beta is: {}".format(beta.shape))
+print(" while from XIDL the shape is: {}".format(beta_1_xidl.shape))
+print(" ")
+plt.figure()
+plt.scatter(beta_1_xidl,
+            beta,
             label='beta')
 plt.legend()
 plt.xlabel(r'RESULTS from XIDL')
-plt.ylabel(r'(XIDL - PYTHON)')
+plt.ylabel(r'RESULTS from PYTHON')
 plt.show()
 
-plt.figure()
-plt.imshow(alpha_1_xidl-alpha)
-cbar = plt.colorbar()
-cbar.set_label('ALPHA XIDL - ALPHA PYTHON', rotation=270)
-plt.show()
+
+
+print(" ")
+print(" The shape of alpha is: {}".format(alpha.shape))
+print(" while from XIDL the shape is: {}".format(alpha_1_xidl.shape))
+print(" ")
+
+
+if debug: 
+    # Plot to check that everything works fine
+    plt.figure()
+    plt.scatter(np.ndarray.flatten(alpha_1_xidl),
+                np.ndarray.flatten((alpha_1_xidl-alpha.T)),
+                label='alpha')
+    plt.legend()
+    plt.xlabel(r'RESULTS from XIDL')
+    plt.ylabel(r'(XIDL - PYTHON)')
+    plt.show()
+
+    plt.figure()
+    plt.scatter(np.ndarray.flatten(beta_1_xidl),
+                np.ndarray.flatten((beta_1_xidl-beta.T)),
+                label='beta')
+    plt.legend()
+    plt.xlabel(r'RESULTS from XIDL')
+    plt.ylabel(r'(XIDL - PYTHON)')
+    plt.show()
+
+    plt.figure()
+    plt.imshow(alpha_1_xidl-alpha)
+    cbar = plt.colorbar()
+    cbar.set_label('ALPHA XIDL - ALPHA PYTHON', rotation=270)
+    plt.show()
+
+
+
+
+
+
+res = scipy.linalg.solve(alpha,beta)
+
+print(" ")
+print(" The shape of res is: {}".format(res.shape))
+print(" while from XIDL the shape is: {}".format(res_1_xidl.shape))
+print(" ")
+
+print(res-res_1_xidl)
+if debug: 
+    # Plot to check that everything works fine
+    plt.figure()
+    plt.scatter(np.ndarray.flatten(res_1_xidl),
+                np.ndarray.flatten(res_1_xidl-res),
+                label='res')
+    plt.legend()
+    plt.xlabel(r'RESULTS from XIDL')
+    plt.ylabel(r'(XIDL - PYTHON)')
+    plt.show()
+
+
+
+
+
+'''
 
 # Brute force test
 alpha_test = np.zeros((15,15))
@@ -303,7 +372,7 @@ print(" beta PYPEIT vs. XIDL:")
 print("  - min={}".format(np.min(beta-beta_1_xidl)))
 print("  - max={}".format(np.max(beta-beta_1_xidl)))
 print(" ")
-
+'''
 
 #####     p = scipy.linalg.cholesky(alpha, lower=False)
 #####     res = scipy.linalg.cho_solve((p, False), beta)
