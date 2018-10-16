@@ -188,7 +188,7 @@ print(" The shape of workt is: {}".format(workt.shape))
 print(" ")
 
 for i in range(nocoeff):
-    for j in range (nycoeff):
+    for j in range(nycoeff):
         work2d[j*nocoeff+i,:] = worky[j,:] * workt[i,:]
 
 print(" ")
@@ -242,7 +242,33 @@ if debug:
     ax2.set_xlabel(r'(WORK2DI XIDL - WORK2DI PYTHON)x10${^-8}$')
     plt.show()
 
-alpha = np.dot(work2d, work2di)
+alpha = work2d.dot(work2di)
+beta = all_wv_pypeit.dot(work2di)
+
+solve = np.linalg.solve(alpha, beta)
+wv_mod = solve.dot(work2d)
+
+print("residuals")
+print(wv_mod - all_wv_pypeit)
+
+plt.figure()
+plt.scatter(all_wv_pypeit,
+            wv_mod - all_wv_pypeit,
+            label='First Iteration')
+plt.legend()
+plt.xlabel(r'WL')
+plt.ylabel(r'residuals')
+plt.show()
+
+plt.figure()
+plt.scatter(all_wv_pypeit,
+            wv_mod,
+            label='First Iteration')
+plt.legend()
+plt.xlabel(r'WL')
+plt.ylabel(r'residuals')
+plt.show()
+
 
 plt.figure()
 plt.imshow(alpha)
