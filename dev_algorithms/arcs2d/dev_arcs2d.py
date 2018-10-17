@@ -72,6 +72,12 @@ work2di_1_xidl = work2di_1_dict['work2di']
 work2di_2_dict = readsav('./sav_files/work2di2.sav', python_dict=True)
 work2di_2_xidl = work2di_2_dict['work2di']
 
+wv_mod_1_dict = readsav('./sav_files/wv_mod_1.sav', python_dict=True)
+wv_mod_1_xidl = wv_mod_1_dict['wv_mod']
+wv_mod_2_dict = readsav('./sav_files/wv_mod_2.sav', python_dict=True)
+wv_mod_2_xidl = wv_mod_2_dict['wv_mod']
+
+
 # Order vector
 order = [3, 4, 5, 6, 7, 8]
 
@@ -248,16 +254,24 @@ beta = all_wv_pypeit.dot(work2di)
 solve = np.linalg.solve(alpha, beta)
 wv_mod = solve.dot(work2d)
 
+## solve_1_xidl = np.linalg.solve(alpha_1_xidl, beta_1_xidl)
+## wv_mod_1_xidl = solve_1_xidl.dot(work2d_1_xidl)
+
+
 print("residuals")
 print(wv_mod - all_wv_pypeit)
 
 plt.figure()
 plt.scatter(all_wv_pypeit,
             wv_mod - all_wv_pypeit,
-            label='First Iteration')
+            label='PypeIt')
+plt.scatter(all_wv_pypeit,
+            wv_mod_1_xidl/t_pypeit - all_wv_pypeit,
+            label='XIDL')
+
 plt.legend()
 plt.xlabel(r'WL')
-plt.ylabel(r'residuals')
+plt.ylabel(r'Residuals')
 plt.show()
 
 plt.figure()
