@@ -10,6 +10,7 @@ import scipy
 import matplotlib.pyplot as plt
 from scipy.io import readsav
 from astropy.io import ascii
+from astropy.stats import sigma_clip
 
 # PYPEIT imports
 from pypeit.core import pydl
@@ -39,8 +40,8 @@ pix_nrm_xidl = np.array(xidl['pix_nrm_xidl'].data)
 t_nrm_xidl = np.array(xidl['t_nrm_xidl'].data)
 
 # These are the .sav files from Feige contiaining
-# alpha, beta, p, res, work2d, and work2di for the
-# 1st and the 2nd round of fitting.
+# alpha, beta, p, res, work2d, work2dim, and wv_mod
+# for the 1st and the 2nd round of fitting.
 
 alpha_1_dict = readsav('./sav_files/alpha1.sav', python_dict=True)
 alpha_1_xidl = alpha_1_dict['alpha']
@@ -77,6 +78,12 @@ wv_mod_1_xidl = wv_mod_1_dict['wv_mod']
 wv_mod_2_dict = readsav('./sav_files/wv_mod_2.sav', python_dict=True)
 wv_mod_2_xidl = wv_mod_2_dict['wv_mod']
 
+# I also load the vectors t and all_wv
+t_dict = readsav('./sav_files/t.sav', python_dict=True)
+t_xidl = t_dict['t']
+
+all_wv_dict = readsav('./sav_files/all_wv.sav', python_dict=True)
+all_wv_xidl = all_wv_dict['all_wv']
 
 # Order vector
 order = [3, 4, 5, 6, 7, 8]
@@ -124,6 +131,9 @@ for ii in all_pix.keys():
     npix_pypeit = np.concatenate((npix_pypeit, npix_tmp))
     index = index + 1
 
+# Setting the same format of XIDL
+all_wv_pypeit = all_wv_pypeit * t_pypeit
+
 # NORMALIZE PIX
 mnx = np.min(all_pix_pypeit)
 mxx = np.max(all_pix_pypeit)
@@ -136,30 +146,40 @@ mxx = np.max(t_pypeit)
 nrmt = np.array([0.5 * (mnx + mxx), mxx - mnx])
 t_nrm_pypeit = 2. * (t_pypeit - nrmt[0])/nrmt[1]
 
-# Check that the vectors match the XIDL ones.
-print(" ")
-print(" pix_nrm PYPEIT vs. XIDL:")
-print("  - min={}".format(np.min(pix_nrm_pypeit-pix_nrm_xidl)))
-print("  - max={}".format(np.max(pix_nrm_pypeit-pix_nrm_xidl)))
-print(" ")
-print(" t_nrm PYPEIT vs. XIDL:")
-print("  - min={}".format(np.min(t_nrm_pypeit-t_nrm_xidl)))
-print("  - max={}".format(np.max(t_nrm_pypeit-t_nrm_xidl)))
-print(" ")
 
 if debug: 
+    # Check that the vectors match the XIDL ones.
+    print(" ")
+    print(" t PYPEIT vs. XIDL:")
+    print("  - min={}".format(np.min(t_pypeit-t_xidl)))
+    print("  - max={}".format(np.max(t_pypeit-t_xidl)))
+    print(" ")
+    print(" all_wv PYPEIT vs. XIDL:")
+    print("  - min={}".format(np.min(all_wv_pypeit-all_wv_xidl)))
+    print("  - max={}".format(np.max(all_wv_pypeit-all_wv_xidl)))
+    print(" ")
+    print(" pix_nrm PYPEIT vs. XIDL:")
+    print("  - min={}".format(np.min(pix_nrm_pypeit-pix_nrm_xidl)))
+    print("  - max={}".format(np.max(pix_nrm_pypeit-pix_nrm_xidl)))
+    print(" ")
+    print(" t_nrm PYPEIT vs. XIDL:")
+    print("  - min={}".format(np.min(t_nrm_pypeit-t_nrm_xidl)))
+    print("  - max={}".format(np.max(t_nrm_pypeit-t_nrm_xidl)))
+    print(" ")
+    # Plot pixels vs. order with wavelengths as colorbar
     print(" ")
     print(" Plot of wavelengths as a function of normalized orders and")
     print(" pixels.")
     print(" ")
     plt.figure()
     cm = plt.cm.get_cmap('RdYlBu_r')
-    sc = plt.scatter(t_nrm_pypeit, pix_nrm_pypeit, c=all_wv_pypeit, 
-                     cmap=cm)
+    sc = plt.scatter(t_nrm_pypeit, pix_nrm_pypeit,
+                     c=all_wv_pypeit/t_pypeit/10000., cmap=cm)
     cbar = plt.colorbar(sc)
-    cbar.set_label(r'WAVELENGTHS', rotation=270)
-    plt.xlabel(r'NORMALIZE ORDERS')
-    plt.ylabel(r'NORMALIZE PIX')
+    cbar.set_label(r'WAVELENGTHS [$\mu$m]', rotation=270,
+                   labelpad=20)
+    plt.xlabel(r'NORMALIZED ORDERS')
+    plt.ylabel(r'NORMALIZED PIX')
     plt.show()
 
 # The following stricktly resamble what is happening from
@@ -169,9 +189,10 @@ if debug:
 # each order. This means that sum(pixid) is the total number
 # of line identified.
 invvar = np.ones(np.sum(pixid), dtype=np.float64)
-print(" ")
-print(" The shape of invvar is: {}".format(invvar.shape))
-print(" ")
+if debug: 
+    print(" ")
+    print(" The shape of invvar is: {}".format(invvar.shape))
+    print(" ")
 
 # SETUP THE FUNCTIONS
 # these are input values of the function. nycoeff is along pixel
@@ -185,326 +206,137 @@ work2d = np.zeros((nycoeff*nocoeff, np.sum(pixid)), dtype=np.float64)
 worky = pydl.flegendre(pix_nrm_pypeit, nycoeff)
 workt = pydl.flegendre(t_nrm_pypeit, nocoeff)
 
-print(" ")
-print(" The shape of work2d is: {}".format(work2d.shape))
-print(" while from XIDL the shape is: {}".format(work2d_1_xidl.shape))
-print(" ")
-print(" The shape of worky is: {}".format(worky.shape))
-print(" The shape of workt is: {}".format(workt.shape))
-print(" ")
-
 for i in range(nocoeff):
     for j in range(nycoeff):
         work2d[j*nocoeff+i,:] = worky[j,:] * workt[i,:]
 
-print(" ")
-print(" work2d PYPEIT vs. XIDL:")
-print("  - min={}".format(np.min(work2d-work2d_1_xidl)))
-print("  - max={}".format(np.max(work2d-work2d_1_xidl)))
-print(" ")
+
+if debug: 
+    print(" ")
+    print(" The shape of work2d is: {}".format(work2d.shape))
+    print(" while from XIDL the shape is: {}".format(work2d_1_xidl.shape))
+    print(" ")
+    print(" The shape of worky is: {}".format(worky.shape))
+    print(" The shape of workt is: {}".format(workt.shape))
+    print(" ")
+    print(" work2d PYPEIT vs. XIDL:")
+    print("  - min={}".format(np.min(work2d-work2d_1_xidl)))
+    print("  - max={}".format(np.max(work2d-work2d_1_xidl)))
+    print(" ")
 
 # Do the matrix algebra
 work2di = np.transpose(work2d * np.outer(np.ones(nocoeff*nycoeff,
                                          dtype=float),
                                          invvar))
-print(" ")
-print(" The shape of work2di is: {}".format(work2di.shape))
-print(" while from XIDL the shape is: {}".format(work2di_1_xidl.shape))
-print(" ")
-
-print(" ")
-print(" The shape of all_wv_pypeit.T is: {}".format(all_wv_pypeit.T.shape))
-print(" ")
-
-
-print(" ")
-print(" work2di PYPEIT vs. XIDL:")
-print("  - min={}".format(np.min(work2di-work2di_1_xidl)))
-print("  - max={}".format(np.max(work2di-work2di_1_xidl)))
-print(" ")
-
 if debug: 
-    # Plot to check that everything works fine
+    print(" ")
+    print(" The shape of work2di is: {}".format(work2di.shape))
+    print(" while from XIDL the shape is: {}".format(work2di_1_xidl.shape))
+    print(" ")
+    print(" The shape of all_wv_pypeit.T is: {}".format(all_wv_pypeit.T.shape))
+    print(" while from XIDL the shape of all_wv_xidl is: {}".format(all_wv_xidl.shape))
+    print(" ")
+    print(" work2di PYPEIT vs. XIDL:")
+    print("  - min={}".format(np.min(work2di-work2di_1_xidl)))
+    print("  - max={}".format(np.max(work2di-work2di_1_xidl)))
+    print(" ")
 
+    # Plot to check that everything works fine
     fig = plt.figure()
     ax1 = fig.add_subplot(121)
     im1 = ax1.imshow((work2d_1_xidl-work2d)*1e8)
     cbar1 = fig.colorbar(im1)
-    cbar1.set_label(r'(WORK2D XIDL - WORK2D PYTHON)x10${^-8}$',
-                     rotation=270)
+    cbar1.set_label(r'(WORK2D XIDL - WORK2D PYTHON)$\times$10$^{-8}$',
+                     rotation=270, labelpad=20)
+    ax1.set_aspect('auto')
     ax2 = fig.add_subplot(122)
     ax2.hist(np.ndarray.flatten(work2d_1_xidl-work2d)*1e8)
-    ax2.set_xlabel(r'(WORK2D XIDL - WORK2D PYTHON)x10${^-8}$')
+    ax2.set_xlabel(r'(WORK2D XIDL - WORK2D PYTHON)$\times$10$^{-8}$')
+    ax2.set_aspect('auto')
     plt.show()
-
     fig = plt.figure()
     ax1 = fig.add_subplot(121)
     im1 = ax1.imshow((work2di_1_xidl-work2di)*1e8)
     cbar1 = fig.colorbar(im1)
-    cbar1.set_label(r'(WORK2DI XIDL - WORK2DI PYTHON)x10${^-8}$',
-                     rotation=270)
+    cbar1.set_label(r'(WORK2DI XIDL - WORK2DI PYTHON)$\times$10$^{-8}$',
+                     rotation=270, labelpad=20)
+    ax1.set_aspect('auto')
     ax2 = fig.add_subplot(122)
     ax2.hist(np.ndarray.flatten(work2di_1_xidl-work2di)*1e8)
-    ax2.set_xlabel(r'(WORK2DI XIDL - WORK2DI PYTHON)x10${^-8}$')
+    ax2.set_xlabel(r'(WORK2DI XIDL - WORK2DI PYTHON)$\times$10$^{-8}$')
+    ax2.set_aspect('auto')
     plt.show()
 
 alpha = work2d.dot(work2di)
 beta = all_wv_pypeit.dot(work2di)
 
-solve = np.linalg.solve(alpha, beta)
+solve = np.linalg.solve(alpha,beta)
 wv_mod = solve.dot(work2d)
 
-## solve_1_xidl = np.linalg.solve(alpha_1_xidl, beta_1_xidl)
-## wv_mod_1_xidl = solve_1_xidl.dot(work2d_1_xidl)
+if debug: 
+    plt.figure()
+    plt.scatter(all_wv_pypeit / t_pypeit,
+                wv_mod / t_pypeit - all_wv_pypeit / t_pypeit,
+                marker="v",
+                label='PypeIt')
+    plt.scatter(all_wv_xidl / t_xidl,
+                wv_mod_1_xidl/t_xidl - all_wv_xidl / t_xidl,
+                marker="^",
+                label='XIDL')
+    plt.legend()
+    plt.title(r'1st ITERATION')
+    plt.xlabel(r'WAVELENGTHS [$\AA$]')
+    plt.ylabel(r'RESIDUALS [$\AA$]')
+    plt.show()
 
+# Mask Values
+# msk = True means a bad value
+msk = sigma_clip(wv_mod-all_wv_pypeit).mask
+if np.any(msk):
+    print("Rejecting: {} of {} lines.".format(len(msk[np.where(msk == True)]),len(msk)))
+    invvar[msk] = 0.
 
-print("residuals")
-print(wv_mod - all_wv_pypeit)
+# Do the matrix algebra
+work2di = np.transpose(work2d * np.outer(np.ones(nocoeff*nycoeff,
+                                         dtype=float),
+                                         invvar))
+alpha = work2d.dot(work2di)
+beta = all_wv_pypeit.dot(work2di)
+
+solve = np.linalg.solve(alpha,beta)
+wv_mod = solve.dot(work2d)
 
 plt.figure()
-plt.scatter(all_wv_pypeit,
-            wv_mod - all_wv_pypeit,
+plt.scatter(all_wv_pypeit / t_pypeit,
+            wv_mod / t_pypeit - all_wv_pypeit / t_pypeit,
+            marker="v",
             label='PypeIt')
-plt.scatter(all_wv_pypeit,
-            wv_mod_1_xidl/t_pypeit - all_wv_pypeit,
+plt.scatter(all_wv_xidl / t_xidl,
+            wv_mod_2_xidl/t_xidl - all_wv_xidl / t_xidl,
+            marker="^",
             label='XIDL')
-
 plt.legend()
-plt.xlabel(r'WL')
-plt.ylabel(r'Residuals')
+plt.title(r'2nd ITERATION')
+plt.xlabel(r'WAVELENGTHS [$\AA$]')
+plt.ylabel(r'RESIDUALS [$\AA$]')
 plt.show()
+
+# Finsih
+gd_wv = invvar > 0.
+resid = (wv_mod[gd_wv] / t_pypeit[gd_wv] - all_wv_pypeit[gd_wv] / t_pypeit[gd_wv])
+fin_rms = np.sqrt(np.mean(resid**2))
+
+print("RMS: {} Ang*Order#.".format(fin_rms))
 
 plt.figure()
-plt.scatter(all_wv_pypeit,
-            wv_mod,
-            label='First Iteration')
-plt.legend()
-plt.xlabel(r'WL')
-plt.ylabel(r'residuals')
+cm = plt.cm.get_cmap('RdYlBu_r')
+sc = plt.scatter(t_pypeit, all_pix_pypeit,
+                 c=wv_mod/t_pypeit/10000., cmap=cm)
+cbar = plt.colorbar(sc)
+cbar.set_label(r'WAVELENGTHS [$\mu$m]', rotation=270,
+               labelpad=20)
+plt.title(r'RESULT OF THE FIT')
+plt.xlabel(r'ORDERS')
+plt.ylabel(r'PIXELS')
 plt.show()
 
-
-plt.figure()
-plt.imshow(alpha)
-cbar = plt.colorbar()
-cbar.set_label('ALPHA PYTHON', rotation=270)
-plt.show()
-
-plt.figure()
-plt.imshow(alpha_1_xidl)
-cbar = plt.colorbar()
-cbar.set_label('ALPHA XIDL', rotation=270)
-plt.show()
-
-beta = np.matmul(work2di.T, all_wv_pypeit.T).T
-print(" The shape of beta is: {}".format(beta.shape))
-print(" while from XIDL the shape is: {}".format(beta_1_xidl.shape))
-print(" ")
-plt.figure()
-plt.scatter(beta_1_xidl,
-            beta,
-            label='beta')
-plt.legend()
-plt.xlabel(r'RESULTS from XIDL')
-plt.ylabel(r'RESULTS from PYTHON')
-plt.show()
-
-
-
-print(" ")
-print(" The shape of alpha is: {}".format(alpha.shape))
-print(" while from XIDL the shape is: {}".format(alpha_1_xidl.shape))
-print(" ")
-
-
-if debug: 
-    # Plot to check that everything works fine
-    plt.figure()
-    plt.scatter(np.ndarray.flatten(alpha_1_xidl),
-                np.ndarray.flatten((alpha_1_xidl-alpha.T)),
-                label='alpha')
-    plt.legend()
-    plt.xlabel(r'RESULTS from XIDL')
-    plt.ylabel(r'(XIDL - PYTHON)')
-    plt.show()
-
-    plt.figure()
-    plt.scatter(np.ndarray.flatten(beta_1_xidl),
-                np.ndarray.flatten((beta_1_xidl-beta.T)),
-                label='beta')
-    plt.legend()
-    plt.xlabel(r'RESULTS from XIDL')
-    plt.ylabel(r'(XIDL - PYTHON)')
-    plt.show()
-
-    plt.figure()
-    plt.imshow(alpha_1_xidl-alpha)
-    cbar = plt.colorbar()
-    cbar.set_label('ALPHA XIDL - ALPHA PYTHON', rotation=270)
-    plt.show()
-
-
-
-
-
-
-res = scipy.linalg.solve(alpha,beta)
-
-print(" ")
-print(" The shape of res is: {}".format(res.shape))
-print(" while from XIDL the shape is: {}".format(res_1_xidl.shape))
-print(" ")
-
-print(res-res_1_xidl)
-if debug: 
-    # Plot to check that everything works fine
-    plt.figure()
-    plt.scatter(np.ndarray.flatten(res_1_xidl),
-                np.ndarray.flatten(res_1_xidl-res),
-                label='res')
-    plt.legend()
-    plt.xlabel(r'RESULTS from XIDL')
-    plt.ylabel(r'(XIDL - PYTHON)')
-    plt.show()
-
-
-
-
-
-'''
-
-# Brute force test
-alpha_test = np.zeros((15,15))
-for row in range(15):
-    for column in range(15):
-        alpha_test[row,column] = np.sum(work2di[:,column]*work2d[row,:])
-filt_bf = np.abs(alpha_test-alpha) > 5e-8
-
-filt_xidl = np.abs(alpha_1_xidl-alpha) > 5e-8
-
-print(" ")
-print(" Compare np.matmul with a brute force columns times row")
-print(" multiplication. This is the opertation that is expected")
-print(" to be performed by IDL")
-print(" Are the two operations different? {}".format(np.any(filt_bf)))
-print(" Now compare the result from PYTHON with those from IDL:")
-print(" Are the two operations different? {}".format(np.any(filt_xidl)))
-print(" ")
-
-alpha_test2 = np.zeros((15,15))
-for row in range(15):
-    for column in range(15):
-        alpha_test2[column,row] = np.sum(work2di[:,row]*work2d[column,:])
-filt2 = np.abs(alpha_test2-alpha_1_xidl) > 1e-8
-
-print(" ")
-print(" The shape of alpha is: {}".format(alpha.shape))
-print(" while from XIDL the shape is: {}".format(alpha_1_xidl.shape))
-print(" The shape of beta is: {}".format(beta.shape))
-print(" while from XIDL the shape is: {}".format(beta_1_xidl.shape))
-print(" ")
-
-print(" ")
-print(" alpha PYPEIT vs. XIDL:")
-print("  - min={}".format(np.min(alpha-alpha_1_xidl)))
-print("  - max={}".format(np.max(alpha-alpha_1_xidl)))
-print(" beta PYPEIT vs. XIDL:")
-print("  - min={}".format(np.min(beta-beta_1_xidl)))
-print("  - max={}".format(np.max(beta-beta_1_xidl)))
-print(" ")
-'''
-
-#####     p = scipy.linalg.cholesky(alpha, lower=False)
-#####     res = scipy.linalg.cho_solve((p, False), beta)
-#####     
-#####     print(res)
-#####     print(res_1_xidl)
-#####     
-#####     
-#####     # Plot to check that everything works fine
-#####     plt.figure()
-#####     plt.scatter(res_1_xidl, res)
-#####     plt.xlabel(r'RESULTS from XIDL')
-#####     plt.ylabel(r'RESULTS from PYTHON')
-#####     plt.show()
-#####     
-#####################################################
-#####################################################
-#####################################################
-#####################################################
-
-### 
-### 
-### 
-### res = scipy.linalg.cho_solve((p, False), beta)
-### wv_mod = np.matmul(work2d, res)
-### 
-
-'''
-   alpha = work2di # work2d
-   beta = work2di # all_wv[*]
-;   beta = work2di # (alog10(all_wv[*]))
-   choldc, alpha, p, /double
-   res = cholsol(alpha,p,beta, /double)
-   wv_mod = dblarr(npix)
-   wv_mod[*] = work2d # res
-'''
-
-# Get RMS
-
-
-### inoder = [slitpix == 3]
-
-
-'''
-   ;; Get RMS
-   gd_wv = where(invvar GT 0.0, ngd)
-   msk = bytarr(npix)
-   msk[gd_wv] = 1B
-   ;; RESID
-;   resid = (wv_mod[gd_wv] - all_wv[gd_wv]);/t[gd_wv]  ; Ang
-;   fin_rms = sqrt( total( resid^2 ) / float(ngd))
-;   print, 'x_fit2darc: RMS = ', fin_rms, ' Ang*Order#'
-;   if keyword_set(CHKRES) then x_splot, all_wv[gd_wv], resid, psym1=1, /block
-;   if keyword_set(CHKRES) then x_splot, resid, /block
-
-   ;; REJECT
-;   djs_iterstat, (wv_mod-alog10(all_wv)), sigrej=2.5, mask=msk
-   djs_iterstat, (wv_mod-all_wv), sigrej=sigrej, mask=msk
-   gd = where(msk EQ 1B, complement=bad, ncomplement=nbad)
-
-   ;; RESET invvar
-   if nbad NE 0 then begin
-       print, 'x_fit2darc_work: Rejecting ', $
-         nbad, ' of ', n_elements(all_wv), ' lines'
-       invvar[bad] = 0.
-   endif
-
-   ;; Do the matrix algebra
-   work2di = transpose(work2d * (invvar[*] # replicate(1,nocoeff*nycoeff)))
-   alpha = work2di # work2d
-   beta = work2di # (all_wv[*])
-;   beta = work2di # (alog10(all_wv[*]))
-   choldc, alpha, p
-   res = cholsol(alpha,p,beta, /double)
-   wv_mod = all_wv * 0.0
-   wv_mod[*] = work2d # res
-
-
-   ;; Finish
-   gd_wv = where(invvar GT 0.0, ngd)
-   resid = (wv_mod[gd_wv] - all_wv[gd_wv]);/t[gd_wv]  ; Ang
-;   resid = 10^wv_mod[gd_wv] - all_wv[gd_wv]
-   fin_rms = sqrt( total( resid^2 ) / float(ngd))
-   print, 'x_fit2darc: RMS = ', fin_rms, ' Ang*Order#'
-;   if keyword_set(CHKRES) then x_splot, all_wv[gd_wv], resid, psym1=1, /block
-   if keyword_set(CHKRES) then x_splot, resid, /block
-
-   ;; OUTPUT Structure
-   out_str = { $
-               nrm: nrm, $
-               nrmt: nrmt, $
-               ny: nycoeff, $
-               no: nocoeff, $
-               res: res }
-'''
