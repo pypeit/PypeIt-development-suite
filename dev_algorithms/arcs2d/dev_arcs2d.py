@@ -219,6 +219,8 @@ def fit2darc(all_wv,
 
     # Plot QA
 
+    # Full plot
+
     all_pix_qa = np.arange(np.min(all_pix),np.max(all_pix),1)
     pix_nrm_qa = 2. * (all_pix_qa - nrmp[0])/nrmp[1]
     worky_qa = pydl.flegendre(pix_nrm_qa, nycoeff)
@@ -226,7 +228,6 @@ def fit2darc(all_wv,
     order = np.arange(np.min(t),np.max(t)+1,1)
 
     prettyplot()
-
     plt.figure(figsize=(7,5))
     plt.title(r'Arc 2D FIT, nx={0:.0f}, ny={1:.0f}, RMS={2:.5f} Ang*Order#'.format(nocoeff, nycoeff,fin_rms))
     plt.xlabel(r'Wavelength [$\AA$]')
@@ -248,7 +249,6 @@ def fit2darc(all_wv,
         plt.plot(wv_mod_qa/ii, all_pix_qa,
                  color=(rr,gg,bb), linestyle='-')
         # Residuals
-        print(t[t == ii])
         resid_qa = (wv_mod[t == ii]-all_wv_order[t == ii])/t[t == ii]
         plt.scatter(wv_mod[t == ii]/t[t == ii]+100*resid_qa, all_pix[t == ii],
                     color=(rr,gg,bb))
@@ -257,121 +257,49 @@ def fit2darc(all_wv,
              ha="right", va="top",)
     plt.show()
 
+    # Individual plots
 
-'''
+    nrow = np.int(2)
+    ncol = np.int(np.ceil(len(order)/2.))
 
-       
+    prettyplot()
 
-           wv = dblarr(npix)
-           wv[*] = work2d # out_str.res / ordr_str[jj].order
-           
-           mn = min(wv, max=mx)
-           
-           oplot, wv, all_pix, color=clr.blue
-           
-           ;; Resid
-           pts = where(t EQ ii, npts)
-           if npts NE 0 then begin
-               nlin = sv_lines[jj].nlin
-               sres = (wv_mod[pts] - all_wv[pts])/ordr_str[jj].order
-               oplot, wv_mod[pts]/t[pts] + sres*500., $
-                 sv_lines[jj].pix[0:nlin-1],  $
-                 psym=1, color=clr.black
-               ;; RMS
-           
-           ;; Label
-           xyouts, 0.5, 0.96, 'Arc 2D FIT (Res x500) nx='+strtrim(nocoeff,2)+ $
-       endfor
-           
-   ;;;;;;;;;;
-       ;; Individual plots
-       nordr = n_elements(ordr_str)
-       !p.multi = [0, 3, 2]
-       pixrms = fltarr(nordr)
-       for jj=0L,nordr-1 do begin
-           ;; NORMALIZE ORDER
-           ii = ordr_str[jj].order
-           tsub = replicate(float(ii), npix)
-           t_nrm = 2. * (tsub - nrmt[0])/nrmt[1]
-           
-           ;; work2d and wv
-           work2d = dblarr(npix,nycoeff*nocoeff)
-           workt = flegendre(t_nrm[*], nocoeff)
-           
-           for i=0,nocoeff-1 do begin
-               for j=0,nycoeff-1 do begin
-                   work2d[*,j*nocoeff+i] = worky[*, j] * workt[*,i]
-               endfor
-           endfor
-           
-           wv = dblarr(npix)
-;           wv[*] = work2d # out_str.res
-           wv[*] = work2d # out_str.res / tsub
-           
-;           mn = min(10^wv, max=mx)
-;           plot, all_pix, 10^wv, color=clr.black, $
-           mn = min(wv, max=mx)
-           plot, all_pix, wv, color=clr.black, $
-             background=clr.white, charsize=1.5, yrange=[mn, mx], $
-             xrange=[0.,sz[1]], xstyle=1, ystyle=1, xtitle='Row', $
-             ytitle='Wavelength', xmargin=[11,2], ymargin=[5,1], /nodata
-           
-           ;; Fit
-           oplot, all_pix, wv, color=clr.blue
-;           oplot, all_pix, 10^wv, color=clr.blue
-           
-           ;; Resid
-           pts = where(t EQ ii, npts)
-           rms = 9.99
-           if npts NE 0 then begin
-               nlin = sv_lines[jj].nlin
-;               sres = 10^wv_mod[pts] - all_wv[pts] 
-;               oplot, sv_lines[jj].pix[0:nlin-1],  10^wv_mod[pts] + sres*100., $
-               sres = (wv_mod[pts] - all_wv[pts])/t[pts]
-               oplot, sv_lines[jj].pix[0:nlin-1],  wv_mod[pts]/t[pts] $
-                 + sres*100., $
-                 psym=1, color=clr.black
-               ;; Rej
-               rej = where(invvar[pts] LE 0., nrej, ncomplement=nnorej, $
-                           complement=norej)
-               if nrej NE 0 then $
-                 oplot, [(sv_lines[jj].pix[0:nlin-1])[rej]],  $
-                        [(all_wv[pts]/t[pts] + sres*100)[rej]], $
-                        psym=2, color=clr.red
-;                       [(10^wv_mod[pts] + sres*100.)[rej]], $
-               ;; RMS
-               if nnorej NE 0 then $
-                 rms = sqrt( total( sres[norej]^2 ) / float(nnorej-1)) $
-               else rms = 9.99
-           endif
-           
-           ;; Label
-;           if side EQ 2 then ylbl = mn + (mx-mn)*0.08*(findgen(5)+1) $
-;           else ylbl = mx - (mx-mn)*0.08*(findgen(5)+1) 
-           ylbl = mx - (mx-mn)*0.08*(findgen(5)+1) 
-           
-           xyouts, sz[1]*0.05, ylbl[0], 'Order = '+strtrim(ii,2), $
-             color=clr.black, charsize=1.5
-           dwv = abs(wv[0]-wv[npix-1])/float(all_pix[npix-1])
-;           dwv = abs(10^wv[0]-10^wv[npix-1])/float(all_pix[npix-1])
-           xyouts, sz[1]*0.05, ylbl[2], '!9Dl!X = '+string(dwv,format='(f6.4)'), $
-             color=clr.black, charsize=1.5
-           xyouts, sz[1]*0.05, ylbl[1], 'RMS(pix) = '+$
-             string(rms/dwv,format='(f4.2)'), color=clr.black, charsize=1.5
-           pixrms[jj] = rms/dwv
-       endfor
-           
-       x_psclose
-       !p.multi=[0,1,1]
+    fig, ax = plt.subplots(nrow,ncol,figsize=(4*ncol,4*nrow))
+    for ii_row in np.arange(nrow):
+        for ii_col in np.arange(ncol):
+            ii = order[(ii_row*(nrow+1))+ii_col]
+            rr = (ii-np.max(order))/(np.min(order)-np.max(order))
+            gg = 0.0
+            bb = (ii-np.min(order))/(np.max(order)-np.min(order))
+            tsub = np.ones_like(len(all_pix_qa),dtype=np.float64) * ii
+            t_nrm_qa = 2. * (tsub - nrmt[0])/nrmt[1]
+            work2d_qa = np.zeros((nycoeff*nocoeff, len(all_pix_qa)), dtype=np.float64)
+            workt_qa = pydl.flegendre(t_nrm_qa, nocoeff)
+            for i in range(nocoeff):
+                for j in range(nycoeff):
+                    work2d_qa[j*nocoeff+i,:] = worky_qa[j,:] * workt_qa[i,:]
+            wv_mod_qa = res.dot(work2d_qa)
+            ax[ii_row,ii_col].plot(all_pix_qa, wv_mod_qa/ii/10000.,
+                           color=(rr,gg,bb), linestyle='-')
+            ax[ii_row,ii_col].set_title('Order = {0:0.0f}'.format(ii))
+            # Residuals
+            resid_qa = (wv_mod[t == ii]-all_wv_order[t == ii])/t[t == ii]
+            resid_qa_mask = (wv_mod[gd_wv][t[gd_wv] == ii]-all_wv_order[gd_wv][t[gd_wv] == ii])/t[gd_wv][t[gd_wv] == ii]
+            rms_qa = np.sqrt(np.mean(resid_qa_mask**2))
+            dwl=(wv_mod_qa[-1]-wv_mod_qa[0])/ii/(all_pix_qa[-1]-all_pix_qa[0])
+            ax[ii_row,ii_col].scatter(all_pix[t == ii], wv_mod[t == ii]/t[t == ii]/10000.+100.*resid_qa/10000.,
+                                      color=(rr,gg,bb))
+            ax[ii_row,ii_col].text(0.9,0.9,
+                              r'RMS={0:.2f} Pixel'.format(rms_qa/np.abs(dwl)),
+                              ha="right", va="top",
+                              transform = ax[ii_row,ii_col].transAxes)
+            ax[ii_row,ii_col].text(0.9,0.8,
+                              r'$\Delta\lambda$={0:.2f} Pixel/$\AA$'.format(np.abs(dwl)),
+                              ha="right", va="top",
+                              transform = ax[ii_row,ii_col].transAxes)
 
-       replace_title = '"' + '%%Title: '+qafil + ' ' +systime() + '"'
-       ps_replacetitle, replace_title, qafil
-
-       spawn, 'gzip -f '+qafil
-   endif
-
-   return, 'Success'
-
-end
-
-'''
+    fig.text(0.5, 0.04, r'Row [pixel]', ha='center', size='large')
+    fig.text(0.04, 0.5, r'Wavelength [$\mu$m]', va='center',
+             rotation='vertical', size='large')
+    fig.suptitle(r'Arc 2D FIT, nx={0:.0f}, ny={1:.0f}, RMS={2:.5f} Ang*Order#, residuals $\times$100'.format(nocoeff, nycoeff,fin_rms))
+    plt.show()
