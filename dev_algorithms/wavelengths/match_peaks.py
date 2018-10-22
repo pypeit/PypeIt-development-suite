@@ -51,13 +51,10 @@ def shift_and_stretch(spec, shift, stretch):
     return spec_out
 
 
-# JFH I think this should be done with scipy.optimize to find the maximum value of the cc correlation as a function of
-# shift and stretch, rather than with curve_fit
-def xcorr_shift_stretch(theta, y1, y2):
+def zerolag_shift_stretch(theta, y1, y2):
 
-    #shift = theta[0]
-    #stretch = theta[1]
-    y2_corr = shift_and_stretch(y2, theta[0], theta[1])
+    shift, stretch = theta
+    y2_corr = shift_and_stretch(y2, shift, stretch)
     # Zero lag correlation
     corr_zero = np.sum(y1*y2_corr)
     corr_denom = np.sqrt(np.sum(y1*y1)*np.sum(y2*y2))
@@ -79,33 +76,24 @@ def xcorr_stretch(theta, y1, y2):
     return -corr_norm
 
 
-def xcross_shift(inspec1,inspec2, smooth = 5.0):
+def xcorr_shift(inspec1,inspec2,smooth = None,debug = False):
 
-    nspec = inspec1.shape[0]
-    y1 = scipy.ndimage.filters.gaussian_filter(inspec1, smooth)
-    y2 = scipy.ndimage.filters.gaussian_filter(inspec2, smooth)
-    lags = np.arange(-nspec + 1, nspec)
-    corr = scipy.signal.correlate(y1, y2, mode='full')
-    corr_denom = np.sqrt(np.sum(y1*y1)*np.sum(y2*y2))
-    corr_norm = corr/corr_denom
-    pix_max = corr_norm.argmax()
-    corr_max_fit, lag_max, width, cent_err = arc.fit_arcspec(lags, corr_norm, np.array([pix_max]), 7)
-
-    return lag_max[0], corr_max_fit[0]
-
-def xcross_shift_nosm(y1,y2, debug = False):
+    if smooth is not None:
+        y1 = scipy.ndimage.filters.gaussian_filter(inspec1, smooth)
+        y2 = scipy.ndimage.filters.gaussian_filter(inspec2, smooth)
+    else:
+        y1 = inspec1
+        y2 = inspec2
 
     nspec = y1.shape[0]
     lags = np.arange(-nspec + 1, nspec)
     corr = scipy.signal.correlate(y1, y2, mode='full')
     corr_denom = np.sqrt(np.sum(y1*y1)*np.sum(y2*y2))
     corr_norm = corr/corr_denom
-    output = arc.detect_lines(corr_norm, nfitpix=7, sigdetect=5.0, FWHM=20.0, cont_samp=30, nfind = 1)
+    output = arc.detect_lines(corr_norm, nfitpix=7, sigdetect=5.0, fwhm=20.0, mask_width = 10.0, cont_samp=30, nfind = 1)
     pix_max = output[1]
     corr_max = np.interp(pix_max, np.arange(lags.shape[0]),corr_norm)
     lag_max  = np.interp(pix_max, np.arange(lags.shape[0]),lags)
-    #pix_max = corr_norm.argmax()
-    #corr_max_fit, lag_max, width, cent_err = arc.fit_arcspec(lags, corr_norm, np.array([pix_max]), 7)
     if debug:
         # Interpolate for bad lines since the fitting code often returns nan
         plt.figure(figsize=(14, 6))
@@ -118,20 +106,24 @@ def xcross_shift_nosm(y1,y2, debug = False):
     return lag_max[0], corr_max[0]
 
 
-def fit_shift_stretch(inspec1, inspec2, smooth = 3.0, shift_mnmx = (0.8,1.2), stretch_mnmx = (0.8,1.2), debug = True):
+def xcorr_shift_stretch(inspec1, inspec2, smooth = 5.0, shift_mnmx = (-0.05,0.05), stretch_mnmx = (0.9,1.1), debug = True):
 
     nspec = inspec1.size
     y1 = scipy.ndimage.filters.gaussian_filter(inspec1, smooth)
     y2 = scipy.ndimage.filters.gaussian_filter(inspec2, smooth)
 
     # Do the cross-correlation first and determine the
-    shift_cc, cc_val = xcross_shift_nosm(y1, y2, debug = debug)
+    shift_cc, cc_val = xcorr_shift(y1, y2, debug = debug)
 
-    bounds = [(shift_mnmx[0]*shift_cc,shift_mnmx[1]*shift_cc), stretch_mnmx]
-    guess = np.array([shift_cc,1.0])
+    bounds = [(shift_cc + nspec*shift_mnmx[0],shift_cc + nspec*shift_mnmx[1]), stretch_mnmx]
+    #guess = np.array([shift_cc,1.0])
     #result = scipy.optimize.minimize(xcorr_shift_stretch, guess, args=(y1,y2), bounds=bounds)
-    result = scipy.optimize.differential_evolution(xcorr_shift_stretch, args=(y1,y2), tol = 1e-4,
-                                                   bounds=bounds, disp=False, polish=True) # ToDO Should we polish?
+    result = scipy.optimize.differential_evolution(zerolag_shift_stretch, args=(y1,y2), tol = 1e-4,
+                                                   bounds=bounds, disp=False, polish=True)
+    #rranges = (slice(bounds[0][0], bounds[0][1], 0.1), slice(bounds[1][0], bounds[1][1], 1e-4))
+    #from IPython import embed
+    #embed()
+    #result = scipy.optimize.brute(xcorr_shift_stretch, rranges, args=(y1,y2), finish = scipy.optimize.fmin, disp=True)
 
     #corr_val = xcorr_stretch((shift,stretch), y1,y2)
     #corr = scipy.signal.correlate(y1, y2, mode='same')
@@ -139,25 +131,27 @@ def fit_shift_stretch(inspec1, inspec2, smooth = 3.0, shift_mnmx = (0.8,1.2), st
     if not result.success:
         msgs.warn('Fit for shift and stretch did not converge!')
 
-
     if debug:
         x1 = np.arange(nspec)
         inspec2_trans = shift_and_stretch(inspec2, result.x[0], result.x[1])
-        plt.plot(x1,inspec1, 'k-', drawstyle='steps')
-        plt.plot(x1,inspec2_trans, 'r-', drawstyle='steps')
+        plt.plot(x1,inspec1, 'k-', drawstyle='steps', label ='inspec1')
+        plt.plot(x1,inspec2_trans, 'r-', drawstyle='steps', label = 'inspec2')
+        plt.title('shift= {:5.3f}'.format(result.x[0]) +
+                  ',  stretch = {:7.5f}'.format(result.x[1]) + ', corr = {:5.3f}'.format(-result.fun))
+        plt.legend()
         plt.show()
 
 
     return result.success, result.x[0], result.x[1], -result.fun, shift_cc, cc_val
 
-
-def fit_shift_stretch_iter(inspec1, inspec2, smooth = 5.0, shift_mnmx = (-1.0,1.0), stretch_mnmx = (0.9,1.1), debug = True):
+# There is a bug somewhere here, but I'm moving on because I don't need this routine.
+def fit_shift_stretch_iter(inspec1, inspec2, smooth = 5.0, shift_mnmx = (-1.0,1.0), stretch_mnmx = (0.8,1.2), debug = True):
 
 
 
     shift_tot = 0.0
     stretch_tot = 1.0
-    niter = 10
+    niter = 5
 
     stretch_vec = np.linspace(stretch_mnmx[0],stretch_mnmx[1],endpoint=True, num = 100)
     nspec = inspec1.size
@@ -166,36 +160,49 @@ def fit_shift_stretch_iter(inspec1, inspec2, smooth = 5.0, shift_mnmx = (-1.0,1.
     bounds = [stretch_mnmx]
     guess = np.array([1.0])
 
+    this_y2 = np.copy(y2)
     for iter in range(niter):
-        this_shift, corr_val = xcross_shift_nosm(y1,y2)
-        shift_tot += shift
-        y2_trans = shift_and_stretch(y2,shift,1.0)
+        this_shift, corr_val = xcross_shift_nosm(y1,this_y2)
+        shift_tot += this_shift
+        #y2_trans = shift_and_stretch(y2,shift,1.0)
         corr_vec = np.zeros_like(stretch_vec)
         for ii in np.arange(stretch_vec.shape[0]):
-            corr_vec[ii] = xcorr_stretch([stretch_vec[ii]],y1,y2_trans)
-        pix_max = corr_vec.argmax()
-        corr_max_fit, stretch_max, width, cent_err = arc.fit_arcspec(stretch_vec, -corr_vec, np.array([pix_max]), 7)
+            corr_vec[ii] = -xcorr_shift_stretch([this_shift, stretch_vec[ii]],y1,this_y2)
+        output = arc.detect_lines(corr_vec, nfitpix=7, sigdetect=5.0, fwhm=10.0, mask_width = 3.0, cont_samp=30, nfind=1)
+        pix_max = output[1][0]
+        this_stretch = np.interp(pix_max, np.arange(stretch_vec.shape[0]), stretch_vec)
+        stretch_tot *= this_stretch
+        corr_max =  -xcorr_shift_stretch([0.0, this_stretch], y1, this_y2)
+        this_y2 = shift_and_stretch(this_y2,0.0,this_stretch)
+        if debug:
+            # Interpolate for bad lines since the fitting code often returns nan
+            plt.figure(figsize=(14, 6))
+            plt.plot(stretch_vec, corr_vec, color='black', drawstyle='steps-mid', lw=3, label='x-corr', linewidth=1.0)
+            plt.plot(this_stretch, corr_max, 'g+', markersize=6.0, label='peak')
+            plt.title('Best stretch = {:5.3f}'.format(this_stretch) + ',  corr_max = {:5.3f}'.format(corr_max))
+            plt.legend()
+            plt.show()
+        if debug and (iter == niter-1):
+            x1 = np.arange(nspec)
+            inspec2_trans = shift_and_stretch(inspec2, 0.0, this_stretch)
+            plt.plot(x1, inspec1, 'k-', drawstyle='steps')
+            plt.plot(x1, inspec2_trans, 'r-', drawstyle='steps')
+            plt.title('Iteration # {:d}'.format(iter) + ': shift_tot = {:5.3f}'.format(shift_tot) +
+                      ',  stretch_tot = {:5.3f}'.format(stretch_tot) + ', corr_tot = {:5.3f}'.format(corr_max))
+            plt.show()
 
-        #result = scipy.optimize.minimize(xcorr_shift, guess, args=(y1,y2), bounds=bounds)
-        #result = scipy.optimize.differential_evolution(xcorr_shift_stretch, args=(y1,y2), bounds=bounds, popsize=25, recombination=0.7,
-        #                                           disp=False, polish=True) # ToDO Should we polish?
-
-    #corr_val = xcorr_stretch((shift,stretch), y1,y2)
-    #corr = scipy.signal.correlate(y1, y2, mode='same')
-
-    if not result.success:
-        msgs.warn('Fit for shift and stretch did not converge!')
-
-
+    corr_tot = -xcorr_shift_stretch([shift_tot, stretch_tot], y1, y2)
+    shift_cc, cc_val = xcross_shift_nosm(y1, y2)
     if debug:
         x1 = np.arange(nspec)
-        inspec2_trans = shift_and_stretch(inspec2, result.x[0], result.x[1])
-        plt.plot(x1,inspec1, 'k-', drawstyle='steps')
-        plt.plot(x1,inspec2_trans, 'r-', drawstyle='steps')
+        inspec2_trans = shift_and_stretch(inspec2, shift_tot, stretch_tot)
+        plt.plot(x1, inspec1, 'k-', drawstyle='steps')
+        plt.plot(x1, inspec2_trans, 'g-', drawstyle='steps')
+        plt.title('Iteration # {:d}'.format(iter) + ': shift_tot = {:5.3f}'.format(shift_tot) +
+                  ',  stretch_tot = {:5.3f}'.format(stretch_tot) + ', corr_tot = {:5.3f}'.format(corr_tot))
         plt.show()
 
-
-    return result.success, result.x[0], result.x[1], -result.fun
+    return True, shift_tot, stretch_tot, corr_tot, shift_cc, cc_val
 
 
 
