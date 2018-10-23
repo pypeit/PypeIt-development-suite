@@ -7,6 +7,7 @@ from __future__ import (print_function, absolute_import, division,
 # General imports
 import numpy as np
 import scipy
+import json
 import matplotlib.pyplot as plt
 from scipy.io import readsav
 from astropy.io import ascii
@@ -30,59 +31,136 @@ from pypeit.core import pydl
 
 debug = False
 
-# Reading in the output from XIDL for GNRIS.
-# Order vector
-order = [3, 4, 5, 6, 7, 8]
+#spec = 'GNRIS'
+spec = 'NIRES'
 
-# Number of identified lines per order
-pixid = np.zeros_like(order)
+###########################################################################
+###########################################################################
+######### ##################################################################
 
-# Read pixels and wavelengths from sv_lines_clean.txt
-# this is just reading the file that Feige gave me.
-f = open('./sav_files/sv_lines_clean.txt', 'r')
-PIXWL_str = f.readlines()
-full = {}
-index = 0
-for line in PIXWL_str:
-    full[index] = np.fromstring(line, dtype=float, sep=' ')
-    index = index+1
-all_pix = {}
-all_wv = {}
-index = 0
-for ii in np.arange(0, 12, 2):
-    all_pix[index] = full[ii][np.nonzero(full[ii])]
-    all_wv[index] = full[ii+1][np.nonzero(full[ii+1])]
-    pixid[index] = len(all_pix[index])
-    index = index+1
+if spec is 'GNRIS':
 
-# Now I have a dict with pixels [all_pix] , one with
-# corresponding wavelengths [all_wl], and one vector with 
-# the orders [order].
-# I'm creating now the vectors resambling those in XIDL.
+    print("Test for GNRIS spectrograph")
 
-all_pix_pypeit = []
-t_pypeit = []
-all_wv_pypeit = []
-npix_pypeit = []
-index = 0
+    # Reading in the output from XIDL for GNRIS.
+    # Order vector
+    order = [3, 4, 5, 6, 7, 8]
 
-for ii in all_pix.keys():
-    all_pix_pypeit = np.concatenate((all_pix_pypeit,
-                                     np.array(all_pix[ii])))
-    t_tmp = np.full_like(np.array(all_pix[ii]), np.float(order[index]))
-    t_pypeit = np.concatenate((t_pypeit, t_tmp))
-    all_wv_pypeit = np.concatenate((all_wv_pypeit,
-                                     np.array(all_wv[ii])))
-    npix_tmp = np.full_like(np.array(all_pix[ii]), np.size(all_pix[ii]))
-    npix_pypeit = np.concatenate((npix_pypeit, npix_tmp))
-    index = index + 1
+    # Number of identified lines per order
+    pixid = np.zeros_like(order)
 
-# Setting the same format of XIDL
-# all_wv_pypeit = all_wv_pypeit * t_pypeit
+    # Read pixels and wavelengths from sv_lines_clean.txt
+    # this is just reading the file that Feige gave me.
+    f = open('./sav_files/sv_lines_clean.txt', 'r')
+    PIXWL_str = f.readlines()
+    full = {}
+    index = 0
+    for line in PIXWL_str:
+        full[index] = np.fromstring(line, dtype=float, sep=' ')
+        index = index+1
+    all_pix = {}
+    all_wv = {}
+    index = 0
+    for ii in np.arange(0, 12, 2):
+        all_pix[index] = full[ii][np.nonzero(full[ii])]
+        all_wv[index] = full[ii+1][np.nonzero(full[ii+1])]
+        pixid[index] = len(all_pix[index])
+        index = index+1
+
+    # Now I have a dict with pixels [all_pix] , one with
+    # corresponding wavelengths [all_wl], and one vector with 
+    # the orders [order].
+    # I'm creating now the vectors resambling those in XIDL.
+
+    all_pix_pypeit = []
+    t_pypeit = []
+    all_wv_pypeit = []
+    npix_pypeit = []
+    index = 0
+
+    for ii in all_pix.keys():
+        all_pix_pypeit = np.concatenate((all_pix_pypeit,
+                                         np.array(all_pix[ii])))
+        t_tmp = np.full_like(np.array(all_pix[ii]), np.float(order[index]))
+        t_pypeit = np.concatenate((t_pypeit, t_tmp))
+        all_wv_pypeit = np.concatenate((all_wv_pypeit,
+                                         np.array(all_wv[ii])))
+        npix_tmp = np.full_like(np.array(all_pix[ii]), np.size(all_pix[ii]))
+        npix_pypeit = np.concatenate((npix_pypeit, npix_tmp))
+        index = index + 1
+
+    # Setting the same format of XIDL
+    # all_wv_pypeit = all_wv_pypeit * t_pypeit
+
+    # plt.figure()
+    # cm = plt.cm.get_cmap('RdYlBu_r')
+    # sc = plt.scatter(t_pypeit, all_pix_pypeit,
+    #                  c=all_wv_pypeit/10000., cmap=cm)
+    # cbar = plt.colorbar(sc)
+    # cbar.set_label(r'WAVELENGTHS [$\mu$m]', rotation=270,
+    #                labelpad=20)
+    # plt.xlabel(r'NORMALIZED ORDERS')
+    # plt.ylabel(r'NORMALIZED PIX')
+    # plt.show()
+
+
+###########################################################################
+###########################################################################
+###########################################################################
+
+if spec is 'NIRES':
+
+    print("Test for NIRES spectrograph")
+
+    # Reading in the output from XIDL for GNRIS.
+    # Order vector
+    order = [3, 4, 5, 6, 7]
+
+    # Number of identified lines per order
+    pixid = np.zeros_like(order)
+
+    # Read pixels and wavelengths from sv_lines_clean.txt
+    # this is just reading the jason file that Feige gave me.
+    
+
+    with open('./json_files/nires_wavecalib.json') as json_nires:
+        nires_data = json.load(json_nires)
+
+    all_pix_pypeit = []
+    t_pypeit = []
+    all_wv_pypeit = []
+    npix_pypeit = []
+    index = 0
+
+    for ii in nires_data.keys():
+        if ii != 'arcparam' and ii != 'steps':
+            all_pix_pypeit = np.concatenate((all_pix_pypeit,
+                                             np.array(nires_data[ii]['xfit'])*(np.array(nires_data[ii]['xnorm'])-1.)))
+            t_tmp = np.full_like(np.array(nires_data[ii]['xfit']), np.float(nires_data[ii]['norder']))
+            # t_tmp = np.full_like(np.array(nires_data[ii]['xfit']), np.float(ii)+1.)
+            t_pypeit = np.concatenate((t_pypeit, t_tmp))
+            all_wv_pypeit = np.concatenate((all_wv_pypeit,
+                                             np.array(nires_data[ii]['yfit'])))
+
+    # plt.figure()
+    # cm = plt.cm.get_cmap('RdYlBu_r')
+    # sc = plt.scatter(t_pypeit, all_pix_pypeit,
+    #                  c=all_wv_pypeit/10000., cmap=cm)
+    # cbar = plt.colorbar(sc)
+    # cbar.set_label(r'WAVELENGTHS [$\mu$m]', rotation=270,
+    #                labelpad=20)
+    # plt.xlabel(r'NORMALIZED ORDERS')
+    # plt.ylabel(r'NORMALIZED PIX')
+    # plt.show()
+
+
+
+###########################################################################
+###########################################################################
+###########################################################################
 
 
 from dev_arcs2d import fit2darc
-
 fit2darc(all_wv_pypeit, all_pix_pypeit, t_pypeit, debug=False)
 
 

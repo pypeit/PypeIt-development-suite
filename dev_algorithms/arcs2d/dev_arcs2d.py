@@ -259,44 +259,49 @@ def fit2darc(all_wv,
 
     # Individual plots
 
-    nrow = np.int(2)
-    ncol = np.int(np.ceil(len(order)/2.))
-
     prettyplot()
 
+    # from IPython import embed
+    # embed()
+
+    nrow = np.int(2)
+    ncol = np.int(np.ceil(len(order)/2.))
     fig, ax = plt.subplots(nrow,ncol,figsize=(4*ncol,4*nrow))
     for ii_row in np.arange(nrow):
         for ii_col in np.arange(ncol):
-            ii = order[(ii_row*(nrow+1))+ii_col]
-            rr = (ii-np.max(order))/(np.min(order)-np.max(order))
-            gg = 0.0
-            bb = (ii-np.min(order))/(np.max(order)-np.min(order))
-            tsub = np.ones_like(len(all_pix_qa),dtype=np.float64) * ii
-            t_nrm_qa = 2. * (tsub - nrmt[0])/nrmt[1]
-            work2d_qa = np.zeros((nycoeff*nocoeff, len(all_pix_qa)), dtype=np.float64)
-            workt_qa = pydl.flegendre(t_nrm_qa, nocoeff)
-            for i in range(nocoeff):
-                for j in range(nycoeff):
-                    work2d_qa[j*nocoeff+i,:] = worky_qa[j,:] * workt_qa[i,:]
-            wv_mod_qa = res.dot(work2d_qa)
-            ax[ii_row,ii_col].plot(all_pix_qa, wv_mod_qa/ii/10000.,
-                           color=(rr,gg,bb), linestyle='-')
-            ax[ii_row,ii_col].set_title('Order = {0:0.0f}'.format(ii))
-            # Residuals
-            resid_qa = (wv_mod[t == ii]-all_wv_order[t == ii])/t[t == ii]
-            resid_qa_mask = (wv_mod[gd_wv][t[gd_wv] == ii]-all_wv_order[gd_wv][t[gd_wv] == ii])/t[gd_wv][t[gd_wv] == ii]
-            rms_qa = np.sqrt(np.mean(resid_qa_mask**2))
-            dwl=(wv_mod_qa[-1]-wv_mod_qa[0])/ii/(all_pix_qa[-1]-all_pix_qa[0])
-            ax[ii_row,ii_col].scatter(all_pix[t == ii], wv_mod[t == ii]/t[t == ii]/10000.+100.*resid_qa/10000.,
-                                      color=(rr,gg,bb))
-            ax[ii_row,ii_col].text(0.9,0.9,
-                              r'RMS={0:.2f} Pixel'.format(rms_qa/np.abs(dwl)),
-                              ha="right", va="top",
-                              transform = ax[ii_row,ii_col].transAxes)
-            ax[ii_row,ii_col].text(0.9,0.8,
-                              r'$\Delta\lambda$={0:.2f} Pixel/$\AA$'.format(np.abs(dwl)),
-                              ha="right", va="top",
-                              transform = ax[ii_row,ii_col].transAxes)
+            if (ii_row*(nrow+1))+ii_col < len(order):
+                ii = order[(ii_row*(nrow+1))+ii_col]
+                rr = (ii-np.max(order))/(np.min(order)-np.max(order))
+                gg = 0.0
+                bb = (ii-np.min(order))/(np.max(order)-np.min(order))
+                tsub = np.ones_like(len(all_pix_qa),dtype=np.float64) * ii
+                t_nrm_qa = 2. * (tsub - nrmt[0])/nrmt[1]
+                work2d_qa = np.zeros((nycoeff*nocoeff, len(all_pix_qa)), dtype=np.float64)
+                workt_qa = pydl.flegendre(t_nrm_qa, nocoeff)
+                for i in range(nocoeff):
+                    for j in range(nycoeff):
+                        work2d_qa[j*nocoeff+i,:] = worky_qa[j,:] * workt_qa[i,:]
+                wv_mod_qa = res.dot(work2d_qa)
+                ax[ii_row,ii_col].plot(all_pix_qa, wv_mod_qa/ii/10000.,
+                               color=(rr,gg,bb), linestyle='-')
+                ax[ii_row,ii_col].set_title('Order = {0:0.0f}'.format(ii))
+                # Residuals
+                resid_qa = (wv_mod[t == ii]-all_wv_order[t == ii])/t[t == ii]
+                resid_qa_mask = (wv_mod[gd_wv][t[gd_wv] == ii]-all_wv_order[gd_wv][t[gd_wv] == ii])/t[gd_wv][t[gd_wv] == ii]
+                rms_qa = np.sqrt(np.mean(resid_qa_mask**2))
+                dwl=(wv_mod_qa[-1]-wv_mod_qa[0])/ii/(all_pix_qa[-1]-all_pix_qa[0])
+                ax[ii_row,ii_col].scatter(all_pix[t == ii], wv_mod[t == ii]/t[t == ii]/10000.+100.*resid_qa/10000.,
+                                          color=(rr,gg,bb))
+                ax[ii_row,ii_col].text(0.9,0.9,
+                                  r'RMS={0:.2f} Pixel'.format(rms_qa/np.abs(dwl)),
+                                  ha="right", va="top",
+                                  transform = ax[ii_row,ii_col].transAxes)
+                ax[ii_row,ii_col].text(0.9,0.8,
+                                  r'$\Delta\lambda$={0:.2f} $\AA$/Pixel'.format(np.abs(dwl)),
+                                  ha="right", va="top",
+                                  transform = ax[ii_row,ii_col].transAxes)
+            else:
+                ax[ii_row,ii_col].axis('off')
 
     fig.text(0.5, 0.04, r'Row [pixel]', ha='center', size='large')
     fig.text(0.04, 0.5, r'Wavelength [$\mu$m]', va='center',
