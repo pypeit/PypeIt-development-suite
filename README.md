@@ -23,9 +23,9 @@ variable that points to this directory.  For example,
  - If you use bash, add the following to your `~/.bashrc` or
    `~/.bash_profile`:
 
-```
-export PYPEIT_DEV=${HOME}/PypeIt-development-suite
-```
+   ```
+   export PYPEIT_DEV=${HOME}/PypeIt-development-suite
+   ```
 
 ## Data Access
 
@@ -50,22 +50,22 @@ access the development suite data at the path:
 The Team Drive contains three directories that should be accessible for
 testing PypeIt (see below): `RAW_DATA`, `Cooked`, and `CALIBS`.
 
-    - If you download the data directly from the Team Drive, place them
-      in your `PypeIt-development-suite` directory.  If you ever submit
-      a PR to this dev suite, make sure that you **do not** add these
-      directories to the repo!
+  - If you download the data directly from the Team Drive, place them in
+    your `PypeIt-development-suite` directory.  If you ever submit a PR
+    to this dev suite, make sure that you **do not** add these
+    directories to the repo!
 
-    - If you're using Google File Stream, add symlinks to you
-      `PypeIt-development-suite` directory as follows (be sure to
-      include the \ in the Team\ Drives otherwise the space in "Team
-      Drives" will cause problems):
+  - If you're using Google File Stream, add symlinks to you
+    `PypeIt-development-suite` directory as follows (be sure to include
+    the \ in the Team\ Drives otherwise the space in "Team Drives" will
+    cause problems):
 
-      ```
-      cd $PYPEIT_DEV
-      ln -s /Volumes/GoogleDrive/Team\ Drives/PHYS-GP-Hennawi/PypeIt/PypeIt-development-suite/RAW_DATA  RAW_DATA
-      ln -s /Volumes/GoogleDrive/Team\ Drives/PHYS-GP-Hennawi/PypeIt/PypeIt-development-suite/Cooked  Cooked
-      ln -s /Volumes/GoogleDrive/Team\ Drives/PHYS-GP-Hennawi/PypeIt/PypeIt-development-suite/CALIBS  CALIBS
-      ```
+    ```
+    cd $PYPEIT_DEV
+    ln -s /Volumes/GoogleDrive/Team\ Drives/PHYS-GP-Hennawi/PypeIt/PypeIt-development-suite/RAW_DATA  RAW_DATA
+    ln -s /Volumes/GoogleDrive/Team\ Drives/PHYS-GP-Hennawi/PypeIt/PypeIt-development-suite/Cooked  Cooked
+    ln -s /Volumes/GoogleDrive/Team\ Drives/PHYS-GP-Hennawi/PypeIt/PypeIt-development-suite/CALIBS  CALIBS
+    ```
 
 ## Testing PypeIt
 
