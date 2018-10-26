@@ -14,14 +14,14 @@ This pulls the versioned files into a directory called
 the tests that are included with the PypeIt code expect an environmental
 variable that points to this directory.  For example,
 
-    * If you use c-shell, add the following to your `~/.cshrc`:
+ - If you use c-shell, add the following to your `~/.cshrc`:
 
-```
-setenv PYPEIT_DEV ${HOME}/PypeIt-development-suite
-```
+   ```
+   setenv PYPEIT_DEV ${HOME}/PypeIt-development-suite
+   ```
 
-    * If you use bash, add the following to your `~/.bashrc` or
-      `~/.bash_profile`:
+ - If you use bash, add the following to your `~/.bashrc` or
+   `~/.bash_profile`:
 
 ```
 export PYPEIT_DEV=${HOME}/PypeIt-development-suite
