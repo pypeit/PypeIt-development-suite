@@ -53,9 +53,8 @@ The Team Drive contains three directories that should be accessible for
 testing PypeIt (see below): `RAW_DATA`, `Cooked`, and `CALIBS`.
 
   - If you download the data directly from the Team Drive, place them in
-    your `PypeIt-development-suite` directory.  If you ever submit a PR
-    to this dev suite, make sure that you **do not** add these
-    directories to the repo!
+    your `PypeIt-development-suite` directory.  **Make sure that you *do
+    not* add these directories to the repo!**
 
   - If you're using Google File Stream, add symlinks to you
     `PypeIt-development-suite` directory as follows (be sure to include
