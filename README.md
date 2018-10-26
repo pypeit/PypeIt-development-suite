@@ -30,8 +30,8 @@ variable that points to this directory.  For example,
 ## Data Access
 
 Given its volume, this repo does not contain the raw data.  Instead the
-raw test data are hosted by in a Google Team Drive.  Please contact Joe
-Hennawi <joe@physics.ucsb.edu> for access.
+raw test data are hosted by in a Google Team Drive.  Please contact [Joe
+Hennawi](mailto:joe@physics.ucsb.edu) for access.
 
 Once you have the correct permissions, the easiest way to access the
 development suite data is download and use [Google File
