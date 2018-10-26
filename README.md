@@ -56,7 +56,7 @@ testing PypeIt (see below): `RAW_DATA`, `Cooked`, and `CALIBS`.
     your `PypeIt-development-suite` directory.  **Make sure that you *do
     not* add these directories to the repo!**
 
-  - If you're using Google File Stream, add symlinks to you
+  - If you're using Google File Stream, add symlinks to your
     `PypeIt-development-suite` directory as follows (be sure to include
     the \ in the Team\ Drives otherwise the space in "Team Drives" will
     cause problems):
