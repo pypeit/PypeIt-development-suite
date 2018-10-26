@@ -45,7 +45,9 @@ be a bit onerous and does not keep in sync with the remote Team Drive).
 Using Google File Stream, the PypeIt team drive you will be able to
 access the development suite data at the path: 
 
+```
 /Volumes/GoogleDrive/Team\ Drives/PHYS-GP-Hennawi/PypeIt/PypeIt-development-suite/
+```
 
 The Team Drive contains three directories that should be accessible for
 testing PypeIt (see below): `RAW_DATA`, `Cooked`, and `CALIBS`.
