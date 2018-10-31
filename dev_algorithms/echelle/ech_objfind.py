@@ -83,7 +83,7 @@ def pca_trace(xcen, usepca = None, npca = 2, npoly_cen = 3, debug=True):
     return pca_fit
 
 
-def ech_objfind(image, ivar, ordermask, slit_left, slit_righ,inmask=None,plate_scale=0.2,ncoeff = 5,min_snr=0.0,nabove_min_snr=0,
+def ech_objfind(image, ivar, ordermask, slit_left, slit_righ,inmask=None,plate_scale=0.2,npca=2,ncoeff = 5,min_snr=0.0,nabove_min_snr=0,
                 pca_percentile=20.0,snr_pca=3.0,box_radius=2.0,show_peaks=False,show_fits=False,show_trace=False):
 
 
@@ -267,14 +267,13 @@ def ech_objfind(image, ivar, ordermask, slit_left, slit_righ,inmask=None,plate_s
 
     sobjs_final = sobjs_trim.copy()
     # Loop over the objects one by one and adjust/predict the traces
-    npca = 2
     npoly_cen = 3
     pca_fits = np.zeros((nspec, norders, nobj_trim))
     for iobj in range(nobj_trim):
         igroup = sobjs_final.ech_group == uni_group_trim[iobj]
         # PCA predict the masked orders which were not traced
-        pca_fits[:,:,iobj] = pca_trace((sobjs_final[igroup].trace_spat).T, usepca = sobjs_final[igroup].ech_usepca,
-                                       npca = npca, npoly_cen = npoly_cen)
+        pca_fits[:,:,iobj] = pca_trace((sobjs_final[igroup].trace_spat).T, usepca = None, npca = npca, npoly_cen = npoly_cen)
+        # usepca = sobjs_final[igroup].ech_usepca,
         # Perform iterative flux weighted centroiding using new PCA predictions
         xinit_fweight = pca_fits[:,:,iobj].copy()
         inmask_now = inmask & (ordermask > 0)
@@ -292,26 +291,22 @@ def ech_objfind(image, ivar, ordermask, slit_left, slit_righ,inmask=None,plate_s
     sobjs_final.set_idx()
     if show_trace:
         viewer, ch = ginga.show_image(objminsky*(ordermask > 0))
-        for spec in sobjs_final:
-            color = 'red' if spec.ech_usepca else 'green'
+        for iobj in range(nobj_trim):
+            for iord in range(norders):
+                ginga.show_trace(viewer, ch, pca_fits[:,iord, iobj], str(uni_frac[iobj]), color='yellow')
+
+        for spec in sobjs_trim:
+            color = 'green' if spec.ech_usepca else 'magenta'
             ginga.show_trace(viewer, ch, spec.trace_spat, spec.idx, color=color)
 
+        #for spec in sobjs_final:
+        #    color = 'red' if spec.ech_usepca else 'green'
+        #    ginga.show_trace(viewer, ch, spec.trace_spat, spec.idx, color=color)
 
     return sobjs_final
     #for spec in sobjs:
     #    ginga.show_trace(viewer, ch, spec.trace_spat, spec.idx, color='orange')
 
-    #for iobj in range(nobj_trim):
-    #    if iobj != 0:
-    #        continue
-    #    for iord in range(norders):
-    #        ginga.show_trace(viewer, ch, pca_fits[:,iord, iobj], str(uni_frac[iobj]), color='yellow')
-
-    #for spec in sobjs_sort:
-    #    if spec.ech_group != 0:
-    #        continue
-    #    color = 'green' if spec.ech_usepca else 'magenta'
-    #    ginga.show_trace(viewer, ch, spec.trace_spat, spec.idx, color=color)
 
 
 
@@ -363,13 +358,13 @@ ordermask = pixels.slit_pixels(slit_left, slit_righ, objminsky.shape, 0)
 
 #ginga.show_slits(viewer,ch, slit_left_fit, slit_righ_fit)
 
-slit_mid = (slit_left + slit_righ)/2.0
-usepca = np.zeros(slit_mid.shape[1],dtype=bool)
+#slit_mid = (slit_left + slit_righ)/2.0
+#usepca = np.zeros(slit_mid.shape[1],dtype=bool)
 #usepca[0:8] = True
-pca_out = pca_trace(slit_mid, usepca = usepca, npca = 4, npoly_cen = 3)
-sys.exit(-1)
-viewer, ch = ginga.show_image(ordermask > 0)
-ginga.show_slits(viewer,ch, slit_mid, pca_out)
+#pca_out = pca_trace(slit_mid, usepca = usepca, npca = 4, npoly_cen = 3)
+#sys.exit(-1)
+#viewer, ch = ginga.show_image(ordermask > 0)
+#ginga.show_slits(viewer,ch, slit_mid, pca_out)
 
 # create the ouptut images skymask and objmask
 skymask = np.zeros_like(objminsky, dtype=bool)
@@ -384,8 +379,9 @@ min_snr = 0.3
 nabove_min_snr = 2
 pca_percentile = 20.0
 snr_pca = 3.0
+npca = 4
 
-sobjs_final = ech_objfind(image, ivar, ordermask, slit_left, slit_righ,inmask=inmask,plate_scale=plate_scale,
+sobjs_final = ech_objfind(image, ivar, ordermask, slit_left, slit_righ,inmask=inmask,plate_scale=plate_scale, npca = npca,
                           ncoeff = 5,min_snr=min_snr,nabove_min_snr=nabove_min_snr,pca_percentile=pca_percentile,snr_pca=snr_pca,
                           box_radius=box_radius,show_peaks=True,show_fits=False,show_trace=True)
 
