@@ -31,7 +31,8 @@ from matplotlib import pyplot as plt
 # usepca = False, good order used to predict bad order
 # usepca = True, bad order predicted by the good orders
 
-def pca_trace(xcen, usepca = None, npca = 2, npoly_cen = 3):
+def pca_trace(xcen, usepca = None, npca = 2, npoly_cen = 3, debug=True):
+
     nspec = xcen.shape[0]
     norders = xcen.shape[1]
     if usepca is None:
@@ -42,8 +43,8 @@ def pca_trace(xcen, usepca = None, npca = 2, npoly_cen = 3):
     ngood = np.sum(use_order)
     if ngood < npca:
         msgs.warn('Not enough good traces for a PCA fit: ngood = {:d}'.format(ngood) + ' is < npca = {:d}'.format(npca))
-        msgs.warn('Using the slit boundaries for now')
-        return -1
+        msgs.warn('Using the input trace for now')
+        return xcen
 
     pca = PCA(n_components=npca)
     xcen_use = (xcen[:,use_order] - np.mean(xcen[:,use_order],0)).T
@@ -52,8 +53,10 @@ def pca_trace(xcen, usepca = None, npca = 2, npoly_cen = 3):
 
     # Fit first pca dimension (with largest variance) with a higher order npoly depending on number of good orders.
     # Fit all higher dimensions (with lower variance) with a line
-    npoly_vec = np.ones(npca,dtype=int)
-    npoly_vec[0] = int(np.fmin(np.fmax(np.floor(3.3*ngood/norders),1.0),3.0))
+    #npoly_vec = np.ones(npca,dtype=int)
+    npoly = int(np.fmin(np.fmax(np.floor(3.3*ngood/norders),1.0),3.0))
+    #npoly_vec[0]=npoly
+    npoly_vec = np.full(npca, npoly)
 
     order_vec = np.arange(norders)
     pca_coeffs = np.zeros((norders, npca))
@@ -62,6 +65,12 @@ def pca_trace(xcen, usepca = None, npca = 2, npoly_cen = 3):
         # ToDO robust_polyfit is garbage remove it entirely from PypeIT!
         msk, poly_coeff = utils.robust_polyfit(order_vec[use_order],pca_coeffs_use[:,idim],npoly_vec[idim], sigma = 3.0, function='polynomial')
         pca_coeffs[:,idim] = utils.func_val(poly_coeff, order_vec, 'polynomial')
+
+        if debug:
+            xvec = np.linspace(order_vec.min(),order_vec.max(),num=100)
+            plt.plot(order_vec[use_order],pca_coeffs_use[:,idim],'k+')
+            plt.plot(xvec, utils.func_val(poly_coeff, xvec, 'polynomial'), 'r')
+            plt.show()
 
     #ToDo should we be masking the bad orders here and interpolating/extrapolating?
     spat_mean = np.mean(xcen,0)
@@ -84,7 +93,6 @@ def ech_objfind(image, ivar, ordermask, slit_left, slit_righ,inmask=None,plate_s
 
     frameshape = image.shape
     nspec = frameshape[0]
-    nspat = frameshape[1]
     norders = slit_left.shape[1]
 
     if isinstance(plate_scale,(float, int)):
@@ -92,7 +100,7 @@ def ech_objfind(image, ivar, ordermask, slit_left, slit_righ,inmask=None,plate_s
     elif isinstance(plate_scale,(np.ndarray, list, tuple)):
         if len(plate_scale) == norders:
             plate_scale_ord = plate_scale
-        elif len(plate_scale) == 1
+        elif len(plate_scale) == 1:
             plate_scale_ord = np.full(norders, plate_scale[0])
         else:
             msgs.error('Invalid size for plate_scale. It must either have one element or norders elements')
@@ -313,16 +321,33 @@ def ech_objfind(image, ivar, ordermask, slit_left, slit_righ,inmask=None,plate_s
 #inmask = np.ones_like(xcen,dtype=bool) # (nspec, norder) boolean
 
 
+# HIRES
+spectro = 'ESI'
+if spectro == 'HIRES':
+    hdu = fits.open('/Users/joe/Dropbox/hires_fndobj/f_hires0181G.fits.gz')
+    objminsky =hdu[2].data
+    ivar  = hdu[1].data
+    mask = (ivar > 0.0)
+    order_str = Table.read('/Users/joe/Dropbox/hires_fndobj/OStr_G_02.fits')
+    slit_left = (order_str['LHEDG']).T
+    slit_righ = (order_str['RHEDG']).T
+    plate_scale = 0.36
+elif spectro == 'ESI':
+    # ESI
+    hdu = fits.open('/Users/joe/Dropbox/Cowie_2002-02-17/Final/fringe_ES.20020217.35453.fits.gz')
+    sciimg = hdu[0].data
+    var  = hdu[1].data
+    ivar = utils.calc_ivar(var)
+    mask = (var > 0.0)
+    skyimg = hdu[2].data
+    objminsky = sciimg - skyimg
+    hdu_sedg = fits.open('/Users/joe/Dropbox/Cowie_2002-02-17/Flats/SEdgECH75_1x1.fits')
+    data = hdu_sedg[0].data
+    slit_left = data[0,:,:].T
+    slit_righ = data[1,:,:].T
+    plate_scale = 0.149
 
-hdu = fits.open('/Users/joe/Dropbox/hires_fndobj/f_hires0181G.fits.gz')
-objminsky =hdu[2].data
-ivar  = hdu[1].data
-mask = (ivar > 0.0)
 
-order_str = Table.read('/Users/joe/Dropbox/hires_fndobj/OStr_G_02.fits')
-
-slit_left = (order_str['LHEDG']).T
-slit_righ = (order_str['RHEDG']).T
 ordermask = pixels.slit_pixels(slit_left, slit_righ, objminsky.shape, 0)
 
 #viewer, ch = ginga.show_image(objminsky)
@@ -338,6 +363,14 @@ ordermask = pixels.slit_pixels(slit_left, slit_righ, objminsky.shape, 0)
 
 #ginga.show_slits(viewer,ch, slit_left_fit, slit_righ_fit)
 
+slit_mid = (slit_left + slit_righ)/2.0
+usepca = np.zeros(slit_mid.shape[1],dtype=bool)
+#usepca[0:8] = True
+pca_out = pca_trace(slit_mid, usepca = usepca, npca = 4, npoly_cen = 3)
+sys.exit(-1)
+viewer, ch = ginga.show_image(ordermask > 0)
+ginga.show_slits(viewer,ch, slit_mid, pca_out)
+
 # create the ouptut images skymask and objmask
 skymask = np.zeros_like(objminsky, dtype=bool)
 objmask = np.zeros_like(objminsky, dtype=bool)
@@ -347,14 +380,13 @@ inmask = mask.copy()
 #------
 ncoeff = 5
 box_radius = 2.0  # arcseconds
-min_snr = 0.0
+min_snr = 0.3
 nabove_min_snr = 2
 pca_percentile = 20.0
 snr_pca = 3.0
-plate_scale = 0.36
 
-sobjs_final = ech_objfind(image, ivar, ordermask, slit_left, slit_righ,inmask=inmask,plate_scale=0.36,
-                          ncoeff = 5,min_snr=0.0,nabove_min_snr=0,pca_percentile=20.0,snr_pca=3.0,box_radius=2.0,
-                          show_peaks=True,show_fits=False,show_trace=True)
+sobjs_final = ech_objfind(image, ivar, ordermask, slit_left, slit_righ,inmask=inmask,plate_scale=plate_scale,
+                          ncoeff = 5,min_snr=min_snr,nabove_min_snr=nabove_min_snr,pca_percentile=pca_percentile,snr_pca=snr_pca,
+                          box_radius=box_radius,show_peaks=True,show_fits=False,show_trace=True)
 
 
