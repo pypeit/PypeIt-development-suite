@@ -74,80 +74,52 @@ def pca_trace(xcen, usepca = None, npca = 2, npoly_cen = 3):
     return pca_fit
 
 
-hdu = fits.open('/Users/joe/Dropbox/hires_fndobj/f_hires0181G.fits.gz')
-objminsky =hdu[2].data
-ivar  = hdu[1].data
-mask = (ivar > 0.0)
+def ech_objfind(image, ivar, ordermask, slit_left, slit_righ,inmask=None,plate_scale=0.2,ncoeff = 5,min_snr=0.0,nabove_min_snr=0,
+                pca_percentile=20.0,snr_pca=3.0,box_radius=2.0,show_peaks=False,show_fits=False,show_trace=False):
 
-order_str = Table.read('/Users/joe/Dropbox/hires_fndobj/OStr_G_02.fits')
 
-slit_left = (order_str['LHEDG']).T
-slit_righ = (order_str['RHEDG']).T
-ordermask = pixels.slit_pixels(slit_left, slit_righ, objminsky.shape, 0)
-
-#viewer, ch = ginga.show_image(objminsky)
-#ginga.show_slits(viewer,ch, slit_left, slit_righ)
-
-#yvec = np.outer(np.ones(norders), spec_vec)
-
-#tset_left = pydl.xy2traceset(yvec, slit_left.T, ncoeff=ncoeff)
-#slit_left_fit = tset_left.yfit.T
-
-#tset_righ = pydl.xy2traceset(yvec, slit_righ.T, ncoeff=ncoeff)
-#slit_righ_fit = tset_righ.yfit.T
-
-#ginga.show_slits(viewer,ch, slit_left_fit, slit_righ_fit)
-
-# create the ouptut images skymask and objmask
-skymask = np.zeros_like(objminsky, dtype=bool)
-objmask = np.zeros_like(objminsky, dtype=bool)
-image = objminsky.copy()
-inmask = mask.copy()
-#Routine starts here.
-#------
-# echelle_objfind(image, ivar, ordermask, slit_left, slit_righ, inmask = None, ncoeff = 5, min_snr = 0.0, nabove_min_snr = 0, pca_percentile = 20.0, snr_pca = 3.0
-    ncoeff = 5
-    box_radius = 2.0 # arcseconds
-    min_snr = 0.0
-    nabove_min_snr = 2
-    pca_percentile = 20.0
-    snr_pca = 3.0
-
-    #
     if inmask is None:
         inmask = (ordermask > 0)
+
 
     frameshape = image.shape
     nspec = frameshape[0]
     nspat = frameshape[1]
     norders = slit_left.shape[1]
-    plate_scale = np.full(norders, 0.36) # 0.12 binned by 3 spatially for HIRES
 
+    if isinstance(plate_scale,(float, int)):
+        plate_scale_ord = np.full(norders, plate_scale)  # 0.12 binned by 3 spatially for HIRES
+    elif isinstance(plate_scale,(np.ndarray, list, tuple)):
+        if len(plate_scale) == norders:
+            plate_scale_ord = plate_scale
+        elif len(plate_scale) == 1
+            plate_scale_ord = np.full(norders, plate_scale[0])
+        else:
+            msgs.error('Invalid size for plate_scale. It must either have one element or norders elements')
+    else:
+        msgs.error('Invalid type for plate scale')
 
     specmid = nspec // 2
     slit_width = slit_righ - slit_left
-    order_vec = np.arange(norders)
     spec_vec = np.arange(nspec)
-    spat_vec = np.arange(nspat)
     slit_spec_pos = nspec/2.0
     slit_spat_pos = np.zeros((norders, 2))
     for iord in range(norders):
         slit_spat_pos[iord, :] = (np.interp(slit_spec_pos, spec_vec, slit_left[:,iord]), np.interp(slit_spec_pos, spec_vec, slit_righ[:,iord]))
 
-
     # Loop over orders and find objects
     sobjs = specobjs.SpecObjs()
     show_peaks=True
     show_fits=True
-    show_trace = False
     # ToDo replace orderindx with the true order number here? Maybe not. Clean up slitid and orderindx!
     for iord  in range(norders):
+        msgs.info('Finding objects on slit # {:d}'.format(iord + 1))
         thismask = ordermask == (iord + 1)
         inmask_iord = inmask & thismask
         specobj_dict = {'setup': 'HIRES', 'slitid': iord + 1, 'scidx': 0,'det': 1, 'objtype': 'science'}
         sobjs_slit, skymask[thismask], objmask[thismask], proc_list = \
             extract.objfind(image, thismask, slit_left[:,iord], slit_righ[:,iord], inmask=inmask_iord,show_peaks=show_peaks,
-                            show_fits=show_fits, show_trace=show_trace, specobj_dict = specobj_dict)
+                            show_fits=show_fits, show_trace=False, specobj_dict = specobj_dict)
         # ToDO make the specobjs _set_item_ work with expressions like this spec[:].orderindx = iord
         for spec in sobjs_slit:
             spec.ech_orderindx = iord
@@ -155,12 +127,10 @@ inmask = mask.copy()
 
 
     nfound = len(sobjs)
-    # ToDo Possibly add code to compute the S/N of each trace (quick extrqctino like on mage/ESI) or use significance of
-    # smass nsig_trace, or some kind of assessment of flux weighted centroid scatter from trace fit
 
     # Compute the FOF linking length based on the instrument place scale and matching length FOFSEP = 1.0"
     FOFSEP = 1.0 # separation of FOF algorithm in arcseconds
-    FOF_frac = FOFSEP/(np.median(slit_width)*np.median(plate_scale))
+    FOF_frac = FOFSEP/(np.median(slit_width)*np.median(plate_scale_ord))
 
     # Run the FOF. We use fake coordinaes
     fracpos = sobjs.spat_fracpos
@@ -177,7 +147,6 @@ inmask = mask.copy()
         gfrac[this_group] = np.median(fracpos[this_group])
 
     uni_frac = gfrac[uni_ind]
-    #usepca = np.ones((norders,nobj),dtype=bool)
 
     sobjs_align = sobjs.copy()
     # Now fill in the missing objects and their traces
@@ -208,7 +177,6 @@ inmask = mask.copy()
                 sobjs_align.add_sobj(thisobj)
                 group = np.append(group, uni_group[iobj])
                 gfrac = np.append(gfrac, uni_frac[iobj])
-    #            usepca[iord,iobj] = False
             else:
                 # ToDo fix specobjs to get rid of these crappy loops!
                 for spec in sobjs_align[on_slit]:
@@ -237,7 +205,7 @@ inmask = mask.copy()
             spec = sobjs_sort[indx]
             thismask = ordermask == (iord + 1)
             inmask_iord = inmask & thismask
-            box_rad_pix = box_radius/plate_scale[iord]
+            box_rad_pix = box_radius/plate_scale_ord[iord]
             flux_tmp  = extract.extract_boxcar(image*inmask_iord, spec.trace_spat,box_rad_pix, ycen = spec.trace_spec)
             var_tmp  = extract.extract_boxcar(varimg*inmask_iord, spec.trace_spat,box_rad_pix, ycen = spec.trace_spec)
             ivar_tmp = utils.calc_ivar(var_tmp)
@@ -269,8 +237,9 @@ inmask = mask.copy()
                       ' on at least nabove_min_snr >= {:d}'.format(nabove_min_snr) + ' orders')
 
     nobj_trim = np.sum(keep_obj)
-    #if nobj == 0:
-    #    return None
+    if nobj_trim == 0:
+        return specobjs.SpecObjs()
+
     SNR_arr_trim = SNR_arr[:,keep_obj]
 
     # Do a final loop over objects and make the final decision about which orders will be interpolated/extrapolated by the PCA
@@ -309,12 +278,18 @@ inmask = mask.copy()
         for iord, spec in enumerate(sobjs_final[igroup]):
             spec.trace_spat = xfit_gweight[:,iord]
             spec.spat_pixpos = spec.trace_spat[specmid]
-    
+
 
     # Set the IDs
     sobjs_final.set_idx()
-    viewer, ch = ginga.show_image(objminsky*(ordermask > 0))
+    if show_trace:
+        viewer, ch = ginga.show_image(objminsky*(ordermask > 0))
+        for spec in sobjs_final:
+            color = 'red' if spec.ech_usepca else 'green'
+            ginga.show_trace(viewer, ch, spec.trace_spat, spec.idx, color=color)
 
+
+    return sobjs_final
     #for spec in sobjs:
     #    ginga.show_trace(viewer, ch, spec.trace_spat, spec.idx, color='orange')
 
@@ -332,14 +307,54 @@ inmask = mask.copy()
 
 
 
-    for spec in sobjs_final:
-        color = 'red' if spec.ech_usepca else 'green'
-        ginga.show_trace(viewer, ch, spec.trace_spat, spec.idx, color=color)
-
 
 
 #xcen = slit_left        # (nspec, norder)
 #inmask = np.ones_like(xcen,dtype=bool) # (nspec, norder) boolean
 
+
+
+hdu = fits.open('/Users/joe/Dropbox/hires_fndobj/f_hires0181G.fits.gz')
+objminsky =hdu[2].data
+ivar  = hdu[1].data
+mask = (ivar > 0.0)
+
+order_str = Table.read('/Users/joe/Dropbox/hires_fndobj/OStr_G_02.fits')
+
+slit_left = (order_str['LHEDG']).T
+slit_righ = (order_str['RHEDG']).T
+ordermask = pixels.slit_pixels(slit_left, slit_righ, objminsky.shape, 0)
+
+#viewer, ch = ginga.show_image(objminsky)
+#ginga.show_slits(viewer,ch, slit_left, slit_righ)
+
+#yvec = np.outer(np.ones(norders), spec_vec)
+
+#tset_left = pydl.xy2traceset(yvec, slit_left.T, ncoeff=ncoeff)
+#slit_left_fit = tset_left.yfit.T
+
+#tset_righ = pydl.xy2traceset(yvec, slit_righ.T, ncoeff=ncoeff)
+#slit_righ_fit = tset_righ.yfit.T
+
+#ginga.show_slits(viewer,ch, slit_left_fit, slit_righ_fit)
+
+# create the ouptut images skymask and objmask
+skymask = np.zeros_like(objminsky, dtype=bool)
+objmask = np.zeros_like(objminsky, dtype=bool)
+image = objminsky.copy()
+inmask = mask.copy()
+#Routine starts here.
+#------
+ncoeff = 5
+box_radius = 2.0  # arcseconds
+min_snr = 0.0
+nabove_min_snr = 2
+pca_percentile = 20.0
+snr_pca = 3.0
+plate_scale = 0.36
+
+sobjs_final = ech_objfind(image, ivar, ordermask, slit_left, slit_righ,inmask=inmask,plate_scale=0.36,
+                          ncoeff = 5,min_snr=0.0,nabove_min_snr=0,pca_percentile=20.0,snr_pca=3.0,box_radius=2.0,
+                          show_peaks=True,show_fits=False,show_trace=True)
 
 
