@@ -31,6 +31,8 @@ from matplotlib import pyplot as plt
 # usepca = False, good order used to predict bad order
 # usepca = True, bad order predicted by the good orders
 
+
+
 def pca_trace(xcen, usepca = None, npca = 2, npoly_cen = 3, debug=True):
 
     nspec = xcen.shape[0]
@@ -58,18 +60,39 @@ def pca_trace(xcen, usepca = None, npca = 2, npoly_cen = 3, debug=True):
     #npoly_vec[0]=npoly
     npoly_vec = np.full(npca, npoly)
 
-    order_vec = np.arange(norders)
+    order_vec = np.arange(norders,dtype=float)
     pca_coeffs = np.zeros((norders, npca))
     # Now loop over the dimensionality of the compression and perform a polynomial fit to
     for idim in range(npca):
         # ToDO robust_polyfit is garbage remove it entirely from PypeIT!
-        msk, poly_coeff = utils.robust_polyfit(order_vec[use_order],pca_coeffs_use[:,idim],npoly_vec[idim], sigma = 3.0, function='polynomial')
+        xfit = order_vec[use_order]
+        yfit = pca_coeffs_use[:,idim]
+        norder = npoly_vec[idim]
+        msk, poly_coeff = utils.robust_polyfit(xfit, yfit, norder, sigma = 3.0, function='polynomial')
+        # TESTING
+        xtemp = xfit.reshape(1, xfit.size)
+        ytemp = yfit.reshape(1, yfit.size)
+        tset = pydl.xy2traceset(xtemp, ytemp, ncoeff=norder,function='poly')
+        tset_yfit = tset.yfit.reshape(tset.yfit.shape[1])
+        #pca_coeffs_tset = tset.yfit
         pca_coeffs[:,idim] = utils.func_val(poly_coeff, order_vec, 'polynomial')
 
         if debug:
+            # Evaluate the fit
             xvec = np.linspace(order_vec.min(),order_vec.max(),num=100)
-            plt.plot(order_vec[use_order],pca_coeffs_use[:,idim],'k+')
-            plt.plot(xvec, utils.func_val(poly_coeff, xvec, 'polynomial'), 'r')
+            (_,tset_fit) = tset.xy(xpos=xvec.reshape(1,xvec.size))
+            yfit_tset = tset_fit[0,:]
+            robust_mask = msk == 0
+            tset_mask = tset.outmask[0,:]
+            plt.plot(xfit[robust_mask],yfit[robust_mask],'ko', markersize = 8.0, label = 'pca coeff fit')
+            plt.plot(xfit[~robust_mask]*1.05,yfit[~robust_mask],'k+', markersize = 10.0, label = 'pca coeff rejected')
+            plt.plot(xfit[tset_mask],yfit[tset_mask],'ro', markersize = 8.0, label = 'pca coeff fit')
+            plt.plot(xfit[~tset_mask]*1.05,yfit[~tset_mask], 'r+', markersize = 10.0, label = 'pca coeff rejected')
+            plt.plot(xvec, utils.func_val(poly_coeff, xvec, 'polynomial'), color='black',label = 'robust polyfit')
+            plt.plot(xvec, yfit_tset, color='red',label='pydl')
+            plt.legend()
+            from IPython import embed
+            embed()
             plt.show()
 
     #ToDo should we be masking the bad orders here and interpolating/extrapolating?
@@ -199,7 +222,6 @@ def ech_objfind(image, ivar, ordermask, slit_left, slit_righ,inmask=None,plate_s
         this_group = group == uni_group[iobj]
         this_sobj = sobjs_align[this_group]
         sobjs_sort.add_sobj(this_sobj[np.argsort(this_sobj.ech_orderindx)])
-
 
     # Loop over the objects and perform a quick and dirty extraction to assess S/N.
     varimg = utils.calc_ivar(ivar)
@@ -358,11 +380,11 @@ ordermask = pixels.slit_pixels(slit_left, slit_righ, objminsky.shape, 0)
 
 #ginga.show_slits(viewer,ch, slit_left_fit, slit_righ_fit)
 
-#slit_mid = (slit_left + slit_righ)/2.0
+slit_mid = (slit_left + slit_righ)/2.0
 #usepca = np.zeros(slit_mid.shape[1],dtype=bool)
 #usepca[0:8] = True
-#pca_out = pca_trace(slit_mid, usepca = usepca, npca = 4, npoly_cen = 3)
-#sys.exit(-1)
+pca_out = pca_trace(slit_mid, npca = 4, npoly_cen = 3)
+sys.exit(-1)
 #viewer, ch = ginga.show_image(ordermask > 0)
 #ginga.show_slits(viewer,ch, slit_mid, pca_out)
 
