@@ -76,24 +76,34 @@ def pca_trace(xcen, usepca = None, npca = 2, npoly_cen = 3, debug=True):
         tset_yfit = tset.yfit.reshape(tset.yfit.shape[1])
         #pca_coeffs_tset = tset.yfit
         pca_coeffs[:,idim] = utils.func_val(poly_coeff, order_vec, 'polynomial')
-
+        ## Test new robust fitting
+        msk_new, poly_coeff_new = utils.robust_polyfit_djs(xfit, yfit, norder, \
+                                                   function='polynomial', minv=None, maxv=None, bspline_par=None, \
+                                                   guesses=None, maxiter=10, inmask=None, sigma=None, invvar=None, \
+                                                   lower=3, upper=2, maxdev=None, maxrej=None, groupdim=None,
+                                                   groupsize=None, \
+                                                   groupbadpix=False, grow=0, sticky=False, verbose=True)
         if debug:
             # Evaluate the fit
             xvec = np.linspace(order_vec.min(),order_vec.max(),num=100)
             (_,tset_fit) = tset.xy(xpos=xvec.reshape(1,xvec.size))
             yfit_tset = tset_fit[0,:]
             robust_mask = msk == 0
+            robust_mask_new = msk_new == 1
             tset_mask = tset.outmask[0,:]
             plt.plot(xfit[robust_mask],yfit[robust_mask],'ko', markersize = 8.0, label = 'pca coeff fit')
             plt.plot(xfit[~robust_mask]*1.05,yfit[~robust_mask],'k+', markersize = 10.0, label = 'pca coeff rejected')
             plt.plot(xfit[tset_mask],yfit[tset_mask],'ro', markersize = 8.0, label = 'pca coeff fit')
             plt.plot(xfit[~tset_mask]*1.05,yfit[~tset_mask], 'r+', markersize = 10.0, label = 'pca coeff rejected')
+            plt.plot(xfit[robust_mask_new]+0.5,yfit[robust_mask_new],'bo', markersize = 8.0, label = 'pca coeff fit')
+            plt.plot(xfit[~robust_mask_new]+0.5,yfit[~robust_mask_new],'b+', markersize = 10.0, label = 'pca coeff rejected')
             plt.plot(xvec, utils.func_val(poly_coeff, xvec, 'polynomial'), color='black',label = 'robust polyfit')
+            plt.plot(xvec+0.5, utils.func_val(poly_coeff_new, xvec, 'polynomial'), color='blue',label = 'new robust polyfit')
             plt.plot(xvec, yfit_tset, color='red',label='pydl')
             plt.legend()
-            from IPython import embed
-            embed()
             plt.show()
+            #from IPython import embed
+            #embed()
 
     #ToDo should we be masking the bad orders here and interpolating/extrapolating?
     spat_mean = np.mean(xcen,0)
@@ -341,24 +351,24 @@ def ech_objfind(image, ivar, ordermask, slit_left, slit_righ,inmask=None,plate_s
 # HIRES
 spectro = 'ESI'
 if spectro == 'HIRES':
-    hdu = fits.open('/Users/joe/Dropbox/hires_fndobj/f_hires0181G.fits.gz')
+    hdu = fits.open('/Users/feige/Dropbox/hires_fndobj/f_hires0181G.fits.gz')
     objminsky =hdu[2].data
     ivar  = hdu[1].data
     mask = (ivar > 0.0)
-    order_str = Table.read('/Users/joe/Dropbox/hires_fndobj/OStr_G_02.fits')
+    order_str = Table.read('/Users/feige/Dropbox/hires_fndobj/OStr_G_02.fits')
     slit_left = (order_str['LHEDG']).T
     slit_righ = (order_str['RHEDG']).T
     plate_scale = 0.36
 elif spectro == 'ESI':
     # ESI
-    hdu = fits.open('/Users/joe/Dropbox/Cowie_2002-02-17/Final/fringe_ES.20020217.35453.fits.gz')
+    hdu = fits.open('/Users/feige/Dropbox/Cowie_2002-02-17/Final/fringe_ES.20020217.35453.fits.gz')
     sciimg = hdu[0].data
     var  = hdu[1].data
     ivar = utils.calc_ivar(var)
     mask = (var > 0.0)
     skyimg = hdu[2].data
     objminsky = sciimg - skyimg
-    hdu_sedg = fits.open('/Users/joe/Dropbox/Cowie_2002-02-17/Flats/SEdgECH75_1x1.fits')
+    hdu_sedg = fits.open('/Users/feige/Dropbox/Cowie_2002-02-17/Flats/SEdgECH75_1x1.fits')
     data = hdu_sedg[0].data
     slit_left = data[0,:,:].T
     slit_righ = data[1,:,:].T
