@@ -1,0 +1,55 @@
+# LVMslitC (multi-slit) reduction for DEIMOS
+
+# Parameters
+[rdx]
+    spectrograph = keck_deimos
+    sortroot = keck_deimos_830g_lvm_8400
+    detnum = 3,7 
+
+[calibrations]
+    [[arcframe]]
+        number = 3
+    [[pixelflatframe]]
+        number = 5
+    [[traceframe]]
+        number = 5
+    [[standardframe]]
+        number = 0
+
+[extract]
+    maxnumber = 3
+
+# Setup
+setup read
+ Setup A
+ --:
+   dichroic: None
+   disperser: {angle: 8399.93554688, name: 830G}
+   slit: {decker: LVMslitC, slitlen: None, slitwid: None}
+ '01': {binning: '1,1', det: 1, namp: 1}
+ '02': {binning: '1,1', det: 2, namp: 1}
+ '03': {binning: '1,1', det: 3, namp: 1}
+ '04': {binning: '1,1', det: 4, namp: 1}
+ '05': {binning: '1,1', det: 5, namp: 1}
+ '06': {binning: '1,1', det: 6, namp: 1}
+ '07': {binning: '1,1', det: 7, namp: 1}
+ '08': {binning: '1,1', det: 8, namp: 1}
+setup end
+
+# Read in the data
+data read
+ path ../../../RAW_DATA/Keck_DEIMOS/830G_LVM_8400/
+|        filename |                date |       frametype |         target | exptime | dispname |   decker |
+| d0316_0037.fits | 2018-03-16T12:22:35 |             arc | -FOUL-WEATHER- |       1 |     830G | LVMslitC |
+| d0316_0038.fits | 2018-03-16T12:23:57 |             arc | -FOUL-WEATHER- |       1 |     830G | LVMslitC |
+| d0316_0039.fits | 2018-03-16T12:25:08 |             arc | -FOUL-WEATHER- |       1 |     830G | LVMslitC |
+| d0316_0040.fits | 2018-03-16T12:26:30 | pixelflat,trace | -FOUL-WEATHER- |       6 |     830G | LVMslitC |
+| d0316_0041.fits | 2018-03-16T12:27:45 | pixelflat,trace | -FOUL-WEATHER- |       6 |     830G | LVMslitC |
+| d0316_0042.fits | 2018-03-16T12:29:00 | pixelflat,trace | -FOUL-WEATHER- |       6 |     830G | LVMslitC |
+| d0316_0043.fits | 2018-03-16T12:30:14 | pixelflat,trace | -FOUL-WEATHER- |       6 |     830G | LVMslitC |
+| d0316_0044.fits | 2018-03-16T12:31:28 | pixelflat,trace | -FOUL-WEATHER- |       6 |     830G | LVMslitC |
+| d0316_0045.fits | 2018-03-16T14:57:26 |         science |      J1401_OFF |    1200 |     830G | LVMslitC |
+#| d0316_0046.fits | 2018-03-16T15:18:37 |         science |      J1401_OFF |    1200 |     830G | LVMslitC |
+#| d0316_0047.fits | 2018-03-16T15:29:47 |         science |      J1401_OFF |     600 |     830G | LVMslitC |
+data end
+
