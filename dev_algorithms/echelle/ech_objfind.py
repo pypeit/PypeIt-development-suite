@@ -396,7 +396,8 @@ elif spectro == 'GNIRS':
     hdu = fits.open('/Users/feige/Dropbox/hires_fndobj/GNIRS/J005424.45+004750.2/Science/J005424.45+004750.2_7/sci-N20171021S0264-267.fits')
     hdu = fits.open('/Users/feige/Dropbox/hires_fndobj/GNIRS/J002407.02-001237.2/Science/J002407.02-001237.2_5/sci-N20171006S0236-239.fits')
     obj = hdu[0].data
-    objminsky = obj - hdu[1].data
+    #objminsky = obj - hdu[1].data
+    objminsky = hdu[1].data - obj # test negative trace
     ivar  = hdu[2].data
     #ivar = utils.calc_ivar(var)
     mask = (ivar > 0.0)
