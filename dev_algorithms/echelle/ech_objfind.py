@@ -73,7 +73,7 @@ def pca_trace(xcen, usepca = None, npca = 2, npoly_cen = 3, debug=True):
         xtemp = xfit.reshape(1, xfit.size)
         ytemp = yfit.reshape(1, yfit.size)
         tset = pydl.xy2traceset(xtemp, ytemp, ncoeff=norder,func='poly')
-        tset_yfit = tset.yfit.reshape(tset.yfit.shape[1])
+        #tset_yfit = tset.yfit.reshape(tset.yfit.shape[1])
 
         ## Test new robust fitting with djs_reject
         msk_new, poly_coeff_new = utils.robust_polyfit_djs(xfit, yfit, norder, \
@@ -347,7 +347,7 @@ def ech_objfind(image, ivar, ordermask, slit_left, slit_righ,inmask=None,plate_s
 
 
 # HIRES
-spectro = 'HIRES'
+spectro = 'GNIRS'
 if spectro == 'HIRES':
     hdu = fits.open('/Users/feige/Dropbox/hires_fndobj/f_hires0184G.fits.gz')
     objminsky =hdu[2].data
@@ -371,12 +371,26 @@ elif spectro == 'ESI':
     slit_left = data[0,:,:].T
     slit_righ = data[1,:,:].T
     plate_scale = 0.149
-elif spectro == 'NRIES':
+elif spectro == 'NIRES':
     from linetools import utils as ltu
-    jdict = ltu.loadjson('/Users/feige/Software/python3/PypeIt-development-suite/dev_algorithms/echelle/tilt_nires.json')
-    slit_left = jdict['lcen']
-    slit_right = jdict['rcen']
-
+    jdict = ltu.loadjson('/Users/feige/Dropbox/hires_fndobj/tilt_nires.json')
+    slit_left = np.array(jdict['lcen'])
+    slit_righ = np.array(jdict['rcen'])
+    hdu = fits.open('/Users/feige/Dropbox/hires_fndobj/spec2d_J1724+1901_NIRES_2018Jun04T130207.856.fits')
+    objminsky = hdu[1].data - hdu[3].data
+    ivar = hdu[2].data
+    mask = (ivar>0)
+    plate_scale = 0.123
+elif spectro == 'GNIRS':
+    from scipy.io import readsav
+    hdu = fits.open('/Users/feige/Dropbox/hires_fndobj/sci-N20170331S0216-219.fits')
+    objminsky = hdu[0].data
+    var  = hdu[2].data
+    ivar = utils.calc_ivar(var)
+    mask = (var > 0.0)
+    slit_left = readsav('/Users/feige/Dropbox/hires_fndobj/left_edge.sav', python_dict=False)['left_edge'].T
+    slit_righ = readsav('/Users/feige/Dropbox/hires_fndobj/right_edge.sav', python_dict=False)['right_edge'].T
+    plate_scale = 0.15
 
 
 ordermask = pixels.slit_pixels(slit_left, slit_righ, objminsky.shape, 0)
