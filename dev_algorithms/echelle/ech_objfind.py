@@ -186,7 +186,7 @@ def ech_objfind(image, ivar, ordermask, slit_left, slit_righ,inmask=None,plate_s
         group = np.zeros(1,dtype='int')
         uni_group, uni_ind = np.unique(group, return_index=True)
         nobj = len(group)
-        msgs.info('Only find one object no FOF matching is needed')
+        msgs.warn('Only find one object no FOF matching is needed')
 
     gfrac = np.zeros(nfound)
     for jj in range(nobj):
