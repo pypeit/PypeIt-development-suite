@@ -158,7 +158,7 @@ def ech_objfind(image, ivar, ordermask, slit_left, slit_righ,inmask=None,plate_s
         specobj_dict = {'setup': 'HIRES', 'slitid': iord + 1, 'scidx': 0,'det': 1, 'objtype': 'science'}
         sobjs_slit, skymask[thismask], objmask[thismask], proc_list = \
             extract.objfind(image, thismask, slit_left[:,iord], slit_righ[:,iord], inmask=inmask_iord,show_peaks=show_peaks,
-                            show_fits=show_fits, show_trace=False, specobj_dict = specobj_dict)
+                            show_fits=show_fits, show_trace=False, specobj_dict = specobj_dict)#, sig_thresh = 3.0)
         # ToDO make the specobjs _set_item_ work with expressions like this spec[:].orderindx = iord
         for spec in sobjs_slit:
             spec.ech_orderindx = iord
@@ -171,15 +171,23 @@ def ech_objfind(image, ivar, ordermask, slit_left, slit_righ,inmask=None,plate_s
     FOFSEP = 1.0 # separation of FOF algorithm in arcseconds
     FOF_frac = FOFSEP/(np.median(slit_width)*np.median(plate_scale_ord))
 
+    # Feige: made the code also works for only one object found in one order
     # Run the FOF. We use fake coordinaes
     fracpos = sobjs.spat_fracpos
     ra_fake = fracpos/1000.0 # Divide all angles by 1000 to make geometry euclidian
     dec_fake = 0.0*fracpos
-    (ingroup, multgroup, firstgroup, nextgroup) = spheregroup(ra_fake, dec_fake, FOF_frac/1000.0)
-    group = ingroup.copy()
-    uni_group, uni_ind = np.unique(group, return_index=True)
-    nobj = len(uni_group)
-    msgs.info('FOF matching found {:d}'.format(nobj) + ' unique objects')
+    if nfound>1:
+        (ingroup, multgroup, firstgroup, nextgroup) = spheregroup(ra_fake, dec_fake, FOF_frac/1000.0)
+        group = ingroup.copy()
+        uni_group, uni_ind = np.unique(group, return_index=True)
+        nobj = len(uni_group)
+        msgs.info('FOF matching found {:d}'.format(nobj) + ' unique objects')
+    elif nfound==1:
+        group = np.zeros(1,dtype='int')
+        uni_group, uni_ind = np.unique(group, return_index=True)
+        nobj = len(group)
+        msgs.info('Only find one object no FOF matching is needed')
+
     gfrac = np.zeros(nfound)
     for jj in range(nobj):
         this_group = group == uni_group[jj]
@@ -383,13 +391,23 @@ elif spectro == 'NIRES':
     plate_scale = 0.123
 elif spectro == 'GNIRS':
     from scipy.io import readsav
-    hdu = fits.open('/Users/feige/Dropbox/hires_fndobj/sci-N20170331S0216-219.fits')
-    objminsky = hdu[0].data
-    var  = hdu[2].data
-    ivar = utils.calc_ivar(var)
-    mask = (var > 0.0)
-    slit_left = readsav('/Users/feige/Dropbox/hires_fndobj/left_edge.sav', python_dict=False)['left_edge'].T
-    slit_righ = readsav('/Users/feige/Dropbox/hires_fndobj/right_edge.sav', python_dict=False)['right_edge'].T
+    #hdu = fits.open('/Users/feige/Dropbox/hires_fndobj/sci-N20170331S0216-219.fits')
+    hdu = fits.open('/Users/feige/Dropbox/hires_fndobj/GNIRS/J021514.76+004223.8/Science/J021514.76+004223.8_1/sci-N20170927S0294-297.fits')
+    hdu = fits.open('/Users/feige/Dropbox/hires_fndobj/GNIRS/J005424.45+004750.2/Science/J005424.45+004750.2_7/sci-N20171021S0264-267.fits')
+    hdu = fits.open('/Users/feige/Dropbox/hires_fndobj/GNIRS/J002407.02-001237.2/Science/J002407.02-001237.2_5/sci-N20171006S0236-239.fits')
+    obj = hdu[0].data
+    objminsky = obj - hdu[1].data
+    ivar  = hdu[2].data
+    #ivar = utils.calc_ivar(var)
+    mask = (ivar > 0.0)
+    #slit_left = readsav('/Users/feige/Dropbox/hires_fndobj/left_edge.sav', python_dict=False)['left_edge'].T
+    #slit_righ = readsav('/Users/feige/Dropbox/hires_fndobj/right_edge.sav', python_dict=False)['right_edge'].T
+    #slit_left = readsav('/Users/feige/Dropbox/hires_fndobj/GNIRS/J021514.76+004223.8/left_edge_J0215.sav',python_dict=False)['left_edge'].T
+    #slit_righ = readsav('/Users/feige/Dropbox/hires_fndobj/GNIRS/J021514.76+004223.8/right_edge_J0215.sav',python_dict=False)['right_edge'].T
+    #slit_left = readsav('/Users/feige/Dropbox/hires_fndobj/GNIRS/J005424.45+004750.2/left_edge_J0054.sav',python_dict=False)['left_edge'].T
+    #slit_righ = readsav('/Users/feige/Dropbox/hires_fndobj/GNIRS/J005424.45+004750.2/right_edge_J0054.sav',python_dict=False)['right_edge'].T
+    slit_left = readsav('/Users/feige/Dropbox/hires_fndobj/GNIRS/J002407.02-001237.2/left_edge_J0024.sav',python_dict=False)['left_edge'].T
+    slit_righ = readsav('/Users/feige/Dropbox/hires_fndobj/GNIRS/J002407.02-001237.2/right_edge_J0024.sav',python_dict=False)['right_edge'].T
     plate_scale = 0.15
 
 
