@@ -371,6 +371,12 @@ elif spectro == 'ESI':
     slit_left = data[0,:,:].T
     slit_righ = data[1,:,:].T
     plate_scale = 0.149
+elif spectro == 'NRIES':
+    from linetools import utils as ltu
+    jdict = ltu.loadjson('/Users/feige/Software/python3/PypeIt-development-suite/dev_algorithms/echelle/tilt_nires.json')
+    slit_left = jdict['lcen']
+    slit_right = jdict['rcen']
+
 
 
 ordermask = pixels.slit_pixels(slit_left, slit_righ, objminsky.shape, 0)
