@@ -7,6 +7,7 @@ from pypeit import msgs
 from astropy.io import fits
 from astropy.table import Table
 from astropy.stats import sigma_clipped_stats
+from matplotlib import pyplot as plt
 
 from pypeit import ginga
 from pypeit.core import pydl
@@ -18,8 +19,6 @@ from pypeit.core import extract
 from astropy.stats import SigmaClip
 from pydl.pydlutils.spheregroup import spheregroup
 
-
-from matplotlib import pyplot as plt
 
 
 #  xcen = flux weighted centroid, xcen_fit = fit to flux weighted centroid, inmask = mask of same dimension as xcen,
@@ -55,55 +54,53 @@ def pca_trace(xcen, usepca = None, npca = 2, npoly_cen = 3, debug=True):
 
     # Fit first pca dimension (with largest variance) with a higher order npoly depending on number of good orders.
     # Fit all higher dimensions (with lower variance) with a line
-    #npoly_vec = np.ones(npca,dtype=int)
     npoly = int(np.fmin(np.fmax(np.floor(3.3*ngood/norders),1.0),3.0))
-    #npoly_vec[0]=npoly
     npoly_vec = np.full(npca, npoly)
-
     order_vec = np.arange(norders,dtype=float)
-    pca_coeffs = np.zeros((norders, npca))
+    # pca_coeffs = np.zeros((norders, npca))
+    pca_coeffs_new = np.zeros((norders, npca))
     # Now loop over the dimensionality of the compression and perform a polynomial fit to
     for idim in range(npca):
         # ToDO robust_polyfit is garbage remove it entirely from PypeIT!
         xfit = order_vec[use_order]
         yfit = pca_coeffs_use[:,idim]
         norder = npoly_vec[idim]
-        msk, poly_coeff = utils.robust_polyfit(xfit, yfit, norder, sigma = 3.0, function='polynomial')
-        # TESTING
+
+        # msk, poly_coeff = utils.robust_polyfit(xfit, yfit, norder, sigma = 3.0, function='polynomial')
+        # pca_coeffs[:,idim] = utils.func_val(poly_coeff, order_vec, 'polynomial')
+
+        # TESTING traceset fitting
         xtemp = xfit.reshape(1, xfit.size)
         ytemp = yfit.reshape(1, yfit.size)
-        tset = pydl.xy2traceset(xtemp, ytemp, ncoeff=norder,function='poly')
+        tset = pydl.xy2traceset(xtemp, ytemp, ncoeff=norder,func='poly')
         tset_yfit = tset.yfit.reshape(tset.yfit.shape[1])
-        #pca_coeffs_tset = tset.yfit
-        pca_coeffs[:,idim] = utils.func_val(poly_coeff, order_vec, 'polynomial')
-        ## Test new robust fitting
+
+        ## Test new robust fitting with djs_reject
         msk_new, poly_coeff_new = utils.robust_polyfit_djs(xfit, yfit, norder, \
                                                    function='polynomial', minv=None, maxv=None, bspline_par=None, \
                                                    guesses=None, maxiter=10, inmask=None, sigma=None, invvar=None, \
-                                                   lower=3, upper=2, maxdev=None, maxrej=None, groupdim=None,
+                                                   lower=5, upper=5, maxdev=None, maxrej=None, groupdim=None,
                                                    groupsize=None, \
                                                    groupbadpix=False, grow=0, sticky=False, verbose=True)
+        pca_coeffs_new[:,idim] = utils.func_val(poly_coeff_new, order_vec, 'polynomial')
+
         if debug:
             # Evaluate the fit
             xvec = np.linspace(order_vec.min(),order_vec.max(),num=100)
             (_,tset_fit) = tset.xy(xpos=xvec.reshape(1,xvec.size))
             yfit_tset = tset_fit[0,:]
-            robust_mask = msk == 0
+            #robust_mask = msk == 0
             robust_mask_new = msk_new == 1
             tset_mask = tset.outmask[0,:]
-            plt.plot(xfit[robust_mask],yfit[robust_mask],'ko', markersize = 8.0, label = 'pca coeff fit')
-            plt.plot(xfit[~robust_mask]*1.05,yfit[~robust_mask],'k+', markersize = 10.0, label = 'pca coeff rejected')
-            plt.plot(xfit[tset_mask],yfit[tset_mask],'ro', markersize = 8.0, label = 'pca coeff fit')
-            plt.plot(xfit[~tset_mask]*1.05,yfit[~tset_mask], 'r+', markersize = 10.0, label = 'pca coeff rejected')
-            plt.plot(xfit[robust_mask_new]+0.5,yfit[robust_mask_new],'bo', markersize = 8.0, label = 'pca coeff fit')
-            plt.plot(xfit[~robust_mask_new]+0.5,yfit[~robust_mask_new],'b+', markersize = 10.0, label = 'pca coeff rejected')
-            plt.plot(xvec, utils.func_val(poly_coeff, xvec, 'polynomial'), color='black',label = 'robust polyfit')
-            plt.plot(xvec+0.5, utils.func_val(poly_coeff_new, xvec, 'polynomial'), color='blue',label = 'new robust polyfit')
-            plt.plot(xvec, yfit_tset, color='red',label='pydl')
+            plt.plot(xfit, yfit, 'ko', mfc='None', markersize=8.0, label='pca coeff')
+            #plt.plot(xfit[~robust_mask], yfit[~robust_mask], 'ms', mfc='None', markersize=10.0,label='robust_polyfit rejected')
+            #plt.plot(xfit[~robust_mask_new], yfit[~robust_mask_new], 'r+', markersize=20.0,label='robust_polyfit_djs rejected')
+            plt.plot(xfit[~tset_mask],yfit[~tset_mask], 'bo', markersize = 10.0, label = 'traceset rejected')
+            #plt.plot(xvec, utils.func_val(poly_coeff, xvec, 'polynomial'),ls='--', color='m', label='robust polyfit')
+            plt.plot(xvec, utils.func_val(poly_coeff_new, xvec, 'polynomial'),ls='-.', color='r', label='new robust polyfit')
+            plt.plot(xvec, yfit_tset,ls=':', color='b',label='traceset')
             plt.legend()
             plt.show()
-            #from IPython import embed
-            #embed()
 
     #ToDo should we be masking the bad orders here and interpolating/extrapolating?
     spat_mean = np.mean(xcen,0)
@@ -111,7 +108,8 @@ def pca_trace(xcen, usepca = None, npca = 2, npoly_cen = 3, debug=True):
     ibad = np.where(msk_spat == 1)
     spat_mean[ibad] = utils.func_val(poly_coeff_spat,order_vec[ibad],'polynomial')
 
-    pca_fit = np.outer(np.ones(nspec), spat_mean) + np.outer(pca.mean_,np.ones(norders)) + (np.dot(pca_coeffs, pca_vectors)).T
+    #pca_fit = np.outer(np.ones(nspec), spat_mean) + np.outer(pca.mean_,np.ones(norders)) + (np.dot(pca_coeffs, pca_vectors)).T
+    pca_fit = np.outer(np.ones(nspec), spat_mean) + np.outer(pca.mean_,np.ones(norders)) + (np.dot(pca_coeffs_new, pca_vectors)).T
 
     return pca_fit
 
@@ -349,13 +347,13 @@ def ech_objfind(image, ivar, ordermask, slit_left, slit_righ,inmask=None,plate_s
 
 
 # HIRES
-spectro = 'ESI'
+spectro = 'HIRES'
 if spectro == 'HIRES':
-    hdu = fits.open('/Users/feige/Dropbox/hires_fndobj/f_hires0181G.fits.gz')
+    hdu = fits.open('/Users/feige/Dropbox/hires_fndobj/f_hires0184G.fits.gz')
     objminsky =hdu[2].data
     ivar  = hdu[1].data
     mask = (ivar > 0.0)
-    order_str = Table.read('/Users/feige/Dropbox/hires_fndobj/OStr_G_02.fits')
+    order_str = Table.read('/Users/feige/Dropbox/hires_fndobj/OStr_G_04.fits')
     slit_left = (order_str['LHEDG']).T
     slit_righ = (order_str['RHEDG']).T
     plate_scale = 0.36
@@ -393,8 +391,8 @@ ordermask = pixels.slit_pixels(slit_left, slit_righ, objminsky.shape, 0)
 slit_mid = (slit_left + slit_righ)/2.0
 #usepca = np.zeros(slit_mid.shape[1],dtype=bool)
 #usepca[0:8] = True
-pca_out = pca_trace(slit_mid, npca = 4, npoly_cen = 3)
-sys.exit(-1)
+#pca_out = pca_trace(slit_mid, npca = 4, npoly_cen = 3)
+#sys.exit(-1)
 #viewer, ch = ginga.show_image(ordermask > 0)
 #ginga.show_slits(viewer,ch, slit_mid, pca_out)
 
@@ -407,7 +405,7 @@ inmask = mask.copy()
 #------
 ncoeff = 5
 box_radius = 2.0  # arcseconds
-min_snr = 0.3
+min_snr = 0.2
 nabove_min_snr = 2
 pca_percentile = 20.0
 snr_pca = 3.0
