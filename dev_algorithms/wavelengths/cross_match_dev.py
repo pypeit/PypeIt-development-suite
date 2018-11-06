@@ -95,5 +95,12 @@ for islit in range(nslits):
     for iarxiv in range(narxiv):
         msgs.info('Cross-correlating slit # {:d}'.format(islit + 1) + ' with arxiv slit # {:d}'.format(iarxiv + 1))
         # Match the peaks between the two spectra.
-        success, shift_vec[cntr], stretch_vec[cntr], ccorr_vec[cntr], _, _ = \
+        success, shift_vec[iarxiv], stretch_vec[iarxiv], ccorr_vec[iarxiv], _, _ = \
             wvutils.xcorr_shift_stretch(spec[:, islit], spec_arxiv[:, iarxiv], debug=debug)
+        # Estimate wcen and disp for this slit based on its shift/stretch relative to the archive slit
+        disp[iarxiv] = disp_arxiv[iarxiv] / stretch_vec[iarxiv]
+        wcen[iarxiv] = wvc_arxiv[iarxiv] - shift_vec[iarxiv]*disp[iarxiv]
+        # For each peak in the arxiv spectrum, identify the corresponding peaks in the input islit spectrum. Do this by
+        # transforming these arxiv slit line pixel locations into the (shifted and stretched) input islit spectrum frame
+        arxiv_det = self.get_use_tcent(sign, detections[str(gs)])
+        gsdet_ss = gsdet * stretch_vec[cntr] + shift_vec[cntr]
