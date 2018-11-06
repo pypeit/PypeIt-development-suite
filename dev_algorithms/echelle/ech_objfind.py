@@ -72,7 +72,7 @@ def pca_trace(xcen, usepca = None, npca = 2, npoly_cen = 3, debug=True):
         # TESTING traceset fitting
         xtemp = xfit.reshape(1, xfit.size)
         ytemp = yfit.reshape(1, yfit.size)
-        tset = pydl.xy2traceset(xtemp, ytemp, ncoeff=norder,func='poly')
+        tset = pydl.xy2traceset(xtemp, ytemp, ncoeff=norder,func='polynomial')
         #tset_yfit = tset.yfit.reshape(tset.yfit.shape[1])
 
         ## Test new robust fitting with djs_reject
@@ -81,7 +81,7 @@ def pca_trace(xcen, usepca = None, npca = 2, npoly_cen = 3, debug=True):
                                                    guesses=None, maxiter=10, inmask=None, sigma=None, invvar=None, \
                                                    lower=5, upper=5, maxdev=None, maxrej=None, groupdim=None,
                                                    groupsize=None, \
-                                                   groupbadpix=False, grow=0, sticky=False, verbose=True)
+                                                   groupbadpix=False, grow=0, sticky=False)
         pca_coeffs_new[:,idim] = utils.func_val(poly_coeff_new, order_vec, 'polynomial')
 
         if debug:
