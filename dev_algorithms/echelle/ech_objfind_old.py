@@ -32,7 +32,7 @@ from pydl.pydlutils.spheregroup import spheregroup
 
 
 
-def pca_trace(xcen, usepca = None, npca = None, npoly_cen = 3, debug=True):
+def pca_trace(xcen, usepca = None, npca = 2, npoly_cen = 3, debug=True):
 
     nspec = xcen.shape[0]
     norders = xcen.shape[1]
@@ -42,17 +42,6 @@ def pca_trace(xcen, usepca = None, npca = None, npoly_cen = 3, debug=True):
     # use_order = True orders used to predict the usepca = True bad orders
     use_order = np.invert(usepca)
     ngood = np.sum(use_order)
-
-    if npca is None:
-        pca_full = PCA()
-        xcen_use = (xcen[:, use_order] - np.mean(xcen[:, use_order], 0)).T
-        pca_full.fit(xcen_use)
-        var = np.cumsum(np.round(pca_full.explained_variance_ratio_, decimals=3) * 100)
-        plt.plot(var)
-        npca = int(np.interp(0.99, var,np.arange(norders)
-        from IPython import embed
-        embed()
-
     if ngood < npca:
         msgs.warn('Not enough good traces for a PCA fit: ngood = {:d}'.format(ngood) + ' is < npca = {:d}'.format(npca))
         msgs.warn('Using the input trace for now')
@@ -125,7 +114,7 @@ def pca_trace(xcen, usepca = None, npca = None, npoly_cen = 3, debug=True):
     return pca_fit
 
 
-def ech_objfind(image, ivar, ordermask, slit_left, slit_righ,inmask=None,plate_scale=0.2,npca=None,ncoeff = 5,min_snr=0.0,nabove_min_snr=0,
+def ech_objfind(image, ivar, ordermask, slit_left, slit_righ,inmask=None,plate_scale=0.2,npca=2,ncoeff = 5,min_snr=0.0,nabove_min_snr=0,
                 pca_percentile=20.0,snr_pca=3.0,box_radius=2.0,show_peaks=False,show_fits=False,show_trace=False):
 
 
@@ -366,7 +355,7 @@ def ech_objfind(image, ivar, ordermask, slit_left, slit_righ,inmask=None,plate_s
 
 
 # HIRES
-spectro = 'GNIRS'
+spectro = 'NIRES'
 if spectro == 'HIRES':
     hdu = fits.open('/Users/feige/Dropbox/hires_fndobj/f_hires0184G.fits.gz')
     objminsky =hdu[2].data
@@ -403,9 +392,9 @@ elif spectro == 'NIRES':
 elif spectro == 'GNIRS':
     from scipy.io import readsav
     #hdu = fits.open('/Users/feige/Dropbox/hires_fndobj/sci-N20170331S0216-219.fits')
-    hdu = fits.open('/Users/joe/Dropbox/hires_fndobj/GNIRS/J021514.76+004223.8/Science/J021514.76+004223.8_1/sci-N20170927S0294-297.fits')
-    hdu = fits.open('/Users/joe/Dropbox/hires_fndobj/GNIRS/J005424.45+004750.2/Science/J005424.45+004750.2_7/sci-N20171021S0264-267.fits')
-    hdu = fits.open('/Users/joe/Dropbox/hires_fndobj/GNIRS/J002407.02-001237.2/Science/J002407.02-001237.2_5/sci-N20171006S0236-239.fits')
+    hdu = fits.open('/Users/feige/Dropbox/hires_fndobj/GNIRS/J021514.76+004223.8/Science/J021514.76+004223.8_1/sci-N20170927S0294-297.fits')
+    hdu = fits.open('/Users/feige/Dropbox/hires_fndobj/GNIRS/J005424.45+004750.2/Science/J005424.45+004750.2_7/sci-N20171021S0264-267.fits')
+    hdu = fits.open('/Users/feige/Dropbox/hires_fndobj/GNIRS/J002407.02-001237.2/Science/J002407.02-001237.2_5/sci-N20171006S0236-239.fits')
     obj = hdu[0].data
     #objminsky = obj - hdu[1].data
     objminsky = hdu[1].data - obj # test negative trace
@@ -418,8 +407,8 @@ elif spectro == 'GNIRS':
     #slit_righ = readsav('/Users/feige/Dropbox/hires_fndobj/GNIRS/J021514.76+004223.8/right_edge_J0215.sav',python_dict=False)['right_edge'].T
     #slit_left = readsav('/Users/feige/Dropbox/hires_fndobj/GNIRS/J005424.45+004750.2/left_edge_J0054.sav',python_dict=False)['left_edge'].T
     #slit_righ = readsav('/Users/feige/Dropbox/hires_fndobj/GNIRS/J005424.45+004750.2/right_edge_J0054.sav',python_dict=False)['right_edge'].T
-    slit_left = readsav('/Users/joe/Dropbox/hires_fndobj/GNIRS/J002407.02-001237.2/left_edge_J0024.sav',python_dict=False)['left_edge'].T
-    slit_righ = readsav('/Users/joe/Dropbox/hires_fndobj/GNIRS/J002407.02-001237.2/right_edge_J0024.sav',python_dict=False)['right_edge'].T
+    slit_left = readsav('/Users/feige/Dropbox/hires_fndobj/GNIRS/J002407.02-001237.2/left_edge_J0024.sav',python_dict=False)['left_edge'].T
+    slit_righ = readsav('/Users/feige/Dropbox/hires_fndobj/GNIRS/J002407.02-001237.2/right_edge_J0024.sav',python_dict=False)['right_edge'].T
     plate_scale = 0.15
 
 
@@ -459,8 +448,10 @@ min_snr = 0.2
 nabove_min_snr = 2
 pca_percentile = 20.0
 snr_pca = 3.0
-npca = None
+npca = 4
 
 sobjs_final = ech_objfind(image, ivar, ordermask, slit_left, slit_righ,inmask=inmask,plate_scale=plate_scale, npca = npca,
                           ncoeff = 5,min_snr=min_snr,nabove_min_snr=nabove_min_snr,pca_percentile=pca_percentile,snr_pca=snr_pca,
                           box_radius=box_radius,show_peaks=True,show_fits=False,show_trace=True)
+
+
