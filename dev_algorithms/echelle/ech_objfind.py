@@ -42,15 +42,21 @@ def pca_trace(xcen, usepca = None, npca = None, npoly_cen = 3, debug=True):
     # use_order = True orders used to predict the usepca = True bad orders
     use_order = np.invert(usepca)
     ngood = np.sum(use_order)
+
+    if npca is None:
+        pca_full = PCA()
+        xcen_use = (xcen[:, use_order] - np.mean(xcen[:, use_order], 0)).T
+        pca_full.fit(xcen_use)
+        var = np.cumsum(np.round(pca_full.explained_variance_ratio_, decimals=3) * 100)
+        plt.plot(var)
+        npca = int(np.interp(0.99, var,np.arange(norders)
+        from IPython import embed
+        embed()
+
     if ngood < npca:
         msgs.warn('Not enough good traces for a PCA fit: ngood = {:d}'.format(ngood) + ' is < npca = {:d}'.format(npca))
         msgs.warn('Using the input trace for now')
         return xcen
-
-    if npca is None:
-        pca_full = PCA(n_components=npca)
-        from IPython import embed
-        embed()
 
     pca = PCA(n_components=npca)
     xcen_use = (xcen[:,use_order] - np.mean(xcen[:,use_order],0)).T
@@ -397,9 +403,9 @@ elif spectro == 'NIRES':
 elif spectro == 'GNIRS':
     from scipy.io import readsav
     #hdu = fits.open('/Users/feige/Dropbox/hires_fndobj/sci-N20170331S0216-219.fits')
-    hdu = fits.open('/Users/feige/Dropbox/hires_fndobj/GNIRS/J021514.76+004223.8/Science/J021514.76+004223.8_1/sci-N20170927S0294-297.fits')
-    hdu = fits.open('/Users/feige/Dropbox/hires_fndobj/GNIRS/J005424.45+004750.2/Science/J005424.45+004750.2_7/sci-N20171021S0264-267.fits')
-    hdu = fits.open('/Users/feige/Dropbox/hires_fndobj/GNIRS/J002407.02-001237.2/Science/J002407.02-001237.2_5/sci-N20171006S0236-239.fits')
+    hdu = fits.open('/Users/joe/Dropbox/hires_fndobj/GNIRS/J021514.76+004223.8/Science/J021514.76+004223.8_1/sci-N20170927S0294-297.fits')
+    hdu = fits.open('/Users/joe/Dropbox/hires_fndobj/GNIRS/J005424.45+004750.2/Science/J005424.45+004750.2_7/sci-N20171021S0264-267.fits')
+    hdu = fits.open('/Users/joe/Dropbox/hires_fndobj/GNIRS/J002407.02-001237.2/Science/J002407.02-001237.2_5/sci-N20171006S0236-239.fits')
     obj = hdu[0].data
     #objminsky = obj - hdu[1].data
     objminsky = hdu[1].data - obj # test negative trace
