@@ -7,6 +7,7 @@ from pypeit import msgs
 from astropy.io import fits
 from astropy.table import Table
 from astropy.stats import sigma_clipped_stats
+from matplotlib import pyplot as plt
 
 from pypeit import ginga
 from pypeit.core import pydl
@@ -18,8 +19,6 @@ from pypeit.core import extract
 from astropy.stats import SigmaClip
 from pydl.pydlutils.spheregroup import spheregroup
 
-
-from matplotlib import pyplot as plt
 
 
 #  xcen = flux weighted centroid, xcen_fit = fit to flux weighted centroid, inmask = mask of same dimension as xcen,
@@ -55,44 +54,52 @@ def pca_trace(xcen, usepca = None, npca = 2, npoly_cen = 3, debug=True):
 
     # Fit first pca dimension (with largest variance) with a higher order npoly depending on number of good orders.
     # Fit all higher dimensions (with lower variance) with a line
-    #npoly_vec = np.ones(npca,dtype=int)
     npoly = int(np.fmin(np.fmax(np.floor(3.3*ngood/norders),1.0),3.0))
-    #npoly_vec[0]=npoly
     npoly_vec = np.full(npca, npoly)
-
     order_vec = np.arange(norders,dtype=float)
-    pca_coeffs = np.zeros((norders, npca))
+    # pca_coeffs = np.zeros((norders, npca))
+    pca_coeffs_new = np.zeros((norders, npca))
     # Now loop over the dimensionality of the compression and perform a polynomial fit to
     for idim in range(npca):
         # ToDO robust_polyfit is garbage remove it entirely from PypeIT!
         xfit = order_vec[use_order]
         yfit = pca_coeffs_use[:,idim]
         norder = npoly_vec[idim]
-        msk, poly_coeff = utils.robust_polyfit(xfit, yfit, norder, sigma = 3.0, function='polynomial')
-        # TESTING
+
+        # msk, poly_coeff = utils.robust_polyfit(xfit, yfit, norder, sigma = 3.0, function='polynomial')
+        # pca_coeffs[:,idim] = utils.func_val(poly_coeff, order_vec, 'polynomial')
+
+        # TESTING traceset fitting
         xtemp = xfit.reshape(1, xfit.size)
         ytemp = yfit.reshape(1, yfit.size)
-        tset = pydl.xy2traceset(xtemp, ytemp, ncoeff=norder,function='poly')
-        tset_yfit = tset.yfit.reshape(tset.yfit.shape[1])
-        #pca_coeffs_tset = tset.yfit
-        pca_coeffs[:,idim] = utils.func_val(poly_coeff, order_vec, 'polynomial')
+        tset = pydl.xy2traceset(xtemp, ytemp, ncoeff=norder,func='polynomial')
+        #tset_yfit = tset.yfit.reshape(tset.yfit.shape[1])
+
+        ## Test new robust fitting with djs_reject
+        msk_new, poly_coeff_new = utils.robust_polyfit_djs(xfit, yfit, norder, \
+                                                   function='polynomial', minv=None, maxv=None, bspline_par=None, \
+                                                   guesses=None, maxiter=10, inmask=None, sigma=None, invvar=None, \
+                                                   lower=5, upper=5, maxdev=None, maxrej=None, groupdim=None,
+                                                   groupsize=None, \
+                                                   groupbadpix=False, grow=0, sticky=False)
+        pca_coeffs_new[:,idim] = utils.func_val(poly_coeff_new, order_vec, 'polynomial')
 
         if debug:
             # Evaluate the fit
             xvec = np.linspace(order_vec.min(),order_vec.max(),num=100)
             (_,tset_fit) = tset.xy(xpos=xvec.reshape(1,xvec.size))
             yfit_tset = tset_fit[0,:]
-            robust_mask = msk == 0
+            #robust_mask = msk == 0
+            robust_mask_new = msk_new == 1
             tset_mask = tset.outmask[0,:]
-            plt.plot(xfit[robust_mask],yfit[robust_mask],'ko', markersize = 8.0, label = 'pca coeff fit')
-            plt.plot(xfit[~robust_mask]*1.05,yfit[~robust_mask],'k+', markersize = 10.0, label = 'pca coeff rejected')
-            plt.plot(xfit[tset_mask],yfit[tset_mask],'ro', markersize = 8.0, label = 'pca coeff fit')
-            plt.plot(xfit[~tset_mask]*1.05,yfit[~tset_mask], 'r+', markersize = 10.0, label = 'pca coeff rejected')
-            plt.plot(xvec, utils.func_val(poly_coeff, xvec, 'polynomial'), color='black',label = 'robust polyfit')
-            plt.plot(xvec, yfit_tset, color='red',label='pydl')
+            plt.plot(xfit, yfit, 'ko', mfc='None', markersize=8.0, label='pca coeff')
+            #plt.plot(xfit[~robust_mask], yfit[~robust_mask], 'ms', mfc='None', markersize=10.0,label='robust_polyfit rejected')
+            #plt.plot(xfit[~robust_mask_new], yfit[~robust_mask_new], 'r+', markersize=20.0,label='robust_polyfit_djs rejected')
+            plt.plot(xfit[~tset_mask],yfit[~tset_mask], 'bo', markersize = 10.0, label = 'traceset rejected')
+            #plt.plot(xvec, utils.func_val(poly_coeff, xvec, 'polynomial'),ls='--', color='m', label='robust polyfit')
+            plt.plot(xvec, utils.func_val(poly_coeff_new, xvec, 'polynomial'),ls='-.', color='r', label='new robust polyfit')
+            plt.plot(xvec, yfit_tset,ls=':', color='b',label='traceset')
             plt.legend()
-            from IPython import embed
-            embed()
             plt.show()
 
     #ToDo should we be masking the bad orders here and interpolating/extrapolating?
@@ -101,7 +108,8 @@ def pca_trace(xcen, usepca = None, npca = 2, npoly_cen = 3, debug=True):
     ibad = np.where(msk_spat == 1)
     spat_mean[ibad] = utils.func_val(poly_coeff_spat,order_vec[ibad],'polynomial')
 
-    pca_fit = np.outer(np.ones(nspec), spat_mean) + np.outer(pca.mean_,np.ones(norders)) + (np.dot(pca_coeffs, pca_vectors)).T
+    #pca_fit = np.outer(np.ones(nspec), spat_mean) + np.outer(pca.mean_,np.ones(norders)) + (np.dot(pca_coeffs, pca_vectors)).T
+    pca_fit = np.outer(np.ones(nspec), spat_mean) + np.outer(pca.mean_,np.ones(norders)) + (np.dot(pca_coeffs_new, pca_vectors)).T
 
     return pca_fit
 
@@ -150,7 +158,7 @@ def ech_objfind(image, ivar, ordermask, slit_left, slit_righ,inmask=None,plate_s
         specobj_dict = {'setup': 'HIRES', 'slitid': iord + 1, 'scidx': 0,'det': 1, 'objtype': 'science'}
         sobjs_slit, skymask[thismask], objmask[thismask], proc_list = \
             extract.objfind(image, thismask, slit_left[:,iord], slit_righ[:,iord], inmask=inmask_iord,show_peaks=show_peaks,
-                            show_fits=show_fits, show_trace=False, specobj_dict = specobj_dict)
+                            show_fits=show_fits, show_trace=False, specobj_dict = specobj_dict)#, sig_thresh = 3.0)
         # ToDO make the specobjs _set_item_ work with expressions like this spec[:].orderindx = iord
         for spec in sobjs_slit:
             spec.ech_orderindx = iord
@@ -163,15 +171,23 @@ def ech_objfind(image, ivar, ordermask, slit_left, slit_righ,inmask=None,plate_s
     FOFSEP = 1.0 # separation of FOF algorithm in arcseconds
     FOF_frac = FOFSEP/(np.median(slit_width)*np.median(plate_scale_ord))
 
+    # Feige: made the code also works for only one object found in one order
     # Run the FOF. We use fake coordinaes
     fracpos = sobjs.spat_fracpos
     ra_fake = fracpos/1000.0 # Divide all angles by 1000 to make geometry euclidian
     dec_fake = 0.0*fracpos
-    (ingroup, multgroup, firstgroup, nextgroup) = spheregroup(ra_fake, dec_fake, FOF_frac/1000.0)
-    group = ingroup.copy()
-    uni_group, uni_ind = np.unique(group, return_index=True)
-    nobj = len(uni_group)
-    msgs.info('FOF matching found {:d}'.format(nobj) + ' unique objects')
+    if nfound>1:
+        (ingroup, multgroup, firstgroup, nextgroup) = spheregroup(ra_fake, dec_fake, FOF_frac/1000.0)
+        group = ingroup.copy()
+        uni_group, uni_ind = np.unique(group, return_index=True)
+        nobj = len(uni_group)
+        msgs.info('FOF matching found {:d}'.format(nobj) + ' unique objects')
+    elif nfound==1:
+        group = np.zeros(1,dtype='int')
+        uni_group, uni_ind = np.unique(group, return_index=True)
+        nobj = len(group)
+        msgs.warn('Only find one object no FOF matching is needed')
+
     gfrac = np.zeros(nfound)
     for jj in range(nobj):
         this_group = group == uni_group[jj]
@@ -339,30 +355,61 @@ def ech_objfind(image, ivar, ordermask, slit_left, slit_righ,inmask=None,plate_s
 
 
 # HIRES
-spectro = 'ESI'
+spectro = 'NIRES'
 if spectro == 'HIRES':
-    hdu = fits.open('/Users/joe/Dropbox/hires_fndobj/f_hires0181G.fits.gz')
+    hdu = fits.open('/Users/feige/Dropbox/hires_fndobj/f_hires0184G.fits.gz')
     objminsky =hdu[2].data
     ivar  = hdu[1].data
     mask = (ivar > 0.0)
-    order_str = Table.read('/Users/joe/Dropbox/hires_fndobj/OStr_G_02.fits')
+    order_str = Table.read('/Users/feige/Dropbox/hires_fndobj/OStr_G_04.fits')
     slit_left = (order_str['LHEDG']).T
     slit_righ = (order_str['RHEDG']).T
     plate_scale = 0.36
 elif spectro == 'ESI':
     # ESI
-    hdu = fits.open('/Users/joe/Dropbox/Cowie_2002-02-17/Final/fringe_ES.20020217.35453.fits.gz')
+    hdu = fits.open('/Users/feige/Dropbox/Cowie_2002-02-17/Final/fringe_ES.20020217.35453.fits.gz')
     sciimg = hdu[0].data
     var  = hdu[1].data
     ivar = utils.calc_ivar(var)
     mask = (var > 0.0)
     skyimg = hdu[2].data
     objminsky = sciimg - skyimg
-    hdu_sedg = fits.open('/Users/joe/Dropbox/Cowie_2002-02-17/Flats/SEdgECH75_1x1.fits')
+    hdu_sedg = fits.open('/Users/feige/Dropbox/Cowie_2002-02-17/Flats/SEdgECH75_1x1.fits')
     data = hdu_sedg[0].data
     slit_left = data[0,:,:].T
     slit_righ = data[1,:,:].T
     plate_scale = 0.149
+elif spectro == 'NIRES':
+    from linetools import utils as ltu
+    jdict = ltu.loadjson('/Users/feige/Dropbox/hires_fndobj/tilt_nires.json')
+    slit_left = np.array(jdict['lcen'])
+    slit_righ = np.array(jdict['rcen'])
+    hdu = fits.open('/Users/feige/Dropbox/hires_fndobj/spec2d_J1724+1901_NIRES_2018Jun04T130207.856.fits')
+    objminsky = hdu[1].data - hdu[3].data
+    ivar = hdu[2].data
+    mask = (ivar>0)
+    plate_scale = 0.123
+elif spectro == 'GNIRS':
+    from scipy.io import readsav
+    #hdu = fits.open('/Users/feige/Dropbox/hires_fndobj/sci-N20170331S0216-219.fits')
+    hdu = fits.open('/Users/feige/Dropbox/hires_fndobj/GNIRS/J021514.76+004223.8/Science/J021514.76+004223.8_1/sci-N20170927S0294-297.fits')
+    hdu = fits.open('/Users/feige/Dropbox/hires_fndobj/GNIRS/J005424.45+004750.2/Science/J005424.45+004750.2_7/sci-N20171021S0264-267.fits')
+    hdu = fits.open('/Users/feige/Dropbox/hires_fndobj/GNIRS/J002407.02-001237.2/Science/J002407.02-001237.2_5/sci-N20171006S0236-239.fits')
+    obj = hdu[0].data
+    #objminsky = obj - hdu[1].data
+    objminsky = hdu[1].data - obj # test negative trace
+    ivar  = hdu[2].data
+    #ivar = utils.calc_ivar(var)
+    mask = (ivar > 0.0)
+    #slit_left = readsav('/Users/feige/Dropbox/hires_fndobj/left_edge.sav', python_dict=False)['left_edge'].T
+    #slit_righ = readsav('/Users/feige/Dropbox/hires_fndobj/right_edge.sav', python_dict=False)['right_edge'].T
+    #slit_left = readsav('/Users/feige/Dropbox/hires_fndobj/GNIRS/J021514.76+004223.8/left_edge_J0215.sav',python_dict=False)['left_edge'].T
+    #slit_righ = readsav('/Users/feige/Dropbox/hires_fndobj/GNIRS/J021514.76+004223.8/right_edge_J0215.sav',python_dict=False)['right_edge'].T
+    #slit_left = readsav('/Users/feige/Dropbox/hires_fndobj/GNIRS/J005424.45+004750.2/left_edge_J0054.sav',python_dict=False)['left_edge'].T
+    #slit_righ = readsav('/Users/feige/Dropbox/hires_fndobj/GNIRS/J005424.45+004750.2/right_edge_J0054.sav',python_dict=False)['right_edge'].T
+    slit_left = readsav('/Users/feige/Dropbox/hires_fndobj/GNIRS/J002407.02-001237.2/left_edge_J0024.sav',python_dict=False)['left_edge'].T
+    slit_righ = readsav('/Users/feige/Dropbox/hires_fndobj/GNIRS/J002407.02-001237.2/right_edge_J0024.sav',python_dict=False)['right_edge'].T
+    plate_scale = 0.15
 
 
 ordermask = pixels.slit_pixels(slit_left, slit_righ, objminsky.shape, 0)
@@ -383,8 +430,8 @@ ordermask = pixels.slit_pixels(slit_left, slit_righ, objminsky.shape, 0)
 slit_mid = (slit_left + slit_righ)/2.0
 #usepca = np.zeros(slit_mid.shape[1],dtype=bool)
 #usepca[0:8] = True
-pca_out = pca_trace(slit_mid, npca = 4, npoly_cen = 3)
-sys.exit(-1)
+#pca_out = pca_trace(slit_mid, npca = 4, npoly_cen = 3)
+#sys.exit(-1)
 #viewer, ch = ginga.show_image(ordermask > 0)
 #ginga.show_slits(viewer,ch, slit_mid, pca_out)
 
@@ -397,7 +444,7 @@ inmask = mask.copy()
 #------
 ncoeff = 5
 box_radius = 2.0  # arcseconds
-min_snr = 0.3
+min_snr = 0.2
 nabove_min_snr = 2
 pca_percentile = 20.0
 snr_pca = 3.0
