@@ -3,7 +3,7 @@
 import numpy as np
 # Read in a wavelength solution and compute
 from pypeit import wavecalib
-from pypeit.core.wavecal import waveio, wvutils, fitting, patterns
+from pypeit.core.wavecal import waveio, wvutils, fitting, patterns, qa
 from pypeit import utils
 from astropy import table
 from pypeit import msgs
