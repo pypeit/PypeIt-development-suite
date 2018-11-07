@@ -119,7 +119,7 @@ def pca_trace(xcen, usepca = None, npca = None, npoly_cen = 3, debug=True):
     return pca_fit
 
 
-def ech_objfind(image, ivar, ordermask, slit_left, slit_righ,inmask=None,plate_scale=0.2,npca=2,ncoeff = 5,min_snr=0.0,nabove_min_snr=0,
+def ech_objfind(image, ivar, ordermask, slit_left, slit_righ,inmask=None,plate_scale=0.2,npca=None,ncoeff = 5,min_snr=0.0,nabove_min_snr=0,
                 pca_percentile=20.0,snr_pca=3.0,box_radius=2.0,show_peaks=False,show_fits=False,show_trace=False):
 
 
@@ -360,7 +360,7 @@ def ech_objfind(image, ivar, ordermask, slit_left, slit_righ,inmask=None,plate_s
 
 
 # HIRES
-spectro = 'NIRES'
+spectro = 'GNIRS'
 if spectro == 'HIRES':
     hdu = fits.open('/Users/feige/Dropbox/hires_fndobj/f_hires0184G.fits.gz')
     objminsky =hdu[2].data
@@ -412,8 +412,8 @@ elif spectro == 'GNIRS':
     #slit_righ = readsav('/Users/feige/Dropbox/hires_fndobj/GNIRS/J021514.76+004223.8/right_edge_J0215.sav',python_dict=False)['right_edge'].T
     #slit_left = readsav('/Users/feige/Dropbox/hires_fndobj/GNIRS/J005424.45+004750.2/left_edge_J0054.sav',python_dict=False)['left_edge'].T
     #slit_righ = readsav('/Users/feige/Dropbox/hires_fndobj/GNIRS/J005424.45+004750.2/right_edge_J0054.sav',python_dict=False)['right_edge'].T
-    slit_left = readsav('/Users/feige/Dropbox/hires_fndobj/GNIRS/J002407.02-001237.2/left_edge_J0024.sav',python_dict=False)['left_edge'].T
-    slit_righ = readsav('/Users/feige/Dropbox/hires_fndobj/GNIRS/J002407.02-001237.2/right_edge_J0024.sav',python_dict=False)['right_edge'].T
+    slit_left = readsav('/Users/joe/Dropbox/hires_fndobj/GNIRS/J002407.02-001237.2/left_edge_J0024.sav',python_dict=False)['left_edge'].T
+    slit_righ = readsav('/Users/joe/Dropbox/hires_fndobj/GNIRS/J002407.02-001237.2/right_edge_J0024.sav',python_dict=False)['right_edge'].T
     plate_scale = 0.15
 
 
@@ -453,7 +453,7 @@ min_snr = 0.2
 nabove_min_snr = 2
 pca_percentile = 20.0
 snr_pca = 3.0
-npca = 4
+npca = None
 
 sobjs_final = ech_objfind(image, ivar, ordermask, slit_left, slit_righ,inmask=inmask,plate_scale=plate_scale, npca = npca,
                           ncoeff = 5,min_snr=min_snr,nabove_min_snr=nabove_min_snr,pca_percentile=pca_percentile,snr_pca=snr_pca,
