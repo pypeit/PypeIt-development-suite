@@ -26,7 +26,7 @@ yreal = xfit**3 - xfit
 nout =50
 indrand = rand.choice(len(yfit),nout)
 std = np.std(yreal-yfit)
-nsigma = rand.uniform(2,5,nout)
+nsigma = rand.uniform(1,3,nout)
 sign = rand.choice([-1,1.],nout)
 
 yfit[indrand] =  yreal[indrand] + sign*nsigma*std
@@ -40,23 +40,23 @@ norder =3
 xvec = np.linspace(xfit.min(), xfit.max(), num=200)
 
 ## Old robust_olyfit
-msk, poly_coeff = utils.robust_polyfit(xfit, yfit, norder, sigma=3.0, function='polynomial')
+msk, poly_coeff = utils.robust_polyfit(xfit, yfit, norder, sigma=1.5, function='polynomial')
 
-#msk_new, poly_coeff_new = utils.robust_polyfit_djs(xfit,yfit,norder, \
-#                                           function = 'polynomial', minv = None, maxv = None, bspline_par = None,\
-#                                           guesses = None, maxiter = 10, inmask = None, sigma = None,invvar = None,\
-#                                           lower = 2, upper = 2,maxdev=None,maxrej=None,groupdim=None,groupsize=None,\
-#                                           groupbadpix=False, grow=0,sticky=True,use_mad=True)
+msk_new, poly_coeff_new = utils.robust_polyfit_djs(xfit,yfit,norder, \
+                                           function = 'polynomial', minv = None, maxv = None, bspline_par = None,\
+                                           guesses = None, maxiter = 20, inmask = None, sigma = None,invvar = None,\
+                                           lower = 1.5, upper = 1.5,maxdev=None,maxrej=3,groupdim=None,groupsize=None,\
+                                           groupbadpix=False, grow=0,sticky=True,use_mad=True)
 
 msk_nosticky, poly_coeff_nosticky = utils.robust_polyfit_djs(xfit,yfit,norder, \
                                            function = 'polynomial', minv = None, maxv = None, bspline_par = None,\
-                                           guesses = None, maxiter = 10, inmask = None, sigma = None,invvar = None,\
-                                           lower = 2, upper = 2,maxdev=None,maxrej=None,groupdim=None,groupsize=None,\
+                                           guesses = None, maxiter = 20, inmask = None, sigma = None,invvar = None,\
+                                           lower = 1.5, upper = 1.5,maxdev=None,maxrej=3,groupdim=None,groupsize=None,\
                                            groupbadpix=False, grow=0,sticky=False,use_mad=True)
 robust_mask = msk == 0
 robust_mask_new = msk_new == 1
 robust_mask_nosticky = msk_nosticky == 1
-maskdiff = np.any(robust_mask_nosticky != robust_mask_new)
+maskdiff = np.sum(robust_mask_nosticky != robust_mask_new)
 coeffdiff = np.any(poly_coeff_nosticky != poly_coeff_new)
 
 print(maskdiff)
