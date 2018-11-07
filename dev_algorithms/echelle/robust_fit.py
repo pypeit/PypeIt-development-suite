@@ -42,11 +42,11 @@ xvec = np.linspace(xfit.min(), xfit.max(), num=200)
 ## Old robust_olyfit
 msk, poly_coeff = utils.robust_polyfit(xfit, yfit, norder, sigma=3.0, function='polynomial')
 
-msk_new, poly_coeff_new = utils.robust_polyfit_djs(xfit,yfit,norder, \
-                                           function = 'polynomial', minv = None, maxv = None, bspline_par = None,\
-                                           guesses = None, maxiter = 10, inmask = None, sigma = None,invvar = None,\
-                                           lower = 2, upper = 2,maxdev=None,maxrej=None,groupdim=None,groupsize=None,\
-                                           groupbadpix=False, grow=0,sticky=True,use_mad=True)
+#msk_new, poly_coeff_new = utils.robust_polyfit_djs(xfit,yfit,norder, \
+#                                           function = 'polynomial', minv = None, maxv = None, bspline_par = None,\
+#                                           guesses = None, maxiter = 10, inmask = None, sigma = None,invvar = None,\
+#                                           lower = 2, upper = 2,maxdev=None,maxrej=None,groupdim=None,groupsize=None,\
+#                                           groupbadpix=False, grow=0,sticky=True,use_mad=True)
 
 msk_nosticky, poly_coeff_nosticky = utils.robust_polyfit_djs(xfit,yfit,norder, \
                                            function = 'polynomial', minv = None, maxv = None, bspline_par = None,\
