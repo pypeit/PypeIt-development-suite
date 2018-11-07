@@ -3,12 +3,73 @@
 import numpy as np
 # Read in a wavelength solution and compute
 from pypeit import wavecalib
-from pypeit.core.wavecal import waveio
-from pypeit.core.wavecal import wvutils
+from pypeit.core.wavecal import waveio, wvutils, fitting
 from pypeit import utils
 from astropy import table
 from pypeit import msgs
 from matplotlib import pyplot as plt
+
+
+def fit_slit(spec, patt_dict, tcent, line_lists, outroot=None, slittxt="Slit", thar=False,match_toler=3.0,
+             func='legendre', n_first=2,sigrej_first=2.0,n_final=4,sigrej_final=3.0,verbose=False):
+    """ Perform a fit to the wavelength solution
+
+    Parameters
+    ----------
+    spec : ndarray
+      arc spectrum
+    patt_dict : dict
+      dictionary of patterns
+    tcent: ndarray
+      List of the detections in this slit to be fit using the patt_dict
+    outroot : str
+      root directory to save QA
+    slittxt : str
+      Label used for QA
+
+    Returns
+    -------
+    final_fit : dict
+      A dictionary containing all of the information about the fit
+    """
+    # Check that patt_dict and tcent refer to each other
+    if patt_dict['mask'].shape != tcent.shape:
+        msgs.error('patt_dict and tcent do not refer to each other. Something is very wrong')
+
+    # Perform final fit to the line IDs
+    if thar:
+        NIST_lines = (line_lists['NIST'] > 0) & (np.char.find(line_lists['Source'].data, 'MURPHY') >= 0)
+    else:
+        NIST_lines = line_lists['NIST'] > 0
+    ifit = np.where(patt_dict['mask'])[0]
+
+    if outroot is not None:
+        plot_fil = outroot + slittxt + '_fit.pdf'
+    else:
+        plot_fil = None
+    # Purge UNKNOWNS from ifit
+    imsk = np.ones(len(ifit), dtype=np.bool)
+    for kk, idwv in enumerate(np.array(patt_dict['IDs'])[ifit]):
+        if np.min(np.abs(self._line_lists['wave'][NIST_lines] - idwv)) > 0.01:
+            imsk[kk] = False
+    ifit = ifit[imsk]
+    # Fit
+    try:
+        final_fit = fitting.iterative_fitting(spec, tcent, ifit,
+                                              np.array(patt_dict['IDs'])[ifit], line_lists[NIST_lines],
+                                              patt_dict['bdisp'],match_toler=match_toler, func=func, n_first=n_first,
+                                              sigrej_first=sigrej_first,n_final=n_final, sigrej_final=sigrej_final,
+                                              plot_fil=plot_fil, verbose=verbose)
+    except TypeError:
+        # A poor fitting result, this can be ignored.
+        return None
+
+    if plot_fil is not None:
+        print("Wrote: {:s}".format(plot_fil))
+
+    # Return
+    return final_fit
+
 
 calibfile ='/Users/joe/python/PypeIt-development-suite/REDUX_OUT/Keck_NIRES/NIRES/MF_keck_nires/MasterWaveCalib_A_01_aa.json'
 wv_calib, par = wavecalib.load_wv_calib(calibfile)
@@ -74,7 +135,7 @@ xrng = np.arange(nspec_arxiv)
 for iarxiv in range(narxiv):
     spec_arxiv[:,iarxiv] = wv_calib[str(iarxiv)]['spec']
     fitc = wv_calib[str(iarxiv)]['fitc']
-    xfit = xrng/(nspec_arxiv - 1)
+    xfit = xrng
     fitfunc = wv_calib[str(iarxiv)]['function']
     fmin, fmax = wv_calib[str(iarxiv)]['fmin'],wv_calib[str(iarxiv)]['fmax']
     wave_soln_arxiv[:,iarxiv] = utils.func_val(fitc, xfit, fitfunc, minv=fmin, maxv=fmax)
@@ -134,16 +195,21 @@ for islit in range(nslits):
             plt.legend()
             plt.show()
 
-            # Loop over the current slit line pixel detections and find the nearest arxiv spectrum line
-            for iline in range(slit_det.size):
-                pdiff = np.abs(slit_det[iline] - arxiv_det_ss)
-                bstpx = np.argmin(pdiff)
-                # If a match is found within 2 pixels, consider this a successful match
-                if pdiff[bstpx] < 2.0:
-                    # Using the arxiv arc wavelength solution, search for the nearest line in the line list
-                    bstwv = np.abs(wvdata - wave_soln_arxiv[bstpx,iarxiv])
-                    # This is probably not a good match
-                    if bstwv[np.argmin(bstwv)] > 2.0 * disp_arxiv[iarxiv]:
-                        continue
-                    lindex = np.append(lindex, np.argmin(bstwv))  # index in the line list self._wvdata
-                    dindex = np.append(dindex, iline)
+        # Calculate wavelengths for all of the gsdet detections
+        wvval_arxiv= utils.func_val(wv_calib[str(iarxiv)]['fitc'], arxiv_det,wv_calib[str(iarxiv)]['function'],
+                                    minv=wv_calib[str(iarxiv)]['fmin'], maxv=wv_calib[str(iarxiv)]['fmax'])
+
+        # Loop over the current slit line pixel detections and find the nearest arxiv spectrum line
+        for iline in range(slit_det.size):
+            pdiff = np.abs(slit_det[iline] - arxiv_det_ss)
+            bstpx = np.argmin(pdiff)
+            # If a match is found within 2 pixels, consider this a successful match
+            if pdiff[bstpx] < 2.0:
+                # Using the arxiv arc wavelength solution, search for the nearest line in the line list
+                bstwv = np.abs(wvdata - wvval_arxiv[bstpx])
+                # This is probably not a good match
+                if bstwv[np.argmin(bstwv)] > 2.0 * disp_arxiv[iarxiv]:
+                    continue
+                lindex = np.append(lindex, np.argmin(bstwv))  # index in the line list self._wvdata
+                dindex = np.append(dindex, iline)
+        sys.exit(-1)
