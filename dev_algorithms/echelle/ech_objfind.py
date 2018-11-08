@@ -141,6 +141,7 @@ def pca_trace(xcen, usepca = None, npca = None, pca_explained_var=99.0,coeff_npo
     #ToDo should we be masking the bad orders here and interpolating/extrapolating?
     spat_mean = np.mean(xcen,0)
 
+    ## ToDO add a plot of this part please for the QA.
     #msk_spat, poly_coeff_spat = utils.robust_polyfit(order_vec, spat_mean, ncen, sigma = 3.0, function = 'polynomial')
     msk_spat, poly_coeff_spat = utils.robust_polyfit_djs(order_vec, spat_mean, cen_npoly, \
                                                        function='polynomial', minv=None, maxv=None, bspline_par=None, \
@@ -230,9 +231,10 @@ def ech_objfind(image, ivar, ordermask, slit_left, slit_righ,inmask=None,plate_s
         thismask = ordermask == (iord + 1)
         inmask_iord = inmask & thismask
         specobj_dict = {'setup': 'HIRES', 'slitid': iord + 1, 'scidx': 0,'det': 1, 'objtype': 'science'}
+        # ToDO Some of the objfind parameters probably need to be passed in here, and also be argumentus to this routine
         sobjs_slit, skymask[thismask], objmask[thismask], proc_list = \
             extract.objfind(image, thismask, slit_left[:,iord], slit_righ[:,iord], inmask=inmask_iord,show_peaks=show_peaks,
-                            show_fits=show_fits, show_trace=False, specobj_dict = specobj_dict)#, sig_thresh = 3.0)
+                            show_fits=show_fits, show_trace=False, specobj_dict = specobj_dict, sig_thresh = 7.0)
         # ToDO make the specobjs _set_item_ work with expressions like this spec[:].orderindx = iord
         for spec in sobjs_slit:
             spec.ech_orderindx = iord
@@ -384,7 +386,7 @@ def ech_objfind(image, ivar, ordermask, slit_left, slit_righ,inmask=None,plate_s
     for iobj in range(nobj_trim):
         igroup = sobjs_final.ech_group == uni_group_trim[iobj]
         # PCA predict the masked orders which were not traced
-        pca_fits[:,:,iobj] = pca_trace((sobjs_final[igroup].trace_spat).T, usepca = None, npca = npca, npoly_cen = npoly_cen)
+        pca_fits[:,:,iobj] = pca_trace((sobjs_final[igroup].trace_spat).T)
         # usepca = sobjs_final[igroup].ech_usepca,
         # Perform iterative flux weighted centroiding using new PCA predictions
         xinit_fweight = pca_fits[:,:,iobj].copy()
@@ -418,60 +420,60 @@ def ech_objfind(image, ivar, ordermask, slit_left, slit_righ,inmask=None,plate_s
     return sobjs_final
 
 # HIRES
-spectro = 'NIRES'
+spectro = 'ESI'
 if spectro == 'HIRES':
-    hdu = fits.open('/Users/feige/Dropbox/hires_fndobj/f_hires0184G.fits.gz')
+    hdu = fits.open('/Users/joe//Dropbox/hires_fndobj/f_hires0184G.fits.gz')
     objminsky =hdu[2].data
     ivar  = hdu[1].data
     mask = (ivar > 0.0)
-    order_str = Table.read('/Users/feige/Dropbox/hires_fndobj/OStr_G_04.fits')
+    order_str = Table.read('/Users/joe//Dropbox/hires_fndobj/OStr_G_04.fits')
     slit_left = (order_str['LHEDG']).T
     slit_righ = (order_str['RHEDG']).T
     plate_scale = 0.36
 elif spectro == 'ESI':
     # ESI
-    hdu = fits.open('/Users/feige/Dropbox/Cowie_2002-02-17/Final/fringe_ES.20020217.35453.fits.gz')
+    hdu = fits.open('/Users/joe//Dropbox/Cowie_2002-02-17/Final/fringe_ES.20020217.35453.fits.gz')
     sciimg = hdu[0].data
     var  = hdu[1].data
     ivar = utils.calc_ivar(var)
     mask = (var > 0.0)
     skyimg = hdu[2].data
     objminsky = sciimg - skyimg
-    hdu_sedg = fits.open('/Users/feige/Dropbox/Cowie_2002-02-17/Flats/SEdgECH75_1x1.fits')
+    hdu_sedg = fits.open('/Users/joe//Dropbox/Cowie_2002-02-17/Flats/SEdgECH75_1x1.fits')
     data = hdu_sedg[0].data
     slit_left = data[0,:,:].T
     slit_righ = data[1,:,:].T
     plate_scale = 0.149
 elif spectro == 'NIRES':
     from linetools import utils as ltu
-    jdict = ltu.loadjson('/Users/feige/Dropbox/hires_fndobj/tilt_nires.json')
+    jdict = ltu.loadjson('/Users/joe//Dropbox/hires_fndobj/tilt_nires.json')
     slit_left = np.array(jdict['lcen'])
     slit_righ = np.array(jdict['rcen'])
-    hdu = fits.open('/Users/feige/Dropbox/hires_fndobj/spec2d_J1724+1901_NIRES_2018Jun04T130207.856.fits')
+    hdu = fits.open('/Users/joe/Dropbox/hires_fndobj/spec2d_J1724+1901_NIRES_2018Jun04T130207.856.fits')
     objminsky = hdu[1].data - hdu[3].data
     ivar = hdu[2].data
     mask = (ivar>0)
     plate_scale = 0.123
 elif spectro == 'GNIRS':
     from scipy.io import readsav
-    #hdu = fits.open('/Users/feige/Dropbox/hires_fndobj/sci-N20170331S0216-219.fits')
-    hdu = fits.open('/Users/feige/Dropbox/hires_fndobj/GNIRS/J021514.76+004223.8/Science/J021514.76+004223.8_1/sci-N20170927S0294-297.fits')
-    hdu = fits.open('/Users/feige/Dropbox/hires_fndobj/GNIRS/J005424.45+004750.2/Science/J005424.45+004750.2_7/sci-N20171021S0264-267.fits')
-    hdu = fits.open('/Users/feige/Dropbox/hires_fndobj/GNIRS/J002407.02-001237.2/Science/J002407.02-001237.2_5/sci-N20171006S0236-239.fits')
+    #hdu = fits.open('/Users/joe//Dropbox/hires_fndobj/sci-N20170331S0216-219.fits')
+    hdu = fits.open('/Users/joe//Dropbox/hires_fndobj/GNIRS/J021514.76+004223.8/Science/J021514.76+004223.8_1/sci-N20170927S0294-297.fits')
+    hdu = fits.open('/Users/joe/Dropbox/hires_fndobj/GNIRS/J005424.45+004750.2/Science/J005424.45+004750.2_7/sci-N20171021S0264-267.fits')
+    hdu = fits.open('/Users/joe/Dropbox/hires_fndobj/GNIRS/J002407.02-001237.2/Science/J002407.02-001237.2_5/sci-N20171006S0236-239.fits')
     obj = hdu[0].data
     #objminsky = obj - hdu[1].data
     objminsky = hdu[1].data - obj # test negative trace
     ivar  = hdu[2].data
     #ivar = utils.calc_ivar(var)
     mask = (ivar > 0.0)
-    #slit_left = readsav('/Users/feige/Dropbox/hires_fndobj/left_edge.sav', python_dict=False)['left_edge'].T
-    #slit_righ = readsav('/Users/feige/Dropbox/hires_fndobj/right_edge.sav', python_dict=False)['right_edge'].T
-    #slit_left = readsav('/Users/feige/Dropbox/hires_fndobj/GNIRS/J021514.76+004223.8/left_edge_J0215.sav',python_dict=False)['left_edge'].T
-    #slit_righ = readsav('/Users/feige/Dropbox/hires_fndobj/GNIRS/J021514.76+004223.8/right_edge_J0215.sav',python_dict=False)['right_edge'].T
-    #slit_left = readsav('/Users/feige/Dropbox/hires_fndobj/GNIRS/J005424.45+004750.2/left_edge_J0054.sav',python_dict=False)['left_edge'].T
-    #slit_righ = readsav('/Users/feige/Dropbox/hires_fndobj/GNIRS/J005424.45+004750.2/right_edge_J0054.sav',python_dict=False)['right_edge'].T
-    slit_left = readsav('/Users/feige/Dropbox/hires_fndobj/GNIRS/J002407.02-001237.2/left_edge_J0024.sav',python_dict=False)['left_edge'].T
-    slit_righ = readsav('/Users/feige/Dropbox/hires_fndobj/GNIRS/J002407.02-001237.2/right_edge_J0024.sav',python_dict=False)['right_edge'].T
+    #slit_left = readsav('/Users/joe//Dropbox/hires_fndobj/left_edge.sav', python_dict=False)['left_edge'].T
+    #slit_righ = readsav('/Users/joe//Dropbox/hires_fndobj/right_edge.sav', python_dict=False)['right_edge'].T
+    #slit_left = readsav('/Users/joe//Dropbox/hires_fndobj/GNIRS/J021514.76+004223.8/left_edge_J0215.sav',python_dict=False)['left_edge'].T
+    #slit_righ = readsav('/Users/joe//Dropbox/hires_fndobj/GNIRS/J021514.76+004223.8/right_edge_J0215.sav',python_dict=False)['right_edge'].T
+    #slit_left = readsav('/Users/joe//Dropbox/hires_fndobj/GNIRS/J005424.45+004750.2/left_edge_J0054.sav',python_dict=False)['left_edge'].T
+    #slit_righ = readsav('/Users/joe//Dropbox/hires_fndobj/GNIRS/J005424.45+004750.2/right_edge_J0054.sav',python_dict=False)['right_edge'].T
+    slit_left = readsav('/Users/joe/Dropbox/hires_fndobj/GNIRS/J002407.02-001237.2/left_edge_J0024.sav',python_dict=False)['left_edge'].T
+    slit_righ = readsav('/Users/joe/Dropbox/hires_fndobj/GNIRS/J002407.02-001237.2/right_edge_J0024.sav',python_dict=False)['right_edge'].T
     plate_scale = 0.15
 
 
