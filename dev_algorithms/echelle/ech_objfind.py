@@ -169,7 +169,7 @@ def pca_trace(xcen, usepca = None, npca = None, pca_explained_var=99.0,coeff_npo
     return pca_fit
 
 
-def ech_objfind(image, ivar, ordermask, slit_left, slit_righ,inmask=None,plate_scale=0.2,ncoeff = 5,
+def ech_objfind(image, ivar, ordermask, slit_left, slit_righ,inmask=None,plate_scale=0.2, std_trace=None, ncoeff = 5,
                 npca=None,coeff_npoly=None, cen_npoly=3,
                 min_snr=0.0,nabove_min_snr=0,pca_explained_var=99.0,pca_percentile=20.0,snr_pca=3.0,
                 box_radius=2.0,sig_thresh=5.,show_peaks=False,show_fits=False,show_trace=False,debug=True):
@@ -248,7 +248,7 @@ def ech_objfind(image, ivar, ordermask, slit_left, slit_righ,inmask=None,plate_s
         specobj_dict = {'setup': 'HIRES', 'slitid': iord + 1, 'scidx': 0,'det': 1, 'objtype': 'science'}
         # ToDO Some of the objfind parameters probably need to be passed in here, and also be argumentus to this routine
         sobjs_slit, skymask[thismask], objmask[thismask], proc_list = \
-            extract.objfind(image, thismask, slit_left[:,iord], slit_righ[:,iord], inmask=inmask_iord,show_peaks=show_peaks,
+            extract.objfind(image, thismask, slit_left[:,iord], slit_righ[:,iord], inmask=inmask_iord,std_trace=std_trace, show_peaks=show_peaks,
                             show_fits=show_fits, show_trace=show_trace, specobj_dict = specobj_dict, sig_thresh = sig_thresh)
         # ToDO make the specobjs _set_item_ work with expressions like this spec[:].orderindx = iord
         for spec in sobjs_slit:
@@ -299,7 +299,12 @@ def ech_objfind(image, ivar, ordermask, slit_left, slit_righ,inmask=None,plate_s
                                            scidx = sobjs_align[0].scidx, objtype=sobjs_align[0].objtype)
                 thisobj.ech_orderindx = iord
                 thisobj.spat_fracpos = uni_frac[iobj]
-                thisobj.trace_spat = slit_left[:,iord] + slit_width[:,iord]*uni_frac[iobj] # new trace
+                if std_trace is not None:
+                    x_trace = np.interp(slit_spec_pos, spec_vec, std_trace)
+                    shift = slit_left[:,iord] + slit_width[:,iord]*uni_frac[iobj] - x_trace
+                    thisobj.trace_spat = std_trace + shift
+                else:
+                    thisobj.trace_spat = slit_left[:,iord] + slit_width[:,iord]*uni_frac[iobj] # new trace
                 thisobj.trace_spec = spec_vec
                 thisobj.spat_pixpos = thisobj.trace_spat[specmid]
                 thisobj.set_idx()
@@ -460,6 +465,7 @@ elif spectro == 'MAGE':
     slit_left = readsav('/Users/feige/Dropbox/hires_fndobj/MAGE/left_edge.sav',python_dict=False)['left_edge'].T
     slit_righ = readsav('/Users/feige/Dropbox/hires_fndobj/MAGE/right_edge.sav',python_dict=False)['right_edge'].T
     plate_scale = 0.3
+    # Standard is the ObjStr1046.fits exten = 1
 elif spectro == 'ESI':
     # ESI
     hdu = fits.open('/Users/feige//Dropbox/Cowie_2002-02-17/Final/fringe_ES.20020217.35453.fits.gz')
@@ -474,6 +480,8 @@ elif spectro == 'ESI':
     slit_left = data[0,:,:].T
     slit_righ = data[1,:,:].T
     plate_scale = 0.149
+    hdu_std =fits.open('/Users/feige//Dropbox/Cowie_2002-02-17/Extract/Obj_ES.20020217.18981.fits.gz')
+    #The structure is exten = 1, and the xpos,ypos are the standard trace
 elif spectro == 'NIRES':
     from linetools import utils as ltu
     jdict = ltu.loadjson('/Users/feige//Dropbox/hires_fndobj/tilt_nires.json')
@@ -487,6 +495,8 @@ elif spectro == 'NIRES':
 elif spectro == 'GNIRS':
     from scipy.io import readsav
     #hdu = fits.open('/Users/feige//Dropbox/hires_fndobj/sci-N20170331S0216-219.fits')
+    # TODO use std. Telluric directory. Extension 4 is the object structure, and you want xpos and ypos. Xpos is the spatial trace that you want
+    # to pass in. ypos is just np.arange(nspec)
     hdu = fits.open('/Users/feige//Dropbox/hires_fndobj/GNIRS/J021514.76+004223.8/Science/J021514.76+004223.8_1/sci-N20170927S0294-297.fits')
     hdu = fits.open('/Users/feige/Dropbox/hires_fndobj/GNIRS/J005424.45+004750.2/Science/J005424.45+004750.2_7/sci-N20171021S0264-267.fits')
     hdu = fits.open('/Users/feige/Dropbox/hires_fndobj/GNIRS/J002407.02-001237.2/Science/J002407.02-001237.2_5/sci-N20171006S0236-239.fits')
