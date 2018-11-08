@@ -20,22 +20,23 @@ from astropy.stats import SigmaClip
 from pydl.pydlutils.spheregroup import spheregroup
 
 
-
-#  xcen = flux weighted centroid, xcen_fit = fit to flux weighted centroid, inmask = mask of same dimension as xcen,
-# usepca = None, npca =2, nspat_poly = 3
-#coeff = tset_left.coeff # (norder, ncoeff)
-#xcen_fit = slit_left_fit # (nspec, norder)
-#ncoeff = coeff.shape[1]
-
-# usepca = False, good order used to predict bad order
-# usepca = True, bad order predicted by the good orders
-
-
-
-def pca_trace(xcen, usepca = None, npca = None, npoly_cen = 3, debug=True):
+def pca_trace(xcen, usepca = None, npca = None, pca_explained_var=99.0,coeff_npoly = None, cen_npoly = 3, debug=True):
+    #ToDO beef up the documentation here. Particularly the typical behavior which is to fit everyhting usepca=None
+    """
+    Using sklearn PCA tracing
+    :param xcen: flux weighted centroid, numpy array
+    :param usepca: bool array with the size equal to the number of orders. True are orders that need to be PCAed.
+                    default is None and hence all orders will be PCAed.
+    :param npca: number of PCA components you want to keep. default is None and it will be assigned automatically by
+                    calculating the number of components contains approximately 99% of the variance
+    :param npoly_cen: order of polynomial used for PCA coefficients fitting
+    :param debug:
+    :return: pca fitting result
+    """
 
     nspec = xcen.shape[0]
     norders = xcen.shape[1]
+
     if usepca is None:
         usepca = np.zeros(norders,dtype=bool)
 
@@ -48,15 +49,34 @@ def pca_trace(xcen, usepca = None, npca = None, npoly_cen = 3, debug=True):
         xcen_use = (xcen[:, use_order] - np.mean(xcen[:, use_order], 0)).T
         pca_full.fit(xcen_use)
         var = np.cumsum(np.round(pca_full.explained_variance_ratio_, decimals=3) * 100)
-        plt.plot(var)
-        npca = int(np.interp(0.99, var,np.arange(norders)
-        from IPython import embed
-        embed()
+        if var[0]>=pca_explained_var:
+            npca = 1
+            msgs.info('The first PCA component contains more than {:5.3f} of the information'.format(pca_explained_var))
+        else:
+            npca = int(np.ceil(np.interp(pca_explained_var, var,np.arange(norders)+1)))
+            msgs.info('Truncated PCA to contain {:5.3f}'.format(pca_explained_var) + '% of the total variance. ' +
+                      'Number of components to keep is npca = {:d}'.format(npca))
+    else:
+        npca = int(npca)
 
     if ngood < npca:
         msgs.warn('Not enough good traces for a PCA fit: ngood = {:d}'.format(ngood) + ' is < npca = {:d}'.format(npca))
-        msgs.warn('Using the input trace for now')
+        msgs.warn('Using the input trace f or now')
         return xcen
+
+    if coeff_npoly is None:
+        coeff_npoly = int(np.fmin(np.fmax(np.floor(3.3*ngood/norders),1.0),3.0))
+
+    # Polynomail coefficient for center of traces
+    if cen_npoly is None:
+        cen_npoly = int(np.fmin(np.fmax(np.floor(3.3 * ngood / norders), 1.0), 3.0))
+
+    # Polynomial coefficient for PCA coefficients
+    npoly_vec =np.zeros(npca, dtype=int)
+    # Cascade down and use lower order polynomial for PCA directions that contain less variance
+    for ipoly in range(npca):
+        npoly_vec[ipoly] = np.fmax(coeff_npoly - ipoly,1)
+
 
     pca = PCA(n_components=npca)
     xcen_use = (xcen[:,use_order] - np.mean(xcen[:,use_order],0)).T
@@ -65,25 +85,28 @@ def pca_trace(xcen, usepca = None, npca = None, npoly_cen = 3, debug=True):
 
     # Fit first pca dimension (with largest variance) with a higher order npoly depending on number of good orders.
     # Fit all higher dimensions (with lower variance) with a line
-    npoly = int(np.fmin(np.fmax(np.floor(3.3*ngood/norders),1.0),3.0))
-    npoly_vec = np.full(npca, npoly)
+
+    # ToDO I think this needs to be an input parameter. If npoly is none then do this stuff
+    # Guess at how high a polynomial order we need to fit the coefficients
+    # So I would come up with some rough scheme here, like npoly-1 in each successive component but require npoly > 1
     order_vec = np.arange(norders,dtype=float)
     # pca_coeffs = np.zeros((norders, npca))
     pca_coeffs_new = np.zeros((norders, npca))
     # Now loop over the dimensionality of the compression and perform a polynomial fit to
     for idim in range(npca):
-        # ToDO robust_polyfit is garbage remove it entirely from PypeIT!
+        # Only fit the use_order orders, then use this to predict the others
         xfit = order_vec[use_order]
         yfit = pca_coeffs_use[:,idim]
         norder = npoly_vec[idim]
 
+        ## No longer used, replaced by the robust_polyfit_djs
         # msk, poly_coeff = utils.robust_polyfit(xfit, yfit, norder, sigma = 3.0, function='polynomial')
         # pca_coeffs[:,idim] = utils.func_val(poly_coeff, order_vec, 'polynomial')
 
         # TESTING traceset fitting
-        xtemp = xfit.reshape(1, xfit.size)
-        ytemp = yfit.reshape(1, yfit.size)
-        tset = pydl.xy2traceset(xtemp, ytemp, ncoeff=norder,func='polynomial')
+        #xtemp = xfit.reshape(1, xfit.size)
+        #ytemp = yfit.reshape(1, yfit.size)
+        #tset = pydl.xy2traceset(xtemp, ytemp, ncoeff=norder,func='polynomial')
         #tset_yfit = tset.yfit.reshape(tset.yfit.shape[1])
 
         ## Test new robust fitting with djs_reject
@@ -98,24 +121,35 @@ def pca_trace(xcen, usepca = None, npca = None, npoly_cen = 3, debug=True):
         if debug:
             # Evaluate the fit
             xvec = np.linspace(order_vec.min(),order_vec.max(),num=100)
-            (_,tset_fit) = tset.xy(xpos=xvec.reshape(1,xvec.size))
-            yfit_tset = tset_fit[0,:]
-            #robust_mask = msk == 0
             robust_mask_new = msk_new == 1
-            tset_mask = tset.outmask[0,:]
             plt.plot(xfit, yfit, 'ko', mfc='None', markersize=8.0, label='pca coeff')
+            plt.plot(xfit[~robust_mask_new], yfit[~robust_mask_new], 'r+', markersize=20.0,label='robust_polyfit_djs rejected')
+            plt.plot(xvec, utils.func_val(poly_coeff_new, xvec, 'polynomial'),ls='-.', color='steelblue', label='robust_polyfit_djs')
+            #(_,tset_fit) = tset.xy(xpos=xvec.reshape(1,xvec.size))
             #plt.plot(xfit[~robust_mask], yfit[~robust_mask], 'ms', mfc='None', markersize=10.0,label='robust_polyfit rejected')
             #plt.plot(xfit[~robust_mask_new], yfit[~robust_mask_new], 'r+', markersize=20.0,label='robust_polyfit_djs rejected')
-            plt.plot(xfit[~tset_mask],yfit[~tset_mask], 'bo', markersize = 10.0, label = 'traceset rejected')
+            #plt.plot(xfit[~tset_mask],yfit[~tset_mask], 'bo', markersize = 10.0, label = 'traceset rejected')
             #plt.plot(xvec, utils.func_val(poly_coeff, xvec, 'polynomial'),ls='--', color='m', label='robust polyfit')
-            plt.plot(xvec, utils.func_val(poly_coeff_new, xvec, 'polynomial'),ls='-.', color='r', label='new robust polyfit')
-            plt.plot(xvec, yfit_tset,ls=':', color='b',label='traceset')
+            #yfit_tset = tset_fit[0,:]
+            #robust_mask = msk == 0
+            #tset_mask = tset.outmask[0,:]
+            #plt.plot(xvec, yfit_tset,ls=':', color='b',label='traceset')
             plt.legend()
             plt.show()
 
+
     #ToDo should we be masking the bad orders here and interpolating/extrapolating?
     spat_mean = np.mean(xcen,0)
-    msk_spat, poly_coeff_spat = utils.robust_polyfit(order_vec, spat_mean, npoly_cen, sigma = 3.0, function = 'polynomial')
+
+    ## ToDO add a plot of this part please for the QA.
+    #msk_spat, poly_coeff_spat = utils.robust_polyfit(order_vec, spat_mean, ncen, sigma = 3.0, function = 'polynomial')
+    msk_spat, poly_coeff_spat = utils.robust_polyfit_djs(order_vec, spat_mean, cen_npoly, \
+                                                       function='polynomial', minv=None, maxv=None, bspline_par=None, \
+                                                       guesses=None, maxiter=10, inmask=None, sigma=None, invvar=None, \
+                                                       lower=3, upper=3, maxdev=None, maxrej=None, groupdim=None,
+                                                       groupsize=None, \
+                                                       groupbadpix=False, grow=0, sticky=False)
+
     ibad = np.where(msk_spat == 1)
     spat_mean[ibad] = utils.func_val(poly_coeff_spat,order_vec[ibad],'polynomial')
 
@@ -127,11 +161,41 @@ def pca_trace(xcen, usepca = None, npca = None, npoly_cen = 3, debug=True):
 
 def ech_objfind(image, ivar, ordermask, slit_left, slit_righ,inmask=None,plate_scale=0.2,npca=None,ncoeff = 5,min_snr=0.0,nabove_min_snr=0,
                 pca_percentile=20.0,snr_pca=3.0,box_radius=2.0,show_peaks=False,show_fits=False,show_trace=False):
+    """
+    Object finding for Echelle spectragraph
+    :param image :  float ndarray
+        Image to search for objects from. This image has shape (nspec, nspat) image.shape where the first dimension (nspec)
+        is spectral, and second dimension (nspat) is spatial. Note this image can either have the sky background in it, or have already been sky subtracted.
+        Object finding works best on sky-subtracted images, but often one runs on the frame with sky first to identify the brightest
+        objects which are then masked (see skymask below) in sky subtraction.
+    :param ivar: ivar for your science image, same shape with image
+    :param ordermask: ordermask, 2D array
+    :param slit_left:  float ndarray
+        Left boundary of slit/order to be extracted (given as floating pt pixels). This a 1-d array with shape (nspec, 1)
+        or (nspec)
+    :param slit_righ:  float ndarray
+        Left boundary of slit/order to be extracted (given as floating pt pixels). This a 1-d array with shape (nspec, 1)
+        or (nspec)
+    :param inmask: mask for each order, parsed into robust poly fit
+    :param plate_scale: plate scale of your detector, in unit of arcsec/pix
+    :param npca: Number of PCA components you want to keep
+    :param ncoeff: order number for trace
+    :param min_snr: minimum SNR for object finding
+    :param nabove_min_snr: how many orders with SNR>min_snr you require for a TRUE object
+    :param pca_percentile: percentile used for determining which order is a bad order
+    :param snr_pca: SNR used for determining which order is a bad order
+                    if an order with ((SNR_now < np.percentile(SNR_now, pca_percentile)) &
+                    (SNR_now < snr_pca)) | sobjs_trim[indx].ech_usepca, then this order will be PCAed
+    :param box_radius: box_car extraction radius
+    :param show_peaks: whether plotting the QA of peak finding of your object in each order
+    :param show_fits: Plot trace fitting
+    :param show_trace: whether display the resulting traces on top of the image
+    :return: all objects found
+    """
 
 
     if inmask is None:
         inmask = (ordermask > 0)
-
 
     frameshape = image.shape
     nspec = frameshape[0]
@@ -167,9 +231,10 @@ def ech_objfind(image, ivar, ordermask, slit_left, slit_righ,inmask=None,plate_s
         thismask = ordermask == (iord + 1)
         inmask_iord = inmask & thismask
         specobj_dict = {'setup': 'HIRES', 'slitid': iord + 1, 'scidx': 0,'det': 1, 'objtype': 'science'}
+        # ToDO Some of the objfind parameters probably need to be passed in here, and also be argumentus to this routine
         sobjs_slit, skymask[thismask], objmask[thismask], proc_list = \
             extract.objfind(image, thismask, slit_left[:,iord], slit_righ[:,iord], inmask=inmask_iord,show_peaks=show_peaks,
-                            show_fits=show_fits, show_trace=False, specobj_dict = specobj_dict)#, sig_thresh = 3.0)
+                            show_fits=show_fits, show_trace=False, specobj_dict = specobj_dict, sig_thresh = 7.0)
         # ToDO make the specobjs _set_item_ work with expressions like this spec[:].orderindx = iord
         for spec in sobjs_slit:
             spec.ech_orderindx = iord
@@ -321,7 +386,7 @@ def ech_objfind(image, ivar, ordermask, slit_left, slit_righ,inmask=None,plate_s
     for iobj in range(nobj_trim):
         igroup = sobjs_final.ech_group == uni_group_trim[iobj]
         # PCA predict the masked orders which were not traced
-        pca_fits[:,:,iobj] = pca_trace((sobjs_final[igroup].trace_spat).T, usepca = None, npca = npca, npoly_cen = npoly_cen)
+        pca_fits[:,:,iobj] = pca_trace((sobjs_final[igroup].trace_spat).T)
         # usepca = sobjs_final[igroup].ech_usepca,
         # Perform iterative flux weighted centroiding using new PCA predictions
         xinit_fweight = pca_fits[:,:,iobj].copy()
@@ -353,57 +418,46 @@ def ech_objfind(image, ivar, ordermask, slit_left, slit_righ,inmask=None,plate_s
         #    ginga.show_trace(viewer, ch, spec.trace_spat, spec.idx, color=color)
 
     return sobjs_final
-    #for spec in sobjs:
-    #    ginga.show_trace(viewer, ch, spec.trace_spat, spec.idx, color='orange')
-
-
-
-
-
-
-#xcen = slit_left        # (nspec, norder)
-#inmask = np.ones_like(xcen,dtype=bool) # (nspec, norder) boolean
-
 
 # HIRES
-spectro = 'GNIRS'
+spectro = 'ESI'
 if spectro == 'HIRES':
-    hdu = fits.open('/Users/feige/Dropbox/hires_fndobj/f_hires0184G.fits.gz')
+    hdu = fits.open('/Users/joe//Dropbox/hires_fndobj/f_hires0184G.fits.gz')
     objminsky =hdu[2].data
     ivar  = hdu[1].data
     mask = (ivar > 0.0)
-    order_str = Table.read('/Users/feige/Dropbox/hires_fndobj/OStr_G_04.fits')
+    order_str = Table.read('/Users/joe//Dropbox/hires_fndobj/OStr_G_04.fits')
     slit_left = (order_str['LHEDG']).T
     slit_righ = (order_str['RHEDG']).T
     plate_scale = 0.36
 elif spectro == 'ESI':
     # ESI
-    hdu = fits.open('/Users/feige/Dropbox/Cowie_2002-02-17/Final/fringe_ES.20020217.35453.fits.gz')
+    hdu = fits.open('/Users/joe//Dropbox/Cowie_2002-02-17/Final/fringe_ES.20020217.35453.fits.gz')
     sciimg = hdu[0].data
     var  = hdu[1].data
     ivar = utils.calc_ivar(var)
     mask = (var > 0.0)
     skyimg = hdu[2].data
     objminsky = sciimg - skyimg
-    hdu_sedg = fits.open('/Users/feige/Dropbox/Cowie_2002-02-17/Flats/SEdgECH75_1x1.fits')
+    hdu_sedg = fits.open('/Users/joe//Dropbox/Cowie_2002-02-17/Flats/SEdgECH75_1x1.fits')
     data = hdu_sedg[0].data
     slit_left = data[0,:,:].T
     slit_righ = data[1,:,:].T
     plate_scale = 0.149
 elif spectro == 'NIRES':
     from linetools import utils as ltu
-    jdict = ltu.loadjson('/Users/feige/Dropbox/hires_fndobj/tilt_nires.json')
+    jdict = ltu.loadjson('/Users/joe//Dropbox/hires_fndobj/tilt_nires.json')
     slit_left = np.array(jdict['lcen'])
     slit_righ = np.array(jdict['rcen'])
-    hdu = fits.open('/Users/feige/Dropbox/hires_fndobj/spec2d_J1724+1901_NIRES_2018Jun04T130207.856.fits')
+    hdu = fits.open('/Users/joe/Dropbox/hires_fndobj/spec2d_J1724+1901_NIRES_2018Jun04T130207.856.fits')
     objminsky = hdu[1].data - hdu[3].data
     ivar = hdu[2].data
     mask = (ivar>0)
     plate_scale = 0.123
 elif spectro == 'GNIRS':
     from scipy.io import readsav
-    #hdu = fits.open('/Users/feige/Dropbox/hires_fndobj/sci-N20170331S0216-219.fits')
-    hdu = fits.open('/Users/joe/Dropbox/hires_fndobj/GNIRS/J021514.76+004223.8/Science/J021514.76+004223.8_1/sci-N20170927S0294-297.fits')
+    #hdu = fits.open('/Users/joe//Dropbox/hires_fndobj/sci-N20170331S0216-219.fits')
+    hdu = fits.open('/Users/joe//Dropbox/hires_fndobj/GNIRS/J021514.76+004223.8/Science/J021514.76+004223.8_1/sci-N20170927S0294-297.fits')
     hdu = fits.open('/Users/joe/Dropbox/hires_fndobj/GNIRS/J005424.45+004750.2/Science/J005424.45+004750.2_7/sci-N20171021S0264-267.fits')
     hdu = fits.open('/Users/joe/Dropbox/hires_fndobj/GNIRS/J002407.02-001237.2/Science/J002407.02-001237.2_5/sci-N20171006S0236-239.fits')
     obj = hdu[0].data
@@ -412,12 +466,12 @@ elif spectro == 'GNIRS':
     ivar  = hdu[2].data
     #ivar = utils.calc_ivar(var)
     mask = (ivar > 0.0)
-    #slit_left = readsav('/Users/feige/Dropbox/hires_fndobj/left_edge.sav', python_dict=False)['left_edge'].T
-    #slit_righ = readsav('/Users/feige/Dropbox/hires_fndobj/right_edge.sav', python_dict=False)['right_edge'].T
-    #slit_left = readsav('/Users/feige/Dropbox/hires_fndobj/GNIRS/J021514.76+004223.8/left_edge_J0215.sav',python_dict=False)['left_edge'].T
-    #slit_righ = readsav('/Users/feige/Dropbox/hires_fndobj/GNIRS/J021514.76+004223.8/right_edge_J0215.sav',python_dict=False)['right_edge'].T
-    #slit_left = readsav('/Users/feige/Dropbox/hires_fndobj/GNIRS/J005424.45+004750.2/left_edge_J0054.sav',python_dict=False)['left_edge'].T
-    #slit_righ = readsav('/Users/feige/Dropbox/hires_fndobj/GNIRS/J005424.45+004750.2/right_edge_J0054.sav',python_dict=False)['right_edge'].T
+    #slit_left = readsav('/Users/joe//Dropbox/hires_fndobj/left_edge.sav', python_dict=False)['left_edge'].T
+    #slit_righ = readsav('/Users/joe//Dropbox/hires_fndobj/right_edge.sav', python_dict=False)['right_edge'].T
+    #slit_left = readsav('/Users/joe//Dropbox/hires_fndobj/GNIRS/J021514.76+004223.8/left_edge_J0215.sav',python_dict=False)['left_edge'].T
+    #slit_righ = readsav('/Users/joe//Dropbox/hires_fndobj/GNIRS/J021514.76+004223.8/right_edge_J0215.sav',python_dict=False)['right_edge'].T
+    #slit_left = readsav('/Users/joe//Dropbox/hires_fndobj/GNIRS/J005424.45+004750.2/left_edge_J0054.sav',python_dict=False)['left_edge'].T
+    #slit_righ = readsav('/Users/joe//Dropbox/hires_fndobj/GNIRS/J005424.45+004750.2/right_edge_J0054.sav',python_dict=False)['right_edge'].T
     slit_left = readsav('/Users/joe/Dropbox/hires_fndobj/GNIRS/J002407.02-001237.2/left_edge_J0024.sav',python_dict=False)['left_edge'].T
     slit_righ = readsav('/Users/joe/Dropbox/hires_fndobj/GNIRS/J002407.02-001237.2/right_edge_J0024.sav',python_dict=False)['right_edge'].T
     plate_scale = 0.15
