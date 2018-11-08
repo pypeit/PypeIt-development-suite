@@ -20,12 +20,13 @@ from astropy.stats import SigmaClip
 from pydl.pydlutils.spheregroup import spheregroup
 
 
-def pca_trace(xcen, usepca = None, npca = None, npoly_cen = 3, debug=True):
+def pca_trace(xcen, usepca = None, npca = None, pca_explained_var=99.0,coeff_npoly = None, cen_npoly = 3, debug=True):
+    #ToDO beef up the documentation here. Particularly the typical behavior which is to fit everyhting usepca=None
     """
     Using sklearn PCA tracing
     :param xcen: flux weighted centroid, numpy array
-    :param usepca: bool array with the size equal to the number of orders. True are orders need to be PCAed.
-                    default is None and all orders will be PCAed.
+    :param usepca: bool array with the size equal to the number of orders. True are orders that need to be PCAed.
+                    default is None and hence all orders will be PCAed.
     :param npca: number of PCA components you want to keep. default is None and it will be assigned automatically by
                     calculating the number of components contains approximately 99% of the variance
     :param npoly_cen: order of polynomial used for PCA coefficients fitting
@@ -35,6 +36,7 @@ def pca_trace(xcen, usepca = None, npca = None, npoly_cen = 3, debug=True):
 
     nspec = xcen.shape[0]
     norders = xcen.shape[1]
+
     if usepca is None:
         usepca = np.zeros(norders,dtype=bool)
 
@@ -47,12 +49,13 @@ def pca_trace(xcen, usepca = None, npca = None, npoly_cen = 3, debug=True):
         xcen_use = (xcen[:, use_order] - np.mean(xcen[:, use_order], 0)).T
         pca_full.fit(xcen_use)
         var = np.cumsum(np.round(pca_full.explained_variance_ratio_, decimals=3) * 100)
-        if var[0]>=99.0:
+        if var[0]>=pca_explained_var:
             npca = 1
-            msgs.info('The first PCA component contains more than 99% information')
+            msgs.info('The first PCA component contains more than {:5.3f} of the information'.format(pca_explained_var))
         else:
-            npca = int(np.ceil(np.interp(99.0, var,np.arange(norders)+1)))
-            msgs.info('Number of components to keep is npca = {:d}'.format(npca))
+            npca = int(np.ceil(np.interp(pca_explained_var, var,np.arange(norders)+1)))
+            msgs.info('Truncated PCA to contain {:5.3f}'.format(pca_explained_var) + '% of the total variance. ' +
+                      'Number of components to keep is npca = {:d}'.format(npca))
     else:
         npca = int(npca)
 
@@ -61,6 +64,20 @@ def pca_trace(xcen, usepca = None, npca = None, npoly_cen = 3, debug=True):
         msgs.warn('Using the input trace f or now')
         return xcen
 
+    if coeff_npoly is None:
+        coeff_npoly = int(np.fmin(np.fmax(np.floor(3.3*ngood/norders),1.0),3.0))
+
+    # Polynomail coefficient for center of traces
+    if cen_npoly is None:
+        cen_npoly = int(np.fmin(np.fmax(np.floor(3.3 * ngood / norders), 1.0), 3.0))
+
+    # Polynomial coefficient for PCA coefficients
+    npoly_vec =np.zeros(npca, dtype=int)
+    # Cascade down and use lower order polynomial for PCA directions that contain less variance
+    for ipoly in range(npca):
+        npoly_vec[ipoly] = np.fmax(coeff_npoly - ipoly,1)
+
+
     pca = PCA(n_components=npca)
     xcen_use = (xcen[:,use_order] - np.mean(xcen[:,use_order],0)).T
     pca_coeffs_use = pca.fit_transform(xcen_use)
@@ -68,14 +85,16 @@ def pca_trace(xcen, usepca = None, npca = None, npoly_cen = 3, debug=True):
 
     # Fit first pca dimension (with largest variance) with a higher order npoly depending on number of good orders.
     # Fit all higher dimensions (with lower variance) with a line
-    npoly = int(np.fmin(np.fmax(np.floor(3.3*ngood/norders),1.0),3.0))
-    npoly_vec = np.full(npca, npoly)
+
+    # ToDO I think this needs to be an input parameter. If npoly is none then do this stuff
+    # Guess at how high a polynomial order we need to fit the coefficients
+    # So I would come up with some rough scheme here, like npoly-1 in each successive component but require npoly > 1
     order_vec = np.arange(norders,dtype=float)
     # pca_coeffs = np.zeros((norders, npca))
     pca_coeffs_new = np.zeros((norders, npca))
     # Now loop over the dimensionality of the compression and perform a polynomial fit to
     for idim in range(npca):
-        # ToDO robust_polyfit is garbage remove it entirely from PypeIT!
+        # Only fit the use_order orders, then use this to predict the others
         xfit = order_vec[use_order]
         yfit = pca_coeffs_use[:,idim]
         norder = npoly_vec[idim]
@@ -121,8 +140,9 @@ def pca_trace(xcen, usepca = None, npca = None, npoly_cen = 3, debug=True):
 
     #ToDo should we be masking the bad orders here and interpolating/extrapolating?
     spat_mean = np.mean(xcen,0)
-    #msk_spat, poly_coeff_spat = utils.robust_polyfit(order_vec, spat_mean, npoly_cen, sigma = 3.0, function = 'polynomial')
-    msk_spat, poly_coeff_spat = utils.robust_polyfit_djs(order_vec, spat_mean, npoly_cen, \
+
+    #msk_spat, poly_coeff_spat = utils.robust_polyfit(order_vec, spat_mean, ncen, sigma = 3.0, function = 'polynomial')
+    msk_spat, poly_coeff_spat = utils.robust_polyfit_djs(order_vec, spat_mean, cen_npoly, \
                                                        function='polynomial', minv=None, maxv=None, bspline_par=None, \
                                                        guesses=None, maxiter=10, inmask=None, sigma=None, invvar=None, \
                                                        lower=3, upper=3, maxdev=None, maxrej=None, groupdim=None,
