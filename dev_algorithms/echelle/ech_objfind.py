@@ -579,7 +579,7 @@ ncoeff = 5
 cen_npoly = 3
 
 
-sobjs_final = extract.ech_objfind(image, ivar, ordermask, slit_left, slit_righ,inmask=inmask,plate_scale=plate_scale,ncoeff = ncoeff,
+sobjs_final = ech_objfind(image, ivar, ordermask, slit_left, slit_righ,inmask=inmask,plate_scale=plate_scale,ncoeff = ncoeff,
                         std_trace =  std_trace,
                         npca=npca,pca_explained_var=pca_explained_var, coeff_npoly=None, cen_npoly=cen_npoly,
                         min_snr=min_snr,nabove_min_snr=nabove_min_snr,pca_percentile=pca_percentile,
