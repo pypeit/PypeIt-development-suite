@@ -20,6 +20,7 @@ from astropy.stats import SigmaClip
 from pydl.pydlutils.spheregroup import spheregroup
 
 
+## ToDo change usepca to extrapolate_order if None then fit everthing, otherwise extrapolate bad orders.
 def pca_trace(xcen, usepca = None, npca = None, pca_explained_var=99.0,coeff_npoly = None, cen_npoly = 3, debug=True):
     """
     Using sklearn PCA tracing
@@ -138,6 +139,7 @@ def pca_trace(xcen, usepca = None, npca = None, pca_explained_var=99.0,coeff_npo
             plt.show()
 
     #ToDo should we be masking the bad orders here and interpolating/extrapolating?
+    ## ToDo, need to parse in the slitwidth of each order and fit the slit fraction
     spat_mean = np.mean(xcen,0)
 
     #msk_spat, poly_coeff_spat = utils.robust_polyfit(order_vec, spat_mean, ncen, sigma = 3.0, function = 'polynomial')
@@ -452,7 +454,7 @@ def ech_objfind(image, ivar, ordermask, slit_left, slit_righ,inmask=None,plate_s
     return sobjs_final
 
 # HIRES
-spectro = 'ESI'
+spectro = 'MAGE'
 if spectro == 'HIRES':
     hdu = fits.open('/Users/feige//Dropbox/hires_fndobj/f_hires0184G.fits.gz')
     objminsky =hdu[2].data
