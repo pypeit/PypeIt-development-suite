@@ -219,7 +219,7 @@ def ech_objfind(image, ivar, ordermask, slit_left, slit_righ,inmask=None,plate_s
     norders = slit_left.shape[1]
 
     if isinstance(plate_scale,(float, int)):
-        plate_scale_ord = np.full(norders, plate_scale)  # 0.12 binned by 3 spatially for HIRES
+        plate_scale_ord = np.full(norders, plate_scale)
     elif isinstance(plate_scale,(np.ndarray, list, tuple)):
         if len(plate_scale) == norders:
             plate_scale_ord = plate_scale
@@ -248,7 +248,6 @@ def ech_objfind(image, ivar, ordermask, slit_left, slit_righ,inmask=None,plate_s
         specobj_dict = {'setup': 'HIRES', 'slitid': iord + 1, 'scidx': 0,'det': 1, 'objtype': 'science'}
         # ToDO Some of the objfind parameters probably need to be passed in here, and also be argumentus to this routine
         if std_trace is not None:
-        #if False:
             sobjs_slit, skymask[thismask], objmask[thismask], proc_list = \
                 extract.objfind(image, thismask, slit_left[:,iord], slit_righ[:,iord], inmask=inmask_iord,std_trace=std_trace[:,iord], show_peaks=show_peaks,
                                 show_fits=show_fits, show_trace=show_trace, specobj_dict = specobj_dict, sig_thresh = sig_thresh)
@@ -305,13 +304,9 @@ def ech_objfind(image, ivar, ordermask, slit_left, slit_righ,inmask=None,plate_s
                                            scidx = sobjs_align[0].scidx, objtype=sobjs_align[0].objtype)
                 thisobj.ech_orderindx = iord
                 thisobj.spat_fracpos = uni_frac[iobj]
-                #from IPython import embed
-                #embed()
                 if std_trace is not None:
                     x_trace = np.interp(slit_spec_pos, spec_vec, std_trace[:,iord])
-                    #shift = slit_left[:,iord] + slit_width[:,iord]*uni_frac[iobj] - x_trace
                     shift = np.interp(slit_spec_pos, spec_vec,slit_left[:,iord] + slit_width[:,iord]*uni_frac[iobj]) - x_trace
-                    #shift = slit_left[:,iord] + slit_width[:,iord]*uni_frac[iobj] - std_trace[:,iord]
                     thisobj.trace_spat = std_trace[:,iord] + shift
                 else:
                     thisobj.trace_spat = slit_left[:,iord] + slit_width[:,iord]*uni_frac[iobj] # new trace
@@ -419,10 +414,6 @@ def ech_objfind(image, ivar, ordermask, slit_left, slit_righ,inmask=None,plate_s
         pca_fits[:, :, iobj] = pca_trace((sobjs_final[igroup].trace_spat).T,usepca = None,
                                          npca=npca, pca_explained_var=pca_explained_var, coeff_npoly=coeff_npoly,
                                          cen_npoly=cen_npoly, debug=debug)
-        #pca_fits[:,:,iobj] = pca_trace((sobjs_final[igroup].trace_spat).T,usepca = usepca,
-        #                               npca = npca, pca_explained_var=pca_explained_var,coeff_npoly = coeff_npoly,
-        #                               cen_npoly = cen_npoly, debug=debug)
-        # usepca = sobjs_final[igroup].ech_usepca,
         # Perform iterative flux weighted centroiding using new PCA predictions
         xinit_fweight = pca_fits[:,:,iobj].copy()
         inmask_now = inmask & (ordermask > 0)
@@ -439,15 +430,19 @@ def ech_objfind(image, ivar, ordermask, slit_left, slit_righ,inmask=None,plate_s
     # Set the IDs
     sobjs_final.set_idx()
     if show_trace:
-        viewer, ch = ginga.show_image(objminsky*(ordermask > 0))
+        viewer, ch = ginga.show_image(image*(ordermask > 0))
         for iobj in range(nobj_trim):
             for iord in range(norders):
+                ## Showing the trace from objfind
+                ginga.show_trace(viewer, ch, sobjs_final.trace_spat[iord].T, sobjs_final.idx, color='steelblue')
+                ## Showing PCA fits
                 ginga.show_trace(viewer, ch, pca_fits[:,iord, iobj], str(uni_frac[iobj]), color='yellow')
-                if std_trace is not None:
-                    ginga.show_trace(viewer, ch, std_trace[:,iord], str(uni_frac[iobj]), color='steelblue')
+                #if std_trace is not None:
+                #    ginga.show_trace(viewer, ch, std_trace[:,iord], str(uni_frac[iobj]), color='steelblue')
 
         for spec in sobjs_trim:
             color = 'green' if spec.ech_usepca else 'magenta'
+            ## Showing the final flux weighted centroiding from PCA predictions
             ginga.show_trace(viewer, ch, spec.trace_spat, spec.idx, color=color)
 
         #for spec in sobjs_final:
@@ -457,7 +452,7 @@ def ech_objfind(image, ivar, ordermask, slit_left, slit_righ,inmask=None,plate_s
     return sobjs_final
 
 # HIRES
-spectro = 'GNIRS'
+spectro = 'ESI'
 if spectro == 'HIRES':
     hdu = fits.open('/Users/feige//Dropbox/hires_fndobj/f_hires0184G.fits.gz')
     objminsky =hdu[2].data
@@ -576,13 +571,13 @@ pca_percentile = 20.0
 snr_pca = 3.0
 npca = 3
 pca_explained_var = 99.8
-sig_thresh = 5
+sig_thresh = 50
 box_radius = 2.0
 ncoeff = 5
 cen_npoly = 3
 
 
-sobjs_final = ech_objfind(image, ivar, ordermask, slit_left, slit_righ,inmask=inmask,plate_scale=plate_scale,ncoeff = ncoeff,
+sobjs_final = extract.ech_objfind(image, ivar, ordermask, slit_left, slit_righ,inmask=inmask,plate_scale=plate_scale,ncoeff = ncoeff,
                         std_trace =  std_trace,
                         npca=npca,pca_explained_var=pca_explained_var, coeff_npoly=None, cen_npoly=cen_npoly,
                         min_snr=min_snr,nabove_min_snr=nabove_min_snr,pca_percentile=pca_percentile,
