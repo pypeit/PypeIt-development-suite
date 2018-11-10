@@ -8,6 +8,7 @@ from pypeit import utils
 from astropy import table
 from pypeit import msgs
 from matplotlib import pyplot as plt
+import scipy
 import copy
 
 
@@ -95,7 +96,13 @@ lamps = par['lamps']
 use_unknowns=True
 debug = True
 cc_thresh = 0.8
-# def archive_reidentify(spec, wv_calib_arxiv, lamps, detections = None, cc_thresh = 0.8
+line_pix_tol = 2.0
+nlocal_cc = 5
+nlocal_cc_odd = nlocal_cc + 1 if nlocal_cc % 2 == 0 else nlocal_cc
+window = 1.0/nlocal_cc_odd* np.ones(nlocal_cc_odd)
+
+
+# def archive_reidentify(spec, wv_calib_arxiv, lamps, detections = None, cc_thresh = 0.8, line_pix_tol = 2.0, nlocal_cc=20
 # rms_threshold = 0.15, nonlinear_counts =par['nonlinear_counts'], sigdetect = par['lowest_nsig'], use_unknowns=True, debug=True)
 
 #
@@ -146,11 +153,13 @@ for iarxiv in range(narxiv):
 wv_calib = {}
 patt_dict = {}
 bad_slits = np.array([], dtype=np.int)
+
 # Loop over the slits in the spectrum and cross-correlate each with each arxiv spectrum to identify lines
 for islit in range(nslits):
     slit_det = detections[str(islit)][0]
     lindex = np.array([], dtype=np.int)
     dindex = np.array([], dtype=np.int)
+    cc_line = np.array([], dtype=float)
     wcen = np.zeros(narxiv)
     disp = np.zeros(narxiv)
     shift_vec = np.zeros(narxiv)
@@ -171,6 +180,8 @@ for islit in range(nslits):
         # transforming these arxiv slit line pixel locations into the (shifted and stretched) input islit spectrum frame
         arxiv_det = wv_calib_arxiv[str(iarxiv)]['xfit']
         arxiv_det_ss = arxiv_det*stretch_vec[iarxiv] + shift_vec[iarxiv]
+        spec_arxiv_ss = wvutils.shift_and_stretch(spec_arxiv[:, iarxiv], shift_vec[iarxiv], stretch_vec[iarxiv])
+
         if debug:
             plt.figure(figsize=(14, 6))
             tampl_slit = np.interp(slit_det, xrng, spec[:, islit])
@@ -180,7 +191,6 @@ for islit in range(nslits):
             plt.plot(xrng, spec_arxiv[:, iarxiv], color='black', drawstyle='steps-mid', linestyle=':',
                      label='arxiv arc', linewidth=0.5)
             plt.plot(arxiv_det, tampl_arxiv, 'k+', markersize=8.0, label='arxiv arc lines')
-            spec_arxiv_ss = wvutils.shift_and_stretch(spec_arxiv[:, iarxiv], shift_vec[iarxiv], stretch_vec[iarxiv])
             # tampl_ss = np.interp(gsdet_ss, xrng, gdarc_ss)
             for iline in range(arxiv_det_ss.size):
                 plt.plot([arxiv_det[iline], arxiv_det_ss[iline]], [tampl_arxiv[iline], tampl_arxiv[iline]],
@@ -201,20 +211,28 @@ for islit in range(nslits):
         # Calculate wavelengths for all of the gsdet detections
         wvval_arxiv= utils.func_val(wv_calib_arxiv[str(iarxiv)]['fitc'], arxiv_det,wv_calib_arxiv[str(iarxiv)]['function'],
                                     minv=wv_calib_arxiv[str(iarxiv)]['fmin'], maxv=wv_calib_arxiv[str(iarxiv)]['fmax'])
+        # Compute a "local" zero lag correlation of the slit spectrum and the shifted and stretch arxiv spectrum over a
+        # a nlocal_cc_odd long segment of spectrum. We will then uses spectral similarity as a further criteria to
+        # decide which lines are good matches
+        prod_smooth = scipy.ndimage.filters.convolve1d(spec[:, islit]*spec_arxiv_ss, window)
+        spec2_smooth = scipy.ndimage.filters.convolve1d(spec[:, islit]**2, window)
+        arxiv2_smooth = scipy.ndimage.filters.convolve1d(spec_arxiv_ss**2, window)
+        corr_local = prod_smooth/np.sqrt(spec2_smooth*arxiv2_smooth)
 
         # Loop over the current slit line pixel detections and find the nearest arxiv spectrum line
         for iline in range(slit_det.size):
+            # match to pixel in shifted/stretch arxiv spectrum
             pdiff = np.abs(slit_det[iline] - arxiv_det_ss)
             bstpx = np.argmin(pdiff)
             # If a match is found within 2 pixels, consider this a successful match
-            if pdiff[bstpx] < 2.0:
+            if pdiff[bstpx] < line_pix_tol:
                 # Using the arxiv arc wavelength solution, search for the nearest line in the line list
                 bstwv = np.abs(wvdata - wvval_arxiv[bstpx])
-                # This is probably not a good match
-                if bstwv[np.argmin(bstwv)] > 2.0 * disp_arxiv[iarxiv]:
-                    continue
-                lindex = np.append(lindex, np.argmin(bstwv))  # index in the line list self._wvdata
-                dindex = np.append(dindex, iline)
+                # This is a good match if it is within 2 disperion elements
+                if bstwv[np.argmin(bstwv)] < 2.0 * disp_arxiv[iarxiv]:
+                    lindex = np.append(lindex, np.argmin(bstwv))  # index in the line list wvdata of this match
+                    dindex = np.append(dindex, iline)             # index of this line in the detected lines
+                    cc_line = np.append(cc_line,np.interp(slit_det[iline],xrng,corr_local))
 
     if np.all(wcen == 0.0) or len(np.unique(lindex)) < 3:
         wv_calib[str(islit)] = {}
@@ -223,6 +241,7 @@ for islit in range(nslits):
 
     # Finalize the best guess of each line
     # Initialise the patterns dictionary, min_nsig not used anywhere
+    sys.exit(-1)
     patt_dict_slit = dict(acceptable=False, nmatch=0, ibest=-1, bwv=0., min_nsig=sigdetect,
                      mask=np.zeros(slit_det.size, dtype=np.bool))
     patt_dict_slit['sign'] = 1 # This is not used anywhere
