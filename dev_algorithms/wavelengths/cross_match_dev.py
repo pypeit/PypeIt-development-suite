@@ -73,15 +73,31 @@ def fit_slit(spec, patt_dict, tcent, line_lists, outroot=None, slittxt="Slit", t
     return final_fit
 
 
-calibfile ='/Users/joe/python/PypeIt-development-suite/REDUX_OUT/Keck_NIRES/NIRES/MF_keck_nires/MasterWaveCalib_A_01_aa.json'
-wv_calib_arxiv, par = wavecalib.load_wv_calib(calibfile)
-steps= wv_calib_arxiv.pop('steps')
-par_dum = wv_calib_arxiv.pop('par')
+instrument = 'LRIS'
+if instrument == 'NIRES':
+    calibfile ='/Users/joe/python/PypeIt-development-suite/REDUX_OUT/Keck_NIRES/NIRES/MF_keck_nires/MasterWaveCalib_A_01_aa.json'
+    wv_calib_arxiv, par = wavecalib.load_wv_calib(calibfile)
+    steps= wv_calib_arxiv.pop('steps')
+    par_dum = wv_calib_arxiv.pop('par')
 
-datafile ='/Users/joe/python/PypeIt-development-suite/REDUX_OUT/Keck_NIRES/NIRES/MF_keck_nires/MasterWaveCalib_A_01_ac.json'
-wv_calib_data, par = wavecalib.load_wv_calib(datafile)
-steps= wv_calib_data.pop('steps')
-par_dum = wv_calib_data.pop('par')
+    datafile ='/Users/joe/python/PypeIt-development-suite/REDUX_OUT/Keck_NIRES/NIRES/MF_keck_nires/MasterWaveCalib_A_01_ac.json'
+    wv_calib_data, par = wavecalib.load_wv_calib(datafile)
+    steps= wv_calib_data.pop('steps')
+    par_dum = wv_calib_data.pop('par')
+elif instrument == 'LRIS':
+    calibfile ='/Users/joe/python/PypeIt-development-suite/REDUX_OUT/Keck_LRIS_red/multi_1200_9000_d680/MF_keck_lris_red/MasterWaveCalib_A_02_aa.json'
+    wv_calib_tot, par = wavecalib.load_wv_calib(calibfile)
+    steps= wv_calib_tot.pop('steps')
+    par_dum = wv_calib_tot.pop('par')
+    wv_calib_arxiv = {}
+    wv_calib_data = {}
+    for islit in range(4):
+        wv_calib_arxiv[str(islit)] = wv_calib_tot[str(islit)]
+    for islit in range(4):
+        wv_calib_data[str(islit)] = wv_calib_tot[str(islit + 4)]
+
+
+
 nslits = len(wv_calib_data)
 # assignments
 spec = np.zeros((wv_calib_data['0']['spec'].size, nslits))
