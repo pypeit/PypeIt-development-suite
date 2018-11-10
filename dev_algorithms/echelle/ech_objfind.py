@@ -20,6 +20,7 @@ from astropy.stats import SigmaClip
 from pydl.pydlutils.spheregroup import spheregroup
 
 
+## ToDo change usepca to extrapolate_order if None then fit everthing, otherwise extrapolate bad orders.
 def pca_trace(xcen, usepca = None, npca = None, pca_explained_var=99.0,coeff_npoly = None, cen_npoly = 3, debug=True):
     """
     Using sklearn PCA tracing
@@ -138,6 +139,7 @@ def pca_trace(xcen, usepca = None, npca = None, pca_explained_var=99.0,coeff_npo
             plt.show()
 
     #ToDo should we be masking the bad orders here and interpolating/extrapolating?
+    ## ToDo, need to parse in the slitwidth of each order and fit the slit fraction
     spat_mean = np.mean(xcen,0)
 
     #msk_spat, poly_coeff_spat = utils.robust_polyfit(order_vec, spat_mean, ncen, sigma = 3.0, function = 'polynomial')
@@ -219,7 +221,7 @@ def ech_objfind(image, ivar, ordermask, slit_left, slit_righ,inmask=None,plate_s
     norders = slit_left.shape[1]
 
     if isinstance(plate_scale,(float, int)):
-        plate_scale_ord = np.full(norders, plate_scale)  # 0.12 binned by 3 spatially for HIRES
+        plate_scale_ord = np.full(norders, plate_scale)
     elif isinstance(plate_scale,(np.ndarray, list, tuple)):
         if len(plate_scale) == norders:
             plate_scale_ord = plate_scale
@@ -247,9 +249,14 @@ def ech_objfind(image, ivar, ordermask, slit_left, slit_righ,inmask=None,plate_s
         inmask_iord = inmask & thismask
         specobj_dict = {'setup': 'HIRES', 'slitid': iord + 1, 'scidx': 0,'det': 1, 'objtype': 'science'}
         # ToDO Some of the objfind parameters probably need to be passed in here, and also be argumentus to this routine
-        sobjs_slit, skymask[thismask], objmask[thismask], proc_list = \
-            extract.objfind(image, thismask, slit_left[:,iord], slit_righ[:,iord], inmask=inmask_iord,std_trace=std_trace, show_peaks=show_peaks,
-                            show_fits=show_fits, show_trace=show_trace, specobj_dict = specobj_dict, sig_thresh = sig_thresh)
+        if std_trace is not None:
+            sobjs_slit, skymask[thismask], objmask[thismask], proc_list = \
+                extract.objfind(image, thismask, slit_left[:,iord], slit_righ[:,iord], inmask=inmask_iord,std_trace=std_trace[:,iord], show_peaks=show_peaks,
+                                show_fits=show_fits, show_trace=show_trace, specobj_dict = specobj_dict, sig_thresh = sig_thresh)
+        else:
+            sobjs_slit, skymask[thismask], objmask[thismask], proc_list = \
+                extract.objfind(image, thismask, slit_left[:,iord], slit_righ[:,iord], inmask=inmask_iord,std_trace=None, show_peaks=show_peaks,
+                                show_fits=show_fits, show_trace=show_trace, specobj_dict = specobj_dict, sig_thresh = sig_thresh)
         # ToDO make the specobjs _set_item_ work with expressions like this spec[:].orderindx = iord
         for spec in sobjs_slit:
             spec.ech_orderindx = iord
@@ -300,9 +307,9 @@ def ech_objfind(image, ivar, ordermask, slit_left, slit_righ,inmask=None,plate_s
                 thisobj.ech_orderindx = iord
                 thisobj.spat_fracpos = uni_frac[iobj]
                 if std_trace is not None:
-                    x_trace = np.interp(slit_spec_pos, spec_vec, std_trace)
-                    shift = slit_left[:,iord] + slit_width[:,iord]*uni_frac[iobj] - x_trace
-                    thisobj.trace_spat = std_trace + shift
+                    x_trace = np.interp(slit_spec_pos, spec_vec, std_trace[:,iord])
+                    shift = np.interp(slit_spec_pos, spec_vec,slit_left[:,iord] + slit_width[:,iord]*uni_frac[iobj]) - x_trace
+                    thisobj.trace_spat = std_trace[:,iord] + shift
                 else:
                     thisobj.trace_spat = slit_left[:,iord] + slit_width[:,iord]*uni_frac[iobj] # new trace
                 thisobj.trace_spec = spec_vec
@@ -409,10 +416,6 @@ def ech_objfind(image, ivar, ordermask, slit_left, slit_righ,inmask=None,plate_s
         pca_fits[:, :, iobj] = pca_trace((sobjs_final[igroup].trace_spat).T,usepca = None,
                                          npca=npca, pca_explained_var=pca_explained_var, coeff_npoly=coeff_npoly,
                                          cen_npoly=cen_npoly, debug=debug)
-        #pca_fits[:,:,iobj] = pca_trace((sobjs_final[igroup].trace_spat).T,usepca = usepca,
-        #                               npca = npca, pca_explained_var=pca_explained_var,coeff_npoly = coeff_npoly,
-        #                               cen_npoly = cen_npoly, debug=debug)
-        # usepca = sobjs_final[igroup].ech_usepca,
         # Perform iterative flux weighted centroiding using new PCA predictions
         xinit_fweight = pca_fits[:,:,iobj].copy()
         inmask_now = inmask & (ordermask > 0)
@@ -429,13 +432,19 @@ def ech_objfind(image, ivar, ordermask, slit_left, slit_righ,inmask=None,plate_s
     # Set the IDs
     sobjs_final.set_idx()
     if show_trace:
-        viewer, ch = ginga.show_image(objminsky*(ordermask > 0))
+        viewer, ch = ginga.show_image(image*(ordermask > 0))
         for iobj in range(nobj_trim):
             for iord in range(norders):
+                ## Showing the trace from objfind
+                ginga.show_trace(viewer, ch, sobjs_final.trace_spat[iord].T, sobjs_final.idx, color='steelblue')
+                ## Showing PCA fits
                 ginga.show_trace(viewer, ch, pca_fits[:,iord, iobj], str(uni_frac[iobj]), color='yellow')
+                #if std_trace is not None:
+                #    ginga.show_trace(viewer, ch, std_trace[:,iord], str(uni_frac[iobj]), color='steelblue')
 
         for spec in sobjs_trim:
             color = 'green' if spec.ech_usepca else 'magenta'
+            ## Showing the final flux weighted centroiding from PCA predictions
             ginga.show_trace(viewer, ch, spec.trace_spat, spec.idx, color=color)
 
         #for spec in sobjs_final:
@@ -465,6 +474,8 @@ elif spectro == 'MAGE':
     slit_left = readsav('/Users/feige/Dropbox/hires_fndobj/MAGE/left_edge.sav',python_dict=False)['left_edge'].T
     slit_righ = readsav('/Users/feige/Dropbox/hires_fndobj/MAGE/right_edge.sav',python_dict=False)['right_edge'].T
     plate_scale = 0.3
+    hdu_std = fits.open('/Users/feige/Dropbox/hires_fndobj/MAGE/ObjStr1046.fits')
+    std_trace = hdu_std[1].data['trace'].T
     # Standard is the ObjStr1046.fits exten = 1
 elif spectro == 'ESI':
     # ESI
@@ -480,7 +491,9 @@ elif spectro == 'ESI':
     slit_left = data[0,:,:].T
     slit_righ = data[1,:,:].T
     plate_scale = 0.149
-    hdu_std =fits.open('/Users/feige//Dropbox/Cowie_2002-02-17/Extract/Obj_ES.20020217.18981.fits.gz')
+    hdu_std =fits.open('/Users/feige//Dropbox/Cowie_2002-02-17/Extract/Obj_ES.20020217.20037.fits.gz')
+    std_trace = hdu_std[1].data['trace'][:,0:slit_left.shape[0]].T
+    std_trace[:,-1] = std_trace[:,-2]+ (np.median(std_trace[:200,-1])-np.median(std_trace[:200,-2]))
     #The structure is exten = 1, and the xpos,ypos are the standard trace
 elif spectro == 'NIRES':
     from linetools import utils as ltu
@@ -495,10 +508,8 @@ elif spectro == 'NIRES':
 elif spectro == 'GNIRS':
     from scipy.io import readsav
     #hdu = fits.open('/Users/feige//Dropbox/hires_fndobj/sci-N20170331S0216-219.fits')
-    # TODO use std. Telluric directory. Extension 4 is the object structure, and you want xpos and ypos. Xpos is the spatial trace that you want
-    # to pass in. ypos is just np.arange(nspec)
-    hdu = fits.open('/Users/feige//Dropbox/hires_fndobj/GNIRS/J021514.76+004223.8/Science/J021514.76+004223.8_1/sci-N20170927S0294-297.fits')
-    hdu = fits.open('/Users/feige/Dropbox/hires_fndobj/GNIRS/J005424.45+004750.2/Science/J005424.45+004750.2_7/sci-N20171021S0264-267.fits')
+    #hdu = fits.open('/Users/feige//Dropbox/hires_fndobj/GNIRS/J021514.76+004223.8/Science/J021514.76+004223.8_1/sci-N20170927S0294-297.fits')
+    #hdu = fits.open('/Users/feige/Dropbox/hires_fndobj/GNIRS/J005424.45+004750.2/Science/J005424.45+004750.2_7/sci-N20171021S0264-267.fits')
     hdu = fits.open('/Users/feige/Dropbox/hires_fndobj/GNIRS/J002407.02-001237.2/Science/J002407.02-001237.2_5/sci-N20171006S0236-239.fits')
     obj = hdu[0].data
     #objminsky = obj - hdu[1].data
@@ -515,6 +526,13 @@ elif spectro == 'GNIRS':
     slit_left = readsav('/Users/feige/Dropbox/hires_fndobj/GNIRS/J002407.02-001237.2/left_edge_J0024.sav',python_dict=False)['left_edge'].T
     slit_righ = readsav('/Users/feige/Dropbox/hires_fndobj/GNIRS/J002407.02-001237.2/right_edge_J0024.sav',python_dict=False)['right_edge'].T
     plate_scale = 0.15
+    #Use std. Telluric directory. Extension 4 is the object structure, and you want xpos and ypos. Xpos is the spatial trace that you want
+    # to pass in. ypos is just np.arange(nspec)
+    hdu_std =fits.open('/Users/feige/Dropbox/hires_fndobj/GNIRS/J002407.02-001237.2/Science/HIP117774_5/tel-N20171006S0228-231.fits')
+    std_xpos = hdu_std[4].data['XPOS'].T
+    std_trace = np.zeros(np.shape(slit_left))
+    for i in range(6):
+        std_trace[:,i] = std_xpos[:,2*i]
 
 
 ordermask = pixels.slit_pixels(slit_left, slit_righ, objminsky.shape, 0)
@@ -562,7 +580,8 @@ cen_npoly = 3
 
 
 sobjs_final = ech_objfind(image, ivar, ordermask, slit_left, slit_righ,inmask=inmask,plate_scale=plate_scale,ncoeff = ncoeff,
-                npca=npca,pca_explained_var=pca_explained_var, coeff_npoly=None, cen_npoly=cen_npoly,
-                min_snr=min_snr,nabove_min_snr=nabove_min_snr,pca_percentile=pca_percentile,
-                snr_pca=snr_pca,box_radius=box_radius,sig_thresh=sig_thresh,
-                show_peaks=False,show_fits=False,show_trace=True,debug=True)
+                        std_trace =  std_trace,
+                        npca=npca,pca_explained_var=pca_explained_var, coeff_npoly=None, cen_npoly=cen_npoly,
+                        min_snr=min_snr,nabove_min_snr=nabove_min_snr,pca_percentile=pca_percentile,
+                        snr_pca=snr_pca,box_radius=box_radius,sig_thresh=sig_thresh,
+                        show_peaks=False,show_fits=False,show_trace=True,debug=True)
