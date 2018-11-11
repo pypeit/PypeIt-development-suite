@@ -115,6 +115,12 @@ spec = np.zeros((wv_calib_data['0']['spec'].size, nslits))
 for slit in range(nslits):
     spec[:,slit] = wv_calib_data[str(slit)]['spec']
 
+
+
+nreid_min = 4 # Minimum number of times that a given candidate reidentified line must be properly matched with a line
+# in the arxiv to be considered a good reidentification. If there is a lot of duplication in the arxiv of the spectra in question (i.e. multislit) set this
+# to a number like 4. However, for echelle this depends on the number of solutions in the arxiv. For fixed format echelle set this 1. For echelle with
+# grating tilts, it will depend on the number of solutions in the arxiv.
 nonlinear_counts=par['nonlinear_counts']
 sigdetect = par['lowest_nsig']
 detections = None
@@ -122,17 +128,22 @@ detections = None
 lamps = par['lamps']
 use_unknowns=True
 debug = True
-cc_thresh = 0.8
-line_pix_tol = 2.0
-nlocal_cc = 5
-nlocal_cc_odd = nlocal_cc + 1 if nlocal_cc % 2 == 0 else nlocal_cc
-window = 1.0/nlocal_cc_odd* np.ones(nlocal_cc_odd)
+cc_thresh = 0.8 # Threshold for the *global* cross-correlation between an input spectrum and member of the arxiv to attempt reidentification
+line_pix_tol = 2.0 # matching tolerance in pixels for a line reidentification. A good line match must match within this tolerance to the
+# the shifted and stretched arxiv spectrum and must match within this many dispersion elements in the wavelength line list.
+cc_local_thresh = 0.8 # Threshold for the local cross-correlation between an input spectrum and the shifted and stretched arxiv spectrum above which a line must be
+# to be considered a good line for reidentification. The local cross-correlation is evaluated at each candidate reidentified line (using a window of nlocal_cc), and
+# is then used to score the the reidentified lines to arrive at the final set of good reidentifications
+nlocal_cc = 5  # Size of pixel window used for local cross-correlation computation for each arc line. If not an odd number the nearest odd number will be found
 
 
-# def archive_reidentify(spec, wv_calib_arxiv, lamps, detections = None, cc_thresh = 0.8, line_pix_tol = 2.0, nlocal_cc=20
+# def reidentify(spec, wv_calib_arxiv, lamps, nreid_min, detections = None, cc_thresh = 0.8, nmin_match = 1, cc_local_thresh = 0.8, line_pix_tol = 2.0, nlocal_cc=20
 # rms_threshold = 0.15, nonlinear_counts =par['nonlinear_counts'], sigdetect = par['lowest_nsig'], use_unknowns=True, debug=True)
 
 #
+
+nlocal_cc_odd = nlocal_cc + 1 if nlocal_cc % 2 == 0 else nlocal_cc
+window = 1.0/nlocal_cc_odd* np.ones(nlocal_cc_odd)
 
 # Generate the line list
 line_lists = waveio.load_line_lists(lamps)
@@ -202,7 +213,7 @@ for islit in range(nslits):
         msgs.info('Cross-correlating slit # {:d}'.format(islit + 1) + ' with arxiv slit # {:d}'.format(iarxiv + 1))
         # Match the peaks between the two spectra. This code attempts to compute the stretch if cc > cc_thresh
         success, shift_vec[iarxiv], stretch_vec[iarxiv], ccorr_vec[iarxiv], _, _ = \
-            wvutils.xcorr_shift_stretch(spec[:, islit], spec_arxiv[:, iarxiv], cc_thresh=cc_thresh, debug=True)
+            wvutils.xcorr_shift_stretch(spec[:, islit], spec_arxiv[:, iarxiv], cc_thresh=cc_thresh, debug=False)
         # If cc < cc_thresh or if this optimization failed, don't reidentify from this arxiv spectrum
         if success != 1:
             continue
@@ -261,10 +272,10 @@ for islit in range(nslits):
             if pdiff[bstpx] < line_pix_tol:
                 # Using the arxiv arc wavelength solution, search for the nearest line in the line list
                 bstwv = np.abs(wvdata - wvval_arxiv[bstpx])
-                # This is a good match if it is within 2 disperion elements
-                if bstwv[np.argmin(bstwv)] < 2.0 * disp_arxiv[iarxiv]:
-                    line_indx = np.append(line_indx, np.argmin(bstwv))  # index in the line list wvdata of this match
-                    det_indx = np.append(det_indx, iline)             # index of this line in the detected lines
+                # This is a good wavelength match if it is within line_pix_tol disperion elements
+                if bstwv[np.argmin(bstwv)] < line_pix_tol*disp_arxiv[iarxiv]:
+                    line_indx = np.append(line_indx, np.argmin(bstwv))  # index in the line list array wvdata of this match
+                    det_indx = np.append(det_indx, iline)             # index of this line in the detected line array slit_det
                     line_cc = np.append(line_cc,np.interp(slit_det[iline],xrng,corr_local)) # local cross-correlation at this match
                     line_iarxiv = np.append(line_iarxiv,iarxiv)
 
@@ -292,12 +303,12 @@ for islit in range(nslits):
     patt_dict_slit['sign'] = 1 # This is not used anywhere
     patt_dict_slit['bwv'] = np.median(wcen[wcen != 0.0])
     patt_dict_slit['bdisp'] = np.median(disp[disp != 0.0])
-    patterns.solve_triangles(slit_det, wvdata, det_indx, line_indx, patt_dict=patt_dict_slit)
+    patterns.solve_xcorr(slit_det, wvdata, det_indx, line_indx, line_cc, patt_dict=patt_dict_slit,nreid_min=nreid_min,
+                         cc_local_thresh=cc_local_thresh)
 
     if debug:
         tmp_list = table.vstack([line_lists, unknwns])
         qa.match_qa(spec[:, islit], slit_det, tmp_list, patt_dict_slit['IDs'], patt_dict_slit['scores'])
-
 
     # Use only the perfect IDs
     iperfect = np.array(patt_dict_slit['scores']) != 'Perfect'
@@ -311,7 +322,7 @@ for islit in range(nslits):
         wv_calib[str(islit)] = {}
         bad_slits = np.append(bad_slits,islit)
         continue
-    final_fit = fit_slit(spec[:,islit], patt_dict_slit, slit_det)
+    final_fit = fit_slit(spec[:,islit], patt_dict_slit, slit_det, line_lists)
     if final_fit is None:
         # This pattern wasn't good enough
         wv_calib[str(islit)] = {}
@@ -327,7 +338,7 @@ for islit in range(nslits):
     patt_dict[str(islit)] = copy.deepcopy(patt_dict)
     wv_calib[str(islit)] = copy.deepcopy(final_fit)
     if debug:
-        yplt = utils.func_val(final_fit['fitc'], xrng, 'legendre', minv=0.0, maxv=1.0)
+        yplt = utils.func_val(final_fit['fitc'], xrng, final_fit['func'], minv=0.0, maxv=1.0)
         plt.plot(final_fit['xfit'], final_fit['yfit'], 'bx')
         plt.plot(xrng, yplt, 'r-')
         plt.show()
