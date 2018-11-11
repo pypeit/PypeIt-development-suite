@@ -8,8 +8,9 @@ from pypeit import utils
 from astropy import table
 from pypeit import msgs
 from matplotlib import pyplot as plt
+import scipy
 import copy
-
+import itertools
 
 def fit_slit(spec, patt_dict, tcent, line_lists, outroot=None, slittxt="Slit", thar=False,match_toler=3.0,
              func='legendre', n_first=2,sigrej_first=2.0,n_final=4,sigrej_final=3.0,verbose=False):
@@ -51,7 +52,7 @@ def fit_slit(spec, patt_dict, tcent, line_lists, outroot=None, slittxt="Slit", t
     # Purge UNKNOWNS from ifit
     imsk = np.ones(len(ifit), dtype=np.bool)
     for kk, idwv in enumerate(np.array(patt_dict['IDs'])[ifit]):
-        if np.min(np.abs(self._line_lists['wave'][NIST_lines] - idwv)) > 0.01:
+        if np.min(np.abs(line_lists['wave'][NIST_lines] - idwv)) > 0.01:
             imsk[kk] = False
     ifit = ifit[imsk]
     # Fit
@@ -72,33 +73,90 @@ def fit_slit(spec, patt_dict, tcent, line_lists, outroot=None, slittxt="Slit", t
     return final_fit
 
 
-calibfile ='/Users/joe/python/PypeIt-development-suite/REDUX_OUT/Keck_NIRES/NIRES/MF_keck_nires/MasterWaveCalib_A_01_aa.json'
-wv_calib_arxiv, par = wavecalib.load_wv_calib(calibfile)
-steps= wv_calib_arxiv.pop('steps')
-par_dum = wv_calib_arxiv.pop('par')
+instrument = 'LRIS-B'
+if instrument == 'NIRES':
+    calibfile ='/Users/joe/python/PypeIt-development-suite/REDUX_OUT/Keck_NIRES/NIRES/MF_keck_nires/MasterWaveCalib_A_01_aa.json'
+    wv_calib_arxiv, par = wavecalib.load_wv_calib(calibfile)
+    steps= wv_calib_arxiv.pop('steps')
+    par_dum = wv_calib_arxiv.pop('par')
 
-datafile ='/Users/joe/python/PypeIt-development-suite/REDUX_OUT/Keck_NIRES/NIRES/MF_keck_nires/MasterWaveCalib_A_01_ac.json'
-wv_calib_data, par = wavecalib.load_wv_calib(datafile)
-steps= wv_calib_data.pop('steps')
-par_dum = wv_calib_data.pop('par')
+    datafile ='/Users/joe/python/PypeIt-development-suite/REDUX_OUT/Keck_NIRES/NIRES/MF_keck_nires/MasterWaveCalib_A_01_ac.json'
+    wv_calib_data, par = wavecalib.load_wv_calib(datafile)
+    steps= wv_calib_data.pop('steps')
+    par_dum = wv_calib_data.pop('par')
+elif instrument == 'LRIS-R':
+    # Use one detector as the arxiv the other as the data
+    calibfile ='/Users/joe/python/PypeIt-development-suite/REDUX_OUT/Keck_LRIS_red/multi_400_8500_d560/MF_keck_lris_red/MasterWaveCalib_A_01_aa.json'
+    wv_calib_arxiv, par = wavecalib.load_wv_calib(calibfile)
+    steps= wv_calib_arxiv.pop('steps')
+    par_dum = wv_calib_arxiv.pop('par')
+
+    datafile ='/Users/joe/python/PypeIt-development-suite/REDUX_OUT/Keck_LRIS_red/multi_400_8500_d560/MF_keck_lris_red/MasterWaveCalib_A_02_aa.json'
+    wv_calib_data, par = wavecalib.load_wv_calib(datafile)
+    steps= wv_calib_data.pop('steps')
+    par_dum = wv_calib_data.pop('par')
+elif instrument == 'LRIS-B':
+    # Use one detector as the arxiv the other as the data
+    calibfile ='/Users/joe/python/PypeIt-development-suite/REDUX_OUT/Keck_LRIS_blue/multi_600_4000_d560/MF_keck_lris_blue/MasterWaveCalib_A_01_aa.json'
+    wv_calib_arxiv, par = wavecalib.load_wv_calib(calibfile)
+    steps= wv_calib_arxiv.pop('steps')
+    par_dum = wv_calib_arxiv.pop('par')
+
+    datafile ='/Users/joe/python/PypeIt-development-suite/REDUX_OUT/Keck_LRIS_blue/multi_600_4000_d560/MF_keck_lris_blue/MasterWaveCalib_A_02_aa.json'
+    wv_calib_data, par = wavecalib.load_wv_calib(datafile)
+    steps= wv_calib_data.pop('steps')
+    par_dum = wv_calib_data.pop('par')
+
+#    calibfile ='/Users/joe/python/PypeIt-development-suite/REDUX_OUT/Keck_LRIS_red/multi_1200_9000_d680/MF_keck_lris_red/MasterWaveCalib_A_02_aa.json'
+#    wv_calib_tot, par = wavecalib.load_wv_calib(calibfile)
+#    steps= wv_calib_tot.pop('steps')
+#    par_dum = wv_calib_tot.pop('par')
+#    wv_calib_arxiv = {}
+#    wv_calib_data = {}
+#    for islit in range(4):
+#        wv_calib_arxiv[str(islit)] = wv_calib_tot[str(islit)]
+#    for islit in range(4):
+#        wv_calib_data[str(islit)] = wv_calib_tot[str(islit + 4)]
+
+
+
 nslits = len(wv_calib_data)
 # assignments
 spec = np.zeros((wv_calib_data['0']['spec'].size, nslits))
 for slit in range(nslits):
     spec[:,slit] = wv_calib_data[str(slit)]['spec']
 
+
+
+nreid_min = 1 # Minimum number of times that a given candidate reidentified line must be properly matched with a line
+# in the arxiv to be considered a good reidentification. If there is a lot of duplication in the arxiv of the spectra in question (i.e. multislit) set this
+# to a number like 2-4. However, for echelle this depends on the number of solutions in the arxiv. For fixed format echelle set this 1. For echelle with
+# grating tilts, it will depend on the number of solutions in the arxiv.
 nonlinear_counts=par['nonlinear_counts']
 sigdetect = par['lowest_nsig']
 detections = None
 # assignments
 lamps = par['lamps']
 use_unknowns=True
-debug = True
-cc_thresh = 0.8
-# def archive_reidentify(spec, wv_calib_arxiv, lamps, detections = None, cc_thresh = 0.8
-# rms_threshold = 0.15, nonlinear_counts =par['nonlinear_counts'], sigdetect = par['lowest_nsig'], use_unknowns=True, debug=True)
+debug_xcorr = True
+debug_reid = True
+cc_thresh = 0.8 # Threshold for the *global* cross-correlation between an input spectrum and member of the arxiv to attempt reidentification
+line_pix_tol = 2.0 # matching tolerance in pixels for a line reidentification. A good line match must match within this tolerance to the
+# the shifted and stretched arxiv spectrum and must match within this many dispersion elements in the wavelength line list.
+cc_local_thresh = 0.8 # Threshold for the local cross-correlation between an input spectrum and the shifted and stretched arxiv spectrum above which a line must be
+# to be considered a good line for reidentification. The local cross-correlation is evaluated at each candidate reidentified line (using a window of nlocal_cc), and
+# is then used to score the the reidentified lines to arrive at the final set of good reidentifications
+nlocal_cc = 10  # Size of pixel window used for local cross-correlation computation for each arc line. If not an odd number the nearest odd number will be found
+rms_threshold = 0.15
+
+# def reidentify(spec, wv_calib_arxiv, lamps, nreid_min, detections = None, cc_thresh = 0.8, nmin_match = 1,
+# cc_local_thresh = 0.8, line_pix_tol = 2.0, nlocal_cc=20, rms_threshold = 0.15, nonlinear_counts =par['nonlinear_counts'],
+# sigdetect = par['lowest_nsig'], use_unknowns=True, debug_xcorr=False, debug_local=False, debug_reid=False)
 
 #
+
+nlocal_cc_odd = nlocal_cc + 1 if nlocal_cc % 2 == 0 else nlocal_cc
+window = 1.0/nlocal_cc_odd* np.ones(nlocal_cc_odd)
 
 # Generate the line list
 line_lists = waveio.load_line_lists(lamps)
@@ -121,7 +179,7 @@ if nspec_arxiv != nspec:
 if detections is None:
     detections = {}
     for islit in range(nslits):
-        tcent, ecent, cut_tcent, icut = wvutils.arc_lines_from_spec(spec[:, islit], min_nsig=sigdetect,nonlinear_counts=nonlinear_counts)
+        tcent, ecent, cut_tcent, icut = wvutils.arc_lines_from_spec(spec[:, islit], sigdetect=sigdetect,nonlinear_counts=nonlinear_counts)
         detections[str(islit)] = [tcent[icut].copy(), ecent[icut].copy()]
 else:
     if len(detections) != nslits:
@@ -146,11 +204,19 @@ for iarxiv in range(narxiv):
 wv_calib = {}
 patt_dict = {}
 bad_slits = np.array([], dtype=np.int)
+
+marker_tuple = ('o','v','<','>','8','s','p','P','*','X','D','d','x')
+color_tuple = ('black','green','red','cyan','magenta','blue','darkorange','yellow','dodgerblue','purple','lightgreen','cornflowerblue')
+marker = itertools.cycle(marker_tuple)
+colors = itertools.cycle(color_tuple)
+
 # Loop over the slits in the spectrum and cross-correlate each with each arxiv spectrum to identify lines
 for islit in range(nslits):
     slit_det = detections[str(islit)][0]
-    lindex = np.array([], dtype=np.int)
-    dindex = np.array([], dtype=np.int)
+    line_indx = np.array([], dtype=np.int)
+    det_indx = np.array([], dtype=np.int)
+    line_cc = np.array([], dtype=float)
+    line_iarxiv = np.array([], dtype=np.int)
     wcen = np.zeros(narxiv)
     disp = np.zeros(narxiv)
     shift_vec = np.zeros(narxiv)
@@ -160,7 +226,7 @@ for islit in range(nslits):
         msgs.info('Cross-correlating slit # {:d}'.format(islit + 1) + ' with arxiv slit # {:d}'.format(iarxiv + 1))
         # Match the peaks between the two spectra. This code attempts to compute the stretch if cc > cc_thresh
         success, shift_vec[iarxiv], stretch_vec[iarxiv], ccorr_vec[iarxiv], _, _ = \
-            wvutils.xcorr_shift_stretch(spec[:, islit], spec_arxiv[:, iarxiv], cc_thresh=cc_thresh, debug=True)
+            wvutils.xcorr_shift_stretch(spec[:, islit], spec_arxiv[:, iarxiv], cc_thresh=cc_thresh, debug=debug_xcorr)
         # If cc < cc_thresh or if this optimization failed, don't reidentify from this arxiv spectrum
         if success != 1:
             continue
@@ -171,7 +237,9 @@ for islit in range(nslits):
         # transforming these arxiv slit line pixel locations into the (shifted and stretched) input islit spectrum frame
         arxiv_det = wv_calib_arxiv[str(iarxiv)]['xfit']
         arxiv_det_ss = arxiv_det*stretch_vec[iarxiv] + shift_vec[iarxiv]
-        if debug:
+        spec_arxiv_ss = wvutils.shift_and_stretch(spec_arxiv[:, iarxiv], shift_vec[iarxiv], stretch_vec[iarxiv])
+
+        if debug_xcorr:
             plt.figure(figsize=(14, 6))
             tampl_slit = np.interp(slit_det, xrng, spec[:, islit])
             plt.plot(xrng, spec[:, islit], color='red', drawstyle='steps-mid', label='input arc',linewidth=1.0, zorder=10)
@@ -180,7 +248,6 @@ for islit in range(nslits):
             plt.plot(xrng, spec_arxiv[:, iarxiv], color='black', drawstyle='steps-mid', linestyle=':',
                      label='arxiv arc', linewidth=0.5)
             plt.plot(arxiv_det, tampl_arxiv, 'k+', markersize=8.0, label='arxiv arc lines')
-            spec_arxiv_ss = wvutils.shift_and_stretch(spec_arxiv[:, iarxiv], shift_vec[iarxiv], stretch_vec[iarxiv])
             # tampl_ss = np.interp(gsdet_ss, xrng, gdarc_ss)
             for iline in range(arxiv_det_ss.size):
                 plt.plot([arxiv_det[iline], arxiv_det_ss[iline]], [tampl_arxiv[iline], tampl_arxiv[iline]],
@@ -201,39 +268,68 @@ for islit in range(nslits):
         # Calculate wavelengths for all of the gsdet detections
         wvval_arxiv= utils.func_val(wv_calib_arxiv[str(iarxiv)]['fitc'], arxiv_det,wv_calib_arxiv[str(iarxiv)]['function'],
                                     minv=wv_calib_arxiv[str(iarxiv)]['fmin'], maxv=wv_calib_arxiv[str(iarxiv)]['fmax'])
+        # Compute a "local" zero lag correlation of the slit spectrum and the shifted and stretch arxiv spectrum over a
+        # a nlocal_cc_odd long segment of spectrum. We will then uses spectral similarity as a further criteria to
+        # decide which lines are good matches
+        prod_smooth = scipy.ndimage.filters.convolve1d(spec[:, islit]*spec_arxiv_ss, window)
+        spec2_smooth = scipy.ndimage.filters.convolve1d(spec[:, islit]**2, window)
+        arxiv2_smooth = scipy.ndimage.filters.convolve1d(spec_arxiv_ss**2, window)
+        denom = np.sqrt(spec2_smooth*arxiv2_smooth)
+        corr_local = np.zeros_like(denom)
+        corr_local[denom > 0] = prod_smooth[denom > 0]/denom[denom > 0]
+        corr_local[denom == 0.0] = -1.0
 
         # Loop over the current slit line pixel detections and find the nearest arxiv spectrum line
         for iline in range(slit_det.size):
+            # match to pixel in shifted/stretch arxiv spectrum
             pdiff = np.abs(slit_det[iline] - arxiv_det_ss)
             bstpx = np.argmin(pdiff)
             # If a match is found within 2 pixels, consider this a successful match
-            if pdiff[bstpx] < 2.0:
+            if pdiff[bstpx] < line_pix_tol:
                 # Using the arxiv arc wavelength solution, search for the nearest line in the line list
                 bstwv = np.abs(wvdata - wvval_arxiv[bstpx])
-                # This is probably not a good match
-                if bstwv[np.argmin(bstwv)] > 2.0 * disp_arxiv[iarxiv]:
-                    continue
-                lindex = np.append(lindex, np.argmin(bstwv))  # index in the line list self._wvdata
-                dindex = np.append(dindex, iline)
+                # This is a good wavelength match if it is within line_pix_tol disperion elements
+                if bstwv[np.argmin(bstwv)] < line_pix_tol*disp_arxiv[iarxiv]:
+                    line_indx = np.append(line_indx, np.argmin(bstwv))  # index in the line list array wvdata of this match
+                    det_indx = np.append(det_indx, iline)             # index of this line in the detected line array slit_det
+                    line_cc = np.append(line_cc,np.interp(slit_det[iline],xrng,corr_local)) # local cross-correlation at this match
+                    line_iarxiv = np.append(line_iarxiv,iarxiv)
 
-    if np.all(wcen == 0.0) or len(np.unique(lindex)) < 3:
+    if np.all(wcen == 0.0) or len(np.unique(line_indx)) < 3:
         wv_calib[str(islit)] = {}
         bad_slits = np.append(bad_slits,islit)
         continue
 
+    if debug_reid:
+        plt.figure(figsize=(14, 6))
+        for iarxiv in range(narxiv):
+            # Only plot those that we actually tried to reidentify (i.e. above cc_thresh)
+            if wcen[iarxiv] != 0.0:
+                this_iarxiv = line_iarxiv == iarxiv
+                plt.plot(wvdata[line_indx[this_iarxiv]],line_cc[this_iarxiv],marker=next(marker),color=next(colors),
+                         linestyle='',markersize=5.0,label='arxiv slit={:d}'.format(iarxiv))
+
+        plt.hlines(cc_local_thresh, wvdata[line_indx].min(), wvdata[line_indx].max(), color='red', linestyle='--',label='Local xcorr threshhold')
+        plt.title('slit={:d}'.format(islit) + ': Local cross-correlation for each line reidentified from arxiv.' +
+                  'Requirement: nreid_min={:d}'.format(nreid_min) + ' matches above xcorr threshold')
+        plt.xlabel('wavelength from line list')
+        plt.ylabel('Local x-correlation coefficient')
+        #plt.ylim((0.0, 1.2))
+        plt.legend()
+        plt.show()
+
     # Finalize the best guess of each line
     # Initialise the patterns dictionary, min_nsig not used anywhere
-    patt_dict_slit = dict(acceptable=False, nmatch=0, ibest=-1, bwv=0., min_nsig=sigdetect,
-                     mask=np.zeros(slit_det.size, dtype=np.bool))
+    patt_dict_slit = dict(acceptable=False, nmatch=0, ibest=-1, bwv=0., min_nsig=sigdetect,mask=np.zeros(slit_det.size, dtype=np.bool))
     patt_dict_slit['sign'] = 1 # This is not used anywhere
     patt_dict_slit['bwv'] = np.median(wcen[wcen != 0.0])
     patt_dict_slit['bdisp'] = np.median(disp[disp != 0.0])
-    patterns.solve_triangles(slit_det, wvdata, dindex, lindex, patt_dict=patt_dict_slit)
+    patterns.solve_xcorr(slit_det, wvdata, det_indx, line_indx, line_cc, patt_dict=patt_dict_slit,nreid_min=nreid_min,
+                         cc_local_thresh=cc_local_thresh)
 
-    if debug:
+    if debug_reid:
         tmp_list = table.vstack([line_lists, unknwns])
         qa.match_qa(spec[:, islit], slit_det, tmp_list, patt_dict_slit['IDs'], patt_dict_slit['scores'])
-
 
     # Use only the perfect IDs
     iperfect = np.array(patt_dict_slit['scores']) != 'Perfect'
@@ -247,7 +343,7 @@ for islit in range(nslits):
         wv_calib[str(islit)] = {}
         bad_slits = np.append(bad_slits,islit)
         continue
-    final_fit = fit_slit(spec[:,islit], patt_dict_slit, slit_det)
+    final_fit = fit_slit(spec[:,islit], patt_dict_slit, slit_det, line_lists)
     if final_fit is None:
         # This pattern wasn't good enough
         wv_calib[str(islit)] = {}
@@ -262,8 +358,8 @@ for islit in range(nslits):
         # Note this result in new_bad_slits, but store the solution since this might be the best possible
     patt_dict[str(islit)] = copy.deepcopy(patt_dict)
     wv_calib[str(islit)] = copy.deepcopy(final_fit)
-    if debug:
-        yplt = utils.func_val(final_fit['fitc'], xrng, 'legendre', minv=0.0, maxv=1.0)
+    if debug_reid:
+        yplt = utils.func_val(final_fit['fitc'], xrng, final_fit['function'], minv=final_fit['fmin'], maxv=final_fit['fmax'])
         plt.plot(final_fit['xfit'], final_fit['yfit'], 'bx')
         plt.plot(xrng, yplt, 'r-')
         plt.show()
