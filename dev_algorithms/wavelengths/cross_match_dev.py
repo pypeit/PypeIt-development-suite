@@ -10,7 +10,7 @@ from pypeit import msgs
 from matplotlib import pyplot as plt
 import scipy
 import copy
-
+import itertools
 
 def fit_slit(spec, patt_dict, tcent, line_lists, outroot=None, slittxt="Slit", thar=False,match_toler=3.0,
              func='legendre', n_first=2,sigrej_first=2.0,n_final=4,sigrej_final=3.0,verbose=False):
@@ -73,7 +73,7 @@ def fit_slit(spec, patt_dict, tcent, line_lists, outroot=None, slittxt="Slit", t
     return final_fit
 
 
-instrument = 'LRIS'
+instrument = 'LRIS-R'
 if instrument == 'NIRES':
     calibfile ='/Users/joe/python/PypeIt-development-suite/REDUX_OUT/Keck_NIRES/NIRES/MF_keck_nires/MasterWaveCalib_A_01_aa.json'
     wv_calib_arxiv, par = wavecalib.load_wv_calib(calibfile)
@@ -84,17 +84,28 @@ if instrument == 'NIRES':
     wv_calib_data, par = wavecalib.load_wv_calib(datafile)
     steps= wv_calib_data.pop('steps')
     par_dum = wv_calib_data.pop('par')
-elif instrument == 'LRIS':
-    calibfile ='/Users/joe/python/PypeIt-development-suite/REDUX_OUT/Keck_LRIS_red/multi_1200_9000_d680/MF_keck_lris_red/MasterWaveCalib_A_02_aa.json'
-    wv_calib_tot, par = wavecalib.load_wv_calib(calibfile)
-    steps= wv_calib_tot.pop('steps')
-    par_dum = wv_calib_tot.pop('par')
-    wv_calib_arxiv = {}
-    wv_calib_data = {}
-    for islit in range(4):
-        wv_calib_arxiv[str(islit)] = wv_calib_tot[str(islit)]
-    for islit in range(4):
-        wv_calib_data[str(islit)] = wv_calib_tot[str(islit + 4)]
+elif instrument == 'LRIS-R':
+    # Use one detector as the arxiv the other as the data
+    calibfile ='/Users/joe/python/PypeIt-development-suite/REDUX_OUT/Keck_LRIS_red/multi_400_8500_d560/MF_keck_lris_red/MasterWaveCalib_A_01_aa.json'
+    wv_calib_arxiv, par = wavecalib.load_wv_calib(calibfile)
+    steps= wv_calib_arxiv.pop('steps')
+    par_dum = wv_calib_arxiv.pop('par')
+
+    datafile ='/Users/joe/python/PypeIt-development-suite/REDUX_OUT/Keck_LRIS_red/multi_400_8500_d560/MF_keck_lris_red/MasterWaveCalib_A_02_aa.json'
+    wv_calib_data, par = wavecalib.load_wv_calib(datafile)
+    steps= wv_calib_data.pop('steps')
+    par_dum = wv_calib_data.pop('par')
+
+#    calibfile ='/Users/joe/python/PypeIt-development-suite/REDUX_OUT/Keck_LRIS_red/multi_1200_9000_d680/MF_keck_lris_red/MasterWaveCalib_A_02_aa.json'
+#    wv_calib_tot, par = wavecalib.load_wv_calib(calibfile)
+#    steps= wv_calib_tot.pop('steps')
+#    par_dum = wv_calib_tot.pop('par')
+#    wv_calib_arxiv = {}
+#    wv_calib_data = {}
+#    for islit in range(4):
+#        wv_calib_arxiv[str(islit)] = wv_calib_tot[str(islit)]
+#    for islit in range(4):
+#        wv_calib_data[str(islit)] = wv_calib_tot[str(islit + 4)]
 
 
 
@@ -144,7 +155,7 @@ if nspec_arxiv != nspec:
 if detections is None:
     detections = {}
     for islit in range(nslits):
-        tcent, ecent, cut_tcent, icut = wvutils.arc_lines_from_spec(spec[:, islit], min_nsig=sigdetect,nonlinear_counts=nonlinear_counts)
+        tcent, ecent, cut_tcent, icut = wvutils.arc_lines_from_spec(spec[:, islit], sigdetect=sigdetect,nonlinear_counts=nonlinear_counts)
         detections[str(islit)] = [tcent[icut].copy(), ecent[icut].copy()]
 else:
     if len(detections) != nslits:
@@ -170,12 +181,18 @@ wv_calib = {}
 patt_dict = {}
 bad_slits = np.array([], dtype=np.int)
 
+marker_tuple = ('o','v','<','>','8','s','p','P','*','X','D','d','x')
+color_tuple = ('black','green','red','cyan','magenta','blue','darkorange','yellow','dodgerblue','purple','lightgreen','cornflowerblue')
+marker = itertools.cycle(marker_tuple)
+colors = itertools.cycle(color_tuple)
+
 # Loop over the slits in the spectrum and cross-correlate each with each arxiv spectrum to identify lines
 for islit in range(nslits):
     slit_det = detections[str(islit)][0]
-    lindex = np.array([], dtype=np.int)
-    dindex = np.array([], dtype=np.int)
-    cc_line = np.array([], dtype=float)
+    line_indx = np.array([], dtype=np.int)
+    det_indx = np.array([], dtype=np.int)
+    line_cc = np.array([], dtype=float)
+    line_iarxiv = np.array([], dtype=np.int)
     wcen = np.zeros(narxiv)
     disp = np.zeros(narxiv)
     shift_vec = np.zeros(narxiv)
@@ -246,24 +263,36 @@ for islit in range(nslits):
                 bstwv = np.abs(wvdata - wvval_arxiv[bstpx])
                 # This is a good match if it is within 2 disperion elements
                 if bstwv[np.argmin(bstwv)] < 2.0 * disp_arxiv[iarxiv]:
-                    lindex = np.append(lindex, np.argmin(bstwv))  # index in the line list wvdata of this match
-                    dindex = np.append(dindex, iline)             # index of this line in the detected lines
-                    cc_line = np.append(cc_line,np.interp(slit_det[iline],xrng,corr_local))
+                    line_indx = np.append(line_indx, np.argmin(bstwv))  # index in the line list wvdata of this match
+                    det_indx = np.append(det_indx, iline)             # index of this line in the detected lines
+                    line_cc = np.append(line_cc,np.interp(slit_det[iline],xrng,corr_local)) # local cross-correlation at this match
+                    line_iarxiv = np.append(line_iarxiv,iarxiv)
 
-    if np.all(wcen == 0.0) or len(np.unique(lindex)) < 3:
+    if np.all(wcen == 0.0) or len(np.unique(line_indx)) < 3:
         wv_calib[str(islit)] = {}
         bad_slits = np.append(bad_slits,islit)
         continue
 
+    if debug:
+        plt.figure(figsize=(14, 6))
+        for iarxiv in range(narxiv):
+            this_iarxiv = line_iarxiv == iarxiv
+            plt.plot(wvdata[line_indx[this_iarxiv]],line_cc[this_iarxiv],marker=next(marker),color=next(colors),linestyle='',markersize=5.0,
+                     label='arxiv slit={:d}'.format(iarxiv))
+        plt.title('slit={:d}'.format(islit) + ' : Local cross-correlation for each line reidentified from arxiv')
+        plt.xlabel('wavelength from line list')
+        plt.ylabel('Local x-correlation coefficient')
+        #plt.ylim((0.0, 1.2))
+        plt.legend()
+        plt.show()
+
     # Finalize the best guess of each line
     # Initialise the patterns dictionary, min_nsig not used anywhere
-    sys.exit(-1)
-    patt_dict_slit = dict(acceptable=False, nmatch=0, ibest=-1, bwv=0., min_nsig=sigdetect,
-                     mask=np.zeros(slit_det.size, dtype=np.bool))
+    patt_dict_slit = dict(acceptable=False, nmatch=0, ibest=-1, bwv=0., min_nsig=sigdetect,mask=np.zeros(slit_det.size, dtype=np.bool))
     patt_dict_slit['sign'] = 1 # This is not used anywhere
     patt_dict_slit['bwv'] = np.median(wcen[wcen != 0.0])
     patt_dict_slit['bdisp'] = np.median(disp[disp != 0.0])
-    patterns.solve_triangles(slit_det, wvdata, dindex, lindex, patt_dict=patt_dict_slit)
+    patterns.solve_triangles(slit_det, wvdata, det_indx, line_indx, patt_dict=patt_dict_slit)
 
     if debug:
         tmp_list = table.vstack([line_lists, unknwns])
