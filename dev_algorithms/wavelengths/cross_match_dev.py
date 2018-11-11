@@ -73,7 +73,7 @@ def fit_slit(spec, patt_dict, tcent, line_lists, outroot=None, slittxt="Slit", t
     return final_fit
 
 
-instrument = 'NIRES'
+instrument = 'LRIS-B'
 if instrument == 'NIRES':
     calibfile ='/Users/joe/python/PypeIt-development-suite/REDUX_OUT/Keck_NIRES/NIRES/MF_keck_nires/MasterWaveCalib_A_01_aa.json'
     wv_calib_arxiv, par = wavecalib.load_wv_calib(calibfile)
@@ -92,6 +92,17 @@ elif instrument == 'LRIS-R':
     par_dum = wv_calib_arxiv.pop('par')
 
     datafile ='/Users/joe/python/PypeIt-development-suite/REDUX_OUT/Keck_LRIS_red/multi_400_8500_d560/MF_keck_lris_red/MasterWaveCalib_A_02_aa.json'
+    wv_calib_data, par = wavecalib.load_wv_calib(datafile)
+    steps= wv_calib_data.pop('steps')
+    par_dum = wv_calib_data.pop('par')
+elif instrument == 'LRIS-B':
+    # Use one detector as the arxiv the other as the data
+    calibfile ='/Users/joe/python/PypeIt-development-suite/REDUX_OUT/Keck_LRIS_blue/multi_600_4000_d560/MF_keck_lris_blue/MasterWaveCalib_A_01_aa.json'
+    wv_calib_arxiv, par = wavecalib.load_wv_calib(calibfile)
+    steps= wv_calib_arxiv.pop('steps')
+    par_dum = wv_calib_arxiv.pop('par')
+
+    datafile ='/Users/joe/python/PypeIt-development-suite/REDUX_OUT/Keck_LRIS_blue/multi_600_4000_d560/MF_keck_lris_blue/MasterWaveCalib_A_02_aa.json'
     wv_calib_data, par = wavecalib.load_wv_calib(datafile)
     steps= wv_calib_data.pop('steps')
     par_dum = wv_calib_data.pop('par')
