@@ -97,15 +97,23 @@ elif instrument == 'LRIS-R':
     par_dum = wv_calib_data.pop('par')
 elif instrument == 'LRIS-B':
     # Use one detector as the arxiv the other as the data
-    calibfile ='/Users/joe/python/PypeIt-development-suite/REDUX_OUT/Keck_LRIS_blue/multi_600_4000_d560/MF_keck_lris_blue/MasterWaveCalib_A_01_aa.json'
+    calibfile ='/Users/joe/python/PypeIt-development-suite/REDUX_OUT/Keck_LRIS_blue/multi_600_4000_d560/MF_keck_lris_blue/MasterWaveCalib_A_02_aa.json'
     wv_calib_arxiv, par = wavecalib.load_wv_calib(calibfile)
     steps= wv_calib_arxiv.pop('steps')
-    par_dum = wv_calib_arxiv.pop('par')
+    par = wv_calib_arxiv.pop('par')
 
-    datafile ='/Users/joe/python/PypeIt-development-suite/REDUX_OUT/Keck_LRIS_blue/multi_600_4000_d560/MF_keck_lris_blue/MasterWaveCalib_A_02_aa.json'
+    datafile ='/Users/joe/python/PypeIt-development-suite/REDUX_OUT/Keck_LRIS_blue/multi_600_4000_d560/MF_keck_lris_blue/MasterWaveCalib_A_01_aa.json'
     wv_calib_data, par = wavecalib.load_wv_calib(datafile)
     steps= wv_calib_data.pop('steps')
     par_dum = wv_calib_data.pop('par')
+
+match_toler = par['match_toler']
+n_first = 1 # par['n_first']
+sigrej_first = par['sigrej_first']
+n_final = par['n_final']
+sigrej_final = par['sigrej_final']
+func = par['func']
+# debug_xcorr=False, debug_local=False, debug_reid=False
 
 #    calibfile ='/Users/joe/python/PypeIt-development-suite/REDUX_OUT/Keck_LRIS_red/multi_1200_9000_d680/MF_keck_lris_red/MasterWaveCalib_A_02_aa.json'
 #    wv_calib_tot, par = wavecalib.load_wv_calib(calibfile)
@@ -134,11 +142,14 @@ nreid_min = 1 # Minimum number of times that a given candidate reidentified line
 # grating tilts, it will depend on the number of solutions in the arxiv.
 nonlinear_counts=par['nonlinear_counts']
 sigdetect = par['lowest_nsig']
+rms_threshold = par['rms_threshold']
+
+
 detections = None
 # assignments
 lamps = par['lamps']
 use_unknowns=True
-debug_xcorr = True
+debug_xcorr = False
 debug_reid = True
 cc_thresh = 0.8 # Threshold for the *global* cross-correlation between an input spectrum and member of the arxiv to attempt reidentification
 line_pix_tol = 2.0 # matching tolerance in pixels for a line reidentification. A good line match must match within this tolerance to the
@@ -147,13 +158,14 @@ cc_local_thresh = 0.8 # Threshold for the local cross-correlation between an inp
 # to be considered a good line for reidentification. The local cross-correlation is evaluated at each candidate reidentified line (using a window of nlocal_cc), and
 # is then used to score the the reidentified lines to arrive at the final set of good reidentifications
 nlocal_cc = 10  # Size of pixel window used for local cross-correlation computation for each arc line. If not an odd number the nearest odd number will be found
-rms_threshold = 0.15
 
 # def reidentify(spec, wv_calib_arxiv, lamps, nreid_min, detections = None, cc_thresh = 0.8, nmin_match = 1,
-# cc_local_thresh = 0.8, line_pix_tol = 2.0, nlocal_cc=20, rms_threshold = 0.15, nonlinear_counts =par['nonlinear_counts'],
-# sigdetect = par['lowest_nsig'], use_unknowns=True, debug_xcorr=False, debug_local=False, debug_reid=False)
-
+# cc_local_thresh = 0.8, line_pix_tol = 2.0, nlocal_cc=10, rms_threshold = 0.15, nonlinear_counts =par['nonlinear_counts'],
+# sigdetect = 5.0, use_unknowns=True,
+# match_toler=3.0,func='legendre',n_first=2,sigrej_first=3.0,n_final=4, sigrej_final=2.0,
+# debug_xcorr=False, debug_local=False, debug_reid=False)
 #
+
 
 nlocal_cc_odd = nlocal_cc + 1 if nlocal_cc % 2 == 0 else nlocal_cc
 window = 1.0/nlocal_cc_odd* np.ones(nlocal_cc_odd)
@@ -295,7 +307,8 @@ for islit in range(nslits):
                     line_cc = np.append(line_cc,np.interp(slit_det[iline],xrng,corr_local)) # local cross-correlation at this match
                     line_iarxiv = np.append(line_iarxiv,iarxiv)
 
-    if np.all(wcen == 0.0) or len(np.unique(line_indx)) < 3:
+    narxiv_used = np.sum(wcen != 0.0)
+    if (narxiv_used == 0) or (len(np.unique(line_indx)) < 3):
         wv_calib[str(islit)] = {}
         bad_slits = np.append(bad_slits,islit)
         continue
@@ -310,8 +323,8 @@ for islit in range(nslits):
                          linestyle='',markersize=5.0,label='arxiv slit={:d}'.format(iarxiv))
 
         plt.hlines(cc_local_thresh, wvdata[line_indx].min(), wvdata[line_indx].max(), color='red', linestyle='--',label='Local xcorr threshhold')
-        plt.title('slit={:d}'.format(islit) + ': Local cross-correlation for each line reidentified from arxiv.' +
-                  'Requirement: nreid_min={:d}'.format(nreid_min) + ' matches above xcorr threshold')
+        plt.title('slit={:d}'.format(islit + 1) + ': Local x-correlation for reidentified lines from narxiv_used={:d}'.format(narxiv_used) +
+                  ' arxiv slits. Requirement: nreid_min={:d}'.format(nreid_min) + ' matches > threshold')
         plt.xlabel('wavelength from line list')
         plt.ylabel('Local x-correlation coefficient')
         #plt.ylim((0.0, 1.2))
@@ -343,7 +356,9 @@ for islit in range(nslits):
         wv_calib[str(islit)] = {}
         bad_slits = np.append(bad_slits,islit)
         continue
-    final_fit = fit_slit(spec[:,islit], patt_dict_slit, slit_det, line_lists)
+    final_fit = fit_slit(spec[:,islit], patt_dict_slit, slit_det, line_lists, match_toler=match_toler,
+                         func=func, n_first=n_first,sigrej_first=sigrej_first,n_final=n_final,
+                         sigrej_final=sigrej_final)
     if final_fit is None:
         # This pattern wasn't good enough
         wv_calib[str(islit)] = {}
