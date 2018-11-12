@@ -371,19 +371,25 @@ def reidentify(spec, wv_calib_arxiv, lamps, nreid_min, detections=None, cc_thres
         if patt_dict_slit['nmatch'] < 3:
             patt_dict_slit['acceptable'] = False
 
-        # Check if a solution was found
+        # Check if an acceptable reidentification solution was found
         if not patt_dict_slit['acceptable']:
             wv_calib[str(islit)] = {}
+            patt_dict[str(islit)] = copy.deepcopy(patt_dict_slit)
             bad_slits = np.append(bad_slits,islit)
             continue
+        # Perform the fit
         final_fit = fit_slit(spec[:,islit], patt_dict_slit, slit_det, line_lists, match_toler=match_toler,
                              func=func, n_first=n_first,sigrej_first=sigrej_first,n_final=n_final,
                              sigrej_final=sigrej_final)
+
+        # Did the fit succeed?
         if final_fit is None:
             # This pattern wasn't good enough
             wv_calib[str(islit)] = {}
+            patt_dict[str(islit)] = copy.deepcopy(patt_dict_slit)
             bad_slits = np.append(bad_slits, islit)
             continue
+        # Is the RMS below the threshold?
         if final_fit['rms'] > rms_threshold:
             msgs.warn('---------------------------------------------------' + msgs.newline() +
                       'Reidentify report for slit {0:d}/{1:d}:'.format(islit + 1, nslits) + msgs.newline() +
@@ -391,7 +397,9 @@ def reidentify(spec, wv_calib_arxiv, lamps, nreid_min, detections=None, cc_thres
                       '---------------------------------------------------')
             bad_slits = np.append(bad_slits, islit)
             # Note this result in new_bad_slits, but store the solution since this might be the best possible
-        patt_dict[str(islit)] = copy.deepcopy(patt_dict)
+
+        # Add the patt_dict and wv_calib to the output dicts
+        patt_dict[str(islit)] = copy.deepcopy(patt_dict_slit)
         wv_calib[str(islit)] = copy.deepcopy(final_fit)
         if debug_reid:
             yplt = utils.func_val(final_fit['fitc'], xrng, final_fit['function'], minv=final_fit['fmin'], maxv=final_fit['fmax'])
@@ -399,7 +407,7 @@ def reidentify(spec, wv_calib_arxiv, lamps, nreid_min, detections=None, cc_thres
             plt.plot(xrng, yplt, 'r-')
             plt.show()
 
-        return wv_calib, patt_dict, bad_slits
+    return wv_calib, patt_dict, bad_slits
 
 
 
@@ -445,7 +453,7 @@ for slit in range(nslits):
     spec[:,slit] = wv_calib_data[str(slit)]['spec']
 
 match_toler = par['match_toler']
-n_first = = par['n_first']
+n_first = par['n_first']
 sigrej_first = par['sigrej_first']
 n_final = par['n_final']
 sigrej_final = par['sigrej_final']
