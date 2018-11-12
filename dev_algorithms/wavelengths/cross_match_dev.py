@@ -73,91 +73,6 @@ def fit_slit(spec, patt_dict, tcent, line_lists, outroot=None, slittxt="Slit", t
     return final_fit
 
 
-instrument = 'LRIS-B'
-if instrument == 'NIRES':
-    calibfile ='/Users/joe/python/PypeIt-development-suite/REDUX_OUT/Keck_NIRES/NIRES/MF_keck_nires/MasterWaveCalib_A_01_aa.json'
-    wv_calib_arxiv, par = wavecalib.load_wv_calib(calibfile)
-    steps= wv_calib_arxiv.pop('steps')
-    par_dum = wv_calib_arxiv.pop('par')
-
-    datafile ='/Users/joe/python/PypeIt-development-suite/REDUX_OUT/Keck_NIRES/NIRES/MF_keck_nires/MasterWaveCalib_A_01_ac.json'
-    wv_calib_data, par = wavecalib.load_wv_calib(datafile)
-    steps= wv_calib_data.pop('steps')
-    par_dum = wv_calib_data.pop('par')
-elif instrument == 'LRIS-R':
-    # Use one detector as the arxiv the other as the data
-    calibfile ='/Users/joe/python/PypeIt-development-suite/REDUX_OUT/Keck_LRIS_red/multi_400_8500_d560/MF_keck_lris_red/MasterWaveCalib_A_01_aa.json'
-    wv_calib_arxiv, par = wavecalib.load_wv_calib(calibfile)
-    steps= wv_calib_arxiv.pop('steps')
-    par_dum = wv_calib_arxiv.pop('par')
-
-    datafile ='/Users/joe/python/PypeIt-development-suite/REDUX_OUT/Keck_LRIS_red/multi_400_8500_d560/MF_keck_lris_red/MasterWaveCalib_A_02_aa.json'
-    wv_calib_data, par = wavecalib.load_wv_calib(datafile)
-    steps= wv_calib_data.pop('steps')
-    par_dum = wv_calib_data.pop('par')
-elif instrument == 'LRIS-B':
-    # Use one detector as the arxiv the other as the data
-    calibfile ='/Users/joe/python/PypeIt-development-suite/REDUX_OUT/Keck_LRIS_blue/multi_600_4000_d560/MF_keck_lris_blue/MasterWaveCalib_A_02_aa.json'
-    wv_calib_arxiv, par = wavecalib.load_wv_calib(calibfile)
-    steps= wv_calib_arxiv.pop('steps')
-    par = wv_calib_arxiv.pop('par')
-
-    datafile ='/Users/joe/python/PypeIt-development-suite/REDUX_OUT/Keck_LRIS_blue/multi_600_4000_d560/MF_keck_lris_blue/MasterWaveCalib_A_01_aa.json'
-    wv_calib_data, par = wavecalib.load_wv_calib(datafile)
-    steps= wv_calib_data.pop('steps')
-    par_dum = wv_calib_data.pop('par')
-
-match_toler = par['match_toler']
-n_first = 1 # par['n_first']
-sigrej_first = par['sigrej_first']
-n_final = par['n_final']
-sigrej_final = par['sigrej_final']
-func = par['func']
-# debug_xcorr=False, debug_local=False, debug_reid=False
-
-#    calibfile ='/Users/joe/python/PypeIt-development-suite/REDUX_OUT/Keck_LRIS_red/multi_1200_9000_d680/MF_keck_lris_red/MasterWaveCalib_A_02_aa.json'
-#    wv_calib_tot, par = wavecalib.load_wv_calib(calibfile)
-#    steps= wv_calib_tot.pop('steps')
-#    par_dum = wv_calib_tot.pop('par')
-#    wv_calib_arxiv = {}
-#    wv_calib_data = {}
-#    for islit in range(4):
-#        wv_calib_arxiv[str(islit)] = wv_calib_tot[str(islit)]
-#    for islit in range(4):
-#        wv_calib_data[str(islit)] = wv_calib_tot[str(islit + 4)]
-
-
-
-nslits = len(wv_calib_data)
-# assignments
-spec = np.zeros((wv_calib_data['0']['spec'].size, nslits))
-for slit in range(nslits):
-    spec[:,slit] = wv_calib_data[str(slit)]['spec']
-
-
-
-nreid_min = 1 # Minimum number of times that a given candidate reidentified line must be properly matched with a line
-# in the arxiv to be considered a good reidentification. If there is a lot of duplication in the arxiv of the spectra in question (i.e. multislit) set this
-# to a number like 2-4. However, for echelle this depends on the number of solutions in the arxiv. For fixed format echelle set this 1. For echelle with
-# grating tilts, it will depend on the number of solutions in the arxiv.
-nonlinear_counts=par['nonlinear_counts']
-sigdetect = par['lowest_nsig']
-rms_threshold = par['rms_threshold']
-
-
-detections = None
-# assignments
-lamps = par['lamps']
-use_unknowns=True
-debug_xcorr = False
-debug_reid = True
-cc_thresh = 0.8 # Threshold for the *global* cross-correlation between an input spectrum and member of the arxiv to attempt reidentification
-line_pix_tol = 2.0 # matching tolerance in pixels for a line reidentification. A good line match must match within this tolerance to the
-# the shifted and stretched arxiv spectrum and must match within this many dispersion elements in the wavelength line list.
-cc_local_thresh = 0.8 # Threshold for the local cross-correlation between an input spectrum and the shifted and stretched arxiv spectrum above which a line must be
-# to be considered a good line for reidentification. The local cross-correlation is evaluated at each candidate reidentified line (using a window of nlocal_cc), and
-# is then used to score the the reidentified lines to arrive at the final set of good reidentifications
-nlocal_cc = 10  # Size of pixel window used for local cross-correlation computation for each arc line. If not an odd number the nearest odd number will be found
 
 def reidentify(spec, wv_calib_arxiv, lamps, nreid_min, detections=None, cc_thresh=0.8,cc_local_thresh = 0.8,
                line_pix_tol=2.0, nlocal_cc=11, rms_threshold=0.15, nonlinear_counts=1e10,sigdetect = 5.0,
@@ -486,3 +401,63 @@ def reidentify(spec, wv_calib_arxiv, lamps, nreid_min, detections=None, cc_thres
 
         return wv_calib, patt_dict, bad_slits
 
+
+
+
+instrument = 'LRIS-R'
+if instrument == 'NIRES':
+    calibfile ='/Users/joe/python/PypeIt-development-suite/REDUX_OUT/Keck_NIRES/NIRES/MF_keck_nires/MasterWaveCalib_A_01_aa.json'
+    wv_calib_arxiv, par = wavecalib.load_wv_calib(calibfile)
+    steps= wv_calib_arxiv.pop('steps')
+    par_dum = wv_calib_arxiv.pop('par')
+
+    datafile ='/Users/joe/python/PypeIt-development-suite/REDUX_OUT/Keck_NIRES/NIRES/MF_keck_nires/MasterWaveCalib_A_01_ac.json'
+    wv_calib_data, par = wavecalib.load_wv_calib(datafile)
+    steps= wv_calib_data.pop('steps')
+    par_dum = wv_calib_data.pop('par')
+elif instrument == 'LRIS-R':
+    # Use one detector as the arxiv the other as the data
+    calibfile ='/Users/joe/python/PypeIt-development-suite/REDUX_OUT/Keck_LRIS_red/multi_400_8500_d560/MF_keck_lris_red/MasterWaveCalib_A_01_aa.json'
+    wv_calib_arxiv, par = wavecalib.load_wv_calib(calibfile)
+    steps= wv_calib_arxiv.pop('steps')
+    par_dum = wv_calib_arxiv.pop('par')
+
+    datafile ='/Users/joe/python/PypeIt-development-suite/REDUX_OUT/Keck_LRIS_red/multi_400_8500_d560/MF_keck_lris_red/MasterWaveCalib_A_02_aa.json'
+    wv_calib_data, par = wavecalib.load_wv_calib(datafile)
+    steps= wv_calib_data.pop('steps')
+    par_dum = wv_calib_data.pop('par')
+elif instrument == 'LRIS-B':
+    # Use one detector as the arxiv the other as the data
+    calibfile ='/Users/joe/python/PypeIt-development-suite/REDUX_OUT/Keck_LRIS_blue/multi_600_4000_d560/MF_keck_lris_blue/MasterWaveCalib_A_02_aa.json'
+    wv_calib_arxiv, par = wavecalib.load_wv_calib(calibfile)
+    steps= wv_calib_arxiv.pop('steps')
+    par_dum = wv_calib_arxiv.pop('par')
+
+    datafile ='/Users/joe/python/PypeIt-development-suite/REDUX_OUT/Keck_LRIS_blue/multi_600_4000_d560/MF_keck_lris_blue/MasterWaveCalib_A_01_aa.json'
+    wv_calib_data, par = wavecalib.load_wv_calib(datafile)
+    steps= wv_calib_data.pop('steps')
+    par_dum = wv_calib_data.pop('par')
+
+nslits = len(wv_calib_data)
+# assignments
+spec = np.zeros((wv_calib_data['0']['spec'].size, nslits))
+for slit in range(nslits):
+    spec[:,slit] = wv_calib_data[str(slit)]['spec']
+
+match_toler = par['match_toler']
+n_first = = par['n_first']
+sigrej_first = par['sigrej_first']
+n_final = par['n_final']
+sigrej_final = par['sigrej_final']
+func = par['func']
+nonlinear_counts=par['nonlinear_counts']
+sigdetect = par['lowest_nsig']
+rms_threshold = par['rms_threshold']
+lamps = par['lamps']
+
+nreid_min = 1
+wv_calib_out, patt_dict, bad_slits = reidentify(spec, wv_calib_arxiv, lamps, nreid_min, rms_threshold=rms_threshold,
+                                                nonlinear_counts=nonlinear_counts,sigdetect=sigdetect,use_unknowns=True,
+                                                match_toler=match_toler,func='legendre',n_first=n_first,
+                                                sigrej_first=sigrej_first,n_final=n_final, sigrej_final=sigrej_final,
+                                                debug_xcorr=False, debug_reid=True)
