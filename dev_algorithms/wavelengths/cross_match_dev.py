@@ -208,8 +208,61 @@ def reidentify(spec, wv_calib_arxiv, lamps, nreid_min, detections=None, cc_thres
        Size of pixel window used for local cross-correlation computation for each arc line. If not an odd number the
        nearest odd number will be found
 
+    rms_threshold: float, default = 0.15
+       Minimum rms for considering a wavelength solution to be an acceptable good fit. Slits/orders with a larger RMS
+       than this are flagged as bad slits
+
+    nonlinear_counts: float, default = 1e10
+       Arc lines above this saturation threshold are not used in wavelength solution fits because they cannot be accurately
+       centroided
+
+    sigdetect: float, default 5.0
+       Sigma threshold above fluctuations for arc-line detection. Arcs are continuum subtracted and the fluctuations are
+       computed after continuum subtraction.
+
+    use_unknowns : bool, default = True
+       If True, arc lines that are known to be present in the spectra, but have not been attributed to an element+ion,
+       will be included in the fit.
+
+    match_toler: float, default = 3.0
+       Matching tolerance when searching for new lines. This is the difference in pixels between the wavlength assigned to
+       an arc line by an iteration of the wavelength solution to the wavelength in the line list.
+
+    func: str, default = 'legendre'
+       Name of function used for the wavelength solution
+
+    n_first: int, default = 2
+       Order of first guess to the wavelength solution.
+
+    sigrej_first: float, default = 2.0
+       Number of sigma for rejection for the first guess to the wavelength solution.
+
+    n_final: int, default = 4
+       Order of the final wavelength solution fit
+
+    sigrej_final: float, default = 3.0
+       Number of sigma for rejection for the final fit to the wavelength solution.
+
+    debug_xcorr: bool, default = False
+       Show plots useful for debugging the cross-correlation used for shift/stretch computation
+
+    debug_reid: bool, default = False
+       Show plots useful for debugging the line reidentification
+
     Returns
     -------
+    (wv_calib, patt_dict, bad_slits)
+
+    wv_calib: dict
+       Wavelength solution for the input arc spectra spec. These are stored in standard pypeit format, i.e.
+       each index of spec[:,slit] corresponds to a key in the wv_calib dictionary wv_calib[str(slit)] which yields
+       the final_fit dictionary for this slit
+
+    patt_dict: dict
+       Arc lines pattern dictionary with some information about the IDs as well as the cross-correlation values
+
+    bad_slits: ndarray, int
+       Numpy array with the indices of the bad slits. These are the indices in the input arc spectrum array spec[:,islit]
 
 
     Revision History
@@ -430,4 +483,6 @@ def reidentify(spec, wv_calib_arxiv, lamps, nreid_min, detections=None, cc_thres
             plt.plot(final_fit['xfit'], final_fit['yfit'], 'bx')
             plt.plot(xrng, yplt, 'r-')
             plt.show()
-        # return wv_calib, patt_dict, bad_slits
+
+        return wv_calib, patt_dict, bad_slits
+
