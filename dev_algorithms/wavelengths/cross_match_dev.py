@@ -205,8 +205,8 @@ def reidentify(spec, wv_calib_arxiv, lamps, nreid_min, detections=None, cc_thres
        line_pix_tol dispersion elements from the line in line list.
 
     n_local_cc: int, defualt = 11
-       Size of pixel window used for local cross-correlation computation for each arc line. If not an odd number the
-       nearest odd number will be found
+       Size of pixel window used for local cross-correlation computation for each arc line. If not an odd number one will
+       be added to it to make it odd.
 
     rms_threshold: float, default = 0.15
        Minimum rms for considering a wavelength solution to be an acceptable good fit. Slits/orders with a larger RMS
