@@ -49,6 +49,8 @@ def fit_slit(spec, patt_dict, tcent, line_lists, outroot=None, slittxt="Slit", t
         plot_fil = outroot + slittxt + '_fit.pdf'
     else:
         plot_fil = None
+
+    # TODO Profx maybe you can add a comment on what this is doing. Why do we have use_unknowns=True only to purge them later??
     # Purge UNKNOWNS from ifit
     imsk = np.ones(len(ifit), dtype=np.bool)
     for kk, idwv in enumerate(np.array(patt_dict['IDs'])[ifit]):
