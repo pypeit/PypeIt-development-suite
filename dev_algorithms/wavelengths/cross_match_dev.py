@@ -77,7 +77,7 @@ def fit_slit(spec, patt_dict, tcent, line_lists, outroot=None, slittxt="Slit", t
 def reidentify(spec, wv_calib_arxiv, lamps, nreid_min, detections=None, cc_thresh=0.8,cc_local_thresh = 0.8,
                line_pix_tol=2.0, nlocal_cc=11, rms_threshold=0.15, nonlinear_counts=1e10,sigdetect = 5.0,
                use_unknowns=True,match_toler=3.0,func='legendre',n_first=2,sigrej_first=3.0,n_final=4, sigrej_final=2.0,
-               debug_xcorr=False, debug_reid=False):
+               seed=None, debug_xcorr=False, debug_reid=False):
 
     """ Determine  a wavelength solution for a set of spectra based on archival wavelength solutions
 
@@ -158,6 +158,10 @@ def reidentify(spec, wv_calib_arxiv, lamps, nreid_min, detections=None, cc_thres
     sigrej_final: float, default = 3.0
        Number of sigma for rejection for the final fit to the wavelength solution.
 
+    seed: int or np.random.RandomState, optional, default = None
+       Seed for scipy.optimize.differential_evolution optimizer. If not specified, the calculation will be seeded
+       in a deterministic way from the input arc spectrum spec.
+
     debug_xcorr: bool, default = False
        Show plots useful for debugging the cross-correlation used for shift/stretch computation
 
@@ -184,6 +188,13 @@ def reidentify(spec, wv_calib_arxiv, lamps, nreid_min, detections=None, cc_thres
     ----------------
     November 2018 by J.F. Hennawi. Based on an initial version of this code written by Ryan Cooke.
     """
+
+    # Determine the seed for scipy.optimize.differential_evolution optimizer
+    if seed is None:
+        # If no seed is specified just take the sum of all the elements and round that to an integer
+        seed = np.fmin(int(np.sum(spec)),2**32-1)
+
+    random_state = np.random.RandomState(seed = seed)
 
 
     nlocal_cc_odd = nlocal_cc + 1 if nlocal_cc % 2 == 0 else nlocal_cc
@@ -257,7 +268,8 @@ def reidentify(spec, wv_calib_arxiv, lamps, nreid_min, detections=None, cc_thres
             msgs.info('Cross-correlating slit # {:d}'.format(islit + 1) + ' with arxiv slit # {:d}'.format(iarxiv + 1))
             # Match the peaks between the two spectra. This code attempts to compute the stretch if cc > cc_thresh
             success, shift_vec[iarxiv], stretch_vec[iarxiv], ccorr_vec[iarxiv], _, _ = \
-                wvutils.xcorr_shift_stretch(spec[:, islit], spec_arxiv[:, iarxiv], cc_thresh=cc_thresh, debug=debug_xcorr)
+                wvutils.xcorr_shift_stretch(spec[:, islit], spec_arxiv[:, iarxiv], cc_thresh=cc_thresh, seed = random_state,
+                                            debug=debug_xcorr)
             # If cc < cc_thresh or if this optimization failed, don't reidentify from this arxiv spectrum
             if success != 1:
                 continue
@@ -292,7 +304,7 @@ def reidentify(spec, wv_calib_arxiv, lamps, nreid_min, detections=None, cc_thres
                     ', stretch = {:5.4f}'.format(stretch_vec[iarxiv]) +
                     ', wv_cen = {:7.1f}'.format(wcen[iarxiv]) +
                     ', disp = {:5.3f}'.format(disp[iarxiv]))
-                plt.ylim(-5.0, 1.5 *spec[:, islit].max())
+                plt.ylim(1.2*spec[:, islit].min(), 1.5 *spec[:, islit].max())
                 plt.legend()
                 plt.show()
 
@@ -402,17 +414,18 @@ def reidentify(spec, wv_calib_arxiv, lamps, nreid_min, detections=None, cc_thres
         patt_dict[str(islit)] = copy.deepcopy(patt_dict_slit)
         wv_calib[str(islit)] = copy.deepcopy(final_fit)
         if debug_reid:
-            yplt = utils.func_val(final_fit['fitc'], xrng, final_fit['function'], minv=final_fit['fmin'], maxv=final_fit['fmax'])
-            plt.plot(final_fit['xfit'], final_fit['yfit'], 'bx')
-            plt.plot(xrng, yplt, 'r-')
-            plt.show()
+            qa.arc_fit_qa(wv_calib[str(islit)])
+            #yplt = utils.func_val(final_fit['fitc'], xrng, final_fit['function'], minv=final_fit['fmin'], maxv=final_fit['fmax'])
+            #plt.plot(final_fit['xfit'], final_fit['yfit'], 'bx')
+            #plt.plot(xrng, yplt, 'r-')
+            #plt.show()
 
     return wv_calib, patt_dict, bad_slits
 
 
 
 
-instrument = 'LRIS-R'
+instrument = 'NIRES'
 if instrument == 'NIRES':
     calibfile ='/Users/joe/python/PypeIt-development-suite/REDUX_OUT/Keck_NIRES/NIRES/MF_keck_nires/MasterWaveCalib_A_01_aa.json'
     wv_calib_arxiv, par = wavecalib.load_wv_calib(calibfile)
@@ -468,4 +481,4 @@ wv_calib_out, patt_dict, bad_slits = reidentify(spec, wv_calib_arxiv, lamps, nre
                                                 nonlinear_counts=nonlinear_counts,sigdetect=sigdetect,use_unknowns=True,
                                                 match_toler=match_toler,func='legendre',n_first=n_first,
                                                 sigrej_first=sigrej_first,n_final=n_final, sigrej_final=sigrej_final,
-                                                debug_xcorr=False, debug_reid=True)
+                                                debug_xcorr=True, debug_reid=True)

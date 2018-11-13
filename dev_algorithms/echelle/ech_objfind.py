@@ -17,8 +17,8 @@ from sklearn.decomposition import PCA
 from pypeit import specobjs
 from pypeit.core import extract
 from astropy.stats import SigmaClip
-from pydl.pydlutils.spheregroup import spheregroup
-
+#from pydl.pydlutils.spheregroup import spheregroup
+from pypeit.core.pydl import spheregroup
 
 ## ToDo change usepca to extrapolate_order if None then fit everthing, otherwise extrapolate bad orders.
 def pca_trace(xcen, usepca = None, npca = None, pca_explained_var=99.0,coeff_npoly = None, cen_npoly = 3, debug=True):
