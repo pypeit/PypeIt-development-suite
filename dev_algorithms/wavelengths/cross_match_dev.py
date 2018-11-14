@@ -88,7 +88,7 @@ n_local_cc =11
 
 nreid_min = 1
 
-new = True
+new = False
 if new:
     all_patt_dict={}
     all_detections = {}
