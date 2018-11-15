@@ -3,81 +3,16 @@
 import numpy as np
 # Read in a wavelength solution and compute
 from pypeit import wavecalib
-from pypeit.core.wavecal import waveio, wvutils, fitting, patterns, qa
+from pypeit.core.wavecal import autoid, waveio
 from pypeit import utils
-from astropy import table
-from pypeit import msgs
-from matplotlib import pyplot as plt
-import scipy
-import copy
-import itertools
-
-def fit_slit(spec, patt_dict, tcent, line_lists, outroot=None, slittxt="Slit", thar=False,match_toler=3.0,
-             func='legendre', n_first=2,sigrej_first=2.0,n_final=4,sigrej_final=3.0,verbose=False):
-    """ Perform a fit to the wavelength solution
-
-    Parameters
-    ----------
-    spec : ndarray
-      arc spectrum
-    patt_dict : dict
-      dictionary of patterns
-    tcent: ndarray
-      List of the detections in this slit to be fit using the patt_dict
-    outroot : str
-      root directory to save QA
-    slittxt : str
-      Label used for QA
-
-    Returns
-    -------
-    final_fit : dict
-      A dictionary containing all of the information about the fit
-    """
-    # Check that patt_dict and tcent refer to each other
-    if patt_dict['mask'].shape != tcent.shape:
-        msgs.error('patt_dict and tcent do not refer to each other. Something is very wrong')
-
-    # Perform final fit to the line IDs
-    if thar:
-        NIST_lines = (line_lists['NIST'] > 0) & (np.char.find(line_lists['Source'].data, 'MURPHY') >= 0)
-    else:
-        NIST_lines = line_lists['NIST'] > 0
-    ifit = np.where(patt_dict['mask'])[0]
-
-    if outroot is not None:
-        plot_fil = outroot + slittxt + '_fit.pdf'
-    else:
-        plot_fil = None
-    # Purge UNKNOWNS from ifit
-    imsk = np.ones(len(ifit), dtype=np.bool)
-    for kk, idwv in enumerate(np.array(patt_dict['IDs'])[ifit]):
-        if np.min(np.abs(line_lists['wave'][NIST_lines] - idwv)) > 0.01:
-            imsk[kk] = False
-    ifit = ifit[imsk]
-    # Fit
-    try:
-        final_fit = fitting.iterative_fitting(spec, tcent, ifit,
-                                              np.array(patt_dict['IDs'])[ifit], line_lists[NIST_lines],
-                                              patt_dict['bdisp'],match_toler=match_toler, func=func, n_first=n_first,
-                                              sigrej_first=sigrej_first,n_final=n_final, sigrej_final=sigrej_final,
-                                              plot_fil=plot_fil, verbose=verbose)
-    except TypeError:
-        # A poor fitting result, this can be ignored.
-        return None
-
-    if plot_fil is not None:
-        print("Wrote: {:s}".format(plot_fil))
-
-    # Return
-    return final_fit
 
 
 
-def reidentify(spec, wv_calib_arxiv, lamps, nreid_min, detections=None, cc_thresh=0.8,cc_local_thresh = 0.8,
+
+def reidentify_old(spec, wv_calib_arxiv, lamps, nreid_min, detections=None, cc_thresh=0.8,cc_local_thresh = 0.8,
                line_pix_tol=2.0, nlocal_cc=11, rms_threshold=0.15, nonlinear_counts=1e10,sigdetect = 5.0,
                use_unknowns=True,match_toler=3.0,func='legendre',n_first=2,sigrej_first=3.0,n_final=4, sigrej_final=2.0,
-               debug_xcorr=False, debug_reid=False):
+               seed=None, debug_xcorr=False, debug_reid=False):
 
     """ Determine  a wavelength solution for a set of spectra based on archival wavelength solutions
 
@@ -158,6 +93,10 @@ def reidentify(spec, wv_calib_arxiv, lamps, nreid_min, detections=None, cc_thres
     sigrej_final: float, default = 3.0
        Number of sigma for rejection for the final fit to the wavelength solution.
 
+    seed: int or np.random.RandomState, optional, default = None
+       Seed for scipy.optimize.differential_evolution optimizer. If not specified, the calculation will be seeded
+       in a deterministic way from the input arc spectrum spec.
+
     debug_xcorr: bool, default = False
        Show plots useful for debugging the cross-correlation used for shift/stretch computation
 
@@ -185,6 +124,13 @@ def reidentify(spec, wv_calib_arxiv, lamps, nreid_min, detections=None, cc_thres
     November 2018 by J.F. Hennawi. Based on an initial version of this code written by Ryan Cooke.
     """
 
+    # Determine the seed for scipy.optimize.differential_evolution optimizer
+    if seed is None:
+        # If no seed is specified just take the sum of all the elements and round that to an integer
+        seed = np.fmin(int(np.sum(spec)),2**32-1)
+
+    random_state = np.random.RandomState(seed = seed)
+
 
     nlocal_cc_odd = nlocal_cc + 1 if nlocal_cc % 2 == 0 else nlocal_cc
     window = 1.0/nlocal_cc_odd* np.ones(nlocal_cc_odd)
@@ -200,7 +146,7 @@ def reidentify(spec, wv_calib_arxiv, lamps, nreid_min, detections=None, cc_thres
     wvdata = np.array(tot_list['wave'].data)  # Removes mask if any
     wvdata.sort()
 
-    nspec = spec.shape[0]
+    nspec, nslits = spec.shape
     narxiv = len(wv_calib_arxiv)
     nspec_arxiv = wv_calib_arxiv['0']['spec'].size
     if nspec_arxiv != nspec:
@@ -225,10 +171,9 @@ def reidentify(spec, wv_calib_arxiv, lamps, nreid_min, detections=None, cc_thres
     for iarxiv in range(narxiv):
         spec_arxiv[:,iarxiv] = wv_calib_arxiv[str(iarxiv)]['spec']
         fitc = wv_calib_arxiv[str(iarxiv)]['fitc']
-        xfit = xrng
         fitfunc = wv_calib_arxiv[str(iarxiv)]['function']
         fmin, fmax = wv_calib_arxiv[str(iarxiv)]['fmin'],wv_calib_arxiv[str(iarxiv)]['fmax']
-        wave_soln_arxiv[:,iarxiv] = utils.func_val(fitc, xfit, fitfunc, minv=fmin, maxv=fmax)
+        wave_soln_arxiv[:,iarxiv] = utils.func_val(fitc, xrng, fitfunc, minv=fmin, maxv=fmax)
         wvc_arxiv[iarxiv] = wave_soln_arxiv[nspec_arxiv//2, iarxiv]
         disp_arxiv[iarxiv] = np.median(wave_soln_arxiv[:,iarxiv] - np.roll(wave_soln_arxiv[:,iarxiv], 1))
 
@@ -257,7 +202,8 @@ def reidentify(spec, wv_calib_arxiv, lamps, nreid_min, detections=None, cc_thres
             msgs.info('Cross-correlating slit # {:d}'.format(islit + 1) + ' with arxiv slit # {:d}'.format(iarxiv + 1))
             # Match the peaks between the two spectra. This code attempts to compute the stretch if cc > cc_thresh
             success, shift_vec[iarxiv], stretch_vec[iarxiv], ccorr_vec[iarxiv], _, _ = \
-                wvutils.xcorr_shift_stretch(spec[:, islit], spec_arxiv[:, iarxiv], cc_thresh=cc_thresh, debug=debug_xcorr)
+                wvutils.xcorr_shift_stretch(spec[:, islit], spec_arxiv[:, iarxiv], cc_thresh=cc_thresh, seed = random_state,
+                                            debug=debug_xcorr)
             # If cc < cc_thresh or if this optimization failed, don't reidentify from this arxiv spectrum
             if success != 1:
                 continue
@@ -292,7 +238,7 @@ def reidentify(spec, wv_calib_arxiv, lamps, nreid_min, detections=None, cc_thres
                     ', stretch = {:5.4f}'.format(stretch_vec[iarxiv]) +
                     ', wv_cen = {:7.1f}'.format(wcen[iarxiv]) +
                     ', disp = {:5.3f}'.format(disp[iarxiv]))
-                plt.ylim(-5.0, 1.5 *spec[:, islit].max())
+                plt.ylim(1.2*spec[:, islit].min(), 1.5 *spec[:, islit].max())
                 plt.legend()
                 plt.show()
 
@@ -329,6 +275,7 @@ def reidentify(spec, wv_calib_arxiv, lamps, nreid_min, detections=None, cc_thres
         narxiv_used = np.sum(wcen != 0.0)
         if (narxiv_used == 0) or (len(np.unique(line_indx)) < 3):
             wv_calib[str(islit)] = {}
+            patt_dict[str(islit)] = {}
             bad_slits = np.append(bad_slits,islit)
             continue
 
@@ -378,7 +325,7 @@ def reidentify(spec, wv_calib_arxiv, lamps, nreid_min, detections=None, cc_thres
             bad_slits = np.append(bad_slits,islit)
             continue
         # Perform the fit
-        final_fit = fit_slit(spec[:,islit], patt_dict_slit, slit_det, line_lists, match_toler=match_toler,
+        final_fit = fitting.fit_slit(spec[:,islit], patt_dict_slit, slit_det, line_lists, match_toler=match_toler,
                              func=func, n_first=n_first,sigrej_first=sigrej_first,n_final=n_final,
                              sigrej_final=sigrej_final)
 
@@ -402,17 +349,17 @@ def reidentify(spec, wv_calib_arxiv, lamps, nreid_min, detections=None, cc_thres
         patt_dict[str(islit)] = copy.deepcopy(patt_dict_slit)
         wv_calib[str(islit)] = copy.deepcopy(final_fit)
         if debug_reid:
-            yplt = utils.func_val(final_fit['fitc'], xrng, final_fit['function'], minv=final_fit['fmin'], maxv=final_fit['fmax'])
-            plt.plot(final_fit['xfit'], final_fit['yfit'], 'bx')
-            plt.plot(xrng, yplt, 'r-')
-            plt.show()
+            qa.arc_fit_qa(wv_calib[str(islit)])
+            #yplt = utils.func_val(final_fit['fitc'], xrng, final_fit['function'], minv=final_fit['fmin'], maxv=final_fit['fmax'])
+            #plt.plot(final_fit['xfit'], final_fit['yfit'], 'bx')
+            #plt.plot(xrng, yplt, 'r-')
+            #plt.show()
 
     return wv_calib, patt_dict, bad_slits
 
 
 
-
-instrument = 'LRIS-R'
+instrument = 'NIRES'
 if instrument == 'NIRES':
     calibfile ='/Users/joe/python/PypeIt-development-suite/REDUX_OUT/Keck_NIRES/NIRES/MF_keck_nires/MasterWaveCalib_A_01_aa.json'
     wv_calib_arxiv, par = wavecalib.load_wv_calib(calibfile)
@@ -452,7 +399,27 @@ spec = np.zeros((wv_calib_data['0']['spec'].size, nslits))
 for slit in range(nslits):
     spec[:,slit] = wv_calib_data[str(slit)]['spec']
 
-match_toler = par['match_toler']
+narxiv = len(wv_calib_arxiv)
+nspec = wv_calib_arxiv['0']['spec'].size
+# assignments
+spec_arxiv = np.zeros((nspec, narxiv))
+for iarxiv in range(narxiv):
+    spec_arxiv[:,iarxiv] = wv_calib_arxiv[str(iarxiv)]['spec']
+
+det_arxiv = {}
+wave_soln_arxiv = np.zeros((nspec, narxiv))
+xrng = np.arange(nspec)
+for iarxiv in range(narxiv):
+    spec_arxiv[:, iarxiv] = wv_calib_arxiv[str(iarxiv)]['spec']
+    fitc = wv_calib_arxiv[str(iarxiv)]['fitc']
+    fitfunc = wv_calib_arxiv[str(iarxiv)]['function']
+    fmin, fmax = wv_calib_arxiv[str(iarxiv)]['fmin'], wv_calib_arxiv[str(iarxiv)]['fmax']
+    wave_soln_arxiv[:, iarxiv] = utils.func_val(fitc, xrng, fitfunc, minv=fmin, maxv=fmax)
+    det_arxiv[str(iarxiv)] = wv_calib_arxiv[str(iarxiv)]['xfit']
+
+
+
+match_toler = 2.0 #par['match_toler']
 n_first = par['n_first']
 sigrej_first = par['sigrej_first']
 n_final = par['n_final']
@@ -463,9 +430,28 @@ sigdetect = par['lowest_nsig']
 rms_threshold = par['rms_threshold']
 lamps = par['lamps']
 
+line_list = waveio.load_line_lists(lamps)
+
+
+cc_thresh =0.8
+cc_local_thresh = 0.8
+n_local_cc =11
+
+
 nreid_min = 1
-wv_calib_out, patt_dict, bad_slits = reidentify(spec, wv_calib_arxiv, lamps, nreid_min, rms_threshold=rms_threshold,
-                                                nonlinear_counts=nonlinear_counts,sigdetect=sigdetect,use_unknowns=True,
-                                                match_toler=match_toler,func='legendre',n_first=n_first,
-                                                sigrej_first=sigrej_first,n_final=n_final, sigrej_final=sigrej_final,
-                                                debug_xcorr=False, debug_reid=True)
+
+new = False
+if new:
+    all_patt_dict={}
+    all_detections = {}
+    for islit in range(nslits):
+        all_detections[str(islit)], all_patt_dict[str(islit)] = autoid.reidentify(spec[:,islit], spec_arxiv, wave_soln_arxiv, det_arxiv, line_list, nreid_min,
+                                                                                  detections=None, cc_thresh=cc_thresh,cc_local_thresh=cc_local_thresh,
+                                                                                  match_toler=match_toler, nlocal_cc=11, nonlinear_counts=nonlinear_counts,sigdetect=sigdetect,
+                                                                                  debug_xcorr=True, debug_reid=True)
+else:
+    wv_calib_out, patt_dict, bad_slits = autoid.reidentify_old(spec, wv_calib_arxiv, lamps, nreid_min, rms_threshold=rms_threshold,
+                                                               nonlinear_counts=nonlinear_counts,sigdetect=sigdetect,use_unknowns=True,
+                                                               match_toler=match_toler,func='legendre',n_first=n_first,
+                                                               sigrej_first=sigrej_first,n_final=n_final, sigrej_final=sigrej_final,
+                                                               debug_xcorr=True, debug_reid=True)
