@@ -6,6 +6,7 @@
     sortroot = keck_lris_blue_2018-Nov-11
 [calibrations]
     [[biasframe]]
+	useframe = 'overscan'
         number = 0
     [[pixelflatframe]]
         number = 0
@@ -14,18 +15,18 @@
     [[pinholeframe]]
         number = 0
     [[traceframe]]
-        number = 0
+        number = 3
     [[standardframe]]
         number = 0
 
 # Read in the data
 data read
- /Users/joe/python/PypeIt-development-suite/RAW_DATA/Keck_LRIS_blue/blue_crystal/b17*.fits*
-|          filename | frametype |  dispname | exptime |   decker | dichroic | binning |   dispangle |  target |
+path /Users/joe/python/PypeIt-development-suite/RAW_DATA/Keck_LRIS_blue/multi_300_5000_d680/
+|          filename | frametype | dispname | exptime |   decker | dichroic | binning |   dispangle |  target |
 | b170816_0021.fits |       arc | 300/5000 |       7 | E570.fil |      680 |     1,1 | 47.82505798 | unknown |
-| b170816_0030.fits | traceflat | 300/5000 |      18 | E570.fil |      680 |     1,1 | 47.82505798 | unknown |
-| b170816_0031.fits | traceflat | 300/5000 |      18 | E570.fil |      680 |     1,1 | 47.82505798 | unknown |
-| b170816_0032.fits | traceflat | 300/5000 |      18 | E570.fil |      680 |     1,1 | 47.82505798 | unknown |
+| b170816_0030.fits |     trace | 300/5000 |      18 | E570.fil |      680 |     1,1 | 47.82505798 | unknown |
+| b170816_0031.fits |     trace | 300/5000 |      18 | E570.fil |      680 |     1,1 | 47.82505798 | unknown |
+| b170816_0032.fits |     trace | 300/5000 |      18 | E570.fil |      680 |     1,1 | 47.82505798 | unknown |
 | b170816_0076.fits |   science | 300/5000 |    1327 | E570.fil |      680 |     1,1 | 47.82392883 |    E570 |
 | b170816_0077.fits |   science | 300/5000 |    1327 | E570.fil |      680 |     1,1 | 47.82392883 |    E570 |
 data end
