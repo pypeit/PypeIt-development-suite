@@ -45,6 +45,7 @@ def prettyplot():
 def fit2darc(all_wv,
              all_pix,
              t,
+             nspec,
              nycoeff=3,
              nocoeff=5,
              sigmarjct=3.0,
@@ -79,8 +80,8 @@ def fit2darc(all_wv,
     # To use the legendre polynomial pixels and orders
     # need to be normalized in the -1,+1 range
     # Normalize pixels
-    mnx = np.min(all_pix)
-    mxx = np.max(all_pix)
+    mnx = 0 #np.min(all_pix)
+    mxx = float(nspec - 1) #np.max(all_pix)
     nrmp = np.array([0.5 * (mnx + mxx), mxx - mnx])
     pix_nrm = 2. * (all_pix - nrmp[0])/nrmp[1]
     # Normalize orders
@@ -261,8 +262,6 @@ def fit2darc(all_wv,
 
     prettyplot()
 
-    # from IPython import embed
-    # embed()
 
     nrow = np.int(2)
     ncol = np.int(np.ceil(len(order)/2.))
@@ -270,6 +269,8 @@ def fit2darc(all_wv,
     for ii_row in np.arange(nrow):
         for ii_col in np.arange(ncol):
             if (ii_row*(nrow+1))+ii_col < len(order):
+                from IPython import embed
+                embed()
                 ii = order[(ii_row*(nrow+1))+ii_col]
                 rr = (ii-np.max(order))/(np.min(order)-np.max(order))
                 gg = 0.0
@@ -308,3 +309,4 @@ def fit2darc(all_wv,
              rotation='vertical', size='large')
     fig.suptitle(r'Arc 2D FIT, nx={0:.0f}, ny={1:.0f}, RMS={2:.5f} Ang*Order#, residuals $\times$100'.format(nocoeff, nycoeff,fin_rms))
     plt.show()
+    return wv_mod

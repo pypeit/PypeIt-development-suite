@@ -132,6 +132,8 @@ if spec is 'NIRES':
     npix_pypeit = []
     index = 0
 
+    nspec =int(nires_data[str(0)]['xnorm'])
+
     for ii in nires_data.keys():
         if ii != 'arcparam' and ii != 'steps':
             all_pix_pypeit = np.concatenate((all_pix_pypeit,
@@ -160,8 +162,10 @@ if spec is 'NIRES':
 ###########################################################################
 
 
-from dev_arcs2d import fit2darc
-fit2darc(all_wv_pypeit, all_pix_pypeit, t_pypeit, debug=False)
+#from dev_arcs2d import fit2darc
+from pypeit.core import arc
+#result = fit2darc(all_wv_pypeit, all_pix_pypeit, t_pypeit, nspec, debug=True)
+result = arc.fit2darc(all_wv_pypeit, all_pix_pypeit, t_pypeit, nspec, debug=True)
 
 
 
