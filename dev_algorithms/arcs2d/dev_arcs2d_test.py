@@ -164,9 +164,14 @@ if spec is 'NIRES':
 
 #from dev_arcs2d import fit2darc
 from pypeit.core import arc
-#result = fit2darc(all_wv_pypeit, all_pix_pypeit, t_pypeit, nspec, debug=True)
-result = arc.fit2darc(all_wv_pypeit, all_pix_pypeit, t_pypeit, nspec, debug=True)
+# result = fit2darc(all_wv_pypeit, all_pix_pypeit, t_pypeit, nspec, debug=True)
+# result = arc.fit2darc(all_wv_pypeit, all_pix_pypeit, t_pypeit, nspec, debug=True)
 
+result = arc.fit2darc(all_wv_pypeit,
+                      all_pix_pypeit,
+                      t_pypeit,
+                      nspec,
+                      debug=False)
 
 
 
