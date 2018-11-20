@@ -1,0 +1,53 @@
+# This is a comment line
+# This reduce data from magellan_mage
+# at the moment takes the star GD108 as SCIENCE (and not as standard).
+# ginga --modules=RC&
+# run_pypeit -v2 -o -m -s ./magellan_mage.pypeit
+# run_pypeit -v2 -o -s ./magellan_mage.pypeit
+
+# User-defined execution parameters
+[rdx]
+spectrograph = magellan_mage
+    sortroot = magellan_mage
+
+[calibrations]
+    [[arcframe]]
+        number = 1
+    [[standardframe]]
+        number = 0
+    [[biasframe]]
+        number = 0
+    [[pixelflatframe]]
+        number = 3
+    [[tilts]]
+        method = spca
+        params = 1, 1, 1
+    [[traceframe]]
+        number = 1
+
+# Read in the data
+data read
+ path /home/ema/Extern/GoogleDrive/PypeIt/PypeIt-development-suite/RAW_DATA/Magellan_MAGE
+| filename         | date                | frametype | target                 | exptime  |
+| mage1034.fits.gz | 2009-03-22T22:19:26 | arc       | ThAr                   | 5.000    | # SLIT=0.70
+| mage1046.fits.gz | 2009-03-22T23:48:21 | science   | GD108                  | 120.000  | # SLIT=0.70
+| mage5005.fits.gz | 2009-03-26T23:04:48 | flat      | TwilightIllum0.70      | 25.000   | # SLIT=0.70
+| mage5006.fits.gz | 2009-03-26T23:05:53 | flat      | TwilightIllum0.70      | 30.000   | # SLIT=0.70
+| mage5007.fits.gz | 2009-03-26T23:07:02 | flat      | TwilightIllum0.70      | 40.000   | # SLIT=0.70
+| mage1066.fits.gz | 2009-03-23T05:14:40 | science   | SDSS1144bg             | 900.000  | # SLIT=0.70
+# | mage1002.fits.gz | 2009-03-22T20:10:44 | Xe-Flash  | Xe Flash 5 arcsec      | 5.000    | # SLIT=5.00
+# | mage1003.fits.gz | 2009-03-22T20:32:23 | Xe-Flash  | Xe Flash 5 arcsec      | 5.000    | # SLIT=5.00
+# | mage1004.fits.gz | 2009-03-22T20:33:19 | Xe-Flash  | Xe Flash 5 arcsec      | 5.000    | # SLIT=5.00
+# | mage1024.fits.gz | 2009-03-22T22:00:53 | flat      | Quartz Flat 5.0 arcsec | 4.000    | # SLIT=5.00
+# | mage1025.fits.gz | 2009-03-22T22:03:35 | flat      | Quartz Flat 5.0 arcsec | 4.000    | # SLIT=5.00
+# | mage1026.fits.gz | 2009-03-22T22:04:15 | flat      | Quartz Flat 5.0 arcsec | 4.000    | # SLIT=5.00
+# | mage1038.fits.gz | 2009-03-22T23:11:41 | flat      | PixFlatSky5arcsec      | 10.000   | # SLIT=5.00
+# | mage1039.fits.gz | 2009-03-22T23:12:57 | flat      | PixFlatSky5arcsec      | 30.000   | # SLIT=5.00
+# | mage1040.fits.gz | 2009-03-22T23:14:17 | flat      | PixFlatSky5arcsec      | 90.000   | # SLIT=5.00
+# | mage1067.fits.gz | 2009-03-23T05:30:18 | science   | SDSS1144bg             | 900.000  | # SLIT=0.70
+# | mage2012.fits.gz | 2009-03-24T02:16:23 | science   | SDSSJ1026bg            | 1800.000 | # SLIT=0.70
+# | mage2013.fits.gz | 2009-03-24T02:47:04 | science   | SDSSJ1026bg            | 1800.000 | # SLIT=0.70
+# | mage5047.fits.gz | 2009-03-27T09:00:26 | science   | CFHQS1509              | 1800.000 | # SLIT=0.70
+# | mage5048.fits.gz | 2009-03-27T09:31:08 | science   | CFHQS1509              | 900.000  | # SLIT=0.70
+# | mage5049.fits.gz | 2009-03-27T09:46:46 | science   | CFHQS1509              | 600.000  | # SLIT=0.70
+data end
