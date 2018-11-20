@@ -31,7 +31,7 @@ from pypeit.core import pydl
 
 debug = False
 
-#spec = 'GNRIS'
+# spec = 'GNRIS'
 spec = 'NIRES'
 
 ###########################################################################
@@ -78,6 +78,7 @@ if spec is 'GNRIS':
     npix_pypeit = []
     index = 0
 
+
     for ii in all_pix.keys():
         all_pix_pypeit = np.concatenate((all_pix_pypeit,
                                          np.array(all_pix[ii])))
@@ -88,6 +89,9 @@ if spec is 'GNRIS':
         npix_tmp = np.full_like(np.array(all_pix[ii]), np.size(all_pix[ii]))
         npix_pypeit = np.concatenate((npix_pypeit, npix_tmp))
         index = index + 1
+
+    # Not the real number but a good approximation
+    nspec =int(np.max(all_pix_pypeit))
 
     # Setting the same format of XIDL
     # all_wv_pypeit = all_wv_pypeit * t_pypeit
@@ -112,7 +116,7 @@ if spec is 'NIRES':
 
     print("Test for NIRES spectrograph")
 
-    # Reading in the output from XIDL for GNRIS.
+    # Reading in the output from XIDL for NIRES.
     # Order vector
     order = [3, 4, 5, 6, 7]
 
