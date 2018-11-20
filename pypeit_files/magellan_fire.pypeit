@@ -1,0 +1,39 @@
+# This is a comment line
+
+# User-defined execution parameters
+[rdx]
+    spectrograph = magellan_fire
+    sortroot = magellan_fire_2018-Nov-19
+[calibrations]
+    [[biasframe]]
+        number = 0
+    [[pixelflatframe]]
+        number = 1
+    [[arcframe]]
+        number = 1
+    [[pinholeframe]]
+        number = 0
+    [[traceframe]]
+        number = 1
+    [[standardframe]]
+        number = 0
+
+# Read in the data
+data read
+ path /Volumes/GoogleDrive/Team Drives/PHYS-GP-Hennawi/PypeIt/PypeIt-development-suite/RAW_DATA/Magellan_FIRE/FIRE/
+|          filename | frametype            |    target | exptime |       date |
+| fire_0029.fits.gz |          science,arc | J0100_hz6 |   908.8 | 2014-10-07 |
+| fire_0030.fits.gz |          science,arc | J0100_hz6 |   908.8 | 2014-10-07 |
+| fire_0031.fits.gz |          science,arc | J0100_hz6 |   908.8 | 2014-10-07 |
+| fire_0032.fits.gz |          science,arc | J0100_hz6 |   908.8 | 2014-10-07 |
+#| fire_0033.fits.gz |      None           |      ThAr |     2.0 | 2014-10-07 |
+| fire_0035.fits.gz |      standard        | HIP116886 |    10.0 | 2014-10-07 |
+| fire_0036.fits.gz |      standard        | HIP116886 |    10.0 | 2014-10-07 |
+#| fire_0037.fits.gz |      None           |      ThAr |     2.0 | 2014-10-07 |
+| fire_0038.fits.gz |      pixelflat,trace |      flat |    45.0 | 2014-10-07 |
+| fire_0039.fits.gz |      pixelflat,trace |      flat |    45.0 | 2014-10-07 |
+| fire_0040.fits.gz |      pixelflat,trace |      flat |    45.0 | 2014-10-07 |
+| fire_0041.fits.gz |      pixelflat,trace |      flat |    45.0 | 2014-10-07 |
+| fire_0042.fits.gz |      pixelflat,trace |      flat |    45.0 | 2014-10-07 |
+data end
+
