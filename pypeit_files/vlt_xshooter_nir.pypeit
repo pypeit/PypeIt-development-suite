@@ -28,7 +28,8 @@ spectrograph = vlt_xshooter_nir
 
 # Read in the data
 data read
- path /Users/joe/python/PypeIt-development-suite/RAW_DATA/VLT_XSHOOTER/NIR/
+# path /Users/joe/python/PypeIt-development-suite/RAW_DATA/VLT_XSHOOTER/NIR/
+path /home/ema/Dropbox/XshooterTestBed/VLT_XSHOOTER/NIR/
 | filename                              | date                    | frametype       | target    | exptime |
 | XSHOO.2016-08-02T12:22:12.800.fits.gz | 2016-08-02T12:22:12.800 | bias            | dark      |   900.0 |
 | XSHOO.2016-08-02T12:37:18.837.fits.gz | 2016-08-02T12:37:18.837 | bias            | dark      |   900.0 |
