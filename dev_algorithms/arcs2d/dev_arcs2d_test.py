@@ -29,7 +29,7 @@ from pypeit.core import pydl
 # test that the PYPEIT code will arrive to the same outputs of
 # XIDL
 
-debug = False
+debug = True
 
 # spec = 'GNRIS'
 spec = 'NIRES'
@@ -175,7 +175,7 @@ result = arc.fit2darc(all_wv_pypeit,
                       all_pix_pypeit,
                       t_pypeit,
                       nspec,
-                      debug=False)
+                      debug=True)
 
 
 
