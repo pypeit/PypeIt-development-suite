@@ -15,28 +15,34 @@ from astropy.stats import sigma_clip
 
 # PYPEIT imports
 from pypeit.core import pydl
+from pypeit.core import arc
 
 ###############################################################
 # Porting XIDL code x_fit2darc to python
+
+# This version: Ema Farina 2018.11.23
 
 # PURPOSE of the XIDL code:
 #  To fit the arc lines identified in x_fitarc as a function of
 #  their y-centroid and order number. The main routine is in
 #  x_fit2darc. The fit is a simple least-squares with one round 
 #  of rejection.
-
-# Feige runned the code on his GNRIS data. I will use this to
+#
+# Feige Wange runned the code on his GNRIS data. These will be used
 # test that the PYPEIT code will arrive to the same outputs of
 # XIDL
+#
+# Test runs on GNRIS and NIRES. There is some hacking to make 
+# to fix the XIDL format PypeIt compatible.
 
-debug = True
+debug = False
 
 # spec = 'GNRIS'
 spec = 'NIRES'
 
 ###########################################################################
 ###########################################################################
-######### ##################################################################
+###########################################################################
 
 if spec is 'GNRIS':
 
@@ -78,7 +84,6 @@ if spec is 'GNRIS':
     npix_pypeit = []
     index = 0
 
-
     for ii in all_pix.keys():
         all_pix_pypeit = np.concatenate((all_pix_pypeit,
                                          np.array(all_pix[ii])))
@@ -92,21 +97,6 @@ if spec is 'GNRIS':
 
     # Not the real number but a good approximation
     nspec =int(np.max(all_pix_pypeit))
-
-    # Setting the same format of XIDL
-    # all_wv_pypeit = all_wv_pypeit * t_pypeit
-
-    # plt.figure()
-    # cm = plt.cm.get_cmap('RdYlBu_r')
-    # sc = plt.scatter(t_pypeit, all_pix_pypeit,
-    #                  c=all_wv_pypeit/10000., cmap=cm)
-    # cbar = plt.colorbar(sc)
-    # cbar.set_label(r'WAVELENGTHS [$\mu$m]', rotation=270,
-    #                labelpad=20)
-    # plt.xlabel(r'NORMALIZED ORDERS')
-    # plt.ylabel(r'NORMALIZED PIX')
-    # plt.show()
-
 
 ###########################################################################
 ###########################################################################
@@ -148,34 +138,20 @@ if spec is 'NIRES':
             all_wv_pypeit = np.concatenate((all_wv_pypeit,
                                              np.array(nires_data[ii]['yfit'])))
 
-    # plt.figure()
-    # cm = plt.cm.get_cmap('RdYlBu_r')
-    # sc = plt.scatter(t_pypeit, all_pix_pypeit,
-    #                  c=all_wv_pypeit/10000., cmap=cm)
-    # cbar = plt.colorbar(sc)
-    # cbar.set_label(r'WAVELENGTHS [$\mu$m]', rotation=270,
-    #                labelpad=20)
-    # plt.xlabel(r'NORMALIZED ORDERS')
-    # plt.ylabel(r'NORMALIZED PIX')
-    # plt.show()
-
-
-
 ###########################################################################
 ###########################################################################
 ###########################################################################
 
 
-#from dev_arcs2d import fit2darc
-from pypeit.core import arc
-# result = fit2darc(all_wv_pypeit, all_pix_pypeit, t_pypeit, nspec, debug=True)
-# result = arc.fit2darc(all_wv_pypeit, all_pix_pypeit, t_pypeit, nspec, debug=True)
+# Run the actual fit:
+fit_dict = arc.fit2darc(all_wv_pypeit,
+                        all_pix_pypeit,
+                        t_pypeit,
+                        nspec,
+                        debug=debug)
 
-result = arc.fit2darc(all_wv_pypeit,
-                      all_pix_pypeit,
-                      t_pypeit,
-                      nspec,
-                      debug=True)
-
+# Plots
+arc.fit2darc_qa(fit_dict)
+arc.fit2darc_orders_qa(fit_dict)
 
 
