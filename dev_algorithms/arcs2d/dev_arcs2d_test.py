@@ -28,7 +28,7 @@ from pypeit.core import arc
 #  x_fit2darc. The fit is a simple least-squares with one round 
 #  of rejection.
 #
-# Feige Wange runned the code on his GNRIS data. These will be used
+# Feige Wang runned the code on his GNRIS data. These will be used
 # test that the PYPEIT code will arrive to the same outputs of
 # XIDL
 #
@@ -151,7 +151,7 @@ fit_dict = arc.fit2darc(all_wv_pypeit,
                         debug=debug)
 
 # Plots
-arc.fit2darc_qa(fit_dict)
+arc.fit2darc_global_qa(fit_dict)
 arc.fit2darc_orders_qa(fit_dict)
 
 
