@@ -10,7 +10,6 @@ This script runs the PypeIt development suite of tests
 
 from __future__ import absolute_import, division, print_function
 
-from IPython import embed
 import sys
 import os
 
@@ -256,7 +255,7 @@ def report_test(retval, npass):
 
 if __name__ == '__main__':
     # Check for pypeit executable
-    if not any([os.access(os.path.join(path, 'run_pypeit'), os.X_OK) 
+    if not any([os.access(os.path.join(path, 'run_pypeit'), os.X_OK)
                 for path in os.environ["PATH"].split(os.pathsep)]):
         raise RuntimeError("You need to install run_pypeit in your PATH")
     # Giddy up
