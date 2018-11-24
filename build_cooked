@@ -27,8 +27,8 @@ def parser(options=None):
 
     return parser.parse_args() if options is None else parser.parse_args(options)
 
+
 def main():
-#    import oslris
     import glob
     import subprocess
     import warnings
@@ -135,6 +135,21 @@ def main():
                                         'MF_keck_deimos', 'MasterTrace_A_03_aa')
     cooked_trace_root = os.path.join(cooked_dir, 'MasterTrace_KeckDEIMOS_830G_8600_det3')
     copy_with_root(keck_deimos_multi, cooked_trace_root)
+
+    # Wavelengths
+    cooked_dir = os.path.join('Cooked', 'WaveCalib')
+    if not os.path.isdir(cooked_dir):
+        os.mkdir(cooked_dir)
+    shane_kast_blue_wvcalib = os.path.join(redux_dir, 'Shane_Kast_blue', '600_4310_d55',
+                                           'shane_kast_blue_setup_A', 'MF_shane_kast_blue',
+                                           'MasterWaveCalib_A_01_aa.json')
+    cooked_file = os.path.join(cooked_dir, 'MasterWaveCalib_ShaneKastBlue_A.json')
+    copy_me(shane_kast_blue_wvcalib, cooked_file)
+
+    # Tar me up
+    print("##############################################################")
+    print("You should now tar up the folder and load onto the Google Drive")
+    print("tar -cvzf Cooked_pypeit_dev.tar Cooked/")
 
 
 def copy_with_root(new_root, cooked_root, debug=False):
