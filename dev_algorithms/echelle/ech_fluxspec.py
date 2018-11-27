@@ -8,8 +8,6 @@ import os
 import json
 import matplotlib.pyplot as plt
 
-# from importlib import reload
-
 from astropy import units
 from astropy.io import fits
 from astropy.table import Table
