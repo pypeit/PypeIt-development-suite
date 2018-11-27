@@ -96,19 +96,42 @@ def ech_coadd_spectra(spectra, wave_grid_method='velocity', niter=5,
 
 
 
-stdfiles = ['/Users/feige/Work/Observations/NIRES/NIRES_Barth/J0252/reduce0930/Science/spec1d_HIP13917_V8p6_NIRES_2018Oct01T094225.598.fits']
-scifiles = ['/Users/feige/Work/Observations/NIRES/NIRES_Barth/J0252/reduce0930/Science/spec1d_J0252-0503_NIRES_2018Oct01T100254.698.fits',
-            '/Users/feige/Work/Observations/NIRES/NIRES_Barth/J0252/reduce0930/Science/spec1d_J0252-0503_NIRES_2018Oct01T100949.328.fits',
-            '/Users/feige/Work/Observations/NIRES/NIRES_Barth/J0252/reduce0930/Science/spec1d_J0252-0503_NIRES_2018Oct01T101642.428.fits',
-            '/Users/feige/Work/Observations/NIRES/NIRES_Barth/J0252/reduce0930/Science/spec1d_J0252-0503_NIRES_2018Oct01T102337.058.fits']
+#scifiles = ['/Users/feige/Work/Observations/NIRES/NIRES_Barth/J0252/reduce0930/Science/spec1d_J0252-0503_NIRES_2018Oct01T100254.698_FLUX.fits',
+#            '/Users/feige/Work/Observations/NIRES/NIRES_Barth/J0252/reduce0930/Science/spec1d_J0252-0503_NIRES_2018Oct01T100949.328_FLUX.fits',
+#            '/Users/feige/Work/Observations/NIRES/NIRES_Barth/J0252/reduce0930/Science/spec1d_J0252-0503_NIRES_2018Oct01T101642.428_FLUX.fits',
+#            '/Users/feige/Work/Observations/NIRES/NIRES_Barth/J0252/reduce0930/Science/spec1d_J0252-0503_NIRES_2018Oct01T102337.058_FLUX.fits']
+#objids = ['OBJ0001','OBJ0002','OBJ0002','OBJ0001']
+norder =5
+datapath = '/Users/feige/Work/Observations/NIRES/NIRES_Barth/J0252/reduce0930/Science/'
+cat = np.genfromtxt(datapath+'J0252_objinfo.txt',dtype=str)
+filenames = cat[:,0]
+scifiles = []
+for i in range(len(filenames)):
+    filename = datapath+filenames[i]
+    scifiles += [filename.replace('.fits','_FLUX.fits')]
+objids = cat[:,1]
 
+plt.figure()
+for i in range(len(scifiles)):
+    sciframe = scifiles[i]
+    spectra = ech_load_spec([sciframe],objid = [objids[i]],norder=norder,extract='OPT',flux=True)
+    for iord in range(norder-1):
+        plt.plot(spectra[iord+1].wavelength,spectra[iord+1].flux)
+    sciframe
+plt.ylim([-0.5,2.0])
+plt.show()
+plt.close()
 
 kwargs={}
-spectra = ech_load_spec(scifiles,objid=['OBJ0001','OBJ0002','OBJ0002','OBJ0001'],norder=5,extract='OPT',flux=False)
-#spec1d = ech_coadd_spectra(spectra, wave_grid_method='velocity', niter=5,
-#                  wave_grid_min=9500.0, wave_grid_max=None,v_pix=None,
-#                  scale_method='auto', do_offset=False, sigrej_final=3.,
-#                  do_var_corr=True, qafile=None, outfile=None,
-#                  do_cr=True,**kwargs)
+spectra = ech_load_spec(scifiles,objid=objids,norder=norder,extract='OPT',flux=True)
+spec1d = ech_coadd_spectra(spectra, wave_grid_method='velocity', niter=5,
+                  wave_grid_min=9500.0, wave_grid_max=None,v_pix=None,
+                  scale_method='auto', do_offset=False, sigrej_final=3.,
+                  do_var_corr=True, qafile='test', outfile=None,
+                  do_cr=True,**kwargs)
+plt.figure()
+plt.plot(spec1d.wavelength,spec1d.flux)
+plt.plot(spec1d.wavelength,spec1d.sig,'-',color='0.7')
+plt.show()
 from IPython import embed
 embed()
