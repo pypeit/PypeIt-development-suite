@@ -318,3 +318,21 @@ def example():
     embed()
 
 #example()
+
+def example2():
+    datapath = '/Users/feige/Work/Observations/NIRES/NIRES_Barth/J0252/reduce0930/Science/'
+    stdframe = datapath+'spec1d_HIP13917_V8p6_NIRES_2018Oct01T094225.598.fits'
+    cat = np.genfromtxt(datapath+'J0252_objinfo.txt',dtype=str)
+    filenames = cat[:,0]
+    norder = 5
+
+    sens_dicts = ech_generate_sensfunc(stdframe, norder=norder, telluric=True, star_type='A0',
+                                       star_mag=8.6, ra=None, dec=None, std_file=None, BALM_MASK_WID=5., nresln=None,
+                                       debug=False)
+    ech_save_master(sens_dicts, outfile='MasterSensFunc_NIRES.fits')
+    for i in range(len(filenames)):
+        sciframe = datapath+filenames[i]
+        sci_specobjs, sci_header = ech_load_specobj(sciframe)
+        ech_flux_science(sci_specobjs,sens_dicts,sci_header,spectrograph=None,norder=5)
+        write_science(sci_specobjs, sci_header, sciframe[:-5]+'_FLUX.fits')
+#example()
