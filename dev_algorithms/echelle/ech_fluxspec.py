@@ -1,4 +1,4 @@
-# Module for guiding Slit/Order tracing
+# Module for echelle fluxing
 from __future__ import absolute_import, division, print_function
 
 import inspect
@@ -7,8 +7,6 @@ import linetools
 import os
 import json
 import matplotlib.pyplot as plt
-
-# from importlib import reload
 
 from astropy import units
 from astropy.io import fits
@@ -113,7 +111,7 @@ def ech_load_specobj(fname,order=None):
     # Return
     return specObjs, head0
 
-def ech_save_master(sens_dicts, norder=5, outfile=None):
+def ech_save_master(sens_dicts, outfile=None):
     """
     Over-load the ech_save_master() method in MasterFrame to write a JSON file
 
@@ -130,6 +128,8 @@ def ech_save_master(sens_dicts, norder=5, outfile=None):
     if outfile is None:
         outfile = 'MasterSensFunc.fits'
         #outfile = self.ms_name
+
+    norder = sens_dicts['norder']
     # Add steps
     #self.sens_dict['steps'] = self.steps
     # Do it
@@ -148,7 +148,7 @@ def ech_save_master(sens_dicts, norder=5, outfile=None):
         tbhdu.name = 'SENSFUNC-ORDER{0:04}'.format(iord)
         # Add critical keys from sens_dict to header
         for key in ['wave_min', 'wave_max', 'exptime', 'airmass', 'std_file', 'std_ra',
-                    'std_dec', 'std_name', 'cal_file']:
+                    'std_dec', 'std_name', 'cal_file', 'ech_orderindx']:
             try:
                 tbhdu.header[key.upper()] = sens_dict[key].value
             except AttributeError:
@@ -166,8 +166,9 @@ def ech_save_master(sens_dicts, norder=5, outfile=None):
             prihdu.header[key.upper()] = sens_dict[key]
         except KeyError:
             pass  # Will not require all of these
+    prihdu.header['NORDER'] = norder
 
-    # Finish
+        # Finish
     hdulist = fits.HDUList(hdus)
     hdulist.writeto(outfile, overwrite=True)
 
@@ -175,7 +176,7 @@ def ech_save_master(sens_dicts, norder=5, outfile=None):
     msgs.info("Wrote sensfunc to MasterFrame: {:s}".format(outfile))
 
 
-def ech_load_master(filename, norder=5, force=False):
+def ech_load_master(filename, force=False):
 
     # Does the master file exist?
     if not os.path.isfile(filename):
@@ -189,6 +190,7 @@ def ech_load_master(filename, norder=5, force=False):
         msgs.info("Loading a pre-existing master calibration frame of SENSFUNC from filename: {:}".format(filename))
 
         hdu = fits.open(filename)
+        norder = hdu[0].header['NORDER']
         sens_dicts = {}
         for iord in range(norder):
             head = hdu[iord+1].header
@@ -196,18 +198,20 @@ def ech_load_master(filename, norder=5, force=False):
             sens_dict = {}
             sens_dict['wave'] = tbl['WAVE']
             sens_dict['sensfunc'] = tbl['SENSFUNC']
-            for key in ['wave_min','wave_max','exptime','airmass','std_file','std_ra','std_dec','std_name','cal_file']:
+            for key in ['wave_min','wave_max','exptime','airmass','std_file','std_ra','std_dec',
+                        'std_name','cal_file', 'ech_orderindx']:
                 try:
                     sens_dict[key] = head[key.upper()]
                 except:
                     pass
             sens_dicts[str(iord)] = sens_dict
+        sens_dicts['norder'] = norder
         return sens_dicts
 
-def find_standard(std_specobjs):
-    std_idx = flux.find_standard(std_specobjs)
-    std = std_specobjs[std_idx]
-    return std
+#def find_standard(std_specobjs):
+#    std_idx = flux.find_standard(std_specobjs)
+#    std = std_specobjs[std_idx]
+#    return std
 
 def ech_generate_sensfunc(stdframe,norder=None,spectrograph=None, telluric=True, star_type=None,
                       star_mag=None, ra=None, dec=None, std_file = None, BALM_MASK_WID=5., nresln=None,debug=False):
@@ -222,7 +226,8 @@ def ech_generate_sensfunc(stdframe,norder=None,spectrograph=None, telluric=True,
     sens_dicts = {}
     for iord in range(norder):
         std_specobjs, std_header = ech_load_specobj(stdframe, order=iord)
-        std = find_standard(std_specobjs)
+        std_idx = flux.find_standard(std_specobjs)
+        std = std_specobjs[std_idx]
         sens_dict = flux.generate_sensfunc(std.boxcar['WAVE'],
                                            std.boxcar['COUNTS'],
                                            std.boxcar['COUNTS_IVAR'],
@@ -231,27 +236,11 @@ def ech_generate_sensfunc(stdframe,norder=None,spectrograph=None, telluric=True,
                                            spectrograph,star_type=star_type,star_mag=star_mag,
                                            telluric=telluric,ra=ra,dec=dec,BALM_MASK_WID=BALM_MASK_WID,
                                            nresln=nresln,std_file=std_file,debug=debug)
+        sens_dict['ech_orderindx'] = iord
         sens_dicts[str(iord)] = sens_dict
+    sens_dicts['norder'] = norder
 
     return sens_dicts
-
-
-def flux_science_order(sci_specobjs,sens_dict,sci_header,spectrograph=None):
-    """
-    Flux the internal list of sci_specobjs
-
-    Wrapper to flux.apply_sensfunc()
-
-    Returns
-    -------
-
-    """
-    if spectrograph is None:
-        spectrograph = sci_header['INSTRUME']
-        msgs.info('You are working on {:s}'.format(spectrograph))
-    for sci_obj in sci_specobjs:
-        flux.apply_sensfunc(sci_obj, sens_dict, sci_header['AIRMASS'],
-                              sci_header['EXPTIME'], spectrograph)
 
 def ech_flux_science(sci_specobjs,sens_dicts,sci_header,spectrograph=None,norder=5):
     """
@@ -270,20 +259,78 @@ def ech_flux_science(sci_specobjs,sens_dicts,sci_header,spectrograph=None,norder
         sens_dict = sens_dicts[str(iord)]
         for sci_obj in sci_specobjs:
             if sci_obj.ech_orderindx == iord:
-                print(iord)
                 flux.apply_sensfunc(sci_obj, sens_dict, sci_header['AIRMASS'],
                                       sci_header['EXPTIME'], spectrograph)
 
-stdframe = '/Users/feige/Work/Observations/NIRES/NIRES_Barth/J0252/reduce0930/Science/spec1d_HIP13917_V8p6_NIRES_2018Oct01T094225.598.fits'
-sciframe = '/Users/feige/Work/Observations/NIRES/NIRES_Barth/J0252/reduce0930/Science/spec1d_J0252-0503_NIRES_2018Oct01T100254.698.fits'
-order = 1
-norder = 5
 
-sens_dicts = ech_generate_sensfunc(stdframe,norder=norder,telluric=True, star_type='A0',
-                      star_mag=8.6, ra=None, dec=None, std_file = None, BALM_MASK_WID=5., nresln=None,debug=False)
-ech_save_master(sens_dicts, norder=norder, outfile='MasterSensFunc_NIRES.fits')
-sci_specobjs, sci_header = ech_load_specobj(sciframe,order=None)
-ech_flux_science(sci_specobjs,sens_dicts,sci_header,spectrograph=None,norder=5)
+def write_science(sci_specobjs, sci_header, outfile):
+    """
+    Write the flux-calibrated science spectra
 
-from IPython import embed
-embed()
+    Parameters
+    ----------
+    outfile : str
+
+    Returns
+    -------
+
+    """
+    if len(sci_specobjs) == 0:
+        msgs.warn("No science spectra to write to disk!")
+    #
+    if 'VEL-TYPE' in sci_header.keys():
+        helio_dict = dict(refframe=sci_header['VEL-TYPE'],
+                          vel_correction=sci_header['VEL'])
+    else:
+        helio_dict = None
+    telescope=None
+    if 'LON-OBS' in sci_header.keys():
+        telescope = TelescopePar(longitude=sci_header['LON-OBS'],
+                                 latitude=sci_header['LAT-OBS'],
+                                 elevation=sci_header['ALT-OBS'])
+    # KLUDGE ME
+    if isinstance(sci_specobjs, list):
+        specObjs = specobjs.SpecObjs(sci_specobjs)
+    elif isinstance(sci_specobjs, specobjs.SpecObjs):
+        specObjs = sci_specobjs
+    else:
+        msgs.error("BAD INPUT")
+    save.save_1d_spectra_fits(specObjs, sci_header, outfile,
+                              helio_dict=helio_dict,
+                              telescope=telescope, overwrite=True)
+    # Step
+    #self.steps.append(inspect.stack()[0][3])
+
+def example():
+    stdframe = '/Users/feige/Work/Observations/NIRES/NIRES_Barth/J0252/reduce0930/Science/spec1d_HIP13917_V8p6_NIRES_2018Oct01T094225.598.fits'
+    sciframe = '/Users/feige/Work/Observations/NIRES/NIRES_Barth/J0252/reduce0930/Science/spec1d_J0252-0503_NIRES_2018Oct01T100254.698.fits'
+    norder = 5
+    sens_dicts = ech_generate_sensfunc(stdframe,norder=norder,telluric=True, star_type='A0',
+                          star_mag=8.6, ra=None, dec=None, std_file = None, BALM_MASK_WID=5., nresln=None,debug=False)
+    ech_save_master(sens_dicts, outfile='MasterSensFunc_NIRES.fits')
+    sens_dicts = ech_load_master('MasterSensFunc_NIRES.fits')
+    sci_specobjs, sci_header = ech_load_specobj(sciframe)
+    ech_flux_science(sci_specobjs,sens_dicts,sci_header,spectrograph=None,norder=5)
+    write_science(sci_specobjs, sci_header, sciframe[:-5]+'_FLUX.fits')
+    from IPython import embed
+    embed()
+
+#example()
+
+def example2():
+    datapath = '/Users/feige/Work/Observations/NIRES/NIRES_Barth/J0252/reduce0930/Science/'
+    stdframe = datapath+'spec1d_HIP13917_V8p6_NIRES_2018Oct01T094225.598.fits'
+    cat = np.genfromtxt(datapath+'J0252_objinfo.txt',dtype=str)
+    filenames = cat[:,0]
+    norder = 5
+
+    sens_dicts = ech_generate_sensfunc(stdframe, norder=norder, telluric=True, star_type='A0',
+                                       star_mag=8.6, ra=None, dec=None, std_file=None, BALM_MASK_WID=5., nresln=None,
+                                       debug=False)
+    ech_save_master(sens_dicts, outfile='MasterSensFunc_NIRES.fits')
+    for i in range(len(filenames)):
+        sciframe = datapath+filenames[i]
+        sci_specobjs, sci_header = ech_load_specobj(sciframe)
+        ech_flux_science(sci_specobjs,sens_dicts,sci_header,spectrograph=None,norder=5)
+        write_science(sci_specobjs, sci_header, sciframe[:-5]+'_FLUX.fits')
+#example()
