@@ -6,6 +6,7 @@
 
 """
 This script builds the Cooked folder
+Execute it with:   python build_cooked
 """
 
 from __future__ import absolute_import, division, print_function
@@ -153,6 +154,17 @@ def main():
 
 
 def copy_with_root(new_root, cooked_root, debug=False):
+    """
+    Copy all files with a given root
+
+    Args:
+        new_root: str
+        cooked_root: str
+        debug:
+
+    Returns:
+
+    """
     import glob
     # Grab em
     new_files = glob.glob(new_root+'.*')
@@ -168,6 +180,18 @@ def copy_with_root(new_root, cooked_root, debug=False):
         copy_me(new_file, cooked_file)
 
 def copy_me(new_file, cooked_file):
+    """
+    Simple script to copy a given file to a new file
+    First compares that the new_file is newer than the
+    cooked file (if the latter exists)
+
+    Args:
+        new_file: str
+        cooked_file: str
+
+    Returns:
+
+    """
     import shutil
     # Compare date stamp
     doit = True
