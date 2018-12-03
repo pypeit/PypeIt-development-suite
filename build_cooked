@@ -6,7 +6,7 @@
 
 """
 This script builds the Cooked folder
-Execute it with:   python build_cooked
+Execute it with:   ./build_cooked
 """
 
 from __future__ import absolute_import, division, print_function
@@ -150,7 +150,7 @@ def main():
     # Tar me up
     print("##############################################################")
     print("You should now tar up the folder and load onto the Google Drive")
-    print("tar -cvzf Cooked_pypeit_dev.tar Cooked/")
+    print("tar -cvzf Cooked_pypeit_dev.tar.gz Cooked/")
 
 
 def copy_with_root(new_root, cooked_root, debug=False):
