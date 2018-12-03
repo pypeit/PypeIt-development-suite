@@ -111,21 +111,24 @@ for i in range(len(filenames)):
     scifiles += [filename.replace('.fits','_FLUX.fits')]
 objids = cat[:,1]
 
+#scifiles = ['/Users/feige/Work/Observations/NIRES/NIRES_Barth/J0252/reduce0930/Science/spec1d_J0252-0503_NIRES_2018Oct01T100254.698_FLUX.fits',
+#            '/Users/feige/Work/Observations/NIRES/NIRES_Barth/J0252/reduce0930/Science/spec1d_J0252-0503_NIRES_2018Oct01T102337.058_FLUX.fits']
+#objids = ['OBJ0001','OBJ0001']
+
 plt.figure()
 for i in range(len(scifiles)):
     sciframe = scifiles[i]
     spectra = ech_load_spec([sciframe],objid = [objids[i]],norder=norder,extract='OPT',flux=True)
     for iord in range(norder-1):
         plt.plot(spectra[iord+1].wavelength,spectra[iord+1].flux)
-    sciframe
+
 plt.ylim([-0.5,2.0])
 plt.show()
-plt.close()
 
 kwargs={}
 spectra = ech_load_spec(scifiles,objid=objids,norder=norder,extract='OPT',flux=True)
 spec1d = ech_coadd_spectra(spectra, wave_grid_method='velocity', niter=5,
-                  wave_grid_min=9500.0, wave_grid_max=None,v_pix=None,
+                  wave_grid_min=9400.0, wave_grid_max=None,v_pix=None,
                   scale_method='auto', do_offset=False, sigrej_final=3.,
                   do_var_corr=True, qafile='test', outfile=None,
                   do_cr=True,**kwargs)
