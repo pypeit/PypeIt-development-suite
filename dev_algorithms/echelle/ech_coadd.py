@@ -101,6 +101,24 @@ def ech_load_spec(files,objid=None,norder=None,order=None,extract='OPT',flux=Tru
     # Return
     return spectra
 
+# return spectrum from arrays of wave, flux and sigma
+def spec_from_array(wave,flux,sig,**kwargs):
+
+    from linetools.spectra.xspectrum1d import XSpectrum1D
+    ituple = (wave, flux, sig)
+    spectrum = XSpectrum1D.from_tuple(ituple, **kwargs)
+    # Polish a bit -- Deal with NAN, inf, and *very* large values that will exceed
+    #   the floating point precision of float32 for var which is sig**2 (i.e. 1e38)
+    bad_flux = np.any([np.isnan(spectrum.flux), np.isinf(spectrum.flux),
+                       np.abs(spectrum.flux) > 1e30,
+                       spectrum.sig ** 2 > 1e10,
+                       ], axis=0)
+    if np.sum(bad_flux):
+        msgs.warn("There are some bad flux values in this spectrum.  Will zero them out and mask them (not ideal)")
+        spectrum.data['flux'][spectrum.select][bad_flux] = 0.
+        spectrum.data['sig'][spectrum.select][bad_flux] = 0.
+    return spectrum
+
 def ech_coadd_spectra(spectra, wave_grid_method='velocity', niter=5,
                   wave_grid_min=None, wave_grid_max=None,v_pix=None,
                   scale_method='auto', do_offset=False, sigrej_final=3.,
@@ -116,8 +134,9 @@ def ech_coadd_spectra(spectra, wave_grid_method='velocity', niter=5,
                         do_cr=do_cr, **kwargs)
     return spec1d
 
-def ech_load_xidl(files,extn=4,norder=6,extract='OPT',sensfile=None,AB=True):
+def ech_load_xidl(files,extn=4,norder=6,order=None,extract='OPT',sensfile=None,AB=True):
     """
+    ONLY tested for GNIRS for now
     files: A list of file names
     objid:
     norder:
@@ -127,7 +146,6 @@ def ech_load_xidl(files,extn=4,norder=6,extract='OPT',sensfile=None,AB=True):
 
     nfiles = len(files)
 
-    from linetools.spectra.xspectrum1d import XSpectrum1D
     # Keywords for Table
     rsp_kwargs = {}
     rsp_kwargs['wave_tag'] = '{:s}_WAVE'.format(extract)
@@ -156,52 +174,71 @@ def ech_load_xidl(files,extn=4,norder=6,extract='OPT',sensfile=None,AB=True):
         elif norder <=1:
             msgs.error('The number of orders have to be greater than one for echelle. Longslit data?')
 
-        for iord in range(norder):
-
-            if AB:
+        if AB:
+            if order is None:
+                msgs.info('Loading all orders into a gaint spectra')
+                for iord in range(norder):
+                    for aa in range(2):
+                        wave = ext_final['WAVE_{:s}'.format(extract)][2 * iord + aa]
+                        flux = ext_final['FLUX_{:s}'.format(extract)][2 * iord + aa]
+                        sig = ext_final['SIG_{:s}'.format(extract)][2 * iord + aa]
+                        if sensfile is not None:
+                            magfunc1 = np.interp(np.log10(wave), loglams, magfunc[iord, :])
+                            sensfunc = 10.0 ** (0.4 * magfunc1)
+                            scale = sensfunc / exptime[ii]
+                            flux = flux * scale
+                            sig = sig * scale
+                        spectrum = spec_from_array(wave, flux, sig, **rsp_kwargs)
+                        # Append
+                        spectra_list.append(spectrum)
+            elif order >= norder:
+                msgs.error('order number cannot greater than the total number of orders')
+            else:
                 for aa in range(2):
-                    wave = ext_final['WAVE_{:s}'.format(extract)][2*iord+aa]
-                    flux = ext_final['FLUX_{:s}'.format(extract)][2*iord+aa]
-                    sig  = ext_final['SIG_{:s}'.format(extract)][2*iord+aa]
+                    wave = ext_final['WAVE_{:s}'.format(extract)][2 * order + aa]
+                    flux = ext_final['FLUX_{:s}'.format(extract)][2 * order + aa]
+                    sig = ext_final['SIG_{:s}'.format(extract)][2 * order + aa]
                     if sensfile is not None:
-                        magfunc1 = np.interp(np.log10(wave),loglams,magfunc[iord,:])
-                        sensfunc = 10.0**(0.4* magfunc1)
+                        magfunc1 = np.interp(np.log10(wave), loglams, magfunc[order, :])
+                        sensfunc = 10.0 ** (0.4 * magfunc1)
                         scale = sensfunc / exptime[ii]
-                        flux = flux*scale
-                        sig = sig*scale
-                    ituple = (wave,flux,sig)
-                    spectrum = XSpectrum1D.from_tuple(ituple, **rsp_kwargs)
-                    # Polish a bit -- Deal with NAN, inf, and *very* large values that will exceed
-                    #   the floating point precision of float32 for var which is sig**2 (i.e. 1e38)
-                    bad_flux = np.any([np.isnan(spectrum.flux), np.isinf(spectrum.flux),
-                                       np.abs(spectrum.flux) > 1e30,
-                                       spectrum.sig**2 > 1e10,
-                                       ], axis=0)
-                    if np.sum(bad_flux):
-                        msgs.warn("There are some bad flux values in this spectrum.  Will zero them out and mask them (not ideal)")
-                        spectrum.data['flux'][spectrum.select][bad_flux] = 0.
-                        spectrum.data['sig'][spectrum.select][bad_flux] = 0.
+                        flux = flux * scale
+                        sig = sig * scale
+                    spectrum = spec_from_array(wave, flux, sig, **rsp_kwargs)
                     # Append
                     spectra_list.append(spectrum)
+        else:
+            if order is None:
+                msgs.info('Loading all orders into a gaint spectra')
+                for iord in range(norder):
+                    wave = ext_final['WAVE_{:s}'.format(extract)][iord]
+                    flux = ext_final['FLUX_{:s}'.format(extract)][iord]
+                    sig = ext_final['SIG_{:s}'.format(extract)][iord]
+                    if sensfile is not None:
+                        magfunc1 = np.interp(np.log10(wave), loglams, magfunc[iord, :])
+                        sensfunc = 10.0 ** (0.4 * magfunc1)
+                        scale = sensfunc / exptime[ii]
+                        flux = flux * scale
+                        sig = sig * scale
+                    spectrum = spec_from_array(wave, flux, sig, **rsp_kwargs)
+                    # Append
+                    spectra_list.append(spectrum)
+            elif order >= norder:
+                msgs.error('order number cannot greater than the total number of orders')
             else:
-                wave = ext_final['WAVE_{:s}'.format(extract)][2 * iord + aa]
-                flux = ext_final['FLUX_{:s}'.format(extract)][2 * iord + aa]
-                sig = ext_final['SIG_{:s}'.format(extract)][2 * iord + aa]
-                ituple = (wave, flux, sig)
-                spectrum = XSpectrum1D.from_tuple(ituple, **rsp_kwargs)
-                # Polish a bit -- Deal with NAN, inf, and *very* large values that will exceed
-                #   the floating point precision of float32 for var which is sig**2 (i.e. 1e38)
-                bad_flux = np.any([np.isnan(spectrum.flux), np.isinf(spectrum.flux),
-                                   np.abs(spectrum.flux) > 1e30,
-                                   spectrum.sig ** 2 > 1e10,
-                                   ], axis=0)
-                if np.sum(bad_flux):
-                    msgs.warn(
-                        "There are some bad flux values in this spectrum.  Will zero them out and mask them (not ideal)")
-                    spectrum.data['flux'][spectrum.select][bad_flux] = 0.
-                    spectrum.data['sig'][spectrum.select][bad_flux] = 0.
+                wave = ext_final['WAVE_{:s}'.format(extract)][order]
+                flux = ext_final['FLUX_{:s}'.format(extract)][order]
+                sig = ext_final['SIG_{:s}'.format(extract)][order]
+                if sensfile is not None:
+                    magfunc1 = np.interp(np.log10(wave), loglams, magfunc[order, :])
+                    sensfunc = 10.0 ** (0.4 * magfunc1)
+                    scale = sensfunc / exptime[ii]
+                    flux = flux * scale
+                    sig = sig * scale
+                spectrum = spec_from_array(wave, flux, sig, **rsp_kwargs)
                 # Append
                 spectra_list.append(spectrum)
+
     # Join into one XSpectrum1D object
     spectra = collate(spectra_list)
     # Return
@@ -264,13 +301,14 @@ def test_nires(show=True):
 
 def test_gnirs(show=True):
     norder=6
+    order = 0
 
     scifiles = ['/Users/feige/Work/Observations/GN-2015A-Q-28_P338+29/Redux/Science/PSO338+29_0/sci-cN20150707S0189-192.fits',
                 '/Users/feige/Work/Observations/GN-2015A-Q-28_P338+29/Redux/Science/PSO338+29_0/sci-cN20150707S0193-196.fits',
                 '/Users/feige/Work/Observations/GN-2015A-Q-28_P338+29/Redux/Science/PSO338+29_0/sci-cN20150707S0220-223.fits',
                 '/Users/feige/Work/Observations/GN-2015A-Q-28_P338+29/Redux/Science/PSO338+29_0/sci-cN20150707S0224-223.fits']
     sensfile = '/Users/feige/Work/Observations/GN-2015A-Q-28_P338+29/Redux/Combine/HIP111538_0_sens.fits'
-    spectra = ech_load_xidl(scifiles,extn=4,norder=norder,extract='OPT',sensfile=sensfile,AB=True)
+    spectra = ech_load_xidl(scifiles,extn=4,norder=norder,order=order,extract='OPT',sensfile=sensfile,AB=True)
 
     kwargs={}
     spec1d = ech_coadd_spectra(spectra, wave_grid_method='velocity', niter=5,
@@ -283,7 +321,7 @@ def test_gnirs(show=True):
     if show:
         plt.show()
 
-test_nires(show=True)
-#test_gnirs(show=True)
+#test_nires(show=True)
+test_gnirs(show=True)
 from IPython import embed
 embed()
