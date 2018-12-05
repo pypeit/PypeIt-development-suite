@@ -131,8 +131,132 @@ def ech_coadd_spectra(spectra, wave_grid_method='velocity', niter=5,
     spec1d = coadd.coadd_spectra(spectra, wave_grid_method=wave_grid_method, niter=niter,
                         scale_method=scale_method, do_offset=do_offset, sigrej_final=sigrej_final,
                         do_var_corr=do_var_corr, qafile=qafile, outfile=outfile,
-                        do_cr=do_cr, **kwargs)
+                        do_cr=do_cr, debug=False,**kwargs)
     return spec1d
+
+def ech_coadd(files,objids=None,norder=None,extract='OPT',flux=True,gaintcoadd=False,
+              wave_grid_method='velocity', niter=5,wave_grid_min=None, wave_grid_max=None,v_pix=None,
+              scale_method='auto', do_offset=False, sigrej_final=3.,do_var_corr=False,
+              qafile=None, outfile=None,do_cr=True, debug=False, **kwargs):
+
+    if gaintcoadd:
+        msgs.info('Coadding all orders and exposures at once')
+        spectra = ech_load_spec(files, objid=objids, norder=norder, order=None, extract=extract, flux=flux)
+        wave_grid = np.zeros((2,spectra.nspec))
+        for i in range(spectra.nspec):
+            wave_grid[0, i] = spectra[i].wvmin.value
+            wave_grid[1, i] = spectra[i].wvmax.value
+        ech_kwargs = {'echelle': True, 'wave_grid_min': np.min(wave_grid), 'wave_grid_max': np.max(wave_grid),
+                      'v_pix': v_pix}
+        kwargs.update(ech_kwargs)
+        # Coadding
+        spec1d = coadd.coadd_spectra(spectra, wave_grid_method=wave_grid_method, niter=niter,
+                                          scale_method=scale_method, do_offset=do_offset, sigrej_final=sigrej_final,
+                                          do_var_corr=do_var_corr, qafile=qafile, outfile=outfile,
+                                          do_cr=do_cr, **kwargs)
+    else:
+        msgs.info('Coadding individual orders first and then merge order')
+        spectra_list = []
+        # Keywords for Table
+        rsp_kwargs = {}
+        rsp_kwargs['wave_tag'] = '{:s}_WAVE'.format(extract)
+        rsp_kwargs['flux_tag'] = '{:s}_FLAM'.format(extract)
+        rsp_kwargs['sig_tag'] = '{:s}_FLAM_SIG'.format(extract)
+        wave_grid = np.zeros((2,norder))
+        for iord in range(norder):
+            spectra = ech_load_spec(files, objid=objids, norder=norder, order=iord, extract=extract, flux=flux)
+            ech_kwargs = {'echelle': True, 'wave_grid_min': spectra.wvmin.value, 'wave_grid_max': spectra.wvmax.value, 'v_pix': v_pix}
+            wave_grid[0,iord] = spectra.wvmin.value
+            wave_grid[1,iord] = spectra.wvmax.value
+            kwargs.update(ech_kwargs)
+            # Coadding the individual orders
+            spec1d_iord = coadd.coadd_spectra(spectra, wave_grid_method=wave_grid_method, niter=niter,
+                                       scale_method=scale_method, do_offset=do_offset, sigrej_final=sigrej_final,
+                                       do_var_corr=do_var_corr, qafile=qafile, outfile=outfile,
+                                       do_cr=do_cr, **kwargs)
+            if debug:
+                plt.plot(spec1d_iord.wavelength, spec1d_iord.flux)
+                plt.plot(spec1d_iord.wavelength, spec1d_iord.sig,color='0.7')
+                plt.xlabel('Wavelength ($\AA$)',fontsize=14)
+                plt.ylabel('Flux',fontsize=14)
+                plt.show()
+            spectrum = spec_from_array(spec1d_iord.wavelength, spec1d_iord.flux, spec1d_iord.sig,**rsp_kwargs)
+            spectra_list.append(spectrum)
+        # Join into one XSpectrum1D object
+        spectra_coadd = collate(spectra_list)
+        kwargs['wave_grid_min'] = np.min(wave_grid)
+        kwargs['wave_grid_max'] = np.max(wave_grid)
+        # ToDo: Currently I'm not using the first order due to some problem. Need to add it back after fix the problem.
+        spec1d = coadd.coadd_spectra(spectra_coadd[1:], wave_grid_method=wave_grid_method, niter=niter,
+                                          scale_method=scale_method, do_offset=do_offset, sigrej_final=sigrej_final,
+                                          do_var_corr=do_var_corr, qafile=qafile, outfile=outfile,
+                                          do_cr=do_cr, **kwargs)
+    if debug:
+        plt.plot(spec1d.wavelength, spec1d.flux)
+        plt.plot(spec1d.wavelength, spec1d.sig, color='0.7')
+        plt.xlabel('Wavelength ($\AA$)', fontsize=14)
+        plt.ylabel('Flux', fontsize=14)
+        plt.show()
+    return spec1d
+
+def test_nires(gaintcoadd=False,debug=True):
+    #scifiles = ['/Users/feige/Work/Observations/NIRES/NIRES_Barth/J0252/reduce0930/Science/spec1d_J0252-0503_NIRES_2018Oct01T100254.698_FLUX.fits',
+    #            '/Users/feige/Work/Observations/NIRES/NIRES_Barth/J0252/reduce0930/Science/spec1d_J0252-0503_NIRES_2018Oct01T100949.328_FLUX.fits',
+    #            '/Users/feige/Work/Observations/NIRES/NIRES_Barth/J0252/reduce0930/Science/spec1d_J0252-0503_NIRES_2018Oct01T101642.428_FLUX.fits',
+    #            '/Users/feige/Work/Observations/NIRES/NIRES_Barth/J0252/reduce0930/Science/spec1d_J0252-0503_NIRES_2018Oct01T102337.058_FLUX.fits']
+    #objids = ['OBJ0001','OBJ0002','OBJ0002','OBJ0001']
+    norder =5
+    datapath = '/Users/feige/Work/Observations/NIRES/NIRES_Barth/J0252/reduce0930/Science/'
+    cat = np.genfromtxt(datapath+'J0252_objinfo.txt',dtype=str)
+    filenames = cat[:,0]
+    scifiles = []
+    for i in range(len(filenames)):
+        filename = datapath+filenames[i]
+        scifiles += [filename.replace('.fits','_FLUX.fits')]
+    objids = cat[:,1]
+
+    # Coadding
+    kwargs={}
+    spec1d = ech_coadd(scifiles, objids=objids, norder=norder, extract='OPT', flux=True,gaintcoadd=gaintcoadd,
+              wave_grid_method='velocity', niter=5,wave_grid_min=None, wave_grid_max=None, v_pix=None,
+              scale_method='auto', do_offset=False, sigrej_final=3.,
+              do_var_corr=False, qafile=None, outfile=None, do_cr=True, debug=debug,**kwargs)
+
+
+def ech_med_scale(spec, smask, nsig=3., niter=5, **kwargs):
+    """ Calculate the median ratio between two spectra
+    Parameters
+    ----------
+    spec
+    smask
+    nsig
+    niter
+    kwargs
+
+    Returns
+    -------
+    med_scale : float
+      Median of reference spectrum to input spectrum
+    """
+    # first coadd spectra without scaling to get a reference spectrum
+    spec1d = ech_coadd_spectra(spec, wave_grid_method='velocity', niter=5,
+                      wave_grid_min=wave_grid_min, wave_grid_max=wave_grid_max,v_pix=None,
+                      scale_method=None, do_offset=False, sigrej_final=3.,
+                      do_var_corr=False, qafile=None, outfile=None,
+                      do_cr=True,**kwargs)
+    # Setup
+    fluxes, sigs, wave = unpack_spec(spec)
+    # Mask
+    okm = (spec1d.sig>0) & ~smask[ispec,:]
+    # Insist on positive values
+    okf = (spec1d.flux > 0.) & (fluxes[ispec,:] > 0)
+    allok = okm & okf
+    # Ratio
+    med_flux = spec1d.flux[allok] / fluxes[ispec,allok]
+    # Clip
+    mn_scale, med_scale, std_scale = astropy.stats.sigma_clipped_stats(med_flux, sigma=nsig, iters=niter, **kwargs)
+    # Return
+    return med_scale
 
 def ech_load_xidl(files,extn=4,norder=6,order=None,extract='OPT',sensfile=None,AB=True):
     """
@@ -245,60 +369,6 @@ def ech_load_xidl(files,extn=4,norder=6,order=None,extract='OPT',sensfile=None,A
     return spectra
 
 
-def test_nires(show=True):
-    #scifiles = ['/Users/feige/Work/Observations/NIRES/NIRES_Barth/J0252/reduce0930/Science/spec1d_J0252-0503_NIRES_2018Oct01T100254.698_FLUX.fits',
-    #            '/Users/feige/Work/Observations/NIRES/NIRES_Barth/J0252/reduce0930/Science/spec1d_J0252-0503_NIRES_2018Oct01T100949.328_FLUX.fits',
-    #            '/Users/feige/Work/Observations/NIRES/NIRES_Barth/J0252/reduce0930/Science/spec1d_J0252-0503_NIRES_2018Oct01T101642.428_FLUX.fits',
-    #            '/Users/feige/Work/Observations/NIRES/NIRES_Barth/J0252/reduce0930/Science/spec1d_J0252-0503_NIRES_2018Oct01T102337.058_FLUX.fits']
-    #objids = ['OBJ0001','OBJ0002','OBJ0002','OBJ0001']
-    norder =5
-    datapath = '/Users/feige/Work/Observations/NIRES/NIRES_Barth/J0252/reduce0930/Science/'
-    cat = np.genfromtxt(datapath+'J0252_objinfo.txt',dtype=str)
-    filenames = cat[:,0]
-    scifiles = []
-    for i in range(len(filenames)):
-        filename = datapath+filenames[i]
-        scifiles += [filename.replace('.fits','_FLUX.fits')]
-    objids = cat[:,1]
-
-    #scifiles = ['/Users/feige/Work/Observations/NIRES/NIRES_Barth/J0252/reduce0930/Science/spec1d_J0252-0503_NIRES_2018Oct01T100254.698_FLUX.fits',
-    #            '/Users/feige/Work/Observations/NIRES/NIRES_Barth/J0252/reduce0930/Science/spec1d_J0252-0503_NIRES_2018Oct01T102337.058_FLUX.fits']
-    #objids = ['OBJ0001','OBJ0001']
-
-    # test plotting individual orders
-    #for i in range(len(scifiles)):
-    #    sciframe = scifiles[i]
-    #    spectra = ech_load_spec([sciframe],objid = [objids[i]],norder=norder,extract='OPT',flux=True)
-    #    for iord in range(norder-1):
-    #        plt.plot(spectra[iord+1].wavelength,spectra[iord+1].flux)
-    #plt.ylim([-0.5,2.0])
-    #plt.show()
-
-    kwargs={}
-    spectra = ech_load_spec(scifiles,objid=objids,norder=norder,order=None,extract='OPT',flux=True)
-    spec1d = ech_coadd_spectra(spectra, wave_grid_method='velocity', niter=5,
-                      wave_grid_min=9400.0, wave_grid_max=None,v_pix=None,
-                      scale_method='auto', do_offset=False, sigrej_final=3.,
-                      do_var_corr=False, qafile='test', outfile=None,
-                      do_cr=True,**kwargs)
-    plt.plot(spec1d.wavelength,spec1d.flux)
-    plt.plot(spec1d.wavelength,spec1d.sig,'-',color='0.7')
-
-    # testing scales between different orders
-    # At this moment forget about the first crappy order
-    plt.figure()
-    for i in range(norder-1):
-        spectra = ech_load_spec(scifiles, objid=objids, norder=norder, order=i+1, extract='OPT', flux=True)
-        spec1d = ech_coadd_spectra(spectra, wave_grid_method='velocity', niter=5,
-                                   wave_grid_min=None, wave_grid_max=None, v_pix=None,
-                                   scale_method='auto', do_offset=False, sigrej_final=3.,
-                                   do_var_corr=False, qafile=None, outfile=None,
-                                   do_cr=True, **kwargs)
-        plt.plot(spec1d.wavelength, spec1d.flux)
-        plt.plot(spec1d.wavelength, spec1d.sig,color='0.7')
-    if show:
-        plt.show()
-
 def test_gnirs(show=True):
     norder=6
     order = 0
@@ -308,20 +378,27 @@ def test_gnirs(show=True):
                 '/Users/feige/Work/Observations/GN-2015A-Q-28_P338+29/Redux/Science/PSO338+29_0/sci-cN20150707S0220-223.fits',
                 '/Users/feige/Work/Observations/GN-2015A-Q-28_P338+29/Redux/Science/PSO338+29_0/sci-cN20150707S0224-223.fits']
     sensfile = '/Users/feige/Work/Observations/GN-2015A-Q-28_P338+29/Redux/Combine/HIP111538_0_sens.fits'
-    spectra = ech_load_xidl(scifiles,extn=4,norder=norder,order=order,extract='OPT',sensfile=sensfile,AB=True)
+    spectra = ech_load_xidl(scifiles,extn=4,norder=norder,order=None,extract='OPT',sensfile=sensfile,AB=True)
 
     kwargs={}
-    spec1d = ech_coadd_spectra(spectra, wave_grid_method='velocity', niter=5,
-                      wave_grid_min=None, wave_grid_max=None,v_pix=None,
-                      scale_method='auto', do_offset=False, sigrej_final=3.,
-                      do_var_corr=False, qafile='test', outfile=None,
-                      do_cr=True,**kwargs)
+    ech_kwargs = {'echelle': True, 'wave_grid_min': None, 'wave_grid_max': None}
+    kwargs.update(ech_kwargs)
+    # Coadding
+    spec1d = coadd.coadd_spectra(spectra, wave_grid_method='velocity', niter=5,
+              scale_method='auto', do_offset=False, sigrej_final=3.,
+              do_var_corr=False, qafile=None, outfile=None, do_cr=True,**kwargs)
+
+    #spec1d = ech_coadd_spectra(spectra, wave_grid_method='velocity', niter=5,
+    #                  wave_grid_min=None, wave_grid_max=None,v_pix=None,
+    #                  scale_method='auto', do_offset=False, sigrej_final=3.,
+    #                  do_var_corr=False, qafile='test', outfile=None,
+    #                  do_cr=True,**kwargs)
     plt.plot(spec1d.wavelength,spec1d.flux)
     plt.plot(spec1d.wavelength,spec1d.sig,'-',color='0.7')
     if show:
         plt.show()
 
-#test_nires(show=True)
-test_gnirs(show=True)
-from IPython import embed
-embed()
+test_nires(gaintcoadd=True, debug=True)
+#test_gnirs(show=True)
+#from IPython import embed
+#embed()
