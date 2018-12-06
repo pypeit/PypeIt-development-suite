@@ -1,0 +1,211 @@
+#!/usr/bin/env python3
+#
+# See top-level LICENSE.rst file for Copyright information
+#
+# -*- coding: utf-8 -*-
+
+"""
+This script builds the Cooked folder
+Execute it with:   ./build_cooked
+"""
+
+from __future__ import absolute_import, division, print_function
+
+import sys
+import os
+import pdb
+
+import numpy as np
+
+
+def parser(options=None):
+    import argparse
+
+    parser = argparse.ArgumentParser(formatter_class=argparse.ArgumentDefaultsHelpFormatter)
+
+    parser.add_argument('--version', type=str, help="Version number to generate (e.g. 0.91)")
+    parser.add_argument('--redux_dir', type=str, help="Full path to the REDUX dir; default='./REDUX_OUT ")
+
+    return parser.parse_args() if options is None else parser.parse_args(options)
+
+
+def main():
+    import glob
+    import subprocess
+    import warnings
+
+    pargs = parser()
+
+    # Path
+    if pargs.redux_dir is None:
+        redux_dir = './REDUX_OUT'
+    else:
+        redux_dir = pargs.redux_dir
+
+    # Generate Cooked folder
+    if not os.path.isdir('Cooked'):
+        os.mkdir('Cooked')
+
+    # Version
+    if pargs.version is not None:
+        vnumber = float(pargs.version)
+        vfile = os.path.join('Cooked', 'version')
+        # Lines
+        lines = ['# Version needs to be a float and the last line of this file\n',
+                 '{:0.3f}'.format(vnumber)]
+        with open(vfile, 'w') as f:
+            f.writelines(lines)
+
+    # Build MF_shane_kast_blue
+    mf_dir = os.path.join('Cooked', 'MF_shane_kast_blue')
+    if not os.path.isdir(mf_dir):
+        os.mkdir(mf_dir)
+    shane_kast_blue_MF = os.path.join(redux_dir, 'Shane_Kast_blue','600_4310_d55',
+                                      'shane_kast_blue_setup_A','MF_shane_kast_blue')
+    kastb_files = glob.glob(os.path.join(shane_kast_blue_MF,'*.*'))
+    # Add fits table
+    # JFH The running the test script does not generate this file, hence I'm removing it from the
+    # the tarball.
+    #kastb_files += [os.path.join(redux_dir, 'Shane_Kast_blue','600_4310_d55',
+    #                             'shane_kast_blue_setup_A',
+    #                             'shane_kast_blue_setup_A.fits')]
+    # Do it
+    for new_file in kastb_files:
+        cooked_file = os.path.join(mf_dir, os.path.basename(new_file))
+        copy_me(new_file, cooked_file)
+
+    # Science files
+    shane_kast_blue_Science = os.path.join(redux_dir, 'Shane_Kast_blue','600_4310_d55',
+                                  'shane_kast_blue_setup_A','Science')
+    kastb_files = glob.glob(os.path.join(shane_kast_blue_Science,'spec1d_*.fits'))
+    # DEIMOS standard
+    keck_deimos_Science = os.path.join(redux_dir, 'Keck_DEIMOS','830G_L_8400', 'Science')
+    keck_deimos_files = glob.glob(os.path.join(keck_deimos_Science, 'spec1d_G191*.fits'))
+    all_files = kastb_files + keck_deimos_files
+    # Generate folder
+    cooked_dir = os.path.join('Cooked', 'Science')
+    if not os.path.isdir(cooked_dir):
+        os.mkdir(cooked_dir)
+    # Do it
+    for new_file in all_files:
+        cooked_file = os.path.join(cooked_dir, os.path.basename(new_file))
+        copy_me(new_file, cooked_file)
+
+    # Trace files
+    cooked_dir = os.path.join('Cooked', 'Trace')
+    if not os.path.isdir(cooked_dir):
+        os.mkdir(cooked_dir)
+    # Kastb
+    shane_kast_red_trace_root = os.path.join(redux_dir, 'Shane_Kast_red', '600_7500_d55',
+                                             'MF_shane_kast_red_ret', 'MasterTrace_A_01_aa')
+    cooked_trace_root = os.path.join(cooked_dir, 'MasterTrace_ShaneKastred_600_7500_d55')
+    copy_with_root(shane_kast_red_trace_root, cooked_trace_root)
+    # Kastb
+    shane_kast_blue_trace_root = os.path.join(redux_dir, 'Shane_Kast_blue', '600_4310_d55', 'shane_kast_blue_setup_A',
+                                             'MF_shane_kast_blue', 'MasterTrace_A_01_aa')
+    cooked_trace_root = os.path.join(cooked_dir, 'MasterTrace_ShaneKastblue_600_4310_d55')
+    copy_with_root(shane_kast_blue_trace_root, cooked_trace_root)
+    # LRISr long 600_7500 (det=2 only)
+    keck_lris_red_long = os.path.join(redux_dir, 'Keck_LRIS_red', 'long_600_7500_d560',
+                                              'MF_keck_lris_red', 'MasterTrace_A_02_aa')
+    cooked_trace_root = os.path.join(cooked_dir, 'MasterTrace_KeckLRISr_long_600_7500_d560')
+    copy_with_root(keck_lris_red_long, cooked_trace_root)
+    # LRISr multi 400_8500
+    keck_lris_red_multi = os.path.join(redux_dir, 'Keck_LRIS_red', 'multi_400_8500_d560',
+                                      'MF_keck_lris_red', 'MasterTrace_A_01_aa')
+    cooked_trace_root = os.path.join(cooked_dir, 'MasterTrace_KeckLRISr_400_8500_det1')
+    copy_with_root(keck_lris_red_multi, cooked_trace_root)
+    keck_lris_red_multi = os.path.join(redux_dir, 'Keck_LRIS_red', 'multi_400_8500_d560',
+                                      'MF_keck_lris_red', 'MasterTrace_A_02_aa')
+    cooked_trace_root = os.path.join(cooked_dir, 'MasterTrace_KeckLRISr_400_8500_det2')
+    copy_with_root(keck_lris_red_multi, cooked_trace_root)
+    # LRISb long
+    keck_lris_blue_long = os.path.join(redux_dir, 'Keck_LRIS_blue', 'long_600_4000_d560',
+                                        'MF_keck_lris_blue', 'MasterTrace_A_02_aa')
+    cooked_trace_root = os.path.join(cooked_dir, 'MasterTrace_KeckLRISb_long_600_4000_det2')
+    copy_with_root(keck_lris_blue_long, cooked_trace_root)
+    # LRISb multi
+    keck_lris_blue_multi = os.path.join(redux_dir, 'Keck_LRIS_blue', 'multi_600_4000_d560',
+                                       'MF_keck_lris_blue', 'MasterTrace_A_01_aa')
+    cooked_trace_root = os.path.join(cooked_dir, 'MasterTrace_KeckLRISb_multi_600_4000_det1')
+    copy_with_root(keck_lris_blue_multi, cooked_trace_root)
+    keck_lris_blue_multi = os.path.join(redux_dir, 'Keck_LRIS_blue', 'multi_600_4000_d560',
+                                        'MF_keck_lris_blue', 'MasterTrace_A_02_aa')
+    cooked_trace_root = os.path.join(cooked_dir, 'MasterTrace_KeckLRISb_multi_600_4000_det2')
+    copy_with_root(keck_lris_blue_multi, cooked_trace_root)
+    # DEIMOS
+    keck_deimos_multi = os.path.join(redux_dir, 'Keck_DEIMOS', '830G_M_8600',
+                                        'MF_keck_deimos', 'MasterTrace_A_03_aa')
+    cooked_trace_root = os.path.join(cooked_dir, 'MasterTrace_KeckDEIMOS_830G_8600_det3')
+    copy_with_root(keck_deimos_multi, cooked_trace_root)
+
+    # Wavelengths
+    cooked_dir = os.path.join('Cooked', 'WaveCalib')
+    if not os.path.isdir(cooked_dir):
+        os.mkdir(cooked_dir)
+    shane_kast_blue_wvcalib = os.path.join(redux_dir, 'Shane_Kast_blue', '600_4310_d55',
+                                           'shane_kast_blue_setup_A', 'MF_shane_kast_blue',
+                                           'MasterWaveCalib_A_01_aa.json')
+    cooked_file = os.path.join(cooked_dir, 'MasterWaveCalib_ShaneKastBlue_A.json')
+    copy_me(shane_kast_blue_wvcalib, cooked_file)
+
+    # Tar me up
+    print("##############################################################")
+    print("You should now tar up the folder and load onto the Google Drive")
+    print("tar -cvzf Cooked_pypeit_dev.tar.gz Cooked/")
+
+
+def copy_with_root(new_root, cooked_root, debug=False):
+    """
+    Copy all files with a given root
+
+    Args:
+        new_root: str
+        cooked_root: str
+        debug:
+
+    Returns:
+
+    """
+    import glob
+    # Grab em
+    new_files = glob.glob(new_root+'.*')
+    for new_file in new_files:
+        bname = os.path.basename(new_file)
+        dpos = bname.find('.')
+        exten = bname[dpos:]
+        #
+        cooked_file = cooked_root+exten
+        # Copy
+        if debug:
+            pdb.set_trace()
+        copy_me(new_file, cooked_file)
+
+def copy_me(new_file, cooked_file):
+    """
+    Simple script to copy a given file to a new file
+    First compares that the new_file is newer than the
+    cooked file (if the latter exists)
+
+    Args:
+        new_file: str
+        cooked_file: str
+
+    Returns:
+
+    """
+    import shutil
+    # Compare date stamp
+    doit = True
+    if os.path.exists(cooked_file):
+        # Time is in seconds total (like MJD)
+        if os.path.getctime(cooked_file) > os.path.getctime(new_file):
+            doit = False
+    if doit:
+        shutil.copy2(new_file, cooked_file)
+        print("Generated/over-wrote {:s}".format(cooked_file))
+
+if __name__ == '__main__':
+    # Giddy up
+    main()
+
