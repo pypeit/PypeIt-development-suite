@@ -58,7 +58,7 @@ def ech_coadd_spectra(spectra, wave_grid_method='velocity', niter=5,
     return spec1d
 
 
-def coadd_nires(giantcoadd=False):
+def coadd_nires(giantcoadd=False,debug=False):
     #scifiles = ['/Users/feige/Work/Observations/NIRES/NIRES_Barth/J0252/reduce0930/Science/spec1d_J0252-0503_NIRES_2018Oct01T100254.698_FLUX.fits',
     #            '/Users/feige/Work/Observations/NIRES/NIRES_Barth/J0252/reduce0930/Science/spec1d_J0252-0503_NIRES_2018Oct01T100949.328_FLUX.fits',
     #            '/Users/feige/Work/Observations/NIRES/NIRES_Barth/J0252/reduce0930/Science/spec1d_J0252-0503_NIRES_2018Oct01T101642.428_FLUX.fits',
@@ -78,7 +78,7 @@ def coadd_nires(giantcoadd=False):
     spec1d = ech_coadd(scifiles, objids=objids,extract='OPT', flux=True,giantcoadd=giantcoadd,
               wave_grid_method='velocity', niter=5,wave_grid_min=None, wave_grid_max=None, v_pix=None,
               scale_method='median', do_offset=False, sigrej_final=3.,
-              do_var_corr=False, qafile='test_nires', outfile=None, do_cr=True,**kwargs)
+              do_var_corr=False, qafile='test_nires', outfile=None, do_cr=True,debug=debug,**kwargs)
     return spec1d
 
 
@@ -193,7 +193,7 @@ def ech_load_xidl(files,extn=4,norder=6,order=None,extract='OPT',sensfile=None,A
     return spectra
 
 
-def coadd_gnirs(giantcoadd=False,qafile='testgnirs'):
+def coadd_gnirs(giantcoadd=False,qafile='testgnirs',debug=False):
     norder=6
     order = 0
 
@@ -210,7 +210,7 @@ def coadd_gnirs(giantcoadd=False,qafile='testgnirs'):
         # Coadding
         spec1d = coadd.coadd_spectra(spectra, wave_grid_method='velocity', niter=5,
                   scale_method='auto', do_offset=False, sigrej_final=3.,
-                  do_var_corr=False, qafile=qafile, outfile=None, do_cr=True,**kwargs)
+                  do_var_corr=False, qafile=qafile, outfile=None, do_cr=True,debug=debug,**kwargs)
     else:
         msgs.info('Coadding individual orders first and then merge order')
         spectra_list = []
@@ -236,7 +236,7 @@ def coadd_gnirs(giantcoadd=False,qafile='testgnirs'):
                 qafile_iord =  None
             spec1d_iord = coadd.coadd_spectra(spectra, wave_grid_method='velocity', niter=5,
                   scale_method='auto', do_offset=False, sigrej_final=3.,
-                  do_var_corr=False, qafile=qafile_iord, outfile=None, do_cr=True,**kwargs)
+                  do_var_corr=False, qafile=qafile_iord, outfile=None, do_cr=True,debug=debug,**kwargs)
             spectrum = spec_from_array(spec1d_iord.wavelength, spec1d_iord.flux, spec1d_iord.sig,**rsp_kwargs)
             spectra_list.append(spectrum)
         # Join into one XSpectrum1D object
@@ -246,7 +246,7 @@ def coadd_gnirs(giantcoadd=False,qafile='testgnirs'):
         kwargs['wave_grid_max'] = np.max(wave_grid)
         spec1d = coadd.coadd_spectra(spectra_coadd, wave_grid_method='velocity', niter=5,
                   scale_method='auto', do_offset=False, sigrej_final=3.,
-                  do_var_corr=False, qafile=qafile, outfile=None, do_cr=True,**kwargs)
+                  do_var_corr=False, qafile=qafile, outfile=None, do_cr=True,debug=debug,**kwargs)
     return spectra_coadd,spec1d
 
 def try_mergeorder():
@@ -278,6 +278,6 @@ def try_mergeorder():
 #flux_example(debug=True)
 #flux_example2()
 
-#coadd_nires(giantcoadd=False)
-spectra_coadd,spec1d = coadd_gnirs(giantcoadd=False)
+coadd_nires(giantcoadd=False,debug=True)
+#spectra_coadd,spec1d = coadd_gnirs(giantcoadd=False,debug=False)
 

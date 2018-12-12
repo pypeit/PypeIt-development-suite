@@ -124,7 +124,7 @@ def spec_from_array(wave,flux,sig,**kwargs):
 def ech_coadd(files,objids=None,extract='OPT',flux=True,giantcoadd=False,
               wave_grid_method='velocity', niter=5,wave_grid_min=None, wave_grid_max=None,v_pix=None,
               scale_method='auto', do_offset=False, sigrej_final=3.,do_var_corr=False,
-              qafile=None, outfile=None,do_cr=True, **kwargs):
+              qafile=None, outfile=None,do_cr=True, debug=False,**kwargs):
 
     nfile = len(files)
     if nfile <=1:
@@ -152,7 +152,7 @@ def ech_coadd(files,objids=None,extract='OPT',flux=True,giantcoadd=False,
         spec1d = coadd.coadd_spectra(spectra, wave_grid_method=wave_grid_method, niter=niter,
                                           scale_method=scale_method, do_offset=do_offset, sigrej_final=sigrej_final,
                                           do_var_corr=do_var_corr, qafile=qafile, outfile=outfile,
-                                          do_cr=do_cr, **kwargs)
+                                          do_cr=do_cr, debug=debug,**kwargs)
     else:
         msgs.info('Coadding individual orders first and then merge order')
         spectra_list = []
@@ -176,7 +176,7 @@ def ech_coadd(files,objids=None,extract='OPT',flux=True,giantcoadd=False,
             spec1d_iord = coadd.coadd_spectra(spectra, wave_grid_method=wave_grid_method, niter=niter,
                                        scale_method=scale_method, do_offset=do_offset, sigrej_final=sigrej_final,
                                        do_var_corr=do_var_corr, qafile=qafile_iord, outfile=outfile,
-                                       do_cr=do_cr, **kwargs)
+                                       do_cr=do_cr, debug=debug, **kwargs)
             spectrum = spec_from_array(spec1d_iord.wavelength, spec1d_iord.flux, spec1d_iord.sig,**rsp_kwargs)
             spectra_list.append(spectrum)
         # Join into one XSpectrum1D object
@@ -188,6 +188,6 @@ def ech_coadd(files,objids=None,extract='OPT',flux=True,giantcoadd=False,
         spec1d = coadd.coadd_spectra(spectra_coadd[1:], wave_grid_method=wave_grid_method, niter=niter,
                                           scale_method=scale_method, do_offset=do_offset, sigrej_final=sigrej_final,
                                           do_var_corr=do_var_corr, qafile=qafile, outfile=outfile,
-                                          do_cr=do_cr, **kwargs)
+                                          do_cr=do_cr, debug=debug, **kwargs)
 
     return spec1d
