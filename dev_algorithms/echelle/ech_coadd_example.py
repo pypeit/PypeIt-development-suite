@@ -31,7 +31,7 @@ def flux_example2(debug=False):
     filenames = cat[:,0]
 
     sens_dicts = ech_generate_sensfunc(stdframe,telluric=True, star_type='A0',
-                                       star_mag=8.6, ra=None, dec=None, std_file=None, BALM_MASK_WID=10., nresln=None,
+                                       star_mag=8.6, ra=None, dec=None, std_file=None, BALM_MASK_WID=15., nresln=None,
                                        debug=debug)
     ech_save_master(sens_dicts, outfile='MasterSensFunc_NIRES.fits')
     for i in range(len(filenames)):
@@ -275,9 +275,9 @@ def try_mergeorder():
 
 
 
-#flux_example(debug=True)
+#flux_example(debug=False)
 #flux_example2()
 
-coadd_nires(giantcoadd=False,debug=True)
+#coadd_nires(giantcoadd=False,debug=True)
 #spectra_coadd,spec1d = coadd_gnirs(giantcoadd=False,debug=False)
 
