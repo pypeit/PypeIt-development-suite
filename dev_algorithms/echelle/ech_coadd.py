@@ -101,8 +101,10 @@ def ech_load_spec(files,objid=None,norder=None,order=None,extract='OPT',flux=Tru
     # Return
     return spectra
 
-# return spectrum from arrays of wave, flux and sigma
 def spec_from_array(wave,flux,sig,**kwargs):
+    """
+    return spectrum from arrays of wave, flux and sigma
+    """
 
     from linetools.spectra.xspectrum1d import XSpectrum1D
     ituple = (wave, flux, sig)
@@ -119,20 +121,6 @@ def spec_from_array(wave,flux,sig,**kwargs):
         spectrum.data['sig'][spectrum.select][bad_flux] = 0.
     return spectrum
 
-def ech_coadd_spectra(spectra, wave_grid_method='velocity', niter=5,
-                  wave_grid_min=None, wave_grid_max=None,v_pix=None,
-                  scale_method='auto', do_offset=False, sigrej_final=3.,
-                  do_var_corr=False, qafile=None, outfile=None,
-                  do_cr=True, **kwargs):
-
-
-    ech_kwargs = {'echelle':True,'wave_grid_min': wave_grid_min, 'wave_grid_max': wave_grid_max, 'v_pix': v_pix}
-    kwargs.update(ech_kwargs)
-    spec1d = coadd.coadd_spectra(spectra, wave_grid_method=wave_grid_method, niter=niter,
-                        scale_method=scale_method, do_offset=do_offset, sigrej_final=sigrej_final,
-                        do_var_corr=do_var_corr, qafile=qafile, outfile=outfile,
-                        do_cr=do_cr, debug=False,**kwargs)
-    return spec1d
 
 def ech_coadd(files,objids=None,norder=None,extract='OPT',flux=True,giantcoadd=False,
               wave_grid_method='velocity', niter=5,wave_grid_min=None, wave_grid_max=None,v_pix=None,
@@ -191,6 +179,25 @@ def ech_coadd(files,objids=None,norder=None,extract='OPT',flux=True,giantcoadd=F
                                           do_var_corr=do_var_corr, qafile=qafile, outfile=outfile,
                                           do_cr=do_cr, **kwargs)
 
+    return spec1d
+
+
+def ech_coadd_spectra(spectra, wave_grid_method='velocity', niter=5,
+                  wave_grid_min=None, wave_grid_max=None,v_pix=None,
+                  scale_method='auto', do_offset=False, sigrej_final=3.,
+                  do_var_corr=False, qafile=None, outfile=None,
+                  do_cr=True, **kwargs):
+    """
+    Deprecated
+    """
+
+
+    ech_kwargs = {'echelle':True,'wave_grid_min': wave_grid_min, 'wave_grid_max': wave_grid_max, 'v_pix': v_pix}
+    kwargs.update(ech_kwargs)
+    spec1d = coadd.coadd_spectra(spectra, wave_grid_method=wave_grid_method, niter=niter,
+                        scale_method=scale_method, do_offset=do_offset, sigrej_final=sigrej_final,
+                        do_var_corr=do_var_corr, qafile=qafile, outfile=outfile,
+                        do_cr=do_cr, debug=False,**kwargs)
     return spec1d
 
 def test_nires(giantcoadd=False):
