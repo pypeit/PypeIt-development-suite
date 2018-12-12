@@ -191,22 +191,3 @@ def ech_coadd(files,objids=None,extract='OPT',flux=True,giantcoadd=False,
                                           do_cr=do_cr, **kwargs)
 
     return spec1d
-
-
-def ech_coadd_spectra(spectra, wave_grid_method='velocity', niter=5,
-                  wave_grid_min=None, wave_grid_max=None,v_pix=None,
-                  scale_method='auto', do_offset=False, sigrej_final=3.,
-                  do_var_corr=False, qafile=None, outfile=None,
-                  do_cr=True, **kwargs):
-    """
-    Deprecated
-    """
-    ech_kwargs = {'echelle':True,'wave_grid_min': wave_grid_min, 'wave_grid_max': wave_grid_max, 'v_pix': v_pix}
-    kwargs.update(ech_kwargs)
-    spec1d = coadd.coadd_spectra(spectra, wave_grid_method=wave_grid_method, niter=niter,
-                        scale_method=scale_method, do_offset=do_offset, sigrej_final=sigrej_final,
-                        do_var_corr=do_var_corr, qafile=qafile, outfile=outfile,
-                        do_cr=do_cr, debug=False,**kwargs)
-    return spec1d
-
-
