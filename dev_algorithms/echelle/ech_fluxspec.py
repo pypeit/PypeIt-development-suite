@@ -208,11 +208,6 @@ def ech_load_master(filename, force=False):
         sens_dicts['norder'] = norder
         return sens_dicts
 
-#def find_standard(std_specobjs):
-#    std_idx = flux.find_standard(std_specobjs)
-#    std = std_specobjs[std_idx]
-#    return std
-
 def ech_generate_sensfunc(stdframe,spectrograph=None, telluric=True, star_type=None,
                       star_mag=None, ra=None, dec=None, std_file = None, BALM_MASK_WID=5., nresln=None,debug=False):
 
