@@ -213,16 +213,16 @@ def ech_load_master(filename, force=False):
 #    std = std_specobjs[std_idx]
 #    return std
 
-def ech_generate_sensfunc(stdframe,norder=None,spectrograph=None, telluric=True, star_type=None,
+def ech_generate_sensfunc(stdframe,spectrograph=None, telluric=True, star_type=None,
                       star_mag=None, ra=None, dec=None, std_file = None, BALM_MASK_WID=5., nresln=None,debug=False):
 
     if spectrograph is None:
         std_specobjs, std_header = ech_load_specobj(stdframe, order=0)
         spectrograph = std_header['INSTRUME']
         msgs.info('You are working on {:s}'.format(spectrograph))
-    if norder is None:
-        #ToDo parsing norder from spectrograph parset
-        msgs.error('Please tell me how many orders you have')
+    ext_final = fits.getheader(stdframe, -1)
+    norder = ext_final['ORDER'] + 1
+
     sens_dicts = {}
     for iord in range(norder):
         std_specobjs, std_header = ech_load_specobj(stdframe, order=iord)
