@@ -1,6 +1,6 @@
 from ech_fluxspec import *
 from ech_coadd import *
-
+import matplotlib.pyplot as plt
 ## test ech_fluxspec
 
 def flux_example(debug=True,datapath='./'):
@@ -245,10 +245,18 @@ def coadd_gnirs(giantcoadd=False,qafile='testgnirs',debug=False,datapath='./'):
         spec1d = coadd.coadd_spectra(spectra_coadd, wave_grid_method='velocity', niter=5,
                   scale_method='auto', do_offset=False, sigrej_final=3.,
                   do_var_corr=False, qafile=qafile, outfile=None, do_cr=True,debug=debug,**kwargs)
-    return spectra_coadd,spec1d
+    return spec1d,spectra_coadd,kwargs
 
-def try_mergeorder():
-    spectra_coadd, spec1d = coadd_gnirs(giantcoadd=False)
+
+def readgnirsxidl(filename):
+    fitsfile = fits.open(filename)
+    header = fitsfile[0].header
+    wave, flux, error = fitsfile[2].data, fitsfile[0].data, fitsfile[1].data
+
+    return wave, flux, error, header
+
+
+def try_mergeorder(spectra_coadd,wave_grid_method='velocity',kwargs=None):
 
     norder = spectra_coadd.nspec
 
@@ -259,10 +267,24 @@ def try_mergeorder():
     indsort = np.argsort(wvmin)
     spectra_coadd_sort = spectra_coadd[indsort]
 
+    # Final wavelength array
+    new_wave = coadd.new_wave_grid(spectra_coadd_sort.data['wave'], wave_method=wave_grid_method, **kwargs)
+
+    # Rebin
+    rspec = spectra_coadd_sort.rebin(new_wave*units.AA, all=True, do_sig=True, grow_bad_sig=True,
+                          masking='none')
+
+    # Define mask -- THIS IS THE ONLY ONE TO USE
+    rmask = rspec.data['sig'].filled(0.) <= 0.
+
+    # S/N**2, weights
+    sn2, weights = coadd.sn_weight(rspec, rmask)
+
     for iord in range(norder):
         wave = spectra_coadd_sort[iord].data['wave'].filled(0.)[0]
         flux = spectra_coadd_sort[iord].data['flux'].filled(0.)[0]
-        plt.plot(wave, flux)
+        sig = spectra_coadd_sort[iord].data['sig'].filled(0.)[0]
+        plt.plot(wave, flux/sig)
     plt.show()
     for ii in range(norder - 1):
         wvmin1, wvmax1 = spectra_coadd_sort[ii].wvmin, spectra_coadd_sort[ii].wvmax
@@ -273,9 +295,27 @@ def try_mergeorder():
 
 
 
-#flux_example(debug=False,datapath='/Users/feige/Dropbox/PypeIt_DATA/NIRES/')
+#flux_example(debug=True,datapath='/Users/feige/Dropbox/PypeIt_DATA/NIRES/')
 #flux_example2(debug=False,datapath='/Users/feige/Dropbox/PypeIt_DATA/NIRES/')
+#coadd_nires(giantcoadd=False,debug=True,datapath='/Users/feige/Dropbox/PypeIt_DATA/NIRES/')
 
-coadd_nires(giantcoadd=False,debug=True,datapath='/Users/feige/Dropbox/PypeIt_DATA/NIRES/')
-#spectra_coadd,spec1d = coadd_gnirs(giantcoadd=False,debug=True,datapath='/Users/feige/Dropbox/PypeIt_DATA/GNIRS/')
+#Test GNIRS
+spec1d,spectra_coadd,kwargs = coadd_gnirs(giantcoadd=False,debug=True,datapath='/Users/feige/Dropbox/PypeIt_DATA/GNIRS/')
+wave, flux, error, header = readgnirsxidl('/Users/feige/Dropbox/PypeIt_DATA/GNIRS/PSO338+29_forpypeit.fits')
+cat = np.genfromtxt('/Users/feige/Dropbox/PypeIt_DATA/GNIRS/mods_spectrum_p338.txt')
+wave_opt, flux_opt, error_opt = cat[:, 0], cat[:, 1]/1e-17, cat[:, 2]/1e-17
 
+plt.figure(figsize=(12,4))
+plt.plot(wave_opt, flux_opt,'k-',label='MODS')
+plt.plot(wave,flux,'b-',label='XIDL')
+plt.plot(wave,error,'b-',alpha=0.5)
+plt.plot(spec1d.wavelength,spec1d.flux,'r-',label='PypeIt')
+plt.plot(spec1d.wavelength,spec1d.sig,'r-',alpha=0.5)
+plt.xlim([9000.,24800.])
+plt.ylim([-0.5,2.0])
+plt.legend(loc=1,fontsize=16)
+plt.show()
+
+
+from IPython import embed
+embed()
