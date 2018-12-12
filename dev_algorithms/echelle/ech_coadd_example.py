@@ -3,29 +3,28 @@ from ech_coadd import *
 
 ## test ech_fluxspec
 
-def flux_example(debug=True):
+def flux_example(debug=True,datapath='./'):
     """
     test single NIRES frame
     :param debug:
     :return:
     """
-    stdframe = '/Users/feige/Work/Observations/NIRES/NIRES_Barth/J0252/reduce0930/Science/spec1d_HIP13917_V8p6_NIRES_2018Oct01T094225.598.fits'
-    sciframe = '/Users/feige/Work/Observations/NIRES/NIRES_Barth/J0252/reduce0930/Science/spec1d_J0252-0503_NIRES_2018Oct01T100254.698.fits'
+    stdframe = datapath+'/spec1d_HIP13917_V8p6_NIRES_2018Oct01T094225.598.fits'
+    sciframe = datapath+'/spec1d_J0252-0503_NIRES_2018Oct01T100254.698.fits'
     sens_dicts = ech_generate_sensfunc(stdframe,telluric=True, star_type='A0',
                           star_mag=8.6, ra=None, dec=None, std_file = None, BALM_MASK_WID=15., nresln=None,debug=debug)
-    ech_save_master(sens_dicts, outfile='MasterSensFunc_NIRES.fits')
-    sens_dicts = ech_load_master('MasterSensFunc_NIRES.fits')
+    ech_save_master(sens_dicts, outfile=datapath+'MasterSensFunc_NIRES.fits')
+    sens_dicts = ech_load_master(datapath+'MasterSensFunc_NIRES.fits')
     sci_specobjs, sci_header = ech_load_specobj(sciframe)
     ech_flux_science(sci_specobjs,sens_dicts,sci_header,spectrograph=None)
     write_science(sci_specobjs, sci_header, sciframe[:-5]+'_FLUX.fits')
 
 
-def flux_example2(debug=False):
+def flux_example2(debug=False,datapath='./'):
     """
     test NIRES with a list of files
     :return:
     """
-    datapath = '/Users/feige/Work/Observations/NIRES/NIRES_Barth/J0252/reduce0930/Science/'
     stdframe = datapath+'spec1d_HIP13917_V8p6_NIRES_2018Oct01T094225.598.fits'
     cat = np.genfromtxt(datapath+'J0252_objinfo.txt',dtype=str)
     filenames = cat[:,0]
@@ -58,13 +57,12 @@ def ech_coadd_spectra(spectra, wave_grid_method='velocity', niter=5,
     return spec1d
 
 
-def coadd_nires(giantcoadd=False,debug=False):
+def coadd_nires(giantcoadd=False,debug=False,datapath='./'):
     #scifiles = ['/Users/feige/Work/Observations/NIRES/NIRES_Barth/J0252/reduce0930/Science/spec1d_J0252-0503_NIRES_2018Oct01T100254.698_FLUX.fits',
     #            '/Users/feige/Work/Observations/NIRES/NIRES_Barth/J0252/reduce0930/Science/spec1d_J0252-0503_NIRES_2018Oct01T100949.328_FLUX.fits',
     #            '/Users/feige/Work/Observations/NIRES/NIRES_Barth/J0252/reduce0930/Science/spec1d_J0252-0503_NIRES_2018Oct01T101642.428_FLUX.fits',
     #            '/Users/feige/Work/Observations/NIRES/NIRES_Barth/J0252/reduce0930/Science/spec1d_J0252-0503_NIRES_2018Oct01T102337.058_FLUX.fits']
     #objids = ['OBJ0001','OBJ0002','OBJ0002','OBJ0001']
-    datapath = '/Users/feige/Work/Observations/NIRES/NIRES_Barth/J0252/reduce0930/Science/'
     cat = np.genfromtxt(datapath+'J0252_objinfo.txt',dtype=str)
     filenames = cat[:,0]
     scifiles = []
@@ -193,15 +191,15 @@ def ech_load_xidl(files,extn=4,norder=6,order=None,extract='OPT',sensfile=None,A
     return spectra
 
 
-def coadd_gnirs(giantcoadd=False,qafile='testgnirs',debug=False):
+def coadd_gnirs(giantcoadd=False,qafile='testgnirs',debug=False,datapath='./'):
     norder=6
     order = 0
 
-    scifiles = ['/Users/feige/Work/Observations/GN-2015A-Q-28_P338+29/Redux/Science/PSO338+29_0/sci-cN20150707S0189-192.fits',
-                '/Users/feige/Work/Observations/GN-2015A-Q-28_P338+29/Redux/Science/PSO338+29_0/sci-cN20150707S0193-196.fits',
-                '/Users/feige/Work/Observations/GN-2015A-Q-28_P338+29/Redux/Science/PSO338+29_0/sci-cN20150707S0220-223.fits',
-                '/Users/feige/Work/Observations/GN-2015A-Q-28_P338+29/Redux/Science/PSO338+29_0/sci-cN20150707S0224-223.fits']
-    sensfile = '/Users/feige/Work/Observations/GN-2015A-Q-28_P338+29/Redux/Combine/HIP111538_0_sens.fits'
+    scifiles = [datapath+'/sci-cN20150707S0189-192.fits',
+                datapath+'/sci-cN20150707S0193-196.fits',
+                datapath+'/sci-cN20150707S0220-223.fits',
+                datapath+'/sci-cN20150707S0224-223.fits']
+    sensfile = datapath+'/HIP111538_0_sens.fits'
     if giantcoadd:
         spectra = ech_load_xidl(scifiles,extn=4,norder=norder,order=None,extract='OPT',sensfile=sensfile,AB=True)
         kwargs={}
@@ -275,9 +273,9 @@ def try_mergeorder():
 
 
 
-#flux_example(debug=False)
-#flux_example2()
+#flux_example(debug=False,datapath='/Users/feige/Dropbox/PypeIt_DATA/NIRES/')
+#flux_example2(debug=False,datapath='/Users/feige/Dropbox/PypeIt_DATA/NIRES/')
 
-#coadd_nires(giantcoadd=False,debug=True)
-#spectra_coadd,spec1d = coadd_gnirs(giantcoadd=False,debug=False)
+coadd_nires(giantcoadd=False,debug=True,datapath='/Users/feige/Dropbox/PypeIt_DATA/NIRES/')
+#spectra_coadd,spec1d = coadd_gnirs(giantcoadd=False,debug=True,datapath='/Users/feige/Dropbox/PypeIt_DATA/GNIRS/')
 
