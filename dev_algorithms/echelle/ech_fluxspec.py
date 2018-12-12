@@ -302,6 +302,11 @@ def write_science(sci_specobjs, sci_header, outfile):
     #self.steps.append(inspect.stack()[0][3])
 
 def example(debug=True):
+    """
+    test single NIRES frame
+    :param debug:
+    :return:
+    """
     stdframe = '/Users/feige/Work/Observations/NIRES/NIRES_Barth/J0252/reduce0930/Science/spec1d_HIP13917_V8p6_NIRES_2018Oct01T094225.598.fits'
     sciframe = '/Users/feige/Work/Observations/NIRES/NIRES_Barth/J0252/reduce0930/Science/spec1d_J0252-0503_NIRES_2018Oct01T100254.698.fits'
     norder = 5
@@ -314,7 +319,11 @@ def example(debug=True):
     write_science(sci_specobjs, sci_header, sciframe[:-5]+'_FLUX.fits')
 
 
-def example2():
+def example2(debug=False):
+    """
+    test NIRES with a list of files
+    :return:
+    """
     datapath = '/Users/feige/Work/Observations/NIRES/NIRES_Barth/J0252/reduce0930/Science/'
     stdframe = datapath+'spec1d_HIP13917_V8p6_NIRES_2018Oct01T094225.598.fits'
     cat = np.genfromtxt(datapath+'J0252_objinfo.txt',dtype=str)
@@ -322,13 +331,13 @@ def example2():
     norder = 5
 
     sens_dicts = ech_generate_sensfunc(stdframe, norder=norder, telluric=True, star_type='A0',
-                                       star_mag=8.6, ra=None, dec=None, std_file=None, BALM_MASK_WID=5., nresln=None,
-                                       debug=False)
+                                       star_mag=8.6, ra=None, dec=None, std_file=None, BALM_MASK_WID=10., nresln=None,
+                                       debug=debug)
     ech_save_master(sens_dicts, outfile='MasterSensFunc_NIRES.fits')
     for i in range(len(filenames)):
         sciframe = datapath+filenames[i]
         sci_specobjs, sci_header = ech_load_specobj(sciframe)
         ech_flux_science(sci_specobjs,sens_dicts,sci_header,spectrograph=None,norder=5)
         write_science(sci_specobjs, sci_header, sciframe[:-5]+'_FLUX.fits')
-#example(debug=True)
+example(debug=True)
 #example2()
