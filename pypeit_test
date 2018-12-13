@@ -152,8 +152,8 @@ def main():
                 ntest += 1
                 logfile = os.path.join(wdir, outfile_root+'.test.log')
                 with open(logfile, 'w') as f:
-                    command_line = ['pypeit_setup', rawdir, instr.lower(), '-c', '-o',
-                                    '--setups_path', wdir ]
+                    command_line = ['pypeit_setup', '-r', rawdir, '-s', instr.lower(), '-c', '-o',
+                                    '--output_path', wdir ]
                     print('Running command: {0}'.format(' '.join(command_line)))
                     retval = subprocess.call(command_line, stderr=f, cwd=wdir)
 
