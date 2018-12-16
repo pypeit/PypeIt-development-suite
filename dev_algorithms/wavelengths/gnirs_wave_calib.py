@@ -38,7 +38,7 @@ def wv_calib_from_extern(wave_soln, arc, lamps, outfile = None, sigdetect=5.0, f
             # Show the QA
             wavecal.qa.arc_fit_qa(wv_calib[str(islit)])
 
-    waveCalib = wavecalib.WaveCalib(None)
+    waveCalib = wavecalib.WaveCalib(None,None)
     if outfile is not None:
         waveCalib.save_master(wv_calib, outfile=outfile)
 
