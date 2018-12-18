@@ -1,4 +1,5 @@
 # Module for echelle fluxing
+# Note that this is a function not a class. The class version is in pypeit.
 from __future__ import absolute_import, division, print_function
 
 import inspect
