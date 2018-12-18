@@ -292,6 +292,3 @@ def write_science(sci_specobjs, sci_header, outfile):
     save.save_1d_spectra_fits(specObjs, sci_header, outfile,
                               helio_dict=helio_dict,
                               telescope=telescope, overwrite=True)
-    # Step
-    #self.steps.append(inspect.stack()[0][3])
-
