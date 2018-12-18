@@ -223,11 +223,9 @@ def ech_generate_sensfunc(stdframe,spectrograph=None, telluric=True, star_type=N
         std_specobjs, std_header = ech_load_specobj(stdframe, order=iord)
         std_idx = flux.find_standard(std_specobjs)
         std = std_specobjs[std_idx]
-        sens_dict = flux.generate_sensfunc(std.boxcar['WAVE'],
-                                           std.boxcar['COUNTS'],
-                                           std.boxcar['COUNTS_IVAR'],
-                                           std_header['AIRMASS'],
-                                           std_header['EXPTIME'],
+        wavemask = std.boxcar['WAVE']>1000.0*units.AA
+        wave,counts,ivar = std.boxcar['WAVE'][wavemask],std.boxcar['COUNTS'][wavemask],std.boxcar['COUNTS_IVAR'][wavemask]
+        sens_dict = flux.generate_sensfunc(wave,counts,ivar,std_header['AIRMASS'],std_header['EXPTIME'],
                                            spectrograph,star_type=star_type,star_mag=star_mag,
                                            telluric=telluric,ra=ra,dec=dec,BALM_MASK_WID=BALM_MASK_WID,
                                            nresln=nresln,std_file=std_file,debug=debug)
