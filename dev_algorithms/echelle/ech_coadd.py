@@ -1,6 +1,7 @@
 
 import numpy as np
 from astropy.io import fits
+from astropy import units
 import matplotlib.pyplot as plt
 
 from pypeit.core import coadd
@@ -8,6 +9,7 @@ from pypeit.core import load
 from pypeit import msgs
 
 from linetools.spectra.utils import collate
+from linetools.spectra.xspectrum1d import XSpectrum1D
 
 def load_single_order(fname,objid=None,order=None,extract='OPT',flux=True):
     """
@@ -49,12 +51,18 @@ def load_single_order(fname,objid=None,order=None,extract='OPT',flux=True):
                        np.abs(spectrum.flux) > 1e30,
                        spectrum.sig ** 2 > 1e10,
                        ], axis=0)
-    if np.sum(bad_flux):
-        msgs.warn("There are some bad flux values in this spectrum.  Will zero them out and mask them (not ideal)")
-        spectrum.data['flux'][spectrum.select][bad_flux] = 0.
-        spectrum.data['sig'][spectrum.select][bad_flux] = 0.
+    # Sometimes Echelle spectra have zero wavelength
+    bad_wave = spectrum.wavelength < 1000.0*units.AA
+    bad_all = bad_flux + bad_wave
+    ## trim bad part
+    wave_out,flux_out,sig_out = spectrum.wavelength[~bad_all],spectrum.flux[~bad_all],spectrum.sig[~bad_all]
+    spectrum_out = XSpectrum1D.from_tuple((wave_out,flux_out,sig_out), verbose=False)
+    #if np.sum(bad_flux):
+    #    msgs.warn("There are some bad flux values in this spectrum.  Will zero them out and mask them (not ideal)")
+    #    spectrum.data['flux'][spectrum.select][bad_flux] = 0.
+    #    spectrum.data['sig'][spectrum.select][bad_flux] = 0.
 
-    return spectrum
+    return spectrum_out
 
 def ech_load_spec(files,objid=None,order=None,extract='OPT',flux=True):
     """
@@ -105,7 +113,6 @@ def spec_from_array(wave,flux,sig,**kwargs):
     return spectrum from arrays of wave, flux and sigma
     """
 
-    from linetools.spectra.xspectrum1d import XSpectrum1D
     ituple = (wave, flux, sig)
     spectrum = XSpectrum1D.from_tuple(ituple, **kwargs)
     # Polish a bit -- Deal with NAN, inf, and *very* large values that will exceed
