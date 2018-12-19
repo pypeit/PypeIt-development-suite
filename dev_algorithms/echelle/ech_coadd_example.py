@@ -316,10 +316,8 @@ def try_mergeorder(spectra_coadd,wave_grid_method='velocity',kwargs=None):
 
 #flux_example(debug=True,datapath='/Users/feige/Dropbox/PypeIt_DATA/NIRES/')
 #flux_example2(debug=False,datapath='/Users/feige/Dropbox/PypeIt_DATA/NIRES/')
-coadd_nires(giantcoadd=False,debug=True,datapath='/Users/feige/Dropbox/PypeIt_DATA/NIRES/')
+#coadd_nires(giantcoadd=False,debug=True,datapath='/Users/feige/Dropbox/PypeIt_DATA/NIRES/')
 
-
-aaa
 # flux XSHOOTER
 datapath = '/Users/feige/Dropbox/PypeIt_DATA/XSHOOTER/J0439/NIR/Science/'
 stdframe = 'spec1d_STD,TELLURIC_XShooter_NIR_2018Oct08T232940.178.fits'
@@ -365,7 +363,7 @@ spec1d = ech_coadd(scifiles, objids=objids,extract='OPT', flux=True,giantcoadd=F
           scale_method='median', do_offset=False, sigrej_final=3.,
           do_var_corr=False, qafile='test_xshooter.png', outfile=None, do_cr=True,debug=True,**kwargs)
 
-aaaa
+
 #Test GNIRS
 spec1d,spectra_coadd,kwargs = coadd_gnirs(giantcoadd=False,debug=True,datapath='/Users/feige/Dropbox/PypeIt_DATA/GNIRS/')
 wave, flux, error, header = readgnirsxidl('/Users/feige/Dropbox/PypeIt_DATA/GNIRS/PSO338+29_forpypeit.fits')
