@@ -382,3 +382,4 @@ plt.legend(loc=1,fontsize=16)
 plt.show()
 
 
+#    flux_spec = extract_asymbox2(thisimg[6000:7000,:], left_asym[6000:7000,:], righ_asym[6000:7000,:])
