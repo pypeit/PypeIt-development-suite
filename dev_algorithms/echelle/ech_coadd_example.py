@@ -314,9 +314,9 @@ def try_mergeorder(spectra_coadd,wave_grid_method='velocity',kwargs=None):
 
 
 
-#flux_example(debug=True,datapath='/Users/feige/Dropbox/PypeIt_DATA/NIRES/')
-#flux_example2(debug=False,datapath='/Users/feige/Dropbox/PypeIt_DATA/NIRES/')
-#coadd_nires(giantcoadd=False,debug=True,datapath='/Users/feige/Dropbox/PypeIt_DATA/NIRES/')
+#flux_example(debug=True,datapath='/Users/feige/Dropbox/PypeIt_Redux/NIRES/')
+#flux_example2(debug=False,datapath='/Users/feige/Dropbox/PypeIt_Redux/NIRES/')
+coadd_nires(giantcoadd=False,debug=True,datapath='/Users/feige/Dropbox/PypeIt_Redux/NIRES/')
 
 # flux XSHOOTER
 datapath = '/Users/feige/Dropbox/PypeIt_DATA/XSHOOTER/J0439/NIR/Science/'
@@ -365,9 +365,9 @@ spec1d = ech_coadd(scifiles, objids=objids,extract='OPT', flux=True,giantcoadd=F
 
 
 #Test GNIRS
-spec1d,spectra_coadd,kwargs = coadd_gnirs(giantcoadd=False,debug=True,datapath='/Users/feige/Dropbox/PypeIt_DATA/GNIRS/')
-wave, flux, error, header = readgnirsxidl('/Users/feige/Dropbox/PypeIt_DATA/GNIRS/PSO338+29_forpypeit.fits')
-cat = np.genfromtxt('/Users/feige/Dropbox/PypeIt_DATA/GNIRS/mods_spectrum_p338.txt')
+spec1d,spectra_coadd,kwargs = coadd_gnirs(giantcoadd=False,debug=True,datapath='/Users/feige/Dropbox/PypeIt_Redux/GNIRS/')
+wave, flux, error, header = readgnirsxidl('/Users/feige/Dropbox/PypeIt_Redux/GNIRS/PSO338+29_forpypeit.fits')
+cat = np.genfromtxt('/Users/feige/Dropbox/PypeIt_Redux/GNIRS/mods_spectrum_p338.txt')
 wave_opt, flux_opt, error_opt = cat[:, 0], cat[:, 1]/1e-17, cat[:, 2]/1e-17
 
 plt.figure(figsize=(12,4))
