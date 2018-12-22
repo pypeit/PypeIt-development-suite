@@ -337,8 +337,6 @@ sci_specobjs, sci_header = ech_load_specobj(datapath + sciframe[:-5] + '_FLUX.fi
 wavemask = sci_specobjs[13].optimal['WAVE']>1000.0*units.AA
 plt.plot(sci_specobjs[13].optimal['WAVE'][wavemask],sci_specobjs[13].optimal['FLAM'][wavemask])
 plt.show()
-from IPython import embed
-embed()
 
 sens_dicts = ech_generate_sensfunc(datapath + stdframe, telluric=True, star_type=star_type,
                                    star_mag=star_mag, ra=None, dec=None, std_file=None,
