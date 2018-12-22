@@ -46,7 +46,9 @@ def wv_calib_from_extern(wave_soln, arc, lamps, outfile = None, sigdetect=5.0, f
 
 
 
-scifile ='/Users/joe/GN-LP-7/redux/J1335+3533/Science/J1335+3533_10/sci-cN20160127S0399-402.fits'
+#scifile ='/Users/joe/GN-LP-7/redux/J1335+3533/Science/J1335+3533_10/sci-cN20160127S0399-402.fits'
+scifile ='/Users/joe/REDUX/gnirs_redux/1420+0227/Science/1420+0227_1/sci-N20110622S0304-307.fits'
+
 obj = Table.read(scifile,hdu=4)
 
 nspec = obj[0]['WAVE_OPT'].size
