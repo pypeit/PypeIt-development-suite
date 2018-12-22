@@ -195,7 +195,7 @@ for iexp in range(nexp):
 # Now compute the final stack with sigma clipping
 sigrej = 3.0
 maxiters = 10
-data = np.ma.MaskedArray(sciimg_out_stack, (norm_out_stack > 0))
+data = np.ma.MaskedArray(sciimg_out_stack, (norm_out_stack == 0))
 sigclip = stats.SigmaClip(sigma=sigrej, maxiters=maxiters, cenfunc='median')
 data_clipped = sigclip(data, axis=0, masked=True)
 mask_out_stack = np.invert(data_clipped.mask)  # outmask = True are good values
@@ -204,6 +204,7 @@ weights = np.ones(nexp)/float(nexp)
 weights_stack = np.einsum('i,ijk->ijk', weights, mask_out_stack)
 weights_sum = np.sum(weights_stack, axis=0)
 sciimg = np.sum(sciimg_out_stack*weights_stack,axis=0)/(weights_sum + (weights_sum == 0.0))
+imgminsky = np.sum(imgminsky_out_stack*weights_stack,axis=0)/(weights_sum + (weights_sum == 0.0))
 varfinal = np.sum(var_out_stack * weights_stack ** 2, axis=0) / (weights_sum + (weights_sum == 0.0)) ** 2
 sciivar = utils.calc_ivar(varfinal)
 # Need to deal with the read noise image!
