@@ -105,6 +105,9 @@ def main():
         # Setups
         setups = next(os.walk(os.path.join(raw_data, instr)))[1]
 
+        if 'blue' not in instr:
+            continue
+
         # Report
         print('The following setups have been found for {0}:'.format(instr))
         for setup in setups:
@@ -147,22 +150,21 @@ def main():
             outfile_root = instr.lower()+'_'+setup.lower()
 
             if instr.lower() in ['shane_kast_blue']: #, 'keck_lris_red']:
-                # Use pypeit_setup to get the pypeit file for Shane Kast
-                # Blue
+                # Use pypeit_setup to get the pypeit file for Shane Kast Blue
                 ntest += 1
                 logfile = os.path.join(wdir, outfile_root+'.test.log')
                 with open(logfile, 'w') as f:
-                    command_line = ['pypeit_setup', rawdir, instr.lower(), '-c', '-o',
-                                    '--setups_path', wdir ]
+                    command_line = ['pypeit_setup', '-r', rawdir, '-s', instr.lower(), '-c', '-o',
+                                    '--output_path', wdir ]
                     print('Running command: {0}'.format(' '.join(command_line)))
                     retval = subprocess.call(command_line, stderr=f, cwd=wdir)
 
-                wdir = os.path.join(wdir, instr.lower()+'_setup_A')
+                wdir = os.path.join(wdir, instr.lower()+'_A')
                 print('Finished running pypeit on {0} --- '.format(outfile_root),
                       file=sys.stderr, end='')
 
-                # Run pypeit on setup_A.pypeit
-                pyp_file = glob.glob(os.path.join(wdir, '*setup_A.pypeit'))
+                # Run pypeit on _A.pypeit
+                pyp_file = glob.glob(os.path.join(wdir, '*_A.pypeit'))
                 if len(pyp_file) != 1:
                     print('Could not find expected pypeit file: {0}'.format(pyp_file))
                     print("\x1B[" + "1;31m" + "FAILED" + "\x1B[" + "0m", file=sys.stderr)
