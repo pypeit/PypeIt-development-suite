@@ -245,6 +245,8 @@ objmodel_rect = np.zeros_like(imgminsky)
 ivarmodel_rect = np.zeros_like(imgminsky)
 extractmask_rect = np.zeros_like(thismask_rect)
 par = spectrograph.default_pypeit_par()
+# TODO Modify profile fitting so that we can pass in a position image which will allow us to improve the spatial sampling
+# in this final extraction step
 skymodel_rect[thismask_rect], objmodel_rect[thismask_rect], ivarmodel_rect[thismask_rect], extractmask_rect[thismask_rect] = \
     skysub.local_skysub_extract(imgminsky, sciivar, tilts, waveimg, global_sky, rn2img, thismask_rect,
     tslits_dict['lcen'], tslits_dict['rcen'], sobjs, model_noise=False,bsp=par['scienceimage']['bspline_spacing'],
@@ -257,6 +259,7 @@ sys.exit(-1)
 
 # Need to deal with the read noise image!
 loglam_mid = ((loglam_bins + np.roll(loglam_bins,1))/2.0)[1:]
+wave_mid = np.power(10.0,loglam_mid)
 dspat_mid = ((dspat_bins + np.roll(dspat_bins,1))/2.0)[1:]
 loglam_img = np.outer(loglam_mid,np.ones(nspat_rect))
 # Denom is computed in case the trace goes off the edge of the image
