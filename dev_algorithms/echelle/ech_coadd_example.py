@@ -314,9 +314,9 @@ def try_mergeorder(spectra_coadd,wave_grid_method='velocity',kwargs=None):
 
 
 
-#flux_example(debug=True,datapath='/Users/feige/Dropbox/PypeIt_DATA/NIRES/')
-#flux_example2(debug=False,datapath='/Users/feige/Dropbox/PypeIt_DATA/NIRES/')
-#coadd_nires(giantcoadd=False,debug=True,datapath='/Users/feige/Dropbox/PypeIt_DATA/NIRES/')
+#flux_example(debug=True,datapath='/Users/feige/Dropbox/PypeIt_Redux/NIRES/')
+#flux_example2(debug=False,datapath='/Users/feige/Dropbox/PypeIt_Redux/NIRES/')
+coadd_nires(giantcoadd=False,debug=True,datapath='/Users/feige/Dropbox/PypeIt_Redux/NIRES/')
 
 # flux XSHOOTER
 datapath = '/Users/feige/Dropbox/PypeIt_DATA/XSHOOTER/J0439/NIR/Science/'
@@ -337,8 +337,6 @@ sci_specobjs, sci_header = ech_load_specobj(datapath + sciframe[:-5] + '_FLUX.fi
 wavemask = sci_specobjs[13].optimal['WAVE']>1000.0*units.AA
 plt.plot(sci_specobjs[13].optimal['WAVE'][wavemask],sci_specobjs[13].optimal['FLAM'][wavemask])
 plt.show()
-from IPython import embed
-embed()
 
 sens_dicts = ech_generate_sensfunc(datapath + stdframe, telluric=True, star_type=star_type,
                                    star_mag=star_mag, ra=None, dec=None, std_file=None,
@@ -363,11 +361,11 @@ spec1d = ech_coadd(scifiles, objids=objids,extract='OPT', flux=True,giantcoadd=F
           scale_method='median', do_offset=False, sigrej_final=3.,
           do_var_corr=False, qafile='test_xshooter.png', outfile=None, do_cr=True,debug=True,**kwargs)
 
-aaaa
+
 #Test GNIRS
-spec1d,spectra_coadd,kwargs = coadd_gnirs(giantcoadd=False,debug=True,datapath='/Users/feige/Dropbox/PypeIt_DATA/GNIRS/')
-wave, flux, error, header = readgnirsxidl('/Users/feige/Dropbox/PypeIt_DATA/GNIRS/PSO338+29_forpypeit.fits')
-cat = np.genfromtxt('/Users/feige/Dropbox/PypeIt_DATA/GNIRS/mods_spectrum_p338.txt')
+spec1d,spectra_coadd,kwargs = coadd_gnirs(giantcoadd=False,debug=True,datapath='/Users/feige/Dropbox/PypeIt_Redux/GNIRS/')
+wave, flux, error, header = readgnirsxidl('/Users/feige/Dropbox/PypeIt_Redux/GNIRS/PSO338+29_forpypeit.fits')
+cat = np.genfromtxt('/Users/feige/Dropbox/PypeIt_Redux/GNIRS/mods_spectrum_p338.txt')
 wave_opt, flux_opt, error_opt = cat[:, 0], cat[:, 1]/1e-17, cat[:, 2]/1e-17
 
 plt.figure(figsize=(12,4))
@@ -382,3 +380,4 @@ plt.legend(loc=1,fontsize=16)
 plt.show()
 
 
+#    flux_spec = extract_asymbox2(thisimg[6000:7000,:], left_asym[6000:7000,:], righ_asym[6000:7000,:])

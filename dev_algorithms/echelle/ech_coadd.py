@@ -11,7 +11,7 @@ from pypeit import msgs
 from linetools.spectra.utils import collate
 from linetools.spectra.xspectrum1d import XSpectrum1D
 
-def load_single_order(fname,objid=None,order=None,extract='OPT',flux=True):
+def load_spec_order(fname,objid=None,order=None,extract='OPT',flux=True):
     """
     Loading single order spectrum from a PypeIt 1D specctrum fits file
     :param file:
@@ -94,13 +94,13 @@ def ech_load_spec(files,objid=None,order=None,extract='OPT',flux=True):
         if order is None:
             msgs.info('Loading all orders into a gaint spectra')
             for iord in range(norder):
-                spectrum = load_single_order(fname,objid=objid[ii],order=iord,extract=extract,flux=flux)
+                spectrum = load_spec_order(fname,objid=objid[ii],order=iord,extract=extract,flux=flux)
                 # Append
                 spectra_list.append(spectrum)
         elif order >= norder:
             msgs.error('order number cannot greater than the total number of orders')
         else:
-            spectrum = load_single_order(fname, objid=objid[ii], order=order, extract=extract, flux=flux)
+            spectrum = load_spec_order(fname, objid=objid[ii], order=order, extract=extract, flux=flux)
             # Append
             spectra_list.append(spectrum)
     # Join into one XSpectrum1D object
