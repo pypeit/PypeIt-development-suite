@@ -225,6 +225,7 @@ varfinal = np.sum(var_rect_stack * weights_stack ** 2, axis=0) / (weights_sum + 
 sciivar = utils.calc_ivar(varfinal)
 outmask = np.sum(mask_rect_stack,axis=0) > 0
 
+sys.exit(-1)
 # Now let's try to do an extraction
 nsamp = np.sum(nsamp_rect_stack,axis=0) # This image indicates the number of times each pixel was sampled
 thismask_rect = np.ones_like(nsamp,dtype=bool)
