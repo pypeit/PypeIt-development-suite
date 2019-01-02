@@ -40,10 +40,15 @@ data read
 | NS.20160414.02604.fits.gz | trace,pixelflat |                   |    3.28 |      low | 42x0.760 |     A | 0,1,2 |      179.7 |    34.95 | flatlamp |       2 |     -1 |
 | NS.20160414.02620.fits.gz | trace,pixelflat |                   |    3.28 |      low | 42x0.760 |     A | 0,1,2 |      179.7 |    34.95 | flatlamp |       2 |     -1 |
 | NS.20160414.02637.fits.gz | trace,pixelflat |                   |    3.28 |      low | 42x0.760 |     A | 0,1,2 |      179.7 |    34.95 | flatlamp |       2 |     -1 |
+# ABBA 
 | NS.20160414.49551.fits.gz |     arc,science |        J1356p3741 |   250.0 |      low | 42x0.760 |     A |     0 |      179.7 |    34.95 |   object |      10 |     20 |
-| NS.20160414.49829.fits.gz |         science |        J1356p3741 |   250.0 |      low | 42x0.760 |     A |     0 |      179.7 |    34.95 |   object |      20 |     10 |
-| NS.20160414.50091.fits.gz |         science |        J1356p3741 |   250.0 |      low | 42x0.760 |     A |     0 |      179.7 |    34.95 |   object |      21 |     11 |
-| NS.20160414.50369.fits.gz |         science |        J1356p3741 |   250.0 |      low | 42x0.760 |     A |     0 |      179.7 |    34.95 |   object |      11 |     21 |
+| NS.20160414.49829.fits.gz |     arc,science |        J1356p3741 |   250.0 |      low | 42x0.760 |     A |     0 |      179.7 |    34.95 |   object |      20 |     10 |
+| NS.20160414.50091.fits.gz |         science |        J1356p3741 |   250.0 |      low | 42x0.760 |     A |     0 |      179.7 |    34.95 |   object |      20 |     10 |
+| NS.20160414.50369.fits.gz |         science |        J1356p3741 |   250.0 |      low | 42x0.760 |     A |     0 |      179.7 |    34.95 |   object |      10 |     20 |
+#| NS.20160414.49551.fits.gz |     arc,science |        J1356p3741 |   250.0 |      low | 42x0.760 |     A |     0 |      179.7 |    34.95 |   object |      10 |     20 |
+#| NS.20160414.49829.fits.gz |         science |        J1356p3741 |   250.0 |      low | 42x0.760 |     A |     0 |      179.7 |    34.95 |   object |      20 |     10 |
+#| NS.20160414.50091.fits.gz |         science |        J1356p3741 |   250.0 |      low | 42x0.760 |     A |     0 |      179.7 |    34.95 |   object |      21 |     11 |
+#| NS.20160414.50369.fits.gz |         science |        J1356p3741 |   250.0 |      low | 42x0.760 |     A |     0 |      179.7 |    34.95 |   object |      11 |     21 |
 | NS.20160414.52519.fits.gz |     arc,science |        J1655p6337 |   250.0 |      low | 42x0.760 |     A |     1 |      179.7 |    34.95 |   object |     100 |    200 |
 | NS.20160414.52795.fits.gz |         science |        J1655p6337 |   250.0 |      low | 42x0.760 |     A |     1 |      179.7 |    34.95 |   object |     200 |    100 |
 | NS.20160414.53056.fits.gz |         science |        J1655p6337 |   250.0 |      low | 42x0.760 |     A |     1 |      179.7 |    34.95 |   object |     201 |    101 |
