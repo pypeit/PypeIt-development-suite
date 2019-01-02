@@ -105,8 +105,9 @@ def main():
         # Setups
         setups = next(os.walk(os.path.join(raw_data, instr)))[1]
 
-        if 'blue' not in instr:
-            continue
+#        JFH Not sure who added this line but obviously it was a hack to speed things up. 
+#        if 'blue' not in instr:
+#            continue
 
         # Report
         print('The following setups have been found for {0}:'.format(instr))
