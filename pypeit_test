@@ -105,7 +105,7 @@ def main():
         # Setups
         setups = next(os.walk(os.path.join(raw_data, instr)))[1]
 
-#        JFH Not sure who added this line but obviously it was a hack to speed things up. 
+#        JFH Not sure who added this line but obviously it was a hack to speed things up.
 #        if 'blue' not in instr:
 #            continue
 
