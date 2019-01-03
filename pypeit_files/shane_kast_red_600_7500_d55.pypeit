@@ -18,7 +18,12 @@ spectrograph = shane_kast_red_ret
         params = 1, 1, 1
     [[traceframe]]
         number = 3
-	
+
+# Setup
+setup read
+ Setup A
+setup end
+
 
 # Read in the data
 data read

@@ -23,7 +23,7 @@ def parser(options=None):
 
     parser = argparse.ArgumentParser(formatter_class=argparse.ArgumentDefaultsHelpFormatter)
 
-    parser.add_argument('--version', type=str, help="Version number to generate (e.g. 0.91)")
+    parser.add_argument('version', type=str, help="Version number to generate (e.g. 0.91)")
     parser.add_argument('--redux_dir', type=str, help="Full path to the REDUX dir; default='./REDUX_OUT ")
 
     return parser.parse_args() if options is None else parser.parse_args(options)
@@ -47,14 +47,13 @@ def main():
         os.mkdir('Cooked')
 
     # Version
-    if pargs.version is not None:
-        vnumber = float(pargs.version)
-        vfile = os.path.join('Cooked', 'version')
-        # Lines
-        lines = ['# Version needs to be a float and the last line of this file\n',
-                 '{:0.3f}'.format(vnumber)]
-        with open(vfile, 'w') as f:
-            f.writelines(lines)
+    vnumber = float(pargs.version)
+    vfile = os.path.join('Cooked', 'version')
+    # Lines
+    lines = ['# Version needs to be a float and the last line of this file\n',
+             '{:0.3f}'.format(vnumber)]
+    with open(vfile, 'w') as f:
+        f.writelines(lines)
 
     # Build MF_shane_kast_blue
     mf_dir = os.path.join('Cooked', 'MF_shane_kast_blue')
