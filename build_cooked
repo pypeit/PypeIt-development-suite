@@ -112,25 +112,25 @@ def main():
     copy_with_root(keck_lris_red_long, cooked_trace_root)
     # LRISr multi 400_8500
     keck_lris_red_multi = os.path.join(redux_dir, 'Keck_LRIS_red', 'multi_400_8500_d560',
-                                      'MF_keck_lris_red', 'MasterTrace_A_01_aa')
+                                      'MF_keck_lris_red', 'MasterTrace_A_1_01')
     cooked_trace_root = os.path.join(cooked_dir, 'MasterTrace_KeckLRISr_400_8500_det1')
     copy_with_root(keck_lris_red_multi, cooked_trace_root)
     keck_lris_red_multi = os.path.join(redux_dir, 'Keck_LRIS_red', 'multi_400_8500_d560',
-                                      'MF_keck_lris_red', 'MasterTrace_A_02_aa')
+                                      'MF_keck_lris_red', 'MasterTrace_A_1_02')
     cooked_trace_root = os.path.join(cooked_dir, 'MasterTrace_KeckLRISr_400_8500_det2')
     copy_with_root(keck_lris_red_multi, cooked_trace_root)
     # LRISb long
     keck_lris_blue_long = os.path.join(redux_dir, 'Keck_LRIS_blue', 'long_600_4000_d560',
-                                        'MF_keck_lris_blue', 'MasterTrace_A_02_aa')
+                                        'MF_keck_lris_blue', 'MasterTrace_A_1_02')
     cooked_trace_root = os.path.join(cooked_dir, 'MasterTrace_KeckLRISb_long_600_4000_det2')
     copy_with_root(keck_lris_blue_long, cooked_trace_root)
     # LRISb multi
     keck_lris_blue_multi = os.path.join(redux_dir, 'Keck_LRIS_blue', 'multi_600_4000_d560',
-                                       'MF_keck_lris_blue', 'MasterTrace_A_01_aa')
+                                       'MF_keck_lris_blue', 'MasterTrace_A_1_01')
     cooked_trace_root = os.path.join(cooked_dir, 'MasterTrace_KeckLRISb_multi_600_4000_det1')
     copy_with_root(keck_lris_blue_multi, cooked_trace_root)
     keck_lris_blue_multi = os.path.join(redux_dir, 'Keck_LRIS_blue', 'multi_600_4000_d560',
-                                        'MF_keck_lris_blue', 'MasterTrace_A_02_aa')
+                                        'MF_keck_lris_blue', 'MasterTrace_A_1_02')
     cooked_trace_root = os.path.join(cooked_dir, 'MasterTrace_KeckLRISb_multi_600_4000_det2')
     copy_with_root(keck_lris_blue_multi, cooked_trace_root)
     # DEIMOS
