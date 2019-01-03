@@ -19,6 +19,11 @@
 [extract]
     maxnumber = 3
 
+# Setup
+setup read
+ Setup A
+setup end
+
 data read
  path /home/xavier/local/Python/PYPIT-development-suite/RAW_DATA/WHT_ISIS_blue/long_R300B_d5300
 |        filename |       date |       frametype |             target | exptime | binning | dichroic | dispname | dispangle |    decker |

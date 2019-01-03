@@ -13,14 +13,19 @@
     [[flatfield]]
         frame = /home/xavier/local/Python/PypeIt-development-suite/CALIBS/PYPEIT_LRISb_pixflat_B600_2x2_17sep2009.fits.gz
 
+# Setup
+setup read
+ Setup A
+setup end
+
 data read
  path /home/xavier/local/Python/PypeIt-development-suite/RAW_DATA/Keck_LRIS_blue/long_600_4000_d560/
-|             filename |                date | frametype |      target | exptime | binning | dichroic | dispname | dispangle |   decker |
-| b150910_2033.fits.gz | 2015-09-10T03:52:42 |       arc |     unknown |       1 |     2,2 |      560 | 600/4000 |      None | long_1.0 |
-| b150910_2036.fits.gz | 2015-09-10T04:22:12 |      bias |     unknown |       0 |     2,2 |      560 | 600/4000 |      None | long_1.0 |
-| b150910_2037.fits.gz | 2015-09-10T04:22:49 |      bias |     unknown |       0 |     2,2 |      560 | 600/4000 |      None | long_1.0 |
-| b150910_2038.fits.gz | 2015-09-10T04:23:26 |      bias |     unknown |       0 |     2,2 |      560 | 600/4000 |      None | long_1.0 |
-| b150910_2051.fits.gz | 2015-09-10T04:51:00 |     trace | s17134+0128 |       5 |     2,2 |      560 | 600/4000 |      None | long_1.0 |
-| b150910_2070.fits.gz | 2015-09-10T05:43:39 |   science |          s2 |     600 |     2,2 |      560 | 600/4000 |      None | long_1.0 |
-| b150910_2083.fits.gz | 2015-09-10T10:03:42 |  standard |   feige 110 |      60 |     2,2 |      560 | 600/4000 |      None | long_1.0 |
+|             filename |                date | frametype |      target | exptime | binning | dichroic | dispname |   decker |
+| b150910_2033.fits.gz | 2015-09-10T03:52:42 |       arc |     unknown |       1 |     2,2 |      560 | 600/4000 | long_1.0 |
+| b150910_2036.fits.gz | 2015-09-10T04:22:12 |      bias |     unknown |       0 |     2,2 |      560 | 600/4000 | long_1.0 |
+| b150910_2037.fits.gz | 2015-09-10T04:22:49 |      bias |     unknown |       0 |     2,2 |      560 | 600/4000 | long_1.0 |
+| b150910_2038.fits.gz | 2015-09-10T04:23:26 |      bias |     unknown |       0 |     2,2 |      560 | 600/4000 | long_1.0 |
+| b150910_2051.fits.gz | 2015-09-10T04:51:00 |     trace | s17134+0128 |       5 |     2,2 |      560 | 600/4000 | long_1.0 |
+| b150910_2070.fits.gz | 2015-09-10T05:43:39 |   science |          s2 |     600 |     2,2 |      560 | 600/4000 | long_1.0 |
+| b150910_2083.fits.gz | 2015-09-10T10:03:42 |  standard |   feige 110 |      60 |     2,2 |      560 | 600/4000 | long_1.0 |
 data end

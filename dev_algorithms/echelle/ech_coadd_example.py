@@ -3,6 +3,25 @@ from ech_coadd import *
 import matplotlib.pyplot as plt
 ## test ech_fluxspec
 
+
+def flux_single(debug=True,datapath='./',stdframe=None,sciframe=None,star_type='A0',star_mag=8.0,
+                 ra=None, dec=None, std_file=None, BALM_MASK_WID=15., nresln=None,outfile=None):
+    """
+    test single frame
+    :param debug:
+    :return:
+    """
+    sens_dicts = ech_generate_sensfunc(datapath+stdframe,telluric=True, star_type=star_type,
+                                       star_mag=star_mag,ra=ra, dec=dec, std_file = std_file,
+                                       BALM_MASK_WID=BALM_MASK_WID, nresln=nresln,debug=debug)
+    ech_save_master(sens_dicts, outfile=datapath+outfile)
+    #sens_dicts = ech_load_master(datapath+'MasterSensFunc_NIRES.fits')
+    sci_specobjs, sci_header = ech_load_specobj(datapath+sciframe)
+    ech_flux_science(sci_specobjs,sens_dicts,sci_header,spectrograph=None)
+    write_science(sci_specobjs, sci_header, datapath+sciframe[:-5]+'_FLUX.fits')
+    return sens_dicts
+
+
 def flux_example(debug=True,datapath='./'):
     """
     test single NIRES frame
@@ -295,14 +314,58 @@ def try_mergeorder(spectra_coadd,wave_grid_method='velocity',kwargs=None):
 
 
 
-#flux_example(debug=True,datapath='/Users/feige/Dropbox/PypeIt_DATA/NIRES/')
-#flux_example2(debug=False,datapath='/Users/feige/Dropbox/PypeIt_DATA/NIRES/')
-#coadd_nires(giantcoadd=False,debug=True,datapath='/Users/feige/Dropbox/PypeIt_DATA/NIRES/')
+#flux_example(debug=True,datapath='/Users/feige/Dropbox/PypeIt_Redux/NIRES/')
+#flux_example2(debug=False,datapath='/Users/feige/Dropbox/PypeIt_Redux/NIRES/')
+coadd_nires(giantcoadd=False,debug=True,datapath='/Users/feige/Dropbox/PypeIt_Redux/NIRES/')
+
+# flux XSHOOTER
+datapath = '/Users/feige/Dropbox/PypeIt_DATA/XSHOOTER/J0439/NIR/Science/'
+stdframe = 'spec1d_STD,TELLURIC_XShooter_NIR_2018Oct08T232940.178.fits'
+sciframe = 'spec1d_STD,TELLURIC_XShooter_NIR_2018Oct08T233037.583.fits' # test fluxing with telluric star
+
+scilist = ['spec1d_J0439_XShooter_NIR_2018Oct09T063213.112.fits','spec1d_J0439_XShooter_NIR_2018Oct09T064021.266.fits',
+           'spec1d_J0439_XShooter_NIR_2018Oct09T064829.420.fits','spec1d_J0439_XShooter_NIR_2018Oct09T065654.883.fits',
+           'spec1d_J0439_XShooter_NIR_2018Oct09T070503.037.fits','spec1d_J0439_XShooter_NIR_2018Oct09T071311.193.fits']
+objids = ['OBJ0000','OBJ0000','OBJ0000','OBJ0001','OBJ0001','OBJ0001']
+star_mag = 5.644
+star_type = 'B9'
+outfile = 'HIP095619_XSHOOTER_NIR_SENS'
+
+flux_single(debug=False,datapath=datapath,stdframe=stdframe,sciframe=sciframe,
+            star_type=star_type,star_mag=star_mag,BALM_MASK_WID=15., nresln=None,outfile=outfile)
+sci_specobjs, sci_header = ech_load_specobj(datapath + sciframe[:-5] + '_FLUX.fits')
+wavemask = sci_specobjs[13].optimal['WAVE']>1000.0*units.AA
+plt.plot(sci_specobjs[13].optimal['WAVE'][wavemask],sci_specobjs[13].optimal['FLAM'][wavemask])
+plt.show()
+
+sens_dicts = ech_generate_sensfunc(datapath + stdframe, telluric=True, star_type=star_type,
+                                   star_mag=star_mag, ra=None, dec=None, std_file=None,
+                                   BALM_MASK_WID=5.0, nresln=None, debug=True)
+ech_save_master(sens_dicts, outfile=datapath + outfile)
+
+
+scifiles = []
+for i in range(len(scilist)):
+    sciframe = scilist[i]
+    sci_specobjs, sci_header = ech_load_specobj(datapath + sciframe)
+    ech_flux_science(sci_specobjs, sens_dicts, sci_header, spectrograph=None)
+    write_science(sci_specobjs, sci_header, datapath + sciframe[:-5] + '_FLUX.fits')
+
+    filename = datapath+sciframe
+    scifiles += [filename.replace('.fits','_FLUX.fits')]
+
+# Coadding
+kwargs={}
+spec1d = ech_coadd(scifiles, objids=objids,extract='OPT', flux=True,giantcoadd=False,
+          wave_grid_method='velocity', niter=5,wave_grid_min=None, wave_grid_max=None, v_pix=None,
+          scale_method='median', do_offset=False, sigrej_final=3.,
+          do_var_corr=False, qafile='test_xshooter.png', outfile=None, do_cr=True,debug=True,**kwargs)
+
 
 #Test GNIRS
-spec1d,spectra_coadd,kwargs = coadd_gnirs(giantcoadd=False,debug=True,datapath='/Users/feige/Dropbox/PypeIt_DATA/GNIRS/')
-wave, flux, error, header = readgnirsxidl('/Users/feige/Dropbox/PypeIt_DATA/GNIRS/PSO338+29_forpypeit.fits')
-cat = np.genfromtxt('/Users/feige/Dropbox/PypeIt_DATA/GNIRS/mods_spectrum_p338.txt')
+spec1d,spectra_coadd,kwargs = coadd_gnirs(giantcoadd=False,debug=True,datapath='/Users/feige/Dropbox/PypeIt_Redux/GNIRS/')
+wave, flux, error, header = readgnirsxidl('/Users/feige/Dropbox/PypeIt_Redux/GNIRS/PSO338+29_forpypeit.fits')
+cat = np.genfromtxt('/Users/feige/Dropbox/PypeIt_Redux/GNIRS/mods_spectrum_p338.txt')
 wave_opt, flux_opt, error_opt = cat[:, 0], cat[:, 1]/1e-17, cat[:, 2]/1e-17
 
 plt.figure(figsize=(12,4))
@@ -317,5 +380,4 @@ plt.legend(loc=1,fontsize=16)
 plt.show()
 
 
-from IPython import embed
-embed()
+#    flux_spec = extract_asymbox2(thisimg[6000:7000,:], left_asym[6000:7000,:], righ_asym[6000:7000,:])

@@ -106,7 +106,7 @@ def main():
     copy_with_root(shane_kast_blue_trace_root, cooked_trace_root)
     # LRISr long 600_7500 (det=2 only)
     keck_lris_red_long = os.path.join(redux_dir, 'Keck_LRIS_red', 'long_600_7500_d560',
-                                              'MF_keck_lris_red', 'MasterTrace_A_02_aa')
+                                              'MF_keck_lris_red', 'MasterTrace_A_1_02')
     cooked_trace_root = os.path.join(cooked_dir, 'MasterTrace_KeckLRISr_long_600_7500_d560')
     copy_with_root(keck_lris_red_long, cooked_trace_root)
     # LRISr multi 400_8500
@@ -134,7 +134,7 @@ def main():
     copy_with_root(keck_lris_blue_multi, cooked_trace_root)
     # DEIMOS
     keck_deimos_multi = os.path.join(redux_dir, 'Keck_DEIMOS', '830G_M_8600',
-                                        'MF_keck_deimos', 'MasterTrace_A_03_aa')
+                                        'MF_keck_deimos', 'MasterTrace_A_1_03')
     cooked_trace_root = os.path.join(cooked_dir, 'MasterTrace_KeckDEIMOS_830G_8600_det3')
     copy_with_root(keck_deimos_multi, cooked_trace_root)
 
@@ -143,8 +143,8 @@ def main():
     if not os.path.isdir(cooked_dir):
         os.mkdir(cooked_dir)
     shane_kast_blue_wvcalib = os.path.join(redux_dir, 'Shane_Kast_blue', '600_4310_d55',
-                                           'shane_kast_blue_setup_A', 'MF_shane_kast_blue',
-                                           'MasterWaveCalib_A_01_aa.json')
+                                           'shane_kast_blue_A', 'MF_shane_kast_blue',
+                                           'MasterWaveCalib_A_1_01.json')
     cooked_file = os.path.join(cooked_dir, 'MasterWaveCalib_ShaneKastBlue_A.json')
     copy_me(shane_kast_blue_wvcalib, cooked_file)
 
