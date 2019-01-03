@@ -31,7 +31,6 @@ def parser(options=None):
 
 def main():
     import glob
-    import subprocess
     import warnings
 
     pargs = parser()
@@ -69,7 +68,7 @@ def main():
 
     # Science files
     shane_kast_blue_Science = os.path.join(redux_dir, 'Shane_Kast_blue','600_4310_d55',
-                                  'shane_kast_blue_setup_A','Science')
+                                  'shane_kast_blue_A','Science')
     kastb_files = glob.glob(os.path.join(shane_kast_blue_Science,'spec1d_*.fits'))
     # DEIMOS standard
     keck_deimos_Science = os.path.join(redux_dir, 'Keck_DEIMOS','830G_L_8400', 'Science')
