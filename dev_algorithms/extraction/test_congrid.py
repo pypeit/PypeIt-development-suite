@@ -1,10 +1,32 @@
-from pypeit.utils import congrid
 import numpy as np
 from pypeit.traceslits import TraceSlits
 from pypeit.spectrographs.util import load_spectrograph
 from pypeit import ginga
+from scipy import interpolate
+from scipy import ndimage
+from pypeit import msgs
+from skimage.transform import resize
 
 
+# if not (np.mod(a.shape[0], newshape[0]) == 0) or (np.mod(newshape[0], a.shape[0]) == 0):
+#    msgs.error('a.shape[0] and newshape[0] are not interger multiples of each other')
+
+# if not (np.mod(a.shape[1], newshape[1]) == 0) or (np.mod(newshape[1], a.shape[1]) == 0):
+#    msgs.error('a.shape[1] and newshape[1] are not interger multiples of each other')
+
+
+def rebin(a, newshape):
+    '''Rebin an array to a new shape using slicing. This routine is taken from:
+    https://scipy-cookbook.readthedocs.io/items/Rebinning.html
+    '''
+
+    if not len(a.shape) == len(newshape):
+        msgs.error('Dimension of a image does not match dimension of new requested image shape')
+
+    slices = [slice(0, old, float(old) / new) for old, new in zip(a.shape, newshape)]
+    coordinates = np.mgrid[slices]
+    indices = coordinates.astype('i')  # choose the biggest smaller integer index
+    return a[tuple(indices)]
 
 
 def congrid(a, newdims, method='linear', centre=False, minusone=False):
@@ -48,10 +70,12 @@ def congrid(a, newdims, method='linear', centre=False, minusone=False):
 
     if method == 'neighbour':
         for i in range(ndims):
-            base = np.indices(newdims)[i]
+            base = np.indices(newdims.astype(int))[i]
             dimlist.append((old[i] - m1) / (newdims[i] - m1) \
                            * (base + ofs) - ofs)
         cd = np.array(dimlist).round().astype(int)
+        from IPython import embed
+        embed()
         newa = a[list(cd)]
         return newa
 
@@ -112,4 +136,10 @@ masterfile = '/Users/joe/python/PypeIt-development-suite/REDUX_OUT_old/Keck_NIRE
 tset_slits = TSlits.load_master(masterfile)
 spectrograph = load_spectrograph('keck_nires')
 slitmask_orig = spectrograph.slitmask(tset_slits)
-slitmask_new = (np.round(congrid(slitmask_orig.astype(np.float64), (2048,2048), method='neighbour'))).astype(slitmask_orig.dtype)
+slitmask_orig = slitmask_orig[1:,1:]
+#slitmask_new = (np.round(congrid(slitmask_orig.astype(np.float64), (2048,2048), method='neighbour'))).astype(slitmask_orig.dtype)
+newshape = (2047*2,1023)
+slitmask_new = rebin(slitmask_orig, newshape)
+slitmask_old = rebin(slitmask_new,slitmask_orig.shape)
+slitmask_new1 = ((np.round(resize(slitmask_orig.astype(np.integer), newshape, preserve_range=True, order=0))).astype(np.integer)).astype(slitmask_orig.dtype)
+slitmask_old1 = ((np.round(resize(slitmask_new1.astype(np.integer), slitmask_orig.shape, preserve_range=True, order=0))).astype(np.integer)).astype(slitmask_orig.dtype)
