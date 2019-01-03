@@ -62,12 +62,6 @@ def main():
     shane_kast_blue_MF = os.path.join(redux_dir, 'Shane_Kast_blue','600_4310_d55',
                                       'shane_kast_blue_A','MF_shane_kast_blue')
     kastb_files = glob.glob(os.path.join(shane_kast_blue_MF,'*.*'))
-    # Add fits table
-    # JFH The running the test script does not generate this file, hence I'm removing it from the
-    # the tarball.
-    #kastb_files += [os.path.join(redux_dir, 'Shane_Kast_blue','600_4310_d55',
-    #                             'shane_kast_blue_setup_A',
-    #                             'shane_kast_blue_setup_A.fits')]
     # Do it
     for new_file in kastb_files:
         cooked_file = os.path.join(mf_dir, os.path.basename(new_file))
