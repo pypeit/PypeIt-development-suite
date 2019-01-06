@@ -1,13 +1,7 @@
 
-#
 
-import inspect
-import copy
 
 import numpy as np
-
-from scipy import interpolate
-
 import matplotlib.pyplot as plt
 import os
 from astropy.io import fits
@@ -25,7 +19,7 @@ from astropy.table import Table
 from astropy import stats
 from pypeit.core import extract
 from pypeit.core import skysub
-
+from pypeit.core import procimg
 from pypeit import ginga
 
 # Read in the masters
@@ -207,25 +201,33 @@ for iexp in range(nexp):
 # Now compute the final stack with sigma clipping
 sigrej = 3.0
 maxiters = 10
+# Replace this later with S/N weights
+weights = np.ones(nexp)/float(nexp)
+sci_list = [sciimg_rect_stack, imgminsky_rect_stack, waveimg_rect_stack, tilts_rect_stack]
+var_list = [var_rect_stack]
+sci_list_out, var_list_out, outmask, nused = procimg.weighted_combine(
+    weights, sci_list, var_list, (norm_rect_stack != 0),
+    sigma_clip=True, sigma_clip_stack=imgminsky_rect_stack, sigrej=sigrej, maxiters=maxiters)
+sciimg, imgminsky, waveimg, tilts = sci_list_out
+sciivar = utils.calc_ivar(var_list_out[0])
+
+
 # Which image do we use for creating the mask?
 data = np.ma.MaskedArray(imgminsky_rect_stack, (norm_rect_stack == 0))
 sigclip = stats.SigmaClip(sigma=sigrej, maxiters=maxiters, cenfunc='median')
 data_clipped = sigclip(data, axis=0, masked=True)
 mask_rect_stack = np.invert(data_clipped.mask)  # mask_rect_stack = True are good values
-# Replace this later with S/N weights
-nused = np.sum(mask_rect_stack,axis=0)
-weights = np.ones(nexp)/float(nexp)
+nused1 = np.sum(mask_rect_stack,axis=0)
 weights_stack = np.einsum('i,ijk->ijk', weights, mask_rect_stack)
 weights_sum = np.sum(weights_stack, axis=0)
-sciimg = np.sum(sciimg_rect_stack*weights_stack,axis=0)/(weights_sum + (weights_sum == 0.0))
-waveimg = np.sum(waveimg_rect_stack*weights_stack,axis=0)/(weights_sum + (weights_sum == 0.0))
-tilts = np.sum(tilts_rect_stack*weights_stack,axis=0)/(weights_sum + (weights_sum == 0.0))
-imgminsky = np.sum(imgminsky_rect_stack*weights_stack,axis=0)/(weights_sum + (weights_sum == 0.0))
-varfinal = np.sum(var_rect_stack * weights_stack ** 2, axis=0) / (weights_sum + (weights_sum == 0.0)) ** 2
-sciivar = utils.calc_ivar(varfinal)
-outmask = np.sum(mask_rect_stack,axis=0) > 0
+sciimg1 = np.sum(sciimg_rect_stack*weights_stack,axis=0)/(weights_sum + (weights_sum == 0.0))
+waveimg1 = np.sum(waveimg_rect_stack*weights_stack,axis=0)/(weights_sum + (weights_sum == 0.0))
+tilts1 = np.sum(tilts_rect_stack*weights_stack,axis=0)/(weights_sum + (weights_sum == 0.0))
+imgminsky1 = np.sum(imgminsky_rect_stack*weights_stack,axis=0)/(weights_sum + (weights_sum == 0.0))
+varfinal1 = np.sum(var_rect_stack * weights_stack ** 2, axis=0) / (weights_sum + (weights_sum == 0.0)) ** 2
+sciivar1 = utils.calc_ivar(varfinal1)
+outmask1 = np.sum(mask_rect_stack,axis=0) > 0
 
-sys.exit(-1)
 # Now let's try to do an extraction
 nsamp = np.sum(nsamp_rect_stack,axis=0) # This image indicates the number of times each pixel was sampled
 thismask_rect = np.ones_like(nsamp,dtype=bool)
