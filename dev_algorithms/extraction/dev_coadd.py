@@ -22,17 +22,6 @@ from pypeit.core import skysub
 from pypeit.core import procimg
 from pypeit import ginga
 
-def get_wave_ind(wave_grid, wave_min, wave_max):
-    diff = wave_grid - wave_min
-    diff[diff > 0] = np.inf
-    ind_lower = np.argmin(np.abs(diff))
-    diff = wave_max - wave_grid
-    diff[diff > 0] = np.inf
-    ind_upper = np.argmin(np.abs(diff))
-    return ind_lower, ind_upper
-
-
-
 # Read in the masters
 path = '/Users/joe/python/PypeIt-development-suite/REDUX_OUT_old/Gemini_GNIRS/GNIRS/'
 master_dir = path + 'MF_gemini_gnirs/'
@@ -50,9 +39,7 @@ spec1d_files = [os.path.join(scidir, ifile) for ifile in ['spec1d_pisco_GNIRS_20
                                                               'spec1d_pisco_GNIRS_2017Mar31T085933.097.fits',
                                                               'spec1d_pisco_GNIRS_2017Mar31T091538.731.fits',
                                                               'spec1d_pisco_GNIRS_2017Mar31T092059.597.fits']]
-
 slit = 4
-
 nexp = len(waveimgfiles)
 
 for ifile in range(nexp):
@@ -107,77 +94,12 @@ logmin = 3.777
 osamp = 1.0
 loglam_grid = logmin + (dloglam/osamp)*np.arange(int(np.ceil(osamp*ngrid)))
 wave_grid = None
-# def coadd_2d(sciimg_stack, sciivar_stack, inmask_stack, skymodel_stack, tilts_stack, waveimg_stack, trace_stack, thismask_stack,
-# loglam_grid = None, wave_grid = None
 
-
-nspec, nspat = sciimg_stack[0,:,:].shape
-
-# Determine the wavelength grid that we will use for the current slit/order
-wave_min = waveimg_stack[thismask_stack].min()
-wave_max = waveimg_stack[thismask_stack].max()
-if loglam_grid is not None:
-    ind_lower, ind_upper = get_wave_ind(loglam_grid, np.log10(wave_min), np.log10(wave_max))
-    loglam_bins = loglam_grid[ind_lower:ind_upper+1]
-    wave_bins = np.power(10.0, loglam_bins)
-elif wave_grid is not None:
-    ind_lower, ind_upper = get_wave_ind(wave_grid, wave_min, wave_max)
-    wave_bins = wave_grid[ind_lower:ind_upper+1]
-    loglam_bins = np.log10(wave_bins)
-else:
-    msgs.error('You must input either a uniformly space loglam grid or wave grid')
-
-nbins = wave_bins.shape[0]
-
-# Create the slit_cen_stack and determine the minimum and maximum spatial offsets that we need to cover to determine
-# the spatial bins
-spat_img = np.outer(np.ones(nspec), np.arange(nspat))
-dspat_stack = np.zeros_like(sciimg_stack)
-spat_min = np.inf
-spat_max = -np.inf
-for iexp in range(nexp):
-    # center of the slit replicated spatially
-    slit_cen_img = np.outer(trace_stack[iexp,:], np.ones(nspat))
-    dspat_iexp = (spat_img - slit_cen_img)
-    dspat_stack[iexp,:,:] = dspat_iexp
-    thismask = thismask_stack[iexp,:,:]
-    spat_min = np.fmin(spat_min,dspat_iexp[thismask].min())
-    spat_max = np.fmax(spat_max,dspat_iexp[thismask].max())
-
-spat_min_int = int(np.floor(spat_min))
-spat_max_int = int(np.ceil(spat_max))
-dspat_bins = np.arange(spat_min_int,spat_max_int +1,1)
-
-# Allocate the rect_stack images
-nspec_rect = nbins - 1
-nspat_rect = dspat_bins.shape[0]-1
-
-sci_list = [sciimg_stack, sciimg_stack - skymodel_stack, tilts_stack, waveimg_stack, dspat_stack]
-var_list = [utils.calc_ivar(sciivar_stack)]
-
-sci_list_rebin, var_list_rebin, norm_rebin_stack, nsmp_rebin_stack = procimg.rebin2d(
-    wave_bins, dspat_bins, waveimg_stack, dspat_stack, thismask_stack, (mask_stack == 0), sci_list, var_list)
-
-# Now compute the final stack with sigma clipping
-sigrej = 3.0
-maxiters = 10
-# Replace this later with S/N weights
-weights = np.ones(nexp)/float(nexp)
-sci_list_out, var_list_out, outmask, nused = procimg.weighted_combine(
-    weights, sci_list_rebin, var_list_rebin, (norm_rebin_stack != 0),
-    sigma_clip=True, sigma_clip_stack=sci_list_rebin[1], sigrej=sigrej, maxiters=maxiters)
-sciimg, imgminsky, tilts, waveimg, dspat = sci_list_out
-sciivar = utils.calc_ivar(var_list_out[0])
-
+sciimg, sciivar, imgminsky, outmask, nused, tilts, waveimg, dspat, thismask, tslits_dict = procimg.coadd2d(
+    sciimg_stack, sciivar_stack, (mask_stack == 0), skymodel_stack, tilts_stack, waveimg_stack, trace_stack,
+    thismask_stack, loglam_grid=loglam_grid)
 sys.exit(-1)
 
-# Now let's try to do an extraction
-nsamp = np.sum(nsamp_rect_stack,axis=0) # This image indicates the number of times each pixel could have been sampled
-thismask_rect = np.ones_like(nsamp,dtype=bool)
-#skymask = np.zeros_like(thismask_rect)
-slit_left = np.full(nspec_rect,0.0)
-slit_righ = np.full(nspec_rect,nspat_rect-1)
-tslits_dict = dict(lcen=slit_left,rcen=slit_righ)
 sobjs, _ = extract.objfind(imgminsky, thismask_rect, tslits_dict['lcen'], tslits_dict['rcen'],
                                                 inmask=outmask, show_peaks=True,show_fits=True, show_trace=True)
 sobjs_neg, _ = extract.objfind(-imgminsky, thismask_rect, tslits_dict['lcen'], tslits_dict['rcen'],
