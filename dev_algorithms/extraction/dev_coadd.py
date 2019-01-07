@@ -22,6 +22,17 @@ from pypeit.core import skysub
 from pypeit.core import procimg
 from pypeit import ginga
 
+def get_wave_ind(wave_grid, wave_min, wave_max):
+    diff = wave_grid - wave_min
+    diff[diff > 0] = np.inf
+    ind_lower = np.argmin(np.abs(diff))
+    diff = wave_max - wave_grid
+    diff[diff > 0] = np.inf
+    ind_upper = np.argmin(np.abs(diff))
+    return ind_lower, ind_upper
+
+
+
 # Read in the masters
 path = '/Users/joe/python/PypeIt-development-suite/REDUX_OUT_old/Gemini_GNIRS/GNIRS/'
 master_dir = path + 'MF_gemini_gnirs/'
@@ -40,25 +51,9 @@ spec1d_files = [os.path.join(scidir, ifile) for ifile in ['spec1d_pisco_GNIRS_20
                                                               'spec1d_pisco_GNIRS_2017Mar31T091538.731.fits',
                                                               'spec1d_pisco_GNIRS_2017Mar31T092059.597.fits']]
 
-# Define the new wavelength grid
-ngrid = 5000
-dloglam = 0.000127888 # this is the average of the median dispersions
-logmin = 3.777
-loglam = logmin + dloglam*np.arange(ngrid)
-# Define the oversampled grid
-nosamp = 1
-loglam_osamp = logmin + (dloglam/nosamp)*np.arange(nosamp*ngrid)
+slit = 4
 
 nexp = len(waveimgfiles)
-# Read in the tslits_dict
-Tslits = traceslits.TraceSlits.from_master_files(tracefile)
-tslits_dict = Tslits._fill_tslits_dict()
-spectrograph = load_spectrograph('gemini_gnirs')
-
-slitmask = spectrograph.slitmask(tslits_dict)
-nslits = tslits_dict['lcen'].shape[1]
-slit = 5
-slitmask_stack = np.einsum('i,jk->ijk', np.ones(nexp), slitmask)
 
 for ifile in range(nexp):
     hdu_wave = fits.open(waveimgfiles[ifile])
@@ -78,7 +73,7 @@ for ifile in range(nexp):
         waveimg_stack = np.zeros((nexp,waveimg.shape[0],waveimg.shape[1]),dtype=float)
         tilts_stack = np.zeros((nexp,waveimg.shape[0],waveimg.shape[1]),dtype=float)
         sciimg_stack = np.zeros((nexp,sciimg.shape[0],sciimg.shape[1]),dtype=float)
-        sky_stack = np.zeros((nexp,sciimg.shape[0],sciimg.shape[1]),dtype=float)
+        skymodel_stack = np.zeros((nexp,sciimg.shape[0],sciimg.shape[1]),dtype=float)
         sciivar_stack = np.zeros((nexp,sciimg.shape[0],sciimg.shape[1]),dtype=float)
         mask_stack = np.zeros((nexp,sciimg.shape[0],sciimg.shape[1]),dtype=float)
         trace_stack = np.zeros((nexp,trace.shape[0]))
@@ -89,147 +84,95 @@ for ifile in range(nexp):
     sciimg_stack[ifile,:,:] = sciimg
     sciivar_stack[ifile,:,:] = sciivar
     mask_stack[ifile,:,:] = mask
-    sky_stack[ifile,:,:] = sky
+    skymodel_stack[ifile,:,:] = sky
     trace_stack[ifile,:] = trace
     wave_stack[ifile,:] = wave_trace
+
+# Read in the tslits_dict
+tslits_dict = traceslits.load_tslits_dict(tracefile)
+#Tslits = traceslits.TraceSlits.from_master_files(tracefile)
+#tslits_dict = Tslits._fill_tslits_dict()
+spectrograph = load_spectrograph('gemini_gnirs')
+slitmask = spectrograph.slitmask(tslits_dict)
+nslits = tslits_dict['lcen'].shape[1]
+slitmask_stack = np.einsum('i,jk->ijk', np.ones(nexp), slitmask)
+thismask_stack = slitmask_stack == slit
+
+# Define the new wavelength grid
+ngrid = 5000
+dloglam = 0.000127888 # this is the average of the median dispersions
+logmin = 3.777
+#loglam = logmin + dloglam*np.arange(ngrid)
+# Define the oversampled grid
+osamp = 1.0
+loglam_grid = logmin + (dloglam/osamp)*np.arange(int(np.ceil(osamp*ngrid)))
+wave_grid = None
+# def coadd_2d(sciimg_stack, sciivar_stack, inmask_stack, skymodel_stack, tilts_stack, waveimg_stack, trace_stack, thismask_stack,
+# loglam_grid = None, wave_grid = None
+
 
 nspec, nspat = sciimg_stack[0,:,:].shape
 
 # Determine the wavelength grid that we will use for the current slit/order
-thismask_stack = slitmask_stack == slit
-thismask = thismask_stack[0,:,:]
 wave_min = waveimg_stack[thismask_stack].min()
 wave_max = waveimg_stack[thismask_stack].max()
-diff = loglam_osamp - np.log10(wave_min)
-diff[diff > 0] = 1e10
-ind_lower = np.argmin(np.abs(diff))
-diff = np.log10(wave_max) - loglam_osamp
-diff[diff > 0] = 1e10
-ind_upper = np.argmin(np.abs(diff))
-loglam_bins = loglam_osamp[ind_lower] + (dloglam/nosamp)*np.arange(ind_upper-ind_lower + 1)
-wave_bins = np.power(10.0,loglam_bins)
-nwave = wave_bins.shape[0]
+if loglam_grid is not None:
+    ind_lower, ind_upper = get_wave_ind(loglam_grid, np.log10(wave_min), np.log10(wave_max))
+    loglam_bins = loglam_grid[ind_lower:ind_upper+1]
+    wave_bins = np.power(10.0, loglam_bins)
+elif wave_grid is not None:
+    ind_lower, ind_upper = get_wave_ind(wave_grid, wave_min, wave_max)
+    wave_bins = wave_grid[ind_lower:ind_upper+1]
+    loglam_bins = np.log10(wave_bins)
+else:
+    msgs.error('You must input either a uniformly space loglam grid or wave grid')
 
+nbins = wave_bins.shape[0]
+
+# Create the slit_cen_stack and determine the minimum and maximum spatial offsets that we need to cover to determine
+# the spatial bins
 spat_img = np.outer(np.ones(nspec), np.arange(nspat))
-#pad_spat = 5
-#spec_ind, spat_ind = np.where(thismask)
-#min_spat = spat_ind.min() - pad_spat
-#max_spat = spat_ind.max() + pad_spat
-#num_spat = max_spat - min_spat + 1
-
-# Need to determine the limits of the spat img
-#spat_lin = np.linspace(min_spat,max_spat,num = int(np.round(num_spat)))
-#spat_img = np.outer(np.ones(nwave), spat_lin)
-#spat_img, loglam_img = np.meshgrid(spat_lin, loglam_slit)
-
-# Normalized spatial offset image (from object trace)
-spat_min = 1e10
-spat_max = -1e10
+dspat_stack = np.zeros_like(sciimg_stack)
+spat_min = np.inf
+spat_max = -np.inf
 for iexp in range(nexp):
-#    slit_cen_lin = (interpolate.interp1d(wave_stack[iexp,:],trace_stack[iexp,:],bounds_error=False ,fill_value='extrapolate'))(wave_slit)
-    slit_cen_img = np.outer(trace_stack[iexp,:], np.ones(nspat))  # center of the slit replicated spatially
-    dspat_img = (spat_img - slit_cen_img)
-    spat_min = np.fmin(spat_min,dspat_img[thismask].min())
-    spat_max = np.fmax(spat_max,dspat_img[thismask].max())
+    # center of the slit replicated spatially
+    slit_cen_img = np.outer(trace_stack[iexp,:], np.ones(nspat))
+    dspat_iexp = (spat_img - slit_cen_img)
+    dspat_stack[iexp,:,:] = dspat_iexp
+    thismask = thismask_stack[iexp,:,:]
+    spat_min = np.fmin(spat_min,dspat_iexp[thismask].min())
+    spat_max = np.fmax(spat_max,dspat_iexp[thismask].max())
 
 spat_min_int = int(np.floor(spat_min))
 spat_max_int = int(np.ceil(spat_max))
 dspat_bins = np.arange(spat_min_int,spat_max_int +1,1)
 
-nspec_rect = nwave -1
+# Allocate the rect_stack images
+nspec_rect = nbins - 1
 nspat_rect = dspat_bins.shape[0]-1
-shape = (nexp, nspec_rect, nspat_rect)
-sciimg_rect_stack = np.zeros(shape)
-imgminsky_rect_stack = np.zeros(shape)
-var_rect_stack = np.zeros(shape)
-tilts_rect_stack = np.zeros(shape)
-waveimg_rect_stack = np.zeros(shape)
-norm_rect_stack = np.zeros(shape)
-nsamp_rect_stack = np.zeros(shape,dtype=int)
 
+sci_list = [sciimg_stack, sciimg_stack - skymodel_stack, tilts_stack, waveimg_stack, dspat_stack]
+var_list = [utils.calc_ivar(sciivar_stack)]
 
-for iexp in range(nexp):
-    slit_cen_img = np.outer(trace_stack[iexp,:], np.ones(nspat))  # center of the slit replicated spatially
-    dspat_img = (spat_img - slit_cen_img)
-
-    # This image is created purely for bookeeping purposes to determine the number of times each pixel
-    # could have been sampled
-    spec_rebin_this = np.log10(waveimg_stack[iexp,:,:][thismask])
-    spat_rebin_this = dspat_img[thismask]
-    norm_img_this, spec_edges, spat_edges = np.histogram2d(spec_rebin_this, spat_rebin_this,
-                                                  bins=[loglam_bins, dspat_bins], density=False)
-    nsamp_rect_stack[iexp,:,:] = norm_img_this
-
-    finmask = thismask & (mask_stack[iexp,:,:] == 0)
-    spec_rebin = np.log10(waveimg_stack[iexp,:,:][finmask])
-    spat_rebin = dspat_img[finmask]
-    norm_img, spec_edges, spat_edges = np.histogram2d(spec_rebin, spat_rebin,
-                                                  bins=[loglam_bins, dspat_bins], density=False)
-    norm_rect_stack[iexp,:,:] = norm_img
-    # Rebin the science image
-    img_now = sciimg_stack[iexp,:,:]
-    weigh_img, spec_edges, spat_edges = np.histogram2d(spec_rebin, spat_rebin,
-                                                   bins=[loglam_bins, dspat_bins], density=False,
-                                                   weights = img_now[finmask])
-    sciimg_rect_stack[iexp,:,:] =(norm_img > 0.0)*weigh_img/(norm_img + (norm_img == 0.0))
-    # Rebin the sky subtracted image
-    imgminsky_now = (sciimg_stack[iexp,:,:] - sky_stack[iexp,:,:])
-    weigh_imgminsky, spec_edges, spat_edges = np.histogram2d(spec_rebin, spat_rebin,
-                                                   bins=[loglam_bins, dspat_bins], density=False,
-                                                   weights = imgminsky_now[finmask])
-    imgminsky_rect_stack[iexp,:,:] =(norm_img > 0.0)*weigh_imgminsky/(norm_img + (norm_img == 0.0))
-    # Rebin the variance
-    var_now = utils.calc_ivar(sciivar_stack[iexp,:,:])
-    weigh_var, spec_edges, spat_edges = np.histogram2d(spec_rebin, spat_rebin,
-                                                   bins=[loglam_bins, dspat_bins], density=False,
-                                                   weights = var_now[finmask])
-    var_rect_stack[iexp,:,:] =(norm_img > 0.0)*weigh_var/(norm_img + (norm_img == 0.0))**2
-    # Rebin the tilts
-    tilts_now = tilts_stack[iexp,:,:]
-    weigh_tilts, spec_edges, spat_edges = np.histogram2d(spec_rebin, spat_rebin,
-                                                   bins=[loglam_bins, dspat_bins], density=False,
-                                                   weights = tilts_now[finmask])
-    tilts_rect_stack[iexp,:,:] =(norm_img > 0.0)*weigh_tilts/(norm_img + (norm_img == 0.0))
-    # Rebin the wavelength image
-    waveimg_now = waveimg_stack[iexp,:,:]
-    weigh_waveimg, spec_edges, spat_edges = np.histogram2d(spec_rebin, spat_rebin,
-                                                   bins=[loglam_bins, dspat_bins], density=False,
-                                                   weights = waveimg_now[finmask])
-    waveimg_rect_stack[iexp,:,:] =(norm_img > 0.0)*weigh_waveimg/(norm_img + (norm_img == 0.0))
-
+sci_list_rebin, var_list_rebin, norm_rebin_stack, nsmp_rebin_stack = procimg.rebin2d(
+    wave_bins, dspat_bins, waveimg_stack, dspat_stack, thismask_stack, (mask_stack == 0), sci_list, var_list)
 
 # Now compute the final stack with sigma clipping
 sigrej = 3.0
 maxiters = 10
 # Replace this later with S/N weights
 weights = np.ones(nexp)/float(nexp)
-sci_list = [sciimg_rect_stack, imgminsky_rect_stack, waveimg_rect_stack, tilts_rect_stack]
-var_list = [var_rect_stack]
 sci_list_out, var_list_out, outmask, nused = procimg.weighted_combine(
-    weights, sci_list, var_list, (norm_rect_stack != 0),
-    sigma_clip=True, sigma_clip_stack=imgminsky_rect_stack, sigrej=sigrej, maxiters=maxiters)
-sciimg, imgminsky, waveimg, tilts = sci_list_out
+    weights, sci_list_rebin, var_list_rebin, (norm_rebin_stack != 0),
+    sigma_clip=True, sigma_clip_stack=sci_list_rebin[1], sigrej=sigrej, maxiters=maxiters)
+sciimg, imgminsky, tilts, waveimg, dspat = sci_list_out
 sciivar = utils.calc_ivar(var_list_out[0])
 
-
-# Which image do we use for creating the mask?
-data = np.ma.MaskedArray(imgminsky_rect_stack, (norm_rect_stack == 0))
-sigclip = stats.SigmaClip(sigma=sigrej, maxiters=maxiters, cenfunc='median')
-data_clipped = sigclip(data, axis=0, masked=True)
-mask_rect_stack = np.invert(data_clipped.mask)  # mask_rect_stack = True are good values
-nused1 = np.sum(mask_rect_stack,axis=0)
-weights_stack = np.einsum('i,ijk->ijk', weights, mask_rect_stack)
-weights_sum = np.sum(weights_stack, axis=0)
-sciimg1 = np.sum(sciimg_rect_stack*weights_stack,axis=0)/(weights_sum + (weights_sum == 0.0))
-waveimg1 = np.sum(waveimg_rect_stack*weights_stack,axis=0)/(weights_sum + (weights_sum == 0.0))
-tilts1 = np.sum(tilts_rect_stack*weights_stack,axis=0)/(weights_sum + (weights_sum == 0.0))
-imgminsky1 = np.sum(imgminsky_rect_stack*weights_stack,axis=0)/(weights_sum + (weights_sum == 0.0))
-varfinal1 = np.sum(var_rect_stack * weights_stack ** 2, axis=0) / (weights_sum + (weights_sum == 0.0)) ** 2
-sciivar1 = utils.calc_ivar(varfinal1)
-outmask1 = np.sum(mask_rect_stack,axis=0) > 0
+sys.exit(-1)
 
 # Now let's try to do an extraction
-nsamp = np.sum(nsamp_rect_stack,axis=0) # This image indicates the number of times each pixel was sampled
+nsamp = np.sum(nsamp_rect_stack,axis=0) # This image indicates the number of times each pixel could have been sampled
 thismask_rect = np.ones_like(nsamp,dtype=bool)
 #skymask = np.zeros_like(thismask_rect)
 slit_left = np.full(nspec_rect,0.0)
@@ -254,7 +197,10 @@ skymodel_rect[thismask_rect], objmodel_rect[thismask_rect], ivarmodel_rect[thism
     skysub.local_skysub_extract(imgminsky, sciivar, tilts, waveimg, global_sky, rn2img, thismask_rect,
     tslits_dict['lcen'], tslits_dict['rcen'], sobjs, model_noise=False,bsp=par['scienceimage']['bspline_spacing'],
     sn_gauss=par['scienceimage']['sn_gauss'],inmask=outmask, show_profile=True)
-resids_rect = ((imgminsky - skymodel_rect - objmodel_rect)*np.sqrt(ivarmodel_rect))[extractmask_rect]
+resids_rect = ((imgminsky - skymodel_rect - objmodel_rect)*np.sqrt(ivarmodel_rect))
+resids_pix = resids_rect[extractmask_rect]
+std_dev = np.std(resids_pix)
+mean_resid = np.mean(resids_pix)
 sobjs_out = sobjs.copy()
 sobjs_out.purge_neg()
 
@@ -270,6 +216,37 @@ loglam_extract_exp = np.log10(waveimg_rect_stack[0, :, :] + (waveimg_rect_stack[
 # We centered everything with respect to the 0 position, so the trace runs vertically
 zero_dspat = np.interp(0.0, dspat_mid, np.arange(dspat_mid.shape[0]))
 trace = np.full(loglam_extract_exp.shape[0],zero_dspat)
+
+
+# Which image do we use for creating the mask?
+#data = np.ma.MaskedArray(imgminsky_rect_stack, (norm_rect_stack == 0))
+#sigclip = stats.SigmaClip(sigma=sigrej, maxiters=maxiters, cenfunc='median')
+#data_clipped = sigclip(data, axis=0, masked=True)
+#mask_rect_stack = np.invert(data_clipped.mask)  # mask_rect_stack = True are good values
+#nused1 = np.sum(mask_rect_stack,axis=0)
+#weights_stack = np.einsum('i,ijk->ijk', weights, mask_rect_stack)
+#weights_sum = np.sum(weights_stack, axis=0)
+#sciimg1 = np.sum(sciimg_rect_stack*weights_stack,axis=0)/(weights_sum + (weights_sum == 0.0))
+#waveimg1 = np.sum(waveimg_rect_stack*weights_stack,axis=0)/(weights_sum + (weights_sum == 0.0))
+#tilts1 = np.sum(tilts_rect_stack*weights_stack,axis=0)/(weights_sum + (weights_sum == 0.0))
+#imgminsky1 = np.sum(imgminsky_rect_stack*weights_stack,axis=0)/(weights_sum + (weights_sum == 0.0))
+#varfinal1 = np.sum(var_rect_stack * weights_stack ** 2, axis=0) / (weights_sum + (weights_sum == 0.0)) ** 2
+#sciivar1 = utils.calc_ivar(varfinal1)
+#outmask1 = np.sum(mask_rect_stack,axis=0) > 0
+
+
+#pad_spat = 5
+#spec_ind, spat_ind = np.where(thismask)
+#min_spat = spat_ind.min() - pad_spat
+#max_spat = spat_ind.max() + pad_spat
+#num_spat = max_spat - min_spat + 1
+
+# Need to determine the limits of the spat img
+#spat_lin = np.linspace(min_spat,max_spat,num = int(np.round(num_spat)))
+#spat_img = np.outer(np.ones(nwave), spat_lin)
+#spat_img, loglam_img = np.meshgrid(spat_lin, loglam_slit)
+#    slit_cen_lin = (interpolate.interp1d(wave_stack[iexp,:],trace_stack[iexp,:],bounds_error=False ,fill_value='extrapolate'))(wave_slit)
+
 
 
 # Single exposure boxcar extraction
@@ -298,3 +275,74 @@ trace = np.full(loglam_extract_exp.shape[0],zero_dspat)
 
 
 #ginga.show_image((np.log10(waveimg_rect_stack[0, :, :]) - loglam_img)/dloglam)
+
+
+#shape = (nexp, nspec_rect, nspat_rect)
+#sciimg_rect_stack = np.zeros(shape)
+#imgminsky_rect_stack = np.zeros(shape)
+#tilts_rect_stack = np.zeros(shape)
+#waveimg_rect_stack = np.zeros(shape)
+#dspat_rect_stack = np.zeros(shape)
+#norm_rect_stack = np.zeros(shape)
+#nsamp_rect_stack = np.zeros(shape,dtype=int)
+#var_rect_stack = np.zeros(shape)
+#
+#
+#
+# for iexp in range(nexp):
+#     # This fist image is purely for bookeeping purposes to determine the number of times each pixel
+#     # could have been sampled
+#     thismask = thismask_stack[iexp,:,:]
+#     spec_rebin_this = waveimg_stack[iexp,:,:][thismask]
+#     spat_rebin_this = dspat_stack[iexp,:,:][thismask]
+#
+#     norm_img_this, spec_edges, spat_edges = np.histogram2d(spec_rebin_this, spat_rebin_this,
+#                                                   bins=[wave_bins, dspat_bins], density=False)
+#     nsamp_rect_stack[iexp,:,:] = norm_img_this
+#
+#     finmask = thismask & (mask_stack[iexp,:,:] == 0)
+#     spec_rebin = waveimg_stack[iexp,:,:][finmask]
+#     spat_rebin = dspat_stack[iexp,:,:][finmask]
+#     norm_img, spec_edges, spat_edges = np.histogram2d(spec_rebin, spat_rebin,
+#                                                   bins=[wave_bins, dspat_bins], density=False)
+#     norm_rect_stack[iexp,:,:] = norm_img
+#     # Rebin the science image (we are not actually using this at the moment)
+#     img_now = sciimg_stack[iexp,:,:]
+#     weigh_img, spec_edges, spat_edges = np.histogram2d(spec_rebin, spat_rebin,
+#                                                    bins=[wave_bins, dspat_bins], density=False,
+#                                                    weights = img_now[finmask])
+#     sciimg_rect_stack[iexp,:,:] =(norm_img > 0.0)*weigh_img/(norm_img + (norm_img == 0.0))
+#     # Rebin the sky subtracted image
+#     imgminsky_now = (sciimg_stack[iexp,:,:] - skymodel_stack[iexp,:,:])
+#     weigh_imgminsky, spec_edges, spat_edges = np.histogram2d(spec_rebin, spat_rebin,
+#                                                    bins=[wave_bins, dspat_bins], density=False,
+#                                                    weights = imgminsky_now[finmask])
+#     imgminsky_rect_stack[iexp,:,:] =(norm_img > 0.0)*weigh_imgminsky/(norm_img + (norm_img == 0.0))
+#
+#     # Rebin the tilts
+#     tilts_now = tilts_stack[iexp,:,:]
+#     weigh_tilts, spec_edges, spat_edges = np.histogram2d(spec_rebin, spat_rebin,
+#                                                    bins=[wave_bins, dspat_bins], density=False,
+#                                                    weights = tilts_now[finmask])
+#     tilts_rect_stack[iexp,:,:] =(norm_img > 0.0)*weigh_tilts/(norm_img + (norm_img == 0.0))
+#     # Rebin the wavelength image
+#     waveimg_now = waveimg_stack[iexp,:,:]
+#     weigh_waveimg, spec_edges, spat_edges = np.histogram2d(spec_rebin, spat_rebin,
+#                                                    bins=[wave_bins, dspat_bins], density=False,
+#                                                    weights = waveimg_now[finmask])
+#     waveimg_rect_stack[iexp,:,:] =(norm_img > 0.0)*weigh_waveimg/(norm_img + (norm_img == 0.0))
+#
+#     # Rebin the sptial offset from the trace in pixels
+#     dspat_now = dspat_stack[iexp,:,:]
+#     weigh_dspat, spec_edges, spat_edges = np.histogram2d(spec_rebin, spat_rebin,
+#                                                            bins=[wave_bins, dspat_bins], density=False,
+#                                                            weights=dspat_now[finmask])
+#     dspat_rect_stack[iexp, :, :] = (norm_img > 0.0) * weigh_dspat/(norm_img + (norm_img == 0.0))
+#
+#     # Rebin the variance
+#     var_now = utils.calc_ivar(sciivar_stack[iexp,:,:])
+#     weigh_var, spec_edges, spat_edges = np.histogram2d(spec_rebin, spat_rebin,
+#                                                    bins=[wave_bins, dspat_bins], density=False,
+#                                                    weights = var_now[finmask])
+#     var_rect_stack[iexp,:,:] =(norm_img > 0.0)*weigh_var/(norm_img + (norm_img == 0.0))**2
+#
