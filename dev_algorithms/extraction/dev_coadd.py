@@ -96,7 +96,7 @@ loglam_grid = logmin + (dloglam/osamp)*np.arange(int(np.ceil(osamp*ngrid)))
 wave_grid = None
 
 sciimg, sciivar, imgminsky, outmask, nused, tilts, waveimg, dspat, thismask, tslits_dict = procimg.coadd2d(
-    sciimg_stack, sciivar_stack, (mask_stack == 0), skymodel_stack, tilts_stack, waveimg_stack, trace_stack,
+    sciimg_stack, sciivar_stack, skymodel_stack, (mask_stack == 0), tilts_stack, waveimg_stack, trace_stack,
     thismask_stack, loglam_grid=loglam_grid)
 sys.exit(-1)
 
