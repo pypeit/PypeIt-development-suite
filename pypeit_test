@@ -151,7 +151,7 @@ def main():
 
             outfile_root = instr.lower()+'_'+setup.lower()
 
-            if instr.lower() in ['shane_kast_blue']: #, 'keck_lris_red']:
+            if instr.lower() in ['shane_kast_blue']:
                 # Use pypeit_setup to get the pypeit file for Shane Kast Blue
                 ntest += 1
                 logfile = os.path.join(wdir, outfile_root+'.test.log')

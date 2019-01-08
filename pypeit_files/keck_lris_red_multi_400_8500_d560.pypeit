@@ -18,6 +18,11 @@
     [[standardframe]]
         number = 0
 
+# Setup
+setup read
+ Setup A
+setup end
+
 # Read in the data
 data read
 path /Users/joe/python/PypeIt-development-suite/RAW_DATA/Keck_LRIS_red/multi_400_8500_d560/

@@ -20,12 +20,7 @@ number = 0
 
 # Setup
 setup read
- A:
-   --:
-     dichroic: none
-     disperser: {angle: 6.1887, name: 32/mmSB_G5533}
-     slit: {decker: SCXD_G5531, slitlen: none, slitwid: none}
-   '01': {binning: 16, det: 1, namp: 1}
+ Setup A
 setup end
 
 # Read in the data

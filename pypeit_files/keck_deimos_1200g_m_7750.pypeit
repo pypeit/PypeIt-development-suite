@@ -13,6 +13,10 @@
     [[standardframe]]
         number = 0
 
+# Setup
+setup read
+ Setup A
+setup end
 
 # Read in the data
 data read
