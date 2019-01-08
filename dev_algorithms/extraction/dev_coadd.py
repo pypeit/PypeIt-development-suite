@@ -39,7 +39,7 @@ spec1d_files = [os.path.join(scidir, ifile) for ifile in ['spec1d_pisco_GNIRS_20
                                                               'spec1d_pisco_GNIRS_2017Mar31T085933.097.fits',
                                                               'spec1d_pisco_GNIRS_2017Mar31T091538.731.fits',
                                                               'spec1d_pisco_GNIRS_2017Mar31T092059.597.fits']]
-slit = 4
+slit = 5
 nexp = len(waveimgfiles)
 
 for ifile in range(nexp):
@@ -98,11 +98,10 @@ wave_grid = None
 sciimg, sciivar, imgminsky, outmask, nused, tilts, waveimg, dspat, thismask, tslits_dict = procimg.coadd2d(
     sciimg_stack, sciivar_stack, skymodel_stack, (mask_stack == 0), tilts_stack, waveimg_stack, trace_stack,
     thismask_stack, loglam_grid=loglam_grid)
-sys.exit(-1)
 
-sobjs, _ = extract.objfind(imgminsky, thismask_rect, tslits_dict['lcen'], tslits_dict['rcen'],
+sobjs, _ = extract.objfind(imgminsky, thismask, tslits_dict['lcen'], tslits_dict['rcen'],
                                                 inmask=outmask, show_peaks=True,show_fits=True, show_trace=True)
-sobjs_neg, _ = extract.objfind(-imgminsky, thismask_rect, tslits_dict['lcen'], tslits_dict['rcen'],
+sobjs_neg, _ = extract.objfind(-imgminsky, thismask, tslits_dict['lcen'], tslits_dict['rcen'],
                                inmask=outmask, show_peaks=True,show_fits=True, show_trace=True)
 sobjs.append_neg(sobjs_neg)
 # Local sky subtraction and extraction
@@ -111,12 +110,12 @@ global_sky = np.zeros_like(imgminsky)
 rn2img = np.zeros_like(imgminsky)
 objmodel_rect = np.zeros_like(imgminsky)
 ivarmodel_rect = np.zeros_like(imgminsky)
-extractmask_rect = np.zeros_like(thismask_rect)
+extractmask_rect = np.zeros_like(thismask)
 par = spectrograph.default_pypeit_par()
 # TODO Modify profile fitting so that we can pass in a position image which will allow us to improve the spatial sampling
 # in this final extraction step
-skymodel_rect[thismask_rect], objmodel_rect[thismask_rect], ivarmodel_rect[thismask_rect], extractmask_rect[thismask_rect] = \
-    skysub.local_skysub_extract(imgminsky, sciivar, tilts, waveimg, global_sky, rn2img, thismask_rect,
+skymodel_rect[thismask], objmodel_rect[thismask], ivarmodel_rect[thismask], extractmask_rect[thismask] = \
+    skysub.local_skysub_extract(imgminsky, sciivar, tilts, waveimg, global_sky, rn2img, thismask,
     tslits_dict['lcen'], tslits_dict['rcen'], sobjs, model_noise=False,bsp=par['scienceimage']['bspline_spacing'],
     sn_gauss=par['scienceimage']['sn_gauss'],inmask=outmask, show_profile=True)
 resids_rect = ((imgminsky - skymodel_rect - objmodel_rect)*np.sqrt(ivarmodel_rect))
