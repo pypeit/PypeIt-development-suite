@@ -1,46 +1,49 @@
-# This is a comment line
-# This reduce data from vlt xshooter vis 
-# at the moment takes the standard star as SCIENCE (and not as standard).
-# Note that for these observations ESO did not provided an arc-lamp
-# ginga --module=RC&
-# run_pypeit -v2 -o -m -s ./vlt_xshooter_vis_2x2.pypeit
-# run_pypeit -v2 -o -s ./vlt_xshooter_vis_2x2.pypeit
+# Auto-generated PypeIt file
+# Thu 10 Jan 2019 15:09:23
 
 # User-defined execution parameters
 [rdx]
 spectrograph = vlt_xshooter_vis
-    sortroot = vlt_xshooter_vis
-
 [calibrations]
-    [[arcframe]]
-        number = 1
-    [[standardframe]]
-        number = 0
-    [[biasframe]]
-        number = 3
-    [[pixelflatframe]]
-        number = 3
-    [[traceframe]]
-        number = 3
+[[biasframe]]
+number = 0
+[[pixelflatframe]]
+number = 0
+[[arcframe]]
+number = 1
+[[pinholeframe]]
+number = 0
+[[traceframe]]
+number = 0
+[[standardframe]]
+number = 0
 
 # Setup
 setup read
- Setup A
+ Setup A:
+   --:
+     dichroic: none
+     disperser: {angle: none, name: default}
+     slit: {decker: 0.9x11, slitlen: none, slitwid: none}
+   '01': {binning: '2,2', det: 1, namp: 1}
 setup end
 
 # Read in the data
 data read
- path /Users/joe/python/PypeIt-development-suite/RAW_DATA/VLT_XSHOOTER/VIS_2x2/
-| filename                              | date                    | frametype       | target    | exptime |
-| XSHOO.2016-10-08T10:07:38.147.fits.gz | 2016-10-08T10:07:38.147 | bias	    | bias	|  0.0000 |
-| XSHOO.2016-10-08T10:08:35.051.fits.gz | 2016-10-08T10:08:35.051 | bias	    | bias	|  0.0000 |
-| XSHOO.2016-10-08T10:09:30.026.fits.gz | 2016-10-08T10:09:30.026 | bias	    | bias	|  0.0000 |
-| XSHOO.2016-10-08T13:03:20.598.fits.gz | 2016-10-08T13:03:20.598 | pixelflat,trace | flat	|  2.5670 |
-| XSHOO.2016-10-08T13:03:57.921.fits.gz | 2016-10-08T13:03:57.921 | pixelflat,trace | flat	|  2.5670 |
-| XSHOO.2016-10-08T13:04:35.024.fits.gz | 2016-10-08T13:04:35.024 | pixelflat,trace | flat	|  2.5670 |
-| XSHOO.2016-10-08T03:05:51.672.fits.gz | 2016-10-08T03:05:51.672 | science    	    | J2310	|  1200.0 |
-| XSHOO.2016-10-08T03:26:38.134.fits.gz | 2016-10-08T03:26:38.134 | science	    | J2310	|  1200.0 |
-| XSHOO.2016-10-07T15:52:42.861.fits.gz | 2016-10-07T15:52:42.861 | arc		    | J2310	|   5.0	  |
-# | XSHOO.2016-10-08T00:51:04.703.fits.gz | 2016-10-08T00:51:04.703 | science	    | TELLURIC  |  3.1200 |
-# | XSHOO.2016-10-08T00:51:37.516.fits.gz | 2016-10-08T00:51:37.516 | science	    | TELLURIC  |  3.1200 |
+ path /Users/joe/python/PypeIt-development-suite/RAW_DATA/VLT_XSHOOTER/VIS_2x2
+|                              filename |       frametype |          ra |         dec |         target | dispname |   decker | binning |             mjd | airmass | exptime | calib | comb_id | bkg_id |
+| XSHOO.2016-10-08T13:03:20.598.fits.gz | trace,pixelflat |        None |        None |      LAMP,FLAT |  default |   0.9x11 |     2,2 | 57669.543988402 |    None |   2.567 |     0 |      -1 |     -1 |
+| XSHOO.2016-10-08T13:03:57.921.fits.gz | trace,pixelflat |        None |        None |      LAMP,FLAT |  default |   0.9x11 |     2,2 | 57669.544420382 |    None |   2.567 |     0 |      -1 |     -1 |
+| XSHOO.2016-10-08T13:04:35.024.fits.gz | trace,pixelflat |        None |        None |      LAMP,FLAT |  default |   0.9x11 |     2,2 | 57669.544849817 |    None |   2.567 |     0 |      -1 |     -1 |
+| XSHOO.2016-10-07T15:52:42.861.fits.gz |             arc |        None |        None |      LAMP,WAVE |  default |   0.9x11 |     1,1 | 57668.661607192 |    None |     5.0 |     0 |      -1 |     -1 |
+| XSHOO.2016-10-08T00:51:37.516.fits.gz |        standard | 21:18:11.17 | -04:31:07.6 |   STD,TELLURIC |  default |   0.9x11 |     2,2 | 57669.035850876 |   1.065 |    3.12 |     0 |       2 |     -1 |
+| XSHOO.2016-10-08T03:05:51.672.fits.gz |         science | 23:10:39.01 | +18:55:17.2 | SDSSJ2310p1855 |  default |   0.9x11 |     2,2 |  57669.12907028 |   1.388 |  1200.0 |     0 |       3 |     -1 |
+#| XSHOO.2016-10-08T03:26:38.134.fits.gz |         science | 23:10:38.98 | +18:55:22.2 | SDSSJ2310p1855 |  default |   0.9x11 |     2,2 | 57669.143496919 |   1.409 |  1200.0 |     0 |       4 |     -1 |
+#| XSHOO.2016-10-08T00:51:04.703.fits.gz |        standard | 21:18:11.15 | -04:31:12.5 |   STD,TELLURIC |  default |   0.9x11 |     2,2 | 57669.035471099 |   1.065 |    3.12 |     0 |       1 |     -1 |
 data end
+
+# Use these biases later once we get the overscan stuff sorted out for the telluric standard
+#| XSHOO.2016-10-08T10:07:38.147.fits.gz |            bias |        None |        None |           BIAS |  default | 1.0x12.6 |     2,2 | 57669.421969287 |    None |     0.0 |     0 |      -1 |     -1 |
+#| XSHOO.2016-10-08T10:08:35.051.fits.gz |            bias |        None |        None |           BIAS |  default | 1.0x12.6 |     2,2 | 57669.422627907 |    None |     0.0 |     0 |      -1 |     -1 |
+#| XSHOO.2016-10-08T10:09:30.026.fits.gz |            bias |        None |        None |           BIAS |  default | 1.0x12.6 |     2,2 | 57669.423264186 |    None |     0.0 |     0 |      -1 |     -1 |
+
