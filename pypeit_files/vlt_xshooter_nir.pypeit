@@ -32,22 +32,22 @@ setup end
 
 # Read in the data
 data read
-# path /Users/joe/python/PypeIt-development-suite/RAW_DATA/VLT_XSHOOTER/NIR/
+ path /Users/joe/python/PypeIt-development-suite/RAW_DATA/VLT_XSHOOTER/NIR/
 path /home/ema/Dropbox/XshooterTestBed/VLT_XSHOOTER/NIR/
-| filename                              | date                    | frametype       | target    | exptime |
-| XSHOO.2016-08-02T12:22:12.800.fits.gz | 2016-08-02T12:22:12.800 | bias            | dark      |   900.0 |
-| XSHOO.2016-08-02T12:37:18.837.fits.gz | 2016-08-02T12:37:18.837 | bias            | dark      |   900.0 |
-| XSHOO.2016-08-02T12:52:26.869.fits.gz | 2016-08-02T12:52:26.869 | bias            | dark      |   900.0 |
-| XSHOO.2016-08-03T14:41:06.410.fits.gz | 2016-08-03T14:41:06.410 | pixelflat,trace | flat      |   18.72 |
-| XSHOO.2016-08-03T14:41:59.007.fits.gz | 2016-08-03T14:41:59.007 | pixelflat,trace | flat      |   18.72 |
-| XSHOO.2016-08-03T14:42:54.280.fits.gz | 2016-08-03T14:42:54.280 | pixelflat,trace | flat      |   18.72 |
-#| XSHOO.2016-08-02T08:45:49.494.fits.gz | 2016-08-02T08:45:49.494 | science,arc     | J0100     |   900.0 |
-#| XSHOO.2016-08-02T09:00:56.860.fits.gz | 2016-08-02T09:00:56.860 | science,arc     | J0100     |   900.0 |
-#| XSHOO.2016-08-02T09:16:54.772.fits.gz | 2016-08-02T09:16:54.772 | science,arc     | J0100     |   900.0 |
-| XSHOO.2016-08-02T09:32:03.463.fits.gz | 2016-08-02T09:32:03.463 | science,arc     | J0100     |   900.0 |
-#| XSHOO.2016-08-02T09:57:17.147.fits.gz | 2016-08-02T09:57:17.147 | science         | HIP022840 |   2.404 |
-#| XSHOO.2016-08-02T09:57:56.903.fits.gz | 2016-08-02T09:57:56.903 | science         | HIP022840 |   2.404 |
-data end
+|                              filename |       frametype |          ra |         dec |         target | dispname | decker | binning |            mjd | airmass | exptime | calib | comb_id | bkg_id |
+| XSHOO.2016-08-03T14:41:06.410.fits.gz | pixelflat,trace |        None |        None |      LAMP,FLAT |  default | 0.4x11 |     1,1 | 57603.61187975 |    None |   18.72 |   0,1 |      -1 |     -1 |
+| XSHOO.2016-08-03T14:41:59.007.fits.gz | pixelflat,trace |        None |        None |      LAMP,FLAT |  default | 0.4x11 |     1,1 | 57603.61248851 |    None |   18.72 |   0,1 |      -1 |     -1 |
+| XSHOO.2016-08-03T14:42:54.280.fits.gz | pixelflat,trace |        None |        None |      LAMP,FLAT |  default | 0.4x11 |     1,1 | 57603.61312824 |    None |   18.72 |   0,1 |      -1 |     -1 |
+| XSHOO.2016-08-02T08:45:49.494.fits.gz |     science,arc | 01:00:13.04 | +28:02:24.4 |     J0100p2802 |  default | 0.6x11 |     1,1 | 57602.36515618 |   1.652 |   900.0 |     0 |       1 |      2 |
+| XSHOO.2016-08-02T09:00:56.860.fits.gz |     science,arc | 01:00:13.04 | +28:02:24.4 |     J0100p2802 |  default | 0.6x11 |     1,1 |  57602.3756581 |   1.649 |   900.0 |     1 |       2 |      1 |
+| XSHOO.2016-08-02T09:57:17.147.fits.gz |        standard | 04:54:50.63 | +00:27:58.4 |   STD,TELLURIC |  default | 0.6x11 |     1,1 | 57602.41478179 |   1.525 |    15.0 |     1 |       3 |      4 |
+| XSHOO.2016-08-02T09:57:56.903.fits.gz |        standard | 04:54:50.91 | +00:28:01.2 |   STD,TELLURIC |  default | 0.6x11 |     1,1 | 57602.41524193 |   1.521 |    15.0 |     1 |       4 |      3 |
+
+# The files that are commented out are actually darks that should be subtracted from these flats
+#| XSHOO.2016-08-03T14:41:32.042.fits.gz | pixelflat,trace |        None |        None |      LAMP,FLAT |  default | 0.4x11 |     1,1 | 57603.61217641 |    None |   18.72 |     0 |      -1 |     -1 |
+#| XSHOO.2016-08-03T14:42:27.310.fits.gz | pixelflat,trace |        None |        None |      LAMP,FLAT |  default | 0.4x11 |     1,1 | 57603.61281609 |    None |   18.72 |     0 |      -1 |     -1 |
+#| XSHOO.2016-08-03T14:43:22.583.fits.gz | pixelflat,trace |        None |        None |      LAMP,FLAT |  default | 0.4x11 |     1,1 | 57603.61345582 |    None |   18.72 |     0 |      -1 |     -1 |
+
 
 # FLATS LAMP ON:
 # XSHOO.2016-08-03T14:41:06.410.fits.gz # J0100 data -- NIR FLATS On/Off 18.72sec
