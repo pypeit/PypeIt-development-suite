@@ -46,7 +46,7 @@ def main():
     # TODO: Once we're satisfied than an instrument passes, add it to
     # this list!  It must pass for every directory that includes these
     # strings and all the sub-directory setups within!
-    valid_instruments = ['Kast', 'DEIMOS', 'LRIS', 'NIRES']
+    valid_instruments = ['Kast', 'DEIMOS', 'LRIS', 'NIRES', 'GNIRS', 'XSHOOTER']
 
     # Grab a list of all instruments
     dev_path = os.getenv('PYPEIT_DEV')
@@ -69,7 +69,6 @@ def main():
         instruments = [item for item in all_instruments if pargs.tests.lower() in item.lower()]
         invalid_selection = [item for item in instruments if not np.any([inst.lower()
                                     in item.lower() for inst in valid_instruments]) ]
-
     # Check that instruments is not blank
     if len(instruments) == 0:
         print("\x1B[" + "1;31m" + "\nERROR - " + "\x1B[" + "0m" +
@@ -92,8 +91,10 @@ def main():
     npass, ntest = 0, 0
 
     # Do them in order Shane, LRIS, DEIMOS, since DEIMOS takes the
-    # longest. To do this we sort and reverse
+    # longest. To do this we sort and reverse, and then apply the kludge below
     instruments.sort(reverse=True)
+    if 'Keck_DEIMOS' in instruments and len(instruments) > 2:
+        instruments[-2], instruments[-1]=instruments[-1],instruments[-2]
 
     # Report
     print('Running tests on the following instruments:')
@@ -104,6 +105,10 @@ def main():
     for instr in instruments:
         # Setups
         setups = next(os.walk(os.path.join(raw_data, instr)))[1]
+
+#        JFH Not sure who added this line but obviously it was a hack to speed things up.
+#        if 'blue' not in instr:
+#            continue
 
         # Report
         print('The following setups have been found for {0}:'.format(instr))
@@ -146,23 +151,22 @@ def main():
 
             outfile_root = instr.lower()+'_'+setup.lower()
 
-            if instr.lower() in ['shane_kast_blue']: #, 'keck_lris_red']:
-                # Use pypeit_setup to get the pypeit file for Shane Kast
-                # Blue
+            if instr.lower() in ['shane_kast_blue']:
+                # Use pypeit_setup to get the pypeit file for Shane Kast Blue
                 ntest += 1
                 logfile = os.path.join(wdir, outfile_root+'.test.log')
                 with open(logfile, 'w') as f:
-                    command_line = ['pypeit_setup', rawdir, instr.lower(), '-c', '-o',
-                                    '--setups_path', wdir ]
+                    command_line = ['pypeit_setup', '-r', rawdir, '-s', instr.lower(), '-c', '-o',
+                                    '--output_path', wdir ]
                     print('Running command: {0}'.format(' '.join(command_line)))
                     retval = subprocess.call(command_line, stderr=f, cwd=wdir)
 
-                wdir = os.path.join(wdir, instr.lower()+'_setup_A')
+                wdir = os.path.join(wdir, instr.lower()+'_A')
                 print('Finished running pypeit on {0} --- '.format(outfile_root),
                       file=sys.stderr, end='')
 
-                # Run pypeit on setup_A.pypeit
-                pyp_file = glob.glob(os.path.join(wdir, '*setup_A.pypeit'))
+                # Run pypeit on _A.pypeit
+                pyp_file = glob.glob(os.path.join(wdir, '*_A.pypeit'))
                 if len(pyp_file) != 1:
                     print('Could not find expected pypeit file: {0}'.format(pyp_file))
                     print("\x1B[" + "1;31m" + "FAILED" + "\x1B[" + "0m", file=sys.stderr)

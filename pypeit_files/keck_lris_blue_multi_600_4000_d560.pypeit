@@ -1,41 +1,47 @@
-# This is a comment line
+# Auto-generated PypeIt file
+# Wed 02 Jan 2019 16:29:54
 
 # User-defined execution parameters
 [rdx]
-    spectrograph = keck_lris_blue
-    sortroot = keck_lris_blue_multi_600_4000_d560
+  spectrograph = keck_lris_blue
+  sortroot = keck_lris_blue_multi_600_4000_d560
 [calibrations]
-    [[biasframe]]
-        number = 3
-    [[pixelflatframe]]
-        number = 0
-    [[arcframe]]
-        number = 1
-    [[pinholeframe]]
-        number = 0
-    [[traceframe]]
-        number = 1
-    [[standardframe]]
-        number = 0
-    [[flatfield]]
-        frame = ../../../CALIBS/PYPEIT_LRISb_pixflat_B600_2x2_17sep2009.fits.gz
+[[biasframe]]
+number = 5
+[[pixelflatframe]]
+number = 0
+[[arcframe]]
+number = 1
+[[pinholeframe]]
+number = 0
+[[traceframe]]
+number = 1
+[[standardframe]]
+number = 0
+[[flatfield]]
+frame = /Users/joe/python/PypeIt-development-suite/CALIBS/PYPEIT_LRISb_pixflat_B600_2x2_17sep2009.fits.gz
 
+
+# Setup
+setup read
+ Setup A
+setup end
 
 # Read in the data
 data read
-path /Users/joe/python/PypeIt-development-suite/RAW_DATA/Keck_LRIS_blue/multi_600_4000_d560/
-|             filename |                date | frametype |     target | exptime | binning | dichroic | dispname |   decker |
-| b170320_2022.fits.gz | 2017-03-20T00:58:13 |       arc |    unknown |       1 |     2,2 |      560 | 600/4000 | c17_60L. |
-| b170320_2042.fits.gz | 2017-03-20T03:13:17 |      bias |    unknown |       0 |     2,2 |      560 | 600/4000 | sp15l.fi |
-| b170320_2043.fits.gz | 2017-03-20T03:13:54 |      bias |    unknown |       0 |     2,2 |      560 | 600/4000 | sp15l.fi |
-| b170320_2044.fits.gz | 2017-03-20T03:14:31 |      bias |    unknown |       0 |     2,2 |      560 | 600/4000 | sp15l.fi |
-| b170320_2045.fits.gz | 2017-03-20T03:15:08 |      bias |    unknown |       0 |     2,2 |      560 | 600/4000 | sp15l.fi |
-| b170320_2046.fits.gz | 2017-03-20T03:15:45 |      bias |    unknown |       0 |     2,2 |      560 | 600/4000 | sp15l.fi |
-| b170320_2058.fits.gz | 2017-03-20T04:51:55 |     trace | Blank04 25 |      12 |     2,2 |      560 | 600/4000 | c17_60L. |
-| b170320_2083.fits.gz | 2017-03-20T06:23:38 |   science |   c17_60L. |    1800 |     2,2 |      560 | 600/4000 | c17_60L. |
-#| b170320_2084.fits.gz | 2017-03-20T06:54:17 |   science |   c17_60L. |    1800 |     2,2 |      560 | 600/4000 | c17_60L. |
-#| b170320_2089.fits.gz | 2017-03-20T08:21:05 |   science |   c17_60L. |    1800 |     2,2 |      560 | 600/4000 | c17_60L. |
-#| b170320_2090.fits.gz | 2017-03-20T08:51:47 |   science |   c17_60L. |    1800 |     2,2 |      560 | 600/4000 | c17_60L. |
-#| b170320_2091.fits.gz | 2017-03-20T09:22:26 |   science |   c17_60L. |    1800 |     2,2 |      560 | 600/4000 | c17_60L. |
+ path /Users/joe/python/PypeIt-development-suite/RAW_DATA/Keck_LRIS_blue/multi_600_4000_d560/
+|             filename | frametype |     target | exptime | dispname |   decker | setup | calib | binning | dichroic |   dispangle |
+| b170320_2022.fits.gz |       arc |    unknown |       1 | 400/8500 | c17_60L. |     A |     0 |     2,2 |      560 | 22.13431168 |
+| b170320_2042.fits.gz |      bias |    unknown |       0 | 400/8500 | sp15l.fi |     A |     0 |     2,2 |      560 | 22.13544083 |
+| b170320_2043.fits.gz |      bias |    unknown |       0 | 400/8500 | sp15l.fi |     A |     0 |     2,2 |      560 | 22.13544083 |
+| b170320_2044.fits.gz |      bias |    unknown |       0 | 400/8500 | sp15l.fi |     A |     0 |     2,2 |      560 | 22.13544083 |
+| b170320_2045.fits.gz |      bias |    unknown |       0 | 400/8500 | sp15l.fi |     A |     0 |     2,2 |      560 | 22.13544083 |
+| b170320_2046.fits.gz |      bias |    unknown |       0 | 400/8500 | sp15l.fi |     A |     0 |     2,2 |      560 | 22.13544083 |
+| b170320_2058.fits.gz |     trace | Blank04 25 |      12 | 600/7500 | c17_60L. |     A |     0 |     2,2 |      560 | 26.98307037 |
+| b170320_2083.fits.gz |   science |   c17_60L. |    1800 | 400/8500 | c17_60L. |     A |     0 |     2,2 |      560 | 22.13995552 |
+| b170320_2084.fits.gz |   science |   c17_60L. |    1800 | 400/8500 | c17_60L. |     A |     0 |     2,2 |      560 | 22.13995552 |
+| b170320_2089.fits.gz |   science |   c17_60L. |    1800 | 400/8500 | c17_60L. |     A |     0 |     2,2 |      560 | 22.13995552 |
+| b170320_2090.fits.gz |   science |   c17_60L. |    1800 | 400/8500 | c17_60L. |     A |     0 |     2,2 |      560 | 22.13995552 |
+| b170320_2091.fits.gz |   science |   c17_60L. |    1800 | 400/8500 | c17_60L. |     A |     0 |     2,2 |      560 | 22.13995552 |
 data end
 

@@ -27,6 +27,10 @@ spectrograph = vlt_xshooter_nir
     [[traceframe]]
         number = 1
 
+# Setup
+setup read
+ Setup A
+setup end
 
 # Read in the data
 data read
