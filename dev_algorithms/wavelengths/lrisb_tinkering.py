@@ -17,6 +17,17 @@ from pypeit.core.wavecal import fitting
 lamps = ['NeI', 'ArI', 'CdI', 'KrI', 'XeI', 'ZnI', 'HgI']
 llist = waveio.load_line_lists(lamps)
 
+def load_300(wv_dict_only=False):
+    # Build the 'master'
+    wfile = os.path.join(os.getenv('PYPEIT_DEV'), 'REDUX_OUT/Keck_LRIS_blue/multi_300_5000_d680', 'MF_keck_lris_blue',
+                         'MasterWaveCalib_A_1_01.json')
+    wv_dict = ltu.loadjson(wfile)
+    if wv_dict_only:
+        return wv_dict
+    # Load template
+    template = Table.read('keck_lris_blue_300_d680.fits')
+    return wv_dict, template
+
 def load_600(wv_dict_only=False):
     # Build the 'master'
     wfile = os.path.join(os.getenv('PYPEIT_DEV'), 'REDUX_OUT/Keck_LRIS_blue/multi_600_4000_d560',
@@ -58,7 +69,7 @@ def build_600(outfile='keck_lris_blue_600_d560.fits'):
     tbl.write(outfile, overwrite=True)
     print("Wrote: {}".format(outfile))
 
-def get_shift(wv_dict, slit, nwspec):
+def get_shift(wv_dict, slit, nwspec, debug=True):
     ncomb = nwspec.size
     tspec = wv_dict[str(slit)]['spec']  # list
     # Pad
@@ -69,11 +80,20 @@ def get_shift(wv_dict, slit, nwspec):
     #
     result_out, shift_out, stretch_out, corr_out, shift_cc, corr_cc = wvutils.xcorr_shift_stretch(
         nwspec, pspec)
+    print("Shift = {}; cc = {}".format(shift_cc, corr_cc))
+    if debug:
+        xvals = np.arange(ncomb)
+        plt.clf()
+        ax = plt.gca()
+        #
+        ax.plot(xvals, nwspec)
+        ax.plot(xvals, np.roll(pspec, int(shift_cc)), 'k')
+        plt.show()
     # Return
     return npad, shift_cc
 
 
-def target_lines(wv_dict, slit, nwwv, nwspec, trim=0.05):
+def target_lines(wv_dict, slit, nwwv, nwspec, trim=0.05, verbose=True, **kwargs):
     tspec = wv_dict[str(slit)]['spec']
     nspec = len(tspec)
     # Shift
@@ -90,7 +110,7 @@ def target_lines(wv_dict, slit, nwwv, nwspec, trim=0.05):
         mspec = nwspec[i0:i0 + nspec]
         mwv = nwwv[i0:i0 + nspec]
     # Peaks
-    all_tcent, all_ecent, cut_tcent, icut, arc_cont_sub = wvutils.arc_lines_from_spec(mspec)
+    all_tcent, all_ecent, cut_tcent, icut, arc_cont_sub = wvutils.arc_lines_from_spec(mspec, **kwargs, debug=True)
     # Wavelengths
     gdwv = mwv[np.round(all_tcent).astype(int)]
     # Match to line list
@@ -107,6 +127,9 @@ def target_lines(wv_dict, slit, nwwv, nwspec, trim=0.05):
     targ_wv = gdwv[mask]
     targ_y = mspec[np.round(all_tcent).astype(int)][mask]
 
+    if verbose:
+        print("Target lines: {}".format(targ_wv))
+
     # Return
     return np.array(tspec), mspec, mwv, targ_wv, targ_y
 
@@ -119,14 +142,19 @@ targ_grid = np.outer(targ_wv, np.ones(all_tcent.size))
 
 
 
-def loss_func(theta, all_tcent, targ_grid, targ_y):
+def loss_func(theta, all_tcent, targ_grid, targ_y, orig_coeff, nfit, verbose=False):
     func = 'legendre'
     fmin, fmax = 0., 1.
-    new_wv = utils.func_val(theta, all_tcent, func, minx=fmin, maxx=fmax)
+    # Replace
+    coeff = orig_coeff.copy()
+    coeff[0:nfit] = theta
+    new_wv = utils.func_val(coeff, all_tcent, func, minx=fmin, maxx=fmax)
     #
     new_grid = np.outer(np.ones(targ_grid.shape[0]), new_wv)
     diff = np.abs(targ_grid - new_grid)
     mgrid = np.min(diff, axis=1)
+    if verbose:
+        print(mgrid)
     # Could sigclip here
 
     # Loss metric
@@ -135,59 +163,86 @@ def loss_func(theta, all_tcent, targ_grid, targ_y):
     return np.sum(loss)
 
 
-def fitme(bounds, all_tcent, targ_grid, targ_y):
-    args=(all_tcent, targ_grid, targ_y)
+def fitme(bounds, all_tcent, targ_grid, targ_y, orig_coeff):
+    args=(all_tcent, targ_grid, targ_y, orig_coeff, len(bounds))
     result = scipy.optimize.differential_evolution(loss_func, bounds, tol=1e-4,
                                                    args=args,
                                                    disp=True, polish=True, seed=None)
     # return
     return result
 
-def do_it_all(slit, instr, plot_fil=None):
+
+def do_it_all(slit, instr, plot_fil=None, IDtol=1.):
     if instr == '600':
         wv_dict, template = load_600()
+        fwhm = 4.
+        n_order = 3
+        n_first = 2
+    elif instr == '300':
+        wv_dict, template = load_300()
+        fwhm = 8.
+        n_order = 3
+        n_first = 3
+    else:
+        pdb.set_trace()
     nwwv = template['wave'].data
     nwspec = template['flux'].data
     # Snippet
-    tspec, mspec, mwv, targ_wv, targ_y = target_lines(wv_dict, slit, nwwv, nwspec)
+    tspec, mspec, mwv, targ_wv, targ_y = target_lines(wv_dict, slit, nwwv, nwspec, fwhm=fwhm)
     # Find new lines
-    all_tcent, all_ecent, cut_tcent, icut, arc_cont_sub = wvutils.arc_lines_from_spec(tspec)
+    all_tcent, all_ecent, cut_tcent, icut, arc_cont_sub = wvutils.arc_lines_from_spec(tspec, fwhm=fwhm,
+                                                                                      debug=True)
     # Grab initial guess
-    n_order = 3
     func = 'legendre'
     sigrej_first = 3.
     fmin, fmax = 0., 1.
     xfit = np.arange(mwv.size)
     yfit = mwv
-    initial_mask = mwv <= 0.
-    i1 = np.where(~initial_mask)[0][0]
+    initial_mask = (mwv > targ_wv.min()) & (mwv < targ_wv.max())
+    i1 = np.where(initial_mask)[0][0]
     disp = mwv[i1 + 1] - mwv[i1]
     #
     mask, fit = utils.robust_polyfit(xfit, yfit, n_order, function=func, sigma=sigrej_first,
-                                     initialmask=initial_mask,
+                                     initialmask=~initial_mask,
                                      minx=fmin, maxx=fmax, verbose=True)  # , weights=wfit)
+    rms_ang = utils.calc_fit_rms(xfit[mask == 0], yfit[mask == 0], fit, func, minx=fmin, maxx=fmax)
+    #                                     weights=wfit[mask == 0])
+    rms_pix = rms_ang / disp
+    print("Initial fit: {};  RMS = {}".format(fit, rms_pix))
     # Target grid
     targ_grid = np.outer(targ_wv, np.ones(all_tcent.size))
+    # Check the loss
+    loss = loss_func(fit[0:2], all_tcent, targ_grid, targ_y, fit, 2)
     # Bounds
     bounds = [[fit[0] - 50., fit[0] + 50],
-              [fit[1] * 0.8, fit[1] * 1.2],
-              [fit[2] * -2, fit[2] * 2],
-              [fit[3] * -2, fit[3] * 2]]
+              [fit[1]*0.9, fit[1]*1.1]]
+    #for ifit in fit[2:]:
+    #    bounds.append([np.abs(ifit)*-2, np.abs(ifit)*2])
     # Differential evolution
-    diff_result = fitme(bounds, all_tcent, targ_grid, targ_y)
-    final_guess = utils.func_val(diff_result.x, all_tcent, func, minx=fmin, maxx=fmax)
+    #diff_result = fitme(bounds, all_tcent, targ_grid, targ_y)
+    diff_result = fitme(bounds, all_tcent, targ_grid, targ_y, fit.copy())
+    new_fit = fit.copy()
+    new_fit[:len(bounds)] = diff_result.x
+    loss = loss_func(fit[0:len(bounds)], all_tcent, targ_grid, targ_y, fit, len(bounds), verbose=True)
+    print("Refined fit: {}".format(diff_result.x))
+    # Now cut on saturation
+    all_tcent, all_ecent, cut_tcent, icut, arc_cont_sub = wvutils.arc_lines_from_spec(tspec, fwhm=fwhm,
+                                                                                      nonlinear_counts=55000,
+                                                                                      debug=True)
+    final_guess = utils.func_val(new_fit, all_tcent, func, minx=fmin, maxx=fmax)
     # Match to line list
     IDs = []
     dwv = mwv[i1 + 1] - mwv[i1]
     lmask = np.zeros(final_guess.size, dtype=bool)
     for kk, iwv in enumerate(final_guess):
         imin = np.argmin(np.abs(iwv - llist['wave']))
-        if np.abs(iwv - llist['wave'][imin]) < dwv:
+        if np.abs(iwv - llist['wave'][imin]) < dwv*IDtol:
             lmask[kk] = True
             IDs.append(llist['wave'][imin])
+    print("IDs: {}".format(IDs))
     # Final fit
     final_fit = fitting.iterative_fitting(tspec, all_tcent, np.where(lmask)[0], np.array(IDs), llist, dwv,
-                              verbose=True, plot_fil=plot_fil, n_first=2)
+                              verbose=True, plot_fil=plot_fil, n_first=n_first)
     # Return
     return final_fit
 
