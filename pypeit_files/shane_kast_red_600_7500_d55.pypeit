@@ -8,17 +8,18 @@ spectrograph = shane_kast_red_ret
     [[arcframe]]
         number = 1
     [[standardframe]]
-	number = 1
+	    number = 1
     [[biasframe]]
         number = 3
     [[pixelflatframe]]
         number = 3
-    [[tilts]]
-        method = spca
-        params = 1, 1, 1
     [[traceframe]]
         number = 3
-	
+
+# Setup
+setup read
+ Setup A
+setup end
 
 # Read in the data
 data read

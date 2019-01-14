@@ -24,13 +24,7 @@ frame = /Users/joe/python/PypeIt-development-suite/CALIBS/PYPEIT_LRISb_pixflat_B
 
 # Setup
 setup read
- A:
-   --:
-     dichroic: '560'
-     disperser: {angle: 22.13431168, name: 400/8500}
-     slit: {decker: c17_60L., slitlen: none, slitwid: none}
-   '01': {binning: '2,2', det: 1, namp: 2}
-   '02': {binning: '2,2', det: 2, namp: 2}
+ Setup A
 setup end
 
 # Read in the data

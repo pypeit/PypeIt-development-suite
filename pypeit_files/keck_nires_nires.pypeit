@@ -20,12 +20,7 @@ number = 0
 
 # Setup
 setup read
- A:
-   --:
-     dichroic: none
-     disperser: {angle: none, name: spec}
-     slit: {decker: none, slitlen: none, slitwid: none}
-   '01': {binning: None, det: 1, namp: 1}
+ Setup A
 setup end
 
 # Read in the data
