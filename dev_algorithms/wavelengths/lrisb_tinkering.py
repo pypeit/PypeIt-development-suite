@@ -82,8 +82,7 @@ def get_shift(wv_dict, slit, nwspec, debug=True, subpix=None):
     npad = ncomb - nspec
     pspec[npad // 2:npad // 2 + len(tspec)] = tspec
     #
-    result_out, shift_out, stretch_out, corr_out, shift_cc, corr_cc = wvutils.xcorr_shift_stretch(
-        nwspec, pspec)
+    shift_cc, corr_cc = wvutils.xcorr_shift(nwspec, pspec)
     print("Shift = {}; cc = {}".format(shift_cc, corr_cc))
     if debug:
         xvals = np.arange(ncomb)
@@ -303,18 +302,18 @@ def reid_in_steps(slit, instr, plot_fil=None, IDtol=1., subpix=None):
                                                                  match_toler=2.5,
                                                                  cc_thresh=0.1, fwhm=fwhm)
         # Deal with IDs
-        gd_IDs = patt_dict['IDs'] > 0.
-        if np.any(gd_IDs):
-            sv_det.append(i0 + detections[gd_IDs])
-            sv_IDs.append(patt_dict['IDs'][gd_IDs])
+        sv_det.append(i0 + detections)
+        sv_IDs.append(patt_dict['IDs'])
 
     # Collate and proceed
     dets = np.concatenate(sv_det)
     IDs = np.concatenate(sv_IDs)
+    #
     i1 = np.where(mwv > 0.)[0][0]
     dwv = mwv[i1+1] - mwv[i1]
-    final_fit = fitting.iterative_fitting(tspec, dets, np.arange(dets.size).astype(int),
-                                          IDs, llist, dwv,
+    #
+    gd_det = np.where(IDs > 0.)[0]
+    final_fit = fitting.iterative_fitting(tspec, dets, gd_det, IDs[gd_det], llist, dwv,
                                           verbose=True, plot_fil=plot_fil, n_first=n_first)
     return final_fit
 
