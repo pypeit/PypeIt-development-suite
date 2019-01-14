@@ -13,6 +13,8 @@ from pypeit import utils
 from pypeit.core.wavecal import wvutils
 from pypeit.core.wavecal import waveio
 from pypeit.core.wavecal import fitting
+from pypeit.core.wavecal import autoid
+from pypeit.core import pydl
 
 lamps = ['NeI', 'ArI', 'CdI', 'KrI', 'XeI', 'ZnI', 'HgI']
 llist = waveio.load_line_lists(lamps)
@@ -69,9 +71,11 @@ def build_600(outfile='keck_lris_blue_600_d560.fits'):
     tbl.write(outfile, overwrite=True)
     print("Wrote: {}".format(outfile))
 
-def get_shift(wv_dict, slit, nwspec, debug=True):
+def get_shift(wv_dict, slit, nwspec, debug=True, subpix=None):
     ncomb = nwspec.size
-    tspec = wv_dict[str(slit)]['spec']  # list
+    tspec = np.array(wv_dict[str(slit)]['spec'])  # list
+    if subpix is not None:
+        tspec = tspec[subpix[0]:subpix[1]]
     # Pad
     pspec = np.zeros_like(nwspec)
     nspec = len(tspec)
@@ -93,11 +97,13 @@ def get_shift(wv_dict, slit, nwspec, debug=True):
     return npad, shift_cc
 
 
-def target_lines(wv_dict, slit, nwwv, nwspec, trim=0.05, verbose=True, **kwargs):
-    tspec = wv_dict[str(slit)]['spec']
+def target_lines(wv_dict, slit, nwwv, nwspec, trim=0.05, verbose=True, subpix=None, **kwargs):
+    tspec = np.array(wv_dict[str(slit)]['spec'])
+    if subpix is not None:
+        tspec = tspec[subpix[0]:subpix[1]]
     nspec = len(tspec)
     # Shift
-    npad, shift_cc = get_shift(wv_dict, slit, nwspec)
+    npad, shift_cc = get_shift(wv_dict, slit, nwspec, subpix=subpix)
     i0 = npad // 2 + int(shift_cc)
     # Master
     if i0 < 0: # Pad?
@@ -110,7 +116,7 @@ def target_lines(wv_dict, slit, nwwv, nwspec, trim=0.05, verbose=True, **kwargs)
         mspec = nwspec[i0:i0 + nspec]
         mwv = nwwv[i0:i0 + nspec]
     # Peaks
-    all_tcent, all_ecent, cut_tcent, icut, arc_cont_sub = wvutils.arc_lines_from_spec(mspec, **kwargs, debug=True)
+    all_tcent, all_ecent, cut_tcent, icut, arc_cont_sub = wvutils.arc_lines_from_spec(mspec, **kwargs)
     # Wavelengths
     gdwv = mwv[np.round(all_tcent).astype(int)]
     # Match to line list
@@ -125,13 +131,14 @@ def target_lines(wv_dict, slit, nwwv, nwspec, trim=0.05, verbose=True, **kwargs)
     # Targets
     mask = tmask & lmask
     targ_wv = gdwv[mask]
+    targ_x = all_tcent[mask]
     targ_y = mspec[np.round(all_tcent).astype(int)][mask]
 
     if verbose:
         print("Target lines: {}".format(targ_wv))
 
     # Return
-    return np.array(tspec), mspec, mwv, targ_wv, targ_y
+    return tspec, mspec, mwv, targ_wv, targ_x, targ_y
 
 '''
 # GLOBAL ME
@@ -142,7 +149,7 @@ targ_grid = np.outer(targ_wv, np.ones(all_tcent.size))
 
 
 
-def loss_func(theta, all_tcent, targ_grid, targ_y, orig_coeff, nfit, verbose=False):
+def loss_func(theta, all_tcent, targ_grid, targ_y, orig_coeff, nfit, verbose=False, sigclip=True):
     func = 'legendre'
     fmin, fmax = 0., 1.
     # Replace
@@ -156,6 +163,16 @@ def loss_func(theta, all_tcent, targ_grid, targ_y, orig_coeff, nfit, verbose=Fal
     if verbose:
         print(mgrid)
     # Could sigclip here
+    if sigclip:
+        iIter = 0
+        maxiter = mgrid.size//2
+        qdone = False
+        thismask = np.ones(mgrid.size, dtype=bool)
+        while (not qdone) and (iIter < maxiter):
+            thismask, qdone = pydl.djs_reject(np.zeros(mgrid.size), mgrid,
+                                              outmask=thismask, lower=3.,upper=3.,
+                                              maxrej=1, sticky=True)
+            iIter += 1
 
     # Loss metric
     loss = mgrid ** 2 * targ_y
@@ -172,7 +189,7 @@ def fitme(bounds, all_tcent, targ_grid, targ_y, orig_coeff):
     return result
 
 
-def do_it_all(slit, instr, plot_fil=None, IDtol=1.):
+def do_it_all(slit, instr, plot_fil=None, IDtol=1., subpix=None):
     if instr == '600':
         wv_dict, template = load_600()
         fwhm = 4.
@@ -188,7 +205,8 @@ def do_it_all(slit, instr, plot_fil=None, IDtol=1.):
     nwwv = template['wave'].data
     nwspec = template['flux'].data
     # Snippet
-    tspec, mspec, mwv, targ_wv, targ_y = target_lines(wv_dict, slit, nwwv, nwspec, fwhm=fwhm)
+    tspec, mspec, mwv, targ_wv, targ_x, targ_y = target_lines(wv_dict, slit, nwwv, nwspec,
+                                                              fwhm=fwhm, subpix=subpix)
     # Find new lines
     all_tcent, all_ecent, cut_tcent, icut, arc_cont_sub = wvutils.arc_lines_from_spec(tspec, fwhm=fwhm,
                                                                                       debug=True)
@@ -223,12 +241,12 @@ def do_it_all(slit, instr, plot_fil=None, IDtol=1.):
     diff_result = fitme(bounds, all_tcent, targ_grid, targ_y, fit.copy())
     new_fit = fit.copy()
     new_fit[:len(bounds)] = diff_result.x
-    loss = loss_func(fit[0:len(bounds)], all_tcent, targ_grid, targ_y, fit, len(bounds), verbose=True)
+    loss = loss_func(new_fit[0:len(bounds)], all_tcent, targ_grid, targ_y, fit, len(bounds), verbose=True)
     print("Refined fit: {}".format(diff_result.x))
     # Now cut on saturation
     all_tcent, all_ecent, cut_tcent, icut, arc_cont_sub = wvutils.arc_lines_from_spec(tspec, fwhm=fwhm,
-                                                                                      nonlinear_counts=55000,
-                                                                                      debug=True)
+                                                                                      nonlinear_counts=55000)
+                                                                                      #debug=True)
     final_guess = utils.func_val(new_fit, all_tcent, func, minx=fmin, maxx=fmax)
     # Match to line list
     IDs = []
@@ -247,6 +265,58 @@ def do_it_all(slit, instr, plot_fil=None, IDtol=1.):
     return final_fit
 
 
+def reid_in_steps(slit, instr, plot_fil=None, IDtol=1., subpix=None):
+    if instr == '600':
+        wv_dict, template = load_600()
+        fwhm = 4.
+        n_first = 2
+        nsnippet = 2
+    elif instr == '300':
+        wv_dict, template = load_300()
+        fwhm = 8.
+        n_first = 3
+        nsnippet = 2
+    else:
+        pdb.set_trace()
+    # Template
+    nwwv = template['wave'].data
+    nwspec = template['flux'].data
+
+    # Full snippet (padded as need be)
+    tspec, mspec, mwv, targ_wv, targ_x, targ_y = target_lines(wv_dict, slit, nwwv, nwspec,
+                                                              fwhm=fwhm, subpix=subpix)
+    # Loop on snippets
+    nsub = tspec.size // nsnippet
+    sv_det, sv_IDs = [], []
+    for kk in range(nsnippet):
+        # Construct
+        i0 = nsub * kk
+        i1 = min(nsub*(kk+1), tspec.size)
+        tsnippet = tspec[i0:i1]
+        msnippet = mspec[i0:i1]
+        mwvsnippet = mwv[i0:i1]
+        # Run reidentify
+        detections, spec_cont_sub, patt_dict = autoid.reidentify(tsnippet, msnippet, mwvsnippet,
+                                                                 llist, 1, debug_xcorr=False,
+                                                                 nonlinear_counts=55000.,
+                                                                 debug_reid=True,  # verbose=True,
+                                                                 match_toler=2.5,
+                                                                 cc_thresh=0.1, fwhm=fwhm)
+        # Deal with IDs
+        gd_IDs = patt_dict['IDs'] > 0.
+        if np.any(gd_IDs):
+            sv_det.append(i0 + detections[gd_IDs])
+            sv_IDs.append(patt_dict['IDs'][gd_IDs])
+
+    # Collate and proceed
+    dets = np.concatenate(sv_det)
+    IDs = np.concatenate(sv_IDs)
+    i1 = np.where(mwv > 0.)[0][0]
+    dwv = mwv[i1+1] - mwv[i1]
+    final_fit = fitting.iterative_fitting(tspec, dets, np.arange(dets.size).astype(int),
+                                          IDs, llist, dwv,
+                                          verbose=True, plot_fil=plot_fil, n_first=n_first)
+    return final_fit
 
 # Command line execution
 if __name__ == '__main__':
