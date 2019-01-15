@@ -68,6 +68,7 @@ def build_600(outfile='keck_lris_blue_600_d560.fits'):
     tbl['wave'] = nwwv
     tbl['flux'] = nwspec
     tbl.meta['INSTR'] = 'keck_lris_blue_600_d560'
+    tbl.meta['BINNING'] = 2
     tbl.write(outfile, overwrite=True)
     print("Wrote: {}".format(outfile))
 
