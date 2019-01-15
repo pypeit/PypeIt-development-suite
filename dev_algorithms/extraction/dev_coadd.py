@@ -23,7 +23,7 @@ from pypeit.core import procimg
 from pypeit import ginga
 
 # Read in the masters
-path = '/Users/joe/python/PypeIt-development-suite/REDUX_OUT_old/Gemini_GNIRS/GNIRS/'
+path = '/Users/joe/python/PypeIt-development-suite/REDUX_OUT/Gemini_GNIRS/'
 master_dir = path + 'MF_gemini_gnirs/'
 scidir = path + 'Science/'
 waveimgfiles = [os.path.join(master_dir, ifile) for ifile in ['MasterWave_A_1_01.fits','MasterWave_A_2_01.fits', 'MasterWave_A_4_01.fits',
@@ -99,6 +99,7 @@ sciimg, sciivar, imgminsky, outmask, nused, tilts, waveimg, dspat, thismask, tsl
     sciimg_stack, sciivar_stack, skymodel_stack, (mask_stack == 0), tilts_stack, waveimg_stack, trace_stack,
     thismask_stack, loglam_grid=loglam_grid)
 
+sys.exit(-1)
 sobjs, _ = extract.objfind(imgminsky, thismask, tslits_dict['lcen'], tslits_dict['rcen'],
                                                 inmask=outmask, show_peaks=True,show_fits=True, show_trace=True)
 sobjs_neg, _ = extract.objfind(-imgminsky, thismask, tslits_dict['lcen'], tslits_dict['rcen'],
