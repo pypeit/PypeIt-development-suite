@@ -56,12 +56,12 @@ def ech_load_specobj(fname,order=None):
         # Parse name
         idx = hdu.name
         objp = idx.split('-')
-        if objp[-2][0:3] == 'DET':
-            det = int(objp[-2][3:])
+        if objp[-1][0:3] == 'DET':
+            det = int(objp[-1][3:])
         else:
-            det = int(objp[-2][1:])
-        if objp[-3][:5] == 'ORDER':
-            iord = int(objp[-3][5:])
+            det = int(objp[-1][1:])
+        if objp[-2][:5] == 'ORDER':
+            iord = int(objp[-2][5:])
         else:
             msgs.warn('Loading longslit data ?')
             iord = int(-1)
@@ -217,7 +217,8 @@ def ech_generate_sensfunc(stdframe,spectrograph=None, telluric=True, star_type=N
         spectrograph = std_header['INSTRUME']
         msgs.info('You are working on {:s}'.format(spectrograph))
     ext_final = fits.getheader(stdframe, -1)
-    norder = ext_final['ORDER'] + 1
+    norder = 5
+    #norder = ext_final['ORDER'] + 1
 
     sens_dicts = {}
     for iord in range(norder):
@@ -290,6 +291,6 @@ def write_science(sci_specobjs, sci_header, outfile):
         specObjs = sci_specobjs
     else:
         msgs.error("BAD INPUT")
-    save.save_1d_spectra_fits(specObjs, sci_header, outfile,
+    save.save_1d_spectra_fits(specObjs, sci_header,'ECHELLE', outfile,
                               helio_dict=helio_dict,
                               telescope=telescope, overwrite=True)
