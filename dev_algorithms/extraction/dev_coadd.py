@@ -14,122 +14,67 @@ from pypeit.core import qa
 from pypeit import traceslits
 from pypeit.core import trace_slits
 from pypeit.core import extract
-from pypeit.spectrographs.util import load_spectrograph
+from pypeit.spectrographs import util
 from astropy.table import Table
 from astropy import stats
+from astropy import constants as const
+from astropy import units as u
 from pypeit.core import extract
 from pypeit.core import skysub
 from pypeit.core import procimg
 from pypeit import ginga
 from pypeit import masterframe
 from pypeit.core import load
-from pypeit.core import coadd
-import glob
-
-#
-#redux_path = '/Users/joe/Dropbox/PypeIt_Redux/NIRES/J0252/ut181001/'
-#spec2d_files = glob.glob(redux_path + 'Science/spec2d_J0252*')
+from pypeit.core import coadd2d
 
 
-# Read in the masters
-#path = '/Users/joe/python/PypeIt-development-suite/REDUX_OUT/Gemini_GNIRS/'
-#master_dir = path + 'MF_gemini_gnirs/'
-#scidir = path + 'Science/'
-#waveimgfiles = [os.path.join(master_dir, ifile) for ifile in ['MasterWave_A_1_01.fits','MasterWave_A_2_01.fits', 'MasterWave_A_4_01.fits',
-#                                                              'MasterWave_A_8_01.fits']]
-#tiltfiles = [os.path.join(master_dir, ifile) for ifile in ['MasterTilts_A_1_01.fits','MasterTilts_A_2_01.fits', 'MasterTilts_A_4_01.fits',
-#                                                           'MasterTilts_A_8_01.fits']]
-#tracefile = os.path.join(master_dir,'MasterTrace_A_15_01')
-#spec2d_files = [os.path.join(scidir, ifile) for ifile in ['spec2d_pisco_GNIRS_2017Mar31T085412.181.fits',
-#                                                              'spec2d_pisco_GNIRS_2017Mar31T085933.097.fits',
-#                                                              'spec2d_pisco_GNIRS_2017Mar31T091538.731.fits',
-#                                                              'spec2d_pisco_GNIRS_2017Mar31T092059.597.fits']]
-#spec1d_files = [os.path.join(scidir, ifile) for ifile in ['spec1d_pisco_GNIRS_2017Mar31T085412.181.fits',
-#                                                              'spec1d_pisco_GNIRS_2017Mar31T085933.097.fits',
-#                                                              'spec1d_pisco_GNIRS_2017Mar31T091538.731.fits',
-#                                                              'spec1d_pisco_GNIRS_2017Mar31T092059.597.fits']]
+# NIRES
+redux_path = '/Users/joe/Dropbox/PypeIt_Redux/NIRES/J0252/ut181001/'
+objprefix = 'J0252-0503'
+slitid = 4
+objid=1
+# GNIRS
+#redux_path = '/Users/joe/python/PypeIt-development-suite/REDUX_OUT/Gemini_GNIRS/'
+#objprefix ='pisco'
+#slitid = 3
+#objid = 1
 
+# read in the stacks
+specobjs_list, tslits_dict_orig, slitmask_stack, sciimg_stack, sciivar_stack, skymodel_stack, mask_stack, tilts_stack, waveimg_stack = \
+    coadd2d.load_coadd2d_files(redux_path, objprefix)
 
-redux_path = '/Users/joe/python/PypeIt-development-suite/REDUX_OUT/Gemini_GNIRS/'
-objprefix ='pisco'
-spec2d_files, spec1d_files, tracefiles, tiltfiles, waveimgfiles = coadd.get_coadd2d_files(redux_path,objprefix)
+nexp, nspec, nspat  = sciimg_stack.shape
+# Create the thismask_stack for this slit.
+thismask_stack = slitmask_stack == slitid
+thismask = thismask_stack[0,:,:]
+slitmask = slitmask_stack[0,:,:]
 
-specobjs_list = []
-for file in spec1d_files:
-    sobjs = load.load_specobjs(file)
-    specobjs_list.append(sobjs)
+# Grab the traces for this slit and objid.
+trace_stack = np.zeros((nexp, nspec),dtype=float)
+for iexp, sobjs in enumerate(specobjs_list):
+    ithis = (sobjs.slitid == slitid) & (sobjs.objid == objid)
+    trace_stack[iexp,:] = sobjs[ithis].trace_spat
 
-
-
-slit = 5
-nexp = len(waveimgfiles)
-hdu_sci1d = fits.open(spec1d_files[ifile])
-obj_table = Table(hdu_sci1d[slit + 1].data)
-
-
-def load_coadd2d_stacks(spec2d_files, tracefiles, tiltfiles, waveimgfiles):
-
-    nfiles = len(spec2d_files)
-
-    for ifile in range(nfiles):
-        hdu_wave = fits.open(waveimgfiles[ifile])
-        waveimg = hdu_wave[0].data
-        hdu_tilts = fits.open(tiltfiles[ifile])
-        tilts = hdu_tilts[0].data
-        hdu_sci = fits.open(spec2d_files[ifile])
-        sciimg = hdu_sci[1].data
-        sky = hdu_sci[3].data
-        sciivar = hdu_sci[5].data
-        mask = hdu_sci[6].data
-        if ifile == 0:
-            # the two shapes accomodate the possibility that waveimg and tilts are binned differently
-            shape_wave = (nfiles,waveimg.shape[0],waveimg.shape[1])
-            shape_sci = (nfiles,sciimg.shape[0],sciimg.shape[1])
-            waveimg_stack = np.zeros(shape_wave,dtype=float)
-            tilts_stack = np.zeros(shape_wave,dtype=float)
-            sciimg_stack = np.zeros(shape_sci,dtype=float)
-            skymodel_stack = np.zeros(shape_sci,dtype=float)
-            sciivar_stack = np.zeros(shape_sci,dtype=float)
-            mask_stack = np.zeros(shape_sci,dtype=float)
-
-        waveimg_stack[ifile,:,:] = waveimg
-        tilts_stack[ifile,:,:] = tilts
-        sciimg_stack[ifile,:,:] = sciimg
-        sciivar_stack[ifile,:,:] = sciivar
-        mask_stack[ifile,:,:] = mask
-        skymodel_stack[ifile,:,:] = sky
-        trace_stack[ifile,:] = trace
-        #wave_stack[ifile,:] = wave_trace
-
-
-
-# Read in the tslits_dict
-tslits_dict = traceslits.load_tslits_dict(tracefile)
-#Tslits = traceslits.TraceSlits.from_master_files(tracefile)
-#tslits_dict = Tslits._fill_tslits_dict()
-spectrograph = load_spectrograph('gemini_gnirs')
-slitmask = spectrograph.slitmask(tslits_dict)
-nslits = tslits_dict['lcen'].shape[1]
-slitmask_stack = np.einsum('i,jk->ijk', np.ones(nexp), slitmask)
-thismask_stack = slitmask_stack == slit
-
-# Define the new wavelength grid
-ngrid = 5000
-dloglam = 0.000127888 # this is the average of the median dispersions
-logmin = 3.777
-#loglam = logmin + dloglam*np.arange(ngrid)
-# Define the oversampled grid
+spectrograph = util.load_spectrograph(tslits_dict_orig['spectrograph'])
+# Define the grid for NIRES
+R = 2700.0*2.7
+dloglam = 1.0/R/np.log(10.0)
+logmin = np.log10(9500.0)
+logmax = np.log10(26000)
+ngrid = int(np.ceil((logmax-logmin)/dloglam))
+# Define the new wavelength grid for GNIRS
+#ngrid = 5000
+#dloglam = 0.000127888 # this is the average of the median dispersions
+#logmin = 3.777
 osamp = 1.0
 loglam_grid = logmin + (dloglam/osamp)*np.arange(int(np.ceil(osamp*ngrid)))
-wave_grid = None
 
-sciimg, sciivar, imgminsky, outmask, nused, tilts, waveimg, dspat, thismask, tslits_dict = procimg.coadd2d(
-    sciimg_stack, sciivar_stack, skymodel_stack, (mask_stack == 0), tilts_stack, waveimg_stack, trace_stack,
+wave_bins, dspat_bins, sciimg, sciivar, imgminsky, outmask, nused, tilts, waveimg, dspat, thismask, tslits_dict = \
+    coadd2d.coadd2d(trace_stack, sciimg_stack, sciivar_stack, skymodel_stack, (mask_stack == 0), tilts_stack, waveimg_stack,
     thismask_stack, loglam_grid=loglam_grid)
 
-sys.exit(-1)
 sobjs, _ = extract.objfind(imgminsky, thismask, tslits_dict['lcen'], tslits_dict['rcen'],
-                                                inmask=outmask, show_peaks=True,show_fits=True, show_trace=True)
+                           inmask=outmask, show_peaks=True,show_fits=True, show_trace=True)
 sobjs_neg, _ = extract.objfind(-imgminsky, thismask, tslits_dict['lcen'], tslits_dict['rcen'],
                                inmask=outmask, show_peaks=True,show_fits=True, show_trace=True)
 sobjs.append_neg(sobjs_neg)
@@ -154,11 +99,33 @@ mean_resid = np.mean(resids_pix)
 sobjs_out = sobjs.copy()
 sobjs_out.purge_neg()
 
-sys.exit(-1)
 
-# Need to deal with the read noise image!
+viewer, ch = ginga.show_image(imgminsky,'imgminsky')
+viewer, ch = ginga.show_image((imgminsky - skymodel_rect)*np.sqrt(ivarmodel_rect),'sky_resids')
+viewer, ch = ginga.show_image((imgminsky - skymodel_rect - objmodel_rect)*np.sqrt(ivarmodel_rect),'resids')
+
+# After displaying all the images sync up the images with WCS_MATCH
+shell = viewer.shell()
+out = shell.start_global_plugin('WCSMatch')
+out = shell.call_global_plugin_method('WCSMatch', 'set_reference_channel', ['imgminsky'], {})
+
+
+igd = sobjs_out[0].optimal['WAVE'] > 1.0
+wave = sobjs_out[0].optimal['WAVE'][igd]
+flux = sobjs_out[0].optimal['COUNTS'][igd]
+sig = sobjs_out[0].optimal['COUNTS_SIG'][igd]
+
+plt.plot(wave, flux,drawstyle='steps-mid')
+plt.plot(wave, sig,drawstyle='steps-mid')
+plt.show()
+sys.exit(-1)
+# This is the wavelength grid of the rectified images. It differs from the 'true' wavelengths by 2% of a pixel
+loglam_bins = np.log10(wave_bins)
 loglam_mid = ((loglam_bins + np.roll(loglam_bins,1))/2.0)[1:]
-wave_mid = np.power(10.0,loglam_mid)
+#wave_mid = np.power(10.0,loglam_mid)
+plt.plot(loglam_mid[igd],(loglam_mid[igd] - np.log10(wave))/loglam_mid[igd]/dloglam)
+
+
 dspat_mid = ((dspat_bins + np.roll(dspat_bins,1))/2.0)[1:]
 loglam_img = np.outer(loglam_mid,np.ones(nspat_rect))
 # Denom is computed in case the trace goes off the edge of the image
