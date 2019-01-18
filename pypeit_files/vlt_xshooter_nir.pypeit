@@ -1,7 +1,7 @@
 # This is a comment line
 # This reduce data from vlt xshooter nir 
 # at the moment takes the star HIP022840 as SCIENCE (and not as standard).
-# ginga --module=RC&
+# ginga --modules=RC&
 # run_pypeit -v2 -o -m -s ./vlt_xshooter_nir.pypeit
 # run_pypeit -v2 -o -s ./vlt_xshooter_nir.pypeit
 
