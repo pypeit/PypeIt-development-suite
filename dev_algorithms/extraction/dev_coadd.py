@@ -21,59 +21,87 @@ from pypeit.core import extract
 from pypeit.core import skysub
 from pypeit.core import procimg
 from pypeit import ginga
+from pypeit import masterframe
+from pypeit.core import load
+from pypeit.core import coadd
+import glob
+
+#
+#redux_path = '/Users/joe/Dropbox/PypeIt_Redux/NIRES/J0252/ut181001/'
+#spec2d_files = glob.glob(redux_path + 'Science/spec2d_J0252*')
+
 
 # Read in the masters
-path = '/Users/joe/python/PypeIt-development-suite/REDUX_OUT_old/Gemini_GNIRS/GNIRS/'
-master_dir = path + 'MF_gemini_gnirs/'
-scidir = path + 'Science/'
-waveimgfiles = [os.path.join(master_dir, ifile) for ifile in ['MasterWave_A_1_01.fits','MasterWave_A_2_01.fits', 'MasterWave_A_4_01.fits',
-                                                              'MasterWave_A_8_01.fits']]
-tiltfiles = [os.path.join(master_dir, ifile) for ifile in ['MasterTilts_A_1_01.fits','MasterTilts_A_2_01.fits', 'MasterTilts_A_4_01.fits',
-                                                           'MasterTilts_A_8_01.fits']]
-tracefile = os.path.join(master_dir,'MasterTrace_A_15_01')
-spec2d_files = [os.path.join(scidir, ifile) for ifile in ['spec2d_pisco_GNIRS_2017Mar31T085412.181.fits',
-                                                              'spec2d_pisco_GNIRS_2017Mar31T085933.097.fits',
-                                                              'spec2d_pisco_GNIRS_2017Mar31T091538.731.fits',
-                                                              'spec2d_pisco_GNIRS_2017Mar31T092059.597.fits']]
-spec1d_files = [os.path.join(scidir, ifile) for ifile in ['spec1d_pisco_GNIRS_2017Mar31T085412.181.fits',
-                                                              'spec1d_pisco_GNIRS_2017Mar31T085933.097.fits',
-                                                              'spec1d_pisco_GNIRS_2017Mar31T091538.731.fits',
-                                                              'spec1d_pisco_GNIRS_2017Mar31T092059.597.fits']]
+#path = '/Users/joe/python/PypeIt-development-suite/REDUX_OUT/Gemini_GNIRS/'
+#master_dir = path + 'MF_gemini_gnirs/'
+#scidir = path + 'Science/'
+#waveimgfiles = [os.path.join(master_dir, ifile) for ifile in ['MasterWave_A_1_01.fits','MasterWave_A_2_01.fits', 'MasterWave_A_4_01.fits',
+#                                                              'MasterWave_A_8_01.fits']]
+#tiltfiles = [os.path.join(master_dir, ifile) for ifile in ['MasterTilts_A_1_01.fits','MasterTilts_A_2_01.fits', 'MasterTilts_A_4_01.fits',
+#                                                           'MasterTilts_A_8_01.fits']]
+#tracefile = os.path.join(master_dir,'MasterTrace_A_15_01')
+#spec2d_files = [os.path.join(scidir, ifile) for ifile in ['spec2d_pisco_GNIRS_2017Mar31T085412.181.fits',
+#                                                              'spec2d_pisco_GNIRS_2017Mar31T085933.097.fits',
+#                                                              'spec2d_pisco_GNIRS_2017Mar31T091538.731.fits',
+#                                                              'spec2d_pisco_GNIRS_2017Mar31T092059.597.fits']]
+#spec1d_files = [os.path.join(scidir, ifile) for ifile in ['spec1d_pisco_GNIRS_2017Mar31T085412.181.fits',
+#                                                              'spec1d_pisco_GNIRS_2017Mar31T085933.097.fits',
+#                                                              'spec1d_pisco_GNIRS_2017Mar31T091538.731.fits',
+#                                                              'spec1d_pisco_GNIRS_2017Mar31T092059.597.fits']]
+
+
+redux_path = '/Users/joe/python/PypeIt-development-suite/REDUX_OUT/Gemini_GNIRS/'
+objprefix ='pisco'
+spec2d_files, spec1d_files, tracefiles, tiltfiles, waveimgfiles = coadd.get_coadd2d_files(redux_path,objprefix)
+
+specobjs_list = []
+for file in spec1d_files:
+    sobjs = load.load_specobjs(file)
+    specobjs_list.append(sobjs)
+
+
+
 slit = 5
 nexp = len(waveimgfiles)
+hdu_sci1d = fits.open(spec1d_files[ifile])
+obj_table = Table(hdu_sci1d[slit + 1].data)
 
-for ifile in range(nexp):
-    hdu_wave = fits.open(waveimgfiles[ifile])
-    waveimg = hdu_wave[0].data
-    hdu_tilts = fits.open(tiltfiles[ifile])
-    tilts = hdu_tilts[0].data
-    hdu_sci = fits.open(spec2d_files[ifile])
-    sciimg = hdu_sci[1].data
-    sky = hdu_sci[3].data
-    sciivar = hdu_sci[5].data
-    mask = hdu_sci[6].data
-    hdu_sci1d = fits.open(spec1d_files[ifile])
-    obj_table = Table(hdu_sci1d[slit+1].data)
-    trace = obj_table['TRACE']
-    wave_trace = obj_table['BOX_WAVE']
-    if ifile == 0:
-        waveimg_stack = np.zeros((nexp,waveimg.shape[0],waveimg.shape[1]),dtype=float)
-        tilts_stack = np.zeros((nexp,waveimg.shape[0],waveimg.shape[1]),dtype=float)
-        sciimg_stack = np.zeros((nexp,sciimg.shape[0],sciimg.shape[1]),dtype=float)
-        skymodel_stack = np.zeros((nexp,sciimg.shape[0],sciimg.shape[1]),dtype=float)
-        sciivar_stack = np.zeros((nexp,sciimg.shape[0],sciimg.shape[1]),dtype=float)
-        mask_stack = np.zeros((nexp,sciimg.shape[0],sciimg.shape[1]),dtype=float)
-        trace_stack = np.zeros((nexp,trace.shape[0]))
-        wave_stack = np.zeros((nexp,trace.shape[0]))
 
-    waveimg_stack[ifile,:,:] = waveimg
-    tilts_stack[ifile,:,:] = tilts
-    sciimg_stack[ifile,:,:] = sciimg
-    sciivar_stack[ifile,:,:] = sciivar
-    mask_stack[ifile,:,:] = mask
-    skymodel_stack[ifile,:,:] = sky
-    trace_stack[ifile,:] = trace
-    wave_stack[ifile,:] = wave_trace
+def load_coadd2d_stacks(spec2d_files, tracefiles, tiltfiles, waveimgfiles):
+
+    nfiles = len(spec2d_files)
+
+    for ifile in range(nfiles):
+        hdu_wave = fits.open(waveimgfiles[ifile])
+        waveimg = hdu_wave[0].data
+        hdu_tilts = fits.open(tiltfiles[ifile])
+        tilts = hdu_tilts[0].data
+        hdu_sci = fits.open(spec2d_files[ifile])
+        sciimg = hdu_sci[1].data
+        sky = hdu_sci[3].data
+        sciivar = hdu_sci[5].data
+        mask = hdu_sci[6].data
+        if ifile == 0:
+            # the two shapes accomodate the possibility that waveimg and tilts are binned differently
+            shape_wave = (nfiles,waveimg.shape[0],waveimg.shape[1])
+            shape_sci = (nfiles,sciimg.shape[0],sciimg.shape[1])
+            waveimg_stack = np.zeros(shape_wave,dtype=float)
+            tilts_stack = np.zeros(shape_wave,dtype=float)
+            sciimg_stack = np.zeros(shape_sci,dtype=float)
+            skymodel_stack = np.zeros(shape_sci,dtype=float)
+            sciivar_stack = np.zeros(shape_sci,dtype=float)
+            mask_stack = np.zeros(shape_sci,dtype=float)
+
+        waveimg_stack[ifile,:,:] = waveimg
+        tilts_stack[ifile,:,:] = tilts
+        sciimg_stack[ifile,:,:] = sciimg
+        sciivar_stack[ifile,:,:] = sciivar
+        mask_stack[ifile,:,:] = mask
+        skymodel_stack[ifile,:,:] = sky
+        trace_stack[ifile,:] = trace
+        #wave_stack[ifile,:] = wave_trace
+
+
 
 # Read in the tslits_dict
 tslits_dict = traceslits.load_tslits_dict(tracefile)
@@ -99,6 +127,7 @@ sciimg, sciivar, imgminsky, outmask, nused, tilts, waveimg, dspat, thismask, tsl
     sciimg_stack, sciivar_stack, skymodel_stack, (mask_stack == 0), tilts_stack, waveimg_stack, trace_stack,
     thismask_stack, loglam_grid=loglam_grid)
 
+sys.exit(-1)
 sobjs, _ = extract.objfind(imgminsky, thismask, tslits_dict['lcen'], tslits_dict['rcen'],
                                                 inmask=outmask, show_peaks=True,show_fits=True, show_trace=True)
 sobjs_neg, _ = extract.objfind(-imgminsky, thismask, tslits_dict['lcen'], tslits_dict['rcen'],
