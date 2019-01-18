@@ -1,0 +1,22 @@
+A:
+  --:
+    dichroic: none
+    disperser: {angle: none, name: default}
+    slit: {decker: 1.6x12.6, slitlen: none, slitwid: none}
+  '01': {binning: '1,1', det: 1, namp: 1}
+  1:
+    arc: ['/home/ema/Dropbox/XshooterTestBed/VLT_XSHOOTER/UVB_1x1/XSHOO.2010-04-28T14:37:18.504.fits.gz']
+    bias: ['/home/ema/Dropbox/XshooterTestBed/VLT_XSHOOTER/UVB_1x1/XSHOO.2010-04-28T10:22:31.905.fits.gz',
+      '/home/ema/Dropbox/XshooterTestBed/VLT_XSHOOTER/UVB_1x1/XSHOO.2010-04-28T10:25:15.469.fits.gz',
+      '/home/ema/Dropbox/XshooterTestBed/VLT_XSHOOTER/UVB_1x1/XSHOO.2010-04-28T10:27:59.033.fits.gz']
+    dark: []
+    pinhole: []
+    pixelflat: ['/home/ema/Dropbox/XshooterTestBed/VLT_XSHOOTER/UVB_1x1/XSHOO.2010-04-28T13:43:14.163.fits.gz',
+      '/home/ema/Dropbox/XshooterTestBed/VLT_XSHOOTER/UVB_1x1/XSHOO.2010-04-28T13:44:32.540.fits.gz',
+      '/home/ema/Dropbox/XshooterTestBed/VLT_XSHOOTER/UVB_1x1/XSHOO.2010-04-28T13:45:51.386.fits.gz']
+    science: ['/home/ema/Dropbox/XshooterTestBed/VLT_XSHOOTER/UVB_1x1/XSHOO.2010-04-28T06:08:49.572.fits.gz',
+      '/home/ema/Dropbox/XshooterTestBed/VLT_XSHOOTER/UVB_1x1/XSHOO.2010-04-28T06:21:25.165.fits.gz']
+    standard: []
+    trace: ['/home/ema/Dropbox/XshooterTestBed/VLT_XSHOOTER/UVB_1x1/XSHOO.2010-04-28T13:43:14.163.fits.gz',
+      '/home/ema/Dropbox/XshooterTestBed/VLT_XSHOOTER/UVB_1x1/XSHOO.2010-04-28T13:44:32.540.fits.gz',
+      '/home/ema/Dropbox/XshooterTestBed/VLT_XSHOOTER/UVB_1x1/XSHOO.2010-04-28T13:45:51.386.fits.gz']
