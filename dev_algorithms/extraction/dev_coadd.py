@@ -26,22 +26,36 @@ from pypeit import ginga
 from pypeit import masterframe
 from pypeit.core import load
 from pypeit.core import coadd2d
+import glob
 
 
 # NIRES
 redux_path = '/Users/joe/Dropbox/PypeIt_Redux/NIRES/J0252/ut181001/'
 objprefix = 'J0252-0503'
-slitid = 4
-objid=1
+spec2d_files = glob.glob(redux_path + 'Science/spec2d_' + objprefix + '*')
+slitid = 3
+objid=np.full(len(spec2d_files),1)
+#objid=1
 # GNIRS
 #redux_path = '/Users/joe/python/PypeIt-development-suite/REDUX_OUT/Gemini_GNIRS/'
 #objprefix ='pisco'
-#slitid = 3
+#slitid = 2
+#spec2d_files = glob.glob(redux_path + 'Science/spec2d_' + objprefix + '*')
+#objid=np.full(len(spec2d_files),1)
+
 #objid = 1
 
+
+# XSHOOTER
+#redux_path = '/Users/joe/Dropbox/PypeIt_Redux/XSHOOTER/J0020m3653/NIR/'
+#objprefix ='VHSJ0020'
+#slitid=11
+#objid = [1,1,1,3]
 # read in the stacks
 specobjs_list, tslits_dict_orig, slitmask_stack, sciimg_stack, sciivar_stack, skymodel_stack, mask_stack, tilts_stack, waveimg_stack = \
-    coadd2d.load_coadd2d_files(redux_path, objprefix)
+    coadd2d.load_coadd2d_stacks(spec2d_files)
+
+
 
 nexp, nspec, nspat  = sciimg_stack.shape
 # Create the thismask_stack for this slit.
@@ -49,50 +63,59 @@ thismask_stack = slitmask_stack == slitid
 thismask = thismask_stack[0,:,:]
 slitmask = slitmask_stack[0,:,:]
 
+
 # Grab the traces for this slit and objid.
 trace_stack = np.zeros((nexp, nspec),dtype=float)
 for iexp, sobjs in enumerate(specobjs_list):
-    ithis = (sobjs.slitid == slitid) & (sobjs.objid == objid)
+    ithis = (sobjs.slitid == slitid) & (sobjs.objid == objid[iexp])
     trace_stack[iexp,:] = sobjs[ithis].trace_spat
 
+
 spectrograph = util.load_spectrograph(tslits_dict_orig['spectrograph'])
-# Define the grid for NIRES
-R = 2700.0*2.7
-dloglam = 1.0/R/np.log(10.0)
-logmin = np.log10(9500.0)
-logmax = np.log10(26000)
-ngrid = int(np.ceil((logmax-logmin)/dloglam))
-# Define the new wavelength grid for GNIRS
-#ngrid = 5000
-#dloglam = 0.000127888 # this is the average of the median dispersions
-#logmin = 3.777
-osamp = 1.0
-loglam_grid = logmin + (dloglam/osamp)*np.arange(int(np.ceil(osamp*ngrid)))
 
-wave_bins, dspat_bins, sciimg, sciivar, imgminsky, outmask, nused, tilts, waveimg, dspat, thismask, tslits_dict = \
+#dloglam_order = np.zeros(spectrograph.norders)
+#sobjs_now = specobjs_list[0]
+#for iorder in range(spectrograph.norders):
+#    ithis = (sobjs_now.objid == objid[0]) & (sobjs_now.ech_orderindx == iorder)
+#    wave_order = sobjs_now[ithis][0].optimal['WAVE'].value
+#    igd = wave_order > 1.0
+#    wave_order = wave_order[igd]
+#    loglam = np.log10(wave_order)
+#    dloglam = (loglam - np.roll(loglam,1))[1:]
+#    dloglam_order[iorder] = np.median(dloglam)
+
+#dloglam_mean = np.mean(dloglam_order)
+#delta_loglam = (dloglam_order - dloglam_mean)/dloglam_mean
+#wave_order = np.zeros(norder)
+# median wavelength separation
+wave_grid = spectrograph.wavegrid()
+
+
+wave_bins, dspat_bins, sciimg_rect, sciivar_rect, imgminsky_rect, outmask_rect, nused, tilts_rect, waveimg_rect, \
+    dspat_rect, thismask_rect, tslits_dict = \
     coadd2d.coadd2d(trace_stack, sciimg_stack, sciivar_stack, skymodel_stack, (mask_stack == 0), tilts_stack, waveimg_stack,
-    thismask_stack, loglam_grid=loglam_grid)
+    thismask_stack, wave_grid=wave_grid)
 
-sobjs, _ = extract.objfind(imgminsky, thismask, tslits_dict['lcen'], tslits_dict['rcen'],
-                           inmask=outmask, show_peaks=True,show_fits=True, show_trace=True)
-sobjs_neg, _ = extract.objfind(-imgminsky, thismask, tslits_dict['lcen'], tslits_dict['rcen'],
-                               inmask=outmask, show_peaks=True,show_fits=True, show_trace=True)
+sobjs, _ = extract.objfind(imgminsky_rect, thismask_rect, tslits_dict['lcen'], tslits_dict['rcen'],
+                           inmask=outmask_rect, show_peaks=True,show_fits=True, show_trace=True)
+sobjs_neg, _ = extract.objfind(-imgminsky_rect, thismask_rect, tslits_dict['lcen'], tslits_dict['rcen'],
+                               inmask=outmask_rect, show_peaks=True,show_fits=True, show_trace=True)
 sobjs.append_neg(sobjs_neg)
 # Local sky subtraction and extraction
-skymodel_rect = np.zeros_like(imgminsky)
-global_sky = np.zeros_like(imgminsky)
-rn2img = np.zeros_like(imgminsky)
-objmodel_rect = np.zeros_like(imgminsky)
-ivarmodel_rect = np.zeros_like(imgminsky)
-extractmask_rect = np.zeros_like(thismask)
+skymodel_rect = np.zeros_like(imgminsky_rect)
+global_sky_rect = np.zeros_like(imgminsky_rect)
+rn2img_rect = np.zeros_like(imgminsky_rect)
+objmodel_rect = np.zeros_like(imgminsky_rect)
+ivarmodel_rect = np.zeros_like(imgminsky_rect)
+extractmask_rect = np.zeros_like(thismask_rect)
 par = spectrograph.default_pypeit_par()
 # TODO Modify profile fitting so that we can pass in a position image which will allow us to improve the spatial sampling
 # in this final extraction step
-skymodel_rect[thismask], objmodel_rect[thismask], ivarmodel_rect[thismask], extractmask_rect[thismask] = \
-    skysub.local_skysub_extract(imgminsky, sciivar, tilts, waveimg, global_sky, rn2img, thismask,
+skymodel_rect[thismask_rect], objmodel_rect[thismask_rect], ivarmodel_rect[thismask_rect], extractmask_rect[thismask_rect] = \
+    skysub.local_skysub_extract(imgminsky_rect, sciivar_rect, tilts_rect, waveimg_rect, global_sky_rect, rn2img_rect, thismask_rect,
     tslits_dict['lcen'], tslits_dict['rcen'], sobjs, model_noise=False,bsp=par['scienceimage']['bspline_spacing'],
-    sn_gauss=par['scienceimage']['sn_gauss'],inmask=outmask, show_profile=True)
-resids_rect = ((imgminsky - skymodel_rect - objmodel_rect)*np.sqrt(ivarmodel_rect))
+    sn_gauss=par['scienceimage']['sn_gauss'],inmask=outmask_rect, show_profile=True)
+resids_rect = ((imgminsky_rect - skymodel_rect - objmodel_rect)*np.sqrt(ivarmodel_rect))
 resids_pix = resids_rect[extractmask_rect]
 std_dev = np.std(resids_pix)
 mean_resid = np.mean(resids_pix)
@@ -100,9 +123,9 @@ sobjs_out = sobjs.copy()
 sobjs_out.purge_neg()
 
 
-viewer, ch = ginga.show_image(imgminsky,'imgminsky')
-viewer, ch = ginga.show_image((imgminsky - skymodel_rect)*np.sqrt(ivarmodel_rect),'sky_resids')
-viewer, ch = ginga.show_image((imgminsky - skymodel_rect - objmodel_rect)*np.sqrt(ivarmodel_rect),'resids')
+viewer, ch = ginga.show_image(imgminsky_rect,'imgminsky')
+viewer, ch = ginga.show_image((imgminsky_rect - skymodel_rect)*np.sqrt(ivarmodel_rect),'sky_resids')
+viewer, ch = ginga.show_image((imgminsky_rect - skymodel_rect - objmodel_rect)*np.sqrt(ivarmodel_rect),'resids')
 
 # After displaying all the images sync up the images with WCS_MATCH
 shell = viewer.shell()
