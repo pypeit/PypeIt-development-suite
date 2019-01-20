@@ -79,8 +79,9 @@ def flux_nires(debug=False,datapath='./',objinfo='J1135_info.txt',stdframe='spec
         ech_flux_science(sci_specobjs,sens_dicts,sci_header,spectrograph=None)
         write_science(sci_specobjs, sci_header, sciframe[:-5]+'_FLUX.fits')
 
-def ech_flux_new(spectragraph='keck_nires',debug=False,datapath='./',star_type='A0',star_mag=8.6,
-                   objinfo='J1135_info.txt',stdframe='spec1d_HIP53735_NIRES_2018Jun04T055220.216.fits'):
+def ech_flux_new(spectragraph='keck_nires',debug=False,datapath='./',star_type='A0',star_mag=8.6,BALM_MASK_WID=20.0,
+                 norder=5,resolution=3000,polycorrect=True,polysens=False, objinfo='J1135_info.txt',
+                 stdframe='spec1d_HIP53735_NIRES_2018Jun04T055220.216.fits'):
     """
     test NIRES with a list of files
     :return:
@@ -98,6 +99,11 @@ def ech_flux_new(spectragraph='keck_nires',debug=False,datapath='./',star_type='
                                       sens_file=datapath+'sens_'+stdframe,
                                       star_type=star_type,
                                       star_mag=star_mag,
+                                      BALM_MASK_WID = BALM_MASK_WID,
+                                      resolution = resolution,
+                                      polycorrect = polycorrect,
+                                      polysens = polysens,
+                                      norder = norder,
                                       debug=debug)
         if i==0:
             _ = FxSpec.generate_sensfunc()
@@ -107,19 +113,22 @@ def ech_flux_new(spectragraph='keck_nires',debug=False,datapath='./',star_type='
 
 
 def ech_coadd_new(giantcoadd=False,debug=False,datapath='./',objinfo='J0252_objinfo.txt',qafile='ech_coadd',
-                  outfile='J0910_GNIRS.fits'):
+                  outfile='J0910_GNIRS.fits',flux=True):
 
     cat = np.genfromtxt(datapath+objinfo,dtype=str)
     filenames = cat[:,0]
     scifiles = []
     for i in range(len(filenames)):
         filename = datapath+filenames[i]
-        scifiles += [filename.replace('.fits','_flux.fits')]
+        if flux:
+            scifiles += [filename.replace('.fits','_flux.fits')]
+        else:
+            scifiles +=[filename]
     objids = cat[:,1]
 
     # Coadding
     kwargs={}
-    spec1d = ech_coadd(scifiles, objids=objids,extract='OPT', flux=True,giantcoadd=giantcoadd,
+    spec1d = ech_coadd(scifiles, objids=objids,extract='OPT', flux=flux,giantcoadd=giantcoadd,
               wave_grid_method='velocity', niter=5,wave_grid_min=None, wave_grid_max=None, v_pix=None,
               scale_method='median', do_offset=False, sigrej_final=3.,
               do_var_corr=False, qafile=datapath+qafile, outfile=datapath+outfile, do_cr=True,debug=debug,**kwargs)
@@ -161,7 +170,7 @@ def coadd_nires(giantcoadd=False,debug=False,datapath='./',objinfo='J0252_objinf
     spec1d = ech_coadd(scifiles, objids=objids,extract='OPT', flux=True,giantcoadd=giantcoadd,
               wave_grid_method='velocity', niter=5,wave_grid_min=None, wave_grid_max=None, v_pix=None,
               scale_method='median', do_offset=False, sigrej_final=3.,
-              do_var_corr=False, qafile='ech_coad', outfile=None, do_cr=True,debug=debug,**kwargs)
+              do_var_corr=False, qafile='ech_coadd', outfile=None, do_cr=True,debug=debug,**kwargs)
     return spec1d
 
 
@@ -469,21 +478,41 @@ def other_tests():
 
 
 ### 2018 Oct NIRES data reduction
-ech_flux_new(debug=True,datapath='/Users/feige/Work/Observations/NIRES/pypeit_redux/ut181001/Science/',\
-            objinfo='J0252_info.txt',stdframe='spec1d_HIP13917_V8p6_NIRES_2018Oct01T094225.598.fits',
-            star_type='A0',star_mag=8.6)
+#ech_flux_new(debug=True,datapath='/Users/feige/Work/Observations/NIRES/pypeit_redux/ut181001/Science/',\
+#            objinfo='J0252_info.txt',stdframe='spec1d_HIP13917_V8p6_NIRES_2018Oct01T094225.598.fits',
+#            star_type='A0',star_mag=8.6)
 #coadd_nires(giantcoadd=False,debug=True,datapath='/Users/feige/Work/Observations/NIRES/pypeit_redux/ut181001/Science/',\
 #           objinfo='J0252_info.txt')
 
 ### 2018 May GNIRS reduction
-#ech_flux_new(debug=False,datapath='/Users/feige/Dropbox/PypeIt_Redux/GNIRS/ut180517/Science/',\
+#ech_flux_new(debug=True,datapath='/Users/feige/Dropbox/PypeIt_Redux/GNIRS/ut180517/Science/',\
 #            objinfo='J0910_info.txt',stdframe='spec1d_HIP43018_GNIRS_2018May16T225142.936.fits',
 #            star_type='A0',star_mag=8.72)
 #ech_coadd_new(giantcoadd=False,debug=True,datapath='/Users/feige/Dropbox/PypeIt_Redux/GNIRS/ut180517/Science/',
 #              objinfo='J0910_info.txt',qafile='ech_coadd',outfile='J0910_GNIRS.fits')
 
-#ech_flux_new(debug=False,datapath='/Users/feige/Dropbox/PypeIt_Redux/GNIRS/P006p39/Flux/',\
-#            objinfo='P006_info.txt',stdframe='spec1d_A2VStar_GNIRS_2016Aug05T002219.142.fits',
-#            star_type='A2',star_mag=6.688)
+#ech_flux_new(debug=True,datapath='/Users/feige/Dropbox/PypeIt_Redux/GNIRS/P006p39/Flux/',\
+#            objinfo='tell_info.txt',stdframe='spec1d_A2VStar_GNIRS_2016Aug05T002219.142.fits',
+#            star_type='A2',star_mag=6.688,norder=6,resolution=1000,BALM_MASK_WID=20.0,polycorrect=True,polysens=False)
 #ech_coadd_new(giantcoadd=False,debug=True,datapath='/Users/feige/Dropbox/PypeIt_Redux/GNIRS/P006p39/Flux/',
 #              objinfo='P006_info.txt',qafile='ech_coadd',outfile='P006_GNIRS.fits')
+
+#ech_coadd_new(giantcoadd=False,debug=True,datapath='/Users/feige/Dropbox/OBS_DATA/GNIRS/ut190117/Science/',
+#              objinfo='tell_info.txt',qafile='ech_coadd',outfile='spec1d_HIP61471_GNIRS_2019Jan17.fits',flux=False)
+#ech_flux_new(debug=True,datapath='/Users/feige/Dropbox/OBS_DATA/GNIRS/ut190117/Science/',\
+#            objinfo='tell_info.txt',stdframe='spec1d_HIP61471_GNIRS_2019Jan17T161602.759.fits',
+#            star_type='A0',star_mag=7.275,BALM_MASK_WID=20.0,polycorrect=False)
+#ech_coadd_new(giantcoadd=False,debug=True,datapath='/Users/feige/Dropbox/OBS_DATA/GNIRS/ut190117/Science/',
+#              objinfo='tell_info.txt',qafile='ech_coadd',outfile='spec1d_HIP61471_GNIRS_2019Jan17.fits',flux=True)
+### XSHOOTER
+#ech_flux_new(debug=True,datapath='/Users/feige/Dropbox/PypeIt_DATA/XSHOOTER/J0439/NIR/Science/',\
+#            objinfo='J0439_info.txt',stdframe='spec1d_STD,TELLURIC_XShooter_NIR_2018Oct08T232940.178.fits',
+#            star_type='A0',star_mag=5.644)
+#ech_coadd_new(giantcoadd=False,debug=True,datapath='/Users/feige/Dropbox/PypeIt_DATA/XSHOOTER/J0439/NIR/Science/',
+#              objinfo='J0439_info.txt',qafile='ech_coadd',outfile='J0439_XSHOOTER.fits')
+
+#ech_flux_new(debug=False,datapath='/Users/feige/Dropbox/PypeIt_Redux/XSHOOTER/J0020m3653/VIS/Science/',\
+#            objinfo='J0020_info.txt',stdframe='spec1d_STD,TELLURIC_XShooter_VIS_2017Oct26T015817.881.fits',
+#            star_type='B7',star_mag=5.812,norder=5,resolution=8000,BALM_MASK_WID=20.0,polycorrect=True,polysens=False)
+ech_coadd_new(giantcoadd=False,debug=False,datapath='/Users/feige/Dropbox/PypeIt_Redux/XSHOOTER/J0020m3653/VIS/Science/',
+              objinfo='J0020_info.txt',qafile='ech_coadd',outfile='J0020_XSHOOTER.fits')
