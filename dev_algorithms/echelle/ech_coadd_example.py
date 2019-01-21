@@ -23,62 +23,6 @@ def flux_single(debug=True,datapath='./',stdframe=None,sciframe=None,star_type='
     write_science(sci_specobjs, sci_header, datapath+sciframe[:-5]+'_FLUX.fits')
     return sens_dicts
 
-
-def flux_example(debug=True,datapath='./'):
-    """
-    test single NIRES frame
-    :param debug:
-    :return:
-    """
-    stdframe = datapath+'/spec1d_HIP13917_V8p6_NIRES_2018Oct01T094225.598.fits'
-    sciframe = datapath+'/spec1d_J0252-0503_NIRES_2018Oct01T100254.698.fits'
-    sens_dicts = ech_generate_sensfunc(stdframe,telluric=True, star_type='A0',
-                          star_mag=8.6, ra=None, dec=None, std_file = None, BALM_MASK_WID=15., nresln=None,debug=debug)
-    ech_save_master(sens_dicts, outfile=datapath+'MasterSensFunc_NIRES.fits')
-    sens_dicts = ech_load_master(datapath+'MasterSensFunc_NIRES.fits')
-    sci_specobjs, sci_header = ech_load_specobj(sciframe)
-    ech_flux_science(sci_specobjs,sens_dicts,sci_header,spectrograph=None)
-    write_science(sci_specobjs, sci_header, sciframe[:-5]+'_FLUX.fits')
-
-
-def flux_example2(debug=False,datapath='./'):
-    """
-    test NIRES with a list of files
-    :return:
-    """
-    stdframe = datapath+'spec1d_HIP13917_V8p6_NIRES_2018Oct01T094225.598.fits'
-    cat = np.genfromtxt(datapath+'J0252_objinfo.txt',dtype=str)
-    filenames = cat[:,0]
-
-    sens_dicts = ech_generate_sensfunc(stdframe,telluric=True, star_type='A0',
-                                       star_mag=8.6, ra=None, dec=None, std_file=None, BALM_MASK_WID=15., nresln=None,
-                                       debug=debug)
-    ech_save_master(sens_dicts, outfile='MasterSensFunc_NIRES.fits')
-    for i in range(len(filenames)):
-        sciframe = datapath+filenames[i]
-        sci_specobjs, sci_header = ech_load_specobj(sciframe)
-        ech_flux_science(sci_specobjs,sens_dicts,sci_header,spectrograph=None)
-        write_science(sci_specobjs, sci_header, sciframe[:-5]+'_flux.fits')
-
-def flux_nires(debug=False,datapath='./',objinfo='J1135_info.txt',stdframe='spec1d_HIP53735_NIRES_2018Jun04T055220.216.fits'):
-    """
-    test NIRES with a list of files
-    :return:
-    """
-    stdframe = datapath+stdframe
-    cat = np.genfromtxt(datapath+objinfo,dtype=str)
-    filenames = cat[:,0]
-
-    sens_dicts = ech_generate_sensfunc(stdframe,telluric=True, star_type='A0',
-                                       star_mag=8.89, ra=None, dec=None, std_file=None, BALM_MASK_WID=15., nresln=None,
-                                       debug=debug)
-    ech_save_master(sens_dicts, outfile='MasterSensFunc_NIRES.fits')
-    for i in range(len(filenames)):
-        sciframe = datapath+filenames[i]
-        sci_specobjs, sci_header = ech_load_specobj(sciframe)
-        ech_flux_science(sci_specobjs,sens_dicts,sci_header,spectrograph=None)
-        write_science(sci_specobjs, sci_header, sciframe[:-5]+'_FLUX.fits')
-
 def ech_flux_new(spectragraph='keck_nires',debug=False,datapath='./',star_type='A0',star_mag=8.6,BALM_MASK_WID=20.0,
                  norder=5,resolution=3000,polycorrect=True,polysens=False, objinfo='J1135_info.txt',
                  stdframe='spec1d_HIP53735_NIRES_2018Jun04T055220.216.fits'):
@@ -133,46 +77,6 @@ def ech_coadd_new(giantcoadd=False,debug=False,datapath='./',objinfo='J0252_obji
               scale_method='median', do_offset=False, sigrej_final=3.,
               do_var_corr=False, qafile=datapath+qafile, outfile=datapath+outfile, do_cr=True,debug=debug,**kwargs)
     return spec1d
-
-def ech_coadd_spectra(spectra, wave_grid_method='velocity', niter=5,
-                  wave_grid_min=None, wave_grid_max=None,v_pix=None,
-                  scale_method='auto', do_offset=False, sigrej_final=3.,
-                  do_var_corr=False, qafile=None, outfile=None,
-                  do_cr=True, **kwargs):
-    """
-    Deprecated
-    """
-    ech_kwargs = {'echelle':True,'wave_grid_min': wave_grid_min, 'wave_grid_max': wave_grid_max, 'v_pix': v_pix}
-    kwargs.update(ech_kwargs)
-    spec1d = coadd.coadd_spectra(spectra, wave_grid_method=wave_grid_method, niter=niter,
-                        scale_method=scale_method, do_offset=do_offset, sigrej_final=sigrej_final,
-                        do_var_corr=do_var_corr, qafile=qafile, outfile=outfile,
-                        do_cr=do_cr, debug=False,**kwargs)
-    return spec1d
-
-
-def coadd_nires(giantcoadd=False,debug=False,datapath='./',objinfo='J0252_objinfo.txt'):
-    #scifiles = ['/Users/feige/Work/Observations/NIRES/NIRES_Barth/J0252/reduce0930/Science/spec1d_J0252-0503_NIRES_2018Oct01T100254.698_FLUX.fits',
-    #            '/Users/feige/Work/Observations/NIRES/NIRES_Barth/J0252/reduce0930/Science/spec1d_J0252-0503_NIRES_2018Oct01T100949.328_FLUX.fits',
-    #            '/Users/feige/Work/Observations/NIRES/NIRES_Barth/J0252/reduce0930/Science/spec1d_J0252-0503_NIRES_2018Oct01T101642.428_FLUX.fits',
-    #            '/Users/feige/Work/Observations/NIRES/NIRES_Barth/J0252/reduce0930/Science/spec1d_J0252-0503_NIRES_2018Oct01T102337.058_FLUX.fits']
-    #objids = ['OBJ0001','OBJ0002','OBJ0002','OBJ0001']
-    cat = np.genfromtxt(datapath+objinfo,dtype=str)
-    filenames = cat[:,0]
-    scifiles = []
-    for i in range(len(filenames)):
-        filename = datapath+filenames[i]
-        scifiles += [filename.replace('.fits','_flux.fits')]
-    objids = cat[:,1]
-
-    # Coadding
-    kwargs={}
-    spec1d = ech_coadd(scifiles, objids=objids,extract='OPT', flux=True,giantcoadd=giantcoadd,
-              wave_grid_method='velocity', niter=5,wave_grid_min=None, wave_grid_max=None, v_pix=None,
-              scale_method='median', do_offset=False, sigrej_final=3.,
-              do_var_corr=False, qafile='ech_coadd', outfile=None, do_cr=True,debug=debug,**kwargs)
-    return spec1d
-
 
 def ech_load_xidl(files,extn=4,norder=6,order=None,extract='OPT',sensfile=None,AB=True):
     """
@@ -285,7 +189,7 @@ def ech_load_xidl(files,extn=4,norder=6,order=None,extract='OPT',sensfile=None,A
     return spectra
 
 
-def coadd_gnirs(giantcoadd=False,qafile='testgnirs',debug=False,datapath='./'):
+def coadd_gnirs_xidl(giantcoadd=False,qafile='testgnirs',debug=False,datapath='./'):
     norder=6
     order = 0
 
@@ -349,45 +253,6 @@ def readgnirsxidl(filename):
 
     return wave, flux, error, header
 
-
-def try_mergeorder(spectra_coadd,wave_grid_method='velocity',kwargs=None):
-
-    norder = spectra_coadd.nspec
-
-    ## Sort spectra
-    wvmin = np.zeros(norder)
-    for iord in range(norder):
-        wvmin[iord] = spectra_coadd[iord].wvmin.value
-    indsort = np.argsort(wvmin)
-    spectra_coadd_sort = spectra_coadd[indsort]
-
-    # Final wavelength array
-    new_wave = coadd.new_wave_grid(spectra_coadd_sort.data['wave'], wave_method=wave_grid_method, **kwargs)
-
-    # Rebin
-    rspec = spectra_coadd_sort.rebin(new_wave*units.AA, all=True, do_sig=True, grow_bad_sig=True,
-                          masking='none')
-
-    # Define mask -- THIS IS THE ONLY ONE TO USE
-    rmask = rspec.data['sig'].filled(0.) <= 0.
-
-    # S/N**2, weights
-    sn2, weights = coadd.sn_weight(rspec, rmask)
-
-    for iord in range(norder):
-        wave = spectra_coadd_sort[iord].data['wave'].filled(0.)[0]
-        flux = spectra_coadd_sort[iord].data['flux'].filled(0.)[0]
-        sig = spectra_coadd_sort[iord].data['sig'].filled(0.)[0]
-        plt.plot(wave, flux/sig)
-    plt.show()
-    for ii in range(norder - 1):
-        wvmin1, wvmax1 = spectra_coadd_sort[ii].wvmin, spectra_coadd_sort[ii].wvmax
-        wvmin2, wvmax2 = spectra_coadd_sort[ii + 1].wvmin, spectra_coadd_sort[ii + 1].wvmax
-
-        wave1 = spectra_coadd_sort[iord].data['wave'].filled(0.)[0]
-        flux1 = spectra_coadd_sort[iord].data['flux'].filled(0.)[0]
-
-
 def other_tests():
     # flux XSHOOTER
     datapath = '/Users/feige/Dropbox/PypeIt_DATA/XSHOOTER/J0439/NIR/Science/'
@@ -450,32 +315,6 @@ def other_tests():
     plt.legend(loc=1,fontsize=16)
     plt.show()
 
-#flux_example(debug=True,datapath='/Users/feige/Dropbox/PypeIt_Redux/NIRES/')
-#flux_example2(debug=False,datapath='/Users/feige/Dropbox/PypeIt_Redux/NIRES/')
-#coadd_nires(giantcoadd=False,debug=True,datapath='/Users/feige/Dropbox/PypeIt_Redux/NIRES/')
-
-#flux_example(debug=True,datapath='/Users/feige/Work/Observations/NIRES/NIRES_Barth/J0252/reduce0930_20190103/Science/')
-#flux_example2(debug=False,datapath='/Users/feige/Work/Observations/NIRES/NIRES_Barth/J0252/reduce0930_20190103/Science/')
-#coadd_nires(giantcoadd=False,debug=True,datapath='/Users/feige/Work/Observations/NIRES/NIRES_Barth/J0252/reduce0930_20190103/Science/')
-
-### 2018 June data reduction
-#flux_nires(debug=False,datapath='/Users/feige/Work/Observations/201805_NIRES/pypeit_redux/20180604/Flux/',\
-#           objinfo='J1135_info.txt',stdframe='spec1d_HIP53735_NIRES_2018Jun04T055220.216.fits')
-#coadd_nires(giantcoadd=False,debug=True,datapath='/Users/feige/Work/Observations/201805_NIRES/pypeit_redux/20180604/Flux/',\
-#            objinfo='J1135_info.txt')
-#flux_nires(debug=False,datapath='/Users/feige/Work/Observations/201805_NIRES/pypeit_redux/20180604/Flux/',\
-#           objinfo='J2125_info.txt',stdframe='spec1d_HIP107535_NIRES_2018Jun04T150456.336.fits')
-#coadd_nires(giantcoadd=False,debug=True,datapath='/Users/feige/Work/Observations/201805_NIRES/pypeit_redux/20180604/Flux/',\
-#            objinfo='J2125_info.txt')
-#flux_nires(debug=False,datapath='/Users/feige/Work/Observations/201805_NIRES/pypeit_redux/20180604/Flux/',\
-#           objinfo='J1316_info.txt',stdframe='spec1d_HIP61471_NIRES_2018Jun04T084258.466.fits')
-#coadd_nires(giantcoadd=False,debug=True,datapath='/Users/feige/Work/Observations/201805_NIRES/pypeit_redux/20180604/Flux/',\
-#           objinfo='J1316_info.txt')
-#flux_nires(debug=False,datapath='/Users/feige/Work/Observations/201805_NIRES/pypeit_redux/20180604/Flux/',\
-#           objinfo='J1724_info.txt',stdframe='spec1d_HIP87643_NIRES_2018Jun04T141653.306.fits')
-#coadd_nires(giantcoadd=False,debug=True,datapath='/Users/feige/Work/Observations/201805_NIRES/pypeit_redux/20180604/Flux/',\
-#           objinfo='J1724_info.txt')
-
 
 ### 2018 Oct NIRES data reduction
 #ech_flux_new(debug=True,datapath='/Users/feige/Work/Observations/NIRES/pypeit_redux/ut181001/Science/',\
@@ -521,5 +360,5 @@ def other_tests():
 #ech_flux_new(debug=False,datapath='/Users/feige/Work2018/XSHOOTER/J1048m0109/VIS/Science/',\
 #            objinfo='J1048_info.txt',stdframe='spec1d_STD,TELLURIC_XShooter_VIS_2017Feb02T050605.546.fits',
 #            star_type='B9',star_mag=7.01,norder=5,resolution=8000,BALM_MASK_WID=20.0,polycorrect=True,polysens=False)
-ech_coadd_new(giantcoadd=False,debug=False,datapath='/Users/feige/Work2018/XSHOOTER/J1048m0109/VIS/Science/',
-              objinfo='J1048_info.txt',qafile='ech_coadd',outfile='J1048_XSHOOTER.fits')
+#ech_coadd_new(giantcoadd=False,debug=False,datapath='/Users/feige/Work2018/XSHOOTER/J1048m0109/VIS/Science/',
+#              objinfo='J1048_info.txt',qafile='ech_coadd',outfile='J1048_XSHOOTER.fits')
