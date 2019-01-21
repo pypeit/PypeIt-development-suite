@@ -514,5 +514,12 @@ def other_tests():
 #ech_flux_new(debug=False,datapath='/Users/feige/Dropbox/PypeIt_Redux/XSHOOTER/J0020m3653/VIS/Science/',\
 #            objinfo='J0020_info.txt',stdframe='spec1d_STD,TELLURIC_XShooter_VIS_2017Oct26T015817.881.fits',
 #            star_type='B7',star_mag=5.812,norder=5,resolution=8000,BALM_MASK_WID=20.0,polycorrect=True,polysens=False)
-ech_coadd_new(giantcoadd=False,debug=False,datapath='/Users/feige/Dropbox/PypeIt_Redux/XSHOOTER/J0020m3653/VIS/Science/',
-              objinfo='J0020_info.txt',qafile='ech_coadd',outfile='J0020_XSHOOTER.fits')
+#ech_coadd_new(giantcoadd=False,debug=False,datapath='/Users/feige/Dropbox/PypeIt_Redux/XSHOOTER/J0020m3653/VIS/Science/',
+#              objinfo='J0020_info.txt',qafile='ech_coadd',outfile='J0020_XSHOOTER.fits')
+
+## Old laptop
+#ech_flux_new(debug=False,datapath='/Users/feige/Work2018/XSHOOTER/J1048m0109/VIS/Science/',\
+#            objinfo='J1048_info.txt',stdframe='spec1d_STD,TELLURIC_XShooter_VIS_2017Feb02T050605.546.fits',
+#            star_type='B9',star_mag=7.01,norder=5,resolution=8000,BALM_MASK_WID=20.0,polycorrect=True,polysens=False)
+ech_coadd_new(giantcoadd=False,debug=False,datapath='/Users/feige/Work2018/XSHOOTER/J1048m0109/VIS/Science/',
+              objinfo='J1048_info.txt',qafile='ech_coadd',outfile='J1048_XSHOOTER.fits')
