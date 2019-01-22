@@ -35,6 +35,7 @@ objprefix = 'J0252-0503'
 spec2d_files = glob.glob(redux_path + 'Science/spec2d_' + objprefix + '*')
 slitid = 3
 objid=np.full(len(spec2d_files),1)
+
 #objid=1
 # GNIRS
 #redux_path = '/Users/joe/python/PypeIt-development-suite/REDUX_OUT/Gemini_GNIRS/'
@@ -52,8 +53,23 @@ objid=np.full(len(spec2d_files),1)
 #slitid=11
 #objid = [1,1,1,3]
 # read in the stacks
+
+
+# Read in the specobjs_list and the 2d image stacks,
+# TODO implement sensitivity function
 specobjs_list, tslits_dict_orig, slitmask_stack, sciimg_stack, sciivar_stack, skymodel_stack, mask_stack, tilts_stack, waveimg_stack = \
     coadd2d.load_coadd2d_stacks(spec2d_files)
+
+
+# Determine the optimal weights, which operates on the 1d files.
+# -- for echelle this routine will:
+# 1) Find the brightest object on Determine which object is the brightest on each exposure
+# 2_ attempt to match up those objects is going to read in all the orders of all of the exposures. Determine which object is brightest. Then
+# determine which order has on average the highest signal-to-noise ratio, then use the S/N ratio in that order to determine the weights.
+# -- for multislit, it will be the same as above but there is the problem of how to associate the objects together on the slits
+
+# Determine the reference trace and optimal weights
+sn2, weights, wave_stack, trace_stack = coadd2d.optimal_weights(specobjs_list, slitid, objid)
 
 
 
@@ -64,30 +80,10 @@ thismask = thismask_stack[0,:,:]
 slitmask = slitmask_stack[0,:,:]
 
 
-# Grab the traces for this slit and objid.
-trace_stack = np.zeros((nexp, nspec),dtype=float)
-for iexp, sobjs in enumerate(specobjs_list):
-    ithis = (sobjs.slitid == slitid) & (sobjs.objid == objid[iexp])
-    trace_stack[iexp,:] = sobjs[ithis].trace_spat
-
 
 spectrograph = util.load_spectrograph(tslits_dict_orig['spectrograph'])
 
-#dloglam_order = np.zeros(spectrograph.norders)
-#sobjs_now = specobjs_list[0]
-#for iorder in range(spectrograph.norders):
-#    ithis = (sobjs_now.objid == objid[0]) & (sobjs_now.ech_orderindx == iorder)
-#    wave_order = sobjs_now[ithis][0].optimal['WAVE'].value
-#    igd = wave_order > 1.0
-#    wave_order = wave_order[igd]
-#    loglam = np.log10(wave_order)
-#    dloglam = (loglam - np.roll(loglam,1))[1:]
-#    dloglam_order[iorder] = np.median(dloglam)
 
-#dloglam_mean = np.mean(dloglam_order)
-#delta_loglam = (dloglam_order - dloglam_mean)/dloglam_mean
-#wave_order = np.zeros(norder)
-# median wavelength separation
 wave_grid = spectrograph.wavegrid()
 
 
@@ -286,3 +282,20 @@ trace = np.full(loglam_extract_exp.shape[0],zero_dspat)
 #                                                    weights = var_now[finmask])
 #     var_rect_stack[iexp,:,:] =(norm_img > 0.0)*weigh_var/(norm_img + (norm_img == 0.0))**2
 #
+
+#dloglam_order = np.zeros(spectrograph.norders)
+#sobjs_now = specobjs_list[0]
+#for iorder in range(spectrograph.norders):
+#    ithis = (sobjs_now.objid == objid[0]) & (sobjs_now.ech_orderindx == iorder)
+#    wave_order = sobjs_now[ithis][0].optimal['WAVE'].value
+#    igd = wave_order > 1.0
+#    wave_order = wave_order[igd]
+#    loglam = np.log10(wave_order)
+#    dloglam = (loglam - np.roll(loglam,1))[1:]
+#    dloglam_order[iorder] = np.median(dloglam)
+
+#dloglam_mean = np.mean(dloglam_order)
+#delta_loglam = (dloglam_order - dloglam_mean)/dloglam_mean
+#wave_order = np.zeros(norder)
+# median wavelength separation
+
