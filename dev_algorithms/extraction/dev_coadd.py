@@ -14,151 +14,137 @@ from pypeit.core import qa
 from pypeit import traceslits
 from pypeit.core import trace_slits
 from pypeit.core import extract
-from pypeit.spectrographs.util import load_spectrograph
+from pypeit.spectrographs import util
 from astropy.table import Table
 from astropy import stats
+from astropy import constants as const
+from astropy import units as u
 from pypeit.core import extract
 from pypeit.core import skysub
 from pypeit.core import procimg
 from pypeit import ginga
 from pypeit import masterframe
 from pypeit.core import load
-from pypeit.core import coadd
+from pypeit.core import coadd2d
 import glob
 
-#
-#redux_path = '/Users/joe/Dropbox/PypeIt_Redux/NIRES/J0252/ut181001/'
-#spec2d_files = glob.glob(redux_path + 'Science/spec2d_J0252*')
+
+# NIRES
+redux_path = '/Users/joe/Dropbox/PypeIt_Redux/NIRES/J0252/ut181001/'
+objprefix = 'J0252-0503'
+spec2d_files = glob.glob(redux_path + 'Science/spec2d_' + objprefix + '*')
+slitid = 3
+objid=np.full(len(spec2d_files),1)
+
+#objid=1
+# GNIRS
+#redux_path = '/Users/joe/python/PypeIt-development-suite/REDUX_OUT/Gemini_GNIRS/'
+#objprefix ='pisco'
+#slitid = 2
+#spec2d_files = glob.glob(redux_path + 'Science/spec2d_' + objprefix + '*')
+#objid=np.full(len(spec2d_files),1)
+
+#objid = 1
 
 
-# Read in the masters
-#path = '/Users/joe/python/PypeIt-development-suite/REDUX_OUT/Gemini_GNIRS/'
-#master_dir = path + 'MF_gemini_gnirs/'
-#scidir = path + 'Science/'
-#waveimgfiles = [os.path.join(master_dir, ifile) for ifile in ['MasterWave_A_1_01.fits','MasterWave_A_2_01.fits', 'MasterWave_A_4_01.fits',
-#                                                              'MasterWave_A_8_01.fits']]
-#tiltfiles = [os.path.join(master_dir, ifile) for ifile in ['MasterTilts_A_1_01.fits','MasterTilts_A_2_01.fits', 'MasterTilts_A_4_01.fits',
-#                                                           'MasterTilts_A_8_01.fits']]
-#tracefile = os.path.join(master_dir,'MasterTrace_A_15_01')
-#spec2d_files = [os.path.join(scidir, ifile) for ifile in ['spec2d_pisco_GNIRS_2017Mar31T085412.181.fits',
-#                                                              'spec2d_pisco_GNIRS_2017Mar31T085933.097.fits',
-#                                                              'spec2d_pisco_GNIRS_2017Mar31T091538.731.fits',
-#                                                              'spec2d_pisco_GNIRS_2017Mar31T092059.597.fits']]
-#spec1d_files = [os.path.join(scidir, ifile) for ifile in ['spec1d_pisco_GNIRS_2017Mar31T085412.181.fits',
-#                                                              'spec1d_pisco_GNIRS_2017Mar31T085933.097.fits',
-#                                                              'spec1d_pisco_GNIRS_2017Mar31T091538.731.fits',
-#                                                              'spec1d_pisco_GNIRS_2017Mar31T092059.597.fits']]
+# XSHOOTER
+#redux_path = '/Users/joe/Dropbox/PypeIt_Redux/XSHOOTER/J0020m3653/NIR/'
+#objprefix ='VHSJ0020'
+#slitid=11
+#objid = [1,1,1,3]
+# read in the stacks
 
 
-redux_path = '/Users/joe/python/PypeIt-development-suite/REDUX_OUT/Gemini_GNIRS/'
-objprefix ='pisco'
-spec2d_files, spec1d_files, tracefiles, tiltfiles, waveimgfiles = coadd.get_coadd2d_files(redux_path,objprefix)
-
-specobjs_list = []
-for file in spec1d_files:
-    sobjs = load.load_specobjs(file)
-    specobjs_list.append(sobjs)
+# Read in the specobjs_list and the 2d image stacks,
+# TODO implement sensitivity function
+specobjs_list, tslits_dict_orig, slitmask_stack, sciimg_stack, sciivar_stack, skymodel_stack, mask_stack, tilts_stack, waveimg_stack = \
+    coadd2d.load_coadd2d_stacks(spec2d_files)
 
 
+# Determine the optimal weights, which operates on the 1d files.
+# -- for echelle this routine will:
+# 1) Find the brightest object on Determine which object is the brightest on each exposure
+# 2_ attempt to match up those objects is going to read in all the orders of all of the exposures. Determine which object is brightest. Then
+# determine which order has on average the highest signal-to-noise ratio, then use the S/N ratio in that order to determine the weights.
+# -- for multislit, it will be the same as above but there is the problem of how to associate the objects together on the slits
 
-slit = 5
-nexp = len(waveimgfiles)
-hdu_sci1d = fits.open(spec1d_files[ifile])
-obj_table = Table(hdu_sci1d[slit + 1].data)
-
-
-def load_coadd2d_stacks(spec2d_files, tracefiles, tiltfiles, waveimgfiles):
-
-    nfiles = len(spec2d_files)
-
-    for ifile in range(nfiles):
-        hdu_wave = fits.open(waveimgfiles[ifile])
-        waveimg = hdu_wave[0].data
-        hdu_tilts = fits.open(tiltfiles[ifile])
-        tilts = hdu_tilts[0].data
-        hdu_sci = fits.open(spec2d_files[ifile])
-        sciimg = hdu_sci[1].data
-        sky = hdu_sci[3].data
-        sciivar = hdu_sci[5].data
-        mask = hdu_sci[6].data
-        if ifile == 0:
-            # the two shapes accomodate the possibility that waveimg and tilts are binned differently
-            shape_wave = (nfiles,waveimg.shape[0],waveimg.shape[1])
-            shape_sci = (nfiles,sciimg.shape[0],sciimg.shape[1])
-            waveimg_stack = np.zeros(shape_wave,dtype=float)
-            tilts_stack = np.zeros(shape_wave,dtype=float)
-            sciimg_stack = np.zeros(shape_sci,dtype=float)
-            skymodel_stack = np.zeros(shape_sci,dtype=float)
-            sciivar_stack = np.zeros(shape_sci,dtype=float)
-            mask_stack = np.zeros(shape_sci,dtype=float)
-
-        waveimg_stack[ifile,:,:] = waveimg
-        tilts_stack[ifile,:,:] = tilts
-        sciimg_stack[ifile,:,:] = sciimg
-        sciivar_stack[ifile,:,:] = sciivar
-        mask_stack[ifile,:,:] = mask
-        skymodel_stack[ifile,:,:] = sky
-        trace_stack[ifile,:] = trace
-        #wave_stack[ifile,:] = wave_trace
+# Determine the reference trace and optimal weights
+rms_sn, weights, wave_stack, trace_stack = coadd2d.optimal_weights(specobjs_list, slitid, objid)
 
 
 
-# Read in the tslits_dict
-tslits_dict = traceslits.load_tslits_dict(tracefile)
-#Tslits = traceslits.TraceSlits.from_master_files(tracefile)
-#tslits_dict = Tslits._fill_tslits_dict()
-spectrograph = load_spectrograph('gemini_gnirs')
-slitmask = spectrograph.slitmask(tslits_dict)
-nslits = tslits_dict['lcen'].shape[1]
-slitmask_stack = np.einsum('i,jk->ijk', np.ones(nexp), slitmask)
-thismask_stack = slitmask_stack == slit
+nexp, nspec, nspat  = sciimg_stack.shape
+# Create the thismask_stack for this slit.
+thismask_stack = slitmask_stack == slitid
+thismask = thismask_stack[0,:,:]
+slitmask = slitmask_stack[0,:,:]
 
-# Define the new wavelength grid
-ngrid = 5000
-dloglam = 0.000127888 # this is the average of the median dispersions
-logmin = 3.777
-#loglam = logmin + dloglam*np.arange(ngrid)
-# Define the oversampled grid
-osamp = 1.0
-loglam_grid = logmin + (dloglam/osamp)*np.arange(int(np.ceil(osamp*ngrid)))
-wave_grid = None
 
-sciimg, sciivar, imgminsky, outmask, nused, tilts, waveimg, dspat, thismask, tslits_dict = procimg.coadd2d(
-    sciimg_stack, sciivar_stack, skymodel_stack, (mask_stack == 0), tilts_stack, waveimg_stack, trace_stack,
-    thismask_stack, loglam_grid=loglam_grid)
 
-sys.exit(-1)
-sobjs, _ = extract.objfind(imgminsky, thismask, tslits_dict['lcen'], tslits_dict['rcen'],
-                                                inmask=outmask, show_peaks=True,show_fits=True, show_trace=True)
-sobjs_neg, _ = extract.objfind(-imgminsky, thismask, tslits_dict['lcen'], tslits_dict['rcen'],
-                               inmask=outmask, show_peaks=True,show_fits=True, show_trace=True)
+spectrograph = util.load_spectrograph(tslits_dict_orig['spectrograph'])
+
+
+wave_grid = spectrograph.wavegrid()
+
+
+wave_bins, dspat_bins, sciimg_rect, sciivar_rect, imgminsky_rect, outmask_rect, nused, tilts_rect, waveimg_rect, \
+    dspat_rect, thismask_rect, tslits_dict = \
+    coadd2d.coadd2d(trace_stack, sciimg_stack, sciivar_stack, skymodel_stack, (mask_stack == 0), tilts_stack, waveimg_stack,
+    thismask_stack, wave_grid=wave_grid)
+
+sobjs, _ = extract.objfind(imgminsky_rect, thismask_rect, tslits_dict['lcen'], tslits_dict['rcen'],
+                           inmask=outmask_rect, show_peaks=True,show_fits=True, show_trace=True)
+sobjs_neg, _ = extract.objfind(-imgminsky_rect, thismask_rect, tslits_dict['lcen'], tslits_dict['rcen'],
+                               inmask=outmask_rect, show_peaks=True,show_fits=True, show_trace=True)
 sobjs.append_neg(sobjs_neg)
 # Local sky subtraction and extraction
-skymodel_rect = np.zeros_like(imgminsky)
-global_sky = np.zeros_like(imgminsky)
-rn2img = np.zeros_like(imgminsky)
-objmodel_rect = np.zeros_like(imgminsky)
-ivarmodel_rect = np.zeros_like(imgminsky)
-extractmask_rect = np.zeros_like(thismask)
+skymodel_rect = np.zeros_like(imgminsky_rect)
+global_sky_rect = np.zeros_like(imgminsky_rect)
+rn2img_rect = np.zeros_like(imgminsky_rect)
+objmodel_rect = np.zeros_like(imgminsky_rect)
+ivarmodel_rect = np.zeros_like(imgminsky_rect)
+extractmask_rect = np.zeros_like(thismask_rect)
 par = spectrograph.default_pypeit_par()
 # TODO Modify profile fitting so that we can pass in a position image which will allow us to improve the spatial sampling
 # in this final extraction step
-skymodel_rect[thismask], objmodel_rect[thismask], ivarmodel_rect[thismask], extractmask_rect[thismask] = \
-    skysub.local_skysub_extract(imgminsky, sciivar, tilts, waveimg, global_sky, rn2img, thismask,
+skymodel_rect[thismask_rect], objmodel_rect[thismask_rect], ivarmodel_rect[thismask_rect], extractmask_rect[thismask_rect] = \
+    skysub.local_skysub_extract(imgminsky_rect, sciivar_rect, tilts_rect, waveimg_rect, global_sky_rect, rn2img_rect, thismask_rect,
     tslits_dict['lcen'], tslits_dict['rcen'], sobjs, model_noise=False,bsp=par['scienceimage']['bspline_spacing'],
-    sn_gauss=par['scienceimage']['sn_gauss'],inmask=outmask, show_profile=True)
-resids_rect = ((imgminsky - skymodel_rect - objmodel_rect)*np.sqrt(ivarmodel_rect))
+    sn_gauss=par['scienceimage']['sn_gauss'],inmask=outmask_rect, show_profile=True)
+resids_rect = ((imgminsky_rect - skymodel_rect - objmodel_rect)*np.sqrt(ivarmodel_rect))
 resids_pix = resids_rect[extractmask_rect]
 std_dev = np.std(resids_pix)
 mean_resid = np.mean(resids_pix)
 sobjs_out = sobjs.copy()
 sobjs_out.purge_neg()
 
-sys.exit(-1)
 
-# Need to deal with the read noise image!
+viewer, ch = ginga.show_image(imgminsky_rect,'imgminsky')
+viewer, ch = ginga.show_image((imgminsky_rect - skymodel_rect)*np.sqrt(ivarmodel_rect),'sky_resids')
+viewer, ch = ginga.show_image((imgminsky_rect - skymodel_rect - objmodel_rect)*np.sqrt(ivarmodel_rect),'resids')
+
+# After displaying all the images sync up the images with WCS_MATCH
+shell = viewer.shell()
+out = shell.start_global_plugin('WCSMatch')
+out = shell.call_global_plugin_method('WCSMatch', 'set_reference_channel', ['imgminsky'], {})
+
+
+igd = sobjs_out[0].optimal['WAVE'] > 1.0
+wave = sobjs_out[0].optimal['WAVE'][igd]
+flux = sobjs_out[0].optimal['COUNTS'][igd]
+sig = sobjs_out[0].optimal['COUNTS_SIG'][igd]
+
+plt.plot(wave, flux,drawstyle='steps-mid')
+plt.plot(wave, sig,drawstyle='steps-mid')
+plt.show()
+sys.exit(-1)
+# This is the wavelength grid of the rectified images. It differs from the 'true' wavelengths by 2% of a pixel
+loglam_bins = np.log10(wave_bins)
 loglam_mid = ((loglam_bins + np.roll(loglam_bins,1))/2.0)[1:]
-wave_mid = np.power(10.0,loglam_mid)
+#wave_mid = np.power(10.0,loglam_mid)
+plt.plot(loglam_mid[igd],(loglam_mid[igd] - np.log10(wave))/loglam_mid[igd]/dloglam)
+
+
 dspat_mid = ((dspat_bins + np.roll(dspat_bins,1))/2.0)[1:]
 loglam_img = np.outer(loglam_mid,np.ones(nspat_rect))
 # Denom is computed in case the trace goes off the edge of the image
@@ -296,3 +282,20 @@ trace = np.full(loglam_extract_exp.shape[0],zero_dspat)
 #                                                    weights = var_now[finmask])
 #     var_rect_stack[iexp,:,:] =(norm_img > 0.0)*weigh_var/(norm_img + (norm_img == 0.0))**2
 #
+
+#dloglam_order = np.zeros(spectrograph.norders)
+#sobjs_now = specobjs_list[0]
+#for iorder in range(spectrograph.norders):
+#    ithis = (sobjs_now.objid == objid[0]) & (sobjs_now.ech_orderindx == iorder)
+#    wave_order = sobjs_now[ithis][0].optimal['WAVE'].value
+#    igd = wave_order > 1.0
+#    wave_order = wave_order[igd]
+#    loglam = np.log10(wave_order)
+#    dloglam = (loglam - np.roll(loglam,1))[1:]
+#    dloglam_order[iorder] = np.median(dloglam)
+
+#dloglam_mean = np.mean(dloglam_order)
+#delta_loglam = (dloglam_order - dloglam_mean)/dloglam_mean
+#wave_order = np.zeros(norder)
+# median wavelength separation
+
