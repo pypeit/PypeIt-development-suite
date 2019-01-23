@@ -69,7 +69,7 @@ specobjs_list, tslits_dict_orig, slitmask_stack, sciimg_stack, sciivar_stack, sk
 # -- for multislit, it will be the same as above but there is the problem of how to associate the objects together on the slits
 
 # Determine the reference trace and optimal weights
-sn2, weights, wave_stack, trace_stack = coadd2d.optimal_weights(specobjs_list, slitid, objid)
+rms_sn, weights, wave_stack, trace_stack = coadd2d.optimal_weights(specobjs_list, slitid, objid)
 
 
 
