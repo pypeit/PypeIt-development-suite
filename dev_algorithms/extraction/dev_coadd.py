@@ -34,7 +34,7 @@ redux_path = '/Users/joe/Dropbox/PypeIt_Redux/NIRES/J0252/ut181001/'
 objprefix = 'J0252-0503'
 spec2d_files = glob.glob(redux_path + 'Science/spec2d_' + objprefix + '*')
 slitid = 3
-objid=np.full(len(spec2d_files),1)
+#objid=np.full(len(spec2d_files),1)
 
 #objid=1
 # GNIRS
@@ -60,37 +60,33 @@ objid=np.full(len(spec2d_files),1)
 specobjs_list, tslits_dict_orig, slitmask_stack, sciimg_stack, sciivar_stack, skymodel_stack, mask_stack, tilts_stack, waveimg_stack = \
     coadd2d.load_coadd2d_stacks(spec2d_files)
 
-
-# Determine the optimal weights, which operates on the 1d files.
-# -- for echelle this routine will:
-# 1) Find the brightest object on Determine which object is the brightest on each exposure
-# 2_ attempt to match up those objects is going to read in all the orders of all of the exposures. Determine which object is brightest. Then
-# determine which order has on average the highest signal-to-noise ratio, then use the S/N ratio in that order to determine the weights.
-# -- for multislit, it will be the same as above but there is the problem of how to associate the objects together on the slits
-
-# Determine the reference trace and optimal weights
-rms_sn, weights, wave_stack, trace_stack = coadd2d.optimal_weights(specobjs_list, slitid, objid)
-
-
-
-nexp, nspec, nspat  = sciimg_stack.shape
-# Create the thismask_stack for this slit.
-thismask_stack = slitmask_stack == slitid
-thismask = thismask_stack[0,:,:]
-slitmask = slitmask_stack[0,:,:]
-
-
+# Find the objid of the brighest object, and the average snr across all orders
+objid, snr_bar = coadd2d.get_brightest_obj(specobjs_list, echelle=True)
 
 spectrograph = util.load_spectrograph(tslits_dict_orig['spectrograph'])
-
-
+nslits = tslits_dict_orig['lcen'].shape[1]
+# Grab the wavelength grid that we will rectify onto
 wave_grid = spectrograph.wavegrid()
 
+## Loop over the slit and create these stacked images for each order. Then pack them into a fake image so that
+## the rest of our routines will run on them, like ech_objfind etc. Generalize the Scienceimage class to handle
+# this and/or strip those methods out to functions.
 
-wave_bins, dspat_bins, sciimg_rect, sciivar_rect, imgminsky_rect, outmask_rect, nused, tilts_rect, waveimg_rect, \
-    dspat_rect, thismask_rect, tslits_dict = \
-    coadd2d.coadd2d(trace_stack, sciimg_stack, sciivar_stack, skymodel_stack, (mask_stack == 0), tilts_stack, waveimg_stack,
-    thismask_stack, wave_grid=wave_grid)
+# Determine the wavelength dependent optimal weights and grab the reference trace
+rms_sn, weights, trace_stack, wave_stack = coadd2d.optimal_weights(specobjs_list, slitid, objid)
+thismask_stack = slitmask_stack == slitid
+wave_bins, dspat_bins, sciimg_rect, sciivar_rect, imgminsky_rect, outmask_rect, nused, tilts_rect, waveimg_rect, dspat_rect = \
+coadd2d.coadd2d(trace_stack, sciimg_stack, sciivar_stack, skymodel_stack, (mask_stack == 0), tilts_stack,
+                waveimg_stack,thismask_stack, weights = weights, wave_grid=wave_grid)
+
+
+# Now create the thismask and tslits_dict that we need for an extraction
+nspec_rect, nspat_rect = imgminsky_rect.shape
+thismask_rect = np.ones(imgminsky_rect.shape, dtype=bool)
+slit_left = np.full(nspec_rect, 0.0)
+slit_righ = np.full(nspec_rect, nspat_rect - 1)
+tslits_dict = dict(lcen=slit_left, rcen=slit_righ,nspec=nspec_rect, nspat=nspat_rect,pad=0, binning=None,
+                   spectrograph=spectrograph.spectrograph)
 
 sobjs, _ = extract.objfind(imgminsky_rect, thismask_rect, tslits_dict['lcen'], tslits_dict['rcen'],
                            inmask=outmask_rect, show_peaks=True,show_fits=True, show_trace=True)
