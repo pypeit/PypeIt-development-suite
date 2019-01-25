@@ -30,7 +30,7 @@ import glob
 
 
 # NIRES
-redux_path = '/Users/joe/Dropbox/PypeIt_Redux/NIRES/J0252/ut181001/'
+redux_path = '/Users/joe/Dropbox/PypeIt_Redux/NIRES/J0252/ut181001_new/'
 objprefix = 'J0252-0503'
 spec2d_files = glob.glob(redux_path + 'Science/spec2d_' + objprefix + '*')
 slitid = 3
@@ -61,8 +61,9 @@ specobjs_list, tslits_dict_orig, slitmask_stack, sciimg_stack, sciivar_stack, sk
     coadd2d.load_coadd2d_stacks(spec2d_files)
 
 # Find the objid of the brighest object, and the average snr across all orders
-nslits = tslits_dict_orig['lcen'].shape[1]
+nslits = tslits_dict_orig['slit_left'].shape[1]
 objid, snr_bar = coadd2d.get_brightest_obj(specobjs_list, echelle=True)
+# TODO Print out a report here on the image stack
 
 spectrograph = util.load_spectrograph(tslits_dict_orig['spectrograph'])
 # Grab the wavelength grid that we will rectify onto
@@ -73,18 +74,42 @@ wave_grid = spectrograph.wavegrid()
 # this and/or strip those methods out to functions.
 
 coadd_list = []
-nspec_psuedo = 0
-nspat_pad = 20
-nspat_psuedo = nspat_pad
+nspec_vec = np.zeros(nslits,dtype=int)
+nspat_vec = np.zeros(nslits,dtype=int)
 for islit in range(nslits):
+    msgs.info('Performing 2d coadd for slit: {:d}/{:d}'.format(islit,nslits-1))
     # Determine the wavelength dependent optimal weights and grab the reference trace
     rms_sn, weights, trace_stack, wave_stack = coadd2d.optimal_weights(specobjs_list, islit, objid)
     thismask_stack = slitmask_stack == islit
+    # Perform the 2d coadd
     coadd_dict = coadd2d.coadd2d(trace_stack, sciimg_stack, sciivar_stack, skymodel_stack, (mask_stack == 0), tilts_stack,
                              waveimg_stack,thismask_stack, weights = weights, wave_grid=wave_grid)
     coadd_list.append(coadd_dict)
-    nspec_psuedo = np.fmax([nspec_psuedo, coadd_dict['nspec']])
-    nspat_psuedo += coadd_dict['nspat'] + nspat_pad
+    nspec_vec[islit]=coadd_dict['nspec']
+    nspat_vec[islit]=coadd_dict['nspat']
+
+# Determine the size of the psuedo image
+nspat_pad = 10
+nspec_psuedo = nspec_vec.max()
+nspat_psuedo = np.sum(nspat_vec) + (nslits + 1)*nspat_pad
+shape_psuedo = (nspec_psuedo, nspat_psuedo)
+imgminsky_psuedo = np.zeros(shape_psuedo)
+
+
+
+
+
+nspec_vec = [nspec_vec for coadd_dict['nspec'] for coadd_cit]
+nspec_psuedo = 0
+
+nspat_psuedo = nspat_pad
+for coadd_dict in coadd_list:
+    nspec_psuedo = np.fmax([nspec,psuedo, coadd_dict['nspec']])
+
+#    nspec_psuedo = np.fmax([nspec_psuedo, coadd_dict['nspec']])
+#    nspat_psuedo += coadd_dict['nspat'] + nspat_pad
+
+nspec_psuedo = [np.fmax(nspec_psuedo, this_dict['nspec']) for this_dict in coadd_list]
 
 # Now pack the data into psuedo images
 imgminsky_psuedo = np.zeros((nspec_psuedo,nspat_psuedo))
