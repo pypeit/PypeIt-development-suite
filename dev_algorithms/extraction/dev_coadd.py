@@ -61,25 +61,34 @@ specobjs_list, tslits_dict_orig, slitmask_stack, sciimg_stack, sciivar_stack, sk
     coadd2d.load_coadd2d_stacks(spec2d_files)
 
 # Find the objid of the brighest object, and the average snr across all orders
+nslits = tslits_dict_orig['lcen'].shape[1]
 objid, snr_bar = coadd2d.get_brightest_obj(specobjs_list, echelle=True)
 
 spectrograph = util.load_spectrograph(tslits_dict_orig['spectrograph'])
-nslits = tslits_dict_orig['lcen'].shape[1]
 # Grab the wavelength grid that we will rectify onto
 wave_grid = spectrograph.wavegrid()
 
-## Loop over the slit and create these stacked images for each order. Then pack them into a fake image so that
+## Loop over the slit and create these stacked images for each order.
 ## the rest of our routines will run on them, like ech_objfind etc. Generalize the Scienceimage class to handle
 # this and/or strip those methods out to functions.
 
-# Determine the wavelength dependent optimal weights and grab the reference trace
-rms_sn, weights, trace_stack, wave_stack = coadd2d.optimal_weights(specobjs_list, slitid, objid)
-thismask_stack = slitmask_stack == slitid
-wave_bins, dspat_bins, sciimg_rect, sciivar_rect, imgminsky_rect, outmask_rect, nused, tilts_rect, waveimg_rect, dspat_rect = \
-coadd2d.coadd2d(trace_stack, sciimg_stack, sciivar_stack, skymodel_stack, (mask_stack == 0), tilts_stack,
-                waveimg_stack,thismask_stack, weights = weights, wave_grid=wave_grid)
+coadd_list = []
+nspec_psuedo = 0
+nspat_pad = 20
+nspat_psuedo = nspat_pad
+for islit in range(nslits):
+    # Determine the wavelength dependent optimal weights and grab the reference trace
+    rms_sn, weights, trace_stack, wave_stack = coadd2d.optimal_weights(specobjs_list, islit, objid)
+    thismask_stack = slitmask_stack == islit
+    coadd_dict = coadd2d.coadd2d(trace_stack, sciimg_stack, sciivar_stack, skymodel_stack, (mask_stack == 0), tilts_stack,
+                             waveimg_stack,thismask_stack, weights = weights, wave_grid=wave_grid)
+    coadd_list.append(coadd_dict)
+    nspec_psuedo = np.fmax([nspec_psuedo, coadd_dict['nspec']])
+    nspat_psuedo += coadd_dict['nspat'] + nspat_pad
 
-
+# Now pack the data into psuedo images
+imgminsky_psuedo = np.zeros((nspec_psuedo,nspat_psuedo))
+for islit in range(nslits):
 # Now create the thismask and tslits_dict that we need for an extraction
 nspec_rect, nspat_rect = imgminsky_rect.shape
 thismask_rect = np.ones(imgminsky_rect.shape, dtype=bool)
