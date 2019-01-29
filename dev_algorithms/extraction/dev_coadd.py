@@ -75,7 +75,7 @@ def extract_one_coadd2d(spec2d_files, ir_redux=False, par=None, show=False):
         mjd = head1d['MJD-OBS']
     obstime = time.Time(mjd, format='mjd')
     filename = os.path.basename(spec2d_files[0])
-    basename = 
+    basename =
 
     # Find the objid of the brighest object, and the average snr across all orders
     nslits = stack_dict['tslits_dict']['slit_left'].shape[1]
