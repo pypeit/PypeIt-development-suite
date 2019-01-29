@@ -5,6 +5,7 @@ import numpy as np
 import matplotlib.pyplot as plt
 import os
 from astropy.io import fits
+from astropy import time
 from pypeit import msgs
 from pypeit.core import arc
 from pypeit import utils
@@ -30,6 +31,8 @@ from pypeit.core import save
 from pypeit.core import pixels
 from pypeit import reduce
 from collections import OrderedDict
+from linetools import utils as ltu
+import scipy
 
 from pypeit import processimages
 import glob
@@ -62,7 +65,17 @@ spec2d_files = glob.glob(redux_path + 'Science/spec2d_' + objprefix + '*')
 
 def extract_one_coadd2d(spec2d_files, ir_redux=False, par=None, show=False):
 
+    # Read in the stack, grab some meta data we will need
     stack_dict = coadd2d.load_coadd2d_stacks(spec2d_files)
+    head1d = stack_dict['head1d_list'][0]
+    head2d = stack_dict['head2d_list'][0]
+    try:
+        mjd = head1d['mjd']  # recorded as 'mjd' in fitstbl
+    except KeyError:
+        mjd = head1d['MJD-OBS']
+    obstime = time.Time(mjd, format='mjd')
+    filename = os.path.basename(spec2d_files[0])
+    basename = 
 
     # Find the objid of the brighest object, and the average snr across all orders
     nslits = stack_dict['tslits_dict']['slit_left'].shape[1]
@@ -102,6 +115,7 @@ def extract_one_coadd2d(spec2d_files, ir_redux=False, par=None, show=False):
     nspat_pad = 10
     nspec_psuedo = nspec_vec.max()
     nspat_psuedo = np.sum(nspat_vec) + (nslits + 1)*nspat_pad
+    spec_vec_psuedo = np.arange(nspec_psuedo)
     shape_psuedo = (nspec_psuedo, nspat_psuedo)
     imgminsky_psuedo = np.zeros(shape_psuedo)
     sciivar_psuedo = np.zeros(shape_psuedo)
@@ -116,8 +130,8 @@ def extract_one_coadd2d(spec2d_files, ir_redux=False, par=None, show=False):
     spat_left = nspat_pad
     slit_left = np.zeros((nspec_psuedo, nslits))
     slit_righ = np.zeros((nspec_psuedo, nslits))
-    spec_min = np.zeros(nslits)
-    spec_max = np.zeros(nslits)
+    spec_min1 = np.zeros(nslits)
+    spec_max1 = np.zeros(nslits)
     for islit, coadd_dict in enumerate(coadd_list):
         spat_righ = spat_left + nspat_vec[islit]
         ispec = slice(0,nspec_vec[islit])
@@ -135,22 +149,36 @@ def extract_one_coadd2d(spec2d_files, ir_redux=False, par=None, show=False):
         dspat_mid[ispat, islit] = coadd_dict['dspat_mid']
         slit_left[:,islit] = np.full(nspec_psuedo, spat_left)
         slit_righ[:,islit] = np.full(nspec_psuedo, spat_righ)
-        spec_max[islit] = nspec_vec[islit]-1
+        spec_max1[islit] = nspec_vec[islit]-1
         spat_left = spat_righ + nspat_pad
 
     tslits_dict_psuedo = dict(slit_left=slit_left, slit_righ=slit_righ, nspec=nspec_psuedo, nspat=nspat_psuedo, pad=0,
                               nslits = nslits, binspectral=1, binspatial=1, spectrograph=spectrograph.spectrograph,
-                              spec_min=spec_min, spec_max=spec_max)
+                              spec_min=spec_min1, spec_max=spec_max1)
+
     slitmask_psuedo = pixels.tslits2mask(tslits_dict_psuedo)
     # This is a kludge to deal with cases where bad wavelengths result in large regions where the slit is poorly sampled,
     # which wreaks havoc on the local sky-subtraction
     min_slit_frac = 0.70
+    spec_min = np.zeros(nslits)
+    spec_max = np.zeros(nslits)
     for islit in range(nslits):
         slit_width = np.sum(inmask_psuedo*(slitmask_psuedo == islit),axis=1)
         slit_width_img = np.outer(slit_width, np.ones(nspat_psuedo))
         med_slit_width = np.median(slit_width_img[slitmask_psuedo==islit])
+        nspec_eff = np.sum(slit_width > min_slit_frac*med_slit_width)
+        nsmooth = int(np.fmax(np.ceil(nspec_eff*0.02),10))
+        slit_width_sm = scipy.ndimage.filters.median_filter(slit_width, size=nsmooth, mode='reflect')
+        igood = (slit_width_sm > min_slit_frac*med_slit_width)
+        spec_min[islit] = spec_vec_psuedo[igood].min()
+        spec_max[islit] = spec_vec_psuedo[igood].max()
         bad_pix = (slit_width_img < min_slit_frac*med_slit_width) & (slitmask_psuedo == islit)
         inmask_psuedo[bad_pix] = False
+
+    # Update with tslits_dict_psuedo
+    tslits_dict_psuedo['spec_min'] = spec_min
+    tslits_dict_psuedo['spec_max'] = spec_max
+    slitmask_psuedo = pixels.tslits2mask(tslits_dict_psuedo)
 
     # Make a fake bitmask from the outmask. We are kludging the crmask to be the outmask_psuedo here, and setting the bpm to
     # be good everywhere
@@ -172,8 +200,19 @@ def extract_one_coadd2d(spec2d_files, ir_redux=False, par=None, show=False):
                                    rn2img_psuedo, sobjs_obj, spat_pix=spat_psuedo,
                                    model_noise=False, show_profile=False, show=show)
 
+    from IPython import embed
+    embed()
+
     if ir_redux:
         sobjs.purge_neg()
+
+    # Flexure correction
+    redux.flexure_correct(sobjs, basename)
+
+    # Grab coord
+    radec = ltu.radec_to_coord(head1d['ra'], head1d['dec'])
+    vel_corr = redux.helio_correct(sobjs, radec, self.obstime)
+
     # TODO Add flexure and heliocentric correction here
     vel_corr=None
 
@@ -197,11 +236,11 @@ def extract_one_coadd2d(spec2d_files, ir_redux=False, par=None, show=False):
     master_dir=''
 
     # headers
-    head1d = stack_dict['head1d_list'][0]
-    head2d = stack_dict['head2d_list'][0]
+
     save.save_all(sci_dict, master_key_dict, master_dir, spectrograph, head1d, head2d, scipath, basename)
 
 
+extract_one_coadd2d(spec2d_files, ir_redux=True, par=None, show=True)
 
 igd = sobjs_out[0].optimal['WAVE'] > 1.0
 wave = sobjs_out[0].optimal['WAVE'][igd]
