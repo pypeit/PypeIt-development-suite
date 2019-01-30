@@ -75,7 +75,12 @@ def extract_one_coadd2d(spec2d_files, ir_redux=False, par=None, show=False):
         mjd = head1d['MJD-OBS']
     obstime = time.Time(mjd, format='mjd')
     filename = os.path.basename(spec2d_files[0])
-    basename =
+    redux_path = stack_dict['redux_path']
+    # New science path for coadds
+    scipath = redux_path + 'Science_coadd'
+    basename = filename.split('_')[1]
+    master_dir=os.path.join(redux_path,os.path.normpath(stack_dict['master_dir']) + '_coadd/')
+    master_key_dict = stack_dict['master_key_dict']
 
     # Find the objid of the brighest object, and the average snr across all orders
     nslits = stack_dict['tslits_dict']['slit_left'].shape[1]
@@ -200,9 +205,6 @@ def extract_one_coadd2d(spec2d_files, ir_redux=False, par=None, show=False):
                                    rn2img_psuedo, sobjs_obj, spat_pix=spat_psuedo,
                                    model_noise=False, show_profile=False, show=show)
 
-    from IPython import embed
-    embed()
-
     if ir_redux:
         sobjs.purge_neg()
 
@@ -211,7 +213,7 @@ def extract_one_coadd2d(spec2d_files, ir_redux=False, par=None, show=False):
 
     # Grab coord
     radec = ltu.radec_to_coord(head1d['ra'], head1d['dec'])
-    vel_corr = redux.helio_correct(sobjs, radec, self.obstime)
+    vel_corr = redux.helio_correct(sobjs, radec, obstime)
 
     # TODO Add flexure and heliocentric correction here
     vel_corr=None
@@ -230,12 +232,12 @@ def extract_one_coadd2d(spec2d_files, ir_redux=False, par=None, show=False):
     if vel_corr is not None:
         sci_dict['meta']['vel_corr'] = vel_corr
 
-    # Create a master key dict
-    master_key_dict={}
-    # Create a new master dir?
-    master_dir=''
+    # Make the new master dir and write out the masters
 
-    # headers
+    # Create fake master files
+
+    # Make the science directory
+    # write out to a file
 
     save.save_all(sci_dict, master_key_dict, master_dir, spectrograph, head1d, head2d, scipath, basename)
 
