@@ -1,0 +1,47 @@
+# Auto-generated PypeIt file
+# Tue 29 Jan 2019 16:27:27
+
+# User-defined execution parameters
+[rdx]
+    spectrograph = keck_lris_red
+[calibrations]
+    [[biasframe]]
+        number = 1
+    [[pixelflatframe]]
+        number = 1
+    [[arcframe]]
+        number = 1
+    [[pinholeframe]]
+        number = 0
+    [[traceframe]]
+        number = 0
+    [[standardframe]]
+        number = 0
+    [[slits]]
+     rm_slits = 1:240:1000
+     # get rid of bad slit caused by scattered light
+
+
+# Setup
+setup read
+ Setup A
+ --:
+   dichroic: '680'
+   disperser: {angle: 49.12641144, name: 1200/9000}
+   slit: {decker: WOD1.fil, slitlen: none, slitwid: none}
+ '01': {binning: '2,1', det: 1, namp: 2}
+ '02': {binning: '2,1', det: 2, namp: 2}
+setup end
+
+
+# Read in the data
+data read
+ path /Users/joe/python/PypeIt-development-suite/RAW_DATA/Keck_LRIS_red/multi_1200_9000_d680_2x1/
+#---------------------------------------------------------
+|          filename | frametype |          ra |         dec |    target |  dispname |   decker | binning |          mjd |    airmass | exptime | dichroic |   dispangle |
+| r190103_0013.fits |       arc | 15:20:00.00 | +45:00:00.0 | DOME FLAT | 1200/9000 | WOD1.fil |     2,1 | 58486.135396 | 1.41291034 |     1.0 |      680 | 49.12641144 |
+| r190103_0014.fits | pixelflat,trace | 15:20:00.00 | +45:00:00.0 | DOME FLAT | 1200/9000 | WOD1.fil |     2,1 | 58486.137781 | 1.41291034 |     4.0 |      680 | 49.12641144 |
+| r190103_0052.fits |   science | 10:02:24.29 | +02:02:15.5 |      WOD1 | 1200/9000 | WOD1.fil |     2,1 | 58486.428245 |   1.597413 |   900.0 |      680 | 49.07110596 |
+| r190103_0088.fits |      bias | 12:41:51.76 | +17:31:10.4 | feige67 | 400/8500 | long_1.5 |     2,1 | 58486.722361 | 1.04164963 |     1.0 |      560 | 25.58803558 |
+data end
+
