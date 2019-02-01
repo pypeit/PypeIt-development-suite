@@ -19,7 +19,7 @@
         number = 0
     [[slits]]
      rm_slits = 1:240:1000
-
+     # get rid of bad slit caused by scattered light
 
 
 # Setup
