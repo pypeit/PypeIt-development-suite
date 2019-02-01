@@ -24,30 +24,24 @@ frame = /Users/joe/python/PypeIt-development-suite/CALIBS/PYPEIT_LRISb_pixflat_B
 
 # Setup
 setup read
- A:
-   --:
-     dichroic: '560'
-     disperser: {angle: 22.13431168, name: 400/8500}
-     slit: {decker: c17_60L., slitlen: none, slitwid: none}
-   '01': {binning: '2,2', det: 1, namp: 2}
-   '02': {binning: '2,2', det: 2, namp: 2}
+ Setup A
 setup end
 
 # Read in the data
 data read
  path /Users/joe/python/PypeIt-development-suite/RAW_DATA/Keck_LRIS_blue/multi_600_4000_d560/
 |             filename | frametype |     target | exptime | dispname |   decker | setup | calib | binning | dichroic |   dispangle |
-| b170320_2022.fits.gz |       arc |    unknown |       1 | 400/8500 | c17_60L. |     A |     0 |     2,2 |      560 | 22.13431168 |
-| b170320_2042.fits.gz |      bias |    unknown |       0 | 400/8500 | sp15l.fi |     A |     0 |     2,2 |      560 | 22.13544083 |
-| b170320_2043.fits.gz |      bias |    unknown |       0 | 400/8500 | sp15l.fi |     A |     0 |     2,2 |      560 | 22.13544083 |
-| b170320_2044.fits.gz |      bias |    unknown |       0 | 400/8500 | sp15l.fi |     A |     0 |     2,2 |      560 | 22.13544083 |
-| b170320_2045.fits.gz |      bias |    unknown |       0 | 400/8500 | sp15l.fi |     A |     0 |     2,2 |      560 | 22.13544083 |
-| b170320_2046.fits.gz |      bias |    unknown |       0 | 400/8500 | sp15l.fi |     A |     0 |     2,2 |      560 | 22.13544083 |
-| b170320_2058.fits.gz |     trace | Blank04 25 |      12 | 600/7500 | c17_60L. |     A |     0 |     2,2 |      560 | 26.98307037 |
-| b170320_2083.fits.gz |   science |   c17_60L. |    1800 | 400/8500 | c17_60L. |     A |     0 |     2,2 |      560 | 22.13995552 |
-| b170320_2084.fits.gz |   science |   c17_60L. |    1800 | 400/8500 | c17_60L. |     A |     0 |     2,2 |      560 | 22.13995552 |
-| b170320_2089.fits.gz |   science |   c17_60L. |    1800 | 400/8500 | c17_60L. |     A |     0 |     2,2 |      560 | 22.13995552 |
-| b170320_2090.fits.gz |   science |   c17_60L. |    1800 | 400/8500 | c17_60L. |     A |     0 |     2,2 |      560 | 22.13995552 |
-| b170320_2091.fits.gz |   science |   c17_60L. |    1800 | 400/8500 | c17_60L. |     A |     0 |     2,2 |      560 | 22.13995552 |
+| b170320_2022.fits.gz |       arc |    unknown |       1 | 600/4000 | c17_60L. |     A |     0 |     2,2 |      560 | 22.13431168 |
+| b170320_2042.fits.gz |      bias |    unknown |       0 | 600/4000 | sp15l.fi |     A |     0 |     2,2 |      560 | 22.13544083 |
+| b170320_2043.fits.gz |      bias |    unknown |       0 | 600/4000 | sp15l.fi |     A |     0 |     2,2 |      560 | 22.13544083 |
+| b170320_2044.fits.gz |      bias |    unknown |       0 | 600/4000 | sp15l.fi |     A |     0 |     2,2 |      560 | 22.13544083 |
+| b170320_2045.fits.gz |      bias |    unknown |       0 | 600/4000 | sp15l.fi |     A |     0 |     2,2 |      560 | 22.13544083 |
+| b170320_2046.fits.gz |      bias |    unknown |       0 | 600/4000 | sp15l.fi |     A |     0 |     2,2 |      560 | 22.13544083 |
+| b170320_2058.fits.gz |     trace | Blank04 25 |      12 | 600/4000 | c17_60L. |     A |     0 |     2,2 |      560 | 26.98307037 |
+| b170320_2083.fits.gz |   science |   c17_60L. |    1800 | 600/4000 | c17_60L. |     A |     0 |     2,2 |      560 | 22.13995552 |
+| b170320_2084.fits.gz |   science |   c17_60L. |    1800 | 600/4000 | c17_60L. |     A |     0 |     2,2 |      560 | 22.13995552 |
+| b170320_2089.fits.gz |   science |   c17_60L. |    1800 | 600/4000 | c17_60L. |     A |     0 |     2,2 |      560 | 22.13995552 |
+| b170320_2090.fits.gz |   science |   c17_60L. |    1800 | 600/4000 | c17_60L. |     A |     0 |     2,2 |      560 | 22.13995552 |
+| b170320_2091.fits.gz |   science |   c17_60L. |    1800 | 600/4000 | c17_60L. |     A |     0 |     2,2 |      560 | 22.13995552 |
 data end
 

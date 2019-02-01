@@ -46,7 +46,7 @@ def main():
     # TODO: Once we're satisfied than an instrument passes, add it to
     # this list!  It must pass for every directory that includes these
     # strings and all the sub-directory setups within!
-    valid_instruments = ['Kast', 'DEIMOS', 'LRIS', 'NIRES']
+    valid_instruments = ['Kast', 'DEIMOS', 'LRIS', 'NIRES', 'GNIRS', 'XSHOOTER']
 
     # Grab a list of all instruments
     dev_path = os.getenv('PYPEIT_DEV')
@@ -69,7 +69,6 @@ def main():
         instruments = [item for item in all_instruments if pargs.tests.lower() in item.lower()]
         invalid_selection = [item for item in instruments if not np.any([inst.lower()
                                     in item.lower() for inst in valid_instruments]) ]
-
     # Check that instruments is not blank
     if len(instruments) == 0:
         print("\x1B[" + "1;31m" + "\nERROR - " + "\x1B[" + "0m" +
@@ -92,8 +91,10 @@ def main():
     npass, ntest = 0, 0
 
     # Do them in order Shane, LRIS, DEIMOS, since DEIMOS takes the
-    # longest. To do this we sort and reverse
+    # longest. To do this we sort and reverse, and then apply the kludge below
     instruments.sort(reverse=True)
+    if 'Keck_DEIMOS' in instruments and len(instruments) > 2:
+        instruments[-2], instruments[-1]=instruments[-1],instruments[-2]
 
     # Report
     print('Running tests on the following instruments:')
@@ -150,7 +151,7 @@ def main():
 
             outfile_root = instr.lower()+'_'+setup.lower()
 
-            if instr.lower() in ['shane_kast_blue']: #, 'keck_lris_red']:
+            if instr.lower() in ['shane_kast_blue']:
                 # Use pypeit_setup to get the pypeit file for Shane Kast Blue
                 ntest += 1
                 logfile = os.path.join(wdir, outfile_root+'.test.log')

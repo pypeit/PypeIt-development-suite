@@ -1,7 +1,7 @@
 # This is a comment line
 # This reduce data from vlt xshooter vis 
 # at the moment takes the star HIP022840 as SCIENCE (and not as standard).
-# ginga --module=RC&
+# ginga --modules=RC&
 # run_pypeit -v2 -o -m -s ./vlt_xshooter_vis_1x2.pypeit
 # run_pypeit -v2 -o -s ./vlt_xshooter_vis_1x2.pypeit
 
@@ -25,6 +25,10 @@ spectrograph = vlt_xshooter_vis
     [[traceframe]]
         number = 1
 
+# Setup
+setup read
+ Setup A
+setup end
 
 # Read in the data
 data read

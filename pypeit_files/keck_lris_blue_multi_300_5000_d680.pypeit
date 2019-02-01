@@ -1,32 +1,44 @@
-# This is a comment line
+# Auto-generated PypeIt file
+# Tue 15 Jan 2019 14:37:46
 
 # User-defined execution parameters
 [rdx]
-    spectrograph = keck_lris_blue
-    sortroot = keck_lris_blue_2018-Nov-11
+spectrograph = keck_lris_blue
 [calibrations]
-    [[biasframe]]
-	useframe = 'overscan'
-        number = 0
-    [[pixelflatframe]]
-        number = 0
-    [[arcframe]]
-        number = 1
-    [[pinholeframe]]
-        number = 0
-    [[traceframe]]
-        number = 3
-    [[standardframe]]
-        number = 0
+[[biasframe]]
+useframe=overscan
+number = 0
+[[pixelflatframe]]
+number = 0
+[[arcframe]]
+number = 1
+[[pinholeframe]]
+number = 0
+[[traceframe]]
+number = 0
+[[standardframe]]
+number = 0
+
+# Setup
+setup read
+ Setup A:
+   --:
+     dichroic: '680'
+     disperser: {angle: 47.82392883, name: 300/5000}
+     slit: {decker: E570.fil, slitlen: none, slitwid: none}
+   '01': {binning: '1,1', det: 1, namp: 2}
+   '02': {binning: '1,1', det: 2, namp: 2}
+setup end
 
 # Read in the data
 data read
-path /Users/joe/python/PypeIt-development-suite/RAW_DATA/Keck_LRIS_blue/multi_300_5000_d680/
-|          filename | frametype | dispname | exptime |   decker | dichroic | binning |   dispangle |  target |
-| b170816_0021.fits |       arc | 300/5000 |       7 | E570.fil |      680 |     1,1 | 47.82505798 | unknown |
-| b170816_0030.fits |     trace | 300/5000 |      18 | E570.fil |      680 |     1,1 | 47.82505798 | unknown |
-| b170816_0031.fits |     trace | 300/5000 |      18 | E570.fil |      680 |     1,1 | 47.82505798 | unknown |
-| b170816_0032.fits |     trace | 300/5000 |      18 | E570.fil |      680 |     1,1 | 47.82505798 | unknown |
-| b170816_0076.fits |   science | 300/5000 |    1327 | E570.fil |      680 |     1,1 | 47.82392883 |    E570 |
-| b170816_0077.fits |   science | 300/5000 |    1327 | E570.fil |      680 |     1,1 | 47.82392883 |    E570 |
+ path /Users/joe/python/PypeIt-development-suite/RAW_DATA/Keck_LRIS_blue/multi_300_5000_d680
+|          filename | frametype       |          ra |         dec |  target | dispname |   decker | binning |          mjd |    airmass | exptime | dichroic |
+| b170816_0030.fits | pixelflat,trace | 15:20:00.00 | +45:00:00.0 | unknown | 300/5000 | E570.fil |     1,1 | 57981.138312 | 1.41309236 |    18.0 |      680 |
+| b170816_0031.fits | pixelflat,trace | 15:20:00.00 | +45:00:00.0 | unknown | 300/5000 | E570.fil |     1,1 | 57981.139355 | 1.41309236 |    18.0 |      680 |
+| b170816_0032.fits | pixelflat,trace | 15:20:00.00 | +45:00:00.0 | unknown | 300/5000 | E570.fil |     1,1 | 57981.140187 | 1.41309236 |    18.0 |      680 |
+| b170816_0021.fits |       arc       | 15:20:00.00 | +45:00:00.0 | unknown | 300/5000 | E570.fil |     1,1 | 57981.122242 | 1.41309236 |     7.0 |      680 |
+| b170816_0076.fits |   science       | 16:18:56.95 | +54:42:11.3 |    E570 | 300/5000 | E570.fil |     1,1 | 57981.303384 | 1.37135629 |  1327.0 |      680 |
+#| b170816_0077.fits |   science       | 16:18:56.95 | +54:42:11.3 |    E570 | 300/5000 | E570.fil |     1,1 | 57981.319415 | 1.43611388 |  1327.0 |      680 |
 data end
+
