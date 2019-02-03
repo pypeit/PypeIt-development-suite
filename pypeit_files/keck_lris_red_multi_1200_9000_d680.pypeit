@@ -21,8 +21,7 @@
         number = 0
      [[slits]]
        sigdetect = 30
-       add_slits = 2:1188:1502:2000,10:1221:1322:1223
- # This is a hack to get bad slit to go away
+       add_slits = 2:2000:1188:1502
 
 
 
