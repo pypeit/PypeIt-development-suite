@@ -7,8 +7,9 @@ import os
 from astropy.io import fits
 from astropy import time
 from pypeit import msgs
-from pypeit.core import arc
 from pypeit import utils
+from pypeit import waveimage
+from pypeit.core import arc
 from pypeit.core import parse
 from pypeit.core import pca
 from pypeit.core import qa
@@ -25,6 +26,7 @@ from pypeit.core import skysub
 from pypeit.core import procimg
 from pypeit import ginga
 from pypeit import masterframe
+from pypeit import traceslits
 from pypeit.core import load
 from pypeit.core import coadd2d
 from pypeit.core import save
@@ -39,17 +41,15 @@ import glob
 
 
 # NIRES
-redux_path = '/Users/joe/Dropbox/PypeIt_Redux/NIRES/J0252/ut181001_new/'
-objprefix = 'J0252-0503'
-spec2d_files = glob.glob(redux_path + 'Science/spec2d_' + objprefix + '*')
-#objid=np.full(len(spec2d_files),1)
+#redux_path = '/Users/joe/Dropbox/PypeIt_Redux/NIRES/J0252/ut181001_new/'
+#objprefix = 'J0252-0503'
+#spec2d_files = glob.glob(redux_path + 'Science/spec2d_' + objprefix + '*')
 
 #objid=1
 # GNIRS
-#redux_path = '/Users/joe/python/PypeIt-development-suite/REDUX_OUT/Gemini_GNIRS/'
-#objprefix ='pisco'
-#slitid = 2
-#spec2d_files = glob.glob(redux_path + 'Science/spec2d_' + objprefix + '*')
+redux_path = '/Users/joe/python/PypeIt-development-suite/REDUX_OUT/Gemini_GNIRS/GNIRS/'
+objprefix ='pisco'
+spec2d_files = glob.glob(redux_path + 'Science/spec2d_' + objprefix + '*')
 #objid=np.full(len(spec2d_files),1)
 
 #objid = 1
@@ -63,24 +63,10 @@ spec2d_files = glob.glob(redux_path + 'Science/spec2d_' + objprefix + '*')
 # read in the stacks
 
 
-def extract_one_coadd2d(spec2d_files, ir_redux=False, par=None, show=False):
+def extract_one_coadd2d(spec2d_files, ir_redux=False, par=None, show=False, det=1):
 
     # Read in the stack, grab some meta data we will need
-    stack_dict = coadd2d.load_coadd2d_stacks(spec2d_files)
-    head1d = stack_dict['head1d_list'][0]
-    head2d = stack_dict['head2d_list'][0]
-    try:
-        mjd = head1d['mjd']  # recorded as 'mjd' in fitstbl
-    except KeyError:
-        mjd = head1d['MJD-OBS']
-    obstime = time.Time(mjd, format='mjd')
-    filename = os.path.basename(spec2d_files[0])
-    redux_path = stack_dict['redux_path']
-    # New science path for coadds
-    scipath = redux_path + 'Science_coadd'
-    basename = filename.split('_')[1]
-    master_dir=os.path.join(redux_path,os.path.normpath(stack_dict['master_dir']) + '_coadd/')
-    master_key_dict = stack_dict['master_key_dict']
+    stack_dict = coadd2d.load_coadd2d_stacks(spec2d_files, det=det)
 
     # Find the objid of the brighest object, and the average snr across all orders
     nslits = stack_dict['tslits_dict']['slit_left'].shape[1]
@@ -190,9 +176,7 @@ def extract_one_coadd2d(spec2d_files, ir_redux=False, par=None, show=False):
     mask = processimages.ProcessImages.build_mask(imgminsky_psuedo, sciivar_psuedo, np.invert(inmask_psuedo),
                                                   np.zeros_like(inmask_psuedo), slitmask=slitmask_psuedo)
 
-    redux = reduce.instantiate_me(spectrograph, tslits_dict_psuedo, mask, ir_redux=ir_redux,
-                                  par=par['scienceimage'], frame_par=par['scienceframe'],
-                                  objtype = 'science')
+    redux = reduce.instantiate_me(spectrograph, tslits_dict_psuedo, mask, ir_redux=ir_redux, par=par, objtype = 'science')
 
     # Object finding
     sobjs_obj, nobj, skymask_init = redux.find_objects(imgminsky_psuedo, sciivar_psuedo, ir_redux=ir_redux,
@@ -208,41 +192,69 @@ def extract_one_coadd2d(spec2d_files, ir_redux=False, par=None, show=False):
     if ir_redux:
         sobjs.purge_neg()
 
+    # TODO Implement flexure and heliocentric corrections on the single exposure 1d reductions and apply them to the
+    # waveimage. Change the data model to accomodate a wavelength model for each image.
     # Flexure correction
-    redux.flexure_correct(sobjs, basename)
+    #redux.flexure_correct(sobjs, basename)
+    # Grab coord. TODO these shifts should all be computed from the individual 1d images in ScienceImage
+    #radec = ltu.radec_to_coord(head1d['ra'], head1d['dec'])
+    #vel_corr = redux.helio_correct(sobjs, radec, obstime)
+    #vel_corr=None
+    # Using the same implementation as in core/pypeit
 
-    # Grab coord
-    radec = ltu.radec_to_coord(head1d['ra'], head1d['dec'])
-    vel_corr = redux.helio_correct(sobjs, radec, obstime)
-
-    # TODO Add flexure and heliocentric correction here
-    vel_corr=None
-
-    sci_dict = {}
+    # Populate the sci_dict
+    sci_dict = OrderedDict()  # This needs to be ordered
     sci_dict['meta'] = {}
     sci_dict['meta']['vel_corr'] = 0.
+    sci_dict[det] = {}
 
-    sci_dict['sciimg'] = imgminsky_psuedo
-    sci_dict['sciivar'] = sciivar_psuedo
-    sci_dict['skymodel']= skymodel_psuedo
-    sci_dict['objmodel']=objmodel_psuedo
-    sci_dict['ivarmodel']=ivarmodel_psuedo
-    sci_dict['outmask'] = outmask_psuedo
-    sci_dict['specobjs'] = sobjs
-    if vel_corr is not None:
-        sci_dict['meta']['vel_corr'] = vel_corr
+    sci_dict[det]['sciimg'] = imgminsky_psuedo
+    sci_dict[det]['sciivar'] = sciivar_psuedo
+    sci_dict[det]['skymodel']= skymodel_psuedo
+    sci_dict[det]['objmodel']=objmodel_psuedo
+    sci_dict[det]['ivarmodel']=ivarmodel_psuedo
+    sci_dict[det]['outmask'] = outmask_psuedo
+    sci_dict[det]['specobjs'] = sobjs
+    #if vel_corr is not None:
+    #    sci_dict['meta']['vel_corr'] = vel_corr
 
-    # Make the new master dir and write out the masters
+    # Creat the relevant directories and filenames
+    head1d = stack_dict['head1d_list'][0]
+    head2d = stack_dict['head2d_list'][0]
+    try:
+        mjd = head1d['mjd']  # recorded as 'mjd' in fitstbl
+    except KeyError:
+        mjd = head1d['MJD-OBS']
+    obstime = time.Time(mjd, format='mjd')
+    filename = os.path.basename(spec2d_files[0])
+    redux_path = stack_dict['redux_path']
+    # New science path for coadds
+    master_dir=os.path.join(redux_path,os.path.normpath(stack_dict['master_dir']) + '_coadd/')
+    master_key_dict = stack_dict['master_key_dict']
+    # Make the new master dir and Science dir
+    if os.path.exists(master_dir):
+        msgs.info("The following directory already exists:"+msgs.newline()+master_dir)
+    else:
+        os.mkdir(master_dir)
+    masterFrame = waveimage.WaveImage(None, None, None, None, None,
+                                      master_key=master_key_dict['arc'], master_dir=master_dir)
+    masterFrame.save_master(waveimg_psuedo)
+    traceSlits = traceslits.TraceSlits(None, None, None, master_key=master_key_dict['trace'], master_dir=master_dir)
+    traceSlits.save_master(tslits_dict_psuedo)
 
-    # Create fake master files
-
-    # Make the science directory
-    # write out to a file
-
+    # Make the science directory, and write outputs to disk
+    scipath = redux_path + 'Science_coadd'
+    if os.path.exists(scipath):
+        msgs.info("The following directory already exists:"+msgs.newline()+scipath)
+    else:
+        os.mkdir(scipath)
+    basename = filename.split('_')[1]
     save.save_all(sci_dict, master_key_dict, master_dir, spectrograph, head1d, head2d, scipath, basename)
 
 
 extract_one_coadd2d(spec2d_files, ir_redux=True, par=None, show=True)
+
+sys.exit(-1)
 
 igd = sobjs_out[0].optimal['WAVE'] > 1.0
 wave = sobjs_out[0].optimal['WAVE'][igd]
@@ -252,7 +264,6 @@ sig = sobjs_out[0].optimal['COUNTS_SIG'][igd]
 plt.plot(wave, flux,drawstyle='steps-mid')
 plt.plot(wave, sig,drawstyle='steps-mid')
 plt.show()
-sys.exit(-1)
 # This is the wavelength grid of the rectified images. It differs from the 'true' wavelengths by 2% of a pixel
 loglam_bins = np.log10(wave_bins)
 loglam_mid = ((loglam_bins + np.roll(loglam_bins,1))/2.0)[1:]
