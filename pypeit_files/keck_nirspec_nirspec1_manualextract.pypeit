@@ -6,16 +6,8 @@
 	spectrograph = keck_nirspec_low
 [calibrations]
 	[[biasframe]]
-		number = 0
+		useframe = 'none'
 	[[pixelflatframe]]
-		number = 0
-	[[arcframe]]
-		number = 0
-	[[pinholeframe]]
-		number = 0
-	[[traceframe]]
-		number = 0
-	[[standardframe]]
 		number = 0
 [scienceimage]
     maxnumber = 3
@@ -37,9 +29,9 @@ data read
 | NS.20160414.02604.fits.gz | trace,pixelflat |       0.0 |      0.0 |                |      low | 42x0.760 |     1,1 | 57492.03014 | 1.41291 |    3.28 | 1,2,3,4 |       1 |     -1 |                None |
 | NS.20160414.02620.fits.gz | trace,pixelflat |       0.0 |      0.0 |                |      low | 42x0.760 |     1,1 | 57492.03033 | 1.41291 |    3.28 | 1,2,3,4 |       1 |     -1 |                None |
 | NS.20160414.02637.fits.gz | trace,pixelflat |       0.0 |      0.0 |                |      low | 42x0.760 |     1,1 | 57492.03052 | 1.41291 |    3.28 | 1,2,3,4 |       1 |     -1 |                None |
-| NS.20160414.02861.fits.gz |       bias,dark |       0.0 |      0.0 |                |      low | 42x0.760 |     1,1 | 57492.03312 | 1.41291 |     1.0 | 1,2,3,4 |       2 |     -1 |                None |
-| NS.20160414.02899.fits.gz |       bias,dark |       0.0 |      0.0 |                |      low | 42x0.760 |     1,1 | 57492.03355 | 1.41291 |     1.0 | 1,2,3,4 |       2 |     -1 |                None |
-| NS.20160414.02912.fits.gz |       bias,dark |       0.0 |      0.0 |                |      low | 42x0.760 |     1,1 | 57492.03372 | 1.41291 |     1.0 | 1,2,3,4 |       2 |     -1 |                None |
+#| NS.20160414.02861.fits.gz |       bias,dark |       0.0 |      0.0 |                |      low | 42x0.760 |     1,1 | 57492.03312 | 1.41291 |     1.0 | 1,2,3,4 |       2 |     -1 |                None |
+#| NS.20160414.02899.fits.gz |       bias,dark |       0.0 |      0.0 |                |      low | 42x0.760 |     1,1 | 57492.03355 | 1.41291 |     1.0 | 1,2,3,4 |       2 |     -1 |                None |
+#| NS.20160414.02912.fits.gz |       bias,dark |       0.0 |      0.0 |                |      low | 42x0.760 |     1,1 | 57492.03372 | 1.41291 |     1.0 | 1,2,3,4 |       2 |     -1 |                None |
 | NS.20160414.52519.fits.gz |     arc,science | 253.91361 | 63.61965 | OFF_J1655p6337 |      low | 42x0.760 |     1,1 | 57492.60787 | 1.40117 |   250.0 |       1 |      10 |     20 |   1,757.0,656.0,2.5 | #det,spat,spec,FWHM |
 | NS.20160414.52795.fits.gz |     arc,science | 253.91328 | 63.61548 | OFF_J1655p6337 |      low | 42x0.760 |     1,1 | 57492.61106 | 1.40481 |   250.0 |       2 |      20 |     10 |   1,746.0,759.5,2.5 |
 | NS.20160414.53056.fits.gz |     arc,science | 253.91328 | 63.61548 | OFF_J1655p6337 |      low | 42x0.760 |     1,1 | 57492.61408 | 1.40873 |   250.0 |       3 |      20 |     10 |   1,746.0,759.5,2.5 |
