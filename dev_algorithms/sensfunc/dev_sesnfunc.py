@@ -17,10 +17,10 @@ wave_mask = sobjs[iord].optimal['WAVE_GRID'] > 0.0
 counts = sobjs[iord].optimal['COUNTS']
 counts_ivar = sobjs[iord].optimal['COUNTS_IVAR']
 
-
-
 # Create copy of the arrays to avoid modification and convert to electrons / s
 wave_star = wave.copy()
 flux_star = counts.copy() / exptime
 ivar_star = counts_ivar.copy() * exptime ** 2
 std_dict = flux.get_standard_spectrum(star_type=star_type, star_mag=star_mag, ra=ra, dec=dec)
+
+
