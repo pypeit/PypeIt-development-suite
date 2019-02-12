@@ -15,7 +15,7 @@
     [[standardframe]]
         number = 0
     [[slits]]
-     rm_slits = 1:725:1000
+     rm_slits = 1:1000:725
      # get rid of blended together box slit which is identified as a real slit.
 
 
