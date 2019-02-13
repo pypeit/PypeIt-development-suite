@@ -59,7 +59,7 @@ def sensfunc(theta, wave_star, counts_ps, counts_ps_ivar, wave_min, wave_max, te
 flux_star = scipy.interpolate.interp1d(std_dict['wave'], std_dict['flux'], bounds_error=False,fill_value='extrapolate')(wave_star)
 
 # Load in the telluric grid
-tel_wave, tel_model, pg, tg, hg, ag = read_telluric_grid('TelFit_Paranal_NIR_AM1.03_R3000.fits')
+tel_wave, tel_model, pg, tg, hg, ag = read_telluric_grid('TelFit_Paranal_NIR_AM1.03_R5500.fits')
 
 seed = np.fmin(int(np.abs(np.sum(counts_ps[np.isfinite(counts_ps)]))), 2 ** 32 - 1)
 random_state = np.random.RandomState(seed=seed)
