@@ -19,6 +19,7 @@ from astropy.io import fits
 
 
 def read_telluric_grid(filename):
+
     hdul = fits.open(filename)
     wave_grid = hdul[1].data
     model_grid = hdul[0].data
@@ -38,7 +39,7 @@ def interp_telluric_grid(theta,tell_dict):
 
     pg = tell_dict['pg']
     tg = tell_dict['tg']
-    hg = tell_dict['hg'],
+    hg = tell_dict['hg']
     ag = tell_dict['ag']
     model_grid = tell_dict['tell_model']
     press,temp,hum,airmass = theta
@@ -157,16 +158,15 @@ func = 'legendre'
 wave_min = wave_star.min()
 wave_max = wave_star.max()
 
-mask, coeff = utils.robust_polyfit_djs(wave_star, sensguess, order, function = func, minx = wave_min, maxx = wave_max,
+mask, coeff = utils.robust_polyfit_djs(wave_star, sensguess, order, function=func, minx=wave_min, maxx=wave_max,
                                        inmask=inmask, lower=3.0, upper=3.0,use_mad=True)
 sensfit_guess = utils.func_val(coeff, wave_star, func, minx=wave_min, maxx=wave_max)
-delta_coeff = (0.7, 1.3)
+delta_coeff = (0.1, 10.0)
 
 plt.plot(wave_star, sensguess)
 plt.plot(wave_star, sensfit_guess)
 plt.ylim(-0.1*sensfit_guess.min(),1.3*sensfit_guess.max())
 plt.show()
-sys.exit(-1)
 
 seed = np.fmin(int(np.abs(np.sum(counts_ps[np.isfinite(counts_ps)]))), 2 ** 32 - 1)
 random_state = np.random.RandomState(seed=seed)
@@ -178,7 +178,7 @@ bounds_tell = [(tell_dict['pg'].min(), tell_dict['pg'].max()),
 bounds.extend(bounds_tell)
 
 # Params for the iterative rejection, will become optional params
-maxiter= 10
+maxiter= 5
 maxdev=None
 maxrej=None
 groupdim=None
@@ -186,28 +186,36 @@ groupsize=None
 groupbadpix=False
 grow=0
 sticky=True
-use_mad=False
+use_mad=True
 lower = 3.0
 upper = 3.0
 
-iIter = 0
+if use_mad:
+    invvar = None
+else:
+    invvar = counts_ps_ivar
+
+iter = 0
 qdone = False
 thismask = np.copy(inmask)
 arg_dict = dict(wave_star=wave_star, counts_ps=counts_ps, counts_ps_ivar=counts_ps_ivar, thismask=thismask,
                 wave_min=wave_min, wave_max=wave_max, flux_true=flux_true, tell_dict=tell_dict, order=order, func=func)
 
-while (not qdone) and (iIter < maxiter):
+while (not qdone) and (iter < maxiter):
     arg_dict['thismask'] = thismask
     result, tellfit, sensfit = sens_tellfit(sensfunc, bounds, arg_dict, seed=random_state)
     counts_model = tellfit*flux_true/(sensfit + (sensfit == 0.0))
-    thismask, qdone = pydl.djs_reject(counts_ps, counts_model, outmask=thismask, inmask=inmask, invvar=counts_ps_ivar,
+    thismask, qdone = pydl.djs_reject(counts_ps, counts_model, outmask=thismask, inmask=inmask, invvar=invvar,
                                       lower=lower, upper=upper, maxdev=maxdev, maxrej=maxrej,
                                       groupdim=groupdim, groupsize=groupsize, groupbadpix=groupbadpix, grow=grow,
                                       use_mad=use_mad, sticky=sticky)
-    iIter += 1
+    nrej = np.sum(arg_dict['thismask'] & np.invert(thismask))
+    nrej_tot = np.sum(inmask & np.invert(thismask))
+    msgs.info('Iteration #{:d}: nrej={:d} new rejections, nrej_tot={:d} total rejections'.format(iter,nrej,nrej_tot))
+    iter += 1
 
-if (iIter == maxiter) & (maxiter != 0):
-    msgs.warn('Maximum number of iterations maxiter={:}'.format(maxiter) + ' reached in robust_polyfit_djs')
+if (iter == maxiter) & (maxiter != 0):
+    msgs.warn('Maximum number of iterations maxiter={:}'.format(maxiter) + ' reached in sens_tell_fit')
 outmask = np.copy(thismask)
 if np.sum(outmask) == 0:
     msgs.warn('All points were rejected!!! The fits will be zero everywhere.')
