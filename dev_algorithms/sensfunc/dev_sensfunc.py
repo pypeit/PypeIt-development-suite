@@ -55,9 +55,6 @@ def interp_telluric_grid(theta,pg,tg,hg,ag,model_grid):
     return model_grid[p_ind,t_ind,h_ind,a_ind]
 
 
-
-
-
 def sensfunc(theta, wave_star, counts_ps, counts_ps_ivar, wave_min, wave_max, flux_true, order, tell_dict):
 
     theta_sens = theta[:order+1]
@@ -132,7 +129,7 @@ wave_max = wave_star.max()
 mask, coeff = utils.robust_polyfit_djs(wave_star, sensguess, order, function = func, minx = wave_min, maxx = wave_max,
                                  inmask=inmask, lower=3.0, upper=3.0,use_mad=True)
 sensfit_guess = utils.func_val(coeff, wave_star, func, minx=wave_min, maxx=wave_max)
-delta_coeff = (-0.30, 0.30)
+delta_coeff = (0.7, 1.3)
 
 seed = np.fmin(int(np.abs(np.sum(counts_ps[np.isfinite(counts_ps)]))), 2 ** 32 - 1)
 random_state = np.random.RandomState(seed=seed)
@@ -145,7 +142,9 @@ bounds_poly.extend(bounds_tell)
 # TODO Can we make the differential evolution run faster?
 result = scipy.optimize.differential_evolution(sensfunc, args=(wave_star, counts_ps, counts_ps_ivar, wave_min, wave_max,
                                                                flux_star, order, tell_dict), tol=1e-4,
-                                                               bounds=bounds_poly, disp=True, polish=True, seed=random_state)
+                                                               bounds=bounds_poly,
+                                                               popsize=40,recombination=0.6,
+                                                               disp=True, polish=True, seed=random_state)
 
 coeff_out = result.x[:order+1]
 tell_out = result.x[order+1:]
@@ -153,7 +152,8 @@ tell_out = result.x[order+1:]
 tellfit = interp_telluric_grid(tell_out,pg,tg,hg,ag,tell_model_grid)
 sensfit = utils.func_val(coeff_out, wave_star, func, minx=wave_min, maxx=wave_max)
 
-plt.plot(wave_star,flux_star)
+plt.plot(wave_star,counts_ps*sensfit)
 plt.plot(wave_star,counts_ps*sensfit/(tellfit + (tellfit == 0.0)))
-plt.ylim(flux_star.min(),flux_star.max())
+plt.plot(wave_star,flux_star)
+plt.ylim(-0.1*flux_star.max(),1.5*flux_star.max())
 plt.show()
