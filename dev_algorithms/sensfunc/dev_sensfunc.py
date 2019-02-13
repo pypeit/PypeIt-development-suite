@@ -88,7 +88,7 @@ def sensfunc(theta, arg_dict):
         chi2 = np.sum(np.square(chi_vec))
     return chi2
 
-def sens_tellfit(optfunc, bounds, arg_dict, tol=1e-4, popsize=40, recombination=0.6, disp=True, polish=True, seed=None):
+def sens_tellfit(optfunc, bounds, arg_dict, tol=1e-4, popsize=25, recombination=0.7, disp=True, polish=True, seed=None):
 
     result = scipy.optimize.differential_evolution(optfunc, args=(arg_dict,), tol=tol,
                                                    bounds=bounds, popsize=popsize,recombination=recombination,
@@ -100,9 +100,9 @@ def sens_tellfit(optfunc, bounds, arg_dict, tol=1e-4, popsize=40, recombination=
     tellfit = interp_telluric_grid(tell_out,arg_dict['tell_dict'])
     sensfit = utils.func_val(coeff_out, wave_star, arg_dict['func'], minx=arg_dict['wave_min'], maxx=arg_dict['wave_max'])
 
-    return result, tellfit, sensfit
+    return result, tellfit, sensfit, coeff_out, tell_out
 
-iord = 7
+iord = 13
 spec1dfile = os.path.join(os.getenv('HOME'),'Dropbox/PypeIt_Redux/XSHOOTER/Pypeit_files/PISCO_nir_REDUCED/Science_coadd/spec1d_STD,FLUX.fits')
 sobjs, head = load.load_specobjs(spec1dfile)
 exptime = head['EXPTIME']
@@ -141,7 +141,7 @@ std_dict['flux'] = flux_std
 flux_true = scipy.interpolate.interp1d(std_dict['wave'], std_dict['flux'], bounds_error=False,fill_value='extrapolate')(wave_star)
 
 # Load in the telluric grid
-telgridfile = os.path.join(dev_path,'dev_algorithms/sensfunc/TelFit_Paranal_NIR_AM1.03_R7000.fits')
+telgridfile = os.path.join(dev_path,'dev_algorithms/sensfunc/TelFit_Paranal_NIR_AM1.03_R7700.fits')
 tell_wave_grid, tell_model_grid, pg, tg, hg, ag = read_telluric_grid(telgridfile)
 ind_lower, ind_upper = coadd2d.get_wave_ind(tell_wave_grid, np.min(wave_star), np.max(wave_star))
 tell_wave_grid = tell_wave_grid[ind_lower:ind_upper]
@@ -203,7 +203,7 @@ arg_dict = dict(wave_star=wave_star, counts_ps=counts_ps, counts_ps_ivar=counts_
 
 while (not qdone) and (iter < maxiter):
     arg_dict['thismask'] = thismask
-    result, tellfit, sensfit = sens_tellfit(sensfunc, bounds, arg_dict, seed=random_state)
+    result, tellfit, sensfit, _, _  = sens_tellfit(sensfunc, bounds, arg_dict, seed=random_state)
     counts_model = tellfit*flux_true/(sensfit + (sensfit == 0.0))
     thismask, qdone = pydl.djs_reject(counts_ps, counts_model, outmask=thismask, inmask=inmask, invvar=invvar,
                                       lower=lower, upper=upper, maxdev=maxdev, maxrej=maxrej,
@@ -221,7 +221,7 @@ if np.sum(outmask) == 0:
     msgs.warn('All points were rejected!!! The fits will be zero everywhere.')
 
 arg_dict['thismask'] = outmask
-result, tellfit, sensfit = sens_tellfit(sensfunc, bounds, arg_dict, seed=random_state)
+result, tellfit, sensfit, coeff_out, tell_out = sens_tellfit(sensfunc, bounds, arg_dict, seed=random_state)
 
 
 plt.plot(wave_star,counts_ps*sensfit)
