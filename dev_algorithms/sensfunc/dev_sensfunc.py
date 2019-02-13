@@ -5,20 +5,21 @@ import numpy as np
 import scipy
 import matplotlib.pyplot as plt
 import os
+import astropy.units as u
+from astropy.io import fits
 from pypeit.core import flux
 from pypeit.core import load
 from pypeit import utils
 PYPEIT_FLUX_SCALE = 1e-17
 
-
 iord = 7
-spec1dfile = '/Users/joe/Dropbox/PypeIt_Redux/XSHOOTER/Pypeit_files/PISCO_nir_REDUCED/Science_coadd/spec1d_STD,FLUX.fits'
+spec1dfile = '/Users/fdavies/Dropbox/PypeIt_Redux/XSHOOTER/Pypeit_files/PISCO_nir_REDUCED/Science_coadd/spec1d_STD,FLUX.fits'
 sobjs, head = load.load_specobjs(spec1dfile)
 exptime = head['EXPTIME']
 airmass = head['AIRMASS']
 
-wave_mask = sobjs[iord].optimal['WAVE_GRID'] > 0.0
-wave = sobjs[iord].optimal['WAVE_GRID'][wave_mask]
+wave_mask = sobjs[iord].optimal['WAVE'] > 10000.0*u.Angstrom
+wave = sobjs[iord].optimal['WAVE'][wave_mask]
 counts = sobjs[iord].optimal['COUNTS'][wave_mask]
 counts_ivar = sobjs[iord].optimal['COUNTS_IVAR'][wave_mask]
 
@@ -27,7 +28,7 @@ wave_star = wave.copy()
 counts_ps = counts.copy()/exptime
 counts_ps_ivar = counts_ivar.copy() * exptime ** 2
 
-xshooter_file = '/Users/joe/python/PypeIt-development-suite/dev_algorithms/sensfunc/xshooter_standards/fEG274.dat'
+xshooter_file = '/Users/fdavies/PypeIt-development-suite/dev_algorithms/sensfunc/xshooter_standards/fEG274.dat'
 output = np.loadtxt(xshooter_file)
 wave_true = output[:,0]
 flux_true = output[:,1]/PYPEIT_FLUX_SCALE
@@ -57,7 +58,8 @@ def sensfunc(theta, wave_star, counts_ps, counts_ps_ivar, wave_min, wave_max, te
 # Interpolate standard star spectrum onto the data wavelength grid
 flux_star = scipy.interpolate.interp1d(std_dict['wave'], std_dict['flux'], bounds_error=False,fill_value='extrapolate')(wave_star)
 
-#
+# Load in the telluric grid
+tel_wave, tel_model, pg, tg, hg, ag = read_telluric_grid('TelFit_Paranal_NIR_AM1.03_R3000.fits')
 
 seed = np.fmin(int(np.abs(np.sum(counts_ps[np.isfinite(counts_ps)]))), 2 ** 32 - 1)
 random_state = np.random.RandomState(seed=seed)
