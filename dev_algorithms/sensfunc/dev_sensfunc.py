@@ -5,12 +5,14 @@ import numpy as np
 import scipy
 import matplotlib.pyplot as plt
 import os
+from pypeit.core import pydl
 import astropy.units as u
 from astropy.io import fits
 from pypeit.core import flux
 from pypeit.core import load
 from pypeit.core import coadd2d
 from pypeit import utils
+from pypeit import msgs
 PYPEIT_FLUX_SCALE = 1e-17
 from astropy.io import fits
 
@@ -32,8 +34,13 @@ def read_telluric_grid(filename):
     return 10.0*wave_grid, model_grid, pg, tg, hg, ag
 
 
-def interp_telluric_grid(theta,pg,tg,hg,ag,model_grid):
+def interp_telluric_grid(theta,tell_dict):
 
+    pg = tell_dict['pg']
+    tg = tell_dict['tg']
+    hg = tell_dict['hg'],
+    ag = tell_dict['ag']
+    model_grid = tell_dict['tell_model']
     press,temp,hum,airmass = theta
     if len(pg) > 1:
         p_ind = int(np.round((press-pg[0])/(pg[1]-pg[0])))
@@ -55,20 +62,44 @@ def interp_telluric_grid(theta,pg,tg,hg,ag,model_grid):
     return model_grid[p_ind,t_ind,h_ind,a_ind]
 
 
-def sensfunc(theta, wave_star, counts_ps, counts_ps_ivar, wave_min, wave_max, flux_true, order, tell_dict):
+def sensfunc(theta, arg_dict):
+
+    wave_star = arg_dict['wave_star']
+    counts_ps = arg_dict['counts_ps']
+    counts_ps_ivar = arg_dict['counts_ps_ivar']
+    thismask = arg_dict['thismask']
+    wave_min = arg_dict['wave_min']
+    wave_max = arg_dict['wave_max']
+    flux_true = arg_dict['flux_true']
+    tell_dict = arg_dict['tell_dict']
+    order = arg_dict['order']
+    func = arg_dict['func']
 
     theta_sens = theta[:order+1]
     theta_tell = theta[order+1:]
-    sensmodel = utils.func_val(theta_sens, wave_star, 'legendre', minx=wave_min, maxx=wave_max)
-    tellmodel = interp_telluric_grid(theta_tell,tell_dict['pg'],tell_dict['tg'],tell_dict['hg'],
-                                     tell_dict['ag'], tell_dict['tell_model'])
+    sensmodel = utils.func_val(theta_sens, wave_star, func, minx=wave_min, maxx=wave_max)
+    tellmodel = interp_telluric_grid(theta_tell,tell_dict)
     if np.sum(sensmodel) < 1e-6:
         return np.inf
     else:
-        chi_vec = (sensmodel != 0.0)*(tellmodel*flux_true/(sensmodel + (sensmodel == 0.0)) - counts_ps)*np.sqrt(counts_ps_ivar)
+        chi_vec = thismask*(sensmodel != 0.0)*(tellmodel*flux_true/(sensmodel + (sensmodel == 0.0)) -
+                                               counts_ps)*np.sqrt(counts_ps_ivar)
         chi2 = np.sum(np.square(chi_vec))
     return chi2
 
+def sens_tellfit(optfunc, bounds, arg_dict, tol=1e-4, popsize=40, recombination=0.6, disp=True, polish=True, seed=None):
+
+    result = scipy.optimize.differential_evolution(optfunc, args=(arg_dict,), tol=tol,
+                                                   bounds=bounds, popsize=popsize,recombination=recombination,
+                                                   disp=disp, polish=polish, seed=seed)
+    wave_star = arg_dict['wave_star']
+    order = arg_dict['order']
+    coeff_out = result.x[:order+1]
+    tell_out = result.x[order+1:]
+    tellfit = interp_telluric_grid(tell_out,arg_dict['tell_dict'])
+    sensfit = utils.func_val(coeff_out, wave_star, arg_dict['func'], minx=arg_dict['wave_min'], maxx=arg_dict['wave_max'])
+
+    return result, tellfit, sensfit
 
 iord = 7
 spec1dfile = os.path.join(os.getenv('HOME'),'Dropbox/PypeIt_Redux/XSHOOTER/Pypeit_files/PISCO_nir_REDUCED/Science_coadd/spec1d_STD,FLUX.fits')
@@ -90,8 +121,8 @@ counts_ps_mask = sobjs[iord].optimal['MASK'][wave_mask]
 dev_path = os.getenv('PYPEIT_DEV')
 xshooter_file = os.path.join(dev_path,'dev_algorithms/sensfunc/xshooter_standards/fEG274.dat')
 output = np.loadtxt(xshooter_file)
-wave_true = output[:,0]
-flux_true = output[:,1]/PYPEIT_FLUX_SCALE
+wave_std = output[:,0]
+flux_std = output[:,1]/PYPEIT_FLUX_SCALE
 # Create a fake std_dict for EG274
 std_dict = {}
 std_dict['std_ra'] = head['RA']
@@ -100,13 +131,13 @@ std_dict['exptime'] = exptime
 std_dict['airmass'] = head['AIRMASS']
 std_dict['std_name'] = ['EG274']
 std_dict['cal_file'] = ['EG274']
-std_dict['wave'] = wave_true
-std_dict['flux'] = flux_true
+std_dict['wave'] = wave_std
+std_dict['flux'] = flux_std
 
 #std_dict = flux.get_standard_spectrum(star_type=star_type, star_mag=star_mag, ra=ra, dec=dec)
 
 # Interpolate standard star spectrum onto the data wavelength grid
-flux_star = scipy.interpolate.interp1d(std_dict['wave'], std_dict['flux'], bounds_error=False,fill_value='extrapolate')(wave_star)
+flux_true = scipy.interpolate.interp1d(std_dict['wave'], std_dict['flux'], bounds_error=False,fill_value='extrapolate')(wave_star)
 
 # Load in the telluric grid
 telgridfile = os.path.join(dev_path,'dev_algorithms/sensfunc/TelFit_Paranal_NIR_AM1.03_R7000.fits')
@@ -116,10 +147,10 @@ tell_wave_grid = tell_wave_grid[ind_lower:ind_upper]
 tell_model_grid = tell_model_grid[:,:,:,:,ind_lower:ind_upper]
 
 tell_guess = (750.0,0.0,50.0,airmass)
-tell_model1 = interp_telluric_grid(tell_guess,pg,tg,hg,ag,tell_model_grid)
 tell_dict = dict(pg=pg,tg=tg,hg=hg,ag=ag,tell_model=tell_model_grid)
+tell_model1 = interp_telluric_grid(tell_guess,tell_dict)
 
-sensguess = tell_model1*flux_star/(counts_ps + (counts_ps < 0.0))
+sensguess = tell_model1*flux_true/(counts_ps + (counts_ps < 0.0))
 inmask = counts_ps_mask & (counts_ps > 0.0) &  np.isfinite(sensguess) & (counts_ps_ivar > 0.0)
 order = 5
 func = 'legendre'
@@ -127,33 +158,72 @@ wave_min = wave_star.min()
 wave_max = wave_star.max()
 
 mask, coeff = utils.robust_polyfit_djs(wave_star, sensguess, order, function = func, minx = wave_min, maxx = wave_max,
-                                 inmask=inmask, lower=3.0, upper=3.0,use_mad=True)
+                                       inmask=inmask, lower=3.0, upper=3.0,use_mad=True)
 sensfit_guess = utils.func_val(coeff, wave_star, func, minx=wave_min, maxx=wave_max)
 delta_coeff = (0.7, 1.3)
 
+plt.plot(wave_star, sensguess)
+plt.plot(wave_star, sensfit_guess)
+plt.ylim(-0.1*sensfit_guess.min(),1.3*sensfit_guess.max())
+plt.show()
+sys.exit(-1)
+
 seed = np.fmin(int(np.abs(np.sum(counts_ps[np.isfinite(counts_ps)]))), 2 ** 32 - 1)
 random_state = np.random.RandomState(seed=seed)
-bounds_poly = [(this_coeff*delta_coeff[0], this_coeff*delta_coeff[1]) for this_coeff in coeff]
+bounds = [(this_coeff*delta_coeff[0], this_coeff*delta_coeff[1]) for this_coeff in coeff]
 bounds_tell = [(tell_dict['pg'].min(), tell_dict['pg'].max()),
                (tell_dict['tg'].min(), tell_dict['tg'].max()),
                (tell_dict['hg'].min(), tell_dict['hg'].max()),
                (tell_dict['ag'].min(), tell_dict['ag'].max())]
-bounds_poly.extend(bounds_tell)
-# TODO Can we make the differential evolution run faster?
-result = scipy.optimize.differential_evolution(sensfunc, args=(wave_star, counts_ps, counts_ps_ivar, wave_min, wave_max,
-                                                               flux_star, order, tell_dict), tol=1e-4,
-                                                               bounds=bounds_poly,
-                                                               popsize=40,recombination=0.6,
-                                                               disp=True, polish=True, seed=random_state)
+bounds.extend(bounds_tell)
 
-coeff_out = result.x[:order+1]
-tell_out = result.x[order+1:]
+# Params for the iterative rejection, will become optional params
+maxiter= 10
+maxdev=None
+maxrej=None
+groupdim=None
+groupsize=None
+groupbadpix=False
+grow=0
+sticky=True
+use_mad=False
+lower = 3.0
+upper = 3.0
 
-tellfit = interp_telluric_grid(tell_out,pg,tg,hg,ag,tell_model_grid)
-sensfit = utils.func_val(coeff_out, wave_star, func, minx=wave_min, maxx=wave_max)
+iIter = 0
+qdone = False
+thismask = np.copy(inmask)
+arg_dict = dict(wave_star=wave_star, counts_ps=counts_ps, counts_ps_ivar=counts_ps_ivar, thismask=thismask,
+                wave_min=wave_min, wave_max=wave_max, flux_true=flux_true, tell_dict=tell_dict, order=order, func=func)
+
+while (not qdone) and (iIter < maxiter):
+    arg_dict['thismask'] = thismask
+    result, tellfit, sensfit = sens_tellfit(sensfunc, bounds, arg_dict, seed=random_state)
+    counts_model = tellfit*flux_true/(sensfit + (sensfit == 0.0))
+    thismask, qdone = pydl.djs_reject(counts_ps, counts_model, outmask=thismask, inmask=inmask, invvar=counts_ps_ivar,
+                                      lower=lower, upper=upper, maxdev=maxdev, maxrej=maxrej,
+                                      groupdim=groupdim, groupsize=groupsize, groupbadpix=groupbadpix, grow=grow,
+                                      use_mad=use_mad, sticky=sticky)
+    iIter += 1
+
+if (iIter == maxiter) & (maxiter != 0):
+    msgs.warn('Maximum number of iterations maxiter={:}'.format(maxiter) + ' reached in robust_polyfit_djs')
+outmask = np.copy(thismask)
+if np.sum(outmask) == 0:
+    msgs.warn('All points were rejected!!! The fits will be zero everywhere.')
+
+arg_dict['thismask'] = outmask
+result, tellfit, sensfit = sens_tellfit(sensfunc, bounds, arg_dict, seed=random_state)
+
 
 plt.plot(wave_star,counts_ps*sensfit)
 plt.plot(wave_star,counts_ps*sensfit/(tellfit + (tellfit == 0.0)))
-plt.plot(wave_star,flux_star)
-plt.ylim(-0.1*flux_star.max(),1.5*flux_star.max())
+plt.plot(wave_star,flux_true)
+plt.ylim(-0.1*flux_true.max(),1.5*flux_true.max())
+plt.show()
+
+plt.plot(wave_star,counts_ps, drawstyle='steps-mid',color='k',label='star spectrum',alpha=0.7)
+plt.plot(wave_star,tellfit*flux_true/(sensfit + (sensfit == 0.0)),color='red',linewidth=1.0,label='model',zorder=3,alpha=0.7)
+plt.ylim(-0.1*counts_ps.max(),1.5*counts_ps.max())
+plt.legend()
 plt.show()
