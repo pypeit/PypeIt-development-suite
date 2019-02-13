@@ -20,19 +20,19 @@ def interp_telluric_grid(theta,pg,tg,hg,ag,model_grid):
 
     press,temp,hum,airmass = theta
     if len(pg) > 1:
-        p_ind = np.mod(int(np.round((press-pg[0])/(pg[1]-pg[0]))))
+        p_ind = int(np.round((press-pg[0])/(pg[1]-pg[0])))
     else:
         p_ind = 0
     if len(tg) > 1:
-        t_ind = np.mod(int(np.round((temp-tg[0])/(tg[1]-tg[0]))))
+        t_ind = int(np.round((temp-tg[0])/(tg[1]-tg[0])))
     else:
         t_ind = 0
     if len(hg) > 1:
-        h_ind = np.mod(int(np.round((hum-hg[0])/(hg[1]-hg[0]))))
+        h_ind = int(np.round((hum-hg[0])/(hg[1]-hg[0])))
     else:
         h_ind = 0
     if len(ag) > 1:
-        a_ind = np.mod(int(np.round((airmass-ag[0])/(ag[1]-ag[0]))))
+        a_ind = int(np.round((airmass-ag[0])/(ag[1]-ag[0])))
     else:
         a_ind = 0
 
