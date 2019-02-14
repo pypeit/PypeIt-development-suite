@@ -62,6 +62,18 @@ def interp_telluric_grid(theta,tell_dict):
 
     return model_grid[p_ind,t_ind,h_ind,a_ind]
 
+def conv_telluric_grid(wave_grid,model_grid,res):
+
+    loglam = np.log(wave_grid)
+    dloglam = np.median(loglam[1:]-loglam[:-1])
+    sig = np.log(1+1.0/(2*np.sqrt(2*np.log(2))*res)) # 1-sigma width, FWHM/2.355
+    pix = dloglam/sig # width of one dloglam in sigma space
+    x = np.arange(-4,4+0.99*pix,pix)
+    g = (1.0/(np.sqrt(2*np.pi)))*np.exp(-0.5*(x**2))*pix
+    conv_model = scipy.signal.convolve(model_grid,g,mode='same')
+
+    return conv_model
+
 
 def sensfunc(theta, arg_dict):
 
@@ -77,18 +89,20 @@ def sensfunc(theta, arg_dict):
     func = arg_dict['func']
 
     theta_sens = theta[:order+1]
-    theta_tell = theta[order+1:]
+    theta_tell = theta[order+1:-1]
+    res = theta[-1]
     sensmodel = utils.func_val(theta_sens, wave_star, func, minx=wave_min, maxx=wave_max)
-    tellmodel = interp_telluric_grid(theta_tell,tell_dict)
+    tellmodel_hires = interp_telluric_grid(theta_tell,tell_dict)
+    tellmodel_conv = conv_telluric_grid(wave_star,tellmodel_hires,res)
     if np.sum(sensmodel) < 1e-6:
         return np.inf
     else:
-        chi_vec = thismask*(sensmodel != 0.0)*(tellmodel*flux_true/(sensmodel + (sensmodel == 0.0)) -
+        chi_vec = thismask*(sensmodel != 0.0)*(tellmodel_conv*flux_true/(sensmodel + (sensmodel == 0.0)) -
                                                counts_ps)*np.sqrt(counts_ps_ivar)
         chi2 = np.sum(np.square(chi_vec))
     return chi2
 
-def sens_tellfit(optfunc, bounds, arg_dict, tol=1e-4, popsize=25, recombination=0.7, disp=True, polish=True, seed=None):
+def sens_tellfit(optfunc, bounds, arg_dict, tol=1e-4, popsize=30, recombination=0.7, disp=True, polish=True, seed=None):
 
     result = scipy.optimize.differential_evolution(optfunc, args=(arg_dict,), tol=tol,
                                                    bounds=bounds, popsize=popsize,recombination=recombination,
@@ -96,13 +110,15 @@ def sens_tellfit(optfunc, bounds, arg_dict, tol=1e-4, popsize=25, recombination=
     wave_star = arg_dict['wave_star']
     order = arg_dict['order']
     coeff_out = result.x[:order+1]
-    tell_out = result.x[order+1:]
-    tellfit = interp_telluric_grid(tell_out,arg_dict['tell_dict'])
+    tell_out = result.x[order+1:-1]
+    resln = result.x[-1]
+    tellfit_hires = interp_telluric_grid(tell_out,arg_dict['tell_dict'])
+    tellfit_conv = conv_telluric_grid(wave_star,tellfit_hires,resln)
     sensfit = utils.func_val(coeff_out, wave_star, arg_dict['func'], minx=arg_dict['wave_min'], maxx=arg_dict['wave_max'])
 
-    return result, tellfit, sensfit, coeff_out, tell_out
+    return result, tellfit_conv, sensfit, coeff_out, tell_out, resln
 
-iord = 13
+iord = 7
 spec1dfile = os.path.join(os.getenv('HOME'),'Dropbox/PypeIt_Redux/XSHOOTER/Pypeit_files/PISCO_nir_REDUCED/Science_coadd/spec1d_STD,FLUX.fits')
 sobjs, head = load.load_specobjs(spec1dfile)
 exptime = head['EXPTIME']
@@ -141,7 +157,7 @@ std_dict['flux'] = flux_std
 flux_true = scipy.interpolate.interp1d(std_dict['wave'], std_dict['flux'], bounds_error=False,fill_value='extrapolate')(wave_star)
 
 # Load in the telluric grid
-telgridfile = os.path.join(dev_path,'dev_algorithms/sensfunc/TelFit_Paranal_NIR_AM1.03_R7700.fits')
+telgridfile = os.path.join(dev_path,'dev_algorithms/sensfunc/TelFit_Paranal_NIR_9800_25000_AM1.03_R25000.fits')
 tell_wave_grid, tell_model_grid, pg, tg, hg, ag = read_telluric_grid(telgridfile)
 ind_lower, ind_upper = coadd2d.get_wave_ind(tell_wave_grid, np.min(wave_star), np.max(wave_star))
 tell_wave_grid = tell_wave_grid[ind_lower:ind_upper]
@@ -176,6 +192,7 @@ bounds_tell = [(tell_dict['pg'].min(), tell_dict['pg'].max()),
                (tell_dict['hg'].min(), tell_dict['hg'].max()),
                (tell_dict['ag'].min(), tell_dict['ag'].max())]
 bounds.extend(bounds_tell)
+bounds.extend([(6000,13000)])
 
 # Params for the iterative rejection, will become optional params
 maxiter= 5
@@ -203,7 +220,7 @@ arg_dict = dict(wave_star=wave_star, counts_ps=counts_ps, counts_ps_ivar=counts_
 
 while (not qdone) and (iter < maxiter):
     arg_dict['thismask'] = thismask
-    result, tellfit, sensfit, _, _  = sens_tellfit(sensfunc, bounds, arg_dict, seed=random_state)
+    result, tellfit, sensfit, _, _, _ = sens_tellfit(sensfunc, bounds, arg_dict, seed=random_state)
     counts_model = tellfit*flux_true/(sensfit + (sensfit == 0.0))
     thismask, qdone = pydl.djs_reject(counts_ps, counts_model, outmask=thismask, inmask=inmask, invvar=invvar,
                                       lower=lower, upper=upper, maxdev=maxdev, maxrej=maxrej,
@@ -221,7 +238,8 @@ if np.sum(outmask) == 0:
     msgs.warn('All points were rejected!!! The fits will be zero everywhere.')
 
 arg_dict['thismask'] = outmask
-result, tellfit, sensfit, coeff_out, tell_out = sens_tellfit(sensfunc, bounds, arg_dict, seed=random_state)
+result, tellfit, sensfit, coeff_out, tell_out, resln = \
+    sens_tellfit(sensfunc, bounds, arg_dict, seed=random_state)
 
 
 plt.plot(wave_star,counts_ps*sensfit)
