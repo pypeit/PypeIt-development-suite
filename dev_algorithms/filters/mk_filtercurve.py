@@ -3,9 +3,10 @@ from astropy.io import ascii
 import matplotlib.pyplot as plt
 
 '''
-Code for generate a fits file of a list of filter transmission curves.
+Code for generating a fits file of filter transmission curves.
 Wavelength units are Angstrom
 Data are collected by Feige Wang in 2019 Feb.
+The orginal transmission curves from each instruments/telescopes are in the dev suite. 
 '''
 pri_hdu = fits.PrimaryHDU()
 hdulist = fits.HDUList(pri_hdu)
