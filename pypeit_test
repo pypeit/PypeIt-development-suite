@@ -32,6 +32,7 @@ def parser(options=None):
                         help='Tests to run.  Options include: all, {0:s}'.format(hlpstr))
     parser.add_argument('-outputdir', type=str, help="Output folder.  Default is ./REDUX_OUT")
     parser.add_argument('-setup', type=str, help="Single out a setup to run")
+    parser.add_argument('--debug', default=False, action='store_true', help='Debug')
 
     return parser.parse_args() if options is None else parser.parse_args(options), hlpstr
 
@@ -107,7 +108,7 @@ def main():
         # Setups
         setups = next(os.walk(os.path.join(raw_data, instr)))[1]
 
-        if 'blue' not in instr:
+        if pargs.debug and ('blue' not in instr):
             continue
 
         # Report
@@ -213,7 +214,6 @@ def main():
              
             # Run pypeit
             retval = -1
-            '''
             if passed:
                 ntest += 1
                 logfile = os.path.join(wdir, outfile_root+'.test.log')
@@ -242,12 +242,10 @@ def main():
                         print("\n", file=sys.stderr)
             else:
                 print("Couldn't run test for {0:s}".format(instr.lower()))
-            '''
-
-            retval = 0
 
             # Fluxing
             if (retval==0) and (instr.lower() in ['shane_kast_blue']):
+                ntest += 1
                 print('Running pypeit_flux on {:s} --- '.format(pyp_file), file=sys.stderr, end='')
                 logfile = os.path.join(wdir, outfile_root+'.test_flux.log')
                 flux_file = os.path.join(dev_path, 'fluxing_files', instr.lower()+'.flux')
@@ -257,10 +255,9 @@ def main():
                     command_line = [ 'pypeit_flux_spec', flux_file ]
                     print('Command line: {0}'.format(' '.join(command_line)))
                     fretval = subprocess.call(command_line, stderr=f, cwd=fdir)
-                    _ = report_test(fretval, npass, flux=True)
+                    npass = report_test(fretval, npass, flux=True)
                     subprocess.call(['tail', '-3', logfile])
                     print("\n", file=sys.stderr)
-                pdb.set_trace()
 
     if npass == ntest:
         print("\n" + "\x1B[" + "1;32m" +
