@@ -68,19 +68,22 @@ def conv_telluric(wave_grid,tell_model,res):
 
     loglam = np.log(wave_grid)
     dloglam = np.median(loglam[1:]-loglam[:-1])
-    sig = np.log(1+1.0/(2*np.sqrt(2*np.log(2))*res)) # 1-sigma width, FWHM/2.355
-    pix = dloglam/sig # width of one dloglam in sigma space
-    x = np.arange(-4,4+0.99*pix,pix)
-    g = (1.0/(np.sqrt(2*np.pi)))*np.exp(-0.5*(x**2))*pix
+    pix = 1.0/res/dloglam/(2.0 * np.sqrt(2.0 * np.log(2))) # number of dloglam pixels per 1 sigma dispersion
+    sig2pix = 1.0/pix # number of sigma per 1 pix
+    #conv_model = scipy.ndimage.filters.gaussian_filter1d(tell_model, pix)
+    # x = loglam/sigma on the wavelength grid from -4 to 4, symmetric, centered about zero.
+    x = np.hstack([-1*np.flip(np.arange(sig2pix,4,sig2pix)),np.arange(0,4,sig2pix)])
+    # g = Gaussian evaluated at x, sig2pix multiplied in to properly normalize the convolution
+    g = (1.0/(np.sqrt(2*np.pi)))*np.exp(-0.5*(x)**2)*sig2pix
     conv_model = scipy.signal.convolve(tell_model,g,mode='same')
-
     return conv_model
 
 def eval_telluric(theta_tell, wave, tell_dict):
 
     tellmodel_hires = interp_telluric_grid(theta_tell[:-1], tell_dict)
     tellmodel_conv = conv_telluric(wave, tellmodel_hires, theta_tell[-1])
-    return tellmodel_conv
+    tell_pad=tell_dict['tell_pad']
+    return tellmodel_conv[tell_pad:-tell_pad]
 
 def sensfunc(theta, arg_dict):
 
@@ -129,7 +132,7 @@ def update_bounds(bounds, delta_coeff, coeff):
     bounds_new.extend(bounds_tell)
     return bounds_new
 
-iord = 0
+iord = 13
 spec1dfile = os.path.join(os.getenv('HOME'),'Dropbox/PypeIt_Redux/XSHOOTER/Pypeit_files/PISCO_nir_REDUCED/Science_coadd/spec1d_STD,FLUX.fits')
 sobjs, head = load.load_specobjs(spec1dfile)
 exptime = head['EXPTIME']
@@ -168,15 +171,21 @@ std_dict['flux'] = flux_std
 flux_true = scipy.interpolate.interp1d(std_dict['wave'], std_dict['flux'], bounds_error=False,fill_value='extrapolate')(wave_star)
 
 # Load in the telluric grid
-telgridfile = os.path.join(dev_path,'dev_algorithms/sensfunc/TelFit_Paranal_NIR_9800_25000_AM1.03_R25000.fits')
+resln_fid = 9200.0
+telgridfile = os.path.join(dev_path,'dev_algorithms/sensfunc/TelFit_Paranal_NIR_9800_25000_AM1.00_R20000.fits')
 tell_wave_grid, tell_model_grid, pg, tg, hg, ag = read_telluric_grid(telgridfile)
-ind_lower, ind_upper = coadd2d.get_wave_ind(tell_wave_grid, np.min(wave_star), np.max(wave_star))
-tell_wave_grid = tell_wave_grid[ind_lower:ind_upper]
-tell_model_grid = tell_model_grid[:,:,:,:,ind_lower:ind_upper]
+# Add some padding
+loglam = np.log(wave_star)
+dloglam = np.median(loglam[1:] - loglam[:-1])
+pix = 1.0/resln_fid/dloglam/(2.0*np.sqrt(2.0*np.log(2)))  # width of one dloglam in sigma space
+tell_pad = int(np.ceil(10.0*pix))
 
+ind_lower, ind_upper = coadd2d.get_wave_ind(tell_wave_grid, np.min(wave_star), np.max(wave_star))
+tell_wave_grid = tell_wave_grid[ind_lower-tell_pad:ind_upper+tell_pad]
+tell_model_grid = tell_model_grid[:,:,:,:,ind_lower-tell_pad:ind_upper+tell_pad]
+tell_dict = dict(pg=pg,tg=tg,hg=hg,ag=ag,tell_model=tell_model_grid, tell_pad=tell_pad)
 
 tell_guess = (750.0,0.0,50.0,airmass, 9200.0)
-tell_dict = dict(pg=pg,tg=tg,hg=hg,ag=ag,tell_model=tell_model_grid)
 tell_model1 = eval_telluric(tell_guess,wave_star, tell_dict)
 
 sensguess = tell_model1*flux_true/(counts_ps + (counts_ps < 0.0))
@@ -241,6 +250,7 @@ while (not qdone) and (iter < maxiter):
                                       lower=lower, upper=upper, maxdev=maxdev, maxrej=maxrej,
                                       groupdim=groupdim, groupsize=groupsize, groupbadpix=groupbadpix, grow=grow,
                                       use_mad=use_mad, sticky=sticky)
+    #msgs.info()
     nrej = np.sum(arg_dict['thismask'] & np.invert(thismask))
     nrej_tot = np.sum(inmask & np.invert(thismask))
     msgs.info('Iteration #{:d}: nrej={:d} new rejections, nrej_tot={:d} total rejections'.format(iter,nrej,nrej_tot))
