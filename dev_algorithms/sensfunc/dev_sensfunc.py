@@ -68,12 +68,14 @@ def conv_telluric(wave_grid,tell_model,res):
 
     loglam = np.log(wave_grid)
     dloglam = np.median(loglam[1:]-loglam[:-1])
-    pix = 1.0/res/dloglam/(2.0 * np.sqrt(2.0 * np.log(2)))
-    conv_model = scipy.ndimage.filters.gaussian_filter1d(tell_model, pix)
-    # TODO Make this faster using scipy.signal.convolve
-    #x = np.arange(-4,4+0.99*pix,pix)
-    #g = (1.0/(np.sqrt(2*np.pi)))*np.exp(-0.5*(x)**2))*pix
-    #conv_model = scipy.signal.convolve(tell_model,g,mode='same')
+    pix = 1.0/res/dloglam/(2.0 * np.sqrt(2.0 * np.log(2))) # number of dloglam pixels per 1 sigma dispersion
+    sig2pix = 1.0/pix # number of sigma per 1 pix
+    #conv_model = scipy.ndimage.filters.gaussian_filter1d(tell_model, pix)
+    # x = loglam/sigma on the wavelength grid from -4 to 4, symmetric, centered about zero.
+    x = np.hstack([-1*np.flip(np.arange(sig2pix,4,sig2pix)),np.arange(0,4,sig2pix)])
+    # g = Gaussian evaluated at x, sig2pix multiplied in to properly normalize the convolution
+    g = (1.0/(np.sqrt(2*np.pi)))*np.exp(-0.5*(x)**2)*sig2pix
+    conv_model = scipy.signal.convolve(tell_model,g,mode='same')
     return conv_model
 
 def eval_telluric(theta_tell, wave, tell_dict):
@@ -248,7 +250,7 @@ while (not qdone) and (iter < maxiter):
                                       lower=lower, upper=upper, maxdev=maxdev, maxrej=maxrej,
                                       groupdim=groupdim, groupsize=groupsize, groupbadpix=groupbadpix, grow=grow,
                                       use_mad=use_mad, sticky=sticky)
-    msgs.info()
+    #msgs.info()
     nrej = np.sum(arg_dict['thismask'] & np.invert(thismask))
     nrej_tot = np.sum(inmask & np.invert(thismask))
     msgs.info('Iteration #{:d}: nrej={:d} new rejections, nrej_tot={:d} total rejections'.format(iter,nrej,nrej_tot))
