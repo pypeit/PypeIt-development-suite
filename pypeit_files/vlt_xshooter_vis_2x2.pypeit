@@ -32,18 +32,15 @@ setup end
 data read
  path /Users/joe/python/PypeIt-development-suite/RAW_DATA/VLT_XSHOOTER/VIS_2x2
 |                              filename |       frametype |          ra |         dec |         target | dispname |   decker | binning |             mjd | airmass | exptime | calib | comb_id | bkg_id |
-| XSHOO.2016-10-08T13:03:20.598.fits.gz | trace,pixelflat |        None |        None |      LAMP,FLAT |  default |   0.9x11 |     2,2 | 57669.543988402 |    None |   2.567 |     0 |      -1 |     -1 |
-| XSHOO.2016-10-08T13:03:57.921.fits.gz | trace,pixelflat |        None |        None |      LAMP,FLAT |  default |   0.9x11 |     2,2 | 57669.544420382 |    None |   2.567 |     0 |      -1 |     -1 |
-| XSHOO.2016-10-08T13:04:35.024.fits.gz | trace,pixelflat |        None |        None |      LAMP,FLAT |  default |   0.9x11 |     2,2 | 57669.544849817 |    None |   2.567 |     0 |      -1 |     -1 |
+| XSHOO.2016-10-08T10:07:38.147.fits.gz |            bias |        None |        None |           BIAS |  default | 1.0x12.6 |     2,2 | 57669.421969287 |    None |     0.0 |     0 |      -1 |     -1 |
+| XSHOO.2016-10-08T10:08:35.051.fits.gz |            bias |        None |        None |           BIAS |  default | 1.0x12.6 |     2,2 | 57669.422627907 |    None |     0.0 |     0 |      -1 |     -1 |
+| XSHOO.2016-10-08T10:09:30.026.fits.gz |            bias |        None |        None |           BIAS |  default | 1.0x12.6 |     2,2 | 57669.423264186 |    None |     0.0 |     0 |      -1 |     -1 |
+| XSHOO.2016-10-08T13:03:20.598.fits.gz | pixelflat,trace |        None |        None |      LAMP,FLAT |  default |   0.9x11 |     2,2 | 57669.543988402 |    None |   2.567 |     0 |      -1 |     -1 |
+| XSHOO.2016-10-08T13:03:57.921.fits.gz | pixelflat,trace |        None |        None |      LAMP,FLAT |  default |   0.9x11 |     2,2 | 57669.544420382 |    None |   2.567 |     0 |      -1 |     -1 |
+| XSHOO.2016-10-08T13:04:35.024.fits.gz | pixelflat,trace |        None |        None |      LAMP,FLAT |  default |   0.9x11 |     2,2 | 57669.544849817 |    None |   2.567 |     0 |      -1 |     -1 |
 | XSHOO.2016-10-07T15:52:42.861.fits.gz |             arc |        None |        None |      LAMP,WAVE |  default |   0.9x11 |     1,1 | 57668.661607192 |    None |     5.0 |     0 |      -1 |     -1 |
-| XSHOO.2016-10-08T00:51:37.516.fits.gz |        standard | 21:18:11.17 | -04:31:07.6 |   STD,TELLURIC |  default |   0.9x11 |     2,2 | 57669.035850876 |   1.065 |    3.12 |     0 |       2 |     -1 |
+| XSHOO.2016-10-08T00:51:04.703.fits.gz |        standard | 21:18:11.15 | -04:31:12.5 |   STD,TELLURIC |  default |   0.9x11 |     2,2 | 57669.035471099 |   1.065 |    3.12 |     0 |       1 |     -1 |
 | XSHOO.2016-10-08T03:05:51.672.fits.gz |         science | 23:10:39.01 | +18:55:17.2 | SDSSJ2310p1855 |  default |   0.9x11 |     2,2 |  57669.12907028 |   1.388 |  1200.0 |     0 |       3 |     -1 |
+#| XSHOO.2016-10-08T00:51:37.516.fits.gz |        standard | 21:18:11.17 | -04:31:07.6 |   STD,TELLURIC |  default |   0.9x11 |     2,2 | 57669.035850876 |   1.065 |    3.12 |     0 |       2 |     -1 |
 #| XSHOO.2016-10-08T03:26:38.134.fits.gz |         science | 23:10:38.98 | +18:55:22.2 | SDSSJ2310p1855 |  default |   0.9x11 |     2,2 | 57669.143496919 |   1.409 |  1200.0 |     0 |       4 |     -1 |
-#| XSHOO.2016-10-08T00:51:04.703.fits.gz |        standard | 21:18:11.15 | -04:31:12.5 |   STD,TELLURIC |  default |   0.9x11 |     2,2 | 57669.035471099 |   1.065 |    3.12 |     0 |       1 |     -1 |
 data end
-
-# Use these biases later once we get the overscan stuff sorted out for the telluric standard
-#| XSHOO.2016-10-08T10:07:38.147.fits.gz |            bias |        None |        None |           BIAS |  default | 1.0x12.6 |     2,2 | 57669.421969287 |    None |     0.0 |     0 |      -1 |     -1 |
-#| XSHOO.2016-10-08T10:08:35.051.fits.gz |            bias |        None |        None |           BIAS |  default | 1.0x12.6 |     2,2 | 57669.422627907 |    None |     0.0 |     0 |      -1 |     -1 |
-#| XSHOO.2016-10-08T10:09:30.026.fits.gz |            bias |        None |        None |           BIAS |  default | 1.0x12.6 |     2,2 | 57669.423264186 |    None |     0.0 |     0 |      -1 |     -1 |
-
