@@ -16,7 +16,7 @@
 setup read
  Setup A:
    --:
-     dichroic: noneß
+     dichroic: none
      disperser: {angle: none, name: low}
      slit: {decker: 42x0.760, slitlen: none, slitwid: none}
    '01': {binning: '1,1', det: 1, namp: 1}
