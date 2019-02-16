@@ -134,13 +134,10 @@ def update_bounds(bounds, delta_coeff, coeff):
 
 
 
-def sensfunc(theta, args):
+def sensfunc(theta, counts_ps, thismask, arg_dict):
 
-    thismask, arg_dict = args
     wave_star = arg_dict['wave_star']
-    counts_ps = arg_dict['counts_ps']
     counts_ps_ivar = arg_dict['counts_ps_ivar']
-    thismask = arg_dict['thismask']
     wave_min = arg_dict['wave_min']
     wave_max = arg_dict['wave_max']
     flux_true = arg_dict['flux_true']
@@ -160,27 +157,20 @@ def sensfunc(theta, args):
         chi2 = np.sum(np.square(chi_vec))
     return chi2
 
-def sens_tellfit(thismask, arg_dict):
+def sens_tellfit(counts_ps, thismask, arg_dict, **kwargs_opt):
 
     # Function that we are optimizing
     sensfunc = arg_dict['sensfunc']
-    # Differential evolution parameters
-    bounds, tol, popsize, recombination, disp, polish, seed = \
-        arg_dict['bounds'], arg_dict['tol'], arg_dict['popsize'], \
-        arg_dict['recombination'], arg_dict['disp'], arg_dict['polish'], arg_dict['seed']
-
-    result = scipy.optimize.differential_evolution(sensfunc, args=(thismask, arg_dict,), tol=tol,bounds=bounds, popsize=popsize,
-                                                   recombination=recombination,disp=disp, polish=polish, seed=seed)
+    result = scipy.optimize.differential_evolution(sensfunc, args=(counts_ps, thismask, arg_dict,), **kwargs_opt)
     wave_star = arg_dict['wave_star']
     order = arg_dict['order']
-    counts_ps = arg_dict['counts_ps']
     coeff_out = result.x[:order+1]
     tell_out = result.x[order+1:]
     tellfit_conv = eval_telluric(tell_out, wave_star,arg_dict['tell_dict'])
     sensfit = utils.func_val(coeff_out, wave_star, arg_dict['func'], minx=arg_dict['wave_min'], maxx=arg_dict['wave_max'])
     counts_model = tellfit_conv*arg_dict['flux_true']/(sensfit + (sensfit == 0.0))
 
-    return result, counts_ps, counts_model
+    return result, counts_model
 
 
 
@@ -224,7 +214,7 @@ flux_true = scipy.interpolate.interp1d(std_dict['wave'], std_dict['flux'], bound
 
 # Load in the telluric grid
 resln_fid = 9200.0
-telgridfile = os.path.join(dev_path,'dev_algorithms/sensfunc/TelFit_Paranal_NIR_9800_25000_AM1.00_R20000.fits')
+telgridfile = os.path.join(dev_path,'dev_algorithms/sensfunc/TelFit_Paranal_NIR_9800_25000_R25000.fits')
 tell_wave_grid, tell_model_grid, pg, tg, hg, ag = read_telluric_grid(telgridfile)
 # Add some padding
 loglam = np.log(wave_star)
@@ -271,7 +261,7 @@ bounds.extend(bounds_tell)
 bounds.extend([(6000,13000)])
 
 # Params for the iterative rejection, will become optional params
-maxiter= 5
+maxiter= 3
 maxdev=None
 maxrej=None
 groupdim=None
@@ -290,54 +280,30 @@ else:
 
 arg_dict = dict(wave_star=wave_star, bounds=bounds, counts_ps=counts_ps, counts_ps_ivar=counts_ps_ivar,
                 wave_min=wave_min, wave_max=wave_max, flux_true=flux_true, tell_dict=tell_dict, order=order,
-                func=func, sensfunc=sensfunc)
+                func=func, sensfunc=sensfunc, )
 
-result, ymodel, outmask = utils.robust_optimize(sens_tellfit, inmask, arg_dict, maxiter=maxiter,
-                                                lower=lower, upper=upper, sticky=sticky, use_mad=use_mad)
+result, ymodel, outmask = utils.robust_optimize(counts_ps, sens_tellfit, arg_dict, inmask=inmask, maxiter=maxiter,
+                                                lower=lower, upper=upper, sticky=sticky, use_mad=use_mad,
+                                                bounds = bounds, tol=1e-4, popsize=30, recombination=0.7, disp=True,
+                                                polish=True,seed=random_state)
 
-sys.exit(-1)
-
-iter = 0
-qdone = False
-thismask = np.copy(inmask)
-arg_dict = dict(wave_star=wave_star, counts_ps=counts_ps, counts_ps_ivar=counts_ps_ivar, thismask=thismask,
-                wave_min=wave_min, wave_max=wave_max, flux_true=flux_true, tell_dict=tell_dict, order=order, func=func,
-                tol=tol, )
-
-while (not qdone) and (iter < maxiter):
-    arg_dict['thismask'] = thismask
-    result, tellfit, sensfit, coeff_out, tell_out = sens_tellfit(sensfunc, bounds, arg_dict, seed=random_state)
-    counts_model = tellfit*flux_true/(sensfit + (sensfit == 0.0))
-    thismask, qdone = pydl.djs_reject(counts_ps, counts_model, outmask=thismask, inmask=inmask, invvar=invvar,
-                                      lower=lower, upper=upper, maxdev=maxdev, maxrej=maxrej,
-                                      groupdim=groupdim, groupsize=groupsize, groupbadpix=groupbadpix, grow=grow,
-                                      use_mad=use_mad, sticky=sticky)
-    #msgs.info()
-    nrej = np.sum(arg_dict['thismask'] & np.invert(thismask))
-    nrej_tot = np.sum(inmask & np.invert(thismask))
-    msgs.info('Iteration #{:d}: nrej={:d} new rejections, nrej_tot={:d} total rejections'.format(iter,nrej,nrej_tot))
-    # recenter the bounds for the legendge fit about the last iteration result
-    bounds = update_bounds(bounds, delta_coeff_fine, coeff_out)
-    iter += 1
-
-if (iter == maxiter) & (maxiter != 0):
-    msgs.warn('Maximum number of iterations maxiter={:}'.format(maxiter) + ' reached in sens_tell_fit')
-outmask = np.copy(thismask)
-if np.sum(outmask) == 0:
-    msgs.warn('All points were rejected!!! The fits will be zero everywhere.')
-
-arg_dict['thismask'] = outmask
-result, tellfit, sensfit, coeff_out, tell_out = sens_tellfit(sensfunc, bounds, arg_dict, seed=random_state)
+coeff_out = result.x[:order + 1]
+tell_out = result.x[order + 1:]
+tellfit = eval_telluric(tell_out, wave_star, arg_dict['tell_dict'])
+sensfit = utils.func_val(coeff_out, wave_star, arg_dict['func'], minx=arg_dict['wave_min'], maxx=arg_dict['wave_max'])
+counts_model = tellfit* arg_dict['flux_true']/(sensfit + (sensfit == 0.0))
 
 
-plt.plot(wave_star,counts_ps*sensfit)
-plt.plot(wave_star,counts_ps*sensfit/(tellfit + (tellfit == 0.0)))
-plt.plot(wave_star,flux_true)
+
+plt.plot(wave_star,counts_ps*sensfit, drawstyle='steps-mid')
+plt.plot(wave_star,counts_ps*sensfit/(tellfit + (tellfit == 0.0)), drawstyle='steps-mid')
+plt.plot(wave_star,flux_true, drawstyle='steps-mid')
 plt.ylim(-0.1*flux_true.max(),1.5*flux_true.max())
 plt.show()
 
 plt.plot(wave_star,counts_ps, drawstyle='steps-mid',color='k',label='star spectrum',alpha=0.7)
-plt.plot(wave_star,tellfit*flux_true/(sensfit + (sensfit == 0.0)),color='red',linewidth=1.0,label='model',zorder=3,alpha=0.7)
+plt.plot(wave_star,tellfit*flux_true/(sensfit + (sensfit == 0.0)),drawstyle='steps-mid', color='red',linewidth=1.0,label='model',zorder=3,alpha=0.7)
 plt.ylim(-0.1*counts_ps.max(),1.5*counts_ps.max())
 plt.legend()
 plt.show()
+
