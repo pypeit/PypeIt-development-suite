@@ -5,6 +5,7 @@ import numpy as np
 import scipy
 import matplotlib.pyplot as plt
 import os
+from astropy.io import fits
 from pypeit.core import pydl
 import astropy.units as u
 from astropy.io import fits
@@ -330,16 +331,124 @@ def ech_sens_tell(spec1dfile, telgridfile, star_type=None, star_mag=None, ra=Non
 
     return sens_dict
 
-spec1dfile = os.path.join(os.getenv('HOME'),'Dropbox/PypeIt_Redux/NIRES/J0252/ut180903/Science_coadd/spec1d_HIP13917.fits')
-star_type='A0'
-star_mag = 8.63
+
+def ech_tell(spec1dfile, telgridfile, resln_guess=None, resln_frac_range=(0.5,1.5), delta_coeff=(0.6, 1.4),
+                  polyorder=7, func='legendre', maxiter=3, sticky=True, use_mad=True, lower=3.0, upper=3.0, seed=None,
+                  tol=1e-4, popsize=30, recombination=0.7, disp=True, polish=True,
+                  debug=True):
+
+    # Read in the spec1d file
+    sobjs, head = load.load_specobjs(spec1dfile)
+    airmass = head['AIRMASS']
+    norders = len(sobjs)
+    nspec = sobjs[0].optimal['COUNTS'].size
+    # Allocate arrays and unpack spectrum
+    wave = np.zeros((nspec, norders))
+    wave_mask = np.zeros((nspec, norders),dtype=bool)
+    flux = np.zeros((nspec, norders))
+    flux_ivar = np.zeros((nspec, norders))
+    flux_mask = np.zeros((nspec, norders),dtype=bool)
+    for iord in range(norders):
+        flux[:,iord] = sobjs[iord].optimal['FLAM']
+        flux_ivar[:,iord] = sobjs[iord].optimal['FLAM_IVAR']
+        wave[:,iord] = sobjs[iord].optimal['WAVE_GRID']
+        wave_mask[:,iord] = sobjs[iord].optimal['WAVE_GRID'] > 0.0
+        flux_mask[:,iord] = wave_mask & sobjs[iord].optimal['MASK']
+
+    # TODO Add some code here that fills in the masked pixels for the wave from the original fixed wavelength grid
+    # so that we can more easily pack the telluric into a fixed array
+
+    # This guarantees that the fit will be deterministic and hence reproducible
+    if seed is None:
+        seed_data = np.fmin(int(np.abs(np.sum(flux))), 2 ** 32 - 1)
+        seed = np.random.RandomState(seed=seed_data)
+
+    loglam = np.log(wave[:, 0])
+    dloglam = np.median(loglam[1:] - loglam[:-1])
+    # Guess resolution from spectral sampling
+    if resln_guess is None:
+        resln_guess = 1.0/(3.0*dloglam)  # assume roughly Nyquist sampling
+
+    # Read in the telluric grid
+    tell_dict = read_telluric_grid(telgridfile)
+
+    # Determine the padding and use a subset of the full tell_model_grid to make the convolutions faster
+    pix = 1.0 / resln_guess / dloglam / (2.0 * np.sqrt(2.0 * np.log(2)))  # number of pixels per resolution element
+    tell_pad = int(np.ceil(10.0 * pix))
+    tell_shape = tell_dict['tell_grid'].shape
+    tell_model_grid = np.zeros((tell_shape[0], tell_shape[1], tell_shape[2], tell_shape[3], nspec + 2*tell_pad, norders))
+    for iord in range(norders):
+        ind_lower = np.argmin(np.abs(tell_dict['wave_grid'] - np.min(wave[:,iord])))  - tell_pad
+        ind_upper = np.argmin(np.abs(tell_dict['wave_grid'] - np.max(wave[:,iord])))  + tell_pad
+        # Assign the tell_model_grid to the relevant subset of the array as the data
+        tell_model_grid[:, :, :, :, :,iord] = tell_dict['tell_grid'][:, :, :, :,ind_lower:ind_upper]
+
+    tell_dict_now = dict(pressure_grid=tell_dict['pressure_grid'], temp_grid=tell_dict['temp_grid'],
+                         h2o_grid=tell_dict['h2o_grid'], airmass_grid=tell_dict['airmass_grid'],
+                         tell_grid=tell_model_grid, tell_pad=(tell_pad, tell_pad))
+
+    # Set the bounds for the optimization
+    bounds = [(this_coeff*delta_coeff[0], this_coeff*delta_coeff[1]) for this_coeff in coeff]
+    bounds_tell = [(tell_dict_now['pressure_grid'].min(), tell_dict_now['pressure_grid'].max()),
+                   (tell_dict_now['temp_grid'].min(), tell_dict_now['temp_grid'].max()),
+                   (tell_dict_now['h2o_grid'].min(), tell_dict_now['h2o_grid'].max()),
+                   (tell_dict_now['airmass_grid'].min(), tell_dict_now['airmass_grid'].max()),
+                   (resln_guess*resln_frac_range[0], resln_guess*resln_frac_range[1])]
+    bounds.extend(bounds_tell)
+
+    # Create the arg_dict 
+    arg_dict = dict(wave_star=wave_star, bounds=bounds, counts_ps=counts_ps, counts_ps_ivar=counts_ps_ivar,
+                    wave_min=wave_min, wave_max=wave_max, flux_true=flux_true, tell_dict=tell_dict_now, order=polyorder,
+                    func=func, sensfunc_chi2=sensfunc_chi2)
+
+    result, ymodel, outmask = utils.robust_optimize(counts_ps, sens_tellfit, arg_dict, invvar=invvar, inmask=inmask,
+                                                    maxiter=maxiter,lower=lower, upper=upper, sticky=sticky,
+                                                    use_mad=use_mad, bounds = bounds, tol=tol, popsize=popsize,
+                                                    recombination=recombination, disp=disp, polish=polish, seed=seed)
+
+    sens_coeff = result.x[:polyorder + 1]
+    #sens_dict = dict(sens_coeff=sens_coeff, wave_min=wave_min, wave_max=wave_max)
+    tell_params = result.x[polyorder + 1:]
+    tellfit = eval_telluric(tell_params, wave_star, arg_dict['tell_dict'])
+    sensfit = utils.func_val(sens_coeff, wave_star, arg_dict['func'], minx=arg_dict['wave_min'], maxx=arg_dict['wave_max'])
+    counts_model = tellfit*arg_dict['flux_true']/(sensfit + (sensfit == 0.0))
+
+    if debug:
+        plt.plot(wave_star,counts_ps*sensfit, drawstyle='steps-mid')
+        plt.plot(wave_star,counts_ps*sensfit/(tellfit + (tellfit == 0.0)), drawstyle='steps-mid')
+        plt.plot(wave_star,flux_true, drawstyle='steps-mid')
+        plt.ylim(-0.1*flux_true.max(),1.5*flux_true.max())
+        plt.show()
+
+        plt.plot(wave_star,counts_ps, drawstyle='steps-mid',color='k',label='star spectrum',alpha=0.7)
+        plt.plot(wave_star,counts_model,drawstyle='steps-mid', color='red',linewidth=1.0,label='model',zorder=3,alpha=0.7)
+        plt.ylim(-0.1*counts_ps.max(),1.5*counts_ps.max())
+        plt.legend()
+        plt.show()
+
+
+    return sens_dict
+
+
 dev_path = os.getenv('PYPEIT_DEV')
-telgridfile = os.path.join(dev_path, 'dev_algorithms/sensfunc/TelFit_MK_NIR_9300_26100_AM1.000_R8000.fits')
-polyorder = [7,11,7,7,7]
 
-sens_dict = ech_sens_tell(spec1dfile, telgridfile, star_type=star_type, star_mag=star_mag, polyorder=polyorder)
+# NIRES
+#spec1dfile = os.path.join(os.getenv('HOME'),'Dropbox/PypeIt_Redux/NIRES/J0252/ut180903/Science_coadd/spec1d_HIP13917.fits')
+#telgridfile = os.path.join(dev_path, 'dev_algorithms/sensfunc/TelFit_MK_NIR_9300_26100_AM1.000_R8000.fits')
+#polyorder = [7,11,7,7,7]
+#star_type='A0'
+#star_mag = 8.63
 
-sensfuncfile = 'HIP13917_sensfunc.json'
+# XSHOOTER
+star_mag  = None
+star_type = None
+spec1dfile = os.path.join(os.getenv('HOME'),'Dropbox/PypeIt_Redux/XSHOOTER/Pypeit_files/PISCO_nir_REDUCED/Science_coadd_old/spec1d_STD,FLUX.fits')
+header = fits.getheader(spec1dfile)
+telgridfile =  os.path.join(dev_path, 'dev_algorithms/sensfunc/TelFit_Paranal_NIR_9800_25000_R25000.fits')
+polyorder=7
+sens_dict = ech_sens_tell(spec1dfile, telgridfile, polyorder=polyorder, ra=header['RA'], dec=header['DEC'],
+                          star_mag=star_mag, star_type=star_type)
+sensfuncfile = 'EG274_sensfunc.json'
 save.save_sens_dict(sens_dict,sensfuncfile)
 sens_dict = load.load_sens_dict(sensfuncfile)
 
