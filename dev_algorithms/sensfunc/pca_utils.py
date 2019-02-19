@@ -2,7 +2,7 @@ import numpy as np
 from sklearn import mixture
 
 def init_pca(filename,wave_grid,redshift):
-    # Read in the pickle file
+    # Read in the pickle file from coarse_pca.create_coarse_pca
     # The relevant pieces are the wavelengths (wave_pca_c), the PCA components (pca_comp_c),
     # and the Gaussian mixture model prior (mix_fit)
     wave_pca_c, cont_all_c, pca_comp_c, coeffs_c,
