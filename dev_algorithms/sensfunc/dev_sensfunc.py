@@ -396,7 +396,7 @@ def ech_tell(spec1dfile, telgridfile, resln_guess=None, resln_frac_range=(0.5,1.
                    (resln_guess*resln_frac_range[0], resln_guess*resln_frac_range[1])]
     bounds.extend(bounds_tell)
 
-    # Create the arg_dict 
+    # Create the arg_dict
     arg_dict = dict(wave_star=wave_star, bounds=bounds, counts_ps=counts_ps, counts_ps_ivar=counts_ps_ivar,
                     wave_min=wave_min, wave_max=wave_max, flux_true=flux_true, tell_dict=tell_dict_now, order=polyorder,
                     func=func, sensfunc_chi2=sensfunc_chi2)
