@@ -68,7 +68,7 @@ def interp_telluric_grid(theta,tell_dict):
 
 def conv_telluric(wave_grid,tell_model,res):
 
-    loglam = np.log(wave_grid)
+    loglam = np.log10(wave_grid)
     dloglam = np.median(loglam[1:]-loglam[:-1])
     pix = 1.0/res/dloglam/(2.0 * np.sqrt(2.0 * np.log(2))) # number of dloglam pixels per 1 sigma dispersion
     sig2pix = 1.0/pix # number of sigma per 1 pix
@@ -166,7 +166,7 @@ def sens_tell_joint(wave_star, counts_ps, counts_ps_ivar, std_dict, tell_dict, i
                                            fill_value='extrapolate')(wave_star)
 
     # Determine the padding and use a subset of the full tell_model_grid to make the convolutions faster
-    loglam = np.log(wave_star)
+    loglam = np.log10(wave_star)
     dloglam = np.median(loglam[1:] - loglam[:-1])
     if resln_guess is None:
         resln_guess = 1.0/(3.0*dloglam) # assume roughly Nyquist sampling
@@ -363,7 +363,7 @@ def ech_tell(spec1dfile, telgridfile, resln_guess=None, resln_frac_range=(0.5,1.
         seed_data = np.fmin(int(np.abs(np.sum(flux))), 2 ** 32 - 1)
         seed = np.random.RandomState(seed=seed_data)
 
-    loglam = np.log(wave[:, 0])
+    loglam = np.log10(wave[:, 0])
     dloglam = np.median(loglam[1:] - loglam[:-1])
     # Guess resolution from spectral sampling
     if resln_guess is None:
@@ -442,7 +442,7 @@ dev_path = os.getenv('PYPEIT_DEV')
 # XSHOOTER
 star_mag  = None
 star_type = None
-spec1dfile = os.path.join(os.getenv('HOME'),'Dropbox/PypeIt_Redux/XSHOOTER/Pypeit_files/PISCO_nir_REDUCED/Science_coadd_old/spec1d_STD,FLUX.fits')
+spec1dfile = os.path.join(os.getenv('HOME'),'Dropbox/PypeIt_Redux/XSHOOTER/Pypeit_files/PISCO_nir_REDUCED/Science_coadd/spec1d_STD.fits')
 header = fits.getheader(spec1dfile)
 telgridfile =  os.path.join(dev_path, 'dev_algorithms/sensfunc/TelFit_Paranal_NIR_9800_25000_R25000.fits')
 polyorder=7
