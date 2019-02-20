@@ -112,12 +112,13 @@ def sensfunc_chi2(theta, counts_ps, thismask, arg_dict):
     theta_tell = theta[order+1:]
     sensmodel = utils.func_val(theta_sens, wave_star, func, minx=wave_min, maxx=wave_max)
     tellmodel_conv = eval_telluric(theta_tell, wave_star, tell_dict)
-    if np.sum(sensmodel) < 1e-6:
+    if np.sum(np.abs(sensmodel)) < 1e-6:
         return np.inf
     else:
         chi_vec = thismask*(sensmodel != 0.0)*(tellmodel_conv*flux_true/(sensmodel + (sensmodel == 0.0)) -
                                                counts_ps)*np.sqrt(counts_ps_ivar)
         chi2 = np.sum(np.square(chi_vec))
+
     return chi2
 
 def sens_tellfit(counts_ps, thismask, arg_dict, **kwargs_opt):
@@ -140,12 +141,43 @@ def sens_tellfit(counts_ps, thismask, arg_dict, **kwargs_opt):
 
 
 
-def sens_tell_joint(wave_star, counts_ps, counts_ps_ivar, std_dict, tell_dict, inmask=None, airmass=None,
-                    resln_guess=None, resln_frac_range=(0.5,1.5), delta_coeff=(0.6,1.4), seed=None,
-                    polyorder=7, func='legendre', maxiter=3, sticky=True, use_mad=True, lower=3.0, upper=3.0,
-                    tol=1e-4, popsize=30, recombination=0.7, disp=True, polish=True,
-                    debug=True):
+def sensfunc_telluric_joint(wave_star, counts_ps, counts_ps_ivar, std_dict, tell_dict, inmask=None, airmass=None,
+                            resln_guess=None, resln_frac_range=(0.5,1.5), delta_coeff=(0.6,1.4), seed=None,
+                            polyorder=7, func='legendre', maxiter=3, sticky=True, use_mad=True, lower=3.0, upper=3.0,
+                            tol=1e-4, popsize=30, recombination=0.7, disp=True, polish=True,
+                            debug=False):
+    """
+    Jointly fit a sensitivity function and telluric correction for an input standart star spectrum.
 
+    Args:
+        wave_star:
+        counts_ps:
+        counts_ps_ivar:
+        std_dict:
+        tell_dict:
+        inmask:
+        airmass:
+        resln_guess:
+        resln_frac_range:
+        delta_coeff:
+        seed:
+        polyorder:
+        func:
+        maxiter:
+        sticky:
+        use_mad:
+        lower:
+        upper:
+        tol:
+        popsize:
+        recombination:
+        disp:
+        polish:
+        debug:
+
+    Returns:
+
+    """
     if inmask is None:
         inmask = (counts_ps_ivar > 0.0)
 
@@ -251,12 +283,44 @@ def sens_tell_joint(wave_star, counts_ps, counts_ps_ivar, std_dict, tell_dict, i
 
 
 
-def ech_sens_tell(spec1dfile, telgridfile, star_type=None, star_mag=None, ra=None, dec=None,
-                  resln_guess=None, resln_frac_range=(0.5,1.5), delta_coeff=(0.6, 1.4),
-                  polyorder=7, func='legendre', maxiter=3, sticky=True, use_mad=True, lower=3.0, upper=3.0, seed=None,
-                  tol=1e-4, popsize=30, recombination=0.7, disp=True, polish=True,
-                  debug=True):
+def ech_sensfunc_telluric(spec1dfile, telgridfile, star_type=None, star_mag=None, ra=None, dec=None,
+                          resln_guess=None, resln_frac_range=(0.5,1.5), delta_coeff=(0.6, 1.4),
+                          polyorder=7, func='legendre', maxiter=3, sticky=True, use_mad=True, lower=3.0, upper=3.0, seed=None,
+                          tol=1e-4, popsize=30, recombination=0.7, disp=True, polish=True,
+                          debug=False):
+    """
+    Loop over orders to jointly fit a sensitivity function and telluric correction for a standard star spectrum for each
+    order individua
 
+
+    Args:
+        spec1dfile:
+        telgridfile:
+        star_type:
+        star_mag:
+        ra:
+        dec:
+        resln_guess:
+        resln_frac_range:
+        delta_coeff:
+        polyorder:
+        func:
+        maxiter:
+        sticky:
+        use_mad:
+        lower:
+        upper:
+        seed:
+        tol:
+        popsize:
+        recombination:
+        disp:
+        polish:
+        debug:
+
+    Returns:
+
+    """
     # Read in the standard spec1d file
     sobjs, head = load.load_specobjs(spec1dfile)
     exptime = head['EXPTIME']
@@ -284,7 +348,7 @@ def ech_sens_tell(spec1dfile, telgridfile, star_type=None, star_mag=None, ra=Non
     wave_all_min=np.inf
     wave_all_max=-np.inf
     for iord in range(norders):
-        wave_mask = sobjs[iord].optimal['WAVE_GRID'] > 0.0
+        wave_mask = sobjs[iord].optimal['WAVE_GRID_MASK']
         wave = sobjs[iord].optimal['WAVE_GRID'][wave_mask]
         wave_all_min = np.fmin(wave.min(),wave_all_min)
         wave_all_max = np.fmax(wave.max(),wave_all_max)
@@ -306,7 +370,7 @@ def ech_sens_tell(spec1dfile, telgridfile, star_type=None, star_mag=None, ra=Non
                              wave_min=wave_all_min, wave_max=wave_all_max)
     for iord in srt_order_tell:
         msgs.info("Fitting sensitiity function for order: {:d}/{:d}".format(iord, norders))
-        wave_mask = sobjs[iord].optimal['WAVE_GRID'] > 0.0
+        wave_mask = sobjs[iord].optimal['WAVE_GRID_MASK']
         wave_grid = sobjs[iord].optimal['WAVE_GRID']
         wave = wave_grid[wave_mask]
         counts = sobjs[iord].optimal['COUNTS'][wave_mask]
@@ -317,7 +381,7 @@ def ech_sens_tell(spec1dfile, telgridfile, star_type=None, star_mag=None, ra=Non
         counts_ps_ivar = counts_ivar.copy()*exptime ** 2
         counts_ps_mask = sobjs[iord].optimal['MASK'][wave_mask]
         inmask = counts_ps_mask & (counts_ps_ivar > 0.0)
-        sens_coeff, tell_params, sensfit, tellfit = sens_tell_joint(
+        sens_coeff, tell_params, sensfit, tellfit = sensfunc_telluric_joint(
             wave_star, counts_ps, counts_ps_ivar, std_dict, tell_dict, inmask=inmask, airmass=airmass,
             resln_guess=resln_guess, resln_frac_range=resln_frac_range, delta_coeff=delta_coeff, seed=seed,
             polyorder=polyorder_vec[iord], func=func, maxiter=maxiter, sticky=sticky, use_mad=use_mad, lower=lower, upper=upper,
@@ -352,7 +416,7 @@ def ech_tell(spec1dfile, telgridfile, resln_guess=None, resln_frac_range=(0.5,1.
         flux[:,iord] = sobjs[iord].optimal['FLAM']
         flux_ivar[:,iord] = sobjs[iord].optimal['FLAM_IVAR']
         wave[:,iord] = sobjs[iord].optimal['WAVE_GRID']
-        wave_mask[:,iord] = sobjs[iord].optimal['WAVE_GRID'] > 0.0
+        wave_mask[:,iord] = sobjs[iord].optimal['WAVE_GRID_MASK']
         flux_mask[:,iord] = wave_mask & sobjs[iord].optimal['MASK']
 
     # TODO Add some code here that fills in the masked pixels for the wave from the original fixed wavelength grid
@@ -445,14 +509,12 @@ star_type = None
 spec1dfile = os.path.join(os.getenv('HOME'),'Dropbox/PypeIt_Redux/XSHOOTER/Pypeit_files/PISCO_nir_REDUCED/Science_coadd/spec1d_STD.fits')
 header = fits.getheader(spec1dfile)
 telgridfile =  os.path.join(dev_path, 'dev_algorithms/sensfunc/TelFit_Paranal_NIR_9800_25000_R25000.fits')
-polyorder=7
-sens_dict = ech_sens_tell(spec1dfile, telgridfile, polyorder=polyorder, ra=header['RA'], dec=header['DEC'],
+polyorder=6
+sens_dict = ech_sensfunc_telluric(spec1dfile, telgridfile, polyorder=polyorder, ra=header['RA'], dec=header['DEC'],
                           star_mag=star_mag, star_type=star_type)
 sensfuncfile = 'EG274_sensfunc.json'
 save.save_sens_dict(sens_dict,sensfuncfile)
 sens_dict = load.load_sens_dict(sensfuncfile)
-
-
 
 
 #
