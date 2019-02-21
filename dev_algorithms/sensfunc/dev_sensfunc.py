@@ -508,7 +508,7 @@ def ech_telluric_qso(spec1dfile, telgridfile, pcafile, npca, z_qso, wave_pca_nor
     tell_model = eval_telluric_orders(tell_guess, wave, tell_dict_now)
     tell_mask = tell_model > tell_norm_thresh
     data_norm = np.sum(tell_mask*flux_mask*flux)
-    pca_norm = np.sum(tell_mask*flux_mask*pca_dict['components'][:,0])
+    pca_norm = np.sum(tell_mask*flux_mask*pca_dict['components'][0,:,:])
     flux_norm = data_norm/pca_norm
 
     # Set the bounds for the PCA and truncate to the right dimension
