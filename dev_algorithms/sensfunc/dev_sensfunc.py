@@ -13,8 +13,10 @@ from pypeit.core import flux
 from pypeit.core import load
 from pypeit.core import save
 from pypeit.core import coadd2d
+from pypeit.spectrographs import util
 from pypeit import utils
 from pypeit import msgs
+import pickle
 PYPEIT_FLUX_SCALE = 1e-17
 from astropy.io import fits
 import copy
@@ -24,39 +26,33 @@ def init_pca(filename,wave_grid,redshift):
     # Read in the pickle file from coarse_pca.create_coarse_pca
     # The relevant pieces are the wavelengths (wave_pca_c), the PCA components (pca_comp_c),
     # and the Gaussian mixture model prior (mix_fit)
-    wave_pca_c, cont_all_c, pca_comp_c, coeffs_c,
-    mean_pca, covar_pca, diff_pca, mix_fit, chi2, dof = pickle.load(open(filename,'rb'))
+    wave_pca_c, cont_all_c, pca_comp_c, coeffs_c, mean_pca, covar_pca, diff_pca, mix_fit, chi2, dof = pickle.load(open(filename,'rb'))
     num_comp = pca_comp_c.shape[0] # number of PCA components
     # Interpolate PCA components onto wave_grid
     pca_interp = scipy.interpolate.interp1d(wave_pca_c*(1+redshift),pca_comp_c,
                                             bounds_error=False, axis=1)
     pca_comp_new = pca_interp(wave_grid)
     # Construct the PCA dict
-    pca_dict = {'mean_spectrum': mean_pca, 'n_components': num_comp,
-                'components': pca_comp_new, 'prior': mix_fit, 'coeffs': coeffs_c}
+    pca_dict = {'npca': num_comp, 'components': pca_comp_new, 'prior': mix_fit, 'coeffs': coeffs_c}
     return pca_dict
 
-def eval_pca(theta,pca_dict):
-    M = pca_dict['mean_spectrum']
+def pca_eval(theta,pca_dict):
     C = pca_dict['components']
     norm = theta[0]
     A = theta[1:]
-    return norm*M*np.exp(np.dot(A,C))
+    return norm*np.exp(np.dot(np.append(1.0,A),C))
 
-def eval_pca_prior(theta,pca_dict):
-    gmm = pca_dict['prior']
+def pca_lnprior(theta,pca_dict):
+    gaussian_mixture_model = pca_dict['prior']
     A = theta[1:]
-    return gmm.score_samples(A.reshape(1,-1))
-
-
-
+    return gaussian_mixture_model.score_samples(A.reshape(1,-1))
 
 def read_telluric_grid(filename, wave_min=None, wave_max=None, pad = 0):
 
     hdul = fits.open(filename)
     wave_grid_full = 10.0*hdul[1].data
     model_grid_full = hdul[0].data
-    nspec_full = wave_grid_full.szie
+    nspec_full = wave_grid_full.size
 
     if wave_min is not None:
         ind_lower = np.argmin(np.abs(wave_grid_full - wave_min)) - pad
@@ -125,8 +121,7 @@ def eval_telluric(theta_tell, tell_dict):
 
     tellmodel_hires = interp_telluric_grid(theta_tell[:-1], tell_dict)
     tellmodel_conv = conv_telluric(tellmodel_hires, tell_dict['dloglam'], theta_tell[-1])
-    tell_pad=tell_dict['tell_pad']
-    return tellmodel_conv[tell_pad[0]:-tell_pad[1]]
+    return tellmodel_conv
 
 def update_bounds(bounds, delta_coeff, coeff):
 
@@ -162,42 +157,6 @@ def sensfunc_chi2(theta, counts_ps, thismask, arg_dict):
     return chi2
 
 
-# Define the probability function as likelihood * prior.
-def lnprior(C_PCA, mix_fit):
-    return mix_fit.score_samples(C_PCA.reshape(1,-1))
-
-
-def lnprob_sample(theta, t_grid, x_grid, f_grid, imin, imax, onep_diff_pca, data_mat, ivar_mat, nskew, nlam, pca_comp_, mix_fit_):
-    n_comp = pca_comp_.shape[0]
-    C_PCA =np.append(1.0,theta[:n_comp-1]) # add the "mean" eigenvalue here
-    t_Q = theta[-2]
-    x_HI = theta[-1]
-    lp = lnprior(C_PCA,t_Q, x_HI,mix_fit_)
-    if not np.isfinite(lp):
-        return -np.inf
-    return lp + lnlike_sample(C_PCA, t_Q, x_HI, t_grid, x_grid, f_grid, imin, imax, onep_diff_pca, data_mat, ivar_mat, nskew, nlam, pca_comp_)
-
-
-
-
-def tell_qso_lnL(theta, flux, thismask, arg_dict):
-
-def tell_qso_fit(flux, thismask, arg_dict, **kwargs_opt):
-
-    # Function that we are optimizing
-    sensfunc_chisq = arg_dict['sensfunc_chi2']
-    result = scipy.optimize.differential_evolution(sensfunc_chisq, args=(counts_ps, thismask, arg_dict,), **kwargs_opt)
-    wave_star = arg_dict['wave_star']
-    order = arg_dict['order']
-    coeff_out = result.x[:order+1]
-    tell_out = result.x[order+1:]
-    tellfit_conv = eval_telluric(tell_out, arg_dict['tell_dict'])
-    sensfit = utils.func_val(coeff_out, wave_star, arg_dict['func'], minx=arg_dict['wave_min'], maxx=arg_dict['wave_max'])
-    counts_model = tellfit_conv*arg_dict['flux_true']/(sensfit + (sensfit == 0.0))
-
-    return result, counts_model
-
-
 def sens_tellfit(counts_ps, thismask, arg_dict, **kwargs_opt):
 
     # Function that we are optimizing
@@ -214,7 +173,44 @@ def sens_tellfit(counts_ps, thismask, arg_dict, **kwargs_opt):
     return result, counts_model
 
 
+def tell_qso_evalmodel(theta, arg_dict):
 
+    nspec = arg_dict['nspec']
+    norders = arg_dict['norders']
+    npca = arg_dict['npca']
+    ind = arg_dict['ind']
+    theta_rescale = theta[0:norders]
+    theta_PCA = theta[norders:norders + npca]
+    theta_tell = theta[-4:]
+    tell_model = eval_telluric(theta_tell, arg_dict['tell_dict'])
+    tell_model_orders = populate_orders(tell_model, ind)
+    pca_model = pca_eval(theta_PCA, arg_dict['pca_dict'])
+    pca_model_orders = populate_orders(pca_model, ind)
+    rescale_orders = np.outer(np.ones(nspec), theta_rescale)
+    flux_model = (rescale_orders != 0.0)*tell_model_orders*pca_model_orders/(rescale_orders + (rescale_orders == 0.0))
+    return flux_model
+
+def tell_qso_chi2(theta, flux, thismask, arg_dict):
+
+    norders = arg_dict['norders']
+    npca = arg_dict['npca']
+    theta_PCA = theta[norders:norders + npca]
+    flux_model = tell_qso_evalmodel(theta, arg_dict)
+    chi_vec = thismask*(flux - flux_model)*np.sqrt(arg_dict['flux_ivar'])
+    chi2 = np.sum(np.square(chi_vec))
+    lnL = -chi2/2.0
+    lnpri = pca_lnprior(theta_PCA, arg_dict['pca_dict'])
+    lnptot = lnL + lnpri
+    chi2_tot = -2.0*lnptot
+    return chi2_tot
+
+def tell_qso_fit(flux, thismask, arg_dict, **kwargs_opt):
+
+    # Function that we are optimizing
+    tell_qso_chi2 = arg_dict['tell_qso_chi2']
+    result = scipy.optimize.differential_evolution(tell_qso_chi2, args=(flux, thismask, arg_dict,), **kwargs_opt)
+    flux_model = tell_qso_evalmodel(result.x, arg_dict)
+    return result, flux_model
 
 def sensfunc_telluric_joint(wave_star, counts_ps, counts_ps_ivar, std_dict, tell_dict, inmask=None, airmass=None,
                             resln_guess=None, resln_frac_range=(0.5,1.5), delta_coeff=(0.6,1.4), seed=None,
@@ -477,9 +473,9 @@ def populate_orders(quantity, ind):
     if len(set(nspec_ord.tolist()))!= 1:
         msgs.error('There is a problem with your upper and lower indices. They do not all imply spectrum of the same length')
     nspec = nspec_ord[0]
-    quantity_orders = np.zeros((nspec, norders))
+    quantity_orders = np.zeros((nspec, norders), dtype=quantity.dtype)
     for iord in range(norders):
-        quantity_orders[:,iord] = quantity[ind[0]:ind[1]]
+        quantity_orders[:,iord] = quantity[ind[iord, 0]:ind[iord, 1]+1]
 
     return quantity_orders
 
@@ -507,12 +503,12 @@ def ech_telluric_qso(spec1dfile, telgridfile, pcafile, npca, z_qso, inmask=None,
         flux_ivar[:,iord] = sobjs[iord].optimal['FLAM_IVAR']
         wave[:,iord] = sobjs[iord].optimal['WAVE_GRID']
         wave_mask[:,iord] = sobjs[iord].optimal['WAVE_GRID_MASK']
-        flux_mask[:,iord] = wave_mask & sobjs[iord].optimal['MASK']
+        flux_mask[:,iord] = wave_mask[:, iord] & sobjs[iord].optimal['MASK']
         # If the user input a mask, populate it onto the orders using wavegrid_inmask
         if inmask is not None:
             ind_lower = np.argmin(np.abs(wavegrid_inmask - wave[:,iord].min()))
             ind_upper = np.argmin(np.abs(wavegrid_inmask - wave[:,iord].max()))
-            inmask_orders[:, iord] = inmask[ind_lower, ind_upper]
+            inmask_orders[:, iord] = inmask[ind_lower:ind_upper+1]
 
 
     # This guarantees that the fit will be deterministic and hence reproducible
@@ -535,11 +531,10 @@ def ech_telluric_qso(spec1dfile, telgridfile, pcafile, npca, z_qso, inmask=None,
     # Determine the indices for populate telluric models onto our orders
     ind_tell = np.zeros((norders, 2), dtype=int)
     for iord in range(norders):
-        ind_tell[0] = np.argmin(np.abs(tell_dict['wave_grid'] - np.min(wave[:,iord])))
-        ind_tell[1] = np.argmin(np.abs(tell_dict['wave_grid'] - np.max(wave[:,iord])))
+        ind_tell[iord, 0] = np.argmin(np.abs(tell_dict['wave_grid'] - np.min(wave[:,iord])))
+        ind_tell[iord, 1] = np.argmin(np.abs(tell_dict['wave_grid'] - np.max(wave[:,iord])))
 
     tell_dict['dloglam'] = dloglam
-    tell_dict['ind'] = ind_tell
     tell_dict['tell_pad'] = (0,0) # no padding since we already padded everything in determining the wavelength range above
 
     # Read in the PCA
@@ -551,16 +546,19 @@ def ech_telluric_qso(spec1dfile, telgridfile, pcafile, npca, z_qso, inmask=None,
                   np.median(tell_dict['h2o_grid']), airmass, resln_guess)
     tell_model = eval_telluric(tell_guess, tell_dict)
     tell_model_orders = populate_orders(tell_model, ind_tell)
-    pca_orders = populate_orders(pca_dict['components'][0,:,:], ind_tell)
-
+    # Just use the mean for estimating the normalization
+    pca_mean_orders = populate_orders(np.exp(pca_dict['components'][0,:]), ind_tell)
     tell_mask = tell_model_orders > tell_norm_thresh
-    data_norm = np.sum(tell_mask*flux_mask*flux) # Data has absorption in it so we don't multilply by tell_model
+    inmask_tot = inmask_orders & flux_mask
+    data_norm = np.sum(tell_mask*inmask_tot*flux) # Data has absorption in it so we don't multilply by tell_model
     # Model has no absorption in it, so we model by average model absorption
-    pca_norm = np.sum(tell_mask*flux_mask*tell_model_orders*pca_dict['components'][0,:,:])
+    pca_norm = np.sum(tell_mask*inmask_tot*tell_model_orders*pca_mean_orders)
     flux_norm = data_norm/pca_norm
+    from IPython import embed
+    embed()
 
     # Set the bounds for the PCA and truncate to the right dimension
-    coeffs = pca_dict['coeffs'][:,1:npca+1]
+    coeffs = pca_dict['coeffs'][:,1:npca]
     # Compute the min and max arrays of the coefficients which are not the norm, i.e. grab the coeffs that aren't the first one
     coeff_min = np.amin(coeffs, axis=0)  # only
     coeff_max = np.amax(coeffs, axis=0)
@@ -577,22 +575,26 @@ def ech_telluric_qso(spec1dfile, telgridfile, pcafile, npca, z_qso, inmask=None,
     bounds = bounds_scale + bounds_flux + bounds_coeff + bounds_tell
 
     # Create the arg_dict
-    arg_dict = dict(wave_star=wave_star, bounds=bounds, counts_ps=counts_ps, counts_ps_ivar=counts_ps_ivar,
-                    wave_min=wave_min, wave_max=wave_max, flux_true=flux_true, tell_dict=tell_dict_now, order=polyorder,
-                    func=func, sensfunc_chi2=sensfunc_chi2)
+    arg_dict = dict(nspec=nspec, norders=norders, ind=ind_tell, flux_ivar=flux_ivar, tell_dict=tell_dict, pca_dict=pca_dict,
+                    tell_qso_chi2 = tell_qso_chi2)
 
-    inmask_tot = inmask_orders & flux_mask
     result, ymodel, outmask = utils.robust_optimize(flux, tell_qso_fit, arg_dict, invvar=flux_ivar, inmask=inmask_tot,
                                                     maxiter=maxiter,lower=lower, upper=upper, sticky=sticky,
                                                     use_mad=use_mad, bounds = bounds, tol=tol, popsize=popsize,
                                                     recombination=recombination, disp=disp, polish=polish, seed=seed)
 
-    sens_coeff = result.x[:polyorder + 1]
-    #sens_dict = dict(sens_coeff=sens_coeff, wave_min=wave_min, wave_max=wave_max)
-    tell_params = result.x[polyorder + 1:]
-    tellfit = eval_telluric(tell_params, wave_star, arg_dict['tell_dict'])
-    sensfit = utils.func_val(sens_coeff, wave_star, arg_dict['func'], minx=arg_dict['wave_min'], maxx=arg_dict['wave_max'])
-    counts_model = tellfit*arg_dict['flux_true']/(sensfit + (sensfit == 0.0))
+    theta = result.x
+    flux_model = tell_qso_evalmodel(theta, arg_dict)
+    theta_rescale = theta[0:norders]
+    theta_PCA = theta[norders:norders + npca]
+    theta_tell = theta[-4:]
+    tell_model = eval_telluric(theta_tell, arg_dict['tell_dict'])
+    tell_model_orders = populate_orders(tell_model, ind_tell)
+    pca_model = pca_eval(theta_PCA, arg_dict['pca_dict'])
+    pca_model_orders = populate_orders(pca_model, ind_tell)
+    rescale_orders = np.outer(np.ones(nspec), theta_rescale)
+    from IPython import embed
+    embed()
 
     if debug:
         plt.plot(wave_star,counts_ps*sensfit, drawstyle='steps-mid')
@@ -608,7 +610,7 @@ def ech_telluric_qso(spec1dfile, telgridfile, pcafile, npca, z_qso, inmask=None,
         plt.show()
 
 
-    return sens_dict
+    return None
 
 
 dev_path = os.getenv('PYPEIT_DEV')
@@ -621,17 +623,31 @@ dev_path = os.getenv('PYPEIT_DEV')
 #star_mag = 8.63
 
 # XSHOOTER
-star_mag  = None
-star_type = None
-spec1dfile = os.path.join(os.getenv('HOME'),'Dropbox/PypeIt_Redux/XSHOOTER/Pypeit_files/PISCO_nir_REDUCED/Science_coadd/spec1d_STD.fits')
-header = fits.getheader(spec1dfile)
+#star_mag  = None
+#star_type = None
+#spec1dfile = os.path.join(os.getenv('HOME'),'Dropbox/PypeIt_Redux/XSHOOTER/Pypeit_files/PISCO_nir_REDUCED/Science_coadd/spec1d_STD.fits')
+#header = fits.getheader(spec1dfile)
+#telgridfile =  os.path.join(dev_path, 'dev_algorithms/sensfunc/TelFit_Paranal_NIR_9800_25000_R25000.fits')
+#polyorder=6
+#sens_dict = ech_sensfunc_telluric(spec1dfile, telgridfile, polyorder=polyorder, ra=header['RA'], dec=header['DEC'],
+#                          star_mag=star_mag, star_type=star_type)
+#sensfuncfile = 'EG274_sensfunc.json'
+#save.save_sens_dict(sens_dict,sensfuncfile)
+#sens_dict = load.load_sens_dict(sensfuncfile)
+
+# QSO fitting
+spec1dfile = os.path.join(os.getenv('HOME'),'Dropbox/PypeIt_Redux/XSHOOTER/Pypeit_files/PISCO_nir_REDUCED/Science_coadd/spec1d_flux_PSOJ205p09.fits')
 telgridfile =  os.path.join(dev_path, 'dev_algorithms/sensfunc/TelFit_Paranal_NIR_9800_25000_R25000.fits')
-polyorder=6
-sens_dict = ech_sensfunc_telluric(spec1dfile, telgridfile, polyorder=polyorder, ra=header['RA'], dec=header['DEC'],
-                          star_mag=star_mag, star_type=star_type)
-sensfuncfile = 'EG274_sensfunc.json'
-save.save_sens_dict(sens_dict,sensfuncfile)
-sens_dict = load.load_sens_dict(sensfuncfile)
+pcafile = os.path.join(dev_path, 'dev_algorithms/sensfunc/qso_pca_1200_3100.pckl')
+npca = 5
+z_qso = 7.54
+vlt_xshooter_nir = util.load_spectrograph('vlt_xshooter_nir')
+wavegrid = vlt_xshooter_nir.wavegrid(midpoint=True)
+inmask = (wavegrid > (1.0 + z_qso)*1230.0)
+ech_telluric_qso(spec1dfile, telgridfile, pcafile, npca, z_qso, inmask=inmask, wavegrid_inmask=wavegrid, debug=True)
+
+
+
 
 
 #
