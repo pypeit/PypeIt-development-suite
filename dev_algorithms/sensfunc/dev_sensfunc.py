@@ -17,6 +17,7 @@ from pypeit import utils
 from pypeit import msgs
 PYPEIT_FLUX_SCALE = 1e-17
 from astropy.io import fits
+import copy
 
 
 def init_pca(filename,wave_grid,redshift):
@@ -50,11 +51,23 @@ def eval_pca_prior(theta,pca_dict):
 
 
 
-def read_telluric_grid(filename):
+def read_telluric_grid(filename, wave_min=None, wave_max=None, pad = 0):
 
     hdul = fits.open(filename)
-    wave_grid = hdul[1].data
-    model_grid = hdul[0].data
+    wave_grid_full = 10.0*hdul[1].data
+    model_grid_full = hdul[0].data
+    nspec_full = wave_grid_full.szie
+
+    if wave_min is not None:
+        ind_lower = np.argmin(np.abs(wave_grid_full - wave_min)) - pad
+    else:
+        ind_lower = 0
+    if wave_max is not None:
+        ind_upper = np.argmin(np.abs(wave_grid_full - wave_max)) + pad
+    else:
+        ind_upper=nspec_full
+    wave_grid = wave_grid_full[ind_lower:ind_upper]
+    model_grid = model_grid_full[:,:,:,:, ind_lower:ind_upper]
 
     pg = hdul[0].header['PRES0']+hdul[0].header['DPRES']*np.arange(0,hdul[0].header['NPRES'])
     tg = hdul[0].header['TEMP0']+hdul[0].header['DTEMP']*np.arange(0,hdul[0].header['NTEMP'])
@@ -64,7 +77,7 @@ def read_telluric_grid(filename):
     else:
         ag = hdul[0].header['AM0']+1*np.arange(0,1)
 
-    tell_dict = dict(wave_grid=10.0*wave_grid, pressure_grid=pg, temp_grid=tg, h2o_grid=hg, airmass_grid=ag,
+    tell_dict = dict(wave_grid=wave_grid, pressure_grid=pg, temp_grid=tg, h2o_grid=hg, airmass_grid=ag,
                      tell_grid=model_grid)
     return tell_dict
 
@@ -96,12 +109,10 @@ def interp_telluric_grid(theta,tell_dict):
 
     return model_grid[p_ind,t_ind,h_ind,a_ind]
 
-def conv_telluric(wave_grid,tell_model,res):
+def conv_telluric(tell_model,dloglam, res):
 
-    loglam = np.log10(wave_grid)
-    dloglam = np.median(loglam[1:]-loglam[:-1])
-    pix = 1.0/res/(dloglam*np.log(10.0))/(2.0 * np.sqrt(2.0 * np.log(2))) # number of dloglam pixels per 1 sigma dispersion
-    sig2pix = 1.0/pix # number of sigma per 1 pix
+    pix_per_sigma = 1.0/res/(dloglam*np.log(10.0))/(2.0 * np.sqrt(2.0 * np.log(2))) # number of dloglam pixels per 1 sigma dispersion
+    sig2pix = 1.0/pix_per_sigma # number of sigma per 1 pix
     #conv_model = scipy.ndimage.filters.gaussian_filter1d(tell_model, pix)
     # x = loglam/sigma on the wavelength grid from -4 to 4, symmetric, centered about zero.
     x = np.hstack([-1*np.flip(np.arange(sig2pix,4,sig2pix)),np.arange(0,4,sig2pix)])
@@ -110,20 +121,12 @@ def conv_telluric(wave_grid,tell_model,res):
     conv_model = scipy.signal.convolve(tell_model,g,mode='same')
     return conv_model
 
-def eval_telluric(theta_tell, wave, tell_dict):
+def eval_telluric(theta_tell, tell_dict):
 
     tellmodel_hires = interp_telluric_grid(theta_tell[:-1], tell_dict)
-    tellmodel_conv = conv_telluric(wave, tellmodel_hires, theta_tell[-1])
+    tellmodel_conv = conv_telluric(tellmodel_hires, tell_dict['dloglam'], theta_tell[-1])
     tell_pad=tell_dict['tell_pad']
     return tellmodel_conv[tell_pad[0]:-tell_pad[1]]
-
-def eval_telluric_orders(theta_tell, wave_order, tell_dict):
-
-    tellmodel = np.zeros_like(wave_order)
-    norders = wave_order.shape[1]
-    for iord in range(norders):
-        tellmodel[:,iord] = eval_telluric(theta_tell, wave_order[:,iord], tell_dict)
-    return tellmodel
 
 def update_bounds(bounds, delta_coeff, coeff):
 
@@ -148,7 +151,7 @@ def sensfunc_chi2(theta, counts_ps, thismask, arg_dict):
     theta_sens = theta[:order+1]
     theta_tell = theta[order+1:]
     sensmodel = utils.func_val(theta_sens, wave_star, func, minx=wave_min, maxx=wave_max)
-    tellmodel_conv = eval_telluric(theta_tell, wave_star, tell_dict)
+    tellmodel_conv = eval_telluric(theta_tell, tell_dict)
     if np.sum(np.abs(sensmodel)) < 1e-6:
         return np.inf
     else:
@@ -157,6 +160,43 @@ def sensfunc_chi2(theta, counts_ps, thismask, arg_dict):
         chi2 = np.sum(np.square(chi_vec))
 
     return chi2
+
+
+# Define the probability function as likelihood * prior.
+def lnprior(C_PCA, mix_fit):
+    return mix_fit.score_samples(C_PCA.reshape(1,-1))
+
+
+def lnprob_sample(theta, t_grid, x_grid, f_grid, imin, imax, onep_diff_pca, data_mat, ivar_mat, nskew, nlam, pca_comp_, mix_fit_):
+    n_comp = pca_comp_.shape[0]
+    C_PCA =np.append(1.0,theta[:n_comp-1]) # add the "mean" eigenvalue here
+    t_Q = theta[-2]
+    x_HI = theta[-1]
+    lp = lnprior(C_PCA,t_Q, x_HI,mix_fit_)
+    if not np.isfinite(lp):
+        return -np.inf
+    return lp + lnlike_sample(C_PCA, t_Q, x_HI, t_grid, x_grid, f_grid, imin, imax, onep_diff_pca, data_mat, ivar_mat, nskew, nlam, pca_comp_)
+
+
+
+
+def tell_qso_lnL(theta, flux, thismask, arg_dict):
+
+def tell_qso_fit(flux, thismask, arg_dict, **kwargs_opt):
+
+    # Function that we are optimizing
+    sensfunc_chisq = arg_dict['sensfunc_chi2']
+    result = scipy.optimize.differential_evolution(sensfunc_chisq, args=(counts_ps, thismask, arg_dict,), **kwargs_opt)
+    wave_star = arg_dict['wave_star']
+    order = arg_dict['order']
+    coeff_out = result.x[:order+1]
+    tell_out = result.x[order+1:]
+    tellfit_conv = eval_telluric(tell_out, arg_dict['tell_dict'])
+    sensfit = utils.func_val(coeff_out, wave_star, arg_dict['func'], minx=arg_dict['wave_min'], maxx=arg_dict['wave_max'])
+    counts_model = tellfit_conv*arg_dict['flux_true']/(sensfit + (sensfit == 0.0))
+
+    return result, counts_model
+
 
 def sens_tellfit(counts_ps, thismask, arg_dict, **kwargs_opt):
 
@@ -167,13 +207,11 @@ def sens_tellfit(counts_ps, thismask, arg_dict, **kwargs_opt):
     order = arg_dict['order']
     coeff_out = result.x[:order+1]
     tell_out = result.x[order+1:]
-    tellfit_conv = eval_telluric(tell_out, wave_star,arg_dict['tell_dict'])
+    tellfit_conv = eval_telluric(tell_out, arg_dict['tell_dict'])
     sensfit = utils.func_val(coeff_out, wave_star, arg_dict['func'], minx=arg_dict['wave_min'], maxx=arg_dict['wave_max'])
     counts_model = tellfit_conv*arg_dict['flux_true']/(sensfit + (sensfit == 0.0))
 
     return result, counts_model
-
-
 
 
 
@@ -256,12 +294,12 @@ def sensfunc_telluric_joint(wave_star, counts_ps, counts_ps_ivar, std_dict, tell
     tell_model_grid = tell_dict['tell_grid'][:,:,:,:,ind_lower_pad:ind_upper_pad+1]
     tell_dict_now = dict(pressure_grid=tell_dict['pressure_grid'], temp_grid=tell_dict['temp_grid'],
                          h2o_grid=tell_dict['h2o_grid'], airmass_grid=tell_dict['airmass_grid'],
-                         tell_grid=tell_model_grid, tell_pad=tell_pad_tuple)
+                         tell_grid=tell_model_grid, tell_pad=tell_pad_tuple, dloglam=dloglam)
     # Model parameter guess for starting the optimizations
     tell_guess = (np.median(tell_dict_now['pressure_grid']), np.median(tell_dict_now['temp_grid']),
                   np.median(tell_dict_now['h2o_grid'])
                   , airmass_guess, resln_guess)
-    tell_model1 = eval_telluric(tell_guess, wave_star, tell_dict_now)
+    tell_model1 = eval_telluric(tell_guess, tell_dict_now)
     sensguess = tell_model1*flux_true/(counts_ps + (counts_ps < 0.0))
     fitmask = inmask & np.isfinite(sensguess)
     wave_min = wave_star.min()
@@ -299,7 +337,7 @@ def sensfunc_telluric_joint(wave_star, counts_ps, counts_ps_ivar, std_dict, tell
     sens_coeff = result.x[:polyorder + 1]
     #sens_dict = dict(sens_coeff=sens_coeff, wave_min=wave_min, wave_max=wave_max)
     tell_params = result.x[polyorder + 1:]
-    tellfit = eval_telluric(tell_params, wave_star, arg_dict['tell_dict'])
+    tellfit = eval_telluric(tell_params, arg_dict['tell_dict'])
     sensfit = utils.func_val(sens_coeff, wave_star, arg_dict['func'], minx=arg_dict['wave_min'], maxx=arg_dict['wave_max'])
     counts_model = tellfit*arg_dict['flux_true']/(sensfit + (sensfit == 0.0))
 
@@ -432,8 +470,21 @@ def ech_sensfunc_telluric(spec1dfile, telgridfile, star_type=None, star_mag=None
 
     return sens_dict
 
+def populate_orders(quantity, ind):
 
-def ech_telluric_qso(spec1dfile, telgridfile, pcafile, npca, z_qso, wave_pca_norm = 1285.0, delta_norm = (0.5,1.5),
+    norders = ind.shape[0]
+    nspec_ord = ind[:,1] - ind[:, 0] + 1
+    if len(set(nspec_ord.tolist()))!= 1:
+        msgs.error('There is a problem with your upper and lower indices. They do not all imply spectrum of the same length')
+    nspec = nspec_ord[0]
+    quantity_orders = np.zeros((nspec, norders))
+    for iord in range(norders):
+        quantity_orders[:,iord] = quantity[ind[0]:ind[1]]
+
+    return quantity_orders
+
+def ech_telluric_qso(spec1dfile, telgridfile, pcafile, npca, z_qso, inmask=None, wavegrid_inmask=None,
+                     bounds_norm = (0.5,1.5), bounds_rescale = (0.7,1.3),
                      resln_guess=None, resln_frac_range=(0.5,1.5), median_nspec_frac=0.01, tell_norm_thresh=0.9,
                      polyorder=7, func='legendre', maxiter=3, sticky=True, use_mad=True, lower=3.0, upper=3.0, seed=None,
                      tol=1e-4, popsize=30, recombination=0.7, disp=True, polish=True,
@@ -450,25 +501,19 @@ def ech_telluric_qso(spec1dfile, telgridfile, pcafile, npca, z_qso, wave_pca_nor
     flux = np.zeros((nspec, norders))
     flux_ivar = np.zeros((nspec, norders))
     flux_mask = np.zeros((nspec, norders),dtype=bool)
-    flux_at_normwave_iord = np.zeros(norders)
-    snr_at_normwave = np.zeros(norders)
-    kernel_size = int(np.ceil(nspec*median_nspec_frac)//2 * 2 + 1)  # This ensure kernel_size is odd
+    inmask_orders = np.ones((nspec, norders), dtype=bool)
     for iord in range(norders):
         flux[:,iord] = sobjs[iord].optimal['FLAM']
         flux_ivar[:,iord] = sobjs[iord].optimal['FLAM_IVAR']
         wave[:,iord] = sobjs[iord].optimal['WAVE_GRID']
         wave_mask[:,iord] = sobjs[iord].optimal['WAVE_GRID_MASK']
         flux_mask[:,iord] = wave_mask & sobjs[iord].optimal['MASK']
-        flux_med = scipy.signal.medfilt(flux_mask[:,iord]*flux[:, iord], kernel_size=kernel_size)
-        snr_med  = scipy.signal.medfilt(flux_mask[:,iord]*flux[:, iord]*np.sqrt(flux_ivar), kernel_size=kernel_size)
-        flux_at_normwave_iord[iord] = scipy.interpolate.interp1d(wave[:, iord], flux_med,bounds_error=False)(wave_pca_norm*(1.0 + z_qso))
-        snr_at_normwave =  scipy.interpolate.interp1d(wave[:, iord], snr_med, bounds_error=False)(wave_pca_norm * (1.0 + z_qso))
-        snr_at_normwave[iord] =flux_at_normwave_iord[iord]*np.sqrt(ivar_at_normwave)
+        # If the user input a mask, populate it onto the orders using wavegrid_inmask
+        if inmask is not None:
+            ind_lower = np.argmin(np.abs(wavegrid_inmask - wave[:,iord].min()))
+            ind_upper = np.argmin(np.abs(wavegrid_inmask - wave[:,iord].max()))
+            inmask_orders[:, iord] = inmask[ind_lower, ind_upper]
 
-    weights = np.isfinite(flux_at_normwave_iord)*snr_at_normwave**2
-    flux_at_normwave = np.sum(weights*flux_at_normwave_iord)/np.sum(weights)
-    # TODO Add some code here that fills in the masked pixels for the wave from the original fixed wavelength grid
-    # so that we can more easily pack the telluric into a fixed array
 
     # This guarantees that the fit will be deterministic and hence reproducible
     if seed is None:
@@ -481,60 +526,63 @@ def ech_telluric_qso(spec1dfile, telgridfile, pcafile, npca, z_qso, wave_pca_nor
     if resln_guess is None:
         resln_guess = 1.0/(3.0*dloglam*np.log(10))  # assume roughly Nyquist sampling
 
-    # Read in the telluric grid
-    tell_dict = read_telluric_grid(telgridfile)
-
     # Determine the padding and use a subset of the full tell_model_grid to make the convolutions faster
-    pix = 1.0 / resln_guess /(dloglam*np.log(10))/ (2.0 * np.sqrt(2.0 * np.log(2)))  # number of pixels per resolution element
-    tell_pad = int(np.ceil(10.0 * pix))
-    tell_shape = tell_dict['tell_grid'].shape
-    tell_model_grid = np.zeros((tell_shape[0], tell_shape[1], tell_shape[2], tell_shape[3], nspec + 2*tell_pad, norders))
-    for iord in range(norders):
-        ind_lower = np.argmin(np.abs(tell_dict['wave_grid'] - np.min(wave[:,iord])))  - tell_pad
-        ind_upper = np.argmin(np.abs(tell_dict['wave_grid'] - np.max(wave[:,iord])))  + tell_pad
-        # Assign the tell_model_grid to the relevant subset of the array as the data
-        tell_model_grid[:, :, :, :, :,iord] = tell_dict['tell_grid'][:, :, :, :,ind_lower:ind_upper]
+    pix_per_sigma = 1.0 / resln_guess /(dloglam*np.log(10))/ (2.0 * np.sqrt(2.0 * np.log(2)))  # number of pixels per resolution element
+    tell_pad = int(np.ceil(15.0*pix_per_sigma))
 
-    tell_dict_now = dict(pressure_grid=tell_dict['pressure_grid'], temp_grid=tell_dict['temp_grid'],
-                         h2o_grid=tell_dict['h2o_grid'], airmass_grid=tell_dict['airmass_grid'],
-                         tell_grid=tell_model_grid, tell_pad=(tell_pad, tell_pad))
+    # Read in the telluric grid
+    tell_dict = read_telluric_grid(telgridfile,wave_min = wave.min(), wave_max=wave.max(), pad=tell_pad)
+    # Determine the indices for populate telluric models onto our orders
+    ind_tell = np.zeros((norders, 2), dtype=int)
+    for iord in range(norders):
+        ind_tell[0] = np.argmin(np.abs(tell_dict['wave_grid'] - np.min(wave[:,iord])))
+        ind_tell[1] = np.argmin(np.abs(tell_dict['wave_grid'] - np.max(wave[:,iord])))
+
+    tell_dict['dloglam'] = dloglam
+    tell_dict['ind'] = ind_tell
+    tell_dict['tell_pad'] = (0,0) # no padding since we already padded everything in determining the wavelength range above
 
     # Read in the PCA
     pca_dict = init_pca(pcafile,tell_dict['wave_grid'],z_qso)
+    pca_dict['ind'] = ind_tell # The PCA is on the same grid as the telluric models and thus has the same ind_lower/ind_upper
 
     # Determine the normalization
-    tell_guess = (np.median(tell_dict_now['pressure_grid']), np.median(tell_dict_now['temp_grid']),
-                  np.median(tell_dict_now['h2o_grid']), airmass, resln_guess)
-    tell_model = eval_telluric_orders(tell_guess, wave, tell_dict_now)
-    tell_mask = tell_model > tell_norm_thresh
-    data_norm = np.sum(tell_mask*flux_mask*flux)
-    pca_norm = np.sum(tell_mask*flux_mask*pca_dict['components'][0,:,:])
+    tell_guess = (np.median(tell_dict['pressure_grid']), np.median(tell_dict['temp_grid']),
+                  np.median(tell_dict['h2o_grid']), airmass, resln_guess)
+    tell_model = eval_telluric(tell_guess, tell_dict)
+    tell_model_orders = populate_orders(tell_model, ind_tell)
+    pca_orders = populate_orders(pca_dict['components'][0,:,:], ind_tell)
+
+    tell_mask = tell_model_orders > tell_norm_thresh
+    data_norm = np.sum(tell_mask*flux_mask*flux) # Data has absorption in it so we don't multilply by tell_model
+    # Model has no absorption in it, so we model by average model absorption
+    pca_norm = np.sum(tell_mask*flux_mask*tell_model_orders*pca_dict['components'][0,:,:])
     flux_norm = data_norm/pca_norm
 
     # Set the bounds for the PCA and truncate to the right dimension
-    coeffs = pca_dict['coeffs'][:,:npca+1]
+    coeffs = pca_dict['coeffs'][:,1:npca+1]
     # Compute the min and max arrays of the coefficients which are not the norm, i.e. grab the coeffs that aren't the first one
-    coeff_min = np.amin(coeffs[:, 1:], axis=0)  # only
-    coeff_max = np.amax(coeffs[:, 1:], axis=0)
-    # Now determine the norm range from the data
-    bounds = [(i, j) for i, j in zip(coeff_min, coeff_max)]
-
-
+    coeff_min = np.amin(coeffs, axis=0)  # only
+    coeff_max = np.amax(coeffs, axis=0)
+    # Determine the norm bounds from the estimate above
+    bounds_scale = [bounds_rescale]*norders
+    bounds_flux = [(flux_norm*bounds_norm[0], flux_norm*bounds_norm[1])]
+    bounds_coeff = [(i, j) for i, j in zip(coeff_min, coeff_max)]
     # Set the bounds for the optimization
-    bounds = [(this_coeff*delta_coeff[0], this_coeff*delta_coeff[1]) for this_coeff in coeff]
-    bounds_tell = [(tell_dict_now['pressure_grid'].min(), tell_dict_now['pressure_grid'].max()),
-                   (tell_dict_now['temp_grid'].min(), tell_dict_now['temp_grid'].max()),
-                   (tell_dict_now['h2o_grid'].min(), tell_dict_now['h2o_grid'].max()),
-                   (tell_dict_now['airmass_grid'].min(), tell_dict_now['airmass_grid'].max()),
-                   (resln_guess*resln_frac_range[0], resln_guess*resln_frac_range[1])]
-    bounds.extend(bounds_tell)
+    bounds_tell = [(tell_dict['pressure_grid'].min(), tell_dict['pressure_grid'].max()),
+                   (tell_dict['temp_grid'].min()    , tell_dict['temp_grid'].max()),
+                   (tell_dict['h2o_grid'].min()     , tell_dict['h2o_grid'].max()),
+                   (tell_dict['airmass_grid'].min() , tell_dict['airmass_grid'].max()),
+                   (resln_guess*resln_frac_range[0] , resln_guess*resln_frac_range[1])]
+    bounds = bounds_scale + bounds_flux + bounds_coeff + bounds_tell
 
     # Create the arg_dict
     arg_dict = dict(wave_star=wave_star, bounds=bounds, counts_ps=counts_ps, counts_ps_ivar=counts_ps_ivar,
                     wave_min=wave_min, wave_max=wave_max, flux_true=flux_true, tell_dict=tell_dict_now, order=polyorder,
                     func=func, sensfunc_chi2=sensfunc_chi2)
 
-    result, ymodel, outmask = utils.robust_optimize(counts_ps, sens_tellfit, arg_dict, invvar=invvar, inmask=inmask,
+    inmask_tot = inmask_orders & flux_mask
+    result, ymodel, outmask = utils.robust_optimize(flux, tell_qso_fit, arg_dict, invvar=flux_ivar, inmask=inmask_tot,
                                                     maxiter=maxiter,lower=lower, upper=upper, sticky=sticky,
                                                     use_mad=use_mad, bounds = bounds, tol=tol, popsize=popsize,
                                                     recombination=recombination, disp=disp, polish=polish, seed=seed)
