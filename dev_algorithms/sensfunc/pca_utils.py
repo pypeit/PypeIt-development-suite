@@ -1,4 +1,5 @@
 import numpy as np
+import scipy
 from sklearn import mixture
 
 def init_pca(filename,wave_grid,redshift):
@@ -11,18 +12,20 @@ def init_pca(filename,wave_grid,redshift):
     # Interpolate PCA components onto wave_grid
     pca_interp = scipy.interpolate.interp1d(wave_pca_c*(1+redshift),pca_comp_c,
                                             bounds_error=False, axis=1)
-    pca_comp_new = pca_interp(wave_grid)
+    nord = wave_grid.shape[1]
+    pca_comp_new = np.zeros(wave_grid.shape)
+    for ii in range(nord):
+        pca_comp_new[ii] = pca_interp(wave_grid[:,ii])
     # Construct the PCA dict
-    pca_dict = {'mean_spectrum': mean_pca, 'n_components': num_comp,
-                'components': pca_comp_new, 'prior': mix_fit}
+    pca_dict = {'n_components': num_comp, 'components': pca_comp_new,
+            'prior': mix_fit, 'coeffs': coeffs_c}
     return pca_dict
 
 def eval_pca(theta,pca_dict):
-    M = pca_dict['mean_spectrum']
     C = pca_dict['components']
     norm = theta[0]
     A = theta[1:]
-    return norm*M*np.exp(np.dot(A,C))
+    return norm*np.exp(np.dot(np.append(1.0,A),C))
 
 def eval_pca_prior(theta,pca_dict):
     gmm = pca_dict['prior']
