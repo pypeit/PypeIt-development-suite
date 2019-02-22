@@ -643,6 +643,8 @@ def ech_telluric_qso(spec1dfile, telgridfile, pcafile, npca, z_qso, inmask=None,
         plt.legend()
         plt.show()
 
+    from IPython import embed
+    embed()
     return None
 
 
