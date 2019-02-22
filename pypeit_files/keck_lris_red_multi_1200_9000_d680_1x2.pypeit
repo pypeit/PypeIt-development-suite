@@ -18,7 +18,7 @@
     [[standardframe]]
         number = 0
     [[slits]]
-     rm_slits = 1:1000:240
+     rm_slits = 1:1000:240,2:1000:930,2:1000:1080
      # get rid of bad slit caused by scattered light
 
 
