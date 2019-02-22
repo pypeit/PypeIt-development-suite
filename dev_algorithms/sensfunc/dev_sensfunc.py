@@ -645,7 +645,7 @@ def ech_telluric_qso(spec1dfile, telgridfile, pcafile, npca, z_qso, inmask=None,
 
     from IPython import embed
     embed()
-    return None
+    return result
 
 
 dev_path = os.getenv('PYPEIT_DEV')
