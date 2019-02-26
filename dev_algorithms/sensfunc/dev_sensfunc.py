@@ -616,8 +616,9 @@ def ech_telluric_qso(spec1dfile, telgridfile, pcafile, npca, z_qso, inmask=None,
         # Plot the data
         for iord in range(norders):
             colors = color_scheme[np.mod(iord, 2)]
-            plt.plot(wave[:,iord], scipy.signal.medfilt(flux[:,iord], kernel_size=15), color=colors[0], drawstyle='steps-mid')
-        plt.ylim((0.0, flux_model.max()))
+            this_mask = wave_mask[:,iord]
+            plt.plot(wave[this_mask,iord], scipy.ndimage.filters.median_filter(flux[this_mask,iord], size=15), color=colors[0], drawstyle='steps-mid')
+        plt.ylim((-0.2, flux_model.max()))
         plt.legend()
         plt.show()
 
@@ -625,8 +626,9 @@ def ech_telluric_qso(spec1dfile, telgridfile, pcafile, npca, z_qso, inmask=None,
         # Plot what we actually fit
         for iord in range(norders):
             colors = color_scheme[np.mod(iord, 2)]
-            plt.plot(wave[:,iord], flux[:,iord], color=colors[0], drawstyle='steps-mid')
-            plt.plot(wave[:,iord], flux_model[:,iord], color=colors[1], drawstyle='steps-mid')
+            this_mask = wave_mask[:,iord]
+            plt.plot(wave[this_mask,iord], flux[this_mask,iord], color=colors[0], drawstyle='steps-mid')
+            plt.plot(wave[this_mask,iord], flux_model[this_mask,iord], color=colors[1], drawstyle='steps-mid')
         plt.ylim((0.0, flux_model.max()))
         plt.legend()
         plt.show()
@@ -634,8 +636,10 @@ def ech_telluric_qso(spec1dfile, telgridfile, pcafile, npca, z_qso, inmask=None,
         # Plot the telluric corrected and rescaled orders
         for iord in range(norders):
             colors = color_scheme[np.mod(iord, 2)]
-            spec_iord = flux[:,iord]*rescale_orders[:, iord]/(tell_model_orders[:, iord] + (tell_model_orders[:,iord] == 0.0))
-            plt.plot(wave[:,iord],scipy.signal.medfilt(spec_iord, kernel_size=15),
+            this_mask = wave_mask[:,iord]
+            spec_iord = flux[this_mask,iord]*rescale_orders[this_mask, iord]/\
+                        (tell_model_orders[this_mask, iord] + (tell_model_orders[this_mask,iord] == 0.0))
+            plt.plot(wave[this_mask,iord],scipy.ndimage.filters.median_filter(spec_iord, size=15),
                      color=colors[0], drawstyle='steps-mid')
         plt.plot(tell_dict['wave_grid'], pca_model, color='green', label='pca model')
         plt.ylim((0.0, pca_model.max()*1.5))
@@ -644,7 +648,7 @@ def ech_telluric_qso(spec1dfile, telgridfile, pcafile, npca, z_qso, inmask=None,
 
     from IPython import embed
     embed()
-    return None
+    return result
 
 
 dev_path = os.getenv('PYPEIT_DEV')
@@ -691,6 +695,7 @@ npca = 10
 z_qso = 6.51#7.54#6.51
 vlt_xshooter_nir = util.load_spectrograph('vlt_xshooter_nir')
 wavegrid = vlt_xshooter_nir.wavegrid(midpoint=True)
+# inmask here includes both a Lya mask (unnecessary for lens), BAL mask, and cuts off at the end of the PCA wave grid
 inmask = (wavegrid > (1.0 + z_qso)*1220.0) & ((wavegrid < 10770) | (wavegrid > 11148)) & (wavegrid < 3099*(1+z_qso))
 ech_telluric_qso(spec1dfile, telgridfile, pcafile, npca, z_qso, inmask=inmask, wavegrid_inmask=wavegrid, debug=True)
 
