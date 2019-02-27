@@ -152,6 +152,7 @@ def sensfunc_chi2(theta, counts_ps, thismask, arg_dict):
     wave_max = arg_dict['wave_max']
     flux_true = arg_dict['flux_true']
     tell_dict = arg_dict['tell_dict']
+    tell_pad = tell_dict['tell_pad']
     order = arg_dict['order']
     func = arg_dict['func']
 
@@ -162,7 +163,7 @@ def sensfunc_chi2(theta, counts_ps, thismask, arg_dict):
     if np.sum(np.abs(sensmodel)) < 1e-6:
         return np.inf
     else:
-        chi_vec = thismask*(sensmodel != 0.0)*(tellmodel_conv*flux_true/(sensmodel + (sensmodel == 0.0)) -
+        chi_vec = thismask*(sensmodel != 0.0)*(tellmodel_conv[tell_pad[0]:-tell_pad[1]]*flux_true/(sensmodel + (sensmodel == 0.0)) -
                                                counts_ps)*np.sqrt(counts_ps_ivar)
         chi2 = np.sum(np.square(chi_vec))
 
@@ -179,8 +180,9 @@ def sens_tellfit(counts_ps, thismask, arg_dict, **kwargs_opt):
     coeff_out = result.x[:order+1]
     tell_out = result.x[order+1:]
     tellfit_conv = eval_telluric(tell_out, arg_dict['tell_dict'])
+    tell_pad = arg_dict['tell_dict']['tell_pad']
     sensfit = utils.func_val(coeff_out, wave_star, arg_dict['func'], minx=arg_dict['wave_min'], maxx=arg_dict['wave_max'])
-    counts_model = tellfit_conv*arg_dict['flux_true']/(sensfit + (sensfit == 0.0))
+    counts_model = tellfit_conv[tell_pad[0]:-tell_pad[1]]*arg_dict['flux_true']/(sensfit + (sensfit == 0.0))
 
     return result, counts_model
 
@@ -308,7 +310,7 @@ def sensfunc_telluric_joint(wave_star, counts_ps, counts_ps_ivar, std_dict, tell
                   np.median(tell_dict_now['h2o_grid'])
                   , airmass_guess, resln_guess)
     tell_model1 = eval_telluric(tell_guess, tell_dict_now)
-    sensguess = tell_model1*flux_true/(counts_ps + (counts_ps < 0.0))
+    sensguess = tell_model1[tell_pad:-tell_pad]*flux_true/(counts_ps + (counts_ps < 0.0))
     fitmask = inmask & np.isfinite(sensguess)
     wave_min = wave_star.min()
     wave_max = wave_star.max()
@@ -336,7 +338,6 @@ def sensfunc_telluric_joint(wave_star, counts_ps, counts_ps_ivar, std_dict, tell
     arg_dict = dict(wave_star=wave_star, bounds=bounds, counts_ps=counts_ps, counts_ps_ivar=counts_ps_ivar,
                     wave_min=wave_min, wave_max=wave_max, flux_true=flux_true, tell_dict=tell_dict_now, order=polyorder,
                     func=func, sensfunc_chi2=sensfunc_chi2)
-
     result, ymodel, outmask = utils.robust_optimize(counts_ps, sens_tellfit, arg_dict, invvar=invvar, inmask=inmask,
                                                     maxiter=maxiter,lower=lower, upper=upper, sticky=sticky,
                                                     use_mad=use_mad, bounds = bounds, tol=tol, popsize=popsize,
@@ -345,7 +346,8 @@ def sensfunc_telluric_joint(wave_star, counts_ps, counts_ps_ivar, std_dict, tell
     sens_coeff = result.x[:polyorder + 1]
     #sens_dict = dict(sens_coeff=sens_coeff, wave_min=wave_min, wave_max=wave_max)
     tell_params = result.x[polyorder + 1:]
-    tellfit = eval_telluric(tell_params, arg_dict['tell_dict'])
+    tell_pad = arg_dict['tell_dict']['tell_pad']
+    tellfit = eval_telluric(tell_params, arg_dict['tell_dict'])[tell_pad[0]:-tell_pad[1]]
     sensfit = utils.func_val(sens_coeff, wave_star, arg_dict['func'], minx=arg_dict['wave_min'], maxx=arg_dict['wave_max'])
     counts_model = tellfit*arg_dict['flux_true']/(sensfit + (sensfit == 0.0))
 
@@ -492,9 +494,9 @@ def populate_orders(quantity, ind):
     return quantity_orders
 
 def ech_telluric_qso(spec1dfile, telgridfile, pcafile, npca, z_qso, inmask=None, wavegrid_inmask=None, delta_zqso = 0.1,
-                     bounds_norm = (0.5,1.5), bounds_rescale = (0.95,1.05), resln_guess=None, resln_frac_range=(0.5,1.5),
+                     bounds_norm = (0.7,1.3), bounds_rescale = (0.95,1.05), resln_guess=None, resln_frac_range=(0.7,1.3),
                      median_nspec_frac=0.01, tell_norm_thresh=0.9, polyorder=7, func='legendre', maxiter=3, sticky=True,
-                     use_mad=True, lower=3.0, upper=3.0, seed=None, tol=1e-2, popsize=30, recombination=0.7, disp=True, polish=True,
+                     use_mad=True, lower=3.0, upper=3.0, seed=None, tol=1e-2, popsize=30, recombination=0.65, disp=True, polish=True,
                      debug=True):
 
 
@@ -614,8 +616,9 @@ def ech_telluric_qso(spec1dfile, telgridfile, pcafile, npca, z_qso, inmask=None,
         # Plot the data
         for iord in range(norders):
             colors = color_scheme[np.mod(iord, 2)]
-            plt.plot(wave[:,iord], scipy.signal.medfilt(flux[:,iord], kernel_size=15), color=colors[0], drawstyle='steps-mid')
-        plt.ylim((0.0, flux_model.max()))
+            this_mask = wave_mask[:,iord]
+            plt.plot(wave[this_mask,iord], scipy.ndimage.filters.median_filter(flux[this_mask,iord], size=15), color=colors[0], drawstyle='steps-mid')
+        plt.ylim((-0.2, flux_model.max()))
         plt.legend()
         plt.show()
 
@@ -623,8 +626,9 @@ def ech_telluric_qso(spec1dfile, telgridfile, pcafile, npca, z_qso, inmask=None,
         # Plot what we actually fit
         for iord in range(norders):
             colors = color_scheme[np.mod(iord, 2)]
-            plt.plot(wave[:,iord], flux[:,iord], color=colors[0], drawstyle='steps-mid')
-            plt.plot(wave[:,iord], flux_model[:,iord], color=colors[1], drawstyle='steps-mid')
+            this_mask = wave_mask[:,iord]
+            plt.plot(wave[this_mask,iord], flux[this_mask,iord], color=colors[0], drawstyle='steps-mid')
+            plt.plot(wave[this_mask,iord], flux_model[this_mask,iord], color=colors[1], drawstyle='steps-mid')
         plt.ylim((0.0, flux_model.max()))
         plt.legend()
         plt.show()
@@ -632,8 +636,10 @@ def ech_telluric_qso(spec1dfile, telgridfile, pcafile, npca, z_qso, inmask=None,
         # Plot the telluric corrected and rescaled orders
         for iord in range(norders):
             colors = color_scheme[np.mod(iord, 2)]
-            spec_iord = flux[:,iord]*rescale_orders[:, iord]/(tell_model_orders[:, iord] + (tell_model_orders[:,iord] == 0.0))
-            plt.plot(wave[:,iord],scipy.signal.medfilt(spec_iord, kernel_size=15),
+            this_mask = wave_mask[:,iord]
+            spec_iord = flux[this_mask,iord]*rescale_orders[this_mask, iord]/\
+                        (tell_model_orders[this_mask, iord] + (tell_model_orders[this_mask,iord] == 0.0))
+            plt.plot(wave[this_mask,iord],scipy.ndimage.filters.median_filter(spec_iord, size=15),
                      color=colors[0], drawstyle='steps-mid')
         plt.plot(tell_dict['wave_grid'], pca_model, color='green', label='pca model')
         plt.ylim((0.0, pca_model.max()*1.5))
@@ -642,7 +648,7 @@ def ech_telluric_qso(spec1dfile, telgridfile, pcafile, npca, z_qso, inmask=None,
 
     from IPython import embed
     embed()
-    return None
+    return result
 
 
 dev_path = os.getenv('PYPEIT_DEV')
@@ -667,15 +673,30 @@ dev_path = os.getenv('PYPEIT_DEV')
 #save.save_sens_dict(sens_dict,sensfuncfile)
 #sens_dict = load.load_sens_dict(sensfuncfile)
 
+#star_mag  = None
+#star_type = None
+#spec1dfile = os.path.join(os.getenv('HOME'),'Dropbox/PypeIt_Redux/XSHOOTER/J0439/vlt_xshooter_nir/Science_coadd/spec1d_Feige110.fits')
+#header = fits.getheader(spec1dfile)
+#telgridfile =  os.path.join(dev_path, 'dev_algorithms/sensfunc/TelFit_Paranal_NIR_9800_25000_R25000.fits')
+#polyorder=6
+#sens_dict = ech_sensfunc_telluric(spec1dfile, telgridfile, polyorder=polyorder, ra=header['RA'], dec=header['DEC'],
+#                                  star_mag=star_mag, star_type=star_type,debug = False,delta_coeff = (-20,20.0),tol=1e-4,popsize=100)
+#sensfuncfile = 'Feige110_sensfunc.json'
+#save.save_sens_dict(sens_dict,sensfuncfile)
+#sens_dict = load.load_sens_dict(sensfuncfile)
+
+
 # QSO fitting
-spec1dfile = os.path.join(os.getenv('HOME'),'Dropbox/PypeIt_Redux/XSHOOTER/Pypeit_files/PISCO_nir_REDUCED/Science_coadd/spec1d_flux_PSOJ205p09.fits')
+#spec1dfile = os.path.join(os.getenv('HOME'),'Dropbox/PypeIt_Redux/XSHOOTER/Pypeit_files/PISCO_nir_REDUCED/Science_coadd/spec1d_flux_PSOJ205p09.fits')
+spec1dfile = os.path.join(os.getenv('HOME'),'Dropbox/PypeIt_Redux/XSHOOTER/J0439/vlt_xshooter_nir/Science_coadd/spec1d_J0439_flux_feige110.fits')
 telgridfile =  os.path.join(dev_path, 'dev_algorithms/sensfunc/TelFit_Paranal_NIR_9800_25000_R25000.fits')
 pcafile = os.path.join(dev_path, 'dev_algorithms/sensfunc/qso_pca_1200_3100.pckl')
-npca = 7
-z_qso = 7.54
+npca = 10
+z_qso = 6.51#7.54#6.51
 vlt_xshooter_nir = util.load_spectrograph('vlt_xshooter_nir')
 wavegrid = vlt_xshooter_nir.wavegrid(midpoint=True)
-inmask = (wavegrid > (1.0 + z_qso)*1230.0)
+# inmask here includes both a Lya mask (unnecessary for lens), BAL mask, and cuts off at the end of the PCA wave grid
+inmask = (wavegrid > (1.0 + z_qso)*1220.0) & ((wavegrid < 10770) | (wavegrid > 11148)) & (wavegrid < 3099*(1+z_qso))
 ech_telluric_qso(spec1dfile, telgridfile, pcafile, npca, z_qso, inmask=inmask, wavegrid_inmask=wavegrid, debug=True)
 
 
