@@ -691,7 +691,7 @@ dev_path = os.getenv('PYPEIT_DEV')
 spec1dfile = os.path.join(os.getenv('HOME'),'Dropbox/PypeIt_Redux/XSHOOTER/J0439/vlt_xshooter_nir/Science_coadd/spec1d_J0439_flux_feige110.fits')
 telgridfile =  os.path.join(dev_path, 'dev_algorithms/sensfunc/TelFit_Paranal_NIR_9800_25000_R25000.fits')
 pcafile = os.path.join(dev_path, 'dev_algorithms/sensfunc/qso_pca_1200_3100.pckl')
-npca = 10
+npca = 8
 z_qso = 6.51#7.54#6.51
 vlt_xshooter_nir = util.load_spectrograph('vlt_xshooter_nir')
 wavegrid = vlt_xshooter_nir.wavegrid(midpoint=True)

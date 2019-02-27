@@ -14,6 +14,7 @@ from __future__ import absolute_import, division, print_function
 import sys
 import os
 import pdb
+import tarfile
 
 import numpy as np
 
@@ -48,9 +49,10 @@ def main():
     # Version
     vnumber = float(pargs.version)
     vfile = os.path.join('Cooked', 'version')
+    vstring = '{:0.3f}'.format(vnumber)
     # Lines
     lines = ['# Version needs to be a float and the last line of this file\n',
-             '{:0.3f}'.format(vnumber)]
+             vstring]
     with open(vfile, 'w') as f:
         f.writelines(lines)
 
@@ -141,10 +143,18 @@ def main():
     cooked_file = os.path.join(cooked_dir, 'MasterWaveCalib_ShaneKastBlue_A.json')
     copy_me(shane_kast_blue_wvcalib, cooked_file)
 
+    cooked_path = os.path.join(os.getcwd(), 'Cooked')
+    tarfilename = os.path.join(cooked_path, 'Cooked_pypeit_dev_v' + vstring + '.tar.gz')
+    print('##############################################################')
+    print('Creating tar file: {:s}'.format(tarfilename))
+
+    with tarfile.open(tarfilename, "w:gz") as tar:
+        tar.add(cooked_path, arcname=os.path.basename(cooked_path))
+
     # Tar me up
-    print("##############################################################")
-    print("You should now tar up the folder and load onto the Google Drive")
-    print("tar -cvzf Cooked_pypeit_dev.tar.gz Cooked/")
+    print('You should now copy this file to the Google Drive:')
+    print('rsync -avz {:s}'.format(tarfilename) + '  YourGoogleDrivePath')
+
 
 
 def copy_with_root(new_root, cooked_root, debug=False):
