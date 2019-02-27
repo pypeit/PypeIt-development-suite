@@ -890,6 +890,7 @@ tell_qso_dict = ech_telluric(qso_pca_dict['wave'], qso_pca_dict['wave_mask'], qs
                              qso_pca_dict['flam_mask'], qso_pca_dict['pca_model_orders'], qso_pca_dict['airmass'],telgridfile,
                              tol=1e-4, popsize=30, recombination=0.7, disp=True, polish=True, debug=False)
 
+# Apply this telluric to the data, now merge the data
 
 
 
