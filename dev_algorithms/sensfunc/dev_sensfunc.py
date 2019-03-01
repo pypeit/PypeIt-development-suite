@@ -156,7 +156,17 @@ def update_bounds(bounds, delta_coeff, coeff):
 
 
 def sensfunc_tellfit_chi2(theta, counts_ps, thismask, arg_dict):
+    """
 
+    Args:
+        theta:
+        counts_ps:
+        thismask:
+        arg_dict:
+
+    Returns:
+
+    """
     wave_star = arg_dict['wave']
     counts_ps_ivar = arg_dict['ivar']
     wave_min = arg_dict['wave_min']
