@@ -24,8 +24,9 @@ def parser(options=None):
 
     parser = argparse.ArgumentParser(formatter_class=argparse.ArgumentDefaultsHelpFormatter)
 
-    parser.add_argument('version', type=str, help="Version number to generate (e.g. 0.91)")
-    parser.add_argument('--redux_dir', type=str, help="Full path to the REDUX dir; default='./REDUX_OUT ")
+    parser.add_argument('version', type=str, help='Version number to generate (e.g. 0.91)')
+    parser.add_argument('--redux_dir', type=str, help='Full path to the REDUX dir; '
+                                                      'default is REDUX_OUT in current directory')
 
     return parser.parse_args() if options is None else parser.parse_args(options)
 
@@ -37,31 +38,28 @@ def main():
     pargs = parser()
 
     # Path
-    if pargs.redux_dir is None:
-        redux_dir = './REDUX_OUT'
-    else:
-        redux_dir = pargs.redux_dir
+    redux_dir = os.path.join(os.getcwd(), 'REDUX_OUT') if pargs.redux_dir is None \
+                    else pargs.redux_dir
 
     # Generate Cooked folder
     if not os.path.isdir('Cooked'):
         os.mkdir('Cooked')
 
     # Version
-    vnumber = float(pargs.version)
+#    vnumber = float(pargs.version)
     vfile = os.path.join('Cooked', 'version')
-    vstring = '{:0.3f}'.format(vnumber)
+#    vstring = '{:0.3f}'.format(vnumber)
     # Lines
-    lines = ['# Version needs to be a float and the last line of this file\n',
-             vstring]
+    lines = ['# Version needs to be a float and the last line of this file\n', pargs.version]
     with open(vfile, 'w') as f:
         f.writelines(lines)
 
     # Build MF_shane_kast_blue
-    mf_dir = os.path.join('Cooked', 'MF_shane_kast_blue')
+    mf_dir = os.path.join('Cooked', 'Shane_Kast_blue')
     if not os.path.isdir(mf_dir):
         os.mkdir(mf_dir)
-    shane_kast_blue_MF = os.path.join(redux_dir, 'Shane_Kast_blue','600_4310_d55',
-                                      'shane_kast_blue_A','MF_shane_kast_blue')
+    shane_kast_blue_MF = os.path.join(redux_dir, 'Shane_Kast_blue', '600_4310_d55',
+                                      'shane_kast_blue_A', 'Masters')
     kastb_files = glob.glob(os.path.join(shane_kast_blue_MF,'*.*'))
     # Do it
     for new_file in kastb_files:
@@ -69,8 +67,8 @@ def main():
         copy_me(new_file, cooked_file)
 
     # Science files
-    shane_kast_blue_Science = os.path.join(redux_dir, 'Shane_Kast_blue','600_4310_d55',
-                                  'shane_kast_blue_A','Science')
+    shane_kast_blue_Science = os.path.join(redux_dir, 'Shane_Kast_blue', '600_4310_d55',
+                                  'shane_kast_blue_A', 'Science')
     kastb_files = glob.glob(os.path.join(shane_kast_blue_Science,'spec1d_*.fits'))
     # DEIMOS standard
     keck_deimos_Science = os.path.join(redux_dir, 'Keck_DEIMOS','830G_L_8400', 'Science')
@@ -91,45 +89,45 @@ def main():
         os.mkdir(cooked_dir)
     # Kastr
     shane_kast_red_trace_root = os.path.join(redux_dir, 'Shane_Kast_red', '600_7500_d55',
-                                             'MF_shane_kast_red_ret', 'MasterTrace_A_1_01')
+                                             'Masters', 'MasterTrace_A_1_01')
     cooked_trace_root = os.path.join(cooked_dir, 'MasterTrace_ShaneKastred_600_7500_d55')
     copy_with_root(shane_kast_red_trace_root, cooked_trace_root)
     # Kastb
-    shane_kast_blue_trace_root = os.path.join(redux_dir, 'Shane_Kast_blue', '600_4310_d55', 'shane_kast_blue_A',
-                                             'MF_shane_kast_blue', 'MasterTrace_A_1_01')
+    shane_kast_blue_trace_root = os.path.join(redux_dir, 'Shane_Kast_blue', '600_4310_d55',
+                                              'shane_kast_blue_A', 'Masters', 'MasterTrace_A_1_01')
     cooked_trace_root = os.path.join(cooked_dir, 'MasterTrace_ShaneKastblue_600_4310_d55')
     copy_with_root(shane_kast_blue_trace_root, cooked_trace_root)
     # LRISr long 600_7500 (det=2 only)
     keck_lris_red_long = os.path.join(redux_dir, 'Keck_LRIS_red', 'long_600_7500_d560',
-                                              'MF_keck_lris_red', 'MasterTrace_A_1_02')
+                                      'Masters', 'MasterTrace_A_1_02')
     cooked_trace_root = os.path.join(cooked_dir, 'MasterTrace_KeckLRISr_long_600_7500_d560')
     copy_with_root(keck_lris_red_long, cooked_trace_root)
     # LRISr multi 400_8500
     keck_lris_red_multi = os.path.join(redux_dir, 'Keck_LRIS_red', 'multi_400_8500_d560',
-                                      'MF_keck_lris_red', 'MasterTrace_A_1_01')
+                                       'Masters', 'MasterTrace_A_1_01')
     cooked_trace_root = os.path.join(cooked_dir, 'MasterTrace_KeckLRISr_400_8500_det1')
     copy_with_root(keck_lris_red_multi, cooked_trace_root)
     keck_lris_red_multi = os.path.join(redux_dir, 'Keck_LRIS_red', 'multi_400_8500_d560',
-                                      'MF_keck_lris_red', 'MasterTrace_A_1_02')
+                                       'Masters', 'MasterTrace_A_1_02')
     cooked_trace_root = os.path.join(cooked_dir, 'MasterTrace_KeckLRISr_400_8500_det2')
     copy_with_root(keck_lris_red_multi, cooked_trace_root)
     # LRISb long
     keck_lris_blue_long = os.path.join(redux_dir, 'Keck_LRIS_blue', 'long_600_4000_d560',
-                                        'MF_keck_lris_blue', 'MasterTrace_A_1_02')
+                                       'Masters', 'MasterTrace_A_1_02')
     cooked_trace_root = os.path.join(cooked_dir, 'MasterTrace_KeckLRISb_long_600_4000_det2')
     copy_with_root(keck_lris_blue_long, cooked_trace_root)
     # LRISb multi
     keck_lris_blue_multi = os.path.join(redux_dir, 'Keck_LRIS_blue', 'multi_600_4000_d560',
-                                       'MF_keck_lris_blue', 'MasterTrace_A_1_01')
+                                        'Masters', 'MasterTrace_A_1_01')
     cooked_trace_root = os.path.join(cooked_dir, 'MasterTrace_KeckLRISb_multi_600_4000_det1')
     copy_with_root(keck_lris_blue_multi, cooked_trace_root)
     keck_lris_blue_multi = os.path.join(redux_dir, 'Keck_LRIS_blue', 'multi_600_4000_d560',
-                                        'MF_keck_lris_blue', 'MasterTrace_A_1_02')
+                                        'Masters', 'MasterTrace_A_1_02')
     cooked_trace_root = os.path.join(cooked_dir, 'MasterTrace_KeckLRISb_multi_600_4000_det2')
     copy_with_root(keck_lris_blue_multi, cooked_trace_root)
     # DEIMOS
-    keck_deimos_multi = os.path.join(redux_dir, 'Keck_DEIMOS', '830G_M_8600',
-                                        'MF_keck_deimos', 'MasterTrace_A_1_03')
+    keck_deimos_multi = os.path.join(redux_dir, 'Keck_DEIMOS', '830G_M_8600', 'Masters',
+                                     'MasterTrace_A_1_03')
     cooked_trace_root = os.path.join(cooked_dir, 'MasterTrace_KeckDEIMOS_830G_8600_det3')
     copy_with_root(keck_deimos_multi, cooked_trace_root)
 
@@ -138,13 +136,13 @@ def main():
     if not os.path.isdir(cooked_dir):
         os.mkdir(cooked_dir)
     shane_kast_blue_wvcalib = os.path.join(redux_dir, 'Shane_Kast_blue', '600_4310_d55',
-                                           'shane_kast_blue_A', 'MF_shane_kast_blue',
+                                           'shane_kast_blue_A', 'Masters',
                                            'MasterWaveCalib_A_1_01.json')
     cooked_file = os.path.join(cooked_dir, 'MasterWaveCalib_ShaneKastBlue_A.json')
     copy_me(shane_kast_blue_wvcalib, cooked_file)
 
     cooked_path = os.path.join(os.getcwd(), 'Cooked')
-    tarfilename = os.path.join(cooked_path, 'Cooked_pypeit_dev_v' + vstring + '.tar.gz')
+    tarfilename = os.path.join(cooked_path, 'Cooked_pypeit_dev_v' + pargs.version + '.tar.gz')
     print('##############################################################')
     print('Creating tar file: {:s}'.format(tarfilename))
 
