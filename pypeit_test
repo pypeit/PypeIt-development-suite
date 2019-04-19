@@ -29,7 +29,7 @@ def parser(options=None):
     parser = argparse.ArgumentParser(formatter_class=argparse.ArgumentDefaultsHelpFormatter)
 
     parser.add_argument('tests', type=str, default=None,
-                        help='Tests to run.  Options include: all, {0:s}'.format(hlpstr))
+                        help='Tests to run.  Options include: develop, all, {0:s}'.format(hlpstr))
     parser.add_argument('-outputdir', type=str, help="Output folder.  Default is ./REDUX_OUT")
     parser.add_argument('-setup', type=str, help="Single out a setup to run")
     parser.add_argument('--debug', default=False, action='store_true', help='Debug')
@@ -41,7 +41,7 @@ def main():
     import glob
     import subprocess
     import warnings
-    import pdb
+    import IPython
 
     pargs, hlpstr = parser()
 
@@ -66,6 +66,10 @@ def main():
     if pargs.tests == 'all':
         instruments = [item for item in all_instruments for inst in valid_instruments 
                             if inst.lower() in item.lower()]
+        invalid_selection = []
+    elif pargs.tests == 'develop':
+        instruments = ['Keck_LRIS_blue', 'Gemini_GNIRS', 'Shane_Kast_blue', 'VLT_XSHOOTER', 'Keck_DEIMOS',
+                       'Shane_Kast_red', 'Keck_NIRES', 'Keck_LRIS_red']
         invalid_selection = []
     else:
         instruments = [item for item in all_instruments if pargs.tests.lower() in item.lower()]
@@ -108,8 +112,41 @@ def main():
         # Setups
         setups = next(os.walk(os.path.join(raw_data, instr)))[1]
 
+        # Cut me down
         if pargs.debug and ('blue' not in instr):
             continue
+
+        # Develop cut
+        if pargs.tests == 'develop':
+            if instr == 'Keck_DEIMOS':
+                req_setups = ['600ZD_M_600', '1200G_M_7750', '830G_LVM_8400', '830G_M_8500', '830G_L_8100']
+            elif instr == 'Gemini_GNIRS':
+                req_setups = ['GNIRS']
+            elif instr == 'Shane_Kast_blue':
+                req_setups = ['452_3306_d57', '600_4310_d55']
+            elif instr == 'Shane_Kast_red':
+                req_setups = ['600_7500_d55']
+            elif instr == 'Keck_NIRES':
+                req_setups = ['NIRES']
+            elif instr == 'Keck_LRIS_blue':
+                req_setups = ['long_400_3400_d560', 'long_600_4000_d560', 'multi_300_5000_d680', 'multi_600_4000_d560', 'multi_1200_340_d460']
+            elif instr == 'Keck_LRIS_red':
+                req_setups = ['long_600_7500_d560', 'multi_1200_9000_d680_1x2', 'multi_600_5000_d560',
+                              'multi_1200_9000_d680', 'multi_400_8500_d560']
+            elif instr == 'VLT_XSHOOTER':
+                req_setups = ['UVB_1x1', 'VIS_2x2', 'NIR']
+            else:
+                # Should not get here
+                print("I don't know how you got here")
+                IPython.embed()
+            # Check me now
+            for setup in req_setups:
+                if setup not in setups:
+                    print("You need to download the {} setup for the {} instrument before proceeding".format(setup, instr))
+                    IPython.embed()
+                else:
+                    print("Not running {} setup".format(setup))
+                    setups.remove(setup)
 
         # Report
         print('The following setups have been found for {0}:'.format(instr))
