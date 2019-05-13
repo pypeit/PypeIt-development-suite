@@ -144,9 +144,7 @@ def main():
                 if setup not in setups:
                     print("You need to download the {} setup for the {} instrument before proceeding".format(setup, instr))
                     IPython.embed()
-                else:
-                    print("Not running {} setup".format(setup))
-                    setups.remove(setup)
+            setups = req_setups
 
         # Report
         print('The following setups have been found for {0}:'.format(instr))
