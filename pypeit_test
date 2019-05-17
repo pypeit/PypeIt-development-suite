@@ -119,7 +119,7 @@ def main():
         # Develop cut
         if pargs.tests == 'develop':
             if instr == 'Keck_DEIMOS':
-                req_setups = ['600ZD_M_6500', '1200G_M_7750', '830G_LVM_8400', '830G_M_8500', '830G_L_8100']
+                req_setups = ['600ZD_M_6500', '1200G_M_7750', '830G_LVM_8400', '830G_M_8100_26','830G_M_8500', '830G_L_8100']
             elif instr == 'Gemini_GNIRS':
                 req_setups = ['GNIRS']
             elif instr == 'Shane_Kast_blue':
@@ -134,7 +134,7 @@ def main():
                 req_setups = ['long_600_7500_d560', 'multi_1200_9000_d680_1x2', 'multi_600_5000_d560',
                               'multi_1200_9000_d680', 'multi_400_8500_d560']
             elif instr == 'VLT_XSHOOTER':
-                req_setups = ['UVB_1x1', 'VIS_2x2', 'NIR']
+                req_setups = ['VIS_1x1', 'VIS_2x1', 'VIS_2x2', 'NIR']
             else:
                 # Should not get here
                 print("I don't know how you got here")
