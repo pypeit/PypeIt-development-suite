@@ -11,6 +11,22 @@ import scipy
 import os
 
 def wv_calib_from_extern(wave_soln, arc, lamps, outfile = None, sigdetect=5.0, fwhm=4.0, nonlinear_counts=1e10, outroot='./', debug=False):
+    """
+
+    Args:
+        wave_soln:
+        arc:
+        lamps:
+        outfile:
+        sigdetect:
+        fwhm:
+        nonlinear_counts:
+        outroot:
+        debug:
+
+    Returns:
+
+    """
 
     # TODO add array size checking etc.
     nslits = wave_soln.shape[1]

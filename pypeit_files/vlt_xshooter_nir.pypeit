@@ -38,7 +38,7 @@ path /home/ema/Dropbox/XshooterTestBed/VLT_XSHOOTER/NIR/
 | XSHOO.2016-08-03T14:41:06.410.fits.gz | pixelflat,trace |        None |        None |      LAMP,FLAT |  default | 0.4x11 |     1,1 | 57603.61187975 |    None |   18.72 |   0,1 |      -1 |     -1 |
 | XSHOO.2016-08-03T14:41:59.007.fits.gz | pixelflat,trace |        None |        None |      LAMP,FLAT |  default | 0.4x11 |     1,1 | 57603.61248851 |    None |   18.72 |   0,1 |      -1 |     -1 |
 | XSHOO.2016-08-03T14:42:54.280.fits.gz | pixelflat,trace |        None |        None |      LAMP,FLAT |  default | 0.4x11 |     1,1 | 57603.61312824 |    None |   18.72 |   0,1 |      -1 |     -1 |
-| XSHOO.2016-08-02T08:45:49.494.fits.gz |     science,arc | 01:00:13.04 | +28:02:24.4 |     J0100p2802 |  default | 0.6x11 |     1,1 | 57602.36515618 |   1.652 |   900.0 |     0 |       1 |      2 |
+| XSHOO.2016-08-02T09:16:54.772.fits.gz |     science,arc | 01:00:13.07 | +28:02:28.1 |     J0100p2802 |  default | 0.6x11 |     1,1 | 57602.38674505 |   1.657 |   900.0 |     0 |       1 |      2 |
 | XSHOO.2016-08-02T09:00:56.860.fits.gz |     science,arc | 01:00:13.04 | +28:02:24.4 |     J0100p2802 |  default | 0.6x11 |     1,1 |  57602.3756581 |   1.649 |   900.0 |     1 |       2 |      1 |
 | XSHOO.2016-08-02T09:57:17.147.fits.gz |        standard | 04:54:50.63 | +00:27:58.4 |   STD,TELLURIC |  default | 0.6x11 |     1,1 | 57602.41478179 |   1.525 |    15.0 |     1 |       3 |      4 |
 | XSHOO.2016-08-02T09:57:56.903.fits.gz |        standard | 04:54:50.91 | +00:28:01.2 |   STD,TELLURIC |  default | 0.6x11 |     1,1 | 57602.41524193 |   1.521 |    15.0 |     1 |       4 |      3 |

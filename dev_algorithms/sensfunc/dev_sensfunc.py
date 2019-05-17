@@ -875,12 +875,18 @@ save.save_sens_dict(tell_dict, telluricfile)
 tell_dict1 = load.load_sens_dict(telluricfile)
 
 # Now flux calibrate the data. At the moment this is a bit cumbersome becuase the interface to the fluxspec class needs to be improved. Probably
-# the easiest way is to use the script for now.
+# the easiest way is to use the script for now. This could be a stack of 1d files, or a 1d file from a 2d co-add
 
-# Now run the piece of code to rescale the individual orders to match each other in the overlap regions
+## Now we co-add the fluxed data if it is not already co-added and get a high S/N order by order spectrum
+
+spec1dfluxfile = '/Users/joe/Dropbox/PypeIt_Redux/XSHOOTER/Pypeit_files/PISCO_nir_REDUCED/Science_coadd_feb19/spec1d_flux_PSOJ205p09.fits'
 
 
-# Now performa a QSO PCA fit to all the orders combined with a global telluric fit for all the orders
+# Now run the piece of code to rescale the individual orders to match each other in the overlap regions. Now we have
+# high S/N fluxed, and matched spectra for each order.
+
+
+# Now perform a global QSO PCA fit to all the orders combined with order by order telluric fits to each order.
 spec1dfile = os.path.join(os.getenv('HOME'),'Dropbox/PypeIt_Redux/XSHOOTER/J0439/vlt_xshooter_nir/Science_coadd/spec1d_J0439_flux_feige110.fits')
 pcafile = os.path.join(dev_path, 'dev_algorithms/sensfunc/qso_pca_1200_3100.pckl')
 npca = 8
