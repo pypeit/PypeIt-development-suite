@@ -518,6 +518,7 @@ def ech_sensfunc_telluric(spec1dfile, telgridfile, star_type=None, star_mag=None
 
     # Read in the telluric grid
     tell_model_dict = read_telluric_grid(telgridfile)
+
     # Sort order by the strength of their telluric absorption
     srt_order_tell = telluric_sort(wave, wave_mask, tell_model_dict)
 
