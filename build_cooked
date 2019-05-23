@@ -140,9 +140,9 @@ def main():
     copy_with_root(keck_lris_blue_multi, cooked_trace_root,
                    ignore_missing=pargs.ignore_missing)
     # DEIMOS
-    keck_deimos_multi = os.path.join(redux_dir, 'Keck_DEIMOS', '830G_M_8600', 'Masters',
+    keck_deimos_multi = os.path.join(redux_dir, 'Keck_DEIMOS', '830G_M_8500', 'Masters',
                                      'MasterTrace_A_1_03')
-    cooked_trace_root = os.path.join(cooked_dir, 'MasterTrace_KeckDEIMOS_830G_8600_det3')
+    cooked_trace_root = os.path.join(cooked_dir, 'MasterTrace_KeckDEIMOS_830G_8500_det3')
     copy_with_root(keck_deimos_multi, cooked_trace_root,
                    ignore_missing=pargs.ignore_missing)
     # ------------------------------------------------------------------
