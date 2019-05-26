@@ -20,7 +20,7 @@ def parser(options=None):
     import argparse
 
     all_tests = ['kast', 'lris', 'deimos', 'nires',  # Instruments
-                 'keck'] # Observatories
+                 'keck', 'magellan'] # Observatories
 #    all_tests = ['kast', 'lris', 'isis', 'hires', 'deimos',  # Instruments
 #                 'keck', 'shane', 'wht']  # Observatories
 

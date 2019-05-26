@@ -1,0 +1,44 @@
+# Auto-generated PypeIt file
+# Fri 17 May 2019 10:21:47
+
+# User-defined execution parameters
+[rdx]
+spectrograph = magellan_mage
+[calibrations]
+[[arcframe]]
+number = 1
+
+# Setup
+setup read
+ Setup A:
+   --:
+     dichroic: none
+     disperser:
+       angle: none
+       name: MagE
+     slit:
+       decker: '2544'
+       slitlen: none
+       slitwid: none
+   '01':
+     binning: 1,1
+     det: 1
+     namp: 1
+setup end
+
+# Read in the data
+data read
+ path ../../RAW_DATA/Magellan_MAGE/1x1
+|      filename |       frametype |         ra |         dec |               target | dispname | decker | binning |                mjd | airmass | exptime |
+| mage0040.fits | trace,pixelflat | 06:31:23.7 | -28:59:39.8 | domeflatQh+Ql+5volts |     MagE |   2542 |     1,1 |  58606.85490740741 |     1.0 |    20.0 |
+| mage0041.fits | trace,pixelflat | 06:32:19.4 | -28:59:34.2 | domeflatQh+Ql+5volts |     MagE |   2542 |     1,1 |  58606.85555555556 |     1.0 |    20.0 |
+| mage0042.fits | trace,pixelflat | 06:33:15.2 | -28:59:28.6 | domeflatQh+Ql+5volts |     MagE |   2542 |     1,1 |  58606.85619212963 |     1.0 |    20.0 |
+| mage0043.fits | trace,pixelflat | 06:34:10.9 | -28:59:23.1 | domeflatQh+Ql+5volts |     MagE |   2542 |     1,1 | 58606.856840277775 |     1.0 |    20.0 |
+| mage0044.fits | trace,pixelflat | 06:35:06.4 | -28:59:17.5 | domeflatQh+Ql+5volts |     MagE |   2542 |     1,1 |  58606.85747685185 |     1.0 |    20.0 |
+| mage0045.fits |        standard | 10:32:13.2 | -35:37:47.1 |              LTT3864 |     MagE |   2542 |     1,1 |  58606.94226851852 |   1.099 |   150.0 |
+| mage0049.fits |         science | 06:08:18.7 | -71:57:33.1 |                J0608 |     MagE |   2542 |     1,1 |  58606.95340277778 |   1.508 |  1200.0 |
+#| mage0050.fits |         science | 06:08:18.9 | -71:57:32.3 |                J0608 |     MagE |   2542 |     1,1 |  58606.96770833333 |   1.548 |  1200.0 |
+#| mage0051.fits |         science | 06:08:19.1 | -71:57:31.9 |                J0608 |     MagE |   2542 |     1,1 |  58606.98234953704 |   1.595 |  1200.0 |
+| mage0052.fits |             arc | 06:08:19.3 | -71:57:31.6 |            J0608-arc |     MagE |   2542 |     1,1 | 58606.996782407405 |   1.648 |     3.0 |
+data end
+
