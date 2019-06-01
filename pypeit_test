@@ -20,7 +20,7 @@ def parser(options=None):
     import argparse
 
     all_tests = ['kast', 'lris', 'deimos', 'nires',  # Instruments
-                 'keck', 'magellan'] # Observatories
+                 'keck', 'magellan', 'vlt'] # Observatories
 #    all_tests = ['kast', 'lris', 'isis', 'hires', 'deimos',  # Instruments
 #                 'keck', 'shane', 'wht']  # Observatories
 
@@ -48,7 +48,7 @@ def main():
     # TODO: Once we're satisfied than an instrument passes, add it to
     # this list!  It must pass for every directory that includes these
     # strings and all the sub-directory setups within!
-    valid_instruments = ['Kast', 'DEIMOS', 'LRIS', 'NIRES', 'GNIRS', 'XSHOOTER']
+    valid_instruments = ['Kast', 'DEIMOS', 'LRIS', 'NIRES', 'GNIRS', 'XSHOOTER', 'MAGE']
 
     # Grab a list of all instruments
     dev_path = os.getenv('PYPEIT_DEV')
@@ -69,7 +69,7 @@ def main():
         invalid_selection = []
     elif pargs.tests == 'develop':
         instruments = ['Keck_LRIS_blue', 'Gemini_GNIRS', 'Shane_Kast_blue', 'VLT_XSHOOTER', 'Keck_DEIMOS',
-                       'Shane_Kast_red', 'Keck_NIRES', 'Keck_LRIS_red']
+                       'Shane_Kast_red', 'Keck_NIRES', 'Keck_LRIS_red', 'Magellan_MagE']
         invalid_selection = []
     else:
         instruments = [item for item in all_instruments if pargs.tests.lower() in item.lower()]
@@ -135,6 +135,8 @@ def main():
                               'multi_1200_9000_d680', 'multi_400_8500_d560']
             elif instr == 'VLT_XSHOOTER':
                 req_setups = ['VIS_1x1', 'VIS_2x1', 'VIS_2x2', 'NIR']
+            elif instr == 'Magellan_MagE':
+                req_setups = ['1x1']
             else:
                 # Should not get here
                 print("I don't know how you got here")

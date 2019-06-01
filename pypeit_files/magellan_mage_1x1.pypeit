@@ -35,9 +35,9 @@ data read
 | mage0042.fits | trace,pixelflat | 06:33:15.2 | -28:59:28.6 | domeflatQh+Ql+5volts |     MagE |   2542 |     1,1 |  58606.85619212963 |     1.0 |    20.0 |
 | mage0043.fits | trace,pixelflat | 06:34:10.9 | -28:59:23.1 | domeflatQh+Ql+5volts |     MagE |   2542 |     1,1 | 58606.856840277775 |     1.0 |    20.0 |
 | mage0044.fits | trace,pixelflat | 06:35:06.4 | -28:59:17.5 | domeflatQh+Ql+5volts |     MagE |   2542 |     1,1 |  58606.85747685185 |     1.0 |    20.0 |
-| mage0016.fits | trace,pixelflat | 06:04:56.6 | -29:02:19.5 |    Xe-Flash in focus |     MagE |   2544 |     1,1 |  58606.83658564815 |     1.0 |    20.0 |
-| mage0017.fits | trace,pixelflat | 06:05:57.9 | -29:02:13.3 |    Xe-Flash in focus |     MagE |   2544 |     1,1 |  58606.83729166666 |     1.0 |    20.0 |
-| mage0018.fits | trace,pixelflat | 06:06:59.2 | -29:02:07.1 |    Xe-Flash in focus |     MagE |   2544 |     1,1 |  58606.83799768519 |     1.0 |    20.0 |
+| mage0013.fits | trace,pixelflat | 06:01:53.1 | -29:02:38.0 |    Xe-Flash in focus |     MagE |   2544 |     1,1 |  58606.83446759259 |     1.0 |    20.0 |
+| mage0014.fits | trace,pixelflat | 06:02:54.2 | -29:02:31.8 |    Xe-Flash in focus |     MagE |   2544 |     1,1 | 58606.835173611114 |     1.0 |    20.0 |
+| mage0015.fits | trace,pixelflat | 06:03:55.5 | -29:02:25.6 |    Xe-Flash in focus |     MagE |   2544 |     1,1 |  58606.83587962963 |     1.0 |    20.0 |
 | mage0045.fits |        standard | 10:32:13.2 | -35:37:47.1 |              LTT3864 |     MagE |   2542 |     1,1 |  58606.94226851852 |   1.099 |   150.0 |
 | mage0049.fits |         science | 06:08:18.7 | -71:57:33.1 |                J0608 |     MagE |   2542 |     1,1 |  58606.95340277778 |   1.508 |  1200.0 |
 #| mage0050.fits |         science | 06:08:18.9 | -71:57:32.3 |                J0608 |     MagE |   2542 |     1,1 |  58606.96770833333 |   1.548 |  1200.0 |
