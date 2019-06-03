@@ -6,6 +6,7 @@ from astropy import stats
 from astropy.stats import sigma_clip,sigma_clipped_stats
 from pypeit.core import load
 from pypeit import utils
+from pypeit import msgs
 import matplotlib.pyplot as plt
 
 def load_1dspec_to_array(fnames,gdobj=None,order=None,ex_value='OPT',flux_value=True):
@@ -114,7 +115,7 @@ def interp_spec(waves,fluxes,ivars,masks,iref=0):
             mask_inter_ii = (mask_inter_ii>0.5) & (ivar_inter_ii>0.) & (flux_inter_ii!=0.)
 
             #sig_inter_ii = np.sqrt(utils.calc_ivar(ivar_inter_ii))
-            #ratio_ii = cal_ratio(wave_iref, flux_iref, flux_inter_ii, sig_iref=sig_iref, sig=sig_inter_ii, \
+            #ratio_ii = median_ratio(wave_iref, flux_iref, flux_inter_ii, sig_iref=sig_iref, sig=sig_inter_ii, \
             #                     cenfunc=cenfunc, snr_cut=snr_cut, maxiters=maxiters, sigma=sigma)
 
             fluxes_inter[ii,:] = flux_inter_ii #* ratio_ii
@@ -131,15 +132,111 @@ def interp_spec(waves,fluxes,ivars,masks,iref=0):
 
     return waves_inter,fluxes_inter,ivars_inter,masks_inter
 
-def cal_ratio(wave,flux_iref,flux,sig_iref=None,sig=None,cenfunc='median',snr_cut=3.0, maxiters=5,sigma=3):
+def sn_weights(waves, fluxes, ivars, masks, dv_smooth=10000.0, const_weights=False, debug=False, verbose=False):
+    """ Calculate the S/N of each input spectrum and create an array of (S/N)^2 weights to be used
+    for coadding.
+
+    Parameters
+    ----------
+    fluxes: float ndarray, shape = (nexp, nspec)
+        Stack of (nexp, nspec) spectra where nexp = number of exposures, and nspec is the length of the spectrum.
+    sigs: float ndarray, shape = (nexp, nspec)
+        1-sigm noise vectors for the spectra
+    masks: bool ndarray, shape = (nexp, nspec)
+        Mask for stack of spectra. True=Good, False=Bad.
+    waves: flota ndarray, shape = (nspec,) or (nexp, nspec)
+        Reference wavelength grid for all the spectra. If wave is a 1d array the routine will assume
+        that all spectra are on the same wavelength grid. If wave is a 2-d array, it will use the individual
+
+    Optional Parameters:
+    --------------------
+    dv_smooth: float, 10000.0
+         Velocity smoothing used for determining smoothly varying S/N ratio weights.
+
+    Returns
+    -------
+    rms_sn : array
+        Root mean square S/N value for each input spectra
+    weights : ndarray
+        Weights to be applied to the spectra. These are signal-to-noise squared weights.
+    """
+
+    sigs = np.sqrt(utils.calc_ivar(ivars))
+
+    if fluxes.ndim == 1:
+        nstack = 1
+        nspec = fluxes.shape[0]
+        flux_stack = fluxes.reshape((nstack, nspec))
+        sig_stack = sigs.reshape((nstack,nspec))
+        mask_stack = masks.reshape((nstack, nspec))
+    elif fluxes.ndim == 2:
+        nstack = fluxes.shape[0]
+        nspec = fluxes.shape[1]
+        flux_stack = fluxes
+        sig_stack = sigs
+        mask_stack = masks
+    else:
+        msgs.error('Unrecognized dimensionality for flux')
+
+    # if the wave
+    if waves.ndim == 1:
+        wave_stack = np.outer(np.ones(nstack), waves)
+    elif waves.ndim == 2:
+        wave_stack = waves
+    else:
+        msgs.error('wavelength array has an invalid size')
+
+    ivar_stack = utils.calc_ivar(sig_stack**2)
+    # Calculate S/N
+    sn_val = flux_stack*np.sqrt(ivar_stack)
+    sn_val_ma = np.ma.array(sn_val, mask = np.invert(mask_stack))
+    sn_sigclip = stats.sigma_clip(sn_val_ma, sigma=3, maxiters=5)
+    sn2 = (sn_sigclip.mean(axis=1).compressed())**2 #S/N^2 value for each spectrum
+    rms_sn = np.sqrt(sn2) # Root Mean S/N**2 value for all spectra
+    rms_sn_stack = np.sqrt(np.mean(sn2))
+
+    if rms_sn_stack <= 3.0 or const_weights:
+        if verbose:
+            msgs.info("Using constant weights for coadding, RMS S/N = {:g}".format(rms_sn_stack))
+        weights = np.outer(sn2, np.ones(nspec))
+        return rms_sn, weights
+    else:
+        if verbose:
+            msgs.info("Using wavelength dependent weights for coadding")
+        weights = np.ones_like(flux_stack) #((fluxes.shape[0], fluxes.shape[1]))
+        spec_vec = np.arange(nspec)
+        for ispec in range(nstack):
+            imask = mask_stack[ispec,:]
+            wave_now = wave_stack[ispec, imask]
+            spec_now = spec_vec[imask]
+            dwave = (wave_now - np.roll(wave_now,1))[1:]
+            dv = (dwave/wave_now[1:])*c_kms
+            dv_pix = np.median(dv)
+            med_width = int(np.round(dv_smooth/dv_pix))
+            sn_med1 = scipy.ndimage.filters.median_filter(sn_val[ispec,imask]**2, size=med_width, mode='reflect')
+            sn_med2 = np.interp(spec_vec, spec_now, sn_med1)
+            #sn_med2 = np.interp(wave_stack[ispec,:], wave_now,sn_med1)
+            sig_res = np.fmax(med_width/10.0, 3.0)
+            gauss_kernel = convolution.Gaussian1DKernel(sig_res)
+            sn_conv = convolution.convolve(sn_med2, gauss_kernel)
+            weights[ispec,:] = sn_conv
+
+        # Finish
+        return rms_sn, weights
+
+
+def median_ratio_flux(wave,flux,sig,flux_iref,sig_iref,mask=None,mask_iref=None,
+                 cenfunc='median',snr_cut=3.0, maxiters=5,sigma=3):
     '''
     Calculate the ratio between reference spectrum and your spectrum.
     Args:
         wave:
-        flux_iref:
         flux:
-        sig_iref:
         sig:
+        flux_iref:
+        sig_iref:
+        mask:
+        mask_iref:
         snr_cut:
         maxiters:
         sigma:
@@ -147,28 +244,47 @@ def cal_ratio(wave,flux_iref,flux,sig_iref=None,sig=None,cenfunc='median',snr_cu
         Ratio_array: ratio array with the same size with your spectrum
     '''
 
-    ## If no sigma array then set to sigma = flux*snr_cut/2.0 of the spectrum
-    if sig_iref is None:
-        sig_iref = np.ones_like(flux_iref)*sigma_clipped_stats(flux_iref,cenfunc=cenfunc,maxiters=maxiters,\
-                                                               sigma=sigma)[1]*snr_cut/2.0
-    if sig is None:
-        sig = np.ones_like(flux)*sigma_clipped_stats(flux,cenfunc=cenfunc,maxiters=maxiters,sigma=sigma)[1]*snr_cut/2.0
-
     ## Mask for reference spectrum and your spectrum
-    mask_iref = (sig_iref>0.) & (flux_iref/sig_iref>snr_cut)
-    mask = (sig>0.) & (flux/sig>snr_cut)
+    if mask_iref is None:
+        mask_iref = (sig_iref>0.) & (flux_iref/sig_iref>snr_cut)
+    if mask is None:
+        mask = (sig>0.) & (flux/sig>snr_cut)
 
     ## Calculate the ratio
     ratio = flux_iref / flux
-    mask_all = mask & mask_iref & (np.isfinite(ratio))
+    mask_all = mask & mask_iref & (flux>0.) & (flux_iref>0.)
     ratio_mean,ratio_median,ratio_std = sigma_clipped_stats(ratio,np.invert(mask_all),cenfunc=cenfunc,\
                                                             maxiters=maxiters,sigma=sigma)
     ratio_array = np.ones_like(flux) * ratio_median
 
     return ratio_array
 
-def scale_spec(waves,fluxes,ivars,flux_iref,ivar_iref,masks=None,mask_iref=None,\
-               cenfunc='median',snr_cut=3.0, maxiters=5,sigma=3):
+def scale_spec(waves,fluxes,ivars,flux_iref=None,ivar_iref=None,masks=None,mask_iref=None,\
+               iref=None,cenfunc='median',snr_cut=3.0, maxiters=5,sigma=3):
+    '''
+    Not USE
+    :param waves:
+    :param fluxes:
+    :param ivars:
+    :param flux_iref:
+    :param ivar_iref:
+    :param masks:
+    :param mask_iref:
+    :param iref:
+    :param cenfunc:
+    :param snr_cut:
+    :param maxiters:
+    :param sigma:
+    :return:
+    '''
+
+    # if iref is None then find the highest SNR one as the reference
+    if (iref is None) :
+        snrs = fluxes / sigs
+        snr = np.nanmedian(snrs, axis=1)
+        iref = np.argmax(snr)
+
+    return None
 
 
 datapath = '/Users/feige/Dropbox/OBS_DATA/GMOS/GS_2018B_FT202/R400_Flux/'
@@ -184,6 +300,8 @@ ex_value = 'OPT'
 flux_value = True
 waves,fluxes,ivars,masks = load_1dspec_to_array(fnames,gdobj=gdobj,order=None,ex_value=ex_value,flux_value=flux_value)
 waves_inter,fluxes_inter,ivars_inter,masks_inter = interp_spec(waves,fluxes,ivars,masks,iref=0)
+rms_sn, weights = sn_weights(waves_inter, fluxes_inter, ivars_inter, masks_inter, dv_smooth=10000.0, \
+                             const_weights=False, debug=False, verbose=False)
 from IPython import embed
 embed()
 
