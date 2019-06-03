@@ -115,21 +115,9 @@ def interp_spec(waves,fluxes,ivars,masks,iref=0):
                                          bounds_error=False,fill_value=0.)(wave_iref)
             mask_inter_ii = (mask_inter_ii>0.5) & (ivar_inter_ii>0.) & (flux_inter_ii!=0.)
 
-            #sig_inter_ii = np.sqrt(utils.calc_ivar(ivar_inter_ii))
-            #ratio_ii = median_ratio(wave_iref, flux_iref, flux_inter_ii, sig_iref=sig_iref, sig=sig_inter_ii, \
-            #                     cenfunc=cenfunc, snr_cut=snr_cut, maxiters=maxiters, sigma=sigma)
-
             fluxes_inter[ii,:] = flux_inter_ii #* ratio_ii
             ivars_inter[ii,:] = ivar_inter_ii #* ratio_ii
             masks_inter[ii,:] = mask_inter_ii
-
-            #plt.plot(waves[ii,:],masks_float[ii,:],'k-')
-            #plt.plot(waves_inter[ii,:],masks_inter[ii,:],'b-')
-            #plt.plot(waves_inter[ii,:],fluxes_inter[ii,:]/np.max(fluxes_inter[ii,:]),'r-')
-
-            #plt.plot(waves[ii,:],fluxes[ii,:],'k-')
-            #plt.plot(waves_inter[ii,:][masks_inter[ii,:]], fluxes_inter[ii,:][masks_inter[ii,:]],'b-')
-            #plt.show()
 
     return waves_inter,fluxes_inter,ivars_inter,masks_inter
 
@@ -386,6 +374,77 @@ def scale_spec(waves,fluxes,ivars,masks=None,flux_iref=None,ivar_iref=None,mask_
     return fluxes_scale,ivars_scale,scales, omethod
 
 
+def long_clean(waves,fluxes,ivars,masks=None,cenfunc='median', snr_cut=3.0, maxiters=5, sigma=2,
+               scale_method='median',hand_scale=None, SN_MAX_MEDSCALE=20., SN_MIN_MEDSCALE=0.5,
+               dv_smooth=10000.0,const_weights=False, debug=False, verbose=False):
+
+    if masks is None:
+        masks = (ivars>0.) & np.isfinite(fluxes)
+
+    masks_out = masks.copy()
+
+    nexp = np.shape(fluxes)[0]
+    nspec  = np.shape(fluxes)[1]
+
+    for iexp in range(nexp):
+        wave_iexp,flux_iexp,ivar_iexp = waves[iexp,:],fluxes[iexp,:],ivars[iexp,:]
+
+        # Interpolate spectra into the native wave grid of the iexp spectrum
+        waves_inter, fluxes_inter, ivars_inter, masks_inter = interp_spec(waves, fluxes, ivars, masks, iref=iexp)
+
+        # avsigclip the interpolated spectra to obtain a high SNR average
+        flux_iref,flux_median,flux_std = sigma_clipped_stats(fluxes_inter, mask=np.invert(masks_inter), mask_value=0.,
+                                                             sigma=sigma,maxiters=maxiters,cenfunc=cenfunc,axis=0)
+        nused = np.sum(masks_inter,axis=0)
+        mask_iref = nused == nexp
+        sig2 = 1.0/(ivars_inter+(ivars_inter<=0))
+        newsig2 = np.sum(sig2*masks_inter,axis=0)/(nused**2+(nused==0))
+        ivar_iref = mask_iref/(newsig2+(newsig2<=0.0))
+
+        # scale the spectra to the reference spectrum
+        fluxes_scale, ivars_scale, scales, omethod = scale_spec(waves_inter,fluxes_inter,ivars_inter,masks=masks_inter,\
+                                                        flux_iref=flux_iref,ivar_iref=ivar_iref,mask_iref=mask_iref,\
+                                                        iref=None,cenfunc=cenfunc,snr_cut=snr_cut,maxiters=maxiters,\
+                                                        sigma=sigma,scale_method=scale_method,hand_scale=hand_scale,\
+                                                        SN_MAX_MEDSCALE=SN_MAX_MEDSCALE,SN_MIN_MEDSCALE=SN_MIN_MEDSCALE,\
+                                                        dv_smooth=dv_smooth,const_weights=const_weights,\
+                                                        debug=debug,verbose=verbose)
+
+        from IPython import embed
+        embed()
+
+        # do rejections and get mask for the iexp spectrum (import from long_combspec.pro)
+
+        # QA plots for the residual of the new masked iexp spectrum and the high SNR average.
+
+
+
+def long_combspec(waves,fluxes,ivars,masks=None):
+
+    ## Some numbers and variables
+    ndim_wave = np.ndim(waves)
+    ndim_spec = np.ndim(fluxes)
+    spec_shape = np.shape(fluxes)
+    nexp = spec_shape[0]
+    nspec  = spec_shape[1]
+
+    ## Some judgements here
+    if (ndim_wave == 1) and (ndim_spec==1):
+        msgs.warn('Only one spectrum, no coadding will be performed.')
+        return
+    if (ndim_wave == 1) and (ndim_spec>1):
+        waves = np.reshape(np.tile(waves,nexp),np.shape(fluxes))
+
+    ## Doing rejections and get the new masks
+    masks_out = long_clean(waves, fluxes, ivars, masks=masks)
+
+    ## resample all spectra (including mask) into the same grid
+    msgs.work('Write a function to resample. No interpolation please !')
+
+    ## Now all spectra with the new masks have been resampled to the sample grid. Coadd them!
+
+
+
 datapath = '/Users/feige/Dropbox/OBS_DATA/GMOS/GS_2018B_FT202/R400_Flux/'
 fnames = [datapath+'spec1d_flux_S20180903S0136-J0252-0503_GMOS-S_1864May27T160716.387.fits',\
           datapath+'spec1d_flux_S20180903S0137-J0252-0503_GMOS-S_1864May27T160719.968.fits',\
@@ -398,18 +457,12 @@ gdobj = ['SPAT1073-SLIT0001-DET03','SPAT1167-SLIT0001-DET03','SPAT1071-SLIT0001-
 ex_value = 'OPT'
 flux_value = True
 waves,fluxes,ivars,masks = load_1dspec_to_array(fnames,gdobj=gdobj,order=None,ex_value=ex_value,flux_value=flux_value)
-waves_inter,fluxes_inter,ivars_inter,masks_inter = interp_spec(waves,fluxes,ivars,masks,iref=0)
 
-#rms_sn, weights = sn_weights(waves_inter, fluxes_inter, ivars_inter, masks_inter, dv_smooth=10000.0, \
-#                             const_weights=False, debug=False, verbose=False)
+long_clean(waves,fluxes,ivars,masks=masks,cenfunc='median', snr_cut=3.0, maxiters=5, sigma=2,
+               scale_method='median',hand_scale=None, SN_MAX_MEDSCALE=20., SN_MIN_MEDSCALE=0.5,
+               dv_smooth=10000.0,const_weights=False, debug=False, verbose=False)
 
-fluxes_scale,ivars_scale,scales, omethod =  scale_spec(waves_inter,fluxes_inter,ivars_inter,masks=masks_inter,
-                                                       flux_iref=None,ivar_iref=None,mask_iref=None,iref=None,
-                                                       cenfunc='median',snr_cut=3.0, maxiters=5,sigma=3,
-                                                       scale_method='median')
 
-from IPython import embed
-embed()
 
 aaaa
 for i in range(fluxes_inter.shape[0]):
@@ -419,3 +472,14 @@ plt.show()
 for i in range(fluxes_inter.shape[0]):
     plt.plot(waves_inter[i,:],fluxes_scale[i,:])
 plt.show()
+
+
+waves_inter,fluxes_inter,ivars_inter,masks_inter = interp_spec(waves,fluxes,ivars,masks,iref=0)
+
+#rms_sn, weights = sn_weights(waves_inter, fluxes_inter, ivars_inter, masks_inter, dv_smooth=10000.0, \
+#                             const_weights=False, debug=False, verbose=False)
+
+fluxes_scale,ivars_scale,scales, omethod =  scale_spec(waves_inter,fluxes_inter,ivars_inter,masks=masks_inter,
+                                                       flux_iref=None,ivar_iref=None,mask_iref=None,iref=None,
+                                                       cenfunc='median',snr_cut=3.0, maxiters=5,sigma=3,
+                                                       scale_method='median')
