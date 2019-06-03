@@ -128,6 +128,8 @@ def main():
                 req_setups = ['600_7500_d55']
             elif instr == 'Keck_NIRES':
                 req_setups = ['NIRES']
+            elif instr == 'Magellan_MAGE':
+                req_setups = ['1x1']
             elif instr == 'Keck_LRIS_blue':
                 req_setups = ['long_400_3400_d560', 'long_600_4000_d560', 'multi_300_5000_d680', 'multi_600_4000_d560']#, 'multi_1200_3400_d460']
             elif instr == 'Keck_LRIS_red':
@@ -257,6 +259,7 @@ def main():
                     print('Directory: {0}'.format(wdir))
                     command_line = [ 'run_pypeit', pyp_file, '-o' ]
                     print('Command line: {0}'.format(' '.join(command_line)))
+                    IPython.embed()
                     retval = subprocess.call(command_line, stderr=f, cwd=wdir)
                     npass = report_test(retval, npass)
                     subprocess.call(['tail', '-2', logfile])
@@ -290,9 +293,23 @@ def main():
                     command_line = [ 'pypeit_flux_spec', flux_file ]
                     print('Command line: {0}'.format(' '.join(command_line)))
                     fretval = subprocess.call(command_line, stderr=f, cwd=fdir)
-                    npass = report_test(fretval, npass, flux=True)
+                    npass = report_test(fretval, npass, type='FLUXING')
                     subprocess.call(['tail', '-3', logfile])
                     print("\n", file=sys.stderr)
+
+            # 2-D coadds
+            if (retval == 0) and (instr.lower() in ['gemini_gnirs']):
+                print('Running pypeit_coadd_2dspec on {:s} --- '.format(pyp_file), file=sys.stderr, end='')
+                logfile = os.path.join(wdir, outfile_root+'.test_2dcoadd.log')
+                with open(logfile, 'w') as f:
+                    print('Directory: {0}'.format(wdir))
+                    command_line = ['pypeit_coadd_2dspec', '--obj', 'pisco']
+                    print('Command line: {0}'.format(' '.join(command_line)))
+                    cretval = subprocess.call(command_line, stderr=f, cwd=wdir)
+                    npass = report_test(cretval, npass, type='COADD2D')
+                    subprocess.call(['tail', '-3', logfile])
+                    print("\n", file=sys.stderr)
+
 
     if npass == ntest:
         print("\n" + "\x1B[" + "1;32m" +
@@ -303,11 +320,12 @@ def main():
               "--- PYPEIT DEVELOPMENT SUITE FAILED {0:d}/{1:d} TESTS ---".format(ntest-npass,
               ntest) + "\x1B[" + "0m" + "\r", file=sys.stderr)
 
-def report_test(retval, npass, flux=False):
-    if flux:
-        fstr = 'FLUXING '
+def report_test(retval, npass, type=None):
+    if type is not None:
+        fstr = type +  ' '
     else:
         fstr = ''
+
 
     if retval == 0:
         print("\x1B[" + "1;32m" + "{}PASSED".format(fstr) + "\x1B[" + "0m", file=sys.stderr)
