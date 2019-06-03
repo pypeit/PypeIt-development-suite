@@ -450,6 +450,8 @@ def long_combspec(waves,fluxes,ivars,masks=None):
 
     ## Now all spectra with the new masks have been resampled to the sample grid. Coadd them!
 
+
+'''
 import os
 datapath = os.path.join(os.getenv('HOME'),'Dropbox/PypeIt_Redux/GMOS/R400_Flux/')
 fnames = [datapath+'spec1d_flux_S20180903S0136-J0252-0503_GMOS-S_1864May27T160716.387.fits',\
@@ -467,9 +469,6 @@ long_clean(waves,fluxes,ivars,masks=masks,cenfunc='median', snr_cut=2.0, maxiter
                scale_method='median',hand_scale=None, SN_MAX_MEDSCALE=20., SN_MIN_MEDSCALE=0.5,
                dv_smooth=10000.0,const_weights=False, debug=False, verbose=False)
 
-
-
-'''
 for i in range(fluxes_inter.shape[0]):
     plt.plot(waves_inter[i,:],fluxes_inter[i,:])
 plt.show()
