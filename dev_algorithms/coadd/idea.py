@@ -29,10 +29,56 @@ A core function for generating mask, rescaling, dealing with overlap regions bet
 import numpy as np
 from scipy.interpolate import interp1d
 from astropy import stats
-from astropy.stats import sigma_clip
+from astropy.stats import sigma_clip,sigma_clipped_stats
 
+def poly_ratio():
+    '''
+    This is a function to calculate the polynomial ratio
+    :return:
+    '''
 
-def long_clean(waves,fluxes,sigs,sigma=3,maxiters=5,iref=0,cenfunc='median', stdfunc='std'):
+def cal_ratio(wave,flux_iref,flux,sig_iref=None,sig=None,cenfunc='median',snr_cut=3.0, maxiters=5,sigma=3):
+    '''
+    Calculate the ratio between reference spectrum and your spectrum.
+    Args:
+        wave:
+        flux_iref:
+        flux:
+        sig_iref:
+        sig:
+        snr_cut:
+        maxiters:
+        sigma:
+    Returns:
+        Ratio_array: ratio array with the same size with your spectrum
+    '''
+    ## ToDo: Remove the following few lines
+    import numpy as np
+    from scipy.interpolate import interp1d
+    from astropy import stats
+    from astropy.stats import sigma_clip, sigma_clipped_stats
+
+    ## If no sigma array then set to sigma = flux*snr_cut/2.0 of the spectrum
+    if sig_iref is None:
+        sig_iref = np.ones_like(flux_iref)*sigma_clipped_stats(flux_iref,cenfunc=cenfunc,maxiters=maxiters,\
+                                                               sigma=sigma)[1]*snr_cut/2.0
+    if sig is None:
+        sig = np.ones_like(flux)*sigma_clipped_stats(flux,cenfunc=cenfunc,maxiters=maxiters,sigma=sigma)[1]*snr_cut/2.0
+
+    ## Mask for reference spectrum and your spectrum
+    mask_iref = (sig_iref>0.) & (flux_iref/sig_iref>snr_cut)
+    mask = (sig>0.) & (flux/sig>snr_cut)
+
+    ## Calculate the ratio
+    ratio = flux_iref / flux
+    mask_all = mask & mask_iref & (np.isfinite(ratio))
+    ratio_mean,ratio_median,ratio_std = sigma_clipped_stats(ratio,np.invert(mask_all),cenfunc=cenfunc,\
+                                                            maxiters=maxiters,sigma=sigma)
+    ratio_array = np.ones_like(flux) * ratio_median
+
+    return ratio_array
+
+def long_clean(waves,fluxes,sigs,sigma=3,maxiters=5,snr_cut=3.0,iref=None,cenfunc='median'):
     '''
     This will be a function to generate the mask and scaling factor/array for the spectra
     :param waves:
@@ -56,44 +102,56 @@ def long_clean(waves,fluxes,sigs,sigma=3,maxiters=5,iref=0,cenfunc='median', std
     mask_iref_new = np.ones_like(fluxes,dtype=bool) # good is True, bad is false
     scale_array = np.ones_like(fluxes,dtype=float)
 
-    #wave_iref,flux_iref,sig_iref = waves[iref,:], fluxes[iref,:],sigs[iref,:]
+    wave_iref,flux_iref,sig_iref = waves[iref,:], fluxes[iref,:],sigs[iref,:]
     #mask_iref = sigs[iref, :] > 0
     #med_iref = fluxes[iref,:][mask_iref]/sigs[iref,:][mask_iref]
     #sn_iref = stats.sigma_clip(med_iref, sigma=3, maxiters=5)#np.median(med_iref)
 
     nspec = np.shape(fluxes)[0]
-    for imask in range(nspec):
-        wave_imask = waves[imask,:]
+    for ispec in range(nspec):
+        wave_ispec = waves[ispec,:]
+        flux_ispec = fluxes[ispec,:]
+        sig_ispec = sigs[ispec,:]
 
-        # Interpolate spectra to have the same wave grid with the imask spectrum.
+        flux_iref_inter = interp1d(wave_iref,flux_iref,kind='cubic',bounds_error=False,fill_value=0.)(wave_ispec)
+        sig_iref_inter = interp1d(wave_iref,sig_iref,kind='cubic',bounds_error=False,fill_value=0.)(wave_ispec)
+
+        ## ToDo: change the following function to poly_ratio
+        ratio_ispec = cal_ratio(wave_ispec,flux_iref_inter,flux_ispec,sig_iref=sig_iref_inter,sig=sig_ispec, \
+                                cenfunc=cenfunc, snr_cut=snr_cut, maxiters=maxiters,sigma=sigma)
+
+        # Interpolate spectra to have the same wave grid with the ispec spectrum.
         # And scale spectra to the same flux level with the iref spectrum.
         flux_inter = np.zeros_like(fluxes)
         sig_inter = np.zeros_like(sigs)
-        for ispec in range(nspec):
-            if ispec == imask:
-                flux_inter_ispec = fluxes[ispec,:].copy()
-                sig_inter_ispec = sigs[ispec, :].copy()
+        for ii in range(nspec):
+            if ii == ispec:
+                flux_inter[ii,:] = fluxes[ii,:].copy()*ratio_ispec
+                sig_inter[ii,:] = sigs[ii, :].copy()*ratio_ispec
             else:
-                flux_inter_ispec = np.interp1d(waves[ispec,:],fluxes[ispec,:],kind='cubic')(wave_imask)
-                sig_inter_ispec = np.interp1d(waves[ispec,:],sigs[ispec, :], kind='cubic')(wave_imask)
+                flux_inter_ii = interp1d(waves[ii,:],fluxes[ii,:],kind='cubic',bounds_error=False,fill_value=0.)(wave_ispec)
+                sig_inter_ii = interp1d(waves[ii,:],sigs[ii, :], kind='cubic',bounds_error=False,fill_value=0.)(wave_ispec)
+                ratio_ii = cal_ratio(wave_ispec, flux_iref_inter, flux_inter_ii, sig_iref=sig_iref_inter, sig=sig_inter_ii, \
+                                     cenfunc=cenfunc, snr_cut=snr_cut, maxiters=maxiters, sigma=sigma)
+                flux_inter[ii,:] = flux_inter_ii * ratio_ii
+                sig_inter[ii,:] = sig_inter_ii * ratio_ii
 
-            # Compute the rescaling factor (median) / array (poly_ratio) for ispec
+        ## Now all spectra should have been scaled to the flux level same with iref and in the ispec wave grid
+        #for ii in range(nspec):
+        #    plt.plot(wave_ispec,flux_inter[ii,:])
+        #plt.show()
+        #plt.close('all')
+        mean,median,std = sigma_clipped_stats(flux_inter, mask=None, mask_value=0., sigma=sigma,maxiters=maxiters,
+                            cenfunc=cenfunc,axis=0)
+        mask_ispec = abs(flux_inter[ispec,:] - median)<sigma*std
+    ## Import the rejection part from the long_combspec.pro to do the rejections
+    ## and get the mask array for the iref spectrum .
 
-            #mask_ispec = sig_inter_ispec > 0
-            #med_ispec = flux_inter_ispec[mask_ispec] / sig_inter_ispec[mask_ispec]
-            #sn_ispec = stats.sigma_clip(med_ispec, sigma=3, maxiters=5)#np.median(med_ispec)
-            #rescale_ispec = med_iref/med_ispec # Should we move the rescaling into the rejection part??
-
-            flux_inter[ispec,:] = flux_inter_ispec*rescale_ispec
-            sig_inter[ispec, :] = sig_inter_ispec*rescale_ispec
 
     ## The following three lines won't be used
     #med = np.median(fluxes,axis=1)
     #med_all = np.reshape(np.repeat(med,npix),spec_shape)
     #flux_med = np.median(fluxes*med_all,axis=0)
-
-    ## Import the rejection part from the long_combspec.pro to do the rejections
-    ## and get the mask array for the iref spectrum .
 
     ## Make a plot of the residual distribution of the iref spectrum.
 
