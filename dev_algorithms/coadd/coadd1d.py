@@ -41,10 +41,13 @@ def load_1dspec_to_array(fnames,gdobj=None,order=None,ex_value='OPT',flux_value=
     for iexp in range(nexp):
         specobjs, headers = load.load_specobjs(fnames[iexp], order=order)
 
+        # Initialize ext
+        ext = None
         for indx, spobj in enumerate(specobjs):
             if gdobj[iexp] in spobj.idx:
                 ext = indx
-        # Error message if this fails
+        if ext is None:
+            msgs.error('Can not find the matched extension for :. Exists'.format(gdobj[iexp]))
 
         ## unpack wave/flux/mask
         if ex_value == 'OPT':
@@ -213,7 +216,6 @@ def sn_weights(waves, fluxes, ivars, masks, dv_smooth=10000.0, const_weights=Fal
 
         # Finish
         return rms_sn, weights
-
 
 def median_ratio_flux(flux,sig,flux_iref,sig_iref,mask=None,mask_iref=None,
                       cenfunc='median',snr_cut=3.0, maxiters=5,sigma=3):
@@ -446,9 +448,8 @@ def long_combspec(waves,fluxes,ivars,masks=None):
 
     ## Now all spectra with the new masks have been resampled to the sample grid. Coadd them!
 
-
-
-datapath = '/Users/feige/Dropbox/OBS_DATA/GMOS/GS_2018B_FT202/R400_Flux/'
+import os
+datapath = os.path.join(os.getenv('HOME'),'Dropbox/PypeIt_Redux/GMOS/R400_Flux/')
 fnames = [datapath+'spec1d_flux_S20180903S0136-J0252-0503_GMOS-S_1864May27T160716.387.fits',\
           datapath+'spec1d_flux_S20180903S0137-J0252-0503_GMOS-S_1864May27T160719.968.fits',\
           datapath+'spec1d_flux_S20180903S0138-J0252-0503_GMOS-S_1864May27T160723.353.fits',\
