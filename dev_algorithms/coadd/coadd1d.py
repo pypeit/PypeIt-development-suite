@@ -90,7 +90,7 @@ def interp_spec(wave_ref, waves,fluxes,ivars,masks):
     masks_float = np.zeros_like(fluxes)
     masks_float[masks] = 1.0
 
-    wave_iref,flux_iref,ivar_iref = waves[iref,:], fluxes[iref,:],ivars[iref,:]
+    #wave_iref,flux_iref,ivar_iref = waves[iref,:], fluxes[iref,:],ivars[iref,:]
     #sig_iref = np.sqrt(utils.calc_ivar(ivar_iref))
 
     # Interpolate spectra to have the same wave grid with the iexp spectrum.
@@ -103,20 +103,21 @@ def interp_spec(wave_ref, waves,fluxes,ivars,masks):
     nexp = np.shape(fluxes)[0]
     for ii in range(nexp):
 
-        waves_inter[ii, :] = wave_iref.copy()
+        waves_inter[ii, :] = wave_ref.copy()
         mask_ii = masks[ii,:]
 
-        if ii == iref:
+        if np.sum(wave_ref == waves[ii,:]) == np.size(wave_ref):
+            # do not interpolate if the wavelength is exactly same with wave_ref
             fluxes_inter[ii,:] = fluxes[ii,:].copy()
             ivars_inter[ii,:] = ivars[ii, :].copy()
             masks_inter[ii, :] = mask_ii.copy()
         else:
             flux_inter_ii = interp1d(waves[ii,:][mask_ii],fluxes[ii,:][mask_ii],kind='cubic',\
-                                     bounds_error=False,fill_value=0.)(wave_iref)
+                                     bounds_error=False,fill_value=0.)(wave_ref)
             ivar_inter_ii = interp1d(waves[ii,:][mask_ii],ivars[ii, :][mask_ii], kind='cubic',\
-                                     bounds_error=False,fill_value=0.)(wave_iref)
+                                     bounds_error=False,fill_value=0.)(wave_ref)
             mask_inter_ii = interp1d(waves[ii,:][mask_ii],masks_float[ii,:][mask_ii],kind='cubic',\
-                                         bounds_error=False,fill_value=0.)(wave_iref)
+                                         bounds_error=False,fill_value=0.)(wave_ref)
             mask_inter_ii = (mask_inter_ii>0.5) & (ivar_inter_ii>0.) & (flux_inter_ii!=0.)
 
             fluxes_inter[ii,:] = flux_inter_ii #* ratio_ii
@@ -218,7 +219,7 @@ def sn_weights(waves, fluxes, ivars, masks, dv_smooth=10000.0, const_weights=Fal
         return rms_sn, weights
 
 def median_ratio_flux(flux,sig,flux_iref,sig_iref,mask=None,mask_iref=None,
-                      cenfunc='median',snr_cut=3.0, maxiters=5,sigma=3):
+                      cenfunc='median',snr_cut=2.0, maxiters=5,sigma=3):
     '''
     Calculate the ratio between reference spectrum and your spectrum.
     Need to be in the same wave grid !!!
@@ -252,7 +253,7 @@ def median_ratio_flux(flux,sig,flux_iref,sig_iref,mask=None,mask_iref=None,
     return ratio_median
 
 def scale_spec(waves,fluxes,ivars,masks=None,flux_iref=None,ivar_iref=None,mask_iref=None,
-               iref=None,cenfunc='median',snr_cut=3.0, maxiters=5,sigma=3,
+               iref=None,cenfunc='median',snr_cut=2.0, maxiters=5,sigma=3,
                scale_method='median',hand_scale=None,SN_MAX_MEDSCALE=20.,SN_MIN_MEDSCALE=0.5,
                dv_smooth=10000.0,const_weights=False,debug=False,verbose=False):
     '''
@@ -377,7 +378,7 @@ def scale_spec(waves,fluxes,ivars,masks=None,flux_iref=None,ivar_iref=None,mask_
     return fluxes_scale,ivars_scale,scales, omethod
 
 
-def long_clean(waves,fluxes,ivars,masks=None,cenfunc='median', snr_cut=3.0, maxiters=5, sigma=2,
+def long_clean(waves,fluxes,ivars,masks=None,cenfunc='median', snr_cut=2.0, maxiters=5, sigma=2,
                scale_method='median',hand_scale=None, SN_MAX_MEDSCALE=20., SN_MIN_MEDSCALE=0.5,
                dv_smooth=10000.0,const_weights=False, debug=False, verbose=False):
 
@@ -398,7 +399,6 @@ def long_clean(waves,fluxes,ivars,masks=None,cenfunc='median', snr_cut=3.0, maxi
         # avsigclip the interpolated spectra to obtain a high SNR average -- This now comes from coadd2d
         flux_iref,flux_median,flux_std = stats.sigma_clipped_stats(fluxes_inter, mask=np.invert(masks_inter), mask_value=0.,
                                                              sigma=sigma,maxiters=maxiters,cenfunc=cenfunc,axis=0)
-
         # This stuff dissappears
         nused = np.sum(masks_inter,axis=0)
         mask_iref = nused == nexp
@@ -462,7 +462,7 @@ ex_value = 'OPT'
 flux_value = True
 waves,fluxes,ivars,masks = load_1dspec_to_array(fnames,gdobj=gdobj,order=None,ex_value=ex_value,flux_value=flux_value)
 
-long_clean(waves,fluxes,ivars,masks=masks,cenfunc='median', snr_cut=3.0, maxiters=5, sigma=2,
+long_clean(waves,fluxes,ivars,masks=masks,cenfunc='median', snr_cut=2.0, maxiters=5, sigma=2,
                scale_method='median',hand_scale=None, SN_MAX_MEDSCALE=20., SN_MIN_MEDSCALE=0.5,
                dv_smooth=10000.0,const_weights=False, debug=False, verbose=False)
 
@@ -478,12 +478,12 @@ for i in range(fluxes_inter.shape[0]):
 plt.show()
 
 
-waves_inter,fluxes_inter,ivars_inter,masks_inter = interp_spec(waves,fluxes,ivars,masks,iref=0)
+waves_inter,fluxes_inter,ivars_inter,masks_inter = interp_spec(waves[0,:],waves,fluxes,ivars,masks)
 
 #rms_sn, weights = sn_weights(waves_inter, fluxes_inter, ivars_inter, masks_inter, dv_smooth=10000.0, \
 #                             const_weights=False, debug=False, verbose=False)
 
 fluxes_scale,ivars_scale,scales, omethod =  scale_spec(waves_inter,fluxes_inter,ivars_inter,masks=masks_inter,
                                                        flux_iref=None,ivar_iref=None,mask_iref=None,iref=None,
-                                                       cenfunc='median',snr_cut=3.0, maxiters=5,sigma=3,
+                                                       cenfunc='median',snr_cut=2.0, maxiters=5,sigma=3,
                                                        scale_method='median')
