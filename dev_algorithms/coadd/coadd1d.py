@@ -47,7 +47,7 @@ def load_1dspec_to_array(fnames,gdobj=None,order=None,ex_value='OPT',flux_value=
             if gdobj[iexp] in spobj.idx:
                 ext = indx
         if ext is None:
-            msgs.error('Can not find the matched extension for :. Exists'.format(gdobj[iexp]))
+            msgs.error('Can not find extension {:} in {:}.'.format(gdobj[iexp],fnames[iexp]))
 
         ## unpack wave/flux/mask
         if ex_value == 'OPT':
@@ -399,7 +399,7 @@ def long_clean(waves,fluxes,ivars,masks=None,cenfunc='median', snr_cut=2.0, maxi
         # avsigclip the interpolated spectra to obtain a high SNR average -- This now comes from coadd2d
         flux_iref,flux_median,flux_std = stats.sigma_clipped_stats(fluxes_inter, mask=np.invert(masks_inter), mask_value=0.,
                                                              sigma=sigma,maxiters=maxiters,cenfunc=cenfunc,axis=0)
-        # This stuff dissappears
+        # This stuff disappears
         nused = np.sum(masks_inter,axis=0)
         mask_iref = nused == nexp
         sig2 = 1.0/(ivars_inter+(ivars_inter<=0))
@@ -461,14 +461,13 @@ gdobj = ['SPAT1073-SLIT0001-DET03','SPAT1167-SLIT0001-DET03','SPAT1071-SLIT0001-
 ex_value = 'OPT'
 flux_value = True
 waves,fluxes,ivars,masks = load_1dspec_to_array(fnames,gdobj=gdobj,order=None,ex_value=ex_value,flux_value=flux_value)
-
 long_clean(waves,fluxes,ivars,masks=masks,cenfunc='median', snr_cut=2.0, maxiters=5, sigma=2,
                scale_method='median',hand_scale=None, SN_MAX_MEDSCALE=20., SN_MIN_MEDSCALE=0.5,
                dv_smooth=10000.0,const_weights=False, debug=False, verbose=False)
 
 
 
-aaaa
+'''
 for i in range(fluxes_inter.shape[0]):
     plt.plot(waves_inter[i,:],fluxes_inter[i,:])
 plt.show()
@@ -487,3 +486,4 @@ fluxes_scale,ivars_scale,scales, omethod =  scale_spec(waves_inter,fluxes_inter,
                                                        flux_iref=None,ivar_iref=None,mask_iref=None,iref=None,
                                                        cenfunc='median',snr_cut=2.0, maxiters=5,sigma=3,
                                                        scale_method='median')
+'''
