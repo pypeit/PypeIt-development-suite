@@ -44,6 +44,7 @@ def load_1dspec_to_array(fnames,gdobj=None,order=None,ex_value='OPT',flux_value=
         for indx, spobj in enumerate(specobjs):
             if gdobj[iexp] in spobj.idx:
                 ext = indx
+        # Error message if this fails
 
         ## unpack wave/flux/mask
         if ex_value == 'OPT':
@@ -71,7 +72,7 @@ def load_1dspec_to_array(fnames,gdobj=None,order=None,ex_value='OPT',flux_value=
 
     return waves,fluxes,ivars,masks
 
-def interp_spec(waves,fluxes,ivars,masks,iref=0):
+def interp_spec(wave_ref, waves,fluxes,ivars,masks):
     '''
     Interpolate all spectra to the page of the iref spectrum
     Args:
@@ -393,7 +394,7 @@ def long_clean(waves,fluxes,ivars,masks=None,cenfunc='median', snr_cut=3.0, maxi
         waves_inter, fluxes_inter, ivars_inter, masks_inter = interp_spec(waves, fluxes, ivars, masks, iref=iexp)
 
         # avsigclip the interpolated spectra to obtain a high SNR average
-        flux_iref,flux_median,flux_std = sigma_clipped_stats(fluxes_inter, mask=np.invert(masks_inter), mask_value=0.,
+        flux_iref,flux_median,flux_std = stats.sigma_clipped_stats(fluxes_inter, mask=np.invert(masks_inter), mask_value=0.,
                                                              sigma=sigma,maxiters=maxiters,cenfunc=cenfunc,axis=0)
         nused = np.sum(masks_inter,axis=0)
         mask_iref = nused == nexp
