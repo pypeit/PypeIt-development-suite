@@ -1,13 +1,13 @@
 
 
 import numpy as np
-from scipy.interpolate import interp1d
+import matplotlib.pyplot as plt
+from scipy import interpolate
 from astropy import stats
-from astropy.stats import sigma_clip,sigma_clipped_stats
-from pypeit.core import load
+
 from pypeit import utils
 from pypeit import msgs
-import matplotlib.pyplot as plt
+from pypeit.core import load
 
 def load_1dspec_to_array(fnames,gdobj=None,order=None,ex_value='OPT',flux_value=True):
     '''
@@ -59,7 +59,7 @@ def load_1dspec_to_array(fnames,gdobj=None,order=None,ex_value='OPT',flux_value=
             else:
                 flux = specobjs[ext].optimal['COUNTS']
                 ivar = specobjs[ext].optimal['COUNTS_IVAR']
-        else:
+        elif ex_value == 'BOX':
             wave = specobjs[ext].boxcar['WAVE']
             if flux_value:
                 flux = specobjs[ext].boxcar['FLAM']
@@ -67,6 +67,8 @@ def load_1dspec_to_array(fnames,gdobj=None,order=None,ex_value='OPT',flux_value=
             else:
                 flux = specobjs[ext].boxcar['COUNTS']
                 ivar = specobjs[ext].boxcar['COUNTS_IVAR']
+        else:
+            msgs.error('{:} is not recognized. Please change to either BOX or OPT.'.format(ex_value))
 
         waves[iexp,:] = wave
         fluxes[iexp,:] = flux
@@ -112,11 +114,11 @@ def interp_spec(wave_ref, waves,fluxes,ivars,masks):
             ivars_inter[ii,:] = ivars[ii, :].copy()
             masks_inter[ii, :] = mask_ii.copy()
         else:
-            flux_inter_ii = interp1d(waves[ii,:][mask_ii],fluxes[ii,:][mask_ii],kind='cubic',\
+            flux_inter_ii = interpolate.interp1d(waves[ii,:][mask_ii],fluxes[ii,:][mask_ii],kind='cubic',\
                                      bounds_error=False,fill_value=0.)(wave_ref)
-            ivar_inter_ii = interp1d(waves[ii,:][mask_ii],ivars[ii, :][mask_ii], kind='cubic',\
+            ivar_inter_ii = interpolate.interp1d(waves[ii,:][mask_ii],ivars[ii, :][mask_ii], kind='cubic',\
                                      bounds_error=False,fill_value=0.)(wave_ref)
-            mask_inter_ii = interp1d(waves[ii,:][mask_ii],masks_float[ii,:][mask_ii],kind='cubic',\
+            mask_inter_ii = interpolate.interp1d(waves[ii,:][mask_ii],masks_float[ii,:][mask_ii],kind='cubic',\
                                          bounds_error=False,fill_value=0.)(wave_ref)
             mask_inter_ii = (mask_inter_ii>0.5) & (ivar_inter_ii>0.) & (flux_inter_ii!=0.)
 
@@ -246,7 +248,7 @@ def median_ratio_flux(flux,sig,flux_iref,sig_iref,mask=None,mask_iref=None,
     ## Calculate the ratio
     ratio = flux_iref / flux
     mask_all = mask & mask_iref & (flux>0.) & (flux_iref>0.)
-    ratio_mean,ratio_median,ratio_std = sigma_clipped_stats(ratio,np.invert(mask_all),cenfunc=cenfunc,\
+    ratio_mean,ratio_median,ratio_std = stats.sigma_clipped_stats(ratio,np.invert(mask_all),cenfunc=cenfunc,\
                                                             maxiters=maxiters,sigma=sigma)
     #ratio_array = np.ones_like(flux) * ratio_median
 
@@ -396,10 +398,10 @@ def long_clean(waves,fluxes,ivars,masks=None,cenfunc='median', snr_cut=2.0, maxi
         # Interpolate spectra into the native wave grid of the iexp spectrum
         waves_inter, fluxes_inter, ivars_inter, masks_inter = interp_spec(waves[iexp], waves, fluxes, ivars, masks)
 
-        # avsigclip the interpolated spectra to obtain a high SNR average -- This now comes from coadd2d
+        # avsigclip the interpolated spectra to obtain a high SNR average -- ToDo: This now comes from coadd2d
         flux_iref,flux_median,flux_std = stats.sigma_clipped_stats(fluxes_inter, mask=np.invert(masks_inter), mask_value=0.,
                                                              sigma=sigma,maxiters=maxiters,cenfunc=cenfunc,axis=0)
-        # This stuff disappears
+        # ToDo: This stuff disappears
         nused = np.sum(masks_inter,axis=0)
         mask_iref = nused == nexp
         sig2 = 1.0/(ivars_inter+(ivars_inter<=0))
