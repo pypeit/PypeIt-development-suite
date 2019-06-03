@@ -28,20 +28,21 @@ def load_1dspec_to_array(fnames,gdobj=None,order=None,ex_value='OPT',flux_value=
         masks:
     '''
 
-    nimg = len(fnames)
+    #ToDo: make it also works for single fits frame.
+    nexp = len(fnames)
     sobjs0,header0 = load.load_specobjs(fnames[0], order=order)
     nspec = sobjs0[0].optimal['COUNTS'].size
 
-    waves = np.zeros((nimg,nspec))
+    waves = np.zeros((nexp,nspec))
     fluxes = np.zeros_like(waves)
     ivars = np.zeros_like(waves)
     masks = np.zeros_like(waves,dtype=bool)
 
-    for ispec in range(nimg):
-        specobjs, headers = load.load_specobjs(fnames[ispec], order=order)
+    for iexp in range(nexp):
+        specobjs, headers = load.load_specobjs(fnames[iexp], order=order)
 
         for indx, spobj in enumerate(specobjs):
-            if gdobj[ispec] in spobj.idx:
+            if gdobj[iexp] in spobj.idx:
                 ext = indx
 
         ## unpack wave/flux/mask
@@ -63,10 +64,10 @@ def load_1dspec_to_array(fnames,gdobj=None,order=None,ex_value='OPT',flux_value=
                 flux = specobjs[ext].boxcar['COUNTS']
                 ivar = specobjs[ext].boxcar['COUNTS_IVAR']
 
-        waves[ispec,:] = wave
-        fluxes[ispec,:] = flux
-        ivars[ispec,:] = ivar
-        masks[ispec,:] = mask
+        waves[iexp,:] = wave
+        fluxes[iexp,:] = flux
+        ivars[iexp,:] = ivar
+        masks[iexp,:] = mask
 
     return waves,fluxes,ivars,masks
 
@@ -88,15 +89,15 @@ def interp_spec(waves,fluxes,ivars,masks,iref=0):
     wave_iref,flux_iref,ivar_iref = waves[iref,:], fluxes[iref,:],ivars[iref,:]
     #sig_iref = np.sqrt(utils.calc_ivar(ivar_iref))
 
-    # Interpolate spectra to have the same wave grid with the ispec spectrum.
-    # And scale spectra to the same flux level with the ispec spectrum.
+    # Interpolate spectra to have the same wave grid with the iexp spectrum.
+    # And scale spectra to the same flux level with the iexp spectrum.
     waves_inter = np.zeros_like(waves)
     fluxes_inter = np.zeros_like(fluxes)
     ivars_inter = np.zeros_like(ivars)
     masks_inter = np.zeros_like(masks)
 
-    nspec = np.shape(fluxes)[0]
-    for ii in range(nspec):
+    nexp = np.shape(fluxes)[0]
+    for ii in range(nexp):
 
         waves_inter[ii, :] = wave_iref.copy()
         mask_ii = masks[ii,:]
@@ -205,32 +206,32 @@ def sn_weights(waves, fluxes, ivars, masks, dv_smooth=10000.0, const_weights=Fal
             msgs.info("Using wavelength dependent weights for coadding")
         weights = np.ones_like(flux_stack) #((fluxes.shape[0], fluxes.shape[1]))
         spec_vec = np.arange(nspec)
-        for ispec in range(nstack):
-            imask = mask_stack[ispec,:]
-            wave_now = wave_stack[ispec, imask]
+        for iexp in range(nstack):
+            imask = mask_stack[iexp,:]
+            wave_now = wave_stack[iexp, imask]
             spec_now = spec_vec[imask]
             dwave = (wave_now - np.roll(wave_now,1))[1:]
             dv = (dwave/wave_now[1:])*c_kms
             dv_pix = np.median(dv)
             med_width = int(np.round(dv_smooth/dv_pix))
-            sn_med1 = scipy.ndimage.filters.median_filter(sn_val[ispec,imask]**2, size=med_width, mode='reflect')
+            sn_med1 = scipy.ndimage.filters.median_filter(sn_val[iexp,imask]**2, size=med_width, mode='reflect')
             sn_med2 = np.interp(spec_vec, spec_now, sn_med1)
-            #sn_med2 = np.interp(wave_stack[ispec,:], wave_now,sn_med1)
+            #sn_med2 = np.interp(wave_stack[iexp,:], wave_now,sn_med1)
             sig_res = np.fmax(med_width/10.0, 3.0)
             gauss_kernel = convolution.Gaussian1DKernel(sig_res)
             sn_conv = convolution.convolve(sn_med2, gauss_kernel)
-            weights[ispec,:] = sn_conv
+            weights[iexp,:] = sn_conv
 
         # Finish
         return rms_sn, weights
 
 
-def median_ratio_flux(wave,flux,sig,flux_iref,sig_iref,mask=None,mask_iref=None,
-                 cenfunc='median',snr_cut=3.0, maxiters=5,sigma=3):
+def median_ratio_flux(flux,sig,flux_iref,sig_iref,mask=None,mask_iref=None,
+                      cenfunc='median',snr_cut=3.0, maxiters=5,sigma=3):
     '''
     Calculate the ratio between reference spectrum and your spectrum.
+    Need to be in the same wave grid !!!
     Args:
-        wave:
         flux:
         sig:
         flux_iref:
@@ -241,7 +242,7 @@ def median_ratio_flux(wave,flux,sig,flux_iref,sig_iref,mask=None,mask_iref=None,
         maxiters:
         sigma:
     Returns:
-        Ratio_array: ratio array with the same size with your spectrum
+        ratio_median: median ratio
     '''
 
     ## Mask for reference spectrum and your spectrum
@@ -255,36 +256,134 @@ def median_ratio_flux(wave,flux,sig,flux_iref,sig_iref,mask=None,mask_iref=None,
     mask_all = mask & mask_iref & (flux>0.) & (flux_iref>0.)
     ratio_mean,ratio_median,ratio_std = sigma_clipped_stats(ratio,np.invert(mask_all),cenfunc=cenfunc,\
                                                             maxiters=maxiters,sigma=sigma)
-    ratio_array = np.ones_like(flux) * ratio_median
+    #ratio_array = np.ones_like(flux) * ratio_median
 
-    return ratio_array
+    return ratio_median
 
-def scale_spec(waves,fluxes,ivars,flux_iref=None,ivar_iref=None,masks=None,mask_iref=None,\
-               iref=None,cenfunc='median',snr_cut=3.0, maxiters=5,sigma=3):
+def scale_spec(waves,fluxes,ivars,masks=None,flux_iref=None,ivar_iref=None,mask_iref=None,
+               iref=None,cenfunc='median',snr_cut=3.0, maxiters=5,sigma=3,
+               scale_method='median',hand_scale=None,SN_MAX_MEDSCALE=20.,SN_MIN_MEDSCALE=0.5,
+               dv_smooth=10000.0,const_weights=False,debug=False,verbose=False):
     '''
-    Not USE
-    :param waves:
-    :param fluxes:
-    :param ivars:
-    :param flux_iref:
-    :param ivar_iref:
-    :param masks:
-    :param mask_iref:
-    :param iref:
-    :param cenfunc:
-    :param snr_cut:
-    :param maxiters:
-    :param sigma:
-    :return:
+    Scale the spectra into the same page with the reference spectrum.
+
+    Args:
+        waves:
+        fluxes:
+        ivars:
+        masks:
+        flux_iref:
+        ivar_iref:
+        mask_iref:
+        iref:
+        cenfunc:
+        snr_cut:
+        maxiters:
+        sigma:
+    Returns:
     '''
 
-    # if iref is None then find the highest SNR one as the reference
-    if (iref is None) :
-        snrs = fluxes / sigs
-        snr = np.nanmedian(snrs, axis=1)
-        iref = np.argmax(snr)
+    # ToDo: Actually do we need wavelength to be here? maybe not.
+    # Just need to make sure all the spectra in the same wave grid.
+    if waves.ndim == 2:
+        if abs(np.mean(waves)-np.mean(waves[0,:]))>1e-6:
+            raise ValueError("Your spectra are not in the same wave grid. Please run 'interp_spec' first!")
+        else:
+            wave = waves[0,:]
+    else:
+        wave = waves.copy()
 
-    return None
+    if masks is None:
+        masks = (ivars>0.) & np.isfinite(fluxes)
+
+    # estimates the SNR of each spectrum and the stacked mean SNR
+    rms_sn, weights = sn_weights(waves, fluxes, ivars, masks, dv_smooth=dv_smooth, \
+                                 const_weights=const_weights, debug=debug, verbose=verbose)
+    rms_sn_stack = np.sqrt(np.mean(rms_sn**2))
+
+    nexp = waves.shape[0]
+
+    # if flux_iref is None, then use the iref spectrum as the reference.
+    if flux_iref is None:
+        if iref is None:
+            # find the highest SNR spectrum as the reference
+            iref = np.argmax(rms_sn)
+        flux_iref = fluxes[iref, :]
+        ivar_iref = ivars[iref, :]
+        mask_iref = masks[iref, :]
+        msgs.info('Using the {:} spectrum to scale your spectra'.format(iref))
+    else:
+        iref = None
+        # ToDo: Need to think about how to deal with ivar_iref=None.
+        if ivar_iref is None:
+            sig_iref = flux_iref.copy() / snr_cut / 2.0
+            ivar_iref = utils.calc_ivar(sig_iref**2)
+
+    if mask_iref is None:
+        mask_iref = (ivar_iref>0.) & np.isfinite(flux_iref)
+
+    sig_iref = np.sqrt(utils.calc_ivar(ivar_iref))
+
+    # Estimate the scale factors
+    fluxes_scale= np.zeros_like(fluxes)
+    ivars_scale= np.zeros_like(ivars)
+    scales = []
+    for iexp in range(nexp):
+        if scale_method == 'hand':
+            omethod = 'hand'
+            # Input?
+            if hand_scale is None:
+                msgs.error("Need to provide hand_scale parameter, one value per spectrum")
+            fluxes_scale[iexp,:] = fluxes[iexp,:] * hand_scale[iexp]
+            ivars_scale[iexp,:] = ivars[iexp,:] * 1.0/hand_scale[iexp]**2
+            scales.append(hand_scale[qq])
+
+        elif ((rms_sn_stack <= SN_MAX_MEDSCALE) and (rms_sn_stack > SN_MIN_MEDSCALE)) or (scale_method=='median'):
+            omethod = 'median_flux'
+            if iexp == iref:
+                fluxes_scale[iexp, :] = fluxes[iexp, :].copy()
+                ivars_scale[iexp, :] = ivars[iexp, :].copy()
+                scales.append(1.)
+                continue
+            # Median ratio (reference to spectrum)
+            #med_scale = median_ratio_flux(spectra, smask, qq, iref)
+            flux = fluxes[iexp,:]
+            sig = np.sqrt(utils.calc_ivar(ivars[iexp,:]))
+            mask = masks[iexp,:]
+            med_scale = median_ratio_flux(flux,sig,flux_iref,sig_iref,mask=mask,mask_iref=mask_iref,
+                      cenfunc=cenfunc,snr_cut=snr_cut, maxiters=maxiters,sigma=sigma)
+            # Apply
+            med_scale= np.minimum(med_scale, 10.0)
+            fluxes_scale[iexp,:] = fluxes[iexp,:] * med_scale
+            ivars_scale[iexp,:] = ivars[iexp,:] * 1.0/med_scale**2
+            scales.append(med_scale)
+
+        elif rms_sn_stack <= SN_MIN_MEDSCALE:
+            omethod = 'none_SN'
+        elif (rms_sn_stack > SN_MAX_MEDSCALE) or scale_method=='poly':
+            msgs.work("Should be using poly here, not median")
+            omethod = 'median_flux'
+            if iexp == iref:
+                fluxes_scale[iexp, :] = fluxes[iexp, :].copy()
+                ivars_scale[iexp, :] = ivars[iexp, :].copy()
+                scales.append(1.)
+                continue
+            # Median ratio (reference to spectrum)
+            #med_scale = median_ratio_flux(spectra, smask, qq, iref)
+            flux = fluxes[iexp,:]
+            sig = np.sqrt(utils.calc_ivar(ivars[iexp,:]))
+            mask = masks[iexp,:]
+            med_scale = median_ratio_flux(flux,sig,flux_iref,sig_iref,mask=mask,mask_iref=mask_iref,
+                      cenfunc=cenfunc,snr_cut=snr_cut, maxiters=maxiters,sigma=sigma)
+            # Apply
+            med_scale= np.minimum(med_scale, 10.0)
+            fluxes_scale[iexp,:] = fluxes[iexp,:] * med_scale
+            ivars_scale[iexp,:] = ivars[iexp,:] * 1.0/med_scale**2
+            scales.append(med_scale)
+        else:
+            msgs.error("Scale method not recognized! Check documentation for available options")
+    # Finish
+    return fluxes_scale,ivars_scale,scales, omethod
 
 
 datapath = '/Users/feige/Dropbox/OBS_DATA/GMOS/GS_2018B_FT202/R400_Flux/'
@@ -300,8 +399,23 @@ ex_value = 'OPT'
 flux_value = True
 waves,fluxes,ivars,masks = load_1dspec_to_array(fnames,gdobj=gdobj,order=None,ex_value=ex_value,flux_value=flux_value)
 waves_inter,fluxes_inter,ivars_inter,masks_inter = interp_spec(waves,fluxes,ivars,masks,iref=0)
-rms_sn, weights = sn_weights(waves_inter, fluxes_inter, ivars_inter, masks_inter, dv_smooth=10000.0, \
-                             const_weights=False, debug=False, verbose=False)
+
+#rms_sn, weights = sn_weights(waves_inter, fluxes_inter, ivars_inter, masks_inter, dv_smooth=10000.0, \
+#                             const_weights=False, debug=False, verbose=False)
+
+fluxes_scale,ivars_scale,scales, omethod =  scale_spec(waves_inter,fluxes_inter,ivars_inter,masks=masks_inter,
+                                                       flux_iref=None,ivar_iref=None,mask_iref=None,iref=None,
+                                                       cenfunc='median',snr_cut=3.0, maxiters=5,sigma=3,
+                                                       scale_method='median')
+
 from IPython import embed
 embed()
 
+aaaa
+for i in range(fluxes_inter.shape[0]):
+    plt.plot(waves_inter[i,:],fluxes_inter[i,:])
+plt.show()
+
+for i in range(fluxes_inter.shape[0]):
+    plt.plot(waves_inter[i,:],fluxes_scale[i,:])
+plt.show()
