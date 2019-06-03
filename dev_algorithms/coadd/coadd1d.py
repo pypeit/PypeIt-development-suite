@@ -391,11 +391,13 @@ def long_clean(waves,fluxes,ivars,masks=None,cenfunc='median', snr_cut=3.0, maxi
         wave_iexp,flux_iexp,ivar_iexp = waves[iexp,:],fluxes[iexp,:],ivars[iexp,:]
 
         # Interpolate spectra into the native wave grid of the iexp spectrum
-        waves_inter, fluxes_inter, ivars_inter, masks_inter = interp_spec(waves, fluxes, ivars, masks, iref=iexp)
+        waves_inter, fluxes_inter, ivars_inter, masks_inter = interp_spec(waves[iexp], waves, fluxes, ivars, masks)
 
-        # avsigclip the interpolated spectra to obtain a high SNR average
+        # avsigclip the interpolated spectra to obtain a high SNR average -- This now comes from coadd2d
         flux_iref,flux_median,flux_std = stats.sigma_clipped_stats(fluxes_inter, mask=np.invert(masks_inter), mask_value=0.,
                                                              sigma=sigma,maxiters=maxiters,cenfunc=cenfunc,axis=0)
+
+        # This stuff dissappears
         nused = np.sum(masks_inter,axis=0)
         mask_iref = nused == nexp
         sig2 = 1.0/(ivars_inter+(ivars_inter<=0))
