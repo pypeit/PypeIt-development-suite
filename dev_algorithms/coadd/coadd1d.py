@@ -97,7 +97,6 @@ def interp_spec(wave_ref, waves,fluxes,ivars,masks):
 
     # Interpolate spectra to have the same wave grid with the iexp spectrum.
     # And scale spectra to the same flux level with the iexp spectrum.
-    waves_inter = np.zeros_like(waves)
     fluxes_inter = np.zeros_like(fluxes)
     ivars_inter = np.zeros_like(ivars)
     masks_inter = np.zeros_like(masks)
@@ -105,7 +104,6 @@ def interp_spec(wave_ref, waves,fluxes,ivars,masks):
     nexp = np.shape(fluxes)[0]
     for ii in range(nexp):
 
-        waves_inter[ii, :] = wave_ref.copy()
         mask_ii = masks[ii,:]
 
         if np.sum(wave_ref == waves[ii,:]) == np.size(wave_ref):
@@ -126,7 +124,7 @@ def interp_spec(wave_ref, waves,fluxes,ivars,masks):
             ivars_inter[ii,:] = ivar_inter_ii #* ratio_ii
             masks_inter[ii,:] = mask_inter_ii
 
-    return waves_inter,fluxes_inter,ivars_inter,masks_inter
+    return fluxes_inter,ivars_inter,masks_inter
 
 def sn_weights(waves, fluxes, ivars, masks, dv_smooth=10000.0, const_weights=False, debug=False, verbose=False):
     """ Calculate the S/N of each input spectrum and create an array of (S/N)^2 weights to be used
@@ -396,7 +394,7 @@ def long_clean(waves,fluxes,ivars,masks=None,cenfunc='median', snr_cut=2.0, maxi
         wave_iexp,flux_iexp,ivar_iexp = waves[iexp,:],fluxes[iexp,:],ivars[iexp,:]
 
         # Interpolate spectra into the native wave grid of the iexp spectrum
-        waves_inter, fluxes_inter, ivars_inter, masks_inter = interp_spec(waves[iexp], waves, fluxes, ivars, masks)
+        fluxes_inter, ivars_inter, masks_inter = interp_spec(waves[iexp], waves, fluxes, ivars, masks)
 
         # avsigclip the interpolated spectra to obtain a high SNR average -- ToDo: This now comes from coadd2d
         flux_iref,flux_median,flux_std = stats.sigma_clipped_stats(fluxes_inter, mask=np.invert(masks_inter), mask_value=0.,
