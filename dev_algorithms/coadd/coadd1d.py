@@ -8,6 +8,7 @@ from astropy import stats
 from pypeit import utils
 from pypeit import msgs
 from pypeit.core import load
+from pypeit.core.wavecal import wvutils
 
 def load_1dspec_to_array(fnames,gdobj=None,order=None,ex_value='OPT',flux_value=True):
     '''
@@ -76,6 +77,116 @@ def load_1dspec_to_array(fnames,gdobj=None,order=None,ex_value='OPT',flux_value=
         masks[iexp,:] = mask
 
     return waves,fluxes,ivars,masks
+
+def new_wave_grid(waves, wave_method='iref', iref=0, wave_grid_min=None, wave_grid_max=None,
+                  A_pix=None, v_pix=None, , samp_fact=1.0**kwargs):
+    """ Create a new wavelength grid for the spectra to be rebinned and coadded on
+
+    Parameters
+    ----------
+    waves : masked ndarray
+        Set of N original wavelength arrays
+        nexp, nspec
+    wave_method : str, optional
+        Desired method for creating new wavelength grid.
+        'iref' -- Use the first wavelength array (default)
+        'velocity' -- Constant velocity
+        'pixel' -- Constant pixel grid
+        'concatenate' -- Meld the input wavelength arrays
+    iref : int, optional
+      Reference spectrum
+    wave_grid_min: float, optional
+      min wavelength value for the final grid
+    wave_grid_max: float, optional
+      max wavelength value for the final grid
+    A_pix : float
+      Pixel size in same units as input wavelength array (e.g. Angstroms)
+    v_pix : float
+      Pixel size in km/s for velocity method
+      If not input, the median km/s per pixel is calculated and used
+    samp_fact: float
+      sampling factor to make the wavelength grid finer or coarser.  samp_fact > 1.0 oversamples (finer),
+      samp_fact < 1.0 undersamples (coarser)
+
+    Returns
+    -------
+    wave_grid : ndarray
+        New wavelength grid, not masked
+    """
+    if not isinstance(waves, MaskedArray):
+        waves = np.ma.array(waves,mask=waves<10.0)
+
+    if wave_method == 'velocity':  # Constant km/s
+        spl = 299792.458
+        if v_pix is None:
+            # Find the median velocity of a pixel in the input
+            dv = spl * np.abs(waves - np.roll(waves,1)) / waves   # km/s
+            v_pix = np.median(dv)
+
+        # to make the wavelength grid finer or coarser
+        v_pix = v_pix/samp_fact
+
+        # Generate wavelength array
+        if wave_grid_min is None:
+            wave_grid_min = np.min(waves)
+        if wave_grid_max is None:
+            wave_grid_max = np.max(waves)
+        x = np.log10(v_pix/spl + 1)
+        npix = int(np.log10(wave_grid_max/wave_grid_min) / x) + 1
+        wave_grid = wave_grid_min * 10**(x*np.arange(npix))
+
+    elif wave_method == 'pixel': # Constant Angstrom
+        if A_pix is None:
+            dA =  np.abs(waves - np.roll(waves,1))
+            A_pix = np.median(dA)
+
+        # Generate wavelength array
+        if wave_grid_min is None:
+            wave_grid_min = np.min(waves)
+        if wave_grid_max is None:
+            wave_grid_max = np.max(waves)
+        wave_grid = wvutils.wavegrid(wave_grid_min, wave_grid_max + A_pix, \
+                                     A_pix,samp_fact=samp_fact)
+
+    elif wave_method == 'loggrid':
+        dloglam_n = np.log10(waves) - np.roll(np.log10(waves), 1)
+        dloglam = np.median(dloglam_n.compressed())
+        wave_grid_max = np.max(waves)
+        wave_grid_min = np.min(waves)
+        loglam_grid = wvutils.wavegrid(np.log10(wave_grid_min), np.log10(wave_grid_max)+dloglam, \
+                                       dloglam,samp_fact=samp_fact)
+        wave_grid = 10**loglam_grid
+
+    elif wave_method == 'concatenate':  # Concatenate
+        # Setup
+        loglam = np.log10(waves) # This deals with padding (0's) just fine, i.e. they get masked..
+        nexp = waves.shape[0]
+        newloglam = loglam[iref, :].compressed()  # Deals with mask
+        # Loop
+        for j in range(nexp):
+            if j == iref:
+                continue
+            #
+            iloglam = loglam[j,:].compressed()
+            dloglam_0 = (newloglam[1]-newloglam[0])
+            dloglam_n =  (newloglam[-1] - newloglam[-2]) # Assumes sorted
+            if (newloglam[0] - iloglam[0]) > dloglam_0:
+                kmin = np.argmin(np.abs(iloglam - newloglam[0] - dloglam_0))
+                newloglam = np.concatenate([iloglam[:kmin], newloglam])
+            #
+            if (iloglam[-1] - newloglam[-1]) > dloglam_n:
+                kmin = np.argmin(np.abs(iloglam - newloglam[-1] - dloglam_n))
+                newloglam = np.concatenate([newloglam, iloglam[kmin:]])
+        # Finish
+        wave_grid = 10**newloglam
+
+    elif wave_method == 'iref':
+        wave_grid = waves[iref, :].compressed()
+
+    else:
+        msgs.error("Bad method for scaling: {:s}".format(wave_method))
+
+    return wave_grid
 
 def interp_spec(wave_ref, waves,fluxes,ivars,masks):
     '''
@@ -451,7 +562,6 @@ def long_combspec(waves,fluxes,ivars,masks=None):
     ## Now all spectra with the new masks have been resampled to the sample grid. Coadd them!
 
 
-'''
 import os
 datapath = os.path.join(os.getenv('HOME'),'Dropbox/PypeIt_Redux/GMOS/R400_Flux/')
 fnames = [datapath+'spec1d_flux_S20180903S0136-J0252-0503_GMOS-S_1864May27T160716.387.fits',\
@@ -465,6 +575,10 @@ gdobj = ['SPAT1073-SLIT0001-DET03','SPAT1167-SLIT0001-DET03','SPAT1071-SLIT0001-
 ex_value = 'OPT'
 flux_value = True
 waves,fluxes,ivars,masks = load_1dspec_to_array(fnames,gdobj=gdobj,order=None,ex_value=ex_value,flux_value=flux_value)
+from IPython import embed
+embed()
+
+'''
 long_clean(waves,fluxes,ivars,masks=masks,cenfunc='median', snr_cut=2.0, maxiters=5, sigma=2,
                scale_method='median',hand_scale=None, SN_MAX_MEDSCALE=20., SN_MIN_MEDSCALE=0.5,
                dv_smooth=10000.0,const_weights=False, debug=False, verbose=False)
