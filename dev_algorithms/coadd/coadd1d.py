@@ -78,8 +78,8 @@ def load_1dspec_to_array(fnames,gdobj=None,order=None,ex_value='OPT',flux_value=
 
     return waves,fluxes,ivars,masks
 
-def new_wave_grid(waves, wave_method='iref', iref=0, wave_grid_min=None, wave_grid_max=None,
-                  A_pix=None, v_pix=None, , samp_fact=1.0**kwargs):
+def new_wave_grid(waves,wave_method='iref',iref=0,wave_grid_min=None,wave_grid_max=None,
+                  A_pix=None,v_pix=None,samp_fact=1.0,**kwargs):
     """ Create a new wavelength grid for the spectra to be rebinned and coadded on
 
     Parameters
@@ -101,6 +101,7 @@ def new_wave_grid(waves, wave_method='iref', iref=0, wave_grid_min=None, wave_gr
       max wavelength value for the final grid
     A_pix : float
       Pixel size in same units as input wavelength array (e.g. Angstroms)
+      If not input, the median pixel size is calculated and used
     v_pix : float
       Pixel size in km/s for velocity method
       If not input, the median km/s per pixel is calculated and used
@@ -113,7 +114,7 @@ def new_wave_grid(waves, wave_method='iref', iref=0, wave_grid_min=None, wave_gr
     wave_grid : ndarray
         New wavelength grid, not masked
     """
-    if not isinstance(waves, MaskedArray):
+    if not isinstance(waves, np.ma.MaskedArray):
         waves = np.ma.array(waves,mask=waves<10.0)
 
     if wave_method == 'velocity':  # Constant km/s
@@ -501,9 +502,8 @@ def long_clean(waves,fluxes,ivars,masks=None,cenfunc='median', snr_cut=2.0, maxi
     masks_out = masks.copy()
 
     nexp = np.shape(fluxes)[0]
-    nspec  = np.shape(fluxes)[1]
-
     for iexp in range(nexp):
+        msgs.info('Cleaning the {:}th exposures.'.format(iexp))
         wave_iexp,flux_iexp,ivar_iexp = waves[iexp,:],fluxes[iexp,:],ivars[iexp,:]
 
         # Interpolate spectra into the native wave grid of the iexp spectrum
@@ -528,13 +528,16 @@ def long_clean(waves,fluxes,ivars,masks=None,cenfunc='median', snr_cut=2.0, maxi
                                                         dv_smooth=dv_smooth,const_weights=const_weights,\
                                                         debug=debug,verbose=verbose)
 
-        from IPython import embed
-        embed()
-
         # do rejections and get mask for the iexp spectrum (import from long_combspec.pro)
+        # doing rejections on fluxes_scale, ivars_scale, masks_inter
+        msgs.info('Cleaning the {:}th exposure.'.format(iexp))
 
         # QA plots for the residual of the new masked iexp spectrum and the high SNR average.
+        if verbose:
+            msgs.info('QA plot for the {:}th exposure.'.format(iexp))
+            #call the QA plots here.
 
+    return masks_out
 
 
 def long_combspec(waves,fluxes,ivars,masks=None):
