@@ -20,7 +20,7 @@ def parser(options=None):
     import argparse
 
     all_tests = ['kast', 'lris', 'deimos', 'nires',  # Instruments
-                 'keck'] # Observatories
+                 'keck', 'magellan', 'vlt'] # Observatories
 #    all_tests = ['kast', 'lris', 'isis', 'hires', 'deimos',  # Instruments
 #                 'keck', 'shane', 'wht']  # Observatories
 
@@ -31,6 +31,7 @@ def parser(options=None):
     parser.add_argument('tests', type=str, default=None,
                         help='Tests to run.  Options include: develop, all, {0:s}'.format(hlpstr))
     parser.add_argument('-outputdir', type=str, help="Output folder.  Default is ./REDUX_OUT")
+    parser.add_argument('--instrument', type=str, help="Restrict to input instrument")
     parser.add_argument('-setup', type=str, help="Single out a setup to run")
     parser.add_argument('--debug', default=False, action='store_true', help='Debug')
 
@@ -48,7 +49,7 @@ def main():
     # TODO: Once we're satisfied than an instrument passes, add it to
     # this list!  It must pass for every directory that includes these
     # strings and all the sub-directory setups within!
-    valid_instruments = ['Kast', 'DEIMOS', 'LRIS', 'NIRES', 'GNIRS', 'XSHOOTER']
+    valid_instruments = ['Kast', 'DEIMOS', 'LRIS', 'NIRES', 'GNIRS', 'XSHOOTER', 'MAGE']
 
     # Grab a list of all instruments
     dev_path = os.getenv('PYPEIT_DEV')
@@ -68,9 +69,12 @@ def main():
                             if inst.lower() in item.lower()]
         invalid_selection = []
     elif pargs.tests == 'develop':
-        instruments = ['Keck_LRIS_blue', 'Gemini_GNIRS', 'Shane_Kast_blue', 'VLT_XSHOOTER', 'Keck_DEIMOS',
-                       'Shane_Kast_red', 'Keck_NIRES', 'Keck_LRIS_red']
         invalid_selection = []
+        if pargs.instrument is not None:
+            instruments = [pargs.instrument]
+        else:
+            instruments = ['Keck_LRIS_blue', 'Gemini_GNIRS', 'Shane_Kast_blue', 'VLT_XSHOOTER', 'Keck_DEIMOS',
+                       'Shane_Kast_red', 'Keck_NIRES', 'Keck_LRIS_red', 'Magellan_MAGE']
     else:
         instruments = [item for item in all_instruments if pargs.tests.lower() in item.lower()]
         invalid_selection = [item for item in instruments if not np.any([inst.lower()
@@ -137,10 +141,12 @@ def main():
                               'multi_1200_9000_d680', 'multi_400_8500_d560']
             elif instr == 'VLT_XSHOOTER':
                 req_setups = ['VIS_1x1', 'VIS_2x1', 'VIS_2x2', 'NIR']
+            elif instr == 'Magellan_MAGE':
+                req_setups = ['1x1']
             else:
                 # Should not get here
                 print("I don't know how you got here")
-                IPython.embed()
+                IPython.embed(header='147 of pypeit_test')
             # Check me now
             for setup in req_setups:
                 if setup not in setups:
