@@ -189,7 +189,7 @@ def new_wave_grid(waves,wave_method='iref',iref=0,wave_grid_min=None,wave_grid_m
 
     return wave_grid
 
-def interp_spec(wave_ref, waves,fluxes,ivars,masks):
+def interp_spec(wave_ref, waves, fluxes, ivars, masks):
     '''
     Interpolate all spectra to the page of the iref spectrum
     Args:
