@@ -579,6 +579,51 @@ waves,fluxes,ivars,masks = load_1dspec_to_array(fnames,gdobj=gdobj,order=None,ex
 from IPython import embed
 embed()
 
+
+
+# Define a common fixed wavegrid
+
+#evalute the sn_weights. This is done once at the beginning
+
+# get_scale_factors == this will use the common wavegrid and interpolate spectra on it. We can be sinful about
+# covariance for the purposes of determining scale factors. This should return:
+# the scale factors evaluated on each native wavegrid, the prelim coadd evaluated on each native wavegrid
+
+
+newmasks = np.copy(masks)
+# COpy the robust_optimize_djs control folow
+iIter = 0
+qdone = False
+thismask = np.copy(inmask)
+while (not qdone) and (iIter < maxiter):
+    waves_stack, flux_stack, ivar_stack = compute_stack(waves, fluxes, ivars, newmasks, wave_grid, sn_weights)
+    flux_stack_native, ivar_stack_native = interp_spec(waves, waves_stack, flux_stack, ivar_stack)
+    ivars_new, ivars_tot = update_errors(waves, fluxes, ivars, waves_stack, flux_stack_native, ivar_stack_native)
+    thismask, qdone = pydl.djs_reject(fluxes, flux_stack_native, outmask=thismask, inmask=inmask, invvar=ivars_tot,
+                                      lower=lower, upper=upper, maxdev=maxdev, maxrej=maxrej,
+                                      groupdim=groupdim, groupsize=groupsize, groupbadpix=groupbadpix, grow=grow,
+                                      use_mad=use_mad, sticky=sticky)
+    iIter += 1
+
+if (iIter == maxiter) & (maxiter != 0):
+    msgs.warn('Maximum number of iterations maxiter={:}'.format(maxiter) + ' reached in robust_polyfit_djs')
+outmask = np.copy(thismask)
+if np.sum(outmask) == 0:
+    msgs.warn('All points were rejected!!! The fits will be zero everywhere.')
+waves_stack, flux_stack, ivar_stack = compute_stack(waves, fluxes, ivars, newmasks, wave_grid, sn_weights)
+# Now do some QA. We need the option to call the same QA routines while we are iterating just in case for debuggin
+
+# Loop over exposures and show the comparison of the the chi_distribution to a Gaussian, and the updated errors
+
+# Loop over exposures show the individual exposure, compared to the stack, compared to the single object noise, and maybe
+# also show the modified noise vector (not sure about this). Label the masked pixels.
+
+    #newmask = reject_update_mask(waves, fluxes, ivars, masks, sn_weights, scale_factors, waves_stack, flux_stack, ivar_stack)
+
+# Once you have the outmask, we update the
+
+
+
 '''
 long_clean(waves,fluxes,ivars,masks=masks,cenfunc='median', snr_cut=2.0, maxiters=5, sigma=2,
                scale_method='median',hand_scale=None, SN_MAX_MEDSCALE=20., SN_MIN_MEDSCALE=0.5,
