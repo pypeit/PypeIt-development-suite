@@ -191,7 +191,7 @@ def new_wave_grid(waves,wave_method='iref',iref=0,wave_grid_min=None,wave_grid_m
 
 def interp_spec(wave_ref, waves, fluxes, ivars, masks):
     '''
-    Interpolate all spectra to the page of the iref spectrum
+    Interpolate all spectra to the page of wave_ref
     Args:
         waves:
         fluxes:
@@ -201,40 +201,79 @@ def interp_spec(wave_ref, waves, fluxes, ivars, masks):
     Returns:
     '''
 
-    masks_float = np.zeros_like(fluxes)
-    masks_float[masks] = 1.0
 
-    #wave_iref,flux_iref,ivar_iref = waves[iref,:], fluxes[iref,:],ivars[iref,:]
-    #sig_iref = np.sqrt(utils.calc_ivar(ivar_iref))
 
-    # Interpolate spectra to have the same wave grid with the iexp spectrum.
-    # And scale spectra to the same flux level with the iexp spectrum.
-    fluxes_inter = np.zeros_like(fluxes)
-    ivars_inter = np.zeros_like(ivars)
-    masks_inter = np.zeros_like(masks)
+    # define a function to interpolate one-D array
+    def interp_oned(wave_new, wave_old, flux_old, ivar_old, mask_old):
+        '''
+        Args:
+           wave_new: (one-D array) New wavelength
+           wave_old: (one-D array) Old wavelength
+           flux_old: (one-D array) Old flux
+           ivar_old: (one-D array) Old ivar
+           mask_old: (one-D array) Old float mask
+        Returns :
+           flux_new, ivar_new, mask_new (bool)
+        '''
 
-    nexp = np.shape(fluxes)[0]
-    for ii in range(nexp):
+        # make the mask array to be float, used for interpolation
+        masks_float = np.zeros_like(flux_old)
+        masks_float[mask_old] = 1.0
 
-        mask_ii = masks[ii,:]
+        flux_new = interpolate.interp1d(wave_old[mask_old], flux_old[mask_old], kind='cubic', \
+                                             bounds_error=False, fill_value=0.)(wave_new)
+        ivar_new = interpolate.interp1d(wave_old[mask_old], ivar_old[mask_old], kind='cubic', \
+                                             bounds_error=False, fill_value=0.)(wave_new)
+        mask_new_tmp = interpolate.interp1d(wave_old[mask_old], masks_float[mask_old], kind='cubic', \
+                                             bounds_error=False, fill_value=0.)(wave_new)
+        mask_new = (mask_new_tmp > 0.5) & (ivar_new > 0.) & (flux_new != 0.)
+        return flux_new,ivar_new,mask_new
 
-        if np.sum(wave_ref == waves[ii,:]) == np.size(wave_ref):
-            # do not interpolate if the wavelength is exactly same with wave_ref
-            fluxes_inter[ii,:] = fluxes[ii,:].copy()
-            ivars_inter[ii,:] = ivars[ii, :].copy()
-            masks_inter[ii, :] = mask_ii.copy()
-        else:
-            flux_inter_ii = interpolate.interp1d(waves[ii,:][mask_ii],fluxes[ii,:][mask_ii],kind='cubic',\
-                                     bounds_error=False,fill_value=0.)(wave_ref)
-            ivar_inter_ii = interpolate.interp1d(waves[ii,:][mask_ii],ivars[ii, :][mask_ii], kind='cubic',\
-                                     bounds_error=False,fill_value=0.)(wave_ref)
-            mask_inter_ii = interpolate.interp1d(waves[ii,:][mask_ii],masks_float[ii,:][mask_ii],kind='cubic',\
-                                         bounds_error=False,fill_value=0.)(wave_ref)
-            mask_inter_ii = (mask_inter_ii>0.5) & (ivar_inter_ii>0.) & (flux_inter_ii!=0.)
+    if (fluxes.ndim==2) and (wave_ref.ndim==1):
 
-            fluxes_inter[ii,:] = flux_inter_ii #* ratio_ii
-            ivars_inter[ii,:] = ivar_inter_ii #* ratio_ii
-            masks_inter[ii,:] = mask_inter_ii
+        nexp = np.shape(fluxes)[0]
+        # Interpolate spectra to have the same wave grid with the iexp spectrum.
+        # And scale spectra to the same flux level with the iexp spectrum.
+        fluxes_inter = np.zeros((nexp, len(wave_ref)))
+        ivars_inter = np.zeros((nexp, len(wave_ref)))
+        masks_inter = np.zeros((nexp, len(wave_ref)), dtype=bool)
+
+        for ii in range(nexp):
+            mask_ii = masks[ii, :]
+            if np.sum(wave_ref == waves[ii, :]) == np.size(wave_ref):
+                # do not interpolate if the wavelength is exactly same with wave_ref
+                fluxes_inter[ii, :] = fluxes[ii, :].copy()
+                ivars_inter[ii, :] = ivars[ii, :].copy()
+                masks_inter[ii, :] = mask_ii.copy()
+            else:
+                flux_inter_ii, ivar_inter_ii, mask_inter_ii = interp_oned(wave_ref, waves[ii, :], \
+                                                                          fluxes[ii, :],ivars[ii, :], \
+                                                                          masks[ii, :])
+                fluxes_inter[ii, :] = flux_inter_ii  # * ratio_ii
+                ivars_inter[ii, :] = ivar_inter_ii  # * ratio_ii
+                masks_inter[ii, :] = mask_inter_ii
+
+    elif (fluxes.ndim==1) and (wave_ref.ndim==1):
+        fluxes_inter, ivars_inter, masks_inter = interp_oned(wave_ref,fluxes,ivars,masks)
+
+    elif (fluxes.ndim==1) and (wave_ref.ndim==2):
+        nexp = np.shape(wave_ref)[0]
+        fluxes_inter = np.zeros_like(wave_ref)
+        ivars_inter = np.zeros_like(wave_ref)
+        masks_inter = np.zeros_like(wave_ref)
+
+        for ii in range(nexp):
+            if np.sum(wave_ref[ii, :] == waves) == np.size(waves):
+                # do not interpolate if the wavelength is exactly same with wave_ref
+                fluxes_inter[ii, :] = fluxes.copy()
+                ivars_inter[ii, :] = ivars.copy()
+                masks_inter[ii, :] = masks.copy()
+            else:
+                flux_inter_ii, ivar_inter_ii, mask_inter_ii = interp_oned(wave_ref[ii, :], waves, \
+                                                                          fluxes, ivars, masks)
+                fluxes_inter[ii, :] = flux_inter_ii  # * ratio_ii
+                ivars_inter[ii, :] = ivar_inter_ii  # * ratio_ii
+                masks_inter[ii, :] = mask_inter_ii
 
     return fluxes_inter,ivars_inter,masks_inter
 
@@ -405,7 +444,7 @@ def scale_spec(waves,fluxes,ivars,masks=None,flux_iref=None,ivar_iref=None,mask_
                                  const_weights=const_weights, debug=debug, verbose=verbose)
     rms_sn_stack = np.sqrt(np.mean(rms_sn**2))
 
-    nexp = waves.shape[0]
+    nexp = fluxes.shape[0]
 
     # if flux_iref is None, then use the iref spectrum as the reference.
     if flux_iref is None:
@@ -490,6 +529,49 @@ def scale_spec(waves,fluxes,ivars,masks=None,flux_iref=None,ivar_iref=None,mask_
     return fluxes_scale,ivars_scale,scales, omethod
 
 
+def compute_stack(waves,fluxes,ivars,masks,wave_grid,weights):
+    '''
+    Compute the stacked spectrum based on spectra and wave_grid with weights being taken into account.
+    Args:
+        waves:
+        fluxes:
+        ivars:
+        masks:
+        wave_grid:
+        weights:
+    Returns:
+        weighted stacked wavelength, flux and ivar
+    '''
+
+    waves_flat = waves[masks].ravel()
+    fluxes_flat = fluxes[masks].ravel()
+    ivars_flat = ivars[masks].ravel()
+    vars_flat = utils.calc_ivar(ivars_flat)
+    weights_flat = weights[masks].ravel()
+
+    # Counts how many pixels in each wavelength bin
+    num_stack, wave_edges = np.histogram(waves_flat,bins=wave_grid,density=False)
+
+    # Calculate the stacked wavelength
+    wave_stack_total, wave_edges = np.histogram(waves_flat,bins=wave_grid,density=False,weights=waves_flat*weights_flat)
+    weights_total, wave_edges = np.histogram(waves_flat,bins=wave_grid,density=False,weights=weights_flat)
+    wave_stack = wave_stack_total / weights_total
+
+    # Calculate the stacked flux
+    flux_stack_total, wave_edges = np.histogram(waves_flat,bins=wave_grid,density=False,weights=fluxes_flat*weights_flat)
+    flux_stack = flux_stack_total / weights_total
+
+    # Calculate the stacked ivar
+    var_stack_total, wave_edges = np.histogram(waves_flat,bins=wave_grid,density=False,weights=vars_flat*weights_flat**2)
+    var_stack = var_stack_total / weights_total**2
+    ivar_stack = utils.calc_ivar(var_stack)
+    #sig_stack = np.sqrt(var_stack)
+
+    # New mask for the stack
+    mask_stack = (ivar_stack>0.) & (flux_stack!=0.)
+
+    return wave_stack, flux_stack, ivar_stack, mask_stack
+
 def long_clean(waves,fluxes,ivars,masks=None,cenfunc='median', snr_cut=2.0, maxiters=5, sigma=2,
                scale_method='median',hand_scale=None, SN_MAX_MEDSCALE=20., SN_MIN_MEDSCALE=0.5,
                dv_smooth=10000.0,const_weights=False, debug=False, verbose=False):
@@ -573,32 +655,100 @@ fnames = [datapath+'spec1d_flux_S20180903S0136-J0252-0503_GMOS-S_1864May27T16071
           datapath+'spec1d_flux_S20181015S0140-J0252-0503_GMOS-S_1864May27T185252.770.fits']
 gdobj = ['SPAT1073-SLIT0001-DET03','SPAT1167-SLIT0001-DET03','SPAT1071-SLIT0001-DET03','SPAT1072-SLIT0001-DET03',\
          'SPAT1166-SLIT0001-DET03','SPAT1073-SLIT0001-DET03']
+
+verbose=False
+
+# parameters for load_1dspec_to_array
 ex_value = 'OPT'
 flux_value = True
+
+# parameters for new_wave_grid
+wave_method='pixel'
+wave_grid_min=None
+wave_grid_max=None
+A_pix=None
+v_pix=None
+samp_fact = 1.0
+
+# parameters for scale_spec
+cenfunc='median'
+snr_cut=2.0
+maxiters=5
+sigma=3
+scale_method='median'
+hand_scale=None
+SN_MAX_MEDSCALE=20.
+SN_MIN_MEDSCALE=0.5
+dv_smooth=10000.0
+const_weights=False
+
+# parameter for rejections
+maxiter = 5
+
+# Start doing coadding
 waves,fluxes,ivars,masks = load_1dspec_to_array(fnames,gdobj=gdobj,order=None,ex_value=ex_value,flux_value=flux_value)
-from IPython import embed
-embed()
 
-
+# keep the orginal fluxes and ivars
+fluxes_in = np.copy(fluxes)
+ivars_in = np.copy(ivars)
 
 # Define a common fixed wavegrid
+wave_grid = new_wave_grid(waves,wave_method=wave_method,wave_grid_min=wave_grid_min,wave_grid_max=wave_grid_max,
+                  A_pix=A_pix,v_pix=v_pix,samp_fact=samp_fact)
 
-#evalute the sn_weights. This is done once at the beginning
+# Evaluate the sn_weights. This is done once at the beginning
+rms_sn, weights = sn_weights(waves,fluxes,ivars,masks, dv_smooth=10000.0, \
+                             const_weights=False, debug=False, verbose=False)
 
 # get_scale_factors == this will use the common wavegrid and interpolate spectra on it. We can be sinful about
 # covariance for the purposes of determining scale factors. This should return:
 # the scale factors evaluated on each native wavegrid, the prelim coadd evaluated on each native wavegrid
 
+# Interpolate spectra into the native wave grid of the iexp spectrum
+fluxes_inter, ivars_inter, masks_inter = interp_spec(wave_grid, waves, fluxes, ivars, masks)
 
+# avsigclip the interpolated spectra to obtain a high SNR average -- ToDo: This now comes from coadd2d
+flux_iref, flux_median, flux_std = stats.sigma_clipped_stats(fluxes_inter, mask=np.invert(masks_inter), mask_value=0.,
+                                                             sigma=sigma, maxiters=maxiters, cenfunc=cenfunc, axis=0)
+# ToDo: This stuff disappears
+nexp = np.shape(fluxes)[0]
+nused = np.sum(masks_inter, axis=0)
+mask_iref = nused == nexp
+sig2 = 1.0 / (ivars_inter + (ivars_inter <= 0))
+newsig2 = np.sum(sig2 * masks_inter, axis=0) / (nused ** 2 + (nused == 0))
+ivar_iref = mask_iref / (newsig2 + (newsig2 <= 0.0))
+
+fluxes_scale, ivars_scale, scales, omethod = scale_spec(wave_grid, fluxes_inter, ivars_inter, masks=masks_inter, \
+                                                        flux_iref=flux_iref, ivar_iref=ivar_iref, mask_iref=mask_iref, \
+                                                        iref=None, cenfunc=cenfunc, snr_cut=snr_cut, maxiters=maxiters, \
+                                                        sigma=sigma, scale_method=scale_method, hand_scale=hand_scale, \
+                                                        SN_MAX_MEDSCALE=SN_MAX_MEDSCALE,
+                                                        SN_MIN_MEDSCALE=SN_MIN_MEDSCALE, \
+                                                        dv_smooth=dv_smooth, const_weights=const_weights, \
+                                                        verbose=verbose)
+
+scale_array = np.transpose(np.ones_like(fluxes.T)*scales)
+fluxes_native_scale = fluxes*scale_array
+ivars_native_scale = ivars * 1.0/scale_array**2
+
+
+from IPython import embed
+embed()
+
+
+os.exit(-1)
+
+# Copy the robust_optimize_djs control folow
 newmasks = np.copy(masks)
-# COpy the robust_optimize_djs control folow
 iIter = 0
 qdone = False
-thismask = np.copy(inmask)
+thismask = np.copy(masks)
 while (not qdone) and (iIter < maxiter):
-    waves_stack, flux_stack, ivar_stack = compute_stack(waves, fluxes, ivars, newmasks, wave_grid, sn_weights)
-    flux_stack_native, ivar_stack_native = interp_spec(waves, waves_stack, flux_stack, ivar_stack)
-    ivars_new, ivars_tot = update_errors(waves, fluxes, ivars, waves_stack, flux_stack_native, ivar_stack_native)
+    wave_stack, flux_stack, ivar_stack, mask_stack = compute_stack(waves, fluxes_native_scale, ivars_native_scale, \
+                                                       thismask, wave_grid, weights)
+    fluxes_stack_native, ivars_stack_native, masks_stack_native = interp_spec(waves, wave_stack, flux_stack, ivar_stack,mask_stack)
+
+    ivars_new, ivars_tot = update_errors(waves, fluxes, ivars, wave_stack, flux_stack_native, ivar_stack_native)
     thismask, qdone = pydl.djs_reject(fluxes, flux_stack_native, outmask=thismask, inmask=inmask, invvar=ivars_tot,
                                       lower=lower, upper=upper, maxdev=maxdev, maxrej=maxrej,
                                       groupdim=groupdim, groupsize=groupsize, groupbadpix=groupbadpix, grow=grow,
