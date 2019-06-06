@@ -265,7 +265,6 @@ def main():
                     print('Directory: {0}'.format(wdir))
                     command_line = [ 'run_pypeit', pyp_file, '-o' ]
                     print('Command line: {0}'.format(' '.join(command_line)))
-                    IPython.embed()
                     retval = subprocess.call(command_line, stderr=f, cwd=wdir)
                     npass = report_test(retval, npass)
                     subprocess.call(['tail', '-2', logfile])
