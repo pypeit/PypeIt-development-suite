@@ -204,6 +204,32 @@ def new_wave_grid(waves,wave_method='iref',iref=0,wave_grid_min=None,wave_grid_m
 
     return wave_grid
 
+
+def interp_oned(wave_new, wave_old, flux_old, ivar_old, mask_old):
+    '''
+    Args:
+       wave_new: (one-D array) New wavelength
+       wave_old: (one-D array) Old wavelength
+       flux_old: (one-D array) Old flux
+       ivar_old: (one-D array) Old ivar
+       mask_old: (one-D array) Old float mask
+    Returns :
+       flux_new, ivar_new, mask_new (bool)
+    '''
+
+    # make the mask array to be float, used for interpolation
+    masks_float = np.zeros_like(flux_old)
+    masks_float[mask_old] = 1.0
+
+    flux_new = interpolate.interp1d(wave_old[mask_old], flux_old[mask_old], kind='cubic', \
+                                         bounds_error=False, fill_value=0.)(wave_new)
+    ivar_new = interpolate.interp1d(wave_old[mask_old], ivar_old[mask_old], kind='cubic', \
+                                         bounds_error=False, fill_value=0.)(wave_new)
+    mask_new_tmp = interpolate.interp1d(wave_old[mask_old], masks_float[mask_old], kind='cubic', \
+                                         bounds_error=False, fill_value=0.)(wave_new)
+    mask_new = (mask_new_tmp > 0.5) & (ivar_new > 0.) & (flux_new != 0.)
+    return flux_new,ivar_new,mask_new
+
 def interp_spec(wave_ref, waves, fluxes, ivars, masks):
     '''
     Interpolate all spectra to the page of wave_ref
@@ -215,34 +241,6 @@ def interp_spec(wave_ref, waves, fluxes, ivars, masks):
         iref:
     Returns:
     '''
-
-
-
-    # define a function to interpolate one-D array
-    def interp_oned(wave_new, wave_old, flux_old, ivar_old, mask_old):
-        '''
-        Args:
-           wave_new: (one-D array) New wavelength
-           wave_old: (one-D array) Old wavelength
-           flux_old: (one-D array) Old flux
-           ivar_old: (one-D array) Old ivar
-           mask_old: (one-D array) Old float mask
-        Returns :
-           flux_new, ivar_new, mask_new (bool)
-        '''
-
-        # make the mask array to be float, used for interpolation
-        masks_float = np.zeros_like(flux_old)
-        masks_float[mask_old] = 1.0
-
-        flux_new = interpolate.interp1d(wave_old[mask_old], flux_old[mask_old], kind='cubic', \
-                                             bounds_error=False, fill_value=0.)(wave_new)
-        ivar_new = interpolate.interp1d(wave_old[mask_old], ivar_old[mask_old], kind='cubic', \
-                                             bounds_error=False, fill_value=0.)(wave_new)
-        mask_new_tmp = interpolate.interp1d(wave_old[mask_old], masks_float[mask_old], kind='cubic', \
-                                             bounds_error=False, fill_value=0.)(wave_new)
-        mask_new = (mask_new_tmp > 0.5) & (ivar_new > 0.) & (flux_new != 0.)
-        return flux_new,ivar_new,mask_new
 
     if (fluxes.ndim==2) and (wave_ref.ndim==1):
 
@@ -384,7 +382,7 @@ def sn_weights(waves, fluxes, ivars, masks, dv_smooth=10000.0, const_weights=Fal
         # Finish
         return rms_sn, weights
 
-def median_ratio_flux(flux,sig,flux_iref,sig_iref,mask=None,mask_iref=None,
+def median_ratio_flux(flux,ivar,flux_ref,ivar_ref,mask=None,mask_ref=None,
                       cenfunc='median',snr_cut=2.0, maxiters=5,sigma=3):
     '''
     Calculate the ratio between reference spectrum and your spectrum.
@@ -392,10 +390,10 @@ def median_ratio_flux(flux,sig,flux_iref,sig_iref,mask=None,mask_iref=None,
     Args:
         flux:
         sig:
-        flux_iref:
-        sig_iref:
+        flux_ref:
+        sig_ref:
         mask:
-        mask_iref:
+        mask_ref:
         snr_cut:
         maxiters:
         sigma:
@@ -404,19 +402,32 @@ def median_ratio_flux(flux,sig,flux_iref,sig_iref,mask=None,mask_iref=None,
     '''
 
     ## Mask for reference spectrum and your spectrum
-    if mask_iref is None:
-        mask_iref = (sig_iref>0.) & (flux_iref/sig_iref>snr_cut)
+    if mask_ref is None:
+        mask_ref = (ivar_ref > 0.0) & (flux_ref*np.sqrt(ivar_ref) > snr_cut)
+    if np.sum(mask_ref)<1:
+        msgs.warn('Not a single pixel has SNR>{:}, estimate median ratio based on data with \
+                   20-80 percentile'.format(snr_cut))
+        p20 = np.percentile(flux_ref, 20)
+        p80 = np.percentile(flux_ref, 80)
+        mask_ref = (ivar_ref > 0.0) & (flux_ref>p20) & (flux_ref<p80)
     if mask is None:
-        mask = (sig>0.) & (flux/sig>snr_cut)
+        mask = (ivar > 0.0) & (flux*np.sqrt(ivar) > snr_cut)
+    if np.sum(mask_ref)<1:
+        msgs.warn('Not a single pixel has SNR>{:}, estimate median ratio based on data with \
+                   20-80 percentile'.format(snr_cut))
+        p20 = np.percentile(flux, 20)
+        p80 = np.percentile(flux, 80)
+        mask_ref = (ivar > 0.0) & (flux > p20) & (flux < p80)
 
     ## Calculate the ratio
-    ratio = flux_iref / flux
-    mask_all = mask & mask_iref & (flux>0.) & (flux_iref>0.)
-    ratio_mean,ratio_median,ratio_std = stats.sigma_clipped_stats(ratio,np.invert(mask_all),cenfunc=cenfunc,\
-                                                            maxiters=maxiters,sigma=sigma)
+    ratio = flux_ref/(flux + (flux == 0.0))
+    mask_all = mask & mask_ref & (flux > 0.0) & (flux_ref > 0.0)
+    ratio_mean,ratio_median,ratio_std = stats.sigma_clipped_stats(ratio,np.invert(mask_all),cenfunc=cenfunc,
+                                                                  maxiters=maxiters,sigma=sigma)
     #ratio_array = np.ones_like(flux) * ratio_median
 
     return ratio_median
+
 
 def scale_spec(waves,fluxes,ivars,masks=None,flux_iref=None,ivar_iref=None,mask_iref=None,
                iref=None,cenfunc='median',snr_cut=2.0, maxiters=5,sigma=3,
@@ -508,7 +519,7 @@ def scale_spec(waves,fluxes,ivars,masks=None,flux_iref=None,ivar_iref=None,mask_
             flux = fluxes[iexp,:]
             sig = np.sqrt(utils.calc_ivar(ivars[iexp,:]))
             mask = masks[iexp,:]
-            med_scale = median_ratio_flux(flux,sig,flux_iref,sig_iref,mask=mask,mask_iref=mask_iref,
+            med_scale = median_ratio_flux(flux,sig,flux_iref,sig_iref,mask=mask,mask_ref=mask_iref,
                       cenfunc=cenfunc,snr_cut=snr_cut, maxiters=maxiters,sigma=sigma)
             # Apply
             med_scale= np.minimum(med_scale, 10.0)
@@ -765,7 +776,8 @@ def long_reject(waves, fluxes, ivars, masks, fluxes_stack, ivars_stack, do_offse
 
         if check:
             msgs.info('Measured effective rejection from distribution of chi^2')
-            msgs.info('Instead of rejecting sigrej={:}. Use threshold sigrej_eff={:}'.format(sigrej_final,sigrej_eff))
+            msgs.info('Instead of rejecting sigrej={:}. Use threshold sigrej_eff={:}'\
+                      .format(sigrej_final,np.round(sigrej_eff,2)))
 
             gdtmp = (outmasks[iexp, :] >0) & (ivar_real>0.)
             chi = (iflux[gdtmp] - newflux_now[gdtmp] - offset) * np.sqrt(ivar_cap[gdtmp])
