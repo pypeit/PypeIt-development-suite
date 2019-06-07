@@ -5,8 +5,9 @@ import matplotlib.pyplot as plt
 from scipy import interpolate
 from astropy import stats
 from astropy.io import fits
-from pkg_resources import resource_filename
+from astropy import convolution
 
+from pkg_resources import resource_filename
 from pypeit import utils
 from pypeit import msgs
 from pypeit.core import load
@@ -231,9 +232,9 @@ def interp_oned(wave_new, wave_old, flux_old, ivar_old, mask_old):
     mask_new = (mask_new_tmp > 0.5) & (ivar_new > 0.) & (flux_new != 0.)
     return flux_new,ivar_new,mask_new
 
-def interp_spec(wave_ref, waves, fluxes, ivars, masks):
+def interp_spec(wave_new, waves, fluxes, ivars, masks):
     '''
-    Interpolate all spectra to the page of wave_ref
+    Interpolate all spectra to the page of wave_new
     Args:
         waves:
         fluxes:
@@ -243,53 +244,50 @@ def interp_spec(wave_ref, waves, fluxes, ivars, masks):
     Returns:
     '''
 
-    if (fluxes.ndim==2) and (wave_ref.ndim==1):
-
+    if (fluxes.ndim==2) and (wave_new.ndim==1):
         nexp = np.shape(fluxes)[0]
         # Interpolate spectra to have the same wave grid with the iexp spectrum.
         # And scale spectra to the same flux level with the iexp spectrum.
-        fluxes_inter = np.zeros((nexp, len(wave_ref)))
-        ivars_inter = np.zeros((nexp, len(wave_ref)))
-        masks_inter = np.zeros((nexp, len(wave_ref)), dtype=bool)
-
+        fluxes_inter = np.zeros((nexp, wave_new.size))
+        ivars_inter  = np.zeros((nexp, wave_new.size))
+        masks_inter  = np.zeros((nexp, wave_new.size), dtype=bool)
         for ii in range(nexp):
             mask_ii = masks[ii, :]
-            if np.sum(wave_ref == waves[ii, :]) == np.size(wave_ref):
-                # do not interpolate if the wavelength is exactly same with wave_ref
+            if np.sum(wave_new == waves[ii, :]) == np.size(wave_new):
+                # do not interpolate if the wavelength is exactly same with wave_new
                 fluxes_inter[ii, :] = fluxes[ii, :].copy()
                 ivars_inter[ii, :] = ivars[ii, :].copy()
                 masks_inter[ii, :] = mask_ii.copy()
             else:
-                flux_inter_ii, ivar_inter_ii, mask_inter_ii = interp_oned(wave_ref, waves[ii, :], \
-                                                                          fluxes[ii, :],ivars[ii, :], \
-                                                                          masks[ii, :])
+                flux_inter_ii, ivar_inter_ii, mask_inter_ii = \
+                    interp_oned(wave_new, waves[ii, :],fluxes[ii, :],ivars[ii, :], masks[ii, :])
                 fluxes_inter[ii, :] = flux_inter_ii  # * ratio_ii
                 ivars_inter[ii, :] = ivar_inter_ii  # * ratio_ii
                 masks_inter[ii, :] = mask_inter_ii
 
-    elif (fluxes.ndim==1) and (wave_ref.ndim==1):
-        fluxes_inter, ivars_inter, masks_inter = interp_oned(wave_ref,fluxes,ivars,masks)
+    elif (fluxes.ndim==1) and (wave_new.ndim==1):
+        fluxes_inter, ivars_inter, masks_inter = interp_oned(wave_new,fluxes,ivars,masks)
 
-    elif (fluxes.ndim==1) and (wave_ref.ndim==2):
-        nexp = np.shape(wave_ref)[0]
-        fluxes_inter = np.zeros_like(wave_ref)
-        ivars_inter = np.zeros_like(wave_ref)
-        masks_inter = np.zeros_like(wave_ref)
+    elif (fluxes.ndim==1) and (wave_new.ndim==2):
+        nexp = np.shape(wave_new)[0]
+        fluxes_inter = np.zeros_like(wave_new)
+        ivars_inter = np.zeros_like(wave_new)
+        masks_inter = np.zeros_like(wave_new)
 
         for ii in range(nexp):
-            if np.sum(wave_ref[ii, :] == waves) == np.size(waves):
-                # do not interpolate if the wavelength is exactly same with wave_ref
+            if np.sum(wave_new[ii, :] == waves) == np.size(waves):
+                # do not interpolate if the wavelength is exactly same with wave_new
                 fluxes_inter[ii, :] = fluxes.copy()
                 ivars_inter[ii, :] = ivars.copy()
                 masks_inter[ii, :] = masks.copy()
             else:
-                flux_inter_ii, ivar_inter_ii, mask_inter_ii = interp_oned(wave_ref[ii, :], waves, \
-                                                                          fluxes, ivars, masks)
+                flux_inter_ii, ivar_inter_ii, mask_inter_ii = \
+                    interp_oned(wave_new[ii, :], waves, fluxes, ivars, masks)
                 fluxes_inter[ii, :] = flux_inter_ii  # * ratio_ii
                 ivars_inter[ii, :] = ivar_inter_ii  # * ratio_ii
                 masks_inter[ii, :] = mask_inter_ii
 
-    return fluxes_inter,ivars_inter,masks_inter
+    return fluxes_inter, ivars_inter, masks_inter
 
 def sn_weights(waves, fluxes, ivars, masks, dv_smooth=10000.0, const_weights=False, verbose=False):
     """ Calculate the S/N of each input spectrum and create an array of (S/N)^2 weights to be used
@@ -382,8 +380,8 @@ def sn_weights(waves, fluxes, ivars, masks, dv_smooth=10000.0, const_weights=Fal
     # Finish
     return rms_sn, weights
 
-def median_ratio_flux(flux,ivar,flux_ref,ivar_ref,mask=None,mask_ref=None,
-                      cenfunc='median',snr_cut=2.0, maxiters=5,sigma=3):
+def robust_median_ratio(flux,ivar,flux_ref,ivar_ref, ref_percentile=20.0, min_good=0.05, mask=None, mask_ref=None,
+                        cenfunc='median', maxiters=5, max_factor = 10.0, sigrej = 3.0):
     '''
     Calculate the ratio between reference spectrum and your spectrum.
     Need to be in the same wave grid !!!
@@ -402,36 +400,36 @@ def median_ratio_flux(flux,ivar,flux_ref,ivar_ref,mask=None,mask_ref=None,
     '''
 
     ## Mask for reference spectrum and your spectrum
-    if mask_ref is None:
-        mask_ref = (ivar_ref > 0.0) & (flux_ref*np.sqrt(ivar_ref) > snr_cut)
-    if np.sum(mask_ref)<1:
-        msgs.warn('Not a single pixel has SNR>{:}, estimate median ratio based on data with \
-                   20-80 percentile'.format(snr_cut))
-        p20 = np.percentile(flux_ref, 20)
-        p80 = np.percentile(flux_ref, 80)
-        mask_ref = (ivar_ref > 0.0) & (flux_ref>p20) & (flux_ref<p80)
     if mask is None:
-        mask = (ivar > 0.0) & (flux*np.sqrt(ivar) > snr_cut)
-    if np.sum(mask_ref)<1:
-        msgs.warn('Not a single pixel has SNR>{:}, estimate median ratio based on data with \
-                   20-80 percentile'.format(snr_cut))
-        p20 = np.percentile(flux, 20)
-        p80 = np.percentile(flux, 80)
-        mask_ref = (ivar > 0.0) & (flux > p20) & (flux < p80)
+        mask = ivar > 0.0
+    if mask_ref is None:
+        mask_ref = ivar_ref > 0.0
 
-    ## Calculate the ratio
-    ratio = flux_ref/(flux + (flux == 0.0))
-    mask_all = mask & mask_ref & (flux > 0.0) & (flux_ref > 0.0)
-    ratio_mean,ratio_median,ratio_std = stats.sigma_clipped_stats(ratio,np.invert(mask_all),cenfunc=cenfunc,
-                                                                  maxiters=maxiters,sigma=sigma)
-    #ratio_array = np.ones_like(flux) * ratio_median
+    nspec = flux.size
+    snr_ref = flux_ref * np.sqrt(ivar_ref)
+    snr_ref_best = np.percentile(snr_ref[mask_ref], ref_percentile)
+    calc_mask = (snr_ref > snr_ref_best) & mask_ref & mask
+    if (np.sum(calc_mask) > min_good*nspec):
+        # Take the best part of the higher SNR reference spectrum
+        flux_ref_mean, flux_ref_median, flux_ref_std = \
+            stats.sigma_clipped_stats(flux_ref,np.invert(calc_mask),cenfunc=cenfunc,maxiters=maxiters,sigma=sigrej)
+        flux_dat_mean, flux_dat_median, flux_dat_std = \
+            stats.sigma_clipped_stats(flux,np.invert(calc_mask),cenfunc=cenfunc,maxiters=maxiters,sigma=sigrej)
+        if (flux_ref_median < 0.0) or (flux_dat_mean < 0.0):
+            msgs.warn('Negative median flux found. Not rescaling')
+            ratio = 1.0
+        else:
+            ratio = np.fmax(np.fmin(flux_ref_median/flux_dat_median, max_factor), 1.0/max_factor)
+    else:
+        msgs.warn('Found only {%d} good pixels for computing median flux ratio.' + msgs.newline() +
+                  'No median rescaling applied'.format(np.sum(calc_mask)))
+        ratio = 1.0
 
-    return ratio_median
+    return ratio
 
-
-def scale_spec(waves,fluxes,ivars,masks=None,flux_iref=None,ivar_iref=None,mask_iref=None,
-               iref=None,cenfunc='median',snr_cut=2.0, maxiters=5,sigma=3,
-               scale_method='median',hand_scale=None,SN_MAX_MEDSCALE=20.,SN_MIN_MEDSCALE=0.5,
+def scale_spec(wave, flux, ivar, flux_ref, ivar_ref, mask=None, mask_ref=None,
+               cenfunc='median',ref_percentile=20.0, maxiters=5,sigrej=3,
+               scale_method=None,hand_scale=None, sn_max_medscale=2.0,sn_min_medscale=0.5,
                dv_smooth=10000.0,const_weights=False,verbose=False):
     '''
     Scale the spectra into the same page with the reference spectrum.
@@ -452,22 +450,13 @@ def scale_spec(waves,fluxes,ivars,masks=None,flux_iref=None,ivar_iref=None,mask_
     Returns:
     '''
 
-    # ToDo: Actually do we need wavelength to be here? maybe not.
-    # Just need to make sure all the spectra in the same wave grid.
-    if waves.ndim == 2:
-        if abs(np.mean(waves)-np.mean(waves[0,:]))>1e-6:
-            raise ValueError("Your spectra are not in the same wave grid. Please run 'interp_spec' first!")
-        else:
-            wave = waves[0,:]
-    else:
-        wave = waves.copy()
-
-    if masks is None:
-        masks = (ivars>0.) & np.isfinite(fluxes)
+    if mask is None:
+        mask = ivar > 0.0
+    if mask_ref is None
+        mask_ref = ivar_ref > 0.0
 
     # estimates the SNR of each spectrum and the stacked mean SNR
-    rms_sn, weights = sn_weights(waves, fluxes, ivars, masks, dv_smooth=dv_smooth, \
-                                 const_weights=const_weights, verbose=verbose)
+    rms_sn, weights = sn_weights(wave, flux, ivar, mask, dv_smooth=dv_smooth, verbose) const_weights=const_weights, verbose=verbose)
     rms_sn_stack = np.sqrt(np.mean(rms_sn**2))
 
     nexp = fluxes.shape[0]

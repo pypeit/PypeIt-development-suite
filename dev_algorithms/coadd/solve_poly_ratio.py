@@ -25,7 +25,7 @@ import IPython
 #        ymult = utils.func_val(acoeff, xvector, polyfunc, minx=wave_min, maxx=wave_max)
 
 
-def error_renormalize(data, model, ivar, mask=None, clip = 6.0, max_corr = 5.0):
+def error_renormalize(data, model, ivar, mask=None, clip = 6.0, max_corr = 5.0, debug=False):
 
     if mask is None:
         mask = (ivar > 0)
@@ -47,7 +47,16 @@ def error_renormalize(data, model, ivar, mask=None, clip = 6.0, max_corr = 5.0):
                       "Setting correction to sigma_corr = {:f}".format(sigma_corr, max_corr, max_corr))
             sigma_corr = max_corr
 
-        return sigma_corr
+    else:
+        msgs.warn('No good pixels in error_renormalize. Threre are probably issues with your data')
+        sigma_corr = 1.0
+
+    if debug:
+        pass
+        # Insert Feige's QA routine here
+
+    return sigma_corr
+
 
 def poly_ratio_fitfunc_chi2(theta, flux_ref, thismask, arg_dict):
     """
@@ -179,45 +188,43 @@ mask = ivar > 0
 #    rms_snr_ref, _ = coadd.sn_weights(wave, flux_ref, ivar_ref, mask=mask_ref)
 #sys.exit(-1)
 
-#def solve_poly_ratio(wave, flux, ivar, flux_ref, ivar_ref, norder, mask = None, mask_ref = None, func='legendre',
-#                     maxiter=3, sticky=True, use_mad=True,
-#                     lower=3.0, upper=3.0, min_good =0.05):
-func ='legendre'
-norder = 3
-maxiter = 3
-sticky = True
-lower = 3.0 #stats.norm.cdf(-3.0)
-upper = 3.0 #stats.norm.cdf(3.0)
-min_good = 0.05
-use_mad=True
-debug=True
+def solve_poly_ratio(wave, flux, ivar, flux_ref, ivar_ref, norder, mask = None, mask_ref = None,
+                     scale_min = 0.05, scale_max = 100.0, func='legendre',
+                     maxiter=3, sticky=True, lower=3.0, upper=3.0, min_good=0.05, debug=True):
 
-if mask is None:
-    mask = (ivar > 0.0)
-if mask_ref is None:
-    mask_ref = (ivar_ref > 0.0)
 
-nspec = wave.size
-# Determine an initial guess
-if ((np.sum(mask) > min_good*nspec) & (np.sum(mask_ref) > min_good*nspec)):
-    flux_25 = np.percentile(flux[mask],25)
-    flux_ref_25 = np.percentile(flux_ref[mask_ref],25)
-    ratio = flux_ref_25/flux_25
-else:
-    ratio = 1.0
-guess = np.append(ratio, np.zeros(norder-1))
-arg_dict = dict(flux = flux, ivar = ivar, mask = mask,
-                ivar_ref = ivar_ref,
-                wave = wave, wave_min = wave.min(),
-                wave_max = wave.max(), func = func, norder = norder, guess = guess)
+    if mask is None:
+        mask = (ivar > 0.0)
+    if mask_ref is None:
+        mask_ref = (ivar_ref > 0.0)
 
-result, ymodel, ivartot, outmask = utils.robust_optimize(flux_ref, poly_ratio_fitfunc, arg_dict,
-                                                         inmask=mask_ref, use_mad=False,
-                                                         maxiter=maxiter, lower=lower, upper=upper, sticky=sticky)
+    nspec = wave.size
+    # Determine an initial guess
+    if ((np.sum(mask) > min_good*nspec) & (np.sum(mask_ref) > min_good*nspec)):
+        flux_25 = np.percentile(flux[mask],25)
+        flux_ref_25 = np.percentile(flux_ref[mask_ref],25)
+        ratio = flux_ref_25/flux_25
+    else:
+        ratio = 1.0
+    guess = np.append(ratio, np.zeros(norder-1))
+    wave_min = wave.min()
+    wave_max = wave.max()
+    arg_dict = dict(flux = flux, ivar = ivar, mask = mask,
+                    ivar_ref = ivar_ref, wave = wave, wave_min = wave_min,
+                    wave_max = wave_max, func = func, norder = norder, guess = guess)
 
-if debug:
-    plt.plot(wave,flux_ref, color='black', drawstyle='steps-mid', zorder=3, label='Reference spectrum')
-    plt.plot(wave,flux, color='dodgerblue', drawstyle='steps-mid', zorder = 10, alpha = 0.5, label='Original spectrum')
-    plt.plot(wave,ymodel, color='red', drawstyle='steps-mid', alpha=0.7, zorder=1, linewidth=2, label='Rescaled spectrum')
-    plt.legend()
-    plt.show()
+    result, ymodel, ivartot, outmask = utils.robust_optimize(flux_ref, poly_ratio_fitfunc, arg_dict,inmask=mask_ref,
+                                                             maxiter=maxiter, lower=lower, upper=upper, sticky=sticky)
+    ymult1 = utils.func_val(result.x, wave, func, minx=wave_min, maxx=wave_max)
+    ymult = np.fmin(np.fmax(ymult1, scale_min), scale_max)
+    flux_rescale = ymul1*flux
+    ivar_rescale = ivar/ymult
+
+    if debug:
+        plt.plot(wave,flux_ref, color='black', drawstyle='steps-mid', zorder=3, label='Reference spectrum')
+        plt.plot(wave,flux, color='dodgerblue', drawstyle='steps-mid', zorder = 10, alpha = 0.5, label='Original spectrum')
+        plt.plot(wave,ymodel, color='red', drawstyle='steps-mid', alpha=0.7, zorder=1, linewidth=2, label='Rescaled spectrum')
+        plt.legend()
+        plt.show()
+
+    return ymult, flux_rescale, ivar_rescale, outmask
