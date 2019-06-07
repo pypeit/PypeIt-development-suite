@@ -8,7 +8,8 @@ from pypeit import utils
 from pypeit.core import coadd
 from scipy import interpolate
 from coadd_new import interp_spec
-
+from scipy import stats
+import IPython
 
 #def solve_poly_fn(theta, xvector, polyfunc, nback = None):
 #
@@ -23,8 +24,14 @@ from coadd_new import interp_spec
 #        ymult = utils.func_val(acoeff, xvector, polyfunc, minx=wave_min, maxx=wave_max)
 
 
-
-
+def error_renormalize(chi2, clip = 6.0):
+    igood = chi2 < clip**2
+    if (np.sum(igood) > 0):
+        chi2_good = chi2[igood]
+        chi2_sort = np.sort(chi2_good)
+        gauss_prob = 1.0 - 2.0 * stats.norm.cdf(-1.0)
+        chi2_sigrej = np.percentile(chi2, 100.0*gauss_prob)
+        one_sigma = np.sqrt(chi2_sigrej)
 
 def poly_ratio_fitfunc_chi2(theta, flux_ref, thismask, arg_dict):
     """
@@ -90,6 +97,7 @@ def poly_ratio_fitfunc(flux_ref, thismask, arg_dict, **kwargs_opt):
     mask_both = mask & thismask
     totvar = utils.calc_ivar(ivar_ref) + ymult**2*utils.calc_ivar(ivar)
     ivartot = mask_both*utils.calc_ivar(totvar)
+    # Now rescale the errors
 
     return result, flux_scale, ivartot
 
@@ -162,10 +170,10 @@ func ='legendre'
 norder = 3
 maxiter = 3
 sticky = True
-use_mad = False #True
-lower = 3.0
-upper = 3.0
+lower = 3.0 #stats.norm.cdf(-3.0)
+upper = 3.0 #stats.norm.cdf(3.0)
 min_good = 0.05
+use_mad=True
 
 if mask is None:
     mask = (ivar > 0.0)
@@ -187,8 +195,7 @@ arg_dict = dict(flux = flux, ivar = ivar, mask = mask,
                 wave_max = wave.max(), func = func, norder = norder, guess = guess)
 
 result, ymodel, ivartot, outmask = utils.robust_optimize(flux_ref, poly_ratio_fitfunc, arg_dict,
-                                                         inmask=mask_ref,
-                                                         maxiter=maxiter, lower=lower, upper=upper, sticky=sticky,
-                                                         use_mad=use_mad)
+                                                         inmask=mask_ref, use_mad=False,
+                                                         maxiter=maxiter, lower=lower, upper=upper, sticky=sticky)
 
 
