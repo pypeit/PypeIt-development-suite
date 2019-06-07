@@ -784,9 +784,9 @@ def long_reject(waves, fluxes, ivars, masks, fluxes_stack, ivars_stack, do_offse
             # Plot Chi distribution
             resid_gauss_plot(chi, one_sigma)
             # Compare individual exposoures with stack spectrum.
-            plt.plot(waves[iexp,:],newflux_now,'k-',lw=2,label='Coadd model')
-            plt.plot(waves[iexp,:],iflux,'b-',alpha=0.7,label='{:}th exposure'.format(iexp+1))
-            plt.plot(waves[iexp,:],np.sqrt(utils.calc_ivar(ivar)),'c:')
+            plt.plot(waves[iexp,:],newflux_now,color='k',linestyle='steps-mid',lw=2,label='Coadd model')
+            plt.plot(waves[iexp,:],iflux,color='b',linestyle='steps-mid',alpha=0.7,label='{:}th exposure'.format(iexp+1))
+            plt.plot(waves[iexp,:],np.sqrt(utils.calc_ivar(ivar)),color='c',linestyle='steps-mid')
             plt.plot(waves[iexp,:][np.invert(gdtmp)],iflux[np.invert(gdtmp)],'s',mfc='None',
                         mec='r',label='Rejected pixels')
             ymin = np.percentile(newflux_now,5)
