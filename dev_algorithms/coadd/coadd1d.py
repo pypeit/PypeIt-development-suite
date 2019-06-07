@@ -357,7 +357,6 @@ def sn_weights(waves, fluxes, ivars, masks, dv_smooth=10000.0, const_weights=Fal
         if verbose:
             msgs.info("Using constant weights for coadding, RMS S/N = {:g}".format(rms_sn_stack))
         weights = np.outer(sn2, np.ones(nspec))
-        return rms_sn, weights
     else:
         if verbose:
             msgs.info("Using wavelength dependent weights for coadding")
@@ -379,8 +378,8 @@ def sn_weights(waves, fluxes, ivars, masks, dv_smooth=10000.0, const_weights=Fal
             sn_conv = convolution.convolve(sn_med2, gauss_kernel)
             weights[iexp,:] = sn_conv
 
-        # Finish
-        return rms_sn, weights
+    # Finish
+    return rms_sn, weights
 
 def median_ratio_flux(flux,ivar,flux_ref,ivar_ref,mask=None,mask_ref=None,
                       cenfunc='median',snr_cut=2.0, maxiters=5,sigma=3):
