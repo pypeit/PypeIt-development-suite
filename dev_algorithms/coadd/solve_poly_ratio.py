@@ -9,6 +9,7 @@ from pypeit.core import coadd
 from scipy import interpolate
 from coadd_new import interp_spec
 from scipy import stats
+from pypeit import msgs
 import IPython
 
 #def solve_poly_fn(theta, xvector, polyfunc, nback = None):
@@ -24,14 +25,29 @@ import IPython
 #        ymult = utils.func_val(acoeff, xvector, polyfunc, minx=wave_min, maxx=wave_max)
 
 
-def error_renormalize(chi2, clip = 6.0):
-    igood = chi2 < clip**2
+def error_renormalize(data, model, ivar, mask=None, clip = 6.0, max_corr = 5.0):
+
+    if mask is None:
+        mask = (ivar > 0)
+
+    chi2 = ivar*(data-model)**2
+    igood = (chi2 < clip**2)
     if (np.sum(igood) > 0):
         chi2_good = chi2[igood]
-        chi2_sort = np.sort(chi2_good)
         gauss_prob = 1.0 - 2.0 * stats.norm.cdf(-1.0)
-        chi2_sigrej = np.percentile(chi2, 100.0*gauss_prob)
-        one_sigma = np.sqrt(chi2_sigrej)
+        chi2_sigrej = np.percentile(chi2_good[igood], 100.0*gauss_prob)
+        sigma_corr = np.sqrt(chi2_sigrej)
+        if sigma_corr < 1.0:
+            msgs.warn("Error renormalization found correction factor sigma_corr = {:f} < 1." + msgs.newline() +
+                      " Errors are overestimated so not applying correction".format(sigma_corr))
+            sigma_corr = 1.0
+        if sigma_corr > max_corr:
+            msgs.warn("Error renormalization found sigma_corr/sigma = {:f} > {:f}." + msgs.newline() +
+                      "Errors are severely underestimated." + msgs.newline() +
+                      "Setting correction to sigma_corr = {:f}".format(sigma_corr, max_corr, max_corr))
+            sigma_corr = max_corr
+
+        return sigma_corr
 
 def poly_ratio_fitfunc_chi2(theta, flux_ref, thismask, arg_dict):
     """
