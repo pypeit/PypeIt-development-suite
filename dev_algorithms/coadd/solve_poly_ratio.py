@@ -31,7 +31,7 @@ def error_renormalize(data, model, ivar, mask=None, clip = 6.0, max_corr = 5.0):
         mask = (ivar > 0)
 
     chi2 = ivar*(data-model)**2
-    igood = (chi2 < clip**2)
+    igood = (chi2 < clip**2) & mask
     if (np.sum(igood) > 0):
         chi2_good = chi2[igood]
         gauss_prob = 1.0 - 2.0 * stats.norm.cdf(-1.0)
@@ -190,6 +190,7 @@ lower = 3.0 #stats.norm.cdf(-3.0)
 upper = 3.0 #stats.norm.cdf(3.0)
 min_good = 0.05
 use_mad=True
+debug=True
 
 if mask is None:
     mask = (ivar > 0.0)
@@ -214,4 +215,9 @@ result, ymodel, ivartot, outmask = utils.robust_optimize(flux_ref, poly_ratio_fi
                                                          inmask=mask_ref, use_mad=False,
                                                          maxiter=maxiter, lower=lower, upper=upper, sticky=sticky)
 
-
+if debug:
+    plt.plot(wave,flux_ref, color='black', drawstyle='steps-mid', zorder=3, label='Reference spectrum')
+    plt.plot(wave,flux, color='dodgerblue', drawstyle='steps-mid', zorder = 10, alpha = 0.5, label='Original spectrum')
+    plt.plot(wave,ymodel, color='red', drawstyle='steps-mid', alpha=0.7, zorder=1, linewidth=2, label='Rescaled spectrum')
+    plt.legend()
+    plt.show()
