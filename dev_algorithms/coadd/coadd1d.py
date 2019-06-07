@@ -4,6 +4,7 @@ import numpy as np
 import matplotlib.pyplot as plt
 from scipy import interpolate
 from astropy import stats
+from pkg_resources import resource_filename
 
 from pypeit import utils
 from pypeit import msgs
@@ -19,9 +20,9 @@ plt.rcParams["xtick.minor.visible"] = True
 plt.rcParams["ytick.minor.visible"] = True
 plt.rcParams["ytick.direction"] = 'in'
 plt.rcParams["xtick.direction"] = 'in'
-plt.rcParams["xtick.labelsize"] = 17
-plt.rcParams["ytick.labelsize"] = 17
-plt.rcParams["axes.labelsize"] = 14
+plt.rcParams["xtick.labelsize"] = 15
+plt.rcParams["ytick.labelsize"] = 15
+plt.rcParams["axes.labelsize"] = 17
 
 
 def load_1dspec_to_array(fnames,gdobj=None,order=None,ex_value='OPT',flux_value=True):
@@ -291,7 +292,7 @@ def interp_spec(wave_ref, waves, fluxes, ivars, masks):
 
     return fluxes_inter,ivars_inter,masks_inter
 
-def sn_weights(waves, fluxes, ivars, masks, dv_smooth=10000.0, const_weights=False, debug=False, verbose=False):
+def sn_weights(waves, fluxes, ivars, masks, dv_smooth=10000.0, const_weights=False, verbose=False):
     """ Calculate the S/N of each input spectrum and create an array of (S/N)^2 weights to be used
     for coadding.
 
@@ -420,7 +421,7 @@ def median_ratio_flux(flux,sig,flux_iref,sig_iref,mask=None,mask_iref=None,
 def scale_spec(waves,fluxes,ivars,masks=None,flux_iref=None,ivar_iref=None,mask_iref=None,
                iref=None,cenfunc='median',snr_cut=2.0, maxiters=5,sigma=3,
                scale_method='median',hand_scale=None,SN_MAX_MEDSCALE=20.,SN_MIN_MEDSCALE=0.5,
-               dv_smooth=10000.0,const_weights=False,debug=False,verbose=False):
+               dv_smooth=10000.0,const_weights=False,verbose=False):
     '''
     Scale the spectra into the same page with the reference spectrum.
 
@@ -455,7 +456,7 @@ def scale_spec(waves,fluxes,ivars,masks=None,flux_iref=None,ivar_iref=None,mask_
 
     # estimates the SNR of each spectrum and the stacked mean SNR
     rms_sn, weights = sn_weights(waves, fluxes, ivars, masks, dv_smooth=dv_smooth, \
-                                 const_weights=const_weights, debug=debug, verbose=verbose)
+                                 const_weights=const_weights, verbose=verbose)
     rms_sn_stack = np.sqrt(np.mean(rms_sn**2))
 
     nexp = fluxes.shape[0]
@@ -586,8 +587,6 @@ def compute_stack(waves,fluxes,ivars,masks,wave_grid,weights):
 
     return wave_stack, flux_stack, ivar_stack, mask_stack
 
-
-
 def resid_gauss_plot(chi,one_sigma):
 
     max = 6.0
@@ -615,6 +614,64 @@ def resid_gauss_plot(chi,one_sigma):
     plt.xlim([-6.05,6.05])
     plt.legend(fontsize=13,loc=2)
     plt.show()
+
+    return
+
+def coaddspec_qa(waves,fluxes,ivars,masks,wave_stack,flux_stack,ivar_stack,mask_stack,
+                 qafile=None,verbose=False):
+    """
+    QA plot for 1D coadd of spectra
+    """
+
+    plt.figure(figsize=(10,6))
+    ax1 = plt.axes([0.07, 0.13, 0.9, 0.4])
+    ax2 = plt.axes([0.07, 0.55,0.9, 0.4])
+    plt.setp(ax2.get_xticklabels(), visible=False)
+
+    # Plot individual exposures
+    ymin = np.percentile(flux_stack[mask_stack], 5)
+    ymax = 2.0 * np.percentile(flux_stack[mask_stack], 95)
+    ylim = [ymin,ymax]
+    xlim = [np.min(wave_stack[mask_stack]),np.max(wave_stack[mask_stack])]
+
+    nexp = np.shape(fluxes)[0]
+    cmap = plt.get_cmap('RdYlBu_r')
+    for iexp in range(nexp):
+        color = cmap(float(iexp) / nexp)
+        ax1.plot(waves[iexp,:], fluxes[iexp,:], color=color,alpha=0.5)
+        ax1.plot(waves[iexp,:][np.invert(masks[iexp,:])], fluxes[iexp,:][np.invert(masks[iexp,:])],\
+                 's',mfc='None',mec='k')
+    ax1.set_xlim(xlim)
+    ax1.set_ylim(ylim)
+    ax1.set_xlabel('Wavelength (Angstrom)')
+    ax1.set_ylabel('Flux')
+
+    # Plot coadded spectrum
+    if (np.max(wave_stack[mask_stack])>9000.0):
+        skytrans_file = resource_filename('pypeit', '/data/skisim/atm_transmission_secz1.5_1.6mm.dat')
+        skycat = np.genfromtxt(skytrans_file,dtype='float')
+        scale = 0.8*ylim[1]
+        ax2.plot(skycat[:,0]*1e4,skycat[:,1]*scale,'m-',alpha=0.5)
+
+    ax2.plot(wave_stack[mask_stack], np.sqrt(utils.calc_ivar(ivar_stack))[mask_stack], ls='steps-',color='0.7')
+    ax2.plot(wave_stack[mask_stack], flux_stack[mask_stack], ls='steps-',color='b')
+    ax2.set_xlim(xlim)
+    ax2.set_ylim(ylim)
+    ax2.set_ylabel('Flux')
+
+    plt.tight_layout(pad=0.2,h_pad=0.,w_pad=0.2)
+    if qafile is not None:
+        if len(qafile.split('.'))==1:
+            msgs.info("No fomat given for the qafile, save to PDF format.")
+            qafile = qafile+'.pdf'
+        plt.savefig(qafile,dpi=300)
+        msgs.info("Wrote coadd QA: {:s}".format(qafile))
+    if verbose:
+        plt.show()
+    plt.close()
+
+    return
+
 
 def long_reject(waves, fluxes, ivars, masks, fluxes_stack, ivars_stack, do_offset=True,
                 sigrej_final=3.,do_var_corr=True, qafile=None, SN_MAX = 20.0, check=False):
@@ -655,7 +712,6 @@ def long_reject(waves, fluxes, ivars, masks, fluxes_stack, ivars_stack, do_offse
         if do_offset:
             diff1 = iflux - newflux_now
             # idum = np.where(arrmask[*, j] EQ 0, nnotmask)
-            # debugger.set_trace()  # GET THE MASK RIGHT!
             nnotmask = np.sum(imask)
             nmed_diff = np.maximum(nnotmask // 20, 10)
             # ; take out the smoothly varying piece
@@ -670,7 +726,6 @@ def long_reject(waves, fluxes, ivars, masks, fluxes_stack, ivars_stack, do_offse
                 goodchi = np.array([True] * iflux.size)
 
             offset_mean, offset, offset_std = stats.sigma_clipped_stats(diff1[goodchi],sigma=3., maxiters=5,cenfunc='median')
-            #                debugger.set_trace()  # Port next line to Python to use this
             # djs_iterstat, (arrflux[goodchi, j]-newflux_now[goodchi]) $
             #   , invvar = ivar_real[goodchi], mean = offset_mean $
             #   , median = offset $
@@ -723,7 +778,7 @@ def long_reject(waves, fluxes, ivars, masks, fluxes_stack, ivars_stack, do_offse
             plt.plot(waves[iexp,:][np.invert(gdtmp)],iflux[np.invert(gdtmp)],'s',mfc='None',
                         mec='r',label='Rejected pixels')
             ymin = np.percentile(newflux_now,5)
-            ymax = 2.5*np.percentile(newflux_now,95)
+            ymax = 2.0*np.percentile(newflux_now,95)
             plt.ylim([ymin,ymax])
             plt.xlim([waves[iexp,:].min(),waves[iexp,:].max()])
             plt.xlabel('Wavelength (Angstrom)')
@@ -732,6 +787,80 @@ def long_reject(waves, fluxes, ivars, masks, fluxes_stack, ivars_stack, do_offse
             plt.show()
 
     return outmasks
+
+def long_comb(waves, fluxes, ivars, masks,wave_method='pixel', wave_grid_min=None, wave_grid_max=None, \
+              A_pix=None, v_pix=None, samp_fact = 1.0, cenfunc='median', snr_cut=2.0, maxiters=5, sigma=3, \
+              scale_method='median', hand_scale=None, SN_MAX_MEDSCALE=20., SN_MIN_MEDSCALE=0.5, \
+              dv_smooth=10000.0, const_weights=False, maxiter_reject = 5, SN_MAX_REJECT=20., \
+              qafile=None,outfile=None,verbose=False):
+
+    # Define a common fixed wavegrid
+    wave_grid = new_wave_grid(waves,wave_method=wave_method,wave_grid_min=wave_grid_min,wave_grid_max=wave_grid_max,
+                      A_pix=A_pix,v_pix=v_pix,samp_fact=samp_fact)
+
+    # Evaluate the sn_weights. This is done once at the beginning
+    rms_sn, weights = sn_weights(waves,fluxes,ivars,masks, dv_smooth=dv_smooth, \
+                                 const_weights=const_weights, verbose=verbose)
+
+    # get_scale_factors == this will use the common wavegrid and interpolate spectra on it. We can be sinful about
+    # covariance for the purposes of determining scale factors. This should return:
+    # the scale factors evaluated on each native wavegrid, the prelim coadd evaluated on each native wavegrid
+
+    # Interpolate spectra into the native wave grid of the iexp spectrum
+    fluxes_inter, ivars_inter, masks_inter = interp_spec(wave_grid, waves, fluxes, ivars, masks)
+
+    # avsigclip the interpolated spectra to obtain a high SNR average -- ToDo: This now comes from coadd2d
+    flux_iref, flux_median, flux_std = stats.sigma_clipped_stats(fluxes_inter, mask=np.invert(masks_inter), mask_value=0.,
+                                                                 sigma=sigma, maxiters=maxiters, cenfunc=cenfunc, axis=0)
+    # ToDo: This stuff disappears
+    nexp = np.shape(fluxes)[0]
+    nused = np.sum(masks_inter, axis=0)
+    mask_iref = nused == nexp
+    sig2 = 1.0 / (ivars_inter + (ivars_inter <= 0))
+    newsig2 = np.sum(sig2 * masks_inter, axis=0) / (nused ** 2 + (nused == 0))
+    ivar_iref = mask_iref / (newsig2 + (newsig2 <= 0.0))
+
+    fluxes_scale, ivars_scale, scales, omethod = scale_spec(wave_grid, fluxes_inter, ivars_inter, masks=masks_inter, \
+                                                            flux_iref=flux_iref, ivar_iref=ivar_iref, mask_iref=mask_iref, \
+                                                            iref=None, cenfunc=cenfunc, snr_cut=snr_cut, maxiters=maxiters, \
+                                                            sigma=sigma, scale_method=scale_method, hand_scale=hand_scale, \
+                                                            SN_MAX_MEDSCALE=SN_MAX_MEDSCALE,
+                                                            SN_MIN_MEDSCALE=SN_MIN_MEDSCALE, \
+                                                            dv_smooth=dv_smooth, const_weights=const_weights, \
+                                                            verbose=verbose)
+
+    scale_array = np.transpose(np.ones_like(fluxes.T)*scales)
+    fluxes_native_scale = fluxes*scale_array
+    ivars_native_scale = ivars * 1.0/scale_array**2
+
+    # Doing rejections and coadding based on the scaled spectra
+    iIter = 0
+    thismask = np.copy(masks)
+    while iIter < maxiter_reject:
+        wave_stack, flux_stack, ivar_stack, mask_stack = compute_stack(waves, fluxes_native_scale, ivars_native_scale, \
+                                                           thismask, wave_grid, weights)
+        fluxes_native_stack, ivars_native_stack, masks_native_stack = interp_spec(waves, wave_stack, flux_stack, \
+                                                                                  ivar_stack,mask_stack)
+        if iIter == maxiter_reject -1:
+            thismask = long_reject(waves, fluxes_native_scale, ivars_native_scale, thismask, fluxes_native_stack, \
+                                   ivars_native_stack, SN_MAX=SN_MAX_REJECT, check=verbose)
+        else:
+            thismask = long_reject(waves, fluxes_native_scale, ivars_native_scale, thismask, fluxes_native_stack, \
+                                   ivars_native_stack, SN_MAX=SN_MAX_REJECT, check=False)
+
+        iIter = iIter +1
+
+    # Plot the final coadded spectrum
+    coaddspec_qa(waves, fluxes_native_scale, ivars_native_scale, thismask, \
+                 wave_stack, flux_stack, ivar_stack, mask_stack,qafile=qafile, verbose=verbose)
+
+    # Write to disk?
+    if outfile is not None:
+        msgs.info('Need to wirte a function to save the coadded spectrum')
+        write_to_disk(wave_stack, flux_stack, ivar_stack, mask_stack, outfile)
+
+    return wave_stack, flux_stack, ivar_stack, mask_stack, scale_array
+
 
 
 import os
@@ -745,103 +874,19 @@ fnames = [datapath+'spec1d_flux_S20180903S0136-J0252-0503_GMOS-S_1864May27T16071
 gdobj = ['SPAT1073-SLIT0001-DET03','SPAT1167-SLIT0001-DET03','SPAT1071-SLIT0001-DET03','SPAT1072-SLIT0001-DET03',\
          'SPAT1166-SLIT0001-DET03','SPAT1073-SLIT0001-DET03']
 
-verbose=False
-
 # parameters for load_1dspec_to_array
 ex_value = 'OPT'
 flux_value = True
 
-# parameters for new_wave_grid
-wave_method='pixel'
-wave_grid_min=None
-wave_grid_max=None
-A_pix=None
-v_pix=None
-samp_fact = 1.0
-
-# parameters for scale_spec
-cenfunc='median'
-snr_cut=2.0
-maxiters=5
-sigma=3
-scale_method='median'
-hand_scale=None
-SN_MAX_MEDSCALE=20.
-SN_MIN_MEDSCALE=0.5
-dv_smooth=10000.0
-const_weights=False
-
-# parameter for rejections
-maxiter = 5
-
-# Start doing coadding
+# Reading data
 waves,fluxes,ivars,masks = load_1dspec_to_array(fnames,gdobj=gdobj,order=None,ex_value=ex_value,flux_value=flux_value)
 
-# keep the orginal fluxes and ivars
-fluxes_in = np.copy(fluxes)
-ivars_in = np.copy(ivars)
-
-# Define a common fixed wavegrid
-wave_grid = new_wave_grid(waves,wave_method=wave_method,wave_grid_min=wave_grid_min,wave_grid_max=wave_grid_max,
-                  A_pix=A_pix,v_pix=v_pix,samp_fact=samp_fact)
-
-# Evaluate the sn_weights. This is done once at the beginning
-rms_sn, weights = sn_weights(waves,fluxes,ivars,masks, dv_smooth=10000.0, \
-                             const_weights=False, debug=False, verbose=False)
-
-# get_scale_factors == this will use the common wavegrid and interpolate spectra on it. We can be sinful about
-# covariance for the purposes of determining scale factors. This should return:
-# the scale factors evaluated on each native wavegrid, the prelim coadd evaluated on each native wavegrid
-
-# Interpolate spectra into the native wave grid of the iexp spectrum
-fluxes_inter, ivars_inter, masks_inter = interp_spec(wave_grid, waves, fluxes, ivars, masks)
-
-# avsigclip the interpolated spectra to obtain a high SNR average -- ToDo: This now comes from coadd2d
-flux_iref, flux_median, flux_std = stats.sigma_clipped_stats(fluxes_inter, mask=np.invert(masks_inter), mask_value=0.,
-                                                             sigma=sigma, maxiters=maxiters, cenfunc=cenfunc, axis=0)
-# ToDo: This stuff disappears
-nexp = np.shape(fluxes)[0]
-nused = np.sum(masks_inter, axis=0)
-mask_iref = nused == nexp
-sig2 = 1.0 / (ivars_inter + (ivars_inter <= 0))
-newsig2 = np.sum(sig2 * masks_inter, axis=0) / (nused ** 2 + (nused == 0))
-ivar_iref = mask_iref / (newsig2 + (newsig2 <= 0.0))
-
-fluxes_scale, ivars_scale, scales, omethod = scale_spec(wave_grid, fluxes_inter, ivars_inter, masks=masks_inter, \
-                                                        flux_iref=flux_iref, ivar_iref=ivar_iref, mask_iref=mask_iref, \
-                                                        iref=None, cenfunc=cenfunc, snr_cut=snr_cut, maxiters=maxiters, \
-                                                        sigma=sigma, scale_method=scale_method, hand_scale=hand_scale, \
-                                                        SN_MAX_MEDSCALE=SN_MAX_MEDSCALE,
-                                                        SN_MIN_MEDSCALE=SN_MIN_MEDSCALE, \
-                                                        dv_smooth=dv_smooth, const_weights=const_weights, \
-                                                        verbose=verbose)
-
-scale_array = np.transpose(np.ones_like(fluxes.T)*scales)
-fluxes_native_scale = fluxes*scale_array
-ivars_native_scale = ivars * 1.0/scale_array**2
-
-
-# Copy the robust_optimize_djs control folow
-iIter = 0
-thismask = np.copy(masks)
-while iIter < maxiter:
-    wave_stack, flux_stack, ivar_stack, mask_stack = compute_stack(waves, fluxes_native_scale, ivars_native_scale, \
-                                                       thismask, wave_grid, weights)
-    fluxes_native_stack, ivars_native_stack, masks_native_stack = interp_spec(waves, wave_stack, flux_stack, ivar_stack,mask_stack)
-    if iIter == maxiter -1:
-        thismask = long_reject(waves, fluxes_native_scale, ivars_native_scale, thismask, fluxes_native_stack, \
-                               ivars_native_stack, SN_MAX = 20.0, check=True)
-    else:
-        thismask = long_reject(waves, fluxes_native_scale, ivars_native_scale, thismask, fluxes_native_stack, \
-                               ivars_native_stack, SN_MAX = 20.0, check=False)
-
-    iIter = iIter +1
-
-from IPython import embed
-embed()
+# Coadding
+wave_stack, flux_stack, ivar_stack, mask_stack, scale_array = \
+    long_comb(waves, fluxes, ivars, masks,wave_method='pixel', scale_method='median', \
+              maxiter_reject = 5, qafile='J0252_gmos', outfile=None, verbose=True)
 
 # Now do some QA. We need the option to call the same QA routines while we are iterating just in case for debuggin
-
 # Loop over exposures and show the comparison of the the chi_distribution to a Gaussian, and the updated errors
 
 # Loop over exposures show the individual exposure, compared to the stack, compared to the single object noise, and maybe
