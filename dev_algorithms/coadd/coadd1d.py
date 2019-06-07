@@ -4,6 +4,7 @@ import numpy as np
 import matplotlib.pyplot as plt
 from scipy import interpolate
 from astropy import stats
+from astropy.io import fits
 from pkg_resources import resource_filename
 
 from pypeit import utils
@@ -803,7 +804,7 @@ def long_comb(waves, fluxes, ivars, masks,wave_method='pixel', wave_grid_min=Non
               A_pix=None, v_pix=None, samp_fact = 1.0, cenfunc='median', snr_cut=2.0, maxiters=5, sigma=3, \
               scale_method='median', hand_scale=None, SN_MAX_MEDSCALE=20., SN_MIN_MEDSCALE=0.5, \
               dv_smooth=10000.0, const_weights=False, maxiter_reject = 5, SN_MAX_REJECT=20., \
-              qafile=None,outfile=None,verbose=False):
+              fill_val=None,qafile=None,outfile=None,verbose=False):
 
     # Define a common fixed wavegrid
     wave_grid = new_wave_grid(waves,wave_method=wave_method,wave_grid_min=wave_grid_min,wave_grid_max=wave_grid_max,
@@ -867,11 +868,65 @@ def long_comb(waves, fluxes, ivars, masks,wave_method='pixel', wave_grid_min=Non
 
     # Write to disk?
     if outfile is not None:
-        msgs.info('Need to wirte a function to save the coadded spectrum')
-        write_to_disk(wave_stack, flux_stack, ivar_stack, mask_stack, outfile)
+        if len(outfile.split('.'))==1:
+            msgs.info("No fomat given for the outfile, save to fits format.")
+            outfile = outfile+'.fits'
+        write_to_fits(wave_stack, flux_stack, ivar_stack, mask_stack, outfile, clobber=True, fill_val=fill_val)
 
     return wave_stack, flux_stack, ivar_stack, mask_stack, scale_array
 
+
+def write_to_fits(wave, flux, ivar, mask, outfil, clobber=True, fill_val=None):
+    """ Write to a multi-extension FITS file.
+    unless select=True.
+    Otherwise writes 1D arrays
+    Parameters
+    ----------
+    outfil : str
+      Name of the FITS file
+    select : int, optional
+      Write only the select spectrum.
+      This will always trigger if there is only 1 spectrum
+      in the data array
+    clobber : bool (True)
+      Clobber existing file?
+    add_wave : bool (False)
+      Force writing of wavelengths as array, instead of using FITS
+      header keywords to specify a wcs.
+    fill_val : float, optional
+      Fill value for masked pixels
+    """
+
+    # Flux
+    if fill_val is None:
+        flux = flux[mask]
+    else:
+        flux[mask] = fill_val
+    prihdu = fits.PrimaryHDU(flux)
+    hdu = fits.HDUList([prihdu])
+    prihdu.name = 'FLUX'
+
+    # Error  (packing LowRedux style)
+    sig = np.sqrt(utils.calc_ivar(ivar))
+    if fill_val is None:
+        sig = sig[mask]
+    else:
+        sig[mask] = fill_val
+    sighdu = fits.ImageHDU(sig)
+    sighdu.name = 'ERROR'
+    hdu.append(sighdu)
+
+    # Wavelength
+    if fill_val is None:
+        wave = wave[mask]
+    else:
+        wave[mask] = fill_val
+    wvhdu = fits.ImageHDU(wave)
+    wvhdu.name = 'WAVELENGTH'
+    hdu.append(wvhdu)
+
+    hdu.writeto(outfil, overwrite=clobber)
+    msgs.info('Wrote spectrum to {:s}'.format(outfil))
 
 
 import os
@@ -895,8 +950,10 @@ waves,fluxes,ivars,masks = load_1dspec_to_array(fnames,gdobj=gdobj,order=None,ex
 # Coadding
 wave_stack, flux_stack, ivar_stack, mask_stack, scale_array = \
     long_comb(waves, fluxes, ivars, masks,wave_method='pixel', scale_method='median', \
-              maxiter_reject = 5, qafile='J0252_gmos', outfile=None, verbose=True)
+              maxiter_reject = 5, qafile='J0252_gmos', outfile='J0252_gmos.fits', verbose=True)
 
+from IPython import embed
+embed()
 # Now do some QA. We need the option to call the same QA routines while we are iterating just in case for debuggin
 # Loop over exposures and show the comparison of the the chi_distribution to a Gaussian, and the updated errors
 
