@@ -78,12 +78,12 @@ def renormalize_errors(chi, mask, clip = 6.0, max_corr = 5.0, debug=False):
                       "Setting correction to sigma_corr = {:f}".format(sigma_corr, max_corr, max_corr))
             sigma_corr = max_corr
 
-    else:
-        msgs.warn('No good pixels in error_renormalize. Threre are probably issues with your data')
-        sigma_corr = 1.0
+        if debug:
+            renormalize_errors_qa(chi[igood], sigma_corr)
 
-    if debug:
-        renormalize_errors_qa(chi, sigma_corr)
+    else:
+        msgs.warn('No good pixels in error_renormalize. There are probably issues with your data')
+        sigma_corr = 1.0
 
     return sigma_corr
 
@@ -113,7 +113,7 @@ def poly_ratio_fitfunc_chi2(theta, flux_ref, thismask, arg_dict):
     wave_max = arg_dict['wave_max']
     func = arg_dict['func']
     # Evaluate the polynomial for rescaling
-    ymult = utils.func_val(theta, wave, func, minx=wave_min, maxx=wave_max)
+    ymult = (utils.func_val(theta, wave, func, minx=wave_min, maxx=wave_max))**2
     flux_scale = ymult*flux
     mask_both = mask & thismask
     # This is the formally correct ivar
@@ -147,7 +147,7 @@ def poly_ratio_fitfunc(flux_ref, thismask, arg_dict, **kwargs_opt):
     wave_max = arg_dict['wave_max']
     func = arg_dict['func']
     # Evaluate the polynomial for rescaling
-    ymult = utils.func_val(result.x, wave, func, minx=wave_min, maxx=wave_max)
+    ymult = (utils.func_val(result.x, wave, func, minx=wave_min, maxx=wave_max))**2
     flux_scale = ymult*flux
     mask_both = mask & thismask
     totvar = utils.calc_ivar(ivar_ref) + ymult**2*utils.calc_ivar(ivar)
@@ -177,7 +177,7 @@ def solve_poly_ratio(wave, flux, ivar, flux_ref, ivar_ref, norder, mask = None, 
     nspec = wave.size
     # Determine an initial guess
     ratio = robust_median_ratio(flux, ivar, flux_ref, ivar_ref, mask=mask, mask_ref=mask_ref)
-    guess = np.append(ratio, np.zeros(norder-1))
+    guess = np.append(np.sqrt(ratio), np.zeros(norder-1))
     wave_min = wave.min()
     wave_max = wave.max()
     arg_dict = dict(flux = flux, ivar = ivar, mask = mask,
@@ -186,7 +186,7 @@ def solve_poly_ratio(wave, flux, ivar, flux_ref, ivar_ref, norder, mask = None, 
 
     result, ymodel, ivartot, outmask = utils.robust_optimize(flux_ref, poly_ratio_fitfunc, arg_dict, inmask=mask_ref,
                                                              maxiter=maxiter, lower=lower, upper=upper, sticky=sticky)
-    ymult1 = utils.func_val(result.x, wave, func, minx=wave_min, maxx=wave_max)
+    ymult1 = (utils.func_val(result.x, wave, func, minx=wave_min, maxx=wave_max))**2
     ymult = np.fmin(np.fmax(ymult1, scale_min), scale_max)
     flux_rescale = ymult*flux
     ivar_rescale = ivar/ymult**2
@@ -645,27 +645,7 @@ def scale_spec(wave, flux, ivar, flux_ref, ivar_ref, mask=None, mask_ref=None, m
             scale_method = 'none'
 
     # Estimate the scale factor
-    if scale_method == 'hand':
-        # Input?
-        if hand_scale is None:
-            msgs.error("Need to provide hand_scale parameter, single value")
-        flux_scale = flux * hand_scale
-        ivar_scale = ivar * 1.0/hand_scale**2
-        scale = np.full(flux.size,hand_scale)
-    elif scale_method == 'median':
-        # Median ratio (reference to spectrum)
-        med_scale = robust_median_ratio(flux,ivar,flux_ref,ivar_ref,ref_percentile=ref_percentile,min_good=min_good,\
-                                        mask=mask, mask_ref=mask_ref,cenfunc=cenfunc, maxiters=maxiters,\
-                                        max_factor=max_median_factor,sigrej=sigrej)
-        # Apply
-        flux_scale = flux * med_scale
-        ivar_scale = ivar * 1.0/med_scale**2
-        scale = np.full(flux.size,med_scale)
-    elif scale_method == 'none':
-        flux_scale = flux.copy()
-        ivar_scale = ivar.copy()
-        scale = np.ones_like(flux)
-    elif scale_method == 'poly':
+    if scale_method == 'poly':
         # Decide on the order of the polynomial rescaling
         if npoly is None:
             if rms_sn_stack > 25.0:
@@ -676,9 +656,28 @@ def scale_spec(wave, flux, ivar, flux_ref, ivar_ref, mask=None, mask_ref=None, m
                 npoly = 2
             else:
                 npoly = 1
-
         scale, flux_scale, ivar_scale, outmask = solve_poly_ratio(wave, flux, ivar, flux_ref, ivar_ref, npoly,
                                                                       mask=mask, mask_ref=mask_ref, debug=debug)
+    elif scale_method == 'median':
+        # Median ratio (reference to spectrum)
+        med_scale = robust_median_ratio(flux,ivar,flux_ref,ivar_ref,ref_percentile=ref_percentile,min_good=min_good,\
+                                        mask=mask, mask_ref=mask_ref,cenfunc=cenfunc, maxiters=maxiters,\
+                                        max_factor=max_median_factor,sigrej=sigrej)
+        # Apply
+        flux_scale = flux * med_scale
+        ivar_scale = ivar * 1.0/med_scale**2
+        scale = np.full(flux.size,med_scale)
+    elif scale_method == 'hand':
+        # Input?
+        if hand_scale is None:
+            msgs.error("Need to provide hand_scale parameter, single value")
+        flux_scale = flux * hand_scale
+        ivar_scale = ivar * 1.0 / hand_scale ** 2
+        scale = np.full(flux.size, hand_scale)
+    elif scale_method == 'none':
+        flux_scale = flux.copy()
+        ivar_scale = ivar.copy()
+        scale = np.ones_like(flux)
     else:
         msgs.error("Scale method not recognized! Check documentation for available options")
     # Finish
@@ -736,8 +735,8 @@ def coadd_qa(wave, flux, ivar, mask=None, wave_coadd=None, flux_coadd=None, ivar
 
     plt.figure(figsize=(10, 6))
     plt.plot(wave[np.invert(mask)], flux[np.invert(mask)],'s',zorder=10,mfc='None', mec='r', label='Rejected pixels')
-    plt.plot(wave[mask], flux[mask], color='dodgerblue', linestyle='steps-mid',zorder=2, alpha=0.7,label='Single exposure')
-    plt.plot(wave[mask], np.sqrt(utils.calc_ivar(ivar[mask])),zorder=3, color='0.7', linestyle='steps-mid')
+    plt.plot(wave, flux, color='dodgerblue', linestyle='steps-mid',zorder=2, alpha=0.7,label='Single exposure')
+    plt.plot(wave, np.sqrt(utils.calc_ivar(ivar)),zorder=3, color='0.7', linestyle='steps-mid')
     ymin = np.percentile(flux, 5)
     ymax = 2.0 * np.percentile(flux, 95)
 
@@ -745,7 +744,7 @@ def coadd_qa(wave, flux, ivar, mask=None, wave_coadd=None, flux_coadd=None, ivar
     if (wave_coadd is not None) and (flux_coadd is not None) and (ivar_coadd is not None):
         if mask_coadd is None:
             mask_coadd = ivar_coadd>0.
-        plt.plot(wave_coadd[mask_coadd],flux_coadd[mask_coadd],color='k',linestyle='steps-mid',lw=2,zorder=1,label='Coadd')
+        plt.plot(wave_coadd,flux_coadd,color='k',linestyle='steps-mid',lw=2,zorder=1,label='Coadd')
         ymin = np.percentile(flux_coadd, 5)
         ymax = 2.0 * np.percentile(flux_coadd, 95)
 
