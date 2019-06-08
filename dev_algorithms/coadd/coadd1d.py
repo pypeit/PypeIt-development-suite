@@ -677,6 +677,7 @@ def scale_spec(wave, flux, ivar, flux_ref, ivar_ref, mask=None, mask_ref=None, m
                 npoly = 2
             else:
                 npoly = 1
+
         scale, flux_scale, ivar_scale, outmask = solve_poly_ratio(wave, flux, ivar, flux_ref, ivar_ref, npoly,
                                                                       mask=mask, mask_ref=mask_ref, debug=debug)
     else:
