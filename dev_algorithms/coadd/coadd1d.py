@@ -537,7 +537,7 @@ def compute_stack(waves,fluxes,ivars,masks,wave_grid,weights):
 
     return wave_stack, flux_stack, ivar_stack, mask_stack
 
-def resid_gauss_plot(chi,one_sigma):
+def resid_gauss_plot(chi,one_sigma,debug=False):
 
     max = 6.0
     min = -6.0
@@ -564,12 +564,15 @@ def resid_gauss_plot(chi,one_sigma):
     plt.xlabel('Residual distribution')
     plt.xlim([-6.05,6.05])
     plt.legend(fontsize=13,loc=2)
-    plt.show()
+
+    if debug:
+        plt.show()
+    plt.close()
 
     return
 
-def reject_qa(wave, flux, ivar, mask=None, wave_coadd=None, flux_coadd=None, ivar_coadd=None, mask_coadd=None,
-              outfile=None, debug=False):
+def coadd_qa(wave, flux, ivar, mask=None, wave_coadd=None, flux_coadd=None, ivar_coadd=None, mask_coadd=None,
+             qafile=None, debug=False):
 
     if mask is None:
         mask = ivar>0.
@@ -602,12 +605,18 @@ def reject_qa(wave, flux, ivar, mask=None, wave_coadd=None, flux_coadd=None, iva
     plt.ylabel('Flux')
     plt.legend(fontsize=13)
 
-    if outfile is not None:
-
+    if qafile is not None:
+        if len(qafile.split('.'))==1:
+            msgs.info("No fomat given for the qafile, save to PDF format.")
+            qafile = qafile+'.pdf'
+        plt.savefig(qafile,dpi=300)
+        msgs.info("Wrote QA: {:s}".format(qafile))
     if debug:
         plt.show()
 
-def coaddspec_qa(waves,fluxes,ivars,masks,wave_stack,flux_stack,ivar_stack,mask_stack,
+    return
+
+def coaddspec_qa_old(waves,fluxes,ivars,masks,wave_stack,flux_stack,ivar_stack,mask_stack,
                  qafile=None,verbose=False):
     """
     QA plot for 1D coadd of spectra
@@ -664,7 +673,7 @@ def coaddspec_qa(waves,fluxes,ivars,masks,wave_stack,flux_stack,ivar_stack,mask_
 
 
 def long_reject(waves, fluxes, ivars, masks, fluxes_stack, ivars_stack, do_offset=True,
-                sigrej_final=3.,do_var_corr=True, qafile=None, SN_MAX = 20.0, check=False):
+                sigrej_final=3.,do_var_corr=True, qafile=None, SN_MAX = 20.0, debug=False):
 
     nexp = np.shape(fluxes)[0]
 
@@ -753,18 +762,17 @@ def long_reject(waves, fluxes, ivars, masks, fluxes_stack, ivars_stack, do_offse
             # rspec.add_to_mask(chi_mask)
             # outmask[*, j] = (arrmask[*, j] EQ 1) OR (chi2_cap GT sigrej_eff^2)
 
-        if check:
-            msgs.info('Measured effective rejection from distribution of chi^2')
-            msgs.info('Instead of rejecting sigrej={:}. Use threshold sigrej_eff={:}'\
-                      .format(sigrej_final,np.round(sigrej_eff,2)))
+        msgs.info('Measured effective rejection from distribution of chi^2')
+        msgs.info('Instead of rejecting sigrej={:}. Use threshold sigrej_eff={:}'\
+                  .format(sigrej_final,np.round(sigrej_eff,2)))
 
-            gdtmp = (outmasks[iexp, :] >0) & (ivar_real>0.)
-            chi = (iflux[gdtmp] - newflux_now[gdtmp] - offset) * np.sqrt(ivar_cap[gdtmp])
-            # Plot Chi distribution
-            resid_gauss_plot(chi, one_sigma)
-            # Compare individual exposoures with stack spectrum.
-            reject_qa(waves[iexp,:],iflux,ivar,mask=gdtmp,wave_coadd=waves[iexp,:],flux_coadd=newflux_now,\
-                      ivar_coadd=ivars_stack[iexp,:], mask_coadd=None)
+        gdtmp = (outmasks[iexp, :] >0) & (ivar_real>0.)
+        chi = (iflux[gdtmp] - newflux_now[gdtmp] - offset) * np.sqrt(ivar_cap[gdtmp])
+        # Plot Chi distribution
+        resid_gauss_plot(chi, one_sigma,debug=debug)
+        # Compare individual exposoures with stack spectrum.
+        coadd_qa(waves[iexp,:],iflux,ivar,mask=gdtmp,wave_coadd=waves[iexp,:],flux_coadd=newflux_now,\
+                  ivar_coadd=ivars_stack[iexp,:], mask_coadd=None,qafile=qafile,debug=debug)
 
     return outmasks
 
@@ -772,7 +780,7 @@ def long_comb(waves, fluxes, ivars, masks,wave_method='pixel', wave_grid_min=Non
               A_pix=None, v_pix=None, samp_fact = 1.0, cenfunc='median', ref_percentile=20.0, maxiters=5, sigrej=3, \
               scale_method='median', hand_scale=None, sn_max_medscale=20., sn_min_medscale=0.5, \
               dv_smooth=10000.0, const_weights=False, maxiter_reject = 5, sn_max_reject=20., \
-              fill_val=None,qafile=None,outfile=None,verbose=False):
+              fill_val=None,qafile=None,outfile=None,verbose=False,debug=False):
 
     # Define a common fixed wavegrid
     wave_grid = new_wave_grid(waves,wave_method=wave_method,wave_grid_min=wave_grid_min,wave_grid_max=wave_grid_max,
@@ -826,16 +834,16 @@ def long_comb(waves, fluxes, ivars, masks,wave_method='pixel', wave_grid_min=Non
                                                                                   ivar_stack,mask_stack)
         if iIter == maxiter_reject -1:
             thismask = long_reject(waves, fluxes_scale, ivars_scale, thismask, fluxes_native_stack, \
-                                   ivars_native_stack, SN_MAX=sn_max_reject, check=verbose)
+                                   ivars_native_stack, SN_MAX=sn_max_reject, debug=debug)
         else:
             thismask = long_reject(waves, fluxes_scale, ivars_scale, thismask, fluxes_native_stack, \
-                                   ivars_native_stack, SN_MAX=sn_max_reject, check=False)
+                                   ivars_native_stack, SN_MAX=sn_max_reject, debug=False)
 
         iIter = iIter +1
 
     # Plot the final coadded spectrum
-    coaddspec_qa(waves, fluxes_scale, ivars_scale, thismask, wave_stack, flux_stack, \
-                 ivar_stack, mask_stack,qafile=qafile, verbose=verbose)
+    coadd_qa(waves, fluxes_scale, ivars_scale, thismask, wave_stack, flux_stack, \
+             ivar_stack, mask_stack,qafile=qafile, debug=debug)
 
     # Write to disk?
     if outfile is not None:
@@ -845,7 +853,6 @@ def long_comb(waves, fluxes, ivars, masks,wave_method='pixel', wave_grid_min=Non
         write_to_fits(wave_stack, flux_stack, ivar_stack, mask_stack, outfile, clobber=True, fill_val=fill_val)
 
     return wave_stack, flux_stack, ivar_stack, mask_stack, scales
-
 
 def write_to_fits(wave, flux, ivar, mask, outfil, clobber=True, fill_val=None):
     """ Write to a multi-extension FITS file.
@@ -898,17 +905,6 @@ def write_to_fits(wave, flux, ivar, mask, outfil, clobber=True, fill_val=None):
 
     hdu.writeto(outfil, overwrite=clobber)
     msgs.info('Wrote spectrum to {:s}'.format(outfil))
-
-
-# Now do some QA. We need the option to call the same QA routines while we are iterating just in case for debuggin
-# Loop over exposures and show the comparison of the the chi_distribution to a Gaussian, and the updated errors
-
-# Loop over exposures show the individual exposure, compared to the stack, compared to the single object noise, and maybe
-# also show the modified noise vector (not sure about this). Label the masked pixels.
-
-#newmask = reject_update_mask(waves, fluxes, ivars, masks, sn_weights, scale_factors, waves_stack, flux_stack, ivar_stack)
-
-# Once you have the outmask, we update the
 
 
 
@@ -1025,3 +1021,15 @@ def long_combspec(waves,fluxes,ivars,masks=None):
 
     ## Now all spectra with the new masks have been resampled to the sample grid. Coadd them!
 '''
+
+
+# Now do some QA. We need the option to call the same QA routines while we are iterating just in case for debuggin
+# Loop over exposures and show the comparison of the the chi_distribution to a Gaussian, and the updated errors
+
+# Loop over exposures show the individual exposure, compared to the stack, compared to the single object noise, and maybe
+# also show the modified noise vector (not sure about this). Label the masked pixels.
+
+#newmask = reject_update_mask(waves, fluxes, ivars, masks, sn_weights, scale_factors, waves_stack, flux_stack, ivar_stack)
+
+# Once you have the outmask, we update the
+
