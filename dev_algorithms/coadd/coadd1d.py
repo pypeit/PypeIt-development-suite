@@ -266,7 +266,7 @@ def interp_spec(wave_new, waves, fluxes, ivars, masks):
                 masks_inter[ii, :] = mask_inter_ii
 
     elif (fluxes.ndim==1) and (wave_new.ndim==1):
-        fluxes_inter, ivars_inter, masks_inter = interp_oned(wave_new,fluxes,ivars,masks)
+        fluxes_inter, ivars_inter, masks_inter = interp_oned(wave_new,waves,fluxes,ivars,masks)
 
     elif (fluxes.ndim==1) and (wave_new.ndim==2):
         nexp = np.shape(wave_new)[0]
@@ -427,10 +427,9 @@ def robust_median_ratio(flux,ivar,flux_ref,ivar_ref, ref_percentile=20.0, min_go
 
     return ratio
 
-def scale_spec(wave, flux, ivar, flux_ref, ivar_ref, mask=None, mask_ref=None,
-               cenfunc='median',ref_percentile=20.0, maxiters=5,sigrej=3,
-               scale_method=None,hand_scale=None, sn_max_medscale=2.0,sn_min_medscale=0.5,
-               dv_smooth=10000.0,const_weights=False,verbose=False):
+def scale_spec(wave, flux, ivar, flux_ref, ivar_ref, mask=None, mask_ref=None, min_good=0.05,
+               cenfunc='median',ref_percentile=20.0, maxiters=5, sigrej=3, max_factor=10, scale_method=None,
+               hand_scale=None, sn_max_medscale=2.0, sn_min_medscale=0.5, verbose=False):
     '''
     Scale the spectra into the same page with the reference spectrum.
 
@@ -452,96 +451,47 @@ def scale_spec(wave, flux, ivar, flux_ref, ivar_ref, mask=None, mask_ref=None,
 
     if mask is None:
         mask = ivar > 0.0
-    if mask_ref is None
+    if mask_ref is None:
         mask_ref = ivar_ref > 0.0
 
     # estimates the SNR of each spectrum and the stacked mean SNR
-    rms_sn, weights = sn_weights(wave, flux, ivar, mask, dv_smooth=dv_smooth, verbose) const_weights=const_weights, verbose=verbose)
+    rms_sn, weights = sn_weights(wave, flux, ivar, mask)
     rms_sn_stack = np.sqrt(np.mean(rms_sn**2))
 
-    nexp = fluxes.shape[0]
-
-    # if flux_iref is None, then use the iref spectrum as the reference.
-    if flux_iref is None:
-        if iref is None:
-            # find the highest SNR spectrum as the reference
-            iref = np.argmax(rms_sn)
-        flux_iref = fluxes[iref, :]
-        ivar_iref = ivars[iref, :]
-        mask_iref = masks[iref, :]
-        msgs.info('Using the {:} spectrum to scale your spectra'.format(iref))
+    # Estimate the scale factor
+    if scale_method == 'hand':
+        omethod = 'hand'
+        # Input?
+        if hand_scale is None:
+            msgs.error("Need to provide hand_scale parameter, single value")
+        flux_scale = flux * hand_scale
+        ivar_scale = ivar * 1.0/hand_scale**2
+        scale = np.full(flux.size,hand_scale)
+    elif ((rms_sn_stack <= sn_max_medscale) and (rms_sn_stack > sn_min_medscale)) or (scale_method=='median'):
+        omethod = 'median_flux'
+        # Median ratio (reference to spectrum)
+        med_scale = robust_median_ratio(flux,ivar,flux_ref,ivar_ref,ref_percentile=ref_percentile,min_good=min_good,\
+                                        mask=mask, mask_ref=mask_ref,cenfunc=cenfunc, maxiters=maxiters,\
+                                        max_factor=max_factor,sigrej=sigrej)
+        # Apply
+        flux_scale = flux * med_scale
+        ivar_scale = ivar * 1.0/med_scale**2
+        scale = np.full(flux.size,med_scale)
+    elif rms_sn_stack <= SN_MIN_MEDSCALE:
+        omethod = 'none_SN'
+        flux_scale = flux.copy()
+        ivar_scale = ivar.copy()
+        scale = np.ones_like(flux)
+    elif (rms_sn_stack > SN_MAX_MEDSCALE) or scale_method=='poly':
+        msgs.work("Should be using poly here.")
+        omethod = 'poly'
+        flux_scale = flux.copy()
+        ivar_scale = ivar.copy()
+        scale = np.ones_like(flux)
     else:
-        iref = None
-        # ToDo: Need to think about how to deal with ivar_iref=None.
-        if ivar_iref is None:
-            sig_iref = flux_iref.copy() / snr_cut / 2.0
-            ivar_iref = utils.calc_ivar(sig_iref**2)
-
-    if mask_iref is None:
-        mask_iref = (ivar_iref>0.) & np.isfinite(flux_iref)
-
-    sig_iref = np.sqrt(utils.calc_ivar(ivar_iref))
-
-    # Estimate the scale factors
-    fluxes_scale= np.zeros_like(fluxes)
-    ivars_scale= np.zeros_like(ivars)
-    scales = []
-    for iexp in range(nexp):
-        if scale_method == 'hand':
-            omethod = 'hand'
-            # Input?
-            if hand_scale is None:
-                msgs.error("Need to provide hand_scale parameter, one value per spectrum")
-            fluxes_scale[iexp,:] = fluxes[iexp,:] * hand_scale[iexp]
-            ivars_scale[iexp,:] = ivars[iexp,:] * 1.0/hand_scale[iexp]**2
-            scales.append(hand_scale[qq])
-
-        elif ((rms_sn_stack <= SN_MAX_MEDSCALE) and (rms_sn_stack > SN_MIN_MEDSCALE)) or (scale_method=='median'):
-            omethod = 'median_flux'
-            if iexp == iref:
-                fluxes_scale[iexp, :] = fluxes[iexp, :].copy()
-                ivars_scale[iexp, :] = ivars[iexp, :].copy()
-                scales.append(1.)
-                continue
-            # Median ratio (reference to spectrum)
-            #med_scale = median_ratio_flux(spectra, smask, qq, iref)
-            flux = fluxes[iexp,:]
-            sig = np.sqrt(utils.calc_ivar(ivars[iexp,:]))
-            mask = masks[iexp,:]
-            med_scale = median_ratio_flux(flux,sig,flux_iref,sig_iref,mask=mask,mask_ref=mask_iref,
-                      cenfunc=cenfunc,snr_cut=snr_cut, maxiters=maxiters,sigma=sigma)
-            # Apply
-            med_scale= np.minimum(med_scale, 10.0)
-            fluxes_scale[iexp,:] = fluxes[iexp,:] * med_scale
-            ivars_scale[iexp,:] = ivars[iexp,:] * 1.0/med_scale**2
-            scales.append(med_scale)
-
-        elif rms_sn_stack <= SN_MIN_MEDSCALE:
-            omethod = 'none_SN'
-        elif (rms_sn_stack > SN_MAX_MEDSCALE) or scale_method=='poly':
-            msgs.work("Should be using poly here, not median")
-            omethod = 'median_flux'
-            if iexp == iref:
-                fluxes_scale[iexp, :] = fluxes[iexp, :].copy()
-                ivars_scale[iexp, :] = ivars[iexp, :].copy()
-                scales.append(1.)
-                continue
-            # Median ratio (reference to spectrum)
-            #med_scale = median_ratio_flux(spectra, smask, qq, iref)
-            flux = fluxes[iexp,:]
-            sig = np.sqrt(utils.calc_ivar(ivars[iexp,:]))
-            mask = masks[iexp,:]
-            med_scale = median_ratio_flux(flux,sig,flux_iref,sig_iref,mask=mask,mask_iref=mask_iref,
-                      cenfunc=cenfunc,snr_cut=snr_cut, maxiters=maxiters,sigma=sigma)
-            # Apply
-            med_scale= np.minimum(med_scale, 10.0)
-            fluxes_scale[iexp,:] = fluxes[iexp,:] * med_scale
-            ivars_scale[iexp,:] = ivars[iexp,:] * 1.0/med_scale**2
-            scales.append(med_scale)
-        else:
-            msgs.error("Scale method not recognized! Check documentation for available options")
+        msgs.error("Scale method not recognized! Check documentation for available options")
     # Finish
-    return fluxes_scale,ivars_scale,scales, omethod
+    return flux_scale, ivar_scale, scale, omethod
 
 
 def compute_stack(waves,fluxes,ivars,masks,wave_grid,weights):
@@ -607,6 +557,7 @@ def resid_gauss_plot(chi,one_sigma):
     xvals = np.arange(-10.0,10,0.02)
     ygauss = gauss1(xvals,0.0,1.0,1.0)
     ygauss_new = gauss1(xvals,0.0,one_sigma,1.0)
+    plt.figure(figsize=(10,6))
     plt.hist(chi,bins=bins_histo,normed=True,histtype='step', align='mid',color='k',linewidth=3,label='Chi distribution')
     plt.plot(xvals,ygauss,'c-',lw=3,label='sigma=1')
     plt.plot(xvals,ygauss_new,'m--',lw=2,label='new sigma={:}'.format(round(one_sigma,2)))
@@ -616,6 +567,40 @@ def resid_gauss_plot(chi,one_sigma):
     plt.show()
 
     return
+
+def reject_qa(wave, flux, ivar, mask=None, wave_coadd=None, flux_coadd=None, ivar_coadd=None, mask_coadd=None):
+
+    if mask is None:
+        mask = ivar>0.
+
+    plt.figure(figsize=(10,6))
+    plt.plot(wave[np.invert(mask)], flux[np.invert(mask)],'s',zorder=10,mfc='None', mec='r', label='Rejected pixels')
+    plt.plot(wave, flux, color='dodgerblue', linestyle='steps-mid',zorder=2, alpha=0.7,label='Single exposure')
+    plt.plot(wave, np.sqrt(utils.calc_ivar(ivar)),zorder=3, color='0.7', linestyle='steps-mid')
+    ymin = np.percentile(flux, 5)
+    ymax = 2.0 * np.percentile(flux, 95)
+
+    # plot coadd
+    if (wave_coadd is not None) and (flux_coadd is not None) and (ivar_coadd is not None):
+        if mask_coadd is None:
+            mask_coadd = ivar_coadd>0.
+        plt.plot(wave_coadd, flux_coadd, color='k', linestyle='steps-mid', lw=2, zorder=1, label='Coadd')
+        ymin = np.percentile(flux_coadd, 5)
+        ymax = 2.0 * np.percentile(flux_coadd, 95)
+
+    # Plot transmission
+    if (np.max(wave[mask])>9000.0):
+        skytrans_file = resource_filename('pypeit', '/data/skisim/atm_transmission_secz1.5_1.6mm.dat')
+        skycat = np.genfromtxt(skytrans_file,dtype='float')
+        scale = 0.8*ymax
+        plt.plot(skycat[:,0]*1e4,skycat[:,1]*scale,'m-',alpha=0.5,zorder=11)
+
+    plt.ylim([ymin, ymax])
+    plt.xlim([wave.min(), wave.max()])
+    plt.xlabel('Wavelength (Angstrom)')
+    plt.ylabel('Flux')
+    plt.legend(fontsize=13)
+    plt.show()
 
 def coaddspec_qa(waves,fluxes,ivars,masks,wave_stack,flux_stack,ivar_stack,mask_stack,
                  qafile=None,verbose=False):
@@ -773,26 +758,15 @@ def long_reject(waves, fluxes, ivars, masks, fluxes_stack, ivars_stack, do_offse
             # Plot Chi distribution
             resid_gauss_plot(chi, one_sigma)
             # Compare individual exposoures with stack spectrum.
-            plt.plot(waves[iexp,:],newflux_now,color='k',linestyle='steps-mid',lw=2,label='Coadd model')
-            plt.plot(waves[iexp,:],iflux,color='b',linestyle='steps-mid',alpha=0.7,label='{:}th exposure'.format(iexp+1))
-            plt.plot(waves[iexp,:],np.sqrt(utils.calc_ivar(ivar)),color='c',linestyle='steps-mid')
-            plt.plot(waves[iexp,:][np.invert(gdtmp)],iflux[np.invert(gdtmp)],'s',mfc='None',
-                        mec='r',label='Rejected pixels')
-            ymin = np.percentile(newflux_now,5)
-            ymax = 2.0*np.percentile(newflux_now,95)
-            plt.ylim([ymin,ymax])
-            plt.xlim([waves[iexp,:].min(),waves[iexp,:].max()])
-            plt.xlabel('Wavelength (Angstrom)')
-            plt.ylabel('Flux')
-            plt.legend(fontsize=13)
-            plt.show()
+            reject_qa(waves[iexp,:],iflux,ivar,mask=gdtmp,wave_coadd=waves[iexp,:],flux_coadd=newflux_now,\
+                      ivar_coadd=ivars_stack[iexp,:], mask_coadd=None)
 
     return outmasks
 
 def long_comb(waves, fluxes, ivars, masks,wave_method='pixel', wave_grid_min=None, wave_grid_max=None, \
-              A_pix=None, v_pix=None, samp_fact = 1.0, cenfunc='median', snr_cut=2.0, maxiters=5, sigma=3, \
-              scale_method='median', hand_scale=None, SN_MAX_MEDSCALE=20., SN_MIN_MEDSCALE=0.5, \
-              dv_smooth=10000.0, const_weights=False, maxiter_reject = 5, SN_MAX_REJECT=20., \
+              A_pix=None, v_pix=None, samp_fact = 1.0, cenfunc='median', ref_percentile=20.0, maxiters=5, sigrej=3, \
+              scale_method='median', hand_scale=None, sn_max_medscale=20., sn_min_medscale=0.5, \
+              dv_smooth=10000.0, const_weights=False, maxiter_reject = 5, sn_max_reject=20., \
               fill_val=None,qafile=None,outfile=None,verbose=False):
 
     # Define a common fixed wavegrid
@@ -811,49 +785,52 @@ def long_comb(waves, fluxes, ivars, masks,wave_method='pixel', wave_grid_min=Non
     fluxes_inter, ivars_inter, masks_inter = interp_spec(wave_grid, waves, fluxes, ivars, masks)
 
     # avsigclip the interpolated spectra to obtain a high SNR average -- ToDo: This now comes from coadd2d
-    flux_iref, flux_median, flux_std = stats.sigma_clipped_stats(fluxes_inter, mask=np.invert(masks_inter), mask_value=0.,
-                                                                 sigma=sigma, maxiters=maxiters, cenfunc=cenfunc, axis=0)
+    flux_ref, flux_median, flux_std = stats.sigma_clipped_stats(fluxes_inter, mask=np.invert(masks_inter), mask_value=0.,
+                                                                 sigma=sigrej, maxiters=maxiters, cenfunc=cenfunc, axis=0)
     # ToDo: This stuff disappears
     nexp = np.shape(fluxes)[0]
     nused = np.sum(masks_inter, axis=0)
-    mask_iref = nused == nexp
+    mask_ref = nused == nexp
     sig2 = 1.0 / (ivars_inter + (ivars_inter <= 0))
     newsig2 = np.sum(sig2 * masks_inter, axis=0) / (nused ** 2 + (nused == 0))
-    ivar_iref = mask_iref / (newsig2 + (newsig2 <= 0.0))
+    ivar_ref = mask_ref / (newsig2 + (newsig2 <= 0.0))
 
-    fluxes_scale, ivars_scale, scales, omethod = scale_spec(wave_grid, fluxes_inter, ivars_inter, masks=masks_inter, \
-                                                            flux_iref=flux_iref, ivar_iref=ivar_iref, mask_iref=mask_iref, \
-                                                            iref=None, cenfunc=cenfunc, snr_cut=snr_cut, maxiters=maxiters, \
-                                                            sigma=sigma, scale_method=scale_method, hand_scale=hand_scale, \
-                                                            SN_MAX_MEDSCALE=SN_MAX_MEDSCALE,
-                                                            SN_MIN_MEDSCALE=SN_MIN_MEDSCALE, \
-                                                            dv_smooth=dv_smooth, const_weights=const_weights, \
-                                                            verbose=verbose)
-
-    scale_array = np.transpose(np.ones_like(fluxes.T)*scales)
-    fluxes_native_scale = fluxes*scale_array
-    ivars_native_scale = ivars * 1.0/scale_array**2
+    nexp = np.shape(fluxes)[0]
+    fluxes_scale = np.copy(fluxes)
+    ivars_scale = np.copy(ivars)
+    scales = np.ones_like(fluxes)
+    for iexp in range(nexp):
+        flux_iref, ivar_iref, mask_iref = interp_spec(waves[iexp,:], wave_grid, flux_ref, ivar_ref, mask_ref)
+        flux_scale,ivar_scale,scale,omethod = scale_spec(waves[iexp,:],fluxes[iexp,:],ivars[iexp,:],\
+                                                         flux_iref,ivar_iref,mask=masks[iexp,:],mask_ref=mask_iref,\
+                                                         cenfunc=cenfunc,ref_percentile=ref_percentile,maxiters=maxiters, \
+                                                         sigrej=sigrej,scale_method=scale_method,hand_scale=hand_scale, \
+                                                         sn_max_medscale=sn_max_medscale,sn_min_medscale=sn_min_medscale,\
+                                                         verbose=verbose)
+        fluxes_scale[iexp,:] = flux_scale
+        ivars_scale[iexp,:] = ivar_scale
+        scales[iexp,:] = scale
 
     # Doing rejections and coadding based on the scaled spectra
     iIter = 0
     thismask = np.copy(masks)
     while iIter < maxiter_reject:
-        wave_stack, flux_stack, ivar_stack, mask_stack = compute_stack(waves, fluxes_native_scale, ivars_native_scale, \
-                                                           thismask, wave_grid, weights)
+        wave_stack, flux_stack, ivar_stack, mask_stack = compute_stack(waves, fluxes_scale, ivars_scale,thismask,\
+                                                                       wave_grid, weights)
         fluxes_native_stack, ivars_native_stack, masks_native_stack = interp_spec(waves, wave_stack, flux_stack, \
                                                                                   ivar_stack,mask_stack)
         if iIter == maxiter_reject -1:
-            thismask = long_reject(waves, fluxes_native_scale, ivars_native_scale, thismask, fluxes_native_stack, \
-                                   ivars_native_stack, SN_MAX=SN_MAX_REJECT, check=verbose)
+            thismask = long_reject(waves, fluxes_scale, ivars_scale, thismask, fluxes_native_stack, \
+                                   ivars_native_stack, SN_MAX=sn_max_reject, check=verbose)
         else:
-            thismask = long_reject(waves, fluxes_native_scale, ivars_native_scale, thismask, fluxes_native_stack, \
-                                   ivars_native_stack, SN_MAX=SN_MAX_REJECT, check=False)
+            thismask = long_reject(waves, fluxes_scale, ivars_scale, thismask, fluxes_native_stack, \
+                                   ivars_native_stack, SN_MAX=sn_max_reject, check=False)
 
         iIter = iIter +1
 
     # Plot the final coadded spectrum
-    coaddspec_qa(waves, fluxes_native_scale, ivars_native_scale, thismask, \
-                 wave_stack, flux_stack, ivar_stack, mask_stack,qafile=qafile, verbose=verbose)
+    coaddspec_qa(waves, fluxes_scale, ivars_scale, thismask, wave_stack, flux_stack, \
+                 ivar_stack, mask_stack,qafile=qafile, verbose=verbose)
 
     # Write to disk?
     if outfile is not None:
@@ -862,7 +839,7 @@ def long_comb(waves, fluxes, ivars, masks,wave_method='pixel', wave_grid_min=Non
             outfile = outfile+'.fits'
         write_to_fits(wave_stack, flux_stack, ivar_stack, mask_stack, outfile, clobber=True, fill_val=fill_val)
 
-    return wave_stack, flux_stack, ivar_stack, mask_stack, scale_array
+    return wave_stack, flux_stack, ivar_stack, mask_stack, scales
 
 
 def write_to_fits(wave, flux, ivar, mask, outfil, clobber=True, fill_val=None):
