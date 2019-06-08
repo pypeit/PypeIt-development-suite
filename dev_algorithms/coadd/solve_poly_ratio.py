@@ -25,8 +25,35 @@ import IPython
 #        ymult = utils.func_val(acoeff, xvector, polyfunc, minx=wave_min, maxx=wave_max)
 
 
-def renormalize_errors(chi2, mask, clip = 6.0, max_corr = 5.0, debug=False):
+def gauss1(x, mean, sigma, area):
+    ygauss = np.exp(-np.power(x - mean, 2.) / (2 * np.power(sigma, 2.)))
+    norm = area / (sigma * np.sqrt(2 * np.pi))
+    return norm * ygauss
 
+def renormalize_errors_qa(chi,sigma_corr, sig_range = 6.0):
+
+    n_bins = 50
+    binsize = 2.0*sig_range/n_bins
+    bins_histo = -sig_range + np.arange(n_bins)*binsize+binsize/2.0
+
+    xvals = np.arange(-10.0,10,0.02)
+    ygauss = gauss1(xvals,0.0,1.0,1.0)
+    ygauss_new = gauss1(xvals,0.0,sigma_corr,1.0)
+    plt.figure(figsize=(10,6))
+    plt.hist(chi,bins=bins_histo,normed=True,histtype='step', align='mid',color='k',linewidth=3,label='Chi distribution')
+    plt.plot(xvals,ygauss,'c-',lw=3,label='sigma=1')
+    plt.plot(xvals,ygauss_new,'m--',lw=2,label='new sigma={:}'.format(round(sigma_corr,2)))
+    plt.xlabel('Residual distribution')
+    plt.xlim([-6.05,6.05])
+    plt.legend(fontsize=13,loc=2)
+    plt.show()
+    plt.close()
+
+    return
+
+def renormalize_errors(chi, mask, clip = 6.0, max_corr = 5.0, debug=False):
+
+    chi2 = chi**2
     igood = (chi2 < clip**2) & mask
     if (np.sum(igood) > 0):
         gauss_prob = 1.0 - 2.0 * stats.norm.cdf(-1.0)
@@ -48,8 +75,7 @@ def renormalize_errors(chi2, mask, clip = 6.0, max_corr = 5.0, debug=False):
         sigma_corr = 1.0
 
     if debug:
-        pass
-        # Insert Feige's QA routine here
+        renormalize_errors_qa(chi, sigma_corr)
 
     return sigma_corr
 
@@ -119,8 +145,13 @@ def poly_ratio_fitfunc(flux_ref, thismask, arg_dict, **kwargs_opt):
     totvar = utils.calc_ivar(ivar_ref) + ymult**2*utils.calc_ivar(ivar)
     ivartot1 = mask_both*utils.calc_ivar(totvar)
     # Now rescale the errors
-    chi2 = ivartot1*(flux_scale - flux_ref)**2
-    sigma_corr = renormalize_errors(chi2, mask=thismask)
+    chi = (flux_scale - flux_ref)*np.sqrt(ivartot1)
+    try:
+        debug = arg_dict['debug']
+    except KeyError:
+        debug = False
+
+    sigma_corr = renormalize_errors(chi, mask=thismask, debug=debug)
     ivartot = ivartot1/sigma_corr
 
     return result, flux_scale, ivartot
@@ -134,7 +165,7 @@ def poly_ratio_fitfunc(flux_ref, thismask, arg_dict, **kwargs_opt):
 
 def solve_poly_ratio(wave, flux, ivar, flux_ref, ivar_ref, norder, mask = None, mask_ref = None,
                      scale_min = 0.05, scale_max = 100.0, func='legendre',
-                     maxiter=3, sticky=True, lower=3.0, upper=3.0, min_good=0.05, debug=True):
+                     maxiter=3, sticky=True, lower=3.0, upper=3.0, min_good=0.05, debug=False):
 
 
     if mask is None:
@@ -155,7 +186,7 @@ def solve_poly_ratio(wave, flux, ivar, flux_ref, ivar_ref, norder, mask = None, 
     wave_max = wave.max()
     arg_dict = dict(flux = flux, ivar = ivar, mask = mask,
                     ivar_ref = ivar_ref, wave = wave, wave_min = wave_min,
-                    wave_max = wave_max, func = func, norder = norder, guess = guess)
+                    wave_max = wave_max, func = func, norder = norder, guess = guess, debug=debug)
 
     result, ymodel, ivartot, outmask = utils.robust_optimize(flux_ref, poly_ratio_fitfunc, arg_dict,inmask=mask_ref,
                                                              maxiter=maxiter, lower=lower, upper=upper, sticky=sticky)
@@ -230,4 +261,4 @@ mask = ivar > 0
 norder = 3
 
 ymult,flux_rescale, ivar_rescale, outmask = solve_poly_ratio(wave, flux, ivar, flux_ref, ivar_ref, norder,
-                                                             mask=mask, mask_ref=mask_ref)
+                                                             mask=mask, mask_ref=mask_ref, debug=True)
