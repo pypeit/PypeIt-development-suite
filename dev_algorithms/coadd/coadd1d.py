@@ -893,6 +893,7 @@ def long_comb(waves, fluxes, ivars, masks,wave_method='pixel', wave_grid_min=Non
                                  const_weights=const_weights, verbose=verbose)
 
     # ToDo: Before computing the stack, one should remove CR and perform an initial re-scaling.
+    #       Need to be very careful with narrow emission/absorption lines.
     # Compute an initial stack as the reference
     wave_ref, flux_ref, ivar_ref, mask_ref = compute_stack(waves, fluxes, ivars, masks, wave_grid, weights)
 
