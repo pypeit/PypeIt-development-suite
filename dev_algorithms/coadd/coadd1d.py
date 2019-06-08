@@ -892,6 +892,7 @@ def long_comb(waves, fluxes, ivars, masks,wave_method='pixel', wave_grid_min=Non
     rms_sn, weights = sn_weights(waves,fluxes,ivars,masks, dv_smooth=dv_smooth, \
                                  const_weights=const_weights, verbose=verbose)
 
+    # ToDo: Before computing the stack, one should remove CR and perform an initial re-scaling.
     # Compute an initial stack as the reference
     wave_ref, flux_ref, ivar_ref, mask_ref = compute_stack(waves, fluxes, ivars, masks, wave_grid, weights)
 
@@ -929,7 +930,7 @@ def long_comb(waves, fluxes, ivars, masks,wave_method='pixel', wave_grid_min=Non
         iIter = iIter +1
 
     # Plot the final coadded spectrum
-    coadd_qa(wave_stack,flux_stack,ivar_stack,mask=mask_stack,qafile=qafile, debug=debug)
+    coadd_qa(wave_stack[mask_stack],flux_stack[mask_stack],ivar_stack[mask_stack],mask=None,qafile=qafile, debug=debug)
 
     # Write to disk?
     if outfile is not None:
