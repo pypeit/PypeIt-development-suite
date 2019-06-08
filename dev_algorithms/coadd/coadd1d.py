@@ -12,6 +12,9 @@ from pypeit import utils
 from pypeit import msgs
 from pypeit.core import load
 from pypeit.core.wavecal import wvutils
+from astropy import constants as const
+c_kms = const.c.to('km/s').value
+
 import IPython
 
 ## Plotting parameters
@@ -114,15 +117,15 @@ def poly_ratio_fitfunc_chi2(theta, flux_ref, thismask, arg_dict):
     flux_scale = ymult*flux
     mask_both = mask & thismask
     # This is the formally correct ivar
-    #totvar = utils.calc_ivar(ivar_ref) + ymult**2 * utils.calc_ivar(ivar)
-    #ivartot = mask_both*utils.calc_ivar(totvar)
+    totvar = utils.calc_ivar(ivar_ref) + ymult**2*utils.calc_ivar(ivar)
+    ivartot = mask_both*utils.calc_ivar(totvar)
 
     # The errors are rescaled at every function evaluation, but we only allow the errors to get smaller by up to a
     # factor of 1e4, and we only allow them to get larger slowly (as the square root).  This should very strongly
     # constrain the flux-corrrection vectors from going too small (or negative), or too large.
-    ## Schlegel's version here, this will not work with robust_optimize since the chi^2 is not a real chi^2
-    vmult = np.fmax(ymult,1e-4)*(ymult <= 1.0) + np.sqrt(ymult)*(ymult > 1.0)
-    ivartot = mask_both/(1.0/(ivar + np.invert(mask_both)) + np.square(vmult)/(ivar_ref + np.invert(mask_both)))
+    ## Schlegel's version here
+    #vmult = np.fmax(ymult,1e-4)*(ymult <= 1.0) + np.sqrt(ymult)*(ymult > 1.0)
+    #ivartot = mask_both/(1.0/(ivar + np.invert(mask_both)) + np.square(vmult)/(ivar_ref + np.invert(mask_both)))
     chi_vec = mask_both * (flux_ref - flux_scale) * np.sqrt(ivartot)
     chi2 = np.sum(np.square(chi_vec))
     return chi2
@@ -186,7 +189,7 @@ def solve_poly_ratio(wave, flux, ivar, flux_ref, ivar_ref, norder, mask = None, 
     ymult1 = utils.func_val(result.x, wave, func, minx=wave_min, maxx=wave_max)
     ymult = np.fmin(np.fmax(ymult1, scale_min), scale_max)
     flux_rescale = ymult*flux
-    ivar_rescale = ivar/ymult
+    ivar_rescale = ivar/ymult**2
 
     if debug:
         plt.plot(wave,flux_ref, color='black', drawstyle='steps-mid', zorder=3, label='Reference spectrum')
