@@ -20,5 +20,5 @@ waves,fluxes,ivars,masks = coadd1d.load_1dspec_to_array(fnames,gdobj=gdobj,order
 
 # Coadding
 wave_stack, flux_stack, ivar_stack, mask_stack, scale_array = \
-    coadd1d.long_comb(waves, fluxes, ivars, masks,wave_method='pixel', scale_method='median', maxiter_reject = 5, \
+    coadd1d.long_comb(waves, fluxes, ivars, masks,wave_method='pixel', scale_method='poly', maxiter_reject = 5, \
                       qafile='J0252_gmos', outfile='J0252_gmos.fits', verbose=False, debug=True)

@@ -637,17 +637,23 @@ def scale_spec(wave, flux, ivar, flux_ref, ivar_ref, mask=None, mask_ref=None, m
     rms_sn, weights = sn_weights(wave, flux, ivar, mask)
     rms_sn_stack = np.sqrt(np.mean(rms_sn**2))
 
+    if scale_method is None:
+        if rms_sn_stack > sn_max_medscale:
+            scale_method = 'poly'
+        elif ((rms_sn_stack <= sn_max_medscale) and (rms_sn_stack > sn_min_medscale)):
+            scale_method = 'median'
+        else:
+            scale_method = 'none'
+
     # Estimate the scale factor
     if scale_method == 'hand':
-        omethod = 'hand'
         # Input?
         if hand_scale is None:
             msgs.error("Need to provide hand_scale parameter, single value")
         flux_scale = flux * hand_scale
         ivar_scale = ivar * 1.0/hand_scale**2
         scale = np.full(flux.size,hand_scale)
-    elif ((rms_sn_stack <= sn_max_medscale) and (rms_sn_stack > sn_min_medscale)) or (scale_method=='median'):
-        omethod = 'median_flux'
+    elif scale_method == 'median':
         # Median ratio (reference to spectrum)
         med_scale = robust_median_ratio(flux,ivar,flux_ref,ivar_ref,ref_percentile=ref_percentile,min_good=min_good,\
                                         mask=mask, mask_ref=mask_ref,cenfunc=cenfunc, maxiters=maxiters,\
@@ -656,13 +662,11 @@ def scale_spec(wave, flux, ivar, flux_ref, ivar_ref, mask=None, mask_ref=None, m
         flux_scale = flux * med_scale
         ivar_scale = ivar * 1.0/med_scale**2
         scale = np.full(flux.size,med_scale)
-    elif rms_sn_stack <= sn_min_medscale:
-        omethod = 'none_SN'
+    elif scale_method == 'none':
         flux_scale = flux.copy()
         ivar_scale = ivar.copy()
         scale = np.ones_like(flux)
-    elif (rms_sn_stack > sn_max_medscale) or scale_method=='poly':
-        omethod = 'poly'
+    elif scale_method == 'poly':
         # Decide on the order of the polynomial rescaling
         if npoly is None:
             if rms_sn_stack > 25.0:
@@ -678,7 +682,7 @@ def scale_spec(wave, flux, ivar, flux_ref, ivar_ref, mask=None, mask_ref=None, m
     else:
         msgs.error("Scale method not recognized! Check documentation for available options")
     # Finish
-    return flux_scale, ivar_scale, scale, omethod
+    return flux_scale, ivar_scale, scale, scale_method
 
 
 def compute_stack(waves,fluxes,ivars,masks,wave_grid,weights):
@@ -854,7 +858,6 @@ def coaddspec_qa_old(waves,fluxes,ivars,masks,wave_stack,flux_stack,ivar_stack,m
         msgs.info("Wrote coadd QA: {:s}".format(qafile))
     if verbose:
         plt.show()
-    plt.close()
 
     return
 
@@ -956,10 +959,11 @@ def long_reject(waves, fluxes, ivars, masks, fluxes_stack, ivars_stack, do_offse
         gdtmp = (outmasks[iexp, :] >0) & (ivar_real>0.)
         chi = (iflux[gdtmp] - newflux_now[gdtmp] - offset) * np.sqrt(ivar_cap[gdtmp])
         # Plot Chi distribution
-        resid_gauss_plot(chi, one_sigma,debug=debug)
-        # Compare individual exposoures with stack spectrum.
-        coadd_qa(waves[iexp,:],iflux,ivar,mask=gdtmp,wave_coadd=waves[iexp,:],flux_coadd=newflux_now,\
-                  ivar_coadd=ivars_stack[iexp,:], mask_coadd=None,qafile=qafile,debug=debug)
+        if debug:
+            renormalize_errors_qa(chi, one_sigma)
+            # Compare individual exposoures with stack spectrum.
+            coadd_qa(waves[iexp,:],iflux,ivar,mask=gdtmp,wave_coadd=waves[iexp,:],flux_coadd=newflux_now,\
+                      ivar_coadd=ivars_stack[iexp,:], mask_coadd=None,qafile=qafile,debug=debug)
 
     return outmasks
 
@@ -1006,7 +1010,7 @@ def long_comb(waves, fluxes, ivars, masks,wave_method='pixel', wave_grid_min=Non
                                                          cenfunc=cenfunc,ref_percentile=ref_percentile,maxiters=maxiters, \
                                                          sigrej=sigrej,scale_method=scale_method,hand_scale=hand_scale, \
                                                          sn_max_medscale=sn_max_medscale,sn_min_medscale=sn_min_medscale,\
-                                                         verbose=verbose)
+                                                         debug=debug)
         fluxes_scale[iexp,:] = flux_scale
         ivars_scale[iexp,:] = ivar_scale
         scales[iexp,:] = scale
