@@ -7,7 +7,7 @@ import os
 from pypeit import utils
 from pypeit.core import coadd
 from scipy import interpolate
-from coadd_new import interp_spec
+from coadd1d import interp_spec
 from scipy import stats
 from pypeit import msgs
 import IPython
@@ -25,12 +25,12 @@ import IPython
 #        ymult = utils.func_val(acoeff, xvector, polyfunc, minx=wave_min, maxx=wave_max)
 
 
-def error_renormalize(data, model, ivar, mask=None, clip = 6.0, max_corr = 5.0, debug=False):
+def renormalize_errors(chi2, mask=None, clip = 6.0, max_corr = 5.0, debug=False):
 
     if mask is None:
         mask = (ivar > 0)
 
-    chi2 = ivar*(data-model)**2
+    #chi2 = ivar*(data-model)**2
     igood = (chi2 < clip**2) & mask
     if (np.sum(igood) > 0):
         chi2_good = chi2[igood]
@@ -121,8 +121,11 @@ def poly_ratio_fitfunc(flux_ref, thismask, arg_dict, **kwargs_opt):
     flux_scale = ymult*flux
     mask_both = mask & thismask
     totvar = utils.calc_ivar(ivar_ref) + ymult**2*utils.calc_ivar(ivar)
-    ivartot = mask_both*utils.calc_ivar(totvar)
+    ivartot1 = mask_both*utils.calc_ivar(totvar)
     # Now rescale the errors
+    chi2 = (flux_scale - flux_ref)*ivartot1
+    sigma_corr = renormalize_errors(chi2, mask=thismask)
+    ivartot = ivartot1/sigma_corr
 
     return result, flux_scale, ivartot
 
