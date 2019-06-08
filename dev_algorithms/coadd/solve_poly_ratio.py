@@ -25,20 +25,16 @@ import IPython
 #        ymult = utils.func_val(acoeff, xvector, polyfunc, minx=wave_min, maxx=wave_max)
 
 
-def renormalize_errors(chi2, mask=None, clip = 6.0, max_corr = 5.0, debug=False):
+def renormalize_errors(chi2, mask, clip = 6.0, max_corr = 5.0, debug=False):
 
-    if mask is None:
-        mask = (ivar > 0)
-
-    #chi2 = ivar*(data-model)**2
     igood = (chi2 < clip**2) & mask
     if (np.sum(igood) > 0):
-        chi2_good = chi2[igood]
         gauss_prob = 1.0 - 2.0 * stats.norm.cdf(-1.0)
-        chi2_sigrej = np.percentile(chi2_good[igood], 100.0*gauss_prob)
+        chi2_sigrej = np.percentile(chi2[igood], 100.0*gauss_prob)
         sigma_corr = np.sqrt(chi2_sigrej)
         if sigma_corr < 1.0:
-            msgs.warn("Error renormalization found correction factor sigma_corr = {:f} < 1." + msgs.newline() +
+            msgs.warn("Error renormalization found correction factor sigma_corr = {:f}".format(sigma_corr) +
+                      " < 1." + msgs.newline() +
                       " Errors are overestimated so not applying correction".format(sigma_corr))
             sigma_corr = 1.0
         if sigma_corr > max_corr:
@@ -123,11 +119,59 @@ def poly_ratio_fitfunc(flux_ref, thismask, arg_dict, **kwargs_opt):
     totvar = utils.calc_ivar(ivar_ref) + ymult**2*utils.calc_ivar(ivar)
     ivartot1 = mask_both*utils.calc_ivar(totvar)
     # Now rescale the errors
-    chi2 = (flux_scale - flux_ref)*ivartot1
+    chi2 = ivartot1*(flux_scale - flux_ref)**2
     sigma_corr = renormalize_errors(chi2, mask=thismask)
     ivartot = ivartot1/sigma_corr
 
     return result, flux_scale, ivartot
+
+
+#if norder is None:
+#    # If user did not specify an order to use, determine it automatically based on S/N
+#    rms_snr, _ = coadd.sn_weights(wave, flux, ivar, mask=mask)
+#    rms_snr_ref, _ = coadd.sn_weights(wave, flux_ref, ivar_ref, mask=mask_ref)
+#sys.exit(-1)
+
+def solve_poly_ratio(wave, flux, ivar, flux_ref, ivar_ref, norder, mask = None, mask_ref = None,
+                     scale_min = 0.05, scale_max = 100.0, func='legendre',
+                     maxiter=3, sticky=True, lower=3.0, upper=3.0, min_good=0.05, debug=True):
+
+
+    if mask is None:
+        mask = (ivar > 0.0)
+    if mask_ref is None:
+        mask_ref = (ivar_ref > 0.0)
+
+    nspec = wave.size
+    # Determine an initial guess
+    if ((np.sum(mask) > min_good*nspec) & (np.sum(mask_ref) > min_good*nspec)):
+        flux_25 = np.percentile(flux[mask],25)
+        flux_ref_25 = np.percentile(flux_ref[mask_ref],25)
+        ratio = flux_ref_25/flux_25
+    else:
+        ratio = 1.0
+    guess = np.append(ratio, np.zeros(norder-1))
+    wave_min = wave.min()
+    wave_max = wave.max()
+    arg_dict = dict(flux = flux, ivar = ivar, mask = mask,
+                    ivar_ref = ivar_ref, wave = wave, wave_min = wave_min,
+                    wave_max = wave_max, func = func, norder = norder, guess = guess)
+
+    result, ymodel, ivartot, outmask = utils.robust_optimize(flux_ref, poly_ratio_fitfunc, arg_dict,inmask=mask_ref,
+                                                             maxiter=maxiter, lower=lower, upper=upper, sticky=sticky)
+    ymult1 = utils.func_val(result.x, wave, func, minx=wave_min, maxx=wave_max)
+    ymult = np.fmin(np.fmax(ymult1, scale_min), scale_max)
+    flux_rescale = ymult*flux
+    ivar_rescale = ivar/ymult
+
+    if debug:
+        plt.plot(wave,flux_ref, color='black', drawstyle='steps-mid', zorder=3, label='Reference spectrum')
+        plt.plot(wave,flux, color='dodgerblue', drawstyle='steps-mid', zorder = 10, alpha = 0.5, label='Original spectrum')
+        plt.plot(wave,ymodel, color='red', drawstyle='steps-mid', alpha=0.7, zorder=1, linewidth=2, label='Rescaled spectrum')
+        plt.legend()
+        plt.show()
+
+    return ymult, flux_rescale, ivar_rescale, outmask
 
 
 
@@ -183,51 +227,7 @@ wave = wave_ref
 flux = flux_inter[idx, :]
 ivar = ivar_inter[idx, :]
 mask = ivar > 0
+norder = 3
 
-
-#if norder is None:
-#    # If user did not specify an order to use, determine it automatically based on S/N
-#    rms_snr, _ = coadd.sn_weights(wave, flux, ivar, mask=mask)
-#    rms_snr_ref, _ = coadd.sn_weights(wave, flux_ref, ivar_ref, mask=mask_ref)
-#sys.exit(-1)
-
-def solve_poly_ratio(wave, flux, ivar, flux_ref, ivar_ref, norder, mask = None, mask_ref = None,
-                     scale_min = 0.05, scale_max = 100.0, func='legendre',
-                     maxiter=3, sticky=True, lower=3.0, upper=3.0, min_good=0.05, debug=True):
-
-
-    if mask is None:
-        mask = (ivar > 0.0)
-    if mask_ref is None:
-        mask_ref = (ivar_ref > 0.0)
-
-    nspec = wave.size
-    # Determine an initial guess
-    if ((np.sum(mask) > min_good*nspec) & (np.sum(mask_ref) > min_good*nspec)):
-        flux_25 = np.percentile(flux[mask],25)
-        flux_ref_25 = np.percentile(flux_ref[mask_ref],25)
-        ratio = flux_ref_25/flux_25
-    else:
-        ratio = 1.0
-    guess = np.append(ratio, np.zeros(norder-1))
-    wave_min = wave.min()
-    wave_max = wave.max()
-    arg_dict = dict(flux = flux, ivar = ivar, mask = mask,
-                    ivar_ref = ivar_ref, wave = wave, wave_min = wave_min,
-                    wave_max = wave_max, func = func, norder = norder, guess = guess)
-
-    result, ymodel, ivartot, outmask = utils.robust_optimize(flux_ref, poly_ratio_fitfunc, arg_dict,inmask=mask_ref,
-                                                             maxiter=maxiter, lower=lower, upper=upper, sticky=sticky)
-    ymult1 = utils.func_val(result.x, wave, func, minx=wave_min, maxx=wave_max)
-    ymult = np.fmin(np.fmax(ymult1, scale_min), scale_max)
-    flux_rescale = ymul1*flux
-    ivar_rescale = ivar/ymult
-
-    if debug:
-        plt.plot(wave,flux_ref, color='black', drawstyle='steps-mid', zorder=3, label='Reference spectrum')
-        plt.plot(wave,flux, color='dodgerblue', drawstyle='steps-mid', zorder = 10, alpha = 0.5, label='Original spectrum')
-        plt.plot(wave,ymodel, color='red', drawstyle='steps-mid', alpha=0.7, zorder=1, linewidth=2, label='Rescaled spectrum')
-        plt.legend()
-        plt.show()
-
-    return ymult, flux_rescale, ivar_rescale, outmask
+ymult,flux_rescale, ivar_rescale, outmask = solve_poly_ratio(wave, flux, ivar, flux_ref, ivar_ref, norder,
+                                                             mask=mask, mask_ref=mask_ref)

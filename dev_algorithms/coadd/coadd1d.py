@@ -603,6 +603,7 @@ def reject_qa(wave, flux, ivar, mask=None, wave_coadd=None, flux_coadd=None, iva
     plt.legend(fontsize=13)
 
     if outfile is not None:
+        pass
 
     if debug:
         plt.show()
