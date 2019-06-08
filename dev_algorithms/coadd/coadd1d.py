@@ -59,7 +59,7 @@ def renormalize_errors(chi, mask, clip = 6.0, max_corr = 5.0, debug=False):
     chi2 = chi**2
     igood = (chi2 < clip**2) & mask
     if (np.sum(igood) > 0):
-        gauss_prob = 1.0 - 2.0 * stats.norm.cdf(-1.0)
+        gauss_prob = 1.0 - 2.0 * scipy.stats.norm.cdf(-1.0)
         chi2_sigrej = np.percentile(chi2[igood], 100.0*gauss_prob)
         sigma_corr = np.sqrt(chi2_sigrej)
         if sigma_corr < 1.0:
@@ -607,8 +607,8 @@ def robust_median_ratio(flux,ivar,flux_ref,ivar_ref, ref_percentile=20.0, min_go
     return ratio
 
 def scale_spec(wave, flux, ivar, flux_ref, ivar_ref, mask=None, mask_ref=None, min_good=0.05,
-               cenfunc='median',ref_percentile=20.0, maxiters=5, sigrej=3, max_factor=10, scale_method=None,
-               hand_scale=None, sn_max_medscale=2.0, sn_min_medscale=0.5, verbose=False):
+               cenfunc='median',ref_percentile=20.0, maxiters=5, sigrej=3, max_median_factor=10,
+               npoly = None, scale_method=None, hand_scale=None, sn_max_medscale=2.0, sn_min_medscale=0.5, debug=True):
     '''
     Scale the spectra into the same page with the reference spectrum.
 
@@ -651,22 +651,30 @@ def scale_spec(wave, flux, ivar, flux_ref, ivar_ref, mask=None, mask_ref=None, m
         # Median ratio (reference to spectrum)
         med_scale = robust_median_ratio(flux,ivar,flux_ref,ivar_ref,ref_percentile=ref_percentile,min_good=min_good,\
                                         mask=mask, mask_ref=mask_ref,cenfunc=cenfunc, maxiters=maxiters,\
-                                        max_factor=max_factor,sigrej=sigrej)
+                                        max_factor=max_median_factor,sigrej=sigrej)
         # Apply
         flux_scale = flux * med_scale
         ivar_scale = ivar * 1.0/med_scale**2
         scale = np.full(flux.size,med_scale)
-    elif rms_sn_stack <= SN_MIN_MEDSCALE:
+    elif rms_sn_stack <= sn_min_medscale:
         omethod = 'none_SN'
         flux_scale = flux.copy()
         ivar_scale = ivar.copy()
         scale = np.ones_like(flux)
-    elif (rms_sn_stack > SN_MAX_MEDSCALE) or scale_method=='poly':
-        msgs.work("Should be using poly here.")
+    elif (rms_sn_stack > sn_max_medscale) or scale_method=='poly':
         omethod = 'poly'
-        flux_scale = flux.copy()
-        ivar_scale = ivar.copy()
-        scale = np.ones_like(flux)
+        # Decide on the order of the polynomial rescaling
+        if npoly is None:
+            if rms_sn_stack > 25.0:
+                npoly = 5 # Is this stable?
+            elif rms_sn_stack > 8.0:
+                npoly = 3
+            elif rms_sn_stack >= 5.0:
+                npoly = 2
+            else:
+                npoly = 1
+        scale, flux_scale, ivar_scale, outmask = solve_poly_ratio(wave, flux, ivar, flux_ref, ivar_ref, npoly,
+                                                                      mask=mask, mask_ref=mask_ref, debug=debug)
     else:
         msgs.error("Scale method not recognized! Check documentation for available options")
     # Finish

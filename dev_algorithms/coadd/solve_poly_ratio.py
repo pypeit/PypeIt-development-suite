@@ -32,7 +32,6 @@ from astropy.io import fits
 from matplotlib import pyplot as plt
 import sys
 
-fitfunc = poly_ratio_fitfunc
 stackfile  = '/Users/joe/REDUX/lris_redux/Nov_2004/Final/SDSSJ073522.43+295710.1_N.fits'
 hdu = fits.open(stackfile)
 flux_ref = hdu[0].data
