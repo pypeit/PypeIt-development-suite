@@ -12,6 +12,7 @@ from pypeit import utils
 from pypeit import msgs
 from pypeit.core import load
 from pypeit.core.wavecal import wvutils
+import IPython
 
 ## Plotting parameters
 plt.rcdefaults()
@@ -164,7 +165,6 @@ def solve_poly_ratio(wave, flux, ivar, flux_ref, ivar_ref, norder, mask = None, 
                      scale_min = 0.05, scale_max = 100.0, func='legendre',
                      maxiter=3, sticky=True, lower=3.0, upper=3.0, min_good=0.05, debug=False):
 
-
     if mask is None:
         mask = (ivar > 0.0)
     if mask_ref is None:
@@ -172,12 +172,7 @@ def solve_poly_ratio(wave, flux, ivar, flux_ref, ivar_ref, norder, mask = None, 
 
     nspec = wave.size
     # Determine an initial guess
-    if ((np.sum(mask) > min_good*nspec) & (np.sum(mask_ref) > min_good*nspec)):
-        flux_25 = np.percentile(flux[mask],25)
-        flux_ref_25 = np.percentile(flux_ref[mask_ref],25)
-        ratio = flux_ref_25/flux_25
-    else:
-        ratio = 1.0
+    ratio = robust_median_ratio(flux, ivar, flux_ref, ivar_ref, mask=mask, mask_ref=mask_ref)
     guess = np.append(ratio, np.zeros(norder-1))
     wave_min = wave.min()
     wave_max = wave.max()
@@ -185,7 +180,7 @@ def solve_poly_ratio(wave, flux, ivar, flux_ref, ivar_ref, norder, mask = None, 
                     ivar_ref = ivar_ref, wave = wave, wave_min = wave_min,
                     wave_max = wave_max, func = func, norder = norder, guess = guess, debug=debug)
 
-    result, ymodel, ivartot, outmask = utils.robust_optimize(flux_ref, poly_ratio_fitfunc, arg_dict,inmask=mask_ref,
+    result, ymodel, ivartot, outmask = utils.robust_optimize(flux_ref, poly_ratio_fitfunc, arg_dict, inmask=mask_ref,
                                                              maxiter=maxiter, lower=lower, upper=upper, sticky=sticky)
     ymult1 = utils.func_val(result.x, wave, func, minx=wave_min, maxx=wave_max)
     ymult = np.fmin(np.fmax(ymult1, scale_min), scale_max)
