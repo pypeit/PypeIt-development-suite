@@ -95,10 +95,30 @@ def read_nires_stack():
 
     return waves, fluxes, ivars, masks
 
+def read_xshooter_nir_stack():
+    datapath = os.path.join(os.getenv('HOME'),'Dropbox/PypeIt_Redux/XSHOOTER/J0439/vlt_xshooter_nir/Science/')
+    fnames = [datapath+'J0439_XSHOOTER_NIR_01.fits',datapath+'J0439_XSHOOTER_NIR_02.fits',datapath+'J0439_XSHOOTER_NIR_03.fits',
+              datapath+'J0439_XSHOOTER_NIR_04.fits',datapath+'J0439_XSHOOTER_NIR_05.fits',datapath+'J0439_XSHOOTER_NIR_06.fits',
+              datapath+'J0439_XSHOOTER_NIR_07.fits',datapath+'J0439_XSHOOTER_NIR_08.fits',datapath+'J0439_XSHOOTER_NIR_09.fits']
+
+    gdobj = ['OBJ0001-ORDER0013-DET01','OBJ0001-ORDER0013-DET01','OBJ0001-ORDER0013-DET01',
+             'OBJ0001-ORDER0013-DET01','OBJ0001-ORDER0013-DET01','OBJ0001-ORDER0013-DET01',
+             'OBJ0001-ORDER0013-DET01','OBJ0001-ORDER0013-DET01','OBJ0001-ORDER0013-DET01']
+
+    # parameters for load_1dspec_to_array
+    ex_value = 'OPT'
+    flux_value = True
+
+    # Reading data
+    waves,fluxes,ivars,masks = coadd1d.load_1dspec_to_array(fnames,gdobj=gdobj,order=None,ex_value=ex_value,flux_value=flux_value)
+
+    return waves, fluxes, ivars, masks
+
 
 #waves, fluxes, ivars, masks = read_gmos_stack()
 #waves, fluxes, ivars, masks = read_lris_stack()
-waves, fluxes, ivars, masks = read_nires_stack()
+#waves, fluxes, ivars, masks = read_nires_stack()
+waves, fluxes, ivars, masks = read_xshooter_nir_stack()
 # Coadding
 wave_stack, flux_stack, ivar_stack, mask_stack, scale_array = \
     coadd1d.long_comb(waves, fluxes, ivars, masks, wave_method='pixel', scale_method='poly', maxiter_reject = 5, \
