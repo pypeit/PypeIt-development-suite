@@ -32,224 +32,6 @@ plt.rcParams["ytick.labelsize"] = 15
 plt.rcParams["axes.labelsize"] = 17
 
 
-
-def gauss1(x, mean, sigma, area):
-    ygauss = np.exp(-np.power(x - mean, 2.) / (2 * np.power(sigma, 2.)))
-    norm = area / (sigma * np.sqrt(2 * np.pi))
-    return norm * ygauss
-
-def renormalize_errors_qa(chi,sigma_corr, sig_range = 6.0, title=''):
-
-    n_bins = 50
-    binsize = 2.0*sig_range/n_bins
-    bins_histo = -sig_range + np.arange(n_bins)*binsize+binsize/2.0
-
-    xvals = np.arange(-10.0,10,0.02)
-    ygauss = gauss1(xvals,0.0,1.0,1.0)
-    ygauss_new = gauss1(xvals,0.0,sigma_corr,1.0)
-
-    plt.figure(figsize=(10, 6))
-    plt.hist(chi,bins=bins_histo,normed=True,histtype='step', align='mid',color='k',linewidth=3,label='Chi distribution')
-    plt.plot(xvals,ygauss,'c-',lw=3,label='sigma=1')
-    plt.plot(xvals,ygauss_new,'m--',lw=2,label='new sigma={:}'.format(round(sigma_corr,2)))
-    plt.xlabel('Residual distribution')
-    plt.xlim([-6.05,6.05])
-    plt.legend(fontsize=13,loc=2)
-    plt.title(title)
-    plt.show()
-    plt.close()
-
-    return
-
-def renormalize_errors(chi, mask, clip = 6.0, max_corr = 5.0, title = '', debug=False):
-
-    chi2 = chi**2
-    maskchi = (chi2 < clip**2) & mask
-    if (np.sum(maskchi) > 0):
-        gauss_prob = 1.0 - 2.0 * scipy.stats.norm.cdf(-1.0)
-        chi2_sigrej = np.percentile(chi2[maskchi], 100.0*gauss_prob)
-        sigma_corr = np.sqrt(chi2_sigrej)
-        if sigma_corr < 1.0:
-            msgs.warn("Error renormalization found correction factor sigma_corr = {:f}".format(sigma_corr) +
-                      " < 1." + msgs.newline() +
-                      " Errors are overestimated so not applying correction".format(sigma_corr))
-            sigma_corr = 1.0
-        if sigma_corr > max_corr:
-            msgs.warn("Error renormalization found sigma_corr/sigma = {:f} > {:f}." + msgs.newline() +
-                      "Errors are severely underestimated." + msgs.newline() +
-                      "Setting correction to sigma_corr = {:f}".format(sigma_corr, max_corr, max_corr))
-            sigma_corr = max_corr
-
-        if debug:
-            renormalize_errors_qa(chi[maskchi], sigma_corr, title=title)
-
-    else:
-        msgs.warn('No good pixels in error_renormalize. There are probably issues with your data')
-        sigma_corr = 1.0
-
-    return sigma_corr, maskchi
-
-
-def poly_ratio_fitfunc_chi2(theta, flux_ref, thismask, arg_dict):
-    """
-    Function to be optimized for poly_ratio rescaling
-
-    Args:
-        theta:
-        flux_ref:
-        ivar_ref:
-        thismask:
-        arg_dict:
-
-    Returns:
-
-    """
-
-    # Unpack the data to be rescaled, the mask for the reference spectrum, and the wavelengths
-    flux = arg_dict['flux']
-    ivar = arg_dict['ivar']
-    mask = arg_dict['mask']
-    flux_med = arg_dict['flux_med']
-    ivar_med = arg_dict['ivar_med']
-    flux_ref_med = arg_dict['flux_ref_med']
-    ivar_ref_med = arg_dict['ivar_ref_med']
-    ivar_ref = arg_dict['ivar_ref']
-    wave = arg_dict['wave']
-    wave_min = arg_dict['wave_min']
-    wave_max = arg_dict['wave_max']
-    func = arg_dict['func']
-    # Evaluate the polynomial for rescaling
-    ymult = (utils.func_val(theta, wave, func, minx=wave_min, maxx=wave_max))**2
-    flux_scale = ymult*flux_med
-    mask_both = mask & thismask
-    # This is the formally correct ivar used for the rejection, but not used in the fitting. This appears to yield
-    # unstable results
-    #totvar = utils.calc_ivar(ivar_ref) + ymult**2*utils.calc_ivar(ivar)
-    #ivartot = mask_both*utils.calc_ivar(totvar)
-
-    # The errors are rescaled at every function evaluation, but we only allow the errors to get smaller by up to a
-    # factor of 1e4, and we only allow them to get larger slowly (as the square root).  This should very strongly
-    # constrain the flux-corrrection vectors from going too small (or negative), or too large.
-    ## Schlegel's version here
-    vmult = np.fmax(ymult,1e-4)*(ymult <= 1.0) + np.sqrt(ymult)*(ymult > 1.0)
-    ivarfit = mask_both/(1.0/(ivar_med + np.invert(mask_both)) + np.square(vmult)/(ivar_ref_med + np.invert(mask_both)))
-    chi_vec = mask_both * (flux_ref_med - flux_scale) * np.sqrt(ivarfit)
-    # Robustly characterize the dispersion of this distribution
-    chi_mean, chi_median, chi_std = \
-        stats.sigma_clipped_stats(chi_vec, np.invert(mask_both), cenfunc='median', maxiters=5, sigma=2.0)
-    # The Huber loss function smoothly interpolates between being chi^2/2 for standard chi^2 rejection and
-    # a linear function of residual in the outlying tails for large residuals. This transition occurs at the
-    # value of the first argument, which we have set to be 2.0*chi_std, which is 2-sigma given the modified
-    # errors described above from Schlegel's code.
-    robust_scale = 2.0
-    huber_vec = scipy.special.huber(robust_scale*chi_std, chi_vec)
-    loss_function = np.sum(np.square(huber_vec*mask_both))
-    #chi2 = np.sum(np.square(chi_vec))
-    return loss_function
-
-
-
-def poly_ratio_fitfunc(flux_ref, thismask, arg_dict, **kwargs_opt):
-
-    # flux_ref, ivar_ref act like the 'data', the rescaled flux will be the 'model'
-
-    # Function that we are optimizing
-    #result = scipy.optimize.differential_evolution(poly_ratio_fitfunc_chi2, args=(flux_ref, ivar_ref, thismask, arg_dict,), **kwargs_opt)
-    guess = arg_dict['guess']
-    result = scipy.optimize.minimize(poly_ratio_fitfunc_chi2, guess, args=(flux_ref, thismask, arg_dict),  **kwargs_opt)
-    #result = scipy.optimize.least_squares(poly_ratio_fitfunc_chi, guess, args=(flux_ref, thismask, arg_dict),  **kwargs_opt)
-    flux = arg_dict['flux']
-    ivar = arg_dict['ivar']
-    mask = arg_dict['mask']
-    flux_med = arg_dict['flux_med']
-    ivar_med = arg_dict['ivar_med']
-    flux_ref_med = arg_dict['flux_ref_med']
-    ivar_ref_med = arg_dict['ivar_ref_med']
-    ivar_ref = arg_dict['ivar_ref']
-    wave = arg_dict['wave']
-    wave_min = arg_dict['wave_min']
-    wave_max = arg_dict['wave_max']
-    func = arg_dict['func']
-    # Evaluate the polynomial for rescaling
-    ymult = (utils.func_val(result.x, wave, func, minx=wave_min, maxx=wave_max))**2
-    flux_scale = ymult*flux
-    mask_both = mask & thismask
-    totvar = utils.calc_ivar(ivar_ref) + ymult**2*utils.calc_ivar(ivar)
-    ivartot1 = mask_both*utils.calc_ivar(totvar)
-    # Now rescale the errors
-    chi = (flux_scale - flux_ref)*np.sqrt(ivartot1)
-    try:
-        debug = arg_dict['debug']
-    except KeyError:
-        debug = False
-
-    sigma_corr, maskchi = renormalize_errors(chi, mask=thismask, title = 'poly_ratio_fitfunc', debug=debug)
-    ivartot = ivartot1/sigma_corr**2
-
-    return result, flux_scale, ivartot
-
-def median_filt_spec(flux, ivar, mask, med_width):
-
-    flux_med = np.zeros_like(flux)
-    ivar_med = np.zeros_like(ivar)
-    flux_med0 = utils.fast_running_median(flux[mask], med_width)
-    flux_med[mask] = flux_med0
-    var = utils.calc_ivar(ivar)
-    var_med0 =  utils.smooth(var[mask], med_width)
-    ivar_med[mask] = utils.calc_ivar(var_med0)
-    return flux_med, ivar_med
-
-
-def solve_poly_ratio(wave, flux, ivar, flux_ref, ivar_ref, norder, mask = None, mask_ref = None,
-                     scale_min = 0.05, scale_max = 100.0, func='legendre',
-                     maxiter=3, sticky=True, lower=3.0, upper=3.0, median_frac=0.01, debug=False):
-
-
-
-    if mask is None:
-        mask = (ivar > 0.0)
-    if mask_ref is None:
-        mask_ref = (ivar_ref > 0.0)
-
-    #
-    nspec = wave.size
-    # Determine an initial guess
-    ratio = robust_median_ratio(flux, ivar, flux_ref, ivar_ref, mask=mask, mask_ref=mask_ref)
-    guess = np.append(np.sqrt(ratio), np.zeros(norder-1))
-    wave_min = wave.min()
-    wave_max = wave.max()
-
-    # Now compute median filtered versions of the spectra which we will actually operate on for the fitting. Note
-    # that rejection will however work on the non-filtered spectra.
-    med_width = (2.0*np.ceil(median_frac/2.0*nspec) + 1).astype(int)
-    flux_med, ivar_med = median_filt_spec(flux, ivar, mask, med_width)
-    flux_ref_med, ivar_ref_med = median_filt_spec(flux_ref, ivar_ref, mask_ref, med_width)
-
-    arg_dict = dict(flux = flux, ivar = ivar, mask = mask,
-                    flux_med = flux_med, ivar_med = ivar_med,
-                    flux_ref_med = flux_ref_med, ivar_ref_med = ivar_ref_med,
-                    ivar_ref = ivar_ref, wave = wave, wave_min = wave_min,
-                    wave_max = wave_max, func = func, norder = norder, guess = guess, debug=debug)
-
-    result, ymodel, ivartot, outmask = utils.robust_optimize(flux_ref, poly_ratio_fitfunc, arg_dict, inmask=mask_ref,
-                                                             maxiter=maxiter, lower=lower, upper=upper, sticky=sticky)
-    ymult1 = (utils.func_val(result.x, wave, func, minx=wave_min, maxx=wave_max))**2
-    ymult = np.fmin(np.fmax(ymult1, scale_min), scale_max)
-    flux_rescale = ymult*flux
-    ivar_rescale = ivar/ymult**2
-
-    if debug:
-        # Determine the y-range for the QA plots
-        scale_spec_qa(wave, flux_med, ivar_med, flux_ref_med, ivar_ref_med, ymult, 'poly', mask = mask, mask_ref=mask_ref,
-                      title='Median Filtered Spectra that were poly_ratio Fit')
-
-    return ymult, flux_rescale, ivar_rescale, outmask
-
-
-
-
-
-
 def load_1dspec_to_array(fnames,gdobj=None,order=None,ex_value='OPT',flux_value=True):
     '''
     Load the spectra from the 1d fits file into arrays.
@@ -428,6 +210,212 @@ def new_wave_grid(waves,wave_method='iref',iref=0,wave_grid_min=None,wave_grid_m
         msgs.error("Bad method for scaling: {:s}".format(wave_method))
 
     return wave_grid
+
+def gauss1(x, mean, sigma, area):
+    ygauss = np.exp(-np.power(x - mean, 2.) / (2 * np.power(sigma, 2.)))
+    norm = area / (sigma * np.sqrt(2 * np.pi))
+    return norm * ygauss
+
+def renormalize_errors_qa(chi,sigma_corr, sig_range = 6.0, title=''):
+
+    n_bins = 50
+    binsize = 2.0*sig_range/n_bins
+    bins_histo = -sig_range + np.arange(n_bins)*binsize+binsize/2.0
+
+    xvals = np.arange(-10.0,10,0.02)
+    ygauss = gauss1(xvals,0.0,1.0,1.0)
+    ygauss_new = gauss1(xvals,0.0,sigma_corr,1.0)
+
+    plt.figure(figsize=(10, 6))
+    plt.hist(chi,bins=bins_histo,normed=True,histtype='step', align='mid',color='k',linewidth=3,label='Chi distribution')
+    plt.plot(xvals,ygauss,'c-',lw=3,label='sigma=1')
+    plt.plot(xvals,ygauss_new,'m--',lw=2,label='new sigma={:}'.format(round(sigma_corr,2)))
+    plt.xlabel('Residual distribution')
+    plt.xlim([-6.05,6.05])
+    plt.legend(fontsize=13,loc=2)
+    plt.title(title)
+    plt.show()
+    plt.close()
+
+    return
+
+def renormalize_errors(chi, mask, clip = 6.0, max_corr = 5.0, title = '', debug=False):
+
+    chi2 = chi**2
+    maskchi = (chi2 < clip**2) & mask
+    if (np.sum(maskchi) > 0):
+        gauss_prob = 1.0 - 2.0 * scipy.stats.norm.cdf(-1.0)
+        chi2_sigrej = np.percentile(chi2[maskchi], 100.0*gauss_prob)
+        sigma_corr = np.sqrt(chi2_sigrej)
+        if sigma_corr < 1.0:
+            msgs.warn("Error renormalization found correction factor sigma_corr = {:f}".format(sigma_corr) +
+                      " < 1." + msgs.newline() +
+                      " Errors are overestimated so not applying correction".format(sigma_corr))
+            sigma_corr = 1.0
+        if sigma_corr > max_corr:
+            msgs.warn("Error renormalization found sigma_corr/sigma = {:f} > {:f}." + msgs.newline() +
+                      "Errors are severely underestimated." + msgs.newline() +
+                      "Setting correction to sigma_corr = {:f}".format(sigma_corr, max_corr, max_corr))
+            sigma_corr = max_corr
+
+        if debug:
+            renormalize_errors_qa(chi[maskchi], sigma_corr, title=title)
+
+    else:
+        msgs.warn('No good pixels in error_renormalize. There are probably issues with your data')
+        sigma_corr = 1.0
+
+    return sigma_corr, maskchi
+
+def poly_ratio_fitfunc_chi2(theta, flux_ref, thismask, arg_dict):
+    """
+    Function to be optimized for poly_ratio rescaling
+
+    Args:
+        theta:
+        flux_ref:
+        ivar_ref:
+        thismask:
+        arg_dict:
+
+    Returns:
+
+    """
+
+    # Unpack the data to be rescaled, the mask for the reference spectrum, and the wavelengths
+    flux = arg_dict['flux']
+    ivar = arg_dict['ivar']
+    mask = arg_dict['mask']
+    flux_med = arg_dict['flux_med']
+    ivar_med = arg_dict['ivar_med']
+    flux_ref_med = arg_dict['flux_ref_med']
+    ivar_ref_med = arg_dict['ivar_ref_med']
+    ivar_ref = arg_dict['ivar_ref']
+    wave = arg_dict['wave']
+    wave_min = arg_dict['wave_min']
+    wave_max = arg_dict['wave_max']
+    func = arg_dict['func']
+    # Evaluate the polynomial for rescaling
+    ymult = (utils.func_val(theta, wave, func, minx=wave_min, maxx=wave_max))**2
+    flux_scale = ymult*flux_med
+    mask_both = mask & thismask
+    # This is the formally correct ivar used for the rejection, but not used in the fitting. This appears to yield
+    # unstable results
+    #totvar = utils.calc_ivar(ivar_ref) + ymult**2*utils.calc_ivar(ivar)
+    #ivartot = mask_both*utils.calc_ivar(totvar)
+
+    # The errors are rescaled at every function evaluation, but we only allow the errors to get smaller by up to a
+    # factor of 1e4, and we only allow them to get larger slowly (as the square root).  This should very strongly
+    # constrain the flux-corrrection vectors from going too small (or negative), or too large.
+    ## Schlegel's version here
+    vmult = np.fmax(ymult,1e-4)*(ymult <= 1.0) + np.sqrt(ymult)*(ymult > 1.0)
+    ivarfit = mask_both/(1.0/(ivar_med + np.invert(mask_both)) + np.square(vmult)/(ivar_ref_med + np.invert(mask_both)))
+    chi_vec = mask_both * (flux_ref_med - flux_scale) * np.sqrt(ivarfit)
+    # Robustly characterize the dispersion of this distribution
+    chi_mean, chi_median, chi_std = \
+        stats.sigma_clipped_stats(chi_vec, np.invert(mask_both), cenfunc='median', maxiters=5, sigma=2.0)
+    # The Huber loss function smoothly interpolates between being chi^2/2 for standard chi^2 rejection and
+    # a linear function of residual in the outlying tails for large residuals. This transition occurs at the
+    # value of the first argument, which we have set to be 2.0*chi_std, which is 2-sigma given the modified
+    # errors described above from Schlegel's code.
+    robust_scale = 2.0
+    huber_vec = scipy.special.huber(robust_scale*chi_std, chi_vec)
+    loss_function = np.sum(np.square(huber_vec*mask_both))
+    #chi2 = np.sum(np.square(chi_vec))
+    return loss_function
+
+def poly_ratio_fitfunc(flux_ref, thismask, arg_dict, **kwargs_opt):
+
+    # flux_ref, ivar_ref act like the 'data', the rescaled flux will be the 'model'
+
+    # Function that we are optimizing
+    #result = scipy.optimize.differential_evolution(poly_ratio_fitfunc_chi2, args=(flux_ref, ivar_ref, thismask, arg_dict,), **kwargs_opt)
+    guess = arg_dict['guess']
+    result = scipy.optimize.minimize(poly_ratio_fitfunc_chi2, guess, args=(flux_ref, thismask, arg_dict),  **kwargs_opt)
+    #result = scipy.optimize.least_squares(poly_ratio_fitfunc_chi, guess, args=(flux_ref, thismask, arg_dict),  **kwargs_opt)
+    flux = arg_dict['flux']
+    ivar = arg_dict['ivar']
+    mask = arg_dict['mask']
+    flux_med = arg_dict['flux_med']
+    ivar_med = arg_dict['ivar_med']
+    flux_ref_med = arg_dict['flux_ref_med']
+    ivar_ref_med = arg_dict['ivar_ref_med']
+    ivar_ref = arg_dict['ivar_ref']
+    wave = arg_dict['wave']
+    wave_min = arg_dict['wave_min']
+    wave_max = arg_dict['wave_max']
+    func = arg_dict['func']
+    # Evaluate the polynomial for rescaling
+    ymult = (utils.func_val(result.x, wave, func, minx=wave_min, maxx=wave_max))**2
+    flux_scale = ymult*flux
+    mask_both = mask & thismask
+    totvar = utils.calc_ivar(ivar_ref) + ymult**2*utils.calc_ivar(ivar)
+    ivartot1 = mask_both*utils.calc_ivar(totvar)
+    # Now rescale the errors
+    chi = (flux_scale - flux_ref)*np.sqrt(ivartot1)
+    try:
+        debug = arg_dict['debug']
+    except KeyError:
+        debug = False
+
+    sigma_corr, maskchi = renormalize_errors(chi, mask=thismask, title = 'poly_ratio_fitfunc', debug=debug)
+    ivartot = ivartot1/sigma_corr**2
+
+    return result, flux_scale, ivartot
+
+def median_filt_spec(flux, ivar, mask, med_width):
+
+    flux_med = np.zeros_like(flux)
+    ivar_med = np.zeros_like(ivar)
+    flux_med0 = utils.fast_running_median(flux[mask], med_width)
+    flux_med[mask] = flux_med0
+    var = utils.calc_ivar(ivar)
+    var_med0 =  utils.smooth(var[mask], med_width)
+    ivar_med[mask] = utils.calc_ivar(var_med0)
+    return flux_med, ivar_med
+
+def solve_poly_ratio(wave, flux, ivar, flux_ref, ivar_ref, norder, mask = None, mask_ref = None,
+                     scale_min = 0.05, scale_max = 100.0, func='legendre',
+                     maxiter=3, sticky=True, lower=3.0, upper=3.0, median_frac=0.01, debug=False):
+
+    if mask is None:
+        mask = (ivar > 0.0)
+    if mask_ref is None:
+        mask_ref = (ivar_ref > 0.0)
+
+    #
+    nspec = wave.size
+    # Determine an initial guess
+    ratio = robust_median_ratio(flux, ivar, flux_ref, ivar_ref, mask=mask, mask_ref=mask_ref)
+    guess = np.append(np.sqrt(ratio), np.zeros(norder-1))
+    wave_min = wave.min()
+    wave_max = wave.max()
+
+    # Now compute median filtered versions of the spectra which we will actually operate on for the fitting. Note
+    # that rejection will however work on the non-filtered spectra.
+    med_width = (2.0*np.ceil(median_frac/2.0*nspec) + 1).astype(int)
+    flux_med, ivar_med = median_filt_spec(flux, ivar, mask, med_width)
+    flux_ref_med, ivar_ref_med = median_filt_spec(flux_ref, ivar_ref, mask_ref, med_width)
+
+    arg_dict = dict(flux = flux, ivar = ivar, mask = mask,
+                    flux_med = flux_med, ivar_med = ivar_med,
+                    flux_ref_med = flux_ref_med, ivar_ref_med = ivar_ref_med,
+                    ivar_ref = ivar_ref, wave = wave, wave_min = wave_min,
+                    wave_max = wave_max, func = func, norder = norder, guess = guess, debug=debug)
+
+    result, ymodel, ivartot, outmask = utils.robust_optimize(flux_ref, poly_ratio_fitfunc, arg_dict, inmask=mask_ref,
+                                                             maxiter=maxiter, lower=lower, upper=upper, sticky=sticky)
+    ymult1 = (utils.func_val(result.x, wave, func, minx=wave_min, maxx=wave_max))**2
+    ymult = np.fmin(np.fmax(ymult1, scale_min), scale_max)
+    flux_rescale = ymult*flux
+    ivar_rescale = ivar/ymult**2
+
+    if debug:
+        # Determine the y-range for the QA plots
+        scale_spec_qa(wave, flux_med, ivar_med, flux_ref_med, ivar_ref_med, ymult, 'poly', mask = mask, mask_ref=mask_ref,
+                      title='Median Filtered Spectra that were poly_ratio Fit')
+
+    return ymult, flux_rescale, ivar_rescale, outmask
 
 
 def interp_oned(wave_new, wave_old, flux_old, ivar_old, mask_old):
@@ -837,7 +825,11 @@ def coadd_qa(wave, flux, ivar, mask=None, wave_coadd=None, flux_coadd=None, ivar
         else:
             num_plot.plot(wave_coadd,nused,linestyle='steps-mid',color='k',lw=2)
         num_plot.set_xlim([wave[mask].min(), wave[mask].max()])
+        num_plot.set_ylim([np.fmax(0.9,int(nused.min())), np.fmax(nused.max()+0.1*nused.max(), nused.max()+0.9)])
         num_plot.set_ylabel('$\\rm N_{EXP}$')
+
+        from matplotlib.ticker import MaxNLocator
+        num_plot.yaxis.set_major_locator(MaxNLocator(integer=True))
     else:
         spec_plot = fig.add_axes([0.1, 0.1, 0.8, 0.85])
 
@@ -845,8 +837,13 @@ def coadd_qa(wave, flux, ivar, mask=None, wave_coadd=None, flux_coadd=None, ivar
     spec_plot.plot(wave[np.invert(mask)], flux[np.invert(mask)],'s',zorder=10,mfc='None', mec='r', label='Rejected pixels')
     spec_plot.plot(wave, flux, color='dodgerblue', linestyle='steps-mid',zorder=2, alpha=0.7,label='Single exposure')
     spec_plot.plot(wave, np.sqrt(utils.calc_ivar(ivar)),zorder=3, color='0.7', linestyle='steps-mid')
-    ymin = np.percentile(flux, 5)
-    ymax = 2.0 * np.percentile(flux, 95)
+
+    # Get limits
+    nspec = flux.size
+    med_width = (2.0 * np.ceil(0.03 / 2.0 * nspec) + 1).astype(int)
+    flux_med, ivar_med = median_filt_spec(flux, ivar, mask, med_width)
+    ymax = 1.5 * flux_med.max()
+    ymin = -0.15 * ymax
 
     # Plot transmission
     if (np.max(wave[mask])>9000.0):
@@ -860,8 +857,8 @@ def coadd_qa(wave, flux, ivar, mask=None, wave_coadd=None, flux_coadd=None, ivar
         if mask_coadd is None:
             mask_coadd = ivar_coadd>0.
         spec_plot.plot(wave_coadd,flux_coadd,color='k',linestyle='steps-mid',lw=2,zorder=1,label='Coadd')
-        ymin = np.percentile(flux_coadd, 5)
-        ymax = 2.0 * np.percentile(flux_coadd, 95)
+        #ymin = np.percentile(flux_coadd, 5)
+        #ymax = 2.0 * np.percentile(flux_coadd, 95)
         spec_plot.legend(fontsize=13)
 
     spec_plot.set_ylim([ymin, ymax])
@@ -880,6 +877,57 @@ def coadd_qa(wave, flux, ivar, mask=None, wave_coadd=None, flux_coadd=None, ivar
 
     return
 
+def write_to_fits(wave, flux, ivar, mask, outfil, clobber=True, fill_val=None):
+    """ Write to a multi-extension FITS file.
+    unless select=True.
+    Otherwise writes 1D arrays
+    Parameters
+    ----------
+    outfil : str
+      Name of the FITS file
+    select : int, optional
+      Write only the select spectrum.
+      This will always trigger if there is only 1 spectrum
+      in the data array
+    clobber : bool (True)
+      Clobber existing file?
+    add_wave : bool (False)
+      Force writing of wavelengths as array, instead of using FITS
+      header keywords to specify a wcs.
+    fill_val : float, optional
+      Fill value for masked pixels
+    """
+
+    # Flux
+    if fill_val is None:
+        flux = flux[mask]
+    else:
+        flux[mask] = fill_val
+    prihdu = fits.PrimaryHDU(flux)
+    hdu = fits.HDUList([prihdu])
+    prihdu.name = 'FLUX'
+
+    # Error  (packing LowRedux style)
+    sig = np.sqrt(utils.calc_ivar(ivar))
+    if fill_val is None:
+        sig = sig[mask]
+    else:
+        sig[mask] = fill_val
+    sighdu = fits.ImageHDU(sig)
+    sighdu.name = 'ERROR'
+    hdu.append(sighdu)
+
+    # Wavelength
+    if fill_val is None:
+        wave = wave[mask]
+    else:
+        wave[mask] = fill_val
+    wvhdu = fits.ImageHDU(wave)
+    wvhdu.name = 'WAVELENGTH'
+    hdu.append(wvhdu)
+
+    hdu.writeto(outfil, overwrite=clobber)
+    msgs.info('Wrote spectrum to {:s}'.format(outfil))
 
 def update_errors(waves, fluxes, ivars, masks, fluxes_stack, ivars_stack, masks_stack, sn_cap=20.0, debug=False):
 
@@ -1001,60 +1049,7 @@ def combspec(waves, fluxes, ivars, masks, wave_method='pixel', wave_grid_min=Non
     return wave_stack, flux_stack, ivar_stack, mask_stack, outmask, weights, scales, rms_sn
 
 
-def write_to_fits(wave, flux, ivar, mask, outfil, clobber=True, fill_val=None):
-    """ Write to a multi-extension FITS file.
-    unless select=True.
-    Otherwise writes 1D arrays
-    Parameters
-    ----------
-    outfil : str
-      Name of the FITS file
-    select : int, optional
-      Write only the select spectrum.
-      This will always trigger if there is only 1 spectrum
-      in the data array
-    clobber : bool (True)
-      Clobber existing file?
-    add_wave : bool (False)
-      Force writing of wavelengths as array, instead of using FITS
-      header keywords to specify a wcs.
-    fill_val : float, optional
-      Fill value for masked pixels
-    """
-
-    # Flux
-    if fill_val is None:
-        flux = flux[mask]
-    else:
-        flux[mask] = fill_val
-    prihdu = fits.PrimaryHDU(flux)
-    hdu = fits.HDUList([prihdu])
-    prihdu.name = 'FLUX'
-
-    # Error  (packing LowRedux style)
-    sig = np.sqrt(utils.calc_ivar(ivar))
-    if fill_val is None:
-        sig = sig[mask]
-    else:
-        sig[mask] = fill_val
-    sighdu = fits.ImageHDU(sig)
-    sighdu.name = 'ERROR'
-    hdu.append(sighdu)
-
-    # Wavelength
-    if fill_val is None:
-        wave = wave[mask]
-    else:
-        wave[mask] = fill_val
-    wvhdu = fits.ImageHDU(wave)
-    wvhdu.name = 'WAVELENGTH'
-    hdu.append(wvhdu)
-
-    hdu.writeto(outfil, overwrite=clobber)
-    msgs.info('Wrote spectrum to {:s}'.format(outfil))
-
-
-### Old functions
+###### Old functions
 def long_reject(waves, fluxes, ivars, masks, fluxes_stack, ivars_stack, do_offset=True,
                 sigrej_final=3.,do_var_corr=True, qafile=None, SN_MAX = 20.0, debug=False):
 
