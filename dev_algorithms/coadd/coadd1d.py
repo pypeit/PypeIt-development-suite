@@ -198,30 +198,6 @@ def median_filt_spec(flux, ivar, mask, med_width):
     ivar_med[mask] = utils.calc_ivar(var_med0)
     return flux_med, ivar_med
 
-def poly_ratio_qa(wave, flux, flux_ref, ymult, ylim = None, title=''):
-
-    from matplotlib.ticker import NullFormatter
-
-    nullfmt = NullFormatter()  # no labels
-    fig = plt.figure(figsize=(14, 8))
-    # [left, bottom, width, height]
-    poly_plot = fig.add_axes([0.1, 0.75, 0.8, 0.20])
-    spec_plot = fig.add_axes([0.1, 0.1, 0.8, 0.65])
-    poly_plot.xaxis.set_major_formatter(nullfmt)  # no x-axis labels for polynomial plot
-    poly_plot.plot(wave, ymult, color='black', linewidth=3.0, label='Polynomial Scaling')
-    poly_plot.legend()
-    if ylim is not None:
-        spec_plot.set_ylim(ylim)
-    spec_plot.plot(wave, flux_ref, color='black', drawstyle='steps-mid', zorder=3, label='Reference spectrum')
-    spec_plot.plot(wave, flux, color='dodgerblue', drawstyle='steps-mid', zorder=10, alpha=0.5,
-                   label='Original spectrum')
-    spec_plot.plot(wave, flux*ymult, color='red', drawstyle='steps-mid', alpha=0.7, zorder=1, linewidth=2,
-                   label='Rescaled spectrum')
-    spec_plot.legend()
-    fig.suptitle(title)
-    plt.show()
-
-
 
 def solve_poly_ratio(wave, flux, ivar, flux_ref, ivar_ref, norder, mask = None, mask_ref = None,
                      scale_min = 0.05, scale_max = 100.0, func='legendre',
@@ -263,12 +239,8 @@ def solve_poly_ratio(wave, flux, ivar, flux_ref, ivar_ref, norder, mask = None, 
 
     if debug:
         # Determine the y-range for the QA plots
-        flux_smth = utils.fast_running_median(flux_med, 3*med_width)
-        flux_ref_smth = utils.fast_running_median(flux_ref_med, 3*med_width)
-        flux_max = 1.5 * (np.fmax(flux_smth.max(), flux_ref_smth.max()))
-        flux_min = np.fmin(-0.15 * flux_max, np.fmin(flux_smth.min(), flux_ref_smth.min()))
-        poly_ratio_qa(wave, flux_med, flux_ref_med, ymult, ylim=(flux_min, flux_max), title='Median Filtered Spectra That Were Fit')
-        poly_ratio_qa(wave, flux, flux_ref, ymult, ylim=(flux_min, flux_max), title='Scaling Applied to the Data')
+        scale_spec_qa(wave, flux_med, ivar_med, flux_ref_med, ivar_ref_med, ymult, 'poly', mask = mask, mask_ref=mask_ref,
+                      title='Median Filtered Spectra that were poly_ratio Fit')
 
     return ymult, flux_rescale, ivar_rescale, outmask
 
@@ -619,6 +591,7 @@ def sn_weights(waves, fluxes, ivars, masks, dv_smooth=10000.0, const_weights=Fal
             dv = (dwave/wave_now[1:])*c_kms
             dv_pix = np.median(dv)
             med_width = int(np.round(dv_smooth/dv_pix))
+            # TODO Replace with fast_running_median
             sn_med1 = scipy.ndimage.filters.median_filter(sn_val[iexp,imask]**2, size=med_width, mode='reflect')
             sn_med2 = np.interp(spec_vec, spec_now, sn_med1)
             #sn_med2 = np.interp(wave_stack[iexp,:], wave_now,sn_med1)
@@ -676,6 +649,46 @@ def robust_median_ratio(flux,ivar,flux_ref,ivar_ref, ref_percentile=20.0, min_go
         ratio = 1.0
 
     return ratio
+
+
+def scale_spec_qa(wave, flux, ivar, flux_ref, ivar_ref, ymult, scale_method,
+                  mask=None, mask_ref=None, ylim = None, median_frac = 0.03, title=''):
+
+    from matplotlib.ticker import NullFormatter
+
+    if mask is None:
+        mask = ivar > 0.0
+    if mask_ref  is None:
+        mask_ref = ivar_ref > 0.0
+
+    # Get limits
+    if ylim is None:
+        nspec = flux.size
+        med_width = (2.0 * np.ceil(median_frac / 2.0 * nspec) + 1).astype(int)
+        flux_med, ivar_med = median_filt_spec(flux, ivar, mask, med_width)
+        flux_ref_med, ivar_ref_med = median_filt_spec(flux_ref, ivar_ref, mask_ref, med_width)
+        flux_max = 1.5 * (np.fmax(flux_med.max(), flux_ref_med.max()))
+        flux_min = np.fmin(-0.15 * flux_max, np.fmin(flux_med.min(), flux_ref_med.min()))
+        ylim = (flux_min, flux_max)
+
+    nullfmt = NullFormatter()  # no labels
+    fig = plt.figure(figsize=(14, 8))
+    # [left, bottom, width, height]
+    poly_plot = fig.add_axes([0.1, 0.75, 0.8, 0.20])
+    spec_plot = fig.add_axes([0.1, 0.1, 0.8, 0.65])
+    poly_plot.xaxis.set_major_formatter(nullfmt)  # no x-axis labels for polynomial plot
+    poly_plot.plot(wave, ymult, color='black', linewidth=3.0, label=scale_method + ' scaling')
+    poly_plot.legend()
+    spec_plot.set_ylim(ylim)
+    spec_plot.plot(wave, flux_ref, color='black', drawstyle='steps-mid', zorder=3, label='reference spectrum')
+    spec_plot.plot(wave, flux, color='dodgerblue', drawstyle='steps-mid', zorder=10, alpha=0.5,
+                   label='original spectrum')
+    spec_plot.plot(wave, flux*ymult, color='red', drawstyle='steps-mid', alpha=0.7, zorder=1, linewidth=2,
+                   label='rescaled spectrum')
+    spec_plot.legend()
+    fig.suptitle(title)
+    plt.show()
+
 
 def scale_spec(wave, flux, ivar, flux_ref, ivar_ref, mask=None, mask_ref=None, min_good=0.05,
                cenfunc='median',ref_percentile=20.0, maxiters=5, sigrej=3, max_median_factor=10,
@@ -738,7 +751,7 @@ def scale_spec(wave, flux, ivar, flux_ref, ivar_ref, mask=None, mask_ref=None, m
         # Apply
         flux_scale = flux * med_scale
         ivar_scale = ivar * 1.0/med_scale**2
-        scale = np.full(flux.size,med_scale)
+        scale = np.full_like(flux,med_scale)
     elif scale_method == 'hand':
         # Input?
         if hand_scale is None:
@@ -753,6 +766,10 @@ def scale_spec(wave, flux, ivar, flux_ref, ivar_ref, mask=None, mask_ref=None, m
     else:
         msgs.error("Scale method not recognized! Check documentation for available options")
     # Finish
+    if debug:
+        scale_spec_qa(wave, flux, ivar, flux_ref, ivar_ref, scale, scale_method, mask = mask, mask_ref=mask_ref,
+                      title='Scaling Applied to the Data')
+
     return flux_scale, ivar_scale, scale, scale_method
 
 
@@ -794,8 +811,10 @@ def compute_stack(waves,fluxes,ivars,masks,wave_grid,weights):
     ivar_stack = utils.calc_ivar(var_stack)
     #sig_stack = np.sqrt(var_stack)
 
+    # TODO There should be a propagated mask in here. Masking is incorrect.
+
     # New mask for the stack
-    mask_stack = (wave_stack>0) & (ivar_stack>0.) & (flux_stack!=0.)
+    mask_stack = (wave_stack > 0.0) & (ivar_stack > 0.0) #& (flux_stack!=0.)
 
     return wave_stack, flux_stack, ivar_stack, mask_stack
 
@@ -1067,56 +1086,3 @@ def write_to_fits(wave, flux, ivar, mask, outfil, clobber=True, fill_val=None):
     msgs.info('Wrote spectrum to {:s}'.format(outfil))
 
 
-
-def poly_ratio_fitfunc_chi2_old(theta, flux_ref, thismask, arg_dict):
-    """
-    Function to be optimized for poly_ratio rescaling
-
-    Args:
-        theta:
-        flux_ref:
-        ivar_ref:
-        thismask:
-        arg_dict:
-
-    Returns:
-
-    """
-
-    # Unpack the data to be rescaled, the mask for the reference spectrum, and the wavelengths
-    flux = arg_dict['flux']
-    ivar = arg_dict['ivar']
-    mask = arg_dict['mask']
-    ivar_ref = arg_dict['ivar_ref']
-    wave = arg_dict['wave']
-    wave_min = arg_dict['wave_min']
-    wave_max = arg_dict['wave_max']
-    func = arg_dict['func']
-    # Evaluate the polynomial for rescaling
-    ymult = (utils.func_val(theta, wave, func, minx=wave_min, maxx=wave_max))**2
-    flux_scale = ymult*flux
-    mask_both = mask & thismask
-    # This is the formally correct ivar used for the rejection, but not used in the fitting. This appears to yield
-    # unstable results
-    #totvar = utils.calc_ivar(ivar_ref) + ymult**2*utils.calc_ivar(ivar)
-    #ivartot = mask_both*utils.calc_ivar(totvar)
-
-    # The errors are rescaled at every function evaluation, but we only allow the errors to get smaller by up to a
-    # factor of 1e4, and we only allow them to get larger slowly (as the square root).  This should very strongly
-    # constrain the flux-corrrection vectors from going too small (or negative), or too large.
-    ## Schlegel's version here
-    vmult = np.fmax(ymult,1e-4)*(ymult <= 1.0) + np.sqrt(ymult)*(ymult > 1.0)
-    ivarfit = mask_both/(1.0/(ivar + np.invert(mask_both)) + np.square(vmult)/(ivar_ref + np.invert(mask_both)))
-    chi_vec = mask_both * (flux_ref - flux_scale) * np.sqrt(ivarfit)
-    # Robustly characterize the dispersion of this distribution
-    chi_mean, chi_median, chi_std = \
-        stats.sigma_clipped_stats(chi_vec, np.invert(mask_both), cenfunc='median', maxiters=5, sigma=2.0)
-    # The Huber loss function smoothly interpolates between being chi^2/2 for standard chi^2 rejection and
-    # a linear function of residual in the outlying tails for large residuals. This transition occurs at the
-    # value of the first argument, which we have set to be 2.0*chi_std, which is 2-sigma given the modified
-    # errors described above from Schlegel's code.
-    robust_scale = 2.0
-    huber_vec = scipy.special.huber(robust_scale*chi_std, chi_vec)
-    loss_function = np.sum(np.square(huber_vec*mask_both))
-    #chi2 = np.sum(np.square(chi_vec))
-    return loss_function
