@@ -120,8 +120,11 @@ waves, fluxes, ivars, masks = read_gmos_stack()
 #waves, fluxes, ivars, masks = read_nires_stack()
 #waves, fluxes, ivars, masks = read_xshooter_nir_stack()
 # Coadding
-wave_stack, flux_stack, ivar_stack, mask_stack, scale_array = \
-    coadd1d.long_comb(waves, fluxes, ivars, masks, wave_method='pixel', scale_method='median', maxiter_reject = 5, \
-                      sigrej_final=3., qafile='J0252_gmos', outfile='J0252_gmos.fits', verbose=False, debug=True)
+wave_stack, flux_stack, ivar_stack, mask_stack, outmask, weights, scales, rms_sn = coadd1d.combspec(
+    waves, fluxes, ivars, masks, scale_method='median', qafile='J0252_gmos', outfile='J0252_gmos.fits',
+    verbose=False, debug=True)
+#wave_stack, flux_stack, ivar_stack, mask_stack, scale_array = \
+#    coadd1d.long_comb(waves, fluxes, ivars, masks, wave_method='pixel', scale_method='median', maxiter_reject = 5, \
+#                      sigrej_final=3., qafile='J0252_gmos', outfile='J0252_gmos.fits', verbose=False, debug=True)
 
 #
