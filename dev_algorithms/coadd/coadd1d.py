@@ -264,7 +264,7 @@ def solve_poly_ratio(wave, flux, ivar, flux_ref, ivar_ref, norder, mask = None, 
     if debug:
         # Determine the y-range for the QA plots
         flux_smth = utils.fast_running_median(flux_med, 3*med_width)
-        flux_ref_smth = utils.fast_running_median(flux_med, 3*med_width)
+        flux_ref_smth = utils.fast_running_median(flux_ref_med, 3*med_width)
         flux_max = 1.5 * (np.fmax(flux_smth.max(), flux_ref_smth.max()))
         flux_min = np.fmin(-0.15 * flux_max, np.fmin(flux_smth.min(), flux_ref_smth.min()))
         poly_ratio_qa(wave, flux_med, flux_ref_med, ymult, ylim=(flux_min, flux_max), title='Median Filtered Spectra That Were Fit')

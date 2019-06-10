@@ -67,8 +67,8 @@ def read_gmos_stack():
 
     return waves, fluxes, ivars, masks
 
-waves, fluxes, ivars, masks = read_gmos_stack()
-#waves, fluxes, ivars, masks = read_lris_stack()
+#waves, fluxes, ivars, masks = read_gmos_stack()
+waves, fluxes, ivars, masks = read_lris_stack()
 
 # Coadding
 wave_stack, flux_stack, ivar_stack, mask_stack, scale_array = \
