@@ -825,7 +825,7 @@ def coadd_qa(wave, flux, ivar, mask=None, wave_coadd=None, flux_coadd=None, ivar
         else:
             num_plot.plot(wave_coadd,nused,linestyle='steps-mid',color='k',lw=2)
         num_plot.set_xlim([wave[mask].min(), wave[mask].max()])
-        num_plot.set_ylim([np.fmax(0,int(nused.min())), np.fmax(nused.max()+0.1*nused.max(), nused.max()+1。0)])
+        num_plot.set_ylim([np.fmax(0,int(nused.min())), np.fmax(nused.max()+0.1*nused.max(), nused.max()+1.0)])
         num_plot.set_ylabel('$\\rm N_{EXP}$')
 
         from matplotlib.ticker import MaxNLocator
