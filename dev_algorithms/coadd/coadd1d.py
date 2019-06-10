@@ -216,7 +216,7 @@ def gauss1(x, mean, sigma, area):
     norm = area / (sigma * np.sqrt(2 * np.pi))
     return norm * ygauss
 
-def renormalize_errors_qa(chi,sigma_corr, sig_range = 6.0, title=''):
+def renormalize_errors_qa(chi, maskchi, sigma_corr, sig_range = 6.0, title=''):
 
     n_bins = 50
     binsize = 2.0*sig_range/n_bins
@@ -227,7 +227,7 @@ def renormalize_errors_qa(chi,sigma_corr, sig_range = 6.0, title=''):
     ygauss_new = gauss1(xvals,0.0,sigma_corr,1.0)
 
     plt.figure(figsize=(10, 6))
-    plt.hist(chi,bins=bins_histo,normed=True,histtype='step', align='mid',color='k',linewidth=3,label='Chi distribution')
+    plt.hist(chi[maskchi],bins=bins_histo,normed=True,histtype='step', align='mid',color='k',linewidth=3,label='Chi distribution')
     plt.plot(xvals,ygauss,'c-',lw=3,label='sigma=1')
     plt.plot(xvals,ygauss_new,'m--',lw=2,label='new sigma={:}'.format(round(sigma_corr,2)))
     plt.xlabel('Residual distribution')
@@ -259,7 +259,7 @@ def renormalize_errors(chi, mask, clip = 6.0, max_corr = 5.0, title = '', debug=
             sigma_corr = max_corr
 
         if debug:
-            renormalize_errors_qa(chi[maskchi], sigma_corr, title=title)
+            renormalize_errors_qa(chi, maskchi, sigma_corr, title=title)
 
     else:
         msgs.warn('No good pixels in error_renormalize. There are probably issues with your data')
@@ -1029,7 +1029,7 @@ def combspec(waves, fluxes, ivars, masks, wave_method='pixel', wave_grid_min=Non
     if debug:
         for i in range(nexp):
             # plot the residual distribution
-            renormalize_errors_qa(outchi[iexp,maskchi[iexp,:]], sigma_corrs[iexp])
+            renormalize_errors_qa(outchi[iexp,:], maskchi[iexp,:], sigma_corrs[iexp])
             # plot the rejections for each exposures
             coadd_qa(waves[iexp,:], fluxes_scale[iexp,:], ivars_scale[iexp,:], mask=outmask[iexp,:],
                      wave_coadd=wave_stack, flux_coadd=flux_stack, ivar_coadd=ivar_stack,
