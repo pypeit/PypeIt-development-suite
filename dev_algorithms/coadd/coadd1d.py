@@ -198,10 +198,36 @@ def median_filt_spec(flux, ivar, mask, med_width):
     ivar_med[mask] = utils.calc_ivar(var_med0)
     return flux_med, ivar_med
 
+def poly_ratio_qa(wave, flux, flux_ref, ymult, ylim = None, title=''):
+
+    from matplotlib.ticker import NullFormatter
+
+    nullfmt = NullFormatter()  # no labels
+    fig = plt.figure(figsize=(14, 8))
+    # [left, bottom, width, height]
+    poly_plot = fig.add_axes([0.1, 0.75, 0.8, 0.20])
+    spec_plot = fig.add_axes([0.1, 0.1, 0.8, 0.65])
+    poly_plot.xaxis.set_major_formatter(nullfmt)  # no x-axis labels for polynomial plot
+    poly_plot.plot(wave, ymult, color='black', linewidth=3.0, label='Polynomial Scaling')
+    poly_plot.legend()
+    if ylim is not None:
+        spec_plot.set_ylim(ylim)
+    spec_plot.plot(wave, flux_ref, color='black', drawstyle='steps-mid', zorder=3, label='Reference spectrum')
+    spec_plot.plot(wave, flux, color='dodgerblue', drawstyle='steps-mid', zorder=10, alpha=0.5,
+                   label='Original spectrum')
+    spec_plot.plot(wave, flux*ymult, color='red', drawstyle='steps-mid', alpha=0.7, zorder=1, linewidth=2,
+                   label='Rescaled spectrum')
+    spec_plot.legend()
+    fig.suptitle(title)
+    plt.show()
+
+
 
 def solve_poly_ratio(wave, flux, ivar, flux_ref, ivar_ref, norder, mask = None, mask_ref = None,
                      scale_min = 0.05, scale_max = 100.0, func='legendre',
                      maxiter=3, sticky=True, lower=3.0, upper=3.0, median_frac=0.01, debug=False):
+
+
 
     if mask is None:
         mask = (ivar > 0.0)
@@ -236,16 +262,13 @@ def solve_poly_ratio(wave, flux, ivar, flux_ref, ivar_ref, norder, mask = None, 
     ivar_rescale = ivar/ymult**2
 
     if debug:
-        # Median filter for determining plot range
-        plt.figure(figsize=(12, 6))
-        flux_med = utils.fast_running_median(flux_ref[outmask], np.int(np.ceil(0.01*nspec)))
-        var_med = utils.fast_running_median(utils.calc_ivar(ivar_rescale[outmask]), np.int(np.ceil(0.01*nspec)))
-        plt.ylim((-3.0*np.abs(var_med.min()), 1.1*flux_med.max()))
-        plt.plot(wave,flux_ref, color='black', drawstyle='steps-mid', zorder=3, label='Reference spectrum')
-        plt.plot(wave,flux, color='dodgerblue', drawstyle='steps-mid', zorder = 10, alpha = 0.5, label='Original spectrum')
-        plt.plot(wave,ymodel, color='red', drawstyle='steps-mid', alpha=0.7, zorder=1, linewidth=2, label='Rescaled spectrum')
-        plt.legend()
-        plt.show()
+        # Determine the y-range for the QA plots
+        flux_smth = utils.fast_running_median(flux_med, 3*med_width)
+        flux_ref_smth = utils.fast_running_median(flux_med, 3*med_width)
+        flux_max = 1.5 * (np.fmax(flux_smth.max(), flux_ref_smth.max()))
+        flux_min = np.fmin(-0.15 * flux_max, np.fmin(flux_smth.min(), flux_ref_smth.min()))
+        poly_ratio_qa(wave, flux_med, flux_ref_med, ymult, ylim=(flux_min, flux_max), title='Median Filtered Spectra That Were Fit')
+        poly_ratio_qa(wave, flux, flux_ref, ymult, ylim=(flux_min, flux_max), title='Scaling Applied to the Data')
 
     return ymult, flux_rescale, ivar_rescale, outmask
 
