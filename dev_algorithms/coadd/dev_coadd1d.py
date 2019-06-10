@@ -67,12 +67,41 @@ def read_gmos_stack():
 
     return waves, fluxes, ivars, masks
 
-waves, fluxes, ivars, masks = read_gmos_stack()
-#waves, fluxes, ivars, masks = read_lris_stack()
+def read_nires_stack():
+    datapath = os.path.join(os.getenv('HOME'),'Dropbox/PypeIt_Redux/NIRES/NIRES_May19/Science/')
+    fnames = [datapath+'spec1d_flux_s190519_0037-J1007+2115_NIRES_2019May19T055221.895.fits',
+              datapath+'spec1d_flux_s190519_0038-J1007+2115_NIRES_2019May19T055923.665.fits',
+              datapath+'spec1d_flux_s190519_0041-J1007+2115_NIRES_2019May19T062048.865.fits',
+              datapath+'spec1d_flux_s190519_0042-J1007+2115_NIRES_2019May19T062750.635.fits',
+              datapath+'spec1d_flux_s190519_0045-J1007+2115_NIRES_2019May19T064943.885.fits',
+              datapath+'spec1d_flux_s190519_0046-J1007+2115_NIRES_2019May19T065646.165.fits',
+              datapath+'spec1d_flux_s190519_0049-J1007+2115_NIRES_2019May19T071920.215.fits',
+              datapath+'spec1d_flux_s190519_0050-J1007+2115_NIRES_2019May19T072621.985.fits',
+              datapath+'spec1d_flux_s190519_0053-J1007+2115_NIRES_2019May19T074819.315.fits',
+              datapath+'spec1d_flux_s190519_0054-J1007+2115_NIRES_2019May19T075521.595.fits',
+              datapath+'spec1d_flux_s190519_0057-J1007+2115_NIRES_2019May19T081918.265.fits',
+              datapath+'spec1d_flux_s190519_0058-J1007+2115_NIRES_2019May19T082620.545.fits']
 
+    gdobj = ['OBJ0001-ORDER0004-DET01','OBJ0001-ORDER0004-DET01','OBJ0001-ORDER0004-DET01','OBJ0001-ORDER0004-DET01',
+             'OBJ0001-ORDER0004-DET01','OBJ0001-ORDER0004-DET01','OBJ0001-ORDER0004-DET01','OBJ0001-ORDER0004-DET01',
+             'OBJ0001-ORDER0004-DET01', 'OBJ0001-ORDER0004-DET01','OBJ0001-ORDER0004-DET01','OBJ0001-ORDER0004-DET01']
+
+    # parameters for load_1dspec_to_array
+    ex_value = 'OPT'
+    flux_value = True
+
+    # Reading data
+    waves,fluxes,ivars,masks = coadd1d.load_1dspec_to_array(fnames,gdobj=gdobj,order=None,ex_value=ex_value,flux_value=flux_value)
+
+    return waves, fluxes, ivars, masks
+
+
+#waves, fluxes, ivars, masks = read_gmos_stack()
+#waves, fluxes, ivars, masks = read_lris_stack()
+waves, fluxes, ivars, masks = read_nires_stack()
 # Coadding
 wave_stack, flux_stack, ivar_stack, mask_stack, scale_array = \
-    coadd1d.long_comb(waves, fluxes, ivars, masks, wave_method='pixel', scale_method='median', maxiter_reject = 5, \
+    coadd1d.long_comb(waves, fluxes, ivars, masks, wave_method='pixel', scale_method='poly', maxiter_reject = 5, \
                       qafile='J0252_gmos', outfile='J0252_gmos.fits', verbose=False, debug=True)
 
 #
