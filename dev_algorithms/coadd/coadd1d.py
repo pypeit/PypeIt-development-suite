@@ -973,7 +973,8 @@ def long_comb(waves, fluxes, ivars, masks,wave_method='pixel', wave_grid_min=Non
               A_pix=None, v_pix=None, samp_fact = 1.0, cenfunc='median', ref_percentile=20.0, maxiters=5, sigrej=3, \
               scale_method='median', hand_scale=None, sn_max_medscale=20., sn_min_medscale=0.5, \
               dv_smooth=10000.0, const_weights=False, maxiter_reject = 5, sn_max_reject=20., \
-              fill_val=None,qafile=None,outfile=None,verbose=False,debug=False):
+              sigrej_final=3., do_var_corr=True, do_offset=False, fill_val=None, \
+              qafile=None, outfile=None, verbose=False, debug=False):
 
     # Define a common fixed wavegrid
     wave_grid = new_wave_grid(waves,wave_method=wave_method,wave_grid_min=wave_grid_min,wave_grid_max=wave_grid_max,
@@ -1014,10 +1015,14 @@ def long_comb(waves, fluxes, ivars, masks,wave_method='pixel', wave_grid_min=Non
                                                                                   ivar_stack,mask_stack)
         if iIter == maxiter_reject -1:
             thismask = long_reject(waves, fluxes_scale, ivars_scale, thismask, fluxes_native_stack, \
-                                   ivars_native_stack, SN_MAX=sn_max_reject, debug=debug)
+                                   ivars_native_stack, SN_MAX=sn_max_reject, do_offset=do_offset, \
+                                   sigrej_final=sigrej_final, do_var_corr=do_var_corr, qafile=None,\
+                                   debug=debug)
         else:
             thismask = long_reject(waves, fluxes_scale, ivars_scale, thismask, fluxes_native_stack, \
-                                   ivars_native_stack, SN_MAX=sn_max_reject, debug=False)
+                                   ivars_native_stack, SN_MAX=sn_max_reject, do_offset=do_offset, \
+                                   sigrej_final=sigrej_final, do_var_corr=do_var_corr, qafile=None,\
+                                   debug=False)
 
         iIter = iIter +1
 
