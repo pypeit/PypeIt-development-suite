@@ -787,36 +787,39 @@ def compute_stack(waves,fluxes,ivars,masks,wave_grid,weights):
         weighted stacked wavelength, flux and ivar
     '''
 
-    waves_flat = waves[masks].ravel()
-    fluxes_flat = fluxes[masks].ravel()
-    ivars_flat = ivars[masks].ravel()
+    ubermask = masks & (weights > 0.0) & (waves > 1.0) & (ivars > 0.0)
+    waves_flat = waves[ubermask].flatten()
+    fluxes_flat = fluxes[ubermask].flatten()
+    ivars_flat = ivars[ubermask].flatten()
     vars_flat = utils.calc_ivar(ivars_flat)
-    weights_flat = weights[masks].ravel()
+    weights_flat = weights[ubermask].flatten()
 
     # Counts how many pixels in each wavelength bin
-    num_stack, wave_edges = np.histogram(waves_flat,bins=wave_grid,density=False)
+    nused, wave_edges = np.histogram(waves_flat,bins=wave_grid,density=False)
+
+    # Calculate the summed weights for the denominator
+    weights_total, wave_edges = np.histogram(waves_flat,bins=wave_grid,density=False,weights=weights_flat)
 
     # Calculate the stacked wavelength
     wave_stack_total, wave_edges = np.histogram(waves_flat,bins=wave_grid,density=False,weights=waves_flat*weights_flat)
-    weights_total, wave_edges = np.histogram(waves_flat,bins=wave_grid,density=False,weights=weights_flat)
-    wave_stack = wave_stack_total / (weights_total+(weights_total==0.))
+    wave_stack = (weights_total > 0.0)*wave_stack_total/(weights_total+(weights_total==0.))
 
     # Calculate the stacked flux
     flux_stack_total, wave_edges = np.histogram(waves_flat,bins=wave_grid,density=False,weights=fluxes_flat*weights_flat)
-    flux_stack = flux_stack_total / (weights_total+(weights_total==0.))
+    flux_stack = (weights_total > 0.0)*flux_stack_total/(weights_total+(weights_total==0.))
 
     # Calculate the stacked ivar
     var_stack_total, wave_edges = np.histogram(waves_flat,bins=wave_grid,density=False,weights=vars_flat*weights_flat**2)
-    var_stack = var_stack_total / (weights_total+(weights_total==0.))**2
+    var_stack = (weights_total > 0.0)*var_stack_total/(weights_total+(weights_total==0.))**2
     ivar_stack = utils.calc_ivar(var_stack)
     #sig_stack = np.sqrt(var_stack)
 
     # TODO There should be a propagated mask in here. Masking is incorrect.
 
     # New mask for the stack
-    mask_stack = (wave_stack > 0.0) & (ivar_stack > 0.0) #& (flux_stack!=0.)
+    mask_stack = (weights_total > 0.0) & (nused > 0.0)
 
-    return wave_stack, flux_stack, ivar_stack, mask_stack
+    return wave_stack, flux_stack, ivar_stack, mask_stack, nused
 
 def coadd_qa(wave, flux, ivar, mask=None, wave_coadd=None, flux_coadd=None, ivar_coadd=None, mask_coadd=None,
              qafile=None, debug=False):
@@ -987,7 +990,7 @@ def long_comb(waves, fluxes, ivars, masks,wave_method='pixel', wave_grid_min=Non
     # ToDo: Before computing the stack, one should remove CR and perform an initial re-scaling.
     #       Need to be very careful with narrow emission/absorption lines.
     # Compute an initial stack as the reference
-    wave_ref, flux_ref, ivar_ref, mask_ref = compute_stack(waves, fluxes, ivars, masks, wave_grid, weights)
+    wave_ref, flux_ref, ivar_ref, mask_ref, nused = compute_stack(waves, fluxes, ivars, masks, wave_grid, weights)
 
     nexp = np.shape(fluxes)[0]
     fluxes_scale = np.copy(fluxes)
@@ -1009,7 +1012,7 @@ def long_comb(waves, fluxes, ivars, masks,wave_method='pixel', wave_grid_min=Non
     iIter = 0
     thismask = np.copy(masks)
     while iIter < maxiter_reject:
-        wave_stack, flux_stack, ivar_stack, mask_stack = compute_stack(waves, fluxes_scale, ivars_scale,thismask,\
+        wave_stack, flux_stack, ivar_stack, mask_stack, nused = compute_stack(waves, fluxes_scale, ivars_scale,thismask,\
                                                                        wave_grid, weights)
         fluxes_native_stack, ivars_native_stack, masks_native_stack = interp_spec(waves, wave_stack, flux_stack, \
                                                                                   ivar_stack,mask_stack)
