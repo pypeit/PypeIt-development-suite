@@ -12,6 +12,7 @@ from pypeit import utils
 from pypeit import msgs
 from pypeit.core import load
 from pypeit.core.wavecal import wvutils
+from pypeit.core import pydl
 from astropy import constants as const
 c_kms = const.c.to('km/s').value
 
@@ -812,9 +813,6 @@ def compute_stack(waves,fluxes,ivars,masks,wave_grid,weights):
     var_stack_total, wave_edges = np.histogram(waves_flat,bins=wave_grid,density=False,weights=vars_flat*weights_flat**2)
     var_stack = (weights_total > 0.0)*var_stack_total/(weights_total+(weights_total==0.))**2
     ivar_stack = utils.calc_ivar(var_stack)
-    #sig_stack = np.sqrt(var_stack)
-
-    # TODO There should be a propagated mask in here. Masking is incorrect.
 
     # New mask for the stack
     mask_stack = (weights_total > 0.0) & (nused > 0.0)
@@ -865,6 +863,169 @@ def coadd_qa(wave, flux, ivar, mask=None, wave_coadd=None, flux_coadd=None, ivar
         plt.show()
 
     return
+
+
+def update_errors(waves, fluxes, ivars, masks, fluxes_stack, ivars_stack, masks_stack, sn_cap=20.0, debug=False):
+
+    nexp = np.shape(fluxes)[0]
+
+    rejivars = np.zeros_like(ivars)
+    sigma_corrs = np.zeros(nexp)
+    outmasks = np.copy(masks)
+
+    # Loop on images to update noise model for rejection
+    for iexp in range(nexp):
+        # Grab the spectrum
+        thisflux = fluxes[iexp,:]
+        thisivar = ivars[iexp,:]
+        thismask = outmasks[iexp,:]
+
+        # Grab the stack interpolated with the same grid as the current exposure
+        thisflux_stack = fluxes_stack[iexp,:]
+        thisvar_stack = utils.calc_ivar(ivars_stack[iexp,:])
+        thismask_stack = masks_stack[iexp, :]
+
+        # var_tot
+        var_tot = thisvar_stack + utils.calc_ivar(thisivar)
+        ivar_tot = utils.calc_ivar(var_tot)
+        mask_tot = thismask & thismask_stack
+        # TODO Do we need the offset code? If so add it right here into the chi
+        chi = np.sqrt(ivar_tot)*(thisflux - thisflux_stack)
+        # Adjust errors to reflect the statistics of the distribution of errors. This fixes cases where the
+        # the noise model is not quite right
+        this_sigma_corr = renormalize_errors(chi, mask_tot, clip=6.0, max_corr=5.0, title='spec_reject', debug=debug)
+        ivar_tot_corr = ivar_tot/this_sigma_corr ** 2
+        ivar_cap = np.minimum(ivar_tot_corr, (sn_cap/(thisflux_stack + (thisflux_stack <= 0.0))) ** 2)
+        sigma_corrs[iexp] = this_sigma_corr
+        rejivars[iexp, :] = ivar_cap
+
+    return rejivars, sigma_corrs
+
+def combspec(waves, fluxes, ivars, masks, wave_method='pixel', wave_grid_min=None, wave_grid_max=None,
+             A_pix=None, v_pix=None, samp_fact = 1.0, ref_percentile=20.0, maxiter_scale=5, sigrej=3, \
+             scale_method='median', hand_scale=None, sn_max_medscale=20., sn_min_medscale=0.5, \
+             dv_smooth=10000.0, const_weights=False, maxiter_reject = 5, sn_cap=20.0,
+             lower = 3.0, upper = 3.0, maxrej = None,
+             qafile=None, outfile=None, verbose=False, debug=False):
+
+    # Define a common fixed wavegrid
+    wave_grid = new_wave_grid(waves,wave_method=wave_method,wave_grid_min=wave_grid_min,wave_grid_max=wave_grid_max,
+                      A_pix=A_pix,v_pix=v_pix,samp_fact=samp_fact)
+
+    # Evaluate the sn_weights. This is done once at the beginning
+    rms_sn, weights = sn_weights(waves,fluxes,ivars,masks, dv_smooth=dv_smooth, const_weights=const_weights, verbose=verbose)
+
+    # ToDo: Before computing the stack, one should remove CR and perform an initial re-scaling.
+    #       Need to be very careful with narrow emission/absorption lines.
+
+    # Compute an initial stack as the reference, this has its own wave grid based on the weighted averages
+    wave_stack, flux_stack, ivar_stack, mask_stack, nused = compute_stack(waves, fluxes, ivars, masks, wave_grid, weights)
+    # Interpolate the stack onto each individual exposures native wavelength grid
+    flux_stack_nat, ivar_stack_nat, mask_stack_nat = interp_spec(waves, wave_stack, flux_stack, ivar_stack, mask_stack)
+
+    # Rescale spectra to line up with our preliminary stack so that we can sensibly reject outliers
+    nexp = np.shape(fluxes)[0]
+    fluxes_scale = np.zeros_like(fluxes)
+    ivars_scale = np.zeros_like(ivars)
+    scales = np.zeros_like(fluxes)
+    for iexp in range(nexp):
+        # TODO Create a parset for the coadd parameters!!!
+        fluxes_scale[iexp,:], ivars_scale[iexp,:], scales[iexp,:],omethod = scale_spec(
+            waves[iexp,:],fluxes[iexp,:],ivars[iexp,:], flux_stack_nat[iexp, :],ivar_stack_nat[iexp,:],
+            mask=masks[iexp,:],mask_ref=mask_stack_nat[iexp,:], ref_percentile=ref_percentile, maxiters=maxiter_scale,
+            sigrej=sigrej, scale_method=scale_method, hand_scale=hand_scale, sn_max_medscale=sn_max_medscale,
+            sn_min_medscale=sn_min_medscale, debug=debug)
+
+    iIter = 0
+    #qdone = False
+    thismask = np.copy(masks)
+#    while (not qdone) and (iIter < maxiter_reject):
+    while (iIter < maxiter_reject):
+        wave_stack, flux_stack, ivar_stack, mask_stack, nused = compute_stack(
+            waves, fluxes_scale, ivars_scale, thismask, wave_grid, weights)
+        flux_stack_nat, ivar_stack_nat, mask_stack_nat = interp_spec(
+            waves, wave_stack, flux_stack, ivar_stack,mask_stack)
+        rejivars, sigma_corrs = update_errors(waves, fluxes_scale, ivars_scale, thismask, flux_stack_nat, ivar_stack_nat,
+                                              sn_cap=sn_cap)
+        thismask, qdone = pydl.djs_reject(fluxes_scale, flux_stack_nat, outmask=thismask,inmask=masks, invvar=rejivars,
+                                          lower=lower,upper=upper, maxrej=maxrej, sticky=False)
+        iIter = iIter +1
+
+    if (iIter == maxiter_reject) & (maxiter_reject != 0):
+        msgs.warn('Maximum number of iterations maxiter={:}'.format(maxiter_reject) + ' reached in combspec')
+    outmask = np.copy(thismask)
+    # Compute the final stack using this outmask
+    wave_stack, flux_stack, ivar_stack, mask_stack, nused = compute_stack(waves, fluxes_scale, ivars_scale, outmask,
+                                                                          wave_grid, weights)
+    if debug:
+        rejivars, sigma_corrs = update_errors(waves, fluxes_scale, ivars_scale, outmask, flux_stack_nat,
+                                              ivar_stack_nat,sn_cap=sn_cap)
+    # TODO Add a plot of nused on the final coadd. Maybe add a second plot where we show the S/N weights
+    # Plot the final coadded spectrum
+    coadd_qa(wave_stack[mask_stack],flux_stack[mask_stack],ivar_stack[mask_stack],mask=None,qafile=qafile, debug=debug)
+
+    # Write to disk?
+    if outfile is not None:
+        if len(outfile.split('.'))==1:
+            msgs.info("No fomat given for the outfile, save to fits format.")
+            outfile = outfile+'.fits'
+        write_to_fits(wave_stack, flux_stack, ivar_stack, mask_stack, outfile, clobber=True, fill_val=fill_val)
+
+    return wave_stack, flux_stack, ivar_stack, mask_stack, outmask, weights, scales, rms_sn
+
+
+def write_to_fits(wave, flux, ivar, mask, outfil, clobber=True, fill_val=None):
+    """ Write to a multi-extension FITS file.
+    unless select=True.
+    Otherwise writes 1D arrays
+    Parameters
+    ----------
+    outfil : str
+      Name of the FITS file
+    select : int, optional
+      Write only the select spectrum.
+      This will always trigger if there is only 1 spectrum
+      in the data array
+    clobber : bool (True)
+      Clobber existing file?
+    add_wave : bool (False)
+      Force writing of wavelengths as array, instead of using FITS
+      header keywords to specify a wcs.
+    fill_val : float, optional
+      Fill value for masked pixels
+    """
+
+    # Flux
+    if fill_val is None:
+        flux = flux[mask]
+    else:
+        flux[mask] = fill_val
+    prihdu = fits.PrimaryHDU(flux)
+    hdu = fits.HDUList([prihdu])
+    prihdu.name = 'FLUX'
+
+    # Error  (packing LowRedux style)
+    sig = np.sqrt(utils.calc_ivar(ivar))
+    if fill_val is None:
+        sig = sig[mask]
+    else:
+        sig[mask] = fill_val
+    sighdu = fits.ImageHDU(sig)
+    sighdu.name = 'ERROR'
+    hdu.append(sighdu)
+
+    # Wavelength
+    if fill_val is None:
+        wave = wave[mask]
+    else:
+        wave[mask] = fill_val
+    wvhdu = fits.ImageHDU(wave)
+    wvhdu.name = 'WAVELENGTH'
+    hdu.append(wvhdu)
+
+    hdu.writeto(outfil, overwrite=clobber)
+    msgs.info('Wrote spectrum to {:s}'.format(outfil))
+
 
 
 def long_reject(waves, fluxes, ivars, masks, fluxes_stack, ivars_stack, do_offset=True,
@@ -972,6 +1133,7 @@ def long_reject(waves, fluxes, ivars, masks, fluxes_stack, ivars_stack, do_offse
 
     return outmasks
 
+
 def long_comb(waves, fluxes, ivars, masks,wave_method='pixel', wave_grid_min=None, wave_grid_max=None, \
               A_pix=None, v_pix=None, samp_fact = 1.0, cenfunc='median', ref_percentile=20.0, maxiters=5, sigrej=3, \
               scale_method='median', hand_scale=None, sn_max_medscale=20., sn_min_medscale=0.5, \
@@ -998,6 +1160,7 @@ def long_comb(waves, fluxes, ivars, masks,wave_method='pixel', wave_grid_min=Non
     scales = np.ones_like(fluxes)
     for iexp in range(nexp):
         flux_iref, ivar_iref, mask_iref = interp_spec(waves[iexp,:], wave_ref, flux_ref, ivar_ref, mask_ref)
+        # TODO Create a parset for the coadd parameters
         flux_scale,ivar_scale,scale,omethod = scale_spec(waves[iexp,:],fluxes[iexp,:],ivars[iexp,:],\
                                                          flux_iref,ivar_iref,mask=masks[iexp,:],mask_ref=mask_iref,\
                                                          cenfunc=cenfunc,ref_percentile=ref_percentile,maxiters=maxiters, \
@@ -1029,6 +1192,7 @@ def long_comb(waves, fluxes, ivars, masks,wave_method='pixel', wave_grid_min=Non
 
         iIter = iIter +1
 
+    # TODO Add a plot of nused on the final coadd. Maybe add a second plot where we show the S/N weights
     # Plot the final coadded spectrum
     coadd_qa(wave_stack[mask_stack],flux_stack[mask_stack],ivar_stack[mask_stack],mask=None,qafile=qafile, debug=debug)
 
@@ -1040,57 +1204,3 @@ def long_comb(waves, fluxes, ivars, masks,wave_method='pixel', wave_grid_min=Non
         write_to_fits(wave_stack, flux_stack, ivar_stack, mask_stack, outfile, clobber=True, fill_val=fill_val)
 
     return wave_stack, flux_stack, ivar_stack, mask_stack, scales
-
-def write_to_fits(wave, flux, ivar, mask, outfil, clobber=True, fill_val=None):
-    """ Write to a multi-extension FITS file.
-    unless select=True.
-    Otherwise writes 1D arrays
-    Parameters
-    ----------
-    outfil : str
-      Name of the FITS file
-    select : int, optional
-      Write only the select spectrum.
-      This will always trigger if there is only 1 spectrum
-      in the data array
-    clobber : bool (True)
-      Clobber existing file?
-    add_wave : bool (False)
-      Force writing of wavelengths as array, instead of using FITS
-      header keywords to specify a wcs.
-    fill_val : float, optional
-      Fill value for masked pixels
-    """
-
-    # Flux
-    if fill_val is None:
-        flux = flux[mask]
-    else:
-        flux[mask] = fill_val
-    prihdu = fits.PrimaryHDU(flux)
-    hdu = fits.HDUList([prihdu])
-    prihdu.name = 'FLUX'
-
-    # Error  (packing LowRedux style)
-    sig = np.sqrt(utils.calc_ivar(ivar))
-    if fill_val is None:
-        sig = sig[mask]
-    else:
-        sig[mask] = fill_val
-    sighdu = fits.ImageHDU(sig)
-    sighdu.name = 'ERROR'
-    hdu.append(sighdu)
-
-    # Wavelength
-    if fill_val is None:
-        wave = wave[mask]
-    else:
-        wave[mask] = fill_val
-    wvhdu = fits.ImageHDU(wave)
-    wvhdu.name = 'WAVELENGTH'
-    hdu.append(wvhdu)
-
-    hdu.writeto(outfil, overwrite=clobber)
-    msgs.info('Wrote spectrum to {:s}'.format(outfil))
-
-
