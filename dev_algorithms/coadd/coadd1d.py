@@ -37,7 +37,7 @@ def gauss1(x, mean, sigma, area):
     norm = area / (sigma * np.sqrt(2 * np.pi))
     return norm * ygauss
 
-def renormalize_errors_qa(chi,sigma_corr, sig_range = 6.0):
+def renormalize_errors_qa(chi,sigma_corr, sig_range = 6.0, title=''):
 
     n_bins = 50
     binsize = 2.0*sig_range/n_bins
@@ -54,12 +54,13 @@ def renormalize_errors_qa(chi,sigma_corr, sig_range = 6.0):
     plt.xlabel('Residual distribution')
     plt.xlim([-6.05,6.05])
     plt.legend(fontsize=13,loc=2)
+    plt.title(title)
     plt.show()
     plt.close()
 
     return
 
-def renormalize_errors(chi, mask, clip = 6.0, max_corr = 5.0, debug=False):
+def renormalize_errors(chi, mask, clip = 6.0, max_corr = 5.0, title = '', debug=False):
 
     chi2 = chi**2
     igood = (chi2 < clip**2) & mask
@@ -79,7 +80,7 @@ def renormalize_errors(chi, mask, clip = 6.0, max_corr = 5.0, debug=False):
             sigma_corr = max_corr
 
         if debug:
-            renormalize_errors_qa(chi[igood], sigma_corr)
+            renormalize_errors_qa(chi[igood], sigma_corr, title=title)
 
     else:
         msgs.warn('No good pixels in error_renormalize. There are probably issues with your data')
@@ -107,6 +108,10 @@ def poly_ratio_fitfunc_chi2(theta, flux_ref, thismask, arg_dict):
     flux = arg_dict['flux']
     ivar = arg_dict['ivar']
     mask = arg_dict['mask']
+    flux_med = arg_dict['flux_med']
+    ivar_med = arg_dict['ivar_med']
+    flux_ref_med = arg_dict['flux_ref_med']
+    ivar_ref_med = arg_dict['ivar_ref_med']
     ivar_ref = arg_dict['ivar_ref']
     wave = arg_dict['wave']
     wave_min = arg_dict['wave_min']
@@ -114,21 +119,34 @@ def poly_ratio_fitfunc_chi2(theta, flux_ref, thismask, arg_dict):
     func = arg_dict['func']
     # Evaluate the polynomial for rescaling
     ymult = (utils.func_val(theta, wave, func, minx=wave_min, maxx=wave_max))**2
-    flux_scale = ymult*flux
+    flux_scale = ymult*flux_med
     mask_both = mask & thismask
-    # This is the formally correct ivar
-    totvar = utils.calc_ivar(ivar_ref) + ymult**2*utils.calc_ivar(ivar)
-    ivartot = mask_both*utils.calc_ivar(totvar)
+    # This is the formally correct ivar used for the rejection, but not used in the fitting. This appears to yield
+    # unstable results
+    #totvar = utils.calc_ivar(ivar_ref) + ymult**2*utils.calc_ivar(ivar)
+    #ivartot = mask_both*utils.calc_ivar(totvar)
 
     # The errors are rescaled at every function evaluation, but we only allow the errors to get smaller by up to a
     # factor of 1e4, and we only allow them to get larger slowly (as the square root).  This should very strongly
     # constrain the flux-corrrection vectors from going too small (or negative), or too large.
     ## Schlegel's version here
-    #vmult = np.fmax(ymult,1e-4)*(ymult <= 1.0) + np.sqrt(ymult)*(ymult > 1.0)
-    #ivartot = mask_both/(1.0/(ivar + np.invert(mask_both)) + np.square(vmult)/(ivar_ref + np.invert(mask_both)))
-    chi_vec = mask_both * (flux_ref - flux_scale) * np.sqrt(ivartot)
-    chi2 = np.sum(np.square(chi_vec))
-    return chi2
+    vmult = np.fmax(ymult,1e-4)*(ymult <= 1.0) + np.sqrt(ymult)*(ymult > 1.0)
+    ivarfit = mask_both/(1.0/(ivar_med + np.invert(mask_both)) + np.square(vmult)/(ivar_ref_med + np.invert(mask_both)))
+    chi_vec = mask_both * (flux_ref_med - flux_scale) * np.sqrt(ivarfit)
+    # Robustly characterize the dispersion of this distribution
+    chi_mean, chi_median, chi_std = \
+        stats.sigma_clipped_stats(chi_vec, np.invert(mask_both), cenfunc='median', maxiters=5, sigma=2.0)
+    # The Huber loss function smoothly interpolates between being chi^2/2 for standard chi^2 rejection and
+    # a linear function of residual in the outlying tails for large residuals. This transition occurs at the
+    # value of the first argument, which we have set to be 2.0*chi_std, which is 2-sigma given the modified
+    # errors described above from Schlegel's code.
+    robust_scale = 2.0
+    huber_vec = scipy.special.huber(robust_scale*chi_std, chi_vec)
+    loss_function = np.sum(np.square(huber_vec*mask_both))
+    #chi2 = np.sum(np.square(chi_vec))
+    return loss_function
+
+
 
 def poly_ratio_fitfunc(flux_ref, thismask, arg_dict, **kwargs_opt):
 
@@ -138,9 +156,14 @@ def poly_ratio_fitfunc(flux_ref, thismask, arg_dict, **kwargs_opt):
     #result = scipy.optimize.differential_evolution(poly_ratio_fitfunc_chi2, args=(flux_ref, ivar_ref, thismask, arg_dict,), **kwargs_opt)
     guess = arg_dict['guess']
     result = scipy.optimize.minimize(poly_ratio_fitfunc_chi2, guess, args=(flux_ref, thismask, arg_dict),  **kwargs_opt)
+    #result = scipy.optimize.least_squares(poly_ratio_fitfunc_chi, guess, args=(flux_ref, thismask, arg_dict),  **kwargs_opt)
     flux = arg_dict['flux']
     ivar = arg_dict['ivar']
     mask = arg_dict['mask']
+    flux_med = arg_dict['flux_med']
+    ivar_med = arg_dict['ivar_med']
+    flux_ref_med = arg_dict['flux_ref_med']
+    ivar_ref_med = arg_dict['ivar_ref_med']
     ivar_ref = arg_dict['ivar_ref']
     wave = arg_dict['wave']
     wave_min = arg_dict['wave_min']
@@ -159,28 +182,49 @@ def poly_ratio_fitfunc(flux_ref, thismask, arg_dict, **kwargs_opt):
     except KeyError:
         debug = False
 
-    sigma_corr = renormalize_errors(chi, mask=thismask, debug=debug)
-    ivartot = ivartot1/sigma_corr
+    sigma_corr = renormalize_errors(chi, mask=thismask, title = 'poly_ratio_fitfunc', debug=debug)
+    ivartot = ivartot1/sigma_corr**2
 
     return result, flux_scale, ivartot
+
+def median_filt_spec(flux, ivar, mask, med_width):
+
+    flux_med = np.zeros_like(flux)
+    ivar_med = np.zeros_like(ivar)
+    flux_med0 = utils.fast_running_median(flux[mask], med_width)
+    flux_med[mask] = flux_med0
+    var = utils.calc_ivar(ivar)
+    var_med0 =  utils.smooth(var[mask], med_width)
+    ivar_med[mask] = utils.calc_ivar(var_med0)
+    return flux_med, ivar_med
 
 
 def solve_poly_ratio(wave, flux, ivar, flux_ref, ivar_ref, norder, mask = None, mask_ref = None,
                      scale_min = 0.05, scale_max = 100.0, func='legendre',
-                     maxiter=3, sticky=True, lower=3.0, upper=3.0, min_good=0.05, debug=False):
+                     maxiter=3, sticky=True, lower=3.0, upper=3.0, median_frac=0.01, debug=False):
 
     if mask is None:
         mask = (ivar > 0.0)
     if mask_ref is None:
         mask_ref = (ivar_ref > 0.0)
 
+    #
     nspec = wave.size
     # Determine an initial guess
     ratio = robust_median_ratio(flux, ivar, flux_ref, ivar_ref, mask=mask, mask_ref=mask_ref)
     guess = np.append(np.sqrt(ratio), np.zeros(norder-1))
     wave_min = wave.min()
     wave_max = wave.max()
+
+    # Now compute median filtered versions of the spectra which we will actually operate on for the fitting. Note
+    # that rejection will however work on the non-filtered spectra.
+    med_width = (2.0*np.ceil(median_frac/2.0*nspec) + 1).astype(int)
+    flux_med, ivar_med = median_filt_spec(flux, ivar, mask, med_width)
+    flux_ref_med, ivar_ref_med = median_filt_spec(flux_ref, ivar_ref, mask_ref, med_width)
+
     arg_dict = dict(flux = flux, ivar = ivar, mask = mask,
+                    flux_med = flux_med, ivar_med = ivar_med,
+                    flux_ref_med = flux_ref_med, ivar_ref_med = ivar_ref_med,
                     ivar_ref = ivar_ref, wave = wave, wave_min = wave_min,
                     wave_max = wave_max, func = func, norder = norder, guess = guess, debug=debug)
 
@@ -192,6 +236,11 @@ def solve_poly_ratio(wave, flux, ivar, flux_ref, ivar_ref, norder, mask = None, 
     ivar_rescale = ivar/ymult**2
 
     if debug:
+        # Median filter for determining plot range
+        plt.figure(figsize=(12, 6))
+        flux_med = utils.fast_running_median(flux_ref[outmask], np.int(np.ceil(0.01*nspec)))
+        var_med = utils.fast_running_median(utils.calc_ivar(ivar_rescale[outmask]), np.int(np.ceil(0.01*nspec)))
+        plt.ylim((-3.0*np.abs(var_med.min()), 1.1*flux_med.max()))
         plt.plot(wave,flux_ref, color='black', drawstyle='steps-mid', zorder=3, label='Reference spectrum')
         plt.plot(wave,flux, color='dodgerblue', drawstyle='steps-mid', zorder = 10, alpha = 0.5, label='Original spectrum')
         plt.plot(wave,ymodel, color='red', drawstyle='steps-mid', alpha=0.7, zorder=1, linewidth=2, label='Rescaled spectrum')
@@ -993,3 +1042,58 @@ def write_to_fits(wave, flux, ivar, mask, outfil, clobber=True, fill_val=None):
 
     hdu.writeto(outfil, overwrite=clobber)
     msgs.info('Wrote spectrum to {:s}'.format(outfil))
+
+
+
+def poly_ratio_fitfunc_chi2_old(theta, flux_ref, thismask, arg_dict):
+    """
+    Function to be optimized for poly_ratio rescaling
+
+    Args:
+        theta:
+        flux_ref:
+        ivar_ref:
+        thismask:
+        arg_dict:
+
+    Returns:
+
+    """
+
+    # Unpack the data to be rescaled, the mask for the reference spectrum, and the wavelengths
+    flux = arg_dict['flux']
+    ivar = arg_dict['ivar']
+    mask = arg_dict['mask']
+    ivar_ref = arg_dict['ivar_ref']
+    wave = arg_dict['wave']
+    wave_min = arg_dict['wave_min']
+    wave_max = arg_dict['wave_max']
+    func = arg_dict['func']
+    # Evaluate the polynomial for rescaling
+    ymult = (utils.func_val(theta, wave, func, minx=wave_min, maxx=wave_max))**2
+    flux_scale = ymult*flux
+    mask_both = mask & thismask
+    # This is the formally correct ivar used for the rejection, but not used in the fitting. This appears to yield
+    # unstable results
+    #totvar = utils.calc_ivar(ivar_ref) + ymult**2*utils.calc_ivar(ivar)
+    #ivartot = mask_both*utils.calc_ivar(totvar)
+
+    # The errors are rescaled at every function evaluation, but we only allow the errors to get smaller by up to a
+    # factor of 1e4, and we only allow them to get larger slowly (as the square root).  This should very strongly
+    # constrain the flux-corrrection vectors from going too small (or negative), or too large.
+    ## Schlegel's version here
+    vmult = np.fmax(ymult,1e-4)*(ymult <= 1.0) + np.sqrt(ymult)*(ymult > 1.0)
+    ivarfit = mask_both/(1.0/(ivar + np.invert(mask_both)) + np.square(vmult)/(ivar_ref + np.invert(mask_both)))
+    chi_vec = mask_both * (flux_ref - flux_scale) * np.sqrt(ivarfit)
+    # Robustly characterize the dispersion of this distribution
+    chi_mean, chi_median, chi_std = \
+        stats.sigma_clipped_stats(chi_vec, np.invert(mask_both), cenfunc='median', maxiters=5, sigma=2.0)
+    # The Huber loss function smoothly interpolates between being chi^2/2 for standard chi^2 rejection and
+    # a linear function of residual in the outlying tails for large residuals. This transition occurs at the
+    # value of the first argument, which we have set to be 2.0*chi_std, which is 2-sigma given the modified
+    # errors described above from Schlegel's code.
+    robust_scale = 2.0
+    huber_vec = scipy.special.huber(robust_scale*chi_std, chi_vec)
+    loss_function = np.sum(np.square(huber_vec*mask_both))
+    #chi2 = np.sum(np.square(chi_vec))
+    return loss_function
