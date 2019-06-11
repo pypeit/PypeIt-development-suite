@@ -97,7 +97,7 @@ def read_nires_stack():
     return waves, fluxes, ivars, masks
 
 def read_xshooter_nir_stack():
-    datapath = os.path.join(os.getenv('HOME'),'Dropbox/PypeIt_Redux/XSHOOTER/J0439/vlt_xshooter_nir/Science/')
+    datapath = os.path.join(os.getenv('HOME'),'Dropbox/PypeIt_Redux/XSHOOTER/J0439_old/vlt_xshooter_nir/Science/')
     fnames = [datapath+'J0439_XSHOOTER_NIR_01.fits',datapath+'J0439_XSHOOTER_NIR_02.fits',datapath+'J0439_XSHOOTER_NIR_03.fits',
               datapath+'J0439_XSHOOTER_NIR_04.fits',datapath+'J0439_XSHOOTER_NIR_05.fits',datapath+'J0439_XSHOOTER_NIR_06.fits',
               datapath+'J0439_XSHOOTER_NIR_07.fits',datapath+'J0439_XSHOOTER_NIR_08.fits',datapath+'J0439_XSHOOTER_NIR_09.fits']
@@ -140,11 +140,11 @@ def read_deimos_stack():
 
 
 
-#waves, fluxes, ivars, masks = read_gmos_stack()
+waves, fluxes, ivars, masks = read_gmos_stack()
 #waves, fluxes, ivars, masks = read_lris_stack()
 #waves, fluxes, ivars, masks = read_nires_stack()
 #waves, fluxes, ivars, masks = read_xshooter_nir_stack()
-waves, fluxes, ivars, masks = read_deimos_stack()
+#waves, fluxes, ivars, masks = read_deimos_stack()
 
 # Coadding
 wave_stack, flux_stack, ivar_stack, mask_stack, outmask, weights, scales, rms_sn = coadd1d.combspec(
