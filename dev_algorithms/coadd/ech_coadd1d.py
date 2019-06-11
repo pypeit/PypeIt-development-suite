@@ -1,8 +1,12 @@
+import os
+import numpy as np
+from astropy.io import fits
+import matplotlib.pyplot as plt
 
-from pypeit.core import coadd1d
+#from pypeit.core import coadd1d
+import coadd1d_old as coadd1d
 from pypeit.core import load
 
-import os
 
 datapath = os.path.join(os.getenv('HOME'), 'Dropbox/PypeIt_Redux/NIRES/NIRES_May19/Science/')
 fnames = [datapath + 'spec1d_flux_s190519_0037-J1007+2115_NIRES_2019May19T055221.895.fits',
@@ -73,9 +77,57 @@ for ii, iord in enumerate(order_vec):
                          sn_min_medscale=0.5, dv_smooth=10000.0, const_weights=False, maxiter_reject=5, sn_cap=20.0,
                          lower=3.0, upper=3.0, maxrej=None, qafile=None, outfile=outfile_order, debug=False)
 
+    # store individual stacked spectrum
+    npix_stack = np.size(wave_stack_iord)
+    waves_stack_orders[ii,:npix_stack] = wave_stack_iord
+    fluxes_stack_orders[ii,:npix_stack] = flux_stack_iord
+    ivars_stack_orders[ii,:npix_stack] = ivar_stack_iord
+    masks_stack_orders[ii,:npix_stack] = mask_stack_iord
+
     # store new masks, scales and weights, all of these arrays are in native wave grid
     scales[:, ii*npix:(ii+1)*npix] = scales_iord.copy()
     weights[:, ii*npix:(ii+1)*npix] = weights_iord.copy()
     outmasks[:, ii*npix:(ii+1)*npix] = outmask_iord.copy()
 
+## re-scale bluer orders to match the reddest order.
+# scaling spectrum order by order. We use the reddest order as the reference since slit loss in redder is smaller
+for ii in range(norder - 1):
+    iord = norder - ii - 1
+    sn_iord_iref = fluxes[iord] * (1. / sigs[iord])
+    sn_iord_scale = fluxes[iord - 1] * (1. / sigs[iord - 1])
+    allok = (sigs[iord - 1, :] > 0) & (sigs[iord, :] > 0) & (sn_iord_iref > SN_MIN_MEDSCALE) & (
+    sn_iord_scale > SN_MIN_MEDSCALE)
 
+    if sum(allok) > np.maximum(num_min_pixels, len(wave) * overlapfrac):
+        # Ratio
+        med_flux = spectra.data['flux'][iord, allok] / spectra.data['flux'][iord - 1, allok]
+        # Clip
+        mn_scale, med_scale, std_scale = stats.sigma_clipped_stats(med_flux, sigma=nsig, iters=niter)
+        med_scale = np.maximum(np.minimum(med_scale, 1.5),0.5)
+        spectra.data['flux'][iord - 1, :] *= med_scale
+        spectra.data['sig'][iord - 1, :] *= med_scale
+        msgs.info('Scaled %s order by a factor of %s'%(iord,str(med_scale)))
+
+        if debug:
+            allok_iord = sigs[iord, :] > 0
+            allok_iordm1 = sigs[iord-1, :] > 0
+            plt.figure(figsize=(12, 6))
+            plt.plot(wave[allok], spectra.data['flux'][iord, allok], '-',lw=10,color='0.7', label='Scale region')
+            plt.plot(wave[allok_iord], spectra.data['flux'][iord,allok_iord], 'r-', label='reference spectrum')
+            plt.plot(wave[allok_iordm1], fluxes_raw[iord - 1,allok_iordm1], 'k-', label='raw spectrum')
+            plt.plot(spectra.data['wave'][iord - 1, allok_iordm1], spectra.data['flux'][iord - 1, allok_iordm1], 'b-',
+                     label='scaled spectrum')
+            mny, medy, stdy = stats.sigma_clipped_stats(fluxes[iord, allok], sigma=nsig, iters=niter)
+            plt.ylim([0.1 * medy, 4.0 * medy])
+            plt.xlim([np.min(wave[sigs[iord - 1, :] > 0]), np.max(wave[sigs[iord, :] > 0])])
+            plt.legend()
+            plt.xlabel('wavelength')
+            plt.ylabel('Flux')
+            plt.show()
+    else:
+        msgs.warn('Not enough overlap region for sticking different orders.')
+
+
+
+from IPython import embed
+embed()
