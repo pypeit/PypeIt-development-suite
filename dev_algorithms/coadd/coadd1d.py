@@ -313,7 +313,8 @@ def poly_ratio_fitfunc_chi2(theta, flux_ref, thismask, arg_dict):
     chi_vec = mask_both * (flux_ref_med - flux_scale) * np.sqrt(ivarfit)
     # Robustly characterize the dispersion of this distribution
     chi_mean, chi_median, chi_std = \
-        stats.sigma_clipped_stats(chi_vec, np.invert(mask_both), cenfunc='median', maxiters=5, sigma=2.0)
+        stats.sigma_clipped_stats(chi_vec, np.invert(mask_both), cenfunc='median', stdfunc=stats.mad_std,
+                                  maxiters=5, sigma=2.0)
     # The Huber loss function smoothly interpolates between being chi^2/2 for standard chi^2 rejection and
     # a linear function of residual in the outlying tails for large residuals. This transition occurs at the
     # value of the first argument, which we have set to be 2.0*chi_std, which is 2-sigma given the modified
@@ -593,7 +594,7 @@ def sn_weights(waves, fluxes, ivars, masks, dv_smooth=10000.0, const_weights=Fal
     return rms_sn, weights
 
 def robust_median_ratio(flux,ivar,flux_ref,ivar_ref, ref_percentile=20.0, min_good=0.05, mask=None, mask_ref=None,
-                        cenfunc='median', maxiters=5, max_factor = 10.0, sigrej = 3.0):
+                        maxiters=5, max_factor = 10.0, sigrej = 3.0):
     '''
     Calculate the ratio between reference spectrum and your spectrum.
     Need to be in the same wave grid !!!
@@ -624,9 +625,11 @@ def robust_median_ratio(flux,ivar,flux_ref,ivar_ref, ref_percentile=20.0, min_go
     if (np.sum(calc_mask) > min_good*nspec):
         # Take the best part of the higher SNR reference spectrum
         flux_ref_mean, flux_ref_median, flux_ref_std = \
-            stats.sigma_clipped_stats(flux_ref,np.invert(calc_mask),cenfunc=cenfunc,maxiters=maxiters,sigma=sigrej)
+            stats.sigma_clipped_stats(flux_ref,np.invert(calc_mask),cenfunc='median', stdfunc=stats.mad_std,
+                                      maxiters=maxiters,sigma=sigrej)
         flux_dat_mean, flux_dat_median, flux_dat_std = \
-            stats.sigma_clipped_stats(flux,np.invert(calc_mask),cenfunc=cenfunc,maxiters=maxiters,sigma=sigrej)
+            stats.sigma_clipped_stats(flux,np.invert(calc_mask),cenfunc='median', stdfunc=stats.mad_std,
+                                      maxiters=maxiters,sigma=sigrej)
         if (flux_ref_median < 0.0) or (flux_dat_mean < 0.0):
             msgs.warn('Negative median flux found. Not rescaling')
             ratio = 1.0
@@ -682,7 +685,7 @@ def scale_spec_qa(wave, flux, ivar, flux_ref, ivar_ref, ymult, scale_method,
 
 
 def scale_spec(wave, flux, ivar, flux_ref, ivar_ref, mask=None, mask_ref=None, min_good=0.05,
-               cenfunc='median',ref_percentile=20.0, maxiters=5, sigrej=3, max_median_factor=10,
+               ref_percentile=20.0, maxiters=5, sigrej=3, max_median_factor=10,
                npoly = None, scale_method=None, hand_scale=None, sn_max_medscale=2.0, sn_min_medscale=0.5, debug=True):
     '''
     Scale the spectra into the same page with the reference spectrum.
@@ -737,7 +740,7 @@ def scale_spec(wave, flux, ivar, flux_ref, ivar_ref, mask=None, mask_ref=None, m
     elif scale_method == 'median':
         # Median ratio (reference to spectrum)
         med_scale = robust_median_ratio(flux,ivar,flux_ref,ivar_ref,ref_percentile=ref_percentile,min_good=min_good,\
-                                        mask=mask, mask_ref=mask_ref,cenfunc=cenfunc, maxiters=maxiters,\
+                                        mask=mask, mask_ref=mask_ref, maxiters=maxiters,\
                                         max_factor=max_median_factor,sigrej=sigrej)
         # Apply
         flux_scale = flux * med_scale
