@@ -1,5 +1,3 @@
-
-
 import scipy
 import numpy as np
 import matplotlib.pyplot as plt
@@ -872,19 +870,22 @@ def coadd_iexp_qa(wave, flux, ivar, flux_stack, ivar_stack, mask=None, mask_stac
 
     return
 
-def weights_qa(waves, weights, masks):
+def weights_qa(waves, weights, masks, debug=False):
 
     nexp = np.shape(waves)[0]
     fig = plt.figure(figsize=(12, 8))
 
+    wave_mask_all = np.zeros_like(masks)
     for iexp in range(nexp):
         this_wave, this_weights, this_mask = waves[iexp,:], weights[iexp,:], masks[iexp,:]
         wave_mask = this_wave > 1.0
+        wave_mask_all[iexp,wave_mask] = True
         plt.plot(this_wave[wave_mask], this_weights[wave_mask]*this_mask[wave_mask])
-    plt.xlim([waves.min(),waves.max()])
+    plt.xlim([waves[wave_mask_all].min(),waves[wave_mask_all].max()])
     plt.xlabel('Wavelength (Angstrom)')
     plt.ylabel('(S/N)^2 weights')
-    plt.show()
+    if debug:
+        plt.show()
 
 def coadd_qa(wave, flux, ivar, nused, mask=None, qafile=None, debug=False):
 
@@ -901,7 +902,7 @@ def coadd_qa(wave, flux, ivar, nused, mask=None, qafile=None, debug=False):
     # [left, bottom, width, height]
     num_plot =  fig.add_axes([0.10, 0.75, 0.80, 0.23])
     spec_plot = fig.add_axes([0.10, 0.10, 0.80, 0.65])
-    num_plot.plot(wave,nused,linestyle='steps-mid',color='k',lw=2)
+    num_plot.plot(wave[wave_mask],nused[wave_mask],linestyle='steps-mid',color='k',lw=2)
     num_plot.set_xlim([wave_min, wave_max])
     num_plot.set_ylim([0.0, np.fmax(1.1*nused.max(), nused.max()+1.0)])
     num_plot.set_ylabel('$\\rm N_{EXP}$')
@@ -1108,8 +1109,9 @@ def combspec(waves, fluxes, ivars, masks, wave_grid_method='pixel', wave_grid_mi
                           qafile=None, debug=debug)
 
     # Plot the final coadded spectrum
-    weights_qa(waves, weights, outmask)
-    coadd_qa(wave_stack,flux_stack,ivar_stack, nused, mask=mask_stack, qafile=qafile, debug=debug)
+    if debug:
+        weights_qa(waves, weights, outmask, debug=True)
+    coadd_qa(wave_stack,flux_stack,ivar_stack, nused, mask=mask_stack, qafile=qafile, debug=True)
 
     # Write to disk?
     if outfile is not None:
@@ -1119,19 +1121,6 @@ def combspec(waves, fluxes, ivars, masks, wave_grid_method='pixel', wave_grid_mi
         write_to_fits(wave_stack, flux_stack, ivar_stack, mask_stack, outfile, clobber=True)
 
     return wave_stack, flux_stack, ivar_stack, mask_stack, outmask, weights, scales, rms_sn
-
-
-#def ech_combspec(gdfiles, objids=None, wave_grid_method='loggrid', wave_grid_min=None, wave_grid_max=None,
-#                 A_pix=None, v_pix=None, samp_fact = 1.0, ref_percentile=20.0, maxiter_scale=5, sigrej=3,
-#                 scale_method=None, hand_scale=None, sn_max_medscale=2.0, sn_min_medscale=0.5, dv_smooth=10000.0,
-#                 const_weights=False, maxiter_reject=5, sn_cap=20.0, lower=3.0, upper=3.0, maxrej=None,
-#                 order_vec=None, ex_value=None, flux_value=None, phot_scale_dicts=None, mergeorder=True, orderscale=None,
-#                 qafile=None, outfile=None, debug=False):
-#    from IPython import embed
-#    embed()
-#    norder = np.size(order_vec)
-#    for ii, iord in enumerate(order_vec):
-
 
 
 ###### Old functions
@@ -1268,11 +1257,11 @@ def long_comb(waves, fluxes, ivars, masks,wave_method='pixel', wave_grid_min=Non
     for iexp in range(nexp):
         flux_iref, ivar_iref, mask_iref = interp_spec(waves[iexp,:], wave_ref, flux_ref, ivar_ref, mask_ref)
         # TODO Create a parset for the coadd parameters
-        flux_scale,ivar_scale,scale,omethod = scale_spec(waves[iexp,:],fluxes[iexp,:],ivars[iexp,:],\
-                                                         flux_iref,ivar_iref,mask=masks[iexp,:],mask_ref=mask_iref,\
-                                                         cenfunc=cenfunc,ref_percentile=ref_percentile,maxiters=maxiters, \
-                                                         sigrej=sigrej,scale_method=scale_method,hand_scale=hand_scale, \
-                                                         sn_max_medscale=sn_max_medscale,sn_min_medscale=sn_min_medscale,\
+        flux_scale,ivar_scale,scale,omethod = scale_spec(waves[iexp,:],fluxes[iexp,:],ivars[iexp,:],
+                                                         flux_iref,ivar_iref,mask=masks[iexp,:],mask_ref=mask_iref,
+                                                         cenfunc=cenfunc,ref_percentile=ref_percentile,maxiters=maxiters,
+                                                         sigrej=sigrej,scale_method=scale_method,hand_scale=hand_scale,
+                                                         sn_max_medscale=sn_max_medscale,sn_min_medscale=sn_min_medscale,
                                                          debug=debug)
         fluxes_scale[iexp,:] = flux_scale
         ivars_scale[iexp,:] = ivar_scale

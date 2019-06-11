@@ -1,5 +1,5 @@
 import os
-import coadd1d
+import coadd1d_old as coadd1d
 import numpy as np
 import os
 from pypeit import utils
@@ -141,9 +141,9 @@ def read_deimos_stack():
 
 #waves, fluxes, ivars, masks = read_gmos_stack()
 #waves, fluxes, ivars, masks = read_lris_stack()
-waves, fluxes, ivars, masks = read_nires_stack()
+#waves, fluxes, ivars, masks = read_nires_stack()
 #waves, fluxes, ivars, masks = read_xshooter_nir_stack()
-#waves, fluxes, ivars, masks = read_deimos_stack()
+waves, fluxes, ivars, masks = read_deimos_stack()
 
 # Coadding
 wave_stack, flux_stack, ivar_stack, mask_stack, outmask, weights, scales, rms_sn = coadd1d.combspec(
