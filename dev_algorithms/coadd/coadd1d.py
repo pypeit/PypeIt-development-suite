@@ -1,4 +1,5 @@
 
+
 import scipy
 import numpy as np
 import matplotlib.pyplot as plt
@@ -15,9 +16,6 @@ from pypeit.core.wavecal import wvutils
 from pypeit.core import pydl
 from astropy import constants as const
 c_kms = const.c.to('km/s').value
-from matplotlib.ticker import NullFormatter, NullLocator
-
-import IPython
 
 ## Plotting parameters
 plt.rcdefaults()
@@ -32,74 +30,7 @@ plt.rcParams["xtick.labelsize"] = 15
 plt.rcParams["ytick.labelsize"] = 15
 plt.rcParams["axes.labelsize"] = 17
 
-
-def load_1dspec_to_array(fnames,gdobj=None,order=None,ex_value='OPT',flux_value=True):
-    '''
-    Load the spectra from the 1d fits file into arrays.
-    If Echelle, you need to specify which order you want to load.
-    It can NOT load all orders for Echelle data.
-    Args:
-        fnames:
-        gdobj:
-        extensions:
-        order: set to None if longslit data
-        ex_value:
-        flux_value:
-    Returns:
-        waves:
-        fluxes:
-        ivars:
-        masks:
-    '''
-
-    #ToDo: make it also works for single fits frame.
-    nexp = len(fnames)
-    sobjs0,header0 = load.load_specobjs(fnames[0], order=order)
-    nspec = sobjs0[0].optimal['COUNTS'].size
-
-    waves = np.zeros((nexp,nspec))
-    fluxes = np.zeros_like(waves)
-    ivars = np.zeros_like(waves)
-    masks = np.zeros_like(waves,dtype=bool)
-
-    for iexp in range(nexp):
-        specobjs, headers = load.load_specobjs(fnames[iexp], order=order)
-
-        # Initialize ext
-        ext = None
-        for indx, spobj in enumerate(specobjs):
-            if gdobj[iexp] in spobj.idx:
-                ext = indx
-        if ext is None:
-            msgs.error('Can not find extension {:} in {:}.'.format(gdobj[iexp],fnames[iexp]))
-
-        ## unpack wave/flux/mask
-        if ex_value == 'OPT':
-            wave = specobjs[ext].optimal['WAVE']
-            mask = specobjs[ext].optimal['MASK']
-            if flux_value:
-                flux = specobjs[ext].optimal['FLAM']
-                ivar = specobjs[ext].optimal['FLAM_IVAR']
-            else:
-                flux = specobjs[ext].optimal['COUNTS']
-                ivar = specobjs[ext].optimal['COUNTS_IVAR']
-        elif ex_value == 'BOX':
-            wave = specobjs[ext].boxcar['WAVE']
-            if flux_value:
-                flux = specobjs[ext].boxcar['FLAM']
-                ivar = specobjs[ext].boxcar['FLAM_IVAR']
-            else:
-                flux = specobjs[ext].boxcar['COUNTS']
-                ivar = specobjs[ext].boxcar['COUNTS_IVAR']
-        else:
-            msgs.error('{:} is not recognized. Please change to either BOX or OPT.'.format(ex_value))
-
-        waves[iexp,:] = wave
-        fluxes[iexp,:] = flux
-        ivars[iexp,:] = ivar
-        masks[iexp,:] = mask
-
-    return waves,fluxes,ivars,masks
+# ToDo: update README and descriptions
 
 def new_wave_grid(waves,wave_method='iref',iref=0,wave_grid_min=None,wave_grid_max=None,
                   A_pix=None,v_pix=None,samp_fact=1.0,**kwargs):
@@ -251,7 +182,7 @@ def renormalize_errors(chi, mask, clip = 6.0, max_corr = 5.0, title = '', debug=
         if sigma_corr < 1.0:
             msgs.warn("Error renormalization found correction factor sigma_corr = {:f}".format(sigma_corr) +
                       " < 1." + msgs.newline() +
-                      " Errors are overestimated so not applying correction".format(sigma_corr))
+                      " Errors are overestimated so not applying correction")
             sigma_corr = 1.0
         if sigma_corr > max_corr:
             msgs.warn("Error renormalization found sigma_corr/sigma = {:f} > {:f}." + msgs.newline() +
@@ -566,9 +497,12 @@ def sn_weights(waves, fluxes, ivars, masks, dv_smooth=10000.0, const_weights=Fal
     rms_sn_stack = np.sqrt(np.mean(sn2))
 
     if rms_sn_stack <= 3.0 or const_weights:
+        weights = np.outer(sn2, np.ones(nspec))
         if verbose:
             msgs.info("Using constant weights for coadding, RMS S/N = {:g}".format(rms_sn_stack))
-        weights = np.outer(sn2, np.ones(nspec))
+            for iexp in np.arange(nstack):
+                msgs.info('S/N = {:4.2f}, weight = {:4.2f} for {:}th exposure'.format(
+                    rms_sn[iexp],np.mean(weights[iexp,:]), iexp))
     else:
         if verbose:
             msgs.info("Using wavelength dependent weights for coadding")
@@ -590,7 +524,9 @@ def sn_weights(waves, fluxes, ivars, masks, dv_smooth=10000.0, const_weights=Fal
             gauss_kernel = convolution.Gaussian1DKernel(sig_res)
             sn_conv = convolution.convolve(sn_med2, gauss_kernel)
             weights[iexp,:] = sn_conv
-
+            if verbose:
+                msgs.info('S/N = {:4.2f}, averaged weight = {:4.2f} for {:}th exposure'.format(
+                    rms_sn[iexp],np.mean(weights[iexp,:]), iexp))
     # Finish
     return rms_sn, weights
 
@@ -647,6 +583,7 @@ def robust_median_ratio(flux,ivar,flux_ref,ivar_ref, ref_percentile=20.0, min_go
 def scale_spec_qa(wave, flux, ivar, flux_ref, ivar_ref, ymult, scale_method,
                   mask=None, mask_ref=None, ylim = None, median_frac = 0.03, title=''):
 
+    from matplotlib.ticker import NullFormatter
 
     if mask is None:
         mask = ivar > 0.0
@@ -821,7 +758,7 @@ def coadd_iexp_qa(wave, flux, ivar, flux_stack, ivar_stack, mask=None, mask_stac
         mask_stack = ivar_stack > 0.0
 
     wave_mask = wave > 1.0
-    fig = plt.figure(figsize=(12, 8))
+    fig = plt.figure(figsize=(10, 6))
 
     spec_plot = fig.add_axes([0.1, 0.1, 0.8, 0.85])
 
@@ -865,7 +802,19 @@ def coadd_iexp_qa(wave, flux, ivar, flux_stack, ivar_stack, mask=None, mask_stac
 
     return
 
+def weights_qa(waves, weights, masks):
 
+    nexp = np.shape(waves)[0]
+    fig = plt.figure(figsize=(10, 6))
+
+    for iexp in range(nexp):
+        this_wave, this_weights, this_mask = waves[iexp,:], weights[iexp,:], masks[iexp,:]
+        wave_mask = this_wave > 1.0
+        plt.plot(this_wave[wave_mask], this_weights[wave_mask]*this_mask[wave_mask])
+    plt.xlim([waves.min(),waves.max()])
+    plt.xlabel('Wavelength (Angstrom)')
+    plt.ylabel('(S/N)^2 weights')
+    plt.show()
 
 def coadd_qa(wave, flux, ivar, nused, mask=None, qafile=None, debug=False):
 
@@ -875,19 +824,17 @@ def coadd_qa(wave, flux, ivar, nused, mask=None, qafile=None, debug=False):
         mask = ivar > 0.0
 
     wave_mask = wave > 1.0
-    wave_min = wave[wave_mask].min()
-    wave_max = wave[wave_mask].max()
-    fig = plt.figure(figsize=(12, 8))
-    # plot how may exposures you used at each pixel
+    fig = plt.figure(figsize=(10, 6))
     # [left, bottom, width, height]
-    num_plot =  fig.add_axes([0.10, 0.75, 0.80, 0.23])
-    spec_plot = fig.add_axes([0.10, 0.10, 0.80, 0.65])
-    num_plot.plot(wave,nused,linestyle='steps-mid',color='k',lw=2)
-    num_plot.set_xlim([wave_min, wave_max])
-    num_plot.set_ylim([0.0, np.fmax(1.1*nused.max(), nused.max()+1.0)])
+    num_plot = fig.add_axes([0.1, 0.75, 0.8, 0.20])
+    spec_plot = fig.add_axes([0.1, 0.1, 0.8, 0.65])
+
+    # plot how may exposures you used at each pixel
+    num_plot.plot(wave[wave_mask],nused[wave_mask],linestyle='steps-mid',color='k',lw=2)
+    num_plot.set_xlim([wave[wave_mask].min(), wave[wave_mask].max()])
+    num_plot.set_ylim([0.0, np.fmax(nused.max()+0.1*nused.max(), nused.max()+1.0)])
     num_plot.set_ylabel('$\\rm N_{EXP}$')
     num_plot.yaxis.set_major_locator(MaxNLocator(integer=True))
-    num_plot.yaxis.set_minor_locator(NullLocator())
 
     # Plot spectrum
     spec_plot.plot(wave[wave_mask], flux[wave_mask], color='black', linestyle='steps-mid',zorder=2,label='Single exposure')
@@ -908,7 +855,7 @@ def coadd_qa(wave, flux, ivar, nused, mask=None, qafile=None, debug=False):
         spec_plot.plot(skycat[:,0]*1e4,skycat[:,1]*scale,'m-',alpha=0.5,zorder=11)
 
     spec_plot.set_ylim([ymin, ymax])
-    spec_plot.set_xlim([wave_min, wave_max])
+    spec_plot.set_xlim([wave[wave_mask].min(), wave[wave_mask].max()])
     spec_plot.set_xlabel('Wavelength (Angstrom)')
     spec_plot.set_ylabel('Flux')
 
@@ -1015,20 +962,19 @@ def update_errors(waves, fluxes, ivars, masks, fluxes_stack, ivars_stack, masks_
 
     return rejivars, sigma_corrs, outchi, maskchi
 
-# This should probaby take a parset?
-def combspec(waves, fluxes, ivars, masks, wave_method='pixel', wave_grid_min=None, wave_grid_max=None,
+#Todo: This should probaby take a parset?
+def combspec(waves, fluxes, ivars, masks, wave_grid_method='pixel', wave_grid_min=None, wave_grid_max=None,
              A_pix=None, v_pix=None, samp_fact = 1.0, ref_percentile=20.0, maxiter_scale=5, sigrej=3,
              scale_method=None, hand_scale=None, sn_max_medscale=2.0, sn_min_medscale=0.5, dv_smooth=10000.0,
-             const_weights=False, maxiter_reject=10, sn_cap=20.0, lower=3.0, upper=3.0, maxrej=None,
-             qafile=None, outfile=None, verbose=False, debug=False):
+             const_weights=False, maxiter_reject=5, sn_cap=20.0, lower=3.0, upper=3.0, maxrej=None,
+             qafile=None, outfile=None, debug=False):
 
     # Define a common fixed wavegrid
-    wave_grid = new_wave_grid(waves,wave_method=wave_method,wave_grid_min=wave_grid_min,wave_grid_max=wave_grid_max,
+    wave_grid = new_wave_grid(waves,wave_method=wave_grid_method,wave_grid_min=wave_grid_min,wave_grid_max=wave_grid_max,
                       A_pix=A_pix,v_pix=v_pix,samp_fact=samp_fact)
 
     # Evaluate the sn_weights. This is done once at the beginning
-    rms_sn, weights = sn_weights(waves,fluxes,ivars,masks, dv_smooth=dv_smooth, const_weights=const_weights, verbose=verbose)
-    # TODO Print out an executive summary to the screen of how many exposures, the S/N of each, and the avg_sn analgous to xidl
+    rms_sn, weights = sn_weights(waves,fluxes,ivars,masks, dv_smooth=dv_smooth, const_weights=const_weights, verbose=True)
 
     # Compute an initial stack as the reference, this has its own wave grid based on the weighted averages
     wave_stack, flux_stack, ivar_stack, mask_stack, nused = compute_stack(waves, fluxes, ivars, masks, wave_grid, weights)
@@ -1049,10 +995,10 @@ def combspec(waves, fluxes, ivars, masks, wave_method='pixel', wave_grid_min=Non
             sn_min_medscale=sn_min_medscale, debug=debug)
 
     iIter = 0
-    qdone = False
+    #qdone = False
     thismask = np.copy(masks)
 #    while (not qdone) and (iIter < maxiter_reject):
-    while (not qdone) and (iIter < maxiter_reject):
+    while (iIter < maxiter_reject):
         wave_stack, flux_stack, ivar_stack, mask_stack, nused = compute_stack(
             waves, fluxes_scale, ivars_scale, thismask, wave_grid, weights)
         flux_stack_nat, ivar_stack_nat, mask_stack_nat = interp_spec(
@@ -1062,16 +1008,22 @@ def combspec(waves, fluxes, ivars, masks, wave_method='pixel', wave_grid_min=Non
                                                                sn_cap=sn_cap)
         thismask, qdone = pydl.djs_reject(fluxes_scale, flux_stack_nat, outmask=thismask,inmask=masks, invvar=rejivars,
                                           lower=lower,upper=upper, maxrej=maxrej, sticky=False)
-        # TODO Add some screen output here on how much was rejected
-        iIter = iIter + 1
+        # print out how much was rejected
+        for iexp in range(nexp):
+            thisreject = thismask[iexp,:]
+            nrej = np.sum(np.invert(thisreject))
+            if nrej > 0:
+                msgs.info("Rejecting {:d} pixels in exposure {:d}".format(nrej, iexp))
+
+        iIter = iIter +1
 
     if (iIter == maxiter_reject) & (maxiter_reject != 0):
         msgs.warn('Maximum number of iterations maxiter={:}'.format(maxiter_reject) + ' reached in combspec')
     outmask = np.copy(thismask)
 
     # Compute the final stack using this outmask
-    wave_stack, flux_stack, ivar_stack, mask_stack, nused = compute_stack(waves, fluxes_scale, ivars_scale, outmask,
-                                                                          wave_grid, weights)
+    wave_stack, flux_stack, ivar_stack, mask_stack, nused = compute_stack(
+        waves, fluxes_scale, ivars_scale, outmask, wave_grid, weights)
     # Used only for plotting below
     flux_stack_nat, ivar_stack_nat, mask_stack_nat = interp_spec(waves, wave_stack, flux_stack, ivar_stack, mask_stack)
     if debug:
@@ -1084,7 +1036,7 @@ def combspec(waves, fluxes, ivars, masks, wave_method='pixel', wave_grid_min=Non
                           qafile=None, debug=debug)
 
     # Plot the final coadded spectrum
-    # TODO Add QA here visualizing the final S/N weights of each exposure
+    weights_qa(waves, weights, outmask)
     coadd_qa(wave_stack,flux_stack,ivar_stack, nused, mask=mask_stack, qafile=qafile, debug=debug)
 
     # Write to disk?
@@ -1095,6 +1047,19 @@ def combspec(waves, fluxes, ivars, masks, wave_method='pixel', wave_grid_min=Non
         write_to_fits(wave_stack, flux_stack, ivar_stack, mask_stack, outfile, clobber=True)
 
     return wave_stack, flux_stack, ivar_stack, mask_stack, outmask, weights, scales, rms_sn
+
+
+#def ech_combspec(gdfiles, objids=None, wave_grid_method='loggrid', wave_grid_min=None, wave_grid_max=None,
+#                 A_pix=None, v_pix=None, samp_fact = 1.0, ref_percentile=20.0, maxiter_scale=5, sigrej=3,
+#                 scale_method=None, hand_scale=None, sn_max_medscale=2.0, sn_min_medscale=0.5, dv_smooth=10000.0,
+#                 const_weights=False, maxiter_reject=5, sn_cap=20.0, lower=3.0, upper=3.0, maxrej=None,
+#                 order_vec=None, ex_value=None, flux_value=None, phot_scale_dicts=None, mergeorder=True, orderscale=None,
+#                 qafile=None, outfile=None, debug=False):
+#    from IPython import embed
+#    embed()
+#    norder = np.size(order_vec)
+#    for ii, iord in enumerate(order_vec):
+
 
 
 ###### Old functions
