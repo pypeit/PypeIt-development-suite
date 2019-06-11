@@ -16,6 +16,9 @@ from pypeit.core.wavecal import wvutils
 from pypeit.core import pydl
 from astropy import constants as const
 c_kms = const.c.to('km/s').value
+from matplotlib.ticker import NullFormatter, NullLocator
+
+import IPython
 
 ## Plotting parameters
 plt.rcdefaults()
@@ -30,7 +33,74 @@ plt.rcParams["xtick.labelsize"] = 15
 plt.rcParams["ytick.labelsize"] = 15
 plt.rcParams["axes.labelsize"] = 17
 
-# ToDo: update README and descriptions
+
+def load_1dspec_to_array(fnames,gdobj=None,order=None,ex_value='OPT',flux_value=True):
+    '''
+    Load the spectra from the 1d fits file into arrays.
+    If Echelle, you need to specify which order you want to load.
+    It can NOT load all orders for Echelle data.
+    Args:
+        fnames:
+        gdobj:
+        extensions:
+        order: set to None if longslit data
+        ex_value:
+        flux_value:
+    Returns:
+        waves:
+        fluxes:
+        ivars:
+        masks:
+    '''
+
+    #ToDo: make it also works for single fits frame.
+    nexp = len(fnames)
+    sobjs0,header0 = load.load_specobjs(fnames[0], order=order)
+    nspec = sobjs0[0].optimal['COUNTS'].size
+
+    waves = np.zeros((nexp,nspec))
+    fluxes = np.zeros_like(waves)
+    ivars = np.zeros_like(waves)
+    masks = np.zeros_like(waves,dtype=bool)
+
+    for iexp in range(nexp):
+        specobjs, headers = load.load_specobjs(fnames[iexp], order=order)
+
+        # Initialize ext
+        ext = None
+        for indx, spobj in enumerate(specobjs):
+            if gdobj[iexp] in spobj.idx:
+                ext = indx
+        if ext is None:
+            msgs.error('Can not find extension {:} in {:}.'.format(gdobj[iexp],fnames[iexp]))
+
+        ## unpack wave/flux/mask
+        if ex_value == 'OPT':
+            wave = specobjs[ext].optimal['WAVE']
+            mask = specobjs[ext].optimal['MASK']
+            if flux_value:
+                flux = specobjs[ext].optimal['FLAM']
+                ivar = specobjs[ext].optimal['FLAM_IVAR']
+            else:
+                flux = specobjs[ext].optimal['COUNTS']
+                ivar = specobjs[ext].optimal['COUNTS_IVAR']
+        elif ex_value == 'BOX':
+            wave = specobjs[ext].boxcar['WAVE']
+            if flux_value:
+                flux = specobjs[ext].boxcar['FLAM']
+                ivar = specobjs[ext].boxcar['FLAM_IVAR']
+            else:
+                flux = specobjs[ext].boxcar['COUNTS']
+                ivar = specobjs[ext].boxcar['COUNTS_IVAR']
+        else:
+            msgs.error('{:} is not recognized. Please change to either BOX or OPT.'.format(ex_value))
+
+        waves[iexp,:] = wave
+        fluxes[iexp,:] = flux
+        ivars[iexp,:] = ivar
+        masks[iexp,:] = mask
+
+    return waves,fluxes,ivars,masks
 
 def new_wave_grid(waves,wave_method='iref',iref=0,wave_grid_min=None,wave_grid_max=None,
                   A_pix=None,v_pix=None,samp_fact=1.0,**kwargs):
@@ -158,7 +228,7 @@ def renormalize_errors_qa(chi, maskchi, sigma_corr, sig_range = 6.0, title=''):
     ygauss = gauss1(xvals,0.0,1.0,1.0)
     ygauss_new = gauss1(xvals,0.0,sigma_corr,1.0)
 
-    plt.figure(figsize=(10, 6))
+    plt.figure(figsize=(12, 8))
     plt.hist(chi[maskchi],bins=bins_histo,normed=True,histtype='step', align='mid',color='k',linewidth=3,label='Chi distribution')
     plt.plot(xvals,ygauss,'c-',lw=3,label='sigma=1')
     plt.plot(xvals,ygauss_new,'m--',lw=2,label='new sigma={:4.2f}'.format(round(sigma_corr,2)))
@@ -603,7 +673,7 @@ def scale_spec_qa(wave, flux, ivar, flux_ref, ivar_ref, ymult, scale_method,
         ylim = (flux_min, flux_max)
 
     nullfmt = NullFormatter()  # no labels
-    fig = plt.figure(figsize=(10, 6))
+    fig = plt.figure(figsize=(12, 8))
     # [left, bottom, width, height]
     poly_plot = fig.add_axes([0.1, 0.75, 0.8, 0.20])
     spec_plot = fig.add_axes([0.1, 0.1, 0.8, 0.65])
@@ -758,7 +828,7 @@ def coadd_iexp_qa(wave, flux, ivar, flux_stack, ivar_stack, mask=None, mask_stac
         mask_stack = ivar_stack > 0.0
 
     wave_mask = wave > 1.0
-    fig = plt.figure(figsize=(10, 6))
+    fig = plt.figure(figsize=(12, 8))
 
     spec_plot = fig.add_axes([0.1, 0.1, 0.8, 0.85])
 
@@ -805,7 +875,7 @@ def coadd_iexp_qa(wave, flux, ivar, flux_stack, ivar_stack, mask=None, mask_stac
 def weights_qa(waves, weights, masks):
 
     nexp = np.shape(waves)[0]
-    fig = plt.figure(figsize=(10, 6))
+    fig = plt.figure(figsize=(12, 8))
 
     for iexp in range(nexp):
         this_wave, this_weights, this_mask = waves[iexp,:], weights[iexp,:], masks[iexp,:]
@@ -824,17 +894,19 @@ def coadd_qa(wave, flux, ivar, nused, mask=None, qafile=None, debug=False):
         mask = ivar > 0.0
 
     wave_mask = wave > 1.0
-    fig = plt.figure(figsize=(10, 6))
-    # [left, bottom, width, height]
-    num_plot = fig.add_axes([0.1, 0.75, 0.8, 0.20])
-    spec_plot = fig.add_axes([0.1, 0.1, 0.8, 0.65])
-
+    wave_min = wave[wave_mask].min()
+    wave_max = wave[wave_mask].max()
+    fig = plt.figure(figsize=(12, 8))
     # plot how may exposures you used at each pixel
-    num_plot.plot(wave[wave_mask],nused[wave_mask],linestyle='steps-mid',color='k',lw=2)
-    num_plot.set_xlim([wave[wave_mask].min(), wave[wave_mask].max()])
-    num_plot.set_ylim([0.0, np.fmax(nused.max()+0.1*nused.max(), nused.max()+1.0)])
+    # [left, bottom, width, height]
+    num_plot =  fig.add_axes([0.10, 0.75, 0.80, 0.23])
+    spec_plot = fig.add_axes([0.10, 0.10, 0.80, 0.65])
+    num_plot.plot(wave,nused,linestyle='steps-mid',color='k',lw=2)
+    num_plot.set_xlim([wave_min, wave_max])
+    num_plot.set_ylim([0.0, np.fmax(1.1*nused.max(), nused.max()+1.0)])
     num_plot.set_ylabel('$\\rm N_{EXP}$')
     num_plot.yaxis.set_major_locator(MaxNLocator(integer=True))
+    num_plot.yaxis.set_minor_locator(NullLocator())
 
     # Plot spectrum
     spec_plot.plot(wave[wave_mask], flux[wave_mask], color='black', linestyle='steps-mid',zorder=2,label='Single exposure')
@@ -855,7 +927,7 @@ def coadd_qa(wave, flux, ivar, nused, mask=None, qafile=None, debug=False):
         spec_plot.plot(skycat[:,0]*1e4,skycat[:,1]*scale,'m-',alpha=0.5,zorder=11)
 
     spec_plot.set_ylim([ymin, ymax])
-    spec_plot.set_xlim([wave[wave_mask].min(), wave[wave_mask].max()])
+    spec_plot.set_xlim([wave_min, wave_max])
     spec_plot.set_xlabel('Wavelength (Angstrom)')
     spec_plot.set_ylabel('Flux')
 
@@ -995,10 +1067,10 @@ def combspec(waves, fluxes, ivars, masks, wave_grid_method='pixel', wave_grid_mi
             sn_min_medscale=sn_min_medscale, debug=debug)
 
     iIter = 0
-    #qdone = False
+    qdone = False
     thismask = np.copy(masks)
 #    while (not qdone) and (iIter < maxiter_reject):
-    while (iIter < maxiter_reject):
+    while (not qdone) and (iIter < maxiter_reject):
         wave_stack, flux_stack, ivar_stack, mask_stack, nused = compute_stack(
             waves, fluxes_scale, ivars_scale, thismask, wave_grid, weights)
         flux_stack_nat, ivar_stack_nat, mask_stack_nat = interp_spec(
