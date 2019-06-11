@@ -15,6 +15,7 @@ from pypeit.core.wavecal import wvutils
 from pypeit.core import pydl
 from astropy import constants as const
 c_kms = const.c.to('km/s').value
+from matplotlib.ticker import NullFormatter, NullLocator
 
 import IPython
 
@@ -646,7 +647,6 @@ def robust_median_ratio(flux,ivar,flux_ref,ivar_ref, ref_percentile=20.0, min_go
 def scale_spec_qa(wave, flux, ivar, flux_ref, ivar_ref, ymult, scale_method,
                   mask=None, mask_ref=None, ylim = None, median_frac = 0.03, title=''):
 
-    from matplotlib.ticker import NullFormatter
 
     if mask is None:
         mask = ivar > 0.0
@@ -821,7 +821,7 @@ def coadd_iexp_qa(wave, flux, ivar, flux_stack, ivar_stack, mask=None, mask_stac
         mask_stack = ivar_stack > 0.0
 
     wave_mask = wave > 1.0
-    fig = plt.figure(figsize=(10, 6))
+    fig = plt.figure(figsize=(12, 8))
 
     spec_plot = fig.add_axes([0.1, 0.1, 0.8, 0.85])
 
@@ -875,16 +875,19 @@ def coadd_qa(wave, flux, ivar, nused, mask=None, qafile=None, debug=False):
         mask = ivar > 0.0
 
     wave_mask = wave > 1.0
-    fig = plt.figure(figsize=(10, 6))
+    wave_min = wave[wave_mask].min()
+    wave_max = wave[wave_mask].max()
+    fig = plt.figure(figsize=(12, 8))
     # plot how may exposures you used at each pixel
     # [left, bottom, width, height]
-    num_plot = fig.add_axes([0.1, 0.75, 0.8, 0.20])
-    spec_plot = fig.add_axes([0.1, 0.1, 0.8, 0.65])
+    num_plot =  fig.add_axes([0.10, 0.75, 0.80, 0.23])
+    spec_plot = fig.add_axes([0.10, 0.10, 0.80, 0.65])
     num_plot.plot(wave,nused,linestyle='steps-mid',color='k',lw=2)
-    num_plot.set_xlim([wave[wave_mask].min(), wave[wave_mask].max()])
-    num_plot.set_ylim([0.0, np.fmax(nused.max()+0.1*nused.max(), nused.max()+1.0)])
+    num_plot.set_xlim([wave_min, wave_max])
+    num_plot.set_ylim([0.0, np.fmax(1.1*nused.max(), nused.max()+1.0)])
     num_plot.set_ylabel('$\\rm N_{EXP}$')
     num_plot.yaxis.set_major_locator(MaxNLocator(integer=True))
+    num_plot.yaxis.set_minor_locator(NullLocator())
 
     # Plot spectrum
     spec_plot.plot(wave[wave_mask], flux[wave_mask], color='black', linestyle='steps-mid',zorder=2,label='Single exposure')
@@ -905,7 +908,7 @@ def coadd_qa(wave, flux, ivar, nused, mask=None, qafile=None, debug=False):
         spec_plot.plot(skycat[:,0]*1e4,skycat[:,1]*scale,'m-',alpha=0.5,zorder=11)
 
     spec_plot.set_ylim([ymin, ymax])
-    spec_plot.set_xlim([wave[wave_mask].min(), wave[wave_mask].max()])
+    spec_plot.set_xlim([wave_min, wave_max])
     spec_plot.set_xlabel('Wavelength (Angstrom)')
     spec_plot.set_ylabel('Flux')
 
