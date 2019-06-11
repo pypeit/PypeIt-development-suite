@@ -147,7 +147,7 @@ waves, fluxes, ivars, masks = read_deimos_stack()
 
 # Coadding
 wave_stack, flux_stack, ivar_stack, mask_stack, outmask, weights, scales, rms_sn = coadd1d.combspec(
-    waves, fluxes, ivars, masks, qafile='P261_deimos', scale_method='median', outfile='P261_deimos.fits',
+    waves, fluxes, ivars, masks, qafile='P261_deimos', outfile='P261_deimos.fits',
     verbose=False, debug=True)
 #wave_stack, flux_stack, ivar_stack, mask_stack, scale_array = \
 #    coadd1d.long_comb(waves, fluxes, ivars, masks, wave_method='pixel', scale_method='median', maxiter_reject = 5, \

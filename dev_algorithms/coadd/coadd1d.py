@@ -1019,7 +1019,7 @@ def update_errors(waves, fluxes, ivars, masks, fluxes_stack, ivars_stack, masks_
 def combspec(waves, fluxes, ivars, masks, wave_method='pixel', wave_grid_min=None, wave_grid_max=None,
              A_pix=None, v_pix=None, samp_fact = 1.0, ref_percentile=20.0, maxiter_scale=5, sigrej=3,
              scale_method=None, hand_scale=None, sn_max_medscale=2.0, sn_min_medscale=0.5, dv_smooth=10000.0,
-             const_weights=False, maxiter_reject=5, sn_cap=20.0, lower=3.0, upper=3.0, maxrej=None,
+             const_weights=False, maxiter_reject=10, sn_cap=20.0, lower=3.0, upper=3.0, maxrej=None,
              qafile=None, outfile=None, verbose=False, debug=False):
 
     # Define a common fixed wavegrid
@@ -1049,10 +1049,10 @@ def combspec(waves, fluxes, ivars, masks, wave_method='pixel', wave_grid_min=Non
             sn_min_medscale=sn_min_medscale, debug=debug)
 
     iIter = 0
-    #qdone = False
+    qdone = False
     thismask = np.copy(masks)
 #    while (not qdone) and (iIter < maxiter_reject):
-    while (iIter < maxiter_reject):
+    while (not qdone) and (iIter < maxiter_reject):
         wave_stack, flux_stack, ivar_stack, mask_stack, nused = compute_stack(
             waves, fluxes_scale, ivars_scale, thismask, wave_grid, weights)
         flux_stack_nat, ivar_stack_nat, mask_stack_nat = interp_spec(
@@ -1063,7 +1063,7 @@ def combspec(waves, fluxes, ivars, masks, wave_method='pixel', wave_grid_min=Non
         thismask, qdone = pydl.djs_reject(fluxes_scale, flux_stack_nat, outmask=thismask,inmask=masks, invvar=rejivars,
                                           lower=lower,upper=upper, maxrej=maxrej, sticky=False)
         # TODO Add some screen output here on how much was rejected
-        iIter = iIter +1
+        iIter = iIter + 1
 
     if (iIter == maxiter_reject) & (maxiter_reject != 0):
         msgs.warn('Maximum number of iterations maxiter={:}'.format(maxiter_reject) + ' reached in combspec')
