@@ -1,5 +1,6 @@
 import os
-import coadd1d_old as coadd1d
+from pypeit.core import coadd1d
+from pypeit.core import load
 import numpy as np
 import os
 from pypeit import utils
@@ -63,7 +64,7 @@ def read_gmos_stack():
     flux_value = True
 
     # Reading data
-    waves,fluxes,ivars,masks = coadd1d.load_1dspec_to_array(fnames,gdobj=gdobj,order=None,ex_value=ex_value,flux_value=flux_value)
+    waves,fluxes,ivars,masks = load.load_1dspec_to_array(fnames,gdobj=gdobj,order=None,ex_value=ex_value,flux_value=flux_value)
 
     return waves, fluxes, ivars, masks
 
@@ -91,7 +92,7 @@ def read_nires_stack():
     flux_value = True
 
     # Reading data
-    waves,fluxes,ivars,masks = coadd1d.load_1dspec_to_array(fnames,gdobj=gdobj,order=None,ex_value=ex_value,flux_value=flux_value)
+    waves,fluxes,ivars,masks = load.load_1dspec_to_array(fnames,gdobj=gdobj,order=None,ex_value=ex_value,flux_value=flux_value)
 
     return waves, fluxes, ivars, masks
 
@@ -110,7 +111,7 @@ def read_xshooter_nir_stack():
     flux_value = True
 
     # Reading data
-    waves,fluxes,ivars,masks = coadd1d.load_1dspec_to_array(fnames,gdobj=gdobj,order=None,ex_value=ex_value,flux_value=flux_value)
+    waves,fluxes,ivars,masks = load.load_1dspec_to_array(fnames,gdobj=gdobj,order=None,ex_value=ex_value,flux_value=flux_value)
 
     return waves, fluxes, ivars, masks
 
@@ -133,7 +134,7 @@ def read_deimos_stack():
     flux_value = True
 
     # Reading data
-    waves,fluxes,ivars,masks = coadd1d.load_1dspec_to_array(fnames,gdobj=gdobj,order=None,ex_value=ex_value,flux_value=flux_value)
+    waves,fluxes,ivars,masks = load.load_1dspec_to_array(fnames,gdobj=gdobj,order=None,ex_value=ex_value,flux_value=flux_value)
 
     return waves, fluxes, ivars, masks
 
