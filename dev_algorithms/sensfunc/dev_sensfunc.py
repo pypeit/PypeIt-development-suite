@@ -14,6 +14,7 @@ from pypeit.core import flux
 from pypeit.core import load
 from pypeit.core import save
 from pypeit.core import coadd2d
+from pypeit.core import coadd1d
 from pypeit.spectrographs import util
 from pypeit import utils
 from pypeit import msgs
@@ -21,7 +22,7 @@ import pickle
 PYPEIT_FLUX_SCALE = 1e-17
 from astropy.io import fits
 import copy
-
+import IPython
 
 def init_pca(filename,wave_grid,redshift, npca):
     # Read in the pickle file from coarse_pca.create_coarse_pca
@@ -283,8 +284,8 @@ def unpack_orders(spec1dfile, ret_flam=False):
     flam_ivar = np.zeros((nspec, norders))
     flam_mask = np.zeros((nspec, norders),dtype=bool)
     for iord in range(norders):
-        wave[:,iord] = sobjs[iord].optimal['WAVE_GRID']
-        wave_mask[:,iord] = sobjs[iord].optimal['WAVE_GRID_MASK']
+        wave[:,iord] = sobjs[iord].optimal['WAVE']
+        wave_mask[:,iord] = sobjs[iord].optimal['WAVE'] > 0.0
         flam_mask[:,iord] = wave_mask[:, iord] & sobjs[iord].optimal['MASK']
         if ret_flam:
             flam[:,iord] = sobjs[iord].optimal['FLAM']
@@ -504,9 +505,16 @@ def ech_sensfunc_telluric(spec1dfile, telgridfile, star_type=None, star_mag=None
         seed_data = np.fmin(int(np.abs(np.sum(std_dict['flux'].value))), 2 ** 32 - 1)
         seed = np.random.RandomState(seed=seed_data)
 
+    # Read in the telluric grid
+    tell_model_dict = read_telluric_grid(telgridfile)
+    wave_grid = tell_model_dict['wave_grid']
+
+    # Read in the standard star spectrum and interpolate it onto the wave grid
     wave, wave_mask, counts, counts_ivar, counts_mask, head = unpack_orders(spec1dfile)
     exptime = head['EXPTIME']
     airmass = head['AIRMASS']
+
+    counts_int, counts_ivar_int, counts_mask_int = coadd1d.interp_spec(wave_grid, wave, counts, counts_ivar, counts_mask)
 
     nspec, norders = wave.shape
     if np.size(polyorder) > 1:
@@ -515,9 +523,6 @@ def ech_sensfunc_telluric(spec1dfile, telgridfile, star_type=None, star_mag=None
         polyorder_vec = np.array(polyorder)
     else:
         polyorder_vec = np.full(norders, polyorder)
-
-    # Read in the telluric grid
-    tell_model_dict = read_telluric_grid(telgridfile)
 
     # Sort order by the strength of their telluric absorption
     srt_order_tell = telluric_sort(wave, wave_mask, tell_model_dict)
@@ -529,7 +534,9 @@ def ech_sensfunc_telluric(spec1dfile, telgridfile, star_type=None, star_mag=None
     wave_all_min=np.inf
     wave_all_max=-np.inf
     for iord in srt_order_tell:
+        IPython.embed()
         msgs.info("Fitting sensitiity function for order: {:d}/{:d}".format(iord, norders))
+        # Interpolate the data onto the fixed telluric grid
         wave_mask_iord = wave_mask[:,iord]
         wave_iord = wave[wave_mask_iord, iord]
         wave_all_min = np.fmin(wave_iord.min(),wave_all_min)
@@ -858,7 +865,8 @@ dev_path = os.getenv('PYPEIT_DEV')
 # First fit the sensivity function using the standard star
 star_mag  = None
 star_type = None
-spec1dfile = os.path.join(os.getenv('HOME'),'Dropbox/PypeIt_Redux/XSHOOTER/J0439/vlt_xshooter_nir/Science_coadd/spec1d_Feige110.fits')
+spec1dfile = os.path.join(os.getenv('HOME'),'Dropbox/PypeIt_Redux/XSHOOTER/J0439/NIR/Science/spec1d_XSHOO.2018-11-08T00:11:57.074-Feige110_XShooter_NIR_2018Nov08T001157.074.fits')
+#spec1dfile = os.path.join(os.getenv('HOME'),'Dropbox/PypeIt_Redux/XSHOOTER/J0439/vlt_xshooter_nir/Science/spec1d_Feige110.fits')
 header = fits.getheader(spec1dfile)
 telgridfile =  os.path.join(dev_path, 'dev_algorithms/sensfunc/TelFit_Paranal_NIR_9800_25000_R25000.fits')
 polyorder=6
@@ -1133,3 +1141,5 @@ tell_qso_dict = ech_telluric(qso_pca_dict['wave'], qso_pca_dict['wave_mask'], qs
 #     from IPython import embed
 #     embed()
 #     return result
+
+
