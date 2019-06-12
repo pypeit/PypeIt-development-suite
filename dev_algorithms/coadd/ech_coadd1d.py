@@ -92,6 +92,8 @@ for ii, iord in enumerate(order_vec):
 
 
 debug = True
+max_factor = 10.0
+
 order_ratios = np.ones(norder)
 ## re-scale bluer orders to match the reddest order.
 # scaling spectrum order by order. We use the reddest order as the reference since slit loss in redder is smaller
@@ -108,13 +110,15 @@ for ii in range(norder - 1):
     flux_tmp, ivar_tmp, mask_tmp = interp_spec(wave_red, wave_blue, flux_blue, ivar_blue, mask_blue)
 
     npix_overlap = np.sum(mask_tmp & mask_red)
-    percentile_iord = npix_overlap / np.sum(mask_red)
+    percentile_iord = np.fmax(100.0 * (npix_overlap / np.sum(mask_red)-0.05), 10)
 
-    order_ratios[iord-1] = robust_median_ratio(flux_tmp, ivar_tmp, flux_red, ivar_red, mask=mask_tmp,
+    order_ratio_iord = robust_median_ratio(flux_tmp, ivar_tmp, flux_red, ivar_red, mask=mask_tmp,
                                                mask_ref=mask_red, ref_percentile=percentile_iord, min_good=0.05,
                                                maxiters=5, max_factor=10.0, sigrej=3.0)
+
+    order_ratios[iord - 1] = np.fmax(np.fmin(order_ratio_iord, max_factor), 1.0/max_factor)
     msgs.info('Scaled {}th order to {}th order by {:}'.format(order_vec[iord-1],order_vec[iord],order_ratios[iord-1]))
-    print(percentile_iord)
+
     if debug:
         plt.figure(figsize=(12, 8))
         plt.plot(wave_red[mask_red], flux_red[mask_red], 'k-', label='reference spectrum')
@@ -137,3 +141,13 @@ for ii in range(norder - 1):
 
 from IPython import embed
 embed()
+
+for ii in range(norder):
+    plt.plot(waves_stack_orders[:, ii][masks_stack_orders[:, ii]], fluxes_stack_orders[:, ii][masks_stack_orders[:, ii]])
+plt.ylim([ymin, ymax])
+plt.show()
+
+for ii in range(norder):
+    plt.plot(waves_stack_orders[:, ii][masks_stack_orders[:, ii]], order_ratios[ii]*fluxes_stack_orders[:, ii][masks_stack_orders[:, ii]])
+plt.ylim([ymin, ymax])
+plt.show()
