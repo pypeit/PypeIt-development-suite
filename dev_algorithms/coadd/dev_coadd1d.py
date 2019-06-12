@@ -1,4 +1,5 @@
 import os
+#from pypeit.core import coadd1d
 from pypeit.core import coadd1d
 from pypeit.core import load
 import numpy as np
@@ -37,12 +38,12 @@ def read_lris_stack():
         wave = obj[objid]['WAVE_OPT']
         if idx == 0:
             nspec = flux.size
-            flux_arr = np.zeros((nfiles, nspec))
-            wave_arr = np.zeros((nfiles, nspec))
-            ivar_arr = np.zeros((nfiles, nspec))
-        flux_arr[idx, :] = np.flip(flux)
-        ivar_arr[idx, :] = np.flip(ivar)
-        wave_arr[idx, :] = np.flip(wave)
+            flux_arr = np.zeros((nspec, nfiles))
+            wave_arr = np.zeros((nspec, nfiles))
+            ivar_arr = np.zeros((nspec, nfiles))
+        flux_arr[:, idx] = np.flip(flux)
+        ivar_arr[:, idx] = np.flip(ivar)
+        wave_arr[:, idx] = np.flip(wave)
 
     mask_arr = (ivar_arr > 0.0)
 
