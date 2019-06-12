@@ -107,10 +107,14 @@ for ii in range(norder - 1):
     # interpolate iord-1 (bluer) to iord-1 (redder)
     flux_tmp, ivar_tmp, mask_tmp = interp_spec(wave_red, wave_blue, flux_blue, ivar_blue, mask_blue)
 
-    order_ratios[iord-1] = robust_median_ratio(flux_tmp, ivar_tmp, flux_red, ivar_red, mask=mask_tmp, mask_ref=mask_red,\
-                                               ref_percentile=20.0, min_good=0.05, maxiters=5, max_factor=10.0, sigrej=3.0)
-    msgs.info('Scaled {}th order to {}th order by {:}'.format(order_vec[iord-1],order_vec[iord],order_ratios[iord-1]))
+    npix_overlap = np.sum(mask_tmp & mask_red)
+    percentile_iord = npix_overlap / np.sum(mask_red)
 
+    order_ratios[iord-1] = robust_median_ratio(flux_tmp, ivar_tmp, flux_red, ivar_red, mask=mask_tmp,
+                                               mask_ref=mask_red, ref_percentile=percentile_iord, min_good=0.05,
+                                               maxiters=5, max_factor=10.0, sigrej=3.0)
+    msgs.info('Scaled {}th order to {}th order by {:}'.format(order_vec[iord-1],order_vec[iord],order_ratios[iord-1]))
+    print(percentile_iord)
     if debug:
         plt.figure(figsize=(12, 8))
         plt.plot(wave_red[mask_red], flux_red[mask_red], 'k-', label='reference spectrum')
