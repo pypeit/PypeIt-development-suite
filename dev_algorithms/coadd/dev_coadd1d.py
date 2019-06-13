@@ -65,11 +65,12 @@ def read_gmos_stack():
     flux_value = True
 
     # Reading data
-    waves,fluxes,ivars,masks,header = load.load_1dspec_to_array(fnames,gdobj=gdobj,order=None,ex_value=ex_value,flux_value=flux_value)
+    waves,fluxes,ivars,masks,header = load.load_1dspec_to_array(fnames,gdobj=gdobj,order=None,ex_value=ex_value,
+                                                                flux_value=flux_value)
 
-    return waves, fluxes, ivars, masks
+    return waves, fluxes, ivars, masks, header
 
-def read_nires_stack():
+def read_nires_stack(order=None):
     datapath = os.path.join(os.getenv('HOME'),'Dropbox/PypeIt_Redux/NIRES/NIRES_May19/Science/')
     fnames = [datapath+'spec1d_flux_s190519_0037-J1007+2115_NIRES_2019May19T055221.895.fits',
               datapath+'spec1d_flux_s190519_0038-J1007+2115_NIRES_2019May19T055923.665.fits',
@@ -84,37 +85,39 @@ def read_nires_stack():
               datapath+'spec1d_flux_s190519_0057-J1007+2115_NIRES_2019May19T081918.265.fits',
               datapath+'spec1d_flux_s190519_0058-J1007+2115_NIRES_2019May19T082620.545.fits']
 
-    gdobj = ['OBJ0001-ORDER0004-DET01','OBJ0001-ORDER0004-DET01','OBJ0001-ORDER0004-DET01','OBJ0001-ORDER0004-DET01',
-             'OBJ0001-ORDER0004-DET01','OBJ0001-ORDER0004-DET01','OBJ0001-ORDER0004-DET01','OBJ0001-ORDER0004-DET01',
-             'OBJ0001-ORDER0004-DET01', 'OBJ0001-ORDER0004-DET01','OBJ0001-ORDER0004-DET01','OBJ0001-ORDER0004-DET01']
+    gdobj = ['OBJ0001','OBJ0001','OBJ0001','OBJ0001',
+             'OBJ0001','OBJ0001','OBJ0001','OBJ0001',
+             'OBJ0001', 'OBJ0001','OBJ0001','OBJ0001']
 
     # parameters for load_1dspec_to_array
     ex_value = 'OPT'
     flux_value = True
 
     # Reading data
-    waves,fluxes,ivars,masks,header = load.load_1dspec_to_array(fnames,gdobj=gdobj,order=None,ex_value=ex_value,flux_value=flux_value)
+    waves,fluxes,ivars,masks,header = load.load_1dspec_to_array(fnames,gdobj=gdobj,order=order,ex_value=ex_value,
+                                                                flux_value=flux_value)
 
-    return waves, fluxes, ivars, masks
+    return waves, fluxes, ivars, masks,header
 
-def read_xshooter_nir_stack():
+def read_xshooter_nir_stack(order=None):
     datapath = os.path.join(os.getenv('HOME'),'Dropbox/PypeIt_Redux/XSHOOTER/J0439_old/vlt_xshooter_nir/Science/')
     fnames = [datapath+'J0439_XSHOOTER_NIR_01.fits',datapath+'J0439_XSHOOTER_NIR_02.fits',datapath+'J0439_XSHOOTER_NIR_03.fits',
               datapath+'J0439_XSHOOTER_NIR_04.fits',datapath+'J0439_XSHOOTER_NIR_05.fits',datapath+'J0439_XSHOOTER_NIR_06.fits',
               datapath+'J0439_XSHOOTER_NIR_07.fits',datapath+'J0439_XSHOOTER_NIR_08.fits',datapath+'J0439_XSHOOTER_NIR_09.fits']
 
-    gdobj = ['OBJ0001-ORDER0013-DET01','OBJ0001-ORDER0013-DET01','OBJ0001-ORDER0013-DET01',
-             'OBJ0001-ORDER0013-DET01','OBJ0001-ORDER0013-DET01','OBJ0001-ORDER0013-DET01',
-             'OBJ0001-ORDER0013-DET01','OBJ0001-ORDER0013-DET01','OBJ0001-ORDER0013-DET01']
+    gdobj = ['OBJ0001','OBJ0001','OBJ0001',
+             'OBJ0001','OBJ0001','OBJ0001',
+             'OBJ0001','OBJ0001','OBJ0001']
 
     # parameters for load_1dspec_to_array
     ex_value = 'OPT'
     flux_value = True
 
     # Reading data
-    waves,fluxes,ivars,masks,header = load.load_1dspec_to_array(fnames,gdobj=gdobj,order=None,ex_value=ex_value,flux_value=flux_value)
+    waves,fluxes,ivars,masks,header = load.load_1dspec_to_array(fnames,gdobj=gdobj,order=order,ex_value=ex_value,
+                                                                flux_value=flux_value)
 
-    return waves, fluxes, ivars, masks
+    return waves, fluxes, ivars, masks, header
 
 
 def read_deimos_stack():
@@ -135,16 +138,17 @@ def read_deimos_stack():
     flux_value = True
 
     # Reading data
-    waves,fluxes,ivars,masks,header = load.load_1dspec_to_array(fnames,gdobj=gdobj,order=None,ex_value=ex_value,flux_value=flux_value)
+    waves,fluxes,ivars,masks,header = load.load_1dspec_to_array(fnames,gdobj=gdobj,order=None,ex_value=ex_value,
+                                                                flux_value=flux_value)
 
-    return waves, fluxes, ivars, masks
+    return waves, fluxes, ivars, masks, header
 
 
-
-waves, fluxes, ivars, masks = read_gmos_stack()
+#### Longslit coadd test
+#waves, fluxes, ivars, masks, header = read_gmos_stack()
 #waves, fluxes, ivars, masks = read_lris_stack()
-#waves, fluxes, ivars, masks = read_nires_stack()
-#waves, fluxes, ivars, masks = read_xshooter_nir_stack()
+#waves, fluxes, ivars, masks, header = read_nires_stack(order=4)
+waves, fluxes, ivars, masks, header = read_xshooter_nir_stack(order=13)
 #waves, fluxes, ivars, masks = read_deimos_stack()
 
 # Generate a wave_grid
@@ -153,8 +157,3 @@ wave_grid = coadd1d.new_wave_grid(waves, wave_method='pixel')
 # Coadding
 wave_stack, flux_stack, ivar_stack, mask_stack, outmask, weights, scales, rms_sn = coadd1d.long_combspec(
     wave_grid, waves, fluxes, ivars, masks, qafile='P261_deimos', outfile='P261_deimos.fits', debug=True)
-#wave_stack, flux_stack, ivar_stack, mask_stack, scale_array = \
-#    coadd1d.long_comb(waves, fluxes, ivars, masks, wave_method='pixel', scale_method='median', maxiter_reject = 5, \
-#                      sigrej_final=3., qafile='J0252_gmos', outfile='J0252_gmos.fits', verbose=False, debug=True)
-
-#
