@@ -65,7 +65,7 @@ def read_gmos_stack():
     flux_value = True
 
     # Reading data
-    waves,fluxes,ivars,masks = load.load_1dspec_to_array(fnames,gdobj=gdobj,order=None,ex_value=ex_value,flux_value=flux_value)
+    waves,fluxes,ivars,masks,header = load.load_1dspec_to_array(fnames,gdobj=gdobj,order=None,ex_value=ex_value,flux_value=flux_value)
 
     return waves, fluxes, ivars, masks
 
@@ -93,7 +93,7 @@ def read_nires_stack():
     flux_value = True
 
     # Reading data
-    waves,fluxes,ivars,masks = load.load_1dspec_to_array(fnames,gdobj=gdobj,order=None,ex_value=ex_value,flux_value=flux_value)
+    waves,fluxes,ivars,masks,header = load.load_1dspec_to_array(fnames,gdobj=gdobj,order=None,ex_value=ex_value,flux_value=flux_value)
 
     return waves, fluxes, ivars, masks
 
@@ -112,7 +112,7 @@ def read_xshooter_nir_stack():
     flux_value = True
 
     # Reading data
-    waves,fluxes,ivars,masks = load.load_1dspec_to_array(fnames,gdobj=gdobj,order=None,ex_value=ex_value,flux_value=flux_value)
+    waves,fluxes,ivars,masks,header = load.load_1dspec_to_array(fnames,gdobj=gdobj,order=None,ex_value=ex_value,flux_value=flux_value)
 
     return waves, fluxes, ivars, masks
 
@@ -135,7 +135,7 @@ def read_deimos_stack():
     flux_value = True
 
     # Reading data
-    waves,fluxes,ivars,masks = load.load_1dspec_to_array(fnames,gdobj=gdobj,order=None,ex_value=ex_value,flux_value=flux_value)
+    waves,fluxes,ivars,masks,header = load.load_1dspec_to_array(fnames,gdobj=gdobj,order=None,ex_value=ex_value,flux_value=flux_value)
 
     return waves, fluxes, ivars, masks
 
@@ -147,9 +147,12 @@ waves, fluxes, ivars, masks = read_gmos_stack()
 #waves, fluxes, ivars, masks = read_xshooter_nir_stack()
 #waves, fluxes, ivars, masks = read_deimos_stack()
 
+# Generate a wave_grid
+wave_grid = coadd1d.new_wave_grid(waves, wave_method='pixel')
+
 # Coadding
-wave_stack, flux_stack, ivar_stack, mask_stack, outmask, weights, scales, rms_sn = coadd1d.combspec(
-    waves, fluxes, ivars, masks, qafile='P261_deimos', outfile='P261_deimos.fits', debug=True)
+wave_stack, flux_stack, ivar_stack, mask_stack, outmask, weights, scales, rms_sn = coadd1d.long_combspec(
+    wave_grid, waves, fluxes, ivars, masks, qafile='P261_deimos', outfile='P261_deimos.fits', debug=True)
 #wave_stack, flux_stack, ivar_stack, mask_stack, scale_array = \
 #    coadd1d.long_comb(waves, fluxes, ivars, masks, wave_method='pixel', scale_method='median', maxiter_reject = 5, \
 #                      sigrej_final=3., qafile='J0252_gmos', outfile='J0252_gmos.fits', verbose=False, debug=True)
