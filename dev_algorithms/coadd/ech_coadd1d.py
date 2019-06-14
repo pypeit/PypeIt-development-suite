@@ -47,3 +47,4 @@ objids = ['OBJ0001', 'OBJ0001', 'OBJ0001', 'OBJ0001',
          'OBJ0001', 'OBJ0001', 'OBJ0001', 'OBJ0001']
 
 wave_stack, flux_stack, ivar_stack, mask_stack = coadd1d.ech_combspec(fnames, objids,debug=False)
+
