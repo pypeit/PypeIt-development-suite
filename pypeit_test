@@ -144,8 +144,6 @@ def main():
                 req_setups = ['VIS_1x1', 'VIS_2x1', 'VIS_2x2', 'NIR']
             elif instr == 'Magellan_MAGE':
                 req_setups = ['1x1']
-            elif instr == 'Keck_MOSFIRE':
-                req_setups = ['Y_multi']
             else:
                 # Should not get here
                 print("I don't know how you got here")
