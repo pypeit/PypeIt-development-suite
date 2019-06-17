@@ -120,40 +120,48 @@ def read_xshooter_nir_stack(order=None):
     return waves, fluxes, ivars, masks, header
 
 
-def read_deimos_stack():
-    datapath = os.path.join(os.getenv('HOME'),'Dropbox/PypeIt_Redux/DEIMOS/Science/')
+def deimos_fnames():
+    datapath = os.path.join(os.getenv('HOME'), 'Dropbox/PypeIt_Redux/DEIMOS/Science/')
     fnames = [datapath + 'spec1d_F_DE.20170527.37601-P261_OFF_DEIMOS_2017May27T102635.318.fits',
               datapath + 'spec1d_F_DE.20170527.38872-P261_OFF_DEIMOS_2017May27T104746.349.fits',
               datapath + 'spec1d_F_DE.20170527.41775-P261_OFF_DEIMOS_2017May27T113608.093.fits',
               datapath + 'spec1d_F_DE.20170527.43045-P261_OFF_DEIMOS_2017May27T115718.864.fits',
               datapath + 'spec1d_F_DE.20170527.44316-P261_OFF_DEIMOS_2017May27T121830.586.fits']
-    gdobj = ['SPAT0764-SLIT0000-DET07',
-             'SPAT0764-SLIT0000-DET07',
-             'SPAT0758-SLIT0000-DET07',
-             'SPAT0758-SLIT0000-DET07',
-             'SPAT0758-SLIT0000-DET07']
+    objids = ['SPAT0764-SLIT0000-DET07',
+              'SPAT0764-SLIT0000-DET07',
+              'SPAT0758-SLIT0000-DET07',
+              'SPAT0758-SLIT0000-DET07',
+              'SPAT0758-SLIT0000-DET07']
 
+    return fnames, objids
+
+def read_deimos_stack():
+    fnames, objids = deimos_fnames()
     # parameters for load_1dspec_to_array
     ex_value = 'OPT'
     flux_value = True
 
     # Reading data
-    waves,fluxes,ivars,masks,header = load.load_1dspec_to_array(fnames,gdobj=gdobj,order=None,ex_value=ex_value,
-                                                                flux_value=flux_value)
-
+    waves, fluxes, ivars, masks, header = load.load_1dspec_to_array(fnames,gdobj=objids,order=None,ex_value=ex_value,
+                                                                    flux_value=flux_value)
     return waves, fluxes, ivars, masks, header
+
 
 
 #### Longslit coadd test
 #waves, fluxes, ivars, masks, header = read_gmos_stack()
 #waves, fluxes, ivars, masks = read_lris_stack()
 #waves, fluxes, ivars, masks, header = read_nires_stack(order=4)
-waves, fluxes, ivars, masks, header = read_xshooter_nir_stack(order=13)
-#waves, fluxes, ivars, masks = read_deimos_stack()
+#waves, fluxes, ivars, masks, header = read_xshooter_nir_stack(order=13)
+#waves, fluxes, ivars, masks, header = read_deimos_stack()
 
 # Generate a wave_grid
-wave_grid = coadd1d.new_wave_grid(waves, wave_method='pixel')
+#wave_grid = coadd1d.new_wave_grid(waves, wave_method='pixel')
+
+fnames, objids = deimos_fnames()
+
+wave_stack, flux_stack, ivar_stack, mask_stack = coadd1d.multi_combspec(fnames, objids, show=True, debug=True)
 
 # Coadding
-wave_stack, flux_stack, ivar_stack, mask_stack, outmask, weights, scales, rms_sn = coadd1d.long_combspec(
-    wave_grid, waves, fluxes, ivars, masks, qafile='P261_deimos', outfile='P261_deimos.fits', debug=True)
+#wave_stack, flux_stack, ivar_stack, mask_stack, outmask, weights, scales, rms_sn = coadd1d.combspec(
+#    wave_grid, waves, fluxes, ivars, masks, debug=True)
