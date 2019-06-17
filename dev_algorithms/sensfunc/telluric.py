@@ -114,6 +114,23 @@ def eval_telluric(theta_tell, tell_dict):
         return tellmodel_conv
 
 
+def sort_telluric(wave, wave_mask, tell_dict):
+
+    norders = wave.shape[1]
+    tell_med = np.zeros(norders)
+    # Do a quick loop over all the orders to sort them in order of strongest to weakest telluric absorption
+    for iord in range(norders):
+        ind_lower = np.argmin(np.abs(tell_dict['wave_grid'] - np.min(wave[wave_mask[:,iord],iord])))
+        ind_upper = np.argmin(np.abs(tell_dict['wave_grid'] - np.max(wave[wave_mask[:,iord],iord])))
+        tm_grid = tell_dict['tell_grid'][:, :, :, :,ind_lower:ind_upper]
+        tell_model_mid = tm_grid[tm_grid.shape[0]//2, tm_grid.shape[1]//2,tm_grid.shape[2]//2,tm_grid.shape[3]//2,:]
+        tell_med[iord] = np.mean(tell_model_mid)
+
+    # Perform fits in order of telluric strength
+    srt_order_tell = tell_med.argsort()
+
+    return srt_order_tell
+
 
 def sensfunc_tellfit_chi2(theta, counts_ps, thismask, arg_dict):
     """
@@ -197,20 +214,26 @@ def tellfit(flam, thismask, arg_dict, **kwargs_opt):
 
 def unpack_orders(spec1dfile, ret_flam=False):
 
+    # TODO This should be a general reader:
+    #  For echelle:  read in all the orders into a (nspec, nporders) array
+    #  FOr longslit: read in the stanard into a (nspec, 1) array
+    # read in the
+
+
     # Read in the spec1d file
     sobjs, head = load.load_specobjs(spec1dfile)
     norders = len(sobjs)
     nspec = sobjs[0].optimal['COUNTS'].size
     # Allocate arrays and unpack spectrum
     wave = np.zeros((nspec, norders))
-    wave_mask = np.zeros((nspec, norders),dtype=bool)
+    #wave_mask = np.zeros((nspec, norders),dtype=bool)
     flam = np.zeros((nspec, norders))
     flam_ivar = np.zeros((nspec, norders))
     flam_mask = np.zeros((nspec, norders),dtype=bool)
     for iord in range(norders):
         wave[:,iord] = sobjs[iord].optimal['WAVE']
-        wave_mask[:,iord] = sobjs[iord].optimal['WAVE'] > 0.0
-        flam_mask[:,iord] = wave_mask[:, iord] & sobjs[iord].optimal['MASK']
+        #wave_mask[:,iord] = sobjs[iord].optimal['WAVE'] > 0.0
+        flam_mask[:,iord] = sobjs[iord].optimal['MASK']
         if ret_flam:
             flam[:,iord] = sobjs[iord].optimal['FLAM']
             flam_ivar[:,iord] = sobjs[iord].optimal['FLAM_IVAR']
@@ -218,7 +241,7 @@ def unpack_orders(spec1dfile, ret_flam=False):
             flam[:,iord] = sobjs[iord].optimal['COUNTS']
             flam_ivar[:,iord] = sobjs[iord].optimal['COUNTS_IVAR']
 
-    return wave, wave_mask, flam, flam_ivar, flam_mask, head
+    return wave, flam, flam_ivar, flam_mask, head
 
 
 def sensfunc_guess(wave, counts_ps, inmask, flam_true, tell_dict_now, resln_guess, airmass_guess, polyorder, func,
@@ -393,7 +416,7 @@ def sensfunc_telluric(spec1dfile, telgridfile, star_type=None, star_mag=None, ra
 
     """
     Loop over orders to jointly fit a sensitivity function and telluric correction for a standard star spectrum for each
-    order individua
+    order individually
 
 
     Args:
@@ -426,8 +449,6 @@ def sensfunc_telluric(spec1dfile, telgridfile, star_type=None, star_mag=None, ra
     """
 
 
-    # Read in standard star dictionary
-    std_dict = flux.get_standard_spectrum(star_type=star_type, star_mag=star_mag, ra=ra, dec=dec)
     # This guarantees that the fit will be deterministic and hence reproducible
     if seed is None:
         seed_data = np.fmin(int(np.abs(np.sum(std_dict['flux'].value))), 2 ** 32 - 1)
@@ -437,18 +458,19 @@ def sensfunc_telluric(spec1dfile, telgridfile, star_type=None, star_mag=None, ra
     tell_model_dict = read_telluric_grid(telgridfile)
     wave_grid = tell_model_dict['wave_grid']
 
-    # Read in the standard star spectrum and interpolate it onto the wave grid.
-    # TODO This should be a general reader. For echelle it should read in all the orders for longslit, it should
-    # read in the
-    wave, wave_mask, counts, counts_ivar, counts_mask, head = unpack_orders(spec1dfile)
+    # Read in the standard star spectrum and interpolate it onto the regular telluric wave grid.
+    wave, counts, counts_ivar, counts_mask, head = unpack_orders(spec1dfile)
     exptime = head['EXPTIME']
     airmass = head['AIRMASS']
-
     # Interpolate the data and standard star spectrum onto the regular telluric wave_grid
     counts_int, counts_ivar_int, counts_mask_int = coadd1d.interp_spec(wave_grid, wave, counts, counts_ivar, counts_mask)
-    flam_true, flam_ivar, flam_mask = coadd1d.interp_spec(wave_grid, std_dict['wave'], std_dict['flux'], 0.0*std_dict['flux'],
-                                                          np.ones_like(std_dict['flux'], dtype=bool))
 
+    # Read in standard star dictionary
+    std_dict = flux.get_standard_spectrum(star_type=star_type, star_mag=star_mag, ra=ra, dec=dec)
+    flam_true, flam_ivar, flam_mask = coadd1d.interp_spec(wave_grid, std_dict['wave'], std_dict['flux'],
+                                                          0.0*std_dict['flux'],np.ones_like(std_dict['flux'], dtype=bool))
+
+    IPython.embed()
     nspec, norders = wave.shape
     if np.size(polyorder) > 1:
         if np.size(polyorder) != norders:
@@ -458,7 +480,7 @@ def sensfunc_telluric(spec1dfile, telgridfile, star_type=None, star_mag=None, ra
         polyorder_vec = np.full(norders, polyorder)
 
     # Sort order by the strength of their telluric absorption
-    srt_order_tell = telluric_sort(wave, wave_mask, tell_model_dict)
+    srt_order_tell = sort_telluric(wave, counts_mask, tell_model_dict)
 
 
     telluric_out = np.zeros((nspec, norders))
@@ -467,4 +489,4 @@ def sensfunc_telluric(spec1dfile, telgridfile, star_type=None, star_mag=None, ra
     tell_dict = {}
     wave_all_min=np.inf
     wave_all_max=-np.inf
-    for iord in srt_order_tell:
+    #for iord in srt_order_tell:
