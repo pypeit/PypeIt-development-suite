@@ -70,7 +70,7 @@ def read_gmos_stack():
 
     return waves, fluxes, ivars, masks, header
 
-def read_nires_stack(order=None):
+def nires_fnames():
     datapath = os.path.join(os.getenv('HOME'),'Dropbox/PypeIt_Redux/NIRES/NIRES_May19/Science/')
     fnames = [datapath+'spec1d_flux_s190519_0037-J1007+2115_NIRES_2019May19T055221.895.fits',
               datapath+'spec1d_flux_s190519_0038-J1007+2115_NIRES_2019May19T055923.665.fits',
@@ -89,6 +89,11 @@ def read_nires_stack(order=None):
              'OBJ0001','OBJ0001','OBJ0001','OBJ0001',
              'OBJ0001', 'OBJ0001','OBJ0001','OBJ0001']
 
+    return fnames, gdobj
+
+def read_nires_stack(order=None):
+
+    fnames, gdobj = nires_fnames()
     # parameters for load_1dspec_to_array
     ex_value = 'OPT'
     flux_value = True
@@ -158,9 +163,13 @@ def read_deimos_stack():
 # Generate a wave_grid
 #wave_grid = coadd1d.new_wave_grid(waves, wave_method='pixel')
 
-fnames, objids = deimos_fnames()
+# Testing DEIMOS
+#fnames, objids = deimos_fnames()
+#wave_stack, flux_stack, ivar_stack, mask_stack = coadd1d.multi_combspec(fnames, objids, show=True, debug=True)
 
-wave_stack, flux_stack, ivar_stack, mask_stack = coadd1d.multi_combspec(fnames, objids, show=True, debug=True)
+# Testing NIRES
+fnames, objids = nires_fnames()
+wave_stack, flux_stack, ivar_stack, mask_stack = coadd1d.ech_combspec(fnames, objids, show=True)
 
 # Coadding
 #wave_stack, flux_stack, ivar_stack, mask_stack, outmask, weights, scales, rms_sn = coadd1d.combspec(
