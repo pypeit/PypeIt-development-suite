@@ -104,7 +104,7 @@ def read_nires_stack(order=None):
 
     return waves, fluxes, ivars, masks,header
 
-def read_xshooter_nir_stack(order=None):
+def xshooter_fnames():
     datapath = os.path.join(os.getenv('HOME'),'Dropbox/PypeIt_Redux/XSHOOTER/J0439_old/vlt_xshooter_nir/Science/')
     fnames = [datapath+'J0439_XSHOOTER_NIR_01.fits',datapath+'J0439_XSHOOTER_NIR_02.fits',datapath+'J0439_XSHOOTER_NIR_03.fits',
               datapath+'J0439_XSHOOTER_NIR_04.fits',datapath+'J0439_XSHOOTER_NIR_05.fits',datapath+'J0439_XSHOOTER_NIR_06.fits',
@@ -113,6 +113,13 @@ def read_xshooter_nir_stack(order=None):
     gdobj = ['OBJ0001','OBJ0001','OBJ0001',
              'OBJ0001','OBJ0001','OBJ0001',
              'OBJ0001','OBJ0001','OBJ0001']
+
+    return fnames, gdobj
+
+
+def read_xshooter_nir_stack(order=None):
+
+    fnames, gdobj = xshooter_fnames()
 
     # parameters for load_1dspec_to_array
     ex_value = 'OPT'
@@ -168,8 +175,13 @@ def read_deimos_stack():
 #wave_stack, flux_stack, ivar_stack, mask_stack = coadd1d.multi_combspec(fnames, objids, show=True, debug=True)
 
 # Testing NIRES
-fnames, objids = nires_fnames()
-wave_stack, flux_stack, ivar_stack, mask_stack = coadd1d.ech_combspec(fnames, objids, show=True)
+#fnames, objids = nires_fnames()
+#wave_stack, flux_stack, ivar_stack, mask_stack = coadd1d.ech_combspec(fnames, objids, show=True)
+
+
+# Test XSHOOTER
+fnames, objids = xshooter_fnames()
+wave_stack, flux_stack, ivar_stack, mask_stack = coadd1d.ech_combspec(fnames, objids, show=False)
 
 # Coadding
 #wave_stack, flux_stack, ivar_stack, mask_stack, outmask, weights, scales, rms_sn = coadd1d.combspec(
