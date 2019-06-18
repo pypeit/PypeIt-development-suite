@@ -54,15 +54,15 @@ dev_path = os.getenv('PYPEIT_DEV')
 # First fit the sensivity function using the standard star
 star_mag  = None
 star_type = None
-spec1dfile = os.path.join(os.getenv('HOME'),'Dropbox/PypeIt_Redux/XSHOOTER/J0439/NIR/Science/spec1d_XSHOO.2018-11-08T00:11:57.074-Feige110_XShooter_NIR_2018Nov08T001157.074.fits')
+spec1dfile = os.path.join(os.getenv('HOME'),'Dropbox/PypeIt_Redux/XSHOOTER/J0439/NIR/Science/spec1d_XSHOO.2018-11-08T00:16:56.583-Feige110_XShooter_NIR_2018Nov08T001656.583.fits')
 #spec1dfile = os.path.join(os.getenv('HOME'),'Dropbox/PypeIt_Redux/XSHOOTER/J0439/vlt_xshooter_nir/Science/spec1d_Feige110.fits')
 header = fits.getheader(spec1dfile)
 telgridfile =  os.path.join(dev_path, 'dev_algorithms/sensfunc/TelFit_Paranal_NIR_9800_25000_R25000.fits')
-polyorder=6
+polyorder=5 # changed from 6
 #
 sens_dict, tell_dict = sensfunc_telluric(spec1dfile, telgridfile, polyorder=polyorder, ra=header['RA'], dec=header['DEC'],
                                          star_mag=star_mag, star_type=star_type,
-                                         seed=None, tol=1e-3, popsize=30, disp=True, polish=True,
+                                         seed=None, tol=1e-4, popsize=40, disp=True, polish=True,
                                          debug=True)
 # Write the sens_dict and tell_dict out to a file
 sensfuncfile = 'Feige110_sensfunc.json'

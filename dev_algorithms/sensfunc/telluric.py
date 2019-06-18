@@ -293,13 +293,11 @@ def sensfunc_guess(wave, counts_ps, inmask, flam_true, tell_dict_now, resln_gues
 
 
 
-def sensfunc_telluric_joint(counts_ps_in, counts_ps_ivar_in, counts_ps_mask_in, flam_true_in, tell_dict, sensfunc=True,
-                            airmass=None, resln_guess=None, pix_shift_bounds = (-2.0,2.0), resln_frac_bounds=(0.5,1.5),
-                            delta_coeff_bounds=(-20.0, 20.0), minmax_coeff_bounds=(-5.0, 5.0),
-                            polyorder=7, func='legendre', maxiter=3, sticky=True, use_mad=False,
-                            lower=3.0, upper=3.0, seed=None, debug=False, **kwargs_opt):
-    #tol=1e-4, popsize=30, recombination=0.7, disp=True, polish=True,
-    #                        debug=False):
+def fit_joint_telluric(counts_ps_in, counts_ps_ivar_in, counts_ps_mask_in, flam_true_in, tell_dict, sensfunc=True,
+                       airmass=None, resln_guess=None, pix_shift_bounds = (-2.0,2.0), resln_frac_bounds=(0.5,1.5),
+                       delta_coeff_bounds=(-20.0, 20.0), minmax_coeff_bounds=(-5.0, 5.0),
+                       polyorder=7, func='legendre', maxiter=3, sticky=True, use_mad=False,
+                       lower=3.0, upper=3.0, seed=None, debug=False, **kwargs_opt):
     """
     Jointly fit a sensitivity function and telluric correction for an input standart star spectrum.
 
@@ -354,12 +352,6 @@ def sensfunc_telluric_joint(counts_ps_in, counts_ps_ivar_in, counts_ps_mask_in, 
     counts_ps_mask = counts_ps_mask_in[ind_lower:ind_upper+1]
     flam_true = flam_true_in[ind_lower:ind_upper+1]
 
-    #if use_mad:
-    #    invvar = None
-    #else:
-    #    invvar = counts_ps_ivar
-
-
     # Determine the padding and use a subset of the full tell_model_grid to make the convolutions faster
     loglam = np.log10(wave)
     dloglam = np.median(loglam[1:] - loglam[:-1])
@@ -367,7 +359,7 @@ def sensfunc_telluric_joint(counts_ps_in, counts_ps_ivar_in, counts_ps_mask_in, 
         resln_guess = 1.0/(3.0*dloglam*np.log(10.0)) # assume roughly Nyquist sampling
     pix = 1.0/resln_guess/(dloglam*np.log(10.0))/(2.0 * np.sqrt(2.0 * np.log(2))) # number of pixels per resolution element
     tell_pad = int(np.ceil(10.0 * pix))
-    # This presumes that the telluric model grid is evaluated on the exact same grid as the star.
+    # This presumes that the star has been interpolated onto the telluric model grid
     ind_lower_pad = np.fmax(ind_lower - tell_pad, 0)
     ind_upper_pad = np.fmin(ind_upper + tell_pad, wave_grid.size-1)
     tell_pad_tuple = (ind_lower-ind_lower_pad, ind_upper_pad-ind_upper)
@@ -531,12 +523,11 @@ def sensfunc_telluric(spec1dfile, telgridfile, star_type=None, star_mag=None, ra
     wave_all_max = -np.inf
     for iord in srt_order_tell:
         msgs.info("Fitting sensitivity function for order: {:d}/{:d}".format(iord, norders))
-        tell_params, tellfit, sens_coeff, sensfit, ind_lower, ind_upper = sensfunc_telluric_joint(
+        tell_params, tellfit, sens_coeff, sensfit, ind_lower, ind_upper = fit_joint_telluric(
             counts_ps[:, iord], counts_ps_ivar[:, iord], counts_ps_mask[:, iord], flam_true, tell_model_dict,
             airmass=airmass, resln_guess=resln_guess, resln_frac_bounds=resln_frac_bounds, delta_coeff_bounds=delta_coeff_bounds,
             polyorder=polyorder_vec[iord], func=func, maxiter=maxiter, sticky=sticky, use_mad=use_mad, lower=lower, upper=upper,
             seed = seed, debug=debug, **kwargs_opt)
-#            tol=tol, popsize=popsize, recombination=recombination, disp=disp, polish=polish, debug=debug)
         wave_min = wave_grid[ind_lower]
         wave_max = wave_grid[ind_upper]
         telluric_out[ind_lower:ind_upper+1,iord] = tellfit
