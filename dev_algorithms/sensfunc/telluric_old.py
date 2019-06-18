@@ -45,6 +45,35 @@ def tell_qso_fit(flam, thismask, arg_dict, **kwargs_opt):
     return result, flam_model
 
 
+def sensfunc_tellfit(counts_ps, thismask, arg_dict, **kwargs_opt):
+
+    # Function that we are optimizing
+    chi2_func = arg_dict['chi2_func']
+    result = scipy.optimize.differential_evolution(chi2_func, args=(counts_ps, thismask, arg_dict,), **kwargs_opt)
+    wave_star = arg_dict['wave']
+    order = arg_dict['order']
+    coeff_out = result.x[:order+1]
+    tell_out = result.x[order+1:]
+    tellfit_conv = eval_telluric(tell_out, arg_dict['tell_dict'])
+    tell_pad = arg_dict['tell_dict']['tell_pad']
+    sensfit = utils.func_val(coeff_out, wave_star, arg_dict['func'], minx=arg_dict['wave_min'], maxx=arg_dict['wave_max'])
+    counts_model = tellfit_conv[tell_pad[0]:-tell_pad[1]]*arg_dict['flam_true']/(sensfit + (sensfit == 0.0))
+
+    return result, counts_model
+
+
+def tellfit_chi2(theta, flam, thismask, arg_dict):
+
+    flam_ivar = arg_dict['ivar']
+    flam_true = arg_dict['flam_true']
+    tell_dict = arg_dict['tell_dict']
+    tell_pad = tell_dict['tell_pad']
+    tellmodel_conv = eval_telluric(theta, tell_dict)
+    chi_vec = thismask*(tellmodel_conv[tell_pad[0]:-tell_pad[1]]*flam_true - flam)*np.sqrt(flam_ivar)
+    chi2 = np.sum(np.square(chi_vec))
+
+    return chi2
+
 
 
 
