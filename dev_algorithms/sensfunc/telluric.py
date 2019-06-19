@@ -13,6 +13,7 @@ from astropy.io import fits
 from astropy import stats
 from pypeit.core import flux
 from pypeit.core import load
+from astropy import table
 from pypeit.core import save
 from pypeit.core import coadd2d
 from pypeit.core import coadd1d
@@ -234,7 +235,7 @@ def tellfit(flam, thismask, arg_dict, **kwargs_opt):
     return result, flam_model
 
 
-def unpack_orders(spec1dfile, ret_flam=False):
+def unpack_orders(sobjs, ret_flam=False):
 
     # TODO This should be a general reader:
     #  For echelle:  read in all the orders into a (nspec, nporders) array
@@ -243,7 +244,6 @@ def unpack_orders(spec1dfile, ret_flam=False):
 
 
     # Read in the spec1d file
-    sobjs, head = load.load_specobjs(spec1dfile)
     norders = len(sobjs)
     nspec = sobjs[0].optimal['COUNTS'].size
     # Allocate arrays and unpack spectrum
@@ -263,7 +263,7 @@ def unpack_orders(spec1dfile, ret_flam=False):
             flam[:,iord] = sobjs[iord].optimal['COUNTS']
             flam_ivar[:,iord] = sobjs[iord].optimal['COUNTS_IVAR']
 
-    return wave, flam, flam_ivar, flam_mask, head
+    return wave, flam, flam_ivar, flam_mask
 
 
 def sensfunc_guess(wave, counts_ps, inmask, flam_true, tell_dict_now, resln_guess, airmass_guess, polyorder, func,
@@ -484,9 +484,15 @@ def sensfunc_telluric(spec1dfile, telgridfile, star_type=None, star_mag=None, ra
     ngrid = wave_grid.size
 
     # Read in the standard star spectrum and interpolate it onto the regular telluric wave grid.
-    wave, counts, counts_ivar, counts_mask, head = unpack_orders(spec1dfile)
+
+
+    sobjs, head = load.load_specobjs(spec1dfile)
+    wave, counts, counts_ivar, counts_mask = unpack_orders(sobjs)
     exptime = head['EXPTIME']
     airmass = head['AIRMASS']
+
+
+
     # Interpolate the data and standard star spectrum onto the regular telluric wave_grid
     counts_int, counts_ivar_int, counts_mask_int = coadd1d.interp_spec(wave_grid, wave, counts, counts_ivar, counts_mask)
     counts_ps = counts_int/exptime
@@ -512,13 +518,33 @@ def sensfunc_telluric(spec1dfile, telgridfile, star_type=None, star_mag=None, ra
         seed_data = np.fmin(int(np.abs(np.sum(std_dict['flux'].value))), 2 ** 32 - 1)
         seed = np.random.RandomState(seed=seed_data)
 
+    # Allocate the output tables
+    kwarg_key = []
+    kwarg_val = []
+    for key, value in kwargs_opt.items():
+        kwarg_key.append(key.upper())
+        kwarg_val.append([value])
+    star_param_key = ['STAR_TYPE', 'STAR_MAG', 'STAR_RA', 'STAR_DEC', 'FUNCTION']
+    star_param_val = [[star_type], [star_mag], [ra], [dec], [func]]
+    param_key = star_param_key + kwarg_key
+    param_val = star_param_val + kwarg_val
+    param_table = table.Table(param_val, names=tuple(param_key), meta={'name': 'Parameter Values'})
+    param_table['PYPELINE'] = head['PYPELINE']
+    param_table['EXPTIME'] = head['EXPTIME']
+    param_table['AIRMASS'] = head['AIRMASS']
+    param_table['NORDERS'] = norders
+    param_table['SPEC1DFILE'] = spec1dfile
+    param_table['CAL_FILE'] = std_dict['cal_file']
+    param_table['STD_NAME'] = std_dict['name']
+
+out_table = table.Table()
+    out_table['ECH_ORDER'] = sobjs.ech_order
+    out_table['ECH_ORDERINDX'] = sobjs.ech_orderindx
+    out_table['ECH_SNR'] = sobjs.ech_snr
+    out_table['TELLURIC'] = np.zeros((norders, ngrid))
+    out_table['SENSFUNC'] = np.zeros((norders, ngrid))
     # Sort order by the strength of their telluric absorption
     srt_order_tell = sort_telluric(wave, counts_mask, tell_model_dict)
-
-    telluric_out = np.zeros((ngrid, norders))
-    sensfunc_out = np.zeros((ngrid, norders))
-    sens_dict = {}
-    tell_dict = {}
     wave_all_min = np.inf
     wave_all_max = -np.inf
     for iord in srt_order_tell:
