@@ -518,15 +518,16 @@ def sensfunc_telluric(spec1dfile, telgridfile, outfile, star_type=None, star_mag
         seed_data = np.fmin(int(np.abs(np.sum(std_dict['flux'].value))), 2 ** 32 - 1)
         seed = np.random.RandomState(seed=seed_data)
 
+
     # Allocate the output tables
     meta_table = table.Table(meta={'name': 'Parameter Values'})
     for key, value in kwargs_opt.items():
-        meta_table[key.upper()] = value
+        meta_table[key.upper()] = [value]
 
-    meta_table['STAR_TYPE'] = star_type
-    meta_table['STAR_MAG'] = star_mag
-    meta_table['STAR_RA'] = ra
-    meta_table['STAR_DEC'] = dec
+    meta_table['STAR_TYPE'] = star_type if star_type is not None else ''
+    meta_table['STAR_MAG'] = star_mag if star_mag is not None else 0.0
+    meta_table['STAR_RA'] = ra if ra is not None else 0.0
+    meta_table['STAR_DEC'] = dec if dec is not None else 0.0
     meta_table['FUNCTION'] = func
     meta_table['PYPELINE'] = head['PYPELINE']
     meta_table['EXPTIME'] = head['EXPTIME']
@@ -537,20 +538,27 @@ def sensfunc_telluric(spec1dfile, telgridfile, outfile, star_type=None, star_mag
     meta_table['STD_NAME'] = std_dict['name']
 
     out_table = table.Table(meta={'name': 'Sensfunc and Telluric Correction'})
-    out_table['ECH_ORDER'] = sobjs.ech_order
-    out_table['ECH_ORDERINDX'] = sobjs.ech_orderindx
-    out_table['ECH_SNR'] = sobjs.ech_snr
-    out_table['TELLURIC'] = np.zeros((norders, ngrid))
-    out_table['SENSFUNC'] = np.zeros((norders, ngrid))
-    out_table['SENSCOEFF'] = np.zeros((norders, polyorder_vec.max()) + 1)
-    out_table['POLYORDER'] = polyorder_vec
+    out_table['ECH_ORDER'] = (sobjs.ech_order).astype(int)
+    out_table['ECH_ORDERINDX'] = (sobjs.ech_orderindx).astype(int)
+    out_table['ECH_SNR'] = (sobjs.ech_snr).astype(float)
+    out_table['IND_LOWER'] = np.zeros(norders, dtype=int)
+    out_table['IND_UPPER'] = np.zeros(norders, dtype=int)
     out_table['WAVE_MIN'] = np.zeros(norders)
     out_table['WAVE_MAX'] = np.zeros(norders)
-    out_table['IND_LOWER'] = np.zeros(norders,dtype=int)
-    out_table['IND_UPPER'] = np.zeros(norders,dtype=int)
+    out_table['SENS_ORDER'] = polyorder_vec
+    out_table['SENS_COEFF'] = np.zeros((norders, polyorder_vec.max() + 1))
+    out_table['TELLURIC'] = np.zeros((norders, ngrid))
+    out_table['SENSFUNC'] = np.zeros((norders, ngrid))
+    out_table['TELL_PRESS'] = np.zeros(norders)
+    out_table['TELL_TEMP'] = np.zeros(norders)
+    out_table['TELL_H2O'] = np.zeros(norders)
+    out_table['TELL_AIRMASS'] = np.zeros(norders)
+    out_table['TELL_RESLN'] = np.zeros(norders)
+    out_table['TELL_SHIFT'] = np.zeros(norders)
 
 
-    # Sort order by the strength of their telluric absorption
+
+# Sort order by the strength of their telluric absorption
     srt_order_tell = sort_telluric(wave, counts_mask, tell_model_dict)
     wave_all_min = np.inf
     wave_all_max = -np.inf
@@ -565,7 +573,7 @@ def sensfunc_telluric(spec1dfile, telgridfile, outfile, star_type=None, star_mag
         out_table['IND_UPPER'][iord] = ind_upper
         out_table['WAVE_MIN'][iord] = wave_grid[ind_lower]
         out_table['WAVE_MAX'][iord] = wave_grid[ind_upper]
-        out_table['SENSCOEFF'][iord][0:polyorder_vec[iord]+1] = sens_coeff
+        out_table['SENS_COEFF'][iord][0:polyorder_vec[iord]+1] = sens_coeff
         out_table['TELLURIC'][iord][ind_lower:ind_upper+1] = tellfit
         out_table['SENSFUNC'][iord][ind_lower:ind_upper+1] = sensfit
         out_table['TELL_PRESS'][iord] = tell_params[0]
@@ -577,12 +585,12 @@ def sensfunc_telluric(spec1dfile, telgridfile, outfile, star_type=None, star_mag
         wave_all_min = np.fmin(out_table['WAVE_MIN'][iord], wave_all_min)
         wave_all_max = np.fmax(out_table['WAVE_MAX'][iord], wave_all_max)
 
-    param_table['WAVE_MIN'] = wave_all_min
-    param_table['WAVE_MAX'] = wave_all_max
+    meta_table['WAVE_MIN'] = wave_all_min
+    meta_table['WAVE_MAX'] = wave_all_max
     # Write to outfile
     msgs.info('Writing sensitivity function and telluric to file: {:}'.format(outfile))
-    hdu_param = fits.BinTableHDU(meta_table.as_array())
-    hdu_table = fits.BinTableHDU(out_table.as_array())
+    hdu_param = fits.table_to_hdu(meta_table)
+    hdu_table = fits.table_to_hdu(out_table)
     hdulist = fits.HDUList()
     hdulist.append(hdu_param)
     hdulist.append(hdu_table)

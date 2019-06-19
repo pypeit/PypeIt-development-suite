@@ -59,21 +59,23 @@ spec1dfile = os.path.join(os.getenv('HOME'),'Dropbox/PypeIt_Redux/XSHOOTER/J0439
 header = fits.getheader(spec1dfile)
 telgridfile =  os.path.join(dev_path, 'dev_algorithms/sensfunc/TelFit_Paranal_NIR_9800_25000_R25000.fits')
 polyorder=5 # changed from 6
+outfile = 'Feige110_sens_tell.fits'
 #
-sens_dict, tell_dict = sensfunc_telluric(spec1dfile, telgridfile, polyorder=polyorder, ra=header['RA'], dec=header['DEC'],
+sens_dict, tell_dict = sensfunc_telluric(spec1dfile, telgridfile, outfile, polyorder=polyorder, ra=header['RA'], dec=header['DEC'],
                                          star_mag=star_mag, star_type=star_type,
                                          seed=None, tol=1e-4, popsize=40, disp=True, polish=True,
                                          debug=True)
 # Write the sens_dict and tell_dict out to a file
-sensfuncfile = 'Feige110_sensfunc.json'
-save.save_sens_dict(sens_dict,sensfuncfile)
+#sensfuncfile = 'Feige110_sensfunc.json'
+#save.save_sens_dict(sens_dict,sensfuncfile)
 # Test loading
-sens_dict1 = load.load_sens_dict(sensfuncfile)
+#sens_dict1 = load.load_sens_dict(sensfuncfile)
 
-telluricfile = 'Feige110_telluric.json'
-save.save_sens_dict(tell_dict, telluricfile)
+#telluricfile = 'Feige110_telluric.json'
+#save.save_sens_dict(tell_dict, telluricfile)
 # Test loading
-tell_dict1 = load.load_sens_dict(telluricfile)
+#tell_dict1 = load.load_sens_dict(telluricfile)
+sys.exit(-1)
 
 # Now flux calibrate the data. At the moment this is a bit cumbersome becuase the interface to the fluxspec class needs to be improved. Probably
 # the easiest way is to use the script for now. This could be a stack of 1d files, or a 1d file from a 2d co-add
