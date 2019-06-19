@@ -537,13 +537,21 @@ def sensfunc_telluric(spec1dfile, telgridfile, star_type=None, star_mag=None, ra
     param_table['CAL_FILE'] = std_dict['cal_file']
     param_table['STD_NAME'] = std_dict['name']
 
-out_table = table.Table()
+    out_table = table.Table()
     out_table['ECH_ORDER'] = sobjs.ech_order
     out_table['ECH_ORDERINDX'] = sobjs.ech_orderindx
     out_table['ECH_SNR'] = sobjs.ech_snr
     out_table['TELLURIC'] = np.zeros((norders, ngrid))
     out_table['SENSFUNC'] = np.zeros((norders, ngrid))
-    # Sort order by the strength of their telluric absorption
+    out_table['SENSFUNC'] = np.zeros((norders, polyorder_vec.max()))
+    out_table['POLYORDER'] = polyorder_vec
+    out_table['WAVE_MIN'] = np.zeros(norders)
+    out_table['WAVE_MAX'] = np.zeros(norders)
+    out_table['IND_LOWER'] = np.zeros(norders,dtype=int)
+    out_table['IND_UPPER'] = np.zeros(norders,dtype=int)
+
+
+# Sort order by the strength of their telluric absorption
     srt_order_tell = sort_telluric(wave, counts_mask, tell_model_dict)
     wave_all_min = np.inf
     wave_all_max = -np.inf
@@ -554,12 +562,14 @@ out_table = table.Table()
             airmass=airmass, resln_guess=resln_guess, resln_frac_bounds=resln_frac_bounds, delta_coeff_bounds=delta_coeff_bounds,
             polyorder=polyorder_vec[iord], func=func, maxiter=maxiter, sticky=sticky, use_mad=use_mad, lower=lower, upper=upper,
             seed = seed, debug=debug, **kwargs_opt)
-        wave_min = wave_grid[ind_lower]
-        wave_max = wave_grid[ind_upper]
-        telluric_out[ind_lower:ind_upper+1,iord] = tellfit
-        sensfunc_out[ind_lower:ind_upper+1,iord] = sensfit
-        wave_all_min = np.fmin(wave_min, wave_all_min)
-        wave_all_max = np.fmax(wave_max, wave_all_max)
+        out_table['IND_LOWER'][iord] = ind_lower
+        out_table['IND_UPPER'][iord] = ind_upper
+        out_table['WAVE_MIN'][iord] = wave_grid[ind_lower]
+        out_table['WAVE_MAX'][iord] = wave_grid[ind_upper]
+        out_table['TELLURIC'][iord][ind_lower:ind_upper+1] = tellfit
+        out_table['SENSFUNC'][iord][ind_lower:ind_upper+1] = sensfit
+        wave_all_min = np.fmin(out_table['WAVE_MIN'][iord], wave_all_min)
+        wave_all_max = np.fmax(out_table['WAVE_MAX'][iord], wave_all_max)
         sens_dict[str(iord)] = dict(polyorder=polyorder_vec[iord], wave_min=wave_min, wave_max=wave_max,
                                     sens_coeff=sens_coeff,
                                     wave=wave[:,iord], sensfunc=sensfunc_out[:,iord])
