@@ -440,8 +440,7 @@ def fit_joint_telluric(counts_ps_in, counts_ps_ivar_in, counts_ps_mask_in, flam_
 def sensfunc_telluric(spec1dfile, telgridfile, outfile, star_type=None, star_mag=None, ra=None, dec=None,
                       resln_guess=None, resln_frac_bounds=(0.5,1.5), delta_coeff_bounds=(-20.0, 20.0),
                       polyorder=7, func='legendre', maxiter=3, sticky=True, use_mad=False, lower=3.0, upper=3.0,
-                      seed=None, debug = False, **kwargs_opt):
-#                          seed=None, tol=1e-4, popsize=30, recombination=0.7, disp=True, polish=True):
+                      seed=None, tol=1e-4, popsize=40, recombination=0.7, polish=True, disp=True, debug=False):
 
     """
     Loop over orders to jointly fit a sensitivity function and telluric correction for a standard star spectrum for each
@@ -485,7 +484,6 @@ def sensfunc_telluric(spec1dfile, telgridfile, outfile, star_type=None, star_mag
 
     # Read in the standard star spectrum and interpolate it onto the regular telluric wave grid.
 
-
     sobjs, head = load.load_specobjs(spec1dfile)
     wave, counts, counts_ivar, counts_mask = unpack_orders(sobjs)
     exptime = head['EXPTIME']
@@ -518,12 +516,12 @@ def sensfunc_telluric(spec1dfile, telgridfile, outfile, star_type=None, star_mag
         seed_data = np.fmin(int(np.abs(np.sum(std_dict['flux'].value))), 2 ** 32 - 1)
         seed = np.random.RandomState(seed=seed_data)
 
-
     # Allocate the output tables
     meta_table = table.Table(meta={'name': 'Parameter Values'})
-    for key, value in kwargs_opt.items():
-        meta_table[key.upper()] = [value]
-
+    meta_table['WAVE_GRID'] = [wave_grid]
+    meta_table['TOL'] = tol
+    meta_table['POPSIZE'] = popsize
+    meta_table['RECOMBINATION'] = recombination
     meta_table['STAR_TYPE'] = star_type if star_type is not None else ''
     meta_table['STAR_MAG'] = star_mag if star_mag is not None else 0.0
     meta_table['STAR_RA'] = ra if ra is not None else 0.0
@@ -536,6 +534,7 @@ def sensfunc_telluric(spec1dfile, telgridfile, outfile, star_type=None, star_mag
     meta_table['SPEC1DFILE'] = spec1dfile
     meta_table['CAL_FILE'] = std_dict['cal_file']
     meta_table['STD_NAME'] = std_dict['name']
+
 
     out_table = table.Table(meta={'name': 'Sensfunc and Telluric Correction'})
     out_table['ECH_ORDER'] = (sobjs.ech_order).astype(int)
@@ -569,7 +568,7 @@ def sensfunc_telluric(spec1dfile, telgridfile, outfile, star_type=None, star_mag
             counts_ps[:, iord], counts_ps_ivar[:, iord], counts_ps_mask[:, iord], flam_true, tell_model_dict,
             airmass=airmass, resln_guess=resln_guess, resln_frac_bounds=resln_frac_bounds, delta_coeff_bounds=delta_coeff_bounds,
             polyorder=polyorder_vec[iord], func=func, maxiter=maxiter, sticky=sticky, use_mad=use_mad, lower=lower, upper=upper,
-            seed = seed, debug=debug, **kwargs_opt)
+            seed = seed, debug=debug, tol=1e-4, popsize=40, recombination=0.7, polish=polish, disp=disp)
         out_table['CHI2'][iord] = result.fun
         out_table['SUCCESS'][iord] = result.success
         out_table['NITER'][iord] = result.nit

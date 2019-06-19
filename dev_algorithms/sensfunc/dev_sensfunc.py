@@ -61,10 +61,8 @@ telgridfile =  os.path.join(dev_path, 'dev_algorithms/sensfunc/TelFit_Paranal_NI
 polyorder=5 # changed from 6
 outfile = 'Feige110_sens_tell.fits'
 #
-sens_dict, tell_dict = sensfunc_telluric(spec1dfile, telgridfile, outfile, polyorder=polyorder, ra=header['RA'], dec=header['DEC'],
-                                         star_mag=star_mag, star_type=star_type,
-                                         seed=None, tol=1e-4, popsize=40, disp=True, polish=True,
-                                         debug=True)
+sensfunc_telluric(spec1dfile, telgridfile, outfile, polyorder=polyorder, ra=header['RA'], dec=header['DEC'],
+                  star_mag=star_mag, star_type=star_type, debug=False)
 # Write the sens_dict and tell_dict out to a file
 #sensfuncfile = 'Feige110_sensfunc.json'
 #save.save_sens_dict(sens_dict,sensfuncfile)
