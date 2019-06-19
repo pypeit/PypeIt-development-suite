@@ -437,7 +437,7 @@ def fit_joint_telluric(counts_ps_in, counts_ps_ivar_in, counts_ps_mask_in, flam_
 
 
 
-def sensfunc_telluric(spec1dfile, telgridfile, star_type=None, star_mag=None, ra=None, dec=None,
+def sensfunc_telluric(spec1dfile, telgridfile, outfile, star_type=None, star_mag=None, ra=None, dec=None,
                       resln_guess=None, resln_frac_bounds=(0.5,1.5), delta_coeff_bounds=(-20.0, 20.0),
                       polyorder=7, func='legendre', maxiter=3, sticky=True, use_mad=False, lower=3.0, upper=3.0,
                       seed=None, debug = False, **kwargs_opt):
@@ -519,31 +519,30 @@ def sensfunc_telluric(spec1dfile, telgridfile, star_type=None, star_mag=None, ra
         seed = np.random.RandomState(seed=seed_data)
 
     # Allocate the output tables
-    kwarg_key = []
-    kwarg_val = []
+    meta_table = table.Table(meta={'name': 'Parameter Values'})
     for key, value in kwargs_opt.items():
-        kwarg_key.append(key.upper())
-        kwarg_val.append([value])
-    star_param_key = ['STAR_TYPE', 'STAR_MAG', 'STAR_RA', 'STAR_DEC', 'FUNCTION']
-    star_param_val = [[star_type], [star_mag], [ra], [dec], [func]]
-    param_key = star_param_key + kwarg_key
-    param_val = star_param_val + kwarg_val
-    param_table = table.Table(param_val, names=tuple(param_key), meta={'name': 'Parameter Values'})
-    param_table['PYPELINE'] = head['PYPELINE']
-    param_table['EXPTIME'] = head['EXPTIME']
-    param_table['AIRMASS'] = head['AIRMASS']
-    param_table['NORDERS'] = norders
-    param_table['SPEC1DFILE'] = spec1dfile
-    param_table['CAL_FILE'] = std_dict['cal_file']
-    param_table['STD_NAME'] = std_dict['name']
+        meta_table[key.upper()] = value
 
-    out_table = table.Table()
+    meta_table['STAR_TYPE'] = star_type
+    meta_table['STAR_MAG'] = star_mag
+    meta_table['STAR_RA'] = ra
+    meta_table['STAR_DEC'] = dec
+    meta_table['FUNCTION'] = func
+    meta_table['PYPELINE'] = head['PYPELINE']
+    meta_table['EXPTIME'] = head['EXPTIME']
+    meta_table['AIRMASS'] = head['AIRMASS']
+    meta_table['NORDERS'] = norders
+    meta_table['SPEC1DFILE'] = spec1dfile
+    meta_table['CAL_FILE'] = std_dict['cal_file']
+    meta_table['STD_NAME'] = std_dict['name']
+
+    out_table = table.Table(meta={'name': 'Sensfunc and Telluric Correction'})
     out_table['ECH_ORDER'] = sobjs.ech_order
     out_table['ECH_ORDERINDX'] = sobjs.ech_orderindx
     out_table['ECH_SNR'] = sobjs.ech_snr
     out_table['TELLURIC'] = np.zeros((norders, ngrid))
     out_table['SENSFUNC'] = np.zeros((norders, ngrid))
-    out_table['SENSFUNC'] = np.zeros((norders, polyorder_vec.max()))
+    out_table['SENSCOEFF'] = np.zeros((norders, polyorder_vec.max()) + 1)
     out_table['POLYORDER'] = polyorder_vec
     out_table['WAVE_MIN'] = np.zeros(norders)
     out_table['WAVE_MAX'] = np.zeros(norders)
@@ -551,7 +550,7 @@ def sensfunc_telluric(spec1dfile, telgridfile, star_type=None, star_mag=None, ra
     out_table['IND_UPPER'] = np.zeros(norders,dtype=int)
 
 
-# Sort order by the strength of their telluric absorption
+    # Sort order by the strength of their telluric absorption
     srt_order_tell = sort_telluric(wave, counts_mask, tell_model_dict)
     wave_all_min = np.inf
     wave_all_max = -np.inf
@@ -566,25 +565,26 @@ def sensfunc_telluric(spec1dfile, telgridfile, star_type=None, star_mag=None, ra
         out_table['IND_UPPER'][iord] = ind_upper
         out_table['WAVE_MIN'][iord] = wave_grid[ind_lower]
         out_table['WAVE_MAX'][iord] = wave_grid[ind_upper]
+        out_table['SENSCOEFF'][iord][0:polyorder_vec[iord]+1] = sens_coeff
         out_table['TELLURIC'][iord][ind_lower:ind_upper+1] = tellfit
         out_table['SENSFUNC'][iord][ind_lower:ind_upper+1] = sensfit
+        out_table['TELL_PRESS'][iord] = tell_params[0]
+        out_table['TELL_TEMP'][iord] = tell_params[1]
+        out_table['TELL_H2O'][iord] = tell_params[2]
+        out_table['TELL_AIRMASS'][iord] = tell_params[3]
+        out_table['TELL_RESLN'][iord] = tell_params[4]
+        out_table['TELL_SHIFT'][iord] = tell_params[5]
         wave_all_min = np.fmin(out_table['WAVE_MIN'][iord], wave_all_min)
         wave_all_max = np.fmax(out_table['WAVE_MAX'][iord], wave_all_max)
-        sens_dict[str(iord)] = dict(polyorder=polyorder_vec[iord], wave_min=wave_min, wave_max=wave_max,
-                                    sens_coeff=sens_coeff,
-                                    wave=wave[:,iord], sensfunc=sensfunc_out[:,iord])
-        tell_dict[str(iord)] = dict(wave_min=wave_min, wave_max=wave_max,
-                                    pressure=tell_params[0], temp=tell_params[1], h2o=tell_params[2],
-                                    airmass=tell_params[3], resolution=tell_params[4], shift=0.0,
-                                    wave=wave[:,iord],
-                                    telluric=telluric_out[:,iord])
 
+    param_table['WAVE_MIN'] = wave_all_min
+    param_table['WAVE_MAX'] = wave_all_max
+    # Write to outfile
+    msgs.info('Writing sensitivity function and telluric to file: {:}'.format(outfile))
+    hdu_param = fits.BinTableHDU(meta_table.as_array())
+    hdu_table = fits.BinTableHDU(out_table.as_array())
+    hdulist = fits.HDUList()
+    hdulist.append(hdu_param)
+    hdulist.append(hdu_table)
+    hdulist.writeto(outfile, overwrite=True)
 
-    sens_dict['meta'] = dict(exptime=exptime, airmass=airmass, nslits=norders, std_file=spec1dfile,
-                             cal_file=std_dict['cal_file'], std_name=std_dict['name'],
-                             std_ra=std_dict['std_ra'], std_dec=std_dict['std_dec'],
-                             wave_min=wave_all_min, wave_max=wave_all_max)
-    tell_dict['meta'] = dict(airmass=airmass, nslits=norders, wave_min=wave_all_min, wave_max=wave_all_max)
-
-    return sens_dict, tell_dict
-    #for iord in srt_order_tell:
