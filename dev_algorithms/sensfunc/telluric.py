@@ -339,7 +339,7 @@ def fit_joint_telluric(counts_ps_in, counts_ps_ivar_in, counts_ps_mask_in, flam_
         seed = np.random.RandomState(seed=seed_data)
 
     # Slice out the parts of the data that are not masked
-    wave_grid =tell_dict['wave_grid']
+    wave_grid = tell_dict['wave_grid']
     wave_grid_ma = np.ma.array(np.copy(wave_grid))
     wave_grid_ma.mask = np.invert(counts_ps_mask_in)
     ind_lower = np.ma.argmin(wave_grid_ma)
@@ -433,7 +433,7 @@ def fit_joint_telluric(counts_ps_in, counts_ps_ivar_in, counts_ps_mask_in, flam_
         plt.show()
 
 
-    return tell_params, telluric_fit, sens_coeff, sensfit, ind_lower, ind_upper
+    return result, tell_params, telluric_fit, sens_coeff, sensfit, ind_lower, ind_upper
 
 
 
@@ -555,20 +555,24 @@ def sensfunc_telluric(spec1dfile, telgridfile, outfile, star_type=None, star_mag
     out_table['TELL_AIRMASS'] = np.zeros(norders)
     out_table['TELL_RESLN'] = np.zeros(norders)
     out_table['TELL_SHIFT'] = np.zeros(norders)
+    out_table['CHI2'] = np.zeros(norders)
+    out_table['SUCCESS'] = np.zeros(norders,dtype=bool)
+    out_table['NITER'] = np.zeros(norders, dtype=int)
 
-
-
-# Sort order by the strength of their telluric absorption
+    # Sort order by the strength of their telluric absorption
     srt_order_tell = sort_telluric(wave, counts_mask, tell_model_dict)
     wave_all_min = np.inf
     wave_all_max = -np.inf
     for iord in srt_order_tell:
         msgs.info("Fitting sensitivity function for order: {:d}/{:d}".format(iord, norders))
-        tell_params, tellfit, sens_coeff, sensfit, ind_lower, ind_upper = fit_joint_telluric(
+        result, tell_params, tellfit, sens_coeff, sensfit, ind_lower, ind_upper = fit_joint_telluric(
             counts_ps[:, iord], counts_ps_ivar[:, iord], counts_ps_mask[:, iord], flam_true, tell_model_dict,
             airmass=airmass, resln_guess=resln_guess, resln_frac_bounds=resln_frac_bounds, delta_coeff_bounds=delta_coeff_bounds,
             polyorder=polyorder_vec[iord], func=func, maxiter=maxiter, sticky=sticky, use_mad=use_mad, lower=lower, upper=upper,
             seed = seed, debug=debug, **kwargs_opt)
+        out_table['CHI2'][iord] = result.fun
+        out_table['SUCCESS'][iord] = result.success
+        out_table['NITER'][iord] = result.nit
         out_table['IND_LOWER'][iord] = ind_lower
         out_table['IND_UPPER'][iord] = ind_upper
         out_table['WAVE_MIN'][iord] = wave_grid[ind_lower]
