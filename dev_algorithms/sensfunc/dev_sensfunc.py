@@ -78,7 +78,8 @@ outfile = 'Feige110_sens_tell.fits'
 
 
 # Now perform a global QSO PCA fit to all the orders combined with order by order telluric fits to each order.
-spec1dfileflux = '/Users/joe/Dropbox/PypeIt_Redux/XSHOOTER/J0439/NIR/spec1d_stack_J0439.fits'
+#spec1dfileflux = '/Users/joe/Dropbox/PypeIt_Redux/XSHOOTER/J0439/NIR/spec1d_stack_J0439.fits'
+spec1dfileflux = '/Users/joe/Dropbox/PypeIt_Redux/XSHOOTER/J0439/NIR/spec1d_stack_J0439_3exp.fits'
 pcafile = os.path.join(dev_path, 'dev_algorithms/sensfunc/qso_pca_1200_3100.pckl')
 npca = 8
 z_qso = 6.51#7.54#6.51

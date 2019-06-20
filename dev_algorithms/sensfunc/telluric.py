@@ -139,7 +139,6 @@ def sort_telluric(wave, wave_mask, tell_dict):
 def qso_tellfit_eval(theta, arg_dict):
 
     tell_dict = arg_dict['tell_dict']
-    tell_pad = tell_dict['tell_pad']
     npca = arg_dict['npca']
 
     # There are npca-1 coefficients, norm and redshift for npca+1 parameters
@@ -148,8 +147,9 @@ def qso_tellfit_eval(theta, arg_dict):
     theta_tell = theta[-6:]
     tell_model = eval_telluric(theta_tell, arg_dict['tell_dict'])
     pca_model = qso_pca.pca_eval(theta_PCA, arg_dict['pca_dict'])
-    ln_pca_pri = qso_pca.pca_lnprior(theta_PCA, arg_dict['pca_dict'])
-
+    # TODO Is the prior evaluation slowing things down??
+    #ln_pca_pri = qso_pca.pca_lnprior(theta_PCA, arg_dict['pca_dict'])
+    ln_pca_pri = 0.0
     return tell_model, pca_model, ln_pca_pri
 
 def qso_tellfit_chi2(theta, flux, thismask, arg_dict):
@@ -165,7 +165,6 @@ def qso_tellfit_chi2(theta, flux, thismask, arg_dict):
     lnL = -chi2_remap/2.0
     lnptot = lnL + ln_pca_pri
     chi2_tot = -2.0*lnptot
-
     return chi2_tot
 
 
@@ -181,6 +180,7 @@ def qso_tellfit(flux, thismask, arg_dict, **kwargs_opt):
 
     tell_model, pca_model, ln_pca_pri = qso_tellfit_eval(result.x, arg_dict)
     chi_vec = thismask*(flux - tell_model*pca_model)*np.sqrt(flux_ivar)
+    IPython.embed()
     try:
         debug = arg_dict['debug']
     except KeyError:
@@ -621,10 +621,10 @@ def sensfunc_telluric(spec1dfile, telgridfile, outfile, star_type=None, star_mag
 
 def telluric_qso(spec1dfile, telgridfile, pcafile, npca, z_qso, inmask=None, wavegrid_inmask=None,
                  sn_cap = 25.0,
-                 delta_zqso = 0.1, bounds_norm = (0.7,1.3), resln_guess=None,
+                 delta_zqso = 0.1, bounds_norm = (0.1,3.0), resln_guess=None,
                  resln_frac_bounds=(0.5,1.5), pix_shift_bounds = (-2.0,2.0),
                  tell_norm_thresh=0.9, maxiter=3, sticky=True, lower=3.0, upper=3.0,
-                 seed=None, tol=1e-3, popsize=40, recombination=0.7, disp=True, polish=True,
+                 seed=None, tol=1e-3, popsize=25, recombination=0.7, disp=True, polish=True,
                  debug=True):
 
     # Read in the data
@@ -661,8 +661,7 @@ def telluric_qso(spec1dfile, telgridfile, pcafile, npca, z_qso, inmask=None, wav
     # Slice out the parts of the data that are not masked
     wave_fit, flux_fit, flux_ivar_fit1, mask_fit, ind_lower, ind_upper = trim_spectrum(wave_grid, flux, flux_ivar, mask)
     # cap the inverse variance
-    flux_ivar_cap = utils.cap_ivar(flux_fit, flux_ivar_fit1, mask_fit, sn_cap)
-    flux_ivar_fit = np.minimum(flux_ivar_fit1, flux_ivar_cap)
+    flux_ivar_fit = utils.cap_ivar(flux_fit, flux_ivar_fit1, sn_cap, mask=mask_fit)
 
     wave_min = wave_grid[ind_lower]
     wave_max = wave_grid[ind_upper]
