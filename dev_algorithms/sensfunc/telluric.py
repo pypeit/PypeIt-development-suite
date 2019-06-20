@@ -148,6 +148,7 @@ def qso_tellfit_eval(theta, arg_dict):
     tell_model = eval_telluric(theta_tell, arg_dict['tell_dict'])
     pca_model = qso_pca.pca_eval(theta_PCA, arg_dict['pca_dict'])
     # TODO Is the prior evaluation slowing things down??
+    # TODO Disablingthe prior for now as I think it slows things down for no big gain
     #ln_pca_pri = qso_pca.pca_lnprior(theta_PCA, arg_dict['pca_dict'])
     ln_pca_pri = 0.0
     return tell_model, pca_model, ln_pca_pri
@@ -180,7 +181,6 @@ def qso_tellfit(flux, thismask, arg_dict, **kwargs_opt):
 
     tell_model, pca_model, ln_pca_pri = qso_tellfit_eval(result.x, arg_dict)
     chi_vec = thismask*(flux - tell_model*pca_model)*np.sqrt(flux_ivar)
-    IPython.embed()
     try:
         debug = arg_dict['debug']
     except KeyError:
@@ -620,7 +620,7 @@ def sensfunc_telluric(spec1dfile, telgridfile, outfile, star_type=None, star_mag
 
 
 def telluric_qso(spec1dfile, telgridfile, pcafile, npca, z_qso, inmask=None, wavegrid_inmask=None,
-                 sn_cap = 25.0,
+                 sn_cap = 30.0,
                  delta_zqso = 0.1, bounds_norm = (0.1,3.0), resln_guess=None,
                  resln_frac_bounds=(0.5,1.5), pix_shift_bounds = (-2.0,2.0),
                  tell_norm_thresh=0.9, maxiter=3, sticky=True, lower=3.0, upper=3.0,
