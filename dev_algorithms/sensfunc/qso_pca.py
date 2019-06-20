@@ -21,7 +21,7 @@ def init_pca(filename,wave_grid,redshift, npca):
     wave_pca_c, cont_all_c, pca_comp_c, coeffs_c, mean_pca, covar_pca, diff_pca, mix_fit, chi2, dof = pickle.load(open(filename,'rb'))
     num_comp = pca_comp_c.shape[0] # number of PCA components
     # Interpolate PCA components onto wave_grid
-    pca_interp = scipy.interpolate.interp1d(wave_pca_c*(1+redshift),pca_comp_c, bounds_error=False, fill_value=0.0, axis=1)
+    pca_interp = scipy.interpolate.interp1d(wave_pca_c*(1.0 + redshift),pca_comp_c, bounds_error=False, fill_value=0.0, axis=1)
     pca_comp_new = pca_interp(wave_grid)
     # Generate a mixture model for the coefficients prior, what should ngauss be?
     prior = mixture.GaussianMixture(n_components = npca-1).fit(coeffs_c[:, 1:npca])
@@ -31,6 +31,10 @@ def init_pca(filename,wave_grid,redshift, npca):
     return pca_dict
 
 def pca_eval(theta,pca_dict):
+    # theta_pca[0] is redshift
+    # theta_pca[1] is norm
+    # theta_pca[2:npca+1] are the PCA dimensionality
+
     C = pca_dict['components']
     z_fid = pca_dict['z_fid']
     dloglam = pca_dict['dloglam']
