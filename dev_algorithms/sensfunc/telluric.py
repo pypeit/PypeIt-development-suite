@@ -165,6 +165,7 @@ def qso_tellfit_chi2(theta, flux, thismask, arg_dict):
     lnL = -chi2_remap/2.0
     lnptot = lnL + ln_pca_pri
     chi2_tot = -2.0*lnptot
+
     return chi2_tot
 
 
@@ -312,7 +313,6 @@ def sensfunc_guess(wave, counts_ps, inmask, flam_true, tell_dict_now, resln_gues
                    lower=3.0, upper=3.0, debug=False):
 
     # Model parameter guess for starting the optimizations
-    tell_pad = tell_dict_now['tell_pad']
     tell_guess = (np.median(tell_dict_now['pressure_grid']), np.median(tell_dict_now['temp_grid']),
                   np.median(tell_dict_now['h2o_grid']), airmass_guess, resln_guess, 0.0)
     tell_model1 = eval_telluric(tell_guess, tell_dict_now)
@@ -688,8 +688,9 @@ def telluric_qso(spec1dfile, telgridfile, pcafile, npca, z_qso, inmask=None, wav
     # Final bounds for the optimizaiton
     bounds =  bounds_z + bounds_flam + bounds_coeff + bounds_tell
     # Create the arg_dict
-    arg_dict = dict(npca=npca, flux_ivar=flux_ivar_fit, tell_dict=tell_dict, pca_dict=pca_dict, bounds=bounds,
+    arg_dict = dict(npca=npca, flux_ivar=flux_ivar_fit, tell_dict=tell_dict_fit, pca_dict=pca_dict, bounds=bounds,
                     seed=seed, chi2_func = qso_tellfit_chi2)
+    IPython.embed()
 
     result, ymodel, ivartot, outmask = utils.robust_optimize(flux_fit, qso_tellfit, arg_dict,
                                                              inmask=mask_tot,
@@ -705,18 +706,15 @@ def telluric_qso(spec1dfile, telgridfile, pcafile, npca, z_qso, inmask=None, wav
 
     if debug:
         # Plot the data
-        flux_med =scipy.ndimage.filters.median_filter(flux_fit[mask_tot], size=15)
-        plt.plot(wave_fit, flux_med, color='k', drawstyle='steps-mid', label='data')
-        plt.plot(wave_fit, flux_model, color='r', drawstyle='steps-mid', label='model')
-        plt.plot(wave_fit, pca_model, color='cornflowerblue', drawstyle='steps-mid', label='pca')
+        flux_med =scipy.ndimage.filters.median_filter(flux_fit, size=15)
+        plt.plot(wave_fit, flux_med, color='k', drawstyle='steps-mid', label='data', zorder=1, alpha=0.5)
+        plt.plot(wave_fit, flux_model, color='r', drawstyle='steps-mid', label='model',zorder=2, alpha=0.5)
+        plt.plot(wave_fit, pca_model, color='cornflowerblue', drawstyle='steps-mid', label='pca',zorder=3)
         plt.ylim((-0.2, 1.5*pca_model.max()))
         plt.legend()
         plt.show()
 
         # Plot the telluric corrected and rescaled orders
-        for iord in range(norders):
-            colors = color_scheme[np.mod(iord, 2)]
-            this_mask = wave_mask[:,iord]
         flux_corr = flux_fit/(tell_model + (tell_model == 0.0))
         plt.plot(wave_fit, flux_corr, color='k', drawstyle='steps-mid')
         plt.plot(wave_fit, pca_model, color='cornflowerblue', drawstyle='steps-mid', label='pca')
