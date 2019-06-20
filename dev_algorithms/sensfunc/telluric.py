@@ -507,6 +507,7 @@ def sensfunc_telluric(spec1dfile, telgridfile, outfile, star_type=None, star_mag
 
 
     out_table = table.Table(meta={'name': 'Sensfunc and Telluric Correction'})
+    # TODO Check the Pypeline so that this will also work with multislit reductions
     out_table['ECH_ORDER'] = (sobjs.ech_order).astype(int)
     out_table['ECH_ORDERINDX'] = (sobjs.ech_orderindx).astype(int)
     out_table['ECH_SNR'] = (sobjs.ech_snr).astype(float)
@@ -535,7 +536,7 @@ def sensfunc_telluric(spec1dfile, telgridfile, outfile, star_type=None, star_mag
     for iord in srt_order_tell:
         msgs.info("Fitting sensitivity function for order: {:d}/{:d}".format(iord, norders))
 
-        # Slice out the parts of the data that are not masked
+        # Slice out the parts of the data that are not masked, this deals with wavelenghth that are zero
         wave_fit, counts_ps_fit, counts_ps_ivar_fit, counts_ps_mask_fit, ind_lower, ind_upper = \
             trim_spectrum(wave_grid, counts_ps[:,iord], counts_ps_ivar[:,iord], counts_ps_mask[:,iord])
         flam_true_fit = flam_true[ind_lower:ind_upper + 1]
@@ -545,7 +546,7 @@ def sensfunc_telluric(spec1dfile, telgridfile, outfile, star_type=None, star_mag
         # This presumes that the data has been interpolated onto the telluric model grid
         tell_dict_fit = trim_tell_dict(tell_dict, ind_lower, ind_upper, dloglam, tell_pad_pix)
 
-        # Guess the coefficients by doing a fit to the sensitivity function with the average telluric behavior
+        # Guess the coefficients by doing a preliminary fit to the sensitivity function with the average telluric behavior
         guess_coeff = sensfunc_guess(wave_fit, counts_ps_fit, counts_ps_mask_fit, flam_true_fit, tell_dict_fit, resln_guess, airmass,
                                polyorder_vec[iord], func, lower=lower, upper=upper, debug=debug)
         # Polynomial coefficient bounds
@@ -619,7 +620,7 @@ def sensfunc_telluric(spec1dfile, telgridfile, outfile, star_type=None, star_mag
     hdulist.writeto(outfile, overwrite=True)
 
 
-def telluric_qso(spec1dfile, telgridfile, pcafile, npca, z_qso, inmask=None, wavegrid_inmask=None,
+def telluric_qso(spec1dfile, telgridfile, pcafile, npca, z_qso, inmask=None, wave_inmask=None,
                  sn_cap = 30.0,
                  delta_zqso = 0.1, bounds_norm = (0.1,3.0), resln_guess=None,
                  resln_frac_bounds=(0.5,1.5), pix_shift_bounds = (-2.0,2.0),
@@ -657,19 +658,26 @@ def telluric_qso(spec1dfile, telgridfile, pcafile, npca, z_qso, inmask=None, wav
 
     # Interpolate the qso onto the regular telluric wave_grid
     flux, flux_ivar, mask = coadd1d.interp_spec(wave_grid, wave_in, flux_in, flux_ivar_in, mask_in)
+    # If an input mask was provided get into the wave_grid, and apply it
+    if inmask is not None:
+        if wave_inmask is None:
+            msgs.error('If you are specifying a mask you need to pass in the corresponding wavelength grid')
+        # TODO we shoudld consider refactoring the interpolator to take a list of images and masks to remove the
+        # the fake zero images in the call below
+        _, _, inmask_int = coadd1d.interp_spec(wave_grid, wave_inmask, 0*inmask, 0*inmask, inmask)
+        mask_tot = mask & inmask_int
+    else:
+        mask_tot = mask
 
     # Slice out the parts of the data that are not masked
-    wave_fit, flux_fit, flux_ivar_fit1, mask_fit, ind_lower, ind_upper = trim_spectrum(wave_grid, flux, flux_ivar, mask)
-    # cap the inverse variance
+    wave_fit, flux_fit, flux_ivar_fit1, mask_fit, ind_lower, ind_upper = trim_spectrum(wave_grid, flux, flux_ivar, mask_tot)
+
+    # cap the inverse variance with a SN_cap to avoid excessive rejection for high S/N data. This amounts to adding
+    # a tiny bit of error, 1.0/SN_CAP to the sigma of the spectrum.
     flux_ivar_fit = utils.cap_ivar(flux_fit, flux_ivar_fit1, sn_cap, mask=mask_fit)
 
     wave_min = wave_grid[ind_lower]
     wave_max = wave_grid[ind_upper]
-
-    # inmask here includes both a Lya mask (unnecessary for lens), BAL mask, and cuts off at the end of the PCA wave grid
-    # This is a kludge
-    inmask = (wave_fit > (1.0 + z_qso) * 1220.0) & ((wave_fit < 10770) | (wave_fit > 11148)) & (wave_fit < 3099 * (1 + z_qso))
-    mask_tot = mask_fit & inmask
 
     # This presumes that the data has been interpolated onto the telluric model grid
     tell_dict_fit = trim_tell_dict(tell_dict, ind_lower, ind_upper, dloglam, tell_pad_pix)
