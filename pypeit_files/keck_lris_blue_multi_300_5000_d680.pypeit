@@ -4,20 +4,6 @@
 # User-defined execution parameters
 [rdx]
 spectrograph = keck_lris_blue
-[calibrations]
-[[biasframe]]
-useframe=overscan
-number = 0
-[[pixelflatframe]]
-number = 0
-[[arcframe]]
-number = 1
-[[pinholeframe]]
-number = 0
-[[traceframe]]
-number = 0
-[[standardframe]]
-number = 0
 
 # Setup
 setup read
