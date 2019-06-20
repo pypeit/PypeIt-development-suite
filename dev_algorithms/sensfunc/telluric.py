@@ -620,10 +620,11 @@ def sensfunc_telluric(spec1dfile, telgridfile, outfile, star_type=None, star_mag
 
 
 def telluric_qso(spec1dfile, telgridfile, pcafile, npca, z_qso, inmask=None, wavegrid_inmask=None,
+                 sn_cap = 25.0,
                  delta_zqso = 0.1, bounds_norm = (0.7,1.3), resln_guess=None,
                  resln_frac_bounds=(0.5,1.5), pix_shift_bounds = (-2.0,2.0),
                  tell_norm_thresh=0.9, maxiter=3, sticky=True, lower=3.0, upper=3.0,
-                 seed=None, tol=1e-4, popsize=40, recombination=0.7, disp=True, polish=True,
+                 seed=None, tol=1e-3, popsize=40, recombination=0.7, disp=True, polish=True,
                  debug=True):
 
     # Read in the data
@@ -658,7 +659,11 @@ def telluric_qso(spec1dfile, telgridfile, pcafile, npca, z_qso, inmask=None, wav
     flux, flux_ivar, mask = coadd1d.interp_spec(wave_grid, wave_in, flux_in, flux_ivar_in, mask_in)
 
     # Slice out the parts of the data that are not masked
-    wave_fit, flux_fit, flux_ivar_fit, mask_fit, ind_lower, ind_upper = trim_spectrum(wave_grid, flux, flux_ivar, mask)
+    wave_fit, flux_fit, flux_ivar_fit1, mask_fit, ind_lower, ind_upper = trim_spectrum(wave_grid, flux, flux_ivar, mask)
+    # cap the inverse variance
+    flux_ivar_cap = utils.cap_ivar(flux_fit, flux_ivar_fit1, mask_fit, sn_cap)
+    flux_ivar_fit = np.minimum(flux_ivar_fit1, flux_ivar_cap)
+
     wave_min = wave_grid[ind_lower]
     wave_max = wave_grid[ind_upper]
 
@@ -688,10 +693,8 @@ def telluric_qso(spec1dfile, telgridfile, pcafile, npca, z_qso, inmask=None, wav
     # Final bounds for the optimizaiton
     bounds =  bounds_z + bounds_flam + bounds_coeff + bounds_tell
     # Create the arg_dict
-    arg_dict = dict(npca=npca, flux_ivar=flux_ivar_fit, tell_dict=tell_dict_fit, pca_dict=pca_dict, bounds=bounds,
-                    seed=seed, chi2_func = qso_tellfit_chi2)
-    IPython.embed()
-
+    arg_dict = dict(npca=npca, flux_ivar=flux_ivar_fit, tell_dict=tell_dict_fit, pca_dict=pca_dict, debug=debug,
+                    bounds=bounds, seed=seed, chi2_func = qso_tellfit_chi2)
     result, ymodel, ivartot, outmask = utils.robust_optimize(flux_fit, qso_tellfit, arg_dict,
                                                              inmask=mask_tot,
                                                              maxiter=maxiter, lower=lower, upper=upper,
@@ -707,17 +710,19 @@ def telluric_qso(spec1dfile, telgridfile, pcafile, npca, z_qso, inmask=None, wav
     if debug:
         # Plot the data
         flux_med =scipy.ndimage.filters.median_filter(flux_fit, size=15)
-        plt.plot(wave_fit, flux_med, color='k', drawstyle='steps-mid', label='data', zorder=1, alpha=0.5)
+
+        plt.plot(wave_fit, flux_fit, color='k', drawstyle='steps-mid', label='data', zorder=1, alpha=0.5)
         plt.plot(wave_fit, flux_model, color='r', drawstyle='steps-mid', label='model',zorder=2, alpha=0.5)
         plt.plot(wave_fit, pca_model, color='cornflowerblue', drawstyle='steps-mid', label='pca',zorder=3)
         plt.ylim((-0.2, 1.5*pca_model.max()))
         plt.legend()
         plt.show()
-
+        IPython.embed()
         # Plot the telluric corrected and rescaled orders
         flux_corr = flux_fit/(tell_model + (tell_model == 0.0))
         plt.plot(wave_fit, flux_corr, color='k', drawstyle='steps-mid')
         plt.plot(wave_fit, pca_model, color='cornflowerblue', drawstyle='steps-mid', label='pca')
+        plt.plot(wave_fit, pca_model.max()*0.9*tell_model, color='magenta', drawstyle='steps-mid', label='pca', alpha=0.4)
         plt.ylim((0.0, pca_model.max()*1.5))
         plt.legend()
         plt.show()
