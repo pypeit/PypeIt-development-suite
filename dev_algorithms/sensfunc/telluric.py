@@ -402,7 +402,7 @@ def trim_spectrum(wave_grid, flux, ivar, mask):
 def sensfunc_telluric(spec1dfile, telgridfile, outfile, star_type=None, star_mag=None, ra=None, dec=None,
                       resln_guess=None, resln_frac_bounds=(0.5,1.5), pix_shift_bounds = (-2.0,2.0),
                       delta_coeff_bounds=(-20.0, 20.0), minmax_coeff_bounds=(-5.0, 5.0),
-                      polyorder=7, func='legendre', maxiter=3, sticky=True, use_mad=False, lower=3.0, upper=3.0,
+                      polyorder=7, func='legendre', maxiter=3, sticky=True, lower=3.0, upper=3.0,
                       seed=None, tol=1e-4, popsize=40, recombination=0.7, polish=True, disp=True, debug=False):
 
     """
@@ -620,7 +620,8 @@ def sensfunc_telluric(spec1dfile, telgridfile, outfile, star_type=None, star_mag
 
 
 def telluric_qso(spec1dfile, telgridfile, pcafile, npca, z_qso, inmask=None, wavegrid_inmask=None,
-                 delta_zqso = 0.1, bounds_norm = (0.7,1.3), resln_guess=None, resln_frac_range=(0.5,1.5),
+                 delta_zqso = 0.1, bounds_norm = (0.7,1.3), resln_guess=None,
+                 resln_frac_bounds=(0.5,1.5), pix_shift_bounds = (-2.0,2.0),
                  tell_norm_thresh=0.9, maxiter=3, sticky=True, lower=3.0, upper=3.0,
                  seed=None, tol=1e-4, popsize=40, recombination=0.7, disp=True, polish=True,
                  debug=True):
@@ -631,6 +632,7 @@ def telluric_qso(spec1dfile, telgridfile, pcafile, npca, z_qso, inmask=None, wav
     head = hdu[0].header
     data = hdu[1].data
     wave_in, flux_in, flux_ivar_in, mask_in = data['OPT_WAVE'], data['OPT_FLAM'], data['OPT_FLAM_IVAR'], data['OPT_MASK']
+    mask_in = mask_in.astype(bool) ## TODO hack fix this
     airmass = head['AIRMASS']
 
     # This guarantees that the fit will be deterministic and hence reproducible
@@ -686,7 +688,8 @@ def telluric_qso(spec1dfile, telgridfile, pcafile, npca, z_qso, inmask=None, wav
     # Final bounds for the optimizaiton
     bounds =  bounds_z + bounds_flam + bounds_coeff + bounds_tell
     # Create the arg_dict
-    arg_dict = dict(npca=npca, flux_ivar=flux_ivar_fit, tell_dict=tell_dict, pca_dict=pca_dict, chi2_func = qso_tellfit_chi2)
+    arg_dict = dict(npca=npca, flux_ivar=flux_ivar_fit, tell_dict=tell_dict, pca_dict=pca_dict, bounds=bounds,
+                    seed=seed, chi2_func = qso_tellfit_chi2)
 
     result, ymodel, ivartot, outmask = utils.robust_optimize(flux_fit, qso_tellfit, arg_dict,
                                                              inmask=mask_tot,
