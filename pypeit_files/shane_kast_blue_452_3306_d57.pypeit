@@ -5,9 +5,6 @@
 [rdx]
 spectrograph = shane_kast_blue
 [calibrations]
-[[biasframe]]
-useframe = overscan
-number = 0
 
 # Setup
 setup read

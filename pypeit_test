@@ -49,7 +49,7 @@ def main():
     # TODO: Once we're satisfied than an instrument passes, add it to
     # this list!  It must pass for every directory that includes these
     # strings and all the sub-directory setups within!
-    valid_instruments = ['Kast', 'DEIMOS', 'LRIS', 'NIRES', 'GNIRS', 'XSHOOTER', 'MAGE']
+    valid_instruments = ['Kast', 'DEIMOS', 'LRIS', 'NIRES', 'GNIRS', 'XSHOOTER', 'MAGE', 'MOSFIRE']
 
     # Grab a list of all instruments
     dev_path = os.getenv('PYPEIT_DEV')

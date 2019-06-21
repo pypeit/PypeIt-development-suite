@@ -5,7 +5,6 @@
 
 [calibrations]
     [[biasframe]]
-        useframe = overscan
         [[[process]]]
             sigrej = 20.
     [[pixelflatframe]]
