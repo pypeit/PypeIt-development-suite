@@ -333,7 +333,7 @@ def sensfunc_guess(wave, counts_ps, inmask, flam_true, tell_dict_now, resln_gues
 
     return coeff
 
-def qso_norm_guess(pca_dict, tell_dict, airmass, resln_guess, tell_norm_thresh, flux, mask):
+def qso_norm_guess(pca_dict, tell_dict, airmass, resln_guess, tell_norm_thresh, flux, ivar, mask):
 
     # Estimate the normalization for setting the bounds
     tell_guess = (np.median(tell_dict['pressure_grid']), np.median(tell_dict['temp_grid']),
@@ -342,12 +342,16 @@ def qso_norm_guess(pca_dict, tell_dict, airmass, resln_guess, tell_norm_thresh, 
     # Just use the mean PCA model for estimating the normalization
     pca_mean = np.exp(pca_dict['components'][0,:])
     tell_mask = tell_model > tell_norm_thresh
-    data_norm = np.sum(tell_mask*mask*flux) # Data has absorption in it so we don't multilply by tell_model
+    # Create a reference model and bogus noise
+    flux_ref = pca_mean*tell_model
+    ivar_ref = utils.inverse((pca_mean/100.0)**2)
+    flam_norm_inv = coadd1d.robust_median_ratio(flux, ivar, flux_ref, ivar_ref, mask=mask, mask_ref = tell_mask)
+    #data_norm = np.sum(tell_mask*mask_norm*flux_med) # Data has absorption in it so we don't multilply by tell_model
     # Model has no absorption in it, so we use the average telluric absorption in the grid
-    pca_norm = np.sum(tell_mask*mask*tell_model*pca_mean)
-    flam_norm = data_norm/pca_norm
+    #pca_norm = np.sum(tell_mask*mask_norm*tell_model*pca_mean)
+    #flam_norm = data_norm/pca_norm
 
-    return flam_norm
+    return 1.0/flam_norm_inv
 
 ## Not used
 def get_dloglam_data(wave):
@@ -556,7 +560,6 @@ def sensfunc_telluric(spec1dfile, telgridfile, outfile, star_type=None, star_mag
         # Set the bounds for the optimization
         bounds_tell = get_bounds_tell(tell_dict_fit, resln_guess, resln_frac_bounds, pix_shift_bounds)
         bounds = bounds_coeff + bounds_tell
-
         # Create the arg_dict
         arg_dict = dict(wave=wave_fit, counts_ps=counts_ps_fit, ivar=counts_ps_ivar_fit,
                         wave_min=wave_min, wave_max=wave_max, flam_true=flam_true_fit,
@@ -664,7 +667,8 @@ def telluric_qso(spec1dfile, telgridfile, pcafile, npca, z_qso, inmask=None, wav
             msgs.error('If you are specifying a mask you need to pass in the corresponding wavelength grid')
         # TODO we shoudld consider refactoring the interpolator to take a list of images and masks to remove the
         # the fake zero images in the call below
-        _, _, inmask_int = coadd1d.interp_spec(wave_grid, wave_inmask, 0*inmask, 0*inmask, inmask)
+        _, _, inmask_int = coadd1d.interp_spec(wave_grid, wave_inmask,
+                                               np.ones_like(wave_inmask), np.ones_like(wave_inmask), inmask)
         mask_tot = mask & inmask_int
     else:
         mask_tot = mask
@@ -685,8 +689,7 @@ def telluric_qso(spec1dfile, telgridfile, pcafile, npca, z_qso, inmask=None, wav
     # Read in the PCA model information
     pca_dict = qso_pca.init_pca(pcafile, wave_fit, z_qso, npca)
 
-    flam_norm = qso_norm_guess(pca_dict, tell_dict_fit, airmass, resln_guess, tell_norm_thresh, flux_fit, mask_tot)
-
+    flam_norm = qso_norm_guess(pca_dict, tell_dict_fit, airmass, resln_guess, tell_norm_thresh, flux_fit, flux_ivar_fit, mask_fit)
     # Set the bounds for the PCA and truncate to the right dimension
     coeffs = pca_dict['coeffs'][:,1:npca]
     # Compute the min and max arrays of the coefficients which are not the norm, i.e. grab the coeffs that aren't the first one
@@ -703,7 +706,7 @@ def telluric_qso(spec1dfile, telgridfile, pcafile, npca, z_qso, inmask=None, wav
     arg_dict = dict(npca=npca, flux_ivar=flux_ivar_fit, tell_dict=tell_dict_fit, pca_dict=pca_dict, debug=debug,
                     bounds=bounds, seed=seed, chi2_func = qso_tellfit_chi2)
     result, ymodel, ivartot, outmask = utils.robust_optimize(flux_fit, qso_tellfit, arg_dict,
-                                                             inmask=mask_tot,
+                                                             inmask=mask_fit,
                                                              maxiter=maxiter, lower=lower, upper=upper,
                                                              sticky=sticky,
                                                              tol=tol, popsize=popsize, recombination=recombination,
