@@ -260,22 +260,37 @@ def apply_sensfunc(fnames, sensfile, extinct_correct=True, tell_correct=False, d
 #          datapath + 'spec1d_XSHOO.2018-11-08T00:16:56.583-Feige110_XShooter_NIR_2018Nov08T001656.583.fits']
 
 ## Lensed Quasar
-#datapath = os.path.join(os.getenv('HOME'), 'Dropbox/PypeIt_Redux/XSHOOTER/J0439_old/vlt_xshooter_nir/Science/')
-#fnames = [datapath + 'J0439_XSHOOTER_NIR_01.fits', datapath + 'J0439_XSHOOTER_NIR_02.fits',
-#          datapath + 'J0439_XSHOOTER_NIR_03.fits',
-#          datapath + 'J0439_XSHOOTER_NIR_04.fits', datapath + 'J0439_XSHOOTER_NIR_05.fits',
-#          datapath + 'J0439_XSHOOTER_NIR_06.fits',
-#          datapath + 'J0439_XSHOOTER_NIR_07.fits', datapath + 'J0439_XSHOOTER_NIR_08.fits',
-#          datapath + 'J0439_XSHOOTER_NIR_09.fits']
+'''
+datapath = os.path.join(os.getenv('HOME'), 'Dropbox/PypeIt_Redux/XSHOOTER/J0439_old/vlt_xshooter_nir/Science/')
+fnames = [datapath + 'J0439_XSHOOTER_NIR_01.fits', datapath + 'J0439_XSHOOTER_NIR_02.fits',
+          datapath + 'J0439_XSHOOTER_NIR_03.fits', datapath + 'J0439_XSHOOTER_NIR_04.fits',
+          datapath + 'J0439_XSHOOTER_NIR_05.fits', datapath + 'J0439_XSHOOTER_NIR_06.fits',
+          datapath + 'J0439_XSHOOTER_NIR_07.fits', datapath + 'J0439_XSHOOTER_NIR_08.fits',
+          datapath + 'J0439_XSHOOTER_NIR_09.fits', datapath + 'J0439_XSHOOTER_NIR_10.fits',
+          datapath + 'J0439_XSHOOTER_NIR_11.fits', datapath + 'J0439_XSHOOTER_NIR_12.fits',
+          datapath + 'J0439_XSHOOTER_NIR_13.fits', datapath + 'J0439_XSHOOTER_NIR_14.fits',
+          datapath + 'J0439_XSHOOTER_NIR_15.fits', datapath + 'J0439_XSHOOTER_NIR_16.fits',
+          datapath + 'J0439_XSHOOTER_NIR_17.fits', datapath + 'J0439_XSHOOTER_NIR_18.fits',
+          datapath + 'J0439_XSHOOTER_NIR_19.fits', datapath + 'J0439_XSHOOTER_NIR_20.fits',
+          datapath + 'J0439_XSHOOTER_NIR_21.fits', datapath + 'J0439_XSHOOTER_NIR_22.fits',
+          datapath + 'J0439_XSHOOTER_NIR_23.fits', datapath + 'J0439_XSHOOTER_NIR_24.fits',
+          datapath + 'J0439_XSHOOTER_NIR_25.fits', datapath + 'J0439_XSHOOTER_NIR_26.fits',
+          datapath + 'J0439_XSHOOTER_NIR_27.fits', datapath + 'J0439_XSHOOTER_NIR_28.fits',
+          datapath + 'J0439_XSHOOTER_NIR_29.fits', datapath + 'J0439_XSHOOTER_NIR_30.fits',
+          datapath + 'J0439_XSHOOTER_NIR_31.fits', datapath + 'J0439_XSHOOTER_NIR_32.fits',
+          datapath + 'J0439_XSHOOTER_NIR_33.fits', datapath + 'J0439_XSHOOTER_NIR_34.fits',
+          datapath + 'J0439_XSHOOTER_NIR_35.fits', datapath + 'J0439_XSHOOTER_NIR_36.fits',
+          datapath + 'J0439_XSHOOTER_NIR_37.fits', datapath + 'J0439_XSHOOTER_NIR_38.fits']
+'''
 
 ## DES z~6.9 Quasar
-#datapath = os.path.join(os.getenv('HOME'), 'Dropbox/PypeIt_Redux/XSHOOTER/J0020m3653/NIR/Science/')
+#datapath = os.path.join(os.getenv('HOME'), 'Dropbox/PypeIt_Redux/XSHOOTER/J0020-3653/NIR/Science/')
 #fnames = [datapath + 'spec1d_VHSJ0020-3653OffsetstarB_XShooter_NIR_2017Dec17T024443.537.fits',
 #          datapath + 'spec1d_VHSJ0020-3653OffsetstarB_XShooter_NIR_2017Dec17T030550.032.fits',
 #          datapath + 'spec1d_VHSJ0020-3653OffsetstarB_XShooter_NIR_2017Oct26T001535.660.fits',
 #          datapath + 'spec1d_VHSJ0020-3653OffsetstarB_XShooter_NIR_2017Oct26T002641.612.fits']
 
-## DES z~6.5 Quasar
+## DES z~6.5 Quasar J0224
 #datapath = os.path.join(os.getenv('HOME'), 'Dropbox/PypeIt_Redux/XSHOOTER/J0224-4711/pypeit_nir/Science/')
 #fnames = [
 #    datapath + 'spec1d_XSHOO.2017-11-23T06:52:51.782-VDESJ0224-4711blindoffset_XShooter_NIR_2017Nov23T065251.782.fits',
@@ -284,12 +299,23 @@ def apply_sensfunc(fnames, sensfile, extinct_correct=True, tell_correct=False, d
 #    datapath + 'spec1d_XSHOO.2018-01-19T02:18:18.297-VDESJ0224-4711blindoffset_XShooter_NIR_2018Jan19T021818.297.fits']
 
 ##J0226
-datapath = os.path.join(os.getenv('HOME'), 'Dropbox/PypeIt_Redux/XSHOOTER/J0226+0302/pypeit_nir/Science/')
-fnames = [datapath + 'spec1d_XSHOO.2017-12-17T03:50:47.125-PSOJ036.5078blindoffset_XShooter_NIR_2017Dec17T035047.125.fits',
-          datapath + 'spec1d_XSHOO.2017-12-17T04:11:13.716-PSOJ036.5078blindoffset_XShooter_NIR_2017Dec17T041113.716.fits',
-          datapath + 'spec1d_XSHOO.2018-01-14T02:12:34.014-PSOJ036.5078blindoffset_XShooter_NIR_2018Jan14T021234.014.fits',
-          datapath + 'spec1d_XSHOO.2018-01-14T02:33:00.603-PSOJ036.5078blindoffset_XShooter_NIR_2018Jan14T023300.603.fits']
+#datapath = os.path.join(os.getenv('HOME'), 'Dropbox/PypeIt_Redux/XSHOOTER/J0226+0302/pypeit_nir/Science/')
+#fnames = [datapath + 'spec1d_XSHOO.2017-12-17T03:50:47.125-PSOJ036.5078blindoffset_XShooter_NIR_2017Dec17T035047.125.fits',
+#          datapath + 'spec1d_XSHOO.2017-12-17T04:11:13.716-PSOJ036.5078blindoffset_XShooter_NIR_2017Dec17T041113.716.fits',
+#          datapath + 'spec1d_XSHOO.2018-01-14T02:12:34.014-PSOJ036.5078blindoffset_XShooter_NIR_2018Jan14T021234.014.fits',
+#          datapath + 'spec1d_XSHOO.2018-01-14T02:33:00.603-PSOJ036.5078blindoffset_XShooter_NIR_2018Jan14T023300.603.fits']
 
-sensfile = os.path.join(os.getenv('HOME'), 'Dropbox/PypeIt_Redux/XSHOOTER/J0439/NIR/Feige110_sens_tell.fits')
-apply_sensfunc(fnames, sensfile, extinct_correct=True, tell_correct=False, debug=False, show=True)
+## Standard star
+#datapath = os.path.join(os.getenv('HOME'), 'Dropbox/PypeIt_Redux/XSHOOTER/J0020-3653/NIR/Science/')
+#fnames = [datapath + 'spec1d_STD,FLUX_XShooter_NIR_2017Dec17T081653.582.fits',
+#          datapath + 'spec1d_STD,FLUX_XShooter_NIR_2017Dec17T082243.751.fits']
+
+##J1048
+datapath = os.path.join(os.getenv('HOME'), 'Dropbox/OBS_DATA/XSHOOTER/NIR/ut20170202/Science/')
+fnames = [datapath + 'spec1d_XSHOO.2017-02-02T04:19:28.545-VIKJ1048m0109_XShooter_NIR_2017Feb02T041928.545.fits',
+          datapath + 'spec1d_XSHOO.2017-02-02T04:40:14.422-VIKJ1048m0109_XShooter_NIR_2017Feb02T044014.422.fits',
+          datapath + 'spec1d_XSHOO.2017-02-02T05:17:52.162-VIKJ1048m0109_XShooter_NIR_2017Feb02T051752.162.fits']
+
+sensfile = os.path.join(os.getenv('HOME'), 'Dropbox/PypeIt_Redux/XSHOOTER/NIR_Stack/Feige110_sens_tell_20190620.fits')
+apply_sensfunc(fnames, sensfile, extinct_correct=True, tell_correct=False, debug=False, show=False)
 

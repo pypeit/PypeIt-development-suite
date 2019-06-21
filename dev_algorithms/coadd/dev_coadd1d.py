@@ -161,7 +161,7 @@ def feige110_xshooter_fnames():
     return fnames, gdobj
 
 def J0020_xshooter_fnames():
-    datapath = os.path.join(os.getenv('HOME'), 'Dropbox/PypeIt_Redux/XSHOOTER/J0020m3653/NIR/Science/')
+    datapath = os.path.join(os.getenv('HOME'), 'Dropbox/PypeIt_Redux/XSHOOTER/J0020-3653/NIR/Science/')
     fnames = [datapath + 'spec1d_VHSJ0020-3653OffsetstarB_XShooter_NIR_2017Dec17T024443.537_flux.fits',
               datapath + 'spec1d_VHSJ0020-3653OffsetstarB_XShooter_NIR_2017Dec17T030550.032_flux.fits',
               datapath + 'spec1d_VHSJ0020-3653OffsetstarB_XShooter_NIR_2017Oct26T001535.660_flux.fits',
@@ -204,6 +204,22 @@ def J0224_xshooter_fnamesb():
               datapath + 'spec1d_XSHOO.2018-01-19T02:18:18.297-VDESJ0224-4711blindoffset_XShooter_NIR_2018Jan19T021818.297_flux.fits']
 
     gdobj = ['OBJ0001','OBJ0001']
+    return fnames, gdobj
+
+def LTT_xshooter_frames():
+    datapath = os.path.join(os.getenv('HOME'), 'Dropbox/PypeIt_Redux/XSHOOTER/J0020-3653/NIR/Science/')
+    fnames = [datapath + 'spec1d_STD,FLUX_XShooter_NIR_2017Dec17T081653.582_flux.fits',
+              datapath + 'spec1d_STD,FLUX_XShooter_NIR_2017Dec17T082243.751_flux.fits']
+    gdobj = ['OBJ0001','OBJ0001']
+
+    return fnames, gdobj
+
+def J1048_xshooter_fnames():
+    datapath = os.path.join(os.getenv('HOME'), 'Dropbox/OBS_DATA/XSHOOTER/NIR/ut20170202/Science/')
+    fnames = [datapath + 'spec1d_XSHOO.2017-02-02T04:19:28.545-VIKJ1048m0109_XShooter_NIR_2017Feb02T041928.545_flux.fits',
+              datapath + 'spec1d_XSHOO.2017-02-02T04:40:14.422-VIKJ1048m0109_XShooter_NIR_2017Feb02T044014.422_flux.fits',
+              datapath + 'spec1d_XSHOO.2017-02-02T05:17:52.162-VIKJ1048m0109_XShooter_NIR_2017Feb02T051752.162_flux.fits']
+    gdobj = ['OBJ0001', 'OBJ0001', 'OBJ0001']
     return fnames, gdobj
 
 def read_xshooter_nir_stack(order=None):
@@ -271,15 +287,24 @@ def read_deimos_stack():
 
 # Test XSHOOTER
 #sensfile = os.path.join(os.getenv('HOME'), 'Dropbox/PypeIt_Redux/XSHOOTER/J0439/NIR/Feige110_sens_tell.fits')
-sensfile = os.path.join(os.getenv('HOME'), 'Dropbox/PypeIt_Redux/XSHOOTER/J0439/NIR/Feige110_sens_tell_20190620.fits')
-fnames, objids = J0226_xshooter_fnames()
-outfile = 'J0226.fits'
+sensfile = os.path.join(os.getenv('HOME'), 'Dropbox/PypeIt_Redux/XSHOOTER/NIR_Stack/Feige110_sens_tell_20190620.fits')
+
+#fnames, objids = J0226_xshooter_fnames()
+#outfile = 'J0226.fits'
 #fnames, objids = xshooter_fnames_newflux3()
+#outfile = 'J0439_3exp'
 #fnames, objids = xshooter_fnames_newflux()
 #fnames, objids = xshooter_fnames_newflux1a()
 #fnames, objids = J0020_xshooter_fnames()
+#outfile = 'J0020'
 #fnames, objids = feige110_xshooter_fnames()
-#fnames, objids = J0224_xshooter_fnamesb()
+#fnames, objids = J0224_xshooter_fnames()
+#outfile = 'J0224'
+#fnames, objids = LTT_xshooter_frames()
+#outfile = 'LTT3218'
+fnames, objids = J1048_xshooter_fnames()
+outfile = 'J1048'
+
 wave_stack, flux_stack, ivar_stack, mask_stack = coadd1d.ech_combspec(fnames, objids, show=True, sensfile=sensfile,
                                                                       outfile=outfile)
 
