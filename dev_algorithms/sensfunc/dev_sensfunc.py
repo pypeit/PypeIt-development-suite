@@ -65,32 +65,24 @@ outfile = 'Feige110_sens_tell.fits'
 #                  star_mag=star_mag, star_type=star_type, debug=False)
 
 
-# Now flux calibrate the data. At the moment this is a bit cumbersome becuase the interface to the fluxspec class needs to be improved. Probably
-# the easiest way is to use the script for now. This could be a stack of 1d files, or a 1d file from a 2d co-add
-
-## Now we co-add the fluxed data if it is not already co-added and get a high S/N order by order spectrum
-
-#spec1dfluxfile = '/Users/joe/Dropbox/PypeIt_Redux/XSHOOTER/Pypeit_files/PISCO_nir_REDUCED/Science_coadd_feb19/spec1d_flux_PSOJ205p09.fits'
-
-
-# Now run the piece of code to rescale the individual orders to match each other in the overlap regions. Now we have
-# high S/N fluxed, and matched spectra for each order.
-
-
-# Now perform a global QSO PCA fit to all the orders combined with order by order telluric fits to each order.
-#spec1dfileflux = '/Users/joe/Dropbox/PypeIt_Redux/XSHOOTER/J0439/NIR/spec1d_stack_J0439.fits'
-spec1dfileflux = '/Users/joe/Dropbox/PypeIt_Redux/XSHOOTER/J0439/NIR/spec1d_stack_J0439_3exp.fits'
+spec1dfileflux = '/Users/joe/Dropbox/PypeIt_Redux/XSHOOTER/NIR_Stack/spec1d_stack_J0224.fits'
 pcafile = os.path.join(dev_path, 'dev_algorithms/sensfunc/qso_pca_1200_3100.pckl')
 npca = 8
-z_qso = 6.51#7.54#6.51
+z_qso = 6.514 #7.54#6.51
+# Create the input mask
+hdu = fits.open(spec1dfileflux)
+head = hdu[0].header
+data = hdu[1].data
+wave, flux, flux_ivar, mask = data['OPT_WAVE'], data['OPT_FLAM'], data['OPT_FLAM_IVAR'], data['OPT_MASK']
+inmask = (wave > (1.0 + z_qso)*1220.0) & (wave < 3099*(1.0 + z_qso))
 
 #vlt_xshooter_nir = util.load_spectrograph('vlt_xshooter_nir')
 #wavegrid = vlt_xshooter_nir.wavegrid(midpoint=True)
 # inmask here includes both a Lya mask (unnecessary for lens), BAL mask, and cuts off at the end of the PCA wave grid
 #inmask = (wavegrid > (1.0 + z_qso)*1220.0) & ((wavegrid < 10770) | (wavegrid > 11148)) & (wavegrid < 3099*(1+z_qso))
 ## TODO add an inmask and inmask on its own wavelength grid
-telluric_qso(spec1dfileflux, telgridfile, pcafile, npca, z_qso, debug=True)
-
+telluric_qso(spec1dfileflux, telgridfile, pcafile, npca, z_qso, inmask = inmask, wave_inmask=wave, debug=True)
+sys.exit(-1)
 # Now that we have the PCA model perform an order by order fit to the telluric absorption as we did for the standard. This allows
 # resolution and a small wavelength shift to be free parameters
 
