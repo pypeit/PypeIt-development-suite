@@ -170,6 +170,16 @@ def J0020_xshooter_fnames():
     gdobj = ['OBJ0001','OBJ0001','OBJ0001','OBJ0001']
     return fnames, gdobj
 
+def J0226_xshooter_fnames():
+    datapath = os.path.join(os.getenv('HOME'), 'Dropbox/PypeIt_Redux/XSHOOTER/J0226+0302/pypeit_nir/Science/')
+    fnames = [datapath + 'spec1d_XSHOO.2017-12-17T03:50:47.125-PSOJ036.5078blindoffset_XShooter_NIR_2017Dec17T035047.125_flux.fits',
+              datapath + 'spec1d_XSHOO.2017-12-17T04:11:13.716-PSOJ036.5078blindoffset_XShooter_NIR_2017Dec17T041113.716_flux.fits',
+              datapath + 'spec1d_XSHOO.2018-01-14T02:12:34.014-PSOJ036.5078blindoffset_XShooter_NIR_2018Jan14T021234.014_flux.fits',
+              datapath + 'spec1d_XSHOO.2018-01-14T02:33:00.603-PSOJ036.5078blindoffset_XShooter_NIR_2018Jan14T023300.603_flux.fits']
+
+    gdobj = ['OBJ0001','OBJ0001','OBJ0001','OBJ0001']
+    return fnames, gdobj
+
 
 def J0224_xshooter_fnames():
     datapath = os.path.join(os.getenv('HOME'), 'Dropbox/PypeIt_Redux/XSHOOTER/J0224-4711/pypeit_nir/Science/')
@@ -262,14 +272,16 @@ def read_deimos_stack():
 # Test XSHOOTER
 #sensfile = os.path.join(os.getenv('HOME'), 'Dropbox/PypeIt_Redux/XSHOOTER/J0439/NIR/Feige110_sens_tell.fits')
 sensfile = os.path.join(os.getenv('HOME'), 'Dropbox/PypeIt_Redux/XSHOOTER/J0439/NIR/Feige110_sens_tell_20190620.fits')
-fnames, objids = xshooter_fnames_newflux3()
+fnames, objids = J0226_xshooter_fnames()
+outfile = 'J0226.fits'
+#fnames, objids = xshooter_fnames_newflux3()
 #fnames, objids = xshooter_fnames_newflux()
 #fnames, objids = xshooter_fnames_newflux1a()
 #fnames, objids = J0020_xshooter_fnames()
 #fnames, objids = feige110_xshooter_fnames()
 #fnames, objids = J0224_xshooter_fnamesb()
-wave_stack, flux_stack, ivar_stack, mask_stack = coadd1d.ech_combspec(fnames, objids, show=False, sensfile=sensfile,
-                                                                      outfile='J0439_3exp_newsens.fits')
+wave_stack, flux_stack, ivar_stack, mask_stack = coadd1d.ech_combspec(fnames, objids, show=True, sensfile=sensfile,
+                                                                      outfile=outfile)
 
 # Coadding
 #wave_stack, flux_stack, ivar_stack, mask_stack, outmask, weights, scales, rms_sn = coadd1d.combspec(

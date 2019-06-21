@@ -260,13 +260,13 @@ def apply_sensfunc(fnames, sensfile, extinct_correct=True, tell_correct=False, d
 #          datapath + 'spec1d_XSHOO.2018-11-08T00:16:56.583-Feige110_XShooter_NIR_2018Nov08T001656.583.fits']
 
 ## Lensed Quasar
-datapath = os.path.join(os.getenv('HOME'), 'Dropbox/PypeIt_Redux/XSHOOTER/J0439_old/vlt_xshooter_nir/Science/')
-fnames = [datapath + 'J0439_XSHOOTER_NIR_01.fits', datapath + 'J0439_XSHOOTER_NIR_02.fits',
-          datapath + 'J0439_XSHOOTER_NIR_03.fits',
-          datapath + 'J0439_XSHOOTER_NIR_04.fits', datapath + 'J0439_XSHOOTER_NIR_05.fits',
-          datapath + 'J0439_XSHOOTER_NIR_06.fits',
-          datapath + 'J0439_XSHOOTER_NIR_07.fits', datapath + 'J0439_XSHOOTER_NIR_08.fits',
-          datapath + 'J0439_XSHOOTER_NIR_09.fits']
+#datapath = os.path.join(os.getenv('HOME'), 'Dropbox/PypeIt_Redux/XSHOOTER/J0439_old/vlt_xshooter_nir/Science/')
+#fnames = [datapath + 'J0439_XSHOOTER_NIR_01.fits', datapath + 'J0439_XSHOOTER_NIR_02.fits',
+#          datapath + 'J0439_XSHOOTER_NIR_03.fits',
+#          datapath + 'J0439_XSHOOTER_NIR_04.fits', datapath + 'J0439_XSHOOTER_NIR_05.fits',
+#          datapath + 'J0439_XSHOOTER_NIR_06.fits',
+#          datapath + 'J0439_XSHOOTER_NIR_07.fits', datapath + 'J0439_XSHOOTER_NIR_08.fits',
+#          datapath + 'J0439_XSHOOTER_NIR_09.fits']
 
 ## DES z~6.9 Quasar
 #datapath = os.path.join(os.getenv('HOME'), 'Dropbox/PypeIt_Redux/XSHOOTER/J0020m3653/NIR/Science/')
@@ -282,6 +282,13 @@ fnames = [datapath + 'J0439_XSHOOTER_NIR_01.fits', datapath + 'J0439_XSHOOTER_NI
 #    datapath + 'spec1d_XSHOO.2017-11-23T07:13:18.374-VDESJ0224-4711blindoffset_XShooter_NIR_2017Nov23T071318.374.fits',
 #    datapath + 'spec1d_XSHOO.2018-01-19T01:57:51.708-VDESJ0224-4711blindoffset_XShooter_NIR_2018Jan19T015751.708.fits',
 #    datapath + 'spec1d_XSHOO.2018-01-19T02:18:18.297-VDESJ0224-4711blindoffset_XShooter_NIR_2018Jan19T021818.297.fits']
+
+##J0226
+datapath = os.path.join(os.getenv('HOME'), 'Dropbox/PypeIt_Redux/XSHOOTER/J0226+0302/pypeit_nir/Science/')
+fnames = [datapath + 'spec1d_XSHOO.2017-12-17T03:50:47.125-PSOJ036.5078blindoffset_XShooter_NIR_2017Dec17T035047.125.fits',
+          datapath + 'spec1d_XSHOO.2017-12-17T04:11:13.716-PSOJ036.5078blindoffset_XShooter_NIR_2017Dec17T041113.716.fits',
+          datapath + 'spec1d_XSHOO.2018-01-14T02:12:34.014-PSOJ036.5078blindoffset_XShooter_NIR_2018Jan14T021234.014.fits',
+          datapath + 'spec1d_XSHOO.2018-01-14T02:33:00.603-PSOJ036.5078blindoffset_XShooter_NIR_2018Jan14T023300.603.fits']
 
 sensfile = os.path.join(os.getenv('HOME'), 'Dropbox/PypeIt_Redux/XSHOOTER/J0439/NIR/Feige110_sens_tell.fits')
 apply_sensfunc(fnames, sensfile, extinct_correct=True, tell_correct=False, debug=False, show=True)
