@@ -22,7 +22,7 @@ import pickle
 PYPEIT_FLUX_SCALE = 1e-17
 from astropy.io import fits
 import copy
-from telluric import sensfunc_telluric
+from telluric import sensfunc_telluric, telluric_qso
 import IPython
 
 
@@ -61,26 +61,16 @@ telgridfile =  os.path.join(dev_path, 'dev_algorithms/sensfunc/TelFit_Paranal_NI
 polyorder=5 # changed from 6
 outfile = 'Feige110_sens_tell.fits'
 #
-sensfunc_telluric(spec1dfile, telgridfile, outfile, polyorder=polyorder, ra=header['RA'], dec=header['DEC'],
-                  star_mag=star_mag, star_type=star_type, debug=False)
-# Write the sens_dict and tell_dict out to a file
-#sensfuncfile = 'Feige110_sensfunc.json'
-#save.save_sens_dict(sens_dict,sensfuncfile)
-# Test loading
-#sens_dict1 = load.load_sens_dict(sensfuncfile)
+#sensfunc_telluric(spec1dfile, telgridfile, outfile, polyorder=polyorder, ra=header['RA'], dec=header['DEC'],
+#                  star_mag=star_mag, star_type=star_type, debug=False)
 
-#telluricfile = 'Feige110_telluric.json'
-#save.save_sens_dict(tell_dict, telluricfile)
-# Test loading
-#tell_dict1 = load.load_sens_dict(telluricfile)
-sys.exit(-1)
 
 # Now flux calibrate the data. At the moment this is a bit cumbersome becuase the interface to the fluxspec class needs to be improved. Probably
 # the easiest way is to use the script for now. This could be a stack of 1d files, or a 1d file from a 2d co-add
 
 ## Now we co-add the fluxed data if it is not already co-added and get a high S/N order by order spectrum
 
-spec1dfluxfile = '/Users/joe/Dropbox/PypeIt_Redux/XSHOOTER/Pypeit_files/PISCO_nir_REDUCED/Science_coadd_feb19/spec1d_flux_PSOJ205p09.fits'
+#spec1dfluxfile = '/Users/joe/Dropbox/PypeIt_Redux/XSHOOTER/Pypeit_files/PISCO_nir_REDUCED/Science_coadd_feb19/spec1d_flux_PSOJ205p09.fits'
 
 
 # Now run the piece of code to rescale the individual orders to match each other in the overlap regions. Now we have
@@ -88,15 +78,18 @@ spec1dfluxfile = '/Users/joe/Dropbox/PypeIt_Redux/XSHOOTER/Pypeit_files/PISCO_ni
 
 
 # Now perform a global QSO PCA fit to all the orders combined with order by order telluric fits to each order.
-spec1dfile = os.path.join(os.getenv('HOME'),'Dropbox/PypeIt_Redux/XSHOOTER/J0439/vlt_xshooter_nir/Science_coadd/spec1d_J0439_flux_feige110.fits')
+#spec1dfileflux = '/Users/joe/Dropbox/PypeIt_Redux/XSHOOTER/J0439/NIR/spec1d_stack_J0439.fits'
+spec1dfileflux = '/Users/joe/Dropbox/PypeIt_Redux/XSHOOTER/J0439/NIR/spec1d_stack_J0439_3exp.fits'
 pcafile = os.path.join(dev_path, 'dev_algorithms/sensfunc/qso_pca_1200_3100.pckl')
 npca = 8
 z_qso = 6.51#7.54#6.51
-vlt_xshooter_nir = util.load_spectrograph('vlt_xshooter_nir')
-wavegrid = vlt_xshooter_nir.wavegrid(midpoint=True)
+
+#vlt_xshooter_nir = util.load_spectrograph('vlt_xshooter_nir')
+#wavegrid = vlt_xshooter_nir.wavegrid(midpoint=True)
 # inmask here includes both a Lya mask (unnecessary for lens), BAL mask, and cuts off at the end of the PCA wave grid
-inmask = (wavegrid > (1.0 + z_qso)*1220.0) & ((wavegrid < 10770) | (wavegrid > 11148)) & (wavegrid < 3099*(1+z_qso))
-qso_pca_dict = ech_telluric_qso(spec1dfile, telgridfile, pcafile, npca, z_qso, inmask=inmask, wavegrid_inmask=wavegrid, debug=True)
+#inmask = (wavegrid > (1.0 + z_qso)*1220.0) & ((wavegrid < 10770) | (wavegrid > 11148)) & (wavegrid < 3099*(1+z_qso))
+## TODO add an inmask and inmask on its own wavelength grid
+telluric_qso(spec1dfileflux, telgridfile, pcafile, npca, z_qso, debug=True)
 
 # Now that we have the PCA model perform an order by order fit to the telluric absorption as we did for the standard. This allows
 # resolution and a small wavelength shift to be free parameters

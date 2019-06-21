@@ -4,8 +4,6 @@
     sortroot = lris_blue_long_600_4000_d560
 
 [calibrations]
-    [[biasframe]]
-        useframe = overscan
     [[pixelflatframe]]
         number = 0
     [[traceframe]]
