@@ -135,7 +135,7 @@ def sort_telluric(wave, wave_mask, tell_dict):
 
     return srt_order_tell
 
-
+# QSO TELLFIT
 def qso_tellfit_eval(theta, arg_dict):
 
     tell_dict = arg_dict['tell_dict']
@@ -148,6 +148,7 @@ def qso_tellfit_eval(theta, arg_dict):
     tell_model = eval_telluric(theta_tell, arg_dict['tell_dict'])
     pca_model = qso_pca.pca_eval(theta_PCA, arg_dict['pca_dict'])
     # TODO Is the prior evaluation slowing things down??
+    # TODO Disablingthe prior for now as I think it slows things down for no big gain
     #ln_pca_pri = qso_pca.pca_lnprior(theta_PCA, arg_dict['pca_dict'])
     ln_pca_pri = 0.0
     return tell_model, pca_model, ln_pca_pri
@@ -180,7 +181,6 @@ def qso_tellfit(flux, thismask, arg_dict, **kwargs_opt):
 
     tell_model, pca_model, ln_pca_pri = qso_tellfit_eval(result.x, arg_dict)
     chi_vec = thismask*(flux - tell_model*pca_model)*np.sqrt(flux_ivar)
-    IPython.embed()
     try:
         debug = arg_dict['debug']
     except KeyError:
@@ -333,7 +333,7 @@ def sensfunc_guess(wave, counts_ps, inmask, flam_true, tell_dict_now, resln_gues
 
     return coeff
 
-def qso_norm_guess(pca_dict, tell_dict, airmass, resln_guess, tell_norm_thresh, flux, mask):
+def qso_norm_guess(pca_dict, tell_dict, airmass, resln_guess, tell_norm_thresh, flux, ivar, mask):
 
     # Estimate the normalization for setting the bounds
     tell_guess = (np.median(tell_dict['pressure_grid']), np.median(tell_dict['temp_grid']),
@@ -342,12 +342,16 @@ def qso_norm_guess(pca_dict, tell_dict, airmass, resln_guess, tell_norm_thresh, 
     # Just use the mean PCA model for estimating the normalization
     pca_mean = np.exp(pca_dict['components'][0,:])
     tell_mask = tell_model > tell_norm_thresh
-    data_norm = np.sum(tell_mask*mask*flux) # Data has absorption in it so we don't multilply by tell_model
+    # Create a reference model and bogus noise
+    flux_ref = pca_mean*tell_model
+    ivar_ref = utils.inverse((pca_mean/100.0)**2)
+    flam_norm_inv = coadd1d.robust_median_ratio(flux, ivar, flux_ref, ivar_ref, mask=mask, mask_ref = tell_mask)
+    #data_norm = np.sum(tell_mask*mask_norm*flux_med) # Data has absorption in it so we don't multilply by tell_model
     # Model has no absorption in it, so we use the average telluric absorption in the grid
-    pca_norm = np.sum(tell_mask*mask*tell_model*pca_mean)
-    flam_norm = data_norm/pca_norm
+    #pca_norm = np.sum(tell_mask*mask_norm*tell_model*pca_mean)
+    #flam_norm = data_norm/pca_norm
 
-    return flam_norm
+    return 1.0/flam_norm_inv
 
 ## Not used
 def get_dloglam_data(wave):
@@ -507,6 +511,7 @@ def sensfunc_telluric(spec1dfile, telgridfile, outfile, star_type=None, star_mag
 
 
     out_table = table.Table(meta={'name': 'Sensfunc and Telluric Correction'})
+    # TODO Check the Pypeline so that this will also work with multislit reductions
     out_table['ECH_ORDER'] = (sobjs.ech_order).astype(int)
     out_table['ECH_ORDERINDX'] = (sobjs.ech_orderindx).astype(int)
     out_table['ECH_SNR'] = (sobjs.ech_snr).astype(float)
@@ -535,7 +540,7 @@ def sensfunc_telluric(spec1dfile, telgridfile, outfile, star_type=None, star_mag
     for iord in srt_order_tell:
         msgs.info("Fitting sensitivity function for order: {:d}/{:d}".format(iord, norders))
 
-        # Slice out the parts of the data that are not masked
+        # Slice out the parts of the data that are not masked, this deals with wavelenghth that are zero
         wave_fit, counts_ps_fit, counts_ps_ivar_fit, counts_ps_mask_fit, ind_lower, ind_upper = \
             trim_spectrum(wave_grid, counts_ps[:,iord], counts_ps_ivar[:,iord], counts_ps_mask[:,iord])
         flam_true_fit = flam_true[ind_lower:ind_upper + 1]
@@ -545,7 +550,7 @@ def sensfunc_telluric(spec1dfile, telgridfile, outfile, star_type=None, star_mag
         # This presumes that the data has been interpolated onto the telluric model grid
         tell_dict_fit = trim_tell_dict(tell_dict, ind_lower, ind_upper, dloglam, tell_pad_pix)
 
-        # Guess the coefficients by doing a fit to the sensitivity function with the average telluric behavior
+        # Guess the coefficients by doing a preliminary fit to the sensitivity function with the average telluric behavior
         guess_coeff = sensfunc_guess(wave_fit, counts_ps_fit, counts_ps_mask_fit, flam_true_fit, tell_dict_fit, resln_guess, airmass,
                                polyorder_vec[iord], func, lower=lower, upper=upper, debug=debug)
         # Polynomial coefficient bounds
@@ -555,7 +560,6 @@ def sensfunc_telluric(spec1dfile, telgridfile, outfile, star_type=None, star_mag
         # Set the bounds for the optimization
         bounds_tell = get_bounds_tell(tell_dict_fit, resln_guess, resln_frac_bounds, pix_shift_bounds)
         bounds = bounds_coeff + bounds_tell
-
         # Create the arg_dict
         arg_dict = dict(wave=wave_fit, counts_ps=counts_ps_fit, ivar=counts_ps_ivar_fit,
                         wave_min=wave_min, wave_max=wave_max, flam_true=flam_true_fit,
@@ -619,8 +623,8 @@ def sensfunc_telluric(spec1dfile, telgridfile, outfile, star_type=None, star_mag
     hdulist.writeto(outfile, overwrite=True)
 
 
-def telluric_qso(spec1dfile, telgridfile, pcafile, npca, z_qso, inmask=None, wavegrid_inmask=None,
-                 sn_cap = 25.0,
+def telluric_qso(spec1dfile, telgridfile, pcafile, npca, z_qso, inmask=None, wave_inmask=None,
+                 sn_cap = 30.0,
                  delta_zqso = 0.1, bounds_norm = (0.1,3.0), resln_guess=None,
                  resln_frac_bounds=(0.5,1.5), pix_shift_bounds = (-2.0,2.0),
                  tell_norm_thresh=0.9, maxiter=3, sticky=True, lower=3.0, upper=3.0,
@@ -657,19 +661,27 @@ def telluric_qso(spec1dfile, telgridfile, pcafile, npca, z_qso, inmask=None, wav
 
     # Interpolate the qso onto the regular telluric wave_grid
     flux, flux_ivar, mask = coadd1d.interp_spec(wave_grid, wave_in, flux_in, flux_ivar_in, mask_in)
+    # If an input mask was provided get into the wave_grid, and apply it
+    if inmask is not None:
+        if wave_inmask is None:
+            msgs.error('If you are specifying a mask you need to pass in the corresponding wavelength grid')
+        # TODO we shoudld consider refactoring the interpolator to take a list of images and masks to remove the
+        # the fake zero images in the call below
+        _, _, inmask_int = coadd1d.interp_spec(wave_grid, wave_inmask,
+                                               np.ones_like(wave_inmask), np.ones_like(wave_inmask), inmask)
+        mask_tot = mask & inmask_int
+    else:
+        mask_tot = mask
 
     # Slice out the parts of the data that are not masked
-    wave_fit, flux_fit, flux_ivar_fit1, mask_fit, ind_lower, ind_upper = trim_spectrum(wave_grid, flux, flux_ivar, mask)
-    # cap the inverse variance
+    wave_fit, flux_fit, flux_ivar_fit1, mask_fit, ind_lower, ind_upper = trim_spectrum(wave_grid, flux, flux_ivar, mask_tot)
+
+    # cap the inverse variance with a SN_cap to avoid excessive rejection for high S/N data. This amounts to adding
+    # a tiny bit of error, 1.0/SN_CAP to the sigma of the spectrum.
     flux_ivar_fit = utils.cap_ivar(flux_fit, flux_ivar_fit1, sn_cap, mask=mask_fit)
 
     wave_min = wave_grid[ind_lower]
     wave_max = wave_grid[ind_upper]
-
-    # inmask here includes both a Lya mask (unnecessary for lens), BAL mask, and cuts off at the end of the PCA wave grid
-    # This is a kludge
-    inmask = (wave_fit > (1.0 + z_qso) * 1220.0) & ((wave_fit < 10770) | (wave_fit > 11148)) & (wave_fit < 3099 * (1 + z_qso))
-    mask_tot = mask_fit & inmask
 
     # This presumes that the data has been interpolated onto the telluric model grid
     tell_dict_fit = trim_tell_dict(tell_dict, ind_lower, ind_upper, dloglam, tell_pad_pix)
@@ -677,8 +689,7 @@ def telluric_qso(spec1dfile, telgridfile, pcafile, npca, z_qso, inmask=None, wav
     # Read in the PCA model information
     pca_dict = qso_pca.init_pca(pcafile, wave_fit, z_qso, npca)
 
-    flam_norm = qso_norm_guess(pca_dict, tell_dict_fit, airmass, resln_guess, tell_norm_thresh, flux_fit, mask_tot)
-
+    flam_norm = qso_norm_guess(pca_dict, tell_dict_fit, airmass, resln_guess, tell_norm_thresh, flux_fit, flux_ivar_fit, mask_fit)
     # Set the bounds for the PCA and truncate to the right dimension
     coeffs = pca_dict['coeffs'][:,1:npca]
     # Compute the min and max arrays of the coefficients which are not the norm, i.e. grab the coeffs that aren't the first one
@@ -695,7 +706,7 @@ def telluric_qso(spec1dfile, telgridfile, pcafile, npca, z_qso, inmask=None, wav
     arg_dict = dict(npca=npca, flux_ivar=flux_ivar_fit, tell_dict=tell_dict_fit, pca_dict=pca_dict, debug=debug,
                     bounds=bounds, seed=seed, chi2_func = qso_tellfit_chi2)
     result, ymodel, ivartot, outmask = utils.robust_optimize(flux_fit, qso_tellfit, arg_dict,
-                                                             inmask=mask_tot,
+                                                             inmask=mask_fit,
                                                              maxiter=maxiter, lower=lower, upper=upper,
                                                              sticky=sticky,
                                                              tol=tol, popsize=popsize, recombination=recombination,
@@ -725,6 +736,18 @@ def telluric_qso(spec1dfile, telgridfile, pcafile, npca, z_qso, inmask=None, wav
         plt.ylim((0.0, pca_model.max()*1.5))
         plt.legend()
         plt.show()
+
+    # Add an analogous I/O to tables as with sensfunc_telluric
+
+    # TODO Do we need software that can determine telluric absorption from a telluric star?
+    #  There are two options here:
+    #  1) run the sensfunc_telluric code as if it were a high-resolution staandard.
+    #  2) Flux the telluric star with the sensfunc form a high-resolution standard, as if it were regular data, then
+    #     run the sensfunc telluric code with a lower-order polynomial adjustment to tweak the model star spectrum
+    #
+    #
+    # Option 2) seems like the better approach, but we need to make sure the code is compatible with this. I think it
+    # would be exactly the same.
 
     #qso_pca_dict = dict(wave=wave, wave_mask=wave_mask, flam=flam, flam_mask=flam_mask, flam_ivar=flam_ivar,
     #                airmass=airmass,  ind=ind_tell,
