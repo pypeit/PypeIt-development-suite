@@ -116,6 +116,85 @@ def xshooter_fnames():
 
     return fnames, gdobj
 
+def xshooter_fnames_newflux():
+    datapath = os.path.join(os.getenv('HOME'),'Dropbox/PypeIt_Redux/XSHOOTER/J0439_old/vlt_xshooter_nir/Science/')
+    fnames = [datapath+'J0439_XSHOOTER_NIR_01_flux.fits',datapath+'J0439_XSHOOTER_NIR_02_flux.fits',datapath+'J0439_XSHOOTER_NIR_03_flux.fits',
+              datapath+'J0439_XSHOOTER_NIR_04_flux.fits',datapath+'J0439_XSHOOTER_NIR_05_flux.fits',datapath+'J0439_XSHOOTER_NIR_06_flux.fits',
+              datapath+'J0439_XSHOOTER_NIR_07_flux.fits',datapath+'J0439_XSHOOTER_NIR_08_flux.fits',datapath+'J0439_XSHOOTER_NIR_09_flux.fits']
+
+    gdobj = ['OBJ0001','OBJ0001','OBJ0001',
+             'OBJ0001','OBJ0001','OBJ0001',
+             'OBJ0001','OBJ0001','OBJ0001']
+
+    return fnames, gdobj
+
+def xshooter_fnames_newflux3():
+    datapath = os.path.join(os.getenv('HOME'),'Dropbox/PypeIt_Redux/XSHOOTER/J0439_old/vlt_xshooter_nir/Science/')
+    fnames = [datapath+'J0439_XSHOOTER_NIR_01_flux.fits',datapath+'J0439_XSHOOTER_NIR_02_flux.fits',
+              datapath + 'J0439_XSHOOTER_NIR_03_flux.fits']
+    gdobj = ['OBJ0001','OBJ0001','OBJ0001']
+
+    return fnames, gdobj
+
+def xshooter_fnames_newflux1():
+    datapath = os.path.join(os.getenv('HOME'),'Dropbox/PypeIt_Redux/XSHOOTER/J0439_old/vlt_xshooter_nir/Science/')
+    fnames = [datapath+'J0439_XSHOOTER_NIR_01_flux.fits']
+    gdobj = ['OBJ0001']
+
+    return fnames, gdobj
+
+
+def xshooter_fnames_newflux1a():
+    datapath = os.path.join(os.getenv('HOME'),'Dropbox/PypeIt_Redux/XSHOOTER/J0439_old/vlt_xshooter_nir/Science/')
+    fnames = [datapath+'J0439_XSHOOTER_NIR_06_flux.fits']
+    gdobj = ['OBJ0001']
+
+    return fnames, gdobj
+
+def feige110_xshooter_fnames():
+    datapath = os.path.join(os.getenv('HOME'),'Dropbox/PypeIt_Redux/XSHOOTER/J0439/NIR/Science/')
+    fnames = [datapath+'spec1d_XSHOO.2018-11-08T00:11:57.074-Feige110_XShooter_NIR_2018Nov08T001157.074._flux.fits',
+              datapath+'spec1d_XSHOO.2018-11-08T00:16:56.583-Feige110_XShooter_NIR_2018Nov08T001656.583._flux.fits']
+
+    gdobj = ['OBJ0001','OBJ0001']
+
+    return fnames, gdobj
+
+def J0020_xshooter_fnames():
+    datapath = os.path.join(os.getenv('HOME'), 'Dropbox/PypeIt_Redux/XSHOOTER/J0020m3653/NIR/Science/')
+    fnames = [datapath + 'spec1d_VHSJ0020-3653OffsetstarB_XShooter_NIR_2017Dec17T024443.537_flux.fits',
+              datapath + 'spec1d_VHSJ0020-3653OffsetstarB_XShooter_NIR_2017Dec17T030550.032_flux.fits',
+              datapath + 'spec1d_VHSJ0020-3653OffsetstarB_XShooter_NIR_2017Oct26T001535.660_flux.fits',
+              datapath + 'spec1d_VHSJ0020-3653OffsetstarB_XShooter_NIR_2017Oct26T002641.612_flux.fits']
+
+    gdobj = ['OBJ0001','OBJ0001','OBJ0001','OBJ0001']
+    return fnames, gdobj
+
+
+def J0224_xshooter_fnames():
+    datapath = os.path.join(os.getenv('HOME'), 'Dropbox/PypeIt_Redux/XSHOOTER/J0224-4711/pypeit_nir/Science/')
+    fnames = [datapath + 'spec1d_XSHOO.2017-11-23T06:52:51.782-VDESJ0224-4711blindoffset_XShooter_NIR_2017Nov23T065251.782_flux.fits',
+              datapath + 'spec1d_XSHOO.2017-11-23T07:13:18.374-VDESJ0224-4711blindoffset_XShooter_NIR_2017Nov23T071318.374_flux.fits',
+              datapath + 'spec1d_XSHOO.2018-01-19T01:57:51.708-VDESJ0224-4711blindoffset_XShooter_NIR_2018Jan19T015751.708_flux.fits',
+              datapath + 'spec1d_XSHOO.2018-01-19T02:18:18.297-VDESJ0224-4711blindoffset_XShooter_NIR_2018Jan19T021818.297_flux.fits']
+
+    gdobj = ['OBJ0001','OBJ0001','OBJ0001','OBJ0001']
+    return fnames, gdobj
+
+def J0224_xshooter_fnamesa():
+    datapath = os.path.join(os.getenv('HOME'), 'Dropbox/PypeIt_Redux/XSHOOTER/J0224-4711/pypeit_nir/Science/')
+    fnames = [datapath + 'spec1d_XSHOO.2017-11-23T06:52:51.782-VDESJ0224-4711blindoffset_XShooter_NIR_2017Nov23T065251.782_flux.fits',
+              datapath + 'spec1d_XSHOO.2017-11-23T07:13:18.374-VDESJ0224-4711blindoffset_XShooter_NIR_2017Nov23T071318.374_flux.fits']
+    gdobj = ['OBJ0001','OBJ0001']
+    return fnames, gdobj
+
+def J0224_xshooter_fnamesb():
+    datapath = os.path.join(os.getenv('HOME'), 'Dropbox/PypeIt_Redux/XSHOOTER/J0224-4711/pypeit_nir/Science/')
+    fnames = [datapath + 'spec1d_XSHOO.2018-01-19T01:57:51.708-VDESJ0224-4711blindoffset_XShooter_NIR_2018Jan19T015751.708_flux.fits',
+              datapath + 'spec1d_XSHOO.2018-01-19T02:18:18.297-VDESJ0224-4711blindoffset_XShooter_NIR_2018Jan19T021818.297_flux.fits']
+
+    gdobj = ['OBJ0001','OBJ0001']
+    return fnames, gdobj
 
 def read_xshooter_nir_stack(order=None):
 
@@ -172,7 +251,8 @@ def read_deimos_stack():
 
 # Testing DEIMOS
 #fnames, objids = deimos_fnames()
-#wave_stack, flux_stack, ivar_stack, mask_stack = coadd1d.multi_combspec(fnames, objids, show=True, debug=True)
+#wave_stack, flux_stack, ivar_stack, mask_stack = coadd1d.multi_combspec(fnames, objids, show=True, debug=True,
+#                                                                        outfile='P261_coadd.fits')
 
 # Testing NIRES
 #fnames, objids = nires_fnames()
@@ -180,8 +260,16 @@ def read_deimos_stack():
 
 
 # Test XSHOOTER
-fnames, objids = xshooter_fnames()
-wave_stack, flux_stack, ivar_stack, mask_stack = coadd1d.ech_combspec(fnames, objids, show=False)
+#sensfile = os.path.join(os.getenv('HOME'), 'Dropbox/PypeIt_Redux/XSHOOTER/J0439/NIR/Feige110_sens_tell.fits')
+sensfile = os.path.join(os.getenv('HOME'), 'Dropbox/PypeIt_Redux/XSHOOTER/J0439/NIR/Feige110_sens_tell_20190620.fits')
+fnames, objids = xshooter_fnames_newflux3()
+#fnames, objids = xshooter_fnames_newflux()
+#fnames, objids = xshooter_fnames_newflux1a()
+#fnames, objids = J0020_xshooter_fnames()
+#fnames, objids = feige110_xshooter_fnames()
+#fnames, objids = J0224_xshooter_fnamesb()
+wave_stack, flux_stack, ivar_stack, mask_stack = coadd1d.ech_combspec(fnames, objids, show=False, sensfile=sensfile,
+                                                                      outfile='J0439_3exp_newsens.fits')
 
 # Coadding
 #wave_stack, flux_stack, ivar_stack, mask_stack, outmask, weights, scales, rms_sn = coadd1d.combspec(
