@@ -57,16 +57,16 @@ star_type = None
 spec1dfile = os.path.join(os.getenv('HOME'),'Dropbox/PypeIt_Redux/XSHOOTER/J0439/NIR/Science/spec1d_XSHOO.2018-11-08T00:16:56.583-Feige110_XShooter_NIR_2018Nov08T001656.583.fits')
 #spec1dfile = os.path.join(os.getenv('HOME'),'Dropbox/PypeIt_Redux/XSHOOTER/J0439/vlt_xshooter_nir/Science/spec1d_Feige110.fits')
 header = fits.getheader(spec1dfile)
-telgridfile =  os.path.join(dev_path, 'dev_algorithms/sensfunc/TelFit_Paranal_NIR_9800_25000_R25000.fits')
+telgridfile = os.path.join(os.getenv('HOME'),'Dropbox/PypeIt_Redux/XSHOOTER/TelFit_Paranal_NIR_9800_25000_R25000.fits')
+#telgridfile =  os.path.join(dev_path, 'dev_algorithms/sensfunc/TelFit_Paranal_NIR_9800_25000_R25000.fits')
 polyorder=5 # changed from 6
 outfile = 'Feige110_sens_tell.fits'
 #
 #sensfunc_telluric(spec1dfile, telgridfile, outfile, polyorder=polyorder, ra=header['RA'], dec=header['DEC'],
 #                  star_mag=star_mag, star_type=star_type, debug=False)
 
-
-spec1dfileflux = '/Users/joe/Dropbox/PypeIt_Redux/XSHOOTER/NIR_Stack/spec1d_stack_J0224.fits'
-pcafile = os.path.join(dev_path, 'dev_algorithms/sensfunc/qso_pca_1200_3100.pckl')
+spec1dfileflux = os.path.join(os.getenv('HOME'),'Dropbox/PypeIt_Redux/XSHOOTER/NIR_Stack/spec1d_stack_J0224.fits')
+pcafile = os.path.join(os.getenv('HOME'),'Dropbox/PypeIt_Redux//qso_pca_1200_3100.pckl')
 npca = 8
 z_qso = 6.514 #7.54#6.51
 # Create the input mask

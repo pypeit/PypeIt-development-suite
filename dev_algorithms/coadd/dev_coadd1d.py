@@ -287,7 +287,7 @@ def read_deimos_stack():
 
 # Test XSHOOTER
 #sensfile = os.path.join(os.getenv('HOME'), 'Dropbox/PypeIt_Redux/XSHOOTER/J0439/NIR/Feige110_sens_tell.fits')
-sensfile = os.path.join(os.getenv('HOME'), 'Dropbox/PypeIt_Redux/XSHOOTER/NIR_Stack/Feige110_sens_tell_20190620.fits')
+sensfile = os.path.join(os.getenv('HOME'), 'Dropbox/PypeIt_Redux/XSHOOTER/NIR_Stack/Feige110_sens_tell_wang.fits')
 
 #fnames, objids = J0226_xshooter_fnames()
 #outfile = 'J0226.fits'
@@ -300,10 +300,10 @@ sensfile = os.path.join(os.getenv('HOME'), 'Dropbox/PypeIt_Redux/XSHOOTER/NIR_St
 #fnames, objids = feige110_xshooter_fnames()
 #fnames, objids = J0224_xshooter_fnames()
 #outfile = 'J0224'
-#fnames, objids = LTT_xshooter_frames()
-#outfile = 'LTT3218'
-fnames, objids = J1048_xshooter_fnames()
-outfile = 'J1048'
+fnames, objids = LTT_xshooter_frames()
+outfile = 'LTT3218'
+#fnames, objids = J1048_xshooter_fnames()
+#outfile = 'J1048'
 
 wave_stack, flux_stack, ivar_stack, mask_stack = coadd1d.ech_combspec(fnames, objids, show=True, sensfile=sensfile,
                                                                       outfile=outfile)
