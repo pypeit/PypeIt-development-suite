@@ -734,6 +734,18 @@ def telluric_qso(spec1dfile, telgridfile, pcafile, npca, z_qso, inmask=None, wav
         plt.legend()
         plt.show()
 
+    # Add an analogous I/O to tables as with sensfunc_telluric
+
+    # TODO Do we need software that can determine telluric absorption from a telluric star?
+    #  There are two options here:
+    #  1) run the sensfunc_telluric code as if it were a high-resolution staandard.
+    #  2) Flux the telluric star with the sensfunc form a high-resolution standard, as if it were regular data, then
+    #     run the sensfunc telluric code with a lower-order polynomial adjustment to tweak the model star spectrum
+    #
+    #
+    # Option 2) seems like the better approach, but we need to make sure the code is compatible with this. I think it
+    # would be exactly the same.
+
     #qso_pca_dict = dict(wave=wave, wave_mask=wave_mask, flam=flam, flam_mask=flam_mask, flam_ivar=flam_ivar,
     #                airmass=airmass,  ind=ind_tell,
     #                tell_params=tell_params, tell_model=tell_model, tell_model_orders=tell_model_orders,
