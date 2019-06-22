@@ -222,6 +222,83 @@ def J1048_xshooter_fnames():
     gdobj = ['OBJ0001', 'OBJ0001', 'OBJ0001']
     return fnames, gdobj
 
+def pisco_xshooter_fnames():
+    datapath = os.path.join(os.getenv('HOME'), 'Dropbox/PypeIt_Redux/XSHOOTER/Pypeit_files/PISCO_NIR/Science/')
+    fnames = [datapath + 'spec1d_XSHOO.2017-06-28T23:51:39.115-PSOJ205p09_1_XShooter_NIR_2017Jun28T235139.115_flux.fits',
+        datapath + 'spec1d_XSHOO.2017-06-29T00:12:24.992-PSOJ205p09_1_XShooter_NIR_2017Jun29T001224.992_flux.fits',
+        datapath + 'spec1d_XSHOO.2018-02-15T08:07:00.164-PSOJ205p09_2_XShooter_NIR_2018Feb15T080700.164_flux.fits',
+        datapath + 'spec1d_XSHOO.2018-02-15T08:27:44.713-PSOJ205p09_2_XShooter_NIR_2018Feb15T082744.713_flux.fits',
+        datapath + 'spec1d_XSHOO.2018-03-10T05:08:40.055-PSOJ205p09_3_XShooter_NIR_2018Mar10T050840.055_flux.fits',
+        datapath + 'spec1d_XSHOO.2018-03-10T05:29:25.933-PSOJ205p09_3_XShooter_NIR_2018Mar10T052925.933_flux.fits',
+        datapath + 'spec1d_XSHOO.2018-03-10T05:58:33.093-PSOJ205p09_4_XShooter_NIR_2018Mar10T055833.093_flux.fits',
+        datapath + 'spec1d_XSHOO.2018-03-10T06:19:22.960-PSOJ205p09_4_XShooter_NIR_2018Mar10T061922.960_flux.fits',
+        datapath + 'spec1d_XSHOO.2018-03-11T08:41:01.429-PSOJ205p09_5_XShooter_NIR_2018Mar11T084101.429_flux.fits',
+        datapath + 'spec1d_XSHOO.2018-03-11T09:01:47.309-PSOJ205p09_5_XShooter_NIR_2018Mar11T090147.309_flux.fits',
+        datapath + 'spec1d_XSHOO.2018-03-18T06:26:29.402-PSOJ205p09_6_XShooter_NIR_2018Mar18T062629.402_flux.fits',
+        datapath + 'spec1d_XSHOO.2018-03-18T06:47:15.945-PSOJ205p09_6_XShooter_NIR_2018Mar18T064715.945_flux.fits',
+        datapath + 'spec1d_XSHOO.2018-03-18T08:32:32.302-PSOJ205p09_7_XShooter_NIR_2018Mar18T083232.302_flux.fits',
+        datapath + 'spec1d_XSHOO.2018-03-18T08:53:18.845-PSOJ205p09_7_XShooter_NIR_2018Mar18T085318.845_flux.fits',
+        datapath + 'spec1d_XSHOO.2018-03-20T05:22:01.367-PSOJ205p09_8_XShooter_NIR_2018Mar20T052201.367_flux.fits',
+        datapath + 'spec1d_XSHOO.2018-03-20T05:42:48.575-PSOJ205p09_8_XShooter_NIR_2018Mar20T054248.575_flux.fits',
+        datapath + 'spec1d_XSHOO.2018-03-21T06:06:09.751-PSOJ205p09_9_XShooter_NIR_2018Mar21T060609.751_flux.fits',
+        datapath + 'spec1d_XSHOO.2018-03-21T06:26:55.631-PSOJ205p09_9_XShooter_NIR_2018Mar21T062655.631_flux.fits',
+        datapath + 'spec1d_XSHOO.2018-03-21T07:13:08.797-PSOJ205p09_10_XShooter_NIR_2018Mar21T071308.797_flux.fits',
+        datapath + 'spec1d_XSHOO.2018-03-21T07:33:56.008-PSOJ205p09_10_XShooter_NIR_2018Mar21T073356.008_flux.fits',
+        datapath + 'spec1d_XSHOO.2018-03-22T05:00:30.229-PSOJ205p09_11_XShooter_NIR_2018Mar22T050030.229_flux.fits',
+        datapath + 'spec1d_XSHOO.2018-03-22T05:21:17.439-PSOJ205p09_11_XShooter_NIR_2018Mar22T052117.439_flux.fits',
+        datapath + 'spec1d_XSHOO.2018-03-22T06:01:30.465-PSOJ205p09_12_XShooter_NIR_2018Mar22T060130.465_flux.fits',
+        datapath + 'spec1d_XSHOO.2018-03-22T06:22:17.675-PSOJ205p09_12_XShooter_NIR_2018Mar22T062217.675_flux.fits',
+        datapath + 'spec1d_XSHOO.2018-03-23T04:45:05.305-PSOJ205p09_13_XShooter_NIR_2018Mar23T044505.305_flux.fits',
+        datapath + 'spec1d_XSHOO.2018-03-23T05:05:50.520-PSOJ205p09_13_XShooter_NIR_2018Mar23T050550.520_flux.fits',
+        datapath + 'spec1d_XSHOO.2018-03-23T05:43:50.910-PSOJ205p09_14_XShooter_NIR_2018Mar23T054350.910_flux.fits',
+        datapath + 'spec1d_XSHOO.2018-03-23T06:04:37.452-PSOJ205p09_14_XShooter_NIR_2018Mar23T060437.452_flux.fits',
+        datapath + 'spec1d_XSHOO.2018-03-23T06:37:00.347-PSOJ205p09_15_XShooter_NIR_2018Mar23T063700.347_flux.fits',
+        datapath + 'spec1d_XSHOO.2018-03-23T06:57:45.561-PSOJ205p09_16_XShooter_NIR_2018Mar23T065745.561_flux.fits',
+        datapath + 'spec1d_XSHOO.2018-03-23T07:36:36.220-PSOJ205p09_16_XShooter_NIR_2018Mar23T073636.220_flux.fits',
+        datapath + 'spec1d_XSHOO.2018-03-23T07:57:23.428-PSOJ205p09_16_XShooter_NIR_2018Mar23T075723.428_flux.fits',
+        datapath + 'spec1d_XSHOO.2018-03-24T05:20:10.198-PSOJ205p09_17_XShooter_NIR_2018Mar24T052010.198_flux.fits',
+        datapath + 'spec1d_XSHOO.2018-03-24T05:40:56.740-PSOJ205p09_17_XShooter_NIR_2018Mar24T054056.740_flux.fits',
+        datapath + 'spec1d_XSHOO.2018-03-24T06:17:18.332-PSOJ205p09_18_XShooter_NIR_2018Mar24T061718.332_flux.fits',
+        datapath + 'spec1d_XSHOO.2018-03-24T06:38:05.542-PSOJ205p09_18_XShooter_NIR_2018Mar24T063805.542_flux.fits',
+        datapath + 'spec1d_XSHOO.2018-03-24T07:13:35.465-PSOJ205p09_19_XShooter_NIR_2018Mar24T071335.465_flux.fits',
+        datapath + 'spec1d_XSHOO.2018-03-24T07:34:22.671-PSOJ205p09_19_XShooter_NIR_2018Mar24T073422.671_flux.fits',
+        datapath + 'spec1d_XSHOO.2018-03-25T05:18:51.790-PSOJ205p09_20_XShooter_NIR_2018Mar25T051851.790_flux.fits',
+        datapath + 'spec1d_XSHOO.2018-03-25T05:39:38.333-PSOJ205p09_20_XShooter_NIR_2018Mar25T053938.333_flux.fits',
+        datapath + 'spec1d_XSHOO.2018-03-26T06:36:32.911-PSOJ205p09_21_XShooter_NIR_2018Mar26T063632.911_flux.fits',
+        datapath + 'spec1d_XSHOO.2018-03-26T06:57:20.118-PSOJ205p09_21_XShooter_NIR_2018Mar26T065720.118_flux.fits',
+        datapath + 'spec1d_XSHOO.2018-03-27T06:57:29.269-PSOJ205p09_22_XShooter_NIR_2018Mar27T065729.269_flux.fits',
+        datapath + 'spec1d_XSHOO.2018-03-27T07:18:15.146-PSOJ205p09_22_XShooter_NIR_2018Mar27T071815.146_flux.fits',
+        datapath + 'spec1d_XSHOO.2018-04-08T04:59:57.666-PSOJ205p09_23_XShooter_NIR_2018Apr08T045957.666_flux.fits',
+        datapath + 'spec1d_XSHOO.2018-04-08T05:20:44.206-PSOJ205p09_23_XShooter_NIR_2018Apr08T052044.206_flux.fits',
+        datapath + 'spec1d_XSHOO.2018-04-08T05:57:54.622-PSOJ205p09_24_XShooter_NIR_2018Apr08T055754.622_flux.fits',
+        datapath + 'spec1d_XSHOO.2018-04-08T06:18:42.492-PSOJ205p09_24_XShooter_NIR_2018Apr08T061842.492_flux.fits',
+        datapath + 'spec1d_XSHOO.2018-04-09T04:59:20.273-PSOJ205p09_25_XShooter_NIR_2018Apr09T045920.273_flux.fits',
+        datapath + 'spec1d_XSHOO.2018-04-09T05:20:06.817-PSOJ205p09_25_XShooter_NIR_2018Apr09T052006.817_flux.fits',
+        datapath + 'spec1d_XSHOO.2018-04-09T05:58:52.879-PSOJ205p09_26_XShooter_NIR_2018Apr09T055852.879_flux.fits',
+        datapath + 'spec1d_XSHOO.2018-04-09T06:19:39.420-PSOJ205p09_26_XShooter_NIR_2018Apr09T061939.420_flux.fits',
+        datapath + 'spec1d_XSHOO.2018-04-10T05:07:58.959-PSOJ205p09_27_XShooter_NIR_2018Apr10T050758.959_flux.fits',
+        datapath + 'spec1d_XSHOO.2018-04-10T05:28:46.165-PSOJ205p09_27_XShooter_NIR_2018Apr10T052846.165_flux.fits',
+        datapath + 'spec1d_XSHOO.2018-04-10T06:05:42.360-PSOJ205p09_28_XShooter_NIR_2018Apr10T060542.360_flux.fits',
+        datapath + 'spec1d_XSHOO.2018-04-10T06:26:30.231-PSOJ205p09_28_XShooter_NIR_2018Apr10T062630.231_flux.fits',
+        datapath + 'spec1d_XSHOO.2018-04-15T04:58:27.291-PSOJ205p09_29_XShooter_NIR_2018Apr15T045827.291_flux.fits',
+        datapath + 'spec1d_XSHOO.2018-04-15T05:19:15.167-PSOJ205p09_29_XShooter_NIR_2018Apr15T051915.167_flux.fits',
+        datapath + 'spec1d_XSHOO.2018-04-15T05:59:39.364-PSOJ205p09_30_XShooter_NIR_2018Apr15T055939.364_flux.fits',
+        datapath + 'spec1d_XSHOO.2018-04-15T06:20:25.908-PSOJ205p09_30_XShooter_NIR_2018Apr15T062025.908_flux.fits',
+        datapath + 'spec1d_XSHOO.2018-04-16T04:23:25.898-PSOJ205p09_31_XShooter_NIR_2018Apr16T042325.898_flux.fits',
+        datapath + 'spec1d_XSHOO.2018-04-16T04:44:12.441-PSOJ205p09_31_XShooter_NIR_2018Apr16T044412.441_flux.fits',
+        datapath + 'spec1d_XSHOO.2018-04-16T05:26:58.617-PSOJ205p09_32_XShooter_NIR_2018Apr16T052658.617_flux.fits',
+        datapath + 'spec1d_XSHOO.2018-04-16T05:47:45.160-PSOJ205p09_32_XShooter_NIR_2018Apr16T054745.160_flux.fits']
+    gdobj = ['OBJ0001', 'OBJ0001', 'OBJ0001', 'OBJ0001', 'OBJ0001', 'OBJ0001', 'OBJ0001', 'OBJ0001', 'OBJ0001',
+             'OBJ0001', 'OBJ0001', 'OBJ0001', 'OBJ0001', 'OBJ0001', 'OBJ0001', 'OBJ0001', 'OBJ0001', 'OBJ0001',
+             'OBJ0001', 'OBJ0001', 'OBJ0001', 'OBJ0001', 'OBJ0001', 'OBJ0001', 'OBJ0001', 'OBJ0001', 'OBJ0001',
+             'OBJ0001', 'OBJ0001', 'OBJ0001', 'OBJ0001', 'OBJ0001', 'OBJ0001', 'OBJ0001', 'OBJ0001', 'OBJ0001',
+             'OBJ0001', 'OBJ0001', 'OBJ0001', 'OBJ0001', 'OBJ0001', 'OBJ0001', 'OBJ0001', 'OBJ0001', 'OBJ0001',
+             'OBJ0001', 'OBJ0001', 'OBJ0001', 'OBJ0001', 'OBJ0001', 'OBJ0001', 'OBJ0001', 'OBJ0001', 'OBJ0001',
+             'OBJ0001', 'OBJ0001', 'OBJ0001', 'OBJ0001', 'OBJ0001', 'OBJ0001', 'OBJ0001', 'OBJ0001', 'OBJ0001',
+             'OBJ0001']
+    return fnames, gdobj
+
+
 def read_xshooter_nir_stack(order=None):
 
     fnames, gdobj = xshooter_fnames()
@@ -300,12 +377,13 @@ sensfile = os.path.join(os.getenv('HOME'), 'Dropbox/PypeIt_Redux/XSHOOTER/NIR_St
 #fnames, objids = feige110_xshooter_fnames()
 #fnames, objids = J0224_xshooter_fnames()
 #outfile = 'J0224'
-fnames, objids = LTT_xshooter_frames()
-outfile = 'LTT3218'
+#fnames, objids = LTT_xshooter_frames()
+#outfile = 'LTT3218'
 #fnames, objids = J1048_xshooter_fnames()
 #outfile = 'J1048'
-
-wave_stack, flux_stack, ivar_stack, mask_stack = coadd1d.ech_combspec(fnames, objids, show=True, sensfile=sensfile,
+fnames, objids = pisco_xshooter_fnames()
+outfile = 'Pisco_all'
+wave_stack, flux_stack, ivar_stack, mask_stack = coadd1d.ech_combspec(fnames, objids, show=False, sensfile=sensfile,
                                                                       outfile=outfile)
 
 # Coadding

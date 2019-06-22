@@ -65,10 +65,10 @@ outfile = 'Feige110_sens_tell.fits'
 #sensfunc_telluric(spec1dfile, telgridfile, outfile, polyorder=polyorder, ra=header['RA'], dec=header['DEC'],
 #                  star_mag=star_mag, star_type=star_type, debug=False)
 
-spec1dfileflux = os.path.join(os.getenv('HOME'),'Dropbox/PypeIt_Redux/XSHOOTER/NIR_Stack/spec1d_stack_J0224.fits')
+spec1dfileflux = os.path.join(os.getenv('HOME'),'Dropbox/PypeIt_Redux/XSHOOTER/NIR_Stack/spec1d_stack_Pisco_all.fits')
 pcafile = os.path.join(os.getenv('HOME'),'Dropbox/PypeIt_Redux//qso_pca_1200_3100.pckl')
 npca = 8
-z_qso = 6.514 #7.54#6.51
+z_qso = 7.54#6.514 #7.54#6.51
 # Create the input mask
 hdu = fits.open(spec1dfileflux)
 head = hdu[0].header

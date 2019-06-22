@@ -629,7 +629,7 @@ def telluric_qso(spec1dfile, telgridfile, pcafile, npca, z_qso, inmask=None, wav
                  resln_frac_bounds=(0.5,1.5), pix_shift_bounds = (-2.0,2.0),
                  tell_norm_thresh=0.9, maxiter=3, sticky=True, lower=3.0, upper=3.0,
                  seed=None, tol=1e-3, popsize=25, recombination=0.7, disp=True, polish=True,
-                 debug=True):
+                 debug=True, show=True):
 
     # Read in the data
     # TODO we need to sort out our data model!!
@@ -717,6 +717,7 @@ def telluric_qso(spec1dfile, telgridfile, pcafile, npca, z_qso, inmask=None, wav
     pca_params = theta[:npca + 1]
     tell_params = theta[-6:]
 
+
     if debug:
         # Plot the data
         flux_med =scipy.ndimage.filters.median_filter(flux_fit, size=15)
@@ -729,17 +730,81 @@ def telluric_qso(spec1dfile, telgridfile, pcafile, npca, z_qso, inmask=None, wav
         plt.show()
         IPython.embed()
         # Plot the telluric corrected and rescaled orders
-        flux_corr = flux_fit/(tell_model + (tell_model == 0.0))
-        plt.plot(wave_fit, flux_corr, color='k', drawstyle='steps-mid')
+        flux_fit_corr = flux_fit / (tell_model + (tell_model == 0.0))
+        plt.plot(wave_fit, flux_fit_corr, color='k', drawstyle='steps-mid')
         plt.plot(wave_fit, pca_model, color='cornflowerblue', drawstyle='steps-mid', label='pca')
         plt.plot(wave_fit, pca_model.max()*0.9*tell_model, color='magenta', drawstyle='steps-mid', label='pca', alpha=0.4)
         plt.ylim((0.0, pca_model.max()*1.5))
         plt.legend()
         plt.show()
 
-    # Add an analogous I/O to tables as with sensfunc_telluric
+    # Interpolate the model to the grid of raw spectrum
+    tell_model_out, _, _ = coadd1d.interp_spec(wave_in, wave_fit, tell_model, flux_ivar_fit, mask_fit)
+    pca_model_out, _, _ = coadd1d.interp_spec(wave_in, wave_fit, pca_model, flux_ivar_fit, mask_fit)
 
-    # TODO Do we need software that can determine telluric absorption from a telluric star?
+    flux_out = flux_in / (tell_model_out + (tell_model_out == 0.0))
+    flux_ivar_out = flux_ivar_in * tell_model_out**2
+    mask_out = mask_in & (tell_model_out>0.)
+
+    # Save the final corrected spectrum
+    outfile = spec1dfile.replace('.fits', '_tell_corr.fits') # Final spectra
+    save.save_coadd1d_to_fits(outfile, wave_in, flux_out, flux_ivar_out, mask_out,
+                              header=head, ex_value='OPT', overwrite=True)
+
+    if show:
+        ymin, ymax = coadd1d.get_ylim(flux_out, flux_ivar_out, mask_out)
+
+        fig = plt.figure(figsize=(12, 8))
+        plt.plot(wave_in, flux_out, color='black', drawstyle='steps-mid',zorder=1,alpha=0.8, label='Telluric Correctted Spectrum')
+        plt.plot(wave_in, np.sqrt(utils.calc_ivar(flux_ivar_out)),zorder=2, color='red', alpha=0.7,
+                   drawstyle='steps-mid', linestyle=':')
+
+        plt.ylim([ymin, ymax])
+        plt.xlim([wave_in.min(), wave_in.max()])
+        plt.xlabel('Wavelength ($\\rm\\AA$)')
+        plt.ylabel('Flux')
+        plt.show()
+
+    # Add an analogous I/O to tables as with sensfunc_telluric
+    # Allocate the output tables
+    meta_table = table.Table(meta={'name': 'Parameter Values'})
+    meta_table['WAVE_GRID'] = [wave_in]
+    meta_table['TOL'] = tol
+    meta_table['POPSIZE'] = popsize
+    meta_table['RECOMBINATION'] = recombination
+    meta_table['PYPELINE'] = head['PYPELINE']
+    meta_table['EXPTIME'] = head['EXPTIME']
+    meta_table['AIRMASS'] = head['AIRMASS']
+    meta_table['TELGRIDFILE'] = os.path.basename(telgridfile)
+    meta_table['SPEC1DFILE'] = os.path.basename(spec1dfile)
+
+    out_table = table.Table(meta={'name': 'Sensfunc and Telluric Correction'})
+    out_table['TELLURIC'] = [tell_model_out]
+    out_table['TELL_PRESS'] = tell_params[0]
+    out_table['TELL_TEMP'] = tell_params[1]
+    out_table['TELL_H2O'] = tell_params[2]
+    out_table['TELL_AIRMASS'] = tell_params[3]
+    out_table['TELL_RESLN'] = tell_params[4]
+    out_table['TELL_SHIFT'] = tell_params[5]
+    out_table['PCA_THETA'] = [pca_params]
+    out_table['PCA_MODEL'] = [pca_model_out]
+    out_table['CHI2'] = result.fun
+    out_table['SUCCESS'] = result.success
+    out_table['NITER'] = result.nit
+
+    # Write the telluric and pca models to fits file,.
+    tellfile = spec1dfile.replace('.fits', '_tell_model.fits') # Telluric and PCA model
+
+    msgs.info('Writing telluric and PCA models to file: {:}'.format(tellfile))
+    hdu_param = fits.table_to_hdu(meta_table)
+    hdu_table = fits.table_to_hdu(out_table)
+    hdulist = fits.HDUList()
+    hdulist.append(hdu_param)
+    hdulist.append(hdu_table)
+    hdulist.writeto(tellfile, overwrite=True)
+
+
+        # TODO Do we need software that can determine telluric absorption from a telluric star?
     #  There are two options here:
     #  1) run the sensfunc_telluric code as if it were a high-resolution staandard.
     #  2) Flux the telluric star with the sensfunc form a high-resolution standard, as if it were regular data, then
