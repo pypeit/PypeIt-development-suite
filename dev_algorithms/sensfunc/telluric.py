@@ -689,7 +689,8 @@ def telluric_qso(spec1dfile, telgridfile, pcafile, npca, z_qso, inmask=None, wav
     # This presumes that the data has been interpolated onto the telluric model grid
     tell_dict_fit = trim_tell_dict(tell_dict, ind_lower, ind_upper, dloglam, tell_pad_pix)
 
-    # Read in the PCA model information
+    #
+    # fitfunc, arg_dict, bounds = instantiate_obj_model(model_type, wave_fit, model_params)
     pca_dict = qso_pca.init_pca(pcafile, wave_fit, z_qso, npca)
 
     flam_norm = qso_norm_guess(pca_dict, tell_dict_fit, airmass, resln_guess, tell_norm_thresh, flux_fit, flux_ivar_fit, mask_fit)
@@ -715,6 +716,7 @@ def telluric_qso(spec1dfile, telgridfile, pcafile, npca, z_qso, inmask=None, wav
                                                              tol=tol, popsize=popsize, recombination=recombination,
                                                              polish=polish, disp=disp)
     theta = result.x
+    # model_params, tell_params eval_obj_model(model_type, wave_fit, model_params, theta)
     tell_model, pca_model, ln_pca_pri = qso_tellfit_eval(theta, arg_dict)
     flux_model = tell_model*pca_model
     pca_params = theta[:npca + 1]
