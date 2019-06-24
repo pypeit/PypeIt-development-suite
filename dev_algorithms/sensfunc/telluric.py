@@ -287,7 +287,7 @@ def unpack_orders(sobjs, ret_flam=False):
 
 
     # Read in the spec1d file
-    norders = len(sobjs)
+    norders = len(sobjs) # ToDO: This is incorrect if you have more than one object in the sobjs
     if ret_flam:
         nspec = sobjs[0].optimal['FLAM'].size
     else:
@@ -452,8 +452,23 @@ def sensfunc_telluric(spec1dfile, telgridfile, outfile, star_type=None, star_mag
     ngrid = wave_grid.size
 
     # Read in the standard star spectrum and interpolate it onto the regular telluric wave grid.
-    sobjs, head = load.load_specobjs(spec1dfile)
-    wave, counts, counts_ivar, counts_mask = unpack_orders(sobjs, ret_flam=ret_flam)
+    ## ToDo: currently just using try except to deal with different format. We should fix the data model
+    try:
+        # Read in the standard spec1d file produced by Pypeit
+        sobjs, head = load.load_specobjs(spec1dfile)
+        wave, counts, counts_ivar, counts_mask = unpack_orders(sobjs, ret_flam=ret_flam)
+    except:
+        # Read in the coadd 1d spectra file
+        hdu = fits.open(spec1dfile)
+        head = hdu[0].header
+        data = hdu[1].data
+        wave_in, flux_in, flux_ivar_in, mask_in = data['OPT_WAVE'], data['OPT_FLAM'], data['OPT_FLAM_IVAR'], data[
+            'OPT_MASK']
+        wave = np.reshape(wave_in,(wave_in.size,1))
+        counts = np.reshape(flux_in,(wave_in.size,1))
+        counts_ivar = np.reshape(flux_ivar_in,(wave_in.size,1))
+        counts_mask = np.reshape(mask_in,(wave_in.size,1))
+
     exptime = head['EXPTIME']
     airmass = head['AIRMASS']
 
@@ -581,6 +596,7 @@ def sensfunc_telluric(spec1dfile, telgridfile, outfile, star_type=None, star_mag
         telluric_fit = eval_telluric(tell_params, arg_dict['tell_dict'])
         sensfit = np.exp(utils.func_val(sens_coeff, wave_fit, arg_dict['func'], minx=wave_min, maxx=wave_max))
         counts_model_fit = telluric_fit * flam_true_fit/ (sensfit + (sensfit == 0.0))
+        IPython.embed()
         if debug:
             plt.plot(wave_fit, counts_ps_fit * sensfit, drawstyle='steps-mid')
             plt.plot(wave_fit, counts_ps_fit * sensfit / (telluric_fit + (telluric_fit == 0.0)), drawstyle='steps-mid')

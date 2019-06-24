@@ -70,11 +70,11 @@ spec1dfileflux = os.path.join(os.getenv('HOME'),'Dropbox/PypeIt_Redux/XSHOOTER/J
 star_mag  = 5.8
 star_type = 'B8'
 
-polyorder=2 # changed from 6
+polyorder=5 # changed from 6
 outfile = 'Tell_B8_V5p8_sens_tell.fits'
 
 sensfunc_telluric(spec1dfileflux, telgridfile, outfile, polyorder=polyorder, ra=None, dec=None,
-                  star_mag=star_mag, star_type=star_type, ret_flam=True, debug=False)
+                  star_mag=star_mag, star_type=star_type, ret_flam=True, debug=True)
 sys.exit(-1)
 
 spec1dfileflux = os.path.join(os.getenv('HOME'),'Dropbox/PypeIt_Redux/XSHOOTER/NIR_Stack/spec1d_stack_Pisco_all.fits')
