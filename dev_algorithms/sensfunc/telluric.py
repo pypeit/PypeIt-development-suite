@@ -191,6 +191,7 @@ def qso_tellfit(flux, thismask, arg_dict, **kwargs_opt):
 
     return result, tell_model*pca_model, ivartot
 
+## TODO Can we merge sensfunc_tellfit_chi2 and qso_tellfit_chi2 into one piece of code
 ## SENSFUNC_TELLFIT
 def sensfunc_tellfit_eval(theta, arg_dict):
 
@@ -407,6 +408,7 @@ def trim_spectrum(wave_grid, flux, ivar, mask):
 
 
 def sensfunc_telluric(spec1dfile, telgridfile, outfile, star_type=None, star_mag=None, ra=None, dec=None,
+                      inmask=None, wave_inmask=None,
                       resln_guess=None, resln_frac_bounds=(0.5,1.5), pix_shift_bounds = (-2.0,2.0),
                       delta_coeff_bounds=(-20.0, 20.0), minmax_coeff_bounds=(-5.0, 5.0),
                       polyorder=7, func='legendre', maxiter=3, sticky=True, lower=3.0, upper=3.0, ret_flam=False,
@@ -471,6 +473,7 @@ def sensfunc_telluric(spec1dfile, telgridfile, outfile, star_type=None, star_mag
 
     exptime = head['EXPTIME']
     airmass = head['AIRMASS']
+    nspec, norders = wave.shape
 
     loglam = np.log10(wave_grid)
     dloglam = np.median(loglam[1:] - loglam[:-1])
@@ -485,7 +488,22 @@ def sensfunc_telluric(spec1dfile, telgridfile, outfile, star_type=None, star_mag
     counts_int, counts_ivar_int, counts_mask_int = coadd1d.interp_spec(wave_grid, wave, counts, counts_ivar, counts_mask)
     counts_ps = counts_int/exptime
     counts_ps_ivar = counts_ivar_int* exptime ** 2
-    counts_ps_mask = counts_mask_int
+    #counts_ps_mask = counts_mask_int
+
+    # If an input mask was provided get into the wave_grid, and apply it
+    if inmask is not None:
+        if wave_inmask is None:
+            msgs.error('If you are specifying a mask you need to pass in the corresponding wavelength grid')
+        # TODO we shoudld consider refactoring the interpolator to take a list of images and masks to remove the
+        # the fake zero images in the call below
+        _, _, inmask_int = coadd1d.interp_spec(wave_grid, wave_inmask,
+                                               np.ones_like(wave_inmask), np.ones_like(wave_inmask), inmask)
+        inmask_tot = np.outer(inmask_int, np.ones(norders, dtype=bool))
+        counts_ps_mask = counts_mask_int & inmask_tot
+    else:
+        counts_ps_mask = counts_mask_int
+
+
 
     # Read in standard star dictionary
     std_dict = flux.get_standard_spectrum(star_type=star_type, star_mag=star_mag, ra=ra, dec=dec)
@@ -499,7 +517,6 @@ def sensfunc_telluric(spec1dfile, telgridfile, outfile, star_type=None, star_mag
         seed = np.random.RandomState(seed=seed_data)
 
 
-    nspec, norders = wave.shape
     if np.size(polyorder) > 1:
         if np.size(polyorder) != norders:
             msgs.error('polyorder must have either have norder elements or be a scalar')
