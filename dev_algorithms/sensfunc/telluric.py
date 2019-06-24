@@ -288,7 +288,10 @@ def unpack_orders(sobjs, ret_flam=False):
 
     # Read in the spec1d file
     norders = len(sobjs)
-    nspec = sobjs[0].optimal['COUNTS'].size
+    if ret_flam:
+        nspec = sobjs[0].optimal['FLAM'].size
+    else:
+        nspec = sobjs[0].optimal['COUNTS'].size
     # Allocate arrays and unpack spectrum
     wave = np.zeros((nspec, norders))
     #wave_mask = np.zeros((nspec, norders),dtype=bool)
@@ -406,7 +409,7 @@ def trim_spectrum(wave_grid, flux, ivar, mask):
 def sensfunc_telluric(spec1dfile, telgridfile, outfile, star_type=None, star_mag=None, ra=None, dec=None,
                       resln_guess=None, resln_frac_bounds=(0.5,1.5), pix_shift_bounds = (-2.0,2.0),
                       delta_coeff_bounds=(-20.0, 20.0), minmax_coeff_bounds=(-5.0, 5.0),
-                      polyorder=7, func='legendre', maxiter=3, sticky=True, lower=3.0, upper=3.0,
+                      polyorder=7, func='legendre', maxiter=3, sticky=True, lower=3.0, upper=3.0, ret_flam=False,
                       seed=None, tol=1e-4, popsize=40, recombination=0.7, polish=True, disp=True, debug=False):
 
     """
@@ -450,7 +453,7 @@ def sensfunc_telluric(spec1dfile, telgridfile, outfile, star_type=None, star_mag
 
     # Read in the standard star spectrum and interpolate it onto the regular telluric wave grid.
     sobjs, head = load.load_specobjs(spec1dfile)
-    wave, counts, counts_ivar, counts_mask = unpack_orders(sobjs)
+    wave, counts, counts_ivar, counts_mask = unpack_orders(sobjs, ret_flam=ret_flam)
     exptime = head['EXPTIME']
     airmass = head['AIRMASS']
 

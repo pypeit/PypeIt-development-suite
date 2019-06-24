@@ -214,6 +214,16 @@ def LTT_xshooter_frames():
 
     return fnames, gdobj
 
+def TELL_xshooter_frames():
+    datapath = os.path.join(os.getenv('HOME'), 'Dropbox/PypeIt_Redux/XSHOOTER/J0224-4711/Test_tell/')
+    fnames = [#datapath + 'spec1d_XSHOO.2017-11-23T07:44:02.747-STD,TELLURIC_XShooter_NIR_2017Nov23T074402.747_flux.fits',
+              #datapath + 'spec1d_XSHOO.2017-11-23T07:44:57.633-STD,TELLURIC_XShooter_NIR_2017Nov23T074457.633_flux.fits',
+              datapath + 'spec1d_XSHOO.2017-11-23T07:46:53.532-STD,TELLURIC_XShooter_NIR_2017Nov23T074653.532_flux.fits',
+              datapath + 'spec1d_XSHOO.2017-11-23T07:47:33.917-STD,TELLURIC_XShooter_NIR_2017Nov23T074733.917_flux.fits']
+    gdobj = ['OBJ0001','OBJ0001','OBJ0001','OBJ0001']
+
+    return fnames, gdobj
+
 def J1048_xshooter_fnames():
     datapath = os.path.join(os.getenv('HOME'), 'Dropbox/OBS_DATA/XSHOOTER/NIR/ut20170202/Science/')
     fnames = [datapath + 'spec1d_XSHOO.2017-02-02T04:19:28.545-VIKJ1048m0109_XShooter_NIR_2017Feb02T041928.545_flux.fits',
@@ -379,10 +389,13 @@ sensfile = os.path.join(os.getenv('HOME'), 'Dropbox/PypeIt_Redux/XSHOOTER/NIR_St
 #outfile = 'J0224'
 #fnames, objids = LTT_xshooter_frames()
 #outfile = 'LTT3218'
-#fnames, objids = J1048_xshooter_fnames()
-#outfile = 'J1048'
-fnames, objids = pisco_xshooter_fnames()
-outfile = 'Pisco_all'
+fnames, objids = J1048_xshooter_fnames()
+outfile = 'J1048'
+#fnames, objids = pisco_xshooter_fnames()
+#outfile = 'Pisco_all'
+#fnames, objids = TELL_xshooter_frames()
+#outfile = 'TELL_B8IV_V5p8'
+
 wave_stack, flux_stack, ivar_stack, mask_stack = coadd1d.ech_combspec(fnames, objids, show=False, sensfile=sensfile,
                                                                       outfile=outfile)
 

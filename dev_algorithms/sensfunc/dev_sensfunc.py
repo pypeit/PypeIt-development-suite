@@ -65,6 +65,18 @@ outfile = 'Feige110_sens_tell.fits'
 #sensfunc_telluric(spec1dfile, telgridfile, outfile, polyorder=polyorder, ra=header['RA'], dec=header['DEC'],
 #                  star_mag=star_mag, star_type=star_type, debug=False)
 
+### Test telluric star
+spec1dfileflux = os.path.join(os.getenv('HOME'),'Dropbox/PypeIt_Redux/XSHOOTER/J0224-4711/Test_tell/spec1d_stack_TELL_B8IV_V5p8.fits')
+star_mag  = 5.8
+star_type = 'B8'
+
+polyorder=2 # changed from 6
+outfile = 'Tell_B8_V5p8_sens_tell.fits'
+
+sensfunc_telluric(spec1dfileflux, telgridfile, outfile, polyorder=polyorder, ra=None, dec=None,
+                  star_mag=star_mag, star_type=star_type, ret_flam=True, debug=False)
+sys.exit(-1)
+
 spec1dfileflux = os.path.join(os.getenv('HOME'),'Dropbox/PypeIt_Redux/XSHOOTER/NIR_Stack/spec1d_stack_Pisco_all.fits')
 pcafile = os.path.join(os.getenv('HOME'),'Dropbox/PypeIt_Redux//qso_pca_1200_3100.pckl')
 npca = 8

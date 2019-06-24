@@ -531,6 +531,7 @@ fnames = [datapath + 'J0439_XSHOOTER_NIR_01.fits', datapath + 'J0439_XSHOOTER_NI
           datapath + 'J0439_XSHOOTER_NIR_37.fits', datapath + 'J0439_XSHOOTER_NIR_38.fits']
 '''
 
+'''
 ## Pisco
 datapath = os.path.join(os.getenv('HOME'), 'Dropbox/PypeIt_Redux/XSHOOTER/Pypeit_files/PISCO_NIR/Science/')
 fnames = [datapath + 'spec1d_XSHOO.2017-06-28T23:51:39.115-PSOJ205p09_1_XShooter_NIR_2017Jun28T235139.115.fits',
@@ -597,7 +598,7 @@ fnames = [datapath + 'spec1d_XSHOO.2017-06-28T23:51:39.115-PSOJ205p09_1_XShooter
           datapath + 'spec1d_XSHOO.2018-04-16T04:44:12.441-PSOJ205p09_31_XShooter_NIR_2018Apr16T044412.441.fits',
           datapath + 'spec1d_XSHOO.2018-04-16T05:26:58.617-PSOJ205p09_32_XShooter_NIR_2018Apr16T052658.617.fits',
           datapath + 'spec1d_XSHOO.2018-04-16T05:47:45.160-PSOJ205p09_32_XShooter_NIR_2018Apr16T054745.160.fits']
-
+'''
 ## DES z~6.9 Quasar
 #datapath = os.path.join(os.getenv('HOME'), 'Dropbox/PypeIt_Redux/XSHOOTER/J0020-3653/NIR/Science/')
 #fnames = [datapath + 'spec1d_VHSJ0020-3653OffsetstarB_XShooter_NIR_2017Dec17T024443.537.fits',
@@ -624,6 +625,13 @@ fnames = [datapath + 'spec1d_XSHOO.2017-06-28T23:51:39.115-PSOJ205p09_1_XShooter
 #datapath = os.path.join(os.getenv('HOME'), 'Dropbox/PypeIt_Redux/XSHOOTER/J0020-3653/NIR/Science/')
 #fnames = [datapath + 'spec1d_STD,FLUX_XShooter_NIR_2017Dec17T081653.582.fits',
 #          datapath + 'spec1d_STD,FLUX_XShooter_NIR_2017Dec17T082243.751.fits']
+
+## Telluric star
+datapath = os.path.join(os.getenv('HOME'), 'Dropbox/PypeIt_Redux/XSHOOTER/J0224-4711/Test_tell/')
+fnames = [datapath + 'spec1d_XSHOO.2017-11-23T07:44:02.747-STD,TELLURIC_XShooter_NIR_2017Nov23T074402.747.fits',
+          datapath + 'spec1d_XSHOO.2017-11-23T07:44:57.633-STD,TELLURIC_XShooter_NIR_2017Nov23T074457.633.fits',
+          datapath + 'spec1d_XSHOO.2017-11-23T07:46:53.532-STD,TELLURIC_XShooter_NIR_2017Nov23T074653.532.fits',
+          datapath + 'spec1d_XSHOO.2017-11-23T07:47:33.917-STD,TELLURIC_XShooter_NIR_2017Nov23T074733.917.fits']
 
 ##J1048
 #datapath = os.path.join(os.getenv('HOME'), 'Dropbox/OBS_DATA/XSHOOTER/NIR/ut20170202/Science/')
