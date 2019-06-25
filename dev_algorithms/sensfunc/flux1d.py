@@ -492,7 +492,6 @@ def apply_sensfunc(fnames, sensfile, extinct_correct=True, tell_correct=False, d
         sobjs, head = load.load_specobjs(spec1dfile)
         instrument = head['INSTRUME']
         spectrograph = load_spectrograph(instrument)
-
         airmass, exptime = head['AIRMASS'], head['EXPTIME']
         longitude, latitude = head['LON-OBS'], head['LAT-OBS']
 
@@ -607,12 +606,12 @@ fnames = [datapath + 'spec1d_XSHOO.2017-06-28T23:51:39.115-PSOJ205p09_1_XShooter
 #          datapath + 'spec1d_VHSJ0020-3653OffsetstarB_XShooter_NIR_2017Oct26T002641.612.fits']
 
 ## DES z~6.5 Quasar J0224
-#datapath = os.path.join(os.getenv('HOME'), 'Dropbox/PypeIt_Redux/XSHOOTER/J0224-4711/pypeit_nir/Science/')
-#fnames = [
-#    datapath + 'spec1d_XSHOO.2017-11-23T06:52:51.782-VDESJ0224-4711blindoffset_XShooter_NIR_2017Nov23T065251.782.fits',
-#    datapath + 'spec1d_XSHOO.2017-11-23T07:13:18.374-VDESJ0224-4711blindoffset_XShooter_NIR_2017Nov23T071318.374.fits',
-#    datapath + 'spec1d_XSHOO.2018-01-19T01:57:51.708-VDESJ0224-4711blindoffset_XShooter_NIR_2018Jan19T015751.708.fits',
-#    datapath + 'spec1d_XSHOO.2018-01-19T02:18:18.297-VDESJ0224-4711blindoffset_XShooter_NIR_2018Jan19T021818.297.fits']
+datapath = os.path.join(os.getenv('HOME'), 'Dropbox/PypeIt_Redux/XSHOOTER/J0224-4711/pypeit_nir/Science/')
+fnames = [
+    datapath + 'spec1d_XSHOO.2017-11-23T06:52:51.782-VDESJ0224-4711blindoffset_XShooter_NIR_2017Nov23T065251.782.fits',
+    datapath + 'spec1d_XSHOO.2017-11-23T07:13:18.374-VDESJ0224-4711blindoffset_XShooter_NIR_2017Nov23T071318.374.fits',
+    datapath + 'spec1d_XSHOO.2018-01-19T01:57:51.708-VDESJ0224-4711blindoffset_XShooter_NIR_2018Jan19T015751.708.fits',
+    datapath + 'spec1d_XSHOO.2018-01-19T02:18:18.297-VDESJ0224-4711blindoffset_XShooter_NIR_2018Jan19T021818.297.fits']
 
 ##J0226
 #datapath = os.path.join(os.getenv('HOME'), 'Dropbox/PypeIt_Redux/XSHOOTER/J0226+0302/pypeit_nir/Science/')
@@ -627,11 +626,11 @@ fnames = [datapath + 'spec1d_XSHOO.2017-06-28T23:51:39.115-PSOJ205p09_1_XShooter
 #          datapath + 'spec1d_STD,FLUX_XShooter_NIR_2017Dec17T082243.751.fits']
 
 ## Telluric star
-datapath = os.path.join(os.getenv('HOME'), 'Dropbox/PypeIt_Redux/XSHOOTER/J0224-4711/Test_tell/')
-fnames = [datapath + 'spec1d_XSHOO.2017-11-23T07:44:02.747-STD,TELLURIC_XShooter_NIR_2017Nov23T074402.747.fits',
-          datapath + 'spec1d_XSHOO.2017-11-23T07:44:57.633-STD,TELLURIC_XShooter_NIR_2017Nov23T074457.633.fits',
-          datapath + 'spec1d_XSHOO.2017-11-23T07:46:53.532-STD,TELLURIC_XShooter_NIR_2017Nov23T074653.532.fits',
-          datapath + 'spec1d_XSHOO.2017-11-23T07:47:33.917-STD,TELLURIC_XShooter_NIR_2017Nov23T074733.917.fits']
+#datapath = os.path.join(os.getenv('HOME'), 'Dropbox/PypeIt_Redux/XSHOOTER/J0224-4711/Test_tell/')
+#fnames = [datapath + 'spec1d_XSHOO.2017-11-23T07:44:02.747-STD,TELLURIC_XShooter_NIR_2017Nov23T074402.747.fits',
+#          datapath + 'spec1d_XSHOO.2017-11-23T07:44:57.633-STD,TELLURIC_XShooter_NIR_2017Nov23T074457.633.fits',
+#          datapath + 'spec1d_XSHOO.2017-11-23T07:46:53.532-STD,TELLURIC_XShooter_NIR_2017Nov23T074653.532.fits',
+#          datapath + 'spec1d_XSHOO.2017-11-23T07:47:33.917-STD,TELLURIC_XShooter_NIR_2017Nov23T074733.917.fits']
 
 ##J1048
 #datapath = os.path.join(os.getenv('HOME'), 'Dropbox/OBS_DATA/XSHOOTER/NIR/ut20170202/Science/')
