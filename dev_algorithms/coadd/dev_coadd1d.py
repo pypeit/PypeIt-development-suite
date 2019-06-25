@@ -386,18 +386,18 @@ sensfile = os.path.join(os.getenv('HOME'), 'Dropbox/PypeIt_Redux/XSHOOTER/NIR_St
 #outfile = 'J0020'
 #fnames, objids = feige110_xshooter_fnames()
 #fnames, objids = J0224_xshooter_fnames()
-#outfile = 'J0224'
+##outfile = 'J0224'
 #fnames, objids = LTT_xshooter_frames()
 #outfile = 'LTT3218'
-fnames, objids = J1048_xshooter_fnames()
-outfile = 'J1048'
-#fnames, objids = pisco_xshooter_fnames()
-#outfile = 'Pisco_all'
+#fnames, objids = J1048_xshooter_fnames()
+#outfile = 'J1048'
+fnames, objids = pisco_xshooter_fnames()
+outfile = 'Pisco_all_box'
 #fnames, objids = TELL_xshooter_frames()
 #outfile = 'TELL_B8IV_V5p8'
 
 wave_stack, flux_stack, ivar_stack, mask_stack = coadd1d.ech_combspec(fnames, objids, show=False, sensfile=sensfile,
-                                                                      outfile=outfile)
+                                                                      ex_value='BOX', outfile=outfile, debug=False)
 
 # Coadding
 #wave_stack, flux_stack, ivar_stack, mask_stack, outmask, weights, scales, rms_sn = coadd1d.combspec(
