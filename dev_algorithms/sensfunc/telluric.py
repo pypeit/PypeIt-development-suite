@@ -26,6 +26,8 @@ from astropy.io import fits
 import copy
 from IPython import embed
 import qso_pca
+from pypeit.spectrographs.spectrograph import Spectrograph
+from pypeit.spectrographs.util import load_spectrograph
 
 
 ##############################
@@ -70,8 +72,16 @@ def read_telluric_grid(filename, wave_min=None, wave_max=None, pad = 0):
     else:
         ag = hdul[0].header['AM0']+1*np.arange(0,1)
 
-    tell_dict = dict(wave_grid=wave_grid, pressure_grid=pg, temp_grid=tg, h2o_grid=hg, airmass_grid=ag,
-                     tell_grid=model_grid)
+    loglam = np.log10(wave_grid)
+    dloglam = np.median(loglam[1:] - loglam[:-1])
+    # Guess resolution from wavelength sampling of telluric grid if it is not provided
+    resln_guess = 1.0/(3.0 * dloglam * np.log(10.0))  # assume roughly Nyquist sampling
+    pix_per_R = 1.0/resln_guess / (dloglam * np.log(10.0)) / (2.0 * np.sqrt(2.0 * np.log(2)))
+    tell_pad_pix = int(np.ceil(10.0 * pix_per_R))
+
+    tell_dict = dict(wave_grid=wave_grid, dloglam=dloglam,
+                     resln_guess=resln_guess, pix_per_R=pix_per_R, tell_pad_pix=tell_pad_pix,
+                     pressure_grid=pg, temp_grid=tg, h2o_grid=hg, airmass_grid=ag, tell_grid=model_grid)
     return tell_dict
 
 
@@ -134,19 +144,19 @@ def eval_telluric(theta_tell, tell_dict):
         return tellmodel_conv[tell_pad[0]:-tell_pad[1]]
 
 
-def trim_tell_dict(tell_dict, ind_lower, ind_upper, dloglam, tell_pad):
+def trim_tell_dict(tell_dict, ind_lower, ind_upper):
 
     wave_grid = tell_dict['wave_grid']
-    ind_lower_pad = np.fmax(ind_lower - tell_pad, 0)
-    ind_upper_pad = np.fmin(ind_upper + tell_pad, wave_grid.size - 1)
+    ind_lower_pad = np.fmax(ind_lower - tell_dict['tell_pad'], 0)
+    ind_upper_pad = np.fmin(ind_upper + tell_dict['tell_pad'], wave_grid.size - 1)
     tell_pad_tuple = (ind_lower - ind_lower_pad, ind_upper_pad - ind_upper)
     tell_wave_grid = wave_grid[ind_lower_pad:ind_upper_pad + 1]
     tell_model_grid = tell_dict['tell_grid'][:, :, :, :, ind_lower_pad:ind_upper_pad + 1]
     tell_dict_fit = dict(pressure_grid=tell_dict['pressure_grid'], temp_grid=tell_dict['temp_grid'],
                          h2o_grid=tell_dict['h2o_grid'], airmass_grid=tell_dict['airmass_grid'],
-                         tell_grid=tell_model_grid, tell_pad=tell_pad_tuple, dloglam=dloglam,
-                         loglam=np.log10(tell_wave_grid))
-
+                         tell_grid=tell_model_grid, tell_pad=tell_pad_tuple,
+                         resln_guess=tell_dict['resln_guess'],pix_per_R=tell_dict['pix_per_R'],
+                         dloglam=tell_dict['dloglam'], loglam=np.log10(tell_wave_grid))
     return tell_dict_fit
 
 def sort_telluric(wave, wave_mask, tell_dict):
@@ -352,7 +362,65 @@ def trim_spectrum(wave_grid, flux, ivar, mask):
 
     return wave_fit, flux_fit, ivar_fit, mask_fit, ind_lower, ind_upper
 
+def general_spec_reader(specfile, ret_flam=False):
 
+    # Read in the standard star spectrum and interpolate it onto the regular telluric wave grid.
+    ## ToDo: currently just using try except to deal with different format. We should fix the data model
+
+    meta_spec = {}
+    try:
+        # Read in the standard spec1d file produced by Pypeit
+        sobjs, head = load.load_specobjs(specfile)
+        wave, counts, counts_ivar, counts_mask = unpack_orders(sobjs, ret_flam=ret_flam)
+        meta_spec['ECH_ORDER'] = (sobjs.ech_order).astype(int)
+        meta_spec['ECH_ORDERINDX'] = (sobjs.ech_orderindx).astype(int)
+        meta_spec['ECH_SNR'] = (sobjs.ech_snr).astype(float)
+        meta_spec['NORDERS'] = wave.shape[1]
+    except:
+        # Read in the coadd 1d spectra file
+        hdu = fits.open(specfile)
+        head = hdu[0].header
+        data = hdu[1].data
+        wave_in, flux_in, flux_ivar_in, mask_in = data['OPT_WAVE'], data['OPT_FLAM'], data['OPT_FLAM_IVAR'], data[
+            'OPT_MASK']
+        wave = np.reshape(wave_in,(wave_in.size,1))
+        counts = np.reshape(flux_in,(wave_in.size,1))
+        counts_ivar = np.reshape(flux_ivar_in,(wave_in.size,1))
+        counts_mask = np.reshape(mask_in,(wave_in.size,1))
+
+    try:
+        spectrograph = load_spectrograph(head['INSTRUME'])
+    except:
+        # This is a hack until a generic spectrograph is implemented.
+        spectrograph = load_spectrograph('shane_kast_blue')
+
+    core_keys = spectrograph.header_cards_for_spec()
+    for key in core_keys:
+        try:
+            meta_spec[key.upper()] = head[key.upper()]
+        except KeyError:
+            pass
+
+    return wave, counts, counts_ivar, counts_mask, meta_spec
+
+def interpolate_inmask(wave_grid, mask, wave_inmask, inmask):
+
+    if inmask is not None:
+        if wave_inmask is None:
+            msgs.error('If you are specifying a mask you need to pass in the corresponding wavelength grid')
+        # TODO we shoudld consider refactoring the interpolator to take a list of images and masks to remove the
+        # the fake zero images in the call below
+        _, _, inmask_int = coadd1d.interp_spec(wave_grid, wave_inmask, np.ones_like(wave_inmask), np.ones_like(wave_inmask), inmask)
+        if mask.ndim == 2:
+            norders = mask.shape[1]
+            inmask_out = np.tile(inmask_int, (norders,1)).T
+        elif mask.ndim == 1:
+            inmask_out = inmask_int
+        else:
+            msgs.error('Unrecognized shape for data mask')
+        return (mask & inmask_out)
+    else:
+        return mask
 
 def sensfunc_telluric(spec1dfile, telgridfile, outfile, star_type=None, star_mag=None, ra=None, dec=None,
                       inmask=None, wave_inmask=None,
@@ -399,58 +467,20 @@ def sensfunc_telluric(spec1dfile, telgridfile, outfile, star_type=None, star_mag
     tell_dict = read_telluric_grid(telgridfile)
     wave_grid = tell_dict['wave_grid']
     ngrid = wave_grid.size
-
-    # Read in the standard star spectrum and interpolate it onto the regular telluric wave grid.
-    ## ToDo: currently just using try except to deal with different format. We should fix the data model
-    try:
-        # Read in the standard spec1d file produced by Pypeit
-        sobjs, head = load.load_specobjs(spec1dfile)
-        embed()
-        wave, counts, counts_ivar, counts_mask = unpack_orders(sobjs, ret_flam=ret_flam)
-    except:
-        # Read in the coadd 1d spectra file
-        hdu = fits.open(spec1dfile)
-        head = hdu[0].header
-        data = hdu[1].data
-        wave_in, flux_in, flux_ivar_in, mask_in = data['OPT_WAVE'], data['OPT_FLAM'], data['OPT_FLAM_IVAR'], data[
-            'OPT_MASK']
-        wave = np.reshape(wave_in,(wave_in.size,1))
-        counts = np.reshape(flux_in,(wave_in.size,1))
-        counts_ivar = np.reshape(flux_ivar_in,(wave_in.size,1))
-        counts_mask = np.reshape(mask_in,(wave_in.size,1))
-
-    exptime = head['EXPTIME']
-    airmass = head['AIRMASS']
-    nspec, norders = wave.shape
-
-    loglam = np.log10(wave_grid)
-    dloglam = np.median(loglam[1:] - loglam[:-1])
     # Guess resolution from wavelength sampling of telluric grid if it is not provided
     if resln_guess is None:
-        resln_guess = 1.0/(3.0 * dloglam * np.log(10.0))  # assume roughly Nyquist sampling
+        resln_guess = tell_dict['resln_guess']
 
-    pix_per_R = 1.0 / resln_guess / (dloglam * np.log(10.0)) / (2.0 * np.sqrt(2.0 * np.log(2)))
-    tell_pad_pix = int(np.ceil(10.0 * pix_per_R))
-
+    # Read in the data and interpolate data onto the regular telluric wave_grid
+    wave, counts, counts_ivar, counts_mask, meta_spec = general_spec_reader(spec1dfile, ret_flam=ret_flam)
+    nspec, norders = wave.shape
     # Interpolate the data and standard star spectrum onto the regular telluric wave_grid
     counts_int, counts_ivar_int, counts_mask_int = coadd1d.interp_spec(wave_grid, wave, counts, counts_ivar, counts_mask)
-    counts_ps = counts_int/exptime
-    counts_ps_ivar = counts_ivar_int* exptime ** 2
-    #counts_ps_mask = counts_mask_int
+    counts_ps = counts_int/meta_spec['exptime']
+    counts_ps_ivar = counts_ivar_int*meta_spec['exptime']**2
 
     # If an input mask was provided get into the wave_grid, and apply it
-    if inmask is not None:
-        if wave_inmask is None:
-            msgs.error('If you are specifying a mask you need to pass in the corresponding wavelength grid')
-        # TODO we shoudld consider refactoring the interpolator to take a list of images and masks to remove the
-        # the fake zero images in the call below
-        _, _, inmask_int = coadd1d.interp_spec(wave_grid, wave_inmask,
-                                               np.ones_like(wave_inmask), np.ones_like(wave_inmask), inmask)
-        inmask_tot = np.outer(inmask_int, np.ones(norders, dtype=bool))
-        counts_ps_mask = counts_mask_int & inmask_tot
-    else:
-        counts_ps_mask = counts_mask_int
-
+    counts_ps_mask = interpolate_inmask(wave_grid, counts_mask_int, wave_inmask, inmask)
 
     # Read in standard star dictionary
     std_dict = flux.get_standard_spectrum(star_type=star_type, star_mag=star_mag, ra=ra, dec=dec)
@@ -480,15 +510,19 @@ def sensfunc_telluric(spec1dfile, telgridfile, outfile, star_type=None, star_mag
     meta_table['STAR_MAG'] = star_mag if star_mag is not None else 0.0
     meta_table['STAR_RA'] = ra if ra is not None else 0.0
     meta_table['STAR_DEC'] = dec if dec is not None else 0.0
-    meta_table['FUNCTION'] = func
-    meta_table['PYPELINE'] = head['PYPELINE']
-    meta_table['EXPTIME'] = head['EXPTIME']
-    meta_table['AIRMASS'] = head['AIRMASS']
-    meta_table['NORDERS'] = norders
     meta_table['CAL_FILE'] = std_dict['cal_file']
+    meta_table['FUNCTION'] = func
     meta_table['STD_NAME'] = std_dict['name']
-    meta_table['TELGRIDFILE'] = os.path.basename(telgridfile)
     meta_table['SPEC1DFILE'] = os.path.basename(spec1dfile)
+    meta_table['TELGRIDFILE'] = os.path.basename(telgridfile)
+    for key,value in meta_spec.items():
+        meta_table[key.upper()] = value
+
+#    meta_table['PYPELINE'] = head['PYPELINE']
+#    meta_table['EXPTIME'] = head['EXPTIME']
+#    meta_table['AIRMASS'] = head['AIRMASS']
+#    meta_table['NORDERS'] = norders
+
 
 
     out_table = table.Table(meta={'name': 'Sensfunc and Telluric Correction'})
@@ -529,7 +563,7 @@ def sensfunc_telluric(spec1dfile, telgridfile, outfile, star_type=None, star_mag
         wave_max = wave_grid[ind_upper]
 
         # This presumes that the data has been interpolated onto the telluric model grid
-        tell_dict_fit = trim_tell_dict(tell_dict, ind_lower, ind_upper, dloglam, tell_pad_pix)
+        tell_dict_fit = trim_tell_dict(tell_dict, ind_lower, ind_upper)
 
         # Guess the coefficients by doing a preliminary fit to the sensitivity function with the average telluric behavior
         guess_obj = sensfunc_guess(wave_fit, counts_ps_fit, counts_ps_mask_fit, flam_true_fit, tell_dict_fit, resln_guess, airmass,
@@ -572,7 +606,7 @@ def sensfunc_telluric(spec1dfile, telgridfile, outfile, star_type=None, star_mag
             plt.ylim(-0.1 * counts_ps_fit.max(), 1.5 * counts_ps_fit.max())
             plt.legend()
             plt.show()
-            IPython.embed()
+            embed()
 
         out_table['CHI2'][iord] = result.fun
         out_table['SUCCESS'][iord] = result.success
@@ -631,12 +665,9 @@ def telluric_qso(spec1dfile, telgridfile, pcafile, npca, z_qso, inmask=None, wav
     tell_dict = read_telluric_grid(telgridfile)
     wave_grid = tell_dict['wave_grid']
     ngrid = wave_grid.size
-
-    loglam = np.log10(wave_grid)
-    dloglam = np.median(loglam[1:] - loglam[:-1])
     # Guess resolution from wavelength sampling of telluric grid if it is not provided
     if resln_guess is None:
-        resln_guess = 1.0/(3.0 * dloglam * np.log(10.0))  # assume roughly Nyquist sampling
+        resln_guess = tell_dict['resln_guess']
 
     pix_per_R = 1.0 / resln_guess / (dloglam * np.log(10.0)) / (2.0 * np.sqrt(2.0 * np.log(2)))
     tell_pad_pix = int(np.ceil(10.0 * pix_per_R))
@@ -644,23 +675,14 @@ def telluric_qso(spec1dfile, telgridfile, pcafile, npca, z_qso, inmask=None, wav
     # Interpolate the qso onto the regular telluric wave_grid
     flux, flux_ivar, mask = coadd1d.interp_spec(wave_grid, wave_in, flux_in, flux_ivar_in, mask_in)
     # If an input mask was provided get into the wave_grid, and apply it
-    if inmask is not None:
-        if wave_inmask is None:
-            msgs.error('If you are specifying a mask you need to pass in the corresponding wavelength grid')
-        # TODO we shoudld consider refactoring the interpolator to take a list of images and masks to remove the
-        # the fake zero images in the call below
-        _, _, inmask_int = coadd1d.interp_spec(wave_grid, wave_inmask,
-                                               np.ones_like(wave_inmask), np.ones_like(wave_inmask), inmask)
-        mask_tot = mask & inmask_int
-    else:
-        mask_tot = mask
+    mask_tot = interpolate_inmask(wave_grid, mask, wave_inmask, inmask)
 
     # Slice out the parts of the data that are not masked
     wave_fit, flux_fit, flux_ivar_fit1, mask_fit, ind_lower, ind_upper = trim_spectrum(wave_grid, flux, flux_ivar, mask_tot)
 
     # cap the inverse variance with a SN_cap to avoid excessive rejection for high S/N data. This amounts to adding
     # a tiny bit of error, 1.0/SN_CAP to the sigma of the spectrum.
-    flux_ivar_fit = utils.cap_ivar(flux_fit, flux_ivar_fit1, sn_cap, mask=mask_fit)
+    flux_ivar_fit = utils.clip_ivar(flux_fit, flux_ivar_fit1, sn_cap, mask=mask_fit)
 
     wave_min = wave_grid[ind_lower]
     wave_max = wave_grid[ind_upper]
