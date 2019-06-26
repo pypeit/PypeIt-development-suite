@@ -191,6 +191,7 @@ def qso_tellfit(flux, thismask, arg_dict, **kwargs_opt):
 
     return result, tell_model*pca_model, ivartot
 
+## TODO Can we merge sensfunc_tellfit_chi2 and qso_tellfit_chi2 into one piece of code
 ## SENSFUNC_TELLFIT
 def sensfunc_tellfit_eval(theta, arg_dict):
 
@@ -287,8 +288,11 @@ def unpack_orders(sobjs, ret_flam=False):
 
 
     # Read in the spec1d file
-    norders = len(sobjs)
-    nspec = sobjs[0].optimal['COUNTS'].size
+    norders = len(sobjs) # ToDO: This is incorrect if you have more than one object in the sobjs
+    if ret_flam:
+        nspec = sobjs[0].optimal['FLAM'].size
+    else:
+        nspec = sobjs[0].optimal['COUNTS'].size
     # Allocate arrays and unpack spectrum
     wave = np.zeros((nspec, norders))
     #wave_mask = np.zeros((nspec, norders),dtype=bool)
@@ -404,9 +408,10 @@ def trim_spectrum(wave_grid, flux, ivar, mask):
 
 
 def sensfunc_telluric(spec1dfile, telgridfile, outfile, star_type=None, star_mag=None, ra=None, dec=None,
+                      inmask=None, wave_inmask=None,
                       resln_guess=None, resln_frac_bounds=(0.5,1.5), pix_shift_bounds = (-2.0,2.0),
                       delta_coeff_bounds=(-20.0, 20.0), minmax_coeff_bounds=(-5.0, 5.0),
-                      polyorder=7, func='legendre', maxiter=3, sticky=True, lower=3.0, upper=3.0,
+                      polyorder=7, func='legendre', maxiter=3, sticky=True, lower=3.0, upper=3.0, ret_flam=False,
                       seed=None, tol=1e-4, popsize=40, recombination=0.7, polish=True, disp=True, debug=False):
 
     """
@@ -449,10 +454,26 @@ def sensfunc_telluric(spec1dfile, telgridfile, outfile, star_type=None, star_mag
     ngrid = wave_grid.size
 
     # Read in the standard star spectrum and interpolate it onto the regular telluric wave grid.
-    sobjs, head = load.load_specobjs(spec1dfile)
-    wave, counts, counts_ivar, counts_mask = unpack_orders(sobjs)
+    ## ToDo: currently just using try except to deal with different format. We should fix the data model
+    try:
+        # Read in the standard spec1d file produced by Pypeit
+        sobjs, head = load.load_specobjs(spec1dfile)
+        wave, counts, counts_ivar, counts_mask = unpack_orders(sobjs, ret_flam=ret_flam)
+    except:
+        # Read in the coadd 1d spectra file
+        hdu = fits.open(spec1dfile)
+        head = hdu[0].header
+        data = hdu[1].data
+        wave_in, flux_in, flux_ivar_in, mask_in = data['OPT_WAVE'], data['OPT_FLAM'], data['OPT_FLAM_IVAR'], data[
+            'OPT_MASK']
+        wave = np.reshape(wave_in,(wave_in.size,1))
+        counts = np.reshape(flux_in,(wave_in.size,1))
+        counts_ivar = np.reshape(flux_ivar_in,(wave_in.size,1))
+        counts_mask = np.reshape(mask_in,(wave_in.size,1))
+
     exptime = head['EXPTIME']
     airmass = head['AIRMASS']
+    nspec, norders = wave.shape
 
     loglam = np.log10(wave_grid)
     dloglam = np.median(loglam[1:] - loglam[:-1])
@@ -467,7 +488,22 @@ def sensfunc_telluric(spec1dfile, telgridfile, outfile, star_type=None, star_mag
     counts_int, counts_ivar_int, counts_mask_int = coadd1d.interp_spec(wave_grid, wave, counts, counts_ivar, counts_mask)
     counts_ps = counts_int/exptime
     counts_ps_ivar = counts_ivar_int* exptime ** 2
-    counts_ps_mask = counts_mask_int
+    #counts_ps_mask = counts_mask_int
+
+    # If an input mask was provided get into the wave_grid, and apply it
+    if inmask is not None:
+        if wave_inmask is None:
+            msgs.error('If you are specifying a mask you need to pass in the corresponding wavelength grid')
+        # TODO we shoudld consider refactoring the interpolator to take a list of images and masks to remove the
+        # the fake zero images in the call below
+        _, _, inmask_int = coadd1d.interp_spec(wave_grid, wave_inmask,
+                                               np.ones_like(wave_inmask), np.ones_like(wave_inmask), inmask)
+        inmask_tot = np.outer(inmask_int, np.ones(norders, dtype=bool))
+        counts_ps_mask = counts_mask_int & inmask_tot
+    else:
+        counts_ps_mask = counts_mask_int
+
+
 
     # Read in standard star dictionary
     std_dict = flux.get_standard_spectrum(star_type=star_type, star_mag=star_mag, ra=ra, dec=dec)
@@ -481,7 +517,6 @@ def sensfunc_telluric(spec1dfile, telgridfile, outfile, star_type=None, star_mag
         seed = np.random.RandomState(seed=seed_data)
 
 
-    nspec, norders = wave.shape
     if np.size(polyorder) > 1:
         if np.size(polyorder) != norders:
             msgs.error('polyorder must have either have norder elements or be a scalar')
@@ -578,6 +613,7 @@ def sensfunc_telluric(spec1dfile, telgridfile, outfile, star_type=None, star_mag
         telluric_fit = eval_telluric(tell_params, arg_dict['tell_dict'])
         sensfit = np.exp(utils.func_val(sens_coeff, wave_fit, arg_dict['func'], minx=wave_min, maxx=wave_max))
         counts_model_fit = telluric_fit * flam_true_fit/ (sensfit + (sensfit == 0.0))
+        IPython.embed()
         if debug:
             plt.plot(wave_fit, counts_ps_fit * sensfit, drawstyle='steps-mid')
             plt.plot(wave_fit, counts_ps_fit * sensfit / (telluric_fit + (telluric_fit == 0.0)), drawstyle='steps-mid')
@@ -686,7 +722,8 @@ def telluric_qso(spec1dfile, telgridfile, pcafile, npca, z_qso, inmask=None, wav
     # This presumes that the data has been interpolated onto the telluric model grid
     tell_dict_fit = trim_tell_dict(tell_dict, ind_lower, ind_upper, dloglam, tell_pad_pix)
 
-    # Read in the PCA model information
+    #
+    # fitfunc, arg_dict, bounds = instantiate_obj_model(model_type, wave_fit, model_params)
     pca_dict = qso_pca.init_pca(pcafile, wave_fit, z_qso, npca)
 
     flam_norm = qso_norm_guess(pca_dict, tell_dict_fit, airmass, resln_guess, tell_norm_thresh, flux_fit, flux_ivar_fit, mask_fit)
@@ -712,6 +749,7 @@ def telluric_qso(spec1dfile, telgridfile, pcafile, npca, z_qso, inmask=None, wav
                                                              tol=tol, popsize=popsize, recombination=recombination,
                                                              polish=polish, disp=disp)
     theta = result.x
+    # model_params, tell_params eval_obj_model(model_type, wave_fit, model_params, theta)
     tell_model, pca_model, ln_pca_pri = qso_tellfit_eval(theta, arg_dict)
     flux_model = tell_model*pca_model
     pca_params = theta[:npca + 1]
