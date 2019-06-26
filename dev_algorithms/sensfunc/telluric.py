@@ -426,7 +426,8 @@ def interpolate_inmask(wave_grid, mask, wave_inmask, inmask):
     else:
         return mask
 
-## TODO Add a function called telluric_fit_loop
+## TODO Add a function called telluric_fit_loop which loops over the orders/spectra to be fit. Pack the obj_dict
+## and arg_dict into lists
 #def telluric_fit_loop(arg_dict_list, obj_dict_list):
 
 # TODO Make all of this a class
