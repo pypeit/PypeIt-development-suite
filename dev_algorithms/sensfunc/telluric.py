@@ -24,9 +24,25 @@ import pickle
 PYPEIT_FLUX_SCALE = 1e-17
 from astropy.io import fits
 import copy
-import IPython
+from IPython import embed
 import qso_pca
 
+
+##############################
+#  Telluric model functions  #
+##############################
+
+def get_bounds_tell(tell_dict, resln_guess, resln_frac_bounds, pix_shift_bounds):
+
+    # Set the bounds for the optimization
+    bounds_tell = [(tell_dict['pressure_grid'].min(), tell_dict['pressure_grid'].max()),
+                   (tell_dict['temp_grid'].min(), tell_dict['temp_grid'].max()),
+                   (tell_dict['h2o_grid'].min(), tell_dict['h2o_grid'].max()),
+                   (tell_dict['airmass_grid'].min(), tell_dict['airmass_grid'].max()),
+                   (resln_guess * resln_frac_bounds[0], resln_guess * resln_frac_bounds[1]),
+                   pix_shift_bounds]
+
+    return bounds_tell
 
 def read_telluric_grid(filename, wave_min=None, wave_max=None, pad = 0):
 
@@ -118,6 +134,21 @@ def eval_telluric(theta_tell, tell_dict):
         return tellmodel_conv[tell_pad[0]:-tell_pad[1]]
 
 
+def trim_tell_dict(tell_dict, ind_lower, ind_upper, dloglam, tell_pad):
+
+    wave_grid = tell_dict['wave_grid']
+    ind_lower_pad = np.fmax(ind_lower - tell_pad, 0)
+    ind_upper_pad = np.fmin(ind_upper + tell_pad, wave_grid.size - 1)
+    tell_pad_tuple = (ind_lower - ind_lower_pad, ind_upper_pad - ind_upper)
+    tell_wave_grid = wave_grid[ind_lower_pad:ind_upper_pad + 1]
+    tell_model_grid = tell_dict['tell_grid'][:, :, :, :, ind_lower_pad:ind_upper_pad + 1]
+    tell_dict_fit = dict(pressure_grid=tell_dict['pressure_grid'], temp_grid=tell_dict['temp_grid'],
+                         h2o_grid=tell_dict['h2o_grid'], airmass_grid=tell_dict['airmass_grid'],
+                         tell_grid=tell_model_grid, tell_pad=tell_pad_tuple, dloglam=dloglam,
+                         loglam=np.log10(tell_wave_grid))
+
+    return tell_dict_fit
+
 def sort_telluric(wave, wave_mask, tell_dict):
 
     norders = wave.shape[1]
@@ -135,149 +166,91 @@ def sort_telluric(wave, wave_mask, tell_dict):
 
     return srt_order_tell
 
-# QSO TELLFIT
-def qso_tellfit_eval(theta, arg_dict):
+############################
+#  Object model functions  #
+############################
 
-    tell_dict = arg_dict['tell_dict']
-    npca = arg_dict['npca']
+# Sensitivity function evaluation function. Model for counts is flam_true/sensfunc
+def sensfunc_obj_model(theta, obj_dict):
 
-    # There are npca-1 coefficients, norm and redshift for npca+1 parameters
-    theta_PCA = theta[:npca + 1]
-    # Telluric is 6-d for general case of airmass, temp, pressure, H2O, resln, shift
-    theta_tell = theta[-6:]
-    tell_model = eval_telluric(theta_tell, arg_dict['tell_dict'])
-    pca_model = qso_pca.pca_eval(theta_PCA, arg_dict['pca_dict'])
+    wave_star = obj_dict['wave']
+    wave_min = obj_dict['wave_min']
+    wave_max = obj_dict['wave_max']
+    flam_true = obj_dict['flam_true']
+    func = obj_dict['func']
+
+    sensfunc = np.exp(utils.func_val(theta, wave_star, func, minx=wave_min, maxx=wave_max))
+    counts_model = flam_true/(sensfunc + (sensfunc == 0.0))
+
+    return counts_model, (sensfunc > 0.0)
+
+# QSO evaluation function. Model for QSO is a PCA spectrum
+def qso_obj_model(theta, obj_dict):
+
+    pca_model = qso_pca.pca_eval(theta, obj_dict['pca_dict'])
     # TODO Is the prior evaluation slowing things down??
     # TODO Disablingthe prior for now as I think it slows things down for no big gain
     #ln_pca_pri = qso_pca.pca_lnprior(theta_PCA, arg_dict['pca_dict'])
-    ln_pca_pri = 0.0
-    return tell_model, pca_model, ln_pca_pri
-
-def qso_tellfit_chi2(theta, flux, thismask, arg_dict):
-
-
-    tell_model, pca_model, ln_pca_pri = qso_tellfit_eval(theta, arg_dict)
-    chi_vec = thismask*(flux - tell_model*pca_model)*np.sqrt(arg_dict['flux_ivar'])
-
-    robust_scale = 2.0
-    huber_vec = scipy.special.huber(robust_scale, chi_vec)
-    chi2_remap = np.sum(np.square(huber_vec * thismask))
-
-    lnL = -chi2_remap/2.0
-    lnptot = lnL + ln_pca_pri
-    chi2_tot = -2.0*lnptot
-    return chi2_tot
+    #ln_pca_pri = 0.0
+    #flux_model, tell_model, spec_model, modelmask
+    return pca_model, (pca_model > 0.0)
 
 
-def qso_tellfit(flux, thismask, arg_dict, **kwargs_opt):
+############################
+#  Fitting routines        #
+############################
 
-    # Function that we are optimizing
-    chi2_func = arg_dict['chi2_func']
-    flux_ivar = arg_dict['flux_ivar']
-    bounds = arg_dict['bounds']
-    seed = arg_dict['seed']
-    result = scipy.optimize.differential_evolution(chi2_func, bounds, args=(flux, thismask, arg_dict,), seed=seed,
-                                                   **kwargs_opt)
+def tellfit_chi2(theta, flux, thismask, arg_dict):
 
-    tell_model, pca_model, ln_pca_pri = qso_tellfit_eval(result.x, arg_dict)
-    chi_vec = thismask*(flux - tell_model*pca_model)*np.sqrt(flux_ivar)
-    try:
-        debug = arg_dict['debug']
-    except KeyError:
-        debug = False
+    obj_model_func = arg_dict['obj_model_func']
+    flux_ivar = arg_dict['ivar']
 
-    sigma_corr, maskchi = coadd1d.renormalize_errors(chi_vec, mask=thismask, title='qso_tellfit', debug=debug)
-    ivartot = flux_ivar/sigma_corr ** 2
+    theta_obj = theta[:-6]
+    theta_tell = theta[-6:]
+    tell_model = eval_telluric(theta_tell, arg_dict['tell_dict'])
+    obj_model, modelmask = obj_model_func(theta_obj, arg_dict['obj_dict'])
 
-    return result, tell_model*pca_model, ivartot
-
-## TODO Can we merge sensfunc_tellfit_chi2 and qso_tellfit_chi2 into one piece of code
-## SENSFUNC_TELLFIT
-def sensfunc_tellfit_eval(theta, arg_dict):
-
-    wave_star = arg_dict['wave']
-    wave_min = arg_dict['wave_min']
-    wave_max = arg_dict['wave_max']
-    flam_true = arg_dict['flam_true']
-    tell_dict = arg_dict['tell_dict']
-    tell_pad = tell_dict['tell_pad']
-    order = arg_dict['order']
-    func = arg_dict['func']
-
-    theta_sens = theta[:order+1]
-    theta_tell = theta[order+1:]
-    sensmodel = np.exp(utils.func_val(theta_sens, wave_star, func, minx=wave_min, maxx=wave_max))
-    tellmodel_conv = eval_telluric(theta_tell, tell_dict)
-    counts_model = tellmodel_conv*flam_true/(sensmodel + (sensmodel == 0.0))
-
-    return counts_model, sensmodel
-
-def sensfunc_tellfit_chi2(theta, counts_ps, thismask, arg_dict):
-    """
-
-    Args:
-        theta:
-        counts_ps:
-        thismask:
-        arg_dict:
-
-    Returns:
-
-    """
-
-    counts_model, sensmodel = sensfunc_tellfit_eval(theta, arg_dict)
-    counts_ps_ivar = arg_dict['ivar']
-
-    if np.sum(np.abs(sensmodel)) < 1e-6:
+    if not np.any(modelmask):
         return np.inf
     else:
-        chi_vec = thismask*(sensmodel != 0.0)*(counts_model - counts_ps)*np.sqrt(counts_ps_ivar)
-        # Robustly characterize the dispersion of this distribution
-        #chi_mean, chi_median, chi_std = stats.sigma_clipped_stats(chi_vec, np.invert(thismask), cenfunc='median',
-        #                                                          stdfunc=stats.mad_std, maxiters=5, sigma=2.0)
+        totalmask = thismask & modelmask
+        chi_vec = totalmask * (flux - tell_model*obj_model) * np.sqrt(flux_ivar)
         robust_scale = 2.0
         huber_vec = scipy.special.huber(robust_scale, chi_vec)
-        loss_function = np.sum(np.square(huber_vec * thismask))
+        loss_function = np.sum(np.square(huber_vec * totalmask))
         return loss_function
 
+def tellfit(flux, thismask, arg_dict, **kwargs_opt):
 
-def sensfunc_tellfit(counts_ps, thismask, arg_dict, **kwargs_opt):
-
-    # Function that we are optimizing
-    chi2_func = arg_dict['chi2_func']
-    counts_ps_ivar = arg_dict['ivar']
-    #guess = arg_dict['guess']
-    bounds = arg_dict['bounds']
-    seed = arg_dict['seed']
-    #result = scipy.optimize.minimize(chi2_func, guess, bounds = bounds, method='TNC', args=(counts_ps, thismask, arg_dict),  **kwargs_opt)
-    result = scipy.optimize.differential_evolution(chi2_func, bounds, args=(counts_ps, thismask, arg_dict,), seed=seed,
+    # Unpack arguments
+    obj_model_func = arg_dict['obj_model_func'] # Evaluation function
+    flux_ivar = arg_dict['ivar'] # Inverse variance of flux or counts
+    bounds = arg_dict['bounds']  # bounds for differential evolution optimizaton
+    seed = arg_dict['seed']      # Seed for differential evolution optimizaton
+    result = scipy.optimize.differential_evolution(tellfit_chi2, bounds, args=(flux, thismask, arg_dict,), seed=seed,
                                                    **kwargs_opt)
 
-    counts_model, sensmodel = sensfunc_tellfit_eval(result.x, arg_dict)
-    chi_vec = thismask * (sensmodel != 0.0) * (counts_model - counts_ps) * np.sqrt(counts_ps_ivar)
+    theta_obj  = result.x[:-6]
+    theta_tell = result.x[-6:]
+    tell_model = eval_telluric(theta_tell, arg_dict['tell_dict'])
+    obj_model, modelmask = obj_model_func(theta_obj, arg_dict['obj_dict'])
+    totalmask = thismask & modelmask
+    chi_vec = totalmask*(flux - tell_model*obj_model)*np.sqrt(flux_ivar)
 
     try:
         debug = arg_dict['debug']
     except KeyError:
         debug = False
 
-    sigma_corr, maskchi = coadd1d.renormalize_errors(chi_vec, mask=thismask, title = 'sensfunc_tellfit', debug=debug)
-    ivartot = counts_ps_ivar/sigma_corr**2
+    # Name of function for title in case QA requested
+    obj_model_func_name = getattr(obj_model_func, '__name__', repr(obj_model_func))
+    sigma_corr, maskchi = coadd1d.renormalize_errors(chi_vec, mask=totalmask, title = obj_model_func_name,
+                                                     debug=debug)
+    ivartot = flux_ivar/sigma_corr**2
 
-    return result, counts_model, ivartot
+    return result, tell_model*obj_model, ivartot
 
 
-def get_bounds_tell(tell_dict, resln_guess, resln_frac_bounds, pix_shift_bounds):
-
-    # Set the bounds for the optimization
-    bounds_tell = [(tell_dict['pressure_grid'].min(), tell_dict['pressure_grid'].max()),
-                   (tell_dict['temp_grid'].min(), tell_dict['temp_grid'].max()),
-                   (tell_dict['h2o_grid'].min(), tell_dict['h2o_grid'].max()),
-                   (tell_dict['airmass_grid'].min(), tell_dict['airmass_grid'].max()),
-                   (resln_guess * resln_frac_bounds[0], resln_guess * resln_frac_bounds[1]),
-                   pix_shift_bounds]
-
-    return bounds_tell
 
 def unpack_orders(sobjs, ret_flam=False):
 
@@ -337,7 +310,7 @@ def sensfunc_guess(wave, counts_ps, inmask, flam_true, tell_dict_now, resln_gues
 
     return coeff
 
-def qso_norm_guess(pca_dict, tell_dict, airmass, resln_guess, tell_norm_thresh, flux, ivar, mask):
+def qso_guess(flux, ivar, mask, pca_dict, tell_dict, airmass, resln_guess, tell_norm_thresh):
 
     # Estimate the normalization for setting the bounds
     tell_guess = (np.median(tell_dict['pressure_grid']), np.median(tell_dict['temp_grid']),
@@ -357,32 +330,6 @@ def qso_norm_guess(pca_dict, tell_dict, airmass, resln_guess, tell_norm_thresh, 
 
     return 1.0/flam_norm_inv
 
-## Not used
-def get_dloglam_data(wave):
-
-    loglam = np.log10(wave)
-    loglam_ma = np.ma.array(np.copy(loglam))
-    loglam_ma.mask = np.invert(wave > 10.0)
-    dloglam_arr = np.abs(loglam_ma - np.roll(loglam_ma, 1, axis=0))[1:, :]
-    dloglam = np.ma.median(dloglam_arr)
-
-    return dloglam
-
-
-def trim_tell_dict(tell_dict, ind_lower, ind_upper, dloglam, tell_pad):
-
-    wave_grid = tell_dict['wave_grid']
-    ind_lower_pad = np.fmax(ind_lower - tell_pad, 0)
-    ind_upper_pad = np.fmin(ind_upper + tell_pad, wave_grid.size - 1)
-    tell_pad_tuple = (ind_lower - ind_lower_pad, ind_upper_pad - ind_upper)
-    tell_wave_grid = wave_grid[ind_lower_pad:ind_upper_pad + 1]
-    tell_model_grid = tell_dict['tell_grid'][:, :, :, :, ind_lower_pad:ind_upper_pad + 1]
-    tell_dict_fit = dict(pressure_grid=tell_dict['pressure_grid'], temp_grid=tell_dict['temp_grid'],
-                         h2o_grid=tell_dict['h2o_grid'], airmass_grid=tell_dict['airmass_grid'],
-                         tell_grid=tell_model_grid, tell_pad=tell_pad_tuple, dloglam=dloglam,
-                         loglam=np.log10(tell_wave_grid))
-
-    return tell_dict_fit
 
 def ind_lower_upper(wave_grid, mask):
 
@@ -458,6 +405,7 @@ def sensfunc_telluric(spec1dfile, telgridfile, outfile, star_type=None, star_mag
     try:
         # Read in the standard spec1d file produced by Pypeit
         sobjs, head = load.load_specobjs(spec1dfile)
+        embed()
         wave, counts, counts_ivar, counts_mask = unpack_orders(sobjs, ret_flam=ret_flam)
     except:
         # Read in the coadd 1d spectra file
@@ -504,7 +452,6 @@ def sensfunc_telluric(spec1dfile, telgridfile, outfile, star_type=None, star_mag
         counts_ps_mask = counts_mask_int
 
 
-
     # Read in standard star dictionary
     std_dict = flux.get_standard_spectrum(star_type=star_type, star_mag=star_mag, ra=ra, dec=dec)
     flam_true, flam_ivar, flam_mask = coadd1d.interp_spec(wave_grid, std_dict['wave'].value, std_dict['flux'].value,
@@ -515,7 +462,6 @@ def sensfunc_telluric(spec1dfile, telgridfile, outfile, star_type=None, star_mag
     if seed is None:
         seed_data = np.fmin(int(np.abs(np.sum(std_dict['flux'].value))), 2 ** 32 - 1)
         seed = np.random.RandomState(seed=seed_data)
-
 
     if np.size(polyorder) > 1:
         if np.size(polyorder) != norders:
@@ -586,34 +532,33 @@ def sensfunc_telluric(spec1dfile, telgridfile, outfile, star_type=None, star_mag
         tell_dict_fit = trim_tell_dict(tell_dict, ind_lower, ind_upper, dloglam, tell_pad_pix)
 
         # Guess the coefficients by doing a preliminary fit to the sensitivity function with the average telluric behavior
-        guess_coeff = sensfunc_guess(wave_fit, counts_ps_fit, counts_ps_mask_fit, flam_true_fit, tell_dict_fit, resln_guess, airmass,
+        guess_obj = sensfunc_guess(wave_fit, counts_ps_fit, counts_ps_mask_fit, flam_true_fit, tell_dict_fit, resln_guess, airmass,
                                polyorder_vec[iord], func, lower=lower, upper=upper, debug=debug)
         # Polynomial coefficient bounds
-        bounds_coeff = [(np.fmin(np.abs(this_coeff)*delta_coeff_bounds[0], minmax_coeff_bounds[0]),
-                         np.fmax(np.abs(this_coeff)*delta_coeff_bounds[1], minmax_coeff_bounds[1])) for this_coeff in guess_coeff]
+        bounds_obj = [(np.fmin(np.abs(this_coeff)*delta_coeff_bounds[0], minmax_coeff_bounds[0]),
+                         np.fmax(np.abs(this_coeff)*delta_coeff_bounds[1], minmax_coeff_bounds[1])) for this_coeff in guess_obj]
 
         # Set the bounds for the optimization
         bounds_tell = get_bounds_tell(tell_dict_fit, resln_guess, resln_frac_bounds, pix_shift_bounds)
-        bounds = bounds_coeff + bounds_tell
+        bounds = bounds_obj + bounds_tell
         # Create the arg_dict
-        arg_dict = dict(wave=wave_fit, counts_ps=counts_ps_fit, ivar=counts_ps_ivar_fit,
-                        wave_min=wave_min, wave_max=wave_max, flam_true=flam_true_fit,
-                        tell_dict=tell_dict_fit,  bounds=bounds,order=polyorder_vec[iord], func=func,
-                        chi2_func = sensfunc_tellfit_chi2, seed=seed, debug=debug)
-        result, ymodel, ivartot, outmask = utils.robust_optimize(counts_ps_fit, sensfunc_tellfit, arg_dict,
+        obj_dict = dict(wave=wave_fit, wave_min=wave_min, wave_max=wave_max, flam_true=flam_true_fit, func=func,
+                        polyorder=polyorder_vec[iord])
+        arg_dict = dict(ivar=counts_ps_ivar_fit, tell_dict=tell_dict_fit,
+                        obj_model_func=sensfunc_obj_model, obj_dict=obj_dict,
+                        bounds=bounds, seed=seed, debug=debug)
+        result, ymodel, ivartot, outmask = utils.robust_optimize(counts_ps_fit, tellfit, arg_dict,
                                                                  inmask=counts_ps_mask_fit,
                                                                  maxiter=maxiter, lower=lower, upper=upper,
                                                                  sticky=sticky,
                                                                  tol=tol, popsize=popsize, recombination=recombination,
                                                                  polish=polish, disp=disp)
         # TODO move to sensfunc_telluric and individual routines
-        sens_coeff = result.x[:polyorder_vec[iord] + 1]
-        tell_params = result.x[polyorder_vec[iord] + 1:]
-        tell_pad_tuple = arg_dict['tell_dict']['tell_pad']
-        telluric_fit = eval_telluric(tell_params, arg_dict['tell_dict'])
-        sensfit = np.exp(utils.func_val(sens_coeff, wave_fit, arg_dict['func'], minx=wave_min, maxx=wave_max))
+        theta_obj = result.x[:-6]
+        theta_tell = result.x[-6:]
+        telluric_fit = eval_telluric(theta_tell, arg_dict['tell_dict'])
+        sensfit = np.exp(utils.func_val(theta_obj, wave_fit, arg_dict['func'], minx=wave_min, maxx=wave_max))
         counts_model_fit = telluric_fit * flam_true_fit/ (sensfit + (sensfit == 0.0))
-        IPython.embed()
         if debug:
             plt.plot(wave_fit, counts_ps_fit * sensfit, drawstyle='steps-mid')
             plt.plot(wave_fit, counts_ps_fit * sensfit / (telluric_fit + (telluric_fit == 0.0)), drawstyle='steps-mid')
@@ -627,6 +572,7 @@ def sensfunc_telluric(spec1dfile, telgridfile, outfile, star_type=None, star_mag
             plt.ylim(-0.1 * counts_ps_fit.max(), 1.5 * counts_ps_fit.max())
             plt.legend()
             plt.show()
+            IPython.embed()
 
         out_table['CHI2'][iord] = result.fun
         out_table['SUCCESS'][iord] = result.success
@@ -635,15 +581,15 @@ def sensfunc_telluric(spec1dfile, telgridfile, outfile, star_type=None, star_mag
         out_table['IND_UPPER'][iord] = ind_upper
         out_table['WAVE_MIN'][iord] = wave_grid[ind_lower]
         out_table['WAVE_MAX'][iord] = wave_grid[ind_upper]
-        out_table['SENS_COEFF'][iord][0:polyorder_vec[iord]+1] = sens_coeff
+        out_table['SENS_COEFF'][iord][0:polyorder_vec[iord]+1] = theta_obj
         out_table['TELLURIC'][iord][ind_lower:ind_upper+1] = telluric_fit
         out_table['SENSFUNC'][iord][ind_lower:ind_upper+1] = sensfit
-        out_table['TELL_PRESS'][iord] = tell_params[0]
-        out_table['TELL_TEMP'][iord] = tell_params[1]
-        out_table['TELL_H2O'][iord] = tell_params[2]
-        out_table['TELL_AIRMASS'][iord] = tell_params[3]
-        out_table['TELL_RESLN'][iord] = tell_params[4]
-        out_table['TELL_SHIFT'][iord] = tell_params[5]
+        out_table['TELL_PRESS'][iord] = theta_tell[0]
+        out_table['TELL_TEMP'][iord] = theta_tell[1]
+        out_table['TELL_H2O'][iord] = theta_tell[2]
+        out_table['TELL_AIRMASS'][iord] = theta_tell[3]
+        out_table['TELL_RESLN'][iord] = theta_tell[4]
+        out_table['TELL_SHIFT'][iord] = theta_tell[5]
         wave_all_min = np.fmin(out_table['WAVE_MIN'][iord], wave_all_min)
         wave_all_max = np.fmax(out_table['WAVE_MAX'][iord], wave_all_max)
 
@@ -726,7 +672,7 @@ def telluric_qso(spec1dfile, telgridfile, pcafile, npca, z_qso, inmask=None, wav
     # fitfunc, arg_dict, bounds = instantiate_obj_model(model_type, wave_fit, model_params)
     pca_dict = qso_pca.init_pca(pcafile, wave_fit, z_qso, npca)
 
-    flam_norm = qso_norm_guess(pca_dict, tell_dict_fit, airmass, resln_guess, tell_norm_thresh, flux_fit, flux_ivar_fit, mask_fit)
+    flam_norm = qso_guess(flux_fit, flux_ivar_fit, mask_fit, pca_dict, tell_dict_fit, airmass, resln_guess, tell_norm_thresh)
     # Set the bounds for the PCA and truncate to the right dimension
     coeffs = pca_dict['coeffs'][:,1:npca]
     # Compute the min and max arrays of the coefficients which are not the norm, i.e. grab the coeffs that aren't the first one
@@ -740,7 +686,7 @@ def telluric_qso(spec1dfile, telgridfile, pcafile, npca, z_qso, inmask=None, wav
     # Final bounds for the optimizaiton
     bounds =  bounds_z + bounds_flam + bounds_coeff + bounds_tell
     # Create the arg_dict
-    arg_dict = dict(npca=npca, flux_ivar=flux_ivar_fit, tell_dict=tell_dict_fit, pca_dict=pca_dict, debug=debug,
+    arg_dict = dict(npca=npca, ivar=flux_ivar_fit, tell_dict=tell_dict_fit, pca_dict=pca_dict, debug=debug,
                     bounds=bounds, seed=seed, chi2_func = qso_tellfit_chi2)
     result, ymodel, ivartot, outmask = utils.robust_optimize(flux_fit, qso_tellfit, arg_dict,
                                                              inmask=mask_fit,

@@ -368,6 +368,63 @@ def populate_orders(quantity, ind):
     return quantity_orders
 
 
+# deprecated
+def sensfunc_tellfit_chi2(theta, counts_ps, thismask, arg_dict):
+    """
+
+    Args:
+        theta:
+        counts_ps:
+        thismask:
+        arg_dict:
+
+    Returns:
+
+    """
+
+    counts_model, sensmodel = sensfunc_tellfit_eval(theta, arg_dict)
+    counts_ps_ivar = arg_dict['ivar']
+
+    if np.sum(np.abs(sensmodel)) < 1e-6:
+        return np.inf
+    else:
+        chi_vec = thismask * (sensmodel != 0.0) * (counts_model - counts_ps) * np.sqrt(counts_ps_ivar)
+        # Robustly characterize the dispersion of this distribution
+        # chi_mean, chi_median, chi_std = stats.sigma_clipped_stats(chi_vec, np.invert(thismask), cenfunc='median',
+        #                                                          stdfunc=stats.mad_std, maxiters=5, sigma=2.0)
+        robust_scale = 2.0
+        huber_vec = scipy.special.huber(robust_scale, chi_vec)
+        loss_function = np.sum(np.square(huber_vec * thismask))
+        return loss_function
+
+
+# deprecated
+def qso_tellfit_chi2(theta, flux, thismask, arg_dict):
+    tell_model, pca_model, ln_pca_pri = qso_tellfit_eval(theta, arg_dict)
+    chi_vec = thismask * (flux - tell_model * pca_model) * np.sqrt(arg_dict['flux_ivar'])
+
+    robust_scale = 2.0
+    huber_vec = scipy.special.huber(robust_scale, chi_vec)
+    chi2_remap = np.sum(np.square(huber_vec * thismask))
+
+    lnL = -chi2_remap / 2.0
+    lnptot = lnL + ln_pca_pri
+    chi2_tot = -2.0 * lnptot
+    return chi2_tot
+
+
+## Not used
+def get_dloglam_data(wave):
+
+    loglam = np.log10(wave)
+    loglam_ma = np.ma.array(np.copy(loglam))
+    loglam_ma.mask = np.invert(wave > 10.0)
+    dloglam_arr = np.abs(loglam_ma - np.roll(loglam_ma, 1, axis=0))[1:, :]
+    dloglam = np.ma.median(dloglam_arr)
+
+    return dloglam
+
+
 def get_inmask_orders(wave, wavegrid_inmask, inmask):
 
     norders = wave.shape[1]
@@ -601,6 +658,54 @@ def ech_telluric(wave, wave_mask, flam, flam_ivar, flam_mask, flam_true, airmass
     tell_dict['meta'] = dict(airmass=airmass, nslits=norders, wave_min=wave_all_min, wave_max=wave_all_max)
 
     return tell_dict
+
+
+
+def sensfunc_tellfit(counts_ps, thismask, arg_dict, **kwargs_opt):
+
+    # Function that we are optimizing
+    chi2_func = arg_dict['chi2_func']
+    counts_ps_ivar = arg_dict['ivar']
+    bounds = arg_dict['bounds']
+    seed = arg_dict['seed']
+    result = scipy.optimize.differential_evolution(chi2_func, bounds, args=(counts_ps, thismask, arg_dict,), seed=seed,
+                                                   **kwargs_opt)
+
+    counts_model, sensmodel = sensfunc_tellfit_eval(result.x, arg_dict)
+    chi_vec = thismask * (sensmodel != 0.0) * (counts_model - counts_ps) * np.sqrt(counts_ps_ivar)
+
+    try:
+        debug = arg_dict['debug']
+    except KeyError:
+        debug = False
+
+    sigma_corr, maskchi = coadd1d.renormalize_errors(chi_vec, mask=thismask, title = 'sensfunc_tellfit', debug=debug)
+    ivartot = counts_ps_ivar/sigma_corr**2
+
+    return result, counts_model, ivartot
+
+
+def qso_tellfit(flux, thismask, arg_dict, **kwargs_opt):
+
+    # Function that we are optimizing
+    chi2_func = arg_dict['chi2_func']
+    flux_ivar = arg_dict['ivar']
+    bounds = arg_dict['bounds']
+    seed = arg_dict['seed']
+    result = scipy.optimize.differential_evolution(chi2_func, bounds, args=(flux, thismask, arg_dict,), seed=seed,
+                                                   **kwargs_opt)
+
+    tell_model, pca_model, ln_pca_pri = qso_tellfit_eval(result.x, arg_dict)
+    chi_vec = thismask*(flux - tell_model*pca_model)*np.sqrt(flux_ivar)
+    try:
+        debug = arg_dict['debug']
+    except KeyError:
+        debug = False
+
+    sigma_corr, maskchi = coadd1d.renormalize_errors(chi_vec, mask=thismask, title='qso_tellfit', debug=debug)
+    ivartot = flux_ivar/sigma_corr ** 2
+
+    return result, tell_model*pca_model, ivartot
 
 def fit_joint_telluric(counts_ps_in, counts_ps_ivar_in, counts_ps_mask_in, flam_true_in, tell_dict, sensfunc=True,
                        airmass=None, resln_guess=None, pix_shift_bounds = (-2.0,2.0), resln_frac_bounds=(0.5,1.5),

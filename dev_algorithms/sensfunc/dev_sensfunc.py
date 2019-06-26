@@ -62,8 +62,8 @@ telgridfile = os.path.join(os.getenv('HOME'),'Dropbox/PypeIt_Redux/XSHOOTER/TelF
 polyorder=5 # changed from 6
 outfile = 'Feige110_sens_tell.fits'
 #
-#sensfunc_telluric(spec1dfile, telgridfile, outfile, polyorder=polyorder, ra=header['RA'], dec=header['DEC'],
-#                  star_mag=star_mag, star_type=star_type, debug=False)
+sensfunc_telluric(spec1dfile, telgridfile, outfile, polyorder=polyorder, ra=header['RA'], dec=header['DEC'],
+                  star_mag=star_mag, star_type=star_type, debug=False)
 
 ### Test telluric star
 spec1dfileflux = os.path.join(os.getenv('HOME'),'Dropbox/PypeIt_Redux/XSHOOTER/J0224-4711/Test_tell/spec1d_stack_TELL_B8IV_V5p8.fits')
