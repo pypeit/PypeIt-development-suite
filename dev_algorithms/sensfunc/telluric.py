@@ -366,12 +366,11 @@ def general_spec_reader(specfile, ret_flam=False):
 
     # Place holder routine that provides a generic spectrum reader
 
-
+    bonus = {}
     try:
         # Read in the standard spec1d file produced by Pypeit
         sobjs, head = load.load_specobjs(specfile)
         wave, counts, counts_ivar, counts_mask = unpack_orders(sobjs, ret_flam=ret_flam)
-        bonus = {}
         bonus['ECH_ORDER'] = (sobjs.ech_order).astype(int)
         bonus['ECH_ORDERINDX'] = (sobjs.ech_orderindx).astype(int)
         bonus['ECH_SNR'] = (sobjs.ech_snr).astype(float)
@@ -383,10 +382,14 @@ def general_spec_reader(specfile, ret_flam=False):
         data = hdu[1].data
         wave_in, flux_in, flux_ivar_in, mask_in = data['OPT_WAVE'], data['OPT_FLAM'], data['OPT_FLAM_IVAR'], data[
             'OPT_MASK']
-        wave = np.reshape(wave_in,(wave_in.size,1))
-        counts = np.reshape(flux_in,(wave_in.size,1))
-        counts_ivar = np.reshape(flux_ivar_in,(wave_in.size,1))
-        counts_mask = np.reshape(mask_in,(wave_in.size,1))
+        wave = wave_in
+        counts = flux_in
+        counts_ivar = flux_ivar_in
+        counts_mask = mask_in
+        #wave = np.reshape(wave_in,(wave_in.size,1))
+        #counts = np.reshape(flux_in,(wave_in.size,1))
+        #counts_ivar = np.reshape(flux_ivar_in,(wave_in.size,1))
+        #counts_mask = np.reshape(mask_in,(wave_in.size,1))
 
     try:
         spectrograph = load_spectrograph(head['INSTRUME'])
@@ -422,6 +425,11 @@ def interpolate_inmask(wave_grid, mask, wave_inmask, inmask):
         return (mask & inmask_out)
     else:
         return mask
+
+## TODO Add a function called telluric_fit_loop
+#def telluric_fit_loop(arg_dict_list, obj_dict_list):
+
+# TODO Make all of this a class
 
 def sensfunc_telluric(spec1dfile, telgridfile, outfile, star_type=None, star_mag=None, star_ra=None, star_dec=None,
                       inmask=None, wave_inmask=None,
@@ -485,7 +493,7 @@ def sensfunc_telluric(spec1dfile, telgridfile, outfile, star_type=None, star_mag
     counts_ps = counts_int/meta_spec['core']['EXPTIME']
     counts_ps_ivar = counts_ivar_int*meta_spec['core']['EXPTIME']**2
 
-    # If an input mask was provided get into the wave_grid, and apply it
+    # If an input mask was provided apply it by interpolating onto wave_grid
     counts_ps_mask = interpolate_inmask(wave_grid, counts_mask_int, wave_inmask, inmask)
 
     # Read in standard star dictionary and interpolate onto regular telluric wave_grid
@@ -555,7 +563,7 @@ def sensfunc_telluric(spec1dfile, telgridfile, outfile, star_type=None, star_mag
     for iord in srt_order_tell:
         msgs.info("Fitting sensitivity function for order: {:d}/{:d}".format(iord, norders))
 
-        # Slice out the parts of the data that are not masked, this deals with wavelenghth that are zero
+        # Slice out the parts of the data that are not masked, this deals with wavelenghts that are zero
         wave_fit, counts_ps_fit, counts_ps_ivar_fit, counts_ps_mask_fit, ind_lower, ind_upper = \
             trim_spectrum(wave_grid, counts_ps[:,iord], counts_ps_ivar[:,iord], counts_ps_mask[:,iord])
         flam_true_fit = flam_true[ind_lower:ind_upper + 1]
@@ -595,6 +603,7 @@ def sensfunc_telluric(spec1dfile, telgridfile, outfile, star_type=None, star_mag
         sensfit = np.exp(utils.func_val(theta_obj, wave_fit, obj_dict['func'], minx=wave_min, maxx=wave_max))
         counts_model_fit = telluric_fit * flam_true_fit/ (sensfit + (sensfit == 0.0))
         if debug:
+            ## TODO Add rejected points to QA plot
             plt.plot(wave_fit, counts_ps_fit * sensfit, drawstyle='steps-mid')
             plt.plot(wave_fit, counts_ps_fit * sensfit / (telluric_fit + (telluric_fit == 0.0)), drawstyle='steps-mid')
             plt.plot(wave_fit, flam_true_fit, drawstyle='steps-mid')
@@ -647,30 +656,24 @@ def telluric_qso(spec1dfile, telgridfile, pcafile, npca, z_qso, inmask=None, wav
                  seed=None, tol=1e-3, popsize=25, recombination=0.7, disp=True, polish=True,
                  debug=True, show=True):
 
-    # Read in the data
-    # TODO we need to sort out our data model!!
-    hdu = fits.open(spec1dfile)
-    head = hdu[0].header
-    data = hdu[1].data
-    wave_in, flux_in, flux_ivar_in, mask_in = data['OPT_WAVE'], data['OPT_FLAM'], data['OPT_FLAM_IVAR'], data['OPT_MASK']
-    mask_in = mask_in.astype(bool) ## TODO hack fix this
-    airmass = head['AIRMASS']
-
-    # This guarantees that the fit will be deterministic and hence reproducible
-    if seed is None:
-        seed_data = np.fmin(int(np.abs(np.sum(flux_in))), 2 ** 32 - 1)
-        seed = np.random.RandomState(seed=seed_data)
 
     # Read in the telluric grid
     tell_dict = read_telluric_grid(telgridfile)
     wave_grid = tell_dict['wave_grid']
     ngrid = wave_grid.size
+
     # Guess resolution from wavelength sampling of telluric grid if it is not provided
     if resln_guess is None:
         resln_guess = tell_dict['resln_guess']
 
-    pix_per_R = 1.0 / resln_guess / (dloglam * np.log(10.0)) / (2.0 * np.sqrt(2.0 * np.log(2)))
-    tell_pad_pix = int(np.ceil(10.0 * pix_per_R))
+    # optimizer requires a seed. This guarantees that the fit will be deterministic and hence reproducible
+    if seed is None:
+        seed_data = np.fmin(int(np.abs(np.sum(wave_grid))), 2 ** 32 - 1)
+        seed = np.random.RandomState(seed=seed_data)
+
+    # Read in the data and interpolate data onto the regular telluric wave_grid
+    wave_in, flux_in, flux_ivar_in, mask_in, meta_spec = general_spec_reader(spec1dfile, ret_flam=True)
+
 
     # Interpolate the qso onto the regular telluric wave_grid
     flux, flux_ivar, mask = coadd1d.interp_spec(wave_grid, wave_in, flux_in, flux_ivar_in, mask_in)
@@ -688,13 +691,14 @@ def telluric_qso(spec1dfile, telgridfile, pcafile, npca, z_qso, inmask=None, wav
     wave_max = wave_grid[ind_upper]
 
     # This presumes that the data has been interpolated onto the telluric model grid
-    tell_dict_fit = trim_tell_dict(tell_dict, ind_lower, ind_upper, dloglam, tell_pad_pix)
+    tell_dict_fit = trim_tell_dict(tell_dict, ind_lower, ind_upper)
 
     #
     # fitfunc, arg_dict, bounds = instantiate_obj_model(model_type, wave_fit, model_params)
     pca_dict = qso_pca.init_pca(pcafile, wave_fit, z_qso, npca)
 
-    flam_norm = qso_guess(flux_fit, flux_ivar_fit, mask_fit, pca_dict, tell_dict_fit, airmass, resln_guess, tell_norm_thresh)
+    flam_norm = qso_guess(flux_fit, flux_ivar_fit, mask_fit, pca_dict, tell_dict_fit, meta_spec['core']['AIRMASS'],
+                          resln_guess, tell_norm_thresh)
     # Set the bounds for the PCA and truncate to the right dimension
     coeffs = pca_dict['coeffs'][:,1:npca]
     # Compute the min and max arrays of the coefficients which are not the norm, i.e. grab the coeffs that aren't the first one
@@ -708,21 +712,22 @@ def telluric_qso(spec1dfile, telgridfile, pcafile, npca, z_qso, inmask=None, wav
     # Final bounds for the optimizaiton
     bounds =  bounds_z + bounds_flam + bounds_coeff + bounds_tell
     # Create the arg_dict
-    arg_dict = dict(npca=npca, ivar=flux_ivar_fit, tell_dict=tell_dict_fit, pca_dict=pca_dict, debug=debug,
-                    bounds=bounds, seed=seed, chi2_func = qso_tellfit_chi2)
-    result, ymodel, ivartot, outmask = utils.robust_optimize(flux_fit, qso_tellfit, arg_dict,
+    obj_dict = dict(npca=npca, pca_dict=pca_dict)
+    arg_dict = dict(ivar=flux_ivar_fit, tell_dict=tell_dict_fit,
+                    obj_model_func= qso_obj_model, obj_dict=obj_dict,
+                    bounds=bounds, seed=seed, debug=debug)
+    result, ymodel, ivartot, outmask = utils.robust_optimize(flux_fit, tellfit, arg_dict,
                                                              inmask=mask_fit,
                                                              maxiter=maxiter, lower=lower, upper=upper,
                                                              sticky=sticky,
                                                              tol=tol, popsize=popsize, recombination=recombination,
                                                              polish=polish, disp=disp)
-    theta = result.x
+    theta_obj = result.x[:-6]
+    theta_tell = result.x[-6:]
     # model_params, tell_params eval_obj_model(model_type, wave_fit, model_params, theta)
-    tell_model, pca_model, ln_pca_pri = qso_tellfit_eval(theta, arg_dict)
-    flux_model = tell_model*pca_model
-    pca_params = theta[:npca + 1]
-    tell_params = theta[-6:]
-
+    pca_model, modelmask = qso_obj_model(theta_obj, obj_dict)
+    telluric_fit = eval_telluric(theta_tell, arg_dict['tell_dict'])
+    flux_model = telluric_fit*pca_model
 
     if debug:
         # Plot the data
@@ -734,18 +739,18 @@ def telluric_qso(spec1dfile, telgridfile, pcafile, npca, z_qso, inmask=None, wav
         plt.ylim((-0.2, 1.5*pca_model.max()))
         plt.legend()
         plt.show()
-        IPython.embed()
+        embed()
         # Plot the telluric corrected and rescaled orders
-        flux_fit_corr = flux_fit / (tell_model + (tell_model == 0.0))
+        flux_fit_corr = flux_fit / (telluric_fit + (telluric_fit == 0.0))
         plt.plot(wave_fit, flux_fit_corr, color='k', drawstyle='steps-mid')
         plt.plot(wave_fit, pca_model, color='cornflowerblue', drawstyle='steps-mid', label='pca')
-        plt.plot(wave_fit, pca_model.max()*0.9*tell_model, color='magenta', drawstyle='steps-mid', label='pca', alpha=0.4)
+        plt.plot(wave_fit, pca_model.max()*0.9*telluric_fit, color='magenta', drawstyle='steps-mid', label='pca', alpha=0.4)
         plt.ylim((0.0, pca_model.max()*1.5))
         plt.legend()
         plt.show()
 
-    # Interpolate the model to the grid of raw spectrum
-    tell_model_out, _, _ = coadd1d.interp_spec(wave_in, wave_fit, tell_model, flux_ivar_fit, mask_fit)
+    # Interpolate the model to the grid of the input spectrum
+    tell_model_out, _, _ = coadd1d.interp_spec(wave_in, wave_fit, telluric_fit, flux_ivar_fit, mask_fit)
     pca_model_out, _, _ = coadd1d.interp_spec(wave_in, wave_fit, pca_model, flux_ivar_fit, mask_fit)
 
     flux_out = flux_in / (tell_model_out + (tell_model_out == 0.0))
@@ -754,6 +759,7 @@ def telluric_qso(spec1dfile, telgridfile, pcafile, npca, z_qso, inmask=None, wav
 
     # Save the final corrected spectrum
     outfile = spec1dfile.replace('.fits', '_tell_corr.fits') # Final spectra
+    head = fits.getheader(spec1dfile)
     save.save_coadd1d_to_fits(outfile, wave_in, flux_out, flux_ivar_out, mask_out,
                               header=head, ex_value='OPT', overwrite=True)
 
@@ -773,26 +779,26 @@ def telluric_qso(spec1dfile, telgridfile, pcafile, npca, z_qso, inmask=None, wav
 
     # Add an analogous I/O to tables as with sensfunc_telluric
     # Allocate the output tables
+    # Allocate the meta parameter tables
     meta_table = table.Table(meta={'name': 'Parameter Values'})
-    meta_table['WAVE_GRID'] = [wave_in]
+    meta_table['WAVE_GRID'] = [wave_grid]
     meta_table['TOL'] = tol
     meta_table['POPSIZE'] = popsize
     meta_table['RECOMBINATION'] = recombination
-    meta_table['PYPELINE'] = head['PYPELINE']
-    meta_table['EXPTIME'] = head['EXPTIME']
-    meta_table['AIRMASS'] = head['AIRMASS']
-    meta_table['TELGRIDFILE'] = os.path.basename(telgridfile)
     meta_table['SPEC1DFILE'] = os.path.basename(spec1dfile)
+    meta_table['TELGRIDFILE'] = os.path.basename(telgridfile)
+    for key,value in meta_spec['core'].items():
+        meta_table[key.upper()] = value
 
     out_table = table.Table(meta={'name': 'Sensfunc and Telluric Correction'})
     out_table['TELLURIC'] = [tell_model_out]
-    out_table['TELL_PRESS'] = tell_params[0]
-    out_table['TELL_TEMP'] = tell_params[1]
-    out_table['TELL_H2O'] = tell_params[2]
-    out_table['TELL_AIRMASS'] = tell_params[3]
-    out_table['TELL_RESLN'] = tell_params[4]
-    out_table['TELL_SHIFT'] = tell_params[5]
-    out_table['PCA_THETA'] = [pca_params]
+    out_table['TELL_PRESS'] = theta_tell[0]
+    out_table['TELL_TEMP'] = theta_tell[1]
+    out_table['TELL_H2O'] = theta_tell[2]
+    out_table['TELL_AIRMASS'] = theta_tell[3]
+    out_table['TELL_RESLN'] = theta_tell[4]
+    out_table['TELL_SHIFT'] = theta_tell[5]
+    out_table['PCA_THETA'] = [theta_obj]
     out_table['PCA_MODEL'] = [pca_model_out]
     out_table['CHI2'] = result.fun
     out_table['SUCCESS'] = result.success
