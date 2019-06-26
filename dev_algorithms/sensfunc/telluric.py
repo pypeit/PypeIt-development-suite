@@ -147,8 +147,8 @@ def eval_telluric(theta_tell, tell_dict):
 def trim_tell_dict(tell_dict, ind_lower, ind_upper):
 
     wave_grid = tell_dict['wave_grid']
-    ind_lower_pad = np.fmax(ind_lower - tell_dict['tell_pad'], 0)
-    ind_upper_pad = np.fmin(ind_upper + tell_dict['tell_pad'], wave_grid.size - 1)
+    ind_lower_pad = np.fmax(ind_lower - tell_dict['tell_pad_pix'], 0)
+    ind_upper_pad = np.fmin(ind_upper + tell_dict['tell_pad_pix'], wave_grid.size - 1)
     tell_pad_tuple = (ind_lower - ind_lower_pad, ind_upper_pad - ind_upper)
     tell_wave_grid = wave_grid[ind_lower_pad:ind_upper_pad + 1]
     tell_model_grid = tell_dict['tell_grid'][:, :, :, :, ind_lower_pad:ind_upper_pad + 1]
@@ -364,18 +364,18 @@ def trim_spectrum(wave_grid, flux, ivar, mask):
 
 def general_spec_reader(specfile, ret_flam=False):
 
-    # Read in the standard star spectrum and interpolate it onto the regular telluric wave grid.
-    ## ToDo: currently just using try except to deal with different format. We should fix the data model
+    # Place holder routine that provides a generic spectrum reader
 
-    meta_spec = {}
+
     try:
         # Read in the standard spec1d file produced by Pypeit
         sobjs, head = load.load_specobjs(specfile)
         wave, counts, counts_ivar, counts_mask = unpack_orders(sobjs, ret_flam=ret_flam)
-        meta_spec['ECH_ORDER'] = (sobjs.ech_order).astype(int)
-        meta_spec['ECH_ORDERINDX'] = (sobjs.ech_orderindx).astype(int)
-        meta_spec['ECH_SNR'] = (sobjs.ech_snr).astype(float)
-        meta_spec['NORDERS'] = wave.shape[1]
+        bonus = {}
+        bonus['ECH_ORDER'] = (sobjs.ech_order).astype(int)
+        bonus['ECH_ORDERINDX'] = (sobjs.ech_orderindx).astype(int)
+        bonus['ECH_SNR'] = (sobjs.ech_snr).astype(float)
+        bonus['NORDERS'] = wave.shape[1]
     except:
         # Read in the coadd 1d spectra file
         hdu = fits.open(specfile)
@@ -394,10 +394,11 @@ def general_spec_reader(specfile, ret_flam=False):
         # This is a hack until a generic spectrograph is implemented.
         spectrograph = load_spectrograph('shane_kast_blue')
 
+    meta_spec = dict(core={}, bonus=bonus)
     core_keys = spectrograph.header_cards_for_spec()
     for key in core_keys:
         try:
-            meta_spec[key.upper()] = head[key.upper()]
+            meta_spec['core'][key.upper()] = head[key.upper()]
         except KeyError:
             pass
 
@@ -422,7 +423,7 @@ def interpolate_inmask(wave_grid, mask, wave_inmask, inmask):
     else:
         return mask
 
-def sensfunc_telluric(spec1dfile, telgridfile, outfile, star_type=None, star_mag=None, ra=None, dec=None,
+def sensfunc_telluric(spec1dfile, telgridfile, outfile, star_type=None, star_mag=None, star_ra=None, star_dec=None,
                       inmask=None, wave_inmask=None,
                       resln_guess=None, resln_frac_bounds=(0.5,1.5), pix_shift_bounds = (-2.0,2.0),
                       delta_coeff_bounds=(-20.0, 20.0), minmax_coeff_bounds=(-5.0, 5.0),
@@ -467,32 +468,33 @@ def sensfunc_telluric(spec1dfile, telgridfile, outfile, star_type=None, star_mag
     tell_dict = read_telluric_grid(telgridfile)
     wave_grid = tell_dict['wave_grid']
     ngrid = wave_grid.size
+
     # Guess resolution from wavelength sampling of telluric grid if it is not provided
     if resln_guess is None:
         resln_guess = tell_dict['resln_guess']
 
+    # optimizer requires a seed. This guarantees that the fit will be deterministic and hence reproducible
+    if seed is None:
+        seed_data = np.fmin(int(np.abs(np.sum(wave_grid))), 2 ** 32 - 1)
+        seed = np.random.RandomState(seed=seed_data)
+
     # Read in the data and interpolate data onto the regular telluric wave_grid
     wave, counts, counts_ivar, counts_mask, meta_spec = general_spec_reader(spec1dfile, ret_flam=ret_flam)
     nspec, norders = wave.shape
-    # Interpolate the data and standard star spectrum onto the regular telluric wave_grid
     counts_int, counts_ivar_int, counts_mask_int = coadd1d.interp_spec(wave_grid, wave, counts, counts_ivar, counts_mask)
-    counts_ps = counts_int/meta_spec['exptime']
-    counts_ps_ivar = counts_ivar_int*meta_spec['exptime']**2
+    counts_ps = counts_int/meta_spec['core']['EXPTIME']
+    counts_ps_ivar = counts_ivar_int*meta_spec['core']['EXPTIME']**2
 
     # If an input mask was provided get into the wave_grid, and apply it
     counts_ps_mask = interpolate_inmask(wave_grid, counts_mask_int, wave_inmask, inmask)
 
-    # Read in standard star dictionary
-    std_dict = flux.get_standard_spectrum(star_type=star_type, star_mag=star_mag, ra=ra, dec=dec)
+    # Read in standard star dictionary and interpolate onto regular telluric wave_grid
+    star_ra = meta_spec['core']['RA'] if star_ra is None else star_ra
+    star_dec = meta_spec['core']['DEC'] if star_dec is None else star_dec
+    std_dict = flux.get_standard_spectrum(star_type=star_type, star_mag=star_mag, ra=star_ra, dec=star_dec)
     flam_true, flam_ivar, flam_mask = coadd1d.interp_spec(wave_grid, std_dict['wave'].value, std_dict['flux'].value,
-                                                          0.0*std_dict['flux'].value,
+                                                          np.ones_like(std_dict['flux'].value),
                                                           np.ones_like(std_dict['flux'].value, dtype=bool))
-
-    # This guarantees that the fit will be deterministic and hence reproducible
-    if seed is None:
-        seed_data = np.fmin(int(np.abs(np.sum(std_dict['flux'].value))), 2 ** 32 - 1)
-        seed = np.random.RandomState(seed=seed_data)
-
     if np.size(polyorder) > 1:
         if np.size(polyorder) != norders:
             msgs.error('polyorder must have either have norder elements or be a scalar')
@@ -500,44 +502,32 @@ def sensfunc_telluric(spec1dfile, telgridfile, outfile, star_type=None, star_mag
     else:
         polyorder_vec = np.full(norders, polyorder)
 
-    # Allocate the output tables
+    # Allocate the meta parameter tables
     meta_table = table.Table(meta={'name': 'Parameter Values'})
     meta_table['WAVE_GRID'] = [wave_grid]
     meta_table['TOL'] = tol
     meta_table['POPSIZE'] = popsize
     meta_table['RECOMBINATION'] = recombination
-    meta_table['STAR_TYPE'] = star_type if star_type is not None else ''
-    meta_table['STAR_MAG'] = star_mag if star_mag is not None else 0.0
-    meta_table['STAR_RA'] = ra if ra is not None else 0.0
-    meta_table['STAR_DEC'] = dec if dec is not None else 0.0
-    meta_table['CAL_FILE'] = std_dict['cal_file']
-    meta_table['FUNCTION'] = func
-    meta_table['STD_NAME'] = std_dict['name']
     meta_table['SPEC1DFILE'] = os.path.basename(spec1dfile)
     meta_table['TELGRIDFILE'] = os.path.basename(telgridfile)
-    for key,value in meta_spec.items():
+    for key,value in meta_spec['core'].items():
         meta_table[key.upper()] = value
-
-#    meta_table['PYPELINE'] = head['PYPELINE']
-#    meta_table['EXPTIME'] = head['EXPTIME']
-#    meta_table['AIRMASS'] = head['AIRMASS']
-#    meta_table['NORDERS'] = norders
-
-
+    # Add sensitivity function specific quantities
+    meta_table['STAR_TYPE'] = star_type if star_type is not None else ''
+    meta_table['STAR_MAG'] = star_mag if star_mag is not None else 0.0
+    meta_table['STAR_RA'] = star_ra
+    meta_table['STAR_DEC'] = star_dec
+    meta_table['STAR_CAL_FILE'] = std_dict['cal_file']
+    meta_table['FUNCTION'] = func
+    meta_table['STD_NAME'] = std_dict['name']
 
     out_table = table.Table(meta={'name': 'Sensfunc and Telluric Correction'})
     # TODO Check the Pypeline so that this will also work with multislit reductions
-    out_table['ECH_ORDER'] = (sobjs.ech_order).astype(int)
-    out_table['ECH_ORDERINDX'] = (sobjs.ech_orderindx).astype(int)
-    out_table['ECH_SNR'] = (sobjs.ech_snr).astype(float)
     out_table['IND_LOWER'] = np.zeros(norders, dtype=int)
     out_table['IND_UPPER'] = np.zeros(norders, dtype=int)
     out_table['WAVE_MIN'] = np.zeros(norders)
     out_table['WAVE_MAX'] = np.zeros(norders)
-    out_table['SENS_ORDER'] = polyorder_vec
-    out_table['SENS_COEFF'] = np.zeros((norders, polyorder_vec.max() + 1))
     out_table['TELLURIC'] = np.zeros((norders, ngrid))
-    out_table['SENSFUNC'] = np.zeros((norders, ngrid))
     out_table['TELL_PRESS'] = np.zeros(norders)
     out_table['TELL_TEMP'] = np.zeros(norders)
     out_table['TELL_H2O'] = np.zeros(norders)
@@ -547,6 +537,16 @@ def sensfunc_telluric(spec1dfile, telgridfile, outfile, star_type=None, star_mag
     out_table['CHI2'] = np.zeros(norders)
     out_table['SUCCESS'] = np.zeros(norders,dtype=bool)
     out_table['NITER'] = np.zeros(norders, dtype=int)
+    out_table['SENS_ORDER'] = polyorder_vec
+    out_table['SENS_COEFF'] = np.zeros((norders, polyorder_vec.max() + 1))
+    out_table['SENSFUNC'] = np.zeros((norders, ngrid))
+    try:
+        out_table['ECH_ORDER'] = meta_spec['bonus']['ECH_ORDER']
+        out_table['ECH_ORDERINDX'] =  meta_spec['bonus']['ECH_ORDERINDX']
+        out_table['ECH_SNR'] = meta_spec['bonus']['ECH_SNR']
+    except:
+        pass
+
 
     # Sort order by the strength of their telluric absorption
     srt_order_tell = sort_telluric(wave, counts_mask, tell_dict)
@@ -566,8 +566,9 @@ def sensfunc_telluric(spec1dfile, telgridfile, outfile, star_type=None, star_mag
         tell_dict_fit = trim_tell_dict(tell_dict, ind_lower, ind_upper)
 
         # Guess the coefficients by doing a preliminary fit to the sensitivity function with the average telluric behavior
-        guess_obj = sensfunc_guess(wave_fit, counts_ps_fit, counts_ps_mask_fit, flam_true_fit, tell_dict_fit, resln_guess, airmass,
-                               polyorder_vec[iord], func, lower=lower, upper=upper, debug=debug)
+        guess_obj = sensfunc_guess(wave_fit, counts_ps_fit, counts_ps_mask_fit, flam_true_fit, tell_dict_fit, resln_guess,
+                                   meta_spec['core']['AIRMASS'], polyorder_vec[iord], func, lower=lower, upper=upper,
+                                   debug=debug)
         # Polynomial coefficient bounds
         bounds_obj = [(np.fmin(np.abs(this_coeff)*delta_coeff_bounds[0], minmax_coeff_bounds[0]),
                          np.fmax(np.abs(this_coeff)*delta_coeff_bounds[1], minmax_coeff_bounds[1])) for this_coeff in guess_obj]
@@ -591,7 +592,7 @@ def sensfunc_telluric(spec1dfile, telgridfile, outfile, star_type=None, star_mag
         theta_obj = result.x[:-6]
         theta_tell = result.x[-6:]
         telluric_fit = eval_telluric(theta_tell, arg_dict['tell_dict'])
-        sensfit = np.exp(utils.func_val(theta_obj, wave_fit, arg_dict['func'], minx=wave_min, maxx=wave_max))
+        sensfit = np.exp(utils.func_val(theta_obj, wave_fit, obj_dict['func'], minx=wave_min, maxx=wave_max))
         counts_model_fit = telluric_fit * flam_true_fit/ (sensfit + (sensfit == 0.0))
         if debug:
             plt.plot(wave_fit, counts_ps_fit * sensfit, drawstyle='steps-mid')
