@@ -607,7 +607,6 @@ def sensfunc_telluric(spec1dfile, telgridfile, outfile, star_type=None, star_mag
             plt.ylim(-0.1 * counts_ps_fit.max(), 1.5 * counts_ps_fit.max())
             plt.legend()
             plt.show()
-            embed()
 
         out_table['CHI2'][iord] = result.fun
         out_table['SUCCESS'][iord] = result.success
