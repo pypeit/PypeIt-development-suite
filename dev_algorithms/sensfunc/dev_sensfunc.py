@@ -22,7 +22,7 @@ import pickle
 PYPEIT_FLUX_SCALE = 1e-17
 from astropy.io import fits
 import copy
-from telluric import sensfunc_telluric, telluric_qso
+import telluric
 import IPython
 
 
@@ -55,12 +55,43 @@ dev_path = os.getenv('PYPEIT_DEV')
 star_mag  = None
 star_type = None
 spec1dfile = os.path.join(os.getenv('HOME'),'Dropbox/PypeIt_Redux/XSHOOTER/J0020-3653/NIR/Science/spec1d_STD,FLUX_XShooter_NIR_2017Dec17T082243.751.fits')
-#spec1dfile = os.path.join(os.getenv('HOME'),'Dropbox/PypeIt_Redux/XSHOOTER/J0439/NIR/Science/spec1d_XSHOO.2018-11-08T00:16:56.583-Feige110_XShooter_NIR_2018Nov08T001656.583.fits')
-#spec1dfile = os.path.join(os.getenv('HOME'),'Dropbox/PypeIt_Redux/XSHOOTER/J0439/vlt_xshooter_nir/Science/spec1d_Feige110.fits')
+
+wave, counts, counts_ivar, counts_mask, meta_spec = telluric.general_spec_reader(spec1dfile, ret_flam=False)
 header = fits.getheader(spec1dfile)
 telgridfile = os.path.join(os.getenv('HOME'),'Dropbox/PypeIt_Redux/XSHOOTER/TelFit_Paranal_NIR_9800_25000_R25000.fits')
+
+star_ra = None
+star_dec = None
+# Read in standard star dictionary and interpolate onto regular telluric wave_grid
+star_ra = meta_spec['core']['RA'] if star_ra is None else star_ra
+star_dec = meta_spec['core']['DEC'] if star_dec is None else star_dec
+#std_dict = flux.get_standard_spectrum(star_type=star_type, star_mag=star_mag, ra=star_ra, dec=star_dec)
+
+#polyorder=8 # changed from 6
+#norders = counts.shape[1]
+
+#if np.size(polyorder) > 1:
+#    if np.size(polyorder) != norders:
+#        msgs.error('polyorder must have either have norder elements or be a scalar')
+#    polyorder_vec = np.array(polyorder)
+#else:
+#    polyorder_vec = np.full(norders, polyorder)
+
+#obj_params = dict(std_dict=std_dict, delta_coeff_bounds=(-20.0, 20.0),
+#                  minmax_coeff_bounds=(-5.0, 5.0), polyorder_vec=polyorder_vec,
+#                  exptime=meta_spec['core']['EXPTIME'], func='legendre', sigrej=3.0, debug=False)
+
+# parameters lowered for testing
+#TelObj = telluric.Telluric(wave, counts, counts_ivar, counts_mask, telgridfile, obj_params,
+#                           telluric.init_sensfunc_model, telluric.eval_sensfunc_model,
+#                           popsize=20, tol=1e-2, debug=True)
+
+#sys.exit(-1)
+#TelObj.run(only_orders=[6])
+
+#spec1dfile = os.path.join(os.getenv('HOME'),'Dropbox/PypeIt_Redux/XSHOOTER/J0439/NIR/Science/spec1d_XSHOO.2018-11-08T00:16:56.583-Feige110_XShooter_NIR_2018Nov08T001656.583.fits')
+#spec1dfile = os.path.join(os.getenv('HOME'),'Dropbox/PypeIt_Redux/XSHOOTER/J0439/vlt_xshooter_nir/Science/spec1d_Feige110.fits')
 #telgridfile =  os.path.join(dev_path, 'dev_algorithms/sensfunc/TelFit_Paranal_NIR_9800_25000_R25000.fits')
-polyorder=8 # changed from 6
 #outfile = 'Feige110_sens_tell.fits'
 outfile = 'LTT3218_sens_tell.fits'
 #
@@ -69,7 +100,7 @@ outfile = 'LTT3218_sens_tell.fits'
 ### Test telluric star
 #spec1dfileflux = os.path.join(os.getenv('HOME'),'Dropbox/PypeIt_Redux/XSHOOTER/J0224-4711/Test_tell/spec1d_stack_TELL_B8IV_V5p8.fits')
 #star_mag  = 5.8
-#star_type = 'B8'
+#star_type = '8'
 
 #polyorder=5 # changed from 6
 #outfile = 'Tell_B8_V5p8_sens_tell.fits'
@@ -79,15 +110,26 @@ outfile = 'LTT3218_sens_tell.fits'
 #sys.exit(-1)
 
 spec1dfileflux = os.path.join(os.getenv('HOME'),'Dropbox/PypeIt_Redux/XSHOOTER/NIR_Stack/spec1d_stack_Pisco_all.fits')
-pcafile = os.path.join(os.getenv('HOME'),'Dropbox/PypeIt_Redux//qso_pca_1200_3100.pckl')
+pca_file = os.path.join(os.getenv('HOME'),'Dropbox/PypeIt_Redux//qso_pca_1200_3100.pckl')
 npca = 8
 z_qso = 7.54#6.514 #7.54#6.51
 # Create the input mask
 hdu = fits.open(spec1dfileflux)
 head = hdu[0].header
 data = hdu[1].data
-wave, flux, flux_ivar, mask = data['OPT_WAVE'], data['OPT_FLAM'], data['OPT_FLAM_IVAR'], data['OPT_MASK']
-inmask = (wave > (1.0 + z_qso)*1220.0) & (wave < 3099*(1.0 + z_qso))
+wave_inmask, flux, flux_ivar, mask = data['OPT_WAVE'], data['OPT_FLAM'], data['OPT_FLAM_IVAR'], data['OPT_MASK']
+inmask = (wave_inmask > (1.0 + z_qso)*1220.0) & (wave_inmask < 3099*(1.0 + z_qso))
+obj_params = dict(pca_file=pca_file, npca=npca, z_qso=z_qso, delta_zqso = 0.1, bounds_norm = (0.1,3.0), tell_norm_thresh=0.9)
+
+wave, flux, ivar, mask, meta_spec = telluric.general_spec_reader(spec1dfileflux, ret_flam=True)
+
+# parameters lowered for testing
+TelObj = telluric.Telluric(wave, flux, ivar, mask, telgridfile, obj_params,
+                           telluric.init_qso_model, telluric.eval_qso_model,
+                           inmask=inmask, wave_inmask=wave_inmask,
+                           popsize=20, tol=1e-2, debug=True)
+
+sys.exit(-1)
 
 #vlt_xshooter_nir = util.load_spectrograph('vlt_xshooter_nir')
 #wavegrid = vlt_xshooter_nir.wavegrid(midpoint=True)
