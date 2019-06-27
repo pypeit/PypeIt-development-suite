@@ -54,28 +54,29 @@ dev_path = os.getenv('PYPEIT_DEV')
 # First fit the sensivity function using the standard star
 star_mag  = None
 star_type = None
-spec1dfile = os.path.join(os.getenv('HOME'),'Dropbox/PypeIt_Redux/XSHOOTER/J0439/NIR/Science/spec1d_XSHOO.2018-11-08T00:16:56.583-Feige110_XShooter_NIR_2018Nov08T001656.583.fits')
+spec1dfile = os.path.join(os.getenv('HOME'),'Dropbox/PypeIt_Redux/XSHOOTER/J0020-3653/NIR/Science/spec1d_STD,FLUX_XShooter_NIR_2017Dec17T082243.751.fits')
+#spec1dfile = os.path.join(os.getenv('HOME'),'Dropbox/PypeIt_Redux/XSHOOTER/J0439/NIR/Science/spec1d_XSHOO.2018-11-08T00:16:56.583-Feige110_XShooter_NIR_2018Nov08T001656.583.fits')
 #spec1dfile = os.path.join(os.getenv('HOME'),'Dropbox/PypeIt_Redux/XSHOOTER/J0439/vlt_xshooter_nir/Science/spec1d_Feige110.fits')
 header = fits.getheader(spec1dfile)
 telgridfile = os.path.join(os.getenv('HOME'),'Dropbox/PypeIt_Redux/XSHOOTER/TelFit_Paranal_NIR_9800_25000_R25000.fits')
 #telgridfile =  os.path.join(dev_path, 'dev_algorithms/sensfunc/TelFit_Paranal_NIR_9800_25000_R25000.fits')
-polyorder=5 # changed from 6
-outfile = 'Feige110_sens_tell.fits'
+polyorder=8 # changed from 6
+#outfile = 'Feige110_sens_tell.fits'
+outfile = 'LTT3218_sens_tell.fits'
 #
-#sensfunc_telluric(spec1dfile, telgridfile, outfile, polyorder=polyorder, ra=header['RA'], dec=header['DEC'],
-#                  star_mag=star_mag, star_type=star_type, debug=False)
+#sensfunc_telluric(spec1dfile, telgridfile, outfile, polyorder=polyorder, debug=True)
 
 ### Test telluric star
-spec1dfileflux = os.path.join(os.getenv('HOME'),'Dropbox/PypeIt_Redux/XSHOOTER/J0224-4711/Test_tell/spec1d_stack_TELL_B8IV_V5p8.fits')
-star_mag  = 5.8
-star_type = 'B8'
+#spec1dfileflux = os.path.join(os.getenv('HOME'),'Dropbox/PypeIt_Redux/XSHOOTER/J0224-4711/Test_tell/spec1d_stack_TELL_B8IV_V5p8.fits')
+#star_mag  = 5.8
+#star_type = 'B8'
 
-polyorder=5 # changed from 6
-outfile = 'Tell_B8_V5p8_sens_tell.fits'
+#polyorder=5 # changed from 6
+#outfile = 'Tell_B8_V5p8_sens_tell.fits'
 
-sensfunc_telluric(spec1dfileflux, telgridfile, outfile, polyorder=polyorder, ra=None, dec=None,
-                  star_mag=star_mag, star_type=star_type, ret_flam=True, debug=True)
-sys.exit(-1)
+#sensfunc_telluric(spec1dfileflux, telgridfile, outfile, polyorder=polyorder, ra=None, dec=None,
+#                  star_mag=star_mag, star_type=star_type, ret_flam=True, debug=True)
+#sys.exit(-1)
 
 spec1dfileflux = os.path.join(os.getenv('HOME'),'Dropbox/PypeIt_Redux/XSHOOTER/NIR_Stack/spec1d_stack_Pisco_all.fits')
 pcafile = os.path.join(os.getenv('HOME'),'Dropbox/PypeIt_Redux//qso_pca_1200_3100.pckl')
@@ -100,9 +101,9 @@ sys.exit(-1)
 
 # TODO we need to add an absorption threshold in median telluric absorption after which the code uses the average of the model
 # coming from all the other orders
-tell_qso_dict = ech_telluric(qso_pca_dict['wave'], qso_pca_dict['wave_mask'], qso_pca_dict['flam'], qso_pca_dict['flam_ivar'],
-                             qso_pca_dict['flam_mask'], qso_pca_dict['pca_model_orders'], qso_pca_dict['airmass'],telgridfile,
-                             tol=1e-4, popsize=30, recombination=0.7, disp=True, polish=True, debug=False)
+#tell_qso_dict = ech_telluric(qso_pca_dict['wave'], qso_pca_dict['wave_mask'], qso_pca_dict['flam'], qso_pca_dict['flam_ivar'],
+#                             qso_pca_dict['flam_mask'], qso_pca_dict['pca_model_orders'], qso_pca_dict['airmass'],telgridfile,
+#                             tol=1e-4, popsize=30, recombination=0.7, disp=True, polish=True, debug=False)
 
 # Apply this telluric to the data, now merge the data
 
