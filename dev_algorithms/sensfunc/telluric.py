@@ -881,14 +881,16 @@ def init_sensfunc_model(obj_params, iord, wave, flux, ivar, mask, tellmodel):
                    np.fmax(np.abs(this_coeff)*obj_params['delta_coeff_bounds'][1], obj_params['minmax_coeff_bounds'][1]))
                    for this_coeff in coeff]
     # Create the obj_dict
-    obj_dict = dict(wave=wave, wave_min=wave.min(), wave_max=wave.max(), flam_true=flam_true, func=obj_params['func'],
+    obj_dict = dict(wave=wave, wave_min=wave.min(), wave_max=wave.max(),
+                    exptime=obj_params['exptime'], flam_true=flam_true, func=obj_params['func'],
                     polyorder=obj_params['polyorder_vec'][iord])
 
     if obj_params['debug']:
-        plt.plot(wave, sensguess_arg, label='sensfunc estimate',title='Sensitivity Function Guess')
+        plt.plot(wave, sensguess_arg, label='sensfunc estimate')
         plt.plot(wave, sensfit_guess, label='sensfunc fit')
         plt.ylim(-0.1 * sensfit_guess.min(), 1.3 * sensfit_guess.max())
         plt.legend()
+        plt.title('Sensitivity Function Guess for iord={:d}'.format(iord))
         plt.show()
 
     return obj_dict, bounds_obj
@@ -1022,13 +1024,13 @@ class Telluric(object):
         model_now = self.tellmodel_list[iord]*self.obj_model_list[iord]
         ## TODO Add rejected points to QA plot
         plt.plot(wave_now, flux_now, drawstyle='steps-mid',
-                 color='k', label='data', alpha=0.7, zorder=5,
-                 title='QA plot for order: {:d}/{:d}'.format(iord, self.norders))
+                 color='k', label='data', alpha=0.7, zorder=5)
         plt.plot(wave_now, sig_now, drawstyle='steps-mid', color='r', label='noise', alpha=0.7, zorder=1)
         plt.plot(wave_now, model_now, drawstyle='steps-mid', color='cornflowerblue', linewidth=1.0, label='model',
                  zorder=7, alpha=0.7)
         plt.ylim(-0.1 * model_now.max(), 1.5 * model_now.max())
         plt.legend()
+        plt.title('QA plot for order: {:d}/{:d}'.format(iord, self.norders))
         plt.show()
 
 

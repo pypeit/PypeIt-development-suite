@@ -79,11 +79,12 @@ else:
 
 obj_params = dict(std_dict=std_dict, delta_coeff_bounds=(-20.0, 20.0),
                   minmax_coeff_bounds=(-5.0, 5.0), polyorder_vec=polyorder_vec,
-                  exptime=meta_spec['core']['EXPTIME'], func='legendre', sigrej=3.0, debug=True)
+                  exptime=meta_spec['core']['EXPTIME'], func='legendre', sigrej=3.0, debug=False)
 
 TelObj = telluric.Telluric(wave, counts, counts_ivar, counts_mask, telgridfile, obj_params,
                            telluric.init_sensfunc_model, telluric.eval_sensfunc_model)
 
+TelObj.run()
 sys.exit(-1)
 #spec1dfile = os.path.join(os.getenv('HOME'),'Dropbox/PypeIt_Redux/XSHOOTER/J0439/NIR/Science/spec1d_XSHOO.2018-11-08T00:16:56.583-Feige110_XShooter_NIR_2018Nov08T001656.583.fits')
 #spec1dfile = os.path.join(os.getenv('HOME'),'Dropbox/PypeIt_Redux/XSHOOTER/J0439/vlt_xshooter_nir/Science/spec1d_Feige110.fits')
