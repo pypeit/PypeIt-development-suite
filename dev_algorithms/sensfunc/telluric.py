@@ -433,15 +433,6 @@ def interpolate_inmask(wave_grid, mask, wave_inmask, inmask):
     else:
         return mask
 
-## TODO Add a function called telluric_fit_loop which loops over the orders/spectra to be fit. Pack the obj_dict
-## and arg_dict into lists
-#def telluric_fit_loop(arg_dict_list, obj_dict_list):
-
-# TODO Make all of this a class
-
-# User must provide these two functions:
-
-# obj_dict, bounds_obj = instantiate_obj_model()
 #
 
 def sensfunc_telluric(spec1dfile, telgridfile, outfile, star_type=None, star_mag=None, star_ra=None, star_dec=None,
@@ -895,6 +886,37 @@ def init_sensfunc_model(obj_params, iord, wave, flux, ivar, mask, tellmodel):
 
     return obj_dict, bounds_obj
 
+#    flam_norm = qso_guess(flux_fit, flux_ivar_fit, mask_fit, pca_dict, tell_dict, meta_spec['core']['AIRMASS'],
+#                          resln_guess, tell_norm_thresh, ind_lower, ind_upper)
+
+
+def init_qso_model(obj_params, iord, wave, flux, ivar, mask, tellmodel):
+
+    pca_dict = qso_pca.init_pca(obj_params['pca_file'], wave, obj_params['z_qso'], obj_params['npca'])
+    pca_mean = np.exp(pca_dict['components'][0, :])
+    tell_mask = tellmodel > obj_params['tell_norm_thresh']
+    # Create a reference model and bogus noise
+    flux_ref = pca_mean * tellmodel
+    ivar_ref = utils.inverse((pca_mean/100.0) ** 2)
+    flam_norm_inv = coadd1d.robust_median_ratio(flux, ivar, flux_ref, ivar_ref, mask=mask, mask_ref=tell_mask)
+    flam_norm = 1.0/flam_norm_inv
+
+    # Set the bounds for the PCA and truncate to the right dimension
+    coeffs = pca_dict['coeffs'][:,1:obj_params['npca']]
+    # Compute the min and max arrays of the coefficients which are not the norm, i.e. grab the coeffs that aren't the first one
+    coeff_min = np.amin(coeffs, axis=0)  # only
+    coeff_max = np.amax(coeffs, axis=0)
+    # QSO redshift: can vary within delta_zqso
+    bounds_z = [(obj_params['z_qso'] - obj_params['delta_zqso'], obj_params['z_qso'] + obj_params['delta_zqso'])]
+    bounds_flam = [(flam_norm*obj_params['bounds_norm'][0], flam_norm*obj_params['bounds_norm'][1])] # Norm: bounds determined from estimate above
+    bounds_pca = [(i, j) for i, j in zip(coeff_min, coeff_max)]        # Coefficients:  determined from PCA model
+    bounds_obj = bounds_z + bounds_flam + bounds_pca
+    # Create the obj_dict
+    obj_dict = dict(npca=obj_params['npca'], pca_dict=pca_dict)
+
+    return obj_dict, bounds_obj
+
+
 # User defined functions
 # obj_dict, bounds_obj = init_obj_model(obj_params, iord, wave, flux, ivar, mask, tellmodel)
 # obj_model, modelmask =  eval_obj_model(theta_obj, obj_dict)
@@ -903,7 +925,7 @@ class Telluric(object):
 
     def __init__(self, wave, flux, ivar, mask, telgridfile, obj_params, init_obj_model, eval_obj_model,
                  airmass_guess=1.5, inmask=None, wave_inmask=None,
-                 sn_cap=None, resln_guess=None, resln_frac_bounds=(0.5, 1.5), pix_shift_bounds=(-2.0, 2.0),
+                 sn_clip=50.0, resln_guess=None, resln_frac_bounds=(0.5, 1.5), pix_shift_bounds=(-2.0, 2.0),
                  maxiter=3, sticky=True, lower=3.0, upper=3.0,
                  seed=None, tol=1e-4, popsize=40, recombination=0.7, polish=True, disp=True, debug=False):
 
@@ -945,13 +967,15 @@ class Telluric(object):
 
         # Interpolate the input values onto the fixed telluric wavelength grid
         _flux, _ivar, _mask = coadd1d.interp_spec(self.wave_grid, self.wave, self.flux, self.ivar, self.mask)
+        # Clip the ivar if that is requested (sn_clip = None simply returns the ivar)
+        _ivar = utils.clip_ivar(_flux, _ivar, sn_clip, mask=_mask)
 
         # If an input mask was provided apply it by interpolating onto wave_grid
         _mask = self.interpolate_inmask(_mask, wave_inmask, inmask)
 
         # Repackage the data into arrays of shape (nspec, norders)
         if self.flux.ndim == 1:
-            self.nspec = self.flux.size
+            self.nspec = _flux.size
             self.norders = 1
             self.flux_arr = _flux.reshape(self.nspec,1)
             self.ivar_arr = _ivar.reshape(self.nspec,1)
@@ -975,7 +999,7 @@ class Telluric(object):
         self.arg_dict_list = [None]*self.norders
         for iord in self.srt_order_tell:
             msgs.info('Initializing object model for order: {:d}/{:d}'.format(iord, self.norders) +
-                      ' with user supplied function: {:s}'.format(init_obj_model.__name__))
+                      ' with user supplied function: {:s}'.format(self.init_obj_model.__name__))
             tellmodel = eval_telluric(self.tell_guess, self.tell_dict, self.ind_lower[iord], self.ind_upper[iord])
             obj_dict, bounds_obj = init_obj_model(obj_params, iord,
                                                   self.wave_grid[self.ind_lower[iord]:self.ind_upper[iord]+1],
@@ -993,7 +1017,9 @@ class Telluric(object):
                                  bounds=bounds_iord, seed=seed_vec[iord], debug=debug)
             self.arg_dict_list[iord] = arg_dict_iord
 
-    def run(self):
+    def run(self, only_orders=None):
+
+        good_orders = self.srt_order_tell if only_orders is None else only_orders
         # Run the fits
         self.result_list = [None]*self.norders
         self.outmask_list = [None]*self.norders
@@ -1002,14 +1028,18 @@ class Telluric(object):
         self.theta_obj_list = [None]*self.norders
         self.theta_tell_list = [None]*self.norders
         for iord in self.srt_order_tell:
+            if iord not in good_orders:
+                continue
+            msgs.info('Fitting object + telluric model for order: {:d}/{:d}'.format(iord, self.norders) +
+                      ' with user supplied function: {:s}'.format(self.init_obj_model.__name__))
             self.result_list[iord], ymodel, ivartot, self.outmask_list[iord] = utils.robust_optimize(
                 self.flux_arr[self.ind_lower[iord]:self.ind_upper[iord]+1, iord], tellfit, self.arg_dict_list[iord],
                 inmask=self.mask_arr[self.ind_lower[iord]:self.ind_upper[iord]+1, iord],
-                maxiter=self.maxiter, lower=self.lower, upper=self.upper,sticky=self.sticky,
+                maxiter=self.maxiter, lower=self.lower, upper=self.upper, sticky=self.sticky,
                 tol=self.tol, popsize=self.popsize, recombination=self.recombination, polish=self.polish, disp=self.disp)
             self.theta_obj_list[iord] = self.result_list[iord].x[:-6]
             self.theta_tell_list[iord] = self.result_list[iord].x[-6:]
-            self.obj_model_list[iord], modelmask = eval_sensfunc_model(self.theta_obj_list[iord], self.obj_dict_list[iord])
+            self.obj_model_list[iord], modelmask = self.eval_obj_model(self.theta_obj_list[iord], self.obj_dict_list[iord])
             self.tellmodel_list[iord] = eval_telluric(self.theta_tell_list[iord], self.tell_dict,
                                                       self.arg_dict_list[iord]['ind_lower'],
                                                       self.arg_dict_list[iord]['ind_upper'])
@@ -1017,22 +1047,36 @@ class Telluric(object):
                 self.show_fit_qa(iord)
 
     def show_fit_qa(self, iord):
+        """
+        Generates QA plot for telluric fitting
+
+        Args:
+            iord: the order being currently fit
+
+        """
 
         wave_now = self.wave_grid[self.ind_lower[iord]:self.ind_upper[iord]+1]
         flux_now = self.flux_arr[self.ind_lower[iord]:self.ind_upper[iord]+1, iord]
-        sig_now = utils.inverse(self.ivar_arr[self.ind_lower[iord]:self.ind_upper[iord]+1, iord])
+        sig_now = np.sqrt(utils.inverse(self.ivar_arr[self.ind_lower[iord]:self.ind_upper[iord]+1, iord]))
+        mask_now = self.mask_arr[self.ind_lower[iord]:self.ind_upper[iord]+1, iord]
         model_now = self.tellmodel_list[iord]*self.obj_model_list[iord]
-        ## TODO Add rejected points to QA plot
+        rejmask = mask_now & np.invert(self.outmask_list[iord])
+
+        fig = plt.figure(figsize=(12, 8))
         plt.plot(wave_now, flux_now, drawstyle='steps-mid',
                  color='k', label='data', alpha=0.7, zorder=5)
-        plt.plot(wave_now, sig_now, drawstyle='steps-mid', color='r', label='noise', alpha=0.7, zorder=1)
-        plt.plot(wave_now, model_now, drawstyle='steps-mid', color='cornflowerblue', linewidth=1.0, label='model',
+        plt.plot(wave_now, sig_now, drawstyle='steps-mid', color='0.7', label='noise', alpha=0.7, zorder=1)
+        plt.plot(wave_now, model_now, drawstyle='steps-mid', color='red', linewidth=1.0, label='model',
                  zorder=7, alpha=0.7)
-        plt.ylim(-0.1 * model_now.max(), 1.5 * model_now.max())
+        plt.plot(wave_now[rejmask], flux_now[rejmask], 's', zorder=10, mfc='None', mec='blue', label='rejected pixels')
+        plt.plot(wave_now[np.invert(mask_now)], flux_now[np.invert(mask_now)], 'v', zorder=9, mfc='None', mec='orange',
+                 label='originally masked')
+        plt.ylim(-0.1 * model_now.max(), 1.3 * model_now.max())
         plt.legend()
+        plt.xlabel('Wavelength')
+        plt.ylabel('Flux or Counts')
         plt.title('QA plot for order: {:d}/{:d}'.format(iord, self.norders))
         plt.show()
-
 
     def interpolate_inmask(self, mask, wave_inmask, inmask):
 
