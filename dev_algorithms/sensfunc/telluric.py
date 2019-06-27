@@ -613,7 +613,6 @@ def sensfunc_telluric(spec1dfile, telgridfile, outfile, star_type=None, star_mag
         telluric_fit = eval_telluric(tell_params, arg_dict['tell_dict'])
         sensfit = np.exp(utils.func_val(sens_coeff, wave_fit, arg_dict['func'], minx=wave_min, maxx=wave_max))
         counts_model_fit = telluric_fit * flam_true_fit/ (sensfit + (sensfit == 0.0))
-        IPython.embed()
         if debug:
             plt.plot(wave_fit, counts_ps_fit * sensfit, drawstyle='steps-mid')
             plt.plot(wave_fit, counts_ps_fit * sensfit / (telluric_fit + (telluric_fit == 0.0)), drawstyle='steps-mid')
@@ -714,7 +713,7 @@ def telluric_qso(spec1dfile, telgridfile, pcafile, npca, z_qso, inmask=None, wav
 
     # cap the inverse variance with a SN_cap to avoid excessive rejection for high S/N data. This amounts to adding
     # a tiny bit of error, 1.0/SN_CAP to the sigma of the spectrum.
-    flux_ivar_fit = utils.cap_ivar(flux_fit, flux_ivar_fit1, sn_cap, mask=mask_fit)
+    flux_ivar_fit = utils.clip_ivar(flux_fit, flux_ivar_fit1, sn_cap, mask=mask_fit)
 
     wave_min = wave_grid[ind_lower]
     wave_max = wave_grid[ind_upper]
