@@ -112,7 +112,7 @@ def interp_telluric_grid(theta,tell_dict):
 
     return model_grid[p_ind,t_ind,h_ind,a_ind]
 
-def conv_telluric(tell_model,dloglam, res):
+def conv_telluric(tell_model, dloglam, res):
 
     pix_per_sigma = 1.0/res/(dloglam*np.log(10.0))/(2.0 * np.sqrt(2.0 * np.log(2))) # number of dloglam pixels per 1 sigma dispersion
     sig2pix = 1.0/pix_per_sigma # number of sigma per 1 pix
@@ -129,35 +129,40 @@ def shift_telluric(tell_model, loglam, dloglam, shift):
     tell_model_shift = np.interp(loglam_shift, loglam, tell_model)
     return tell_model_shift
 
-
-def eval_telluric(theta_tell, tell_dict):
+#TODO add trimming to this function to obviate the need for the trim_tell_dict function. It is not expensive to
+# just trim the array and will simplify the code.
+def eval_telluric(theta_tell, tell_dict, ind_lower, ind_upper):
 
     ntheta = len(theta_tell)
     tellmodel_hires = interp_telluric_grid(theta_tell[:4], tell_dict)
-    tellmodel_conv = conv_telluric(tellmodel_hires, tell_dict['dloglam'], theta_tell[4])
-    tell_pad = tell_dict['tell_pad']
+
+    # Deal with padding for the convolutions
+    ind_lower_pad = np.fmax(ind_lower - tell_dict['tell_pad_pix'], 0)
+    ind_upper_pad = np.fmin(ind_upper + tell_dict['tell_pad_pix'], tell_dict['wave_grid'].size - 1)
+    tell_pad_tuple = (ind_lower - ind_lower_pad, ind_upper_pad - ind_upper)
+    tellmodel_conv = conv_telluric(tellmodel_hires[ind_lower_pad:ind_upper_pad + 1], tell_dict['dloglam'], theta_tell[4])
 
     if ntheta == 6:
-        tellmodel_out = shift_telluric(tellmodel_conv, tell_dict['loglam'], tell_dict['dloglam'], theta_tell[5])
-        return tellmodel_out[tell_pad[0]:-tell_pad[1]]
+        tellmodel_out = shift_telluric(tellmodel_conv, np.log10(tell_dict['wave_grid'][ind_lower_pad: ind_upper_pad+1]), tell_dict['dloglam'], theta_tell[5])
+        return tellmodel_out[tell_pad_tuple[0]:-tell_pad_tuple[1]]
     else:
-        return tellmodel_conv[tell_pad[0]:-tell_pad[1]]
+        return tellmodel_conv[tell_pad_tuple[0]:-tell_pad_tuple[1]]
 
-
-def trim_tell_dict(tell_dict, ind_lower, ind_upper):
-
-    wave_grid = tell_dict['wave_grid']
-    ind_lower_pad = np.fmax(ind_lower - tell_dict['tell_pad_pix'], 0)
-    ind_upper_pad = np.fmin(ind_upper + tell_dict['tell_pad_pix'], wave_grid.size - 1)
-    tell_pad_tuple = (ind_lower - ind_lower_pad, ind_upper_pad - ind_upper)
-    tell_wave_grid = wave_grid[ind_lower_pad:ind_upper_pad + 1]
-    tell_model_grid = tell_dict['tell_grid'][:, :, :, :, ind_lower_pad:ind_upper_pad + 1]
-    tell_dict_fit = dict(pressure_grid=tell_dict['pressure_grid'], temp_grid=tell_dict['temp_grid'],
-                         h2o_grid=tell_dict['h2o_grid'], airmass_grid=tell_dict['airmass_grid'],
-                         tell_grid=tell_model_grid, tell_pad=tell_pad_tuple,
-                         resln_guess=tell_dict['resln_guess'],pix_per_R=tell_dict['pix_per_R'],
-                         dloglam=tell_dict['dloglam'], loglam=np.log10(tell_wave_grid))
-    return tell_dict_fit
+# Deprecated
+#def trim_tell_dict(tell_dict, ind_lower, ind_upper):
+#
+#    wave_grid = tell_dict['wave_grid']
+#    ind_lower_pad = np.fmax(ind_lower - tell_dict['tell_pad_pix'], 0)
+#    ind_upper_pad = np.fmin(ind_upper + tell_dict['tell_pad_pix'], wave_grid.size - 1)
+#    tell_pad_tuple = (ind_lower - ind_lower_pad, ind_upper_pad - ind_upper)
+#    tell_wave_grid = wave_grid[ind_lower_pad:ind_upper_pad + 1]
+#    tell_model_grid = tell_dict['tell_grid'][:, :, :, :, ind_lower_pad:ind_upper_pad + 1]
+#    tell_dict_fit = dict(pressure_grid=tell_dict['pressure_grid'], temp_grid=tell_dict['temp_grid'],
+#                         h2o_grid=tell_dict['h2o_grid'], airmass_grid=tell_dict['airmass_grid'],
+#                         tell_grid=tell_model_grid, tell_pad_tuple=tell_pad_tuple,
+#                         resln_guess=tell_dict['resln_guess'],pix_per_R=tell_dict['pix_per_R'],
+#                         dloglam=tell_dict['dloglam'], loglam=np.log10(tell_wave_grid))
+#    return tell_dict_fit
 
 def sort_telluric(wave, wave_mask, tell_dict):
 
@@ -181,21 +186,22 @@ def sort_telluric(wave, wave_mask, tell_dict):
 ############################
 
 # Sensitivity function evaluation function. Model for counts is flam_true/sensfunc
-def sensfunc_obj_model(theta, obj_dict):
+def eval_sensfunc_model(theta, obj_dict):
 
     wave_star = obj_dict['wave']
     wave_min = obj_dict['wave_min']
     wave_max = obj_dict['wave_max']
     flam_true = obj_dict['flam_true']
     func = obj_dict['func']
+    exptime = obj_dict['exptime']
 
     sensfunc = np.exp(utils.func_val(theta, wave_star, func, minx=wave_min, maxx=wave_max))
-    counts_model = flam_true/(sensfunc + (sensfunc == 0.0))
+    counts_model = exptime*flam_true/(sensfunc + (sensfunc == 0.0))
 
     return counts_model, (sensfunc > 0.0)
 
 # QSO evaluation function. Model for QSO is a PCA spectrum
-def qso_obj_model(theta, obj_dict):
+def eval_qso_model(theta, obj_dict):
 
     pca_model = qso_pca.pca_eval(theta, obj_dict['pca_dict'])
     # TODO Is the prior evaluation slowing things down??
@@ -217,7 +223,7 @@ def tellfit_chi2(theta, flux, thismask, arg_dict):
 
     theta_obj = theta[:-6]
     theta_tell = theta[-6:]
-    tell_model = eval_telluric(theta_tell, arg_dict['tell_dict'])
+    tell_model = eval_telluric(theta_tell, arg_dict['tell_dict'], arg_dict['ind_lower'], arg_dict['ind_upper'])
     obj_model, modelmask = obj_model_func(theta_obj, arg_dict['obj_dict'])
 
     if not np.any(modelmask):
@@ -242,7 +248,7 @@ def tellfit(flux, thismask, arg_dict, **kwargs_opt):
 
     theta_obj  = result.x[:-6]
     theta_tell = result.x[-6:]
-    tell_model = eval_telluric(theta_tell, arg_dict['tell_dict'])
+    tell_model = eval_telluric(theta_tell, arg_dict['tell_dict'], arg_dict['ind_lower'], arg_dict['ind_upper'])
     obj_model, modelmask = obj_model_func(theta_obj, arg_dict['obj_dict'])
     totalmask = thismask & modelmask
     chi_vec = totalmask*(flux - tell_model*obj_model)*np.sqrt(flux_ivar)
@@ -297,12 +303,13 @@ def unpack_orders(sobjs, ret_flam=False):
 
 
 def sensfunc_guess(wave, counts_ps, inmask, flam_true, tell_dict_now, resln_guess, airmass_guess, polyorder, func,
+                   ind_lower, ind_upper,
                    lower=3.0, upper=3.0, debug=False):
 
     # Model parameter guess for starting the optimizations
     tell_guess = (np.median(tell_dict_now['pressure_grid']), np.median(tell_dict_now['temp_grid']),
                   np.median(tell_dict_now['h2o_grid']), airmass_guess, resln_guess, 0.0)
-    tell_model1 = eval_telluric(tell_guess, tell_dict_now)
+    tell_model1 = eval_telluric(tell_guess, tell_dict_now, ind_lower, ind_upper)
     sensguess_arg = tell_model1 * flam_true/(counts_ps + (counts_ps < 0.0))
     sensguess = np.log(sensguess_arg)
     fitmask = inmask & np.isfinite(sensguess) & (sensguess_arg > 0.0)
@@ -320,12 +327,12 @@ def sensfunc_guess(wave, counts_ps, inmask, flam_true, tell_dict_now, resln_gues
 
     return coeff
 
-def qso_guess(flux, ivar, mask, pca_dict, tell_dict, airmass, resln_guess, tell_norm_thresh):
+def qso_guess(flux, ivar, mask, pca_dict, tell_dict, airmass, resln_guess, tell_norm_thresh, ind_lower, ind_upper):
 
     # Estimate the normalization for setting the bounds
     tell_guess = (np.median(tell_dict['pressure_grid']), np.median(tell_dict['temp_grid']),
                   np.median(tell_dict['h2o_grid']), airmass, resln_guess, 0.0)
-    tell_model = eval_telluric(tell_guess, tell_dict)
+    tell_model = eval_telluric(tell_guess, tell_dict, ind_lower, ind_upper)
     # Just use the mean PCA model for estimating the normalization
     pca_mean = np.exp(pca_dict['components'][0,:])
     tell_mask = tell_model > tell_norm_thresh
@@ -431,6 +438,11 @@ def interpolate_inmask(wave_grid, mask, wave_inmask, inmask):
 #def telluric_fit_loop(arg_dict_list, obj_dict_list):
 
 # TODO Make all of this a class
+
+# User must provide these two functions:
+
+# obj_dict, bounds_obj = instantiate_obj_model()
+#
 
 def sensfunc_telluric(spec1dfile, telgridfile, outfile, star_type=None, star_mag=None, star_ra=None, star_dec=None,
                       inmask=None, wave_inmask=None,
@@ -572,10 +584,10 @@ def sensfunc_telluric(spec1dfile, telgridfile, outfile, star_type=None, star_mag
         wave_max = wave_grid[ind_upper]
 
         # This presumes that the data has been interpolated onto the telluric model grid
-        tell_dict_fit = trim_tell_dict(tell_dict, ind_lower, ind_upper)
+        #tell_dict_fit = trim_tell_dict(tell_dict, ind_lower, ind_upper)
 
         # Guess the coefficients by doing a preliminary fit to the sensitivity function with the average telluric behavior
-        guess_obj = sensfunc_guess(wave_fit, counts_ps_fit, counts_ps_mask_fit, flam_true_fit, tell_dict_fit, resln_guess,
+        guess_obj = sensfunc_guess(wave_fit, counts_ps_fit, counts_ps_mask_fit, flam_true_fit, tell_dict, resln_guess,
                                    meta_spec['core']['AIRMASS'], polyorder_vec[iord], func, lower=lower, upper=upper,
                                    debug=debug)
         # Polynomial coefficient bounds
@@ -583,12 +595,12 @@ def sensfunc_telluric(spec1dfile, telgridfile, outfile, star_type=None, star_mag
                          np.fmax(np.abs(this_coeff)*delta_coeff_bounds[1], minmax_coeff_bounds[1])) for this_coeff in guess_obj]
 
         # Set the bounds for the optimization
-        bounds_tell = get_bounds_tell(tell_dict_fit, resln_guess, resln_frac_bounds, pix_shift_bounds)
+        bounds_tell = get_bounds_tell(tell_dict, resln_guess, resln_frac_bounds, pix_shift_bounds)
         bounds = bounds_obj + bounds_tell
         # Create the arg_dict
         obj_dict = dict(wave=wave_fit, wave_min=wave_min, wave_max=wave_max, flam_true=flam_true_fit, func=func,
                         polyorder=polyorder_vec[iord])
-        arg_dict = dict(ivar=counts_ps_ivar_fit, tell_dict=tell_dict_fit,
+        arg_dict = dict(ivar=counts_ps_ivar_fit, tell_dict=tell_dict, ind_lower=ind_lower, ind_upper=ind_upper,
                         obj_model_func=sensfunc_obj_model, obj_dict=obj_dict,
                         bounds=bounds, seed=seed, debug=debug)
         result, ymodel, ivartot, outmask = utils.robust_optimize(counts_ps_fit, tellfit, arg_dict,
@@ -600,7 +612,7 @@ def sensfunc_telluric(spec1dfile, telgridfile, outfile, star_type=None, star_mag
         # TODO move to sensfunc_telluric and individual routines
         theta_obj = result.x[:-6]
         theta_tell = result.x[-6:]
-        telluric_fit = eval_telluric(theta_tell, arg_dict['tell_dict'])
+        telluric_fit = eval_telluric(theta_tell, arg_dict['tell_dict'], arg_dict['ind_lower'], arg_dict['ind_upper'])
         sensfit = np.exp(utils.func_val(theta_obj, wave_fit, obj_dict['func'], minx=wave_min, maxx=wave_max))
         counts_model_fit = telluric_fit * flam_true_fit/ (sensfit + (sensfit == 0.0))
         if debug:
@@ -692,14 +704,14 @@ def telluric_qso(spec1dfile, telgridfile, pcafile, npca, z_qso, inmask=None, wav
     wave_max = wave_grid[ind_upper]
 
     # This presumes that the data has been interpolated onto the telluric model grid
-    tell_dict_fit = trim_tell_dict(tell_dict, ind_lower, ind_upper)
+    #tell_dict_fit = trim_tell_dict(tell_dict, ind_lower, ind_upper)
 
     #
     # fitfunc, arg_dict, bounds = instantiate_obj_model(model_type, wave_fit, model_params)
     pca_dict = qso_pca.init_pca(pcafile, wave_fit, z_qso, npca)
 
-    flam_norm = qso_guess(flux_fit, flux_ivar_fit, mask_fit, pca_dict, tell_dict_fit, meta_spec['core']['AIRMASS'],
-                          resln_guess, tell_norm_thresh)
+    flam_norm = qso_guess(flux_fit, flux_ivar_fit, mask_fit, pca_dict, tell_dict, meta_spec['core']['AIRMASS'],
+                          resln_guess, tell_norm_thresh, ind_lower, ind_upper)
     # Set the bounds for the PCA and truncate to the right dimension
     coeffs = pca_dict['coeffs'][:,1:npca]
     # Compute the min and max arrays of the coefficients which are not the norm, i.e. grab the coeffs that aren't the first one
@@ -709,12 +721,13 @@ def telluric_qso(spec1dfile, telgridfile, pcafile, npca, z_qso, inmask=None, wav
     bounds_flam = [(flam_norm*bounds_norm[0], flam_norm*bounds_norm[1])] # Norm: bounds determined from estimate above
     bounds_coeff = [(i, j) for i, j in zip(coeff_min, coeff_max)]        # Coefficients:  determined from PCA model
     # Set the bounds for the telluric
-    bounds_tell = get_bounds_tell(tell_dict_fit, resln_guess, resln_frac_bounds, pix_shift_bounds)
+    bounds_tell = get_bounds_tell(tell_dict, resln_guess, resln_frac_bounds, pix_shift_bounds)
     # Final bounds for the optimizaiton
     bounds =  bounds_z + bounds_flam + bounds_coeff + bounds_tell
     # Create the arg_dict
     obj_dict = dict(npca=npca, pca_dict=pca_dict)
-    arg_dict = dict(ivar=flux_ivar_fit, tell_dict=tell_dict_fit,
+    arg_dict = dict(ivar=flux_ivar_fit, tell_dict=tell_dict,
+                    ind_lower=ind_lower, ind_upper=ind_upper,
                     obj_model_func= qso_obj_model, obj_dict=obj_dict,
                     bounds=bounds, seed=seed, debug=debug)
     result, ymodel, ivartot, outmask = utils.robust_optimize(flux_fit, tellfit, arg_dict,
@@ -727,7 +740,7 @@ def telluric_qso(spec1dfile, telgridfile, pcafile, npca, z_qso, inmask=None, wav
     theta_tell = result.x[-6:]
     # model_params, tell_params eval_obj_model(model_type, wave_fit, model_params, theta)
     pca_model, modelmask = qso_obj_model(theta_obj, obj_dict)
-    telluric_fit = eval_telluric(theta_tell, arg_dict['tell_dict'])
+    telluric_fit = eval_telluric(theta_tell, arg_dict['tell_dict'], arg_dict['ind_lower'], arg_dict['ind_upper'])
     flux_model = telluric_fit*pca_model
 
     if debug:
@@ -740,7 +753,6 @@ def telluric_qso(spec1dfile, telgridfile, pcafile, npca, z_qso, inmask=None, wav
         plt.ylim((-0.2, 1.5*pca_model.max()))
         plt.legend()
         plt.show()
-        embed()
         # Plot the telluric corrected and rescaled orders
         flux_fit_corr = flux_fit / (telluric_fit + (telluric_fit == 0.0))
         plt.plot(wave_fit, flux_fit_corr, color='k', drawstyle='steps-mid')
@@ -834,3 +846,289 @@ def telluric_qso(spec1dfile, telgridfile, pcafile, npca, z_qso, inmask=None, wav
 
 #    return qso_pca_dict
 
+#obj_params = dict(star_type=None, star_mag=None, star_ra=None, star_dec=None, delta_coeff_bounds=(-20.0, 20.0),
+#                  minmax_coeff_bounds=(-5.0, 5.0), polyorder=7, func='legendre')
+
+
+#flam_norm = qso_guess(flux_fit, flux_ivar_fit, mask_fit, pca_dict, tell_dict, meta_spec['core']['AIRMASS'],
+#                      resln_guess, tell_norm_thresh, ind_lower, ind_upper)
+
+# Guess the coefficients by doing a preliminary fit to the sensitivity function with the average telluric behavior
+#guess_obj = sensfunc_guess(wave_fit, counts_ps_fit, counts_ps_mask_fit, flam_true_fit, tell_dict, resln_guess,
+#                           meta_spec['core']['AIRMASS'], polyorder_vec[iord], func, lower=lower, upper=upper,
+#                           debug=debug)
+
+
+def init_sensfunc_model(obj_params, iord, wave, flux, ivar, mask, tellmodel):
+
+    # Model parameter guess for starting the optimizations
+    flam_true = scipy.interpolate.interp1d(obj_params['std_dict']['wave'].value,
+                                           obj_params['std_dict']['flux'].value, kind='linear',
+                                           bounds_error=False, fill_value=np.nan)(wave)
+    flam_true_mask = np.isfinite(flam_true)
+    sensguess_arg = obj_params['exptime']*tellmodel*flam_true/(flux + (flux < 0.0))
+    sensguess = np.log(sensguess_arg)
+    fitmask = mask & np.isfinite(sensguess) & (sensguess_arg > 0.0) & np.isfinite(flam_true_mask)
+    # Perform an initial fit to the sensitivity function to set the starting point for optimization
+    mask, coeff = utils.robust_polyfit_djs(wave, sensguess, obj_params['polyorder_vec'][iord], function=obj_params['func'],
+                                       minx=wave.min(), maxx=wave.max(), inmask=fitmask,
+                                       lower=obj_params['sigrej'], upper=obj_params['sigrej'],
+                                       use_mad=True)
+    sensfit_guess = np.exp(utils.func_val(coeff, wave, obj_params['func'], minx=wave.min(), maxx=wave.max()))
+
+    # Polynomial coefficient bounds
+    bounds_obj = [(np.fmin(np.abs(this_coeff)*obj_params['delta_coeff_bounds'][0], obj_params['minmax_coeff_bounds'][0]),
+                   np.fmax(np.abs(this_coeff)*obj_params['delta_coeff_bounds'][1], obj_params['minmax_coeff_bounds'][1]))
+                   for this_coeff in coeff]
+    # Create the obj_dict
+    obj_dict = dict(wave=wave, wave_min=wave.min(), wave_max=wave.max(), flam_true=flam_true, func=obj_params['func'],
+                    polyorder=obj_params['polyorder_vec'][iord])
+
+    if obj_params['debug']:
+        plt.plot(wave, sensguess_arg, label='sensfunc estimate',title='Sensitivity Function Guess')
+        plt.plot(wave, sensfit_guess, label='sensfunc fit')
+        plt.ylim(-0.1 * sensfit_guess.min(), 1.3 * sensfit_guess.max())
+        plt.legend()
+        plt.show()
+
+    return obj_dict, bounds_obj
+
+# User defined functions
+# obj_dict, bounds_obj = init_obj_model(obj_params, iord, wave, flux, ivar, mask, tellmodel)
+# obj_model, modelmask =  eval_obj_model(theta_obj, obj_dict)
+
+class Telluric(object):
+
+    def __init__(self, wave, flux, ivar, mask, telgridfile, obj_params, init_obj_model, eval_obj_model,
+                 airmass_guess=1.5, inmask=None, wave_inmask=None,
+                 sn_cap=None, resln_guess=None, resln_frac_bounds=(0.5, 1.5), pix_shift_bounds=(-2.0, 2.0),
+                 maxiter=3, sticky=True, lower=3.0, upper=3.0,
+                 seed=None, tol=1e-4, popsize=40, recombination=0.7, polish=True, disp=True, debug=False):
+
+        self.wave = wave
+        self.flux = flux
+        self.ivar = ivar
+        self.mask = mask
+        self.telgridfile = telgridfile
+        self.init_obj_model = init_obj_model
+        self.eval_obj_model = eval_obj_model
+        self.resln_frac_bounds = resln_frac_bounds
+        self.pix_shift_bounds = pix_shift_bounds
+        self.maxiter = maxiter
+        self.sticky = sticky
+        self.lower = lower
+        self.upper = upper
+        self.tol = tol
+        self.popsize = popsize
+        self.recombination = recombination
+        self.polish = polish
+        self.disp = disp
+        self.debug = debug
+
+        # Optimizer requires a seed. This guarantees that the fit will be deterministic and hence reproducible
+        self.seed = seed if seed is not None else 777
+        rand = np.random.RandomState(seed=seed)
+        # read the telluric grid and initalize associated parameters
+        self.tell_dict = self.read_telluric_grid()
+        self.wave_grid = self.tell_dict['wave_grid']
+        self.ngrid = self.wave_grid.size
+        self.resln_guess = resln_guess if resln_guess is not None else self.tell_dict['resln_guess']
+        # Model parameter guess for determining the bounds with the init_obj_model function
+        self.tell_guess = (np.median(self.tell_dict['pressure_grid']),
+                           np.median(self.tell_dict['temp_grid']),
+                           np.median(self.tell_dict['h2o_grid']),
+                           airmass_guess, self.resln_guess, 0.0)
+        # Set the bounds for the telluric optimization
+        self.bounds_tell = self.get_bounds_tell()
+
+        # Interpolate the input values onto the fixed telluric wavelength grid
+        _flux, _ivar, _mask = coadd1d.interp_spec(self.wave_grid, self.wave, self.flux, self.ivar, self.mask)
+
+        # If an input mask was provided apply it by interpolating onto wave_grid
+        _mask = self.interpolate_inmask(_mask, wave_inmask, inmask)
+
+        # Repackage the data into arrays of shape (nspec, norders)
+        if self.flux.ndim == 1:
+            self.nspec = self.flux.size
+            self.norders = 1
+            self.flux_arr = _flux.reshape(self.nspec,1)
+            self.ivar_arr = _ivar.reshape(self.nspec,1)
+            self.mask_arr = _mask.reshape(self.nspec,1)
+        else:
+            self.nspec, self.norders = _flux.shape
+            self.flux_arr = _flux
+            self.ivar_arr = _ivar
+            self.mask_arr = _mask
+
+        seed_vec = rand.randint(2 ** 32 - 1, size=self.norders)
+        # sort the orders by the strength of their telluric absorption
+        self.ind_lower, self.ind_upper = self.get_ind_lower_upper()
+        self.srt_order_tell = self.sort_telluric()
+        # Loop over the data to:
+        # 1) determine the ind_lower, ind_upper for every order/spectrum
+        # 2) initialize the obj_dict, and bounds by running the init_obj_model callable
+        self.obj_dict_list = [None]*self.norders
+        self.bounds_obj_list = [None]*self.norders
+        self.bounds_list = [None]*self.norders
+        self.arg_dict_list = [None]*self.norders
+        for iord in self.srt_order_tell:
+            msgs.info('Initializing object model for order: {:d}/{:d}'.format(iord, self.norders) +
+                      ' with user supplied function: {:s}'.format(init_obj_model.__name__))
+            tellmodel = eval_telluric(self.tell_guess, self.tell_dict, self.ind_lower[iord], self.ind_upper[iord])
+            obj_dict, bounds_obj = init_obj_model(obj_params, iord,
+                                                  self.wave_grid[self.ind_lower[iord]:self.ind_upper[iord]+1],
+                                                  self.flux_arr[self.ind_lower[iord]:self.ind_upper[iord]+1, iord],
+                                                  self.ivar_arr[self.ind_lower[iord]:self.ind_upper[iord]+1, iord],
+                                                  self.mask_arr[self.ind_lower[iord]:self.ind_upper[iord]+1, iord],
+                                                  tellmodel)
+            self.obj_dict_list[iord] = obj_dict
+            self.bounds_obj_list[iord] = bounds_obj
+            bounds_iord = bounds_obj + self.bounds_tell
+            self.bounds_list[iord] = bounds_iord
+            arg_dict_iord = dict(ivar=self.ivar_arr[self.ind_lower[iord]:self.ind_upper[iord]+1, iord],
+                                 tell_dict=self.tell_dict, ind_lower=self.ind_lower[iord], ind_upper=self.ind_upper[iord],
+                                 obj_model_func=self.eval_obj_model, obj_dict=obj_dict,
+                                 bounds=bounds_iord, seed=seed_vec[iord], debug=debug)
+            self.arg_dict_list[iord] = arg_dict_iord
+
+    def run(self):
+        # Run the fits
+        self.result_list = [None]*self.norders
+        self.outmask_list = [None]*self.norders
+        self.obj_model_list = [None]*self.norders
+        self.tellmodel_list = [None]*self.norders
+        self.theta_obj_list = [None]*self.norders
+        self.theta_tell_list = [None]*self.norders
+        for iord in self.srt_order_tell:
+            self.result_list[iord], ymodel, ivartot, self.outmask_list[iord] = utils.robust_optimize(
+                self.flux_arr[self.ind_lower[iord]:self.ind_upper[iord]+1, iord], tellfit, self.arg_dict_list[iord],
+                inmask=self.mask_arr[self.ind_lower[iord]:self.ind_upper[iord]+1, iord],
+                maxiter=self.maxiter, lower=self.lower, upper=self.upper,sticky=self.sticky,
+                tol=self.tol, popsize=self.popsize, recombination=self.recombination, polish=self.polish, disp=self.disp)
+            self.theta_obj_list[iord] = self.result_list[iord].x[:-6]
+            self.theta_tell_list[iord] = self.result_list[iord].x[-6:]
+            self.obj_model_list[iord], modelmask = eval_sensfunc_model(self.theta_obj_list[iord], self.obj_dict_list[iord])
+            self.tellmodel_list[iord] = eval_telluric(self.theta_tell_list[iord], self.tell_dict,
+                                                      self.arg_dict_list[iord]['ind_lower'],
+                                                      self.arg_dict_list[iord]['ind_upper'])
+            if self.debug:
+                self.show_fit_qa(iord)
+
+    def show_fit_qa(self, iord):
+
+        wave_now = self.wave_grid[self.ind_lower[iord]:self.ind_upper[iord]+1]
+        flux_now = self.flux_arr[self.ind_lower[iord]:self.ind_upper[iord]+1, iord]
+        sig_now = utils.inverse(self.ivar_arr[self.ind_lower[iord]:self.ind_upper[iord]+1, iord])
+        model_now = self.tellmodel_list[iord]*self.obj_model_list[iord]
+        ## TODO Add rejected points to QA plot
+        plt.plot(wave_now, flux_now, drawstyle='steps-mid',
+                 color='k', label='data', alpha=0.7, zorder=5,
+                 title='QA plot for order: {:d}/{:d}'.format(iord, self.norders))
+        plt.plot(wave_now, sig_now, drawstyle='steps-mid', color='r', label='noise', alpha=0.7, zorder=1)
+        plt.plot(wave_now, model_now, drawstyle='steps-mid', color='cornflowerblue', linewidth=1.0, label='model',
+                 zorder=7, alpha=0.7)
+        plt.ylim(-0.1 * model_now.max(), 1.5 * model_now.max())
+        plt.legend()
+        plt.show()
+
+
+    def interpolate_inmask(self, mask, wave_inmask, inmask):
+
+        if inmask is not None:
+            if wave_inmask is None:
+                msgs.error('If you are specifying a mask you need to pass in the corresponding wavelength grid')
+            # TODO we shoudld consider refactoring the interpolator to take a list of images and masks to remove the
+            # the fake zero images in the call below
+            _, _, inmask_int = coadd1d.interp_spec(self.wave_grid, wave_inmask, np.ones_like(wave_inmask),
+                                                   np.ones_like(wave_inmask), inmask)
+            if mask.ndim == 2:
+                norders = mask.shape[1]
+                inmask_out = np.tile(inmask_int, (norders, 1)).T
+            elif mask.ndim == 1:
+                inmask_out = inmask_int
+            else:
+                msgs.error('Unrecognized shape for data mask')
+            return (mask & inmask_out)
+        else:
+            return mask
+
+
+    def get_ind_lower_upper(self):
+
+        ind_lower = np.zeros(self.norders, dtype=int)
+        ind_upper = np.zeros(self.norders, dtype=int)
+        for iord in range(self.norders):
+            # This presumes that the data has been interpolated onto the telluric model grid
+            wave_grid_ma = np.ma.array(np.copy(self.wave_grid))
+            wave_grid_ma.mask = np.invert(self.mask_arr[:,iord])
+            ind_lower[iord] = np.ma.argmin(wave_grid_ma)
+            ind_upper[iord] = np.ma.argmax(wave_grid_ma)
+        return ind_lower, ind_upper
+
+    ##########################
+    ## telluric grid methods #
+    ##########################
+    def read_telluric_grid(self, wave_min=None, wave_max=None, pad=0):
+
+        hdul = fits.open(self.telgridfile)
+        wave_grid_full = 10.0 * hdul[1].data
+        model_grid_full = hdul[0].data
+        nspec_full = wave_grid_full.size
+
+        if wave_min is not None:
+            ind_lower = np.argmin(np.abs(wave_grid_full - wave_min)) - pad
+        else:
+            ind_lower = 0
+        if wave_max is not None:
+            ind_upper = np.argmin(np.abs(wave_grid_full - wave_max)) + pad
+        else:
+            ind_upper = nspec_full
+        wave_grid = wave_grid_full[ind_lower:ind_upper]
+        model_grid = model_grid_full[:, :, :, :, ind_lower:ind_upper]
+
+        pg = hdul[0].header['PRES0'] + hdul[0].header['DPRES'] * np.arange(0, hdul[0].header['NPRES'])
+        tg = hdul[0].header['TEMP0'] + hdul[0].header['DTEMP'] * np.arange(0, hdul[0].header['NTEMP'])
+        hg = hdul[0].header['HUM0'] + hdul[0].header['DHUM'] * np.arange(0, hdul[0].header['NHUM'])
+        if hdul[0].header['NAM'] > 1:
+            ag = hdul[0].header['AM0'] + hdul[0].header['DAM'] * np.arange(0, hdul[0].header['NAM'])
+        else:
+            ag = hdul[0].header['AM0'] + 1 * np.arange(0, 1)
+
+        loglam = np.log10(wave_grid)
+        dloglam = np.median(loglam[1:] - loglam[:-1])
+        # Guess resolution from wavelength sampling of telluric grid if it is not provided
+        resln_guess = 1.0 / (3.0 * dloglam * np.log(10.0))  # assume roughly Nyquist sampling
+        pix_per_R = 1.0 / resln_guess / (dloglam * np.log(10.0)) / (2.0 * np.sqrt(2.0 * np.log(2)))
+        tell_pad_pix = int(np.ceil(10.0 * pix_per_R))
+
+        tell_dict = dict(wave_grid=wave_grid, dloglam=dloglam,
+                         resln_guess=resln_guess, pix_per_R=pix_per_R, tell_pad_pix=tell_pad_pix,
+                         pressure_grid=pg, temp_grid=tg, h2o_grid=hg, airmass_grid=ag, tell_grid=model_grid)
+        return tell_dict
+
+    def get_bounds_tell(self):
+
+        # Set the bounds for the optimization
+        bounds_tell = [(self.tell_dict['pressure_grid'].min(), self.tell_dict['pressure_grid'].max()),
+                       (self.tell_dict['temp_grid'].min(), self.tell_dict['temp_grid'].max()),
+                       (self.tell_dict['h2o_grid'].min(), self.tell_dict['h2o_grid'].max()),
+                       (self.tell_dict['airmass_grid'].min(), self.tell_dict['airmass_grid'].max()),
+                       (self.resln_guess * self.resln_frac_bounds[0], self.resln_guess * self.resln_frac_bounds[1]),
+                       self.pix_shift_bounds]
+
+        return bounds_tell
+
+    def sort_telluric(self):
+
+        tell_med = np.zeros(self.norders)
+        # Do a quick loop over all the orders to sort them in order of strongest to weakest telluric absorption
+        for iord in range(self.norders):
+            tm_grid = self.tell_dict['tell_grid'][:, :, :, :, self.ind_lower[iord]:self.ind_upper[iord] + 1]
+            tell_model_mid = tm_grid[tm_grid.shape[0] // 2, tm_grid.shape[1] // 2, tm_grid.shape[2] // 2,
+                             tm_grid.shape[3] // 2, :]
+            tell_med[iord] = np.mean(tell_model_mid)
+
+        # Perform fits in order of telluric strength
+        srt_order_tell = tell_med.argsort()
+
+        return srt_order_tell
