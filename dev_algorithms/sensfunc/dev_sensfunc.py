@@ -28,8 +28,8 @@ import IPython
 
 
 dev_path = os.getenv('PYPEIT_DEV')
-do_sens = False
-do_qso = True
+do_sens = True
+do_qso = False
 
 
 ##################################################
@@ -52,7 +52,8 @@ if do_qso:
     telloutfile = 'J0224-4711_tell.fits'
     outfile = 'spec1d_stack_tell_J0224-4711.fits'
     z_qso = 6.51
-    TelQSO = telluric.qso_telluric(spec1dfluxfile, telgridfile, pca_file, z_qso, telloutfile, outfile, create_bal_mask=None, debug=True, show=True)
+    TelQSO = telluric.qso_telluric(spec1dfluxfile, telgridfile, pca_file, z_qso, telloutfile, outfile,
+                                   create_bal_mask=None, debug=True, show=True)
 
 
 

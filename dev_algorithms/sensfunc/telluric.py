@@ -393,7 +393,7 @@ class Telluric(object):
                  sn_clip=50.0, airmass_guess=1.5, resln_guess=None,
                  resln_frac_bounds=(0.5, 1.5), pix_shift_bounds=(-2.0, 2.0),
                  maxiter=3, sticky=True, lower=3.0, upper=3.0,
-                 seed=None, tol=1e-4, popsize=40, recombination=0.7, polish=True, disp=True, debug=False):
+                 seed=None, tol=1e-3, popsize=30, recombination=0.7, polish=True, disp=True, debug=False):
 
         # This init function performs the following steps:
         # 1) assignement of relevant input arguments
@@ -794,7 +794,8 @@ def mask_star_lines(wave_star, mask_width=10.0):
 
 def sensfunc_telluric(spec1dfile, telgridfile, outfile, star_type=None, star_mag=None, star_ra=None, star_dec=None,
                       polyorder=8, mask_abs_lines=True, delta_coeff_bounds=(-20.0, 20.0), minmax_coeff_bounds=(-5.0, 5.0),
-                      only_orders=None, debug_init=False, debug=False):
+                      only_orders=None, tol=1e-3, popsize=30, recombination=0.7, polish=True, disp=True,
+                      debug_init=False, debug=False):
 
 
     # Read in the data
@@ -837,7 +838,8 @@ def sensfunc_telluric(spec1dfile, telgridfile, outfile, star_type=None, star_mag
 
     # parameters lowered for testing
     TelObj = Telluric(wave, counts, counts_ivar, mask_tot, telgridfile, obj_params,
-                      init_sensfunc_model, eval_sensfunc_model, popsize=20, tol=1e-2, debug=debug)
+                      init_sensfunc_model, eval_sensfunc_model,  tol=tol, popsize=popsize, recombination=recombination,
+                      polish=polish, disp=disp, debug=debug)
 
     TelObj.run(only_orders=only_orders)
     TelObj.save(outfile)
@@ -852,8 +854,9 @@ def create_bal_mask(wave):
 
 
 
-def qso_telluric(spec1dfile, telgridfile, pca_file, z_qso, telloutfile, outfile, npca = 8, create_bal_mask=None, delta_zqso=0.1, bounds_norm=(0.1, 3.0),
-                      tell_norm_thresh=0.9, only_orders=None, debug=False, show=False):
+def qso_telluric(spec1dfile, telgridfile, pca_file, z_qso, telloutfile, outfile, npca = 8, create_bal_mask=None,
+                 delta_zqso=0.1, bounds_norm=(0.1, 3.0), tell_norm_thresh=0.9, only_orders=None,
+                 tol=1e-3, popsize=30, recombination=0.7, polish=True, disp=True, debug=False, show=False):
 
 
     obj_params = dict(pca_file=pca_file, npca=npca, z_qso=z_qso, delta_zqso=delta_zqso, bounds_norm=bounds_norm,
@@ -873,7 +876,8 @@ def qso_telluric(spec1dfile, telgridfile, pca_file, z_qso, telloutfile, outfile,
 
     # parameters lowered for testing
     TelObj = Telluric(wave, flux, ivar, mask_tot, telgridfile, obj_params, init_qso_model, eval_qso_model,
-                      popsize=20, tol=1e-2, debug=debug)
+                      tol=tol, popsize=popsize, recombination=recombination,
+                      polish=polish, disp=disp, debug=debug)
     TelObj.run(only_orders=only_orders)
     TelObj.save(telloutfile)
 
