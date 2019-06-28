@@ -929,10 +929,7 @@ class Telluric(object):
                  maxiter=3, sticky=True, lower=3.0, upper=3.0,
                  seed=None, tol=1e-4, popsize=40, recombination=0.7, polish=True, disp=True, debug=False):
 
-        self.wave = wave
-        self.flux = flux
-        self.ivar = ivar
-        self.mask = mask
+        # Assign arguments
         self.telgridfile = telgridfile
         self.init_obj_model = init_obj_model
         self.eval_obj_model = eval_obj_model
@@ -948,6 +945,10 @@ class Telluric(object):
         self.polish = polish
         self.disp = disp
         self.debug = debug
+
+        # Reshape all spectra to be (nspec, norders)
+        self.wave_in_arr, self.flux_in_arr, self.ivar_in_arr, self.mask_in_arr, self.nspec_in, self.norders = \
+            self.reshape(wave, flux, ivar, mask)
 
         # Optimizer requires a seed. This guarantees that the fit will be deterministic and hence reproducible
         self.seed = seed if seed is not None else 777
@@ -966,25 +967,13 @@ class Telluric(object):
         self.bounds_tell = self.get_bounds_tell()
 
         # Interpolate the input values onto the fixed telluric wavelength grid
-        _flux, _ivar, _mask = coadd1d.interp_spec(self.wave_grid, self.wave, self.flux, self.ivar, self.mask)
+        self.flux_arr, self.ivar_arr, _mask = coadd1d.interp_spec(self.wave_grid, self.wave_in_arr, self.flux_in_arr,
+                                                  self.ivar_in_arr, self.mask_in_arr)
         # Clip the ivar if that is requested (sn_clip = None simply returns the ivar)
-        _ivar = utils.clip_ivar(_flux, _ivar, sn_clip, mask=_mask)
+        _ivar = utils.clip_ivar(self.flux_arr, self.ivar_arr, sn_clip, mask=_mask)
 
         # If an input mask was provided apply it by interpolating onto wave_grid
-        _mask = self.interpolate_inmask(_mask, wave_inmask, inmask)
-
-        # Repackage the data into arrays of shape (nspec, norders)
-        if self.flux.ndim == 1:
-            self.nspec = _flux.size
-            self.norders = 1
-            self.flux_arr = _flux.reshape(self.nspec,1)
-            self.ivar_arr = _ivar.reshape(self.nspec,1)
-            self.mask_arr = _mask.reshape(self.nspec,1)
-        else:
-            self.nspec, self.norders = _flux.shape
-            self.flux_arr = _flux
-            self.ivar_arr = _ivar
-            self.mask_arr = _mask
+        self.mask_arr = self.interpolate_inmask(_mask, wave_inmask, inmask)
 
         seed_vec = rand.randint(2 ** 32 - 1, size=self.norders)
         # sort the orders by the strength of their telluric absorption
@@ -1017,6 +1006,8 @@ class Telluric(object):
                                  bounds=bounds_iord, seed=seed_vec[iord], debug=debug)
             self.arg_dict_list[iord] = arg_dict_iord
 
+        self.out_table = self.init_tell_output()
+
     def run(self, only_orders=None):
 
         good_orders = self.srt_order_tell if only_orders is None else only_orders
@@ -1043,6 +1034,7 @@ class Telluric(object):
             self.tellmodel_list[iord] = eval_telluric(self.theta_tell_list[iord], self.tell_dict,
                                                       self.arg_dict_list[iord]['ind_lower'],
                                                       self.arg_dict_list[iord]['ind_upper'])
+            self.assign_tell_output(iord)
             if self.debug:
                 self.show_fit_qa(iord)
 
@@ -1078,6 +1070,111 @@ class Telluric(object):
         plt.title('QA plot for order: {:d}/{:d}'.format(iord, self.norders))
         plt.show()
 
+    def init_tell_output(self):
+
+        # Allocate the meta parameter table, ext=1
+        meta_table = table.Table(meta={'name': 'Parameter Values'})
+        meta_table['WAVE_GRID'] = [self.wave_grid]
+        meta_table['TOL'] = self.tol
+        meta_table['POPSIZE'] = self.popsize
+        meta_table['RECOMBINATION'] = self.recombination
+        #meta_table['SPEC1DFILE'] = os.path.basename(spec1dfile)
+        meta_table['TELGRIDFILE'] = os.path.basename(self.telgridfile)
+
+        # Allocate the output table, ext=2
+        out_table = table.Table(meta={'name': 'Telluric Correction'})
+        out_table['IND_LOWER'] = np.zeros(self.norders, dtype=int)
+        out_table['IND_UPPER'] = np.zeros(self.norders, dtype=int)
+        out_table['WAVE_MIN'] = np.zeros(self.norders)
+        out_table['WAVE_MAX'] = np.zeros(self.norders)
+        out_table['TELLURIC'] = np.zeros((self.norders, self.nspec_in))
+        out_table['TELL_PRESS'] = np.zeros(self.norders)
+        out_table['TELL_TEMP'] = np.zeros(self.norders)
+        out_table['TELL_H2O'] = np.zeros(self.norders)
+        out_table['TELL_AIRMASS'] = np.zeros(self.norders)
+        out_table['TELL_RESLN'] = np.zeros(self.norders)
+        out_table['TELL_SHIFT'] = np.zeros(self.norders)
+        out_table['CHI2'] = np.zeros(self.norders)
+        out_table['SUCCESS'] = np.zeros(self.norders, dtype=bool)
+        out_table['NITER'] = np.zeros(self.norders, dtype=int)
+
+        return out_table
+
+    def assign_tell_output(self, iord):
+
+        self.out_table['IND_LOWER'][iord] = self.ind_lower[iord]
+        self.out_table['IND_UPPER'][iord] = self.ind_upper[iord]
+        self.out_table['WAVE_MIN'][iord] = self.wave_grid[self.ind_lower[iord]]
+        self.out_table['WAVE_MAX'][iord] = self.wave_grid[self.ind_upper[iord]]
+        gdwave = self.wave_in_arr[:,iord] > 1.0
+        wave_in = self.wave_in_arr[gdwave,iord]
+        wave_now = self.wave_grid[self.ind_lower[iord]:self.ind_upper[iord]+1]
+        self.out_table['TELLURIC'][iord][gdwave] = scipy.interpolate.interp1d(
+            wave_now, self.tellmodel_list[iord], kind='linear', bounds_error=False, fill_value=0.0)(wave_in[gdwave])
+        self.out_table['TELL_PRESS'][iord] = self.theta_obj_list[iord][0]
+        self.out_table['TELL_TEMP'][iord] = self.theta_obj_list[iord][1]
+        self.out_table['TELL_H2O'][iord] = self.theta_obj_list[iord][2]
+        self.out_table['TELL_AIRMASS'][iord] = self.theta_obj_list[iord][3]
+        self.out_table['TELL_RESLN'][iord] = self.theta_obj_list[iord][4]
+        self.out_table['TELL_SHIFT'][iord] = self.theta_obj_list[iord][5]
+        self.out_table['CHI2'][iord] = self.result_list[iord].fun
+        self.out_table['SUCCESS'][iord] = self.result_list[iord].success
+        self.out_table['NITER'][iord] = self.result_list[iord].nit
+
+    def init_obj_output(self):
+
+        # Allocate the meta parameter table, ext=1
+        meta_table = table.Table(meta={'name': 'Parameter Values'})
+        meta_table['WAVE_GRID'] = [self.wave_grid]
+        meta_table['TOL'] = self.tol
+        meta_table['POPSIZE'] = self.popsize
+        meta_table['RECOMBINATION'] = self.recombination
+        #meta_table['SPEC1DFILE'] = os.path.basename(spec1dfile)
+        meta_table['TELGRIDFILE'] = os.path.basename(self.telgridfile)
+
+        # Allocate the output table, ext=2
+        out_table = table.Table(meta={'name': 'Telluric Correction'})
+        # TODO Check the Pypeline so that this will also work with multislit reductions
+        out_table['IND_LOWER'] = np.zeros(self.norders, dtype=int)
+        out_table['IND_UPPER'] = np.zeros(self.norders, dtype=int)
+        out_table['WAVE_MIN'] = np.zeros(self.norders)
+        out_table['WAVE_MAX'] = np.zeros(self.norders)
+        out_table['TELLURIC'] = np.zeros((self.norders, self.nspec_in))
+        out_table['TELL_PRESS'] = np.zeros(self.norders)
+        out_table['TELL_TEMP'] = np.zeros(self.norders)
+        out_table['TELL_H2O'] = np.zeros(self.norders)
+        out_table['TELL_AIRMASS'] = np.zeros(self.norders)
+        out_table['TELL_RESLN'] = np.zeros(self.norders)
+        out_table['TELL_SHIFT'] = np.zeros(self.norders)
+        out_table['CHI2'] = np.zeros(self.norders)
+        out_table['SUCCESS'] = np.zeros(self.norders, dtype=bool)
+        out_table['NITER'] = np.zeros(self.norders, dtype=int)
+
+        return out_table
+
+    def assign_obj_output(self, iord):
+
+        self.out_table['IND_LOWER'][iord] = self.ind_lower[iord]
+        self.out_table['IND_UPPER'][iord] = self.ind_upper[iord]
+        self.out_table['WAVE_MIN'][iord] = self.wave_grid[self.ind_lower[iord]]
+        self.out_table['WAVE_MAX'][iord] = self.wave_grid[self.ind_upper[iord]]
+        gdwave = self.wave_in_arr[:,iord] > 1.0
+        wave_in = self.wave_in_arr[gdwave,iord]
+        wave_now = self.wave_grid[self.ind_lower[iord]:self.ind_upper[iord]+1]
+        self.out_table['TELLURIC'][iord][gdwave] = scipy.interpolate.interp1d(
+            wave_now, self.tellmodel_list[iord], kind='linear', bounds_error=False, fill_value=0.0)(wave_in[gdwave])
+        self.out_table['TELL_PRESS'][iord] = self.theta_obj_list[iord][0]
+        self.out_table['TELL_TEMP'][iord] = self.theta_obj_list[iord][1]
+        self.out_table['TELL_H2O'][iord] = self.theta_obj_list[iord][2]
+        self.out_table['TELL_AIRMASS'][iord] = self.theta_obj_list[iord][3]
+        self.out_table['TELL_RESLN'][iord] = self.theta_obj_list[iord][4]
+        self.out_table['TELL_SHIFT'][iord] = self.theta_obj_list[iord][5]
+        self.out_table['CHI2'][iord] = self.result_list[iord].fun
+        self.out_table['SUCCESS'][iord] = self.result_list[iord].success
+        self.out_table['NITER'][iord] = self.result_list[iord].nit
+
+
+
     def interpolate_inmask(self, mask, wave_inmask, inmask):
 
         if inmask is not None:
@@ -1110,6 +1207,27 @@ class Telluric(object):
             ind_lower[iord] = np.ma.argmin(wave_grid_ma)
             ind_upper[iord] = np.ma.argmax(wave_grid_ma)
         return ind_lower, ind_upper
+
+    def reshape(self, wave, flux, ivar, mask):
+        # Repackage the data into arrays of shape (nspec, norders)
+        if self.flux.ndim == 1:
+            nspec = flux.size
+            norders = 1
+            wave_arr = wave.reshape(self.nspec,1)
+            flux_arr = flux.reshape(self.nspec, 1)
+            ivar_arr = ivar.reshape(self.nspec, 1)
+            mask_arr = mask.reshape(self.nspec, 1)
+        else:
+            nspec, norders = flux.shape
+            if wave.ndim == 1:
+                wave_arr = np.tile(wave, (norders, 1)).T
+            else:
+                wave_arr = wave
+            flux_arr = flux
+            ivar_arr = ivar
+            mask_arr = mask
+
+        return wave_arr, flux_arr, ivar_arr, mask_arr, nspec, norders
 
     ##########################
     ## telluric grid methods #
