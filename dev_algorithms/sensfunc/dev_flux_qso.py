@@ -5,6 +5,8 @@ import telluric
 from flux1d import apply_sensfunc
 from pypeit.core import coadd1d
 
+debug = False
+show = True
 z_qso = 7.085
 npca = 8
 ex_value = 'OPT'
@@ -13,6 +15,8 @@ telgridfile = os.path.join(os.getenv('HOME'),'Dropbox/PypeIt_Redux/XSHOOTER/TelF
 sensfile = os.path.join(os.getenv('HOME'), 'Dropbox/PypeIt_Redux/XSHOOTER/LTT3218_sens_tell.fits')
 
 qsoname = 'J1120+0641'
+
+
 datapath = os.path.join(os.getenv('HOME'), 'Dropbox/PypeIt_Redux/XSHOOTER/{:}/NIR/Science/'.format(qsoname))
 #TODO: change the spec1dlist to the pypeit format and change the reader accordingly
 spec1dfiles = np.genfromtxt(os.path.join(datapath,'spec1dlist'),dtype='str')
@@ -25,15 +29,16 @@ for ifile in range(nfiles):
 objids = ['OBJ0001']*nfiles
 
 # apply the sensfunc to all spectra
-apply_sensfunc(fnames, sensfile, extinct_correct=False, tell_correct=False, debug=False, show=False)
+apply_sensfunc(fnames, sensfile, extinct_correct=False, tell_correct=False, debug=debug, show=False)
 
 # let's coadd all the fluxed spectra
 wave_stack, flux_stack, ivar_stack, mask_stack = coadd1d.ech_combspec(fnames, objids, show=True, sensfile=sensfile,
-                                                                      ex_value='OPT', outfile=qsoname+'_new', debug=False)
+                                                                      ex_value='OPT', outfile=qsoname, debug=debug)
 
 # run telluric.qso_telluric to get the final results
 spec1dfluxfile = 'spec1d_stack_{:}.fits'.format(qsoname)
 telloutfile = 'spec1d_stack_{:}_tellmodel.fits'.format(qsoname)
 outfile = 'spec1d_stack_{:}_tellcorr.fits'.format(qsoname)
+
 TelQSO = telluric.qso_telluric(spec1dfluxfile, telgridfile, pca_file, z_qso, telloutfile, outfile,
-                               create_bal_mask=None, debug=True, show=True)
+                               create_bal_mask=None, debug=debug, show=show)
