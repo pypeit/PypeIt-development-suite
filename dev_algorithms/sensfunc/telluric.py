@@ -490,6 +490,8 @@ class Telluric(object):
 
     def run(self, only_orders=None):
 
+        only_orders = [only_orders] if (only_orders is not None and
+                                        isinstance(only_orders, (int, np.int, np.int64, np.int32))) else only_orders
         good_orders = self.srt_order_tell if only_orders is None else only_orders
         # Run the fits
         self.result_list = [None]*self.norders
@@ -576,13 +578,13 @@ class Telluric(object):
         # Allocate the meta parameter table, ext=1
         meta_table = table.Table(meta={'name': 'Parameter Values'})
         meta_table['TOL'] = [self.tol]
-        meta_table['POPSIZE'] = self.popsize
-        meta_table['RECOMBINATION'] = self.recombination
-        meta_table['TELGRIDFILE'] = os.path.basename(self.telgridfile)
+        meta_table['POPSIZE'] = [self.popsize]
+        meta_table['RECOMBINATION'] = [self.recombination]
+        meta_table['TELGRIDFILE'] = [os.path.basename(self.telgridfile)]
         # TODO Fix this bug!!
         if 'output_meta_keys' in self.obj_params:
             for key in self.obj_params['output_meta_keys']:
-                meta_table[key.upper()] = self.obj_param[key]
+                meta_table[key.upper()] = [self.obj_params[key]]
 
         # Allocate the output table, ext=2
         out_table = table.Table(meta={'name': 'Object Model and Telluric Correction'})
@@ -873,7 +875,6 @@ def qso_telluric(spec1dfile, telgridfile, pca_file, z_qso, telloutfile, outfile,
     # parameters lowered for testing
     TelObj = Telluric(wave, flux, ivar, mask_tot, telgridfile, obj_params, init_qso_model, eval_qso_model,
                       popsize=20, tol=1e-2, debug=debug)
-
     TelObj.run(only_orders=only_orders)
     TelObj.save(telloutfile)
 
