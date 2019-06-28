@@ -39,7 +39,7 @@ if do_sens:
     spec1dfile = os.path.join(os.getenv('HOME'), 'Dropbox/PypeIt_Redux/XSHOOTER/spec1d_XSHOO.2017-11-23T08:25:54.754-LTT3218_XShooter_NIR_2017Nov23T082554.754.fits')
     telgridfile = os.path.join(os.getenv('HOME'),'Dropbox/PypeIt_Redux/XSHOOTER/TelFit_Paranal_NIR_9800_25000_R25000.fits')
     outfile = 'LTT3218_sens_tell.fits'
-    TelSens = telluric.sensfunc_telluric(spec1dfile, telgridfile, outfile, mask_abs_lines=True, debug=False)
+    TelSens = telluric.sensfunc_telluric(spec1dfile, telgridfile, outfile, mask_abs_lines=True,debug=False)
 
 
 ###############################
