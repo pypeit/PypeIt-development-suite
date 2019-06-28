@@ -4,34 +4,52 @@ import numpy as np
 import telluric
 from flux1d import apply_sensfunc
 from pypeit.core import coadd1d
+from pypeit import msgs
 
 debug = False
 show = True
+
 z_qso = 7.085
 npca = 8
 ex_value = 'OPT'
-pca_file = os.path.join(os.getenv('HOME'),'Dropbox/PypeIt_Redux//qso_pca_1200_3100.pckl')
-telgridfile = os.path.join(os.getenv('HOME'),'Dropbox/PypeIt_Redux/XSHOOTER/TelFit_Paranal_NIR_9800_25000_R25000.fits')
-sensfile = os.path.join(os.getenv('HOME'), 'Dropbox/PypeIt_Redux/XSHOOTER/LTT3218_sens_tell.fits')
-
 qsoname = 'J1120+0641'
 
-
 datapath = os.path.join(os.getenv('HOME'), 'Dropbox/PypeIt_Redux/XSHOOTER/{:}/NIR/Science/'.format(qsoname))
-#TODO: change the spec1dlist to the pypeit format and change the reader accordingly
-spec1dfiles = np.genfromtxt(os.path.join(datapath,'spec1dlist'),dtype='str')
 
+# TODO: change the spec1dlist to the pypeit format and change the reader accordingly
+spec1dfiles = np.genfromtxt(os.path.join(datapath,'spec1dlist'),dtype='str')
 nfiles = len(spec1dfiles)
 fnames = []
 for ifile in range(nfiles):
     fnames.append(os.path.join(datapath,spec1dfiles[ifile]))
+
 #TODO: the objids shoul be read in from the pypeit format file as noted above.
 objids = ['OBJ0001']*nfiles
 
-# apply the sensfunc to all spectra
+std1dfile = os.path.join(os.getenv('HOME'),'Dropbox/PypeIt_Redux/XSHOOTER/spec1d_XSHOO.2017-11-23T08:25:54.754-LTT3218_XShooter_NIR_2017Nov23T082554.754.fits')
+
+# get the pca pickle file and atmosphere model grid
+pca_file = os.path.join(os.getenv('HOME'),'Dropbox/PypeIt_Redux//qso_pca_1200_3100.pckl')
+telgridfile = os.path.join(os.getenv('HOME'),'Dropbox/PypeIt_Redux/XSHOOTER/TelFit_Paranal_NIR_9800_25000_R25000.fits')
+
+# TODO: set sensfile=None if you want to derive sensfunc from std1dfile
+sensfile = os.path.join(os.getenv('HOME'), 'Dropbox/PypeIt_Redux/XSHOOTER/LTT3218_sens_tell.fits')
+if sensfile is None:
+    if std1dfile is None:
+        msgs.error('You need either give a sensfile or a std1dfile')
+    else:
+        # run telluric.sensfunc_telluric to get the sensfile
+        sensfile = 'LTT3218_sens_tell.fits'
+        TelSens = telluric.sensfunc_telluric(std1dfile, telgridfile, sensfile, mask_abs_lines=True, debug=debug)
+
+## Apply the sensfunc to all spectra (only sensfunc but not tellluric)
+# TODO: change show=show
 apply_sensfunc(fnames, sensfile, extinct_correct=False, tell_correct=False, debug=debug, show=False)
 
-# let's coadd all the fluxed spectra
+## Let's coadd all the fluxed spectra
+# you should get a coadded spectrum named as 'spec1d_stack_{:}.fits'.format(qsoname)
+#                a straight merge of individual order stacked spectra named as 'spec1d_merge_{:}.fits'.format(qsoname)
+#                a individual order stacked spectra (multi-extension) named as 'spec1d_order_{:}.fits'.format(qsoname)
 wave_stack, flux_stack, ivar_stack, mask_stack = coadd1d.ech_combspec(fnames, objids, show=True, sensfile=sensfile,
                                                                       ex_value='OPT', outfile=qsoname, debug=debug)
 
