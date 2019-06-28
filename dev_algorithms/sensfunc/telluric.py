@@ -838,7 +838,7 @@ def sensfunc_telluric(spec1dfile, telgridfile, outfile, star_type=None, star_mag
                       debug=debug_init)
 
     # Optionally, mask prominent stellar absorption features
-    mask_abs = mask_star_lines(wave)
+    inmask = mask_star_lines(wave)
     # parameters lowered for testing
     TelObj = Telluric(wave, counts, counts_ivar, counts_mask, telgridfile, obj_params,
                       init_sensfunc_model, eval_sensfunc_model, inmask=mask_abs, wave_inmask=wave,
