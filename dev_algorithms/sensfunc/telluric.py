@@ -754,10 +754,61 @@ class Telluric(object):
         return srt_order_tell
 
 
+def mask_star_lines(wave_star, mask_width=10.0):
+    """
+    Mask stellar recombination lines
+    Args:
+        wave_star: ndarray, shape (nspec,) or (nspec, nimgs)
+        mask_width: float, width to mask around each line centers in Angstroms
+    Returns:
+        mask: ndarray, same shape as wave_star
+    """
+
+    mask_star = np.ones_like(wave_star, dtype=bool)
+    # Mask Balmer, Paschen, Brackett, and Pfund recombination lines
+    msgs.info("Masking stellar lines: Balmer, Paschen, Brackett, Pfund")
+    # Mask Balmer
+    msgs.info(" Masking Balmer")
+    lines_balm = np.array([3836.4, 3969.6, 3890.1, 4102.8, 4102.8, 4341.6, 4862.7, 5407.0,
+                           6564.6, 8224.8, 8239.2])
+    for line_balm in lines_balm:
+        ibalm = np.abs(wave_star - line_balm) <= mask_width
+        mask_star[ibalm] = False
+    # Mask Paschen
+    msgs.info(" Masking Paschen")
+    # air wavelengths from:
+    # https://www.subarutelescope.org/Science/Resources/lines/hi.html
+    lines_pasc = np.array([8203.6, 8440.3, 8469.6, 8504.8, 8547.7, 8600.8, 8667.4, 8752.9,
+                           8865.2, 9017.4, 9229.0, 9546.0, 10049.4, 10938.1,
+                           12818.1, 18751.0])
+    for line_pasc in lines_pasc:
+        ipasc = np.abs(wave_star - line_pasc) <= mask_width
+        mask_star[ipasc] = False
+    # Mask Brackett
+    msgs.info(" Masking Brackett")
+    # air wavelengths from:
+    # https://www.subarutelescope.org/Science/Resources/lines/hi.html
+    lines_brac = np.array([14584.0, 18174.0, 19446.0, 21655.0, 26252.0, 40512.0])
+    for line_brac in lines_brac:
+        ibrac = np.abs(wave_star - line_brac) <= mask_width
+        mask_star[ibrac] = False
+    # Mask Pfund
+    msgs.info(" Masking Pfund")
+    # air wavelengths from:
+    # https://www.subarutelescope.org/Science/Resources/lines/hi.html
+    lines_pfund = np.array([22788.0, 32961.0, 37395.0, 46525.0, 74578.0])
+    for line_pfund in lines_pfund:
+        ipfund = np.abs(wave_star - line_pfund) <= mask_width
+        mask_star[ipfund] = False
+
+    return mask_star
+
 def sensfunc_telluric(spec1dfile, telgridfile, outfile, star_type=None, star_mag=None, star_ra=None, star_dec=None,
-                      polyorder=8, delta_coeff_bounds=(-20.0, 20.0), minmax_coeff_bounds=(-5.0, 5.0), debug=False):
+                      polyorder=8, mask_abs_lines=True, delta_coeff_bounds=(-20.0, 20.0), minmax_coeff_bounds=(-5.0, 5.0), debug_init=False,
+                      debug=False):
 
 
+    # Read in the data
     wave, counts, counts_ivar, counts_mask, meta_spec = general_spec_reader(spec1dfile, ret_flam=False)
     header = fits.getheader(spec1dfile)
     # Read in standard star dictionary and interpolate onto regular telluric wave_grid
@@ -770,6 +821,7 @@ def sensfunc_telluric(spec1dfile, telgridfile, outfile, star_type=None, star_mag
     else:
         norders = 1
 
+    # Create the polyorder_vec
     if np.size(polyorder) > 1:
         if np.size(polyorder) != norders:
             msgs.error('polyorder must have either have norder elements or be a scalar')
@@ -777,14 +829,20 @@ def sensfunc_telluric(spec1dfile, telgridfile, outfile, star_type=None, star_mag
     else:
         polyorder_vec = np.full(norders, polyorder)
 
-    obj_params = dict(std_dict=std_dict, delta_coeff_bounds=delta_coeff_bounds, minmax_coeff_bounds=minmax_coeff_bounds,
+
+    # Initalize the object parameters
+    obj_params = dict(std_dict=std_dict,
+                      delta_coeff_bounds=delta_coeff_bounds, minmax_coeff_bounds=minmax_coeff_bounds,
                       polyorder_vec=polyorder_vec, exptime=meta_spec['core']['EXPTIME'],
-                      func='legendre', sigrej=3.0, output_meta_keys=('polyorder_vec'), debug=False)
+                      func='legendre', sigrej=3.0, output_meta_keys=('polyorder_vec', 'exptime', 'func'),
+                      debug=debug_init)
 
-# parameters lowered for testing
-#TelObj = telluric.Telluric(wave, counts, counts_ivar, counts_mask, telgridfile, obj_params,
-#                           telluric.init_sensfunc_model, telluric.eval_sensfunc_model,
-#                           popsize=20, tol=1e-2, debug=True)
+    # Optionally, mask prominent stellar absorption features
+    mask_abs = mask_star_lines(wave)
+    # parameters lowered for testing
+    TelObj = Telluric(wave, counts, counts_ivar, counts_mask, telgridfile, obj_params,
+                      init_sensfunc_model, eval_sensfunc_model, inmask=mask_abs, wave_inmask=wave,
+                      popsize=20, tol=1e-2, debug=debug)
 
-#sys.exit(-1)
-#TelObj.run(only_orders=[6])
+    TelObj.run(only_orders=5)
+    TelObj.write(outfile)
