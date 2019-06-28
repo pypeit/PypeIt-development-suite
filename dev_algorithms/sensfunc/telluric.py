@@ -644,7 +644,6 @@ class Telluric(object):
                 inmask_out = inmask_int
             else:
                 msgs.error('Unrecognized shape for data mask')
-            embed()
             return (mask & inmask_out)
         else:
             return mask
