@@ -804,8 +804,8 @@ def mask_star_lines(wave_star, mask_width=10.0):
     return mask_star
 
 def sensfunc_telluric(spec1dfile, telgridfile, outfile, star_type=None, star_mag=None, star_ra=None, star_dec=None,
-                      polyorder=8, mask_abs_lines=True, delta_coeff_bounds=(-20.0, 20.0), minmax_coeff_bounds=(-5.0, 5.0), debug_init=False,
-                      debug=False):
+                      polyorder=8, mask_abs_lines=True, delta_coeff_bounds=(-20.0, 20.0), minmax_coeff_bounds=(-5.0, 5.0),
+                      only_orders=None, debug_init=False, debug=False):
 
 
     # Read in the data
@@ -829,7 +829,7 @@ def sensfunc_telluric(spec1dfile, telgridfile, outfile, star_type=None, star_mag
     else:
         polyorder_vec = np.full(norders, polyorder)
 
-
+    embed()
     # Initalize the object parameters
     obj_params = dict(std_dict=std_dict,
                       delta_coeff_bounds=delta_coeff_bounds, minmax_coeff_bounds=minmax_coeff_bounds,
@@ -838,11 +838,17 @@ def sensfunc_telluric(spec1dfile, telgridfile, outfile, star_type=None, star_mag
                       debug=debug_init)
 
     # Optionally, mask prominent stellar absorption features
-    inmask = mask_star_lines(wave)
+    if mask_abs_lines:
+        wave_inmask = wave
+        inmask = mask_star_lines(wave_inmask)
+    else:
+        wave_inmask=None
+        inmask=None
+
     # parameters lowered for testing
     TelObj = Telluric(wave, counts, counts_ivar, counts_mask, telgridfile, obj_params,
-                      init_sensfunc_model, eval_sensfunc_model, inmask=mask_abs, wave_inmask=wave,
+                      init_sensfunc_model, eval_sensfunc_model, inmask=inmask, wave_inmask=wave_inmask,
                       popsize=20, tol=1e-2, debug=debug)
 
-    TelObj.run(only_orders=5)
+    TelObj.run(only_orders=only_orders)
     TelObj.write(outfile)
