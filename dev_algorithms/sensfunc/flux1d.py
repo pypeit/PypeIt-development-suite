@@ -14,7 +14,7 @@ from pypeit import utils
 from pypeit import msgs
 from pypeit.core import load, save, coadd1d
 from pypeit.spectrographs.util import load_spectrograph
-
+from IPython import embed
 
 PYPEIT_FLUX_SCALE = 1e-17
 
@@ -395,25 +395,27 @@ def apply_sensfunc_spec(wave, counts, ivar, sensfunc, airmass, exptime, mask=Non
 
 def apply_sensfunc_specobjs(specobjs, sens_meta, sens_table, airmass, exptime, extinct_correct=True, tell_correct=False,
                             longitude=None, latitude=None, debug=False, show=False):
+
+    # TODO This function should operate on a single object
     func = sens_meta['FUNC'][0]
     polyorder_vec = sens_meta['POLYORDER_VEC'][0]
-    nspec = len(specobjs)
-    import  IPython
-    IPython.embed()
+    nimgs = len(specobjs)
 
     if show:
         fig = plt.figure(figsize=(12, 8))
         xmin, xmax = [], []
         ymin, ymax = [], []
 
-    for ispec in range(nspec):
+    for ispec in range(nimgs):
         # get the ECH_ORDER, ECH_ORDERINDX, WAVELENGTH from your science
         sobj_ispec = specobjs[ispec]
+        ## TODO Comment on the logich here. Hard to follow
         try:
-            iord, iord_indx, iord_idx = sobj_ispec.ech_order, sobj_ispec.ech_orderindx, sobj_ispec.idx
+            ech_order, ech_orderindx, idx = sobj_ispec.ech_order, sobj_ispec.ech_orderindx, sobj_ispec.idx
             msgs.info('Applying sensfunc to Echelle data')
         except:
-            iord_idx = 0
+            ech_orderindx = 0
+            idx = sobj_ispec.idx
             msgs.info('Applying sensfunc to Longslit/Multislit data')
 
         for extract_type in ['boxcar', 'optimal']:
@@ -421,19 +423,20 @@ def apply_sensfunc_specobjs(specobjs, sens_meta, sens_table, airmass, exptime, e
 
             if len(extract) == 0:
                 continue
-            msgs.info("Fluxing {:s} extraction for:".format(extract_type) + msgs.newline() + "{}".format(sobj_ispec.idx))
-            wave = np.copy(np.array(extract['WAVE']))
-            wave_mask = wave>1.0
-            counts = np.copy(np.array(extract['COUNTS']))
-            counts_ivar = np.copy(np.array(extract['COUNTS_IVAR']))
-            mask = np.copy(np.array(extract['MASK']))
+            msgs.info("Fluxing {:s} extraction for:".format(extract_type) + msgs.newline() + "{}".format(idx))
+            wave = extract['WAVE'].value.copy()
+            wave_mask = wave > 1.0
+            counts = extract['COUNTS'].copy()
+            counts_ivar = extract['COUNTS_IVAR'].copy()
+            mask = extract['MASK'].copy()
 
             # get sensfunc from the sens_table
-            sens_table_ispec = sens_table[iord_indx]
-            coeff = sens_table_ispec['SENS_COEFF']
+            coeff = sens_table[ech_orderindx]['OBJ_THETA'][0:polyorder_vec[ech_orderindx] + 2]
+            wave_min = sens_table[ech_orderindx]['WAVE_MIN']
+            wave_max = sens_table[ech_orderindx]['WAVE_MAX']
             sensfunc = np.zeros_like(wave)
             sensfunc[wave_mask] = np.exp(utils.func_val(coeff, wave[wave_mask], func,
-                                             minx=wave[wave_mask].min(), maxx=wave[wave_mask].max()))
+                                             minx=wave_min, maxx=wave_max))
 
             # get telluric from the sens_table
             if tell_correct:
@@ -445,7 +448,7 @@ def apply_sensfunc_specobjs(specobjs, sens_meta, sens_table, airmass, exptime, e
             flam, flam_ivar, outmask = apply_sensfunc_spec(wave, counts, counts_ivar, sensfunc, airmass, exptime,
                                                       mask=mask, extinct_correct=extinct_correct, telluric=telluric,
                                                       longitude=longitude, latitude=latitude, debug=debug)
-            flam_sig = np.sqrt(utils.calc_ivar(flam_ivar))
+            flam_sig = np.sqrt(utils.inverse(flam_ivar))
             # The following will be changed directly in the specobjs, so do not need to return anything.
             extract['MASK'] = outmask
             extract['FLAM'] = flam
@@ -602,10 +605,10 @@ fnames = [datapath + 'spec1d_XSHOO.2017-06-28T23:51:39.115-PSOJ205p09_1_XShooter
 '''
 ## DES z~6.9 Quasar
 datapath = os.path.join(os.getenv('HOME'), 'Dropbox/PypeIt_Redux/XSHOOTER/J0020-3653/NIR/Science/')
-fnames = [datapath + 'spec1d_VHSJ0020-3653OffsetstarB_XShooter_NIR_2017Dec17T024443.537.fits',
-          datapath + 'spec1d_VHSJ0020-3653OffsetstarB_XShooter_NIR_2017Dec17T030550.032.fits',
-          datapath + 'spec1d_VHSJ0020-3653OffsetstarB_XShooter_NIR_2017Oct26T001535.660.fits',
-          datapath + 'spec1d_VHSJ0020-3653OffsetstarB_XShooter_NIR_2017Oct26T002641.612.fits']
+fnames = [datapath + 'spec1d_XSHOO.2017-10-26T00:26:41.612-VHSJ0020-3653_XShooter_NIR_2017Oct26T002641.612.fits',
+          datapath + 'spec1d_XSHOO.2017-10-26T00:48:55.512-VHSJ0020-3653_XShooter_NIR_2017Oct26T004855.512.fits',
+          datapath + 'spec1d_XSHOO.2017-12-17T02:44:43.537-VHSJ0020-3653_XShooter_NIR_2017Dec17T024443.537.fits',
+          datapath + 'spec1d_XSHOO.2017-12-17T03:05:50.032-VHSJ0020-3653_XShooter_NIR_2017Dec17T030550.032.fits']
 
 ## DES z~6.5 Quasar J0224
 #datapath = os.path.join(os.getenv('HOME'), 'Dropbox/PypeIt_Redux/XSHOOTER/J0224-4711/pypeit_nir/Science/')

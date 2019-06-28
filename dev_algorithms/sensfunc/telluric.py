@@ -292,6 +292,9 @@ def general_spec_reader(specfile, ret_flam=False):
 ############################
 
 
+##############
+# Sensfunc Model #
+##############
 def init_sensfunc_model(obj_params, iord, wave, flux, ivar, mask, tellmodel):
 
     # Model parameter guess for starting the optimizations
@@ -344,6 +347,9 @@ def eval_sensfunc_model(theta, obj_dict):
 
     return counts_model, (sensfunc > 0.0)
 
+##############
+# QSO Model #
+##############
 def init_qso_model(obj_params, iord, wave, flux, ivar, mask, tellmodel):
 
     pca_dict = qso_pca.init_pca(obj_params['pca_file'], wave, obj_params['z_qso'], obj_params['npca'])
@@ -514,8 +520,8 @@ class Telluric(object):
             self.theta_tell_list[iord] = self.result_list[iord].x[-6:]
             self.obj_model_list[iord], modelmask = self.eval_obj_model(self.theta_obj_list[iord], self.obj_dict_list[iord])
             self.tellmodel_list[iord] = eval_telluric(self.theta_tell_list[iord], self.tell_dict,
-                                                      ind_lower=self.arg_dict_list[iord]['ind_lower'],
-                                                      ind_upper=self.arg_dict_list[iord]['ind_upper'])
+                                                      ind_lower=self.ind_lower[iord],
+                                                      ind_upper=self.ind_upper[iord])
             self.assign_output(iord)
             if self.debug:
                 self.show_fit_qa(iord)
@@ -581,7 +587,6 @@ class Telluric(object):
         meta_table['POPSIZE'] = [self.popsize]
         meta_table['RECOMBINATION'] = [self.recombination]
         meta_table['TELGRIDFILE'] = [os.path.basename(self.telgridfile)]
-        # TODO Fix this bug!!
         if 'output_meta_keys' in self.obj_params:
             for key in self.obj_params['output_meta_keys']:
                 meta_table[key.upper()] = [self.obj_params[key]]
@@ -602,6 +607,11 @@ class Telluric(object):
         out_table['CHI2'] = np.zeros(self.norders)
         out_table['SUCCESS'] = np.zeros(self.norders, dtype=bool)
         out_table['NITER'] = np.zeros(self.norders, dtype=int)
+        out_table['IND_LOWER'] = self.ind_lower
+        out_table['IND_UPPER'] = self.ind_upper
+        out_table['WAVE_MIN'] = self.wave_grid[self.ind_lower]
+        out_table['WAVE_MAX'] = self.wave_grid[self.ind_upper]
+
 
         return meta_table, out_table
 
