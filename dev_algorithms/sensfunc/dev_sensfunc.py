@@ -51,13 +51,7 @@ dev_path = os.getenv('PYPEIT_DEV')
 #sens_dict = load.load_sens_dict(sensfuncfile)
 
 
-# First fit the sensivity function using the standard star
-star_mag  = None
-star_type = None
 spec1dfile = os.path.join(os.getenv('HOME'),'Dropbox/PypeIt_Redux/XSHOOTER/J0020-3653/NIR/Science/spec1d_STD,FLUX_XShooter_NIR_2017Dec17T082243.751.fits')
-
-wave, counts, counts_ivar, counts_mask, meta_spec = telluric.general_spec_reader(spec1dfile, ret_flam=False)
-header = fits.getheader(spec1dfile)
 telgridfile = os.path.join(os.getenv('HOME'),'Dropbox/PypeIt_Redux/XSHOOTER/TelFit_Paranal_NIR_9800_25000_R25000.fits')
 
 star_ra = None
