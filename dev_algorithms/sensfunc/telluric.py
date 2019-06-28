@@ -405,6 +405,7 @@ class Telluric(object):
 
         # 1) Assign arguments
         self.telgridfile = telgridfile
+        self.obj_params = obj_params
         self.init_obj_model = init_obj_model
         self.airmass_guess = airmass_guess
         self.eval_obj_model = eval_obj_model
@@ -516,7 +517,7 @@ class Telluric(object):
             if self.debug:
                 self.show_fit_qa(iord)
 
-    def write(self, outfile):
+    def save(self, outfile):
         """
         Method for writing astropy tables containing fits to a multi-extension fits file
 
@@ -529,7 +530,9 @@ class Telluric(object):
         # Write to outfile
         msgs.info('Writing object and telluric models to file: {:}'.format(outfile))
         hdu_meta = fits.table_to_hdu(self.meta_table)
+        hdu_meta.name = 'METADATA'
         hdu_out = fits.table_to_hdu(self.out_table)
+        hdu_out.name = 'OUT_TABLE'
         hdulist = fits.HDUList()
         hdulist.append(hdu_meta)
         hdulist.append(hdu_out)
@@ -566,12 +569,13 @@ class Telluric(object):
         plt.ylabel('Flux or Counts')
         plt.title('QA plot for order: {:d}/{:d}'.format(iord, self.norders))
         plt.show()
+        embed()
 
     def init_output(self):
 
         # Allocate the meta parameter table, ext=1
         meta_table = table.Table(meta={'name': 'Parameter Values'})
-        meta_table['TOL'] = self.tol
+        meta_table['TOL'] = [self.tol]
         meta_table['POPSIZE'] = self.popsize
         meta_table['RECOMBINATION'] = self.recombination
         meta_table['TELGRIDFILE'] = os.path.basename(self.telgridfile)
@@ -584,14 +588,14 @@ class Telluric(object):
         out_table['WAVE'] = np.zeros((self.norders, self.nspec_in))
         out_table['TELLURIC'] = np.zeros((self.norders, self.nspec_in))
         out_table['OBJ_MODEL'] = np.zeros((self.norders, self.nspec_in))
-        out_table['TELL_THETA'] = np.zeros(self.norders, 6)
+        out_table['TELL_THETA'] = np.zeros((self.norders, 6))
         out_table['TELL_PRESS'] = np.zeros(self.norders)
         out_table['TELL_TEMP'] = np.zeros(self.norders)
         out_table['TELL_H2O'] = np.zeros(self.norders)
         out_table['TELL_AIRMASS'] = np.zeros(self.norders)
         out_table['TELL_RESLN'] = np.zeros(self.norders)
         out_table['TELL_SHIFT'] = np.zeros(self.norders)
-        out_table['OBJ_THETA'] = np.zeros(self.norders, self.max_ntheta_obj)
+        out_table['OBJ_THETA'] = np.zeros((self.norders, self.max_ntheta_obj))
         out_table['CHI2'] = np.zeros(self.norders)
         out_table['SUCCESS'] = np.zeros(self.norders, dtype=bool)
         out_table['NITER'] = np.zeros(self.norders, dtype=int)
@@ -601,13 +605,13 @@ class Telluric(object):
     def assign_output(self, iord):
 
         gdwave = self.wave_in_arr[:,iord] > 1.0
-        wave_in = self.wave_in_arr[gdwave,iord]
+        wave_in_gd = self.wave_in_arr[gdwave,iord]
         wave_grid_now = self.wave_grid[self.ind_lower[iord]:self.ind_upper[iord]+1]
         self.out_table['WAVE'][iord] = self.wave_in_arr[:,iord]
         self.out_table['TELLURIC'][iord][gdwave] = scipy.interpolate.interp1d(
-            wave_grid_now, self.tellmodel_list[iord], kind='linear', bounds_error=False, fill_value=0.0)(wave_in[gdwave])
+            wave_grid_now, self.tellmodel_list[iord], kind='linear', bounds_error=False, fill_value=0.0)(wave_in_gd)
         self.out_table['OBJ_MODEL'][iord][gdwave] = scipy.interpolate.interp1d(
-            wave_grid_now, self.obj_model_list[iord], kind='linear', bounds_error=False, fill_value=0.0)(wave_in[gdwave])
+            wave_grid_now, self.obj_model_list[iord], kind='linear', bounds_error=False, fill_value=0.0)(wave_in_gd)
         self.out_table['TELL_THETA'][iord] = self.theta_tell_list[iord]
         self.out_table['TELL_PRESS'][iord] = self.theta_tell_list[iord][0]
         self.out_table['TELL_TEMP'][iord] = self.theta_tell_list[iord][1]
@@ -615,8 +619,8 @@ class Telluric(object):
         self.out_table['TELL_AIRMASS'][iord] = self.theta_tell_list[iord][3]
         self.out_table['TELL_RESLN'][iord] = self.theta_tell_list[iord][4]
         self.out_table['TELL_SHIFT'][iord] = self.theta_tell_list[iord][5]
-        ntheta_iord = len(self.theta_tell_list[iord])
-        self.out_table['OBJ_THETA'][iord][0:ntheta_iord+1] = self.theta_tell_list[iord]
+        ntheta_iord = len(self.theta_obj_list[iord])
+        self.out_table['OBJ_THETA'][iord][0:ntheta_iord+1] = self.theta_obj_list[iord]
         self.out_table['CHI2'][iord] = self.result_list[iord].fun
         self.out_table['SUCCESS'][iord] = self.result_list[iord].success
         self.out_table['NITER'][iord] = self.result_list[iord].nit
@@ -631,13 +635,16 @@ class Telluric(object):
             # the fake zero images in the call below
             _, _, inmask_int = coadd1d.interp_spec(self.wave_grid, wave_inmask, np.ones_like(wave_inmask),
                                                    np.ones_like(wave_inmask), inmask)
-            if mask.ndim == 2:
+            # If the data mask is 2d, and inmask is 1d, tile to create the inmask aligned with the data
+            if mask.ndim == 2 & inmask.ndim == 1:
                 norders = mask.shape[1]
                 inmask_out = np.tile(inmask_int, (norders, 1)).T
-            elif mask.ndim == 1:
+            # If the data mask and inmask have the same dimensionlaity, interpolated mask has correct dimensions
+            elif mask.ndim == inmask.ndim:
                 inmask_out = inmask_int
             else:
                 msgs.error('Unrecognized shape for data mask')
+            embed()
             return (mask & inmask_out)
         else:
             return mask
@@ -657,7 +664,7 @@ class Telluric(object):
 
     def reshape(self, wave, flux, ivar, mask):
         # Repackage the data into arrays of shape (nspec, norders)
-        if self.flux.ndim == 1:
+        if flux.ndim == 1:
             nspec = flux.size
             norders = 1
             wave_arr = wave.reshape(self.nspec,1)
@@ -717,7 +724,7 @@ class Telluric(object):
                          pressure_grid=pg, temp_grid=tg, h2o_grid=hg, airmass_grid=ag, tell_grid=model_grid)
         return tell_dict
 
-    def  get_tell_guess(self):
+    def get_tell_guess(self):
 
         tell_guess = (np.median(self.tell_dict['pressure_grid']),
                       np.median(self.tell_dict['temp_grid']),
@@ -761,7 +768,7 @@ def mask_star_lines(wave_star, mask_width=10.0):
         wave_star: ndarray, shape (nspec,) or (nspec, nimgs)
         mask_width: float, width to mask around each line centers in Angstroms
     Returns:
-        mask: ndarray, same shape as wave_star
+        mask: ndarray, same shape as wave_star, True=Good (i.e. does not hit a stellar absorption line)
     """
 
     mask_star = np.ones_like(wave_star, dtype=bool)
@@ -829,12 +836,15 @@ def sensfunc_telluric(spec1dfile, telgridfile, outfile, star_type=None, star_mag
     else:
         polyorder_vec = np.full(norders, polyorder)
 
-    embed()
     # Initalize the object parameters
     obj_params = dict(std_dict=std_dict,
                       delta_coeff_bounds=delta_coeff_bounds, minmax_coeff_bounds=minmax_coeff_bounds,
                       polyorder_vec=polyorder_vec, exptime=meta_spec['core']['EXPTIME'],
-                      func='legendre', sigrej=3.0, output_meta_keys=('polyorder_vec', 'exptime', 'func'),
+                      func='legendre', sigrej=3.0,
+                      std_source=std_dict['std_source'], std_ra=std_dict['std_ra'], std_dec=std_dict['std_dec'],
+                      std_name=std_dict['name'], std_calfile=std_dict['cal_file'],
+                      output_meta_keys=('polyorder_vec', 'exptime', 'func', 'std_source',
+                                        'std_ra', 'std_dec', 'std_name', 'std_calfile'),
                       debug=debug_init)
 
     # Optionally, mask prominent stellar absorption features
@@ -851,4 +861,6 @@ def sensfunc_telluric(spec1dfile, telgridfile, outfile, star_type=None, star_mag
                       popsize=20, tol=1e-2, debug=debug)
 
     TelObj.run(only_orders=only_orders)
-    TelObj.write(outfile)
+    TelObj.save(outfile)
+
+    return TelObj
