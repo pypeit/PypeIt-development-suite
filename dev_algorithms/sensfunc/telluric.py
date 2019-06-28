@@ -285,7 +285,7 @@ def general_spec_reader(specfile, ret_flam=False):
         except KeyError:
             pass
 
-    return wave, counts, counts_ivar, counts_mask, meta_spec
+    return wave, counts, counts_ivar, counts_mask, meta_spec, head
 
 ############################
 #  Object model functions  #
@@ -798,8 +798,7 @@ def sensfunc_telluric(spec1dfile, telgridfile, outfile, star_type=None, star_mag
 
 
     # Read in the data
-    wave, counts, counts_ivar, counts_mask, meta_spec = general_spec_reader(spec1dfile, ret_flam=False)
-    header = fits.getheader(spec1dfile)
+    wave, counts, counts_ivar, counts_mask, meta_spec, header = general_spec_reader(spec1dfile, ret_flam=False)
     # Read in standard star dictionary and interpolate onto regular telluric wave_grid
     star_ra = meta_spec['core']['RA'] if star_ra is None else star_ra
     star_dec = meta_spec['core']['DEC'] if star_dec is None else star_dec
@@ -819,13 +818,13 @@ def sensfunc_telluric(spec1dfile, telgridfile, outfile, star_type=None, star_mag
         polyorder_vec = np.full(norders, polyorder)
 
     # Initalize the object parameters
-    obj_params = dict(std_dict=std_dict,
+    obj_params = dict(std_dict=std_dict, airmass=meta_spec['core']['AIRMASS'],
                       delta_coeff_bounds=delta_coeff_bounds, minmax_coeff_bounds=minmax_coeff_bounds,
                       polyorder_vec=polyorder_vec, exptime=meta_spec['core']['EXPTIME'],
                       func='legendre', sigrej=3.0,
                       std_source=std_dict['std_source'], std_ra=std_dict['std_ra'], std_dec=std_dict['std_dec'],
                       std_name=std_dict['name'], std_calfile=std_dict['cal_file'],
-                      output_meta_keys=('polyorder_vec', 'exptime', 'func', 'std_source',
+                      output_meta_keys=('airmass', 'polyorder_vec', 'exptime', 'func', 'std_source',
                                         'std_ra', 'std_dec', 'std_name', 'std_calfile'),
                       debug=debug_init)
 
@@ -861,7 +860,7 @@ def qso_telluric(spec1dfile, telgridfile, pca_file, z_qso, telloutfile, outfile,
                       tell_norm_thresh=tell_norm_thresh,
                       output_meta_keys=('pca_file', 'npca', 'z_qso', 'delta_zqso','bounds_norm', 'tell_norm_thresh'))
 
-    wave, flux, ivar, mask, meta_spec = general_spec_reader(spec1dfile, ret_flam=True)
+    wave, flux, ivar, mask, meta_spec, header = general_spec_reader(spec1dfile, ret_flam=True)
     header = fits.getheader(spec1dfile) # clean this up!
     # Mask the IGM and mask wavelengths that extend redward of our PCA
     qsomask = (wave > (1.0 + z_qso)*1220.0) & (wave < 3100.0*(1.0 + z_qso))
