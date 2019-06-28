@@ -569,7 +569,6 @@ class Telluric(object):
         plt.ylabel('Flux or Counts')
         plt.title('QA plot for order: {:d}/{:d}'.format(iord, self.norders))
         plt.show()
-        embed()
 
     def init_output(self):
 
