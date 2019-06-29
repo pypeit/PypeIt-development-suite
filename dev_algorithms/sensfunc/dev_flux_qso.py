@@ -47,12 +47,14 @@ if do_sens:
 # TODO: change show=False to show=show
 apply_sensfunc(fnames, sensfile, extinct_correct=False, tell_correct=False, debug=debug, show=False)
 
+fnames_flux = [f.replace('.fits', '_flux.fits') for f in fnames]
+
 ## Let's coadd all the fluxed spectra
 # you should get a coadded spectrum named as 'spec1d_stack_{:}.fits'.format(qsoname)
 #                a straight merge of individual order stacked spectra named as 'spec1d_merge_{:}.fits'.format(qsoname)
 #                a individual order stacked spectra (multi-extension) named as 'spec1d_order_{:}.fits'.format(qsoname)
 # TODO: change the outfile to work with datapath. It's a hard coding on these names in coadd1d
-wave_stack, flux_stack, ivar_stack, mask_stack = coadd1d.ech_combspec(fnames, objids, show=show, sensfile=sensfile,
+wave_stack, flux_stack, ivar_stack, mask_stack = coadd1d.ech_combspec(fnames_flux, objids, show=show, sensfile=sensfile,
                                                                       ex_value='OPT', outfile=qsoname, debug=debug)
 
 # run telluric.qso_telluric to get the final results
