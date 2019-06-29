@@ -52,7 +52,7 @@ apply_sensfunc(fnames, sensfile, extinct_correct=False, tell_correct=False, debu
 #                a straight merge of individual order stacked spectra named as 'spec1d_merge_{:}.fits'.format(qsoname)
 #                a individual order stacked spectra (multi-extension) named as 'spec1d_order_{:}.fits'.format(qsoname)
 # TODO: change the outfile to work with datapath. It's a hard coding on these names in coadd1d
-wave_stack, flux_stack, ivar_stack, mask_stack = coadd1d.ech_combspec(fnames, objids, show=True, sensfile=sensfile,
+wave_stack, flux_stack, ivar_stack, mask_stack = coadd1d.ech_combspec(fnames, objids, show=show, sensfile=sensfile,
                                                                       ex_value='OPT', outfile=qsoname, debug=debug)
 
 # run telluric.qso_telluric to get the final results
@@ -62,4 +62,4 @@ outfile = 'spec1d_stack_{:}_tellcorr.fits'.format(qsoname)
 
 # TODO: add other modes here
 TelQSO = telluric.qso_telluric(spec1dfluxfile, telgridfile, pca_file, z_qso, telloutfile, outfile,
-                               create_bal_mask=None, debug=debug, show=show)
+                               create_bal_mask=None, debug=True, show=show)
