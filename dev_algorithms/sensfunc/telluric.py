@@ -469,8 +469,8 @@ class Telluric(object):
         self.bounds_list = [None]*self.norders
         self.arg_dict_list = [None]*self.norders
         self.max_ntheta_obj = 0
-        for iord in self.srt_order_tell:
-            msgs.info('Initializing object model for order: {:d}/{:d}'.format(iord, self.norders) +
+        for counter, iord in enumerate(self.srt_order_tell):
+            msgs.info('Initializing object model for order: {:d}, {:d}/{:d}'.format(iord, counter, self.norders) +
                       ' with user supplied function: {:s}'.format(self.init_obj_model.__name__))
             tellmodel = eval_telluric(self.tell_guess, self.tell_dict,
                                       ind_lower=self.ind_lower[iord], ind_upper=self.ind_upper[iord])
@@ -506,10 +506,10 @@ class Telluric(object):
         self.tellmodel_list = [None]*self.norders
         self.theta_obj_list = [None]*self.norders
         self.theta_tell_list = [None]*self.norders
-        for iord in self.srt_order_tell:
+        for counter, iord in enumerate(self.srt_order_tell):
             if iord not in good_orders:
                 continue
-            msgs.info('Fitting object + telluric model for order: {:d}/{:d}'.format(iord, self.norders) +
+            msgs.info('Fitting object + telluric model for order: {:d}, {:d}/{:d}'.format(iord, counter, self.norders) +
                       ' with user supplied function: {:s}'.format(self.init_obj_model.__name__))
             self.result_list[iord], ymodel, ivartot, self.outmask_list[iord] = utils.robust_optimize(
                 self.flux_arr[self.ind_lower[iord]:self.ind_upper[iord]+1, iord], tellfit, self.arg_dict_list[iord],
