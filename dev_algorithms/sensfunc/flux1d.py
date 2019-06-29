@@ -607,8 +607,8 @@ fnames = [datapath + 'spec1d_XSHOO.2017-06-28T23:51:39.115-PSOJ205p09_1_XShooter
 datapath = os.path.join(os.getenv('HOME'), 'Dropbox/PypeIt_Redux/XSHOOTER/J0020-3653/NIR/Science/')
 fnames = [datapath + 'spec1d_XSHOO.2017-10-26T00:26:41.612-VHSJ0020-3653_XShooter_NIR_2017Oct26T002641.612.fits',
           datapath + 'spec1d_XSHOO.2017-10-26T00:48:55.512-VHSJ0020-3653_XShooter_NIR_2017Oct26T004855.512.fits',
-          datapath + 'spec1d_XSHOO.2017-12-17T02:44:43.537-VHSJ0020-3653_XShooter_NIR_2017Dec17T024443.537.fits',
-          datapath + 'spec1d_XSHOO.2017-12-17T03:05:50.032-VHSJ0020-3653_XShooter_NIR_2017Dec17T030550.032.fits']
+          datapath + 'spec1d_XSHOO.2017-12-17T02:44:43.537-VHSJ0020-3653_XShooter_NIR_2017Dec17T024443.537.fits']
+#          datapath + 'spec1d_XSHOO.2017-12-17T03:05:50.032-VHSJ0020-3653_XShooter_NIR_2017Dec17T030550.032.fits']
 
 ## DES z~6.5 Quasar J0224
 #datapath = os.path.join(os.getenv('HOME'), 'Dropbox/PypeIt_Redux/XSHOOTER/J0224-4711/pypeit_nir/Science/')
@@ -646,6 +646,12 @@ fnames = [datapath + 'spec1d_XSHOO.2017-10-26T00:26:41.612-VHSJ0020-3653_XShoote
 #sensfile = os.path.join(os.getenv('HOME'), 'Dropbox/PypeIt_Redux/XSHOOTER/NIR_Stack/Feige110_sens_tell_wang.fits')
 sensfile = os.path.join(os.getenv('HOME'), 'Dropbox/PypeIt_Redux/XSHOOTER/LTT3218_sens_tell.fits')
 apply_sensfunc(fnames, sensfile, extinct_correct=False, tell_correct=False, debug=False, show=False)
+objids = ['OBJ0001']*3
+outfile = 'VHSJ0020-3653'
+fnames_flux  = [file.replace('.fits', '_flux.fits') for file in fnames]
+wave_stack, flux_stack, ivar_stack, mask_stack = coadd1d.ech_combspec(fnames_flux, objids, show=True, sensfile=sensfile,
+                                                                      ex_value='OPT', outfile=outfile, debug=True)
+
 
 '''
 ## test find standard
