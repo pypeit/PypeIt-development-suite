@@ -363,9 +363,8 @@ def read_deimos_stack():
 #wave_grid = coadd1d.new_wave_grid(waves, wave_method='pixel')
 
 # Testing DEIMOS
-#fnames, objids = deimos_fnames()
-#wave_stack, flux_stack, ivar_stack, mask_stack = coadd1d.multi_combspec(fnames, objids, show=True, debug=True,
-#                                                                        outfile='P261_coadd.fits')
+fnames, objids = deimos_fnames()
+wave_stack, flux_stack, ivar_stack, mask_stack = coadd1d.combspec(fnames, objids, show=True, debug=True,outfile='P261_coadd.fits')
 
 # Testing NIRES
 #fnames, objids = nires_fnames()
@@ -374,7 +373,7 @@ def read_deimos_stack():
 
 # Test XSHOOTER
 #sensfile = os.path.join(os.getenv('HOME'), 'Dropbox/PypeIt_Redux/XSHOOTER/J0439/NIR/Feige110_sens_tell.fits')
-sensfile = os.path.join(os.getenv('HOME'), 'Dropbox/PypeIt_Redux/XSHOOTER/NIR_Stack/Feige110_sens_tell_wang.fits')
+#sensfile = os.path.join(os.getenv('HOME'), 'Dropbox/PypeIt_Redux/XSHOOTER/NIR_Stack/Feige110_sens_tell_wang.fits')
 
 #fnames, objids = J0226_xshooter_fnames()
 #outfile = 'J0226.fits'
@@ -385,8 +384,8 @@ sensfile = os.path.join(os.getenv('HOME'), 'Dropbox/PypeIt_Redux/XSHOOTER/NIR_St
 #fnames, objids = J0020_xshooter_fnames()
 #outfile = 'J0020'
 #fnames, objids = feige110_xshooter_fnames()
-fnames, objids = J0224_xshooter_fnames()
-outfile = 'J0224'
+#fnames, objids = J0224_xshooter_fnames()
+#outfile = 'J0224'
 #fnames, objids = LTT_xshooter_frames()
 #outfile = 'LTT3218'
 #fnames, objids = J1048_xshooter_fnames()
@@ -396,8 +395,8 @@ outfile = 'J0224'
 #fnames, objids = TELL_xshooter_frames()
 #outfile = 'TELL_B8IV_V5p8'
 
-wave_stack, flux_stack, ivar_stack, mask_stack = coadd1d.ech_combspec(fnames, objids, show=True, sensfile=sensfile,
-                                                                      ex_value='OPT', outfile=outfile, debug=False)
+#wave_stack, flux_stack, ivar_stack, mask_stack = coadd1d.ech_combspec(fnames, objids, show=True, sensfile=sensfile,
+#                                                                      ex_value='OPT', outfile=outfile, debug=False)
 
 # Coadding
 #wave_stack, flux_stack, ivar_stack, mask_stack, outmask, weights, scales, rms_sn = coadd1d.combspec(
