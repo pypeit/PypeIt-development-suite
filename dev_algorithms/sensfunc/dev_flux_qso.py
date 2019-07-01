@@ -56,7 +56,7 @@ fnames_flux = [f.replace('.fits', '_flux.fits') for f in fnames]
 # TODO: change the outfile to work with datapath. It's a hard coding on these names in coadd1d
 wave_stack, flux_stack, ivar_stack, mask_stack = coadd1d.ech_combspec(fnames_flux[0:7], objids[0:7], show=True, sensfile=sensfile,
                                                                       ex_value='OPT', outfile=qsoname,
-                                                                      show_order_scale=True, debug=True)
+                                                                      show_order_scale=False, show_exp=True, debug=debug)
 
 # run telluric.qso_telluric to get the final results
 spec1dfluxfile = 'spec1d_stack_{:}.fits'.format(qsoname)
