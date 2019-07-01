@@ -6,14 +6,15 @@ from flux1d import apply_sensfunc
 from pypeit.core import coadd1d
 from pypeit import msgs
 
-debug = False
+debug_sens = False
+debug_comb = True
 show = True
 do_sens = False
 
-z_qso = 7.085
+z_qso = 6.9
 npca = 8
 ex_value = 'OPT'
-qsoname = 'J1120+0641'
+qsoname = 'J0020-3653'
 
 datapath = os.path.join(os.getenv('HOME'), 'Dropbox/PypeIt_Redux/XSHOOTER/{:}/NIR/Science/'.format(qsoname))
 
@@ -41,11 +42,11 @@ if do_sens:
         msgs.error('You need either give a std1dfile to derive sensfunc')
     else:
         # run telluric.sensfunc_telluric to get the sensfile
-        TelSens = telluric.sensfunc_telluric(std1dfile, telgridfile, sensfile, mask_abs_lines=True, debug=debug)
+        TelSens = telluric.sensfunc_telluric(std1dfile, telgridfile, sensfile, mask_abs_lines=True, debug=debug_sens)
 
 ## Apply the sensfunc to all spectra (only sensfunc but not tellluric)
 # TODO: change show=False to show=show
-#apply_sensfunc(fnames, sensfile, extinct_correct=False, tell_correct=False, debug=debug, show=False)
+apply_sensfunc(fnames, sensfile, extinct_correct=False, tell_correct=False, debug=False, show=False)
 
 fnames_flux = [f.replace('.fits', '_flux.fits') for f in fnames]
 
@@ -54,9 +55,8 @@ fnames_flux = [f.replace('.fits', '_flux.fits') for f in fnames]
 #                a straight merge of individual order stacked spectra named as 'spec1d_merge_{:}.fits'.format(qsoname)
 #                a individual order stacked spectra (multi-extension) named as 'spec1d_order_{:}.fits'.format(qsoname)
 # TODO: change the outfile to work with datapath. It's a hard coding on these names in coadd1d
-wave_stack, flux_stack, ivar_stack, mask_stack = coadd1d.ech_combspec(fnames_flux[0:7], objids[0:7], show=True, sensfile=sensfile,
-                                                                      ex_value='OPT', outfile=qsoname,
-                                                                      show_order_scale=True, debug=True)
+wave_stack, flux_stack, ivar_stack, mask_stack = coadd1d.ech_combspec(fnames_flux, objids, show=show, sensfile=sensfile,
+                                                                      ex_value='OPT', outfile=qsoname, debug=debug_comb)
 
 # run telluric.qso_telluric to get the final results
 spec1dfluxfile = 'spec1d_stack_{:}.fits'.format(qsoname)
