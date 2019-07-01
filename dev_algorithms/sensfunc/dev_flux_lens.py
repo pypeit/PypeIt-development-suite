@@ -10,10 +10,10 @@ debug = False
 show = True
 do_sens = False
 
-z_qso = 7.085
+z_qso = 6.51
 npca = 8
 ex_value = 'OPT'
-qsoname = 'J1120+0641'
+qsoname = 'J0439'
 
 datapath = os.path.join(os.getenv('HOME'), 'Dropbox/PypeIt_Redux/XSHOOTER/J0439/NIR/Science/')
 
