@@ -364,7 +364,7 @@ def read_deimos_stack():
 
 # Testing DEIMOS
 fnames, objids = deimos_fnames()
-wave_stack, flux_stack, ivar_stack, mask_stack = coadd1d.combspec(fnames, objids, show=True, debug=True,outfile='P261_coadd.fits')
+wave_stack, flux_stack, ivar_stack, mask_stack = coadd1d.multi_combspec(fnames, objids, show=True, debug=True,outfile='P261_coadd.fits')
 
 # Testing NIRES
 #fnames, objids = nires_fnames()
