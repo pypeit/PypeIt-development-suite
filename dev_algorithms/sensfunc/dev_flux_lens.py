@@ -8,6 +8,7 @@ from pypeit import msgs
 
 debug = False
 show = True
+show_exp=True
 do_sens = False
 
 z_qso = 6.51
@@ -45,7 +46,7 @@ if do_sens:
 
 ## Apply the sensfunc to all spectra (only sensfunc but not tellluric)
 # TODO: change show=False to show=show
-apply_sensfunc(fnames, sensfile, extinct_correct=False, tell_correct=False, debug=debug, show=False)
+#apply_sensfunc(fnames, sensfile, extinct_correct=False, tell_correct=False, debug=debug, show=False)
 
 fnames_flux = [f.replace('.fits', '_flux.fits') for f in fnames]
 
@@ -54,9 +55,10 @@ fnames_flux = [f.replace('.fits', '_flux.fits') for f in fnames]
 #                a straight merge of individual order stacked spectra named as 'spec1d_merge_{:}.fits'.format(qsoname)
 #                a individual order stacked spectra (multi-extension) named as 'spec1d_order_{:}.fits'.format(qsoname)
 # TODO: change the outfile to work with datapath. It's a hard coding on these names in coadd1d
-wave_stack, flux_stack, ivar_stack, mask_stack = coadd1d.ech_combspec(fnames_flux, objids, show=show, sensfile=sensfile,
-                                                                      ex_value='OPT', outfile=qsoname, debug=debug)
-
+wave_stack, flux_stack, ivar_stack, mask_stack = coadd1d.ech_combspec(fnames_flux[0:11], objids, sensfile=sensfile,
+                                                                      ex_value='OPT', outfile=qsoname, show=show,
+                                                                      show_exp=show_exp, debug=debug)
+sys.exit(-1)
 # run telluric.qso_telluric to get the final results
 spec1dfluxfile = 'spec1d_stack_{:}.fits'.format(qsoname)
 telloutfile = 'spec1d_stack_{:}_tellmodel.fits'.format(qsoname)
