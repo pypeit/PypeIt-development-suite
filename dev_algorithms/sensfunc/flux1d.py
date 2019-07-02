@@ -91,11 +91,13 @@ def find_standard_file(ra, dec, toler=20.*units.arcmin, check=False):
                         msgs.info("Loading standard star file: {:s}".format(fil))
                     if sset == 'xshooter':
                         std_spec = Table.read(fil, format='ascii')
+                        std_dict['std_source'] = sset
                         std_dict['wave'] = std_spec['col1'] * units.AA
                         std_dict['flux'] = std_spec['col2'] / PYPEIT_FLUX_SCALE * \
                                            units.erg / units.s / units.cm ** 2 / units.AA
                         msgs.info("Fluxes are flambda, normalized to 1e-17")
                     elif sset == 'calspec':
+                        std_dict['std_source'] = sset
                         std_spec = fits.open(fil)[1].data
                         std_dict['wave'] = std_spec['WAVELENGTH'] * units.AA
                         std_dict['flux'] = std_spec['FLUX'] / PYPEIT_FLUX_SCALE \
@@ -206,6 +208,7 @@ def stellar_model(V, sptype):
     star_flux = flux.data * flux_factor
     # Generate a dict matching the output of find_standard_file
     std_dict = dict(cal_file='KuruczTelluricModel', name=sptype, Vmag=V, std_ra=None, std_dec=None)
+    std_dict['std_source'] = 'KuruczTelluricModel'
     std_dict['wave'] = star_lam * units.AA
     std_dict['flux'] = star_flux / PYPEIT_FLUX_SCALE * units.erg / units.s / units.cm ** 2 / units.AA
 
@@ -244,6 +247,7 @@ def get_standard_spectrum(star_type=None, star_mag=None, ra=None, dec=None):
             vega_file = resource_filename('pypeit', '/data/standards/vega_tspectool_vacuum.dat')
             vega_data = Table.read(vega_file, comment='#', format='ascii')
             std_dict = dict(cal_file='vega_tspectool_vacuum', name=star_type, std_ra=None, std_dec=None)
+            std_dict['std_source'] = 'VEGA'
             std_dict['wave'] = vega_data['col1'] * units.AA
 
             # vega is V=0.03
