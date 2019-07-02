@@ -54,9 +54,10 @@ fnames_flux = [f.replace('.fits', '_flux.fits') for f in fnames]
 #                a straight merge of individual order stacked spectra named as 'spec1d_merge_{:}.fits'.format(qsoname)
 #                a individual order stacked spectra (multi-extension) named as 'spec1d_order_{:}.fits'.format(qsoname)
 # TODO: change the outfile to work with datapath. It's a hard coding on these names in coadd1d
-wave_stack, flux_stack, ivar_stack, mask_stack = coadd1d.ech_combspec(fnames_flux[0:7], objids[0:7], show=True, sensfile=sensfile,
+wave_stack, flux_stack, ivar_stack, mask_stack = coadd1d.ech_combspec(fnames_flux[0:7], objids[0:7], sensfile=sensfile,
                                                                       ex_value='OPT', outfile=qsoname+'_newcoadd',
-                                                                      show_order_scale=False, debug=False)
+                                                                      show_order_scale=False, debug=False, show=True,
+                                                                      show_exp=True)
 #
 # run telluric.qso_telluric to get the final results
 spec1dfluxfile = 'spec1d_stack_{:}.fits'.format(qsoname)
