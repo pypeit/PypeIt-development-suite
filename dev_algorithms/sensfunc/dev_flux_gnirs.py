@@ -10,14 +10,14 @@ from pypeit import msgs
 
 debug = False
 show = True
-do_sens = False
+do_sens = True
 
 z_qso = 7.50
 npca = 8
 ex_value = 'OPT'
-qsoname = 'BlueHawaii'
+qsoname = 'BlueHawaii_GNIRS'
 
-datapath = os.path.join(os.getenv('HOME'), 'Dropbox/PypeIt_Redux/NIRES/NIRES_May19/Science/')
+datapath = os.path.join(os.getenv('HOME'), 'Dropbox/PypeIt_Redux/GNIRS/BlueHawaii/')
 
 # TODO: change the spec1dlist to the pypeit format and change the reader accordingly
 spec1dlist = 'spec1dlist'
@@ -31,20 +31,21 @@ for ifile in range(nfiles):
 objids = ['OBJ0001']*nfiles
 
 std1dfile = os.path.join(os.getenv('HOME'),
-                          'Dropbox/PypeIt_Redux/NIRES/NIRES_May19/Science/spec1d_s190519_0059-GD153_NIRES_2019May19T083811.995.fits')
+                          'Dropbox/PypeIt_Redux/GNIRS/BlueHawaii/spec1d_N20190531S0067-HIP56736_GNIRS_2019May31T073323.707.fits')
 
 # get the pca pickle file and atmosphere model grid
 pca_file = os.path.join(os.getenv('HOME'),'Dropbox/PypeIt_Redux/qso_pca_1200_3100.pckl')
 telgridfile = os.path.join(os.getenv('HOME'),'Dropbox/PypeIt_Redux/TelFit_MaunaKea_3100_26100_R20000.fits')
 
 # TODO: set sensfile=None if you want to derive sensfunc from std1dfile
-sensfile = os.path.join(os.getenv('HOME'), 'Dropbox/PypeIt_Redux/NIRES/GD153_sens_tell_nires.fits')
+sensfile = os.path.join(os.getenv('HOME'), 'Dropbox/PypeIt_Redux/GNIRS/HIP56736_sens_tell_gnirs.fits')
 if do_sens:
     if std1dfile is None:
         msgs.error('You need either give a std1dfile to derive sensfunc')
     else:
         # run telluric.sensfunc_telluric to get the sensfile
-        TelSens = telluric.sensfunc_telluric(std1dfile, telgridfile, sensfile, mask_abs_lines=True, debug=True)
+        TelSens = telluric.sensfunc_telluric(std1dfile, telgridfile, sensfile, star_type='A0', star_mag=8.78,
+                                             star_ra=None, star_dec=None, mask_abs_lines=True, debug=debug)
 
 ## Apply the sensfunc to all spectra (only sensfunc but not tellluric)
 # TODO: change show=False to show=show
@@ -57,9 +58,8 @@ fnames_flux = [f.replace('.fits', '_flux.fits') for f in fnames]
 #                a straight merge of individual order stacked spectra named as 'spec1d_merge_{:}.fits'.format(qsoname)
 #                a individual order stacked spectra (multi-extension) named as 'spec1d_order_{:}.fits'.format(qsoname)
 # TODO: change the outfile to work with datapath. It's a hard coding on these names in coadd1d
-wave_stack, flux_stack, ivar_stack, mask_stack = coadd1d.ech_combspec(fnames_flux, objids, sensfile=sensfile,
-                                                                      ex_value='OPT', outfile=qsoname, debug=debug,
-                                                                      show_order_scale=True, show_exp=True, show=True)
+wave_stack, flux_stack, ivar_stack, mask_stack = coadd1d.ech_combspec(fnames_flux, objids, show=show, sensfile=sensfile,
+                                                                      ex_value='OPT', outfile=qsoname, debug=debug)
 
 # run telluric.qso_telluric to get the final results
 spec1dfluxfile = 'spec1d_stack_{:}.fits'.format(qsoname)
