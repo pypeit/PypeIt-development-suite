@@ -5,6 +5,7 @@ import telluric
 from flux1d import apply_sensfunc
 from pypeit.core import coadd1d
 from pypeit import msgs
+from pypeit.core import load
 
 debug = False
 show = True
@@ -28,6 +29,17 @@ for ifile in range(nfiles):
 
 #TODO: the objids shoul be read in from the pypeit format file as noted above.
 objids = ['OBJ0001']*nfiles
+
+
+wave_mask = waves > 1.0
+waves_ma = np.ma.array(waves, mask=np.invert(wave_mask))
+loglam = np.ma.log10(waves_ma)
+loglam_roll = (loglam - np.roll(loglam, 1,axis=0))[1:]
+dloglam_ord = np.ma.median(loglam_roll, axis=0)
+dloglam = np.median(dloglam_ord)
+# Guess resolution from wavelength sampling of telluric grid if it is not provided
+resln_guess = 1.0 / (3.0 * dloglam * np.log(10.0))  # assume roughly Nyquist sampling
+pix_per_R = 1.0 / resln_guess / (dloglam * np.log(10.0)) / (2.0 * np.sqrt(2.0 * np.log(2)))
 
 std1dfile = os.path.join(os.getenv('HOME'),'Dropbox/PypeIt_Redux/XSHOOTER/J0439/NIR/Science/spec1d_XSHOO.2018-10-16T08:34:05.508-LTT3218_XShooter_NIR_2018Oct16T083405.508.fits')
 

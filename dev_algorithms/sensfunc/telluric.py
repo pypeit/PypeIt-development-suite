@@ -34,17 +34,39 @@ from pypeit.spectrographs.util import load_spectrograph
 #  Telluric model functions  #
 ##############################
 
-def get_bounds_tell(tell_dict, resln_guess, resln_frac_bounds, pix_shift_bounds):
+#def get_bounds_tell(tell_dict, resln_guess, resln_frac_bounds, pix_shift_bounds):
+#
+#    # Set the bounds for the optimization
+#    bounds_tell = [(tell_dict['pressure_grid'].min(), tell_dict['pressure_grid'].max()),
+#                   (tell_dict['temp_grid'].min(), tell_dict['temp_grid'].max()),
+#                   (tell_dict['h2o_grid'].min(), tell_dict['h2o_grid'].max()),
+#                   (tell_dict['airmass_grid'].min(), tell_dict['airmass_grid'].max()),
+#                   (resln_guess * resln_frac_bounds[0], resln_guess * resln_frac_bounds[1]),
+#                   pix_shift_bounds]
+#
+#    return bounds_tell
 
-    # Set the bounds for the optimization
-    bounds_tell = [(tell_dict['pressure_grid'].min(), tell_dict['pressure_grid'].max()),
-                   (tell_dict['temp_grid'].min(), tell_dict['temp_grid'].max()),
-                   (tell_dict['h2o_grid'].min(), tell_dict['h2o_grid'].max()),
-                   (tell_dict['airmass_grid'].min(), tell_dict['airmass_grid'].max()),
-                   (resln_guess * resln_frac_bounds[0], resln_guess * resln_frac_bounds[1]),
-                   pix_shift_bounds]
+def get_sampling(waves):
 
-    return bounds_tell
+    if waves.ndim == 1:
+        norders = 1
+        nspec = waves.shape[0]
+        waves_stack = waves.reshape((nspec, norders))
+    elif waves.ndim == 2:
+        nspec, norders = waves.shape
+        waves_stack = waves
+
+    wave_mask = waves_stack > 1.0
+    waves_ma = np.ma.array(waves_stack, mask=np.invert(wave_mask))
+    loglam = np.ma.log10(waves_ma)
+    loglam_roll = (loglam - np.roll(loglam, 1, axis=0))[1:]
+    dloglam_ord = np.ma.median(loglam_roll, axis=0)
+    dloglam = np.median(dloglam_ord)
+    # Guess resolution from wavelength sampling of telluric grid if it is not provided
+    resln_guess = 1.0 / (3.0 * dloglam * np.log(10.0))  # assume roughly Nyquist sampling
+    pix_per_R = 1.0 / resln_guess / (dloglam * np.log(10.0)) / (2.0 * np.sqrt(2.0 * np.log(2)))
+
+    return dloglam, resln_guess, pix_per_R
 
 def read_telluric_grid(filename, wave_min=None, wave_max=None, pad = 0):
 
@@ -72,11 +94,7 @@ def read_telluric_grid(filename, wave_min=None, wave_max=None, pad = 0):
     else:
         ag = hdul[0].header['AM0']+1*np.arange(0,1)
 
-    loglam = np.log10(wave_grid)
-    dloglam = np.median(loglam[1:] - loglam[:-1])
-    # Guess resolution from wavelength sampling of telluric grid if it is not provided
-    resln_guess = 1.0/(3.0 * dloglam * np.log(10.0))  # assume roughly Nyquist sampling
-    pix_per_R = 1.0/resln_guess / (dloglam * np.log(10.0)) / (2.0 * np.sqrt(2.0 * np.log(2)))
+    dloglam, resln_guess, pix_per_R = get_sampling(wave_grid)
     tell_pad_pix = int(np.ceil(10.0 * pix_per_R))
 
     tell_dict = dict(wave_grid=wave_grid, dloglam=dloglam,
@@ -397,7 +415,7 @@ class Telluric(object):
 
     def __init__(self, wave, flux, ivar, mask, telgridfile, obj_params, init_obj_model, eval_obj_model,
                  sn_clip=50.0, airmass_guess=1.5, resln_guess=None,
-                 resln_frac_bounds=(0.5, 1.5), pix_shift_bounds=(-2.0, 2.0),
+                 resln_frac_bounds=(0.5, 1.5), pix_shift_bounds=(-5.0, 5.0),
                  maxiter=3, sticky=True, lower=3.0, upper=3.0,
                  seed=None, tol=1e-3, popsize=30, recombination=0.7, polish=True, disp=True, debug=False):
 
@@ -441,7 +459,7 @@ class Telluric(object):
         self.tell_dict = self.read_telluric_grid()
         self.wave_grid = self.tell_dict['wave_grid']
         self.ngrid = self.wave_grid.size
-        self.resln_guess = resln_guess if resln_guess is not None else self.tell_dict['resln_guess']
+        self.resln_guess = get_sampling(self.wave_in_arr)[1] if resln_guess is None else resln_guess
         # Model parameter guess for determining the bounds with the init_obj_model function
         self.tell_guess = self.get_tell_guess()
         # Set the bounds for the telluric optimization
