@@ -5,6 +5,7 @@ from pkg_resources import resource_filename
 import matplotlib.pyplot as plt
 
 from astropy.io import fits
+from astropy.io import ascii
 from astropy import units
 from astropy import constants
 from astropy import coordinates

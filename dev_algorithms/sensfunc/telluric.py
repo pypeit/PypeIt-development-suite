@@ -11,7 +11,7 @@ from pypeit.core import pydl
 import astropy.units as u
 from astropy.io import fits
 from astropy import stats
-from pypeit.core import flux
+import flux1d
 from pypeit.core import load
 from astropy import table
 from pypeit.core import save
@@ -404,6 +404,61 @@ def eval_qso_model(theta, obj_dict):
     #ln_pca_pri = 0.0
     #flux_model, tell_model, spec_model, modelmask
     return pca_model, (pca_model > 0.0)
+
+
+##############
+# Star Model #
+##############
+def init_star_model(obj_params, iord, wave, flux, ivar, mask, tellmodel):
+
+
+    # Model parameter guess for starting the optimizations
+    flam_true = scipy.interpolate.interp1d(obj_params['std_dict']['wave'].value,
+                                           obj_params['std_dict']['flux'].value, kind='linear',
+                                           bounds_error=False, fill_value=np.nan)(wave)
+    flam_model = flam_true*tellmodel
+    flam_model_ivar = (100.0*utils.inverse(flam_model))**2 # This is just a bogus noise to give  S/N of 100
+    flam_model_mask = np.isfinite(flam_model)
+    scale, fit_tuple, flux_scale, ivar_scale, outmask = coadd1d.solve_poly_ratio(
+        wave, flux, ivar, flam_model, flam_model_ivar, obj_params['polyorder_vec'][iord],
+        mask=mask, mask_ref=flam_model_mask, func=obj_params['func'])
+
+    coeff, wave_min, wave_max = fit_tuple
+    if(wave_min != wave.min()) or (wave_max != wave.max()):
+        msgs.error('Problem with the wave_min or wave_max')
+    # Polynomial coefficient bounds
+    bounds_obj = [(np.fmin(np.abs(this_coeff)*obj_params['delta_coeff_bounds'][0], obj_params['minmax_coeff_bounds'][0]),
+                   np.fmax(np.abs(this_coeff)*obj_params['delta_coeff_bounds'][1], obj_params['minmax_coeff_bounds'][1]))
+                   for this_coeff in coeff]
+    # Create the obj_dict
+    obj_dict = dict(wave=wave, wave_min=wave_min, wave_max=wave_max, flam_true=flam_true, func=obj_params['func'],
+                    polyorder=obj_params['polyorder_vec'][iord])
+
+    if obj_params['debug']:
+        plt.plot(wave, flux, drawstyle='steps-mid', label='star spectrum')
+        plt.plot(wave, flux_scale, drawstyle='steps-mid', label='polynomial*star spectrum')
+        plt.plot(wave, flam_model, label='telluric star model')
+        plt.ylim(-0.1 * flam_model.min(), 1.3 * flam_model.max())
+        plt.legend()
+        plt.title('Sensitivity Function Guess for iord={:d}'.format(iord))
+        plt.show()
+
+
+    return obj_dict, bounds_obj
+
+# Star evaluation function.
+def eval_star_model(theta, obj_dict):
+
+    wave_star = obj_dict['wave']
+    wave_min = obj_dict['wave_min']
+    wave_max = obj_dict['wave_max']
+    flam_true = obj_dict['flam_true']
+    func = obj_dict['func']
+
+    ymult = (utils.func_val(theta, wave_star, func, minx=wave_min, maxx=wave_max))**2
+    star_model = ymult*flam_true
+
+    return star_model, (star_model > 0.0)
 
 
 
@@ -831,7 +886,7 @@ def sensfunc_telluric(spec1dfile, telgridfile, outfile, star_type=None, star_mag
     # Read in standard star dictionary and interpolate onto regular telluric wave_grid
     star_ra = meta_spec['core']['RA'] if star_ra is None else star_ra
     star_dec = meta_spec['core']['DEC'] if star_dec is None else star_dec
-    std_dict = flux.get_standard_spectrum(star_type=star_type, star_mag=star_mag, ra=star_ra, dec=star_dec)
+    std_dict = flux1d.get_standard_spectrum(star_type=star_type, star_mag=star_mag, ra=star_ra, dec=star_dec)
 
     if counts.ndim == 2:
         norders = counts.shape[1]
@@ -931,7 +986,7 @@ def qso_telluric(spec1dfile, telgridfile, pca_file, z_qso, telloutfile, outfile,
         plt.plot(wave, flux_med, drawstyle='steps-mid', color='k', label='corrected data', alpha=0.7, zorder=5)
         plt.plot(wave, sig_corr, drawstyle='steps-mid', color='r', label='noise', alpha=0.3, zorder=1)
         plt.plot(wave, pca_model, color='cornflowerblue', linewidth=1.0, label='PCA model', zorder=7, alpha=0.7)
-        plt.plot(wave, pca_model.max()*0.9*telluric, color='magenta', drawstyle='steps-mid', label='pca', alpha=0.4)
+        plt.plot(wave, pca_model.max()*0.9*telluric, color='magenta', drawstyle='steps-mid', label='telluric', alpha=0.4)
         plt.ylim(-0.1*pca_model.max(), 1.5*pca_model.max())
         plt.legend()
         plt.xlabel('Wavelength')
@@ -942,3 +997,87 @@ def qso_telluric(spec1dfile, telgridfile, pca_file, z_qso, telloutfile, outfile,
                               header=header, ex_value='OPT', overwrite=True)
 
 
+
+def star_telluric(spec1dfile, telgridfile, telloutfile, outfile, star_type=None, star_mag=None, star_ra=None, star_dec=None,
+                  polyorder=5, mask_abs_lines=True, delta_coeff_bounds=(-20.0, 20.0), minmax_coeff_bounds=(-5.0, 5.0),
+                  only_orders=None, tol=1e-3, popsize=30, recombination=0.7, polish=True, disp=True,
+                  debug_init=False, debug=False, show=False):
+
+
+    # Read in the data
+    wave, flux, ivar, mask, meta_spec, header = general_spec_reader(spec1dfile, ret_flam=False)
+    # Read in standard star dictionary and interpolate onto regular telluric wave_grid
+    star_ra = meta_spec['core']['RA'] if star_ra is None else star_ra
+    star_dec = meta_spec['core']['DEC'] if star_dec is None else star_dec
+    std_dict = flux1d.get_standard_spectrum(star_type=star_type, star_mag=star_mag, ra=star_ra, dec=star_dec)
+
+    if flux.ndim == 2:
+        norders = flux.shape[1]
+    else:
+        norders = 1
+
+    # Create the polyorder_vec
+    if np.size(polyorder) > 1:
+        if np.size(polyorder) != norders:
+            msgs.error('polyorder must have either have norder elements or be a scalar')
+        polyorder_vec = np.array(polyorder)
+    else:
+        polyorder_vec = np.full(norders, polyorder)
+
+    # Initalize the object parameters
+    obj_params = dict(std_dict=std_dict, airmass=meta_spec['core']['AIRMASS'],
+                      delta_coeff_bounds=delta_coeff_bounds, minmax_coeff_bounds=minmax_coeff_bounds,
+                      polyorder_vec=polyorder_vec, exptime=meta_spec['core']['EXPTIME'],
+                      func='legendre', sigrej=3.0,
+                      std_ra=std_dict['std_ra'], std_dec=std_dict['std_dec'],
+                      std_name=std_dict['name'], std_calfile=std_dict['cal_file'],
+                      output_meta_keys=('airmass', 'polyorder_vec', 'exptime', 'func',
+                                        'std_ra', 'std_dec', 'std_calfile'),
+                      debug=debug_init)
+
+    # Optionally, mask prominent stellar absorption features
+    if mask_abs_lines:
+        inmask = mask_star_lines(wave)
+        mask_tot = inmask & mask
+    else:
+        mask_tot = mask
+
+    # parameters lowered for testing
+    TelObj = Telluric(wave, flux, ivar, mask_tot, telgridfile, obj_params,
+                      init_star_model, eval_star_model,  tol=tol, popsize=popsize, recombination=recombination,
+                      polish=polish, disp=disp, debug=debug)
+
+    TelObj.run(only_orders=only_orders)
+    TelObj.save(telloutfile)
+
+
+    # Apply the telluric correction
+    meta_table = table.Table.read(telloutfile, hdu=1)
+    out_table = table.Table.read(telloutfile, hdu=2)
+
+    telluric = out_table['TELLURIC'][0,:]
+    star_model = out_table['OBJ_MODEL'][0,:]
+    # Plot the telluric corrected and rescaled spectrum
+    flux_corr = flux*utils.inverse(telluric)
+    ivar_corr = (telluric > 0.0) * ivar * telluric * telluric
+    mask_corr = (telluric > 0.0) * mask
+    sig_corr = np.sqrt(utils.inverse(ivar_corr))
+
+    if show:
+        # Median filter
+        fig = plt.figure(figsize=(12, 8))
+        plt.plot(wave, flux_corr, drawstyle='steps-mid', color='k', label='corrected data', alpha=0.7, zorder=5)
+        plt.plot(wave, flux, drawstyle='steps-mid', color='0.7', label='uncorrected data', alpha=0.7, zorder=5)
+        plt.plot(wave, sig_corr, drawstyle='steps-mid', color='r', label='noise', alpha=0.3, zorder=1)
+        plt.plot(wave, star_model, color='cornflowerblue', linewidth=1.0, label='poly scaled star model', zorder=7, alpha=0.7)
+        plt.plot(std_dict['wave'].value, std_dict['flux'].value, color='green', linewidth=1.0, label='original star model', zorder=8, alpha=0.7)
+        plt.plot(wave, star_model.max()*0.9*telluric, color='magenta', drawstyle='steps-mid', label='telluric', alpha=0.4)
+        plt.ylim(-0.1*star_model.max(), 1.5*star_model.max())
+        plt.legend()
+        plt.xlabel('Wavelength')
+        plt.ylabel('Flux')
+        plt.show()
+
+    embed()
+
+    return TelObj
