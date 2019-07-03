@@ -419,9 +419,11 @@ def init_star_model(obj_params, iord, wave, flux, ivar, mask, tellmodel):
     flam_model = flam_true*tellmodel
     flam_model_ivar = (100.0*utils.inverse(flam_model))**2 # This is just a bogus noise to give  S/N of 100
     flam_model_mask = np.isfinite(flam_model)
+    # As solve_poly_ratio is designed to multiply a scale factor into the flux, and not the flux_ref, we
+    # set the flux_ref to be the data here, i.e. flux
     scale, fit_tuple, flux_scale, ivar_scale, outmask = coadd1d.solve_poly_ratio(
-        wave, flux, ivar, flam_model, flam_model_ivar, obj_params['polyorder_vec'][iord],
-        mask=mask, mask_ref=flam_model_mask, func=obj_params['func'], model=obj_params['model'])
+        wave, flam_model, flam_model_ivar, flux, ivar, obj_params['polyorder_vec'][iord],
+        mask=flam_model_mask, mask_ref=mask, func=obj_params['func'], model=obj_params['model'])
 
     coeff, wave_min, wave_max = fit_tuple
     if(wave_min != wave.min()) or (wave_max != wave.max()):
@@ -435,9 +437,10 @@ def init_star_model(obj_params, iord, wave, flux, ivar, mask, tellmodel):
                     model=obj_params['model'], polyorder=obj_params['polyorder_vec'][iord])
 
     if obj_params['debug']:
-        plt.plot(wave, flux, drawstyle='steps-mid', label='star spectrum')
-        plt.plot(wave, flux_scale, drawstyle='steps-mid', label='polynomial*star spectrum')
-        plt.plot(wave, flam_model, label='telluric star model')
+        plt.plot(wave, flux, drawstyle='steps-mid', alpha=0.7, zorder=5, label='star spectrum')
+        plt.plot(wave, flux_scale, drawstyle='steps-mid', alpha=0.7, zorder=4, label='poly_model*star_model*telluric')
+        plt.plot(wave, flam_model, label='star_model*telluric')
+        plt.plot(wave, flam_true, label='star_model')
         plt.ylim(-0.1 * flam_model.min(), 1.3 * flam_model.max())
         plt.legend()
         plt.title('Sensitivity Function Guess for iord={:d}'.format(iord))
@@ -1064,15 +1067,15 @@ def star_telluric(spec1dfile, telgridfile, telloutfile, outfile, star_type=None,
     sig_corr = np.sqrt(utils.inverse(ivar_corr))
 
     if show:
-        # Median filter
         fig = plt.figure(figsize=(12, 8))
-        plt.plot(wave, flux_corr, drawstyle='steps-mid', color='k', label='corrected data', alpha=0.7, zorder=5)
-        plt.plot(wave, flux, drawstyle='steps-mid', color='0.7', label='uncorrected data', alpha=0.7, zorder=5)
-        plt.plot(wave, sig_corr, drawstyle='steps-mid', color='r', label='noise', alpha=0.3, zorder=1)
+        plt.plot(wave, flux_corr*mask_corr, drawstyle='steps-mid', color='k', label='corrected data', alpha=0.7, zorder=5)
+        plt.plot(wave, flux*mask_corr, drawstyle='steps-mid', color='0.7', label='uncorrected data', alpha=0.7, zorder=3)
+        plt.plot(wave, sig_corr*mask_corr, drawstyle='steps-mid', color='r', label='noise', alpha=0.3, zorder=1)
         plt.plot(wave, star_model, color='cornflowerblue', linewidth=1.0, label='poly scaled star model', zorder=7, alpha=0.7)
         plt.plot(std_dict['wave'].value, std_dict['flux'].value, color='green', linewidth=1.0, label='original star model', zorder=8, alpha=0.7)
         plt.plot(wave, star_model.max()*0.9*telluric, color='magenta', drawstyle='steps-mid', label='telluric', alpha=0.4)
-        plt.ylim(-0.1*star_model.max(), 1.5*star_model.max())
+        plt.ylim(-np.median(sig_corr[mask_corr]).max(), 1.5*star_model.max())
+        plt.xlim(wave[wave > 1.0].min(), wave[wave > 1.0].max())
         plt.legend()
         plt.xlabel('Wavelength')
         plt.ylabel('Flux')

@@ -40,5 +40,5 @@ spec1dfluxfile = 'spec1d_stack_{:}.fits'.format(objname)
 telloutfile = 'spec1d_stack_{:}_tellmodel.fits'.format(objname)
 outfile = 'spec1d_stack_{:}_tellcorr.fits'.format(objname)
 
-TelStar = telluric.star_telluric(spec1dfluxfile, telgridfile, telloutfile, outfile, debug_init=True, debug=True, show=show,
+TelStar = telluric.star_telluric(spec1dfluxfile, telgridfile, telloutfile, outfile, polyorder=7, debug_init=True, debug=True, show=show,
                                  star_mag=star_mag, star_type=star_type)
