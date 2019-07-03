@@ -421,7 +421,7 @@ def init_star_model(obj_params, iord, wave, flux, ivar, mask, tellmodel):
     flam_model_mask = np.isfinite(flam_model)
     scale, fit_tuple, flux_scale, ivar_scale, outmask = coadd1d.solve_poly_ratio(
         wave, flux, ivar, flam_model, flam_model_ivar, obj_params['polyorder_vec'][iord],
-        mask=mask, mask_ref=flam_model_mask, func=obj_params['func'])
+        mask=mask, mask_ref=flam_model_mask, func=obj_params['func'], model=obj_params['model'])
 
     coeff, wave_min, wave_max = fit_tuple
     if(wave_min != wave.min()) or (wave_max != wave.max()):
@@ -432,7 +432,7 @@ def init_star_model(obj_params, iord, wave, flux, ivar, mask, tellmodel):
                    for this_coeff in coeff]
     # Create the obj_dict
     obj_dict = dict(wave=wave, wave_min=wave_min, wave_max=wave_max, flam_true=flam_true, func=obj_params['func'],
-                    polyorder=obj_params['polyorder_vec'][iord])
+                    model=obj_params['model'], polyorder=obj_params['polyorder_vec'][iord])
 
     if obj_params['debug']:
         plt.plot(wave, flux, drawstyle='steps-mid', label='star spectrum')
@@ -454,8 +454,8 @@ def eval_star_model(theta, obj_dict):
     wave_max = obj_dict['wave_max']
     flam_true = obj_dict['flam_true']
     func = obj_dict['func']
-
-    ymult = (utils.func_val(theta, wave_star, func, minx=wave_min, maxx=wave_max))**2
+    model = obj_dict['model']
+    ymult = coadd1d.poly_model_eval(theta, func, model, wave_star, wave_min, wave_max)
     star_model = ymult*flam_true
 
     return star_model, (star_model > 0.0)
@@ -469,7 +469,7 @@ def eval_star_model(theta, obj_dict):
 class Telluric(object):
 
     def __init__(self, wave, flux, ivar, mask, telgridfile, obj_params, init_obj_model, eval_obj_model,
-                 sn_clip=50.0, airmass_guess=1.5, resln_guess=None,
+                 sn_clip=30.0, airmass_guess=1.5, resln_guess=None,
                  resln_frac_bounds=(0.5, 1.5), pix_shift_bounds=(-5.0, 5.0),
                  maxiter=3, sticky=True, lower=3.0, upper=3.0,
                  seed=None, tol=1e-3, popsize=30, recombination=0.7, polish=True, disp=True, debug=False):
@@ -877,7 +877,7 @@ def mask_star_lines(wave_star, mask_width=10.0):
 
 def sensfunc_telluric(spec1dfile, telgridfile, outfile, star_type=None, star_mag=None, star_ra=None, star_dec=None,
                       polyorder=8, mask_abs_lines=True, delta_coeff_bounds=(-20.0, 20.0), minmax_coeff_bounds=(-5.0, 5.0),
-                      only_orders=None, tol=1e-3, popsize=30, recombination=0.7, polish=True, disp=True,
+                      sn_clip=30.0, only_orders=None, tol=1e-3, popsize=30, recombination=0.7, polish=True, disp=True,
                       debug_init=False, debug=False):
 
 
@@ -921,7 +921,7 @@ def sensfunc_telluric(spec1dfile, telgridfile, outfile, star_type=None, star_mag
 
     # parameters lowered for testing
     TelObj = Telluric(wave, counts, counts_ivar, mask_tot, telgridfile, obj_params,
-                      init_sensfunc_model, eval_sensfunc_model,  tol=tol, popsize=popsize, recombination=recombination,
+                      init_sensfunc_model, eval_sensfunc_model,  sn_clip=sn_clip, tol=tol, popsize=popsize, recombination=recombination,
                       polish=polish, disp=disp, debug=debug)
 
     TelObj.run(only_orders=only_orders)
@@ -938,7 +938,7 @@ def create_bal_mask(wave):
 
 
 def qso_telluric(spec1dfile, telgridfile, pca_file, z_qso, telloutfile, outfile, npca = 8, create_bal_mask=None,
-                 delta_zqso=0.1, bounds_norm=(0.1, 3.0), tell_norm_thresh=0.9, only_orders=None,
+                 delta_zqso=0.1, bounds_norm=(0.1, 3.0), tell_norm_thresh=0.9, sn_clip=30.0, only_orders=None,
                  tol=1e-3, popsize=30, recombination=0.7, polish=True, disp=True, debug=False, show=False):
 
 
@@ -959,7 +959,7 @@ def qso_telluric(spec1dfile, telgridfile, pca_file, z_qso, telloutfile, outfile,
 
     # parameters lowered for testing
     TelObj = Telluric(wave, flux, ivar, mask_tot, telgridfile, obj_params, init_qso_model, eval_qso_model,
-                      tol=tol, popsize=popsize, recombination=recombination,
+                      sn_clip=sn_clip, tol=tol, popsize=popsize, recombination=recombination,
                       polish=polish, disp=disp, debug=debug)
     TelObj.run(only_orders=only_orders)
     TelObj.save(telloutfile)
@@ -999,9 +999,9 @@ def qso_telluric(spec1dfile, telgridfile, pca_file, z_qso, telloutfile, outfile,
 
 
 def star_telluric(spec1dfile, telgridfile, telloutfile, outfile, star_type=None, star_mag=None, star_ra=None, star_dec=None,
-                  polyorder=5, mask_abs_lines=True, delta_coeff_bounds=(-20.0, 20.0), minmax_coeff_bounds=(-5.0, 5.0),
-                  only_orders=None, tol=1e-3, popsize=30, recombination=0.7, polish=True, disp=True,
-                  debug_init=False, debug=False, show=False):
+                  func='legendre', model='exp', polyorder=5, mask_abs_lines=True, delta_coeff_bounds=(-20.0, 20.0),
+                  minmax_coeff_bounds=(-5.0, 5.0), only_orders=None, sn_clip=30.0, tol=1e-3, popsize=30, recombination=0.7, polish=True,
+                  disp=True, debug_init=False, debug=False, show=False):
 
 
     # Read in the data
@@ -1028,7 +1028,7 @@ def star_telluric(spec1dfile, telgridfile, telloutfile, outfile, star_type=None,
     obj_params = dict(std_dict=std_dict, airmass=meta_spec['core']['AIRMASS'],
                       delta_coeff_bounds=delta_coeff_bounds, minmax_coeff_bounds=minmax_coeff_bounds,
                       polyorder_vec=polyorder_vec, exptime=meta_spec['core']['EXPTIME'],
-                      func='legendre', sigrej=3.0,
+                      func=func, model=model, sigrej=3.0,
                       std_ra=std_dict['std_ra'], std_dec=std_dict['std_dec'],
                       std_name=std_dict['name'], std_calfile=std_dict['cal_file'],
                       output_meta_keys=('airmass', 'polyorder_vec', 'exptime', 'func',
@@ -1044,8 +1044,8 @@ def star_telluric(spec1dfile, telgridfile, telloutfile, outfile, star_type=None,
 
     # parameters lowered for testing
     TelObj = Telluric(wave, flux, ivar, mask_tot, telgridfile, obj_params,
-                      init_star_model, eval_star_model,  tol=tol, popsize=popsize, recombination=recombination,
-                      polish=polish, disp=disp, debug=debug)
+                      init_star_model, eval_star_model,  sn_clip=sn_clip,
+                      tol=tol, popsize=popsize, recombination=recombination, polish=polish, disp=disp, debug=debug)
 
     TelObj.run(only_orders=only_orders)
     TelObj.save(telloutfile)
@@ -1077,7 +1077,10 @@ def star_telluric(spec1dfile, telgridfile, telloutfile, outfile, star_type=None,
         plt.xlabel('Wavelength')
         plt.ylabel('Flux')
         plt.show()
-
     embed()
+
+    save.save_coadd1d_to_fits(outfile, wave, flux_corr, ivar_corr, mask_corr, telluric=telluric, obj_model=star_model,
+                              header=header, ex_value='OPT', overwrite=True)
+
 
     return TelObj

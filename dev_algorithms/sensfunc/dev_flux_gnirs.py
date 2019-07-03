@@ -45,7 +45,7 @@ if do_sens:
     else:
         # run telluric.sensfunc_telluric to get the sensfile
         TelSens = telluric.sensfunc_telluric(std1dfile, telgridfile, sensfile, star_type='A0', star_mag=8.78,
-                                             star_ra=None, star_dec=None, mask_abs_lines=True, debug=debug)
+                                             star_ra=None, star_dec=None, mask_abs_lines=True, debug=True)
 
 ## Apply the sensfunc to all spectra (only sensfunc but not tellluric)
 # TODO: change show=False to show=show
