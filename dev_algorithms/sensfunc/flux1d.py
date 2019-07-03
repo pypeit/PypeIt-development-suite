@@ -54,10 +54,11 @@ def find_standard_file(ra, dec, toler=20.*units.arcmin, check=False):
     std_sets = ['xshooter', 'calspec']
 
     # SkyCoord
-    if ':' in ra:
-        obj_coord = coordinates.SkyCoord(ra, dec, unit=(units.hourangle, units.deg))
-    else:
+    try:
+        ra, dec = float(ra), float(dec)
         obj_coord = coordinates.SkyCoord(ra, dec, unit=(units.deg, units.deg))
+    except:
+        obj_coord = coordinates.SkyCoord(ra, dec, unit=(units.hourangle, units.deg))
 
     # Loop on standard sets
     closest = dict(sep=999 * units.deg)
@@ -246,7 +247,7 @@ def get_standard_spectrum(star_type=None, star_mag=None, ra=None, dec=None):
             ## Vega model from TSPECTOOL
             vega_file = resource_filename('pypeit', '/data/standards/vega_tspectool_vacuum.dat')
             vega_data = Table.read(vega_file, comment='#', format='ascii')
-            std_dict = dict(cal_file='vega_tspectool_vacuum', name=star_type, std_ra=None, std_dec=None)
+            std_dict = dict(cal_file='vega_tspectool_vacuum', name=star_type, std_ra=ra, std_dec=dec)
             std_dict['std_source'] = 'VEGA'
             std_dict['wave'] = vega_data['col1'] * units.AA
 
@@ -258,6 +259,8 @@ def get_standard_spectrum(star_type=None, star_mag=None, ra=None, dec=None):
             # Create star spectral model
             msgs.info("Getting kurucz+93 stellar model")
             std_dict = stellar_model(star_mag, star_type)
+            std_dict['std_ra'] = ra
+            std_dict['std_dec'] = dec
     else:
         msgs.error('Insufficient information provided for fluxing. '
                    'Either the coordinates of the standard or a stellar type and magnitude are needed.')
