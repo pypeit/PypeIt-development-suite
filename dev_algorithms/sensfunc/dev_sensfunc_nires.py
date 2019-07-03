@@ -10,7 +10,7 @@ from pypeit import msgs
 
 debug = False
 show = True
-do_sens = True
+do_sens = False
 
 z_qso = 7.50
 npca = 8
@@ -48,7 +48,7 @@ if do_sens:
 
 ## Apply the sensfunc to all spectra (only sensfunc but not tellluric)
 # TODO: change show=False to show=show
-apply_sensfunc(fnames, sensfile, extinct_correct=False, tell_correct=False, debug=debug, show=False)
+#apply_sensfunc(fnames, sensfile, extinct_correct=False, tell_correct=False, debug=debug, show=False)
 
 fnames_flux = [f.replace('.fits', '_flux.fits') for f in fnames]
 
@@ -59,7 +59,7 @@ fnames_flux = [f.replace('.fits', '_flux.fits') for f in fnames]
 # TODO: change the outfile to work with datapath. It's a hard coding on these names in coadd1d
 wave_stack, flux_stack, ivar_stack, mask_stack = coadd1d.ech_combspec(fnames_flux, objids, sensfile=sensfile,
                                                                       ex_value='OPT', outfile=qsoname, debug=debug,
-                                                                      show_order_scale=True, show_exp=True, show=True)
+                                                                      show_order_scale=False, show_exp=True, show=True)
 
 # run telluric.qso_telluric to get the final results
 spec1dfluxfile = 'spec1d_stack_{:}.fits'.format(qsoname)
