@@ -91,6 +91,7 @@ def find_standard_file(ra, dec, toler=20.*units.arcmin, check=False):
                         fil = fil[0]
                         msgs.info("Loading standard star file: {:s}".format(fil))
                     if sset == 'xshooter':
+                        # TODO let's add the star_mag here and get a uniform set of tags in the std_dict
                         std_spec = Table.read(fil, format='ascii')
                         std_dict['std_source'] = sset
                         std_dict['wave'] = std_spec['col1'] * units.AA
@@ -242,12 +243,10 @@ def get_standard_spectrum(star_type=None, star_mag=None, ra=None, dec=None):
         ## using vega spectrum
         if 'A0' in star_type:
             msgs.info('Getting vega spectrum')
-            std_dict={'stellar_type':star_type , 'Vmag': star_mag}
-
             ## Vega model from TSPECTOOL
             vega_file = resource_filename('pypeit', '/data/standards/vega_tspectool_vacuum.dat')
             vega_data = Table.read(vega_file, comment='#', format='ascii')
-            std_dict = dict(cal_file='vega_tspectool_vacuum', name=star_type, std_ra=ra, std_dec=dec)
+            std_dict = dict(cal_file='vega_tspectool_vacuum', name=star_type, Vmag=star_mag, std_ra=ra, std_dec=dec)
             std_dict['std_source'] = 'VEGA'
             std_dict['wave'] = vega_data['col1'] * units.AA
 
