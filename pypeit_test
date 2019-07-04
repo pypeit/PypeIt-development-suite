@@ -75,7 +75,8 @@ def main():
             instruments = [pargs.instrument]
         else:
             instruments = ['Keck_LRIS_blue', 'Gemini_GNIRS', 'Shane_Kast_blue', 'VLT_XSHOOTER', 'Keck_DEIMOS',
-                       'Shane_Kast_red', 'Keck_NIRES', 'Keck_LRIS_red', 'Magellan_MAGE']
+                       'Shane_Kast_red', 'Keck_NIRES', 'Keck_LRIS_red', 'Magellan_MAGE',
+                           'Gemini_GMOS']
     else:
         instruments = [item for item in all_instruments if pargs.tests.lower() in item.lower()]
         invalid_selection = [item for item in instruments if not np.any([inst.lower()
@@ -144,6 +145,8 @@ def main():
                 req_setups = ['VIS_1x1', 'VIS_2x1', 'VIS_2x2', 'NIR']
             elif instr == 'Magellan_MAGE':
                 req_setups = ['1x1']
+            elif instr == 'Gemini_GMOS':
+                req_setups = ['GS_HAM_R400_700']
             else:
                 # Should not get here
                 print("I don't know how you got here")
