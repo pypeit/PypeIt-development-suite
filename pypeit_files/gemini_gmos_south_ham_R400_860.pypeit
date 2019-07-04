@@ -1,0 +1,53 @@
+# Auto-generated PypeIt file
+# Mon 27 May 2019 15:08:33
+
+# User-defined execution parameters
+[rdx]
+  spectrograph = gemini_gmos_south_ham
+  detnum = 3
+[calibrations]
+  [[wavelengths]]
+    lamps=['OH_GMOS']
+  [[slits]]
+    sigdetect=500
+  [[biasframe]]
+    number = 0
+  [[pixelflatframe]]
+    number = 0
+  [[arcframe]]
+    number = 1
+  [[pinholeframe]]
+    number = 0
+  [[traceframe]]
+    number = 0
+  [[standardframe]]
+    number = 0
+
+# Setup
+setup read
+ Setup A:
+   --:
+     dichroic: RG610_G0331
+     disperser: {angle: 860.0, name: R400+_G5325}
+     slit: {decker: 0.75arcsec, slitlen: none, slitwid: none}
+   '01': {binning: '2,2', det: 1, namp: 4}
+   '02': {binning: '2,2', det: 2, namp: 4}
+   '03': {binning: '2,2', det: 3, namp: 4}
+setup end
+
+# Read in the data
+data read
+ path ../RAW
+|                filename |       frametype |           ra |          dec |     target |    dispname |         decker | binning |              mjd | airmass | exptime |    dichroic | calib | comb_id | bkg_id |
+| S20180903S0174.fits.bz2 |            bias |        147.0 |         89.9 |       Bias | R400+_G5325 |     0.75arcsec |     2,2 | 2018.67203937563 |     1.0 |     0.0 | RG610_G0331 |   all |      -1 |     -1 |
+| S20180903S0175.fits.bz2 |            bias |        147.0 |         89.9 |       Bias | R400+_G5325 |     0.75arcsec |     2,2 | 2018.67204041922 |     1.0 |     0.0 | RG610_G0331 |   all |      -1 |     -1 |
+| S20180903S0176.fits.bz2 |            bias |        147.0 |         89.9 |       Bias | R400+_G5325 |     0.75arcsec |     2,2 | 2018.67204145595 |     1.0 |     0.0 | RG610_G0331 |   all |      -1 |     -1 |
+| S20180903S0177.fits.bz2 |            bias |        147.0 |         89.9 |       Bias | R400+_G5325 |     0.75arcsec |     2,2 | 2018.67204249268 |     1.0 |     0.0 | RG610_G0331 |   all |      -1 |     -1 |
+| S20180903S0178.fits.bz2 |            bias |        147.0 |         89.9 |       Bias | R400+_G5325 |     0.75arcsec |     2,2 |  2018.6720435331 |     1.0 |     0.0 | RG610_G0331 |   all |      -1 |     -1 |
+| S20180903S0139.fits.bz2 | trace,pixelflat |  43.06933333 |  -5.05883611 |   GCALflat | R400+_G5325 |     0.75arcsec |     2,2 | 2018.67183756159 |   1.116 |     1.0 | RG610_G0331 |   all |      -1 |     -1 |
+| S20180903S0140.fits.bz2 | trace,pixelflat |  43.06933333 |  -5.05883611 |   GCALflat | R400+_G5325 |     0.75arcsec |     2,2 | 2018.67183917557 |   1.117 |     1.0 | RG610_G0331 |   all |      -1 |     -1 |
+| S20180903S0136.fits.bz2 |     arc,science |  43.06933333 |  -5.05883611 | J0252-0503 | R400+_G5325 |     0.75arcsec |     2,2 | 2018.67171744684 |   1.109 |  1200.0 | RG610_G0331 |     1 |       1 |      2 |
+| S20180903S0137.fits.bz2 |     arc,science |  43.06933333 |  -5.05883611 | J0252-0503 | R400+_G5325 |     0.75arcsec |     2,2 | 2018.67175888324 |   1.105 |  1200.0 | RG610_G0331 |     2 |       2 |      1 |
+| S20180903S0138.fits.bz2 |     arc,science |  43.06933333 |  -5.05883611 | J0252-0503 | R400+_G5325 |     0.75arcsec |     2,2 | 2018.67179807084 |    1.11 |  1200.0 | RG610_G0331 |     3 |       3 |      2 |
+data end
+

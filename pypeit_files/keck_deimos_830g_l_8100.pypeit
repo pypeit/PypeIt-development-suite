@@ -38,12 +38,15 @@ setup end
 # Read in the data
 data read
  path ../../../RAW_DATA/Keck_DEIMOS/830G_L_8100/
-|        filename    |                date |       frametype |     target | exptime | dispname | decker |
-| d0527_0030.fits.gz | 2017-05-27T01:51:57 |             arc | DOME PHLAT |       1 |     830G | LongMirr |
-| d0527_0031.fits.gz | 2017-05-27T01:53:16 | pixelflat,trace | DOME PHLAT |       4 |     830G | LongMirr |
-| d0527_0032.fits.gz | 2017-05-27T01:54:29 | pixelflat,trace | DOME PHLAT |       4 |     830G | LongMirr |
-| d0527_0033.fits.gz | 2017-05-27T01:55:42 | pixelflat,trace | DOME PHLAT |       4 |     830G | LongMirr |
-| d0527_0081.fits.gz | 2017-05-27T11:07:54 |         science |   P261_OFF |    1200 |     830G | LongMirr |
-#| d0527_0083.fits | 2017-05-27T11:56:16 |         science |   P261_OFF |    1200 |     830G | LongMirr |
+|               filename |       frametype |          ra |         dec |     target | dispname |   decker | binning |          mjd |    airmass | exptime |     dispangle |
+| DE.20170527.06713.fits |        tilt,arc | 03:52:00.00 | +45:00:00.0 | DOME PHLAT |     830G | LongMirr |     1,1 | 57900.077631 | 1.41291034 |     1.0 | 8099.98291016 |
+| DE.20170527.06790.fits | trace,pixelflat | 03:52:00.00 | +45:00:00.0 | DOME PHLAT |     830G | LongMirr |     1,1 |  57900.07851 | 1.41291034 |     4.0 | 8099.98291016 |
+| DE.20170527.06864.fits | trace,pixelflat | 03:52:00.00 | +45:00:00.0 | DOME PHLAT |     830G | LongMirr |     1,1 | 57900.079356 | 1.41291034 |     4.0 | 8099.98291016 |
+| DE.20170527.06936.fits | trace,pixelflat | 03:52:00.00 | +45:00:00.0 | DOME PHLAT |     830G | LongMirr |     1,1 | 57900.080211 | 1.41291034 |     4.0 | 8099.98291016 |
+| DE.20170527.37601.fits |         science | 17:24:08.73 | +19:01:41.4 |   P261_OFF |     830G | LongMirr |     1,1 | 57900.435131 | 1.03078874 |  1200.0 | 8099.98291016 |
+#| DE.20170527.38872.fits |         science | 17:24:08.73 | +19:01:41.4 |   P261_OFF |     830G | LongMirr |     1,1 | 57900.449842 | 1.01267696 |  1200.0 | 8099.98291016 |
+#| DE.20170527.41775.fits |         science | 17:24:08.71 | +19:01:44.0 |   P261_OFF |     830G | LongMirr |     1,1 | 57900.483427 | 1.00093023 |  1200.0 | 8099.98291016 |
+#| DE.20170527.43045.fits |         science | 17:24:08.71 | +19:01:44.0 |   P261_OFF |     830G | LongMirr |     1,1 | 57900.498135 | 1.00838805 |  1200.0 | 8099.98291016 |
+#| DE.20170527.44316.fits |         science | 17:24:08.71 | +19:01:44.0 |   P261_OFF |     830G | LongMirr |     1,1 | 57900.512854 | 1.02377681 |  1200.0 | 8099.98291016 |
 data end
 

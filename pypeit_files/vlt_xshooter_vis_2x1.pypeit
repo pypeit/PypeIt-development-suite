@@ -1,0 +1,35 @@
+# This is a comment line
+# This reduces data from vlt_xshooter_vis 
+# run_pypeit vlt_xshooter_vis_2x1.pypeit
+
+
+# User-defined execution parameters
+[rdx]
+spectrograph = vlt_xshooter_vis
+
+# Setup
+setup read
+Setup A
+--:
+  dichroic: none
+  disperser: {angle: none, name: default}
+  slit: {decker: 0.9x11, slitlen: none, slitwid: none}
+'01': {binning: '2,1', det: 1, namp: 1}
+setup end
+
+# Read in the data
+data read
+ path /Users/joe/python/PypeIt-development-suite/RAW_DATA/VLT_XSHOOTER/VIS_2x1/
+|                              filename |       frametype |          ra |         dec |       target | dispname |   decker | binning |             mjd | airmass | exptime | calib | comb_id | bkg_id |
+| XSHOO.2016-08-02T10:45:45.410.fits.gz |            bias |        None |        None |         BIAS |  default | 1.0x12.6 |     2,1 | 57602.448442245 |    None |     0.0 |     0 |      -1 |     -1 |
+| XSHOO.2016-08-02T10:47:16.857.fits.gz |            bias |        None |        None |         BIAS |  default | 1.0x12.6 |     2,1 | 57602.449500664 |    None |     0.0 |     0 |      -1 |     -1 |
+| XSHOO.2016-08-02T10:48:48.184.fits.gz |            bias |        None |        None |         BIAS |  default | 1.0x12.6 |     2,1 | 57602.450557693 |    None |     0.0 |     0 |      -1 |     -1 |
+| XSHOO.2016-08-02T13:36:24.258.fits.gz | trace,pixelflat |        None |        None |    LAMP,FLAT |  default |   0.9x11 |     2,1 | 57602.566947425 |    None |   5.134 |     0 |      -1 |     -1 |
+| XSHOO.2016-08-02T13:37:24.132.fits.gz | trace,pixelflat |        None |        None |    LAMP,FLAT |  default |   0.9x11 |     2,1 | 57602.567640421 |    None |   5.134 |     0 |      -1 |     -1 |
+| XSHOO.2016-08-02T13:38:24.917.fits.gz | trace,pixelflat |        None |        None |    LAMP,FLAT |  default |   0.9x11 |     2,1 |  57602.56834395 |    None |   5.134 |     0 |      -1 |     -1 |
+| XSHOO.2016-08-02T16:25:56.791.fits.gz |             arc |        None |        None |    LAMP,WAVE |  default |   0.9x11 |     2,1 | 57602.684685077 |    None |     0.6 |     0 |      -1 |     -1 |
+| XSHOO.2016-08-02T08:45:46.510.fits.gz |         science | 01:00:13.04 | +28:02:24.4 |   J0100p2802 |  default |   0.9x11 |     2,1 | 57602.365121637 |   1.652 |  1800.0 |     0 |       1 |     -1 |
+| XSHOO.2016-08-02T09:57:13.715.fits.gz |       standard | 04:54:50.63 | +00:27:58.4 | STD,TELLURIC |  default |   0.9x11 |     2,1 | 57602.414742074 |   1.525 |     4.0 |     0 |       3 |     -1 |
+#| XSHOO.2016-08-02T09:16:51.980.fits.gz |        science | 01:00:13.07 | +28:02:28.1 |   J0100p2802 |  default |   0.9x11 |     2,1 | 57602.386712729 |   1.657 |  1800.0 |     0 |       2 |     -1 |
+#| XSHOO.2016-08-02T09:57:54.039.fits.gz |      standard | 04:54:50.91 | +00:28:01.2 | STD,TELLURIC |  default |   0.9x11 |     2,1 | 57602.415208778 |   1.521 |     4.0 |     0 |       4 |     -1 |
+data end

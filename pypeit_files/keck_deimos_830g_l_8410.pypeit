@@ -3,9 +3,8 @@
 # Parmaeters
 [rdx]
     spectrograph = keck_deimos
+    sortroot = keck_deimos_setup_A
     detnum = 3,7
-
-#    sortroot = keck_deimos_830g
 
 [calibrations]
     [[arcframe]]

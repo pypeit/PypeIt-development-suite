@@ -1,1 +1,0 @@
-tar -zcvf cooked_pypit_dev.tar.gz Trace/ Arc/ WaveCalib/ MF_* Science/ version
