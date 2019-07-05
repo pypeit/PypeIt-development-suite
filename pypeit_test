@@ -15,7 +15,6 @@ import os
 
 import numpy as np
 
-
 def parser(options=None):
     import argparse
 
