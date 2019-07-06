@@ -13,6 +13,7 @@ from astropy.io import fits
 from astropy import stats
 import flux1d
 from pypeit.core import load
+from pypeit.core.wavecal import wvutils
 from astropy import table
 from pypeit.core import save
 from pypeit.core import coadd2d
@@ -46,27 +47,27 @@ from pypeit.spectrographs.util import load_spectrograph
 #
 #    return bounds_tell
 
-def get_sampling(waves):
-
-    if waves.ndim == 1:
-        norders = 1
-        nspec = waves.shape[0]
-        waves_stack = waves.reshape((nspec, norders))
-    elif waves.ndim == 2:
-        nspec, norders = waves.shape
-        waves_stack = waves
-
-    wave_mask = waves_stack > 1.0
-    waves_ma = np.ma.array(waves_stack, mask=np.invert(wave_mask))
-    loglam = np.ma.log10(waves_ma)
-    loglam_roll = (loglam - np.roll(loglam, 1, axis=0))[1:]
-    dloglam_ord = np.ma.median(loglam_roll, axis=0)
-    dloglam = np.median(dloglam_ord)
-    # Guess resolution from wavelength sampling of telluric grid if it is not provided
-    resln_guess = 1.0 / (3.0 * dloglam * np.log(10.0))  # assume roughly Nyquist sampling
-    pix_per_R = 1.0 / resln_guess / (dloglam * np.log(10.0)) / (2.0 * np.sqrt(2.0 * np.log(2)))
-
-    return dloglam, resln_guess, pix_per_R
+#def get_sampling(waves):
+#
+#    if waves.ndim == 1:
+#        norders = 1
+#        nspec = waves.shape[0]
+#        waves_stack = waves.reshape((nspec, norders))
+#    elif waves.ndim == 2:
+#        nspec, norders = waves.shape
+#        waves_stack = waves
+#
+#    wave_mask = waves_stack > 1.0
+#    waves_ma = np.ma.array(waves_stack, mask=np.invert(wave_mask))
+#    loglam = np.ma.log10(waves_ma)
+#    loglam_roll = (loglam - np.roll(loglam, 1, axis=0))[1:]
+#    dloglam_ord = np.ma.median(loglam_roll, axis=0)
+#    dloglam = np.median(dloglam_ord)
+#    # Guess resolution from wavelength sampling of telluric grid if it is not provided
+#    resln_guess = 1.0 / (3.0 * dloglam * np.log(10.0))  # assume roughly Nyquist sampling
+#    pix_per_sigma = 1.0 / resln_guess / (dloglam * np.log(10.0)) / (2.0 * np.sqrt(2.0 * np.log(2)))
+#
+#    return dloglam, resln_guess, pix_per_sigma
 
 def read_telluric_grid(filename, wave_min=None, wave_max=None, pad = 0):
 
@@ -94,11 +95,11 @@ def read_telluric_grid(filename, wave_min=None, wave_max=None, pad = 0):
     else:
         ag = hdul[0].header['AM0']+1*np.arange(0,1)
 
-    dloglam, resln_guess, pix_per_R = get_sampling(wave_grid)
-    tell_pad_pix = int(np.ceil(10.0 * pix_per_R))
+    dwave, dloglam, resln_guess, pix_per_sigma = wvutils.get_sampling(wave_grid)
+    tell_pad_pix = int(np.ceil(10.0 * pix_per_sigma))
 
     tell_dict = dict(wave_grid=wave_grid, dloglam=dloglam,
-                     resln_guess=resln_guess, pix_per_R=pix_per_R, tell_pad_pix=tell_pad_pix,
+                     resln_guess=resln_guess, pix_per_sigma=pix_per_sigma, tell_pad_pix=tell_pad_pix,
                      pressure_grid=pg, temp_grid=tg, h2o_grid=hg, airmass_grid=ag, tell_grid=model_grid)
     return tell_dict
 
@@ -565,7 +566,7 @@ class Telluric(object):
         self.tell_dict = self.read_telluric_grid()
         self.wave_grid = self.tell_dict['wave_grid']
         self.ngrid = self.wave_grid.size
-        self.resln_guess = get_sampling(self.wave_in_arr)[1] if resln_guess is None else resln_guess
+        self.resln_guess = wvutils.get_sampling(self.wave_in_arr)[2] if resln_guess is None else resln_guess
         # Model parameter guess for determining the bounds with the init_obj_model function
         self.tell_guess = self.get_tell_guess()
         # Set the bounds for the telluric optimization
