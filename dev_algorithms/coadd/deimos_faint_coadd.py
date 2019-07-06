@@ -57,8 +57,17 @@ def deimos_fnames_1433():
     return fnames, objids
 
 
+def deimos_fnames_J1535():
+    fnames = ['/Users/joe/DEIMOS_redux/July19/LongMirr/8400/Science/spec1d_d0706_0039-J1535+1943_OFF_DEIMOS_2019Jul06T093801.997.fits',
+              '/Users/joe/DEIMOS_redux/July19/LongMirr/8420/Science/spec1d_d0706_0040-J1535+1943_OFF_DEIMOS_2019Jul06T100323.846.fits']
+    objids = [ 'SPAT1070-SLIT0000-DET07', 'SPAT1069-SLIT0000-DET07']
 
-fnames, objids = deimos_fnames_1433()
+    return fnames, objids
+
+
+
+fnames, objids = deimos_fnames_J1535()
+#fnames, objids = deimos_fnames_1433()
 wave_stack, flux_stack, ivar_stack, mask_stack = coadd1d.multi_combspec(fnames, objids, flux_value=False,
                                                                         show=True, debug=True,
                                                                         debug_scale=True, show_scale=True,
