@@ -8,14 +8,28 @@ from pypeit import msgs
 
 debug = False
 show = True
-do_sens = True
+do_sens = False
 
-z_qso = 6.51
 npca = 8
 ex_value = 'OPT'
-qsoname = 'J0224-4711'
 
-datapath = os.path.join(os.getenv('HOME'), 'Dropbox/PypeIt_Redux/XSHOOTER/J0224-4711/VIS/Science/')
+#z_qso = 6.51
+#qsoname = 'J0224-4711'
+#datapath = os.path.join(os.getenv('HOME'), 'Dropbox/PypeIt_Redux/XSHOOTER/J0224-4711/VIS/Science/')
+
+qsoname = 'J0020-3653'
+datapath = os.path.join(os.getenv('HOME'), 'Dropbox/PypeIt_Redux/XSHOOTER/J0020-3653/VIS/Science')
+
+#z_qso = 6.54
+#qsoname = 'J0226+0302'
+
+#z_qso = 6.32
+#qsoname = 'J0100+2802'
+
+#qsoname = 'J2211-6320'
+
+#qsoname = 'J0305-3150'
+#datapath = os.path.join(os.getenv('HOME'), 'Dropbox/OBS_DATA/XSHOOTER/{:}/VIS/Science/'.format(qsoname))
 
 # TODO: change the spec1dlist to the pypeit format and change the reader accordingly
 spec1dlist = 'spec1dlist'
@@ -27,6 +41,7 @@ for ifile in range(nfiles):
 
 #TODO: the objids shoul be read in from the pypeit format file as noted above.
 objids = ['OBJ0001']*nfiles
+
 
 std1dfile = os.path.join(os.getenv('HOME'),'Dropbox/PypeIt_Redux/XSHOOTER/J0224-4711/VIS/Science/spec1d_XSHOO.2017-11-23T08:31:41.418-LTT3218_XShooter_VIS_2017Nov23T083141.419.fits')
 
