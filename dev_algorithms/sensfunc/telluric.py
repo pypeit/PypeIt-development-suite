@@ -464,6 +464,54 @@ def eval_star_model(theta, obj_dict):
     return star_model, (star_model > 0.0)
 
 
+####################
+# Polynomial Model #
+####################
+def init_poly_model(obj_params, iord, wave, flux, ivar, mask, tellmodel):
+
+    tellmodel_ivar = (100.0*utils.inverse(tellmodel))**2 # This is just a bogus noise to give  S/N of 100
+    tellmodel_mask = np.isfinite(tellmodel) & mask
+
+    if obj_params['mask_lyman_a']:
+        mask = mask & (wave>1216.15*(1+obj_params['z_obj']))
+
+    # As solve_poly_ratio is designed to multiply a scale factor into the flux, and not the flux_ref, we
+    # set the flux_ref to be the data here, i.e. flux
+    scale, fit_tuple, flux_scale, ivar_scale, outmask = coadd1d.solve_poly_ratio(
+        wave, tellmodel, tellmodel_ivar, flux, ivar, obj_params['polyorder_vec'][iord],
+        mask=tellmodel_mask, mask_ref=mask, func=obj_params['func'], model=obj_params['model'])
+
+    coeff, wave_min, wave_max = fit_tuple
+    if(wave_min != wave.min()) or (wave_max != wave.max()):
+        msgs.error('Problem with the wave_min or wave_max')
+    # Polynomial model
+    polymodel = coadd1d.poly_model_eval(coeff, obj_params['func'], obj_params['model'], wave, wave_min, wave_max)
+
+    # Polynomial coefficient bounds
+    bounds_obj = [(np.fmin(np.abs(this_coeff)*obj_params['delta_coeff_bounds'][0], obj_params['minmax_coeff_bounds'][0]),
+                   np.fmax(np.abs(this_coeff)*obj_params['delta_coeff_bounds'][1], obj_params['minmax_coeff_bounds'][1]))
+                   for this_coeff in coeff]
+    # Create the obj_dict
+    obj_dict = dict(wave=wave, wave_min=wave_min, wave_max=wave_max, polymodel=polymodel, func=obj_params['func'],
+                    model=obj_params['model'], polyorder=obj_params['polyorder_vec'][iord])
+
+    if obj_params['debug']:
+        plt.plot(wave, flux, drawstyle='steps-mid', alpha=0.7, zorder=5, label='star spectrum')
+        plt.plot(wave, flux_scale, drawstyle='steps-mid', alpha=0.7, zorder=4, label='poly_model*telluric')
+        plt.plot(wave, tellmodel, label='telluric')
+        plt.plot(wave, polymodel, label='poly_model')
+        plt.xlim(wave[mask].min(), wave[mask].max())
+        plt.ylim(-0.3 * flux[mask].min(), 1.3 * flux[mask].max())
+        plt.legend()
+        plt.title('Sensitivity Function Guess for iord={:d}'.format(iord))
+        plt.show()
+
+    return obj_dict, bounds_obj
+
+# Polynomial evaluation function.
+def eval_poly_model(theta, obj_dict):
+    return obj_dict['polymodel'], (obj_dict['polymodel'] > 0.0)
+
 
 # User defined functions
 # obj_dict, bounds_obj = init_obj_model(obj_params, iord, wave, flux, ivar, mask, tellmodel)
@@ -999,7 +1047,7 @@ def qso_telluric(spec1dfile, telgridfile, pca_file, z_qso, telloutfile, outfile,
     save.save_coadd1d_to_fits(outfile, wave, flux_corr, ivar_corr, mask_corr, telluric=telluric, obj_model=pca_model,
                               header=header, ex_value='OPT', overwrite=True)
 
-
+    return TelObj
 
 def star_telluric(spec1dfile, telgridfile, telloutfile, outfile, star_type=None, star_mag=None, star_ra=None, star_dec=None,
                   func='legendre', model='exp', polyorder=5, mask_abs_lines=True, delta_coeff_bounds=(-20.0, 20.0),
@@ -1083,6 +1131,93 @@ def star_telluric(spec1dfile, telgridfile, telloutfile, outfile, star_type=None,
     embed()
 
     save.save_coadd1d_to_fits(outfile, wave, flux_corr, ivar_corr, mask_corr, telluric=telluric, obj_model=star_model,
+                              header=header, ex_value='OPT', overwrite=True)
+
+    return TelObj
+
+def poly_telluric(spec1dfile, telgridfile, telloutfile, outfile, z_obj=0.0, func='legendre', model='exp', polyorder=3,
+                  fit_region_min=None, fit_region_max=None, mask_lyman_a=True, delta_coeff_bounds=(-20.0, 20.0),
+                  minmax_coeff_bounds=(-5.0, 5.0), only_orders=None, sn_clip=30.0, tol=1e-3, popsize=30, maxiter=5,
+                  recombination=0.7, polish=True, disp=True, debug_init=False, debug=False, show=False):
+
+    # Read in the data
+    wave, flux, ivar, mask, meta_spec, header = general_spec_reader(spec1dfile, ret_flam=False)
+
+    if flux.ndim == 2:
+        norders = flux.shape[1]
+    else:
+        norders = 1
+
+    # Create the polyorder_vec
+    if np.size(polyorder) > 1:
+        if np.size(polyorder) != norders:
+            msgs.error('polyorder must have either have norder elements or be a scalar')
+        polyorder_vec = np.array(polyorder)
+    else:
+        polyorder_vec = np.full(norders, polyorder)
+
+    # Initalize the object parameters
+    obj_params = dict(z_obj=z_obj, mask_lyman_a=mask_lyman_a, airmass=meta_spec['core']['AIRMASS'],
+                      delta_coeff_bounds=delta_coeff_bounds, minmax_coeff_bounds=minmax_coeff_bounds,
+                      polyorder_vec=polyorder_vec, exptime=meta_spec['core']['EXPTIME'],
+                      func=func, model=model, sigrej=3.0,
+                      output_meta_keys=('airmass', 'polyorder_vec', 'exptime', 'func'),
+                      debug=debug_init)
+
+    # Optionally, only using the redward of Lyman-alpha line to do the fitting
+    if mask_lyman_a:
+        inmask = wave > 1216.15 * (1+z_obj)
+        mask_tot = inmask & mask
+    else:
+        mask_tot = mask
+
+    if fit_region_min is not None:
+        if np.size(fit_region_min) != np.size(fit_region_max):
+            msgs.error('fit_region_min should have the same size with fit_region_max.')
+        else:
+            mask_region = np.zeros_like(mask_tot,dtype=bool)
+            for ii in range(np.size(fit_region_min)):
+                mask_ii = (wave>fit_region_min[ii]) & (wave<fit_region_max[ii])
+                mask_region[mask_ii] = True
+            mask_tot = mask_tot & mask_region
+
+    # parameters lowered for testing
+    TelObj = Telluric(wave, flux, ivar, mask_tot, telgridfile, obj_params,
+                      init_poly_model, eval_poly_model,  sn_clip=sn_clip, maxiter=maxiter,
+                      tol=tol, popsize=popsize, recombination=recombination, polish=polish, disp=disp, debug=debug)
+
+    TelObj.run(only_orders=only_orders)
+    TelObj.save(telloutfile)
+
+
+    # Apply the telluric correction
+    meta_table = table.Table.read(telloutfile, hdu=1)
+    out_table = table.Table.read(telloutfile, hdu=2)
+
+    telluric = out_table['TELLURIC'][0,:]
+    poly_model = out_table['OBJ_MODEL'][0,:]
+    # Plot the telluric corrected and rescaled spectrum
+    flux_corr = flux*utils.inverse(telluric)
+    ivar_corr = (telluric > 0.0) * ivar * telluric * telluric
+    mask_corr = (telluric > 0.0) * mask
+    sig_corr = np.sqrt(utils.inverse(ivar_corr))
+
+    if show:
+        fig = plt.figure(figsize=(12, 8))
+        plt.plot(wave, flux_corr*mask_corr, drawstyle='steps-mid', color='k', label='corrected data', alpha=0.7, zorder=5)
+        plt.plot(wave, flux*mask_corr, drawstyle='steps-mid', color='0.7', label='uncorrected data', alpha=0.7, zorder=3)
+        plt.plot(wave, sig_corr*mask_corr, drawstyle='steps-mid', color='r', label='noise', alpha=0.3, zorder=1)
+        #plt.plot(wave, poly_model, color='cornflowerblue', linewidth=1.0, label='polynomial model', zorder=7, alpha=0.7)
+        plt.plot(wave, poly_model.max()*0.9*telluric, color='magenta', drawstyle='steps-mid', label='telluric', alpha=0.4)
+        plt.ylim(-np.median(sig_corr[mask_corr]).max(), 1.5*poly_model.max())
+        plt.xlim(wave[wave > 1.0].min(), wave[wave > 1.0].max())
+        plt.legend()
+        plt.xlabel('Wavelength')
+        plt.ylabel('Flux')
+        plt.show()
+    embed()
+
+    save.save_coadd1d_to_fits(outfile, wave, flux_corr, ivar_corr, mask_corr, telluric=telluric, obj_model=poly_model,
                               header=header, ex_value='OPT', overwrite=True)
 
 
