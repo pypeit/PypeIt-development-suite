@@ -214,6 +214,16 @@ def LTT_xshooter_frames():
 
     return fnames, gdobj
 
+def TELL_xshooter_frames():
+    datapath = os.path.join(os.getenv('HOME'), 'Dropbox/PypeIt_Redux/XSHOOTER/J0224-4711/Test_tell/')
+    fnames = [#datapath + 'spec1d_XSHOO.2017-11-23T07:44:02.747-STD,TELLURIC_XShooter_NIR_2017Nov23T074402.747_flux.fits',
+              #datapath + 'spec1d_XSHOO.2017-11-23T07:44:57.633-STD,TELLURIC_XShooter_NIR_2017Nov23T074457.633_flux.fits',
+              datapath + 'spec1d_XSHOO.2017-11-23T07:46:53.532-STD,TELLURIC_XShooter_NIR_2017Nov23T074653.532_flux.fits',
+              datapath + 'spec1d_XSHOO.2017-11-23T07:47:33.917-STD,TELLURIC_XShooter_NIR_2017Nov23T074733.917_flux.fits']
+    gdobj = ['OBJ0001','OBJ0001','OBJ0001','OBJ0001']
+
+    return fnames, gdobj
+
 def J1048_xshooter_fnames():
     datapath = os.path.join(os.getenv('HOME'), 'Dropbox/OBS_DATA/XSHOOTER/NIR/ut20170202/Science/')
     fnames = [datapath + 'spec1d_XSHOO.2017-02-02T04:19:28.545-VIKJ1048m0109_XShooter_NIR_2017Feb02T041928.545_flux.fits',
@@ -353,9 +363,8 @@ def read_deimos_stack():
 #wave_grid = coadd1d.new_wave_grid(waves, wave_method='pixel')
 
 # Testing DEIMOS
-#fnames, objids = deimos_fnames()
-#wave_stack, flux_stack, ivar_stack, mask_stack = coadd1d.multi_combspec(fnames, objids, show=True, debug=True,
-#                                                                        outfile='P261_coadd.fits')
+fnames, objids = deimos_fnames()
+wave_stack, flux_stack, ivar_stack, mask_stack = coadd1d.multi_combspec(fnames, objids, show=True, debug=True,outfile='P261_coadd.fits')
 
 # Testing NIRES
 #fnames, objids = nires_fnames()
@@ -364,7 +373,7 @@ def read_deimos_stack():
 
 # Test XSHOOTER
 #sensfile = os.path.join(os.getenv('HOME'), 'Dropbox/PypeIt_Redux/XSHOOTER/J0439/NIR/Feige110_sens_tell.fits')
-sensfile = os.path.join(os.getenv('HOME'), 'Dropbox/PypeIt_Redux/XSHOOTER/NIR_Stack/Feige110_sens_tell_wang.fits')
+#sensfile = os.path.join(os.getenv('HOME'), 'Dropbox/PypeIt_Redux/XSHOOTER/NIR_Stack/Feige110_sens_tell_wang.fits')
 
 #fnames, objids = J0226_xshooter_fnames()
 #outfile = 'J0226.fits'
@@ -381,10 +390,13 @@ sensfile = os.path.join(os.getenv('HOME'), 'Dropbox/PypeIt_Redux/XSHOOTER/NIR_St
 #outfile = 'LTT3218'
 #fnames, objids = J1048_xshooter_fnames()
 #outfile = 'J1048'
-fnames, objids = pisco_xshooter_fnames()
-outfile = 'Pisco_all'
-wave_stack, flux_stack, ivar_stack, mask_stack = coadd1d.ech_combspec(fnames, objids, show=False, sensfile=sensfile,
-                                                                      outfile=outfile)
+#fnames, objids = pisco_xshooter_fnames()
+#outfile = 'Pisco_all_box'
+#fnames, objids = TELL_xshooter_frames()
+#outfile = 'TELL_B8IV_V5p8'
+
+#wave_stack, flux_stack, ivar_stack, mask_stack = coadd1d.ech_combspec(fnames, objids, show=True, sensfile=sensfile,
+#                                                                      ex_value='OPT', outfile=outfile, debug=False)
 
 # Coadding
 #wave_stack, flux_stack, ivar_stack, mask_stack, outmask, weights, scales, rms_sn = coadd1d.combspec(
