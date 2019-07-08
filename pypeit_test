@@ -34,6 +34,8 @@ def parser(options=None):
     parser.add_argument('--instrument', type=str, help="Restrict to input instrument")
     parser.add_argument('-setup', type=str, help="Single out a setup to run")
     parser.add_argument('--debug', default=False, action='store_true', help='Debug')
+    parser.add_argument('--prep_only', default=False, action='store_true',
+                        help='Only prepare to execute run_pypeit, but do not actually run it.')
 
     return parser.parse_args() if options is None else parser.parse_args(options), hlpstr
 
@@ -73,8 +75,9 @@ def main():
         if pargs.instrument is not None:
             instruments = [pargs.instrument]
         else:
-            instruments = ['Keck_LRIS_blue', 'Gemini_GNIRS', 'Shane_Kast_blue', 'VLT_XSHOOTER', 'Keck_DEIMOS',
-                       'Shane_Kast_red', 'Keck_NIRES', 'Keck_LRIS_red', 'Magellan_MAGE']
+            instruments = ['Keck_LRIS_blue', 'Gemini_GNIRS', 'Shane_Kast_blue', 'VLT_XSHOOTER',
+                           'Keck_DEIMOS', 'Shane_Kast_red', 'Keck_NIRES', 'Keck_LRIS_red',
+                           'Magellan_MAGE']
     else:
         instruments = [item for item in all_instruments if pargs.tests.lower() in item.lower()]
         invalid_selection = [item for item in instruments if not np.any([inst.lower()
@@ -123,7 +126,8 @@ def main():
         # Develop cut
         if pargs.tests == 'develop':
             if instr == 'Keck_DEIMOS':
-                req_setups = ['600ZD_M_6500', '1200G_M_7750', '830G_LVM_8400', '830G_M_8100_26','830G_M_8500', '830G_L_8100']
+                req_setups = ['600ZD_M_6500', '1200G_M_7750', '830G_LVM_8400', '830G_M_8100_26',
+                              '830G_M_8500', '830G_L_8100']
             elif instr == 'Gemini_GNIRS':
                 req_setups = ['GNIRS']
             elif instr == 'Shane_Kast_blue':
@@ -135,10 +139,11 @@ def main():
             elif instr == 'Magellan_MAGE':
                 req_setups = ['1x1']
             elif instr == 'Keck_LRIS_blue':
-                req_setups = ['long_400_3400_d560', 'long_600_4000_d560', 'multi_300_5000_d680', 'multi_600_4000_d560']#, 'multi_1200_3400_d460']
+                req_setups = ['long_400_3400_d560', 'long_600_4000_d560', 'multi_300_5000_d680',
+                              'multi_600_4000_d560']#, 'multi_1200_3400_d460']
             elif instr == 'Keck_LRIS_red':
-                req_setups = ['long_600_7500_d560', 'multi_1200_9000_d680_1x2', 'multi_600_5000_d560',
-                              'multi_1200_9000_d680', 'multi_400_8500_d560']
+                req_setups = ['long_600_7500_d560', 'multi_1200_9000_d680_1x2',
+                              'multi_600_5000_d560', 'multi_1200_9000_d680', 'multi_400_8500_d560']
             elif instr == 'VLT_XSHOOTER':
                 req_setups = ['VIS_1x1', 'VIS_2x1', 'VIS_2x2', 'NIR']
             elif instr == 'Magellan_MAGE':
@@ -254,6 +259,9 @@ def main():
                 pyp_file = outfile_root+'.pypeit'
                 with open(os.path.join(wdir, pyp_file), 'w') as ofile:
                     ofile.writelines(lines)
+
+            if pargs.prep_only:
+                continue
              
             # Run pypeit
             retval = -1
