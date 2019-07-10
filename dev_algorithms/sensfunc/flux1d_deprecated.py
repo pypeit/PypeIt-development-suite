@@ -353,7 +353,7 @@ def extinction_correction(wave, airmass, extinct):
     # Return
     return flux_corr
 
-def apply_sensfunc_spec(wave, counts, ivar, sensfunc, airmass, exptime, mask=None, extinct_correct=True, telluric=None,
+def apply_sens_tell_spec(wave, counts, ivar, sensfunc, airmass, exptime, mask=None, extinct_correct=True, telluric=None,
                    longitude=None, latitude=None, debug=False):
 
     if mask is None:
@@ -400,7 +400,7 @@ def apply_sensfunc_spec(wave, counts, ivar, sensfunc, airmass, exptime, mask=Non
 
     return flam, flam_ivar, outmask
 
-def apply_sensfunc_specobjs(specobjs, sens_meta, sens_table, airmass, exptime, extinct_correct=True, tell_correct=False,
+def apply_sens_tell_specobjs(specobjs, sens_meta, sens_table, airmass, exptime, extinct_correct=True, tell_correct=False,
                             longitude=None, latitude=None, debug=False, show=False):
 
     # TODO This function should operate on a single object
@@ -452,7 +452,7 @@ def apply_sensfunc_specobjs(specobjs, sens_meta, sens_table, airmass, exptime, e
             else:
                 telluric = None
 
-            flam, flam_ivar, outmask = apply_sensfunc_spec(wave, counts, counts_ivar, sensfunc, airmass, exptime,
+            flam, flam_ivar, outmask = apply_sens_tell_spec(wave, counts, counts_ivar, sensfunc, airmass, exptime,
                                                       mask=mask, extinct_correct=extinct_correct, telluric=telluric,
                                                       longitude=longitude, latitude=latitude, debug=debug)
             flam_sig = np.sqrt(utils.inverse(flam_ivar))
@@ -492,7 +492,7 @@ def apply_sensfunc_specobjs(specobjs, sens_meta, sens_table, airmass, exptime, e
         plt.ylabel('Flux')
         plt.show()
 
-def apply_sensfunc(fnames, sensfile, extinct_correct=True, tell_correct=False, debug=False, show=False):
+def apply_sens_tell(fnames, sensfile, extinct_correct=True, tell_correct=False, debug=False, show=False):
 
     sens_meta = Table.read(sensfile, 1)
     sens_table = Table.read(sensfile, 2)
@@ -507,7 +507,7 @@ def apply_sensfunc(fnames, sensfile, extinct_correct=True, tell_correct=False, d
         airmass, exptime = head['AIRMASS'], head['EXPTIME']
         longitude, latitude = head['LON-OBS'], head['LAT-OBS']
 
-        apply_sensfunc_specobjs(sobjs, sens_meta, sens_table, airmass, exptime, extinct_correct=extinct_correct,
+        apply_sens_tell_specobjs(sobjs, sens_meta, sens_table, airmass, exptime, extinct_correct=extinct_correct,
                                 tell_correct=tell_correct, longitude=longitude, latitude=latitude,
                                 debug=debug, show=show)
         save.save_1d_spectra_fits(sobjs, head, spectrograph, outfile, helio_dict=None, overwrite=True)
