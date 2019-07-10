@@ -2,7 +2,7 @@ import os
 import numpy as np
 
 import telluric
-from pypeit.core.flux_calib import apply_sens_tell
+from pypeit.core.flux_calib import apply_sensfunc
 from pypeit.core import coadd1d
 from pypeit import msgs
 
@@ -46,7 +46,7 @@ if do_sens:
 
 ## Apply the sensfunc to all spectra (only sensfunc but not tellluric)
 # TODO: change show=False to show=show
-apply_sens_tell(fnames, sensfile, extinct_correct=False, tell_correct=False, debug=False, show=False)
+apply_sensfunc(fnames, sensfile, extinct_correct=False, tell_correct=False, debug=False, show=False)
 
 fnames_flux = [f.replace('.fits', '_flux.fits') for f in fnames]
 

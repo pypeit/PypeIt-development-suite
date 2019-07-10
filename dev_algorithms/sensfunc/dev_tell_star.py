@@ -2,7 +2,7 @@ import os
 import numpy as np
 
 import telluric
-from pypeit.core.flux_calib import apply_sens_tell
+from pypeit.core.flux_calib import apply_sensfunc
 from pypeit.core import coadd1d
 from pypeit import msgs
 show=True
@@ -23,7 +23,7 @@ objids = ['OBJ0001']*nfiles
 sensfile = os.path.join(os.getenv('HOME'), 'Dropbox/PypeIt_Redux/XSHOOTER/LTT3218_sens_tell.fits')
 
 ## Apply the sensfunc to the telluric star spectra
-#apply_sens_tell(fnames, sensfile, extinct_correct=False, tell_correct=False, debug=False, show=True)
+#apply_sensfunc(fnames, sensfile, extinct_correct=False, tell_correct=False, debug=False, show=True)
 
 fnames_flux = [f.replace('.fits', '_flux.fits') for f in fnames]
 
