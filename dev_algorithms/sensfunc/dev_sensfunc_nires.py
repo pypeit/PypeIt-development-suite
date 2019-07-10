@@ -4,7 +4,7 @@ import os
 import numpy as np
 
 import telluric
-from flux1d import apply_sensfunc
+from pypeit.core.flux_calib import apply_sensfunc
 from pypeit.core import coadd1d
 from pypeit import msgs
 

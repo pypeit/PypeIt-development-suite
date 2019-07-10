@@ -11,8 +11,7 @@ from pypeit.core import pydl
 import astropy.units as u
 from astropy.io import fits
 from astropy import stats
-import flux1d
-from pypeit.core import load
+from pypeit.core import load, flux_calib
 from pypeit.core.wavecal import wvutils
 from astropy import table
 from pypeit.core import save
@@ -938,7 +937,7 @@ def sensfunc_telluric(spec1dfile, telgridfile, outfile, star_type=None, star_mag
     # Read in standard star dictionary and interpolate onto regular telluric wave_grid
     star_ra = meta_spec['core']['RA'] if star_ra is None else star_ra
     star_dec = meta_spec['core']['DEC'] if star_dec is None else star_dec
-    std_dict = flux1d.get_standard_spectrum(star_type=star_type, star_mag=star_mag, ra=star_ra, dec=star_dec)
+    std_dict = flux_calib.get_standard_spectrum(star_type=star_type, star_mag=star_mag, ra=star_ra, dec=star_dec)
 
     if counts.ndim == 2:
         norders = counts.shape[1]
@@ -1061,7 +1060,7 @@ def star_telluric(spec1dfile, telgridfile, telloutfile, outfile, star_type=None,
     # Read in standard star dictionary and interpolate onto regular telluric wave_grid
     star_ra = meta_spec['core']['RA'] if star_ra is None else star_ra
     star_dec = meta_spec['core']['DEC'] if star_dec is None else star_dec
-    std_dict = flux1d.get_standard_spectrum(star_type=star_type, star_mag=star_mag, ra=star_ra, dec=star_dec)
+    std_dict = flux_calib.get_standard_spectrum(star_type=star_type, star_mag=star_mag, ra=star_ra, dec=star_dec)
 
     if flux.ndim == 2:
         norders = flux.shape[1]
