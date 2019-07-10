@@ -62,7 +62,7 @@ if do_sens:
 
 ## Apply the sensfunc to all spectra (only sensfunc but not tellluric)
 # TODO: change show=False to show=show
-#apply_sensfunc(fnames, sensfile, extinct_correct=False, tell_correct=False, debug=debug, show=False)
+apply_sensfunc(fnames, sensfile, extinct_correct=False, tell_correct=False, debug=debug, show=False)
 
 fnames_flux = [f.replace('.fits', '_flux.fits') for f in fnames]
 
