@@ -497,7 +497,7 @@ def init_poly_model(obj_params, iord, wave, flux, ivar, mask, tellmodel):
                     model=obj_params['model'], polyorder=obj_params['polyorder_vec'][iord])
 
     if obj_params['debug']:
-        plt.plot(wave, flux, drawstyle='steps-mid', alpha=0.7, zorder=5, label='star spectrum')
+        plt.plot(wave, flux, drawstyle='steps-mid', alpha=0.7, zorder=5, label='observed spectrum')
         plt.plot(wave, flux_scale, drawstyle='steps-mid', alpha=0.7, zorder=4, label='poly_model*telluric')
         plt.plot(wave, tellmodel, label='telluric')
         plt.plot(wave, polymodel, label='poly_model')
@@ -1205,11 +1205,11 @@ def poly_telluric(spec1dfile, telgridfile, telloutfile, outfile, z_obj=0.0, func
 
     if show:
         fig = plt.figure(figsize=(12, 8))
-        plt.plot(wave, flux_corr*mask_corr, drawstyle='steps-mid', color='k', label='corrected data', alpha=0.7, zorder=5)
-        plt.plot(wave, flux*mask_corr, drawstyle='steps-mid', color='0.7', label='uncorrected data', alpha=0.7, zorder=3)
-        plt.plot(wave, sig_corr*mask_corr, drawstyle='steps-mid', color='r', label='noise', alpha=0.3, zorder=1)
+        plt.plot(wave, flux_corr*mask_corr, drawstyle='steps-mid', color='k', label='corrected data', alpha=0.8, zorder=5)
+        plt.plot(wave, flux*mask_corr, drawstyle='steps-mid', color='0.7', label='uncorrected data', alpha=0.5, zorder=3)
+        plt.plot(wave, sig_corr*mask_corr, drawstyle='steps-mid', color='b', label='noise', alpha=0.3, zorder=1)
         #plt.plot(wave, poly_model, color='cornflowerblue', linewidth=1.0, label='polynomial model', zorder=7, alpha=0.7)
-        plt.plot(wave, poly_model.max()*0.9*telluric, color='magenta', drawstyle='steps-mid', label='telluric', alpha=0.4)
+        plt.plot(wave, poly_model.max()*1.1*telluric, color='magenta', drawstyle='steps-mid', label='telluric', alpha=0.3)
         plt.ylim(-np.median(sig_corr[mask_corr]).max(), 1.5*poly_model.max())
         plt.xlim(wave[wave > 1.0].min(), wave[wave > 1.0].max())
         plt.legend()
