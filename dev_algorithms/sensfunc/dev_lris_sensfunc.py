@@ -2,7 +2,7 @@ import os
 import numpy as np
 
 import telluric
-from pypeit.core.flux_calib import apply_sensfunc
+from pypeit.core.flux_calib import apply_sens_tell
 from pypeit.core import coadd1d
 from pypeit import msgs
 from pypeit.core import load
