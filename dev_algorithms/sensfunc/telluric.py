@@ -1216,7 +1216,6 @@ def poly_telluric(spec1dfile, telgridfile, telloutfile, outfile, z_obj=0.0, func
         plt.xlabel('Wavelength')
         plt.ylabel('Flux')
         plt.show()
-    embed()
 
     save.save_coadd1d_to_fits(outfile, wave, flux_corr, ivar_corr, mask_corr, telluric=telluric, obj_model=poly_model,
                               header=header, ex_value='OPT', overwrite=True)
