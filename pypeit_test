@@ -14,6 +14,7 @@ import sys
 import os
 
 import numpy as np
+from IPython import embed
 
 def parser(options=None):
     import argparse
@@ -136,7 +137,7 @@ def main():
             elif instr == 'Magellan_MAGE':
                 req_setups = ['1x1']
             elif instr == 'Keck_LRIS_blue':
-                req_setups = ['long_400_3400_d560', 'long_600_4000_d560', 'multi_300_5000_d680', 'multi_600_4000_d560']#, 'multi_1200_3400_d460']
+                req_setups = ['multi_600_4000_d560', 'long_400_3400_d560', 'long_600_4000_d560', 'multi_300_5000_d680']  #, 'multi_1200_3400_d460']
             elif instr == 'Keck_LRIS_red':
                 req_setups = ['long_600_7500_d560', 'multi_1200_9000_d680_1x2', 'multi_600_5000_d560',
                               'multi_1200_9000_d680', 'multi_400_8500_d560']
@@ -305,7 +306,7 @@ def main():
                     subprocess.call(['tail', '-3', logfile])
                     print("\n", file=sys.stderr)
 
-            # 2-D coadds
+            # 2-D coadds Echelle
             if (retval == 0) and (instr.lower() in ['gemini_gnirs']):
                 ntest += 1
                 print('Running pypeit_coadd_2dspec on {:s} --- '.format(pyp_file), file=sys.stderr, end='')
@@ -318,6 +319,22 @@ def main():
                     npass = report_test(cretval, npass, type='COADD2D')
                     subprocess.call(['tail', '-3', logfile])
                     print("\n", file=sys.stderr)
+
+            # 2-D coadds MultiSlit
+            if (retval == 0) and (instr.lower() in ['keck_lris_blue']) and ('multi_600_4000_d560' in setup):
+                ntest += 1
+                print('Running pypeit_coadd_2dspec on {:s} --- '.format(pyp_file), file=sys.stderr, end='')
+                logfile = os.path.join(wdir, outfile_root+'.test_coadd2d.log')
+                coadd2d_file = os.path.join(dev_path, 'coadd2d_files', instr.lower() + '_' + setup + '.coadd2d')
+                with open(logfile, 'w') as f:
+                    print('Directory: {0}'.format(wdir))
+                    command_line = ['pypeit_coadd_2dspec', '--file', coadd2d_file]
+                    print('Command line: {0}'.format(' '.join(command_line)))
+                    cretval = subprocess.call(command_line, stderr=f, cwd=wdir)
+                    npass = report_test(cretval, npass, type='COADD2D')
+                    subprocess.call(['tail', '-3', logfile])
+                    print("\n", file=sys.stderr)
+
 
 
     if npass == ntest:
