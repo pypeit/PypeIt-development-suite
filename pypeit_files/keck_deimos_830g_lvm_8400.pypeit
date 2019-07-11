@@ -42,9 +42,9 @@ setup end
 data read
  path ../../../RAW_DATA/Keck_DEIMOS/830G_LVM_8400/
 |        filename |                date |       frametype |         target | exptime | dispname |   decker |
-| d0316_0037.fits | 2018-03-16T12:22:35 |             arc | -FOUL-WEATHER- |       1 |     830G | LVMslitC |
-| d0316_0038.fits | 2018-03-16T12:23:57 |             arc | -FOUL-WEATHER- |       1 |     830G | LVMslitC |
-| d0316_0039.fits | 2018-03-16T12:25:08 |             arc | -FOUL-WEATHER- |       1 |     830G | LVMslitC |
+#| d0316_0037.fits | 2018-03-16T12:22:35 |        arc,tilt | -FOUL-WEATHER- |       1 |     830G | LVMslitC |
+#| d0316_0038.fits | 2018-03-16T12:23:57 |        arc,tilt | -FOUL-WEATHER- |       1 |     830G | LVMslitC |
+| d0316_0039.fits | 2018-03-16T12:25:08 |        arc,tilt | -FOUL-WEATHER- |       1 |     830G | LVMslitC |
 | d0316_0040.fits | 2018-03-16T12:26:30 | pixelflat,trace | -FOUL-WEATHER- |       6 |     830G | LVMslitC |
 | d0316_0041.fits | 2018-03-16T12:27:45 | pixelflat,trace | -FOUL-WEATHER- |       6 |     830G | LVMslitC |
 | d0316_0042.fits | 2018-03-16T12:29:00 | pixelflat,trace | -FOUL-WEATHER- |       6 |     830G | LVMslitC |

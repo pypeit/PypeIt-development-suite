@@ -39,7 +39,7 @@ setup end
 data read
  path /Volumes/GoogleDrive/Team Drives/PHYS-GP-Hennawi/PypeIt/PypeIt-development-suite/RAW_DATA/Keck_LRIS_red/multi_1200_9000_d680/
 |          filename |                date | frametype       |  target | exptime | binning | dichroic | dispname |   decker |
-| r170816_0009.fits | 2017-08-16T02:56:14 | arc             | unknown |       3 |     1,1 |      680 | 1200/9000 | E570.fil |
+| r170816_0009.fits | 2017-08-16T02:56:14 | arc,tilt            | unknown |       3 |     1,1 |      680 | 1200/9000 | E570.fil |
 | r170816_0018.fits | 2017-08-16T03:19:28 | pixelflat,trace | unknown |      10 |     1,1 |      680 | 1200/9000 | E570.fil |
 | r170816_0019.fits | 2017-08-16T03:22:01 | pixelflat,trace | unknown |      10 |     1,1 |      680 | 1200/9000 | E570.fil |
 | r170816_0020.fits | 2017-08-16T03:24:18 | pixelflat,trace | unknown |      10 |     1,1 |      680 | 1200/9000 | E570.fil |
