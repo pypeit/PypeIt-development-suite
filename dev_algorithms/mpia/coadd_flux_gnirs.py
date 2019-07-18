@@ -22,7 +22,13 @@ mpia_outpath = os.path.join(mpia_path,'output')
 dev_suite_path = os.path.join(os.getenv('PYPEIT_DEV'), 'REDUX_OUT/Gemini_GNIRS/GNIRS/Science')
 
 # List of science files for pisco
-spec1dfiles = glob.glob(dev_suite_path + '/spec1d*pisco*.fits')
+file_list = glob.glob(dev_suite_path + '/spec1d*pisco*.fits')
+spec1dfiles = []
+for ifile in file_list:
+    if '_flux' not in ifile:
+        spec1dfiles.append(ifile)
+
+
 nfiles = len(spec1dfiles)
 objids = ['OBJ0001']*nfiles
 # One telluric file
@@ -46,8 +52,9 @@ if not os.path.exists(spec1dfiles_flux[0]):
     apply_sensfunc(spec1dfiles, sensfile, extinct_correct=False, tell_correct=False, debug=False, show=False)
 
 # Now let's coadd the spectrum
-spec1dfluxfile = 'spec1d_coadd_{:}.fits'.format(qsoname)
+spec1dfluxfile = os.path.join(mpia_path, 'spec1d_coadd_{:}.fits'.format(qsoname))
 wave_stack, flux_stack, ivar_stack, mask_stack = coadd1d.ech_combspec(spec1dfiles_flux, objids, show=show,
+                                                                      show_exp=True,
                                                                       sensfile=sensfile, ex_value='OPT',
                                                                       outfile=spec1dfluxfile, debug=debug)
 
@@ -55,8 +62,8 @@ wave_stack, flux_stack, ivar_stack, mask_stack = coadd1d.ech_combspec(spec1dfile
 pca_file = os.path.join(mpia_path, 'qso_pca_1200_3100.pckl')
 
 # run telluric.qso_telluric to get the final results
-telloutfile = '{:}_tellmodel.fits'.format(qsoname)
-outfile = 'spec1d_coadd_{:}_tellcorr.fits'.format(qsoname)
+telloutfile = os.path.join(mpia_path, '{:}_tellmodel.fits'.format(qsoname))
+outfile = os.path.join(mpia_path, 'spec1d_coadd_{:}_tellcorr.fits'.format(qsoname))
 
 # TODO: add other modes here
 TelQSO = telluric.qso_telluric(spec1dfluxfile, telgridfile, pca_file, z_qso, telloutfile, outfile,
