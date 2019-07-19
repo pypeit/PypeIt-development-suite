@@ -18,8 +18,8 @@ ex_value = 'OPT'
 qsoname = 'pisco'
 
 mpia_path = os.path.join(os.getenv('HOME'), 'Dropbox/MPIA_PypeIt')
-mpia_outpath = os.path.join(mpia_path,'output')
-dev_suite_path = os.path.join(os.getenv('PYPEIT_DEV'), 'REDUX_OUT/Gemini_GNIRS/GNIRS/Science')
+dev_suite_path =  os.path.join(mpia_path, 'work/gemini_gnirs_A/Science')
+#dev_suite_path = os.path.join(os.getenv('PYPEIT_DEV'), 'REDUX_OUT/Gemini_GNIRS/GNIRS/Science')
 
 # List of science files for pisco
 file_list = glob.glob(dev_suite_path + '/spec1d*pisco*.fits')
