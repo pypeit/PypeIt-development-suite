@@ -58,6 +58,7 @@ wave_stack, flux_stack, ivar_stack, mask_stack = coadd1d.ech_combspec(spec1dfile
                                                                       sensfile=sensfile, ex_value='OPT',
                                                                       outfile=spec1dfluxfile, debug=debug)
 
+sys.exit(-1)
 # This is a pickle file containing the PCA model for the QSOs
 pca_file = os.path.join(mpia_path, 'qso_pca_1200_3100.pckl')
 
