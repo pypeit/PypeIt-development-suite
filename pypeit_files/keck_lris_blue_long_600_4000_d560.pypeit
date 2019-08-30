@@ -6,8 +6,6 @@
 [calibrations]
     [[flatfield]]
         frame = /home/xavier/local/Python/PypeIt-development-suite/CALIBS/PYPEIT_LRISb_pixflat_B600_2x2_17sep2009.fits.gz
-    [[slitedges]]
-        sync_predict = nearest
 
 # Setup
 setup read

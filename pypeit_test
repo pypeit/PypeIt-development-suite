@@ -123,7 +123,8 @@ def main():
         # Develop cut
         if pargs.tests == 'develop':
             if instr == 'Keck_DEIMOS':
-                req_setups = ['600ZD_M_6500', '1200G_M_7750', '830G_LVM_8400', '830G_M_8100_26','830G_M_8500', '830G_L_8100']
+                req_setups = ['600ZD_M_6500', '1200G_M_7750', '830G_LVM_8400', '830G_M_8100_26','830G_M_8500',
+                              '830G_L_8100']
             elif instr == 'Gemini_GNIRS':
                 req_setups = ['GNIRS']
             elif instr == 'Shane_Kast_blue':
@@ -135,7 +136,8 @@ def main():
             elif instr == 'Magellan_MAGE':
                 req_setups = ['1x1']
             elif instr == 'Keck_LRIS_blue':
-                req_setups = ['multi_600_4000_d560', 'long_400_3400_d560', 'long_600_4000_d560', 'multi_300_5000_d680']  #, 'multi_1200_3400_d460']
+                req_setups = ['multi_600_4000_d560', 'long_400_3400_d560', 'long_600_4000_d560',
+                              'multi_300_5000_d680']  #, 'multi_1200_3400_d460']
             elif instr == 'Keck_LRIS_red':
                 req_setups = ['long_600_7500_d560', 'multi_1200_9000_d680_1x2', 'multi_600_5000_d560',
                               'multi_1200_9000_d680', 'multi_400_8500_d560']

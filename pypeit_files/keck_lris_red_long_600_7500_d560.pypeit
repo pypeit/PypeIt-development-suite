@@ -5,9 +5,6 @@
     spectrograph = keck_lris_red
     sortroot = keck_lris_red_long_600_7500_d560
     ignore_bad_headers = True
-[calibrations]
-    [[slitedges]]
-        sync_predict = nearest
 
 # Setup
 setup read
