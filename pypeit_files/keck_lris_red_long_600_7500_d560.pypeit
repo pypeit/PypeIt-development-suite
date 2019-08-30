@@ -6,18 +6,8 @@
     sortroot = keck_lris_red_long_600_7500_d560
     ignore_bad_headers = True
 [calibrations]
-    [[biasframe]]
-        number = 3
-    [[pixelflatframe]]
-        number = 3
-    [[arcframe]]
-        number = 1
-    [[pinholeframe]]
-        number = 0
-    [[traceframe]]
-        number = 1
-    [[standardframe]]
-        number = 1
+    [[slitedges]]
+        sync_predict = nearest
 
 # Setup
 setup read
