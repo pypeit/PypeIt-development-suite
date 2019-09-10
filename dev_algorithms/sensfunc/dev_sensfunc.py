@@ -11,7 +11,6 @@ from pypeit.core import pydl
 import astropy.units as u
 from astropy.io import fits
 from astropy.table import Table
-from pypeit.core import flux
 from pypeit.core import load
 from pypeit.core import save
 from pypeit.core import coadd2d

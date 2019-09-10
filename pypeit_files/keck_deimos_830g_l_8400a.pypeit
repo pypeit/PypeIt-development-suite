@@ -41,8 +41,8 @@ setup end
 data read
  path ../../../RAW_DATA/Keck_DEIMOS/830G_L_8400A/
 |        filename |                date |                    frametype |         target | exptime | dispname |   decker |
-| d0914_0011.fits | 2017-09-14T03:15:10 |   arc                        |        unknown |       1 |  830G    |  LongMirr |
-| d0914_0012.fits | 2017-09-14T03:16:20 |   arc                        |        unknown |       1 |  830G    |  LongMirr |
+| d0914_0011.fits | 2017-09-14T03:15:10 |   arc,tilt                        |        unknown |       1 |  830G    |  LongMirr |
+| d0914_0012.fits | 2017-09-14T03:16:20 |   arc,tilt                        |        unknown |       1 |  830G    |  LongMirr |
 | d0914_0013.fits | 2017-09-14T03:17:41 |   pixelflat,trace            |        unknown |       6 |  830G    |  LongMirr |
 | d0914_0014.fits | 2017-09-14T03:19:06 |   pixelflat,trace            |        unknown |       6 |  830G    |  LongMirr |
 | d0914_0015.fits | 2017-09-14T03:20:21 |   pixelflat,trace            |        unknown |       6 |  830G    |  LongMirr |

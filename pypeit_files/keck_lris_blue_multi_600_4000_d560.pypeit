@@ -5,6 +5,7 @@
 [rdx]
   spectrograph = keck_lris_blue
   sortroot = keck_lris_blue_multi_600_4000_d560
+  detnum = 2
 [calibrations]
 [[biasframe]]
 number = 5
@@ -31,7 +32,7 @@ setup end
 data read
  path /Users/joe/python/PypeIt-development-suite/RAW_DATA/Keck_LRIS_blue/multi_600_4000_d560/
 |             filename | frametype |     target | exptime | dispname |   decker | setup | calib | binning | dichroic |   dispangle |
-| b170320_2022.fits.gz |       arc |    unknown |       1 | 600/4000 | c17_60L. |     A |     0 |     2,2 |      560 | 22.13431168 |
+| b170320_2022.fits.gz |  arc,tilt |    unknown |       1 | 600/4000 | c17_60L. |     A |     0 |     2,2 |      560 | 22.13431168 |
 | b170320_2042.fits.gz |      bias |    unknown |       0 | 600/4000 | sp15l.fi |     A |     0 |     2,2 |      560 | 22.13544083 |
 | b170320_2043.fits.gz |      bias |    unknown |       0 | 600/4000 | sp15l.fi |     A |     0 |     2,2 |      560 | 22.13544083 |
 | b170320_2044.fits.gz |      bias |    unknown |       0 | 600/4000 | sp15l.fi |     A |     0 |     2,2 |      560 | 22.13544083 |
@@ -40,8 +41,8 @@ data read
 | b170320_2058.fits.gz |     trace | Blank04 25 |      12 | 600/4000 | c17_60L. |     A |     0 |     2,2 |      560 | 26.98307037 |
 | b170320_2083.fits.gz |   science |   c17_60L. |    1800 | 600/4000 | c17_60L. |     A |     0 |     2,2 |      560 | 22.13995552 |
 | b170320_2084.fits.gz |   science |   c17_60L. |    1800 | 600/4000 | c17_60L. |     A |     0 |     2,2 |      560 | 22.13995552 |
-| b170320_2089.fits.gz |   science |   c17_60L. |    1800 | 600/4000 | c17_60L. |     A |     0 |     2,2 |      560 | 22.13995552 |
 | b170320_2090.fits.gz |   science |   c17_60L. |    1800 | 600/4000 | c17_60L. |     A |     0 |     2,2 |      560 | 22.13995552 |
 | b170320_2091.fits.gz |   science |   c17_60L. |    1800 | 600/4000 | c17_60L. |     A |     0 |     2,2 |      560 | 22.13995552 |
+#| b170320_2089.fits.gz |   science |   c17_60L. |    1800 | 600/4000 | c17_60L. |     A |     0 |     2,2 |      560 | 22.13995552 |
 data end
 

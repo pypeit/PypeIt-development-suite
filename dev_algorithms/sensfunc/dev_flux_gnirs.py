@@ -1,16 +1,17 @@
 
 
+
 import os
 import numpy as np
 
 import telluric
-from flux1d import apply_sensfunc
+from pypeit.core.flux_calib import apply_sensfunc
 from pypeit.core import coadd1d
 from pypeit import msgs
 
 debug = False
 show = True
-do_sens = True
+do_sens = False
 
 z_qso = 7.50
 npca = 8

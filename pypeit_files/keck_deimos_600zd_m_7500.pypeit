@@ -39,7 +39,7 @@ data read
 | DE.20140226.50959.fits | 2014-02-26T14:34:21 |           science |        j1137 |    1500 |    600ZD | jcCIV2C |
 #| DE.20140226.52536.fits | 2014-02-26T15:00:31 |           science |        j1137 |    1500 |    600ZD | jcCIV2C |
 #| DE.20140226.54107.fits | 2014-02-26T15:26:40 |           science |        j1137 |    1500 |    600ZD | jcCIV2C |
-| DE.20140226.61434.fits | 2014-02-26T17:03:57 |               arc | HORIZON STOW |       1 |    600ZD | jcCIV2C |
+| DE.20140226.61434.fits | 2014-02-26T17:03:57 |          arc,tilt | HORIZON STOW |       1 |    600ZD | jcCIV2C |
 | DE.20140226.61512.fits | 2014-02-26T17:05:19 |   pixelflat,trace | HORIZON STOW |       6 |    600ZD | jcCIV2C |
 | DE.20140226.61587.fits | 2014-02-26T17:06:35 |   pixelflat,trace | HORIZON STOW |       6 |    600ZD | jcCIV2C |
 | DE.20140226.61663.fits | 2014-02-26T17:07:51 |   pixelflat,trace | HORIZON STOW |       6 |    600ZD | jcCIV2C |

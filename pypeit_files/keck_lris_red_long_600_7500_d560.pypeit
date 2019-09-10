@@ -28,7 +28,7 @@ setup end
 data read
 path /Users/joe/python/PypeIt-development-suite/RAW_DATA/Keck_LRIS_red/long_600_7500_d560/
 |               filename    |                date | frametype |         target | exptime | binning | dichroic | dispname |   decker |
-| LR.20160216.05709.fits.gz | 2016-02-16T01:35:11 |  arc      	 |           None |       1 |     2,2 |      560 | 600/7500 | long_0.7 |
+| LR.20160216.05709.fits.gz | 2016-02-16T01:35:11 |  arc,tilt    |           None |       1 |     2,2 |      560 | 600/7500 | long_0.7 |
 | LR.20160216.07348.fits.gz | 2016-02-16T02:02:28 |   bias    	 |           None |       0 |     2,2 |      560 | 600/7500 | long_0.7 |
 | LR.20160216.07412.fits.gz | 2016-02-16T02:03:31 |   bias    	 |        unknown |       0 |     2,2 |      560 | 600/7500 | long_0.7 |
 | LR.20160216.07470.fits.gz | 2016-02-16T02:04:30 |   bias    	 |        unknown |       0 |     2,2 |      560 | 600/7500 | long_0.7 |

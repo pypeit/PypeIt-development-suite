@@ -10,7 +10,7 @@ from astropy.io import fits
 from pypeit.core import pydl
 import astropy.units as u
 from astropy.io import fits
-from pypeit.core import flux
+from pypeit.core import flux_calib
 from pypeit.core import load
 from pypeit.core import save
 from pypeit.core import coadd2d

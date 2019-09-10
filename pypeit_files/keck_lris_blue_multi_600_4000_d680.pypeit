@@ -35,7 +35,7 @@ setup end
 data read
  path /Users/joe/python/PypeIt-development-suite/RAW_DATA/Keck_LRIS_blue/multi_600_4000_d680/
 |          filename | frametype	      |          ra |         dec |    target | dispname |   decker | binning |          mjd |    airmass | exptime | dichroic |
-| b190103_0017.fits |       arc       | 15:20:00.00 | +45:00:00.0 | DOME FLAT | 600/4000 | WOD1.fil |     2,2 | 58486.136329 | 1.41291034 |     2.0 |      680 |
+| b190103_0017.fits |    arc,tilt     | 15:20:00.00 | +45:00:00.0 | DOME FLAT | 600/4000 | WOD1.fil |     2,2 | 58486.136329 | 1.41291034 |     2.0 |      680 |
 | b190103_0019.fits | pixelflat,trace | 15:20:00.00 | +45:00:00.0 | DOME FLAT | 600/4000 | WOD1.fil |     2,2 | 58486.146263 | 1.41291034 |    60.0 |      680 |
 | b190103_0020.fits | pixelflat,trace | 15:20:00.00 | +45:00:00.0 | DOME FLAT | 600/4000 | WOD1.fil |     2,2 |  58486.14791 | 1.41291034 |    60.0 |      680 |
 | b190103_0021.fits | pixelflat,trace | 15:20:00.00 | +45:00:00.0 | DOME FLAT | 600/4000 | WOD1.fil |     2,2 | 58486.149103 | 1.41291034 |    60.0 |      680 |

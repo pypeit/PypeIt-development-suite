@@ -37,24 +37,24 @@ setup end
 data read
  path ../../../RAW_DATA/Keck_DEIMOS/830G_L_8400B/
 |           filename |       frametype |         target | exptime | dispname |   decker |
-| d0914_0011.fits.gz |             arc |        unknown |       1 |     830G | LongMirr |
-| d0914_0012.fits.gz |             arc |        unknown |       1 |     830G | LongMirr |
+| d0914_0011.fits.gz |        arc,tilt |        unknown |       1 |     830G | LongMirr |
+| d0914_0012.fits.gz |        arc,tilt |        unknown |       1 |     830G | LongMirr |
 | d0914_0013.fits.gz | trace,pixelflat |        unknown |       6 |     830G | LongMirr |
 | d0914_0014.fits.gz | trace,pixelflat |        unknown |       6 |     830G | LongMirr |
 | d0914_0015.fits.gz | trace,pixelflat |        unknown |       6 |     830G | LongMirr |
 | d0914_0016.fits.gz | trace,pixelflat |        unknown |       6 |     830G | LongMirr |
 | d0914_0017.fits.gz | trace,pixelflat |        unknown |       6 |     830G | LongMirr |
 | d0914_0020.fits.gz |         science | J2102m1458_OFF |    1200 |     830G | LongMirr |
-| d0914_0021.fits.gz |         science | J2102m1458_OFF |    1200 |     830G | LongMirr |
-| d0914_0022.fits.gz |         science | J2102m1458_OFF |    1200 |     830G | LongMirr |
-| d0914_0023.fits.gz |         science | J2102m1458_OFF |    1200 |     830G | LongMirr |
-| d0914_0024.fits.gz |         science | J2102m1458_OFF |    1200 |     830G | LongMirr |
-| d0914_0025.fits.gz |         science | J2102m1458_OFF |    1200 |     830G | LongMirr |
-| d0914_0026.fits.gz |         science | J2102m1458_OFF |    1200 |     830G | LongMirr |
-| d0914_0027.fits.gz |         science | J2102m1458_OFF |    1200 |     830G | LongMirr |
-| d0914_0028.fits.gz |         science | J2102m1458_OFF |    1200 |     830G | LongMirr |
-| d0914_0047.fits.gz |        standard |        G191B2B |      60 |     830G | LongMirr |
-| d0914_0048.fits.gz |        standard |        G191B2B |      60 |     830G | LongMirr |
+#| d0914_0021.fits.gz |         science | J2102m1458_OFF |    1200 |     830G | LongMirr |
+#| d0914_0022.fits.gz |         science | J2102m1458_OFF |    1200 |     830G | LongMirr |
+#| d0914_0023.fits.gz |         science | J2102m1458_OFF |    1200 |     830G | LongMirr |
+#| d0914_0024.fits.gz |         science | J2102m1458_OFF |    1200 |     830G | LongMirr |
+#| d0914_0025.fits.gz |         science | J2102m1458_OFF |    1200 |     830G | LongMirr |
+#| d0914_0026.fits.gz |         science | J2102m1458_OFF |    1200 |     830G | LongMirr |
+#| d0914_0027.fits.gz |         science | J2102m1458_OFF |    1200 |     830G | LongMirr |
+#| d0914_0028.fits.gz |         science | J2102m1458_OFF |    1200 |     830G | LongMirr |
+#| d0914_0047.fits.gz |        standard |        G191B2B |      60 |     830G | LongMirr |
+#| d0914_0048.fits.gz |        standard |        G191B2B |      60 |     830G | LongMirr |
 | d0914_0049.fits.gz |        standard |        G191B2B |      60 |     830G | LongMirr |
 data end
 
