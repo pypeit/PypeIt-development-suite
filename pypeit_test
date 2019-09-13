@@ -289,7 +289,9 @@ def main():
                 print("Couldn't run test for {0:s}".format(instr.lower()))
 
             # Fluxing
-            if (retval==0) and (instr.lower() in ['shane_kast_blue']) and ('600' in setup):
+            if (retval == 0) and (
+                    ((instr.lower() == 'shane_kast_blue') and ('600' in setup)) or
+                    (instr.lower() == 'keck_nires')):
                 ntest += 1
                 print('Running pypeit_flux on {:s} --- '.format(pyp_file), file=sys.stderr, end='')
                 logfile = os.path.join(wdir, outfile_root+'.test_flux.log')
