@@ -44,11 +44,11 @@ if do_sens:
         msgs.error('You need either give a std1dfile to derive sensfunc')
     else:
         # run telluric.sensfunc_telluric to get the sensfile
-        TelSens = telluric.sensfunc_telluric(std1dfile, telgridfile, sensfile, mask_abs_lines=True, debug=True)
+        TelSens = telluric.sensfunc_telluric(std1dfile, telgridfile, sensfile, mask_abs_lines=True, debug=debug)
 
 ## Apply the sensfunc to all spectra (only sensfunc but not tellluric)
 # TODO: change show=False to show=show
-apply_sensfunc(fnames, sensfile, extinct_correct=False, tell_correct=False, debug=debug, show=False)
+apply_sensfunc(fnames, sensfile, extinct_correct=False, tell_correct=False, debug=debug, show=show)
 
 fnames_flux = [f.replace('.fits', '_flux.fits') for f in fnames]
 
