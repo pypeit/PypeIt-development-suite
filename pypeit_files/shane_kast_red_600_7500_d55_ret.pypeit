@@ -1,20 +1,9 @@
-# This is a comment line
+# PypeIt test file for the old Kast-red Reticon detector
 
 # User-defined execution parameters
 [rdx]
 spectrograph = shane_kast_red_ret
     sortroot = shane_kast_red_setup_A
-[calibrations]
-    [[arcframe]]
-        number = 1
-    [[standardframe]]
-	    number = 1
-    [[biasframe]]
-        number = 3
-    [[pixelflatframe]]
-        number = 3
-    [[traceframe]]
-        number = 3
 
 # Setup
 setup read
@@ -33,9 +22,6 @@ data read
 | r126.fits.gz | 2015-01-23T01:14:05.86 |     pixelflat,trace |  dome flat |       1 |     None | 2.0 arcsec |
 | r127.fits.gz | 2015-01-23T01:14:21.85 |     pixelflat,trace |  dome flat |       1 |     None | 2.0 arcsec |
 | r153.fits.gz | 2015-01-23T02:53:23.85 |             science | J0025-0312 |     200 |     None | 2.0 arcsec |
-#| r154.fits.gz | 2015-01-23T02:59:50.56 |             science | J0027+0706 |     200 |     None | 2.0 arcsec |
-#| r534.fits.gz | 2015-01-25T09:38:42.48 |             science | J1250+2800 |    1200 |     None | 2.0 arcsec |
-#| r535.fits.gz | 2015-01-25T09:59:27.54 |             science | J1250+2800 |    1200 |     None | 2.0 arcsec |
 | r136.fits.gz | 2015-01-23T02:43:20.75 |             standard |    G191b2b |      30 |     None | 2.0 arcsec |
 data end
 
