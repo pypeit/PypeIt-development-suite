@@ -153,7 +153,7 @@ def main():
             for setup in req_setups:
                 if setup not in setups:
                     print("You need to download the {} setup for the {} instrument before proceeding".format(setup, instr))
-                    IPython.embed()
+                    IPython.embed(header='156 of pypeit_test')
             setups = req_setups
 
         # Report
