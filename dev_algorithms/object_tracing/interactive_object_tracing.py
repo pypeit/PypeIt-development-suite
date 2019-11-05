@@ -8,7 +8,11 @@ def load_pkl(name):
         return pickle.load(f)
 
 
+det = 1
 frame = np.load("frame.npy")
 trace_dict = load_pkl("trace_dict")
 sobjs = load_pkl("sobjs")
-gui_object_find.initialise(frame, trace_dict, sobjs)
+# Make some updates
+trace_dict["slit_left"] = trace_dict["edges_l"]
+trace_dict["slit_righ"] = trace_dict["edges_r"]
+gui_object_find.initialise(det, frame, trace_dict, sobjs)
