@@ -9,8 +9,8 @@
             sigrej = 20.
     [[flatfield]]
         frame = /home/xavier/Projects/Python/PypeIt-development-suite/CALIBS/PYPEIT_LRISb_pixflat_B400_2x2_15apr2015.fits.gz
-    [[tilts]]
-        idsonly = True
+#    [[tilts]]
+#        idsonly = True
 
 # Setup
 setup read
