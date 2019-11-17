@@ -3,13 +3,13 @@
 import os
 import numpy as np
 
-import telluric
+from pypeit.core import telluric
 from pypeit.core.flux_calib import apply_sensfunc
 from pypeit.core import coadd1d
 from pypeit import msgs
 
 debug = False
-show = True
+show = False
 do_sens = False
 
 z_qso = 7.50
@@ -44,11 +44,11 @@ if do_sens:
         msgs.error('You need either give a std1dfile to derive sensfunc')
     else:
         # run telluric.sensfunc_telluric to get the sensfile
-        TelSens = telluric.sensfunc_telluric(std1dfile, telgridfile, sensfile, mask_abs_lines=True, debug=True)
+        TelSens = telluric.sensfunc_telluric(std1dfile, telgridfile, sensfile, mask_abs_lines=True, debug=debug)
 
 ## Apply the sensfunc to all spectra (only sensfunc but not tellluric)
 # TODO: change show=False to show=show
-#apply_sensfunc(fnames, sensfile, extinct_correct=False, tell_correct=False, debug=debug, show=False)
+apply_sensfunc(fnames, sensfile, extinct_correct=False, tell_correct=False, debug=debug, show=show)
 
 fnames_flux = [f.replace('.fits', '_flux.fits') for f in fnames]
 
@@ -59,15 +59,15 @@ fnames_flux = [f.replace('.fits', '_flux.fits') for f in fnames]
 # TODO: change the outfile to work with datapath. It's a hard coding on these names in coadd1d
 wave_stack, flux_stack, ivar_stack, mask_stack = coadd1d.ech_combspec(fnames_flux, objids, sensfile=sensfile,
                                                                       ex_value='OPT', outfile=qsoname, debug=debug,
-                                                                      show_order_scale=False, show_exp=True, show=True)
+                                                                      show_order_scale=False, show_exp=True, show=show)
 
 # run telluric.qso_telluric to get the final results
-spec1dfluxfile = 'spec1d_stack_{:}.fits'.format(qsoname)
-telloutfile = 'spec1d_stack_{:}_tellmodel.fits'.format(qsoname)
-outfile = 'spec1d_stack_{:}_tellcorr.fits'.format(qsoname)
+spec1dfluxfile = '{:}.fits'.format(qsoname)
+telloutfile = '{:}_tellmodel.fits'.format(qsoname)
+outfile = '{:}_tellcorr.fits'.format(qsoname)
 
 # TODO: add other modes here
 TelQSO = telluric.qso_telluric(spec1dfluxfile, telgridfile, pca_file, z_qso, telloutfile, outfile,
-                               create_bal_mask=None, debug=True, show=show)
+                               create_bal_mask=None, debug=debug, show=show)
 
 
