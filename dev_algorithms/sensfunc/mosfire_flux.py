@@ -23,4 +23,4 @@ outroot = 'J1724+1901_MOSFIRE_2019nov18'
 flux_tell(sci_path, stdfile, spec1dfiles=spec1dfiles, std_path=std_path, instrument=instrument,
           outroot=outroot, objids=objids,  z_qso=z_qso, tell_method=tell_method,
           fit_region_min=[9200.0], fit_region_max=[9900.0],
-          do_sens=True, do_flux=False, do_stack=False, do_tell=False, disp=False, debug=False)
+          do_sens=True, do_flux=False, do_stack=False, do_tell=False, disp=True, debug=True)
