@@ -8,8 +8,8 @@ from pypeit.core.flux_calib import apply_sensfunc
 from pypeit.core import coadd1d
 from pypeit import msgs
 
-#basedir = os.getenv('HOME')
-basedir = '/d2/Feige'
+basedir = os.getenv('HOME')
+#basedir = '/d2/Feige'
 
 def get_sens_from_file(std1dfile=None, instrument='GNIRS', star_type=None, star_mag=None,star_ra=None,
                        star_dec=None, sens_polyorder=8, mask_abs_lines=True, disp=True, debug=False):
