@@ -4,8 +4,8 @@ from flux_coadd_tell import flux_tell, stack_multinight
 ### sensfunction for MOSFIRE
 instrument = 'MOSFIRE'
 
-basedir = '/d2/Feige/'
-#basedir = os.getenv('HOME')
+#basedir = '/d2/Feige/'
+basedir = os.getenv('HOME')
 
 std_path = os.path.join(basedir,'Dropbox/PypeIt_Redux/MOSFIRE/Nov19/nov_redux/Science/')
 stdfile = 'spec1d_m191118_0065-GD71_MOSFIRE_2019Nov18T104910.987.fits'
