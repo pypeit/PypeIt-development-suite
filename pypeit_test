@@ -75,8 +75,8 @@ def main():
             instruments = [pargs.instrument]
         else:
             instruments = ['Keck_LRIS_blue', 'Gemini_GNIRS', 'Shane_Kast_blue', 'VLT_XSHOOTER',
-                           'Keck_DEIMOS', 'Shane_Kast_red', 'Keck_NIRES', 'Keck_LRIS_red',
-                           'Magellan_MAGE', 'Gemini_GMOS']
+                           'Keck_DEIMOS', 'Shane_Kast_red', 'Keck_NIRES', 'Keck_NIRSPEC', 'Keck_MOSFIRE',
+                           'Keck_LRIS_red', 'Magellan_MAGE', 'Gemini_GMOS']
     else:
         instruments = [item for item in all_instruments if pargs.tests.lower() in item.lower()]
         invalid_selection = [item for item in instruments if not np.any([inst.lower()
@@ -117,7 +117,6 @@ def main():
     for instr in instruments:
         # Setups
         setups = next(os.walk(os.path.join(raw_data, instr)))[1]
-        embed()
         # Cut me down
         if pargs.debug and ('blue' not in instr):
             continue
@@ -137,6 +136,8 @@ def main():
                 req_setups = ['NIRES']
             elif instr == 'Keck_NIRSPEC':
                 req_setups = ['NIRSPEC-1-LOW']
+            elif instr == 'Keck_MOSFIRE':
+                req_setups = ['Y-long']
             elif instr == 'Magellan_MAGE':
                 req_setups = ['1x1']
             elif instr == 'Keck_LRIS_blue':
