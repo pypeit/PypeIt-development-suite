@@ -135,9 +135,9 @@ def main():
             elif instr == 'Keck_NIRES':
                 req_setups = ['NIRES']
             elif instr == 'Keck_NIRSPEC':
-                req_setups = ['NIRSPEC-1-LOW']
+                req_setups = ['LOW_NIRSPEC-1']
             elif instr == 'Keck_MOSFIRE':
-                req_setups = ['Y-long']
+                req_setups = ['Y_long']
             elif instr == 'Magellan_MAGE':
                 req_setups = ['1x1']
             elif instr == 'Keck_LRIS_blue':
