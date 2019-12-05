@@ -25,7 +25,7 @@ setup end
 
 # Read in the data
 data read
- path ../RAW_DATA/Magellan_FIRE/FIRE_New
+ path ../RAW_DATA/Magellan_FIRE/FIRE_Echelle
 |       filename |        frametype |          ra |         dec |          target | dispname |  decker | binning |                mjd | airmass | exptime | dichroic | calib | comb_id | bkg_id |
 | fire_0067.fits |         standard | 325.3815464 | -24.2020323 |        HD206108 |  Echelle | default |     1,1 | 2458387.6463773153 |   1.058 |    30.0 |  default |     0 |       5 |      6 |
 | fire_0068.fits |         standard | 325.3816297 | -24.2020878 |        HD206108 |  Echelle | default |     1,1 |  2458387.647604167 |   1.061 |    30.0 |  default |     0 |       6 |      5 |
