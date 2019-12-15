@@ -9,17 +9,14 @@ archives =['gemini_gnirs_10L_K.fits', 'gemini_gnirs_10L_H.fits','gemini_gnirs_10
            'gemini_gnirs_10L_Y.fits']
 files = [os.path.join(redux_path, file) for file in archives]
 
-arc_table = table.Table()
-wave = np.zeros((6,1022))
-flux = np.zeros((6,1022))
-order = np.arange(6,2,-1,dtype=int)
-arc_table['flux'] = np.zeros((6,1022))
-arc_table['order'] = np.zeros(6,dtype=int)
+wave = np.zeros((4,1022))
+flux = np.zeros((4,1022))
+order = np.arange(3,7,1,dtype=int)
 for islit, file in enumerate(files):
-    table.table.read(files)
-    wave[islit,:] = table['wave']
-    flux[islit,:] = table['flux']
+    arch = table.Table.read(file)
+    wave[islit,:] = arch['wave']
+    flux[islit,:] = arch['flux']
 
 outpath = '/Users/joe/python/PypeIt/pypeit/data/arc_lines/reid_arxiv/'
 outroot = 'gemini_gnirs_10mm_LBSX.fits'
-templates.write_template(wave,flux,1,outpath,outroot)
+templates.write_template(wave,flux,1,outpath,outroot, order=order)
