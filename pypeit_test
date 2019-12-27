@@ -27,7 +27,7 @@ def parser(options=None):
     parser = argparse.ArgumentParser(formatter_class=argparse.ArgumentDefaultsHelpFormatter)
 
     parser.add_argument('tests', type=str, default=None,
-                        help='Tests to run.  Options include: develop, all, {0:s}'.format(hlpstr))
+                        help='Tests to run.  Options include: develop, afterburn, all, {0:s}'.format(hlpstr))
     parser.add_argument('-outputdir', type=str, help="Output folder.  Default is ./REDUX_OUT")
     parser.add_argument('--instrument', type=str, help="Restrict to input instrument")
     parser.add_argument('-setup', type=str, help="Single out a setup to run")
@@ -63,6 +63,7 @@ def main():
 
     walk = os.walk(raw_data)
     all_instruments = next(walk)[1]
+    flg_after = False
 
     # Setup
     if pargs.tests == 'all':
@@ -77,6 +78,8 @@ def main():
             instruments = ['Keck_LRIS_blue', 'Gemini_GNIRS', 'Shane_Kast_blue', 'VLT_XSHOOTER',
                            'Keck_DEIMOS', 'Shane_Kast_red', 'Keck_NIRES', 'Keck_LRIS_red',
                            'Magellan_MAGE', 'Gemini_GMOS']
+    elif pargs.tests == 'afterburn':   # Fluxing, COADD2D only
+        flg_after = True
     else:
         instruments = [item for item in all_instruments if pargs.tests.lower() in item.lower()]
         invalid_selection = [item for item in instruments if not np.any([inst.lower()
@@ -266,7 +269,7 @@ def main():
              
             # Run pypeit
             retval = -1
-            if passed:
+            if passed and (not flg_after):
                 ntest += 1
                 logfile = os.path.join(wdir, outfile_root+'.test.log')
                 print('Running pypeit on {:s} --- '.format(pyp_file), file=sys.stderr, end='')
@@ -292,6 +295,8 @@ def main():
                         npass = report_test(retval, npass)
                         subprocess.call(['tail', '-2', logfile])
                         print("\n", file=sys.stderr)
+            elif flg_after:
+                retval = 0
             else:
                 print("Couldn't run test for {0:s}".format(instr.lower()))
 
