@@ -1,0 +1,36 @@
+# Auto-generated PypeIt file
+# Wed 06 Nov 2019 16:18:05
+
+# User-defined execution parameters
+[rdx]
+spectrograph = mdm_osmos_mdm4k
+
+# Setup
+setup read
+ Setup A:
+   --:
+     dichroic: none
+     disperser:
+       angle: none
+       name: Blue Grism
+     slit:
+       decker: 1.2 inner
+       slitlen: none
+       slitwid: none
+   '01':
+     binning: 1,1
+     det: 1
+     namp: 2
+setup end
+
+# Read in the data
+data read
+ path /home/xavier/local/Python/PypeIt-development-suite/RAW_DATA/MDM_OSMOS/MDM4K
+|                 filename |       frametype |       ra |       dec |       target |   dispname |    decker | binning |          mjd | airmass | exptime |
+| MDM_slitbalanceflat.fits |           trace | 19:21:29 | +12:27:47 | FlatSpectrum | Blue Grism | 1.2 inner |     1,1 | 58790.025332 |    1.07 |    10.0 |
+|         MDM_MISflat.fits |        pixelflat| 17:41:43 | +31:55:26 |      MISFlat | Blue Grism | 1.2 inner |     1,1 | 58789.930631 |     1.0 |   180.0 |
+|         MDM_science.fits |         science | 15:11:41 | +04:47:24 |      J151138 | Blue Grism | 1.2 inner |     1,1 | 58660.239872 |     1.2 |   900.0 |
+|          MDM_arc_Ar.fits |        tilt,arc | 10:13:55 | +32:08:27 |           Ar | Blue Grism | 1.2 inner |     1,1 | 58655.986869 |     1.0 |   300.0 |
+|          MDM_arc_Xe.fits |        tilt,arc | 10:19:45 | +32:08:31 |           Xe | Blue Grism | 1.2 inner |     1,1 | 58655.990909 |     1.0 |   300.0 |
+data end
+

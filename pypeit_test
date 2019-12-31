@@ -17,10 +17,8 @@ from IPython import embed
 def parser(options=None):
     import argparse
 
-    all_tests = ['kast', 'lris', 'deimos', 'nires',  # Instruments
-                 'keck', 'magellan', 'vlt', 'gemini'] # Observatories
-#    all_tests = ['kast', 'lris', 'isis', 'hires', 'deimos',  # Instruments
-#                 'keck', 'shane', 'wht']  # Observatories
+    all_tests = ['kast', 'lris', 'deimos', 'nires', 'osmos',  # Instruments
+                 'keck', 'magellan', 'vlt', 'gemini', 'mdm']  # Observatories
 
     hlpstr = ", ".join(all_tests)
 
@@ -50,7 +48,7 @@ def main():
     # this list!  It must pass for every directory that includes these
     # strings and all the sub-directory setups within!
     valid_instruments = ['Kast', 'DEIMOS', 'LRIS', 'NIRES', 'GNIRS', 'XSHOOTER', 'MAGE', 'MOSFIRE',
-                         'GMOS']
+                         'GMOS', 'OSMOS']
 
     # Grab a list of all instruments
     dev_path = os.getenv('PYPEIT_DEV')
@@ -77,7 +75,7 @@ def main():
         else:
             instruments = ['Keck_LRIS_blue', 'Gemini_GNIRS', 'Shane_Kast_blue', 'VLT_XSHOOTER',
                            'Keck_DEIMOS', 'Shane_Kast_red', 'Keck_NIRES', 'Keck_LRIS_red',
-                           'Magellan_MAGE', 'Gemini_GMOS']
+                           'Magellan_MAGE', 'Gemini_GMOS', 'MDM_OSMOS']
     elif pargs.tests == 'afterburn':   # Fluxing, COADD2D only
         flg_after = True
     else:
@@ -152,6 +150,8 @@ def main():
                 req_setups = ['1x1']
             elif instr == 'Gemini_GMOS':
                 req_setups = ['GS_HAM_R400_700']
+            elif instr == 'MDM_OSMOS':
+                req_setups = ['MDM4K']
             else:
                 # Should not get here
                 print("I don't know how you got here")
