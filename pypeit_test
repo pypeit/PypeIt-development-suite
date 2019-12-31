@@ -49,7 +49,7 @@ def main():
     # TODO: Once we're satisfied than an instrument passes, add it to
     # this list!  It must pass for every directory that includes these
     # strings and all the sub-directory setups within!
-    valid_instruments = ['Kast', 'DEIMOS', 'LRIS', 'NIRES', 'GNIRS', 'XSHOOTER', 'MAGE', 'MOSFIRE',
+    valid_instruments = ['Kast', 'DEIMOS', 'LRIS', 'NIRES', 'NIRSPEC', 'GNIRS', 'XSHOOTER', 'MAGE', 'MOSFIRE',
                          'GMOS']
 
     # Grab a list of all instruments
@@ -76,8 +76,8 @@ def main():
             instruments = [pargs.instrument]
         else:
             instruments = ['Keck_LRIS_blue', 'Gemini_GNIRS', 'Shane_Kast_blue', 'VLT_XSHOOTER',
-                           'Keck_DEIMOS', 'Shane_Kast_red', 'Keck_NIRES', 'Keck_LRIS_red',
-                           'Magellan_MAGE', 'Gemini_GMOS']
+                           'Keck_DEIMOS', 'Shane_Kast_red', 'Keck_NIRES', 'Keck_NIRSPEC', 'Keck_MOSFIRE',
+                           'Keck_LRIS_red', 'Magellan_MAGE', 'Gemini_GMOS']
     elif pargs.tests == 'afterburn':   # Fluxing, COADD2D only
         flg_after = True
     else:
@@ -120,7 +120,6 @@ def main():
     for instr in instruments:
         # Setups
         setups = next(os.walk(os.path.join(raw_data, instr)))[1]
-
         # Cut me down
         if pargs.debug and ('blue' not in instr):
             continue
@@ -138,6 +137,10 @@ def main():
                 req_setups = ['600_7500_d55_ret', '600_7500_d57']
             elif instr == 'Keck_NIRES':
                 req_setups = ['NIRES']
+            elif instr == 'Keck_NIRSPEC':
+                req_setups = ['LOW_NIRSPEC-1']
+            elif instr == 'Keck_MOSFIRE':
+                req_setups = ['Y_long']
             elif instr == 'Magellan_MAGE':
                 req_setups = ['1x1']
             elif instr == 'Keck_LRIS_blue':

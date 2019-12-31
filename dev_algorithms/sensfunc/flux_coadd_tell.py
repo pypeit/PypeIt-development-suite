@@ -8,6 +8,9 @@ from pypeit.core.flux_calib import apply_sensfunc
 from pypeit.core import coadd1d
 from pypeit import msgs
 
+basedir = os.getenv('HOME')
+#basedir = '/d2/Feige'
+
 def get_sens_from_file(std1dfile=None, instrument='GNIRS', star_type=None, star_mag=None,star_ra=None,
                        star_dec=None, sens_polyorder=8, mask_abs_lines=True, disp=True, debug=False):
 
@@ -19,19 +22,20 @@ def get_sens_from_file(std1dfile=None, instrument='GNIRS', star_type=None, star_
         sensfile = std1dfile.replace('.fits','.sens.fits')
 
     # get the pca pickle file and atmosphere model grid
-    pca_file = os.path.join(os.getenv('HOME'), 'Dropbox/PypeIt_Redux/qso_pca_1200_3100.pckl')
+    pca_file = os.path.join(basedir, 'Dropbox/PypeIt_Redux/qso_pca_1200_3100.pckl')
 
     if (instrument=='GNIRS') or (instrument=='NIRES'):
-        telgridfile = os.path.join(os.getenv('HOME'), 'Dropbox/PypeIt_Redux/TelFit_MaunaKea_3100_26100_R20000.fits')
+        telgridfile = os.path.join(basedir, 'Dropbox/PypeIt_Redux/TelFit_MaunaKea_3100_26100_R20000.fits')
     elif (instrument == 'XSHOOTER_VIS') or (instrument == 'GMOS-S'):
-        telgridfile = os.path.join(os.getenv('HOME'),
+        telgridfile = os.path.join(basedir,
                                    'Dropbox/PypeIt_Redux/XSHOOTER/TelFit_Paranal_VIS_4900_11100_R25000.fits')
     elif instrument == 'XSHOOTER_NIR':
-        telgridfile = os.path.join(os.getenv('HOME'),
+        telgridfile = os.path.join(basedir,
                                    'Dropbox/PypeIt_Redux/XSHOOTER/TelFit_Paranal_NIR_9800_25000_R25000.fits')
     else:
-        telgridfile = os.path.join(os.getenv('HOME'), 'Dropbox/PypeIt_Redux/TelFit_MaunaKea_3100_26100_R20000.fits')
+        telgridfile = os.path.join(basedir, 'Dropbox/PypeIt_Redux/TelFit_MaunaKea_3100_26100_R20000.fits')
         msgs.warn('No telluric grid is found. Using MaunaKea!')
+    msgs.info('Using {:}'.format(telgridfile))
 
     # run telluric.sensfunc_telluric to get the sensfile
     TelSens = telluric.sensfunc_telluric(std1dfile, telgridfile, sensfile, star_type=star_type, star_mag=star_mag,
@@ -52,7 +56,7 @@ def apply_tell_from_file(z_obj, stackfilename, tell_method='qso', instrument='NI
         outfile = stackfilename.replace('.fits','_tellcorr.fits')
 
     if tell_method=='qso':
-        pca_file = os.path.join(os.getenv('HOME'), 'Dropbox/PypeIt_Redux/qso_pca_1200_3100.pckl')
+        pca_file = os.path.join(basedir, 'Dropbox/PypeIt_Redux/qso_pca_1200_3100.pckl')
         # run telluric.qso_telluric to get the final results
         # TODO: add other modes here
         TelQSO = telluric.qso_telluric(stackfilename, telgridfile, pca_file, z_obj, telloutfile, outfile,
@@ -116,15 +120,15 @@ def flux_tell(sci_path, stdfile, spec1dfiles=None, std_path=None, fileroot=None,
         msgs.info('Loading sensfile {:}'.format(sensfile))
 
         if (instrument=='GNIRS') or (instrument=='NIRES'):
-            telgridfile = os.path.join(os.getenv('HOME'), 'Dropbox/PypeIt_Redux/TelFit_MaunaKea_3100_26100_R20000.fits')
+            telgridfile = os.path.join(basedir, 'Dropbox/PypeIt_Redux/TelFit_MaunaKea_3100_26100_R20000.fits')
         elif (instrument == 'XSHOOTER_VIS') or (instrument == 'GMOS-S'):
-            telgridfile = os.path.join(os.getenv('HOME'),
+            telgridfile = os.path.join(basedir,
                                        'Dropbox/PypeIt_Redux/XSHOOTER/TelFit_Paranal_VIS_4900_11100_R25000.fits')
         elif instrument == 'XSHOOTER_NIR':
-            telgridfile = os.path.join(os.getenv('HOME'),
+            telgridfile = os.path.join(basedir,
                                        'Dropbox/PypeIt_Redux/XSHOOTER/TelFit_Paranal_NIR_9800_25000_R25000.fits')
         else:
-            telgridfile = os.path.join(os.getenv('HOME'), 'Dropbox/PypeIt_Redux/TelFit_MaunaKea_3100_26100_R20000.fits')
+            telgridfile = os.path.join(basedir, 'Dropbox/PypeIt_Redux/TelFit_MaunaKea_3100_26100_R20000.fits')
             msgs.warn('No telluric grid is found. Using MaunaKea!')
 
     ### Apply the sensfunc to all spectra (only sensfunc but not tellluric)
