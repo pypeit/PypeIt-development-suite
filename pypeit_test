@@ -70,7 +70,7 @@ def main():
         instruments = [item for item in all_instruments for inst in valid_instruments 
                             if inst.lower() in item.lower()]
         invalid_selection = []
-    elif pargs.tests == 'develop':
+    elif pargs.tests in ['develop', 'afterburn']:
         invalid_selection = []
         if pargs.instrument is not None:
             instruments = [pargs.instrument]
@@ -78,8 +78,8 @@ def main():
             instruments = ['Keck_LRIS_blue', 'Gemini_GNIRS', 'Shane_Kast_blue', 'VLT_XSHOOTER',
                            'Keck_DEIMOS', 'Shane_Kast_red', 'Keck_NIRES', 'Keck_NIRSPEC', 'Keck_MOSFIRE',
                            'Keck_LRIS_red', 'Magellan_MAGE', 'Gemini_GMOS']
-    elif pargs.tests == 'afterburn':   # Fluxing, COADD2D only
-        flg_after = True
+        if pargs.tests == 'afterburn':   # Fluxing, COADD2D only
+            flg_after = True
     else:
         instruments = [item for item in all_instruments if pargs.tests.lower() in item.lower()]
         invalid_selection = [item for item in instruments if not np.any([inst.lower()
@@ -119,13 +119,14 @@ def main():
 
     for instr in instruments:
         # Setups
+        print('Instrument: ', instr)
         setups = next(os.walk(os.path.join(raw_data, instr)))[1]
         # Cut me down
         if pargs.debug and ('blue' not in instr):
             continue
 
         # Develop cut
-        if pargs.tests == 'develop':
+        if pargs.tests in ['develop', 'afterburn']:
             if instr == 'Keck_DEIMOS':
                 req_setups = ['600ZD_M_6500', '1200G_M_7750', '830G_LVM_8400', '830G_M_8100_26',
                               '830G_M_8500', '830G_L_8100']
