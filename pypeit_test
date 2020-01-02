@@ -49,8 +49,8 @@ def main():
     # TODO: Once we're satisfied than an instrument passes, add it to
     # this list!  It must pass for every directory that includes these
     # strings and all the sub-directory setups within!
-    valid_instruments = ['Kast', 'DEIMOS', 'LRIS', 'NIRES', 'NIRSPEC', 'GNIRS', 'XSHOOTER', 'MAGE', 'MOSFIRE',
-                         'GMOS']
+    valid_instruments = ['kast', 'deimos', 'lris', 'nires', 'nirspec', 'gnirs', 'xshooter', 'mage', 'mosfire',
+                         'gmos']
 
     # Grab a list of all instruments
     dev_path = os.getenv('PYPEIT_DEV')
@@ -74,9 +74,9 @@ def main():
         if pargs.instrument is not None:
             instruments = [pargs.instrument]
         else:
-            instruments = ['Keck_LRIS_blue', 'Gemini_GNIRS', 'Shane_Kast_blue', 'VLT_XSHOOTER',
-                           'Keck_DEIMOS', 'Shane_Kast_red', 'Keck_NIRES', 'Keck_NIRSPEC', 'Keck_MOSFIRE',
-                           'Keck_LRIS_red', 'Magellan_MAGE', 'Gemini_GMOS']
+            instruments = ['keck_lris_blue', 'gemini_gnirs', 'shane_kast_blue', 'vlt_xshooter',
+                           'keck_deimos', 'shane_Kast_red', 'keck_nires', 'keck_nirspec', 'keck_mosfire',
+                           'keck_lris_red', 'magellan_MAGE', 'gemini_gmos']
     else:
         instruments = [item for item in all_instruments if pargs.tests.lower() in item.lower()]
         invalid_selection = [item for item in instruments if not np.any([inst.lower()
@@ -123,34 +123,34 @@ def main():
 
         # Develop cut
         if pargs.tests == 'develop':
-            if instr == 'Keck_DEIMOS':
+            if instr == 'keck_deimos':
                 req_setups = ['600ZD_M_6500', '1200G_M_7750', '830G_LVM_8400', '830G_M_8100_26',
                               '830G_M_8500', '830G_L_8100']
-            elif instr == 'Gemini_GNIRS':
-                req_setups = ['GNIRS']
-            elif instr == 'Shane_Kast_blue':
+            elif instr == 'gemini_gnirs':
+                req_setups = ['32_SB_SXD', '10_LB_SXD']
+            elif instr == 'shane_kast_blue':
                 req_setups = ['452_3306_d57', '600_4310_d55']
-            elif instr == 'Shane_Kast_red':
+            elif instr == 'shane_Kast_red':
                 req_setups = ['600_7500_d55_ret']
-            elif instr == 'Keck_NIRES':
-                req_setups = ['NIRES']
-            elif instr == 'Keck_NIRSPEC':
+            elif instr == 'keck_nires':
+                req_setups = ['nires']
+            elif instr == 'keck_nirspec':
                 req_setups = ['LOW_NIRSPEC-1']
-            elif instr == 'Keck_MOSFIRE':
+            elif instr == 'keck_mosfire':
                 req_setups = ['Y_long']
-            elif instr == 'Magellan_MAGE':
+            elif instr == 'magellan_mage':
                 req_setups = ['1x1']
-            elif instr == 'Keck_LRIS_blue':
+            elif instr == 'keck_lris_blue':
                 req_setups = ['multi_600_4000_d560', 'long_400_3400_d560', 'long_600_4000_d560',
                               'multi_300_5000_d680']  #, 'multi_1200_3400_d460']
-            elif instr == 'Keck_LRIS_red':
+            elif instr == 'keck_lris_red':
                 req_setups = ['long_600_7500_d560', 'multi_1200_9000_d680_1x2',
                               'multi_600_5000_d560', 'multi_1200_9000_d680', 'multi_400_8500_d560']
-            elif instr == 'VLT_XSHOOTER':
+            elif instr == 'vlt_xshooter':
                 req_setups = ['VIS_1x1', 'VIS_2x1', 'VIS_2x2', 'NIR']
-            elif instr == 'Magellan_MAGE':
+            elif instr == 'magellan_mage':
                 req_setups = ['1x1']
-            elif instr == 'Gemini_GMOS':
+            elif instr == 'gemini_gmos':
                 req_setups = ['GS_HAM_R400_700']
             else:
                 # Should not get here
@@ -248,12 +248,13 @@ def main():
                     if 'data read' in iline:
                         dpth = lines[kk+1]
                         newdpth = ' path ' if 'path' in dpth else ' '
-                        i0 = dpth.rfind('/')
-                        if setup.strip('/') == dpth[i0:].strip('/\n'):
-                            # TODO: Test is for WHT path issue...
-                            newdpth += os.path.join(raw_data, instr, setup)+'\n'
-                        else:
-                            newdpth += os.path.join(raw_data, instr, setup+dpth[i0:])
+                        newdpth += os.path.join(raw_data, instr, setup) +'\n'
+                        # i0 = dpth.rfind('/')
+                        #if setup.strip('/') == dpth[i0:].strip('/\n'):
+                        #    # TODO: Test is for WHT path issue...
+                        #    newdpth += os.path.join(raw_data, instr, setup)+'\n'
+                        #else:
+                        #    newdpth += os.path.join(raw_data, instr, setup+dpth[i0:])
                         lines[kk+1] = newdpth
                     elif 'flatfield' in iline and 'frame' in lines[kk+1]:
                         newcpth = os.path.join(dev_path, 'CALIBS', os.path.split(lines[kk+1])[1])
@@ -352,7 +353,7 @@ def main():
             #        print("\n", file=sys.stderr)
 
             # 2-D coadds Echelle
-            if (retval == 0) and (instr.lower() in ['gemini_gnirs']):
+            if (retval == 0) and (instr.lower() in ['gemini_gnirs']) and ('32_SB_SXD' in setup):
                 ntest += 1
                 print('Running pypeit_coadd_2dspec on {:s} --- '.format(pyp_file), file=sys.stderr, end='')
                 logfile = os.path.join(wdir, outfile_root+'.test_2dcoadd.log')
