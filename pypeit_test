@@ -352,6 +352,43 @@ def main():
                     print("\n", file=sys.stderr)
 
 
+            # Quick Look
+            if instr.lower() == 'shane_kast_blue' and '600' in setup:
+                ntest += 1
+                print('Running pypeit_ql_mos on {:s}'.format(instr), file=sys.stderr, end='')
+                qldir = os.path.join(wdir,'QL')
+                # Generate
+                if not os.path.isdir(qldir):
+                    os.mkdir(qldir)
+                logfile = os.path.join(qldir, outfile_root+'.test_ql.log')
+                with open(logfile, 'w') as f:
+                    print('Directory: {0}'.format(qldir))
+                    command_line = ['pypeit_ql_mos', 'shane_kast_blue', os.path.join(
+                        raw_data, 'Shane_Kast_blue', '600_4310_d55'), 'b1.fits.gz', 'b10.fits.gz', 'b27.fits.gz']
+                    print('Command line: {0}'.format(' '.join(command_line)))
+                    cretval = subprocess.call(command_line, stderr=f, cwd=qldir)
+                    npass = report_test(cretval, npass, type='QL')
+                    subprocess.call(['tail', '-3', logfile])
+                    print("\n", file=sys.stderr)
+
+            # Quick Look
+            if instr.lower() == 'keck_nires' and setup == 'NIRES':
+                ntest += 1
+                print('Running pypeit_ql_keck_nires on {:s}'.format(instr), file=sys.stderr, end='')
+                qldir = os.path.join(wdir,'QL')
+                # Generate
+                if not os.path.isdir(qldir):
+                    os.mkdir(qldir)
+                logfile = os.path.join(qldir, outfile_root+'.test_ql.log')
+                with open(logfile, 'w') as f:
+                    print('Directory: {0}'.format(qldir))
+                    command_line = ['pypeit_ql_keck_nires', os.path.join(
+                        raw_data, 'Keck_NIRES', 'NIRES'), 's180604_0089.fits.gz', 's180604_0090.fits.gz']
+                    print('Command line: {0}'.format(' '.join(command_line)))
+                    cretval = subprocess.call(command_line, stderr=f, cwd=qldir)
+                    npass = report_test(cretval, npass, type='QL')
+                    subprocess.call(['tail', '-3', logfile])
+                    print("\n", file=sys.stderr)
 
     if npass == ntest:
         print("\n" + "\x1B[" + "1;32m" +
