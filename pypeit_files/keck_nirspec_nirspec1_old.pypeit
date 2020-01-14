@@ -32,7 +32,7 @@ setup end
 
 # Read in the data
 data read
- path /home/xavier/local/Python/PypeIt-development-suite/RAW_DATA/Keck_NIRSPEC/NIRSPEC-1
+ path /home/xavier/local/Python/PypeIt-development-suite/RAW_DATA/keck_nirspec/NIRSPEC-1
 |                  filename |       frametype |            target | exptime | dispname |   decker | setup | calib | echellepos | crosspos |   idname | comb_id | bkg_id |
 | NS.20160414.02861.fits.gz |       bias,dark | Cold Dark (Short) |     1.0 |      low | 42x0.760 |     A | 0,1,2 |      179.7 |    34.95 |     dark |       1 |     -1 |
 | NS.20160414.02899.fits.gz |       bias,dark | Cold Dark (Short) |     1.0 |      low | 42x0.760 |     A | 0,1,2 |      179.7 |    34.95 |     dark |       1 |     -1 |

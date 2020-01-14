@@ -25,7 +25,7 @@ setup read
 setup end
 
 data read
- path /home/xavier/local/Python/PYPIT-development-suite/RAW_DATA/WHT_ISIS_blue/long_R300B_d5300
+ path /home/xavier/local/Python/PYPIT-development-suite/RAW_DATA/wht_isis_blue/long_R300B_d5300
 |        filename |       date |       frametype |             target | exptime | binning | dichroic | dispname | dispangle |    decker |
 | r2324566.fit.gz | 2016-02-09 |        arc,tilt | Blue Arc CuNe+Cuar |   60.01 |    None |     5300 |    R300B |    4225.0 | LONG_SLIT |
 # Image 80 is saturated

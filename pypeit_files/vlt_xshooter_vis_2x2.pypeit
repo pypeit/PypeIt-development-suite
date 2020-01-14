@@ -21,7 +21,7 @@ setup end
 
 # Read in the data
 data read
- path ../../../RAW_DATA/VLT_XSHOOTER/VIS_2x2
+ path ../../../RAW_DATA/vlt_xshooter/VIS_2x2
 |                              filename |       frametype |          ra |         dec |         target | dispname |   decker | binning |             mjd | airmass | exptime | calib | comb_id | bkg_id |
 | XSHOO.2016-10-08T10:07:38.147.fits.gz |            bias |        None |        None |           BIAS |  default | 1.0x12.6 |     2,2 | 57669.421969287 |    None |     0.0 |     0 |      -1 |     -1 |
 | XSHOO.2016-10-08T10:08:35.051.fits.gz |            bias |        None |        None |           BIAS |  default | 1.0x12.6 |     2,2 | 57669.422627907 |    None |     0.0 |     0 |      -1 |     -1 |

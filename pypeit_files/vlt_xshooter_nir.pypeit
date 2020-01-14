@@ -9,8 +9,7 @@ setup end
 
 # Read in the data
 data read
- path /Users/joe/python/PypeIt-development-suite/RAW_DATA/VLT_XSHOOTER/NIR/
-path /home/ema/Dropbox/XshooterTestBed/VLT_XSHOOTER/NIR/
+ path /Users/joe/python/PypeIt-development-suite/RAW_DATA/vlt_xshooter/NIR/
 |                              filename |       frametype |          ra |         dec |         target | dispname | decker | binning |            mjd | airmass | exptime | calib | comb_id | bkg_id |
 | XSHOO.2016-08-02T15:32:41.936.fits.gz | trace,pixelflat |        None |        None |      LAMP,FLAT |  default | 0.6x11 |     1,1 | 57602.64770759 |    None |   12.48 |   all |      -1 |     -1 |
 | XSHOO.2016-08-02T15:33:04.243.fits.gz |            bias |        None |        None |      LAMP,FLAT |  default | 0.6x11 |     1,1 | 57602.64796577 |    None |   12.48 |   all |      -1 |     -1 |

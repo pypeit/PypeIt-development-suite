@@ -36,7 +36,7 @@ setup end
 
 # Read in the data
 data read
- path ../../../RAW_DATA/Keck_DEIMOS/830G_L_8410/
+ path ../../../RAW_DATA/keck_deimos/830G_L_8410/
 |        filename |                date |       frametype |         target | exptime | dispname |   decker |
 | d0913_0013.fits | 2017-09-13T03:06:57 |        arc,tilt |     DOME PHLAT |       1 |     830G | LongMirr |
 | d0913_0014.fits | 2017-09-13T03:08:08 |        arc,tilt |     DOME PHLAT |       1 |     830G | LongMirr |

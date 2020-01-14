@@ -19,7 +19,7 @@ setup end
 
 # Data
 data read
- path /home/xavier/Projects/Python/PYPIT-development-suite/RAW_DATA/Keck_LRIS_blue/long_400_3400_d560/
+ path /home/xavier/Projects/Python/PYPIT-development-suite/RAW_DATA/keck_lris_blue/long_400_3400_d560/
 |                  filename |                date |       frametype |       target | exptime | binning | dichroic | dispname |   decker |
 | LB.20160109.14149.fits.gz | 2016-01-09T03:55:53 |        arc,tilt |         test |       1 |     2,2 |      560 | 400/3400 | long_1.0 |
 | LB.20160109.57204.fits.gz | 2016-01-09T16:03:27 |         science | CIV1233-0031 |     600 |     2,2 |      560 | 400/3400 | long_1.0 |
