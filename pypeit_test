@@ -27,7 +27,7 @@ def parser(options=None):
     parser = argparse.ArgumentParser(formatter_class=argparse.ArgumentDefaultsHelpFormatter)
 
     parser.add_argument('tests', type=str, default=None,
-                        help='Tests to run.  Options include: develop, all, {0:s}'.format(hlpstr))
+                        help='Tests to run.  Options include: develop, afterburn, all, {0:s}'.format(hlpstr))
     parser.add_argument('-outputdir', type=str, help="Output folder.  Default is ./REDUX_OUT")
     parser.add_argument('--instrument', type=str, help="Restrict to input instrument")
     parser.add_argument('-setup', type=str, help="Single out a setup to run")
@@ -63,13 +63,14 @@ def main():
 
     walk = os.walk(raw_data)
     all_instruments = next(walk)[1]
+    flg_after = False
 
     # Setup
     if pargs.tests == 'all':
         instruments = [item for item in all_instruments for inst in valid_instruments 
                             if inst.lower() in item.lower()]
         invalid_selection = []
-    elif pargs.tests == 'develop':
+    elif pargs.tests in ['develop', 'afterburn']:
         invalid_selection = []
         if pargs.instrument is not None:
             instruments = [pargs.instrument]
@@ -77,6 +78,8 @@ def main():
             instruments = ['keck_lris_blue', 'gemini_gnirs', 'shane_kast_blue', 'vlt_xshooter',
                            'keck_deimos', 'shane_kast_red', 'keck_nires', 'keck_nirspec', 'keck_mosfire',
                            'keck_lris_red', 'magellan_mage', 'gemini_gmos']
+        if pargs.tests == 'afterburn':   # Fluxing, COADD2D only
+            flg_after = True
     else:
         instruments = [item for item in all_instruments if pargs.tests.lower() in item.lower()]
         invalid_selection = [item for item in instruments if not np.any([inst.lower()
@@ -116,13 +119,14 @@ def main():
 
     for instr in instruments:
         # Setups
+        print('Instrument: ', instr)
         setups = next(os.walk(os.path.join(raw_data, instr)))[1]
         # Cut me down
         if pargs.debug and ('blue' not in instr):
             continue
 
         # Develop cut
-        if pargs.tests == 'develop':
+        if pargs.tests in ['develop', 'afterburn']:
             if instr == 'keck_deimos':
                 req_setups = ['600ZD_M_6500', '1200G_M_7750', '830G_LVM_8400', '830G_M_8100_26',
                               '830G_M_8500', '830G_L_8100']
@@ -132,6 +136,9 @@ def main():
                 req_setups = ['452_3306_d57', '600_4310_d55']
             elif instr == 'shane_kast_red':
                 req_setups = ['600_7500_d55_ret']
+            elif instr == 'keck_nires':
+            elif instr == 'shane_kast_red':
+                req_setups = ['600_7500_d55_ret', '600_7500_d57']
             elif instr == 'keck_nires':
                 req_setups = ['NIRES']
             elif instr == 'keck_nirspec':
@@ -266,10 +273,10 @@ def main():
 
             if pargs.prep_only:
                 continue
-             
+
             # Run pypeit
             retval = -1
-            if passed:
+            if passed and (not flg_after):
                 ntest += 1
                 logfile = os.path.join(wdir, outfile_root+'.test.log')
                 print('Running pypeit on {:s} --- '.format(pyp_file), file=sys.stderr, end='')
@@ -295,6 +302,8 @@ def main():
                         npass = report_test(retval, npass)
                         subprocess.call(['tail', '-2', logfile])
                         print("\n", file=sys.stderr)
+            elif flg_after:
+                retval = 0
             else:
                 print("Couldn't run test for {0:s}".format(instr.lower()))
 
@@ -346,6 +355,43 @@ def main():
                     print("\n", file=sys.stderr)
 
 
+            # Quick Look
+            if instr.lower() == 'shane_kast_blue' and '600' in setup:
+                ntest += 1
+                print('Running pypeit_ql_mos on {:s}'.format(instr), file=sys.stderr, end='')
+                qldir = os.path.join(wdir,'QL')
+                # Generate
+                if not os.path.isdir(qldir):
+                    os.mkdir(qldir)
+                logfile = os.path.join(qldir, outfile_root+'.test_ql.log')
+                with open(logfile, 'w') as f:
+                    print('Directory: {0}'.format(qldir))
+                    command_line = ['pypeit_ql_mos', 'shane_kast_blue', os.path.join(
+                        raw_data, 'Shane_Kast_blue', '600_4310_d55'), 'b1.fits.gz', 'b10.fits.gz', 'b27.fits.gz']
+                    print('Command line: {0}'.format(' '.join(command_line)))
+                    cretval = subprocess.call(command_line, stderr=f, cwd=qldir)
+                    npass = report_test(cretval, npass, type='QL')
+                    subprocess.call(['tail', '-3', logfile])
+                    print("\n", file=sys.stderr)
+
+            # Quick Look
+            if instr.lower() == 'keck_nires' and setup == 'NIRES':
+                ntest += 1
+                print('Running pypeit_ql_keck_nires on {:s}'.format(instr), file=sys.stderr, end='')
+                qldir = os.path.join(wdir,'QL')
+                # Generate
+                if not os.path.isdir(qldir):
+                    os.mkdir(qldir)
+                logfile = os.path.join(qldir, outfile_root+'.test_ql.log')
+                with open(logfile, 'w') as f:
+                    print('Directory: {0}'.format(qldir))
+                    command_line = ['pypeit_ql_keck_nires', os.path.join(
+                        raw_data, 'Keck_NIRES', 'NIRES'), 's180604_0089.fits.gz', 's180604_0090.fits.gz']
+                    print('Command line: {0}'.format(' '.join(command_line)))
+                    cretval = subprocess.call(command_line, stderr=f, cwd=qldir)
+                    npass = report_test(cretval, npass, type='QL')
+                    subprocess.call(['tail', '-3', logfile])
+                    print("\n", file=sys.stderr)
 
     if npass == ntest:
         print("\n" + "\x1B[" + "1;32m" +

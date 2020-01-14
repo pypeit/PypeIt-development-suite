@@ -1,0 +1,59 @@
+# Auto-generated PypeIt file
+# Mon 23 Sep 2019 11:56:02
+
+# User-defined execution parameters
+[rdx]
+spectrograph = shane_kast_red
+
+# Setup
+setup read
+ Setup A:
+   --:
+     dichroic: d57
+     disperser:
+       angle: 10801.0
+       name: 600/7500
+     slit:
+       decker: 2.0 arcsec
+       slitlen: none
+       slitwid: none
+   '01':
+     binning: 1,1
+     det: 1
+     namp: 2
+setup end
+
+# Read in the data
+data read
+ path /home/xavier/local/Python/PypeIt-development-suite/RAW_DATA/Shane_Kast_red/600_7500_d57
+|  filename |       frametype |          ra |        dec |     target | dispname |     decker | binning |                mjd |        airmass | exptime | dichroic |
+| r100.fits |            bias | 16:24:48.25 | 37:24:57.0 |       bias | 600/7500 | 2.0 arcsec |     1,1 | 58404.959828356485 |            1.0 |     0.0 |      d57 |
+| r101.fits |            bias | 16:25:18.35 | 37:24:56.2 |       bias | 600/7500 | 2.0 arcsec |     1,1 |  58404.96018310185 |            1.0 |     0.0 |      d57 |
+| r102.fits |            bias | 16:25:48.44 | 37:24:55.5 |       bias | 600/7500 | 2.0 arcsec |     1,1 | 58404.960536805556 |            1.0 |     0.0 |      d57 |
+| r103.fits |            bias | 16:26:18.54 | 37:24:54.7 |       bias | 600/7500 | 2.0 arcsec |     1,1 | 58404.960890277776 |            1.0 |     0.0 |      d57 |
+| r104.fits |            bias | 16:26:48.89 | 37:24:53.9 |       bias | 600/7500 | 2.0 arcsec |     1,1 |  58404.96124386574 |            1.0 |     0.0 |      d57 |
+| r105.fits |            bias | 16:27:24.00 | 37:24:53.0 |       bias | 600/7500 | 2.0 arcsec |     1,1 |   58404.9615974537 |            1.0 |     0.0 |      d57 |
+| r106.fits |            bias | 16:27:54.09 | 37:24:52.3 |       bias | 600/7500 | 2.0 arcsec |     1,1 |  58404.96195844907 |            1.0 |     0.0 |      d57 |
+| r107.fits |            bias | 16:28:24.19 | 37:24:51.5 |       bias | 600/7500 | 2.0 arcsec |     1,1 | 58404.962311574076 |            1.0 |     0.0 |      d57 |
+| r108.fits |            bias | 16:28:54.53 | 37:24:50.7 |       bias | 600/7500 | 2.0 arcsec |     1,1 |  58404.96266597222 |            1.0 |     0.0 |      d57 |
+| r109.fits |            bias | 16:29:24.63 | 37:24:49.9 |       bias | 600/7500 | 2.0 arcsec |     1,1 |  58404.96302210648 |            1.0 |     0.0 |      d57 |
+| r121.fits |        standard | 21:51:11.01 | 28:51:49.8 |   bd284211 | 600/7500 | 2.0 arcsec |     1,1 | 58405.155172453706 |  1.02999997139 |   120.0 |      d57 |
+| r122.fits |         science | 21:32:10.32 | 55:52:42.4 |   Abell 77 | 600/7500 | 2.0 arcsec |     1,1 | 58405.175282986114 |  1.05999994278 |   900.0 |      d57 |
+| r124.fits |         science | 19:51:09.30 | 46:28:59.8 |    GJ 1243 | 600/7500 | 2.0 arcsec |     1,1 | 58405.222817361115 |  1.19000005722 |   120.0 |      d57 |
+| r125.fits |         science | 19:51:09.30 | 46:28:59.8 |    GJ 1243 | 600/7500 | 2.0 arcsec |     1,1 |  58405.23284525463 |  1.22000002861 |   120.0 |      d57 |
+#| r126.fits |         science | 01:37:41.10 | 33:09:33.1 |      3C 48 | 600/7500 | 2.0 arcsec |     1,1 |  58405.25256412037 | 1.159999966621 |  1200.0 |      d57 |
+#| r127.fits |         science | 00:11:25.79 | 58:49:29.0 |   V633 Cas | 600/7500 | 2.0 arcsec |     1,1 | 58405.293538425925 | 1.070000052452 |   600.0 |      d57 |
+#| r128.fits |         science | 23:19:58.38 | -5:09:56.3 |  Feige 110 | 600/7500 | 2.0 arcsec |     1,1 |  58405.30188402778 |  1.44000005722 |   120.0 |      d57 |
+| r110.fits |        tilt,arc | 16:34:56.17 | 37:24:41.4 | Arc HgArNe | 600/7500 | 0.5 arcsec |     1,1 |  58404.96685370371 |            1.0 |     3.0 |      d57 |
+| r111.fits | trace,pixelflat | 16:38:17.05 | 37:24:36.2 |  Dome Flat | 600/7500 | 2.0 arcsec |     1,1 |      58404.9691875 |            1.0 |     3.0 |      d57 |
+| r112.fits | trace,pixelflat | 16:38:52.16 | 37:24:35.3 |  Dome Flat | 600/7500 | 2.0 arcsec |     1,1 |  58404.96957662037 |            1.0 |     3.0 |      d57 |
+| r113.fits | trace,pixelflat | 16:39:27.27 | 37:24:34.4 |  Dome Flat | 600/7500 | 2.0 arcsec |     1,1 |    58404.969965625 |            1.0 |     3.0 |      d57 |
+| r114.fits | trace,pixelflat | 16:40:02.63 | 37:24:33.5 |  Dome Flat | 600/7500 | 2.0 arcsec |     1,1 |   58404.9703556713 |            1.0 |     3.0 |      d57 |
+| r115.fits | trace,pixelflat | 16:40:32.72 | 37:24:32.7 |  Dome Flat | 600/7500 | 2.0 arcsec |     1,1 | 58404.970744791666 |            1.0 |     3.0 |      d57 |
+| r116.fits | trace,pixelflat | 16:41:07.83 | 37:24:31.8 |  Dome Flat | 600/7500 | 2.0 arcsec |     1,1 | 58404.971137962966 |            1.0 |     3.0 |      d57 |
+| r117.fits | trace,pixelflat | 16:41:42.94 | 37:24:30.9 |  Dome Flat | 600/7500 | 2.0 arcsec |     1,1 |  58404.97152708333 |            1.0 |     3.0 |      d57 |
+| r118.fits | trace,pixelflat | 16:42:18.05 | 37:24:30.0 |  Dome Flat | 600/7500 | 2.0 arcsec |     1,1 |  58404.97191620371 |            1.0 |     3.0 |      d57 |
+| r119.fits | trace,pixelflat | 16:42:48.39 | 37:24:29.2 |  Dome Flat | 600/7500 | 2.0 arcsec |     1,1 | 58404.972305208335 |            1.0 |     3.0 |      d57 |
+| r120.fits | trace,pixelflat | 16:43:23.50 | 37:24:28.3 |  Dome Flat | 600/7500 | 2.0 arcsec |     1,1 | 58404.972694097225 |            1.0 |     3.0 |      d57 |
+data end
+
