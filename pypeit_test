@@ -25,10 +25,10 @@ def develop_setups():
             'shane_kast_red': ['600_7500_d55_ret', '600_7500_d57'],
             'keck_nires': ['NIRES'],
             'keck_nirspec': ['LOW_NIRSPEC-1'],
-            'keck_mosfire': ['Y_long']
-            'magellan_mage': ['1x1']
+            'keck_mosfire': ['Y_long'],
+            'magellan_mage': ['1x1'],
             'keck_lris_blue': ['multi_600_4000_d560', 'long_400_3400_d560', 'long_600_4000_d560',
-                               'multi_300_5000_d680']  #, 'multi_1200_3400_d460']
+                               'multi_300_5000_d680'],
             'keck_lris_red': ['long_600_7500_d560', 'multi_1200_9000_d680_1x2',
                               'multi_600_5000_d560', 'multi_1200_9000_d680',
                               'multi_400_8500_d560'],
@@ -371,7 +371,7 @@ def main():
                 with open(logfile, 'w') as f:
                     print('Directory: {0}'.format(qldir))
                     command_line = ['pypeit_ql_mos', 'shane_kast_blue',
-                                    os.path.join(raw_data, 'Shane_Kast_blue', '600_4310_d55'),
+                                    os.path.join(raw_data, 'shane_kast_blue', '600_4310_d55'),
                                     'b1.fits.gz', 'b10.fits.gz', 'b27.fits.gz']
                     print('Command line: {0}'.format(' '.join(command_line)))
                     cretval = subprocess.call(command_line, stderr=f, cwd=qldir)
