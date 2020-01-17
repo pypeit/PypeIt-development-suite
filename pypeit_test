@@ -383,7 +383,7 @@ def main():
                 with open(logfile, 'w') as f:
                     print('Directory: {0}'.format(qldir))
                     command_line = ['pypeit_ql_keck_nires', os.path.join(
-                        raw_data, 'Keck_NIRES', 'NIRES'), 's180604_0089.fits.gz', 's180604_0090.fits.gz']
+                        raw_data, 'keck_nires', 'NIRES'), 's180604_0089.fits.gz', 's180604_0090.fits.gz']
                     print('Command line: {0}'.format(' '.join(command_line)))
                     cretval = subprocess.call(command_line, stderr=f, cwd=qldir)
                     npass = report_test(cretval, npass, type='QL')
