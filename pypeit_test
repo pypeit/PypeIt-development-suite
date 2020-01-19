@@ -401,12 +401,14 @@ def main():
 
     if npass == ntest:
         print("\n" + "\x1B[" + "1;32m" +
-              "--- PYPEIT DEVELOPMENT SUITE PASSED {0:d}/{1:d} TESTS ---".format(npass, ntest) +
-              "\x1B[" + "0m" + "\r", file=sys.stderr)
+              "--- PYPEIT DEVELOPMENT SUITE PASSED {0}/{1} TESTS (Masters {3}) ---".format(
+                npass, ntest, 'reused' if pargs.masters else 'ignored') 
+              + "\x1B[" + "0m" + "\r", file=sys.stderr)
     else:
         print("\n" + "\x1B[" + "1;31m" +
-              "--- PYPEIT DEVELOPMENT SUITE FAILED {0:d}/{1:d} TESTS ---".format(ntest-npass,
-              ntest) + "\x1B[" + "0m" + "\r", file=sys.stderr)
+              "--- PYPEIT DEVELOPMENT SUITE FAILED {0}/{1} TESTS (Masters {3}) ---".format(
+                ntest-npass, ntest, 'reused' if pargs.masters else 'ignored')
+              + "\x1B[" + "0m" + "\r", file=sys.stderr)
 
 def report_test(retval, npass, type=None):
     if type is not None:
