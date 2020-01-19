@@ -38,7 +38,7 @@ setup end
 
 # Read in the data
 data read
- path /Users/joe/python/PypeIt-development-suite/RAW_DATA/VLT_XSHOOTER/VIS_1x1/
+ path /Users/joe/python/PypeIt-development-suite/RAW_DATA/vlt_xshooter/VIS_1x1/
 |                              filename |       frametype |          ra |         dec |       target | dispname |   decker | binning |             mjd | airmass | exptime | calib | comb_id | bkg_id |
 | XSHOO.2010-04-28T10:23:42.901.fits.gz |            bias |        None |        None |         BIAS |  default | 1.0x12.6 |     1,1 |  55314.43313543 |    None |     0.0 |     0 |      -1 |     -1 |
 | XSHOO.2010-04-28T10:26:26.465.fits.gz |            bias |        None |        None |         BIAS |  default | 1.0x12.6 |     1,1 |  55314.43502853 |    None |     0.0 |     0 |      -1 |     -1 |

@@ -25,7 +25,7 @@ setup end
 
 # Read in the data
 data read
-path /Users/joe/python/PypeIt-development-suite/RAW_DATA/Keck_LRIS_red/multi_400_8500_d560/
+path /Users/joe/python/PypeIt-development-suite/RAW_DATA/keck_lris_red/multi_400_8500_d560/
 |          filename |                date | frametype	  |   target | exptime | binning | dichroic | dispname |   decker |
 | r170320_2057.fits.gz | 2017-03-20T02:23:02 | pixelflat,trace |  unknown |       7 |     2,2 |      560 | 400/8500 | c17_60L. |
 | r170320_2058.fits.gz | 2017-03-20T02:24:06 | pixelflat,trace |  unknown |       7 |     2,2 |      560 | 400/8500 | c17_60L. |

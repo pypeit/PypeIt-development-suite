@@ -34,7 +34,7 @@ setup end
 
 # Read in the data
 data read
- path ../../../RAW_DATA/Keck_DEIMOS/830G_L_8400/
+ path ../../../RAW_DATA/keck_deimos/830G_L_8400/
 |        filename |                date |                    frametype |         target | exptime | dispname |   decker |
 | d0914_0011.fits.gz | 2017-09-14T03:15:10 |                      arc,tilt |        unknown |       1 |     830G | LongMirr |
 #| d0914_0002.fits.gz | 2017-09-14T01:48:07 |                         bias |        unknown |       1 |     830G |     None |

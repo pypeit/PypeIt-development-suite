@@ -32,7 +32,7 @@ setup end
 
 # Read in the data
 data read
- path ../../../RAW_DATA/Keck_DEIMOS/830G_M_8100_37/
+ path ../../../RAW_DATA/keck_deimos/830G_M_8100_37/
 |        filename    |                date |       frametype |     target | exptime | dispname | decker |
 | d0526_0066.fits.gz | 2017-05-26T03:41:32 |        arc,tilt | DOME PHLAT |       1 |     830G |   m247 |
 | d0526_0067.fits.gz | 2017-05-26T03:42:52 | pixelflat,trace | DOME PHLAT |       4 |     830G |   m247 |

@@ -34,7 +34,7 @@ setup end
 
 # Read in the data
 data read
- path /Volumes/GoogleDrive/Team Drives/PHYS-GP-Hennawi/PypeIt/PypeIt-development-suite/RAW_DATA/Keck_DEIMOS/600ZD_M_7500/
+ path /Volumes/GoogleDrive/Team Drives/PHYS-GP-Hennawi/PypeIt/PypeIt-development-suite/RAW_DATA/keck_deimos/600ZD_M_7500/
 |               filename |                date |         frametype |       target | exptime | dispname |  decker |
 | DE.20140226.50959.fits | 2014-02-26T14:34:21 |           science |        j1137 |    1500 |    600ZD | jcCIV2C |
 #| DE.20140226.52536.fits | 2014-02-26T15:00:31 |           science |        j1137 |    1500 |    600ZD | jcCIV2C |

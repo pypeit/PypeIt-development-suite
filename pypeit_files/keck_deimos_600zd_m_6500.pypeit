@@ -34,7 +34,7 @@ setup end
 
 # Read in the data
 data read
- path /Volumes/GoogleDrive/Team Drives/PHYS-GP-Hennawi/PypeIt/PypeIt-development-suite/RAW_DATA/Keck_DEIMOS/600ZD_M_6500/
+ path /Volumes/GoogleDrive/Team Drives/PHYS-GP-Hennawi/PypeIt/PypeIt-development-suite/RAW_DATA/keck_deimos/600ZD_M_6500/
 |           filename |                date  | frametype         |         target | exptime | binning | dichroic | dispname |     dispangle | decker |
 | d1010_0005.fits.gz | 2015-10-10T01:31:58  |     bias          |     DOME PHLAT |       1 |     1,1 |     None |    600ZD | 1097.54162598 | mask04 |
 | d1010_0006.fits.gz | 2015-10-10T01:33:11  |     bias          |     DOME PHLAT |       1 |     1,1 |     None |    600ZD | 1097.54162598 | mask04 |

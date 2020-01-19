@@ -18,7 +18,7 @@ setup end
 
 # Read in the data
 data read
- path /data/Projects/Python/PypeIt-development-suite/RAW_DATA/Shane_Kast_blue/452_3306_d57
+ path /data/Projects/Python/PypeIt-development-suite/RAW_DATA/shane_kast_blue/452_3306_d57
 |   filename |       frametype |          ra |        dec |  target | dispname |     decker | binning |                mjd |        airmass | exptime | dichroic |
 | b1001.fits |       arc,tilt  | 04:29:11.05 | 37:20:18.4 |   arc_2 | 452/3306 | 2.0 arcsec |     1,1 |  58544.08237268519 |            1.0 |    15.0 |      d57 |
 | b1002.fits |       arc,tilt  | 04:30:02.15 | 37:20:19.7 |   arc_2 | 452/3306 | 2.0 arcsec |     1,1 | 58544.082964699075 |            1.0 |    15.0 |      d57 |
