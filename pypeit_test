@@ -11,9 +11,11 @@ This script runs the PypeIt development suite of tests
 import sys
 import os
 import glob
+import subprocess
+
+from IPython import embed
 
 import numpy as np
-from IPython import embed
 
 def develop_setups():
     """
@@ -68,7 +70,7 @@ def run_pypeit_setup(rawdir, rdxdir, instr, setup):
         latter is None if the setup wasn't successful.
     """
     # Use pypeit_setup to get the pypeit file
-    print('Running pypeit_setup on {0}/{1}'.format(instr, setup), file=sys.stderr, end='')
+    print('Running pypeit_setup on {0}/{1} --- '.format(instr, setup), file=sys.stderr, end='')
     logfile = get_logfile(rdxdir, instr, setup, 'test')
     with open(logfile, 'w') as f:
         command_line = ['pypeit_setup', '-r', rawdir, '-s', instr, '-c all', '-o',
@@ -142,7 +144,7 @@ def fix_pypeit_file_directory(dev_path, raw_data, instr, setup, rdxdir):
 
     # Write the pypeit file
     pyp_file = os.path.join(rdxdir, pypeit_file_name(instr, setup))
-    with open(pyp_file), 'w') as ofile:
+    with open(pyp_file, 'w') as ofile:
         ofile.writelines(lines)
     return pyp_file
 
@@ -270,8 +272,6 @@ def parser(options=None):
 
 
 def main():
-    import subprocess
-    import warnings
 
     pargs = parser()
 
@@ -362,6 +362,10 @@ def main():
                 if setup not in setups:
                     missing_data += [ '{0}/{1}'.format(instr, setup) ]
 
+                if instr == 'shane_kast_blue' and '600' in setup:
+                    # pypeit file is created by pypeit_setup
+                    continue
+
                 pyp_file = template_pypeit_file(dev_path, instr, setup)
                 if not os.path.isfile(pyp_file):
                     missing_pypfiles += [pyp_file]
@@ -372,8 +376,8 @@ def main():
             raise ValueError('Missing the following test data: {0}'.format(
                                 ', '.join(missing_data)))
         if len(missing_pypfiles) > 0:
-            raise ValueError('Missing the following template pypeit files: {0}'.format(
-                                ', '.join(missing_pypeit_files)))
+            raise ValueError('Missing the following template pypeit files:\n    {0}'.format(
+                                '\n    '.join(missing_pypfiles)))
     #---------------------------------------------------------------------------
 
 
