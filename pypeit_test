@@ -164,7 +164,7 @@ def run_pypeit(rdxdir, instr, setup, pyp_file, masters):
     with open(logfile, 'w') as f:
         print('Directory: {0}'.format(rdxdir))
         command_line = ['run_pypeit', pyp_file, '-o']
-        if pargs.masters:
+        if masters:
             command_line += ['-m']
         print('Command line: {0}'.format(' '.join(command_line)))
         retval = subprocess.call(command_line, stderr=f, cwd=rdxdir)
