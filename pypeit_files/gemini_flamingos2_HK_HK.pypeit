@@ -1,0 +1,40 @@
+# Auto-generated PypeIt file
+# Wed 04 Dec 2019 15:54:59
+
+# User-defined execution parameters
+[rdx]
+spectrograph = gemini_flamingos2
+
+# Setup
+setup read
+ Setup A:
+   --:
+     dichroic: HK_G0806_good
+     disperser:
+       angle: none
+       name: HK_G5802
+     slit:
+       decker: 4pix-slit
+       slitlen: none
+       slitwid: none
+   '01':
+     binning: 1,1
+     det: 1
+     namp: 1
+setup end
+
+# Read in the data
+data read
+ path ../RAW_DATA/Gemini_FLAMINGOS2/HK_HK
+|               filename |        frametype |          ra |          dec |          target | dispname |    decker | binning |           mjd | airmass | exptime |      dichroic | calib | comb_id | bkg_id |
+| S20161108S0069.fits.gz | science,tilt,arc | 36.11058333 |     -47.1915 | VDES J0224-4711 | HK_G5802 | 4pix-slit |     1,1 | 57700.1015625 |    1.17 |   200.0 | HK_G0806_good |     0 |       1 |      2 |
+| S20161108S0070.fits.gz | science,tilt,arc | 36.11058333 |     -47.1915 | VDES J0224-4711 | HK_G5802 | 4pix-slit |     1,1 | 57700.1015625 |   1.162 |   200.0 | HK_G0806_good |     0 |       2 |      1 |
+| S20161108S0071.fits.gz | science,tilt,arc | 36.11058333 |     -47.1915 | VDES J0224-4711 | HK_G5802 | 4pix-slit |     1,1 | 57700.1015625 |   1.155 |   200.0 | HK_G0806_good |     0 |       3 |      4 |
+| S20161108S0072.fits.gz | science,tilt,arc | 36.11058333 |     -47.1915 | VDES J0224-4711 | HK_G5802 | 4pix-slit |     1,1 | 57700.1015625 |   1.148 |   200.0 | HK_G0806_good |     0 |       4 |      3 |
+| S20161108S0087.fits.gz |         standard | 49.45544583 | -49.28533611 |        HIP15339 | HK_G5802 | 4pix-slit |     1,1 | 57700.1015625 |    1.19 |     5.0 | HK_G0806_good |     0 |       5 |      6 |
+| S20161108S0088.fits.gz |         standard | 49.45544583 | -49.28533611 |        HIP15339 | HK_G5802 | 4pix-slit |     1,1 | 57700.1015625 |   1.189 |     5.0 | HK_G0806_good |     0 |       6 |      5 |
+| S20161108S0089.fits.gz |         standard | 49.45544583 | -49.28533611 |        HIP15339 | HK_G5802 | 4pix-slit |     1,1 | 57700.1015625 |   1.188 |     5.0 | HK_G0806_good |     0 |       6 |      5 |
+| S20161108S0090.fits.gz |         standard | 49.45544583 | -49.28533611 |        HIP15339 | HK_G5802 | 4pix-slit |     1,1 | 57700.1015625 |   1.187 |     5.0 | HK_G0806_good |     0 |       5 |      6 |
+| S20161108S0078.fits.gz |  trace,pixelflat | 36.11058333 |     -47.1915 |        GCALflat | HK_G5802 | 4pix-slit |     1,1 | 57700.1015625 |   1.117 |    80.0 | HK_G0806_good |     0 |      -1 |     -1 |
+data end
+
