@@ -17,9 +17,9 @@
         number = 0
     [[wavelengths]]
         rms_threshold = 1.0
-
-[extract]
-    maxnumber = 3
+[scienceimage]
+    [[findobj]]
+        maxnumber = 3
 
 # Setup
 setup read

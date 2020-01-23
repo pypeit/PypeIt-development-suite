@@ -6,22 +6,10 @@
     spectrograph = keck_lris_red
     sortroot = keck_lris_red_multi_1200_9000_d680
     detnum = 2
-[calibrations]
-    [[biasframe]]
-        number = 4
-    [[pixelflatframe]]
-        number = 3
-    [[arcframe]]
-        number = 1
-    [[pinholeframe]]
-        number = 0
-    [[traceframe]]
-        number = 1
-    [[standardframe]]
-        number = 0
-     [[slits]]
-       sigdetect = 30
-       add_slits = 2:2000:1188:1502
+#[calibrations]
+#    [[slitedges]]
+#       edge_thresh = 20.
+#       add_slits = 2:2000:1188:1502
 
 
 # Setup

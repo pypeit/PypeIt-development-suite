@@ -9,7 +9,8 @@
      tweak_slits = False
      illumflatten = False
 [scienceimage]
-     find_trim_edge = 10,10     
+    [[findobj]]
+        find_trim_edge = 10,10     
 
 setup read
 Setup A

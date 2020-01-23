@@ -15,8 +15,9 @@
         number = 0
 # No standard frame because we did not take a standard with the same slitmask.
 
-[extract]
-    maxnumber = 5
+[scienceimage]
+    [[findobj]]
+        maxnumber = 5
 
 # Setup
 setup read
