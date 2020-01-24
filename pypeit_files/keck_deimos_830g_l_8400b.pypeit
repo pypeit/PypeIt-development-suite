@@ -35,7 +35,7 @@ setup end
 
 # Read in the data
 data read
- path ../../../RAW_DATA/keck_deimos/830G_L_8400B/
+ path /home/xavier/local/Python/PypeIt-development-suite/RAW_DATA/keck_deimos/830G_L_8400B/
 |           filename |       frametype |         target | exptime | dispname |   decker |
 | d0914_0011.fits.gz |        arc,tilt |        unknown |       1 |     830G | LongMirr |
 | d0914_0012.fits.gz |        arc,tilt |        unknown |       1 |     830G | LongMirr |

@@ -25,7 +25,7 @@ setup end
 
 # Read in the data
 data read
- path ../RAW_DATA/Gemini_FLAMINGOS2/HK_HK
+ path /home/xavier/local/Python/PypeIt-development-suite/RAW_DATA/Gemini_FLAMINGOS2/HK_HK
 |               filename |        frametype |          ra |          dec |          target | dispname |    decker | binning |           mjd | airmass | exptime |      dichroic | calib | comb_id | bkg_id |
 | S20161108S0069.fits.gz | science,tilt,arc | 36.11058333 |     -47.1915 | VDES J0224-4711 | HK_G5802 | 4pix-slit |     1,1 | 57700.1015625 |    1.17 |   200.0 | HK_G0806_good |     0 |       1 |      2 |
 | S20161108S0070.fits.gz | science,tilt,arc | 36.11058333 |     -47.1915 | VDES J0224-4711 | HK_G5802 | 4pix-slit |     1,1 | 57700.1015625 |   1.162 |   200.0 | HK_G0806_good |     0 |       2 |      1 |

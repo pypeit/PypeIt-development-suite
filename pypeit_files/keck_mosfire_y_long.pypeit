@@ -23,7 +23,7 @@ setup end
 
 # Read in the data
 data read
- path ../2019nov20/
+ path /home/xavier/local/Python/PypeIt-development-suite/RAW_DATA/keck_mosfire/Y_long
 |          filename |       frametype |           ra |         dec |         target |     dispname |        decker | binning |            mjd |    airmass |   exptime | filter1 | calib | comb_id | bkg_id |
 # Flat fields, and darks 
 | m191119_0027.fits |           trace |          230 |           45|      DOME FLAT | spectroscopy | LONGSLIT-46x1 |     1,1 | 58806.18380414 | 1.41291034 |  11.63832 |       Y |   all |      -1 |     -1 |

@@ -25,7 +25,7 @@ setup end
 
 # Read in the data
 data read
- path /Volumes/GoogleDrive/Shared drives/PHYS-GP-Hennawi/PypeIt/PypeIt-development-suite/RAW_DATA/LBT_LUCI/LUCI-II
+ path /home/xavier/local/Python/PypeIt-development-suite/RAW_DATA/lbt_luci/LUCI-II
 |                 filename |        frametype |           ra |           dec |              target |   dispname |        decker | binning |          mjd |      airmass | exptime | calib | comb_id | bkg_id |   idname |
 #| luci2.20181124.0475.fits |         standard | 08 31 19.941 | +37 15 53.213 |            HD 71906 | G200 LoRes | LS_1.00arcsec |     1,1 | 58446.419337 | 1.0635005227 |   62.75 |     0 |       1 |      2 | standard |
 #| luci2.20181124.0476.fits |         standard | 08 31 19.941 | +37 15 53.213 |            HD 71906 | G200 LoRes | LS_1.00arcsec |     1,1 | 58446.420648 | 1.0610274989 |   62.75 |     0 |       2 |      1 | standard |

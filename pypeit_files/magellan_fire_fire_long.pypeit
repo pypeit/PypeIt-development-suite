@@ -25,7 +25,7 @@ setup end
 
 # Read in the data
 data read
- path ../RAW_DATA/Magellan_FIRE/FIRE_Long
+ path /home/xavier/local/Python/PypeIt-development-suite/RAW_DATA/magellan_fire/FIRE_Long
 |       filename |       frametype |          ra |         dec |       target | dispname |  decker | binning |                mjd | airmass | exptime | dichroic |
 | fire_0015.fits |        arc,tilt |  276.115286 | -28.9964957 |       NeNeAr | Longslit | default |     1,1 |  2458792.342453704 |     1.0 |     5.0 |  default |
 | fire_0016.fits |        arc,tilt | 276.5096584 | -28.9964631 |       NeNeAr | Longslit | default |     1,1 |  2458792.343518519 |     1.0 |     5.0 |  default |

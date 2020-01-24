@@ -17,7 +17,7 @@ setup end
 
 # Read in the data
 data read
- path ../../../RAW_DATA/Gemini_GNIRS/GNIRS_10L
+ path /home/xavier/local/Python/PypeIt-development-suite/RAW_DATA/gemini_gnirs/10_LB_SXD
 |            filename |       frametype |           ra |         dec |                   target |        dispname |     decker | binning |              mjd | airmass | exptime | dispangle | calib | comb_id | bkg_id |
 | N20160722S0171.fits |        standard |     323.1189 |  1.01229722 |               hip 106356 | 10/mmLBSX_G5532 | SCXD_G5531 |     1,1 |  57591.404597237 |   1.074 |     1.0 |      2.03 |     0 |       1 |      2 |
 | N20160722S0172.fits |        standard |     323.1189 |  1.01229722 |               hip 106356 | 10/mmLBSX_G5532 | SCXD_G5531 |     1,1 | 57591.4049191892 |   1.073 |     1.0 |      2.03 |     0 |       2 |      1 |
