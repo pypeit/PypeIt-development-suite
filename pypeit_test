@@ -557,7 +557,7 @@ def main():
                 ntest += 1
                 std_file = os.path.join(rdxdir, 'Science',
                                 'spec1d_S20181219S0316-GD71_GMOS-S_1864May27T230832.356.fits')
-                if run_sensfunc(rdxdir, instr, setup, std_file)
+                if run_sensfunc(rdxdir, instr, setup, std_file):
                     npass += 1
                 else:
                     failed += [ 'pypeit_sensfunc: {0}/{1}'.format(instr, setup) ]
