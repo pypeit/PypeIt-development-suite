@@ -1,0 +1,5 @@
+# User-defined fluxing parameters
+flux read
+ Science/spec1d_S20180903S0136-J0252-0503_GMOS-S_1864May27T160716.387.fits sens_S20181219S0316-GD71_GMOS-S_1864May27T230832.356.fits
+ Science/spec1d_S20180903S0137-J0252-0503_GMOS-S_1864May27T160719.968.fits 
+flux end

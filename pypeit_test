@@ -35,7 +35,7 @@ def develop_setups():
                               'multi_400_8500_d560'],
             'vlt_xshooter': ['VIS_1x1', 'VIS_2x1', 'VIS_2x2', 'NIR'],
             'gemini_gnirs': ['32_SB_SXD', '10_LB_SXD'],
-            'gemini_gmos': ['GS_HAM_R400_700'],
+            'gemini_gmos': ['GS_HAM_R400_700', 'GS_HAM_R400_860'],
             'gemini_flamingos2': ['HK_HK', 'JH_JH'],
             'magellan_mage': ['1x1'],
             'magellan_fire': ['FIRE_Echelle', 'FIRE_Long'],
@@ -196,15 +196,33 @@ def run_sensfunc(rdxdir, instr, setup, std_file, sens_file=None):
 
 def run_flux_calib(dev_path, rdxdir, instr, setup):
     logfile = get_logfile(rdxdir, instr, setup, 'test_flux')
-    flux_file = os.path.join(dev_path, 'sensfunc_files', instr.lower()+'.sens')
-    fdir = os.path.join(rdxdir, 'Science')
+    flux_file = os.path.join(dev_path, 'fluxing_files',
+                             '{0}_{1}.flux'.format(instr.lower(), setup.lower()))
+#    fdir = os.path.join(rdxdir, 'Science')
     with open(logfile, 'w') as f:
-        print('Directory: {0}'.format(fdir))
-        command_line = ['pypeit_flux_spec', flux_file]
+        print('Directory: {0}'.format(rdxdir))
+        command_line = ['pypeit_flux_calib', flux_file]
         print('Command line: {0}'.format(' '.join(command_line)))
         print('Running pypeit_flux on {0}/{1}'.format(instr, setup), file=sys.stderr, end='')
-        retval = subprocess.call(command_line, stderr=f, cwd=fdir)
+        retval = subprocess.call(command_line, stderr=f, cwd=rdxdir)
         report_test(retval, type='FLUXING')
+        subprocess.call(['tail', '-3', logfile])
+        print("\n", file=sys.stderr)
+    return retval == 0
+
+
+def run_coadd1d(dev_path, rdxdir, instr, setup):
+    logfile = get_logfile(rdxdir, instr, setup, 'test_1dcoadd')
+    coadd_file = os.path.join(dev_path, 'coadd1d_files',
+                              '{0}_{1}.coadd1d'.format(instr.lower(), setup.lower()))
+    with open(logfile, 'w') as f:
+        print('Directory: {0}'.format(rdxdir))
+        command_line = ['pypeit_coadd_1dspec', coadd_file]
+        print('Command line: {0}'.format(' '.join(command_line)))
+        print('Running pypeit_coadd_1dspec on {0}/{1}'.format(instr, setup), file=sys.stderr,
+              end='')
+        retval = subprocess.call(command_line, stderr=f, cwd=rdxdir)
+        report_test(retval, type='COADD1D')
         subprocess.call(['tail', '-3', logfile])
         print("\n", file=sys.stderr)
     return retval == 0
@@ -506,7 +524,11 @@ def main():
                 # Skip the afterburner tests
                 continue
 
-            # Sensfunc testing, UVIS algorithm without .sens file
+            # ----------------------------------------------------------
+            # ----------------------------------------------------------
+            # SensFunc tests
+            # ----------------------------------------------------------
+            # UVIS algorithm without .sens file
             if passed and instr == 'shane_kast_blue' and '600' in setup:
                 ntest += 1
                 # TODO: Instead check for file with standard star in the
@@ -519,6 +541,44 @@ def main():
                 else:
                     failed += [ 'pypeit_sensfunc: {0}/{1}'.format(instr, setup) ]
 
+            # IR algorithm with .sens file
+            if passed and instr == 'gemini_gnirs' and setup == '32_SB_SXD':
+                ntest += 1
+                std_file = os.path.join(rdxdir, 'Science',
+                                'spec1d_cN20170331S0206-HIP62745_GNIRS_2017Mar31T083351.681.fits')
+                sens_file = os.path.join(dev_path, 'sensfunc_files', 'gemini_gnirs_32_sb_sxd.sens')
+                if run_sensfunc(rdxdir, instr, setup, std_file, sens_file=sens_file):
+                    npass += 1
+                else:
+                    failed += [ 'pypeit_sensfunc: {0}/{1}'.format(instr, setup) ]
+
+            # IR algorithm, multi-slit, without .sens file
+            if passed and instr == 'gemini_gmos' and setup == 'GS_HAM_R400_860':
+                ntest += 1
+                std_file = os.path.join(rdxdir, 'Science',
+                                'spec1d_S20181219S0316-GD71_GMOS-S_1864May27T230832.356.fits')
+                if run_sensfunc(rdxdir, instr, setup, std_file)
+                    npass += 1
+                else:
+                    failed += [ 'pypeit_sensfunc: {0}/{1}'.format(instr, setup) ]
+            # ----------------------------------------------------------
+
+
+            # ----------------------------------------------------------
+            # ----------------------------------------------------------
+            # Flux calibration tests
+            # ----------------------------------------------------------
+            flux_calib_pairs = {'shane_kast_blue': '600_4310_d55',  # long-slit
+                                'gemini_gnirs': '32_SB_SXD',        # echelle
+                                'gemini_gmos': 'GS_HAM_R400_860'}   # multi-slit
+            if passed and any([instr == key and setup == flux_calib_pairs[key] 
+                                for key in flux_calib_pairs.keys()]):
+                ntest += 1
+                if run_flux_calib(dev_path, rdxdir, instr, setup):
+                    npass += 1
+                else:
+                    failed += [ 'pypeit_flux_spec: {0}/{1}'.format(instr, setup) ]
+
              # TODO: Does a sens file exist for NIRES?
 #            # Sensfunc testing, IR algorithm with .sens file
 #            # JFH TODO add a NIRSPEC dataset with a standard
@@ -528,19 +588,30 @@ def main():
 #                    npass += 1
 #                else:
 #                    failed += [ 'pypeit_flux_spec: {0}/{1}'.format(instr, setup) ]
+            # ----------------------------------------------------------
 
-            # Sensfunc testing, IR algorithm with .sens file
-            if passed and instr == 'gemini_gnirs' and setup == '32_SB_SXD':
+            # ----------------------------------------------------------
+            # ----------------------------------------------------------
+            # 1D coadding tests
+            # ----------------------------------------------------------
+            coadd_1d_pairs = {'shane_kast_blue': '600_4310_d55',  # long-slit
+                              'gemini_gnirs': '32_SB_SXD',        # echelle
+                              'gemini_gmos': 'GS_HAM_R400_860'}   # multi-slit
+            if passed and any([instr == key and setup == coadd_1d_pairs[key] 
+                                for key in coadd_1d_pairs.keys()]):
                 ntest += 1
-                std_file = os.path.join(rdxdir, 'Science',
-                                'spec1d_cN20170331S0206-HIP62745_GNIRS_2017Mar31T083351.681.fits')
-                sens_file = os.path.join(dev_path, 'sensfunc_files', 'gemini_gnirs_32_sb_sxd.sens')
-                if run_sensfunc(rdxdir, instr, setup, std_file, sens_file=sens_file):
+                if run_coadd1d(dev_path, rdxdir, instr, setup):
                     npass += 1
                 else:
-                    failed += [ 'pypeit_flux_spec: {0}/{1}'.format(instr, setup) ]
+                    failed += [ 'pypeit_coadd_1dspec: {0}/{1}'.format(instr, setup) ]
+            # ----------------------------------------------------------
 
-            # 2-D coadds Echelle
+
+            # ----------------------------------------------------------
+            # ----------------------------------------------------------
+            # 2D coadding tests
+            # ----------------------------------------------------------
+            # Echelle
             if passed and instr == 'gemini_gnirs' and setup == '32_SB_SXD':
                 ntest += 1
                 if run_coadd2d(rdxdir, instr, setup, obj='pisco'):
@@ -548,7 +619,7 @@ def main():
                 else:
                     failed += [ 'pypeit_coadd_2dspec: {0}/{1}'.format(instr, setup) ]
 
-            # 2-D coadds MultiSlit
+            # MultiSlit
             if passed and instr == 'keck_lris_blue' and setup == 'multi_600_4000_d560':
                 ntest += 1
                 if run_coadd2d(rdxdir, instr, setup, 
@@ -556,8 +627,13 @@ def main():
                     npass += 1
                 else:
                     failed += [ 'pypeit_coadd_2dspec: {0}/{1}'.format(instr, setup) ]
+            # ----------------------------------------------------------
 
-            # Quick Look MOS
+            # ----------------------------------------------------------
+            # ----------------------------------------------------------
+            # Quick-look tests
+            # ----------------------------------------------------------
+            # MOS
             if instr == 'shane_kast_blue' and '600' in setup:
                 ntest += 1
                 if run_ql(rawdir, rdxdir, instr, setup,
@@ -566,7 +642,7 @@ def main():
                 else:
                     failed += [ 'pypeit_ql: {0}/{1}'.format(instr, setup) ]
 
-            # Quick Look NIRES
+            # NIRES
             if instr.lower() == 'keck_nires' and setup == 'NIRES':
                 ntest += 1
                 if run_ql(rawdir, rdxdir, instr, setup,
@@ -574,6 +650,8 @@ def main():
                     npass += 1
                 else:
                     failed += [ 'pypeit_ql: {0}/{1}'.format(instr, setup) ]
+            # ----------------------------------------------------------
+
     #---------------------------------------------------------------------------
 
     if npass == ntest:
