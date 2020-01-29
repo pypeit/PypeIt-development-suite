@@ -32,7 +32,7 @@ setup end
 
 # Read in the data
 data read
- path ../../../RAW_DATA/Gemini_GMOS/GS_HAM_R400_860/
+ path /Users/joe/python/PypeIt-development-suite/RAW_DATA/Gemini_GMOS/GS_HAM_R400_860/
 |                filename |       frametype |           ra |          dec |     target |    dispname |         decker | binning |              mjd | airmass | exptime |    dichroic | calib | comb_id | bkg_id |
 | S20180903S0174.fits |            bias |        147.0 |         89.9 |       Bias | R400+_G5325 |     0.75arcsec |     2,2 | 2018.67203937563 |     1.0 |     0.0 | RG610_G0331 |   1,2 |      -1 |     -1 |
 | S20180903S0175.fits |            bias |        147.0 |         89.9 |       Bias | R400+_G5325 |     0.75arcsec |     2,2 | 2018.67204041922 |     1.0 |     0.0 | RG610_G0331 |   1,2 |      -1 |     -1 |
