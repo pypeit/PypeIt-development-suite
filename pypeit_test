@@ -95,12 +95,12 @@ def run_pypeit_setup(rawdir, rdxdir, instr, setup):
     return rdxdir, True, pyp_file
 
 
-def pypeit_file_name(instr, setup):
-    return '{0}_{1}.pypeit'.format(instr.lower(), setup.lower())
+def pypeit_file_name(instr, setup, std=False):
+    base = '{0}_{1}'.format(instr.lower(), setup.lower())
+    return '{0}_std.pypeit'.format(base) if std else '{0}.pypeit'.format(base)
 
-
-def template_pypeit_file(dev_path, instr, setup):
-    return os.path.join(dev_path, 'pypeit_files', pypeit_file_name(instr, setup))
+def template_pypeit_file(dev_path, instr, setup, std=False):
+    return os.path.join(dev_path, 'pypeit_files', pypeit_file_name(instr, setup, std=std))
 
 
 def coadd2d_file_name(instr, setup):
@@ -111,7 +111,7 @@ def template_coadd2d_file(dev_path, instr, setup):
     return os.path.join(dev_path, 'coadd2d_files', coadd2d_file_name(instr, setup))
 
 
-def fix_pypeit_file_directory(dev_path, raw_data, instr, setup, rdxdir):
+def fix_pypeit_file_directory(dev_path, raw_data, instr, setup, rdxdir, std=False):
     """
     Use template pypeit file to write the pypeit file relevant to the
     exising directory structure.
@@ -120,8 +120,10 @@ def fix_pypeit_file_directory(dev_path, raw_data, instr, setup, rdxdir):
         str: The path to the corrected pypeit file.
     """
     # Read the pypeit file
-    pyp_file = template_pypeit_file(dev_path, instr, setup)
+    pyp_file = template_pypeit_file(dev_path, instr, setup, std=std)
     if not os.path.isfile(pyp_file):
+        if std:
+            return None
         raise FileNotFoundError('File does not exist: {0}'.format(pyp_file))
     with open(pyp_file, 'r') as infile:
         lines = infile.readlines()
@@ -144,7 +146,7 @@ def fix_pypeit_file_directory(dev_path, raw_data, instr, setup, rdxdir):
             lines[kk+1] = '        frame = {0}'.format(newcpth)
 
     # Write the pypeit file
-    pyp_file = os.path.join(rdxdir, pypeit_file_name(instr, setup))
+    pyp_file = os.path.join(rdxdir, pypeit_file_name(instr, setup, std=std))
     with open(pyp_file, 'w') as ofile:
         ofile.writelines(lines)
     return pyp_file
@@ -489,9 +491,15 @@ def main():
                     npass += 1
                 else:
                     failed += [ 'pypeit_setup: {0}/{1}'.format(instr, setup) ]
+                std_pyp_file = None
             else:
                 # Use pre-made PypeIt file
                 pyp_file = fix_pypeit_file_directory(dev_path, raw_data, instr, setup, rdxdir)
+                # Also try to find and fix pypeit files for
+                # spectroscopic standards.  This is a KLUDGE for
+                # gemini_gmos
+                std_pyp_file = fix_pypeit_file_directory(dev_path, raw_data, instr, setup, rdxdir,
+                                                         std=True)
 
             if not passed:
                 print('Cannot continue with test for {0}/{1}.  Moving on.'.format(instr, setup))
@@ -510,6 +518,15 @@ def main():
                     npass += 1
                 else:
                     failed += [ 'run_pypeit: {0}/{1}'.format(instr, setup) ]
+
+            # Run pypeit on any standards, if they exist
+            if passed and std_pyp_file is not None and not flg_after:
+                ntest += 1
+                passed = run_pypeit(rdxdir, instr, setup, std_pyp_file, pargs.masters)
+                if passed:
+                    npass += 1
+                else:
+                    failed += [ 'run_pypeit std: {0}/{1}'.format(instr, setup) ]
 
             # Try re-running keck_lris_red setups with masters
             if passed and not flg_after and instr == 'keck_lris_red':
