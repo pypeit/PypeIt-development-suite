@@ -84,7 +84,7 @@ def run_pypeit_setup(rawdir, rdxdir, instr, setup):
     if len(pyp_file) != 1:
         print("\x1B[" + "1;31m" + " --- FAILED" + "\x1B[" + "0m", file=sys.stderr)
         print('Could not find expected pypeit file: {0}'.format(pyp_file), file=sys.stderr)
-        return redxdir, False, None
+        return rdxdir, False, None
 
     pyp_file = os.path.split(pyp_file[0])[1]
     if retval == 0:
