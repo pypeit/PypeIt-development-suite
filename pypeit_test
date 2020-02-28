@@ -181,15 +181,16 @@ def run_sensfunc(rdxdir, instr, setup, std_file, sens_file=None):
         print('File does not exist!: {0}'.format(std_file))
         return False
     logfile = get_logfile(rdxdir, instr, setup, 'test_sens')
-    fdir = os.path.join(rdxdir, 'Science')
+    #fdir = os.path.join(rdxdir, 'Science')
     with open(logfile, 'w') as f:
-        print('Directory: {0}'.format(fdir))
+        #print('Directory: {0}'.format(fdir))
+        print('Directory: {0}'.format(rdxdir))
         command_line = ['pypeit_sensfunc', std_file]
         if sens_file is not None:
             command_line += ['-s', sens_file]
         print('Command line: {0}'.format(' '.join(command_line)))
         print('Running pypeit_sensfunc on {0}/{1}'.format(instr, setup), file=sys.stderr, end='')
-        retval = subprocess.call(command_line, stderr=f, cwd=fdir)
+        retval = subprocess.call(command_line, stderr=f, cwd=rdxdir)
         report_test(retval, type='SENSFUNC')
         subprocess.call(['tail', '-3', logfile])
         print("\n", file=sys.stderr)
