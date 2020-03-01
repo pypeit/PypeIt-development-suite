@@ -6,7 +6,7 @@
   spectrograph = keck_lris_blue
   sortroot = keck_lris_blue_multi_600_4000_d560
   detnum = 2
-[scienceimage]
+[reduce]
     [[findobj]]
         sig_thresh=5.0
 
