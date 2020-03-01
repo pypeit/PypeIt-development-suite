@@ -256,8 +256,8 @@ def run_ql(rawdir, rdxdir, instr, setup, files, mos=False):
     logfile = get_logfile(qldir, instr, setup, 'test_ql')
     with open(logfile, 'w') as f:
         print('Directory: {0}'.format(qldir))
-        command_line = ['pypeit_ql_mos' if mos else 'pypeit_ql_keck_nires']
-        command_line += [instr, rawdir] + files
+        command_line = ['pypeit_ql_mos', instr] if mos else ['pypeit_ql_keck_nires']
+        command_line += [rawdir] + files
         # TODO: Make sure files is a list
         print('Command line: {0}'.format(' '.join(command_line)))
         print('Running pypeit_ql_mos on {0}'.format(instr), file=sys.stderr, end='')
