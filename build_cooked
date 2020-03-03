@@ -74,10 +74,12 @@ def main():
     shane_kast_blue_Science = os.path.join(redux_dir, 'shane_kast_blue', '600_4310_d55',
                                   'shane_kast_blue_A', 'Science')
     kastb_files = glob.glob(os.path.join(shane_kast_blue_Science,'spec1d_*.fits'))
+    ''' NOT USED RIGHT NOW
     # DEIMOS standard
     keck_deimos_Science = os.path.join(redux_dir, 'keck_deimos','830G_L_8400', 'Science')
     keck_deimos_files = glob.glob(os.path.join(keck_deimos_Science, 'spec1d_G191*.fits'))
-    all_files = kastb_files + keck_deimos_files
+    '''
+    all_files = kastb_files #+ keck_deimos_files
     # Generate folder
     cooked_dir = os.path.join('Cooked', 'Science')
     if not os.path.isdir(cooked_dir):
