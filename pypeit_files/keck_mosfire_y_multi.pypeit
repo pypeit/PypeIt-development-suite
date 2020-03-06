@@ -17,7 +17,7 @@ setup end
 
 # Read in the data
 data read
- path ../
+ path /home/xavier/local/Python/PypeIt-development-suite/RAW_DATA/keck_mosfire/Y_multi
 |             filename |       frametype |           ra |         dec |       target |     dispname |       decker | binning |            mjd |    airmass |   exptime | filter1 | calib | comb_id | bkg_id |
 | m190508_0005.fits.gz | pixelflat,trace |          230 |          45 |      unknown | spectroscopy | pg1338_mask1 |     1,1 | 58611.14918409 | 1.41291034 |  16.00269 |       Y | all |      1  |     -1 |
 | m190508_0006.fits.gz | pixelflat,trace |          230 |          45 |      unknown | spectroscopy | pg1338_mask1 |     1,1 | 58611.14947923 | 1.41291034 |  16.00269 |       Y | all |      1  |     -1 |

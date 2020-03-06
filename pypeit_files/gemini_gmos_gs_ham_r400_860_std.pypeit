@@ -1,0 +1,46 @@
+# Auto-generated PypeIt file
+# Mon 27 May 2019 15:08:33
+
+# User-defined execution parameters
+[rdx]
+  spectrograph = gemini_gmos_south_ham
+  detnum = 1,2,3
+[calibrations]
+  [[slitedges]]
+     edge_thresh=20.
+  [[flatfield]]
+     tweak_slits=False     
+  [[wavelengths]]
+    lamps=['OH_GMOS']
+    method = 'holy-grail'
+[reduce]
+  [[findobj]]
+    sig_thresh = 0.5
+    maxnumber = 1
+
+# Setup
+setup read
+ Setup A:
+   --:
+     dichroic: RG610_G0331
+     disperser: {angle: 860.0, name: R400+_G5325}
+     slit: {decker: 0.75arcsec, slitlen: none, slitwid: none}
+   '01': {binning: '2,2', det: 1, namp: 4}
+   '02': {binning: '2,2', det: 2, namp: 4}
+   '03': {binning: '2,2', det: 3, namp: 4}
+setup end
+
+# Read in the data
+data read
+ path /Users/joe/python/PypeIt-development-suite/RAW_DATA/Gemini_GMOS/GS_HAM_R400_860/
+|                filename |       frametype |           ra |          dec |     target |    dispname |         decker | binning |              mjd | airmass | exptime |    dichroic | calib | comb_id | bkg_id |
+## For Standard
+| S20181219S0443.fits |            bias |        147.0 |         89.9 |       Bias | R400+_G5325 |     0.75arcsec |     2,2 | 2018.96485450468 |     1.0 |     0.0 | RG610_G0331 |     3 |      -1 |     -1 |
+| S20181219S0444.fits |            bias |        147.0 |         89.9 |       Bias | R400+_G5325 |     0.75arcsec |     2,2 | 2018.96485514531 |     1.0 |     0.0 | RG610_G0331 |     3 |      -1 |     -1 |
+| S20181219S0445.fits |            bias |        147.0 |         89.9 |       Bias | R400+_G5325 |     0.75arcsec |     2,2 | 2018.96485582819 |     1.0 |     0.0 | RG610_G0331 |     3 |      -1 |     -1 |
+| S20181219S0318.fits | trace,pixelflat |  88.11508333 |  15.88700833 |   GCALflat | R400+_G5325 |     0.75arcsec |     2,2 | 2018.96426963659 |   1.439 |     1.0 | RG610_G0331 |     3 |      -1 |     -1 |
+| S20181219S0319.fits | trace,pixelflat |  88.11508333 |  15.88700833 |   GCALflat | R400+_G5325 |     0.75arcsec |     2,2 |   2018.964270855 |   1.439 |     1.0 | RG610_G0331 |     3 |      -1 |     -1 |
+| S20181219S0316.fits |         science |  88.11508333 |  15.88700833 |       GD71 | R400+_G5325 |     0.75arcsec |     2,2 | 2018.96426337978 |   1.439 |    60.0 | RG610_G0331 |     3 |      -1 |     -1 |
+| S20180903S0136std.fits |        tilt,arc |  43.06933333 |  -5.05883611 | J0252-0503 | R400+_G5325 |     0.75arcsec |     2,2 | 2018.67171744684 |   1.109 |  1200.0 | RG610_G0331 |     3 |      -1 |     -1 |
+data end
+

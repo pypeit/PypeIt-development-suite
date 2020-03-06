@@ -6,22 +6,10 @@
     spectrograph = keck_lris_red
     sortroot = keck_lris_red_multi_1200_9000_d680
     detnum = 2
-[calibrations]
-    [[biasframe]]
-        number = 4
-    [[pixelflatframe]]
-        number = 3
-    [[arcframe]]
-        number = 1
-    [[pinholeframe]]
-        number = 0
-    [[traceframe]]
-        number = 1
-    [[standardframe]]
-        number = 0
-     [[slits]]
-       sigdetect = 30
-       add_slits = 2:2000:1188:1502
+#[calibrations]
+#    [[slitedges]]
+#       edge_thresh = 20.
+#       add_slits = 2:2000:1188:1502
 
 
 # Setup
@@ -37,7 +25,7 @@ setup end
 
 # Read in the data
 data read
- path /Volumes/GoogleDrive/Team Drives/PHYS-GP-Hennawi/PypeIt/PypeIt-development-suite/RAW_DATA/keck_lris_red/multi_1200_9000_d680/
+ path /home/xavier/local/Python/PypeIt-development-suite/RAW_DATA/keck_lris_red/multi_1200_9000_d680/
 |          filename |                date | frametype       |  target | exptime | binning | dichroic | dispname |   decker |
 | r170816_0009.fits | 2017-08-16T02:56:14 | arc,tilt            | unknown |       3 |     1,1 |      680 | 1200/9000 | E570.fil |
 | r170816_0018.fits | 2017-08-16T03:19:28 | pixelflat,trace | unknown |      10 |     1,1 |      680 | 1200/9000 | E570.fil |

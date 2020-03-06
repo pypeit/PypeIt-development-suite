@@ -1,0 +1,41 @@
+# Auto-generated PypeIt file
+# Thu 05 Dec 2019 10:42:23
+
+# User-defined execution parameters
+[rdx]
+spectrograph = magellan_fire_long
+
+# Setup
+setup read
+ Setup A:
+   --:
+     dichroic: default
+     disperser:
+       angle: none
+       name: Longslit
+     slit:
+       decker: default
+       slitlen: none
+       slitwid: none
+   '01':
+     binning: 1,1
+     det: 1
+     namp: 1
+setup end
+
+# Read in the data
+data read
+ path /home/xavier/local/Python/PypeIt-development-suite/RAW_DATA/magellan_fire/FIRE_Long
+|       filename |       frametype |          ra |         dec |       target | dispname |  decker | binning |                mjd | airmass | exptime | dichroic |
+| fire_0015.fits |        arc,tilt |  276.115286 | -28.9964957 |       NeNeAr | Longslit | default |     1,1 |  2458792.342453704 |     1.0 |     5.0 |  default |
+| fire_0016.fits |        arc,tilt | 276.5096584 | -28.9964631 |       NeNeAr | Longslit | default |     1,1 |  2458792.343518519 |     1.0 |     5.0 |  default |
+| fire_0017.fits |        arc,tilt | 276.5096584 | -28.9964631 |       NeNeAr | Longslit | default |     1,1 | 2458792.3443287043 |     1.0 |     5.0 |  default |
+| fire_0038.fits |         science | 319.4950383 |  -2.8670188 |  Flat_low_HK | Longslit | default |     1,1 | 2458792.5006018523 |   1.126 |   600.0 |  default |
+| fire_0025.fits | trace,pixelflat | 278.3632452 | -28.9963402 | Flat_high_zJ | Longslit | default |     1,1 |  2458792.354328704 |     1.0 |    15.0 |  default |
+| fire_0026.fits | trace,pixelflat | 278.3632452 | -28.9963402 | Flat_high_zJ | Longslit | default |     1,1 |   2458792.35525463 |     1.0 |    15.0 |  default |
+| fire_0027.fits | trace,pixelflat | 278.3632452 | -28.9963402 | Flat_high_zJ | Longslit | default |     1,1 |   2458792.35619213 |     1.0 |    15.0 |  default |
+| fire_0028.fits | trace,pixelflat | 281.8264066 |  -28.996135 |  Flat_low_HK | Longslit | default |     1,1 |  2458792.358344908 |     1.0 |    15.0 |  default |
+| fire_0029.fits | trace,pixelflat | 282.3614147 | -28.9960994 |  Flat_low_HK | Longslit | default |     1,1 | 2458792.3598842598 |     1.0 |    15.0 |  default |
+| fire_0030.fits | trace,pixelflat | 282.3614147 | -28.9960994 |  Flat_low_HK | Longslit | default |     1,1 |  2458792.360810186 |     1.0 |    15.0 |  default |
+data end
+

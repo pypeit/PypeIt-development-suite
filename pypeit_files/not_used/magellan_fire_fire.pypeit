@@ -20,7 +20,7 @@
 
 # Read in the data
 data read
- path /Volumes/GoogleDrive/Team Drives/PHYS-GP-Hennawi/PypeIt/PypeIt-development-suite/RAW_DATA/magellan_fire/FIRE/
+ path /home/xavier/local/Python/PypeIt-development-suite/RAW_DATA/magellan_fire/FIRE/
 |          filename | frametype            |    target | exptime |       date |
 | fire_0029.fits.gz |    science,arc,tilt | J0100_hz6 |   908.8 | 2014-10-07 |
 | fire_0030.fits.gz |    science,arc,tilt | J0100_hz6 |   908.8 | 2014-10-07 |

@@ -1,0 +1,40 @@
+# Auto-generated PypeIt file
+# Wed 04 Dec 2019 15:44:32
+
+# User-defined execution parameters
+[rdx]
+spectrograph = gemini_flamingos2
+
+# Setup
+setup read
+ Setup A:
+   --:
+     dichroic: JH_G0809
+     disperser:
+       angle: none
+       name: JH_G5801
+     slit:
+       decker: 4pix-slit
+       slitlen: none
+       slitwid: none
+   '01':
+     binning: 1,1
+     det: 1
+     namp: 1
+setup end
+
+# Read in the data
+data read
+ path /home/xavier/local/Python/PypeIt-development-suite/RAW_DATA/Gemini_FLAMINGOS2/JH_JH
+|               filename |        frametype |          ra |          dec |          target | dispname |    decker | binning |           mjd | airmass | exptime | dichroic | calib | comb_id | bkg_id |
+| S20161108S0068.fits.gz |  pixelflat,trace | 36.11058333 |     -47.1915 |        GCALflat | JH_G5801 | 4pix-slit |     1,1 | 57700.1015625 |   1.179 |     4.0 | JH_G0809 |     0 |      -1 |     -1 |
+| S20161108S0059.fits.gz | science,arc,tilt | 36.11058333 |     -47.1915 | VDES J0224-4711 | JH_G5801 | 4pix-slit |     1,1 | 57700.1015625 |   1.251 |   200.0 | JH_G0809 |     0 |       1 |      2 |
+| S20161108S0060.fits.gz | science,arc,tilt | 36.11058333 |     -47.1915 | VDES J0224-4711 | JH_G5801 | 4pix-slit |     1,1 | 57700.1015625 |    1.24 |   200.0 | JH_G0809 |     0 |       2 |      1 |
+| S20161108S0061.fits.gz | science,arc,tilt | 36.11058333 |     -47.1915 | VDES J0224-4711 | JH_G5801 | 4pix-slit |     1,1 | 57700.1015625 |    1.23 |   200.0 | JH_G0809 |     0 |       2 |      1 |
+| S20161108S0062.fits.gz | science,arc,tilt | 36.11058333 |     -47.1915 | VDES J0224-4711 | JH_G5801 | 4pix-slit |     1,1 | 57700.1015625 |    1.22 |   200.0 | JH_G0809 |     0 |       1 |      2 |
+| S20161108S0038.fits.gz |         standard | 20.43472917 | -52.07651111 |         HIP6364 | JH_G5801 | 4pix-slit |     1,1 |       57700.0 |   1.246 |     5.0 | JH_G0809 |     0 |       3 |      4 |
+| S20161108S0039.fits.gz |         standard | 20.43472917 | -52.07651111 |         HIP6364 | JH_G5801 | 4pix-slit |     1,1 |       57700.0 |   1.245 |     5.0 | JH_G0809 |     0 |       4 |      3 |
+| S20161108S0040.fits.gz |         standard | 20.43472917 | -52.07651111 |         HIP6364 | JH_G5801 | 4pix-slit |     1,1 |       57700.0 |   1.244 |     5.0 | JH_G0809 |     0 |       4 |      3 |
+| S20161108S0041.fits.gz |         standard | 20.43472917 | -52.07651111 |         HIP6364 | JH_G5801 | 4pix-slit |     1,1 |       57700.0 |   1.243 |     5.0 | JH_G0809 |     0 |       3 |      4 |
+data end
+

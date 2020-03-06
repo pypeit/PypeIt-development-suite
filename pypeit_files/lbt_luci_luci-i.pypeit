@@ -1,0 +1,44 @@
+# Auto-generated PypeIt file
+# Fri 13 Dec 2019 15:19:48
+
+# User-defined execution parameters
+[rdx]
+spectrograph = lbt_luci1
+
+# Setup
+setup read
+ Setup A:
+   --:
+     dichroic: none
+     disperser:
+       angle: none
+       name: G200 LoRes
+     slit:
+       decker: LS_1.00arcsec
+       slitlen: none
+       slitwid: none
+   '01':
+     binning: 1,1
+     det: 1
+     namp: 1
+setup end
+
+# Read in the data
+data read
+ path /home/xavier/local/Python/PypeIt-development-suite/RAW_DATA/lbt_luci/LUCI-I
+|                 filename |        frametype |           ra |           dec |              target |   dispname |        decker | binning |          mjd |      airmass | exptime | calib | comb_id | bkg_id |   idname |
+| luci1.20181124.0043.fits | arc,science,tilt |  09 07 9.895 | +25 06 20.808 | J090709.89+250620.8 | G200 LoRes | LS_1.00arcsec |     1,1 | 58446.437615 | 1.0946223372 |   220.0 |     0 |       5 |      6 |   object |
+| luci1.20181124.0044.fits | arc,science,tilt |  09 07 9.895 | +25 06 20.808 | J090709.89+250620.8 | G200 LoRes | LS_1.00arcsec |     1,1 | 58446.440681 | 1.0870100797 |   220.0 |     0 |       6 |      5 |   object |
+| luci1.20181124.0045.fits | arc,science,tilt |  09 07 9.895 | +25 06 20.808 | J090709.89+250620.8 | G200 LoRes | LS_1.00arcsec |     1,1 |  58446.44351 | 1.0804379436 |   220.0 |     0 |       7 |      8 |   object |
+| luci1.20181124.0046.fits | arc,science,tilt |  09 07 9.895 | +25 06 20.808 | J090709.89+250620.8 | G200 LoRes | LS_1.00arcsec |     1,1 | 58446.446587 | 1.0736825039 |   220.0 |     0 |       8 |      7 |   object |
+| luci1.20181122.0083.fits |  pixelflat,trace | 03 19 44.945 | +01 11 56.539 |           HIP 13917 | G200 LoRes | LS_1.00arcsec |     1,1 | 58444.458886 |          1.0 |    16.0 |     0 |      -1 |     -1 |     flat |
+| luci1.20181122.0084.fits |  pixelflat,trace | 03 19 44.945 | +01 11 56.539 |           HIP 13917 | G200 LoRes | LS_1.00arcsec |     1,1 | 58444.459201 |          1.0 |    16.0 |     0 |      -1 |     -1 |     flat |
+| luci1.20181122.0085.fits |  pixelflat,trace | 03 19 44.945 | +01 11 56.539 |           HIP 13917 | G200 LoRes | LS_1.00arcsec |     1,1 | 58444.459508 |          1.0 |    16.0 |     0 |      -1 |     -1 |     flat |
+| luci1.20181122.0086.fits |  pixelflat,trace | 03 19 44.945 | +01 11 56.539 |           HIP 13917 | G200 LoRes | LS_1.00arcsec |     1,1 | 58444.459808 |          1.0 |    16.0 |     0 |      -1 |     -1 |     flat |
+| luci1.20181122.0087.fits |  pixelflat,trace | 03 19 44.945 | +01 11 56.539 |           HIP 13917 | G200 LoRes | LS_1.00arcsec |     1,1 | 58444.460116 |          1.0 |    16.0 |     0 |      -1 |     -1 |     flat |
+| luci1.20181124.0034.fits |         standard | 08 31 19.941 | +37 15 53.213 |            HD 71906 | G200 LoRes | LS_1.00arcsec |     1,1 | 58446.419426 | 1.0633296244 |   62.75 |     0 |       1 |      2 | standard |
+| luci1.20181124.0035.fits |         standard | 08 31 19.941 | +37 15 53.213 |            HD 71906 | G200 LoRes | LS_1.00arcsec |     1,1 | 58446.420647 | 1.0610231568 |   62.75 |     0 |       2 |      1 | standard |
+| luci1.20181124.0036.fits |         standard | 08 31 19.941 | +37 15 53.213 |            HD 71906 | G200 LoRes | LS_1.00arcsec |     1,1 | 58446.421574 | 1.0592939926 |   62.75 |     0 |       2 |      1 | standard |
+| luci1.20181124.0037.fits |         standard | 08 31 19.941 | +37 15 53.213 |            HD 71906 | G200 LoRes | LS_1.00arcsec |     1,1 | 58446.422787 | 1.0570759215 |   62.75 |     0 |       1 |      2 | standard |
+data end
+
