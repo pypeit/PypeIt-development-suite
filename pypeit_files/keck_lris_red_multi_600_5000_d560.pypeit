@@ -21,7 +21,7 @@ setup end
 
 # Read in the data
 data read
- path /data/Projects/Python/PypeIt-development-suite/RAW_DATA/Keck_LRIS_red/multi_600_5000_d560/raw
+ path /data/Projects/Python/PypeIt-development-suite/RAW_DATA/keck_lris_red/multi_600_5000_d560/raw
 |                  filename |       frametype |          ra |         dec |          target | dispname |   decker | binning |          mjd |    airmass | exptime | dichroic |   dispangle |
 #| LR.20170319.13295.fits.gz |            bias | 15:20:00.00 | +00:00:00.0 |       DOME FLAT |   mirror |   direct |     2,2 | 57831.153878 | 13.37481353 |     0.0 |      560 | 13.88036156 |
 #| LR.20170319.13353.fits.gz |            bias | 15:20:00.00 | +00:00:00.0 |       DOME FLAT |   mirror |   direct |     2,2 | 57831.154558 | 13.37481353 |     0.0 |      560 | 13.88036156 |

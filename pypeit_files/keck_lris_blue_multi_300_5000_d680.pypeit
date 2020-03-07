@@ -21,7 +21,7 @@ setup end
 
 # Read in the data
 data read
- path /Users/joe/python/PypeIt-development-suite/RAW_DATA/Keck_LRIS_blue/multi_300_5000_d680
+ path /Users/joe/python/PypeIt-development-suite/RAW_DATA/keck_lris_blue/multi_300_5000_d680
 |          filename | frametype       |          ra |         dec |  target | dispname |   decker | binning |          mjd |    airmass | exptime | dichroic |
 | b170816_0030.fits | pixelflat,trace | 15:20:00.00 | +45:00:00.0 | unknown | 300/5000 | E570.fil |     1,1 | 57981.138312 | 1.41309236 |    18.0 |      680 |
 | b170816_0031.fits | pixelflat,trace | 15:20:00.00 | +45:00:00.0 | unknown | 300/5000 | E570.fil |     1,1 | 57981.139355 | 1.41309236 |    18.0 |      680 |

@@ -1,0 +1,56 @@
+Steps for gerenrating SENSFUNC, fluxing, coadding, and telluric correction:
+
+Step 1: Generate a SENSFUNC
+  Prepare a sensfunc pypeit file. See example below (sens_par.pypeit):
+  ####################################################################################################
+  [sensfunc]
+    [[IR]]
+    telgridfile = /Users/feige/Dropbox/PypeIt_Redux/XSHOOTER/TelFit_Paranal_VIS_4900_11100_R25000.fits
+  ####################################################################################################
+
+  Run the following command line in your terminal:
+  pypeit_sensfunc ./Science/spec1d_XSHOO.2017-10-25T23\:32\:02.407-LTT7987_XShooter_VIS_2017Oct25T233202.407.fits -s sens_par.pypeit
+
+  It generate a SENSFUNC fits file named as:
+  sens_XSHOO.2017-10-25T23:32:02.407-LTT7987_XShooter_VIS_2017Oct25T233202.407.fits
+
+Step 2: Flux your one-D spectra
+  Prepare a fluxing pypeit file. See example below (flux_par.pypeit):
+  ####################################################################################################
+  # first column is the names of your spec1d files
+  # second column is your sensfunc, you must specify either a sensfile for all spec1dfiles on the first line, or
+  # create a two column list of spec1dfiles and corresponding sensfiles
+  flux read
+   Science/spec1d_XSHOO.2017-10-26T00:15:32.343-VHSJ0020-3653_XShooter_VIS_2017Oct26T001532.343.fits sens_XSHOO.2017-10-25T23:32:02.407-LTT7987_XShooter_VIS_2017Oct25T233202.407.fits
+   Science/spec1d_XSHOO.2017-10-26T00:26:38.553-VHSJ0020-3653_XShooter_VIS_2017Oct26T002638.553.fits
+   Science/spec1d_XSHOO.2017-10-26T00:37:44.584-VHSJ0020-3653_XShooter_VIS_2017Oct26T003744.583.fits
+   Science/spec1d_XSHOO.2017-10-26T00:48:52.304-VHSJ0020-3653_XShooter_VIS_2017Oct26T004852.304.fits
+   Science/spec1d_XSHOO.2017-12-17T02:44:39.735-VHSJ0020-3653_XShooter_VIS_2017Dec17T024439.735.fits
+   Science/spec1d_XSHOO.2017-12-17T03:05:47.087-VHSJ0020-3653_XShooter_VIS_2017Dec17T030547.087.fits
+  flux end
+  ####################################################################################################
+
+  Run the following command line in your terminal:
+  pypeit_flux_calib flux_par.pypeit
+
+Step 3: Coadd your one-D spectra of your science targets one by one
+  Prepare a coadd pypeit file. See example below (coadd1d_par.pypeit):
+  ####################################################################################################
+  [coadd1d]
+   coaddfile = 'J0020-3653_XShooter_VIS_coadd.fits'
+   sensfuncfile = 'sens_XSHOO.2017-10-25T23:32:02.407-LTT7987_XShooter_VIS_2017Oct25T233202.407.fits'
+
+  # first column is the names of your spec1d files
+  # second column is the extension name of your object
+  coadd1d read
+   Science/spec1d_XSHOO.2017-10-26T00:15:32.343-VHSJ0020-3653_XShooter_VIS_2017Oct26T001532.343.fits OBJ0685-DET01
+   Science/spec1d_XSHOO.2017-10-26T00:26:38.553-VHSJ0020-3653_XShooter_VIS_2017Oct26T002638.553.fits OBJ0245-DET01
+   Science/spec1d_XSHOO.2017-10-26T00:37:44.584-VHSJ0020-3653_XShooter_VIS_2017Oct26T003744.583.fits OBJ0251-DET01
+   Science/spec1d_XSHOO.2017-10-26T00:48:52.304-VHSJ0020-3653_XShooter_VIS_2017Oct26T004852.304.fits OBJ0705-DET01
+   Science/spec1d_XSHOO.2017-12-17T02:44:39.735-VHSJ0020-3653_XShooter_VIS_2017Dec17T024439.735.fits OBJ0664-DET01
+   Science/spec1d_XSHOO.2017-12-17T03:05:47.087-VHSJ0020-3653_XShooter_VIS_2017Dec17T030547.087.fits OBJ0253-DET01
+  coadd1d end
+  ####################################################################################################
+
+  Run the following command line in your terminal:
+  pypeit_coadd_1dspec coadd1d_par.pypeit

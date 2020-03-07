@@ -22,7 +22,7 @@ setup end
 
 # Read in the data
 data read
- path /home/xavier/local/Python/PypeIt-development-suite/RAW_DATA/Gemini_GMOS/GS_HAM_R400_700
+ path /home/xavier/local/Python/PypeIt-development-suite/RAW_DATA/gemini_gmos/GS_HAM_R400_700
 |            filename |       frametype |           ra |          dec |    target |    dispname |    decker | binning |              mjd | airmass | exptime |    dichroic | dispangle |
 #| S20181005S0082.fits |        arc,tilt | 326.10520833 | -40.90022222 |      CuAr | R400+_G5325 | 1.0arcsec |     2,2 | 2018.75872120822 |   1.063 |    16.0 | GG455_G0329 |     700.0 |
 | S20181005S0083.fits.gz |        arc,tilt | 326.10520833 | -40.90022222 |      CuAr | R400+_G5325 | 1.0arcsec |     2,2 | 2018.75872227769 |   1.064 |    16.0 | GG455_G0329 |     700.0 |

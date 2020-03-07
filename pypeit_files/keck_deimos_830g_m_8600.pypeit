@@ -32,7 +32,7 @@ setup end
 
 # Read in the data
 data read
- path ../../../RAW_DATA/Keck_DEIMOS/830G_M_8600/
+ path /home/xavier/local/Python/PypeIt-development-suite/RAW_DATA/keck_deimos/830G_M_8600/
 |                  filename |                date |       frametype |          target | exptime | dispname |  decker |
 | DE.20130409.09996.fits.gz | 2013-04-09T02:46:30 |        arc,tilt |         unknown |       1 |     830G | Z6CL01B |
 | DE.20130409.10065.fits.gz | 2013-04-09T02:47:54 | pixelflat,trace |         unknown |       8 |     830G | Z6CL01B |

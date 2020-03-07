@@ -30,7 +30,7 @@ setup end
 
 # Read in the data
 data read
- path /Users/joe/python/PypeIt-development-suite/RAW_DATA/Keck_LRIS_blue/multi_600_4000_d560/
+ path /Users/joe/python/PypeIt-development-suite/RAW_DATA/keck_lris_blue/multi_600_4000_d560/
 |             filename | frametype |     target | exptime | dispname |   decker | setup | calib | binning | dichroic |   dispangle |
 | b170320_2022.fits.gz |  arc,tilt |    unknown |       1 | 600/4000 | c17_60L. |     A |     0 |     2,2 |      560 | 22.13431168 |
 | b170320_2042.fits.gz |      bias |    unknown |       0 | 600/4000 | sp15l.fi |     A |     0 |     2,2 |      560 | 22.13544083 |

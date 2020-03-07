@@ -30,7 +30,7 @@ setup end
 
 # Read in the data
 data read
- path ../../RAW_DATA/Keck_NIRES/NIRES
+ path /home/xavier/local/Python/PypeIt-development-suite/RAW_DATA/keck_nires/NIRES
 |             filename |        frametype |               ra |               dec |     target | dispname |  decker | binning |              mjd |          airmass | exptime | calib | comb_id | bkg_id |
 | s180604_0023.fits.gz |  pixelflat,trace |          58.0296 |           44.9972 |       flat |     spec | default |     1,1 | 58273.1074152318 |  1.4129791420892 |   100.0 | all   |      -1 |     -1 |
 | s180604_0024.fits.gz |  pixelflat,trace |          58.0296 |           44.9972 |       flat |     spec | default |     1,1 | 58273.1087728707 |  1.4129791420892 |   100.0 | all   |      -1 |     -1 |

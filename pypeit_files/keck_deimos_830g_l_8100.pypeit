@@ -15,8 +15,9 @@
         number = 0
 # No standard frame because we did not take a standard with the same slitmask.
 
-[extract]
-    maxnumber = 5
+[reduce]
+    [[findobj]]
+        maxnumber = 5
 
 # Setup
 setup read
@@ -37,7 +38,7 @@ setup end
 
 # Read in the data
 data read
- path ../../../RAW_DATA/Keck_DEIMOS/830G_L_8100/
+ path /home/xavier/local/Python/PypeIt-development-suite/RAW_DATA/keck_deimos/830G_L_8100/
 |               filename |       frametype |          ra |         dec |     target | dispname |   decker | binning |          mjd |    airmass | exptime |     dispangle |
 | DE.20170527.06713.fits |        tilt,arc | 03:52:00.00 | +45:00:00.0 | DOME PHLAT |     830G | LongMirr |     1,1 | 57900.077631 | 1.41291034 |     1.0 | 8099.98291016 |
 | DE.20170527.06790.fits | trace,pixelflat | 03:52:00.00 | +45:00:00.0 | DOME PHLAT |     830G | LongMirr |     1,1 |  57900.07851 | 1.41291034 |     4.0 | 8099.98291016 |

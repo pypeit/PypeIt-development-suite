@@ -28,7 +28,7 @@ setup end
 
 # Read in the data
 data read
- path ../../RAW_DATA/Magellan_MAGE/1x1
+ path /home/xavier/local/Python/PypeIt-development-suite/RAW_DATA/magellan_mage/1x1
 |      filename |       frametype |         ra |         dec |               target | dispname | decker | binning |                mjd | airmass | exptime |
 #| mage0040.fits | trace,pixelflat | 06:31:23.7 | -28:59:39.8 | domeflatQh+Ql+5volts |     MagE |   2542 |     1,1 |  58606.85490740741 |     1.0 |    20.0 |
 #| mage0041.fits | trace,pixelflat | 06:32:19.4 | -28:59:34.2 | domeflatQh+Ql+5volts |     MagE |   2542 |     1,1 |  58606.85555555556 |     1.0 |    20.0 |

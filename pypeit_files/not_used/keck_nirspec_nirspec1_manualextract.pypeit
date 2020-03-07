@@ -26,7 +26,7 @@ setup end
 
 # Read in the data
 data read
- path /Users/thsyu/Google Drive File Stream/Team Drives/PHYS-GP-Hennawi/PypeIt/PypeIt-development-suite/RAW_DATA/Keck_NIRSPEC/NIRSPEC-1
+ path /home/xavier/local/Python/PypeIt-development-suite/RAW_DATA/keck_nirspec/LOW_NIRSPEC-1
 |                  filename |       frametype |        ra |      dec |         target | dispname |   decker | binning |         mjd | airmass | exptime |   calib | comb_id | bkg_id |      manual_extract |
 | NS.20160414.02604.fits.gz | trace,pixelflat |       0.0 |      0.0 |                |      low | 42x0.760 |     1,1 | 57492.03014 | 1.41291 |    3.28 |   all |       1 |     -1 |                None |
 | NS.20160414.02620.fits.gz | trace,pixelflat |       0.0 |      0.0 |                |      low | 42x0.760 |     1,1 | 57492.03033 | 1.41291 |    3.28 |   all |       1 |     -1 |                None |

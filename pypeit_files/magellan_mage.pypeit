@@ -27,7 +27,7 @@ spectrograph = magellan_mage
 
 # Read in the data
 data read
- path /home/ema/Extern/GoogleDrive/PypeIt/PypeIt-development-suite/RAW_DATA/Magellan_MAGE
+ path /home/ema/Extern/GoogleDrive/PypeIt/PypeIt-development-suite/RAW_DATA/magellan_mage
 | filename         | date                | frametype  | target                 | exptime  |
 | mage1034.fits.gz | 2009-03-22T22:19:26 | arc,tilt        | ThAr                   | 5.000    | # SLIT=0.70
 | mage1046.fits.gz | 2009-03-22T23:48:21 | science    | GD108                  | 120.000  | # SLIT=0.70

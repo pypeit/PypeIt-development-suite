@@ -6,8 +6,9 @@
   spectrograph = keck_lris_blue
   sortroot = keck_lris_blue_multi_600_4000_d560
   detnum = 2
-[scienceimage]
-sig_thresh=5.0
+[reduce]
+    [[findobj]]
+        sig_thresh=5.0
 
 # Read in the data
 coadd2d read
