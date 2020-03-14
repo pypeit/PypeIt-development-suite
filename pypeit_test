@@ -533,7 +533,7 @@ def main():
                     failed += [ 'run_pypeit std: {0}/{1}'.format(instr, setup) ]
 
             # Try re-running keck_lris_red setups with masters
-            if passed and not (flg_after or flg_ql) and instr == 'keck_lris_red':
+            if passed and not (flg_after or flg_ql) and instr == 'keck_lris_red' and not flg_ql:
                 ntest += 1
                 passed = run_pypeit(rdxdir, instr, setup, pyp_file, True)
                 if passed:
