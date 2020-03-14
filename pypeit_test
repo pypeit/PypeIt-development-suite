@@ -303,7 +303,7 @@ def parser(options=None):
                              'can provide the telescope or the spectrograph, but beware of '
                              'non-unique matches.  E.g. \'mage\' selects all the magellan '
                              'instruments, not just \'magellan_mage\'.  Options include: '
-                             'develop, reduce, afterburn, all, {0}'.format(', '.join(all_tests)))
+                             'develop, reduce, afterburn, all, ql, {0}'.format(', '.join(all_tests)))
     parser.add_argument('-o', '--outputdir', type=str, default='REDUX_OUT',
                         help='Output folder.')
     # TODO: Why is this an option?
@@ -335,6 +335,7 @@ def main():
 
     all_instruments = available_data()
     flg_after = False
+    flg_ql = False
 
     # Development instruments (in returned dictonary keys) and setups
     devsetups = develop_setups()
@@ -345,12 +346,14 @@ def main():
         instruments = np.array([item for item in all_instruments
                                         for inst in supported_instruments()
                                             if inst.lower() in item.lower()])
-    elif pargs.tests in ['develop', 'reduce', 'afterburn']:
+    elif pargs.tests in ['develop', 'reduce', 'afterburn', 'ql']:
         instruments = np.array(list(devsetups.keys())) if pargs.instrument is None \
                         else np.array([pargs.instrument])
         if pargs.tests == 'afterburn':
             # Only do the flux-calibration and coadding tests
             flg_after = True
+        elif pargs.tests == 'ql':
+            flg_ql = True
     else:
         instruments = np.array([item for item in all_instruments 
                                     if pargs.tests.lower() in item.lower()])
@@ -512,7 +515,7 @@ def main():
 
             pyp_file = os.path.split(pyp_file)[1]
             # Run pypeit
-            if passed and not flg_after:
+            if passed and not (flg_after or flg_ql):
                 ntest += 1
                 passed = run_pypeit(rdxdir, instr, setup, pyp_file, pargs.masters)
                 if passed:
@@ -521,7 +524,7 @@ def main():
                     failed += [ 'run_pypeit: {0}/{1}'.format(instr, setup) ]
 
             # Run pypeit on any standards, if they exist
-            if passed and std_pyp_file is not None and not flg_after:
+            if passed and std_pyp_file is not None and not (flg_after or flg_ql):
                 ntest += 1
                 passed = run_pypeit(rdxdir, instr, setup, std_pyp_file, pargs.masters)
                 if passed:
@@ -530,7 +533,7 @@ def main():
                     failed += [ 'run_pypeit std: {0}/{1}'.format(instr, setup) ]
 
             # Try re-running keck_lris_red setups with masters
-            if passed and not flg_after and instr == 'keck_lris_red':
+            if passed and not (flg_after or flg_ql) and instr == 'keck_lris_red':
                 ntest += 1
                 passed = run_pypeit(rdxdir, instr, setup, pyp_file, True)
                 if passed:
@@ -547,7 +550,7 @@ def main():
             # SensFunc tests
             # ----------------------------------------------------------
             # UVIS algorithm without .sens file
-            if passed and instr == 'shane_kast_blue' and '600' in setup:
+            if passed and instr == 'shane_kast_blue' and '600' in setup and not flg_ql:
                 ntest += 1
                 # TODO: Instead check for file with standard star in the
                 # file name?
@@ -560,7 +563,7 @@ def main():
                     failed += [ 'pypeit_sensfunc: {0}/{1}'.format(instr, setup) ]
 
             # IR algorithm with .sens file
-            if passed and instr == 'gemini_gnirs' and setup == '32_SB_SXD':
+            if passed and instr == 'gemini_gnirs' and setup == '32_SB_SXD' and not flg_ql:
                 ntest += 1
                 std_file = os.path.join(rdxdir, 'Science',
                                 'spec1d_cN20170331S0206-HIP62745_GNIRS_2017Mar31T083351.681.fits')
@@ -571,7 +574,7 @@ def main():
                     failed += [ 'pypeit_sensfunc: {0}/{1}'.format(instr, setup) ]
 
             # IR algorithm, multi-slit, without .sens file
-            if passed and instr == 'gemini_gmos' and setup == 'GS_HAM_R400_860':
+            if passed and instr == 'gemini_gmos' and setup == 'GS_HAM_R400_860' and not flg_ql:
                 ntest += 1
                 std_file = os.path.join(rdxdir, 'Science',
                                 'spec1d_S20181219S0316-GD71_GMOS-S_1864May27T230832.356.fits')
@@ -590,7 +593,7 @@ def main():
                                 'gemini_gnirs': '32_SB_SXD',        # echelle
                                 'gemini_gmos': 'GS_HAM_R400_860'}   # multi-slit
             if passed and any([instr == key and setup == flux_calib_pairs[key] 
-                                for key in flux_calib_pairs.keys()]):
+                                for key in flux_calib_pairs.keys()]) and not flg_ql:
                 ntest += 1
                 if run_flux_calib(dev_path, rdxdir, instr, setup):
                     npass += 1
@@ -616,7 +619,7 @@ def main():
                               'gemini_gnirs': '32_SB_SXD',        # echelle
                               'gemini_gmos': 'GS_HAM_R400_860'}   # multi-slit
             if passed and any([instr == key and setup == coadd_1d_pairs[key] 
-                                for key in coadd_1d_pairs.keys()]):
+                                for key in coadd_1d_pairs.keys()]) and not flg_ql:
                 ntest += 1
                 if run_coadd1d(dev_path, rdxdir, instr, setup):
                     npass += 1
@@ -630,7 +633,7 @@ def main():
             # 2D coadding tests
             # ----------------------------------------------------------
             # Echelle
-            if passed and instr == 'gemini_gnirs' and setup == '32_SB_SXD':
+            if passed and instr == 'gemini_gnirs' and setup == '32_SB_SXD' and not flg_ql:
                 ntest += 1
                 if run_coadd2d(rdxdir, instr, setup, obj='pisco'):
                     npass += 1
@@ -638,7 +641,7 @@ def main():
                     failed += [ 'pypeit_coadd_2dspec: {0}/{1}'.format(instr, setup) ]
 
             # MultiSlit
-            if passed and instr == 'keck_lris_blue' and setup == 'multi_600_4000_d560':
+            if passed and instr == 'keck_lris_blue' and setup == 'multi_600_4000_d560' and not flg_ql:
                 ntest += 1
                 if run_coadd2d(rdxdir, instr, setup, 
                                coadd_file=template_coadd2d_file(dev_path, instr, setup)):
