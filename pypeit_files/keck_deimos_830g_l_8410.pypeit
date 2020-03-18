@@ -6,14 +6,6 @@
     sortroot = keck_deimos_setup_A
     detnum = 3,7
 
-[calibrations]
-    [[arcframe]]
-        number = 2
-    [[pixelflatframe]]
-        number = 5
-    [[traceframe]]
-        number = 5
-
 [extract]
     maxnumber = 5
 

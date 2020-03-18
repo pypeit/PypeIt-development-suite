@@ -6,14 +6,6 @@
     sortroot = keck_deimos_600zd_m_6500
     detnum = 3,7
 
-[calibrations]
-    [[pixelflatframe]]
-        number = 1
-    [[traceframe]]
-        number = 1
-    [[standardframe]]
-        number = 0
-
 # Setup
 setup read
  Setup A

@@ -7,16 +7,6 @@
 
 #    sortroot = keck_deimos_830g
 
-[calibrations]
-    [[arcframe]]
-        number = 2
-    [[pixelflatframe]]
-        number = 5
-    [[traceframe]]
-        number = 5
-    [[standardframe]]
-        number = 1
-
 [extract]
     maxnumber = 5
 

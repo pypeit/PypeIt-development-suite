@@ -4,9 +4,6 @@
 # User-defined execution parameters
 [rdx]
 spectrograph = magellan_mage
-[calibrations]
-[[arcframe]]
-number = 1
 
 # Setup
 setup read
