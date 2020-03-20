@@ -4,9 +4,6 @@
 # User-defined execution parameters
 [rdx]
 spectrograph = keck_lris_red
-[calibrations]
-[[standardframe]]
-number = 0
 
 # Setup
 setup read

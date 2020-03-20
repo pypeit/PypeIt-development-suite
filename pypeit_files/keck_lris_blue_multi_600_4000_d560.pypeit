@@ -7,18 +7,6 @@
   sortroot = keck_lris_blue_multi_600_4000_d560
   detnum = 2
 [calibrations]
-[[biasframe]]
-number = 5
-[[pixelflatframe]]
-number = 0
-[[arcframe]]
-number = 1
-[[pinholeframe]]
-number = 0
-[[traceframe]]
-number = 1
-[[standardframe]]
-number = 0
 [[flatfield]]
 frame = /Users/joe/python/PypeIt-development-suite/CALIBS/PYPEIT_LRISb_pixflat_B600_2x2_17sep2009.fits.gz
 

@@ -2,18 +2,6 @@
 [rdx]
     spectrograph = keck_lris_blue
 [calibrations]
-    [[biasframe]]
-        number = 1
-    [[pixelflatframe]]
-        number = 5
-    [[arcframe]]
-        number = 1	
-    [[pinholeframe]]
-        number = 0
-    [[traceframe]]
-        number = 0
-    [[standardframe]]
-        number = 0
     [[slits]]
      rm_slits = 1:1000:725
      # get rid of blended together box slit which is identified as a real slit.

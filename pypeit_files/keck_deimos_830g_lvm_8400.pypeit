@@ -7,14 +7,6 @@
     detnum = 3,7 
 
 [calibrations]
-    [[arcframe]]
-        number = 3
-    [[pixelflatframe]]
-        number = 5
-    [[traceframe]]
-        number = 5
-    [[standardframe]]
-        number = 0
     [[wavelengths]]
         rms_threshold = 1.0
 [reduce]

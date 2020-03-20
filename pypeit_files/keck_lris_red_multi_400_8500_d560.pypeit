@@ -4,19 +4,6 @@
 [rdx]
     spectrograph = keck_lris_red
     sortroot = keck_lris_red_multi_400_8500_d560
-[calibrations]
-    [[biasframe]]
-#        number = 10
-    [[pixelflatframe]]
-        number = 3
-    [[arcframe]]
-        number = 1
-    [[pinholeframe]]
-        number = 0
-    [[traceframe]]
-        number = 1
-    [[standardframe]]
-        number = 0
 
 # Setup
 setup read

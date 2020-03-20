@@ -13,19 +13,9 @@ spectrograph = vlt_xshooter_nir
     sortroot = vlt_xshooter_nir
 
 [calibrations]
-    [[arcframe]]
-        number = 1
-    [[standardframe]]
-        number = 0
-    [[biasframe]]
-        number = 3
-    [[pixelflatframe]]
-        number = 3
     [[tilts]]
         method = spca
         params = 1, 1, 1
-    [[traceframe]]
-        number = 1
 
 # Setup
 setup read

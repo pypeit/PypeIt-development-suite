@@ -6,16 +6,6 @@
     sortroot = keck_deimos_setup_A
     detnum = 3,7
 
-[calibrations]
-    [[arcframe]]
-        number = 2
-    [[traceframe]]
-        number = 5
-    [[pixelflatframe]]
-        number = 5
-    [[standardframe]]
-        number = 3
-
 # Setup
 setup read
  Setup A
