@@ -422,7 +422,7 @@ def main():
                     missing_pypfiles += [pyp_file]
 
         if len(unsupported) > 0:
-            raise ValueError('Unsupported instruments: {0}'.format(', '.join(unsuppoted)))
+            raise ValueError('Unsupported instruments: {0}'.format(', '.join(unsupported)))
         if len(missing_data) > 0:
             raise ValueError('Missing the following test data: {0}'.format(
                                 ', '.join(missing_data)))
