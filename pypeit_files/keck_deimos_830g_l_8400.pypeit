@@ -6,12 +6,6 @@
     sortroot = keck_deimos_830g
     detnum = 3,7
 
-[calibrations]
-    [[pixelflatframe]]
-        number = 3
-    [[traceframe]]
-        number = 3
-
 [extract]
     maxnumber = 5
 

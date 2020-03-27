@@ -4,19 +4,6 @@
 # User-defined execution parameters
 [rdx]
     spectrograph = keck_lris_red
-[calibrations]
-    [[biasframe]]
-        number = 1
-    [[pixelflatframe]]
-        number = 1
-    [[arcframe]]
-        number = 1
-    [[pinholeframe]]
-        number = 0
-    [[traceframe]]
-        number = 0
-    [[standardframe]]
-        number = 0
 #    [[slitedges]]
 #     rm_slits = 1:1000:240,2:1000:930,2:1000:1080
      # get rid of bad slit caused by scattered light
