@@ -4,6 +4,9 @@
     spectrograph = keck_deimos
     sortroot = keck_deimos_setup_A
     detnum = 2,6
+[calibrations]
+    [[flatfield]]
+        saturated_slits = continue
 
 # Setup
 setup read

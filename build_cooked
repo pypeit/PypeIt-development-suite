@@ -74,6 +74,7 @@ def main():
     shane_kast_blue_Science = os.path.join(redux_dir, 'shane_kast_blue', '600_4310_d55',
                                   'shane_kast_blue_A', 'Science')
     kastb_files = glob.glob(os.path.join(shane_kast_blue_Science,'spec1d_*.fits'))
+    kastb_files += glob.glob(os.path.join(shane_kast_blue_Science, 'spec2d_b27*fits'))
     ''' NOT USED RIGHT NOW
     # DEIMOS standard
     keck_deimos_Science = os.path.join(redux_dir, 'keck_deimos','830G_L_8400', 'Science')
@@ -85,6 +86,17 @@ def main():
     if not os.path.isdir(cooked_dir):
         os.mkdir(cooked_dir)
     # Do it
+    for new_file in all_files:
+        cooked_file = os.path.join(cooked_dir, os.path.basename(new_file))
+        copy_me(new_file, cooked_file)
+
+    # For the show_2dspec unit test:
+    cooked_dir = os.path.join('Cooked', 'Masters')
+    if not os.path.isdir(cooked_dir):
+        os.mkdir(cooked_dir)
+    mdir = os.path.join(redux_dir, 'shane_kast_blue', '600_4310_d55',
+                        'shane_kast_blue_A', 'Masters')
+    all_files = glob.glob(os.path.join(mdir, '*Slits*'))
     for new_file in all_files:
         cooked_file = os.path.join(cooked_dir, os.path.basename(new_file))
         copy_me(new_file, cooked_file)
