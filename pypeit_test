@@ -21,8 +21,8 @@ def develop_setups():
     """
     Return the list of development setups.
     """
-    return {'shane_kast_blue': ['452_3306_d57', '600_4310_d55'],
-            'shane_kast_red': ['600_7500_d55_ret', '600_7500_d57'],
+    return {'shane_kast_blue': ['452_3306_d57', '600_4310_d55', '830_3460_d46'],
+            'shane_kast_red': ['600_7500_d55_ret', '600_7500_d57', '600_5000_d46'],
             'keck_deimos': ['600ZD_M_6500', '1200G_M_7750', '830G_LVM_8400', '830G_M_8100_26',
                             '830G_M_8500', '830G_L_8100'],
             'keck_nires': ['NIRES'],
