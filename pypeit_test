@@ -497,8 +497,6 @@ def main():
                 else:
                     failed += [ 'pypeit_setup: {0}/{1}'.format(instr, setup) ]
                 std_pyp_file = None
-            elif flg_ql:
-                pass
             else:
                 # Use pre-made PypeIt file
                 pyp_file = fix_pypeit_file_directory(dev_path, raw_data, instr, setup, rdxdir)
