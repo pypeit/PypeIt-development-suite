@@ -30,14 +30,16 @@ variable that points to this directory.  For example,
 ## Data Access
 
 Given its volume, this repo does not contain the raw data.  Instead the
-raw test data are hosted by in a Google Team Drive.  Please contact [Joe
-Hennawi](mailto:joe@physics.ucsb.edu) for access.
+raw test data are hosted by in a 
+[Google Drive](https://drive.google.com/drive/folders/1oh19siB1-F0jjmY-F_jr73eA-TQYEiFW?usp=sharing).  
 
-Once you have the correct permissions, the easiest way to access the
+The easiest way to access the
 development suite data is download and use [Google File
 Stream](https://support.google.com/drive/answer/7329379?hl=en).  Google
 File Stream is a Dropbox-like application that syncs your Google Drive
-with a local directory on your machine.  If you cannot or would rather
+with a local directory on your machine.  
+
+If you cannot or would rather
 not use Google File Stream, you can simply download the appropriate
 files directly using the Google Drive web interface (although this can
 be a bit onerous and does not keep in sync with the remote Team Drive).
