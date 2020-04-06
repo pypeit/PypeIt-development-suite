@@ -27,7 +27,7 @@ def develop_setups():
                             '830G_M_8500', '830G_L_8100'],
             'keck_nires': ['NIRES'],
             'keck_nirspec': ['LOW_NIRSPEC-1'],
-            'keck_mosfire': ['Y_long'],
+            'keck_mosfire': ['Y_long', 'J_multi'],
             'keck_lris_blue': ['multi_600_4000_d560', 'long_400_3400_d560', 'long_600_4000_d560',
                                'multi_300_5000_d680'],
             'keck_lris_red': ['long_600_7500_d560', 'multi_1200_9000_d680_1x2',
