@@ -39,12 +39,13 @@ def develop_setups():
             'gemini_flamingos2': ['HK_HK', 'JH_JH'],
             'magellan_mage': ['1x1'],
             'magellan_fire': ['FIRE_Echelle', 'FIRE_Long'],
+            'mdm_osmos': ['MDM4K'],
             'lbt_luci': ['LUCI-I', 'LUCI-II']}
 
 
 def supported_instruments():
     return ['kast', 'deimos', 'nires', 'nirspec', 'mosfire', 'lris', 'xshooter', 'gnirs', 'gmos',
-            'flamingos2', 'mage', 'fire', 'luci']
+            'flamingos2', 'mage', 'fire', 'luci', 'mdm']
 
 
 def raw_data_dir():
@@ -645,7 +646,7 @@ def main():
             # MultiSlit
             if passed and instr == 'keck_lris_blue' and setup == 'multi_600_4000_d560' and not flg_ql:
                 ntest += 1
-                if run_coadd2d(rdxdir, instr, setup, 
+                if run_coadd2d(rdxdir, instr, setup,
                                coadd_file=template_coadd2d_file(dev_path, instr, setup)):
                     npass += 1
                 else:
@@ -680,7 +681,7 @@ def main():
     if npass == ntest:
         print("\n" + "\x1B[" + "1;32m" +
               "--- PYPEIT DEVELOPMENT SUITE PASSED {0}/{1} TESTS (Masters {2}) ---".format(
-                npass, ntest, 'reused' if pargs.masters else 'ignored') 
+                npass, ntest, 'reused' if pargs.masters else 'ignored')
               + "\x1B[" + "0m" + "\r", file=sys.stderr)
     else:
         print("\n" + "\x1B[" + "1;31m" +
