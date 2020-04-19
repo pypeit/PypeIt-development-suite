@@ -1,0 +1,36 @@
+# Auto-generated PypeIt file
+# Sun 19 Apr 2020 13:41:02
+
+# User-defined execution parameters
+[rdx]
+spectrograph = not_alfosc
+
+# Setup
+setup read
+ Setup A:
+   --:
+     binning: 2,1
+     dichroic: none
+     disperser:
+       angle: none
+       name: Grism_#4
+     slit:
+       decker: Slit_1.0
+       slitlen: none
+       slitwid: none
+setup end
+
+# Read in the data
+data read
+ path /home/xavier/local/Python/PypeIt-development-suite/RAW_DATA/not_alfosc/grism4
+|        filename |                 frametype |            ra |           dec |                  target | dispname |   decker | binning |                mjd |         airmass | exptime |
+| ALDc200207.fits |                  arc,tilt | 12.8347777778 | 28.0116388882 |    HeNe GQ125005+280041 | Grism_4 | Slit_1.0 |     2,1 | 58929.210751412036 | 1.2815260234976 |     3.0 |
+| ALDc200337.fits | pixelflat,illumflat,trace | 14.7806111111 | 25.9147222216 | Halogen 1 alfosc-calibs | Grism_4 | Slit_1.0 |     2,1 |  58929.29572361111 | 1.0000097567258 |     5.0 |
+| ALDc200338.fits | pixelflat,illumflat,trace | 14.7806111111 | 25.9147222216 | Halogen 2 alfosc-calibs | Grism_4 | Slit_1.0 |     2,1 | 58929.295879907404 |  1.000009754373 |     5.0 |
+| ALDc200339.fits | pixelflat,illumflat,trace | 14.7806111111 | 25.9147222216 | Halogen 3 alfosc-calibs | Grism_4 | Slit_1.0 |     2,1 |  58929.29603619213 |  1.000009754373 |     5.0 |
+| ALDc200205.fits |                   science | 12.8347777778 | 28.0116388882 |         GQ125005+280041 | Grism_4 | Slit_1.0 |     2,1 | 58929.193404502315 | 1.1720315699649 |  1030.0 |
+| ALDc210004.fits |                      bias | 14.7806111111 | 25.9147222216 |                    bias | Open_(Lyot) |   Open |     2,1 | 58929.75818763889 | 1.0000098168164 |   0.002 |
+| ALDc210005.fits |                      bias | 14.7806111111 | 25.9147222216 |   bias | Open_(Lyot) |   Open |     2,1 |  58929.7582541088 | 1.0000098156364 |   0.002 |
+| ALDc210006.fits |                      bias | 14.7806111111 | 25.9147222216 |   bias | Open_(Lyot) |   Open |     2,1 | 58929.75832069445 | 1.0000098168164 |   0.002 |
+data end
+
