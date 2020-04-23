@@ -669,7 +669,7 @@ def main():
             if instr.lower() == 'keck_nires' and setup == 'NIRES':
                 ntest += 1
                 if run_ql(rawdir, rdxdir, instr, setup,
-                          ['s180604_0089.fits.gz', 's180604_0090.fits.gz']):
+                          ['s190519_0067.fits', 's190519_0068.fits']):
                     npass += 1
                 else:
                     failed += [ 'pypeit_ql: {0}/{1}'.format(instr, setup) ]
