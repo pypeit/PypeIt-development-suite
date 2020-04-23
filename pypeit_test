@@ -132,12 +132,13 @@ def fix_pypeit_file_directory(dev_path, raw_data, instr, setup, rdxdir, std=Fals
     # Replace the default path with the local one
     for kk, iline in enumerate(lines):
         if 'data read' in iline:
+            # JFH: This logic is a convoluted mess, and resulted in an infinite while loop. I hope this fixes it.
             old_path = lines[kk+1].strip().split(' ')[1] if 'path' in lines[kk+1] \
                             else lines[kk+1].strip()
             subdir = ''
-            while os.path.split(old_path)[1] != setup:
-                subdir = os.path.join(os.path.split(old_path)[1], subdir)
-                old_path = os.path.split(old_path)[0]
+            #while os.path.split(old_path)[1] != setup:
+            #    subdir = os.path.join(os.path.split(old_path)[1], subdir)
+            #    old_path = os.path.split(old_path)[0]
             newdpth = ' path ' if 'path' in lines[kk+1] else ' '
             newdpth += os.path.join(raw_data, instr, setup, subdir)
             newdpth += '\n'
