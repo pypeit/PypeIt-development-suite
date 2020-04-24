@@ -2,15 +2,27 @@
 [rdx]
     spectrograph = keck_lris_blue
     sortroot = lris_blue_long_400_3400_d560
-
+[scienceframe]
+   [[process]]
+      use_biasimage=False
 [calibrations]
-    [[biasframe]]
-        [[[process]]]
-            sigrej = 20.
-    [[flatfield]]
-        frame = /home/xavier/Projects/Python/PypeIt-development-suite/CALIBS/PYPEIT_LRISb_pixflat_B400_2x2_15apr2015.fits.gz
-#    [[tilts]]
-#        idsonly = True
+   [[standardframe]]
+      [[[process]]]
+      use_biasimage=False
+   [[arcframe]]
+      [[[process]]]
+      use_biasimage=False
+   [[tiltframe]]
+      [[[process]]]
+      use_biasimage=False   
+   [[traceframe]]
+      [[[process]]]
+      use_biasimage=False
+   [[illumflatframe]]
+      [[[process]]]
+      use_biasimage=False      
+   [[flatfield]]
+      pixelflat_file = /Users/joe/python/PypeIt-development-suite/CALIBS/PYPEIT_LRISb_pixflat_B400_2x2_15apr2015.fits.gz
 
 # Setup
 setup read
@@ -19,12 +31,12 @@ setup end
 
 # Data
 data read
- path /home/xavier/Projects/Python/PYPIT-development-suite/RAW_DATA/keck_lris_blue/long_400_3400_d560/
+ path /Users/joe/python/PypeIt-development-suite/RAW_DATA/keck_lris_blue/long_400_3400_d560/
 |                  filename |                date |       frametype |       target | exptime | binning | dichroic | dispname |   decker |
 | LB.20160109.14149.fits.gz | 2016-01-09T03:55:53 |        arc,tilt |         test |       1 |     2,2 |      560 | 400/3400 | long_1.0 |
 | LB.20160109.57204.fits.gz | 2016-01-09T16:03:27 |         science | CIV1233-0031 |     600 |     2,2 |      560 | 400/3400 | long_1.0 |
 | LB.20160109.58013.fits.gz | 2016-01-09T16:07:21 |        standard |     Feige 34 |      25 |     2,2 |      560 | 400/3400 | long_1.0 |
-| LB.20160109.59923.fits.gz | 2016-01-09T16:38:53 | pixelflat,trace |          sky |       6 |     2,2 |      560 | 400/3400 | long_1.0 |
-| LB.20160109.59975.fits.gz | 2016-01-09T16:39:45 | pixelflat,trace |          sky |       6 |     2,2 |      560 | 400/3400 | long_1.0 |
-| LB.20160109.60019.fits.gz | 2016-01-09T16:40:26 | pixelflat,trace |          sky |       4 |     2,2 |      560 | 400/3400 | long_1.0 |
+| LB.20160109.59923.fits.gz | 2016-01-09T16:38:53 | illumflat,trace |          sky |       6 |     2,2 |      560 | 400/3400 | long_1.0 |
+| LB.20160109.59975.fits.gz | 2016-01-09T16:39:45 | illumflat,trace |          sky |       6 |     2,2 |      560 | 400/3400 | long_1.0 |
+| LB.20160109.60019.fits.gz | 2016-01-09T16:40:26 | illumflat,trace |          sky |       4 |     2,2 |      560 | 400/3400 | long_1.0 |
 data end

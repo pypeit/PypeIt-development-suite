@@ -6,7 +6,16 @@
 
 [rdx]
     spectrograph = keck_mosfire
+# Don't flat field longslit data because there are too many artifacts from the bars???
+[scienceframe]
+  [[process]]
+    use_pixelflat=False
+    use_illumflat=False
 [calibrations]
+ [[standardframe]]
+  [[[process]]]
+     use_pixelflat=False
+     use_illumflat=False
  [[flatfield]]
     tweak_slits = False
  [[wavelengths]]
@@ -44,11 +53,11 @@ data read
 #
 # Dome flat, lights on
 #
-| m191013_0143.fits | pixelflat,trace |       230.0 |        45.0 |     DOME FLAT | spectroscopy | LONGSLIT-46x1.5 |     1,1 | 58769.65279882 | 1.41291034 |   4.36437 |       K |   all |      -1 |     -1 |
-| m191013_0144.fits | pixelflat,trace |       230.0 |        45.0 |     DOME FLAT | spectroscopy | LONGSLIT-46x1.5 |     1,1 | 58769.65295229 | 1.41291034 |   4.36437 |       K |   all |      -1 |     -1 |
-| m191013_0145.fits | pixelflat,trace |       230.0 |        45.0 |     DOME FLAT | spectroscopy | LONGSLIT-46x1.5 |     1,1 | 58769.65311167 | 1.41291034 |   4.36437 |       K |   all |      -1 |     -1 |
-| m191013_0146.fits | pixelflat,trace |       230.0 |        45.0 |     DOME FLAT | spectroscopy | LONGSLIT-46x1.5 |     1,1 | 58769.65325924 | 1.41291034 |   4.36437 |       K |   all |      -1 |     -1 |
-| m191013_0147.fits | pixelflat,trace |       230.0 |        45.0 |     DOME FLAT | spectroscopy | LONGSLIT-46x1.5 |     1,1 | 58769.65340681 | 1.41291034 |   4.36437 |       K |   all |      -1 |     -1 |
+| m191013_0143.fits | trace	      |       230.0 |        45.0 |     DOME FLAT | spectroscopy | LONGSLIT-46x1.5 |     1,1 | 58769.65279882 | 1.41291034 |   4.36437 |       K |   all |      -1 |     -1 |
+| m191013_0144.fits | trace 	      |       230.0 |        45.0 |     DOME FLAT | spectroscopy | LONGSLIT-46x1.5 |     1,1 | 58769.65295229 | 1.41291034 |   4.36437 |       K |   all |      -1 |     -1 |
+| m191013_0145.fits | trace 	      |       230.0 |        45.0 |     DOME FLAT | spectroscopy | LONGSLIT-46x1.5 |     1,1 | 58769.65311167 | 1.41291034 |   4.36437 |       K |   all |      -1 |     -1 |
+| m191013_0146.fits | trace 	      |       230.0 |        45.0 |     DOME FLAT | spectroscopy | LONGSLIT-46x1.5 |     1,1 | 58769.65325924 | 1.41291034 |   4.36437 |       K |   all |      -1 |     -1 |
+| m191013_0147.fits | trace 	      |       230.0 |        45.0 |     DOME FLAT | spectroscopy | LONGSLIT-46x1.5 |     1,1 | 58769.65340681 | 1.41291034 |   4.36437 |       K |   all |      -1 |     -1 |
 #
 # Dome flat, lights off
 #
