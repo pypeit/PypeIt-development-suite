@@ -19,19 +19,19 @@ setup end
 data read
 path /Users/joe/python/PypeIt-development-suite/RAW_DATA/keck_mosfire/J_multi/
 |             filename |       frametype |           ra |         dec |       target |     dispname |    decker | binning |            mjd |    airmass | exptime | filter1 | calib | comb_id |  bkg_id |
-| m191015_0002.fits    | pixelflat,trace |          230 |          45 |      unknown | spectroscopy | 2M2228_12 |     1,1 | 58611.14918409 | 1.41291034 |  10.184 |       J | all   |     -1  |      -1 |
-| m191015_0003.fits    | pixelflat,trace |          230 |          45 |      unknown | spectroscopy | 2M2228_12 |     1,1 | 58611.14947923 | 1.41291034 |  10.184 |       J | all   |     -1  |      -1 |
-| m191015_0004.fits    | pixelflat,trace |          230 |          45 |      unknown | spectroscopy | 2M2228_12 |     1,1 | 58611.14976846 | 1.41291034 |  10.184 |       J | all   |     -1  |      -1 |
-| m191015_0005.fits    | pixelflat,trace |          230 |          45 |      unknown | spectroscopy | 2M2228_12 |     1,1 | 58611.14976846 | 1.41291034 |  10.184 |       J | all   |     -1  |      -1 |
-| m191015_0006.fits    | pixelflat,trace |          230 |          45 |      unknown | spectroscopy | 2M2228_12 |     1,1 | 58611.14976846 | 1.41291034 |  10.184 |       J | all   |     -1  |      -1 |
-| m191015_0007.fits    | pixelflat,trace |          230 |          45 |      unknown | spectroscopy | 2M2228_12 |     1,1 | 58611.14976846 | 1.41291034 |  10.184 |       J | all   |     -1  |      -1 |
-| m191015_0008.fits    | pixelflat,trace |          230 |          45 |      unknown | spectroscopy | 2M2228_12 |     1,1 | 58611.14976846 | 1.41291034 |  10.184 |       J | all   |     -1  |      -1 |
-| m191015_0009.fits    | pixelflat,trace |          230 |          45 |      unknown | spectroscopy | 2M2228_12 |     1,1 | 58611.14976846 | 1.41291034 |  10.184 |       J | all   |     -1  |      -1 |
-| m191015_0010.fits    | pixelflat,trace |          230 |          45 |      unknown | spectroscopy | 2M2228_12 |     1,1 | 58611.14976846 | 1.41291034 |  10.184 |       J | all   |     -1  |      -1 |
-| m191015_0011.fits    | pixelflat,trace |          230 |          45 |      unknown | spectroscopy | 2M2228_12 |     1,1 | 58611.14976846 | 1.41291034 |  10.184 |       J | all   |     -1  |      -1 |
-| m191015_0012.fits    | pixelflat,trace |          230 |          45 |      unknown | spectroscopy | 2M2228_12 |     1,1 | 58611.14976846 | 1.41291034 |  10.184 |       J | all   |     -1  |      -1 |
-| m191015_0013.fits    | pixelflat,trace |          230 |          45 |      unknown | spectroscopy | 2M2228_12 |     1,1 | 58611.14976846 | 1.41291034 |  10.184 |       J | all   |     -1  |      -1 |
-| m191015_0014.fits    | pixelflat,trace |          230 |          45 |      unknown | spectroscopy | 2M2228_12 |     1,1 | 58611.14976846 | 1.41291034 |  10.184 |       J | all   |     -1  |      -1 |
+| m191015_0002.fits    | illumflat,pixelflat,trace |          230 |          45 |      unknown | spectroscopy | 2M2228_12 |     1,1 | 58611.14918409 | 1.41291034 |  10.184 |       J | all   |     -1  |      -1 |
+| m191015_0003.fits    | illumflat,pixelflat,trace |          230 |          45 |      unknown | spectroscopy | 2M2228_12 |     1,1 | 58611.14947923 | 1.41291034 |  10.184 |       J | all   |     -1  |      -1 |
+| m191015_0004.fits    | illumflat,pixelflat,trace |          230 |          45 |      unknown | spectroscopy | 2M2228_12 |     1,1 | 58611.14976846 | 1.41291034 |  10.184 |       J | all   |     -1  |      -1 |
+| m191015_0005.fits    | illumflat,pixelflat,trace |          230 |          45 |      unknown | spectroscopy | 2M2228_12 |     1,1 | 58611.14976846 | 1.41291034 |  10.184 |       J | all   |     -1  |      -1 |
+| m191015_0006.fits    | illumflat,pixelflat,trace |          230 |          45 |      unknown | spectroscopy | 2M2228_12 |     1,1 | 58611.14976846 | 1.41291034 |  10.184 |       J | all   |     -1  |      -1 |
+| m191015_0007.fits    | illumflat,pixelflat,trace |          230 |          45 |      unknown | spectroscopy | 2M2228_12 |     1,1 | 58611.14976846 | 1.41291034 |  10.184 |       J | all   |     -1  |      -1 |
+| m191015_0008.fits    | illumflat,pixelflat,trace |          230 |          45 |      unknown | spectroscopy | 2M2228_12 |     1,1 | 58611.14976846 | 1.41291034 |  10.184 |       J | all   |     -1  |      -1 |
+| m191015_0009.fits    | illumflat,pixelflat,trace |          230 |          45 |      unknown | spectroscopy | 2M2228_12 |     1,1 | 58611.14976846 | 1.41291034 |  10.184 |       J | all   |     -1  |      -1 |
+| m191015_0010.fits    | illumflat,pixelflat,trace |          230 |          45 |      unknown | spectroscopy | 2M2228_12 |     1,1 | 58611.14976846 | 1.41291034 |  10.184 |       J | all   |     -1  |      -1 |
+| m191015_0011.fits    | illumflat,pixelflat,trace |          230 |          45 |      unknown | spectroscopy | 2M2228_12 |     1,1 | 58611.14976846 | 1.41291034 |  10.184 |       J | all   |     -1  |      -1 |
+| m191015_0012.fits    | illumflat,pixelflat,trace |          230 |          45 |      unknown | spectroscopy | 2M2228_12 |     1,1 | 58611.14976846 | 1.41291034 |  10.184 |       J | all   |     -1  |      -1 |
+| m191015_0013.fits    | illumflat,pixelflat,trace |          230 |          45 |      unknown | spectroscopy | 2M2228_12 |     1,1 | 58611.14976846 | 1.41291034 |  10.184 |       J | all   |     -1  |      -1 |
+| m191015_0014.fits    | illumflat,pixelflat,trace |          230 |          45 |      unknown | spectroscopy | 2M2228_12 |     1,1 | 58611.14976846 | 1.41291034 |  10.184 |       J | all   |     -1  |      -1 |
 | m200305_0276.fits    | arc,tilt |                 230 |          45 |      unknown | spectroscopy | 2M2228_12 |     1,1 | 58611.14976846 | 1.41291034 |  120    |       J | all   |     -1  |      -1 |
 | m200305_0277.fits    | arc,tilt |                 230 |          45 |      unknown | spectroscopy | 2M2228_12 |     1,1 | 58611.14976846 | 1.41291034 |  120 	  |       J | all   |     -1  |      -1 |
 | m200305_0278.fits    | arc,tilt |                 230 |          45 |      unknown | spectroscopy | 2M2228_12 |     1,1 | 58611.14976846 | 1.41291034 |  120 	  |       J | all   |     -1  |      -1 |
