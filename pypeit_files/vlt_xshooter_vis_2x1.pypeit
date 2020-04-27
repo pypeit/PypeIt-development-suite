@@ -24,9 +24,9 @@ data read
 | XSHOO.2016-08-02T10:45:45.410.fits.gz |            bias |        None |        None |         BIAS |  default | 1.0x12.6 |     2,1 | 57602.448442245 |    None |     0.0 |     0 |      -1 |     -1 |
 | XSHOO.2016-08-02T10:47:16.857.fits.gz |            bias |        None |        None |         BIAS |  default | 1.0x12.6 |     2,1 | 57602.449500664 |    None |     0.0 |     0 |      -1 |     -1 |
 | XSHOO.2016-08-02T10:48:48.184.fits.gz |            bias |        None |        None |         BIAS |  default | 1.0x12.6 |     2,1 | 57602.450557693 |    None |     0.0 |     0 |      -1 |     -1 |
-| XSHOO.2016-08-02T13:36:24.258.fits.gz | trace,pixelflat |        None |        None |    LAMP,FLAT |  default |   0.9x11 |     2,1 | 57602.566947425 |    None |   5.134 |     0 |      -1 |     -1 |
-| XSHOO.2016-08-02T13:37:24.132.fits.gz | trace,pixelflat |        None |        None |    LAMP,FLAT |  default |   0.9x11 |     2,1 | 57602.567640421 |    None |   5.134 |     0 |      -1 |     -1 |
-| XSHOO.2016-08-02T13:38:24.917.fits.gz | trace,pixelflat |        None |        None |    LAMP,FLAT |  default |   0.9x11 |     2,1 |  57602.56834395 |    None |   5.134 |     0 |      -1 |     -1 |
+| XSHOO.2016-08-02T13:36:24.258.fits.gz | trace,illumflat,pixelflat |        None |        None |    LAMP,FLAT |  default |   0.9x11 |     2,1 | 57602.566947425 |    None |   5.134 |     0 |      -1 |     -1 |
+| XSHOO.2016-08-02T13:37:24.132.fits.gz | trace,illumflat,pixelflat |        None |        None |    LAMP,FLAT |  default |   0.9x11 |     2,1 | 57602.567640421 |    None |   5.134 |     0 |      -1 |     -1 |
+| XSHOO.2016-08-02T13:38:24.917.fits.gz | trace,illumflat,pixelflat |        None |        None |    LAMP,FLAT |  default |   0.9x11 |     2,1 |  57602.56834395 |    None |   5.134 |     0 |      -1 |     -1 |
 | XSHOO.2016-08-02T16:25:56.791.fits.gz |        arc,tilt |        None |        None |    LAMP,WAVE |  default |   0.9x11 |     2,1 | 57602.684685077 |    None |     0.6 |     0 |      -1 |     -1 |
 | XSHOO.2016-08-02T08:45:46.510.fits.gz |         science | 01:00:13.04 | +28:02:24.4 |   J0100p2802 |  default |   0.9x11 |     2,1 | 57602.365121637 |   1.652 |  1800.0 |     0 |       1 |     -1 |
 | XSHOO.2016-08-02T09:57:13.715.fits.gz |       standard  | 04:54:50.63 | +00:27:58.4 | STD,TELLURIC |  default |   0.9x11 |     2,1 | 57602.414742074 |   1.525 |     4.0 |     0 |       3 |     -1 |

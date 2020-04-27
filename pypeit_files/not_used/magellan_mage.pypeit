@@ -9,7 +9,8 @@
 [rdx]
 spectrograph = magellan_mage
     sortroot = magellan_mage
-
+[baseprocess]
+   use_biasimage=False  
 [calibrations]
     [[tilts]]
         method = spca
@@ -21,9 +22,9 @@ data read
 | filename         | date                | frametype  | target                 | exptime  |
 | mage1034.fits.gz | 2009-03-22T22:19:26 | arc,tilt        | ThAr                   | 5.000    | # SLIT=0.70
 | mage1046.fits.gz | 2009-03-22T23:48:21 | science    | GD108                  | 120.000  | # SLIT=0.70
-| mage5005.fits.gz | 2009-03-26T23:04:48 | flat,trace | TwilightIllum0.70      | 25.000   | # SLIT=0.70
-| mage5006.fits.gz | 2009-03-26T23:05:53 | flat,trace | TwilightIllum0.70      | 30.000   | # SLIT=0.70
-| mage5007.fits.gz | 2009-03-26T23:07:02 | flat,trace | TwilightIllum0.70      | 40.000   | # SLIT=0.70
+| mage5005.fits.gz | 2009-03-26T23:04:48 | illumflat,pixelflat,trace | TwilightIllum0.70      | 25.000   | # SLIT=0.70
+| mage5006.fits.gz | 2009-03-26T23:05:53 | illumflat,pixelflat,trace | TwilightIllum0.70      | 30.000   | # SLIT=0.70
+| mage5007.fits.gz | 2009-03-26T23:07:02 | illumflat,pixelflat,trace | TwilightIllum0.70      | 40.000   | # SLIT=0.70
 | mage1066.fits.gz | 2009-03-23T05:14:40 | science    | SDSS1144bg             | 900.000  | # SLIT=0.70
 # | mage1002.fits.gz | 2009-03-22T20:10:44 | Xe-Flash   | Xe Flash 5 arcsec      | 5.000    | # SLIT=5.00
 # | mage1003.fits.gz | 2009-03-22T20:32:23 | Xe-Flash   | Xe Flash 5 arcsec      | 5.000    | # SLIT=5.00
