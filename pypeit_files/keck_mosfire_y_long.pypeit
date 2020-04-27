@@ -4,17 +4,12 @@
 # User-defined execution parameters
 [rdx]
     spectrograph = keck_mosfire
-[scienceframe]
-   [[process]]
-     use_pixelflat=False
-     use_illumflat=False	
+[baseprocess]
+    use_pixelflat=False
+    use_illumflat=False	
 [calibrations]
   [[flatfield]]
      tweak_slits = False
-  [[standardframe]]
-    [[[process]]]
-      use_pixelflat=False
-      use_illumflat=False	
 [reduce]
   [[findobj]]
      find_trim_edge = 10,10     
