@@ -27,7 +27,7 @@ data read
 | r170816_0019.fits | 2017-08-16T03:22:01 | illumflat,pixelflat,trace | unknown |      10 |     1,1 |      680 | 1200/9000 | E570.fil |
 | r170816_0020.fits | 2017-08-16T03:24:18 | illumflat,pixelflat,trace | unknown |      10 |     1,1 |      680 | 1200/9000 | E570.fil |
 | r170816_0021.fits | 2017-08-16T03:26:35 | illumflat,pixelflat,trace | unknown |      10 |     1,1 |      680 | 1200/9000 | E570.fil |
-| r170816_0022.fits | 2017-08-16T03:28:52 | illumflat,.pixelflat,trace | unknown |      10 |     1,1 |      680 | 1200/9000 | E570.fil |
+| r170816_0022.fits | 2017-08-16T03:28:52 | illumflat,pixelflat,trace | unknown |      10 |     1,1 |      680 | 1200/9000 | E570.fil |
 | r170816_0045.fits | 2017-08-16T04:28:57 |      bias | unknown |       0 |     1,1 |      680 | 1200/9000 | long_1.5 |
 | r170816_0046.fits | 2017-08-16T04:31:05 |      bias | unknown |       0 |     1,1 |      680 | 1200/9000 | long_1.5 |
 | r170816_0047.fits | 2017-08-16T04:33:14 |      bias | unknown |       0 |     1,1 |      680 | 1200/9000 | long_1.5 |
