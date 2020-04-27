@@ -3,11 +3,8 @@
 
 # User-defined execution parameters
 [rdx]
-spectrograph = vlt_xshooter_vis
-[calibrations]
-    [[arcframe]]
-        [[[process]]]
-            bias = skip
+  spectrograph = vlt_xshooter_vis
+
 
 # Setup
 setup read
