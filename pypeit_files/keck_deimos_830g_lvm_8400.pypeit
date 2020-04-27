@@ -5,7 +5,8 @@
     spectrograph = keck_deimos
     sortroot = keck_deimos_830g_lvm_8400
     detnum = 3,7 
-
+[baseprocess]
+    use_biasimage=False
 [calibrations]
     [[wavelengths]]
         rms_threshold = 1.0
@@ -37,11 +38,11 @@ data read
 #| d0316_0037.fits | 2018-03-16T12:22:35 |        arc,tilt | -FOUL-WEATHER- |       1 |     830G | LVMslitC |
 #| d0316_0038.fits | 2018-03-16T12:23:57 |        arc,tilt | -FOUL-WEATHER- |       1 |     830G | LVMslitC |
 | d0316_0039.fits | 2018-03-16T12:25:08 |        arc,tilt | -FOUL-WEATHER- |       1 |     830G | LVMslitC |
-| d0316_0040.fits | 2018-03-16T12:26:30 | pixelflat,trace | -FOUL-WEATHER- |       6 |     830G | LVMslitC |
-| d0316_0041.fits | 2018-03-16T12:27:45 | pixelflat,trace | -FOUL-WEATHER- |       6 |     830G | LVMslitC |
-| d0316_0042.fits | 2018-03-16T12:29:00 | pixelflat,trace | -FOUL-WEATHER- |       6 |     830G | LVMslitC |
-| d0316_0043.fits | 2018-03-16T12:30:14 | pixelflat,trace | -FOUL-WEATHER- |       6 |     830G | LVMslitC |
-| d0316_0044.fits | 2018-03-16T12:31:28 | pixelflat,trace | -FOUL-WEATHER- |       6 |     830G | LVMslitC |
+| d0316_0040.fits | 2018-03-16T12:26:30 | illumflat,pixelflat,trace | -FOUL-WEATHER- |       6 |     830G | LVMslitC |
+| d0316_0041.fits | 2018-03-16T12:27:45 | illumflat,pixelflat,trace | -FOUL-WEATHER- |       6 |     830G | LVMslitC |
+| d0316_0042.fits | 2018-03-16T12:29:00 | illumflat,pixelflat,trace | -FOUL-WEATHER- |       6 |     830G | LVMslitC |
+| d0316_0043.fits | 2018-03-16T12:30:14 | illumflat,pixelflat,trace | -FOUL-WEATHER- |       6 |     830G | LVMslitC |
+| d0316_0044.fits | 2018-03-16T12:31:28 | illumflat,pixelflat,trace | -FOUL-WEATHER- |       6 |     830G | LVMslitC |
 | d0316_0045.fits | 2018-03-16T14:57:26 |         science |      J1401_OFF |    1200 |     830G | LVMslitC |
 #| d0316_0046.fits | 2018-03-16T15:18:37 |         science |      J1401_OFF |    1200 |     830G | LVMslitC |
 #| d0316_0047.fits | 2018-03-16T15:29:47 |         science |      J1401_OFF |     600 |     830G | LVMslitC |

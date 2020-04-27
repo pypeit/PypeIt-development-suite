@@ -5,7 +5,8 @@
     spectrograph = keck_deimos
     sortroot = keck_deimos_830g
     detnum = 3,7
-
+[baseprocess]
+    use_biasimage=False
 [extract]
     maxnumber = 5
 
@@ -32,9 +33,9 @@ data read
 |        filename |                date |                    frametype |         target | exptime | dispname |   decker |
 | d0914_0011.fits.gz | 2017-09-14T03:15:10 |                      arc,tilt |        unknown |       1 |     830G | LongMirr |
 #| d0914_0002.fits.gz | 2017-09-14T01:48:07 |                         bias |        unknown |       1 |     830G |     None |
-| d0914_0013.fits.gz | 2017-09-14T03:17:41 |              pixelflat,trace |        unknown |       6 |     830G | LongMirr |
-| d0914_0014.fits.gz | 2017-09-14T03:19:06 |              pixelflat,trace |        unknown |       6 |     830G | LongMirr |
-| d0914_0015.fits.gz | 2017-09-14T03:20:21 |              pixelflat,trace |        unknown |       6 |     830G | LongMirr |
+| d0914_0013.fits.gz | 2017-09-14T03:17:41 |     illumflat,pixelflat,trace |        unknown |       6 |     830G | LongMirr |
+| d0914_0014.fits.gz | 2017-09-14T03:19:06 |     illumflat,pixelflat,trace |        unknown |       6 |     830G | LongMirr |
+| d0914_0015.fits.gz | 2017-09-14T03:20:21 |     illumflat,pixelflat,trace |        unknown |       6 |     830G | LongMirr |
 | d0914_0036.fits.gz | 2017-09-14T11:58:33 |                      science | PSOJ011p09_OFF |    1200 |     830G | LongMirr |
 #| d0914_0037.fits.gz | 2017-09-14T12:20:01 |                      science | PSOJ011p09_OFF |    1200 |     830G | LongMirr |
 #| d0914_0038.fits.gz | 2017-09-14T12:41:16 |                      science | PSOJ011p09_OFF |    1200 |     830G | LongMirr |
