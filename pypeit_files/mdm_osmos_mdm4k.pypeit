@@ -3,7 +3,9 @@
 
 # User-defined execution parameters
 [rdx]
-spectrograph = mdm_osmos_mdm4k
+  spectrograph = mdm_osmos_mdm4k
+[baseprocess]
+  use_biasimage=False
 
 # Setup
 setup read
