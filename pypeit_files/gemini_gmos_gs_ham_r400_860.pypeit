@@ -18,7 +18,7 @@
 [reduce]
   [[findobj]]
     sig_thresh = 0.5
-    maxnumber = 1
+    maxnumber = 5
 
 # Setup
 setup read
