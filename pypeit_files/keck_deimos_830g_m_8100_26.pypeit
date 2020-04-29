@@ -6,7 +6,7 @@
     detnum = 2,6
 [calibrations]
     [[flatfield]]
-        saturated_slits = continue
+        saturated_slits = mask
 
 # Setup
 setup read

@@ -9,7 +9,7 @@
      # get rid of bad slit caused by scattered light
 [calibrations]
     [[flatfield]]
-        saturated_slits = continue
+        saturated_slits = mask  # This is a junk slit of 2 alignment boxes
 
 # Setup
 setup read

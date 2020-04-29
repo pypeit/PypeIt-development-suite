@@ -7,7 +7,6 @@
 [calibrations]
   [[flatfield]]
      tweak_slits = False
-     illumflatten = False
 [reduce]
   [[findobj]]
      find_trim_edge = 10,10     
