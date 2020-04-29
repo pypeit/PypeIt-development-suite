@@ -1,0 +1,126 @@
+#!/usr/bin/env python3
+#
+# See top-level LICENSE.rst file for Copyright information
+#
+# -*- coding: utf-8 -*-
+
+"""
+This script builds the Cooked folder
+Execute it with:   ./build_cooked
+"""
+
+import os
+import tarfile
+import shutil
+import glob
+
+import argparse
+
+import pdb
+
+import numpy as np
+
+
+def parser(options=None):
+
+    parser = argparse.ArgumentParser(formatter_class=argparse.ArgumentDefaultsHelpFormatter)
+
+    #parser.add_argument('version', type=str, help='Version number to generate (e.g. 0.91)')
+    parser.add_argument('--redux_dir', type=str, help='Full path to the REDUX dir; '
+                                                      'default is REDUX_OUT in current directory')
+    parser.add_argument('-i', '--ignore_missing', help='Ignore any missing files',
+                        action='store_true', default=False)
+
+    return parser.parse_args() if options is None else parser.parse_args(options)
+
+
+def main():
+
+    pargs = parser()
+
+    redux_dir = os.path.join(os.getcwd(), 'REDUX_OUT') if pargs.redux_dir is None \
+                    else pargs.redux_dir
+
+    # Generate Cooked folder
+    nires_dir = 'NIRES_MASTERS'
+    if not os.path.isdir(nires_dir):
+        os.mkdir(nires_dir)
+
+    # ------------------------------------------------------------------
+    # Version
+    #vfile = os.path.join('Cooked', 'version')
+    # Lines
+    #with open(vfile, 'w') as f:
+    #    f.writelines(lines)
+    # ------------------------------------------------------------------
+
+    # ------------------------------------------------------------------
+    keck_nires_path = os.path.join(redux_dir, 'keck_nires', 'NIRES', 'Masters')
+    files_01 = glob.glob(os.path.join(keck_nires_path, '*1_01*'))
+    # Do it
+    for ifile in files_01:
+        cooked_file = os.path.join(nires_dir, os.path.basename(ifile))
+        copy_me(ifile, cooked_file)
+    # A few more
+    for root in ['MasterFlat_A_15_01.fits', 'MasterSlits_A_15_01.fits.gz']:
+        ifile = os.path.join(keck_nires_path, root)
+        cooked_file = os.path.join(nires_dir, os.path.basename(ifile).replace('15','1'))
+        copy_me(ifile, cooked_file)
+
+
+
+def copy_with_root(new_root, cooked_root, debug=False, ignore_missing=False):
+    """
+    Copy all files with a given root
+
+    Args:
+        new_root: str
+        cooked_root: str
+        debug:
+
+    Returns:
+
+    """
+    # Grab em
+    new_files = glob.glob(new_root+'.*')
+    if len(new_files) == 0 and not ignore_missing:
+        raise ValueError('No files found with root: {0}'.format(new_root))
+    for new_file in new_files:
+        bname = os.path.basename(new_file)
+        dpos = bname.find('.')
+        exten = bname[dpos:]
+        #
+        cooked_file = cooked_root+exten
+        # Copy
+        if debug:
+            pdb.set_trace()
+        copy_me(new_file, cooked_file)
+
+
+def copy_me(new_file, cooked_file):
+    """
+    Simple script to copy a given file to a new file
+    First compares that the new_file is newer than the
+    cooked file (if the latter exists)
+
+    Args:
+        new_file: str
+        cooked_file: str
+
+    Returns:
+
+    """
+    # Compare date stamp
+    doit = True
+    if os.path.exists(cooked_file):
+        # Time is in seconds total (like MJD)
+        if os.path.getctime(cooked_file) > os.path.getctime(new_file):
+            doit = False
+    if doit:
+        shutil.copy2(new_file, cooked_file)
+        print("Generated/over-wrote {:s}".format(cooked_file))
+
+if __name__ == '__main__':
+    # Giddy up
+    main()
+
