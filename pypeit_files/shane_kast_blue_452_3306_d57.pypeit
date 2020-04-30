@@ -4,7 +4,8 @@
 # User-defined execution parameters
 [rdx]
 spectrograph = shane_kast_blue
-[calibrations]
+[baseprocess]
+  use_biasimage = False
 
 # Setup
 setup read
@@ -23,11 +24,11 @@ data read
 | b1001.fits |       arc,tilt  | 04:29:11.05 | 37:20:18.4 |   arc_2 | 452/3306 | 2.0 arcsec |     1,1 |  58544.08237268519 |            1.0 |    15.0 |      d57 |
 | b1002.fits |       arc,tilt  | 04:30:02.15 | 37:20:19.7 |   arc_2 | 452/3306 | 2.0 arcsec |     1,1 | 58544.082964699075 |            1.0 |    15.0 |      d57 |
 | b1003.fits |       arc,tilt  | 04:30:37.98 | 37:20:20.6 |   arc_2 | 452/3306 | 2.0 arcsec |     1,1 |  58544.08334224537 |            1.0 |    15.0 |      d57 |
-| b1013.fits | pixelflat,trace | 04:46:46.55 | 37:20:45.8 |   dflat | 452/3306 | 2.0 arcsec |     1,1 |  58544.09452199074 |            1.0 |    30.0 |      d57 |
-| b1014.fits | pixelflat,trace | 04:48:38.80 | 37:20:48.8 |   dflat | 452/3306 | 2.0 arcsec |     1,1 |  58544.09586527778 |            1.0 |    30.0 |      d57 |
-| b1015.fits | pixelflat,trace | 04:49:29.66 | 37:20:50.1 |   dflat | 452/3306 | 2.0 arcsec |     1,1 | 58544.096416319444 |            1.0 |    30.0 |      d57 |
-| b1016.fits | pixelflat,trace | 04:50:15.77 | 37:20:51.3 |   dflat | 452/3306 | 2.0 arcsec |     1,1 |  58544.09696736111 |            1.0 |    30.0 |      d57 |
-| b1017.fits | pixelflat,trace | 04:51:06.63 | 37:20:52.7 |   dflat | 452/3306 | 2.0 arcsec |     1,1 |  58544.09751712963 |            1.0 |    30.0 |      d57 |
+| b1013.fits | illumflat,pixelflat,trace | 04:46:46.55 | 37:20:45.8 |   dflat | 452/3306 | 2.0 arcsec |     1,1 |  58544.09452199074 |            1.0 |    30.0 |      d57 |
+| b1014.fits | illumflat,pixelflat,trace | 04:48:38.80 | 37:20:48.8 |   dflat | 452/3306 | 2.0 arcsec |     1,1 |  58544.09586527778 |            1.0 |    30.0 |      d57 |
+| b1015.fits | illumflat,pixelflat,trace | 04:49:29.66 | 37:20:50.1 |   dflat | 452/3306 | 2.0 arcsec |     1,1 | 58544.096416319444 |            1.0 |    30.0 |      d57 |
+| b1016.fits | illumflat,pixelflat,trace | 04:50:15.77 | 37:20:51.3 |   dflat | 452/3306 | 2.0 arcsec |     1,1 |  58544.09696736111 |            1.0 |    30.0 |      d57 |
+| b1017.fits | illumflat,pixelflat,trace | 04:51:06.63 | 37:20:52.7 |   dflat | 452/3306 | 2.0 arcsec |     1,1 |  58544.09751712963 |            1.0 |    30.0 |      d57 |
 | b1044.fits |         science | 06:17:30.50 | 62:29:27.9 | 2019bek | 452/3306 | 2.0 arcsec |     1,1 |  58544.19427905093 | 1.110000014305 |  1200.0 |      d57 |
 | b1045.fits |         standard| 10:39:36.70 | 43:06:10.2 | Feige34 | 452/3306 | 2.0 arcsec |     1,1 |  58544.19945775463 |  1.27999997139 |   180.0 |      d57 |
 | b1046.fits |         science | 10:29:21.96 | 29:30:38.0 |  2019np | 452/3306 | 2.0 arcsec |     1,1 | 58544.219715162035 | 1.269999980927 |   945.0 |      d57 |

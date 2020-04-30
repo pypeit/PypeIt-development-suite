@@ -4,6 +4,8 @@
 # User-defined execution parameters
 [rdx]
 spectrograph = shane_kast_blue
+[baseprocess]
+  use_biasimage = False
 
 # Setup
 setup read
@@ -25,7 +27,7 @@ data read
  path /data/Projects/Python/PypeIt-development-suite/RAW_DATA/shane_kast_blue/830_3460_d46
 |  filename |       frametype |                 ra |                 dec |                         target | dispname |     decker | binning |               mjd |        airmass | exptime | dichroic |
 | b100.fits.gz |        arc,tilt | 241.14912499999997 |   37.42488888888889 |                            arc | 830/3460 | 0.5 arcsec |     1,1 | 58789.89189212963 |            1.0 |    30.0 |      d46 |
-| b123.fits.gz | pixelflat,trace | 264.52145833333327 |   37.38191666666667 |                      dome flat | 830/3460 | 4.0 arcsec |     1,1 | 58789.95656979167 |            1.0 |    20.0 |      d46 |
+| b123.fits.gz | illumflat,pixelflat,trace | 264.52145833333327 |   37.38191666666667 |                      dome flat | 830/3460 | 4.0 arcsec |     1,1 | 58789.95656979167 |            1.0 |    20.0 |      d46 |
 #| b146.fits |         science |  327.7962916666666 |   28.86452777777778 | bd+28 4211 4" slit parallactic | 830/3460 | 4.0 arcsec |     1,1 | 58790.08819861111 | 1.039999961853 |    90.0 |      d46 |
 | b188.fits.gz |         science | 29.959208333333333 | 0.39469444444444446 |         PG0157+002 parallactic | 830/3460 | 4.0 arcsec |     1,1 |  58790.3713556713 | 1.360000014305 |   200.0 |      d46 |
 data end

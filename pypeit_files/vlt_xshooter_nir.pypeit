@@ -1,6 +1,16 @@
 # User-defined execution parameters
 [rdx]
 spectrograph = vlt_xshooter_nir
+[calibrations]
+  [[pixelflatframe]]
+     [[[process]]]
+     	use_darkimage = True
+  [[illumflatframe]]
+     [[[process]]]
+     	use_darkimage = True
+  [[traceframe]]
+     [[[process]]]
+     	use_darkimage = True
 
 # Setup
 setup read
@@ -12,11 +22,11 @@ data read
  path /Users/joe/python/PypeIt-development-suite/RAW_DATA/vlt_xshooter/NIR/
 |                              filename |       frametype |          ra |         dec |         target | dispname | decker | binning |            mjd | airmass | exptime | calib | comb_id | bkg_id |
 | XSHOO.2016-08-02T15:32:41.936.fits.gz | trace,pixelflat |        None |        None |      LAMP,FLAT |  default | 0.6x11 |     1,1 | 57602.64770759 |    None |   12.48 |   all |      -1 |     -1 |
-| XSHOO.2016-08-02T15:33:04.243.fits.gz |            bias |        None |        None |      LAMP,FLAT |  default | 0.6x11 |     1,1 | 57602.64796577 |    None |   12.48 |   all |      -1 |     -1 |
+| XSHOO.2016-08-02T15:33:04.243.fits.gz |            dark |        None |        None |      LAMP,FLAT |  default | 0.6x11 |     1,1 | 57602.64796577 |    None |   12.48 |   all |      -1 |     -1 |
 | XSHOO.2016-08-02T15:33:23.081.fits.gz | trace,pixelflat |        None |        None |      LAMP,FLAT |  default | 0.6x11 |     1,1 | 57602.64818381 |    None |   12.48 |   all |      -1 |     -1 |
-| XSHOO.2016-08-02T15:33:44.695.fits.gz | 	     bias |        None |        None |      LAMP,FLAT |  default | 0.6x11 |     1,1 | 57602.64843397 |    None |   12.48 |   all |      -1 |     -1 |
+| XSHOO.2016-08-02T15:33:44.695.fits.gz | 	     dark |        None |        None |      LAMP,FLAT |  default | 0.6x11 |     1,1 | 57602.64843397 |    None |   12.48 |   all |      -1 |     -1 |
 | XSHOO.2016-08-02T15:34:05.614.fits.gz | trace,pixelflat |        None |        None |      LAMP,FLAT |  default | 0.6x11 |     1,1 | 57602.64867609 |    None |   12.48 |   all |      -1 |     -1 |
-| XSHOO.2016-08-02T15:34:25.148.fits.gz | 	     bias |        None |        None |      LAMP,FLAT |  default | 0.6x11 |     1,1 | 57602.64890218 |    None |   12.48 |   all |      -1 |     -1 |
+| XSHOO.2016-08-02T15:34:25.148.fits.gz | 	     dark |        None |        None |      LAMP,FLAT |  default | 0.6x11 |     1,1 | 57602.64890218 |    None |   12.48 |   all |      -1 |     -1 |
 | XSHOO.2016-08-02T09:16:54.772.fits.gz | science,arc,tilt | 01:00:13.07 | +28:02:28.1 |     J0100p2802 |  default | 0.6x11 |     1,1 | 57602.38674505 |   1.657 |   900.0 |     0 |       1 |      2 |
 | XSHOO.2016-08-02T09:00:56.860.fits.gz | science,arc,tilt | 01:00:13.04 | +28:02:24.4 |     J0100p2802 |  default | 0.6x11 |     1,1 |  57602.3756581 |   1.649 |   900.0 |     1 |       2 |      1 |
 | XSHOO.2016-08-02T09:57:17.147.fits.gz |        standard | 04:54:50.63 | +00:27:58.4 |   STD,TELLURIC |  default | 0.6x11 |     1,1 | 57602.41478179 |   1.525 |    15.0 |     1 |       3 |      4 |

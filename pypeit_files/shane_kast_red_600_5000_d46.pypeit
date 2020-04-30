@@ -4,6 +4,8 @@
 # User-defined execution parameters
 [rdx]
 spectrograph = shane_kast_red
+[baseprocess]
+  use_biasimage = False
 
 # Setup
 setup read
@@ -25,7 +27,7 @@ data read
  path /home/xavier/Projects/PypeIt-development-suite/REDUX_OUT/shane_kast_red/600_5000_d46
 |  filename |       frametype |                ra |                dec |                          target | dispname |     decker | binning |                mjd |        airmass | exptime | dichroic | dispangle |
 | r100.fits.gz |        arc,tilt | 241.0330833333333 |  37.42508333333333 |                             arc | 600/5000 | 0.5 arcsec |     1,1 |  58789.89154039352 |            1.0 |     1.0 |      d46 |    9979.0 |
-| r123.fits.gz | pixelflat,trace | 264.4629583333333 |  37.38202777777778 |                       dome flat | 600/5000 | 4.0 arcsec |     1,1 |  58789.95643530093 |            1.0 |     1.0 |      d46 |    9979.0 |
+| r123.fits.gz | illumflat,pixelflat,trace | 264.4629583333333 |  37.38202777777778 |                       dome flat | 600/5000 | 4.0 arcsec |     1,1 |  58789.95643530093 |            1.0 |     1.0 |      d46 |    9979.0 |
 | r146.fits.gz |         science | 327.7962083333333 | 28.864555555555558 | bd+28 4211  4" slit parallactic | 600/5000 | 4.0 arcsec |     1,1 | 58790.088295023146 | 1.039999961853 |    90.0 |      d46 |    9978.0 |
 | r188.fits.gz |   science | 29.959208333333333 | 0.39469444444444446 | PG0157+002 4" slit pa208 | 600/5000 | 4.0 arcsec |     1,1 | 58790.371361805555 | 1.360000014305 |   200.0 |      d46 |    9972.0 |
 data end

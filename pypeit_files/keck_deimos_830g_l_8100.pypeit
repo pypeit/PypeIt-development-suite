@@ -5,7 +5,8 @@
     spectrograph = keck_deimos
     sortroot = keck_deimos_830g
     detnum = 3,7
-
+[baseprocess]
+    use_biasimage=False
 [reduce]
     [[findobj]]
         maxnumber = 5
@@ -32,9 +33,9 @@ data read
  path /home/xavier/local/Python/PypeIt-development-suite/RAW_DATA/keck_deimos/830G_L_8100/
 |               filename |       frametype |          ra |         dec |     target | dispname |   decker | binning |          mjd |    airmass | exptime |     dispangle |
 | DE.20170527.06713.fits |        tilt,arc | 03:52:00.00 | +45:00:00.0 | DOME PHLAT |     830G | LongMirr |     1,1 | 57900.077631 | 1.41291034 |     1.0 | 8099.98291016 |
-| DE.20170527.06790.fits | trace,pixelflat | 03:52:00.00 | +45:00:00.0 | DOME PHLAT |     830G | LongMirr |     1,1 |  57900.07851 | 1.41291034 |     4.0 | 8099.98291016 |
-| DE.20170527.06864.fits | trace,pixelflat | 03:52:00.00 | +45:00:00.0 | DOME PHLAT |     830G | LongMirr |     1,1 | 57900.079356 | 1.41291034 |     4.0 | 8099.98291016 |
-| DE.20170527.06936.fits | trace,pixelflat | 03:52:00.00 | +45:00:00.0 | DOME PHLAT |     830G | LongMirr |     1,1 | 57900.080211 | 1.41291034 |     4.0 | 8099.98291016 |
+| DE.20170527.06790.fits | trace,illumflat,pixelflat | 03:52:00.00 | +45:00:00.0 | DOME PHLAT |     830G | LongMirr |     1,1 |  57900.07851 | 1.41291034 |     4.0 | 8099.98291016 |
+| DE.20170527.06864.fits | trace,illumflat,pixelflat | 03:52:00.00 | +45:00:00.0 | DOME PHLAT |     830G | LongMirr |     1,1 | 57900.079356 | 1.41291034 |     4.0 | 8099.98291016 |
+| DE.20170527.06936.fits | trace,illumflat,pixelflat | 03:52:00.00 | +45:00:00.0 | DOME PHLAT |     830G | LongMirr |     1,1 | 57900.080211 | 1.41291034 |     4.0 | 8099.98291016 |
 | DE.20170527.37601.fits |         science | 17:24:08.73 | +19:01:41.4 |   P261_OFF |     830G | LongMirr |     1,1 | 57900.435131 | 1.03078874 |  1200.0 | 8099.98291016 |
 #| DE.20170527.38872.fits |         science | 17:24:08.73 | +19:01:41.4 |   P261_OFF |     830G | LongMirr |     1,1 | 57900.449842 | 1.01267696 |  1200.0 | 8099.98291016 |
 #| DE.20170527.41775.fits |         science | 17:24:08.71 | +19:01:44.0 |   P261_OFF |     830G | LongMirr |     1,1 | 57900.483427 | 1.00093023 |  1200.0 | 8099.98291016 |
