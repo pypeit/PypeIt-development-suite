@@ -6,11 +6,6 @@
     spectrograph = keck_lris_red
     sortroot = keck_lris_red_multi_1200_9000_d680
     detnum = 2
-#[calibrations]
-#    [[slitedges]]
-#       edge_thresh = 20.
-#       add_slits = 2:2000:1188:1502
-
 
 # Setup
 setup read
@@ -28,11 +23,11 @@ data read
  path /home/xavier/local/Python/PypeIt-development-suite/RAW_DATA/keck_lris_red/multi_1200_9000_d680/
 |          filename |                date | frametype       |  target | exptime | binning | dichroic | dispname |   decker |
 | r170816_0009.fits | 2017-08-16T02:56:14 | arc,tilt            | unknown |       3 |     1,1 |      680 | 1200/9000 | E570.fil |
-| r170816_0018.fits | 2017-08-16T03:19:28 | pixelflat,trace | unknown |      10 |     1,1 |      680 | 1200/9000 | E570.fil |
-| r170816_0019.fits | 2017-08-16T03:22:01 | pixelflat,trace | unknown |      10 |     1,1 |      680 | 1200/9000 | E570.fil |
-| r170816_0020.fits | 2017-08-16T03:24:18 | pixelflat,trace | unknown |      10 |     1,1 |      680 | 1200/9000 | E570.fil |
-| r170816_0021.fits | 2017-08-16T03:26:35 | pixelflat,trace | unknown |      10 |     1,1 |      680 | 1200/9000 | E570.fil |
-| r170816_0022.fits | 2017-08-16T03:28:52 | pixelflat,trace | unknown |      10 |     1,1 |      680 | 1200/9000 | E570.fil |
+| r170816_0018.fits | 2017-08-16T03:19:28 | illumflat,pixelflat,trace | unknown |      10 |     1,1 |      680 | 1200/9000 | E570.fil |
+| r170816_0019.fits | 2017-08-16T03:22:01 | illumflat,pixelflat,trace | unknown |      10 |     1,1 |      680 | 1200/9000 | E570.fil |
+| r170816_0020.fits | 2017-08-16T03:24:18 | illumflat,pixelflat,trace | unknown |      10 |     1,1 |      680 | 1200/9000 | E570.fil |
+| r170816_0021.fits | 2017-08-16T03:26:35 | illumflat,pixelflat,trace | unknown |      10 |     1,1 |      680 | 1200/9000 | E570.fil |
+| r170816_0022.fits | 2017-08-16T03:28:52 | illumflat,pixelflat,trace | unknown |      10 |     1,1 |      680 | 1200/9000 | E570.fil |
 | r170816_0045.fits | 2017-08-16T04:28:57 |      bias | unknown |       0 |     1,1 |      680 | 1200/9000 | long_1.5 |
 | r170816_0046.fits | 2017-08-16T04:31:05 |      bias | unknown |       0 |     1,1 |      680 | 1200/9000 | long_1.5 |
 | r170816_0047.fits | 2017-08-16T04:33:14 |      bias | unknown |       0 |     1,1 |      680 | 1200/9000 | long_1.5 |

@@ -20,9 +20,9 @@ path /Users/joe/python/PypeIt-development-suite/RAW_DATA/keck_lris_red/long_600_
 | LR.20160216.07470.fits.gz | 2016-02-16T02:04:30 |   bias    	 |        unknown |       0 |     2,2 |      560 | 600/7500 | long_0.7 |
 | LR.20160216.07529.fits.gz | 2016-02-16T02:05:29 |   bias    	 |        unknown |       0 |     2,2 |      560 | 600/7500 | long_0.7 |
 | LR.20160216.07587.fits.gz | 2016-02-16T02:06:27 |   bias    	 |        unknown |       0 |     2,2 |      560 | 600/7500 | long_0.7 |
-| LR.20160216.13991.fits.gz | 2016-02-16T03:53:32 | trace,pixelflat |        unknown |      20 |     2,2 |      560 | 600/7500 | long_0.7 |
-| LR.20160216.14090.fits.gz | 2016-02-16T03:55:11 | trace,pixelflat |        unknown |      20 |     2,2 |      560 | 600/7500 | long_0.7 |
-| LR.20160216.14167.fits.gz | 2016-02-16T03:56:28 | trace,pixelflat |        unknown |      20 |     2,2 |      560 | 600/7500 | long_0.7 |
+| LR.20160216.13991.fits.gz | 2016-02-16T03:53:32 | trace,illumflat,pixelflat |        unknown |      20 |     2,2 |      560 | 600/7500 | long_0.7 |
+| LR.20160216.14090.fits.gz | 2016-02-16T03:55:11 | trace,illumflat,pixelflat |        unknown |      20 |     2,2 |      560 | 600/7500 | long_0.7 |
+| LR.20160216.14167.fits.gz | 2016-02-16T03:56:28 | trace,illumflat,pixelflat |        unknown |      20 |     2,2 |      560 | 600/7500 | long_0.7 |
 | LR.20160216.17613.fits.gz | 2016-02-16T04:54:04 |  standard 	 |       G1910B2B |      30 |     2,2 |      560 | 600/7500 | long_0.7 |
 | LR.20160216.40478.fits.gz | 2016-02-16T11:24:39 |  science        | OFF_J1044p6306 |     600 |     2,2 |      560 | 600/7500 | long_0.7 |
 #| LR.20160216.05529.fits.gz | 2016-02-16T01:32:11 |     arc   |                |       1 |     2,2 |      560 | 600/7500 | long_0.7 |

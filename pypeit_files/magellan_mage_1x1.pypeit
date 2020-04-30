@@ -4,7 +4,8 @@
 # User-defined execution parameters
 [rdx]
 spectrograph = magellan_mage
-
+[baseprocess]
+   use_biasimage=False  
 # Setup
 setup read
  Setup A:
@@ -27,14 +28,14 @@ setup end
 data read
  path /home/xavier/local/Python/PypeIt-development-suite/RAW_DATA/magellan_mage/1x1
 |      filename |       frametype |         ra |         dec |               target | dispname | decker | binning |                mjd | airmass | exptime |
-#| mage0040.fits | trace,pixelflat | 06:31:23.7 | -28:59:39.8 | domeflatQh+Ql+5volts |     MagE |   2542 |     1,1 |  58606.85490740741 |     1.0 |    20.0 |
-#| mage0041.fits | trace,pixelflat | 06:32:19.4 | -28:59:34.2 | domeflatQh+Ql+5volts |     MagE |   2542 |     1,1 |  58606.85555555556 |     1.0 |    20.0 |
-| mage0042.fits | trace,pixelflat | 06:33:15.2 | -28:59:28.6 | domeflatQh+Ql+5volts |     MagE |   2542 |     1,1 |  58606.85619212963 |     1.0 |    20.0 |
-| mage0043.fits | trace,pixelflat | 06:34:10.9 | -28:59:23.1 | domeflatQh+Ql+5volts |     MagE |   2542 |     1,1 | 58606.856840277775 |     1.0 |    20.0 |
-| mage0044.fits | trace,pixelflat | 06:35:06.4 | -28:59:17.5 | domeflatQh+Ql+5volts |     MagE |   2542 |     1,1 |  58606.85747685185 |     1.0 |    20.0 |
-| mage0013.fits | trace,pixelflat | 06:01:53.1 | -29:02:38.0 |    Xe-Flash in focus |     MagE |   2544 |     1,1 |  58606.83446759259 |     1.0 |    20.0 |
-| mage0014.fits | trace,pixelflat | 06:02:54.2 | -29:02:31.8 |    Xe-Flash in focus |     MagE |   2544 |     1,1 | 58606.835173611114 |     1.0 |    20.0 |
-| mage0015.fits | trace,pixelflat | 06:03:55.5 | -29:02:25.6 |    Xe-Flash in focus |     MagE |   2544 |     1,1 |  58606.83587962963 |     1.0 |    20.0 |
+#| mage0040.fits | trace,illumflat,pixelflat | 06:31:23.7 | -28:59:39.8 | domeflatQh+Ql+5volts |     MagE |   2542 |     1,1 |  58606.85490740741 |     1.0 |    20.0 |
+#| mage0041.fits | trace,illumflat,pixelflat | 06:32:19.4 | -28:59:34.2 | domeflatQh+Ql+5volts |     MagE |   2542 |     1,1 |  58606.85555555556 |     1.0 |    20.0 |
+| mage0042.fits | trace,illumflat,pixelflat | 06:33:15.2 | -28:59:28.6 | domeflatQh+Ql+5volts |     MagE |   2542 |     1,1 |  58606.85619212963 |     1.0 |    20.0 |
+| mage0043.fits | trace,illumflat,pixelflat | 06:34:10.9 | -28:59:23.1 | domeflatQh+Ql+5volts |     MagE |   2542 |     1,1 | 58606.856840277775 |     1.0 |    20.0 |
+| mage0044.fits | trace,illumflat,pixelflat | 06:35:06.4 | -28:59:17.5 | domeflatQh+Ql+5volts |     MagE |   2542 |     1,1 |  58606.85747685185 |     1.0 |    20.0 |
+| mage0013.fits | trace,illumflat,pixelflat | 06:01:53.1 | -29:02:38.0 |    Xe-Flash in focus |     MagE |   2544 |     1,1 |  58606.83446759259 |     1.0 |    20.0 |
+| mage0014.fits | trace,illumflat,pixelflat | 06:02:54.2 | -29:02:31.8 |    Xe-Flash in focus |     MagE |   2544 |     1,1 | 58606.835173611114 |     1.0 |    20.0 |
+| mage0015.fits | trace,illumflat,pixelflat | 06:03:55.5 | -29:02:25.6 |    Xe-Flash in focus |     MagE |   2544 |     1,1 |  58606.83587962963 |     1.0 |    20.0 |
 | mage0045.fits |        standard | 10:32:13.2 | -35:37:47.1 |              LTT3864 |     MagE |   2542 |     1,1 |  58606.94226851852 |   1.099 |   150.0 |
 | mage0049.fits |         science | 06:08:18.7 | -71:57:33.1 |                J0608 |     MagE |   2542 |     1,1 |  58606.95340277778 |   1.508 |  1200.0 |
 #| mage0050.fits |         science | 06:08:18.9 | -71:57:32.3 |                J0608 |     MagE |   2542 |     1,1 |  58606.96770833333 |   1.548 |  1200.0 |
