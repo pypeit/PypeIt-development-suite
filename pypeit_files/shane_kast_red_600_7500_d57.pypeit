@@ -45,15 +45,15 @@ data read
 #| r127.fits |         science | 00:11:25.79 | 58:49:29.0 |   V633 Cas | 600/7500 | 2.0 arcsec |     1,1 | 58405.293538425925 | 1.070000052452 |   600.0 |      d57 |
 #| r128.fits |         science | 23:19:58.38 | -5:09:56.3 |  Feige 110 | 600/7500 | 2.0 arcsec |     1,1 |  58405.30188402778 |  1.44000005722 |   120.0 |      d57 |
 | r110.fits |        tilt,arc | 16:34:56.17 | 37:24:41.4 | Arc HgArNe | 600/7500 | 0.5 arcsec |     1,1 |  58404.96685370371 |            1.0 |     3.0 |      d57 |
-| r111.fits | trace,pixelflat | 16:38:17.05 | 37:24:36.2 |  Dome Flat | 600/7500 | 2.0 arcsec |     1,1 |      58404.9691875 |            1.0 |     3.0 |      d57 |
-| r112.fits | trace,pixelflat | 16:38:52.16 | 37:24:35.3 |  Dome Flat | 600/7500 | 2.0 arcsec |     1,1 |  58404.96957662037 |            1.0 |     3.0 |      d57 |
-| r113.fits | trace,pixelflat | 16:39:27.27 | 37:24:34.4 |  Dome Flat | 600/7500 | 2.0 arcsec |     1,1 |    58404.969965625 |            1.0 |     3.0 |      d57 |
-| r114.fits | trace,pixelflat | 16:40:02.63 | 37:24:33.5 |  Dome Flat | 600/7500 | 2.0 arcsec |     1,1 |   58404.9703556713 |            1.0 |     3.0 |      d57 |
-| r115.fits | trace,pixelflat | 16:40:32.72 | 37:24:32.7 |  Dome Flat | 600/7500 | 2.0 arcsec |     1,1 | 58404.970744791666 |            1.0 |     3.0 |      d57 |
-| r116.fits | trace,pixelflat | 16:41:07.83 | 37:24:31.8 |  Dome Flat | 600/7500 | 2.0 arcsec |     1,1 | 58404.971137962966 |            1.0 |     3.0 |      d57 |
-| r117.fits | trace,pixelflat | 16:41:42.94 | 37:24:30.9 |  Dome Flat | 600/7500 | 2.0 arcsec |     1,1 |  58404.97152708333 |            1.0 |     3.0 |      d57 |
-| r118.fits | trace,pixelflat | 16:42:18.05 | 37:24:30.0 |  Dome Flat | 600/7500 | 2.0 arcsec |     1,1 |  58404.97191620371 |            1.0 |     3.0 |      d57 |
-| r119.fits | trace,pixelflat | 16:42:48.39 | 37:24:29.2 |  Dome Flat | 600/7500 | 2.0 arcsec |     1,1 | 58404.972305208335 |            1.0 |     3.0 |      d57 |
-| r120.fits | trace,pixelflat | 16:43:23.50 | 37:24:28.3 |  Dome Flat | 600/7500 | 2.0 arcsec |     1,1 | 58404.972694097225 |            1.0 |     3.0 |      d57 |
+| r111.fits | illumflat,trace,pixelflat | 16:38:17.05 | 37:24:36.2 |  Dome Flat | 600/7500 | 2.0 arcsec |     1,1 |      58404.9691875 |            1.0 |     3.0 |      d57 |
+| r112.fits | illumflat,trace,pixelflat | 16:38:52.16 | 37:24:35.3 |  Dome Flat | 600/7500 | 2.0 arcsec |     1,1 |  58404.96957662037 |            1.0 |     3.0 |      d57 |
+| r113.fits | illumflat,trace,pixelflat | 16:39:27.27 | 37:24:34.4 |  Dome Flat | 600/7500 | 2.0 arcsec |     1,1 |    58404.969965625 |            1.0 |     3.0 |      d57 |
+| r114.fits | illumflat,trace,pixelflat | 16:40:02.63 | 37:24:33.5 |  Dome Flat | 600/7500 | 2.0 arcsec |     1,1 |   58404.9703556713 |            1.0 |     3.0 |      d57 |
+| r115.fits | illumflat,trace,pixelflat | 16:40:32.72 | 37:24:32.7 |  Dome Flat | 600/7500 | 2.0 arcsec |     1,1 | 58404.970744791666 |            1.0 |     3.0 |      d57 |
+| r116.fits | illumflat,trace,pixelflat | 16:41:07.83 | 37:24:31.8 |  Dome Flat | 600/7500 | 2.0 arcsec |     1,1 | 58404.971137962966 |            1.0 |     3.0 |      d57 |
+| r117.fits | illumflat,trace,pixelflat | 16:41:42.94 | 37:24:30.9 |  Dome Flat | 600/7500 | 2.0 arcsec |     1,1 |  58404.97152708333 |            1.0 |     3.0 |      d57 |
+| r118.fits | illumflat,trace,pixelflat | 16:42:18.05 | 37:24:30.0 |  Dome Flat | 600/7500 | 2.0 arcsec |     1,1 |  58404.97191620371 |            1.0 |     3.0 |      d57 |
+| r119.fits | illumflat,trace,pixelflat | 16:42:48.39 | 37:24:29.2 |  Dome Flat | 600/7500 | 2.0 arcsec |     1,1 | 58404.972305208335 |            1.0 |     3.0 |      d57 |
+| r120.fits | illumflat,trace,pixelflat | 16:43:23.50 | 37:24:28.3 |  Dome Flat | 600/7500 | 2.0 arcsec |     1,1 | 58404.972694097225 |            1.0 |     3.0 |      d57 |
 data end
 

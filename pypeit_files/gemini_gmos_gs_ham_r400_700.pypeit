@@ -4,6 +4,8 @@
 # User-defined execution parameters
 [rdx]
 spectrograph = gemini_gmos_south_ham
+[baseprocess]
+   use_biasimage=False
 [calibrations]
    [[tilts]]
       tracethresh = 10.
@@ -26,8 +28,8 @@ data read
 |            filename |       frametype |           ra |          dec |    target |    dispname |    decker | binning |              mjd | airmass | exptime |    dichroic | dispangle |
 #| S20181005S0082.fits |        arc,tilt | 326.10520833 | -40.90022222 |      CuAr | R400+_G5325 | 1.0arcsec |     2,2 | 2018.75872120822 |   1.063 |    16.0 | GG455_G0329 |     700.0 |
 | S20181005S0083.fits.gz |        arc,tilt | 326.10520833 | -40.90022222 |      CuAr | R400+_G5325 | 1.0arcsec |     2,2 | 2018.75872227769 |   1.064 |    16.0 | GG455_G0329 |     700.0 |
-| S20181005S0081.fits.gz | pixelflat,trace | 326.10520833 | -40.90022222 |  GCALflat | R400+_G5325 | 1.0arcsec |     2,2 | 2018.75872056653 |   1.063 |     1.0 | GG455_G0329 |     700.0 |
-| S20181005S0084.fits.gz | pixelflat,trace | 326.10520833 | -40.90022222 |  GCALflat | R400+_G5325 | 1.0arcsec |     2,2 | 2018.75872336089 |   1.064 |     1.0 | GG455_G0329 |     700.0 |
+| S20181005S0081.fits.gz | illumflat,pixelflat,trace | 326.10520833 | -40.90022222 |  GCALflat | R400+_G5325 | 1.0arcsec |     2,2 | 2018.75872056653 |   1.063 |     1.0 | GG455_G0329 |     700.0 |
+| S20181005S0084.fits.gz | illumflat,pixelflat,trace | 326.10520833 | -40.90022222 |  GCALflat | R400+_G5325 | 1.0arcsec |     2,2 | 2018.75872336089 |   1.064 |     1.0 | GG455_G0329 |     700.0 |
 | S20181005S0079.fits.gz |         science | 326.10520833 | -40.90022222 | FRB180924 | R400+_G5325 | 1.0arcsec |     2,2 |  2018.7586745718 |   1.044 |   700.0 | GG455_G0329 |     700.0 |
 #| S20181005S0080.fits |         science | 326.10520833 | -40.90022222 | FRB180924 | R400+_G5325 | 1.0arcsec |     2,2 | 2018.75869731381 |   1.056 |   700.0 | GG455_G0329 |     700.0 |
 #| S20181005S0085.fits |         science | 326.10520833 | -40.90022222 | FRB180924 | R400+_G5325 | 1.0arcsec |     2,2 |  2018.7587244705 |   1.072 |   700.0 | GG455_G0329 |     700.0 |

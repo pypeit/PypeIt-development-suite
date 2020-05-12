@@ -5,7 +5,8 @@
     spectrograph = keck_deimos
     sortroot = keck_deimos_setup_A
     detnum = 3,7
-
+[baseprocess]
+    use_biasimage=False
 [extract]
     maxnumber = 5
 
@@ -32,11 +33,11 @@ data read
 |        filename |                date |       frametype |         target | exptime | dispname |   decker |
 | d0913_0013.fits | 2017-09-13T03:06:57 |        arc,tilt |     DOME PHLAT |       1 |     830G | LongMirr |
 | d0913_0014.fits | 2017-09-13T03:08:08 |        arc,tilt |     DOME PHLAT |       1 |     830G | LongMirr |
-| d0913_0015.fits | 2017-09-13T03:09:30 | pixelflat,trace |     DOME PHLAT |       6 |     830G | LongMirr |
-| d0913_0016.fits | 2017-09-13T03:10:44 | pixelflat,trace |     DOME PHLAT |       6 |     830G | LongMirr |
-| d0913_0017.fits | 2017-09-13T03:11:58 | pixelflat,trace |     DOME PHLAT |       6 |     830G | LongMirr |
-| d0913_0018.fits | 2017-09-13T03:13:12 | pixelflat,trace |     DOME PHLAT |       6 |     830G | LongMirr |
-| d0913_0019.fits | 2017-09-13T03:14:26 | pixelflat,trace |     DOME PHLAT |       6 |     830G | LongMirr |
+| d0913_0015.fits | 2017-09-13T03:09:30 | illumflat,pixelflat,trace |     DOME PHLAT |       6 |     830G | LongMirr |
+| d0913_0016.fits | 2017-09-13T03:10:44 | illumflat,pixelflat,trace |     DOME PHLAT |       6 |     830G | LongMirr |
+| d0913_0017.fits | 2017-09-13T03:11:58 | illumflat,pixelflat,trace |     DOME PHLAT |       6 |     830G | LongMirr |
+| d0913_0018.fits | 2017-09-13T03:13:12 | illumflat,pixelflat,trace |     DOME PHLAT |       6 |     830G | LongMirr |
+| d0913_0019.fits | 2017-09-13T03:14:26 | illumflat,pixelflat,trace |     DOME PHLAT |       6 |     830G | LongMirr |
 | d0913_0024.fits | 2017-09-13T12:44:00 |         science | PSOJ006p39_OFF |    1200 |     830G | LongMirr |
 #| d0913_0025.fits | 2017-09-13T13:05:12 |         science | PSOJ006p39_OFF |    1200 |     830G | LongMirr |
 | d0913_0033.fits | 2017-09-13T15:10:28 |        standard |        G191B2B |      60 |     830G | LongMirr |

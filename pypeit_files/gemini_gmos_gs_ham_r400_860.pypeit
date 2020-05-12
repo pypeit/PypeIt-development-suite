@@ -5,6 +5,8 @@
 [rdx]
   spectrograph = gemini_gmos_south_ham
   detnum = 1,2,3
+[baseprocess]
+   use_biasimage=False  
 [calibrations]
   [[slitedges]]
      edge_thresh=100.
@@ -16,7 +18,7 @@
 [reduce]
   [[findobj]]
     sig_thresh = 0.5
-    maxnumber = 1
+    maxnumber = 5
 
 # Setup
 setup read
@@ -39,8 +41,8 @@ data read
 | S20180903S0176.fits |            bias |        147.0 |         89.9 |       Bias | R400+_G5325 |     0.75arcsec |     2,2 | 2018.67204145595 |     1.0 |     0.0 | RG610_G0331 |   1,2 |      -1 |     -1 |
 | S20180903S0177.fits |            bias |        147.0 |         89.9 |       Bias | R400+_G5325 |     0.75arcsec |     2,2 | 2018.67204249268 |     1.0 |     0.0 | RG610_G0331 |   1,2 |      -1 |     -1 |
 | S20180903S0178.fits |            bias |        147.0 |         89.9 |       Bias | R400+_G5325 |     0.75arcsec |     2,2 |  2018.6720435331 |     1.0 |     0.0 | RG610_G0331 |   1,2 |      -1 |     -1 |
-| S20180903S0139.fits | trace,pixelflat |  43.06933333 |  -5.05883611 |   GCALflat | R400+_G5325 |     0.75arcsec |     2,2 | 2018.67183756159 |   1.116 |     1.0 | RG610_G0331 |   1,2 |      -1 |     -1 |
-| S20180903S0140.fits | trace,pixelflat |  43.06933333 |  -5.05883611 |   GCALflat | R400+_G5325 |     0.75arcsec |     2,2 | 2018.67183917557 |   1.117 |     1.0 | RG610_G0331 |   1,2 |      -1 |     -1 |
+| S20180903S0139.fits | trace,illumflat,pixelflat |  43.06933333 |  -5.05883611 |   GCALflat | R400+_G5325 |     0.75arcsec |     2,2 | 2018.67183756159 |   1.116 |     1.0 | RG610_G0331 |   1,2 |      -1 |     -1 |
+| S20180903S0140.fits | trace,illumflat,pixelflat |  43.06933333 |  -5.05883611 |   GCALflat | R400+_G5325 |     0.75arcsec |     2,2 | 2018.67183917557 |   1.117 |     1.0 | RG610_G0331 |   1,2 |      -1 |     -1 |
 | S20180903S0136.fits | tilt,arc,science|  43.06933333 |  -5.05883611 | J0252-0503 | R400+_G5325 |     0.75arcsec |     2,2 | 2018.67171744684 |   1.109 |  1200.0 | RG610_G0331 |     1 |      -1 |     -1 |
 | S20180903S0137.fits | tilt,arc,science|  43.06933333 |  -5.05883611 | J0252-0503 | R400+_G5325 |     0.75arcsec |     2,2 | 2018.67175888324 |   1.105 |  1200.0 | RG610_G0331 |     2 |      -1 |     -1 |
 ## For Standard

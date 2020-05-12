@@ -27,7 +27,7 @@ def develop_setups():
                             '830G_M_8500', '830G_L_8100'],
             'keck_nires': ['NIRES'],
             'keck_nirspec': ['LOW_NIRSPEC-1'],
-            'keck_mosfire': ['Y_long', 'J_multi'],
+            'keck_mosfire': ['Y_long', 'J_multi', 'K_long'],
             'keck_lris_blue': ['multi_600_4000_d560', 'long_400_3400_d560', 'long_600_4000_d560',
                                'multi_300_5000_d680'],
             'keck_lris_red': ['long_600_7500_d560', 'multi_1200_9000_d680_1x2',
@@ -40,12 +40,15 @@ def develop_setups():
             'magellan_mage': ['1x1'],
             'magellan_fire': ['FIRE_Echelle', 'FIRE_Long'],
             'mdm_osmos': ['MDM4K'],
-            'lbt_luci': ['LUCI-I', 'LUCI-II']}
+            'not_alfosc': ['grism4'],
+            'vlt_fors2': ['300I'],
+            'lbt_luci': ['LUCI-I', 'LUCI-II']
+            }
 
 
 def supported_instruments():
     return ['kast', 'deimos', 'nires', 'nirspec', 'mosfire', 'lris', 'xshooter', 'gnirs', 'gmos',
-            'flamingos2', 'mage', 'fire', 'luci', 'mdm']
+            'flamingos2', 'mage', 'fire', 'luci', 'mdm', 'alfosc', 'fors2']
 
 
 def raw_data_dir():
@@ -132,19 +135,20 @@ def fix_pypeit_file_directory(dev_path, raw_data, instr, setup, rdxdir, std=Fals
     # Replace the default path with the local one
     for kk, iline in enumerate(lines):
         if 'data read' in iline:
+            # JFH: This logic is a convoluted mess, and resulted in an infinite while loop. I hope this fixes it.
             old_path = lines[kk+1].strip().split(' ')[1] if 'path' in lines[kk+1] \
                             else lines[kk+1].strip()
             subdir = ''
-            while os.path.split(old_path)[1] != setup:
-                subdir = os.path.join(os.path.split(old_path)[1], subdir)
-                old_path = os.path.split(old_path)[0]
+            #while os.path.split(old_path)[1] != setup:
+            #    subdir = os.path.join(os.path.split(old_path)[1], subdir)
+            #    old_path = os.path.split(old_path)[0]
             newdpth = ' path ' if 'path' in lines[kk+1] else ' '
             newdpth += os.path.join(raw_data, instr, setup, subdir)
             newdpth += '\n'
             lines[kk+1] = newdpth
-        elif 'flatfield' in iline and 'frame' in lines[kk+1]:
+        elif 'flatfield' in iline and 'pixelflat_file' in lines[kk+1]:
             newcpth = os.path.join(dev_path, 'CALIBS', os.path.split(lines[kk+1])[1])
-            lines[kk+1] = '        frame = {0}'.format(newcpth)
+            lines[kk+1] = '        pixelflat_file = {0}'.format(newcpth)
 
     # Write the pypeit file
     pyp_file = os.path.join(rdxdir, pypeit_file_name(instr, setup, std=std))
@@ -668,7 +672,7 @@ def main():
             if instr.lower() == 'keck_nires' and setup == 'NIRES':
                 ntest += 1
                 if run_ql(rawdir, rdxdir, instr, setup,
-                          ['s180604_0089.fits.gz', 's180604_0090.fits.gz']):
+                          ['s190519_0067.fits', 's190519_0068.fits']):
                     npass += 1
                 else:
                     failed += [ 'pypeit_ql: {0}/{1}'.format(instr, setup) ]

@@ -5,6 +5,8 @@
     spectrograph = keck_deimos
     sortroot = keck_deimos_setup_A
     detnum = 3,7
+[baseprocess]
+    use_biasimage=False
 
 # Setup
 setup read
@@ -32,8 +34,8 @@ data read
 #| DE.20140226.52536.fits | 2014-02-26T15:00:31 |           science |        j1137 |    1500 |    600ZD | jcCIV2C |
 #| DE.20140226.54107.fits | 2014-02-26T15:26:40 |           science |        j1137 |    1500 |    600ZD | jcCIV2C |
 | DE.20140226.61434.fits | 2014-02-26T17:03:57 |          arc,tilt | HORIZON STOW |       1 |    600ZD | jcCIV2C |
-| DE.20140226.61512.fits | 2014-02-26T17:05:19 |   pixelflat,trace | HORIZON STOW |       6 |    600ZD | jcCIV2C |
-| DE.20140226.61587.fits | 2014-02-26T17:06:35 |   pixelflat,trace | HORIZON STOW |       6 |    600ZD | jcCIV2C |
-| DE.20140226.61663.fits | 2014-02-26T17:07:51 |   pixelflat,trace | HORIZON STOW |       6 |    600ZD | jcCIV2C |
+| DE.20140226.61512.fits | 2014-02-26T17:05:19 | illumflat,pixelflat,trace | HORIZON STOW |       6 |    600ZD | jcCIV2C |
+| DE.20140226.61587.fits | 2014-02-26T17:06:35 | illumflat,pixelflat,trace | HORIZON STOW |       6 |    600ZD | jcCIV2C |
+| DE.20140226.61663.fits | 2014-02-26T17:07:51 | illumflat,pixelflat,trace | HORIZON STOW |       6 |    600ZD | jcCIV2C |
 data end
 

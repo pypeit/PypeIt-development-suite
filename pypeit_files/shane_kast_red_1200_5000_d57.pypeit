@@ -4,6 +4,8 @@
 # User-defined execution parameters
 [rdx]
 spectrograph = shane_kast_red
+[baseprocess]
+  use_biasimage = False
 
 # Setup
 setup read
@@ -25,7 +27,7 @@ data read
  path /home/xavier/Projects/PypeIt-development-suite/REDUX_OUT/shane_kast_red/1200_5000_d57
 |   filename |       frametype |                 ra |                dec |            target |  dispname |     decker | binning |                mjd |        airmass | exptime | dichroic | dispangle |
 | r3003.fits.gz |        arc,tilt |  305.0607916666666 |  37.30455555555555 | Arcs (0.5 arcsec) | 1200/5000 | 0.5 arcsec |     1,1 | 58791.066244444446 |            1.0 |     3.0 |      d57 |   24742.0 |
-| r3017.fits.gz | pixelflat,trace | 307.73737499999993 |            37.3005 |            dflats | 1200/5000 | 2.0 arcsec |     1,1 |   58791.0737130787 |            1.0 |    10.0 |      d57 |   24742.0 |
+| r3017.fits.gz | illumflat,pixelflat,trace | 307.73737499999993 |            37.3005 |            dflats | 1200/5000 | 2.0 arcsec |     1,1 |   58791.0737130787 |            1.0 |    10.0 |      d57 |   24742.0 |
 | r3038.fits.gz |         science | 10.622541666666665 |  41.48452777777778 |      ZTF18abilbfg | 1200/5000 | 2.0 arcsec |     1,1 |  58791.10225069444 | 1.320000052452 |   100.0 |      d57 |   24732.0 |
 | r3036.fits.gz |        standard | 327.79587499999997 | 28.863861111111113 |          BD284211 | 1200/5000 | 2.0 arcsec |     1,1 |  58791.09514722222 |  1.02999997139 |    60.0 |      d57 |   24734.0 |
 data end
