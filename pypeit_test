@@ -40,12 +40,15 @@ def develop_setups():
             'magellan_mage': ['1x1'],
             'magellan_fire': ['FIRE_Echelle', 'FIRE_Long'],
             'mdm_osmos': ['MDM4K'],
-            'lbt_luci': ['LUCI-I', 'LUCI-II']}
+            'not_alfosc': ['grism4'],
+            'vlt_fors2': ['300I'],
+            'lbt_luci': ['LUCI-I', 'LUCI-II']
+            }
 
 
 def supported_instruments():
     return ['kast', 'deimos', 'nires', 'nirspec', 'mosfire', 'lris', 'xshooter', 'gnirs', 'gmos',
-            'flamingos2', 'mage', 'fire', 'luci', 'mdm']
+            'flamingos2', 'mage', 'fire', 'luci', 'mdm', 'alfosc', 'fors2']
 
 
 def raw_data_dir():
