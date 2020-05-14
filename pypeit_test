@@ -216,6 +216,7 @@ def run_flux_setup(rdxdir, instr, setup):
         report_test(retval, type='FLUX_SETUP')
         subprocess.call(['tail', '-3', logfile])
         print("\n", file=sys.stderr)
+    return retval ==0
 
 def run_flux_calib(dev_path, rdxdir, instr, setup):
     logfile = get_logfile(rdxdir, instr, setup, 'test_flux')
@@ -268,7 +269,7 @@ def run_coadd2d(rdxdir, instr, setup, coadd_file=None, obj=None):
         print("\n", file=sys.stderr)
     return retval == 0
 
-def run_tellfit(rdxdir, instr, setup, coadd_file):
+def run_tellfit(rdxdir, instr, setup, coadd_file, redshift, objmodel):
     """
     Test telluric correction with pisco GNIRS data
     """
@@ -276,7 +277,8 @@ def run_tellfit(rdxdir, instr, setup, coadd_file):
     with open(logfile, 'w') as f:
         print('Directory: {0}'.format(rdxdir))
         command_line = ['pypeit_tellfit', os.path.join(rdxdir,coadd_file)]
-        command_line += ['-r 7.5','--objmodel qso']
+        command_line += ['--redshift', '{:}'.format(redshift)]
+        command_line += ['--objmodel', objmodel]
         print('Command line: {0}'.format(' '.join(command_line)))
         print('Running pypeit_tellfit on {0}/{1}'.format(instr, setup), file=sys.stderr,
               end='')
@@ -284,6 +286,7 @@ def run_tellfit(rdxdir, instr, setup, coadd_file):
         report_test(retval, type='TELLFIT')
         subprocess.call(['tail', '-3', logfile])
         print("\n", file=sys.stderr)
+    return retval == 0
 
 
 def run_ql(rawdir, rdxdir, instr, setup, files, mos=False):
@@ -711,19 +714,13 @@ def main():
             # Echelle
             if passed and instr == 'gemini_gnirs' and setup == '32_SB_SXD' and not flg_ql:
                 ntest += 1
-                if run_tellfit(rdxdir, instr, setup, coadd_file='pisco_coadd.fits'):
+                if run_tellfit(rdxdir, instr, setup, coadd_file='pisco_coadd.fits', redshift=7.52, objmodel='qso'):
                     npass += 1
                 else:
                     failed += [ 'pypeit_tellfit: {0}/{1}'.format(instr, setup) ]
 
             # MultiSlit
-            if passed and instr == 'gemini_gmos' and setup == 'GS_HAM_R400_860' and not flg_ql:
-                ntest += 1
-                if run_tellfit(rdxdir, instr, setup, coadd_file='J0252_cont_source.fits'):
-                    npass += 1
-                else:
-                    failed += [ 'pypeit_tellfit: {0}/{1}'.format(instr, setup) ]
-            # ----------------------------------------------------------
+            #ToDo: Add a multislit test.
 
             # ----------------------------------------------------------
             # ----------------------------------------------------------
