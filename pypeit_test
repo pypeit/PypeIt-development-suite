@@ -201,6 +201,22 @@ def run_sensfunc(rdxdir, instr, setup, std_file, sens_file=None):
         print("\n", file=sys.stderr)
     return retval == 0
 
+def run_flux_setup(rdxdir, instr, setup):
+    """
+    Test telluric correction with pisco GNIRS data
+    """
+    logfile = get_logfile(rdxdir, instr, setup, 'test_flux_setup')
+    with open(logfile, 'w') as f:
+        print('Directory: {0}'.format(rdxdir))
+        command_line = ['pypeit_flux_setup', os.path.join(rdxdir,'Science')]
+        print('Command line: {0}'.format(' '.join(command_line)))
+        print('Running pypeit_flux_setup on {0}/{1}'.format(instr, setup), file=sys.stderr,
+              end='')
+        retval = subprocess.call(command_line, stderr=f, cwd=rdxdir)
+        report_test(retval, type='FLUX_SETUP')
+        subprocess.call(['tail', '-3', logfile])
+        print("\n", file=sys.stderr)
+    return retval ==0
 
 def run_flux_calib(dev_path, rdxdir, instr, setup):
     logfile = get_logfile(rdxdir, instr, setup, 'test_flux')
@@ -249,6 +265,25 @@ def run_coadd2d(rdxdir, instr, setup, coadd_file=None, obj=None):
               end='')
         retval = subprocess.call(command_line, stderr=f, cwd=rdxdir)
         report_test(retval, type='COADD2D')
+        subprocess.call(['tail', '-3', logfile])
+        print("\n", file=sys.stderr)
+    return retval == 0
+
+def run_tellfit(rdxdir, instr, setup, coadd_file, redshift, objmodel):
+    """
+    Test telluric correction with pisco GNIRS data
+    """
+    logfile = get_logfile(rdxdir, instr, setup, 'test_tellfit')
+    with open(logfile, 'w') as f:
+        print('Directory: {0}'.format(rdxdir))
+        command_line = ['pypeit_tellfit', os.path.join(rdxdir,coadd_file)]
+        command_line += ['--redshift', '{:}'.format(redshift)]
+        command_line += ['--objmodel', objmodel]
+        print('Command line: {0}'.format(' '.join(command_line)))
+        print('Running pypeit_tellfit on {0}/{1}'.format(instr, setup), file=sys.stderr,
+              end='')
+        retval = subprocess.call(command_line, stderr=f, cwd=rdxdir)
+        report_test(retval, type='TELLFIT')
         subprocess.call(['tail', '-3', logfile])
         print("\n", file=sys.stderr)
     return retval == 0
@@ -589,6 +624,22 @@ def main():
                     failed += [ 'pypeit_sensfunc: {0}/{1}'.format(instr, setup) ]
             # ----------------------------------------------------------
 
+            # ----------------------------------------------------------
+            # ----------------------------------------------------------
+            # fluxing/coadd1d/tellfit Pypeit files setup tests
+            # ----------------------------------------------------------
+            flux_setup_pairs = {'shane_kast_blue': '600_4310_d55',  # long-slit
+                                'gemini_gnirs': '32_SB_SXD',        # echelle
+                                'gemini_gmos': 'GS_HAM_R400_860'}   # multi-slit
+            if passed and any([instr == key and setup == flux_setup_pairs[key]
+                                for key in flux_setup_pairs.keys()]) and not flg_ql:
+                ntest += 1
+                if run_flux_setup(rdxdir, instr, setup):
+                    npass += 1
+                else:
+                    failed += [ 'pypeit_flux_setup: {0}/{1}'.format(instr, setup) ]
+            # ----------------------------------------------------------
+
 
             # ----------------------------------------------------------
             # ----------------------------------------------------------
@@ -654,6 +705,22 @@ def main():
                 else:
                     failed += [ 'pypeit_coadd_2dspec: {0}/{1}'.format(instr, setup) ]
             # ----------------------------------------------------------
+
+
+            # ----------------------------------------------------------
+            # ----------------------------------------------------------
+            # Telluric tests
+            # ----------------------------------------------------------
+            # Echelle
+            if passed and instr == 'gemini_gnirs' and setup == '32_SB_SXD' and not flg_ql:
+                ntest += 1
+                if run_tellfit(rdxdir, instr, setup, coadd_file='pisco_coadd.fits', redshift=7.52, objmodel='qso'):
+                    npass += 1
+                else:
+                    failed += [ 'pypeit_tellfit: {0}/{1}'.format(instr, setup) ]
+
+            # MultiSlit
+            #ToDo: Add a multislit test.
 
             # ----------------------------------------------------------
             # ----------------------------------------------------------
