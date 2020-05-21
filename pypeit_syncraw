@@ -49,6 +49,18 @@ def main():
             print(' '.join(p))
             return
         subprocess.run(p, check=True)
+    elif pargs.developer == 'rjc':
+        if pargs.copy:
+            command = 'copy'
+        else:
+            command = 'sync'
+        p = ['rclone', command, 'PypeIt:RAW_DATA', 'RAW_DATA', '-v']
+        if pargs.dryrun:
+            p += ['--dry-run']
+        if pargs.print:
+            print(' '.join(p))
+            return
+        subprocess.run(p, check=True)
 
 if __name__ == '__main__':
     # Check for rclone

@@ -25,6 +25,7 @@ def develop_setups():
             'shane_kast_red': ['600_7500_d55_ret', '600_7500_d57', '600_5000_d46', '1200_5000_d57'],
             'keck_deimos': ['600ZD_M_6500', '1200G_M_7750', '830G_LVM_8400', '830G_M_8100_26',
                             '830G_M_8500', '830G_L_8100'],
+            'keck_kcwi': ['bh2_4200'],
             'keck_nires': ['NIRES'],
             'keck_nirspec': ['LOW_NIRSPEC-1'],
             'keck_mosfire': ['Y_long', 'J_multi', 'K_long'],
@@ -47,7 +48,7 @@ def develop_setups():
 
 
 def supported_instruments():
-    return ['kast', 'deimos', 'nires', 'nirspec', 'mosfire', 'lris', 'xshooter', 'gnirs', 'gmos',
+    return ['kast', 'deimos', 'kcwi', 'nires', 'nirspec', 'mosfire', 'lris', 'xshooter', 'gnirs', 'gmos',
             'flamingos2', 'mage', 'fire', 'luci', 'mdm', 'alfosc', 'fors2']
 
 
@@ -770,7 +771,7 @@ if __name__ == '__main__':
 
     # Check for PYPEIT_DEV
     if 'PYPEIT_DEV' not in os.environ:
-        raise EnvironmentError('Enviroment must include PYEPIT_DEV, which points to the '
+        raise EnvironmentError('Enviroment must include PYPEIT_DEV, which points to the '
                                'top-level directory with the dev-suite raw data.')
 
     # Giddy up
