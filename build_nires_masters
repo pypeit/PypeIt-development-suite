@@ -59,12 +59,12 @@ def main():
     files_01 = glob.glob(os.path.join(keck_nires_path, '*2_01*'))
     # Do it
     for ifile in files_01:
-        cooked_file = os.path.join(nires_dir, os.path.basename(ifile))
+        cooked_file = os.path.join(nires_dir, os.path.basename(ifile).replace('_2_','_1_'))
         copy_me(ifile, cooked_file)
     # A few more
     for root in ['MasterFlat_A_7_01.fits', 'MasterSlits_A_7_01.fits.gz']:
         ifile = os.path.join(keck_nires_path, root)
-        cooked_file = os.path.join(nires_dir, os.path.basename(ifile).replace('15','1'))
+        cooked_file = os.path.join(nires_dir, os.path.basename(ifile).replace('7','1'))
         copy_me(ifile, cooked_file)
 
 
