@@ -56,13 +56,13 @@ def main():
 
     # ------------------------------------------------------------------
     keck_nires_path = os.path.join(redux_dir, 'keck_nires', 'NIRES', 'Masters')
-    files_01 = glob.glob(os.path.join(keck_nires_path, '*1_01*'))
+    files_01 = glob.glob(os.path.join(keck_nires_path, '*2_01*'))
     # Do it
     for ifile in files_01:
         cooked_file = os.path.join(nires_dir, os.path.basename(ifile))
         copy_me(ifile, cooked_file)
     # A few more
-    for root in ['MasterFlat_A_15_01.fits', 'MasterSlits_A_15_01.fits.gz']:
+    for root in ['MasterFlat_A_7_01.fits', 'MasterSlits_A_7_01.fits.gz']:
         ifile = os.path.join(keck_nires_path, root)
         cooked_file = os.path.join(nires_dir, os.path.basename(ifile).replace('15','1'))
         copy_me(ifile, cooked_file)
