@@ -41,7 +41,7 @@ def develop_setups():
             'magellan_mage': ['1x1'],
             'magellan_fire': ['FIRE_Echelle', 'FIRE_Long'],
             'mdm_osmos': ['MDM4K'],
-            'not_alfosc': ['grism4'],
+            'not_alfosc': ['grism4', 'grism19'],
             'vlt_fors2': ['300I'],
             'lbt_luci': ['LUCI-I', 'LUCI-II']
             }
