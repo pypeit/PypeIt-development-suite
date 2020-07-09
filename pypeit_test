@@ -34,6 +34,7 @@ def develop_setups():
             'keck_lris_red': ['long_600_7500_d560', 'multi_1200_9000_d680_1x2',
                               'multi_600_5000_d560', 'multi_1200_9000_d680',
                               'multi_400_8500_d560'],
+            'keck_lris_red_orig': ['long_300_5000'],
             'vlt_xshooter': ['VIS_1x1', 'VIS_2x1', 'VIS_2x2', 'NIR'],
             'gemini_gnirs': ['32_SB_SXD', '10_LB_SXD'],
             'gemini_gmos': ['GS_HAM_R400_700', 'GS_HAM_R400_860'],
