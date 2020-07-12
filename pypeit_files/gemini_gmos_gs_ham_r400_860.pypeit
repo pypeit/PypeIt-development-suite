@@ -9,7 +9,7 @@
    use_biasimage=False  
 [calibrations]
   [[slitedges]]
-     edge_thresh=100.
+     edge_thresh=200.
   [[flatfield]]
      tweak_slits=False     
   [[wavelengths]]
