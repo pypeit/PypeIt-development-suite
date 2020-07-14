@@ -25,6 +25,7 @@ def develop_setups():
             'shane_kast_red': ['600_7500_d55_ret', '600_7500_d57', '600_5000_d46', '1200_5000_d57'],
             'keck_deimos': ['600ZD_M_6500', '1200G_M_7750', '830G_LVM_8400', '830G_M_8100_26',
                             '830G_M_8500', '830G_L_8100'],
+            'keck_kcwi': ['bh2_4200'],
             'keck_nires': ['NIRES'],
             'keck_nirspec': ['LOW_NIRSPEC-1'],
             'keck_mosfire': ['Y_long', 'J_multi', 'K_long'],
@@ -47,7 +48,7 @@ def develop_setups():
 
 
 def supported_instruments():
-    return ['kast', 'deimos', 'nires', 'nirspec', 'mosfire', 'lris', 'xshooter', 'gnirs', 'gmos',
+    return ['kast', 'deimos', 'kcwi', 'nires', 'nirspec', 'mosfire', 'lris', 'xshooter', 'gnirs', 'gmos',
             'flamingos2', 'mage', 'fire', 'luci', 'mdm', 'alfosc', 'fors2']
 
 
@@ -201,6 +202,22 @@ def run_sensfunc(rdxdir, instr, setup, std_file, sens_file=None):
         print("\n", file=sys.stderr)
     return retval == 0
 
+def run_flux_setup(rdxdir, instr, setup):
+    """
+    Test telluric correction with pisco GNIRS data
+    """
+    logfile = get_logfile(rdxdir, instr, setup, 'test_flux_setup')
+    with open(logfile, 'w') as f:
+        print('Directory: {0}'.format(rdxdir))
+        command_line = ['pypeit_flux_setup', os.path.join(rdxdir,'Science')]
+        print('Command line: {0}'.format(' '.join(command_line)))
+        print('Running pypeit_flux_setup on {0}/{1}'.format(instr, setup), file=sys.stderr,
+              end='')
+        retval = subprocess.call(command_line, stderr=f, cwd=rdxdir)
+        report_test(retval, type='FLUX_SETUP')
+        subprocess.call(['tail', '-3', logfile])
+        print("\n", file=sys.stderr)
+    return retval ==0
 
 def run_flux_calib(dev_path, rdxdir, instr, setup):
     logfile = get_logfile(rdxdir, instr, setup, 'test_flux')
@@ -249,6 +266,25 @@ def run_coadd2d(rdxdir, instr, setup, coadd_file=None, obj=None):
               end='')
         retval = subprocess.call(command_line, stderr=f, cwd=rdxdir)
         report_test(retval, type='COADD2D')
+        subprocess.call(['tail', '-3', logfile])
+        print("\n", file=sys.stderr)
+    return retval == 0
+
+def run_tellfit(rdxdir, instr, setup, coadd_file, redshift, objmodel):
+    """
+    Test telluric correction with pisco GNIRS data
+    """
+    logfile = get_logfile(rdxdir, instr, setup, 'test_tellfit')
+    with open(logfile, 'w') as f:
+        print('Directory: {0}'.format(rdxdir))
+        command_line = ['pypeit_tellfit', os.path.join(rdxdir,coadd_file)]
+        command_line += ['--redshift', '{:}'.format(redshift)]
+        command_line += ['--objmodel', objmodel]
+        print('Command line: {0}'.format(' '.join(command_line)))
+        print('Running pypeit_tellfit on {0}/{1}'.format(instr, setup), file=sys.stderr,
+              end='')
+        retval = subprocess.call(command_line, stderr=f, cwd=rdxdir)
+        report_test(retval, type='TELLFIT')
         subprocess.call(['tail', '-3', logfile])
         print("\n", file=sys.stderr)
     return retval == 0
@@ -589,6 +625,22 @@ def main():
                     failed += [ 'pypeit_sensfunc: {0}/{1}'.format(instr, setup) ]
             # ----------------------------------------------------------
 
+            # ----------------------------------------------------------
+            # ----------------------------------------------------------
+            # fluxing/coadd1d/tellfit Pypeit files setup tests
+            # ----------------------------------------------------------
+            flux_setup_pairs = {'shane_kast_blue': '600_4310_d55',  # long-slit
+                                'gemini_gnirs': '32_SB_SXD',        # echelle
+                                'gemini_gmos': 'GS_HAM_R400_860'}   # multi-slit
+            if passed and any([instr == key and setup == flux_setup_pairs[key]
+                                for key in flux_setup_pairs.keys()]) and not flg_ql:
+                ntest += 1
+                if run_flux_setup(rdxdir, instr, setup):
+                    npass += 1
+                else:
+                    failed += [ 'pypeit_flux_setup: {0}/{1}'.format(instr, setup) ]
+            # ----------------------------------------------------------
+
 
             # ----------------------------------------------------------
             # ----------------------------------------------------------
@@ -655,6 +707,22 @@ def main():
                     failed += [ 'pypeit_coadd_2dspec: {0}/{1}'.format(instr, setup) ]
             # ----------------------------------------------------------
 
+
+            # ----------------------------------------------------------
+            # ----------------------------------------------------------
+            # Telluric tests
+            # ----------------------------------------------------------
+            # Echelle
+            if passed and instr == 'gemini_gnirs' and setup == '32_SB_SXD' and not flg_ql:
+                ntest += 1
+                if run_tellfit(rdxdir, instr, setup, coadd_file='pisco_coadd.fits', redshift=7.52, objmodel='qso'):
+                    npass += 1
+                else:
+                    failed += [ 'pypeit_tellfit: {0}/{1}'.format(instr, setup) ]
+
+            # MultiSlit
+            #ToDo: Add a multislit test.
+
             # ----------------------------------------------------------
             # ----------------------------------------------------------
             # Quick-look tests
@@ -703,7 +771,7 @@ if __name__ == '__main__':
 
     # Check for PYPEIT_DEV
     if 'PYPEIT_DEV' not in os.environ:
-        raise EnvironmentError('Enviroment must include PYEPIT_DEV, which points to the '
+        raise EnvironmentError('Enviroment must include PYPEIT_DEV, which points to the '
                                'top-level directory with the dev-suite raw data.')
 
     # Giddy up

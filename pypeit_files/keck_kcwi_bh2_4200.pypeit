@@ -1,0 +1,44 @@
+
+# User-defined execution parameters
+[rdx]
+spectrograph = keck_kcwi
+
+[reduce]
+    [[skysub]]
+        user_regions = :30,70:
+
+# Setup
+setup read
+ Setup A:
+   --:
+     binning: 1,1
+     dichroic: none
+     disperser:
+       angle: 240.9942169
+       name: BH2
+     slit:
+       decker: Small
+       slitlen: none
+       slitwid: none
+setup end
+
+# Read in the data
+data read
+ path /Users/rcooke/Software/PypeIt-development-suite/RAW_DATA/keck_kcwi/bh2_4200/
+|                  filename | frametype |                 ra |                  dec |          target | dispname | decker | binning |          mjd | airmass | exptime |   dispangle |
+| KB.20191219.12282.fits.gz |             align |  57.99999999999999 |                 45.0 |         unknown |      BH2 |  Small |     1,1 | 58836.142164 |    1.41 |    48.0 | 240.9942169 |
+| KB.20200310.09562.fits.gz |          arc,tilt |  57.99999999999999 |                 45.0 |         unknown |      BH2 |  Small |     1,1 | 58918.110674 |    1.41 |   112.2 | 240.9942169 |
+| KB.20191220.61384.fits.gz |              bias |  58.02958333333333 |   44.997194444444446 |      DOME PHLAT |      BH2 |  Small |     1,1 |  58837.71047 |    1.41 |     0.0 | 240.6334229 |
+| KB.20191220.61577.fits.gz |              bias |  58.02958333333333 |   44.997194444444446 |      DOME PHLAT |      BH2 |  Small |     1,1 | 58837.712701 |    1.41 |     0.0 | 240.6334229 |
+| KB.20191220.61753.fits.gz |              bias |  58.02958333333333 |   44.997194444444446 |      DOME PHLAT |      BH2 |  Small |     1,1 | 58837.714744 |    1.41 |     0.0 | 240.6334229 |
+| KB.20191221.11862.fits.gz |              dark |  57.99999999999999 |                 45.0 |         unknown |      BH2 |  Small |     1,1 | 58838.137295 |    1.41 |  3600.0 | 240.6334229 |
+| KB.20191221.15638.fits.gz |              dark | 24.927999999999997 |              34.8915 |          eng042 |      BH2 |  Small |     1,1 | 58838.180999 |    1.13 |  3600.0 | 240.6334229 |
+| KB.20191219.59875.fits.gz |         pixelflat |              67.35 | 0.059000000000000004 |    HORIZON STOW |      BH2 |  Small |     1,1 | 58836.692999 |   13.37 |    48.0 | 240.9942169 |
+| KB.20191219.60099.fits.gz |         pixelflat |              67.35 | 0.059000000000000004 |    HORIZON STOW |      BH2 |  Small |     1,1 | 58836.695597 |   13.37 |    48.0 | 240.9942169 |
+| KB.20191219.60323.fits.gz |         pixelflat |              67.35 | 0.059000000000000004 |    HORIZON STOW |      BH2 |  Small |     1,1 | 58836.698194 |   13.37 |    48.0 | 240.9942169 |
+| KB.20191219.56886.fits.gz |           science |  191.3984583333333 |   42.640166666666666 |     BB1245p4238 |      BH2 |  Small |     1,1 | 58836.658409 |    1.15 |  1200.0 | 240.9942169 |
+| KB.20191220.62342.fits.gz |   illumflat,trace |  58.02958333333333 |   44.997194444444446 |      DOME PHLAT |      BH2 |  Small |     1,1 | 58837.721556 |    1.41 |   300.0 | 240.9942169 |
+| KB.20191220.62818.fits.gz |   illumflat,trace |  58.02958333333333 |   44.997194444444446 |      DOME PHLAT |      BH2 |  Small |     1,1 | 58837.727069 |    1.41 |   300.0 | 240.9942169 |
+| KB.20191220.63295.fits.gz |   illumflat,trace |  58.02958333333333 |   44.997194444444446 |      DOME PHLAT |      BH2 |  Small |     1,1 | 58837.732582 |    1.41 |   300.0 | 240.9942169 |
+data end
+
