@@ -738,6 +738,7 @@ def main():
 
             # NIRES
             if instr.lower() == 'keck_nires' and setup == 'NIRES':
+                embed(header='741 of ptest')
                 ntest += 1
                 if run_ql(rawdir, rdxdir, instr, setup,
                           ['s190519_0067.fits', 's190519_0068.fits']):
