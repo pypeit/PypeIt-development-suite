@@ -4,6 +4,12 @@
 # User-defined execution parameters
 [rdx]
 spectrograph = gemini_gnirs
+[calibrations]
+  [[slitedges]]
+     sync_to_edge = False
+     max_nudge = 0
+     order_offset = -0.04
+
 
 # Setup
 setup read
