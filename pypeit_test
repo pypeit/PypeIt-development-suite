@@ -31,6 +31,7 @@ def develop_setups():
             'keck_mosfire': ['Y_long', 'J_multi', 'K_long'],
             'keck_lris_blue': ['multi_600_4000_d560', 'long_400_3400_d560', 'long_600_4000_d560',
                                'multi_300_5000_d680'],
+            'keck_lris_blue_orig': ['long_600_4000_d500'],
             'keck_lris_red': ['long_600_7500_d560', 'multi_1200_9000_d680_1x2',
                               'multi_600_5000_d560', 'multi_1200_9000_d680',
                               'multi_400_8500_d560'],
