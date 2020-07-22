@@ -8,9 +8,11 @@
 This script runs the PypeIt development suite of tests
 """
 
-import sys
+import shutil
 import os
 import subprocess
+
+from pkg_resources import resource_filename
 
 from IPython import embed
 
@@ -27,7 +29,7 @@ def parser(options=None):
     parser.add_argument('-d', '--dryrun', default=False, action='store_true',
                         help='Only list the steps')
     parser.add_argument('-p', '--print', default=False, action='store_true',
-                        help='Only print the command')
+                        help='Print the command')
 
     return parser.parse_args() if options is None else parser.parse_args(options)
 
@@ -36,31 +38,50 @@ def main():
 
     pargs = parser()
 
+    if pargs.copy:
+        command = 'copy'
+    else:
+        command = 'sync'
+
     #
     if pargs.developer == 'jxp':
-        if pargs.copy:
-            command = 'copy'
-        else:
-            command = 'sync'
-        p = ['rclone', command, 'GoogleDrive:UCO/PypeIt/PypeIt-development-suite/RAW_DATA', 'RAW_DATA', '-v']
-        if pargs.dryrun:
-            p += ['--dry-run']
-        if pargs.print:
-            print(' '.join(p))
-            return
-        subprocess.run(p, check=True)
+        raw_path = 'GoogleDrive:UCO/PypeIt/PypeIt-development-suite/RAW_DATA'
+        calib_path = 'GoogleDrive:UCO/PypeIt/Calibrations'
     elif pargs.developer == 'rjc':
-        if pargs.copy:
-            command = 'copy'
-        else:
-            command = 'sync'
-        p = ['rclone', command, 'PypeIt:RAW_DATA', 'RAW_DATA', '-v']
-        if pargs.dryrun:
+        raw_path = 'PypeIt:RAW_DATA'
+        calib_path = None
+
+    # Do it
+    praw = ['rclone', command, raw_path, 'RAW_DATA', '-v']
+    pnires1, pnires2, ptell, ptell2 = None, None, None, None
+    if calib_path is not None:
+        pnires1 = ['rclone', command, calib_path+'/nires_masters.tar.gz', '.', '-v']
+        pnires2 = ['tar', '-zxvf', './nires_masters.tar.gz']
+        # Tellurics
+        ptell = ['rclone', command, calib_path+'/Telluric', 'Telluric', '-v']
+        tell_path = os.path.join(resource_filename('pypeit', 'data'), 'telluric')
+        ptell2 = ['mv', 'Telluric/*.*', tell_path]
+
+    if pargs.dryrun:
+        for p in [praw, pnires1, ptell]:
+            if p is None:
+                continue
             p += ['--dry-run']
+    for p in [praw, pnires1, pnires2, ptell, ptell2]:
+        if p is None:
+            continue
+        # Only execute these if the clone was performed
+        if p in [pnires2, ptell2] and pargs.dryrun:
+            continue
         if pargs.print:
             print(' '.join(p))
             return
         subprocess.run(p, check=True)
+
+    # Clean up?
+    if ptell is not None:
+        shutil.rmtree('Telluric/')
+
 
 if __name__ == '__main__':
     # Check for rclone
