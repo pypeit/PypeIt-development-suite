@@ -1,0 +1,44 @@
+# Auto-generated PypeIt file
+# Fri 26 Jun 2020 10:54:48
+
+# User-defined execution parameters
+[rdx]
+spectrograph = not_alfosc
+
+# Setup
+setup read
+ Setup A:
+   --:
+     binning: 2,1
+     dichroic: none
+     disperser:
+       angle: none
+       name: Grism_19
+     slit:
+       decker: Slit_1.3
+       slitlen: none
+       slitwid: none
+setup end
+
+# Read in the data
+data read
+ path ../Raw
+|        filename |                 frametype |            ra |           dec |                  target | dispname |   decker | binning |                mjd |          airmass | exptime |
+#| ALDf250191.fits |                  arc,tilt | 23.3328888889 | -5.1658333332 |                    HeNe | Grism_19 | Slit_1.3 |     2,1 |  59026.15950835648 | 1.50210720304783 |     1.5 |
+| ALDf250198.fits |                  arc,tilt |  1.9667444444 | 65.7147222206 |                    HeNe | Grism_19 | Slit_1.3 |     2,1 |  59026.17173677083 | 1.79654549187682 |     1.5 |
+| ALDf250201.fits |                  arc,tilt |  1.9667444444 | 65.7147222206 |                    HeNe | Grism_19 | Slit_1.3 |     2,1 | 59026.200359594906 | 1.62443259539695 |     1.5 |
+| ALDf250206.fits | pixelflat,illumflat,trace | 21.4826944444 | 58.7399999986 | Halogen 1 alfosc-calibs | Grism_19 | Slit_1.3 |     2,1 |  59026.21757302083 | 1.00001051684363 |   9.615 |
+| ALDf250207.fits | pixelflat,illumflat,trace | 21.4826944444 | 58.7399999986 | Halogen 2 alfosc-calibs | Grism_19 | Slit_1.3 |     2,1 |   59026.2178774537 | 1.00001051684363 |   9.615 |
+| ALDf250208.fits | pixelflat,illumflat,trace | 21.4826944444 | 58.7399999986 | Halogen 3 alfosc-calibs | Grism_19 | Slit_1.3 |     2,1 | 59026.218182372686 | 1.00001051928659 |   9.615 |
+| ALDf250209.fits | pixelflat,illumflat,trace | 21.4826944444 | 58.7399999986 | Halogen 4 alfosc-calibs | Grism_19 | Slit_1.3 |     2,1 |   59026.2184868287 | 1.00001051928659 |   9.615 |
+| ALDf250210.fits | pixelflat,illumflat,trace | 21.4826944444 | 58.7399999986 | Halogen 5 alfosc-calibs | Grism_19 | Slit_1.3 |     2,1 | 59026.218792141204 | 1.00001052172984 |   9.615 |
+| ALDf250190.fits |                  standard | 23.3328888889 | -5.1658333332 |                Feige110 | Grism_19 | Slit_1.3 |     2,1 |  59026.15830565972 |  1.5174600136829 |   150.0 |
+| ALDf250199.fits |                   science |  1.9667444444 | 65.7147222206 |               FRB180916 | Grism_19 | Slit_1.3 |     2,1 |  59026.17899681713 | 1.79430596468907 |  1200.0 |
+| ALDf250200.fits |                   science |  1.9667444444 | 65.7147222206 |               FRB180916 | Grism_19 | Slit_1.3 |     2,1 |  59026.19303883102 | 1.70410748858643 |  1200.0 |
+| ALDf250252.fits | bias,dark | 21.4826944444 | 58.7399999986 | alfosc-calibs bias |  Grism_4 | Slit_1.3 |     2,1 | 59026.23235042824 | 1.00001051440096 |   0.002 |
+| ALDf250253.fits | bias,dark | 21.4826944444 | 58.7399999986 | alfosc-calibs bias |  Grism_4 | Slit_1.3 |     2,1 | 59026.23258072916 | 1.00001051440096 |   0.002 |
+| ALDf250254.fits | bias,dark | 21.4826944444 | 58.7399999986 | alfosc-calibs bias |  Grism_4 | Slit_1.3 |     2,1 | 59026.23281150463 | 1.00001051806508 |   0.002 |
+| ALDf250255.fits | bias,dark | 21.4826944444 | 58.7399999986 | alfosc-calibs bias |  Grism_4 | Slit_1.3 |     2,1 | 59026.23304028935 | 1.00001051562227 |   0.002 |
+| ALDf250256.fits | bias,dark | 21.4826944444 | 58.7399999986 | alfosc-calibs bias |  Grism_4 | Slit_1.3 |     2,1 | 59026.23326940972 | 1.00001051440096 |   0.002 |
+data end
+

@@ -4,6 +4,12 @@
 # User-defined execution parameters
 [rdx]
 spectrograph = gemini_gnirs
+[calibrations]
+  [[slitedges]]
+     sync_to_edge = False
+     max_nudge = 0
+     order_offset = -0.04
+
 
 # Setup
 setup read
@@ -18,31 +24,17 @@ setup end
 # Read in the data
 data read
  path /home/xavier/local/Python/PypeIt-development-suite/RAW_DATA/gemini_gnirs/10_LB_SXD
-|            filename |       frametype |           ra |         dec |                   target |        dispname |     decker | binning |              mjd | airmass | exptime | dispangle | calib | comb_id | bkg_id |
-| N20160722S0171.fits |        standard |     323.1189 |  1.01229722 |               hip 106356 | 10/mmLBSX_G5532 | SCXD_G5531 |     1,1 |  57591.404597237 |   1.074 |     1.0 |      2.03 |     0 |       1 |      2 |
-| N20160722S0172.fits |        standard |     323.1189 |  1.01229722 |               hip 106356 | 10/mmLBSX_G5532 | SCXD_G5531 |     1,1 | 57591.4049191892 |   1.073 |     1.0 |      2.03 |     0 |       2 |      1 |
-| N20160722S0179.fits |         science | 320.87277917 | -0.84804167 | SDSS-J212329.47-005052.9 | 10/mmLBSX_G5532 | SCXD_G5531 |     1,1 | 57591.4247170287 |   1.068 |   120.0 |      2.03 |     0 |       3 |      4 |
-| N20160722S0180.fits |         science | 320.87277917 | -0.84804167 | SDSS-J212329.47-005052.9 | 10/mmLBSX_G5532 | SCXD_G5531 |     1,1 | 57591.4265202694 |   1.068 |   120.0 |      2.03 |     1 |       4 |      3 |
-| N20160722S0231.fits |        arc,tilt |     323.1189 |  1.01229722 |                       Ar | 10/mmLBSX_G5532 | SCXD_G5531 |     1,1 | 57591.5129425302 |   1.216 |     5.0 |      2.03 |   all |      -1 |     -1 |
-| N20160722S0232.fits |        arc,tilt |     323.1189 |  1.01229722 |                       Ar | 10/mmLBSX_G5532 | SCXD_G5531 |     1,1 | 57591.5131045673 |   1.217 |     5.0 |      2.03 |   all |      -1 |     -1 |
-| N20160722S0238.fits | trace,pixelflat |     323.1189 |  1.01229722 |                 GCALflat | 10/mmLBSX_G5532 | SCXD_G5531 |     1,1 | 57591.5140451537 |   1.221 |     8.0 |      2.03 |   all |      -1 |     -1 |
-| N20160722S0239.fits | trace,pixelflat |     323.1189 |  1.01229722 |                 GCALflat | 10/mmLBSX_G5532 | SCXD_G5531 |     1,1 | 57591.5142405626 |   1.222 |     8.0 |      2.03 |   all |      -1 |     -1 |
-| N20160722S0240.fits | trace,pixelflat |     323.1189 |  1.01229722 |                 GCALflat | 10/mmLBSX_G5532 | SCXD_G5531 |     1,1 | 57591.5144340426 |   1.222 |     8.0 |      2.03 |   all |      -1 |     -1 |
-| N20160722S0241.fits | trace,pixelflat |     323.1189 |  1.01229722 |                 GCALflat | 10/mmLBSX_G5532 | SCXD_G5531 |     1,1 | 57591.5146300302 |   1.223 |     8.0 |      2.03 |   all |      -1 |     -1 |
-| N20160722S0242.fits | trace,pixelflat |     323.1189 |  1.01229722 |                 GCALflat | 10/mmLBSX_G5532 | SCXD_G5531 |     1,1 |  57591.514823896 |   1.224 |     8.0 |      2.03 |   all |      -1 |     -1 |
-| N20160722S0243.fits | trace,pixelflat |     323.1189 |  1.01229722 |                 GCALflat | 10/mmLBSX_G5532 | SCXD_G5531 |     1,1 | 57591.5150181475 |   1.225 |     8.0 |      2.03 |   all |      -1 |     -1 |
-| N20160722S0244.fits | trace,pixelflat |     323.1189 |  1.01229722 |                 GCALflat | 10/mmLBSX_G5532 | SCXD_G5531 |     1,1 | 57591.5152139423 |   1.226 |     8.0 |      2.03 |   all |      -1 |     -1 |
-| N20160722S0245.fits | trace,pixelflat |     323.1189 |  1.01229722 |                 GCALflat | 10/mmLBSX_G5532 | SCXD_G5531 |     1,1 | 57591.5154089654 |   1.227 |     8.0 |      2.03 |   all |      -1 |     -1 |
-| N20160722S0246.fits | trace,pixelflat |     323.1189 |  1.01229722 |                 GCALflat | 10/mmLBSX_G5532 | SCXD_G5531 |     1,1 |  57591.515603024 |   1.228 |     8.0 |      2.03 |   all |      -1 |     -1 |
-| N20160722S0247.fits | trace,pixelflat |     323.1189 |  1.01229722 |                 GCALflat | 10/mmLBSX_G5532 | SCXD_G5531 |     1,1 | 57591.5157978543 |   1.229 |     8.0 |      2.03 |   all |      -1 |     -1 |
-| N20160722S0248.fits | trace,pixelflat |     323.1189 |  1.01229722 |                 GCALflat | 10/mmLBSX_G5532 | SCXD_G5531 |     1,1 | 57591.5159926845 |    1.23 |     8.0 |      2.03 |   all |      -1 |     -1 |
-| N20160722S0249.fits | trace,pixelflat |     323.1189 |  1.01229722 |                 GCALflat | 10/mmLBSX_G5532 | SCXD_G5531 |     1,1 | 57591.5161867432 |   1.231 |     8.0 |      2.03 |   all |      -1 |     -1 |
-| N20160722S0250.fits | trace,pixelflat |     323.1189 |  1.01229722 |                 GCALflat | 10/mmLBSX_G5532 | SCXD_G5531 |     1,1 | 57591.5163819592 |   1.232 |     8.0 |      2.03 |   all |      -1 |     -1 |
-| N20160722S0251.fits | trace,pixelflat |     323.1189 |  1.01229722 |                 GCALflat | 10/mmLBSX_G5532 | SCXD_G5531 |     1,1 | 57591.5165762108 |   1.233 |     8.0 |      2.03 |   all |      -1 |     -1 |
-| N20160722S0252.fits | trace,pixelflat |     323.1189 |  1.01229722 |                 GCALflat | 10/mmLBSX_G5532 | SCXD_G5531 |     1,1 | 57591.5167704623 |   1.233 |     8.0 |      2.03 |   all |      -1 |     -1 |
-| N20160722S0253.fits | trace,pixelflat |     323.1189 |  1.01229722 |                 GCALflat | 10/mmLBSX_G5532 | SCXD_G5531 |     1,1 |  57591.516968379 |   1.234 |     8.0 |      2.03 |   all |      -1 |     -1 |
-| N20160722S0254.fits | trace,pixelflat |     323.1189 |  1.01229722 |                 GCALflat | 10/mmLBSX_G5532 | SCXD_G5531 |     1,1 | 57591.5171620518 |   1.235 |     8.0 |      2.03 |   all |      -1 |     -1 |
-| N20160722S0255.fits | trace,pixelflat |     323.1189 |  1.01229722 |                 GCALflat | 10/mmLBSX_G5532 | SCXD_G5531 |     1,1 | 57591.5173568821 |   1.236 |     8.0 |      2.03 |   all |      -1 |     -1 |
-| N20160722S0256.fits | trace,pixelflat |     323.1189 |  1.01229722 |                 GCALflat | 10/mmLBSX_G5532 | SCXD_G5531 |     1,1 |  57591.517552291 |   1.237 |     8.0 |      2.03 |   all |      -1 |     -1 |
-| N20160722S0257.fits | trace,pixelflat |     323.1189 |  1.01229722 |                 GCALflat | 10/mmLBSX_G5532 | SCXD_G5531 |     1,1 | 57591.5177486645 |   1.238 |     8.0 |      2.03 |   all |      -1 |     -1 |
+|             filename |       frametype |           ra |         dec |                   target |        dispname |     decker | binning |              mjd | airmass | exptime | dispangle | calib | comb_id | bkg_id |
+|  N20160717S0105.fits |        standard |     323.1189 |  1.01229722 |               hip 106356 | 10/mmLBSX_G5532 | SCXD_G5531 |     1,1 |  57586.365845118 |   1.376 |     1.0 |      2.03 |     0 |     101 |    102 |
+|  N20160717S0106.fits |        standard |     323.1189 |  1.01229722 |               hip 106356 | 10/mmLBSX_G5532 | SCXD_G5531 |     1,1 | 57586.3661664915 |   1.374 |     1.0 |      2.03 |     0 |     102 |    101 |
+|  N20160717S0114.fits |         science | 320.87277917 | -0.84804167 | SDSS-J212329.47-005052.9 | 10/mmLBSX_G5532 | SCXD_G5531 |     1,1 | 57586.3912052646 |   1.218 |   120.0 |      2.03 |     0 |       0 |      1 |
+|  N20160717S0115.fits |         science | 320.87277917 | -0.84804167 | SDSS-J212329.47-005052.9 | 10/mmLBSX_G5532 | SCXD_G5531 |     1,1 | 57586.3929570007 |   1.211 |   120.0 |      2.03 |     1 |       1 |      0 |
+|  N20160717S0183.fits |        arc,tilt |     323.1189 |  1.01229722 |                       Ar | 10/mmLBSX_G5532 | SCXD_G5531 |     1,1 | 57586.5929436906 |   1.472 |     5.0 |      2.03 |   all |      -1 |     -1 |
+|  N20160717S0184.fits |        arc,tilt |     323.1189 |  1.01229722 |                       Ar | 10/mmLBSX_G5532 | SCXD_G5531 |     1,1 |  57586.593104956 |   1.474 |     5.0 |      2.03 |   all |      -1 |     -1 |
+|  N20160717S0190.fits | pixelflat,trace |     323.1189 |  1.01229722 |                 GCALflat | 10/mmLBSX_G5532 | SCXD_G5531 |     1,1 | 57586.5940468927 |   1.482 |     8.0 |      2.03 |   all |      -1 |     -1 |
+|  N20160717S0191.fits | pixelflat,trace |     323.1189 |  1.01229722 |                 GCALflat | 10/mmLBSX_G5532 | SCXD_G5531 |     1,1 | 57586.5942411443 |   1.484 |     8.0 |      2.03 |   all |      -1 |     -1 |
+|  N20160717S0192.fits | pixelflat,trace |     323.1189 |  1.01229722 |                 GCALflat | 10/mmLBSX_G5532 | SCXD_G5531 |     1,1 | 57586.5944373248 |   1.486 |     8.0 |      2.03 |   all |      -1 |     -1 |
+|  N20160717S0193.fits | pixelflat,trace |     323.1189 |  1.01229722 |                 GCALflat | 10/mmLBSX_G5532 | SCXD_G5531 |     1,1 | 57586.5946311906 |   1.488 |     8.0 |      2.03 |   all |      -1 |     -1 |
+|  N20160717S0194.fits | pixelflat,trace |     323.1189 |  1.01229722 |                 GCALflat | 10/mmLBSX_G5532 | SCXD_G5531 |     1,1 | 57586.5948265995 |    1.49 |     8.0 |      2.03 |   all |      -1 |     -1 |
 data end
+

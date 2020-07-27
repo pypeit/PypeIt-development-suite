@@ -1,0 +1,37 @@
+# Auto-generated PypeIt file
+# Wed 15 Jul 2020 10:19:17
+
+# User-defined execution parameters
+[rdx]
+  spectrograph = keck_lris_blue_orig
+[baseprocess]
+  use_biasimage = False
+  use_illumflat = False
+# Setup
+setup read
+ Setup A:
+   --:
+     binning: 1,1
+     dichroic: '500'
+     disperser:
+       angle: 20.89954948
+       name: 600/4000
+     slit:
+       decker: long_1.5
+       slitlen: none
+       slitwid: none
+setup end
+
+# Read in the data
+data read
+ path ../rawdir
+|               filename |       frametype |                 ra |                 dec |      target | dispname |   decker | binning |          mjd |     airmass | exptime | dichroic |
+| LB.20080105.16624.fits |        standard |  332.8813333333333 |  18.092333333333332 |   BD17 4708 | 600/4000 | long_1.5 |     1,1 | 54470.192407 |  1.35408264 |    10.0 |      500 |
+| LB.20080105.60285.fits | pixelflat,trace | 247.35829166666664 |                 0.0 | cass module | 600/4000 | long_1.5 |     1,1 | 54470.697747 | 13.37481353 |   180.0 |      500 |
+| LB.20080105.60810.fits |        arc,tilt | 247.35829166666664 |                 0.0 | cass module | 600/4000 | long_1.5 |     1,1 | 54470.703828 | 13.37481353 |     1.0 |      500 |
+| LB.20080105.60882.fits |        arc,tilt | 247.35829166666664 |                 0.0 | cass module | 600/4000 | long_1.5 |     1,1 | 54470.704663 | 13.37481353 |     1.0 |      500 |
+| LB.20080105.60948.fits |        arc,tilt | 247.35829166666664 |                 0.0 | cass module | 600/4000 | long_1.5 |     1,1 | 54470.705427 | 13.37481353 |     1.0 |      500 |
+| LB.20080105.07660.fits |            bias | 229.99999999999997 |                45.0 |             | 600/4000 | long_1.0 |     1,1 | 54470.088668 |  1.41309502 |     0.0 |      500 |
+| LB.20080105.39276.fits |         science |  98.74516666666665 | -23.584916666666665 |  J0634-2335 | 600/4000 | long_1.5 |     1,1 | 54470.454586 |  1.42406733 |   600.0 |      500 |
+data end
+
