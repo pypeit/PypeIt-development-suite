@@ -75,7 +75,7 @@ def main():
     kastb_files = glob.glob(os.path.join(shane_kast_blue_Science,'spec1d_*.fits'))
     kastb_files += glob.glob(os.path.join(shane_kast_blue_Science, 'spec2d_b27*fits'))
     # Keck KCWI Science files
-    keck_kcwi_Science = os.path.join(redux_dir, 'keck_kcwi', 'bh2_4200', 'keck_kcwi_A', 'Science')
+    keck_kcwi_Science = os.path.join(redux_dir, 'keck_kcwi', 'bh2_4200', 'Science')
     keck_kcwi_files = glob.glob(os.path.join(keck_kcwi_Science, 'spec2d_*fits'))
     ''' NOT USED RIGHT NOW
     # DEIMOS standard
