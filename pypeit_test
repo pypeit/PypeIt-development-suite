@@ -36,7 +36,7 @@ def develop_setups():
                               'multi_600_5000_d560', 'multi_1200_9000_d680',
                               'multi_400_8500_d560'],
             'keck_lris_red_orig': ['long_300_5000'],
-            'vlt_xshooter': ['VIS_1x1', 'VIS_2x1', 'VIS_2x2', 'NIR'],
+            'vlt_xshooter': ['VIS_1x1', 'VIS_2x1', 'VIS_2x2', 'VIS_manual', 'NIR'],
             'gemini_gnirs': ['32_SB_SXD', '10_LB_SXD'],
             'gemini_gmos': ['GS_HAM_R400_700', 'GS_HAM_R400_860'],
             'gemini_flamingos2': ['HK_HK', 'JH_JH'],
@@ -703,6 +703,15 @@ def main():
                     npass += 1
                 else:
                     failed += [ 'pypeit_coadd_2dspec: {0}/{1}'.format(instr, setup) ]
+
+            # Manual + Echelle
+            if passed and instr == 'vlt_xshooter' and setup == 'VIS_manual' and not flg_ql:
+                ntest += 1
+                if run_coadd2d(rdxdir, instr, setup,
+                               coadd_file=template_coadd2d_file(dev_path, instr, setup)):
+                    npass += 1
+                else:
+                    failed += ['pypeit_coadd_2dspec: {0}/{1}'.format(instr, setup) ]
             # ----------------------------------------------------------
 
 
