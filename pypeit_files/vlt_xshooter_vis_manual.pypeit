@@ -7,6 +7,11 @@ spectrograph = vlt_xshooter_vis
 [reduce]
   [[findobj]]
     sig_thresh = 5.
+  [[extraction]]
+    [[[manual]]]
+       spat_spec = 1181.8:3820.6
+       det = 1
+       fwhm = 3.
 
 # Setup
 setup read
@@ -37,10 +42,10 @@ data read
 | XSHOO.2019-08-20T11:28:09.160.fits.gz |            bias |        None |        None |          BIAS |  default | 1.0x12.6 |     1,1 | 58715.477883799 |    None |     0.0 | VIS |
 | XSHOO.2019-08-21T07:55:35.020.fits.gz |         science | 21:57:38.97 | -80:21:31.3 |     FRB190711 |  default |   1.2x11 |     1,1 | 58716.330266429 |    1.94 |   350.0 | VIS |
 | XSHOO.2019-08-21T08:04:15.565.fits.gz |         science | 21:57:38.97 | -80:21:31.3 |     FRB190711 |  default |   1.2x11 |     1,1 | 58716.336291257 |   1.956 |   350.0 | VIS |
-| XSHOO.2019-08-21T08:30:32.521.fits.gz |         science | 21:57:38.97 | -80:21:31.3 |     FRB190711 |  default |   1.2x11 |     1,1 | 58716.354543072 |   2.012 |   350.0 | VIS |
-| XSHOO.2019-08-21T09:07:37.544.fits.gz |         science | 21:57:38.72 | -80:21:30.5 |     FRB190711 |  default |   1.2x11 |     1,1 | 58716.380295655 |   2.104 |   350.0 | VIS |
-| XSHOO.2019-08-21T09:16:18.019.fits.gz |         science | 21:57:38.72 | -80:21:30.5 |     FRB190711 |  default |   1.2x11 |     1,1 | 58716.386319672 |   2.127 |   350.0 | VIS |
-| XSHOO.2019-08-21T09:42:33.456.fits.gz |         science | 21:57:38.72 | -80:21:30.5 |     FRB190711 |  default |   1.2x11 |     1,1 | 58716.404553891 |   2.205 |   350.0 | VIS |
+#| XSHOO.2019-08-21T08:30:32.521.fits.gz |         science | 21:57:38.97 | -80:21:31.3 |     FRB190711 |  default |   1.2x11 |     1,1 | 58716.354543072 |   2.012 |   350.0 | VIS |
+#| XSHOO.2019-08-21T09:07:37.544.fits.gz |         science | 21:57:38.72 | -80:21:30.5 |     FRB190711 |  default |   1.2x11 |     1,1 | 58716.380295655 |   2.104 |   350.0 | VIS |
+#| XSHOO.2019-08-21T09:16:18.019.fits.gz |         science | 21:57:38.72 | -80:21:30.5 |     FRB190711 |  default |   1.2x11 |     1,1 | 58716.386319672 |   2.127 |   350.0 | VIS |
+#| XSHOO.2019-08-21T09:42:33.456.fits.gz |         science | 21:57:38.72 | -80:21:30.5 |     FRB190711 |  default |   1.2x11 |     1,1 | 58716.404553891 |   2.205 |   350.0 | VIS |
 | XSHOO.2019-08-21T12:56:26.906.fits.gz |        tilt,arc |        None |        None |     LAMP,WAVE |  default |  Pin_row |     1,1 | 58716.539200301 |    None |    10.0 | VIS |
 | XSHOO.2019-08-21T12:17:18.352.fits.gz | trace,pixelflat,illumflat |        None |        None |     LAMP,FLAT |  default |   1.2x11 |     1,1 | 58716.512017961 |    None | 17.7715 | VIS |
 | XSHOO.2019-08-21T12:18:04.906.fits.gz | trace,pixelflat,illumflat |        None |        None |     LAMP,FLAT |  default |   1.2x11 |     1,1 | 58716.512556783 |    None | 17.7715 | VIS |
