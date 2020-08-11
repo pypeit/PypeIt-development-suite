@@ -1,0 +1,34 @@
+# Auto-generated PypeIt file
+# Tue 11 Aug 2020 12:20:18
+
+# User-defined execution parameters
+[rdx]
+spectrograph = mmt_binospec
+
+# Setup
+setup read
+ Setup A:
+   --:
+     binning: 1 1
+     dichroic: default
+     disperser:
+       angle: none
+       name: x270
+     slit:
+       decker: default
+       slitlen: none
+       slitwid: none
+setup end
+
+# Read in the data
+data read
+ path /Users/feige/Software/python3/PypeIt-development-suite/RAW_DATA/mmt_binospec/Multislit_G270
+|                       filename |                 frametype |          ra |         dec |       target | dispname |  decker | binning |         mjd | airmass | exptime |
+|    BOSS1441_350.comp.6791.fits |                  arc,tilt | 14.68541944 | 39.97979167 | BOSS1441_350 |     x270 | default |     1 1 | 58216.42884 |  1.0508 |   300.0 |
+|    BOSS1441_350.flat.6792.fits | pixelflat,illumflat,trace | 14.68541944 | 39.97979167 | BOSS1441_350 |     x270 | default |     1 1 | 58216.43294 |  1.0573 |    30.0 |
+|    BOSS1441_350.flat.6793.fits | pixelflat,illumflat,trace | 14.68541944 | 39.97979167 | BOSS1441_350 |     x270 | default |     1 1 | 58216.43385 |  1.0588 |    30.0 |
+|    BOSS1441_350.flat.6794.fits | pixelflat,illumflat,trace | 14.68541944 | 39.97979167 | BOSS1441_350 |     x270 | default |     1 1 | 58216.43478 |  1.0604 |    30.0 |
+| BOSS1441_350.Science.6785.fits |                   science | 14.68541944 | 39.97979167 | BOSS1441_350 |     x270 | default |     1 1 | 58216.34156 |  1.0248 |  1200.0 |
+| BOSS1441_350.Science.6786.fits |                   science | 14.68541944 | 39.97979167 | BOSS1441_350 |     x270 | default |     1 1 | 58216.35599 |  1.0149 |  1200.0 |
+data end
+

@@ -45,13 +45,16 @@ def develop_setups():
             'mdm_osmos': ['MDM4K'],
             'not_alfosc': ['grism4', 'grism19'],
             'vlt_fors2': ['300I'],
-            'lbt_luci': ['LUCI-I', 'LUCI-II']
+            'lbt_luci': ['LUCI-I', 'LUCI-II'],
+            'mmt_binospec': ['Longslit_G600','Multislit_G270'],
+            'mmt_mmirs': ['HK_zJ','J_zJ','K_K'],
+            'lbt_mods': ['MODS1R_Longslit','MODS2R_Longslit']
             }
 
 
 def supported_instruments():
     return ['kast', 'deimos', 'kcwi', 'nires', 'nirspec', 'mosfire', 'lris', 'xshooter', 'gnirs', 'gmos',
-            'flamingos2', 'mage', 'fire', 'luci', 'mdm', 'alfosc', 'fors2']
+            'flamingos2', 'mage', 'fire', 'luci', 'mdm', 'alfosc', 'fors2', 'binospec', 'mmirs', 'mods']
 
 
 def raw_data_dir():
