@@ -1,0 +1,38 @@
+# Auto-generated PypeIt file
+# Mon 10 Aug 2020 15:59:24
+
+# User-defined execution parameters
+[rdx]
+spectrograph = p200_dbsp_red
+
+# Setup
+setup read
+ Setup A:
+   --:
+     binning: 1,1
+     dichroic: D55
+     disperser:
+       angle: 24.633333333333333
+       name: 316/7500
+     slit:
+       decker: '0.5'
+       slitlen: none
+       slitwid: 0.5
+setup end
+
+# Read in the data
+data read
+ path ../Raw
+|     filename    |                 frametype |                 ra |                dec |       target | dispname | decker | binning |                mjd | airmass | exptime |          dispangle | dichroic | slitwid |
+| red0011.fits.gz |                  arc,tilt |               None |               None |         arcs | 316/7500 |    0.5 |     1,1 | 59046.053244386574 |    None |     0.4 | 24.633333333333333 |      D55 |     0.5 |
+| red0001.fits.gz |                      bias |               None |               None |         bias | 316/7500 |    0.5 |     1,1 |  59046.04806153935 |    None |     0.0 | 24.633333333333333 |      D55 |     0.5 |
+| red0002.fits.gz |                      bias |               None |               None |         bias | 316/7500 |    0.5 |     1,1 |  59046.04832938658 |    None |     0.0 | 24.633333333333333 |      D55 |     0.5 |
+| red0003.fits.gz |                      bias |               None |               None |         bias | 316/7500 |    0.5 |     1,1 | 59046.048597326386 |    None |     0.0 | 24.633333333333333 |      D55 |     0.5 |
+| red0004.fits.gz |                      bias |               None |               None |         bias | 316/7500 |    0.5 |     1,1 |   59046.0488652662 |    None |     0.0 | 24.633333333333333 |      D55 |     0.5 |
+| red0005.fits.gz |                      bias |               None |               None |         bias | 316/7500 |    0.5 |     1,1 |   59046.0491331713 |    None |     0.0 | 24.633333333333333 |      D55 |     0.5 |
+| red0014.fits.gz | pixelflat,illumflat,trace |               None |               None |         flat | 316/7500 |    1.0 |     1,1 |  59046.12870966435 |    None |    60.0 | 24.633333333333333 |      D55 |     1.0 |
+| red0015.fits.gz | pixelflat,illumflat,trace | 223.98516666666663 | 33.663222222222224 |         flat | 316/7500 |    1.0 |     1,1 | 59046.129671979164 |     1.0 |    60.0 | 24.633333333333333 |      D55 |     1.0 |
+| red0016.fits.gz | pixelflat,illumflat,trace | 224.35970833333332 | 33.629583333333336 |         flat | 316/7500 |    1.0 |     1,1 | 59046.130634305555 |     1.0 |    60.0 | 24.633333333333333 |      D55 |     1.0 |
+| red0035.fits.gz |                   science | 154.78187499999996 |  34.65533333333333 | ZTF20abismub | 316/7500 |    1.0 |     1,1 |   59046.1770921875 |   2.788 |   450.0 | 24.633333333333333 |      D55 |     1.0 |
+data end
+
