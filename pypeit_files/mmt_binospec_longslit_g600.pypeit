@@ -1,0 +1,33 @@
+# Auto-generated PypeIt file
+# Tue 11 Aug 2020 12:18:18
+
+# User-defined execution parameters
+[rdx]
+spectrograph = mmt_binospec
+
+# Setup
+setup read
+ Setup A:
+   --:
+     binning: 1 1
+     dichroic: default
+     disperser:
+       angle: none
+       name: x600
+     slit:
+       decker: default
+       slitlen: none
+       slitwid: none
+setup end
+
+# Read in the data
+data read
+ path /Users/feige/Software/python3/PypeIt-development-suite/RAW_DATA/mmt_binospec/Longslit_G600
+|                      filename |                 frametype |         ra |         dec |    target | dispname |  decker | binning |         mjd | airmass | exptime |
+| sci_img_2018.0209.061629.fits |                  arc,tilt | 4.65756979 | 16.62106728 | Longslit1 |     x600 | default |     1 1 | 58158.25781 |   1.509 |   300.0 |
+| sci_img_2018.0209.061743.fits | pixelflat,illumflat,trace | 4.65756979 | 16.62106728 | Longslit1 |     x600 | default |     1 1 | 58158.26191 |  1.5476 |    20.0 |
+| sci_img_2018.0209.061852.fits | pixelflat,illumflat,trace | 4.65756979 | 16.62106728 | Longslit1 |     x600 | default |     1 1 | 58158.26269 |  1.5552 |    20.0 |
+| sci_img_2018.0209.062002.fits | pixelflat,illumflat,trace | 4.65756979 | 16.62106728 | Longslit1 |     x600 | default |     1 1 | 58158.26351 |  1.5634 |    20.0 |
+| sci_img_2018.0209.035515.fits |                   science | 4.65756979 | 16.62106728 | Longslit1 |     x600 | default |     1 1 | 58158.15046 |   1.056 |  1100.0 |
+data end
+

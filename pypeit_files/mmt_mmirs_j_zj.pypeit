@@ -1,0 +1,32 @@
+# Auto-generated PypeIt file
+# Tue 11 Aug 2020 12:23:11
+
+# User-defined execution parameters
+[rdx]
+spectrograph = mmt_mmirs
+
+# Setup
+setup read
+ Setup A:
+   --:
+     binning: 1,1
+     dichroic: zJ
+     disperser:
+       angle: none
+       name: J
+     slit:
+       decker: 4pixel-long
+       slitlen: none
+       slitwid: none
+setup end
+
+# Read in the data
+data read
+ path /Users/feige/Software/python3/PypeIt-development-suite/RAW_DATA/mmt_mmirs/J_zJ
+|                          filename |                 frametype |          ra |         dec |         target | dispname |      decker | binning |                mjd | airmass | exptime | dichroic | calib | comb_id | bkg_id |
+| PAAlignJ134208_longslit.5475.fits |          arc,science,tilt | 13.70209353 |  9.47417222 | PAAlignJ134208 |        J | 4pixel-long |     1,1 | 57852.275289351855 |   1.142 | 300.957 |       zJ |     0 |       2 |      2 |
+| PAAlignJ134208_longslit.5476.fits |          arc,science,tilt | 13.70205124 |   9.4732542 | PAAlignJ134208 |        J | 4pixel-long |     1,1 | 57852.279016203705 |   1.134 | 300.957 |       zJ |     0 |       1 |      1 |
+|                    flat.5494.fits | pixelflat,illumflat,trace | 11.63234099 | 15.76900833 |           flat |        J | 4pixel-long |     1,1 |  57852.32210648148 |   1.157 |  10.327 |       zJ |     0 |      -1 |     -1 |
+|                    flat.5495.fits | pixelflat,illumflat,trace | 11.63234099 | 15.76900833 |           flat |        J | 4pixel-long |     1,1 |  57852.32239583333 |   1.157 |  10.327 |       zJ |     0 |      -1 |     -1 |
+data end
+

@@ -1,0 +1,39 @@
+# Auto-generated PypeIt file
+# Tue 11 Aug 2020 12:45:58
+
+# User-defined execution parameters
+[rdx]
+spectrograph = lbt_mods2r
+
+# Setup
+setup read
+ Setup A:
+   --:
+     binning: 1,1
+     dichroic: GG495
+     disperser:
+       angle: none
+       name: G670L
+     slit:
+       decker: LS5x60x1.0
+       slitlen: none
+       slitwid: none
+setup end
+
+# Read in the data
+data read
+ path /Users/feige/Software/python3/PypeIt-development-suite/RAW_DATA/lbt_mods/MODS2R_Longslit
+|                     filename |                 frametype |                 ra |                dec |                              target | dispname |     decker | binning |          mjd | airmass | exptime |
+| mods2r.20180112.0057.fits.gz |                  arc,tilt |         180.323125 | 21.590408333333333 |                         Xe+Kr Lamps |    G670L | LS5x60x0.6 |     1,1 | 58130.584094 |     1.0 |     1.0 |
+| mods2r.20180112.0058.fits.gz |                  arc,tilt |         180.323125 | 21.590408333333333 |                             Ar Lamp |    G670L | LS5x60x0.6 |     1,1 | 58130.585346 |     1.0 |     1.0 |
+| mods2r.20171226.0003.fits.gz |                      bias | 189.27027916666665 |  62.19698611111111 |                          Bias 8Kx3K |    G670L |   ID575016 |     1,1 | 58113.586654 |     1.0 |     0.0 |
+| mods2r.20171226.0004.fits.gz |                      bias | 189.27027916666665 |  62.19698611111111 |                          Bias 8Kx3K |    G670L |   ID575016 |     1,1 | 58113.587878 |     1.0 |     0.0 |
+| mods2r.20171226.0005.fits.gz |                      bias | 189.27027916666665 |  62.19698611111111 |                          Bias 8Kx3K |    G670L |   ID575016 |     1,1 | 58113.589103 |     1.0 |     0.0 |
+| mods2r.20171228.0021.fits.gz | pixelflat,illumflat,trace | 194.25973749999997 | 22.031299999999998 | VF10+Clear LS5x60x1.0 Spectral Flat |    G670L | LS5x60x1.0 |     1,1 | 58115.628565 |     1.0 |     1.5 |
+| mods2r.20171228.0022.fits.gz | pixelflat,illumflat,trace | 194.25973749999997 | 22.031299999999998 | VF10+Clear LS5x60x1.0 Spectral Flat |    G670L | LS5x60x1.0 |     1,1 | 58115.629753 |     1.0 |     1.5 |
+| mods2r.20171228.0023.fits.gz | pixelflat,illumflat,trace | 194.25973749999997 | 22.031299999999998 | VF10+Clear LS5x60x1.0 Spectral Flat |    G670L | LS5x60x1.0 |     1,1 | 58115.630943 |     1.0 |     1.5 |
+| mods2r.20180112.0047.fits.gz |                   science |  166.1085083333333 |  21.55998888888889 |                      QSO_J1104+2134 |    G670L | LS5x60x1.0 |     1,1 | 58130.483962 |    1.03 |  1200.0 |
+| mods2r.20180112.0048.fits.gz |                   science |  166.1085083333333 |  21.55998888888889 |                      QSO_J1104+2134 |    G670L | LS5x60x1.0 |     1,1 | 58130.499042 |    1.05 |  1200.0 |
+| mods2r.20180112.0008.fits.gz |                  standard | 58.840416666666655 |  9.788527777777778 |                                Hz 4 |    G670L |     LS60x5 |     1,1 | 58130.097739 |    1.16 |   180.0 |
+data end
+

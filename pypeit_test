@@ -36,9 +36,9 @@ def develop_setups():
                               'multi_600_5000_d560', 'multi_1200_9000_d680',
                               'multi_400_8500_d560'],
             'keck_lris_red_orig': ['long_300_5000'],
-            'vlt_xshooter': ['VIS_1x1', 'VIS_2x1', 'VIS_2x2', 'NIR'],
+            'vlt_xshooter': ['VIS_1x1', 'VIS_2x1', 'VIS_2x2', 'VIS_manual', 'NIR'],
             'gemini_gnirs': ['32_SB_SXD', '10_LB_SXD'],
-            'gemini_gmos': ['GS_HAM_R400_700', 'GS_HAM_R400_860'],
+            'gemini_gmos': ['GS_HAM_R400_700', 'GS_HAM_R400_860', 'GN_HAM_R400_885'],
             'gemini_flamingos2': ['HK_HK', 'JH_JH'],
             'magellan_mage': ['1x1'],
             'magellan_fire': ['FIRE_Echelle', 'FIRE_Long'],
@@ -47,13 +47,17 @@ def develop_setups():
             'p200_dbsp_blue': ['600_4000_d55'],
             'p200_dbsp_red': ['316_7500_d55'],
             'vlt_fors2': ['300I'],
-            'lbt_luci': ['LUCI-I', 'LUCI-II']
+            'lbt_luci': ['LUCI-I', 'LUCI-II'],
+            'mmt_binospec': ['Longslit_G600','Multislit_G270'],
+            'mmt_mmirs': ['HK_zJ','J_zJ','K_K'],
+            'lbt_mods': ['MODS1R_Longslit','MODS2R_Longslit']
             }
 
 
 def supported_instruments():
     return ['kast', 'deimos', 'kcwi', 'nires', 'nirspec', 'mosfire', 'lris', 'xshooter', 'gnirs', 'gmos',
-            'flamingos2', 'mage', 'fire', 'luci', 'mdm', 'alfosc', 'fors2', 'dbsp']
+            'flamingos2', 'mage', 'fire', 'luci', 'mdm', 'alfosc', 'fors2', 'binospec', 'mmirs', 'mods',
+            'dbsp']
 
 
 def raw_data_dir():
@@ -705,6 +709,15 @@ def main():
                     npass += 1
                 else:
                     failed += [ 'pypeit_coadd_2dspec: {0}/{1}'.format(instr, setup) ]
+
+            # Manual + Echelle
+            if passed and instr == 'vlt_xshooter' and setup == 'VIS_manual' and not flg_ql:
+                ntest += 1
+                if run_coadd2d(rdxdir, instr, setup,
+                               coadd_file=template_coadd2d_file(dev_path, instr, setup)):
+                    npass += 1
+                else:
+                    failed += ['pypeit_coadd_2dspec: {0}/{1}'.format(instr, setup) ]
             # ----------------------------------------------------------
 
 
