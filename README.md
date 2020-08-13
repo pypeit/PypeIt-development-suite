@@ -105,4 +105,8 @@ or just the `1200G_M_7750` setup specifically:
 ./pypeit_test deimos -s 1200G_M_7750
 ```
 
+or the development suite for full tests
 
+```
+./pypeit_test develop
+```
