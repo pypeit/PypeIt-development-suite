@@ -38,7 +38,7 @@ def develop_setups():
             'keck_lris_red_orig': ['long_300_5000'],
             'vlt_xshooter': ['VIS_1x1', 'VIS_2x1', 'VIS_2x2', 'VIS_manual', 'NIR'],
             'gemini_gnirs': ['32_SB_SXD', '10_LB_SXD'],
-            'gemini_gmos': ['GS_HAM_R400_700', 'GS_HAM_R400_860', 'GN_HAM_R400_885'],
+            'gemini_gmos': ['GS_HAM_R400_700', 'GS_HAM_R400_860'] #, 'GN_HAM_R400_885'],
             'gemini_flamingos2': ['HK_HK', 'JH_JH'],
             'magellan_mage': ['1x1'],
             'magellan_fire': ['FIRE_Echelle', 'FIRE_Long'],
