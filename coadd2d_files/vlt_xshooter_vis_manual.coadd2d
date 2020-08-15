@@ -9,7 +9,7 @@
         fwhm = 3.,
 
 [coadd2d]
-  use_slits = True
+  use_slits4wvgrid = True
   offsets = 0.,0.,0.,0.,0.,0.
   weights = uniform
 
