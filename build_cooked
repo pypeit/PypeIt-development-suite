@@ -170,8 +170,8 @@ def main():
         os.mkdir(cooked_dir)
     shane_kast_blue_wvcalib = os.path.join(redux_dir, 'shane_kast_blue', '600_4310_d55',
                                            'shane_kast_blue_A', 'Masters',
-                                           'MasterWaveCalib_A_1_01.json')
-    cooked_file = os.path.join(cooked_dir, 'MasterWaveCalib_ShaneKastBlue_A.json')
+                                           'MasterWaveCalib_A_1_01.fits')
+    cooked_file = os.path.join(cooked_dir, 'MasterWaveCalib_ShaneKastBlue_A.fits')
     copy_me(shane_kast_blue_wvcalib, cooked_file)
     # ------------------------------------------------------------------
 
