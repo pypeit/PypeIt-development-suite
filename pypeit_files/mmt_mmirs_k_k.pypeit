@@ -1,0 +1,32 @@
+# Auto-generated PypeIt file
+# Tue 11 Aug 2020 12:23:57
+
+# User-defined execution parameters
+[rdx]
+spectrograph = mmt_mmirs
+
+# Setup
+setup read
+ Setup A:
+   --:
+     binning: 1,1
+     dichroic: Kspec
+     disperser:
+       angle: none
+       name: K3000
+     slit:
+       decker: 4pixel-long
+       slitlen: none
+       slitwid: none
+setup end
+
+# Read in the data
+data read
+ path /Users/feige/Software/python3/PypeIt-development-suite/RAW_DATA/mmt_mmirs/K_K
+|                        filename |                 frametype |          ra |         dec |       target | dispname |      decker | binning |               mjd | airmass | exptime | dichroic | calib | comb_id | bkg_id |
+| J1342_0928_K_longslit.5783.fits |          arc,science,tilt |  13.7020941 |  9.47416667 | J1342_0928_K |    K3000 | 4pixel-long |     1,1 | 57853.38282407408 |   1.143 | 300.957 |    Kspec |     0 |       1 |      2 |
+| J1342_0928_K_longslit.5784.fits |          arc,science,tilt |  13.7020941 |  9.47416667 | J1342_0928_K |    K3000 | 4pixel-long |     1,1 | 57853.38652777778 |   1.152 | 300.957 |    Kspec |     0 |       2 |      1 |
+|                  flat.5498.fits | pixelflat,illumflat,trace | 11.63234099 | 15.76900833 |         flat |    K3000 | 4pixel-long |     1,1 | 57852.32407407407 |   1.163 |  10.327 |    Kspec |     0 |      -1 |     -1 |
+|                  flat.5499.fits | pixelflat,illumflat,trace | 11.63234099 | 15.76900833 |         flat |    K3000 | 4pixel-long |     1,1 |      57852.324375 |   1.164 |  10.327 |    Kspec |     0 |      -1 |     -1 |
+data end
+
