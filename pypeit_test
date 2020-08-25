@@ -58,7 +58,7 @@ def develop_setups():
 def supported_instruments():
     return ['kast', 'deimos', 'kcwi', 'nires', 'nirspec', 'mosfire', 'lris', 'xshooter', 'gnirs', 'gmos',
             'flamingos2', 'mage', 'fire', 'luci', 'mdm', 'alfosc', 'fors2', 'binospec', 'mmirs', 'mods',
-            'dbsp']
+            'dbsp','tspec']
 
 
 def raw_data_dir():
