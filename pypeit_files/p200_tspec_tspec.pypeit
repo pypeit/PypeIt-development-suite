@@ -38,7 +38,7 @@ data read
 | tspec0038.fits |  pixelflat,trace |  267.7247083333333 | 33.334944444444446 |    lamp_on | TSPEC_SPEC | default |     1,1 |  57317.98240543981 |     1.0 |    30.0 |   all |      -1 |     -1 |
 | tspec0039.fits |  pixelflat,trace | 267.86591666666664 | 33.334722222222226 |    lamp_on | TSPEC_SPEC | default |     1,1 |  57317.98279693287 |     1.0 |    30.0 |   all |      -1 |     -1 |
 | tspec0040.fits |  pixelflat,trace | 268.00754166666667 | 33.334500000000006 |    lamp_on | TSPEC_SPEC | default |     1,1 | 57317.983188321756 |     1.0 |    30.0 |   all |      -1 |     -1 |
-#| tspec0043.fits |         standard | 332.61016666666666 |           16.70225 |  HIP109452 | TSPEC_SPEC | default |     1,1 |  57318.14326601852 |   1.049 |    30.0 |     2 |       3 |      4 |
-#| tspec0044.fits |         standard | 332.60474999999997 |           16.70225 |  HIP109452 | TSPEC_SPEC | default |     1,1 |  57318.14380003472 |   1.049 |    30.0 |     1 |       4 |      3 |
+| tspec0043.fits |         standard | 332.61016666666666 |           16.70225 |  HIP109452 | TSPEC_SPEC | default |     1,1 |  57318.14326601852 |   1.049 |    30.0 |     2 |       3 |      4 |
+| tspec0044.fits |         standard | 332.60474999999997 |           16.70225 |  HIP109452 | TSPEC_SPEC | default |     1,1 |  57318.14380003472 |   1.049 |    30.0 |     1 |       4 |      3 |
 data end
 
