@@ -1,6 +1,6 @@
 # Single-slit reduction for DEIMOS
 
-# Parmaeters
+# Parameters
 [rdx]
     spectrograph = keck_deimos
     detnum = 3,7
@@ -31,13 +31,13 @@ setup end
 data read
  path /home/xavier/local/Python/PypeIt-development-suite/RAW_DATA/keck_deimos/830G_L_8400A/
 |        filename |                date |                    frametype |         target | exptime | dispname |   decker |
-| d0914_0011.fits | 2017-09-14T03:15:10 |   arc,tilt                        |        unknown |       1 |  830G    |  LongMirr |
-| d0914_0012.fits | 2017-09-14T03:16:20 |   arc,tilt                        |        unknown |       1 |  830G    |  LongMirr |
-| d0914_0013.fits | 2017-09-14T03:17:41 |   pixelflat,trace            |        unknown |       6 |  830G    |  LongMirr |
-| d0914_0014.fits | 2017-09-14T03:19:06 |   pixelflat,trace            |        unknown |       6 |  830G    |  LongMirr |
-| d0914_0015.fits | 2017-09-14T03:20:21 |   pixelflat,trace            |        unknown |       6 |  830G    |  LongMirr |
-| d0914_0016.fits | 2017-09-14T03:21:36 |   pixelflat,trace            |        unknown |       6 |  830G    |  LongMirr |
-| d0914_0017.fits | 2017-09-14T03:22:49 |   pixelflat,trace            |        unknown |       6 |  830G    |  LongMirr |
+| d0914_0011.fits | 2017-09-14T03:15:10 |   arc,tilt                   |        unknown |       1 |  830G    |  LongMirr |
+| d0914_0012.fits | 2017-09-14T03:16:20 |   arc,tilt                   |        unknown |       1 |  830G    |  LongMirr |
+| d0914_0013.fits | 2017-09-14T03:17:41 |   pixelflat,illumflat,trace  |        unknown |       6 |  830G    |  LongMirr |
+| d0914_0014.fits | 2017-09-14T03:19:06 |   pixelflat,illumflat,trace  |        unknown |       6 |  830G    |  LongMirr |
+| d0914_0015.fits | 2017-09-14T03:20:21 |   pixelflat,illumflat,trace  |        unknown |       6 |  830G    |  LongMirr |
+| d0914_0016.fits | 2017-09-14T03:21:36 |   pixelflat,illumflat,trace  |        unknown |       6 |  830G    |  LongMirr |
+| d0914_0017.fits | 2017-09-14T03:22:49 |   pixelflat,illumflat,trace  |        unknown |       6 |  830G    |  LongMirr |
 | d0914_0045.fits | 2017-09-14T15:01:15 |   science                    | PSOJ036p03_OFF |    1200 |  830G    |  LongMirr |
 | d0914_0047.fits | 2017-09-14T15:24:32 |   standard                   |        G191B2B |      60 |  830G    |  LongMirr |
 data end
