@@ -28,8 +28,8 @@ setup end
 data read
  path /home/xavier/local/Python/PypeIt-development-suite/RAW_DATA/keck_deimos/600ZD_M_6500/
 |           filename |                date  | frametype         |         target | exptime | binning | dichroic | dispname |     dispangle | decker |
-| d1010_0005.fits.gz | 2015-10-10T01:31:58  |     bias,dark     |     DOME PHLAT |       1 |     1,1 |     None |    600ZD | 1097.54162598 | mask04 |
-| d1010_0006.fits.gz | 2015-10-10T01:33:11  |     bias,dark     |     DOME PHLAT |       1 |     1,1 |     None |    600ZD | 1097.54162598 | mask04 |
+| d1010_0005.fits.gz | 2015-10-10T01:31:58  |     bias          |     DOME PHLAT |       1 |     1,1 |     None |    600ZD | 1097.54162598 | mask04 |
+| d1010_0006.fits.gz | 2015-10-10T01:33:11  |     bias          |     DOME PHLAT |       1 |     1,1 |     None |    600ZD | 1097.54162598 | mask04 |
 | d1010_0040.fits.gz | 2015-10-10T03:28:23  |   arc,tilt        |     DOME PHLAT |       1 |     1,1 |     None |    600ZD | 6500.00634766 | mask03 |
 | d1010_0041.fits.gz | 2015-10-10T03:29:43  | illumflat,pixelflat,trace   |     DOME PHLAT |       6 |     1,1 |     None |    600ZD | 6500.00634766 | mask03 |
 | d1010_0056.fits.gz | 2015-10-10T05:28:23  |   science 	| HIT2015-mask03 |    1800 |     1,1 |     None |    600ZD | 6500.00634766 | mask03 |
