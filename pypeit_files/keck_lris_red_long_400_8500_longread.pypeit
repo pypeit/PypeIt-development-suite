@@ -1,0 +1,37 @@
+# Auto-generated PypeIt file
+# Wed 19 Aug 2020 20:12:49
+
+# User-defined execution parameters
+[rdx]
+spectrograph = keck_lris_red
+  detnum = 2
+[baseprocess]
+    use_biasimage = False
+    use_illumflat = False
+
+# Setup
+setup read
+ Setup A:
+   --:
+     binning: 1,1
+     dichroic: '560'
+     disperser:
+       angle: 23.33069992
+       name: 400/8500
+     slit:
+       decker: long_1.0
+       slitlen: none
+       slitwid: none
+setup end
+
+# Read in the data
+data read
+ path ../rawdir
+|               filename    |       frametype |                 ra |                dec |         target | dispname |   decker | binning |          mjd |    airmass | exptime | dichroic |   dispangle |
+| LR.20181003.57930.fits.gz | pixelflat,trace | 229.99999999999997 |               45.0 |      DOME FLAT | 400/8500 | long_1.0 |     1,1 | 58394.670494 | 1.41291034 |    30.0 |      560 | 23.33069992 |
+| LR.20181003.57507.fits.gz |        arc,tilt | 229.99999999999997 |               45.0 |      DOME FLAT | 400/8500 | long_1.0 |     1,1 | 58394.665601 | 1.41291034 |     1.0 |      560 | 23.33069992 |
+| LR.20181003.57637.fits.gz |        arc,tilt | 229.99999999999997 |               45.0 |      DOME FLAT | 400/8500 | long_1.0 |     1,1 | 58394.667106 | 1.41291034 |     1.0 |      560 | 23.33069992 |
+| LR.20181003.50025.fits.gz |         science |  60.43841666666666 | 21.174972222222223 | J040145+211028 | 400/8500 | long_1.0 |     1,1 | 58394.579001 | 1.00299281 |   900.0 |      560 | 23.33069992 |
+| LR.20181003.56288.fits.gz |        standard | 101.30516666666665 |  2.137111111111111 |        hilt600 | 400/8500 | long_1.0 |     1,1 | 58394.651487 | 1.06644035 |    60.0 |      560 | 23.33069992 |
+data end
+

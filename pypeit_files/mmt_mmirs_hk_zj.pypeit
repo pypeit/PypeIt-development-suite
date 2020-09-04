@@ -1,0 +1,33 @@
+# Auto-generated PypeIt file
+# Tue 11 Aug 2020 12:21:54
+
+# User-defined execution parameters
+[rdx]
+spectrograph = mmt_mmirs
+
+# Setup
+setup read
+ Setup A:
+   --:
+     binning: 1,1
+     dichroic: zJ
+     disperser:
+       angle: none
+       name: HK
+     slit:
+       decker: 5pixel-long
+       slitlen: none
+       slitwid: none
+setup end
+
+# Read in the data
+data read
+ path /Users/feige/Software/python3/PypeIt-development-suite/RAW_DATA/mmt_mmirs/HK_zJ
+|                           filename |                 frametype |          ra |         dec |          target | dispname |      decker | binning |                mjd | airmass | exptime | dichroic | calib |
+| J1758_2933-dire_longslit.6672.fits |          arc,science,tilt | 17.97245556 | 29.57148444 | J1758_2933-dire |       HK | 5pixel-long |     1,1 |  58302.38355324074 |   1.196 | 601.914 |       zJ |     0 |
+|                     flat.6675.fits | pixelflat,illumflat,trace | 17.97245556 | 29.57148444 | J1758_2933-dire |       HK | 5pixel-long |     1,1 | 58302.392488425925 |   1.236 |   4.426 |       zJ |     0 |
+|                     flat.6676.fits | pixelflat,illumflat,trace | 17.97245556 | 29.57148444 | J1758_2933-dire |       HK | 5pixel-long |     1,1 |  58302.39268518519 |   1.236 |   4.426 |       zJ |     0 |
+|        HIP92486_longslit.6680.fits |                  standard | 18.84954362 | 10.31210833 |        HIP92486 |       HK | 5pixel-long |     1,1 |  58302.39837962963 |   1.231 |  22.129 |       zJ |     0 |
+|        HIP92486_longslit.6681.fits |                  standard | 18.84954307 | 10.31321942 |        HIP92486 |       HK | 5pixel-long |     1,1 |  58302.39880787037 |   1.233 |  22.129 |       zJ |     0 |
+data end
+
