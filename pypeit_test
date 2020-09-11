@@ -13,24 +13,22 @@ import os
 import os.path
 import glob
 import subprocess
-from queue import Queue, Empty
-from threading import Thread
+from queue import PriorityQueue, Empty
+from threading import Thread, Lock
+from functools import total_ordering
 import random
 import traceback
 import time
-
+import datetime
+from enum import Enum, IntEnum, auto
+from abc import ABC, abstractmethod
 from IPython import embed
 
 import numpy as np
 
-test_run_queue = Queue()
+test_run_queue = PriorityQueue()
 """:obj:`queue.Queue`: FIFO queue for test setups to be run."""
 
-test_result_queue = Queue()
-""":obj:`queue.Queue`: FIFO queue of completed test results in PypeItTestResult objects."""
-
-run_dummy_tests = False
-"""Whether to run dummy tests for testing purposes. TODO: Remove this and use external unit test frame work"""
 
 def develop_setups():
     """
@@ -75,43 +73,355 @@ def supported_instruments():
             'flamingos2', 'mage', 'fire', 'luci', 'mdm', 'alfosc', 'fors2', 'binospec', 'mmirs', 'mods',
             'dbsp']
 
+class TestLength(IntEnum):
+    """Enumeration for specifying the relative test duration of different test setups.
 
-class PypeItTestResult(object):
-    """Holds results from running a pypeit test and has methods for reporting on those results"""
+    Values:
+    SHORT            For test setups that take < 10 minutes to test
+    MEDIUM           For test setups that take 10-15 minutes to test
+    LONG             For test setups that take 15-30 minutes to test
+    VERY_LONG        For test setups that take 30-60 minutes to test
+    EXTREMELY_LONG   For test setups that take over 1 hour to test
+    DEFAULT          The default value for test setups that haven't been classified.
+                     currently set to SHORT
 
-    types = {'PYPEIT_SETUP':    "pypeit_setup",
-             "PYPEIT":          "pypeit (without masters)",
-             "PYPEIT_MASTERS":  "pypeit (with masters)",
-             "SENSFUNC":        "pypeit_sensfunc",
-             "FLUX_SETUP":      "pypeit_flux_setup",
-             "FLUXING":         "pypeit_flux",
-             "COADD1D":         "pypeit_coadd_1dspec",
-             "COADD2D":         "pypeit_coadd_2dspec",
-             "TELLFIT":         "pypeit_tellfit",
-             "QL":              "pypeit_ql_mos",
-             "UNKNOWN":         "Unknown"}
+    The numeric values set for this enum are used in a priority queue that considers, lower numbers to
+    be higher priority. As such their order is reversed from the order of their durations, and the actual
+    value doesn't matter.
+    """
+    SHORT          = 90
+    MEDIUM         = 80
+    LONG           = 70
+    VERY_LONG      = 60
+    EXTREMELY_LONG = 50
+    DEFAULT        = 90
 
-    def __init__(self, instr, setup, test_type, rdxdir):
+
+
+class TestSetup(object):
+    """Representation of a test setup within the pypeit development suite.
+    
+    Attributes:
+        instr (str):        The instrument for the test setup
+        name (str):         The name of the test setup
+        rawdir (str):       The directory with the raw data for the test setup
+        rdxdir (str):       The output directory for the test setup. This can be changed as tests are run.
+        dev_path (str):     The path of the Pypeit-development-suite repository
+        pyp_file (str):     The .pypeit file used for the test. This may be created by a PypeItSetupTest.
+        std_pyp_file (str): The standards .pypeit file used for some tests.
+
+        length(:obj:`TestLength`):  The expected duration of the test.
+
+        tests (:obj:`list` of :obj:`PypeItTest`): The list of tests to run in this test setup. The tests will be run
+                                                  in sequential order
+
+    """
+    def __init__(self, instr, name, rawdir, rdxdir, dev_path):
+        self.instr = instr
+        self.name = name
+        self.rawdir = rawdir
+        self.rdxdir = rdxdir
+        self.dev_path = dev_path
+
+        self.pyp_file = None
+        self.std_pyp_file = None
+        self.tests = []
+        self.length = self.determine_length()
+
+    def __str__(self):
+        """Return a string represetnation of this setup of the format "instr/name"""""
+        return f"{self.instr}/{self.name}"
+
+    def __lt__(self, other):
+        """
+        Compare this test setup with another using the "length" attribute. This is included so that a
+        TestSetup  object can be placed into a PriorityQueue
+        """
+        return self.length < other.length
+
+    def determine_length(self):
+        """Determine the expected length of the test setup"""
+
+        instr_lengths = {'mmt_binospec': TestLength.VERY_LONG,
+                         'keck_kcwi': TestLength.VERY_LONG,
+                         'keck_deimos': TestLength.LONG,
+                         'vlt_xshooter': TestLength.MEDIUM,
+                         'keck_mosfire': TestLength.MEDIUM,
+                         'gemini_flamingos2': TestLength.MEDIUM}
+
+        setup_lengths = {'mmt_binospec/Multislit_G270': TestLength.EXTREMELY_LONG,
+                         'magellan_fire/FIRE_Echelle': TestLength.VERY_LONG,
+                         'keck_lris_blue/multi_300_5000_d680': TestLength.MEDIUM,
+                         'mmt_mmirs/J_zJ': TestLength.MEDIUM,
+                         'vlt_xshooter/VIS_manual': TestLength.LONG,
+                         'gemini_gmos/GS_HAM_R400_860': TestLength.LONG,
+                         'gemini_gnirs/32_SB_SXD': TestLength.VERY_LONG,
+                         'lbt_mods/MODS1R_Longslit': TestLength.VERY_LONG,
+                         'lbt_mods/MODS2R_Longslit': TestLength.LONG}
+
+        setup_key = str(self)
+
+        # Look for a specific setup
+        if setup_key in setup_lengths:
+            return setup_lengths[setup_key]
+
+        # Otherwise look for an instrument
+        elif self.instr in instr_lengths:
+            return instr_lengths[self.instr]
+
+        # Otherwise fall back to the default
+        return TestLength.DEFAULT
+
+
+def red_text(text):
+    """Utiltiy method to wrap text in the escape sequences to make it appear red in a terminal"""
+    return f'\x1B[1;31m{text}\x1B[0m'
+
+def green_text(text):
+    """Utiltiy method to wrap text in the escape sequences to make it appear green in a terminal"""
+    return f'\x1B[1;32m{text}\x1B[0m'
+
+
+class TestReport(object):
+    """Class for reporting on the status and results of testing.
+
+    The test_started, test_skipped, and test_completed methods of this class are called during testing to keep track of
+    status and provide incremental status updates to the console as tests are running.
+
+    detailed_report and summary report are called after testing to report on the results.
+
+    Attributes:
+
+    pargs (:obj:`Namespace`:) The parsed command line arguments to pypeit_test
+    setups (:obj:`list` of :obj:`TestSetup`):  The test setups that are being tested.
+
+    start_time (:obj:`datetime.datetime`): The date and time testing started.
+    end_time (:obj:`datetime.datetime`):   The date and time testing finished.
+
+    num_tests (int):   The total number of tests in all of the test setups.
+    num_passed (int):  The number of tests that have passed.
+    num_failed (int):  The number of tests that have failed.
+    num_skipped (int): The number of tests that were skipped because they depended on the results of a failed tests.
+    num_active (int):  The number of tests that are currently in progress.
+
+    failed_tests (:obj:`list` of str):  List of names of tests that have failed
+    skipped_tests (:obj:`list` of str): List of names of tests that have been skipped
+
+    testing_complete (bool): Whether testing has completed.
+    lock (:obj:`threading.Lock`): Lock used to synchronize access when multiple threads are reporting status. This
+                                  prevents scrambled output being sent to stdout.
+    """
+    def __init__(self, pargs, setups):
+        self.pargs = pargs
+        self.test_setups = setups
+        self.start_time = None
+        self.end_time = None
+
+        self.num_tests = 0
+        self.num_passed = 0
+        self.num_failed = 0
+        self.num_skipped = 0
+        self.num_active = 0
+        self.failed_tests = []
+        self.skipped_tests = []
+        self.lock = Lock()
+        self.testing_complete = False
+
+
+    def _get_test_counts(self):
+        """Helper method to create a string with the curren test counts"""
+        verbose_info = f'{self.num_active:2} active/' if self.pargs.verbose else ''
+        return f'{verbose_info}{self.num_passed:2} passed/{self.num_failed:2} failed/{self.num_skipped:2} skipped'
+
+    def test_started(self, test):
+        """Called when a test has started executing"""
+        with self.lock:
+            self.num_tests += 1
+            self.num_active += 1
+
+
+            if not self.pargs.quiet:
+                verbose_info = ''
+                if self.pargs.verbose:
+                    verbose_info = f' at {datetime.datetime.now().ctime()}'
+
+                print(f'{self._get_test_counts()} STARTED {test}{verbose_info}')
+
+    def test_skipped(self, test):
+        """Called when a test has been skipped because a test before it has failed"""
+        with self.lock:
+            self.num_skipped += 1
+            self.skipped_tests.append(test)
+
+            if not self.pargs.quiet:
+                print(f'{self._get_test_counts()} {red_text("SKIPPED")} {test}')
+
+    def test_completed(self, test):
+        """Called when a test has finished executing."""
+        with self.lock:
+            self.num_active -= 1
+            if test.passed:
+                self.num_passed += 1
+            else:
+                self.num_failed += 1
+                self.failed_tests.append(test)
+
+            if not self.pargs.quiet:
+                verbose_info = ''
+                if self.pargs.verbose:
+                    if test.end_time is not None and test.start_time is not None:
+                        duration = test.end_time-test.start_time
+                    else:
+                        duration = 'n/a'
+
+                    verbose_info = f' with pid {test.pid} at {datetime.datetime.now().ctime()} Duration {duration}'
+
+                if test.passed:
+                    print(f'{self._get_test_counts()} {green_text("PASSED")}  {test}{verbose_info}')
+                else:
+                    print(f'{self._get_test_counts()} {red_text("FAILED")}  {test}{verbose_info}')
+                    self.report_on_test(test)
+
+    def detailed_report(self, output=sys.stdout):
+        """Display a detailed report on testing to the given output stream"""
+
+        # Report header information
+        print('Reducing data for the following setups:', file=output)
+        for setup in self.test_setups:
+            print(f'    {setup}', file=output)
+        print('', file=output)
+
+        if self.pargs.threads > 1:
+            print(f'Ran tests in {self.pargs.threads} parallel processes\n', file=output)
+
+        for setup in self.test_setups:
+            self.report_on_setup(setup, output)
+        print ("-------------------------", file=output)
+        self.summary_report(output)
+
+    def summary_report(self, output=sys.stdout):
+        """Display a summary report on the results of testing to the given output stream"""
+
+        masters_text = 'reused' if self.pargs.masters else 'ignored'
+        if self.num_tests == self.num_passed:
+            print("\n" + "\x1B[" + "1;32m" +
+                  "--- PYPEIT DEVELOPMENT SUITE PASSED {0}/{1} TESTS (Masters {2}) ---".format(
+                      self.num_passed, self.num_tests, masters_text)
+                  + "\x1B[" + "0m" + "\r", file=output)
+        else:
+            print("\n" + "\x1B[" + "1;31m" +
+                  "--- PYPEIT DEVELOPMENT SUITE FAILED {0}/{1} TESTS (Masters {2}) ---".format(
+                      self.num_failed, self.num_tests, masters_text)
+                  + "\x1B[" + "0m" + "\r", file=output)
+            print('Failed tests:', file=output)
+            for t in self.failed_tests:
+                print('    {0}'.format(t), file=output)
+            print('Skipped tests:', file=output)
+            for t in self.skipped_tests:
+                print('    {0}'.format(t), file=output)
+
+        print(f"Testing Started at {self.start_time.isoformat()}", file=output)
+        print(f"Testing Completed at {self.end_time.isoformat()}", file=output)
+        print(f"Total Time: {self.end_time - self.start_time}", file=output)
+
+
+    def report_on_test(self, test, output=sys.stdout):
+        """Print a detailed report on the status of a test to the given output stream."""
+
+        if test.passed:
+            result = green_text('--- PASSED')
+        elif test.passed is None:
+            result = red_text('--- SKIPPED')
+        else:
+            result = red_text('--- FAILED')
+
+        if test.start_time is not None and test.end_time is not None:
+            duration = test.end_time - test.start_time
+        else:
+            duration = None
+
+        print("----", file=output)
+        print(f"{test.setup} {test.description} Result: {result}\n", file=output)
+        print(f'Logfile:    {test.logfile}', file=output)
+        print(f'Process Id: {test.pid}', file=output)
+        print(f'Start time: {test.start_time.ctime() if test.start_time is not None else "n/a"}', file=output)
+        print(f'End time:   {test.end_time.ctime() if test.end_time is not None else "n/a"}', file=output)
+        print(f'Duration:   {duration}', file=output)
+        print(f"Command:    {' '.join(test.command_line) if test.command_line is not None else ''}", file=output)
+        print('', file=output)
+        print('Error Messages:', file=output)
+
+        for msg in test.error_msgs:
+            print(msg, file=output)
+
+        print('', file=output)
+        print("End of Log:", file=output)
+        if test.logfile is not None and os.path.exists(test.logfile):
+            result = subprocess.run(['tail', '-3', test.logfile], stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
+            print(result.stdout.decode(), file=output)
+
+        print('\n', file=output)
+
+    def report_on_setup(self, setup, output=sys.stdout):
+        """Print a detailed report on the status of a test setup and the tests within it to the given output stream."""
+
+        print ("-------------------------", file=output)
+        print (f"Test Setup: {setup}\n", file=output)
+        print ("-------------------------", file=output)
+        print("Directories:", file=output)
+        print(f"         Raw data: {setup.rawdir}", file=output)
+        print(f"    PypeIt output: {setup.rdxdir}", file=output)
+        print("Files:", file=output)
+        print(f"     .pypeit file: {setup.pyp_file}", file=output)
+        print(f" Std .pypeit file: {setup.std_pyp_file}", file=output)
+
+        print("Tests:", file=output)
+
+        for t in setup.tests:
+            self.report_on_test(t, output)
+
+
+def get_unique_file(file):
+    """Ensures a file name is unique on the file system, modifying it if neccessary.
+
+    Args:
+        file (str): The full pathname of the file.
+
+    Return:
+        A unique version of the passed in file name. If the file doesn't already exist it is returned
+        unchanged, otherwise a number is added to name (before the file extension) to make it unique.
+    """
+    file_num = 2
+    (file_base, file_ext) = os.path.splitext(file)
+    while os.path.exists(file):
+        file = f'{file_base}.{file_num}.{file_ext}'
+        file_num += 1
+
+    return file
+
+
+class PypeItTest(ABC):
+    """Abstract base class for classes that run pypeit tests and hold the results from those tests."""
+
+
+    def __init__(self, setup, description, log_suffix):
         """
         Constructor
 
         Args:
-            instr (str): Instrument of the test
-            setup (str): Test setup of the test
-            test_type (str): The type of test performed. This is one of the keys of the 'types' class member
-                             variable.
-            rdxdir (str): The output directory the test was run in.
+            setup (:obj:`TestSetup`) Test setup containing the test.
+            description (str): A description of the type of test performed.
+            log_suffix (str): The suffix to use for the log file name for the type of test.
         """
 
-        self.instr = instr
         self.setup = setup
-        self.type = test_type
-        self.rdxdir = rdxdir
+        self.description = description
+        self.log_suffix = log_suffix
 
         self.passed = None
         """ bool: True if the test passed, False if the test failed, None if the test is in progress"""
 
-        self.command_line = []
+        self.command_line = None
         """ :obj:`list` of :obj:`str`: The command and arguments that were run for the test."""
 
         self.error_msgs = []
@@ -123,45 +433,218 @@ class PypeItTestResult(object):
         self.pid = None
         """ int: The process id of the child process than ran the test"""
 
-    def report(self):
-        """Display a report on the test to stdout/stderr"""
+        self.start_time = None
+        """ :obj:`datetime.datetime`: The date and time the test started."""
 
-        # Report
-        print ("-----")
-        print("Directories:")
-        print(f"         Raw data: {raw_data_dir()}")
-        print(f"    PypeIt output: {self.rdxdir}")
-        print(f"          Logfile: {self.logfile}")
-        print(f"       Process Id: {self.pid}")
-        print("")
+        self.end_time = None
+        """ :obj:`datetime.datetime`: The date and time the test finished."""
 
-        print(f"Command: {' '.join(self.command_line)}", file=sys.stderr)
-
-        if self.passed:
-            result = "\x1B[" + "1;32m" + f"{self.type} --- PASSED" + "\x1B[" + "0m"
-        else:
-            result = "\x1B[" + "1;31m" + f"{self.type} --- FAILED" + "\x1B[" + "0m"
-
-        print(f"Ran {self.types[self.type]} on {self.instr}/{self.setup} Result: {result}\n", file=sys.stderr)
-
-        for msg in self.error_msgs:
-            print(msg, file=sys.stderr)
-
-        if self.logfile is not None:
-            subprocess.call(['tail', '-3', self.logfile])
-
-        print("\n", file=sys.stderr)
 
     def __str__(self):
         """Return a summary of the test and the status.
 
-           Example: 'shane_kast_red/600_7500_d57 pypeit (without masters): Passed'
+           Example: 'shane_kast_red/600_7500_d57 pypeit (without masters)'
         """
-        return f"{self.instr}/{self.setup} {self.types[self.type]}: " \
-               f"{'In Progress' if self.passed is None else 'Passed' if self.passed else 'Failed'}"
+        return f"{self.setup} {self.description}"
+
+    def get_logfile(self):
+        """Return a unique logifle name for the test"""
+        # Get a unique log file to prevent a test from overwriting the log from a previous test
+        name = '{0}_{1}.{2}.log'.format(self.setup.instr.lower(), self.setup.name.lower(), self.log_suffix)
+        return get_unique_file(os.path.join(self.setup.rdxdir, name))
 
 
 
+    @abstractmethod
+    def build_command_line(self):
+        pass
+
+    def run(self):
+        """Run a test in a child process."""
+
+        try:
+            # Open a log for the test
+            child = None
+            self.logfile = self.get_logfile()
+            with open(self.logfile, "w") as f:
+                try:
+                    self.command_line = self.build_command_line()
+                    self.start_time = datetime.datetime.now()
+                    child = subprocess.Popen(self.command_line, stdout=f, stderr=f, cwd=self.setup.rdxdir)
+                    self.pid = child.pid
+                    child.wait()
+                    self.end_time = datetime.datetime.now()
+                    self.passed = (child.returncode == 0)
+                finally:
+                    # Kill the child if the parent script exits due to a SIGTERM or SIGINT (Ctrl+C)
+                    if child is not None:
+                        child.terminate()
+
+        except Exception:
+            # An exception occurred while running the test
+            # Make sure it's marked as failed and document that an exception ocurred
+            self.error_msgs.append(f"Exception in Test {self}:")
+            self.error_msgs.append(traceback.format_exc())
+            self.passed = False
+
+        return self.passed
+
+
+class PypeItSetupTest(PypeItTest):
+    """Test subclass that runs pypeit_setup"""
+    def __init__(self, setup):
+        super().__init__(setup, "pypeit_setup", "setup")
+
+    def run(self):
+
+        if super().run():
+            # Check for the pypeit file after running the test
+            rdxdir = os.path.join(self.setup.rdxdir, self.setup.instr.lower() + '_A')
+            pyp_file_glob = os.path.join(rdxdir, '*_A.pypeit')
+            pyp_file = glob.glob(pyp_file_glob)
+            if len(pyp_file) != 1:
+                self.error_msgs.append(f"Could not find expected pypeit file {pyp_file_glob}")
+                self.passed = False
+            else:
+                # If the pypeit file was created, put it's location and the new output
+                # directory into the setup object for subsequent tests to use
+                pyp_file = os.path.split(pyp_file[0])[1]
+
+                self.setup.pyp_file = pyp_file
+                self.setup.rdxdir = rdxdir
+
+        return self.passed
+
+    def build_command_line(self):
+        return ['pypeit_setup', '-r', self.setup.rawdir, '-s',
+                self.setup.instr, '-c all', '-o', '--output_path', self.setup.rdxdir]
+
+
+class PypeItReduceTest(PypeItTest):
+    """Test subclass that runs run_pypeit"""
+
+    def __init__(self, setup, masters, std=False):
+        description = f"pypeit {'standards ' if std else ''}(with{'out' if not masters else ''} masters)"
+        super().__init__(setup, description, "test")
+
+        self.masters = masters
+        self.std = std
+
+
+    def build_command_line(self):
+        if self.std:
+            pyp_file = self.setup.std_pyp_file
+        else:
+            pyp_file = self.setup.pyp_file
+
+        command_line = ['run_pypeit', pyp_file, '-o']
+        if self.masters:
+            command_line += ['-m']
+
+        return command_line
+
+
+class PypeItSensFuncTest(PypeItTest):
+    """Test subclass that runs pypeit_sensfunc"""
+    def __init__(self, setup, std_file, sens_file=None):
+        super().__init__(setup, "pypeit_sensfunc", "test_sens")
+        self.std_file = std_file
+        self.sens_file = sens_file
+
+    def run(self):
+
+        self.std_file = os.path.join(self.setup.rdxdir, "Science", self.std_file)
+
+        if not os.path.isfile(self.std_file):
+            self.error_msgs.append(f"File does not exist!: {self.std_file}")
+            self.passed = False
+        else:
+            return super().run()
+
+    def build_command_line(self):
+        command_line = ['pypeit_sensfunc', self.std_file]
+
+        if self.sens_file is not None:
+            command_line += ['-s', self.sens_file]
+
+        return command_line
+
+class PypeItFluxSetupTest(PypeItTest):
+    """Test subclass that runs pypeit_flux_setup"""
+    def __init__(self, setup):
+        super().__init__(setup, "pypeit_flux_setup", "test_flux_setup")
+
+    def build_command_line(self):
+        return ['pypeit_flux_setup', os.path.join(self.setup.rdxdir, 'Science')]
+
+
+class PypeItFluxTest(PypeItTest):
+    """Test subclass that runs pypeit_flux_calib"""
+    def __init__(self, setup):
+        super().__init__(setup, "pypeit_flux", "test_flux")
+
+    def build_command_line(self):
+        flux_file = os.path.join(self.setup.dev_path, 'fluxing_files',
+                                 '{0}_{1}.flux'.format(self.setup.instr.lower(), self.setup.name.lower()))
+        return ['pypeit_flux_calib', flux_file]
+
+
+class PypeItCoadd1DTest(PypeItTest):
+    """Test subclass that runs pypeit_coadd_1dspec"""
+
+    def __init__(self, setup):
+        super().__init__(setup, "pypeit_coadd_1dspec", "test_1dcoadd")
+
+    def build_command_line(self):
+        coadd_file = os.path.join(self.setup.dev_path, 'coadd1d_files',
+                                  '{0}_{1}.coadd1d'.format(self.setup.instr.lower(), self.setup.name.lower()))
+        return ['pypeit_coadd_1dspec', coadd_file]
+
+class PypeItCoadd2DTest(PypeItTest):
+    """Test subclass that runs pypeit_coadd_2dspec"""
+    def __init__(self, setup, coadd_file=None, obj=None):
+        super().__init__(setup, "pypeit_coadd_2dspec", "test_2dcoadd")
+        self.obj = obj
+        self.coadd_file = coadd_file
+
+        if self.coadd_file is None and self.obj is None:
+            raise ValueError('Must provide coadd2d file or object name.')
+
+    def build_command_line(self):
+        command_line = ['pypeit_coadd_2dspec']
+        command_line += ['--obj', self.obj] if self.coadd_file is None else ['--file', self.coadd_file]
+        return command_line
+
+class PypeItTelluricTest(PypeItTest):
+    """Test subclass that runs pypeit_tellfit"""
+
+    def __init__(self, setup, coadd_file, redshift, objmodel):
+        super().__init__(setup, "pypeit_tellfit", 'test_tellfit')
+        self.coadd_file = coadd_file
+        self.redshift = redshift
+        self.objmodel = objmodel
+
+
+    def build_command_line(self):
+        command_line = ['pypeit_tellfit', os.path.join(self.setup.rdxdir, self.coadd_file)]
+        command_line += ['--redshift', '{:}'.format(self.redshift)]
+        command_line += ['--objmodel', self.objmodel]
+
+        return command_line
+
+class PypeItQuickLookTest(PypeItTest):
+    """Test subclass that runs pypeit_ql_mos"""
+
+    def __init__(self, setup, files, mos=False):
+        super().__init__(setup, "pypeit_ql_mos", "test_ql")
+        self.files = files
+        self.mos = mos
+
+    def build_command_line(self):
+        command_line = ['pypeit_ql_mos', self.setup.instr] if self.mos else ['pypeit_ql_keck_nires']
+        command_line += [self.setup.rawdir] + self.files
+
+        return command_line
 
 def raw_data_dir():
     return os.path.join(os.environ['PYPEIT_DEV'], 'RAW_DATA')
@@ -171,72 +654,6 @@ def available_data():
     walk = os.walk(raw_data_dir())
     return next(walk)[1]
 
-
-def get_logfile(rdxdir, instr, setup, ext):
-
-    # Get a unique log file to prevent a test from overwriting the log from a previous test
-    logfile = os.path.join(rdxdir, '{0}_{1}.{2}.log'.format(instr.lower(), setup.lower(), ext))
-    log_num = 2
-    while os.path.exists(logfile):
-        logfile = os.path.join(rdxdir, '{0}_{1}.{2}.{3}.log'.format(instr.lower(), setup.lower(), ext, log_num))
-        log_num += 1
-
-    return logfile
-
-def run_test(test_result, cwd):
-    """Run a test in a child process.
-
-    Args:
-        test_result (:obj:`PypeItTestResult`): In/Out argument for the results of the test.
-        cwd (str): The working directory to run the child process in.
-    """
-
-    # TODO: Remove dummy test and use an external test frame work like pytest to do this
-    if run_dummy_tests:
-        delay =  random.randint(5,10)
-        print(f"Test {test_result}: Sleeping for {delay} seconds.")
-        time.sleep(delay)
-        test_result.passed=True
-    else:
-        with open(test_result.logfile, "w") as f:
-            try:
-                child = subprocess.Popen(test_result.command_line, stdout=f, stderr=f, cwd=cwd)
-                print(f"Test {test_result}: Started with pid {child.pid}")
-                test_result.pid = child.pid
-                child.wait()
-                test_result.passed = (child.returncode == 0)
-            finally:
-                # Kill the child if the parent script exits due to a SIGTERM or SIGINT (Ctrl+C)
-                child.terminate()
-
-def run_pypeit_setup(rawdir, rdxdir, instr, setup):
-    """
-    Run pypeit_setup.
-
-    Returns:
-        tuple: Returns the PypeItTestResult of the test, the pypeit_file and the new
-        output test directory for subsequen tests in the test setup
-    """
-    result = PypeItTestResult(instr, setup, 'PYPEIT_SETUP', rdxdir)
-
-    # Use pypeit_setup to get the pypeit file
-    result.logfile = get_logfile(rdxdir, instr, setup, 'test')
-    result.command_line = ['pypeit_setup', '-r', rawdir, '-s', instr, '-c all', '-o',
-                           '--output_path', rdxdir]
-
-    run_test(result, rdxdir)
-
-    # Check for the pypeit file
-    rdxdir = os.path.join(rdxdir, instr.lower()+'_A')
-    pyp_file = glob.glob(os.path.join(rdxdir, '*_A.pypeit'))
-    if len(pyp_file) != 1:
-        result.error_msgs.append(f"Could not find expected pypeit file: {pyp_file}")
-        result.passed = False
-        return result, None, rdxdir
-
-    pyp_file = os.path.split(pyp_file[0])[1]
-
-    return result, pyp_file, rdxdir
 
 
 def pypeit_file_name(instr, setup, std=False):
@@ -294,118 +711,6 @@ def fix_pypeit_file_directory(dev_path, raw_data, instr, setup, rdxdir, std=Fals
     return pyp_file
 
 
-def run_pypeit(rdxdir, instr, setup, pyp_file, masters):
-    """
-    Run pypeit on the provided instrument and setup in the provided
-    reduction directory.
-
-    Returns:
-        obj:`PypeItTestResult`: The result of the test.
-    """
-    result = PypeItTestResult(instr, setup, "PYPEIT_MASTERS" if masters else "PYPEIT", rdxdir)
-
-    result.logfile = get_logfile(rdxdir, instr, setup, 'test')
-    result.command_line = ['run_pypeit', pyp_file, '-o']
-    if masters:
-        result.command_line += ['-m']
-
-    run_test(result, rdxdir)
-
-    return result
-
-
-def run_sensfunc(rdxdir, instr, setup, std_file, sens_file=None):
-    result = PypeItTestResult(instr, setup, "SENSFUNC", rdxdir)
-
-    if not os.path.isfile(std_file):
-        result.error_msgs.append(f"File does not exist!: {std_file}")
-        result.passed = False
-        return result
-
-    result.logfile = get_logfile(rdxdir, instr, setup, 'test_sens')
-    result.command_line = ['pypeit_sensfunc', std_file]
-    if sens_file is not None:
-        result.command_line += ['-s', sens_file]
-
-    run_test(result, rdxdir)
-
-    return result
-
-def run_flux_setup(rdxdir, instr, setup):
-    """
-    Test telluric correction with pisco GNIRS data
-    """
-    result = PypeItTestResult(instr, setup, "FLUX_SETUP", rdxdir)
-    result.logfile = get_logfile(rdxdir, instr, setup, 'test_flux_setup')
-    result.command_line = ['pypeit_flux_setup', os.path.join(rdxdir, 'Science')]
-
-    run_test(result, rdxdir)
-
-    return result
-
-def run_flux_calib(dev_path, rdxdir, instr, setup):
-    result = PypeItTestResult(instr, setup, "FLUXING", rdxdir)
-    result.logfile = get_logfile(rdxdir, instr, setup, 'test_flux')
-    flux_file = os.path.join(dev_path, 'fluxing_files',
-                             '{0}_{1}.flux'.format(instr.lower(), setup.lower()))
-    result.command_line = ['pypeit_flux_calib', flux_file]
-
-    run_test(result, rdxdir)
-    return result
-
-
-def run_coadd1d(dev_path, rdxdir, instr, setup):
-    result = PypeItTestResult(instr, setup, "COADD1D", rdxdir)
-    result.logfile = get_logfile(rdxdir, instr, setup, 'test_1dcoadd')
-    coadd_file = os.path.join(dev_path, 'coadd1d_files',
-                              '{0}_{1}.coadd1d'.format(instr.lower(), setup.lower()))
-    result.command_line = ['pypeit_coadd_1dspec', coadd_file]
-
-    run_test(result, rdxdir)
-    return result
-
-
-def run_coadd2d(rdxdir, instr, setup, coadd_file=None, obj=None):
-    result = PypeItTestResult(instr, setup, "COADD2D", rdxdir)
-    if coadd_file is None and obj is None:
-        result.error_msgs.append('Must provided coadd2d file or object name.')
-        result.passed = False
-        return result
-
-    result.logfile = get_logfile(rdxdir, instr, setup, 'test_2dcoadd')
-    result.command_line = ['pypeit_coadd_2dspec']
-    result.command_line += ['--obj', obj] if coadd_file is None else ['--file', coadd_file]
-
-    run_test(result, rdxdir)
-    return result
-
-def run_tellfit(rdxdir, instr, setup, coadd_file, redshift, objmodel):
-    """
-    Test telluric correction with pisco GNIRS data
-    """
-    result = PypeItTestResult(instr, setup, "TELLFIT", rdxdir)
-    result.logfile = get_logfile(rdxdir, instr, setup, 'test_tellfit')
-    result.command_line = ['pypeit_tellfit', os.path.join(rdxdir, coadd_file)]
-    result.command_line += ['--redshift', '{:}'.format(redshift)]
-    result.command_line += ['--objmodel', objmodel]
-
-    run_test(result, rdxdir)
-    return result
-
-
-def run_ql(rawdir, rdxdir, instr, setup, files, mos=False):
-    result = PypeItTestResult(instr, setup, "QL", rdxdir)
-    qldir = os.path.join(rdxdir, 'QL')
-    if not os.path.isdir(qldir):
-        os.mkdir(qldir)
-    result.logfile = get_logfile(qldir, instr, setup, 'test_ql')
-    result.command_line = ['pypeit_ql_mos', instr] if mos else ['pypeit_ql_keck_nires']
-    result.command_line += [rawdir] + files
-
-    run_test(result, rdxdir)
-    return result
-
-
 
 def parser(options=None):
     import argparse
@@ -446,42 +751,44 @@ def parser(options=None):
                         help='Only prepare to execute run_pypeit, but do not actually run it.')
     parser.add_argument('-m', '--masters', default=False, action='store_true',
                         help='run pypeit using any existing masters')
-    parser.add_argument('-d', '--dummy', default=False, action='store_true',
-                        help='Run dummy tests to test this test script.')
     parser.add_argument('-t', '--threads', default=1, type=int,
                         help='The number of test threads to run in parallel.')
+    parser.add_argument('-q', '--quiet', default=False, action='store_true',
+                        help='Supress all output to stdout. If -r is not a given, a report file will be '
+                             'written to <outputdir>/pypeit_test_results.txt')
+    parser.add_argument('-v', '--verbose', default=False, action='store_true',
+                        help='Output additional detailed information while running the tests and output a '
+                             'detailed report at the end of testing. This has no efffect if -q is given')
+    parser.add_argument('-r', '--report', default=None, type=str,
+                        help='File name to write the test report and summary information to. ')
 
     return parser.parse_args() if options is None else parser.parse_args(options)
 
-def thread_target():
+def thread_target(test_report):
     """Thread target method for running tests."""
-    try:
-        while (True):
-            test_setup = test_run_queue.get_nowait()
-            try:
-                for test_result in run_test_setup(test_setup):
-                    test_result_queue.put(test_result)
-            except Exception:
-                # Create a test result to document that an exception ocurred running the test
-                test_result = PypeItTestResult(test_setup[1],
-                                               test_setup[2],
-                                               "UNKNOWN",
-                                               "Unknown")
-                test_result.error_msgs.append(f"Exception in Test Setup {test_setup[1]}/{test_setup[2]}:")
-                test_result.error_msgs.append(traceback.format_exc())
-                test_result.passed = False
-                test_result_queue.put(test_result)
+    while not test_report.testing_complete:
+        try:
+            test_setup = test_run_queue.get(timeout=2)
+        except Empty:
+            # queue is currently empty but another thread may put another test on it, so try again
+            continue
 
-            # Count the test as done. This needs to be done to allow the join() call in main to return when
-            # all of the tests have been completed
-            test_run_queue.task_done()
+        passed = True
+        for test in test_setup.tests:
 
-    except Empty as e:
-        # Queue is empty, let the thread terminate
-        pass
+            if not passed:
+                test_report.test_skipped(test)
+            else:
+                test_report.test_started(test)
+                passed = test.run()
+                test_report.test_completed(test)
+
+        # Count the test setup as done. This needs to be done to allow the join() call in main to return when
+        # all of the tests have been completed
+        test_run_queue.task_done()
+
 
 def main():
-
 
     pargs = parser()
 
@@ -491,11 +798,6 @@ def main():
         # Set the OMP_NUM_THREADS to 1 to prevent numpy multithreading from competing for resources
         # with the multiple processes started by this script
         os.environ['OMP_NUM_THREADS'] = '1'
-
-
-    global run_dummy_tests
-    if pargs.dummy:
-        run_dummy_tests = True
 
     # TODO: Once we're satisfied that an instrument passes, add it to
     # this list and add a series of setups to the development set!  Runs
@@ -545,28 +847,36 @@ def main():
         return 1
 
     if len(unsupported) > 0:
-        print("\x1B[" + "1;33m" + "\nWARNING - " + "\x1B[" + "0m" +
-              "The following tests have not been validated and may not pass: {0}\n\n".format(
-              unsupported))
+        if not pargs.quiet:
+            print("\x1B[" + "1;33m" + "\nWARNING - " + "\x1B[" + "0m" +
+                  "The following tests have not been validated and may not pass: {0}\n\n".format(
+                  unsupported))
 
     if not os.path.exists(pargs.outputdir):
         os.mkdir(pargs.outputdir)
     outputdir = os.path.abspath(pargs.outputdir)
 
-    # Do DEIMOS last:
-    # TODO: Do we still care? It hasn't been last for a long time...
-    if 'keck_deimos' in instruments:
-        instruments = np.append(np.delete(instruments, np.argwhere(instruments=='keck_deimos')),
-                                ['keck_deimos'])
+    # Make sure we can create a writable report file (if needed) before starting the tests
+    if pargs.report is None and pargs.quiet:
+        # If there's no report file specified in the command line, but we're in quiet mode,
+        # make up a report file name
+        pargs.report = get_unique_file(os.path.join(outputdir, "pypeit_test_results.txt"))
+
+    if pargs.report:
+        try:
+            report_file = open(pargs.report, "w")
+        except Exception as e:
+            print(f"Could not open report file {report_file}", file=stderr)
+            traceback.print_exc()
+            sys.exit(1)
+
 
     # Report
-    print('Running tests on the following instruments:')
-    for instr in instruments:
-        print('    {0}'.format(instr))
-    print('')
-
-    if pargs.threads > 1:
-        print(f'Running tests in {pargs.threads} parallel processes')
+    if not pargs.quiet:
+        print('Running tests on the following instruments:')
+        for instr in instruments:
+            print('    {0}'.format(instr))
+        print('')
 
     #---------------------------------------------------------------------------
     # Check all the data and relevant files exists before starting!
@@ -610,263 +920,240 @@ def main():
     #---------------------------------------------------------------------------
 
     #---------------------------------------------------------------------------
-    # Loop on instruments
-    npass = 0
-    ntest = 0
-    
-    failed = []
 
+    setups = []
     for instr in instruments:
         # Only do blue instruments
         if pargs.debug and 'blue' not in instr:
             continue
 
         # Setups
-        setups = next(os.walk(os.path.join(raw_data, instr)))[1]
-        if pargs.setup is not None and pargs.setup not in setups:
+        setup_names = next(os.walk(os.path.join(raw_data, instr)))[1]
+        if pargs.setup is not None and pargs.setup not in setup_names:
             # No setups selected
             continue
         # Limit to a single setup
         if pargs.setup is not None:
-            setups = [ pargs.setup ]
+            setup_names = [ pargs.setup ]
         # Limit to development setups
         if pargs.tests in tests_that_only_use_dev_setups:
-            setups = devsetups[instr]
-
-        # Report
-        print('Reducing data from {0} for the following setups:'.format(instr))
-        for setup in setups:
-            print('    {0}'.format(setup))
-        print('')
+            setup_names = devsetups[instr]
 
         # Add tests to the test_run_queue
-        for setup in setups:
+        for setup_name in setup_names:
 
-            test_setup = (pargs, instr, setup, flg_after, flg_ql)
-            test_run_queue.put(test_setup)
+            setup = build_test_setup(pargs, instr, setup_name, flg_after, flg_ql)
+            setups.append(setup)
+            test_run_queue.put(setup)
+
+        # Report
+        if not pargs.quiet:
+            print('Reducing data from {0} for the following setups:'.format(instr))
+            for name in setup_names:
+                print('    {0}'.format(name))
+            print('')
+
+
+    if not pargs.quiet and pargs.threads > 1:
+        print(f'Running tests in {pargs.threads} parallel processes')
+
+
+    test_report = TestReport(pargs, setups)
+    test_report.start_time = datetime.datetime.now()
 
     # Start threads to run the tests
+    thread_pool = []
     for i in range(pargs.threads):
-        Thread(target=thread_target, daemon=True).start()
+        new_thread = Thread(target=thread_target, args=[test_report])
+        thread_pool.append(new_thread)
+        new_thread.start()
 
     # Wait for the tests to finish
     test_run_queue.join()
 
+    # Set the test status to complete and then wait for the threads to finish.
+    # We don't run the threads as daemon threads so that main() can be called multiple times
+    # in unit tests
+    test_report.testing_complete = True
+    for thread in thread_pool:
+        thread.join()
+
     # Report on the test results
-    while not test_result_queue.empty():
-        result = test_result_queue.get(timeout=2)
-        result.report()
-        ntest += 1
-        if result.passed:
-            npass += 1
+    test_report.end_time = datetime.datetime.now()
+
+    if pargs.report is not None:
+        test_report.detailed_report(report_file)
+
+    if not pargs.quiet:
+        if pargs.verbose:
+            test_report.detailed_report()
         else:
-            failed.append(f"{result.types[result.type]}: {result.instr}/{result.setup}")
+            test_report.summary_report()
 
-    if npass == ntest:
-        print("\n" + "\x1B[" + "1;32m" +
-              "--- PYPEIT DEVELOPMENT SUITE PASSED {0}/{1} TESTS (Masters {2}) ---".format(
-                npass, ntest, 'reused' if pargs.masters else 'ignored')
-              + "\x1B[" + "0m" + "\r", file=sys.stderr)
-    else:
-        print("\n" + "\x1B[" + "1;31m" +
-              "--- PYPEIT DEVELOPMENT SUITE FAILED {0}/{1} TESTS (Masters {2}) ---".format(
-                ntest-npass, ntest, 'reused' if pargs.masters else 'ignored')
-              + "\x1B[" + "0m" + "\r", file=sys.stderr)
-        print('Failed tests:')
-        for fail in failed:
-            print('    {0}'.format(fail))
+    return test_report.num_failed
 
 
-def run_test_setup(test_setup):
+def build_test_setup(pargs, instr, setup_name, flg_after, flg_ql):
+    """Builds a TestSetup object including the tests that it will run"""
 
-    pargs, instr, setup, flg_after, flg_ql = test_setup
     dev_path = os.getenv('PYPEIT_DEV')
     raw_data = raw_data_dir()
     outputdir = os.path.abspath(pargs.outputdir)
-    test_results = []
+
     # Directory with raw data
-    rawdir = os.path.join(raw_data, instr, setup)
+    rawdir = os.path.join(raw_data, instr, setup_name)
 
     # Directory for reduced data
-    rdxdir = os.path.join(outputdir, instr, setup)
+    rdxdir = os.path.join(outputdir, instr, setup_name)
     if not os.path.exists(rdxdir):
         # Make the directory
         os.makedirs(rdxdir)
 
-
-    # Begin with optimism
-    passed = True
+    setup = TestSetup(instr, setup_name, rawdir, rdxdir, dev_path)
 
     # TODO: By default search for the appropriate pypeit file
     # and run pypeit_setup if it doesn't exist
 
     # TODO: Include option that forces the tests to run
     # pypeit_setup
-
-    if instr == 'shane_kast_blue' and '600' in setup:
+    if setup.instr == 'shane_kast_blue' and '600' in setup.name:
         # Use pypeit_setup to generate the pypeit file
-        result, pyp_file, rdxdir = run_pypeit_setup(rawdir, rdxdir, instr, setup)
-        passed = result.passed
-        std_pyp_file = None
-        test_results.append(result)
+        setup.tests.append(PypeItSetupTest(setup))
+
     else:
         # Use pre-made PypeIt file
-        pyp_file = fix_pypeit_file_directory(dev_path, raw_data, instr, setup, rdxdir)
+        setup.pyp_file = fix_pypeit_file_directory(setup.dev_path,
+                                                   raw_data_dir(),
+                                                   setup.instr,
+                                                   setup.name,
+                                                   setup.rdxdir)
+
         # Also try to find and fix pypeit files for
         # spectroscopic standards.  This is a KLUDGE for
         # gemini_gmos
-        std_pyp_file = fix_pypeit_file_directory(dev_path, raw_data, instr, setup, rdxdir,
-                                                 std=True)
-
-    if not passed:
-        return test_results
+        setup.std_pyp_file = fix_pypeit_file_directory(setup.dev_path,
+                                                       raw_data_dir(),
+                                                       setup.instr,
+                                                       setup.name,
+                                                       setup.rdxdir,
+                                                       std=True)
 
     # Only want to prep
     if pargs.prep_only:
-        return test_results
+        return setup
 
-    pyp_file = os.path.split(pyp_file)[1]
+    # ----------------------------------------------------------
+    # Reduce tests
+    # ----------------------------------------------------------
     # Run pypeit
-    if passed and not (flg_after or flg_ql):
-        result = run_pypeit(rdxdir, instr, setup, pyp_file, pargs.masters)
-        passed = result.passed
-        test_results.append(result)
+    if not (flg_after or flg_ql):
 
-    # Run pypeit on any standards, if they exist
-    if passed and std_pyp_file is not None and not (flg_after or flg_ql):
-        result  = run_pypeit(rdxdir, instr, setup, std_pyp_file, pargs.masters)
-        passed = result.passed
-        test_results.append(result)
+        setup.tests.append(PypeItReduceTest(setup, pargs.masters))
 
-    # Try re-running keck_lris_red setups with masters
-    if passed and not (flg_after or flg_ql) and instr == 'keck_lris_red' and not flg_ql:
-        result = run_pypeit(rdxdir, instr, setup, pyp_file, True)
-        passed = result.passed
-        test_results.append(result)
+        # Run pypeit on any standards, if they exist
+        if setup.std_pyp_file:
+            setup.tests.append(PypeItReduceTest(setup, pargs.masters, std=True))
+
+        # Try re-running keck_lris_red setups with masters
+        if setup.instr == 'keck_lris_red':
+            setup.tests.append(PypeItReduceTest(setup, True))
 
     if pargs.tests == 'reduce':
         # Skip the afterburner tests
-        return test_results
-
-    # ----------------------------------------------------------
-    # ----------------------------------------------------------
-    # SensFunc tests
-    # ----------------------------------------------------------
-    # UVIS algorithm without .sens file
-    if passed and instr == 'shane_kast_blue' and '600' in setup and not flg_ql:
-        # TODO: Instead check for file with standard star in the
-        # file name?
-        std_file = os.path.join(rdxdir, 'Science',
-                                'spec1d_b24-Feige66_KASTb_2015May20T041246.960.fits')
-        test_results.append(run_sensfunc(rdxdir, instr, setup, std_file))
-
-    # IR algorithm with .sens file
-    if passed and instr == 'gemini_gnirs' and setup == '32_SB_SXD' and not flg_ql:
-        std_file = os.path.join(rdxdir, 'Science',
-                                'spec1d_cN20170331S0206-HIP62745_GNIRS_2017Mar31T083351.681.fits')
-        sens_file = os.path.join(dev_path, 'sensfunc_files', 'gemini_gnirs_32_sb_sxd.sens')
-        test_results.append(run_sensfunc(rdxdir, instr, setup, std_file, sens_file=sens_file))
-
-    # IR algorithm, multi-slit, without .sens file
-    if passed and instr == 'gemini_gmos' and setup == 'GS_HAM_R400_860' and not flg_ql:
-        std_file = os.path.join(rdxdir, 'Science',
-                                'spec1d_S20181219S0316-GD71_GMOS-S_1864May27T230832.356.fits')
-        test_results.append(run_sensfunc(rdxdir, instr, setup, std_file))
+        return setup
     # ----------------------------------------------------------
 
-    # ----------------------------------------------------------
-    # ----------------------------------------------------------
-    # fluxing/coadd1d/tellfit Pypeit files setup tests
-    # ----------------------------------------------------------
-    flux_setup_pairs = {'shane_kast_blue': '600_4310_d55',  # long-slit
-                        'gemini_gnirs': '32_SB_SXD',  # echelle
-                        'gemini_gmos': 'GS_HAM_R400_860'}  # multi-slit
-    if passed and any([instr == key and setup == flux_setup_pairs[key]
-                       for key in flux_setup_pairs.keys()]) and not flg_ql:
-        test_results.append(run_flux_setup(rdxdir, instr, setup))
+    if not flg_ql:
+        # ----------------------------------------------------------
+        # SensFunc tests
+        # ----------------------------------------------------------
+        # UVIS algorithm without .sens file
+        if setup.instr == 'shane_kast_blue' and '600' in setup.name:
+            # TODO: Instead check for file with standard star in the
+            # file name?
+            std_file = 'spec1d_b24-Feige66_KASTb_2015May20T041246.960.fits'
+            setup.tests.append(PypeItSensFuncTest(setup, std_file=std_file))
 
-    # ----------------------------------------------------------
+        # IR algorithm with .sens file
+        if setup.instr == 'gemini_gnirs' and setup.name == '32_SB_SXD':
+            std_file = 'spec1d_cN20170331S0206-HIP62745_GNIRS_2017Mar31T083351.681.fits'
+            sens_file = os.path.join(setup.dev_path, 'sensfunc_files', 'gemini_gnirs_32_sb_sxd.sens')
+            setup.tests.append(PypeItSensFuncTest(setup, std_file=std_file, sens_file=sens_file))
 
-    # ----------------------------------------------------------
-    # ----------------------------------------------------------
-    # Flux calibration tests
-    # ----------------------------------------------------------
-    flux_calib_pairs = {'shane_kast_blue': '600_4310_d55',  # long-slit
-                        'gemini_gnirs': '32_SB_SXD',  # echelle
-                        'gemini_gmos': 'GS_HAM_R400_860'}  # multi-slit
-    if passed and any([instr == key and setup == flux_calib_pairs[key]
-                       for key in flux_calib_pairs.keys()]) and not flg_ql:
-        test_results.append(run_flux_calib(dev_path, rdxdir, instr, setup))
+        # IR algorithm, multi-slit, without .sens file
+        if setup.instr == 'gemini_gmos' and setup.name == 'GS_HAM_R400_860':
+            std_file = 'spec1d_S20181219S0316-GD71_GMOS-S_1864May27T230832.356.fits'
+            setup.tests.append(PypeItSensFuncTest(setup, std_file=std_file))
 
-    # TODO: Does a sens file exist for NIRES?
-    #            # Sensfunc testing, IR algorithm with .sens file
-    #            # JFH TODO add a NIRSPEC dataset with a standard
-    #            if passed and instr == 'keck_nires':
-    #                ntest += 1
-    #                if run_flux_calib(dev_path, rdxdir, instr, setup):
-    #                    npass += 1
-    #                else:
-    #                    failed += [ 'pypeit_flux_spec: {0}/{1}'.format(instr, setup) ]
-    # ----------------------------------------------------------
+        # ----------------------------------------------------------
 
-    # ----------------------------------------------------------
-    # ----------------------------------------------------------
-    # 1D coadding tests
-    # ----------------------------------------------------------
-    coadd_1d_pairs = {'shane_kast_blue': '600_4310_d55',  # long-slit
-                      'gemini_gnirs': '32_SB_SXD',  # echelle
-                      'gemini_gmos': 'GS_HAM_R400_860'}  # multi-slit
-    if passed and any([instr == key and setup == coadd_1d_pairs[key]
-                       for key in coadd_1d_pairs.keys()]) and not flg_ql:
-        test_results.append(run_coadd1d(dev_path, rdxdir, instr, setup))
-    # ----------------------------------------------------------
+        # ----------------------------------------------------------
+        # fluxing/coadd1d/tellfit tests
+        # ----------------------------------------------------------
+        flux_coadd1d_pairs = {'shane_kast_blue': '600_4310_d55',  # long-slit
+                              'gemini_gnirs': '32_SB_SXD',  # echelle
+                              'gemini_gmos': 'GS_HAM_R400_860'}  # multi-slit
 
-    # ----------------------------------------------------------
-    # ----------------------------------------------------------
-    # 2D coadding tests
-    # ----------------------------------------------------------
-    # Echelle
-    if passed and instr == 'gemini_gnirs' and setup == '32_SB_SXD' and not flg_ql:
-        test_results.append(run_coadd2d(rdxdir, instr, setup, obj='pisco'))
+        if any([setup.instr == key and setup.name == flux_coadd1d_pairs[key]
+                for key in flux_coadd1d_pairs.keys()]):
+            setup.tests.append(PypeItFluxSetupTest(setup))
+            setup.tests.append(PypeItFluxTest(setup))
+            setup.tests.append(PypeItCoadd1DTest(setup))
 
-    # MultiSlit
-    if passed and instr == 'keck_lris_blue' and setup == 'multi_600_4000_d560' and not flg_ql:
-        test_results.append(run_coadd2d(rdxdir, instr, setup,
-                                        coadd_file=template_coadd2d_file(dev_path, instr, setup)))
-    # Manual + Echelle
-    if passed and instr == 'vlt_xshooter' and setup == 'VIS_manual' and not flg_ql:
-        test_results.append(run_coadd2d(rdxdir, instr, setup,
-                       coadd_file=template_coadd2d_file(dev_path, instr, setup)))
+        # ----------------------------------------------------------
 
-    # ----------------------------------------------------------
+        # ----------------------------------------------------------
+        # 2D coadding tests
+        # ----------------------------------------------------------
+        # Echelle
+        if setup.instr == 'gemini_gnirs' and setup.name == '32_SB_SXD':
+            setup.tests.append(PypeItCoadd2DTest(setup, obj='pisco'))
 
-    # ----------------------------------------------------------
-    # ----------------------------------------------------------
-    # Telluric tests
-    # ----------------------------------------------------------
-    # Echelle
-    if passed and instr == 'gemini_gnirs' and setup == '32_SB_SXD' and not flg_ql:
-        test_results.append(run_tellfit(rdxdir, instr, setup, coadd_file='pisco_coadd.fits', redshift=7.52, objmodel='qso'))
+        # MultiSlit
+        if setup.instr == 'keck_lris_blue' and setup.name == 'multi_600_4000_d560':
+            coadd_file = template_coadd2d_file(setup.dev_path, setup.instr, setup.name)
+            setup.tests.append(PypeItCoadd2DTest(setup, coadd_file=coadd_file))
 
-    # MultiSlit
-    # ToDo: Add a multislit test.
+        # Manual + Echelle
+        if setup.instr == 'vlt_xshooter' and setup.name == 'VIS_manual':
+            coadd_file = template_coadd2d_file(setup.dev_path, setup.instr, setup.name)
+            setup.tests.append(PypeItCoadd2DTest(setup, coadd_file=coadd_file))
 
-    # ----------------------------------------------------------
+        # ----------------------------------------------------------
+
+        # ----------------------------------------------------------
+        # Telluric tests
+        # ----------------------------------------------------------
+        # Echelle
+        if setup.instr == 'gemini_gnirs' and setup.name == '32_SB_SXD':
+            setup.tests.append(PypeItTelluricTest(setup, coadd_file='pisco_coadd.fits',
+                                                  redshift=7.52, objmodel='qso'))
+
+        # MultiSlit
+        # ToDo: Add a multislit test.
+        # ----------------------------------------------------------
+
     # ----------------------------------------------------------
     # Quick-look tests
     # ----------------------------------------------------------
+
+    ql_tests = []
+
     # MOS
-    if instr == 'shane_kast_blue' and '600' in setup:
-        test_results.append(run_ql(rawdir, rdxdir, instr, setup,
-                                   ['b1.fits.gz', 'b10.fits.gz', 'b27.fits.gz'], mos=True))
+    if setup.instr == 'shane_kast_blue' and '600' in setup.name:
+        setup.tests.append(PypeItQuickLookTest(setup,
+                                            files=['b1.fits.gz', 'b10.fits.gz', 'b27.fits.gz'],
+                                            mos=True))
+
 
     # NIRES
-    if instr.lower() == 'keck_nires' and setup == 'NIRES':
-        test_results.append(run_ql(rawdir, rdxdir, instr, setup,
-                                   ['s190519_0067.fits', 's190519_0068.fits']))
+    if setup.instr.lower() == 'keck_nires' and setup.name == 'NIRES':
+        setup.tests.append(PypeItQuickLookTest(setup, files=['s190519_0067.fits', 's190519_0068.fits']))
+
     # ----------------------------------------------------------
 
-    return test_results
+
+    return setup
 
 if __name__ == '__main__':
     # Check for pypeit executable
@@ -880,6 +1167,6 @@ if __name__ == '__main__':
                                'top-level directory with the dev-suite raw data.')
 
     # Giddy up
-    main()
+    sys.exit(main())
 
 
