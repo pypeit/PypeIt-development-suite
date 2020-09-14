@@ -230,7 +230,7 @@ class TestReport(object):
 
 
     def _get_test_counts(self):
-        """Helper method to create a string with the curren test counts"""
+        """Helper method to create a string with the current test counts"""
         verbose_info = f'{self.num_active:2} active/' if self.pargs.verbose else ''
         return f'{verbose_info}{self.num_passed:2} passed/{self.num_failed:2} failed/{self.num_skipped:2} skipped'
 
@@ -1068,7 +1068,7 @@ def build_test_setup(pargs, instr, setup_name, flg_after, flg_ql):
         # ----------------------------------------------------------
         # SensFunc tests
         # ----------------------------------------------------------
-        # UVIS algorithm without .sens file
+        # IR algorithm without .sens file
         if setup.instr == 'shane_kast_blue' and '600' in setup.name:
             # TODO: Instead check for file with standard star in the
             # file name?
