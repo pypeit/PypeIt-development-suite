@@ -60,6 +60,7 @@ def develop_setups():
             'not_alfosc': ['grism4', 'grism19'],
             'p200_dbsp_blue': ['600_4000_d55'],
             'p200_dbsp_red': ['316_7500_d55'],
+            'p200_tspec':['TSPEC'],
             'vlt_fors2': ['300I'],
             'lbt_luci': ['LUCI-I', 'LUCI-II'],
             'mmt_binospec': ['Longslit_G600','Multislit_G270'],
@@ -71,7 +72,7 @@ def develop_setups():
 def supported_instruments():
     return ['kast', 'deimos', 'kcwi', 'nires', 'nirspec', 'mosfire', 'lris', 'xshooter', 'gnirs', 'gmos',
             'flamingos2', 'mage', 'fire', 'luci', 'mdm', 'alfosc', 'fors2', 'binospec', 'mmirs', 'mods',
-            'dbsp']
+            'dbsp','tspec']
 
 class TestLength(IntEnum):
     """Enumeration for specifying the relative test duration of different test setups.
