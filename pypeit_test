@@ -11,7 +11,7 @@ This script runs the PypeIt development suite of tests
 import sys
 import os
 import os.path
-from test_scripts.pypeit_test import main
+from test_scripts.test_main import main
 
 if __name__ == '__main__':
     # Check for pypeit executable
