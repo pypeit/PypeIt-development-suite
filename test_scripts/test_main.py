@@ -20,7 +20,7 @@ from IPython import embed
 
 import numpy as np
 
-from .test_setups import TestPhase, all_tests, TestLength, develop_setups, supported_instruments
+from .test_setups import TestPhase, all_tests, develop_setups, supported_instruments
 from .pypeit_tests import get_unique_file
 
 test_run_queue = PriorityQueue()
@@ -40,15 +40,16 @@ class TestSetup(object):
         dev_path (str):     The path of the Pypeit-development-suite repository
         pyp_file (str):     The .pypeit file used for the test. This may be created by a PypeItSetupTest.
         std_pyp_file (str): The standards .pypeit file used for some tests.
+        priority (int):     The priority of the TestSetup. Used in a PriorityQueue to determine the order used to
+                            run test setups.
 
         genreate_pyp_file (boolean): Set to true if this setup will generate it's own .pypeit file wint pypeit_setup.
-        length(:obj:`TestLength`):  The expected duration of the test.
 
         tests (:obj:`list` of :obj:`PypeItTest`): The list of tests to run in this test setup. The tests will be run
                                                   in sequential order
 
     """
-    def __init__(self, instr, name, rawdir, rdxdir, dev_path):
+    def __init__(self, instr, name, rawdir, rdxdir, dev_path, priority):
         self.instr = instr
         self.name = name
         self.key = f'{self.instr}/{self.name}'
@@ -59,7 +60,7 @@ class TestSetup(object):
         self.std_pyp_file = None
         self.generate_pyp_file = False
         self.tests = []
-        self.length = self.determine_length()
+        self.priority = priority
 
     def __str__(self):
         """Return a string representation of this setup of the format "instr/name"""""
@@ -67,45 +68,18 @@ class TestSetup(object):
 
     def __lt__(self, other):
         """
-        Compare this test setup with another using the "length" attribute. This is included so that a
-        TestSetup  object can be placed into a PriorityQueue
+        Compare this test setup with another using the "priority" attribute. This is included so that a
+        TestSetup object can be placed into a PriorityQueue
         """
-        return self.length < other.length
-
-    def determine_length(self):
-        """Determine the expected length of the test setup"""
-
-        instr_lengths = {'mmt_binospec': TestLength.VERY_LONG,
-                         'keck_kcwi': TestLength.VERY_LONG,
-                         'keck_deimos': TestLength.LONG,
-                         'vlt_xshooter': TestLength.MEDIUM,
-                         'keck_mosfire': TestLength.MEDIUM,
-                         'gemini_flamingos2': TestLength.MEDIUM}
-
-        setup_lengths = {'mmt_binospec/Multislit_G270': TestLength.EXTREMELY_LONG,
-                         'magellan_fire/FIRE_Echelle': TestLength.VERY_LONG,
-                         'keck_lris_blue/multi_300_5000_d680': TestLength.MEDIUM,
-                         'mmt_mmirs/J_zJ': TestLength.MEDIUM,
-                         'vlt_xshooter/VIS_manual': TestLength.LONG,
-                         'gemini_gmos/GS_HAM_R400_860': TestLength.LONG,
-                         'gemini_gnirs/32_SB_SXD': TestLength.VERY_LONG,
-                         'lbt_mods/MODS1R_Longslit': TestLength.VERY_LONG,
-                         'lbt_mods/MODS2R_Longslit': TestLength.LONG}
-
-        setup_key = str(self)
-
-        # Look for a specific setup
-        if setup_key in setup_lengths:
-            return setup_lengths[setup_key]
-
-        # Otherwise look for an instrument
-        elif self.instr in instr_lengths:
-            return instr_lengths[self.instr]
-
-        # Otherwise fall back to the default
-        return TestLength.DEFAULT
+        return self.priority < other.priority
 
     def check_for_missing_files(self):
+        """
+        Check for any missing files needed to run the tests in this setup.
+
+        Returns:
+            A list of missing files or paths the test setup requires to run.
+        """
         missing_files = []
 
         # Check for missing raw data
@@ -334,7 +308,32 @@ def available_data():
     return next(walk)[1]
 
 
+def write_test_priority_file(setups):
 
+    setup_durations = []
+    for setup in setups:
+        duration = sum([test.end_time - test.start_time for test in setup.tests], datetime.timedelta())
+        setup_durations.append((setup.key, duration))
+
+    with open("test_priority_list", "w") as f:
+        for (key, duration) in sorted(setup_durations, key=lambda x: x[1], reverse=True):
+            print(key, file=f)
+
+def load_test_priority_file():
+    priorities = dict()
+    count = 0
+    if os.path.exists("test_priority_list"):
+        with open("test_priority_list", "r") as f:
+            while True:
+                line = f.readline()
+                if len(line) == 0:
+                    break
+                setup_key = line.strip()
+                if len(setup_key) > 0:
+                    priorities[setup_key] = count
+                    count += 1
+
+    return priorities
 
 def parser(options=None):
     import argparse
@@ -426,7 +425,6 @@ def main():
         # with the multiple processes started by this script
         os.environ['OMP_NUM_THREADS'] = '1'
 
-    dev_path = os.getenv('PYPEIT_DEV')
     raw_data = raw_data_dir()
     if not os.path.isdir(raw_data):
         raise NotADirectoryError('No directory: {0}'.format(raw_data))
@@ -448,6 +446,12 @@ def main():
             print(f"Could not open report file {pargs.report}", file=sys.stderr)
             traceback.print_exc()
             sys.exit(1)
+
+    # Only write the test priority file if all develop tests are being run
+    if pargs.tests == "develop" and pargs.instrument is None and pargs.setup is None and pargs.debug is False:
+        write_priorities = True
+    else:
+        write_priorities = False
 
     # ---------------------------------------------------------------------------
     # Determine which instruments and setups will be tested
@@ -505,6 +509,12 @@ def main():
 
     # ---------------------------------------------------------------------------
     # Build the TestSetup and PypeItTest objects for testing
+
+    # Load test setup priority from file
+    priorities = load_test_priority_file()
+    if not pargs.quiet and pargs.verbose:
+        print(f'Loaded {len(priorities)} setup priorities')
+
     setups = []
     missing_files = []
     for instr in instruments:
@@ -527,8 +537,9 @@ def main():
         # Build test setups and check for missing files
         for setup_name in setup_names:
 
-            setup = build_test_setup(pargs, instr, setup_name, flg_after, flg_ql)
+            setup = build_test_setup(pargs, instr, setup_name, flg_after, flg_ql, priorities)
             missing_files += setup.check_for_missing_files()
+            # set setup priority from file
             setups.append(setup)
 
         # Report
@@ -576,6 +587,15 @@ def main():
         thread.join()
 
     # ---------------------------------------------------------------------------
+    # Build test priority list for next time, but only if all tests succeeded
+    # and all develop tests were being run
+    if write_priorities and test_report.num_passed == test_report.num_tests:
+        write_test_priority_file(setups)
+        if not pargs.quiet and pargs.verbose:
+            print(f'Wrote {len(setups)} setup priorities')
+
+
+    # ---------------------------------------------------------------------------
     # Report on the test results
     test_report.end_time = datetime.datetime.now()
 
@@ -591,7 +611,7 @@ def main():
     return test_report.num_failed
 
 
-def build_test_setup(pargs, instr, setup_name, flg_after, flg_ql):
+def build_test_setup(pargs, instr, setup_name, flg_after, flg_ql, priorities):
     """Builds a TestSetup object including the tests that it will run"""
 
     dev_path = os.getenv('PYPEIT_DEV')
@@ -607,7 +627,13 @@ def build_test_setup(pargs, instr, setup_name, flg_after, flg_ql):
         # Make the directory
         os.makedirs(rdxdir)
 
-    setup = TestSetup(instr, setup_name, rawdir, rdxdir, dev_path)
+    setup_key = f'{instr}/{setup_name}'
+    if setup_key in priorities:
+        priority = priorities[setup_key]
+    else:
+        priority = sys.maxsize
+
+    setup = TestSetup(instr, setup_name, rawdir, rdxdir, dev_path, priority)
 
     for test in all_tests:
         if '*' in test['setups']:

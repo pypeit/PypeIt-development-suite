@@ -78,38 +78,10 @@ Attributes:
                             _telluric:          Test setups that run pypeit_tellfit. For each test setup the
                             _quick_look:        Test setups that run pypeit_ql_mos. For each test setup the
 
-
-Todo:
-Remove TestLength code with code that automatically determines the order to run tests.
 """
 
 from . import pypeit_tests
 from enum import Enum, IntEnum, auto
-
-
-class TestLength(IntEnum):
-    """Enumeration for specifying the relative test duration of different test setups.
-
-    Values:
-    SHORT            For test setups that take < 10 minutes to test
-    MEDIUM           For test setups that take 10-15 minutes to test
-    LONG             For test setups that take 15-30 minutes to test
-    VERY_LONG        For test setups that take 30-60 minutes to test
-    EXTREMELY_LONG   For test setups that take over 1 hour to test
-    DEFAULT          The default value for test setups that haven't been classified.
-                     currently set to SHORT
-
-    The numeric values set for this enum are used in a priority queue that considers, lower numbers to
-    be higher priority. As such their order is reversed from the order of their durations, and the actual
-    value doesn't matter.
-    """
-    SHORT          = 90
-    MEDIUM         = 80
-    LONG           = 70
-    VERY_LONG      = 60
-    EXTREMELY_LONG = 50
-    DEFAULT        = 90
-
 
 class TestPhase(Enum):
     """Enumeration for specifying the test phase that a test runs in.
@@ -165,23 +137,6 @@ develop_setups = {'shane_kast_blue': ['452_3306_d57', '600_4310_d55', '830_3460_
                   'lbt_mods': ['MODS1R_Longslit', 'MODS2R_Longslit']
                   }
 
-instr_lengths = {'mmt_binospec': TestLength.VERY_LONG,
-                 'keck_kcwi': TestLength.VERY_LONG,
-                 'keck_deimos': TestLength.LONG,
-                 'vlt_xshooter': TestLength.MEDIUM,
-                 'keck_mosfire': TestLength.MEDIUM,
-                 'gemini_flamingos2': TestLength.MEDIUM}
-
-setup_lengths = {'mmt_binospec/Multislit_G270': TestLength.EXTREMELY_LONG,
-                 'magellan_fire/FIRE_Echelle': TestLength.VERY_LONG,
-                 'keck_lris_blue/multi_300_5000_d680': TestLength.MEDIUM,
-                 'mmt_mmirs/J_zJ': TestLength.MEDIUM,
-                 'vlt_xshooter/VIS_manual': TestLength.LONG,
-                 'gemini_gmos/GS_HAM_R400_860': TestLength.LONG,
-                 'gemini_gnirs/32_SB_SXD': TestLength.VERY_LONG,
-                 'lbt_mods/MODS1R_Longslit': TestLength.VERY_LONG,
-                 'lbt_mods/MODS2R_Longslit': TestLength.LONG}
-
 _pypeit_setup = ['shane_kast_blue/600_4310_d55']
 
 _additional_reduce = {'keck_lris_red':
@@ -193,7 +148,7 @@ _additional_reduce = {'keck_lris_red':
 _sensfunc = {'shane_kast_blue/600_4310_d55':
                  {'std_file': 'spec1d_*Feige66*.fits'},
              'gemini_gnirs/32_SB_SXD':
-                 {'std_file': 'spec1d_*HIP62745*.fits', 'sens_file': 'gemini_gnirs_32_sb_sxd.sens'},
+                 {'std_file': 'spec1d_*S0206-HIP62745*.fits', 'sens_file': 'gemini_gnirs_32_sb_sxd.sens'},
              'gemini_gmos/GS_HAM_R400_860':
                  {'std_file': 'spec1d_**GD71*.fits'},
              }

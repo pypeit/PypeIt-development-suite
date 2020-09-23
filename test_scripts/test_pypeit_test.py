@@ -27,6 +27,7 @@ To get the coverage of the tests:
 import pytest
 import subprocess
 import sys
+import os
 import random
 from . import test_main
 from .pypeit_tests import PypeItReduceTest
@@ -96,6 +97,30 @@ def create_dummy_files(base_path, files):
         with open(full_path, 'w') as f:
             print("dummy content", file=f)
 
+
+def change_dir(new_directory):
+    """
+    Utility method to change the local directory with a context manager that will restore
+       the original directory.  It is used to prevent a test from affecting other tests
+       when changing the directory
+    """
+    class cd_context_manager:
+        def __init__(self, dir):
+            self.new_dir = dir
+            self.old_dir = None
+
+        def __enter__(self):
+            self.old_dir = os.getcwd()
+            os.chdir(self.new_dir)
+
+        def __exit__(self, exc_type, exc_val, exc_tb):
+            if self.old_dir is not None:
+                os.chdir(self.old_dir)
+
+            return False # Indicate an exception should propagate beyond the context
+
+    return cd_context_manager(new_directory)
+
 def test_main_with_missing_file_failures(monkeypatch, tmp_path):
     """
     Test test_main.main() when there are failures due to missing files
@@ -121,7 +146,11 @@ def test_main_with_missing_file_failures(monkeypatch, tmp_path):
 
         monkeypatch.setattr(sys, "argv", ['pypeit_test', '-o', str(tmp_path), '-t', '1',
                                           '-i', 'gemini_gnirs', '-s', '32_SB_SXD', 'gemini_gnirs'])
+        os.chdir(tmp_path)
         assert test_main.main() == 1
+
+        # Make sure the test_priority_list doesn't exist if there's a failure
+        assert not os.path.exists(tmp_path / "test_priority_list")
 
 
 def test_main_with_build_command_failure(monkeypatch, tmp_path):
@@ -177,7 +206,12 @@ def test_main_develop_without_failures(monkeypatch, tmp_path):
                          'shane_kast_blue/600_4310_d55/shane_kast_blue_A/shane_kast_blue_A.pypeit',
                          'shane_kast_blue/600_4310_d55/shane_kast_blue_A/Science/spec1d_b24-Feige66_KASTb_2015May20T041246.960.fits']
         create_dummy_files(tmp_path, missing_files)
-        assert test_main.main() == 0
+
+        # Change to the temp path so that the test_priority_list is written there
+        with change_dir(tmp_path):
+            assert test_main.main() == 0
+
+        assert os.path.exists(tmp_path / "test_priority_list")
 
 def test_main_debug_with_verbose_and_report(monkeypatch, tmp_path):
     """
@@ -195,6 +229,76 @@ def test_main_debug_with_verbose_and_report(monkeypatch, tmp_path):
         # Verify the report exists and contains data
         stat_result = report_path.stat()
         assert stat_result.st_size > 0
+
+
+def test_main_debug_priority_list(monkeypatch, tmp_path, capsys):
+    """
+    Test test_main.main() with the --debug option, and make sure tests run in the order given by the
+    test_priority list
+    """
+
+    test_order = ['p200_dbsp_blue/600_4000_d55',
+                  'shane_kast_blue/600_4310_d55',
+                  'keck_lris_blue/multi_300_5000_d680',
+                  'keck_lris_blue_orig/long_600_4000_d500',
+                  'keck_lris_blue/multi_600_4000_d560',
+                  'shane_kast_blue/452_3306_d57',
+                  'keck_lris_blue/long_600_4000_d560',
+                  'keck_lris_blue/long_400_3400_d560'
+                  ]
+
+    # The last test won't get written to the test priority list file so the code to assign the default
+    # priority executes
+    last_test = 'shane_kast_blue/830_3460_d46'
+
+
+    with monkeypatch.context() as m:
+        monkeypatch.setattr(subprocess, "Popen", mock_popen)
+        monkeypatch.setattr(subprocess, "run", mock_run)
+
+        # Run from the tmp_path so the test priority list is separated from other tests
+        with change_dir(tmp_path):
+
+            # Write out a test priority list
+            with open('test_priority_list', "w") as f:
+                for setup_key in test_order:
+                    print(setup_key, file=f)
+
+            # Add the last test back to the test_order now that the priority list is written
+            test_order.append(last_test)
+
+            # Prevent debug suite from failing
+            missing_files = ['shane_kast_blue/600_4310_d55/shane_kast_blue_A/shane_kast_blue_A.pypeit',
+                             'shane_kast_blue/600_4310_d55/shane_kast_blue_A/Science/spec1d_b24-Feige66_KASTb_2015May20T041246.960.fits']
+            create_dummy_files(tmp_path, missing_files)
+
+            monkeypatch.setattr(sys, "argv", ['pypeit_test', '-o', str(tmp_path), '--debug',
+                                              '-v', 'develop'])
+            assert test_main.main() == 0
+
+            # Use captured stdout to make sure test setups were run in the order in test_order
+            # We verify this by splitting the stdout into words and looking for "STARTED" and the test setup
+            # listed after it. This setup is compared against the next expected setup in test_order, but care is taken
+            # to deal with test setups that start multiple tests
+            output = capsys.readouterr().out
+            output_words = output.split()
+            current_pos = 0
+            found_started = False
+            last_setup_found = ""
+            for word in output_words:
+                if word == 'STARTED':
+                    found_started = True
+                    continue
+
+                if found_started == True:
+                    found_started = False
+                    if word == last_setup_found:
+                        # Don't check against the next test setup if this is a test in the previous test setup
+                        continue
+
+                    assert word == test_order[current_pos]
+                    last_setup_found = word
+                    current_pos += 1
 
 def test_main_with_quiet(monkeypatch, tmp_path, capsys):
     """
@@ -264,3 +368,4 @@ def test_main_in_steps(monkeypatch, tmp_path):
         monkeypatch.setattr(sys, "argv", ['pypeit_test', '-o', str(tmp_path), '-t', '4',
                                           '-i', 'shane_kast_blue', '-s', '600_4310_d55', 'ql'])
         assert test_main.main() == 0
+
