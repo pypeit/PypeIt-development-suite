@@ -23,7 +23,7 @@ def develop_setups():
     """
     return {'shane_kast_blue': ['452_3306_d57', '600_4310_d55', '830_3460_d46'],
             'shane_kast_red': ['600_7500_d55_ret', '600_7500_d57', '600_5000_d46', '1200_5000_d57'],
-            'keck_deimos': ['600ZD_M_6500', '1200G_M_7750', '830G_LVM_8400', '830G_M_8100_26',
+            'keck_deimos': ['600ZD_M_6500', '600ZD_tilted', '1200G_M_7750', '830G_LVM_8400', '830G_M_8100_26',
                             '830G_M_8500', '830G_L_8100'],
             'keck_kcwi': ['bh2_4200'],
             'keck_nires': ['NIRES'],
@@ -34,24 +34,32 @@ def develop_setups():
             'keck_lris_blue_orig': ['long_600_4000_d500'],
             'keck_lris_red': ['long_600_7500_d560', 'multi_1200_9000_d680_1x2',
                               'multi_600_5000_d560', 'multi_1200_9000_d680',
-                              'multi_400_8500_d560'],
+                              'multi_400_8500_d560',
+                              'long_400_8500_longread'],  # Longslit read-out mode
             'keck_lris_red_orig': ['long_300_5000'],
-            'vlt_xshooter': ['VIS_1x1', 'VIS_2x1', 'VIS_2x2', 'NIR'],
+            'vlt_xshooter': ['VIS_1x1', 'VIS_2x1', 'VIS_2x2', 'VIS_manual', 'NIR'],
             'gemini_gnirs': ['32_SB_SXD', '10_LB_SXD'],
-            'gemini_gmos': ['GS_HAM_R400_700', 'GS_HAM_R400_860'],
+            'gemini_gmos': ['GS_HAM_R400_700', 'GS_HAM_R400_860', 'GN_HAM_R400_885'],
             'gemini_flamingos2': ['HK_HK', 'JH_JH'],
             'magellan_mage': ['1x1'],
             'magellan_fire': ['FIRE_Echelle', 'FIRE_Long'],
             'mdm_osmos': ['MDM4K'],
             'not_alfosc': ['grism4', 'grism19'],
+            'p200_dbsp_blue': ['600_4000_d55'],
+            'p200_dbsp_red': ['316_7500_d55'],
+            'p200_tspec':['TSPEC'],
             'vlt_fors2': ['300I'],
-            'lbt_luci': ['LUCI-I', 'LUCI-II']
+            'lbt_luci': ['LUCI-I', 'LUCI-II'],
+            'mmt_binospec': ['Longslit_G600','Multislit_G270'],
+            'mmt_mmirs': ['HK_zJ','J_zJ','K_K'],
+            'lbt_mods': ['MODS1R_Longslit','MODS2R_Longslit']
             }
 
 
 def supported_instruments():
     return ['kast', 'deimos', 'kcwi', 'nires', 'nirspec', 'mosfire', 'lris', 'xshooter', 'gnirs', 'gmos',
-            'flamingos2', 'mage', 'fire', 'luci', 'mdm', 'alfosc', 'fors2']
+            'flamingos2', 'mage', 'fire', 'luci', 'mdm', 'alfosc', 'fors2', 'binospec', 'mmirs', 'mods',
+            'dbsp','tspec']
 
 
 def raw_data_dir():
@@ -703,6 +711,15 @@ def main():
                     npass += 1
                 else:
                     failed += [ 'pypeit_coadd_2dspec: {0}/{1}'.format(instr, setup) ]
+
+            # Manual + Echelle
+            if passed and instr == 'vlt_xshooter' and setup == 'VIS_manual' and not flg_ql:
+                ntest += 1
+                if run_coadd2d(rdxdir, instr, setup,
+                               coadd_file=template_coadd2d_file(dev_path, instr, setup)):
+                    npass += 1
+                else:
+                    failed += ['pypeit_coadd_2dspec: {0}/{1}'.format(instr, setup) ]
             # ----------------------------------------------------------
 
 
