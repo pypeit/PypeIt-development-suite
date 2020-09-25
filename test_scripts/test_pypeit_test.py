@@ -196,6 +196,18 @@ def test_main_develop_without_failures(monkeypatch, tmp_path):
     Test test_main.main() on a simulated dev suite run with no errors.
     """
 
+    test_order = ['p200_dbsp_blue/600_4000_d55',
+                  'shane_kast_blue/600_4310_d55',
+                  'keck_lris_blue/multi_300_5000_d680',
+                  'keck_lris_blue_orig/long_600_4000_d500',
+                  'keck_lris_blue/multi_600_4000_d560',
+                  'shane_kast_blue/452_3306_d57',
+                  'keck_lris_blue/long_600_4000_d560',
+                  'keck_lris_blue/long_400_3400_d560'
+                  ]
+
+    priority_list = tmp_path / 'test_priority_list'
+
     with monkeypatch.context() as m:
         monkeypatch.setattr(subprocess, "Popen", mock_popen)
         monkeypatch.setattr(subprocess, "run", mock_run)
@@ -209,9 +221,19 @@ def test_main_develop_without_failures(monkeypatch, tmp_path):
 
         # Change to the temp path so that the test_priority_list is written there
         with change_dir(tmp_path):
+            # Write out a short test priority list to exercise the code to detect changes from a full run
+            with open(priority_list, "w") as f:
+                for setup_key in test_order:
+                    print(setup_key, file=f)
+
+            # Get the size of it to make sure it changes
+            first_stat_info = priority_list.stat()
+
             assert test_main.main() == 0
 
-        assert os.path.exists(tmp_path / "test_priority_list")
+        assert priority_list.exists()
+        second_stat_info = priority_list.stat()
+        assert first_stat_info.st_size < second_stat_info.st_size
 
 def test_main_debug_with_verbose_and_report(monkeypatch, tmp_path):
     """

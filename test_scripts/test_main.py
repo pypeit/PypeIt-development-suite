@@ -26,6 +26,82 @@ from .pypeit_tests import get_unique_file
 test_run_queue = PriorityQueue()
 """:obj:`queue.Queue`: FIFO queue for test setups to be run."""
 
+class TestPriorityList(object):
+    """A class for reading and updating the order test setups are are tested.
+    
+    The order that test setups should be tested in is stored as a list of instr/setup keys in a file named 
+    'test_priority_list' in $PYPEIT_DEV. This class is responsible for reading, writing and updating the file, and
+    for translating the order into a priority that can be used in a PriorityQueue.
+    
+    To determine the order to run tests, the slowest tests are run first in order to optimize CPU efficiency when
+    running with multiple threads.  Once the test suite is completed, the order is recalculated based on how long
+    the tests actually took.  If the order is changed, the new ordering is written to the test_priority_list file.
+    
+    Attributes:
+        _prority_map (:obj:`dict` of str to int): Maps instr/setup name identifiers to an integer priority.
+
+        _updated (boolean): Whether the _priority_map has been modified and should be written to disk.
+        _file (str):        The file name to write the priority list to.
+    """
+
+    def __init__(self, file):
+        """Reads the priority list from a file."""
+        self._priority_map = dict()
+        self._updated = False
+        self._file = file
+
+        count = 0
+        if os.path.exists(file):
+            with open(file, "r") as f:
+                while True:
+                    line = f.readline()
+                    if len(line) == 0:
+                        break
+                    setup_key = line.strip()
+                    if len(setup_key) > 0:
+                        self._priority_map[setup_key] = count
+                        count += 1
+
+    def __len__(self):
+        """Return how many test setups are in the priority list"""
+        return len(self._priority_map)
+
+    def set_test_setup_priority(self, setup):
+        """Set the test priority of a TestSetup object."""
+
+        if setup.key in self._priority_map:
+            setup.priority = self._priority_map[setup.key]
+        else:
+            # If the test setup is currently known, assume it is short and put it at the end of the priority list
+            # by assigning it a large number.
+            setup.priority = sys.maxsize
+
+    def update_priorities(self, setups):
+        """Update the test priorities based on the actual runtimes of the test setups"""
+        setup_durations = []
+        for setup in setups:
+            duration = sum([test.end_time - test.start_time for test in setup.tests], datetime.timedelta())
+            setup_durations.append((setup.key, duration))
+
+        count = 0
+        new_priority_map = dict()
+        for setup_key in [item[0] for item in sorted(setup_durations, key=lambda x: x[1])]:
+            new_priority_map[setup_key] = count
+            count += 1
+
+        if new_priority_map != self._priority_map:
+            self._priority_map = new_priority_map
+            self._updated = True
+
+    def write(self):
+        """Write the test priority list to a file if it has changed."""
+        if self._updated:
+            with open(self._file, "w") as f:
+                for item in sorted(self._priority_map.items(), key=lambda x: x[1], reverse=True):
+                    print(item[0], file=f)
+
+            self.updated = False
+
 
 class TestSetup(object):
     """Representation of a test setup within the pypeit development suite.
@@ -43,13 +119,13 @@ class TestSetup(object):
         priority (int):     The priority of the TestSetup. Used in a PriorityQueue to determine the order used to
                             run test setups.
 
-        genreate_pyp_file (boolean): Set to true if this setup will generate it's own .pypeit file wint pypeit_setup.
+        generate_pyp_file (boolean): Set to true if this setup will generate it's own .pypeit file wint pypeit_setup.
 
         tests (:obj:`list` of :obj:`PypeItTest`): The list of tests to run in this test setup. The tests will be run
                                                   in sequential order
 
     """
-    def __init__(self, instr, name, rawdir, rdxdir, dev_path, priority):
+    def __init__(self, instr, name, rawdir, rdxdir, dev_path):
         self.instr = instr
         self.name = name
         self.key = f'{self.instr}/{self.name}'
@@ -60,7 +136,6 @@ class TestSetup(object):
         self.std_pyp_file = None
         self.generate_pyp_file = False
         self.tests = []
-        self.priority = priority
 
     def __str__(self):
         """Return a string representation of this setup of the format "instr/name"""""
@@ -308,33 +383,6 @@ def available_data():
     return next(walk)[1]
 
 
-def write_test_priority_file(setups):
-
-    setup_durations = []
-    for setup in setups:
-        duration = sum([test.end_time - test.start_time for test in setup.tests], datetime.timedelta())
-        setup_durations.append((setup.key, duration))
-
-    with open("test_priority_list", "w") as f:
-        for (key, duration) in sorted(setup_durations, key=lambda x: x[1], reverse=True):
-            print(key, file=f)
-
-def load_test_priority_file():
-    priorities = dict()
-    count = 0
-    if os.path.exists("test_priority_list"):
-        with open("test_priority_list", "r") as f:
-            while True:
-                line = f.readline()
-                if len(line) == 0:
-                    break
-                setup_key = line.strip()
-                if len(setup_key) > 0:
-                    priorities[setup_key] = count
-                    count += 1
-
-    return priorities
-
 def parser(options=None):
     import argparse
 
@@ -511,9 +559,9 @@ def main():
     # Build the TestSetup and PypeItTest objects for testing
 
     # Load test setup priority from file
-    priorities = load_test_priority_file()
+    priority_list = TestPriorityList('test_priority_list')
     if not pargs.quiet and pargs.verbose:
-        print(f'Loaded {len(priorities)} setup priorities')
+        print(f'Loaded {len(priority_list)} setup priorities')
 
     setups = []
     missing_files = []
@@ -537,7 +585,7 @@ def main():
         # Build test setups and check for missing files
         for setup_name in setup_names:
 
-            setup = build_test_setup(pargs, instr, setup_name, flg_after, flg_ql, priorities)
+            setup = build_test_setup(pargs, instr, setup_name, flg_after, flg_ql, priority_list)
             missing_files += setup.check_for_missing_files()
             # set setup priority from file
             setups.append(setup)
@@ -590,9 +638,10 @@ def main():
     # Build test priority list for next time, but only if all tests succeeded
     # and all develop tests were being run
     if write_priorities and test_report.num_passed == test_report.num_tests:
-        write_test_priority_file(setups)
+        priority_list.update_priorities(setups)
+        priority_list.write()
         if not pargs.quiet and pargs.verbose:
-            print(f'Wrote {len(setups)} setup priorities')
+            print(f'Wrote {len(priority_list)} setup priorities')
 
 
     # ---------------------------------------------------------------------------
@@ -611,7 +660,7 @@ def main():
     return test_report.num_failed
 
 
-def build_test_setup(pargs, instr, setup_name, flg_after, flg_ql, priorities):
+def build_test_setup(pargs, instr, setup_name, flg_after, flg_ql, priority_list):
     """Builds a TestSetup object including the tests that it will run"""
 
     dev_path = os.getenv('PYPEIT_DEV')
@@ -627,13 +676,9 @@ def build_test_setup(pargs, instr, setup_name, flg_after, flg_ql, priorities):
         # Make the directory
         os.makedirs(rdxdir)
 
-    setup_key = f'{instr}/{setup_name}'
-    if setup_key in priorities:
-        priority = priorities[setup_key]
-    else:
-        priority = sys.maxsize
+    setup = TestSetup(instr, setup_name, rawdir, rdxdir, dev_path)
 
-    setup = TestSetup(instr, setup_name, rawdir, rdxdir, dev_path, priority)
+    priority_list.set_test_setup_priority(setup)
 
     for test in all_tests:
         if '*' in test['setups']:
