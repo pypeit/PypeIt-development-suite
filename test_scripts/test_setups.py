@@ -8,8 +8,8 @@ instruments, setups, tests or test types.
 
 To add a new instrument and/or setup to the dev suite:
 
-1) Make sure the necessary raw data, pypeit files, and other test files are in the PypeIt-development-suite repo
-   and the development suite google drive. TODO link to a read the docs page with more detail
+1) Make sure the necessary raw data, pypeit files, and other test files are in the PypeIt-development-suite repo and
+   the development suite google drive. See https://pypeit.readthedocs.io/en/latest/development.html#development-suite
 2) Add the instrument and setup(s) to the develop_setups dict
 3) If this is a new instrument, add the instrument to the supported_instruments list.
 3) If additional tests are add 'instrument/setup' to the desired test attribute.
