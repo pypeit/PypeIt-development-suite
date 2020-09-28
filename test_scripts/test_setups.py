@@ -12,7 +12,7 @@ To add a new instrument and/or setup to the dev suite:
    the development suite google drive. See https://pypeit.readthedocs.io/en/latest/development.html#development-suite
 2) Add the instrument and setup(s) to the develop_setups dict
 3) If this is a new instrument, add the instrument to the supported_instruments list.
-3) If additional tests are add 'instrument/setup' to the desired test attribute.
+3) If additional tests are desired add 'instrument/setup' to the desired test attribute.
 
 To add a new test for an existing setup:
 

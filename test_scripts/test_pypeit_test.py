@@ -4,12 +4,12 @@
 # -*- coding: utf-8 -*-
 
 """
-Test driver for the pypeit_test script.
+Pytest based test functions and Mock classes for testing the PypeIt dev suite scripts.
 
 Rather than a series of bottom up style unit tests, these tests are intended to
-cover as much code as possible to avoid finding out there's a syntax error in pypeit_test
-at the end of a 10 hour test run. To accomplish this the tests call the main() function in pypeit_test
-with the subprocess calls to run tests replaced by mock objects.
+cover as much code as possible to avoid finding out there's a syntax error in a script
+at the end of a 10 hour test run. To accomplish this the tests call the pypeit_test.main() function
+with mock objects and functions to replace calling the actual dev suite tests.
 
 Although the tests attempt to verify the results of pypeit_test.main(), it is usually helpful to check the stdout
 from the tests. This can be done with:
