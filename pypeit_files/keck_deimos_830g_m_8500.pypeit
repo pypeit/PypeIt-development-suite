@@ -6,6 +6,14 @@
     detnum = 3,7
 [baseprocess]
    use_biasimage=False
+[reduce]
+   [[extraction]]
+      use_2dmodel_mask = False
+      boxcar_radius = 1.5  # arcsec
+   [[skysub]]
+      mask_by_boxcar = True
+      no_local_sky = True
+
 
 # Setup
 setup read
