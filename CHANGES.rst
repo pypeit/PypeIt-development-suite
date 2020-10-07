@@ -10,5 +10,5 @@
 - Ingested multi_600_5000_d560 for LRISr
 - Added fluxing test
 - Kast grism 452
-- DEIMOS blue
+- DEIMOS blue (1200B and 1200G)
 
