@@ -177,7 +177,7 @@ def main():
 
     # ------------------------------------------------------------------
     cooked_path = os.path.join(os.getcwd(), 'Cooked')
-    tarfilename = os.path.join(cooked_path, 'Cooked_pypeit_dev_v' + pargs.version + '.tar.gz')
+    tarfilename = os.path.join(os.getcwd(), 'Cooked_pypeit_dev_v' + pargs.version + '.tar.gz')
     print('##############################################################')
     print('Creating tar file: {:s}'.format(tarfilename))
 
