@@ -1,0 +1,44 @@
+# Auto-generated PypeIt file
+# Mon 24 Aug 2020 18:51:28
+
+# User-defined execution parameters
+[rdx]
+     spectrograph = keck_deimos
+     detnum=2,6
+[calibrations]
+     [[slitedges]]
+        edge_thresh = 10.0
+
+# Setup
+setup read
+ Setup B:
+   --:
+     binning: 1,1
+     dichroic: none
+     disperser:
+       angle: 5499.96289062
+       name: 1200G
+     slit:
+       decker: agsmsk
+       slitlen: none
+       slitwid: none
+setup end
+
+# Read in the data
+data read
+ path /Users/dpelliccia/Github_Pypeit/PypeIt-development-suite/RAW_DATA/keck_deimos/1200G_Ghassem
+|         filename |                 frametype |                 ra |                dec |       target | dispname | decker | binning |          mjd |     airmass | exptime |     dispangle |
+|  d0417_0054.fits |                  arc,tilt |  57.99999999999999 |               45.0 |      unknown |    1200G | agsmsk |     1,1 | 58590.192262 |  1.41291034 |     1.0 | 5499.96289062 |
+|  d0417_0055.fits |                  arc,tilt |  57.99999999999999 |               45.0 |      unknown |    1200G | agsmsk |     1,1 | 58590.195527 |  1.41291034 |    12.0 | 5499.96289062 |
+#|  d0417_0078.fits |                  arc,tilt |  67.37958333333333 |              0.065 | HORIZON STOW |    1200G | agsmsk |     1,1 |   58590.7743 | 13.37481353 |     1.0 | 5499.96289062 |
+|  d0417_0079.fits |                  arc,tilt |  67.37958333333333 |              0.065 | HORIZON STOW |    1200G | agsmsk |     1,1 | 58590.775197 | 13.37481353 |    46.0 | 5499.96289062 |
+|  d0417_0080.fits |                  arc,tilt |  67.37958333333333 |              0.065 | HORIZON STOW |    1200G | agsmsk |     1,1 | 58590.776643 | 13.37481353 |    35.0 | 5499.96289062 |
+|  d0417_0056.fits | pixelflat,illumflat,trace |  57.99999999999999 |               45.0 |      unknown |    1200G | agsmsk |     1,1 | 58590.196837 |  1.41291034 |    12.0 | 5499.96289062 |
+|  d0417_0057.fits | pixelflat,illumflat,trace |  57.99999999999999 |               45.0 |      unknown |    1200G | agsmsk |     1,1 | 58590.197882 |  1.41291034 |    12.0 | 5499.96289062 |
+|  d0417_0058.fits | pixelflat,illumflat,trace |  57.99999999999999 |               45.0 |      unknown |    1200G | agsmsk |     1,1 | 58590.198927 |  1.41291034 |    12.0 | 5499.96289062 |
+|  d0417_0082.fits | pixelflat,illumflat,trace |  67.37958333333333 |              0.065 | HORIZON STOW |    1200G | agsmsk |     1,1 | 58590.781631 | 13.37481353 |    12.0 | 5499.96289062 |
+|  d0417_0083.fits | pixelflat,illumflat,trace |  67.37958333333333 |              0.065 | HORIZON STOW |    1200G | agsmsk |     1,1 | 58590.782581 | 13.37481353 |    12.0 | 5499.96289062 |
+|  d0417_0084.fits | pixelflat,illumflat,trace |  67.37958333333333 |              0.065 | HORIZON STOW |    1200G | agsmsk |     1,1 | 58590.783632 | 13.37481353 |    12.0 | 5499.96289062 |
+| d0315_45929.fits |                   science | 215.11908333333332 |  53.23422222222222 |       agsmsk |    1200G | agsmsk |     1,1 | 58192.531523 |  1.20049403 |  1200.0 | 5499.96289062 |
+data end
+
