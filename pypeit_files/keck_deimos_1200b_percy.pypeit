@@ -1,0 +1,40 @@
+# Auto-generated PypeIt file
+# Mon 24 Aug 2020 21:09:48
+
+# User-defined execution parameters
+[rdx]
+     spectrograph = keck_deimos
+     detnum=2
+[calibrations]
+     [[slitedges]]
+        edge_thresh = 10.0
+
+# Setup
+setup read
+ Setup A:
+   --:
+     binning: 1,1
+     dichroic: none
+     disperser:
+       angle: 5200.01708984
+       name: 1200B
+     slit:
+       decker: a13_1
+       slitlen: none
+       slitwid: none
+setup end
+
+# Read in the data
+data read
+ path /Users/dpelliccia/Github_Pypeit/PypeIt-development-suite/RAW_DATA/keck_deimos/1200B_Percy
+|        filename |                 frametype |                 ra |                  dec |       target | dispname | decker | binning |          mjd |     airmass | exptime |     dispangle |
+| d1003_0126.fits |                  arc,tilt |              67.35 | 0.059000000000000004 | HORIZON STOW |    1200B |  a13_1 |     1,1 | 58029.726347 | 13.37481353 |     1.0 | 5200.01708984 |
+| d1003_0127.fits |                  arc,tilt |              67.35 | 0.059000000000000004 | HORIZON STOW |    1200B |  a13_1 |     1,1 | 58029.727259 | 13.37481353 |    42.0 | 5200.01708984 |
+| d1003_0128.fits |                  arc,tilt |              67.35 | 0.059000000000000004 | HORIZON STOW |    1200B |  a13_1 |     1,1 | 58029.728631 | 13.37481353 |    32.0 | 5200.01708984 |
+| d1003_0129.fits |                  arc,tilt |              67.35 | 0.059000000000000004 | HORIZON STOW |    1200B |  a13_1 |     1,1 | 58029.732241 | 13.37481353 |     1.0 | 5200.01708984 |
+| d1003_0130.fits | pixelflat,illumflat,trace |              67.35 | 0.059000000000000004 | HORIZON STOW |    1200B |  a13_1 |     1,1 | 58029.734124 | 13.37481353 |    20.0 | 5200.01708984 |
+| d1003_0131.fits | pixelflat,illumflat,trace |              67.35 | 0.059000000000000004 | HORIZON STOW |    1200B |  a13_1 |     1,1 | 58029.735139 | 13.37481353 |    20.0 | 5200.01708984 |
+| d1003_0132.fits | pixelflat,illumflat,trace |              67.35 | 0.059000000000000004 | HORIZON STOW |    1200B |  a13_1 |     1,1 |  58029.73618 | 13.37481353 |    20.0 | 5200.01708984 |
+| d1003_0071.fits |                   science | 3.4204999999999997 |   -19.49105555555556 |        a13_1 |    1200B |  a13_1 |     1,1 | 58029.322047 |  1.54107334 |  1800.0 | 5200.01708984 |
+data end
+
