@@ -13,8 +13,8 @@
   offsets = 0.,0.,0.,0.,0.,0.
   weights = uniform
 
-coadd2d read
+spec2d read
 Science/spec2d_XSHOO.2019-08-21T07:55:35.020-FRB190711_XShooter_VIS_2019Aug21T075535.019.fits
 Science/spec2d_XSHOO.2019-08-21T08:04:15.565-FRB190711_XShooter_VIS_2019Aug21T080415.565.fits
-coadd2d end
+spec2d end
 
