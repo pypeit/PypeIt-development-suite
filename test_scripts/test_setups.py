@@ -106,7 +106,7 @@ supported_instruments = ['kast', 'deimos', 'kcwi', 'nires', 'nirspec', 'mosfire'
 develop_setups = {'shane_kast_blue': ['452_3306_d57', '600_4310_d55', '830_3460_d46'],
                   'shane_kast_red': ['600_7500_d55_ret', '600_7500_d57', '600_5000_d46', '1200_5000_d57'],
                   'keck_deimos': ['600ZD_M_6500', '600ZD_tilted', '1200G_M_7750', '830G_LVM_8400', '830G_M_8100_26',
-                                  '830G_M_8500', '830G_L_8100'],
+                                  '830G_M_8500', '830G_L_8100', '1200B_Percy', '1200G_Ghassem'],
                   'keck_kcwi': ['bh2_4200'],
                   'keck_nires': ['NIRES'],
                   'keck_nirspec': ['LOW_NIRSPEC-1'],
