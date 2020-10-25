@@ -183,7 +183,9 @@ _telluric = {'gemini_gnirs/32_SB_SXD':
 _quick_look = {'shane_kast_blue/600_4310_d55':
                    {'files': ['b1.fits.gz', 'b10.fits.gz', 'b27.fits.gz'], 'mos': True},
                'keck_nires/NIRES':
-                   {'files': ['s190519_0067.fits', 's190519_0068.fits']}}
+                   {'files': ['s190519_0067.fits', 's190519_0068.fits']},
+               'keck_mosfire/Y_long':
+                   {'files': ['m191120_0043.fits', 'm191120_0044.fits',  'm191120_0045.fits', 'm191120_0046.fits']}}
 
 all_tests = [{'factory': pypeit_tests.PypeItSetupTest,
               'type':    TestPhase.PREP,
