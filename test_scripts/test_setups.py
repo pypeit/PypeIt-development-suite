@@ -74,9 +74,10 @@ Attributes:
                             _flux_setup:        Test setups that run pypeit_flux_setup.
                             _flux:              Test setups that run pypeit_flux_calib.
                             _coadd1d:           Test setups that run pypeit_coadd_1dspec.
-                            _coadd2d:           Test setups that run pypeit_coadd_2dspec. For each test setup the
-                            _telluric:          Test setups that run pypeit_tellfit. For each test setup the
-                            _quick_look:        Test setups that run pypeit_ql_mos. For each test setup the
+                            _coadd2d:           Test setups that run pypeit_coadd_2dspec.
+                            _telluric:          Test setups that run pypeit_tellfit.
+                            _quick_look:        Test setups that run quick look script. The actual script run is chosen
+                                                based on the instrument.
 
 """
 
@@ -181,11 +182,13 @@ _telluric = {'gemini_gnirs/32_SB_SXD':
              }
 
 _quick_look = {'shane_kast_blue/600_4310_d55':
-                   {'files': ['b1.fits.gz', 'b10.fits.gz', 'b27.fits.gz'], 'mos': True},
+                   {'files': ['b1.fits.gz', 'b10.fits.gz', 'b27.fits.gz']},
                'keck_nires/NIRES':
                    {'files': ['s190519_0067.fits', 's190519_0068.fits']},
                'keck_mosfire/Y_long':
-                   {'files': ['m191120_0043.fits', 'm191120_0044.fits',  'm191120_0045.fits', 'm191120_0046.fits']}}
+                   {'files': ['m191120_0043.fits', 'm191120_0044.fits',  'm191120_0045.fits', 'm191120_0046.fits'],
+                    '--samp_fact': 0.5}}
+
 
 all_tests = [{'factory': pypeit_tests.PypeItSetupTest,
               'type':    TestPhase.PREP,

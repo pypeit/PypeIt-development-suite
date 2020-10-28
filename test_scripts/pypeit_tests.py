@@ -309,16 +309,28 @@ class PypeItTelluricTest(PypeItTest):
         return command_line
 
 class PypeItQuickLookTest(PypeItTest):
-    """Test subclass that runs pypeit_ql_mos"""
+    """Test subclass that runs quick look tests.
+       The specific test script run depends on the instrument type.
+    """
 
-    def __init__(self, setup, pargs, files, mos=False):
+    def __init__(self, setup, pargs, files, **options):
         super().__init__(setup, "pypeit_ql_mos", "test_ql")
         self.files = files
-        self.mos = mos
+        self.options = options
 
     def build_command_line(self):
-        command_line = ['pypeit_ql_mos', self.setup.instr] if self.mos else ['pypeit_ql_keck_nires']
+
+        if self.setup.instr == 'keck_nires':
+            command_line = ['pypeit_ql_keck_nires']
+        elif self.setup.instr == 'keck_mosfire':
+            command_line = ['pypeit_ql_keck_mosfire']
+        else:
+            command_line = ['pypeit_ql_mos', self.setup.instr]
+
         command_line += [self.setup.rawdir] + self.files
+
+        for option in self.options:
+            command_line += [option, str(self.options[option])]
 
         return command_line
 
