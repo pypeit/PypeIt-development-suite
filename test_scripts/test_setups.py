@@ -109,7 +109,7 @@ develop_setups = {'shane_kast_blue': ['452_3306_d57', '600_4310_d55', '830_3460_
                   'gemini_gmos': ['GS_HAM_R400_700', 'GS_HAM_R400_860', 'GN_HAM_R400_885'],
                   'gemini_flamingos2': ['HK_HK', 'JH_JH'],
                   'keck_deimos': ['600ZD_M_6500', '600ZD_tilted', '1200G_M_7750', '830G_LVM_8400', '830G_M_8100_26',
-                                  '830G_M_8500', '830G_L_8100', '1200B_Percy', '1200G_Ghassem'],
+                                  '830G_M_8500', '830G_L_8100', '1200B_M_5200', '1200G_M_5500'],
                   'keck_kcwi': ['bh2_4200'],
                   'keck_nires': ['NIRES'],
                   'keck_nirspec': ['LOW_NIRSPEC-1'],

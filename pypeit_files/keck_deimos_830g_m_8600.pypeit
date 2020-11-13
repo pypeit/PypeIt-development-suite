@@ -9,7 +9,7 @@
     
 # Setup
 setup read
- Setup A
+ Setup A:
  --:
    dichroic: None
    disperser: {angle: 8600.02148438, name: 830G}
