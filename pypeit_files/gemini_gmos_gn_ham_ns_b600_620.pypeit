@@ -1,0 +1,37 @@
+# Auto-generated PypeIt file
+# Sat 19 Sep 2020 10:14:32
+
+# User-defined execution parameters
+[rdx]
+spectrograph = gemini_gmos_north_ham_ns
+
+# Setup
+setup read
+ Setup E:
+   --:
+     binning: 1,1
+     dichroic: GG455_G0305
+     disperser:
+       angle: 620.0
+       name: B600+_G5307
+     slit:
+       decker: NS0.75arcsec
+       slitlen: none
+       slitwid: none
+setup end
+
+# Read in the data
+data read
+ path ../Raw
+|            filename |                 frametype |           ra |        dec |         target |    dispname |       decker | binning |              mjd | airmass | exptime |    dichroic | dispangle |        datasec |
+| N20191224S0124.fits.gz |                  arc,tilt | 189.59027917 | 1.08851944 |           CuAr | B600+_G5307 | NS0.75arcsec |     1,1 | 2019.97854761454 |   1.084 |    70.0 | GG455_G0305 |     620.0 | [1:512,1:4224] |
+| N20191224S0125.fits.gz | pixelflat,illumflat,trace | 189.59027917 | 1.08851944 |       GCALflat | B600+_G5307 | NS0.75arcsec |     1,1 | 2019.97855239258 |   1.082 |    16.0 | GG455_G0305 |     620.0 | [1:512,1:4224] |
+| N20191224S0122.fits.gz |                   science | 189.59027917 | 1.08851944 | SDSSJ1238+0105 | B600+_G5307 | NS0.75arcsec |     1,1 |  2019.9784685591 |   1.132 |   847.0 | GG455_G0305 |     620.0 | [1:512,1:4224] |
+| N20191224S0123.fits.gz |                   science | 189.59027917 | 1.08851944 | SDSSJ1238+0105 | B600+_G5307 | NS0.75arcsec |     1,1 | 2019.97850787293 |   1.098 |   847.0 | GG455_G0305 |     620.0 | [1:512,1:4224] |
+| N20191224S0153.fits.gz |      bias | 75.0 | 89.97 |   Bias | B600+_G5307 | 0.5arcsec |     1,1 | 2019.97872777928 |     1.0 |     0.0 |  open1-6 |     550.0 | [1:512,1:4224] |
+| N20191224S0154.fits.gz |      bias | 75.0 | 89.97 |   Bias | B600+_G5307 | 0.5arcsec |     1,1 | 2019.97873035499 |     1.0 |     0.0 |  open1-6 |     550.0 | [1:512,1:4224] |
+| N20191224S0155.fits.gz |      bias | 75.0 | 89.97 |   Bias | B600+_G5307 | 0.5arcsec |     1,1 | 2019.97873292806 |     1.0 |     0.0 |  open1-6 |     550.0 | [1:512,1:4224] |
+| N20191224S0156.fits.gz |      bias | 75.0 | 89.97 |   Bias | B600+_G5307 | 0.5arcsec |     1,1 | 2019.97873550589 |     1.0 |     0.0 |  open1-6 |     550.0 | [1:512,1:4224] |
+| N20191224S0157.fits.gz |      bias | 75.0 | 89.97 |   Bias | B600+_G5307 | 0.5arcsec |     1,1 | 2019.97873811382 |     1.0 |     0.0 |  open1-6 |     550.0 | [1:512,1:4224] |
+data end
+
