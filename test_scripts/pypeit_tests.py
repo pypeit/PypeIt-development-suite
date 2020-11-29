@@ -340,7 +340,9 @@ class PypeItQuickLookTest(PypeItTest):
     def run(self):
         """Generate any required quick look masters before running the quick look test"""
 
-        if not self.mos:
+        #if not self.mos:
+        # JFH Is this correct
+        if self.setup.instr == 'keck_nires':
 
             try:
                 # Place the masters into the NIRES_MASTERS environment variable if defined, otherwise
