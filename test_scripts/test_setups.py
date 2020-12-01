@@ -100,13 +100,11 @@ class TestPhase(Enum):
 
 
 supported_instruments = ['kast', 'deimos', 'kcwi', 'nires', 'nirspec', 'mosfire', 'lris', 'xshooter', 'gnirs', 'gmos',
-                         'flamingos2', 'mage', 'fire', 'luci', 'mdm', 'alfosc', 'fors2', 'binospec', 'mmirs', 'mods',
-                         'dbsp', 'tspec']
+                         'flamingos2', 'mage', 'fire', 'luci', 'mdm', 'alfosc', 'fors2', 'binospec', 'mmirs', 'bluechannel',
+                         'mods', 'dbsp', 'tspec']
 
 
-develop_setups = {'shane_kast_blue': ['452_3306_d57', '600_4310_d55', '830_3460_d46'],
-                  'shane_kast_red': ['600_7500_d55_ret', '600_7500_d57', '600_5000_d46', '1200_5000_d57'],
-                  'gemini_gnirs': ['32_SB_SXD', '10_LB_SXD'],
+develop_setups = {'gemini_gnirs': ['32_SB_SXD', '10_LB_SXD'],
                   'gemini_gmos': ['GS_HAM_R400_700', 'GS_HAM_R400_860', 'GN_HAM_R400_885', 'GN_HAM_NS_B600_620'],
                   'gemini_flamingos2': ['HK_HK', 'JH_JH'],
                   'keck_deimos': ['600ZD_M_6500', '600ZD_tilted', '1200G_M_7750', '830G_LVM_8400', '830G_M_8100_26',
@@ -130,10 +128,13 @@ develop_setups = {'shane_kast_blue': ['452_3306_d57', '600_4310_d55', '830_3460_
                   'mdm_osmos': ['MDM4K'],
                   'mmt_binospec': ['Longslit_G600', 'Multislit_G270'],
                   'mmt_mmirs': ['HK_zJ', 'J_zJ', 'K_K'],
+                  'mmt_bluechannel': ['300l'],
                   'not_alfosc': ['grism4', 'grism19'],
                   'p200_dbsp_blue': ['600_4000_d55'],
                   'p200_dbsp_red': ['316_7500_d55'],
                   'p200_tspec': ['TSPEC'],
+                  'shane_kast_blue': ['452_3306_d57', '600_4310_d55', '830_3460_d46'],
+                  'shane_kast_red': ['300_7500_Ne', '600_7500_d55_ret', '600_7500_d57', '600_5000_d46', '1200_5000_d57'],
                   'vlt_fors2': ['300I'],
                   'vlt_xshooter': ['VIS_1x1', 'VIS_2x1', 'VIS_2x2', 'VIS_manual', 'NIR'],
                   }
