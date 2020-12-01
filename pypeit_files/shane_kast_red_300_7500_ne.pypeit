@@ -1,0 +1,29 @@
+# Auto-generated PypeIt file
+# Mon 09 Nov 2020 13:43:45
+
+# User-defined execution parameters
+[rdx]
+spectrograph = shane_kast_red
+[baseprocess]
+use_biasimage = False
+
+# Setup
+setup read
+    Setup B:
+         dispname: 300/7500
+         dichroic: clear
+        dispangle: 3794.0
+setup end
+
+# Read in the data
+data read
+ path /home/xavier/Projects/PypeIt-development-suite/RAW_DATA/shane_kast_red/300_7500_Ne
+|   filename |                 frametype |                 ra |                dec |                             target | dispname |     decker | binning |                mjd |        airmass | exptime | dichroic | dispangle  |
+| r1015.fits |                  arc,tilt | 290.45441666666665 |  37.34652777777778 |                  vis2s 0.5" LB arc | 300/7500 | 0.5 arcsec |     1,1 |  59144.05940636574 |            1.0 |    60.0 |    clear |    3795.0  |
+| r1018.fits |                  arc,tilt |  292.0212083333333 | 37.343611111111116 |                  vis2s 0.5" RB arc | 300/7500 | 0.5 arcsec |     1,1 |  59144.06373576389 |            1.0 |     8.0 |    clear |    3795.0  |
+| r1024.fits | pixelflat,illumflat,trace |  297.1825416666667 |  37.33416666666667 |                    vis2s 3.0" flat | 300/7500 | 3.0 arcsec |     1,1 |  59144.07804861111 |            1.0 |     1.0 |    clear |    3795.0  |
+| r1025.fits | pixelflat,illumflat,trace |         304.640125 | 37.321444444444445 |                    vis2s 3.0" flat | 300/7500 | 3.0 arcsec |     1,1 |  59144.09868865741 |            1.0 |     1.0 |    clear |    3795.0  |
+| r1026.fits | pixelflat,illumflat,trace | 304.89054166666665 |  37.32105555555556 |                    vis2s 3.0" flat | 300/7500 | 3.0 arcsec |     1,1 | 59144.099381134256 |            1.0 |     1.0 |    clear |    3795.0  |
+| r2008.fits |                   science |  322.2409166666666 |  58.73961111111111 |                 vis2s BD284211 0.0 | 300/7500 | 3.0 arcsec |     1,1 | 59145.275269212965 |           1.25 |    60.0 |    clear |    3794.0  |
+data end
+
