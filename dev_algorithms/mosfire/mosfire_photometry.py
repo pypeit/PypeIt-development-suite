@@ -66,8 +66,8 @@ ZP = {
 #star_obj_file = '/Users/joe/Downloads/MF.20200528.40413.fits'
 #star_sky_file = '/Users/joe/Downloads/MF.20200528.40360.fits'
 
-#path = '/Users/joe/Dropbox/MOSFIRE_acq/'
-path = '/home/riccardo/Downloads'
+path = '/Users/joe/Dropbox/MOSFIRE_acq/'
+#path = '/home/riccardo/Downloads'
 qso_obj_file = os.path.join(path, 'm201023_0093.fits')
 qso_sky_file = os.path.join(path, 'm201023_0092.fits')
 star_obj_file = os.path.join(path, 'm201023_0091.fits')
@@ -96,7 +96,6 @@ star_sky_hdr = starSkyImg.rawheadlist[0]
 plate_scale = qsoSkyImg.detector.platescale
 nspec, nspat = qsoSkyImg.shape
 
-sys.exit(-1)
 # Read in data
 #star_obj = fits.getdata(star_obj_file)
 #star_hdr = fits.getheader(star_obj_file)
@@ -128,6 +127,15 @@ FWHM=0.70 # seeing in arcsec
 sigma_FWHM_pix=FWHM/plate_scale/2.35
 kernel = Gaussian2DKernel(x_stddev=sigma_FWHM_pix)
 qso_diff_conv = convolve(qsoImg.image-qsoSkyImg.image, kernel)
+ipix_max = np.argmax(qso_diff_conv[acq_box])
+spec_max = spec_coord[acq_box][ipix_max]
+spat_max = spat_coord[acq_box][ipix_max]
+viewer, ch_sky = display.show_image(qso_diff_conv,'QSO_DIFF_CONVOL') #, cuts = (-5.0*qso_sigma, 5.0*qso_sigma))
+# display.show_points(viewer, ch_sky, spec_pix, spat_pix)
+#display.show_points(viewer, ch_sky, [spec_max + 1], [spat_max + 1])
+display.show_points(viewer, ch_sky, [spec_max], [spat_max])
+
+sys.exit(-1)
 
 
 # Get bar information from header
