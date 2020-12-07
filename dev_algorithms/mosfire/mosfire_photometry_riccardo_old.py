@@ -5,6 +5,48 @@ from photutils import RectangularAperture, aperture_photometry
 from astropy.stats import sigma_clipped_stats
 from scipy.ndimage import gaussian_filter
 from photutils import DAOStarFinder
+from pypeit.images import buildimage
+from pypeit.spectrographs.util import load_spectrograph
+
+
+# The following code is from MOSFIRE.CSU
+def mm_to_pix(millimeters):
+    demagnification = 7.24254
+    return millimeters/demagnification/0.018
+
+# following code comes from old trunk of MOSFIRE code tree:
+# http://code.google.com/p/mosfire/source/browse/MOSFIRE/CSU.py?r=823640967a0497bd7bafbb0f8147228c3d3993bd
+
+def csu_mm_to_pix(x_mm, slitno):
+    """
+    Convert a slit's position into a pixel value. This is a linear approximation to a sixth order polynomial fit by ccs from cooldown 8 data.
+    """
+
+    center_pix = (1042.986, 1035.879)
+    numslits = 46
+    rotation = np.radians(0.2282)
+    tempscale = 0.99646
+    mm = 1
+
+    # _kfp is keck focal plane, the x_kfp has a "fudge factor"
+    x_kfp = x_mm * tempscale - 5.0 * 1.2 * mm
+    y_kfp = 5.8*mm*tempscale*(numslits - slitno + 0.70)
+    # _mfp is Mosfire focal plane, convert the mms into pixels
+    x_mfp = 2047 - mm_to_pix(x_kfp)
+    y_mfp = mm_to_pix(y_kfp)
+
+
+    # Rotate around the center
+    x_mfp -= center_pix[0]
+    y_mfp -= center_pix[1]
+
+    x_mfp = np.cos(rotation)*x_mfp - np.sin(rotation)*y_mfp
+    y_mfp = np.sin(rotation)*x_mfp + np.cos(rotation)*y_mfp
+    x_mfp += center_pix[0]
+    y_mfp += center_pix[1]
+
+    return np.array([x_mfp, y_mfp])
+
 
 ZP = {
     'Y':28.13,
@@ -27,16 +69,42 @@ qso_sky_file = '/home/riccardo/Downloads/MF.20200528.40505.fits'
 star_obj_file = '/home/riccardo/Downloads/MF.20200528.40413.fits'
 star_sky_file = '/home/riccardo/Downloads/MF.20200528.40360.fits'
 
+
+# Build Science image
+spectrograph = load_spectrograph('keck_mosfire')
+det = 1
+parset = spectrograph.default_pypeit_par()
+parset['scienceframe']['process']['use_illumflat'] = False
+parset['scienceframe']['process']['use_pixelflat'] = False
+
+skyImg = buildimage.buildimage_fromlist(
+    spectrograph, det, parset['scienceframe'], [qso_sky_file], ignore_saturation=False)
+sys.exit(-1)
 # Read in data
-star_obj = fits.getdata(star_obj_file)
-star_hdr=fits.getheader(star_obj_file)
-star_sky = fits.getdata(star_sky_file)
-star_diff = star_obj - star_sky
-qso_obj = fits.getdata(qso_obj_file)
-qso_hdr=fits.getheader(qso_obj_file)
-qso_sky = fits.getdata(qso_sky_file)
+#star_obj = fits.getdata(star_obj_file)
+#star_hdr = fits.getheader(star_obj_file)
+#star_sky = fits.getdata(star_sky_file)
+#star_sky_hdr = fits.getheader(star_sky_file)
+#star_diff = star_obj - star_sky
+#qso_obj = fits.getdata(qso_obj_file)
+#qso_hdr =fits.getheader(qso_obj_file)
+#qso_sky = fits.getdata(qso_sky_file)
+qso_sky_hdr =fits.getheader(qso_sky_file)
 qso_diff = qso_obj - qso_sky
 
+# Get bar information from header
+xpix = np.zeros(92)
+ypix = np.zeros(92)
+for islit in range(1, 93):
+    slit = int(islit + 1) / 2
+    pos = qso_sky_hdr["B%0.2iPOS" % islit]
+    xpix[islit-1], ypix[islit-1] = csu_mm_to_pix(pos, slit)
+
+display.connect_to_ginga(raise_err=True, allow_new=True)
+viewer, ch_sky = display.show_image(qso_diff,'QSO_SKY') #, cuts = (-5.0*qso_sigma, 5.0*qso_sigma))
+display.show_points(viewer, ch_sky, ypix, xpix)
+
+sys.exit(-1)
 
 plate_scale = 0.18 # Put in correct value
 centroid=[star_hdr['CRPIX1']+15,star_hdr['CRPIX2']+20]

@@ -14,12 +14,12 @@ with mock objects and functions to replace calling the actual dev suite tests.
 Although the tests attempt to verify the results of pypeit_test.main(), it is usually helpful to check the stdout
 from the tests. This can be done with:
 
-    pytest --capture=no test_pypeit_test.py
+    python -m  pytest --capture=no -v test_scripts/test_pypeit_test.py
 
 To get the coverage of the tests:
 
     pip install coverage
-    coverage run -m pytest test_pypeit_test.py
+    coverage run -m pytest test_scripts/test_pypeit_test.py
     coverage report -m
 
 """
@@ -29,8 +29,8 @@ import subprocess
 import sys
 import os
 import random
-from . import test_main
-from .pypeit_tests import PypeItReduceTest
+from test_scripts import test_main
+from test_scripts.pypeit_tests import PypeItReduceTest
 import time
 
 
@@ -66,8 +66,9 @@ class MockCompletedProcess(object):
     from the pypeit test scripts
     """
 
-    def __init__(self):
+    def __init__(self, returncode=0):
         self.stdout = b"This is \nSample log output\nFor unit testing\n"
+        self.returncode = returncode
 
 def mock_popen(*args, **kwargs):
     """
@@ -80,6 +81,19 @@ def mock_run(*args, **kwargs):
     Mock function for subprocess.run()
     """
     return MockCompletedProcess()
+
+def mock_failed_run(*args, **kwargs):
+    """
+    Mock function for subprocess.run() that has a returncode not equal to zero
+    """
+    return MockCompletedProcess(1)
+
+def mock_raises_run(*args, **kwargs):
+    """
+    Mock function for subprocess.run() that raises an exception
+    """
+    raise RuntimeError("Unit testing Exception")
+
 
 def create_dummy_files(base_path, files):
     """
@@ -391,3 +405,46 @@ def test_main_in_steps(monkeypatch, tmp_path):
                                           '-i', 'shane_kast_blue', '-s', '600_4310_d55', 'ql'])
         assert test_main.main() == 0
 
+def test_quick_look_build_masters_failure(monkeypatch, tmp_path):
+    """
+    Test test_main.main() ql tests that fail building masters.
+    """
+
+    # Failure from the build script returning non-zero
+    with monkeypatch.context() as m:
+        monkeypatch.setattr(subprocess, "Popen", mock_popen)
+        monkeypatch.setattr(subprocess, "run", mock_failed_run)
+        monkeypatch.setattr(sys, "argv", ['pypeit_test', '-o', str(tmp_path), '-i', 'keck_nires', 'ql'])
+
+        assert test_main.main() == 1
+
+    # Failure from an exception raised when running the build script
+    with monkeypatch.context() as m:
+        monkeypatch.setattr(subprocess, "Popen", mock_popen)
+        monkeypatch.setattr(subprocess, "run", mock_raises_run)
+        monkeypatch.setattr(sys, "argv", ['pypeit_test', '-o', str(tmp_path), '-i', 'keck_nires', 'ql'])
+
+        assert test_main.main() == 1
+
+def test_quick_look_masters_env(monkeypatch, tmp_path):
+    """
+    Test test_main.main() ql tests with and without a NIRES_MASTERS environment variable.
+    """
+
+    # Generate masters without the environment variable set
+    with monkeypatch.context() as m:
+        monkeypatch.setattr(subprocess, "Popen", mock_popen)
+        monkeypatch.setattr(subprocess, "run", mock_run)
+        monkeypatch.delenv('NIRES_MASTERS', raising=False)
+        monkeypatch.setattr(sys, "argv", ['pypeit_test', '-o', str(tmp_path), '-i', 'keck_nires', 'ql'])
+
+        assert test_main.main() == 0
+
+    # Generate masters with the environment variable set
+    with monkeypatch.context() as m:
+        monkeypatch.setattr(subprocess, "Popen", mock_popen)
+        monkeypatch.setattr(subprocess, "run", mock_run)
+        monkeypatch.setenv('NIRES_MASTERS', str(tmp_path))
+        monkeypatch.setattr(sys, "argv", ['pypeit_test', '-o', str(tmp_path), '-i', 'keck_nires', 'ql'])
+
+        assert test_main.main() == 0
