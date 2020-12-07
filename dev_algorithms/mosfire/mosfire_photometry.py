@@ -59,16 +59,16 @@ ZP = {
     'H2':26.85
 }
 
+# Object is J21.3, offset is J18.99
+#qso_obj_file = '/Users/joe/Downloads/MF.20200528.40601.fits'
+#qso_sky_file = '/Users/joe/Downloads/MF.20200528.40505.fits'
+#star_obj_file = '/Users/joe/Downloads/MF.20200528.40413.fits'
+#star_sky_file = '/Users/joe/Downloads/MF.20200528.40360.fits'
 
-qso_obj_file = '/Users/joe/Downloads/MF.20200528.40601.fits'
-qso_sky_file = '/Users/joe/Downloads/MF.20200528.40505.fits'
-star_obj_file = '/Users/joe/Downloads/MF.20200528.40413.fits'
-star_sky_file = '/Users/joe/Downloads/MF.20200528.40360.fits'
-
-#qso_obj_file = '/home/riccardo/Downloads/MF.20200528.40601.fits'
-#qso_sky_file = '/home/riccardo/Downloads/MF.20200528.40505.fits'
-#star_obj_file = '/home/riccardo/Downloads/MF.20200528.40413.fits'
-#star_sky_file = '/home/riccardo/Downloads/MF.20200528.40360.fits'
+qso_obj_file = '/home/riccardo/Downloads/m201023_0093.fits'
+qso_sky_file = '/home/riccardo/Downloads/m201023_0092.fits'
+star_obj_file = '/home/riccardo/Downloads/m201023_0091.fits'
+star_sky_file = '/home/riccardo/Downloads/m201023_0090.fits'
 
 
 # Build Science image
