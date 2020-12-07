@@ -16,17 +16,16 @@ ZP = {
     'H1':26.88,
     'H2':26.85
 }
-
-
+'''
 qso_obj_file = '/Users/joe/Downloads/MF.20200528.40601.fits'
 qso_sky_file = '/Users/joe/Downloads/MF.20200528.40505.fits'
 star_obj_file = '/Users/joe/Downloads/MF.20200528.40413.fits'
 star_sky_file = '/Users/joe/Downloads/MF.20200528.40360.fits'
-
-#qso_obj_file = '/home/riccardo/Downloads/MF.20200528.40601.fits'
-#qso_sky_file = '/home/riccardo/Downloads/MF.20200528.40505.fits'
-#star_obj_file = '/home/riccardo/Downloads/MF.20200528.40413.fits'
-#star_sky_file = '/home/riccardo/Downloads/MF.20200528.40360.fits'
+'''
+qso_obj_file = '/home/riccardo/Downloads/MF.20200528.40601.fits'
+qso_sky_file = '/home/riccardo/Downloads/MF.20200528.40505.fits'
+star_obj_file = '/home/riccardo/Downloads/MF.20200528.40413.fits'
+star_sky_file = '/home/riccardo/Downloads/MF.20200528.40360.fits'
 
 # Read in data
 star_obj = fits.getdata(star_obj_file)
@@ -41,27 +40,28 @@ qso_diff = qso_obj - qso_sky
 
 plate_scale = 0.18 # Put in correct value
 centroid=[star_hdr['CRPIX1']+15,star_hdr['CRPIX2']+20]
-lengthx=round(2/plate_scale)
-lengthy=round(3.5/plate_scale)
+lengthx=round(2/plate_scale/2)
+lengthy=round(3.5/plate_scale/2)
 
 # Determine acquisition window location # Find the centroid of the image
 sky_mean, sky_med, sky_sigma = sigma_clipped_stats(qso_sky[centroid[1]-lengthy:centroid[1]+lengthy, centroid[0]-lengthx:centroid[0]+lengthx],sigma_lower=5.0, sigma_upper=5.0)
 acq_mask = (qso_sky > (sky_med -2.0*sky_sigma)) & (qso_sky < (sky_med + 2.0*sky_sigma))
 # qso_mean, qso_med, qso_sigma = sigma_clipped_stats(qso_diff[centroid[0]-lengthx:centroid[0
 
+
 #acq_mask = np.zeros_like(star_sky, dtype=bool)
 
-
+'''
 fwhm = 3.0
 star_smooth = gaussian_filter(star_diff, sigma=fwhm)
 qso_smooth = gaussian_filter(qso_diff, sigma=fwhm)
 
 # Find the centroid of the image
-star_mean, star_med, star_sigma = sigma_clipped_stats(star_diff[centroid[0]-lengthx:centroid[0]+lengthx, centroid[1]-lengthy:centroid[1]+lengthy],
-                                                      sigma_lower=5.0, sigma_upper=5.0)
-qso_mean, qso_med, qso_sigma = sigma_clipped_stats(qso_diff[centroid[0]-lengthx:centroid[0]+lengthx, centroid[1]-lengthy:centroid[1]+lengthy],
-                                                   sigma_lower=5.0, sigma_upper=5.0)
-daofind = DAOStarFinder(fwhm=5.0, threshold=5.*star_sigma)
+#star_mean, star_med, star_sigma = sigma_clipped_stats(star_diff[centroid[0]-lengthx:centroid[0]+lengthx, centroid[1]-lengthy:centroid[1]+lengthy],
+#                                                      sigma_lower=5.0, sigma_upper=5.0)
+#qso_mean, qso_med, qso_sigma = sigma_clipped_stats(qso_diff[centroid[0]-lengthx:centroid[0]+lengthx, centroid[1]-lengthy:centroid[1]+lengthy],
+#                                                   sigma_lower=5.0, sigma_upper=5.0)
+daofind = DAOStarFinder(fwhm=5.0, threshold=5.*sky_sigma)
 sources = daofind(star_diff)
 
 # Define coordinates and apertures
@@ -86,7 +86,7 @@ counts_back_qso=(phot_back_qso['aperture_sum']-phot_qso['aperture_sum'])/(back_a
 f_qso=(counts_qso-counts_back_qso)/qso_hdr['ELAPTIME']
 m_qso=-2.5 * np.log10(f_qso) + ZP[qso_hdr['FILTER']]
 print(f_qso,m_qso)
-'''
+
 # Display images
 display.connect_to_ginga(raise_err=True, allow_new=True)
 viewer, ch_star = display.show_image(star_diff,'Star', clear=True, cuts = (-5.0*star_sigma, 5.0*star_sigma))
