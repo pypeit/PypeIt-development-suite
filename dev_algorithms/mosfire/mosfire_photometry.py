@@ -3,6 +3,7 @@ import numpy as np
 from scipy.ndimage import gaussian_filter
 from astropy.io import fits
 from astropy.stats import sigma_clipped_stats
+from astropy.convolution import Gaussian2DKernel, convolve
 from pypeit.images import buildimage
 from pypeit.display import display
 from pypeit.spectrographs.util import load_spectrograph
@@ -65,7 +66,8 @@ ZP = {
 #star_obj_file = '/Users/joe/Downloads/MF.20200528.40413.fits'
 #star_sky_file = '/Users/joe/Downloads/MF.20200528.40360.fits'
 
-path = '/Users/joe/Dropbox/MOSFIRE_acq/'
+#path = '/Users/joe/Dropbox/MOSFIRE_acq/'
+path = '/home/riccardo/Downloads'
 qso_obj_file = os.path.join(path, 'm201023_0093.fits')
 qso_sky_file = os.path.join(path, 'm201023_0092.fits')
 star_obj_file = os.path.join(path, 'm201023_0091.fits')
@@ -119,6 +121,14 @@ median_box = (spat_coord > lower_left_spat) & (spat_coord < upper_right_spat) & 
 mean_sky, med_sky, sigma_sky = sigma_clipped_stats(starSkyImg.image[median_box], sigma_lower=5.0, sigma_upper=5.0)
 acq_box = (spat_coord > lower_left_spat) & (spat_coord < upper_right_spat) & \
           (starSkyImg.image > (med_sky - 3.0*sigma_sky)) & (starSkyImg.image < (med_sky + 3.0*sigma_sky))
+
+# Convolve with a Gaussian kernel with x_stddev=1 (and y_stddev=1)
+# It is a 9x9 array
+FWHM=0.70 # seeing in arcsec
+sigma_FWHM_pix=FWHM/plate_scale/2.35
+kernel = Gaussian2DKernel(x_stddev=sigma_FWHM_pix)
+qso_diff_conv = convolve(qsoImg.image-qsoSkyImg.image, kernel)
+
 
 # Get bar information from header
 #xpix = np.zeros(92)
