@@ -13,7 +13,6 @@ import argparse
 sys.path.append(r'/home/jwalawender/.local/lib/python3.6/site-packages/pyds9-1.9.dev0-py3.6-linux-x86_64.egg/')
 from pyds9 import DS9
 
-
 def parse_args(options=None):
     parser = argparse.ArgumentParser(description='Display MOSFIRE acquisition images via DS9', formatter_class=argparse.ArgumentDefaultsHelpFormatter)
     parser.add_argument('rawpath', type = str, help = 'Raw data path, e.g. /s/sdata1300/mosfire5/2020dec08')
