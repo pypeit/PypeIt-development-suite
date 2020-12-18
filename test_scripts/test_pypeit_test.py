@@ -331,7 +331,11 @@ def test_main_debug_priority_list(monkeypatch, tmp_path, capsys):
                     if word == last_setup_found:
                         # Don't check against the next test setup if this is a test in the previous test setup
                         continue
-
+                    # If more tests have been added to the debug tests, don't get an index out of
+                    # bound exception
+                    if current_pos >= len(test_order):
+                        break
+                        
                     assert word == test_order[current_pos]
                     last_setup_found = word
                     current_pos += 1

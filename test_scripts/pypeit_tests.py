@@ -318,6 +318,7 @@ class PypeItQuickLookTest(PypeItTest):
         super().__init__(setup, "pypeit_ql", "test_ql")
         self.files = files
         self.mos = mos
+        self.redux_dir = os.path.abspath(pargs.outputdir)
 
     def build_command_line(self):
         command_line = ['pypeit_ql_mos', self.setup.instr] if self.mos else ['pypeit_ql_keck_nires']
@@ -345,7 +346,7 @@ class PypeItQuickLookTest(PypeItTest):
                 logfile = get_unique_file(os.path.join(self.setup.rdxdir, "build_nires_masters_output.log"))
                 with open(logfile, "w") as log:
                     result = subprocess.run([os.path.join(self.setup.dev_path, 'build_nires_masters'),
-                                             '--force_copy', '--output_dir', output_dir],
+                                             '--redux_dir', self.redux_dir, '--force_copy', '--output_dir', output_dir],
                                             stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
 
                     print(result.stdout, file=log)
