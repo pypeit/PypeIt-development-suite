@@ -111,6 +111,7 @@ class PypeItTest(ABC):
         files generated during testing should be included"""
         return []
 
+
 class PypeItSetupTest(PypeItTest):
     """Test subclass that runs pypeit_setup"""
     def __init__(self, setup, pargs):
@@ -153,17 +154,13 @@ class PypeItReduceTest(PypeItTest):
         super().__init__(setup, description, "test")
 
         self.std = std
-
+        # If the pypeit file isn't being created by pypeit_setup, copy it and update it's path
         if not self.setup.generate_pyp_file:
             self.pyp_file = template_pypeit_file(self.setup.dev_path,
                                                  self.setup.instr,
                                                  self.setup.name,
                                                  self.std)
 
-    def build_command_line(self):
-        if self.setup.generate_pyp_file:
-            self.pyp_file = self.setup.pyp_file
-        else:
             self.pyp_file = fix_pypeit_file_directory(self.pyp_file,
                                                       self.setup.dev_path,
                                                       self.setup.rawdir,
@@ -171,6 +168,10 @@ class PypeItReduceTest(PypeItTest):
                                                       self.setup.name,
                                                       self.setup.rdxdir,
                                                       self.std)
+
+    def build_command_line(self):
+        if self.setup.generate_pyp_file:
+            self.pyp_file = self.setup.pyp_file
 
         command_line = ['run_pypeit', self.pyp_file, '-o']
         if self.masters:
@@ -390,7 +391,7 @@ def fix_pypeit_file_directory(pyp_file, dev_path, raw_data, instr, setup, rdxdir
     """
     # Read the pypeit file
     if not os.path.isfile(pyp_file):
-        raise FileNotFoundError('File does not exist: {0}'.format(pyp_file))
+        raise FileNotFoundError(pyp_file)
     with open(pyp_file, 'r') as infile:
         lines = infile.readlines()
 
