@@ -9,7 +9,7 @@
      [[slitedges]]
         edge_thresh = 10.0
     [[wavelengths]]
-        lamps = NeI, ArI, KrI, XeI, ZnI
+        lamps = NeI, ArI, CdI, KrI, XeI, HgI, ZnI
      [[tilts]]
         tracethresh = 10
 
