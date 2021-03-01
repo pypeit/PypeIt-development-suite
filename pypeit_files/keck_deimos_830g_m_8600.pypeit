@@ -6,10 +6,13 @@
     detnum = 1,5
 [baseprocess]
     use_biasimage=False
+[calibrations]
+    [[flatfield]]
+        saturated_slits = mask
     
 # Setup
 setup read
- Setup A
+ Setup A:
  --:
    dichroic: None
    disperser: {angle: 8600.02148438, name: 830G}

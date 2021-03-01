@@ -5,7 +5,7 @@
 # -*- coding: utf-8 -*-
 
 """
-This script builds the Cooked folder
+This script builds the NIRES Masters
 Execute it with:   ./build_cooked
 """
 
@@ -28,7 +28,10 @@ def parser(options=None):
     #parser.add_argument('version', type=str, help='Version number to generate (e.g. 0.91)')
     parser.add_argument('--redux_dir', type=str, help='Full path to the REDUX dir; '
                                                       'default is REDUX_OUT in current directory')
-    parser.add_argument('-i', '--ignore_missing', help='Ignore any missing files',
+    parser.add_argument('-o', '--output_dir', type=str,
+                        help='Full path to the destination directory for the NIRES masters.'
+                             'Defaults to "NIRES_MASTERS" in the current directory')
+    parser.add_argument('-f', '--force_copy', help='Copy the files even if they already exist in the destination',
                         action='store_true', default=False)
 
     return parser.parse_args() if options is None else parser.parse_args(options)
@@ -42,17 +45,14 @@ def main():
                     else pargs.redux_dir
 
     # Generate Cooked folder
-    nires_dir = 'NIRES_MASTERS'
-    if not os.path.isdir(nires_dir):
-        os.mkdir(nires_dir)
+    if pargs.output_dir is not None:
+        nires_dir = pargs.output_dir
+    else:
+        nires_dir = 'NIRES_MASTERS'
 
-    # ------------------------------------------------------------------
-    # Version
-    #vfile = os.path.join('Cooked', 'version')
-    # Lines
-    #with open(vfile, 'w') as f:
-    #    f.writelines(lines)
-    # ------------------------------------------------------------------
+    if not os.path.isdir(nires_dir):
+        os.makedirs(nires_dir, exist_ok=True)
+
 
     # ------------------------------------------------------------------
     keck_nires_path = os.path.join(redux_dir, 'keck_nires', 'NIRES', 'Masters')
@@ -60,44 +60,16 @@ def main():
     # Do it
     for ifile in files_01:
         cooked_file = os.path.join(nires_dir, os.path.basename(ifile).replace('_2_','_1_'))
-        copy_me(ifile, cooked_file)
+        copy_me(ifile, cooked_file, pargs.force_copy)
     # A few more
     for root in ['MasterFlat_A_7_01.fits', 'MasterSlits_A_7_01.fits.gz']:
         ifile = os.path.join(keck_nires_path, root)
         cooked_file = os.path.join(nires_dir, os.path.basename(ifile).replace('7','1'))
-        copy_me(ifile, cooked_file)
+        copy_me(ifile, cooked_file, pargs.force_copy)
 
+    exit(0)
 
-
-def copy_with_root(new_root, cooked_root, debug=False, ignore_missing=False):
-    """
-    Copy all files with a given root
-
-    Args:
-        new_root: str
-        cooked_root: str
-        debug:
-
-    Returns:
-
-    """
-    # Grab em
-    new_files = glob.glob(new_root+'.*')
-    if len(new_files) == 0 and not ignore_missing:
-        raise ValueError('No files found with root: {0}'.format(new_root))
-    for new_file in new_files:
-        bname = os.path.basename(new_file)
-        dpos = bname.find('.')
-        exten = bname[dpos:]
-        #
-        cooked_file = cooked_root+exten
-        # Copy
-        if debug:
-            pdb.set_trace()
-        copy_me(new_file, cooked_file)
-
-
-def copy_me(new_file, cooked_file):
+def copy_me(new_file, cooked_file, force_copy):
     """
     Simple script to copy a given file to a new file
     First compares that the new_file is newer than the
@@ -116,7 +88,7 @@ def copy_me(new_file, cooked_file):
         # Time is in seconds total (like MJD)
         if os.path.getctime(cooked_file) > os.path.getctime(new_file):
             doit = False
-    if doit:
+    if doit or force_copy:
         shutil.copy2(new_file, cooked_file)
         print("Generated/over-wrote {:s}".format(cooked_file))
 
