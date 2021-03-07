@@ -137,6 +137,7 @@ develop_setups = {'gemini_gnirs': ['32_SB_SXD', '10_LB_SXD'],
                   'shane_kast_red': ['300_7500_Ne', '600_7500_d55_ret', '600_7500_d57', '600_5000_d46', '1200_5000_d57'],
                   'vlt_fors2': ['300I'],
                   'vlt_xshooter': ['VIS_1x1', 'VIS_2x1', 'VIS_2x2', 'VIS_manual', 'NIR'],
+                  'vlt_sinfoni': ['K_0.8'],
                   }
 
 _pypeit_setup = ['shane_kast_blue/600_4310_d55']
