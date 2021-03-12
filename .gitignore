@@ -4,3 +4,7 @@ RAW_DATA
 REDUX_OUT
 Cooked
 CALIBS
+*.pckl
+dev_algorithms/data
+NIRES_MASTERS
+Telluric
