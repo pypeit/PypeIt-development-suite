@@ -10,6 +10,7 @@
 [calibrations]
   [[slitedges]]
      edge_thresh=20.
+     bound_detector=True
   [[flatfield]]
      tweak_slits=False     
   [[wavelengths]]
@@ -17,7 +18,7 @@
     method = 'holy-grail'
 [reduce]
   [[findobj]]
-    sig_thresh = 0.5
+    sig_thresh = 10.0 
     maxnumber = 1
 
 # Setup
@@ -34,7 +35,7 @@ setup end
 
 # Read in the data
 data read
- path /Users/joe/python/PypeIt-development-suite/RAW_DATA/Gemini_GMOS/GS_HAM_R400_860/
+ path /Users/joe/python/PypeIt-development-suite/RAW_DATA/gemini_gmos/GS_HAM_R400_860/
 |                filename |       frametype |           ra |          dec |     target |    dispname |         decker | binning |              mjd | airmass | exptime |    dichroic | calib | comb_id | bkg_id |
 ## For Standard
 | S20181219S0443.fits |            bias |        147.0 |         89.9 |       Bias | R400+_G5325 |     0.75arcsec |     2,2 | 2018.96485450468 |     1.0 |     0.0 | RG610_G0331 |     3 |      -1 |     -1 |
