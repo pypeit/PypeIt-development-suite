@@ -10,7 +10,6 @@
 [calibrations]
   [[slitedges]]
      edge_thresh=20.
-     bound_detector=True
   [[flatfield]]
      tweak_slits=False     
   [[wavelengths]]
