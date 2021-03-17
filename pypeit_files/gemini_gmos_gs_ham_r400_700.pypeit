@@ -3,12 +3,14 @@
 
 # User-defined execution parameters
 [rdx]
-spectrograph = gemini_gmos_south_ham
+    spectrograph = gemini_gmos_south_ham
 [baseprocess]
-   use_biasimage=False
+    use_biasimage=False
 [calibrations]
-   [[tilts]]
-      tracethresh = 10.
+    [[tilts]]
+        tracethresh = 10.
+    [[slitedges]]
+        bound_detector = True
 
 # Setup
 setup read
