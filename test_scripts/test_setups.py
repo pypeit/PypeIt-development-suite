@@ -151,6 +151,8 @@ _additional_reduce = {'keck_lris_red':
 
 _sensfunc = {'shane_kast_blue/600_4310_d55':
                  {'std_file': 'spec1d_*Feige66*.fits'},
+             #'keck_demos/830G_LVM_8400':
+             #    {'std_file': 'spec1d_*S0206-HIP62745*.fits', 'sens_file': 'gemini_gnirs_32_sb_sxd.sens'},
              'gemini_gnirs/32_SB_SXD':
                  {'std_file': 'spec1d_*S0206-HIP62745*.fits', 'sens_file': 'gemini_gnirs_32_sb_sxd.sens'},
              'gemini_gmos/GS_HAM_R400_860':
@@ -163,6 +165,7 @@ _flux_setup = ['shane_kast_blue/600_4310_d55',
                ]
 
 _flux = ['shane_kast_blue/600_4310_d55',
+         #'keck_deimos/830G_LVM_8400',
          'gemini_gnirs/32_SB_SXD',
          'gemini_gmos/GS_HAM_R400_860',
          ]
