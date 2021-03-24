@@ -1,0 +1,30 @@
+# Auto-generated PypeIt file
+# Wed 24 Mar 2021 14:47:19
+
+# User-defined execution parameters
+[rdx]
+spectrograph = gtc_osiris
+
+# Setup
+setup read
+    Setup A:
+        dispname: R2500U
+          decker: 0.6
+         binning: 2,2
+setup end
+
+# Read in the data
+data read
+ path /Users/djones/Documents/GitHub/gtc_osiris/R2500U
+|                                                   filename |                 frametype |                 ra |                 dec |         target | dispname | decker | binning |              mjd |          airmass | exptime |
+|      0002789280-20201208-OSIRIS-OsirisCalibrationLamp.fits |                  arc,tilt | 107.65122499999998 |  29.492924444444444 |     ArcLamp_Xe |   R2500U |    0.6 |     2,2 | 59192.0424895684 |  1.1355080090028 |    12.0 |
+|      0002789281-20201208-OSIRIS-OsirisCalibrationLamp.fits |                  arc,tilt | 107.84767083333332 |          29.4932825 |     ArcLamp_Xe |   R2500U |    0.6 |     2,2 | 59192.0430219756 |  1.1355080090028 |   840.0 |
+|                 0002851158-20210217-OSIRIS-OsirisBias.fits |                      bias | 172.29369166666663 | -1.8303269444444443 |           BIAS |   R2500V |    0.6 |     2,2 | 59263.2161230212 | 1.43133794521904 |     0.0 |
+|                 0002851159-20210217-OSIRIS-OsirisBias.fits |                      bias |  172.3903958333333 | -1.8302652777777777 |           BIAS |   R2500V |    0.6 |     2,2 | 59263.2163892249 | 1.43133794521904 |     0.0 |
+|                 0002851160-20210217-OSIRIS-OsirisBias.fits |                      bias | 172.48280416666663 | -1.8302119444444445 |           BIAS |   R2500V |    0.6 |     2,2 | 59263.2166554287 | 1.43133794521904 |     0.0 |
+|         0002789353-20201208-OSIRIS-OsirisSpectralFlat.fits | pixelflat,illumflat,trace | 170.72125416666665 |  29.575108333333333 |   SpectralFlat |   R2500U |    0.6 |     2,2 |  59192.217107624 |  1.1355080090028 |   800.0 |
+|         0002789354-20201208-OSIRIS-OsirisSpectralFlat.fits | pixelflat,illumflat,trace |  174.1635458333333 |   29.57653722222222 |   SpectralFlat |   R2500U |    0.6 |     2,2 |  59192.226633087 |  1.1355080090028 |   800.0 |
+|         0002789355-20201208-OSIRIS-OsirisSpectralFlat.fits | pixelflat,illumflat,trace | 177.60136666666668 |           29.578195 |   SpectralFlat |   R2500U |    0.6 |     2,2 | 59192.2361701238 |  1.1355080090028 |   800.0 |
+| 0002878151-20210310-OSIRIS-OsirisLongSlitSpectroscopy.fits |                  standard |  76.44558749999997 |  52.786249444444444 | SPSTD_G191-B2B |   R2500U |   2.52 |     2,2 | 59283.8566701934 | 1.14388086896342 |    60.0 |
+data end
+
