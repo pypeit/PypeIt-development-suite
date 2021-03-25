@@ -347,15 +347,14 @@ class PypeItQuickLookTest(PypeItTest):
         if self.setup.instr == 'keck_nires':
 
             try:
-                # Place the masters into the NIRES_MASTERS environment variable if defined, otherwise
+                # Place the masters into the QL_MASTERS environment variable if defined, otherwise
                 # default to ${PYPEIT_DEV}/QL/NIRES_MASTERS.  To set that default we set the
                 # NIRES_MASTERS variable in the tests's environment
-                if 'NIRES_MASTERS' in os.environ:
-                    output_dir = os.environ['NIRES_MASTERS']
-                else:
-                    output_dir = os.path.join(self.setup.dev_path, 'QL', 'NIRES_MASTERS')
+                if 'QL_MASTERS' not in os.environ:
                     self.env = os.environ.copy()
-                    self.env['NIRES_MASTERS'] = output_dir
+                    self.env['QL_MASTERS'] = os.path.join(os.environ['PYPEIT_DEV'], 'QL')
+
+                output_dir = os.path.join(os.environ['QL_MASTERS'], 'NIRES_MASTERS')
 
                 # Build the masters with the output going to a log file
                 logfile = get_unique_file(os.path.join(self.setup.rdxdir, "build_nires_masters_output.log"))
@@ -368,11 +367,13 @@ class PypeItQuickLookTest(PypeItTest):
 
                 if result.returncode != 0:
                     self.error_msgs.append("Failed to generate NIRES masters.")
+                    self.passed = False
                     return False
             except Exception:
                 # Prevent any exceptions from escaping the "run" method
                 self.error_msgs.append("Exception building NIRES masters:")
                 self.error_msgs.append(traceback.format_exc())
+                self.passed = False
                 return False
 
         # Run the quick look test via the parent's run method
