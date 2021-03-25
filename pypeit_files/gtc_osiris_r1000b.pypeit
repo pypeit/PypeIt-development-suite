@@ -1,5 +1,5 @@
 # Auto-generated PypeIt file
-# Wed 24 Mar 2021 14:44:59
+# Thu 25 Mar 2021 08:25:11
 
 # User-defined execution parameters
 [rdx]
@@ -9,22 +9,22 @@ spectrograph = gtc_osiris
 setup read
     Setup A:
         dispname: R1000B
-          decker: 0.6
+          decker: 1.23
          binning: 2,2
 setup end
 
 # Read in the data
 data read
  path /Users/djones/Documents/GitHub/gtc_osiris/R1000B
-|                                                   filename |                 frametype |                 ra |                   dec |         target | dispname | decker | binning |              mjd |          airmass | exptime |
-|      0002789674-20201209-OSIRIS-OsirisCalibrationLamp.fits |                  arc,tilt | 181.35217916666667 | -0.008984999999999998 |   ArcLamp_HgAr |   R1000B |    0.6 |     2,2 | 59193.2403230997 | 13.3748135344195 |     3.6 |
-|      0002789675-20201209-OSIRIS-OsirisCalibrationLamp.fits |                  arc,tilt | 181.35217916666667 | -0.008973888888888889 |     ArcLamp_Ne |   R1000B |    0.6 |     2,2 | 59193.2408670811 | 13.3748135344195 |     2.1 |
-|                 0002851158-20210217-OSIRIS-OsirisBias.fits |                      bias | 172.29369166666663 |   -1.8303269444444443 |           BIAS |   R2500V |    0.6 |     2,2 | 59263.2161230212 | 1.43133794521904 |     0.0 |
-|                 0002851159-20210217-OSIRIS-OsirisBias.fits |                      bias |  172.3903958333333 |   -1.8302652777777777 |           BIAS |   R2500V |    0.6 |     2,2 | 59263.2163892249 | 1.43133794521904 |     0.0 |
-|                 0002851160-20210217-OSIRIS-OsirisBias.fits |                      bias | 172.48280416666663 |   -1.8302119444444445 |           BIAS |   R2500V |    0.6 |     2,2 | 59263.2166554287 | 1.43133794521904 |     0.0 |
-|         0002789676-20201209-OSIRIS-OsirisSpectralFlat.fits | pixelflat,illumflat,trace | 181.35217916666667 | -0.008970555555555555 |   SpectralFlat |   R1000B |    0.6 |     2,2 | 59193.2413994885 | 13.3748135344195 |    12.8 |
-|         0002789677-20201209-OSIRIS-OsirisSpectralFlat.fits | pixelflat,illumflat,trace | 181.35217916666667 | -0.008973333333333333 |   SpectralFlat |   R1000B |    0.6 |     2,2 |  59193.241827729 | 13.3748135344195 |    12.8 |
-|         0002789678-20201209-OSIRIS-OsirisSpectralFlat.fits | pixelflat,illumflat,trace | 181.35217916666667 | -0.008973333333333333 |   SpectralFlat |   R1000B |    0.6 |     2,2 | 59193.2422443959 | 13.3748135344195 |    12.8 |
-| 0002878148-20210310-OSIRIS-OsirisLongSlitSpectroscopy.fits |                  standard |  76.44561249999998 |     52.78626222222222 | SPSTD_G191-B2B |   R1000B |   2.52 |     2,2 | 59283.8544595453 | 1.14031308762201 |    20.0 |
+|                                                   filename |                 frametype |                 ra |                dec |              target | dispname | decker | binning |              mjd |          airmass | exptime |
+|      0000260380-20120918-OSIRIS-OsirisCalibrationLamp.fits |                  arc,tilt |  193.1760833333333 |          63.866325 |        ArcLamp_HgAr |   R1000B |   1.23 |     2,2 | 56188.6688313691 |  1.2884631632499 |     6.0 |
+|      0000260381-20120918-OSIRIS-OsirisCalibrationLamp.fits |                  arc,tilt | 193.42319999999995 |  63.86622638888889 |          ArcLamp_Ne |   R1000B |   1.23 |     2,2 | 56188.6695142395 |  1.2884631632499 |     3.5 |
+|                 0000260690-20120919-OSIRIS-OsirisBias.fits |                      bias | 236.78426249999998 |  64.06458805555555 |                BIAS |     OPEN |    0.0 |     2,2 | 56189.7545189932 | 1.24594966190452 |     0.0 |
+|                 0000260691-20120919-OSIRIS-OsirisBias.fits |                      bias | 236.95999999999995 |  64.06434916666666 |                BIAS |     OPEN |    0.0 |     2,2 | 56189.7550051044 | 1.24594966190452 |     0.0 |
+|                 0000260695-20120919-OSIRIS-OsirisBias.fits |                      bias | 237.65877916666665 |  64.06337416666666 |                BIAS |     OPEN |    0.0 |     2,2 | 56189.7569379747 | 1.24594966190452 |     0.0 |
+|         0000260382-20120918-OSIRIS-OsirisSpectralFlat.fits | pixelflat,illumflat,trace | 193.65775833333333 | 63.866261111111115 |        SpectralFlat |   R1000B |   1.23 |     2,2 | 56188.6701623877 |  1.2884631632499 |     8.0 |
+|         0000260383-20120918-OSIRIS-OsirisSpectralFlat.fits | pixelflat,illumflat,trace | 193.87137916666663 | 63.866031944444444 |        SpectralFlat |   R1000B |   1.23 |     2,2 | 56188.6707526654 |  1.2884631632499 |     8.0 |
+|         0000260384-20120918-OSIRIS-OsirisSpectralFlat.fits | pixelflat,illumflat,trace | 194.08080416666664 |  63.86594027777778 |        SpectralFlat |   R1000B |   1.23 |     2,2 | 56188.6713429432 |  1.2884631632499 |     8.0 |
+| 0000260786-20120919-OSIRIS-OsirisLongSlitSpectroscopy.fits |                   science |  229.2515833333333 |  39.18536666666667 | UCDtan_05_R.eq.16.0 |   R1000B |   1.23 |     2,2 | 56189.8898662155 | 1.94463275653557 |   180.0 |
 data end
 

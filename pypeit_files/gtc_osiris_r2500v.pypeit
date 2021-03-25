@@ -1,5 +1,5 @@
 # Auto-generated PypeIt file
-# Wed 24 Mar 2021 14:47:32
+# Thu 25 Mar 2021 08:06:02
 
 # User-defined execution parameters
 [rdx]
@@ -26,6 +26,7 @@ data read
 |         0002789268-20201208-OSIRIS-OsirisSpectralFlat.fits | pixelflat,illumflat,trace | 103.31292499999998 |   29.48332083333333 |   SpectralFlat |   R2500V |    0.6 |     2,2 | 59192.0304641052 |  1.1355080090028 |    72.0 |
 |         0002789269-20201208-OSIRIS-OsirisSpectralFlat.fits | pixelflat,illumflat,trace | 103.71013333333333 |  29.484238611111113 |   SpectralFlat |   R2500V |    0.6 |     2,2 | 59192.0315752165 |  1.1355080090028 |    72.0 |
 |         0002789270-20201208-OSIRIS-OsirisSpectralFlat.fits | pixelflat,illumflat,trace | 104.11142083333333 |  29.485554166666667 |   SpectralFlat |   R2500V |    0.6 |     2,2 | 59192.0326863275 |  1.1355080090028 |    72.0 |
+| 0002527948-20200221-OSIRIS-OsirisLongSlitSpectroscopy.fits |                   science | 10.235462499999999 |   40.58916277777778 |      AT2019zhd |   R2500V |    0.6 |     2,2 | 58900.8428544412 | 1.71051933969055 |   360.0 |
 | 0002878152-20210310-OSIRIS-OsirisLongSlitSpectroscopy.fits |                  standard |  76.44555833333332 |   52.78624833333333 | SPSTD_G191-B2B |   R2500V |   2.52 |     2,2 | 59283.8577118601 | 1.14561309821435 |    40.0 |
 data end
 
