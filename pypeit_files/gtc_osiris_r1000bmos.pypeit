@@ -1,0 +1,30 @@
+# Auto-generated PypeIt file
+# Thu 25 Mar 2021 10:40:19
+
+# User-defined execution parameters
+[rdx]
+spectrograph = gtc_osiris
+
+# Setup
+setup read
+    Setup A:
+        dispname: R1000B
+          decker: GTC4-14AMEX_0001
+         binning: 2,2
+setup end
+
+# Read in the data
+data read
+ path /Users/djones/Documents/GitHub/PYPEIT_DEV/gtc_osiris/RAW_DATA/R1000BMOS
+|                                              filename |                 frametype |                 ra |                dec |       target | dispname |           decker | binning |              mjd |          airmass | exptime |
+| 0000652314-20140403-OSIRIS-OsirisCalibrationLamp.fits |                  arc,tilt |        253.0729375 |  36.76616722222222 | ArcLamp_HgAr |   R1000B | GTC4-14AMEX_0001 |     2,2 | 56751.2623775209 | 1.03708682740987 |     3.6 |
+| 0000652315-20140403-OSIRIS-OsirisCalibrationLamp.fits |                  arc,tilt | 253.27354166666666 |  36.76590916666667 |   ArcLamp_Ne |   R1000B | GTC4-14AMEX_0001 |     2,2 | 56751.2629330763 | 1.03708682740987 |     2.1 |
+|            0000260690-20120919-OSIRIS-OsirisBias.fits |                      bias | 236.78426249999998 |  64.06458805555555 |         BIAS |     OPEN |           NOMASK |     2,2 | 56189.7545189932 | 1.24594966190452 |     0.0 |
+|            0000260691-20120919-OSIRIS-OsirisBias.fits |                      bias | 236.95999999999995 |  64.06434916666666 |         BIAS |     OPEN |           NOMASK |     2,2 | 56189.7550051044 | 1.24594966190452 |     0.0 |
+|            0000260695-20120919-OSIRIS-OsirisBias.fits |                      bias | 237.65877916666665 |  64.06337416666666 |         BIAS |     OPEN |           NOMASK |     2,2 | 56189.7569379747 | 1.24594966190452 |     0.0 |
+|    0000652317-20140403-OSIRIS-OsirisSpectralFlat.fits | pixelflat,illumflat,trace | 253.61206249999995 |  36.76547194444444 | SpectralFlat |   R1000B | GTC4-14AMEX_0001 |     2,2 | 56751.2638705763 | 1.03708682740987 |    7.68 |
+|    0000652318-20140403-OSIRIS-OsirisSpectralFlat.fits | pixelflat,illumflat,trace | 253.74579999999995 | 36.765299444444445 | SpectralFlat |   R1000B | GTC4-14AMEX_0001 |     2,2 | 56751.2642293726 | 1.03708682740987 |    7.68 |
+|    0000652319-20140403-OSIRIS-OsirisSpectralFlat.fits | pixelflat,illumflat,trace | 253.86282083333333 |         36.7651475 | SpectralFlat |   R1000B | GTC4-14AMEX_0001 |     2,2 | 56751.2645534474 | 1.03708682740987 |    7.68 |
+|             0000652269-20140403-OSIRIS-OsirisMOS.fits |                   science | 148.69829166666668 |  69.02815305555555 |     M81-MOS1 |   R1000B | GTC4-14AMEX_0001 |     2,2 | 56750.9295534474 | 1.30904275870905 |  1308.0 |
+data end
+
