@@ -9,6 +9,9 @@ spectrograph = gtc_osiris
   [[skysub]]
     bspline_spacing=0.95
 
+[calibrations]
+  [[slitedges]]
+    minimum_slit_length = 4.
 
 
 # Setup
