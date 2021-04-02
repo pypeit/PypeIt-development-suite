@@ -10,6 +10,8 @@
 [reduce]
     [[findobj]]
         maxnumber = 5
+   [[extraction]]
+	optimal_fwhm = 1.
 
 # Setup
 setup read
