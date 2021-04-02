@@ -329,9 +329,13 @@ class PypeItQuickLookTest(PypeItTest):
         if self.setup.instr == 'keck_nires':
             command_line = ['pypeit_ql_keck_nires']
         elif self.setup.instr == 'keck_mosfire':
+<<<<<<< HEAD
             command_line = ['pypeit_ql_keck_mosfire']
             if self.pargs.quiet:
                 command_line += ['--no_gui', '--writefits']
+=======
+            command_line = ['pypeit_ql_keck_mosfire', '--nogui', '--writefits']
+>>>>>>> Add support for generating MOSFIRE masters by dev suite
         else:
             command_line = ['pypeit_ql_mos', self.setup.instr]
 
@@ -345,36 +349,31 @@ class PypeItQuickLookTest(PypeItTest):
     def run(self):
         """Generate any required quick look masters before running the quick look test"""
 
-        #if not self.mos:
-        # JFH Is this correct
-        if self.setup.instr == 'keck_nires':
-
+        if self.setup.instr == 'keck_nires' or (self.setup.instr == 'keck_mosfire' and self.setup.name == 'Y_long'):
             try:
                 # Place the masters into the QL_MASTERS environment variable if defined, otherwise
-                # default to ${PYPEIT_DEV}/QL/NIRES_MASTERS.  To set that default we set the
-                # NIRES_MASTERS variable in the tests's environment
+                # default to ${PYPEIT_DEV}/QL/.  To set that default we set the
+                # QL_MASTERS variable in the tests's environment
                 if 'QL_MASTERS' not in os.environ:
                     self.env = os.environ.copy()
-                    self.env['QL_MASTERS'] = os.path.join(os.environ['PYPEIT_DEV'], 'QL')
-
-                output_dir = os.path.join(os.environ['QL_MASTERS'], 'NIRES_MASTERS')
+                    self.env['QL_MASTERS'] = os.path.join(os.environ['PYPEIT_DEV'], 'QL_MASTERS')
 
                 # Build the masters with the output going to a log file
-                logfile = get_unique_file(os.path.join(self.setup.rdxdir, "build_nires_masters_output.log"))
+                logfile = get_unique_file(os.path.join(self.setup.rdxdir, "build_ql_masters_output.log"))
                 with open(logfile, "w") as log:
-                    result = subprocess.run([os.path.join(self.setup.dev_path, 'build_nires_masters'),
-                                             '--redux_dir', self.redux_dir, '--force_copy', '--output_dir', output_dir],
+                    result = subprocess.run([os.path.join(self.setup.dev_path, 'build_ql_masters'),
+                                             self.setup.instr, self.setup.name, '--redux_dir', self.redux_dir, '--force_copy'],
                                             stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
 
-                    print(result.stdout, file=log)
+                    print(result.stdout if isinstance(result.stdout, str) else result.stdout.decode(errors='replace'), file=log)
 
                 if result.returncode != 0:
-                    self.error_msgs.append("Failed to generate NIRES masters.")
+                    self.error_msgs.append("Failed to generate QL masters.")
                     self.passed = False
                     return False
             except Exception:
                 # Prevent any exceptions from escaping the "run" method
-                self.error_msgs.append("Exception building NIRES masters:")
+                self.error_msgs.append("Exception building QL masters:")
                 self.error_msgs.append(traceback.format_exc())
                 self.passed = False
                 return False
