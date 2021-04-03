@@ -124,6 +124,8 @@ class TestSetup(object):
         tests (:obj:`list` of :obj:`PypeItTest`): The list of tests to run in this test setup. The tests will be run
                                                   in sequential order
 
+        missing_files (:obj:`list` of str): List of missing files preventing the test setup from running.
+
     """
     def __init__(self, instr, name, rawdir, rdxdir, dev_path):
         self.instr = instr
@@ -136,6 +138,7 @@ class TestSetup(object):
         self.std_pyp_file = None
         self.generate_pyp_file = False
         self.tests = []
+        self.missing_files = []
 
     def __str__(self):
         """Return a string representation of this setup of the format "instr/name"""""
@@ -148,23 +151,6 @@ class TestSetup(object):
         """
         return self.priority < other.priority
 
-    def check_for_missing_files(self):
-        """
-        Check for any missing files needed to run the tests in this setup.
-
-        Returns:
-            A list of missing files or paths the test setup requires to run.
-        """
-        missing_files = []
-
-        # Check for missing raw data
-        if not os.path.exists(self.rawdir):
-            missing_files.append(self.rawdir)
-
-        for test in self.tests:
-            missing_files += test.check_for_missing_files()
-
-        return missing_files
 
 def red_text(text):
     """Utiltiy method to wrap text in the escape sequences to make it appear red in a terminal"""
@@ -582,11 +568,12 @@ def main():
         if pargs.tests in tests_that_only_use_dev_setups:
             setup_names = devsetups[instr]
 
-        # Build test setups and check for missing files
+        # Build test setups, check for missing files, and run any prep work
         for setup_name in setup_names:
 
             setup = build_test_setup(pargs, instr, setup_name, flg_after, flg_ql, priority_list)
-            missing_files += setup.check_for_missing_files()
+            missing_files += setup.missing_files
+
             # set setup priority from file
             setups.append(setup)
 
@@ -676,38 +663,58 @@ def build_test_setup(pargs, instr, setup_name, flg_after, flg_ql, priority_list)
         # Make the directory
         os.makedirs(rdxdir)
 
+    # Create the test setup and set it's priority
     setup = TestSetup(instr, setup_name, rawdir, rdxdir, dev_path)
-
     priority_list.set_test_setup_priority(setup)
 
-    for test in all_tests:
-        if '*' in test['setups']:
+    # Go through each test for this setup and add it to the setup if it's
+    # selected by the command line arguments
+    for test_descr in all_tests:
+        if '*' in test_descr['setups']:
             key = '*'
-        elif setup.instr in test['setups']:
+        elif setup.instr in test_descr['setups']:
             key = setup.instr
-        elif setup.key in test['setups']:
+        elif setup.key in test_descr['setups']:
             key = setup.key
         else:
             continue
 
-        if pargs.prep_only and test['type'] != TestPhase.PREP:
-            continue
-
-        if pargs.tests == "reduce" and test['type'] not in (TestPhase.PREP, TestPhase.REDUCE):
-            continue
-
-        if flg_after and test['type'] not in (TestPhase.PREP, TestPhase.AFTERBURN):
-            continue
-
-        if flg_ql and test['type'] not in (TestPhase.PREP, TestPhase.QL):
-            continue
-
-        if isinstance(test['setups'], dict):
-            kwargs = test['setups'][key]
+        if isinstance(test_descr['setups'], dict):
+            kwargs = test_descr['setups'][key]
         else:
             kwargs = dict()
 
-        setup.tests.append(test['factory'](setup, pargs, **kwargs))
+        # Create the test, this will also run any prep_only steps in the
+        # __init__ method
+        try:
+            test = test_descr['factory'](setup, pargs, **kwargs)
+        except FileNotFoundError as e:
+            # If the test prep work found a missing file, just record it in the
+            # list of missing files. This allows all missing files for the
+            # test suite to be reported at once
+            setup.missing_files.append(str(e))
+            continue
+
+        # Check for any missing files
+        missing_files = test.check_for_missing_files()
+        if len(missing_files) > 0:
+            setup.missing_files += missing_files
+            continue
+
+        # Skip the test if it wasn't selected by the command line
+        if pargs.prep_only and test_descr['type'] != TestPhase.PREP:
+            continue
+
+        if pargs.tests == "reduce" and test_descr['type'] not in (TestPhase.PREP, TestPhase.REDUCE):
+            continue
+
+        if flg_after and test_descr['type'] not in (TestPhase.PREP, TestPhase.AFTERBURN):
+            continue
+
+        if flg_ql and test_descr['type'] not in (TestPhase.PREP, TestPhase.QL):
+            continue
+
+        setup.tests.append(test)
 
     return setup
 

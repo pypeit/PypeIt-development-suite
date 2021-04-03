@@ -32,6 +32,9 @@ class PypeItTest(ABC):
         self.description = description
         self.log_suffix = log_suffix
 
+        self.env = os.environ
+        """ :obj:`Mapping`: OS Environment to run the test under."""
+
         self.passed = None
         """ bool: True if the test passed, False if the test failed, None if the test is in progress"""
 
@@ -84,7 +87,7 @@ class PypeItTest(ABC):
                 try:
                     self.command_line = self.build_command_line()
                     self.start_time = datetime.datetime.now()
-                    child = subprocess.Popen(self.command_line, stdout=f, stderr=f, cwd=self.setup.rdxdir)
+                    child = subprocess.Popen(self.command_line, stdout=f, stderr=f, env=self.env, cwd=self.setup.rdxdir)
                     self.pid = child.pid
                     child.wait()
                     self.end_time = datetime.datetime.now()
@@ -107,6 +110,7 @@ class PypeItTest(ABC):
         """Return a list of any missing files the test requires. This is called before testing begins, so
         files generated during testing should be included"""
         return []
+
 
 class PypeItSetupTest(PypeItTest):
     """Test subclass that runs pypeit_setup"""
@@ -150,17 +154,13 @@ class PypeItReduceTest(PypeItTest):
         super().__init__(setup, description, "test")
 
         self.std = std
-
+        # If the pypeit file isn't being created by pypeit_setup, copy it and update it's path
         if not self.setup.generate_pyp_file:
             self.pyp_file = template_pypeit_file(self.setup.dev_path,
                                                  self.setup.instr,
                                                  self.setup.name,
                                                  self.std)
 
-    def build_command_line(self):
-        if self.setup.generate_pyp_file:
-            self.pyp_file = self.setup.pyp_file
-        else:
             self.pyp_file = fix_pypeit_file_directory(self.pyp_file,
                                                       self.setup.dev_path,
                                                       self.setup.rawdir,
@@ -168,6 +168,10 @@ class PypeItReduceTest(PypeItTest):
                                                       self.setup.name,
                                                       self.setup.rdxdir,
                                                       self.std)
+
+    def build_command_line(self):
+        if self.setup.generate_pyp_file:
+            self.pyp_file = self.setup.pyp_file
 
         command_line = ['run_pypeit', self.pyp_file, '-o']
         if self.masters:
@@ -309,12 +313,13 @@ class PypeItTelluricTest(PypeItTest):
         return command_line
 
 class PypeItQuickLookTest(PypeItTest):
-    """Test subclass that runs pypeit_ql_mos"""
+    """Test subclass that runs pypeit_ql* scripts"""
 
     def __init__(self, setup, pargs, files, mos=False):
-        super().__init__(setup, "pypeit_ql_mos", "test_ql")
+        super().__init__(setup, "pypeit_ql", "test_ql")
         self.files = files
         self.mos = mos
+        self.redux_dir = os.path.abspath(pargs.outputdir)
 
     def build_command_line(self):
         command_line = ['pypeit_ql_mos', self.setup.instr] if self.mos else ['pypeit_ql_keck_nires']
@@ -322,6 +327,42 @@ class PypeItQuickLookTest(PypeItTest):
 
         return command_line
 
+    def run(self):
+        """Generate any required quick look masters before running the quick look test"""
+
+        if not self.mos:
+
+            try:
+                # Place the masters into the NIRES_MASTERS environment variable if defined, otherwise
+                # default to ${PYPEIT_DEV}/QL/NIRES_MASTERS.  To set that default we set the
+                # NIRES_MASTERS variable in the tests's environment
+                if 'NIRES_MASTERS' in os.environ:
+                    output_dir = os.environ['NIRES_MASTERS']
+                else:
+                    output_dir = os.path.join(self.setup.dev_path, 'QL', 'NIRES_MASTERS')
+                    self.env = os.environ.copy()
+                    self.env['NIRES_MASTERS'] = output_dir
+
+                # Build the masters with the output going to a log file
+                logfile = get_unique_file(os.path.join(self.setup.rdxdir, "build_nires_masters_output.log"))
+                with open(logfile, "w") as log:
+                    result = subprocess.run([os.path.join(self.setup.dev_path, 'build_nires_masters'),
+                                             '--redux_dir', self.redux_dir, '--force_copy', '--output_dir', output_dir],
+                                            stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
+
+                    print(result.stdout, file=log)
+
+                if result.returncode != 0:
+                    self.error_msgs.append("Failed to generate NIRES masters.")
+                    return False
+            except Exception:
+                # Prevent any exceptions from escaping the "run" method
+                self.error_msgs.append("Exception building NIRES masters:")
+                self.error_msgs.append(traceback.format_exc())
+                return False
+
+        # Run the quick look test via the parent's run method
+        return super().run()
 
 def pypeit_file_name(instr, setup, std=False):
     base = '{0}_{1}'.format(instr.lower(), setup.lower())
@@ -350,7 +391,7 @@ def fix_pypeit_file_directory(pyp_file, dev_path, raw_data, instr, setup, rdxdir
     """
     # Read the pypeit file
     if not os.path.isfile(pyp_file):
-        raise FileNotFoundError('File does not exist: {0}'.format(pyp_file))
+        raise FileNotFoundError(pyp_file)
     with open(pyp_file, 'r') as infile:
         lines = infile.readlines()
 
@@ -387,7 +428,7 @@ def get_unique_file(file):
     file_num = 2
     (file_base, file_ext) = os.path.splitext(file)
     while os.path.exists(file):
-        file = f'{file_base}.{file_num}.{file_ext}'
+        file = f'{file_base}.{file_num}{file_ext}'
         file_num += 1
 
     return file
