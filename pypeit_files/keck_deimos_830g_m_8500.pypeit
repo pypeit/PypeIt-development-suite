@@ -7,6 +7,8 @@
 [baseprocess]
    use_biasimage=False
 [reduce]
+   [[findobj]]
+         sig_thresh = 100.
    [[extraction]]
       use_2dmodel_mask = False
       boxcar_radius = 1.5  # arcsec
