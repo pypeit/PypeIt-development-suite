@@ -198,8 +198,6 @@ def measure_sky_lines(slits, nslits, hdu, orig=True):
                                                lower=3., upper=3.)
                 # Save in tuple (flipped)
                 fitted_line = linear_fit.fitc
-                fitted_line2 = fit_sky_linear(sky_lines,sky_diff,sky_ediff)
-                embed(header='201 of dmost')
             
             slits['fit_slope'][i] = fitted_line[1]
             slits['fit_b'][i]     = fitted_line[0]
