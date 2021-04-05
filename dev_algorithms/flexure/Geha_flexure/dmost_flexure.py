@@ -8,12 +8,17 @@ import matplotlib.pyplot as plt
 import matplotlib.backends.backend_pdf
 
 from scipy.optimize import curve_fit
-from astropy.modeling import models, fitting
+from scipy.interpolate import interp1d
+
+from pypeit.core import fitting
+from pypeit.core.wavecal import wvutils
+#from astropy.modeling import models, fitting
 
 import dmost_utils, dmost_slit_matching
 
-DEIMOS_DROPBOX = '/Users/mgeha/Dropbox/DEIMOS/'
+from IPython import embed
 
+#DEIMOS_DROPBOX = '/Users/mgeha/Dropbox/DEIMOS/'
 
 
 ########################################
@@ -57,10 +62,12 @@ def spec_normalize(wave,spec,ivar,nlow=75,npoly=1):
 #####################################################
 # CALCULATE SKY EMISSION LINE 
 #
-def sky_em_residuals(wave,flux,ivar,plot=0):
+def sky_em_residuals(wave,flux,ivar,plot=0, orig=True, toler=0.3):
 
     # READ SKY LINES -- THESE ARE VACUUM WAVELENGTHS
-    sky_file = DEIMOS_DROPBOX+'Other_data/sky_single_mg.dat'
+    #sky_file = DEIMOS_DROPBOX+'Other_data/sky_single_mg.dat'
+    # TODO -- Path in PypeIt
+    sky_file = 'sky_single_mg.dat'
     sky=ascii.read(sky_file)
     
     dwave = []
@@ -69,37 +76,61 @@ def sky_em_residuals(wave,flux,ivar,plot=0):
     los = []
     los_err= []
 
+    if orig:
+        for line in sky['Wave']:
+            wline = [line-5.,line+5.] 
+            mw    = (wave > wline[0]) & (wave < wline[1])
+            
+            p=[0,0,0,0]
+            if np.sum(mw) > 20:
+                p0 = gauss_guess(wave[mw],flux[mw])
+                try:
+                    p, pcov = curve_fit(gaussian,wave[mw],flux[mw], 
+                                        sigma = 1./np.sqrt(ivar[mw]), p0=p0)
+                    perr = np.sqrt(np.diag(pcov))
+                except:
+                    p=p0
+                    p[2] = -99
+                    perr=p0
+                gfit = gaussian(wave[mw],*p)
+                d = p[2] - line
+
+                if (plot==1):
+                    plt.figure(figsize=(8,3)) 
+                    plt.plot(wave[mw],gfit,'g')
+                    plt.plot(wave[mw],flux[mw])
+                    plt.title('{} {:0.2f} diff= {:0.3f}'.format(line,p[3],d))
+
+                if ~np.isfinite(perr[2]):
+                    perr[2] = 1000.
+                dwave = np.append(dwave,line)
+                diff = np.append(diff,d)
+                diff_err = np.append(diff_err,perr[2])
+                los = np.append(los,p[3])
+                los_err = np.append(los_err,perr[3])
+    # New approach
+    all_tcent, all_ecent, cut_tcent, icut, arc_cont_sub, \
+        all_twid, all_tampl = wvutils.arc_lines_from_spec(
+            flux, sigdetect=5., return_more=True)
+
+    # Linearly interpolate wavelengths 
+    # Match up to known lines
+    dwave2 = []
+    diff2 = []
+    diff_err2  = []
+    los2 = []
+    f_wv = interp1d(np.arange(wave.size), wave)
+    gd_wave = f_wv(all_tcent[icut])
     for line in sky['Wave']:
-        wline = [line-5.,line+5.] 
-        mw    = (wave > wline[0]) & (wave < wline[1])
-        
-        p=[0,0,0,0]
-        if np.sum(mw) > 20:
-            p0 = gauss_guess(wave[mw],flux[mw])
-            try:
-                p, pcov = curve_fit(gaussian,wave[mw],flux[mw], sigma = 1./np.sqrt(ivar[mw]), p0=p0)
-                perr = np.sqrt(np.diag(pcov))
-            except:
-                p=p0
-                p[2] = -99
-                perr=p0
-            gfit = gaussian(wave[mw],*p)
-            d = p[2] - line
+        if np.absmin(line-gd_wave) < toler:
+            imin = np.argmin(np.abs(np.absline-gd_wave))
+            dwave2.append(line)
+            diff2.append(gd_wave[imin]-line)
+            diff_err2.append(all_ecent[icut][imin])
+            los2.append(all_twid[icut][imin])
 
-            if (plot==1):
-                plt.figure(figsize=(8,3)) 
-                plt.plot(wave[mw],gfit,'g')
-                plt.plot(wave[mw],flux[mw])
-                plt.title('{} {:0.2f} diff= {:0.3f}'.format(line,p[3],d))
 
-            if ~np.isfinite(perr[2]):
-                perr[2] = 1000.
-            dwave = np.append(dwave,line)
-            diff = np.append(diff,d)
-            diff_err = np.append(diff_err,perr[2])
-            los = np.append(los,p[3])
-            los_err = np.append(los_err,perr[3])
-
+    embed(header='compare these on 113 of dmost_flexure')
             
     m=(diff_err < 0.1) & (diff_err > 0.0)
     return dwave[m],diff[m],diff_err[m],los[m],los_err[m]
