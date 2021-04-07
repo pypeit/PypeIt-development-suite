@@ -20,7 +20,7 @@ from IPython import embed
 
 import numpy as np
 
-from .test_setups import TestPhase, all_tests, develop_setups, supported_instruments
+from .test_setups import TestPhase, all_tests, develop_setups, ql_master_setups, supported_instruments
 from .pypeit_tests import get_unique_file
 
 test_run_queue = PriorityQueue()
@@ -436,7 +436,7 @@ def parser(options=None):
                              'can provide the telescope or the spectrograph, but beware of '
                              'non-unique matches.  E.g. \'mage\' selects all the magellan '
                              'instruments, not just \'magellan_mage\'.  Options include: '
-                             'develop, reduce, afterburn, all, ql, {0}'.format(', '.join(all_tests)))
+                             'develop, reduce, afterburn, all, ql, qlrelease, {0}'.format(', '.join(all_tests)))
     parser.add_argument('-o', '--outputdir', type=str, default='REDUX_OUT',
                         help='Output folder.')
     # TODO: Why is this an option?
@@ -458,7 +458,8 @@ def parser(options=None):
                              'detailed report at the end of testing. This has no effect if -q is given')
     parser.add_argument('-r', '--report', default=None, type=str,
                         help='Write a detailed test report to REPORT.')
-
+    parser.add_argument('--release', default=False, action='store_true',
+                        help='Any quicklook masters generated will be "release" versions.')
     return parser.parse_args() if options is None else parser.parse_args(options)
 
 def thread_target(test_report):
@@ -554,6 +555,8 @@ def main():
             flg_after = True
         elif pargs.tests == 'ql':
             flg_ql = True
+    elif pargs.tests == 'qlrelease':
+        instruments = ql_master_setups.keys()
     else:
         instruments = np.array([item for item in all_instruments 
                                     if pargs.tests.lower() in item.lower()])
@@ -609,6 +612,9 @@ def main():
         # Limit to development setups
         if pargs.tests in tests_that_only_use_dev_setups:
             setup_names = devsetups[instr]
+        elif pargs.tests == 'qlrelease':
+            setup_names = ql_master_setups[instr]
+            pargs.release = True
 
         # Build test setups, check for missing files, and run any prep work
         for setup_name in setup_names:

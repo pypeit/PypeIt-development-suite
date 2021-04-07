@@ -361,8 +361,11 @@ class PypeItQuickLookTest(PypeItTest):
                 # Build the masters with the output going to a log file
                 logfile = get_unique_file(os.path.join(self.setup.rdxdir, "build_ql_masters_output.log"))
                 with open(logfile, "w") as log:
-                    result = subprocess.run([os.path.join(self.setup.dev_path, 'build_ql_masters'),
-                                             self.setup.instr, self.setup.name, '--redux_dir', self.redux_dir, '--force_copy'],
+                    build_args = [self.setup.instr, self.setup.name, '--redux_dir', self.redux_dir, '--force_copy']
+                    if self.pargs.release:
+                        build_args.append('--release')
+
+                    result = subprocess.run([os.path.join(self.setup.dev_path, 'build_ql_masters'), *build_args],
                                             stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
 
                     print(result.stdout if isinstance(result.stdout, str) else result.stdout.decode(errors='replace'), file=log)

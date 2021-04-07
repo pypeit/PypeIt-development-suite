@@ -17,6 +17,7 @@ import traceback
 
 import argparse
 
+from pypeit import version as pypeit_version
 
 def parser(options=None):
 
@@ -27,6 +28,9 @@ def parser(options=None):
                                                                     'or "all". Defaults to "all".')
     parser.add_argument('setup', type=str, default="all", help='Instrument setup to generate quick look masters for. '
                                                                'Options depend on instrument. Defaults to "all".')
+    parser.add_argument('--release', help='Add the "release" suffix to the files, signifying that they are relaese '
+                                          'versions of the masers. Defaults to "False".',
+                        action='store_true', default=False)
     parser.add_argument('--redux_dir', type=str, help='Full path to the REDUX dir; '
                                                       'default is REDUX_OUT in current directory')
     parser.add_argument('-o', '--output_dir', type=str,
@@ -46,6 +50,12 @@ def main():
     redux_dir = os.path.join(os.getcwd(), 'REDUX_OUT') if pargs.redux_dir is None \
                     else pargs.redux_dir
 
+    
+    if 'dev' in pypeit_version and pargs.release is False:
+        version_dir = 'develop'
+    else:
+        version_dir = 'release'
+
     # Set the output dir where the masters should be placed.
     if pargs.output_dir is None:
         if 'QL_MASTERS' in os.environ:
@@ -55,6 +65,8 @@ def main():
     else:
         ql_masters = pargs.output_dir
 
+    ql_masters = os.path.join(ql_masters, version_dir)
+    
     # Build the list of files to copy and where to copy them to.
     # This includes updating any filenames to match what the quicklook
     # scripts expect.
