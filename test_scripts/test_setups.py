@@ -109,7 +109,7 @@ develop_setups = {'bok_bc': ['600'],
                   'gemini_gmos': ['GS_HAM_R400_700', 'GS_HAM_R400_860', 'GN_HAM_R400_885', 'GN_HAM_NS_B600_620'],
                   'gemini_flamingos2': ['HK_HK', 'JH_JH'],
                   'keck_deimos': ['600ZD_M_6500', '600ZD_tilted', '1200G_M_7750', '830G_LVM_8400', '830G_M_8100_26',
-                                  '830G_M_8500', '830G_L_8100', '1200B_M_5200', '1200G_M_5500', '900ZD_M_6000', '1200B_LVM_5200'],
+                                  '830G_M_8500', '830G_L_8100', '1200B_M_5200', '1200G_M_5500', '900ZD_M_6000', '1200B_LVM_5200', '900ZD_LVM_5500'],
                   'keck_kcwi': ['bh2_4200'],
                   'keck_nires': ['NIRES'],
                   'keck_nirspec': ['LOW_NIRSPEC-1'],
@@ -157,6 +157,8 @@ _sensfunc = {'shane_kast_blue/600_4310_d55':
                  {'std_file': 'spec1d_*S0206-HIP62745*.fits', 'sens_file': 'gemini_gnirs_32_sb_sxd.sens'},
              'gemini_gmos/GS_HAM_R400_860':
                  {'std_file': 'spec1d_**GD71*.fits'},
+              'keck_deimos/900ZD_LVM_5500':
+                 {'std_file': 'spec1d_*Feige110*.fits', 'sens_file': 'keck_deimos_900zd_lvm_5500.sens'},
              }
 
 _flux_setup = ['shane_kast_blue/600_4310_d55',
@@ -168,6 +170,7 @@ _flux = ['shane_kast_blue/600_4310_d55',
          #'keck_deimos/830G_LVM_8400',
          'gemini_gnirs/32_SB_SXD',
          'gemini_gmos/GS_HAM_R400_860',
+         'keck_deimos/900ZD_LVM_5500',
          ]
 
 _coadd1d = ['shane_kast_blue/600_4310_d55',
