@@ -271,6 +271,7 @@ def fit_mask_surfaces(slits):
     pmodel_los = fit_p(p_init, slits['objra'][mgood], 
                        slits['objdec'][mgood], slits['fit_los'][mgood])
 
+    embed(header='274 of dmostf')
     
     return pmodel_m,pmodel_b,pmodel_los
 
