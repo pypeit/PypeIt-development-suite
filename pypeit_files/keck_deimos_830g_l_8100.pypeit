@@ -10,8 +10,9 @@
 [reduce]
     [[findobj]]
         maxnumber = 5
+        find_fwhm = 9.  #pixels
    [[extraction]]
-	optimal_fwhm = 1.
+	use_user_fwhm = True
 
 # Setup
 setup read
