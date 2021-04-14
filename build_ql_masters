@@ -11,10 +11,13 @@ Execute it with:   ``./build_ql_masters`` after running the dev suite on
 """
 
 import os
+import sys
 import shutil
 import glob
 import traceback
-
+from collections import namedtuple
+from test_scripts.test_main import build_test_setup
+from test_scripts.pypeit_tests import PypeItQuickLookTest
 import argparse
 
 from pypeit import version as pypeit_version
@@ -79,32 +82,66 @@ def main():
         os.makedirs(nires_dest_dir, exist_ok=True)
 
         keck_nires_path = os.path.join(redux_dir, 'keck_nires', 'NIRES', 'Masters')
-        source_files = glob.glob(os.path.join(keck_nires_path, '*2_01*'))
-        dest_files = [os.path.join(nires_dest_dir, os.path.basename(x).replace('_2_','_1_')) for x in source_files]
+        source_filters = [os.path.join(keck_nires_path, '*2_01*'),
+                          os.path.join(keck_nires_path, 'MasterFlat_A_7_01.fits'), 
+                          os.path.join(keck_nires_path, 'MasterSlits_A_7_01.fits.gz')]
 
-        # A few more
-        for root in ['MasterFlat_A_7_01.fits', 'MasterSlits_A_7_01.fits.gz']:
-            source_files.append(os.path.join(keck_nires_path, root))
-            dest_files.append(os.path.join(nires_dest_dir, root.replace('7','1')))
+        found_files = find_source_files(source_filters)
+        if len(found_files) == 0:
+            print ("Could not find all NIRES masters, attempting to generate them...")
+            run_devsuite('keck_nires', 'NIRES', redux_dir, pargs.release)
+
+            found_files = find_source_files(source_filters)
+            if len(found_files) == 0:
+                print ("Could not generate all NIRES masters.")
+                sys.exit(1)
+
+
+        source_files += found_files
+        for file in found_files:
+            new_base = os.path.basename(file).replace('_2_','_1_').replace('_7_','_1_')
+            dest_files.append(os.path.join(nires_dest_dir, new_base))
 
     if pargs.instrument == 'all' or pargs.instrument == 'keck_mosfire':
-        files = ['Masters/MasterSlits_A_15_01.fits.gz',
-                 'Masters/MasterTilts_A_4_01.fits', 
-                 'Masters/MasterWaveCalib_A_4_01.fits',
-                 'Science/spec1d_m191118_0064-GD71_MOSFIRE_2019Nov18T104704.507.fits',
-                 'sens_m191118_0064-GD71_MOSFIRE_2019Nov18T104704.507.fits' ]
 
-        dest_dir = os.path.join(ql_masters, 'MOSFIRE_MASTERS', 'Y')
-        os.makedirs(dest_dir, exist_ok=True)
-        for file in files:
-            source_files.append(os.path.join(redux_dir, 'keck_mosfire', 'Y_long', file))
-            dest_files.append(os.path.join(ql_masters, 'MOSFIRE_MASTERS', 'Y', os.path.basename(file)))
+        if pargs.setup == 'all' or pargs.setup == "Y_long":
+            dest_dir = os.path.join(ql_masters, 'MOSFIRE_MASTERS', 'Y')
+            os.makedirs(dest_dir, exist_ok=True)
+
+            files = ['Masters/MasterSlits_A_15_01.fits.gz',
+                     'Masters/MasterTilts_A_4_01.fits', 
+                     'Masters/MasterWaveCalib_A_4_01.fits',
+                     'Science/spec1d_m191118_0064-GD71_MOSFIRE_2019Nov18T104704.507.fits',
+                     'sens_m191118_0064-GD71_MOSFIRE_2019Nov18T104704.507.fits' ]
+
+            source_filters = [os.path.join(redux_dir, 'keck_mosfire', 'Y_long', x) for x in files]
+            found_files = find_source_files(source_filters)
+            if len(found_files) == 0:
+                print("Could not find all MOSFIRE masters, attempting to generate them.")
+                run_devsuite("keck_mosfire", 'Y_long', redux_dir, pargs.release)
+
+                found_files = find_source_files(source_filters)
+                if len(found_files) == 0:
+                    print("Failed to generate MOSFIRE masters.")
+                    sys.exit(1)
+
+            source_files += found_files
+
+            for file in found_files:
+                dest_files.append(os.path.join(ql_masters, 'MOSFIRE_MASTERS', 'Y', os.path.basename(file)))
 
     # Copy the files
     for source_file, dest_file in zip(source_files, dest_files):
         copy_me(source_file, dest_file, pargs.force_copy)
 
     exit(0)
+
+def find_source_files(source_filters):
+    found_files = []
+    for filter in source_filters:
+        found_files += glob.glob(filter)
+
+    return found_files
 
 def copy_me(new_file, cooked_file, force_copy):
     """
@@ -129,7 +166,32 @@ def copy_me(new_file, cooked_file, force_copy):
         shutil.copy2(new_file, cooked_file)
         print("Generated/over-wrote {:s}".format(cooked_file))
 
+
+def run_devsuite(instrument, setup, redux_dir, release):
+
+    DevSuiteParams = namedtuple("DevSuiteParams", ["tests", "prep_only", "masters", 
+                                                   "outputdir", "release"])
+    pargs = DevSuiteParams(tests="develop", prep_only=False, masters=False,
+                           outputdir = redux_dir, release=release)
+    test_setup = build_test_setup(pargs, instrument, setup, False, False)
+
+    for test in test_setup.tests:
+        # A quick look test will run build_ql_masters, potentially creating an 
+        # infinite recursion. So skip those tests
+        if isinstance(test, PypeItQuickLookTest):
+            continue
+
+        passed = test.run()
+        if not passed:
+            print(f"Failed running dev suite tests for {instrument}/{setup}")
+            for message in test.error_msgs:
+                print(message)
+
+            print(f"Also be sure to chek the log at {test.logfile}")
+            break
+    
 if __name__ == '__main__':
     # Giddy up
     main()
+
 
