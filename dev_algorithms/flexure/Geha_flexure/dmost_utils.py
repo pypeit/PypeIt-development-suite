@@ -1,16 +1,6 @@
 import numpy as np
-import os
 
-from astropy.table import Table
 from astropy.io import ascii,fits
-
-import deimos_tools
-import matplotlib.backends.backend_pdf
-import matplotlib.pyplot as plt
-
-import scipy.ndimage as scipynd
-from scipy.optimize import curve_fit
-
 
 # NEED TO REMOVE THIS SOMEHOW
 DEIMOS_DROPBOX = '/Users/mgeha/Dropbox/DEIMOS/'

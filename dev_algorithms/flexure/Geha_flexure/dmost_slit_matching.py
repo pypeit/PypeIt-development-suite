@@ -208,7 +208,7 @@ def initialize_slits(nslits, rbext,hdu):
         
         r =slits['bname'][i] 
         hdr = hdu[r].header
-        slits['rms_arc_r'][i] = hdr['WAVE_RMS']
+#        slits['rms_arc_r'][i] = hdr['WAVE_RMS']
 
         rSN, bSN = calc_rb_SN(slits['rname'][i],slits['bname'][i], hdu)
         slits['rSN'][i] = rSN
@@ -218,7 +218,7 @@ def initialize_slits(nslits, rbext,hdu):
         try:
             slits['ypos'][i]      = np.min(hdu[b].data['OPT_WAVE'])
             hd = hdu[b].header
-            slits['rms_arc_b'] = hd['WAVE_RMS']
+#            slits['rms_arc_b'] = hd['WAVE_RMS']
         except:
             slits['ypos'][i] = -1.
             slits['rSN'][i] = -1.

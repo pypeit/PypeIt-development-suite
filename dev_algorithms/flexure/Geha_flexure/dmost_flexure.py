@@ -8,12 +8,19 @@ import matplotlib.pyplot as plt
 import matplotlib.backends.backend_pdf
 
 from scipy.optimize import curve_fit
+from scipy.interpolate import interp1d
+
+from pypeit.core import fitting as pypeit_fitting
+from pypeit.core.wavecal import wvutils
+from pypeit import msgs
+
 from astropy.modeling import models, fitting
 
 import dmost_utils, dmost_slit_matching
 
-DEIMOS_DROPBOX = '/Users/mgeha/Dropbox/DEIMOS/'
+from IPython import embed
 
+#DEIMOS_DROPBOX = '/Users/mgeha/Dropbox/DEIMOS/'
 
 
 ########################################
@@ -57,52 +64,87 @@ def spec_normalize(wave,spec,ivar,nlow=75,npoly=1):
 #####################################################
 # CALCULATE SKY EMISSION LINE 
 #
-def sky_em_residuals(wave,flux,ivar,plot=0):
+def sky_em_residuals(wave,flux,ivar,plot=0, orig=False, toler=0.3):
 
     # READ SKY LINES -- THESE ARE VACUUM WAVELENGTHS
-    sky_file = DEIMOS_DROPBOX+'Other_data/sky_single_mg.dat'
+    #sky_file = DEIMOS_DROPBOX+'Other_data/sky_single_mg.dat'
+    # TODO -- Path in PypeIt
+    sky_file = 'sky_single_mg.dat'
     sky=ascii.read(sky_file)
     
-    dwave = []
-    diff = []
-    diff_err  = []
-    los = []
-    los_err= []
 
-    for line in sky['Wave']:
-        wline = [line-5.,line+5.] 
-        mw    = (wave > wline[0]) & (wave < wline[1])
-        
-        p=[0,0,0,0]
-        if np.sum(mw) > 20:
-            p0 = gauss_guess(wave[mw],flux[mw])
-            try:
-                p, pcov = curve_fit(gaussian,wave[mw],flux[mw], sigma = 1./np.sqrt(ivar[mw]), p0=p0)
-                perr = np.sqrt(np.diag(pcov))
-            except:
-                p=p0
-                p[2] = -99
-                perr=p0
-            gfit = gaussian(wave[mw],*p)
-            d = p[2] - line
-
-            if (plot==1):
-                plt.figure(figsize=(8,3)) 
-                plt.plot(wave[mw],gfit,'g')
-                plt.plot(wave[mw],flux[mw])
-                plt.title('{} {:0.2f} diff= {:0.3f}'.format(line,p[3],d))
-
-            if ~np.isfinite(perr[2]):
-                perr[2] = 1000.
-            dwave = np.append(dwave,line)
-            diff = np.append(diff,d)
-            diff_err = np.append(diff_err,perr[2])
-            los = np.append(los,p[3])
-            los_err = np.append(los_err,perr[3])
-
+    if orig:
+        dwave = []
+        diff = []
+        diff_err  = []
+        los = []
+        los_err= []
+        for line in sky['Wave']:
+            wline = [line-5.,line+5.] 
+            mw    = (wave > wline[0]) & (wave < wline[1])
             
-    m=(diff_err < 0.1) & (diff_err > 0.0)
-    return dwave[m],diff[m],diff_err[m],los[m],los_err[m]
+            p=[0,0,0,0]
+            if np.sum(mw) > 20:
+                p0 = gauss_guess(wave[mw],flux[mw])
+                try:
+                    p, pcov = curve_fit(gaussian,wave[mw],flux[mw], 
+                                        sigma = 1./np.sqrt(ivar[mw]), p0=p0)
+                    perr = np.sqrt(np.diag(pcov))
+                except:
+                    p=p0
+                    p[2] = -99
+                    perr=p0
+                gfit = gaussian(wave[mw],*p)
+                d = p[2] - line
+
+                if (plot==1):
+                    plt.figure(figsize=(8,3)) 
+                    plt.plot(wave[mw],gfit,'g')
+                    plt.plot(wave[mw],flux[mw])
+                    plt.title('{} {:0.2f} diff= {:0.3f}'.format(line,p[3],d))
+
+                if ~np.isfinite(perr[2]):
+                    perr[2] = 1000.
+                dwave = np.append(dwave,line)
+                diff = np.append(diff,d)
+                diff_err = np.append(diff_err,perr[2])
+                los = np.append(los,p[3])
+                los_err = np.append(los_err,perr[3])
+    else:
+        # New approach
+        all_tcent, all_ecent, cut_tcent, icut, arc_cont_sub, \
+            all_twid, all_tampl = wvutils.arc_lines_from_spec(
+                flux, sigdetect=5., return_more=True)
+        # Dispersion
+        dwv_pix = np.median(np.abs(wave-np.roll(wave,1)))
+
+        # Linearly interpolate wavelengths 
+        # Match up to known lines
+        dwave2 = []
+        diff2 = []
+        diff_err2  = []
+        los2 = []
+        los_err2 = []
+        f_wv = interp1d(np.arange(wave.size), wave)
+        gd_wave = f_wv(all_tcent[icut])
+        for line in sky['Wave']:
+            if np.min(np.abs(line-gd_wave)) < toler:
+                imin = np.argmin(np.abs(line-gd_wave))
+                dwave2.append(line)
+                diff2.append(gd_wave[imin]-line) # Ang
+                diff_err2.append(all_ecent[icut][imin]*dwv_pix) # Ang
+                los2.append(all_twid[icut][imin]*dwv_pix) # Ang
+                los_err2.append(0.1*los2[-1])  # ASSUMPTION!!
+
+
+    #embed(header='compare these on 113 of dmost_flexure')
+            
+    if orig:
+        m=(diff_err < 0.1) & (diff_err > 0.0)
+        return dwave[m],diff[m],diff_err[m],los[m],los_err[m]
+    else:
+        return np.array(dwave2), np.array(diff2), np.array(diff_err2), \
+            np.array(los2), np.array(los_err2)
 
 
 #######################################################
@@ -117,9 +159,11 @@ def fit_sky_linear(wlines,wdiff,wdiff_err):
 #######################################################
 #  
 #
-def measure_sky_lines(slits, nslits, hdu):
+def measure_sky_lines(slits, nslits, hdu, orig=True):
 
     for i in np.arange(0,nslits,1):
+        if (i % 10) == 0:
+            print("Working on slit {} of {}".format(i, nslits))
 
         if (slits['rSN'][i] > 1.) & (slits['bSN'][i] > 1.):
             r = slits['rname'][i]
@@ -129,11 +173,11 @@ def measure_sky_lines(slits, nslits, hdu):
             # SKY LINES FIRST
             r_sky_line, r_sky_diff,r_sky_ediff,r_los,r_elos = sky_em_residuals(hdu[r].data['OPT_WAVE'], \
                                                     hdu[r].data['OPT_COUNTS_SKY'],\
-                                                    hdu[r].data['OPT_COUNTS_IVAR'])
+                                                    hdu[r].data['OPT_COUNTS_IVAR'], orig=orig)
 
             b_sky_line, b_sky_diff,b_sky_ediff,b_los,b_elos = sky_em_residuals(hdu[b].data['OPT_WAVE'], \
                                                     hdu[b].data['OPT_COUNTS_SKY'],\
-                                                    hdu[b].data['OPT_COUNTS_IVAR'])
+                                                    hdu[b].data['OPT_COUNTS_IVAR'], orig=orig)
 
 
             sky_diff  = np.concatenate((r_sky_diff,b_sky_diff),axis=None)
@@ -142,8 +186,18 @@ def measure_sky_lines(slits, nslits, hdu):
             sky_los   = np.concatenate((r_los,b_los),axis=None)
 
             # FIT SINGLE SLIT SKY LINES WITH A LINE           
-            fitted_line = fit_sky_linear(sky_lines,sky_diff,sky_ediff)
-
+            if orig:
+                fitted_line = fit_sky_linear(sky_lines,sky_diff,sky_ediff)
+            else:
+                linear_fit = pypeit_fitting.robust_fit(sky_lines,
+                                               sky_diff,
+                                               weights=1./sky_ediff**2,  # TO BE CONFIRMED
+                                               function='polynomial', 
+                                               order=1,
+                                               maxrej=1,  # Might increase
+                                               lower=3., upper=3.)
+                # Save in tuple (flipped)
+                fitted_line = linear_fit.fitc
             
             slits['fit_slope'][i] = fitted_line[1]
             slits['fit_b'][i]     = fitted_line[0]
@@ -155,7 +209,8 @@ def measure_sky_lines(slits, nslits, hdu):
 #######################################################
 #  UPDATE SLITS FITS WITH ALL_MASK FIT
 #
-def update_flexure_fit(slits, nslits, hdu, pmodel_m,pmodel_b,pmodel_los):
+def update_flexure_fit(slits:list, nslits:int, hdu, pmodel_m,pmodel_b,pmodel_los, 
+                       orig=True):
 
     fslits = slits
 
@@ -175,7 +230,8 @@ def update_flexure_fit(slits, nslits, hdu, pmodel_m,pmodel_b,pmodel_los):
         if f['rSN'] > 0:
             all_wave,all_flux,all_ivar,all_sky = dmost_utils.load_spectrum(f,hdu,vacuum = 1)
 
-            dwave,diff,diff_err,los,elos = sky_em_residuals(all_wave,all_sky,all_ivar,plot=0)
+            dwave,diff,diff_err,los,elos = sky_em_residuals(
+                all_wave,all_sky,all_ivar, plot=0, orig=orig)
             m=np.isfinite(diff)
             sky_mean = np.average(np.abs(diff[m]), weights = 1./diff_err[m]**2)
             resid_sky = np.append(resid_sky,sky_mean)
@@ -208,10 +264,14 @@ def fit_mask_surfaces(slits):
 
     # FIT FOR SLOPES, INTERCEPTS, LOS
     
-    pmodel_m = fit_p(p_init, slits['objra'][mgood], slits['objdec'][mgood], slits['fit_slope'][mgood])
-    pmodel_b = fit_p(p_init, slits['objra'][mgood], slits['objdec'][mgood], slits['fit_b'][mgood])
-    pmodel_los = fit_p(p_init, slits['objra'][mgood], slits['objdec'][mgood], slits['fit_los'][mgood])
+    pmodel_m = fit_p(p_init, slits['objra'][mgood], 
+                     slits['objdec'][mgood], slits['fit_slope'][mgood])
+    pmodel_b = fit_p(p_init, slits['objra'][mgood], 
+                     slits['objdec'][mgood], slits['fit_b'][mgood])
+    pmodel_los = fit_p(p_init, slits['objra'][mgood], 
+                       slits['objdec'][mgood], slits['fit_los'][mgood])
 
+    embed(header='274 of dmostf')
     
     return pmodel_m,pmodel_b,pmodel_los
 
@@ -221,10 +281,14 @@ def fit_mask_surfaces(slits):
 
 def qa_flexure_plots(plot_dir, nslits, slits, fslits, hdu):
 
+    # Generate QA folder as need be
+    qa_dir = os.path.join(plot_dir, 'QA')
+    if not os.path.isdir(qa_dir):
+        os.mkdir(qa_dir)
     header = hdu[0].header
     mask = header['TARGET'].strip()
     fnames = header['FILENAME'].split('.')
-    pdf2 = matplotlib.backends.backend_pdf.PdfPages(plot_dir+'QA/flex_slits_'+mask+'_'+fnames[2]+'.pdf')
+    pdf2 = matplotlib.backends.backend_pdf.PdfPages(os.path.join(qa_dir, 'flex_slits_'+mask+'_'+fnames[2]+'.pdf'))
     plt.rcParams.update({'figure.max_open_warning': 0})
     for i in np.arange(0,nslits,1):
 
@@ -370,7 +434,7 @@ def qa_flexure_plots(plot_dir, nslits, slits, fslits, hdu):
 
 
 #######################################################
-def flexure_correct(hdu, data_dir,clobber=0):
+def flexure_correct(hdu, data_dir,clobber=0, orig=True):
 
 
     filename = hdu.filename()
@@ -378,32 +442,44 @@ def flexure_correct(hdu, data_dir,clobber=0):
     
     txt = filename.replace('.fits','.txt')
     
-    slit_table_file = data_dir + '/dmost/dmost'+tmp[1]
+    out_dir = os.path.join(data_dir,'dmost')
+    if not os.path.isdir(out_dir):
+        os.mkdir(out_dir)
+    slit_table_file = os.path.join(out_dir, 'dmost'+tmp[1])
 
     # IF FILE DOESN"T EXIST GENERATE
     if (not os.path.isfile(slit_table_file)) | (clobber == 1):
 
         # CREATE SLIT TABLE
+        msgs.info("Generating slit table")
         slits, nslits = dmost_slit_matching.create_slit_table(hdu,data_dir,txt)
 
         # INITIAL SKY LINE STUFF
-        slits = measure_sky_lines(slits, nslits,hdu)
+        msgs.info("Measuring sky lines")
+        slits = measure_sky_lines(slits, nslits,hdu, orig=orig)
 
         # FIT SURFACES
+        msgs.info("Fitting the surface")
         pmodel_m, pmodel_b,pmodel_los = fit_mask_surfaces(slits)
 
      
         # ADD TO TABLE
-        fslits = update_flexure_fit(slits,nslits, hdu, pmodel_m, pmodel_b,pmodel_los)
+        msgs.info("Table time")
+        fslits = update_flexure_fit(slits,nslits, hdu, pmodel_m, pmodel_b,pmodel_los,
+                                    orig=orig)
 
         # REFIT FOR QA PLOTS
+        msgs.info("Generate QA")
         qa_flexure_plots(data_dir,nslits,slits,fslits,hdu)
 
+        msgs.info("Write to table")
         fslits.write(slit_table_file,overwrite=True)
 
     # ELSE READ IT IN
     if os.path.isfile(slit_table_file):
         fslits = Table.read(slit_table_file)
+    
+    print("All done!!")
 
     return fslits
 
