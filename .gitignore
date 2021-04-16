@@ -1,10 +1,11 @@
 *.DS_Store
 *.swp
-RAW_DATA
-REDUX_OUT
+RAW_DATA/
+REDUX_OUT/
 Cooked
 CALIBS
 *.pckl
 dev_algorithms/data
 NIRES_MASTERS
 Telluric
+DEIMOS_QL_TST
