@@ -4,6 +4,13 @@
 # User-defined execution parameters
 [rdx]
 spectrograph = keck_deimos
+detnum = 3,7
+[reduce]
+   [[findobj]]
+        maxnumber = 3
+[calibrations]
+  [[slitedges]]
+    edge_thresh = 20.0
 
 # Setup
 setup read
@@ -17,7 +24,7 @@ setup end
 
 # Read in the data
 data read
- path /Users/dpelliccia/Pypeit/PypeIt-development-suite/RAW_DATA/keck_deimos/900ZD_LVM_5500
+ path /Users/joe/python/PypeIt-development-suite/RAW_DATA/keck_deimos/900ZD_LVM_5500
 |               filename |                 frametype |                ra |                dec |    target | dispname |   decker | binning |          mjd |    airmass | exptime |     dispangle |      amp |    dateobs |         utc |
 | DE.20110729.15259.fits |                  arc,tilt | 57.99999999999999 |               45.0 |   unknown |    900ZD | LVMslits |     1,1 | 55771.176546 | 1.41291034 |     1.0 | 5499.95605469 | SINGLE:B | 2011-07-29 | 04:14:19.03 |
 | DE.20110729.15541.fits |                  arc,tilt | 57.99999999999999 |               45.0 |   unknown |    900ZD | LVMslits |     1,1 | 55771.179802 | 1.41291034 |    12.0 | 5499.95605469 | SINGLE:B | 2011-07-29 | 04:19:01.63 |
