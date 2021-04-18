@@ -158,8 +158,10 @@ _sensfunc = {'shane_kast_blue/600_4310_d55':
                  {'std_file': 'spec1d_*S0206-HIP62745*.fits', 'sens_file': 'gemini_gnirs_32_sb_sxd.sens'},
              'gemini_gmos/GS_HAM_R400_860':
                  {'std_file': 'spec1d_**GD71*.fits'},
-              'keck_deimos/900ZD_LVM_5500':
+             'keck_deimos/900ZD_LVM_5500':
                  {'std_file': 'spec1d_*Feige110*.fits', 'sens_file': 'keck_deimos_900zd_lvm_5500.sens'},
+             'keck_mosfire/Y_long':
+                 {'std_file': 'spec1d_*0064-GD71*.fits'}
              }
 
 _flux_setup = ['shane_kast_blue/600_4310_d55',
