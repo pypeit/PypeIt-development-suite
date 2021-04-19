@@ -318,10 +318,6 @@ class TestReport(object):
         if self.pargs.threads > 1:
             print(f'Ran tests in {self.pargs.threads} parallel processes\n', file=output)
 
-        for setup in self.test_setups:
-            self.report_on_setup(setup, output)
-        print ("-------------------------", file=output)
-
     def summary_report(self, output=sys.stdout):
         """Display a summary report on the results of testing to the given output stream"""
 

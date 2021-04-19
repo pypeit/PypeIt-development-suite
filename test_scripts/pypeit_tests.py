@@ -322,6 +322,7 @@ class PypeItQuickLookTest(PypeItTest):
         self.files = files
         self.options = options
         self.redux_dir = os.path.abspath(pargs.outputdir)
+        self.pargs = pargs
 
     def build_command_line(self):
 
@@ -329,6 +330,8 @@ class PypeItQuickLookTest(PypeItTest):
             command_line = ['pypeit_ql_keck_nires']
         elif self.setup.instr == 'keck_mosfire':
             command_line = ['pypeit_ql_keck_mosfire']
+            if self.pargs.quiet:
+                command_line += ['--no_gui', '--writefits']
         else:
             command_line = ['pypeit_ql_mos', self.setup.instr]
 
