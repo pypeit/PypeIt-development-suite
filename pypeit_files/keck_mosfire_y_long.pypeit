@@ -26,25 +26,25 @@ setup end
 # Read in the data
 data read
  path /Users/joe/python/PypeIt-development-suite/RAW_DATA/keck_mosfire/Y_long/
-|          filename |       frametype |           ra |         dec |         target |     dispname |        decker | binning |            mjd |    airmass |   exptime | filter1 | calib | comb_id | bkg_id |
+|          filename |       frametype |           ra |          dec |         target |       dispname |        decker | binning |            mjd |    airmass |   exptime | filter1 |  dithpat | dithpos | dithoff | calib | comb_id | bkg_id |
 # Flat fields, and darks 
-| m191119_0027.fits |           trace |          230 |           45|      DOME FLAT | spectroscopy | LONGSLIT-46x1 |     1,1 | 58806.18380414 | 1.41291034 |  11.63832 |       Y |   all |      -1 |     -1 |
-| m191119_0028.fits | 		trace |          230 |           45|      DOME FLAT | spectroscopy | LONGSLIT-46x1 |     1,1 | 58806.18403434 | 1.41291034 |  11.63832 |       Y |   all |      -1 |     -1 |
-| m191119_0029.fits | 		trace |          230 |           45|      DOME FLAT | spectroscopy | LONGSLIT-46x1 |     1,1 | 58806.18427636 | 1.41291034 |  11.63832 |       Y |   all |      -1 |     -1 |
-| m191119_0030.fits | 		trace |          230 |           45|      DOME FLAT | spectroscopy | LONGSLIT-46x1 |     1,1 | 58806.18452022 | 1.41291034 |  11.63832 |       Y |   all |      -1 |     -1 |
-| m191119_0031.fits | 		trace |          230 |           45|      DOME FLAT | spectroscopy | LONGSLIT-46x1 |     1,1 | 58806.18476039 | 1.41291034 |  11.63832 |       Y |   all |      -1 |     -1 |
-| m191119_0037.fits |           bias  |          230 |          45 |      DOME FLAT | spectroscopy | LONGSLIT-46x1 |     1,1 | 58806.18642497 | 1.41291034 |  11.63832 |       Y |   all |      -1 |     -1 |
-| m191119_0038.fits |           bias  |          230 |          45 |      DOME FLAT | spectroscopy | LONGSLIT-46x1 |     1,1 | 58806.18665518 | 1.41291034 |  11.63832 |       Y |   all |      -1 |     -1 |
-| m191119_0039.fits |           bias  |          230 |          45 |      DOME FLAT | spectroscopy | LONGSLIT-46x1 |     1,1 | 58806.18689719 | 1.41291034 |  11.63832 |       Y |   all |      -1 |     -1 |
-| m191119_0040.fits |           bias  |          230 |          45 |      DOME FLAT | spectroscopy | LONGSLIT-46x1 |     1,1 |  58806.1871333 | 1.41291034 |  11.63832 |       Y |   all |      -1 |     -1 |
-| m191119_0041.fits |           bias  |          230 |          45 |      DOME FLAT | spectroscopy | LONGSLIT-46x1 |     1,1 | 58806.18737532 | 1.41291034 |  11.63832 |       Y |   all |      -1 |     -1 |
+| m191119_0027.fits |           trace |        230.0 |         45.0 |      DOME FLAT | Y-spectroscopy | LONGSLIT-46x1 |     1,1 | 58806.18380414 | 1.41291034 |  11.63832 |       Y |    Stare |  object |     0.0 |   all |      -1 |     -1 |
+| m191119_0028.fits |           trace |        230.0 |         45.0 |      DOME FLAT | Y-spectroscopy | LONGSLIT-46x1 |     1,1 | 58806.18403434 | 1.41291034 |  11.63832 |       Y |    Stare |  object |     0.0 |   all |      -1 |     -1 |
+| m191119_0029.fits |           trace |        230.0 |         45.0 |      DOME FLAT | Y-spectroscopy | LONGSLIT-46x1 |     1,1 | 58806.18427636 | 1.41291034 |  11.63832 |       Y |    Stare |  object |     0.0 |   all |      -1 |     -1 |
+| m191119_0030.fits |           trace |        230.0 |         45.0 |      DOME FLAT | Y-spectroscopy | LONGSLIT-46x1 |     1,1 | 58806.18452022 | 1.41291034 |  11.63832 |       Y |    Stare |  object |     0.0 |   all |      -1 |     -1 |
+| m191119_0031.fits |           trace |        230.0 |         45.0 |      DOME FLAT | Y-spectroscopy | LONGSLIT-46x1 |     1,1 | 58806.18476039 | 1.41291034 |  11.63832 |       Y |    Stare |  object |     0.0 |   all |      -1 |     -1 |
+| m191119_0037.fits |            bias |        230.0 |         45.0 |      DOME FLAT | Y-spectroscopy | LONGSLIT-46x1 |     1,1 | 58806.18642497 | 1.41291034 |  11.63832 |       Y |    Stare |  object |     0.0 |   all |      -1 |     -1 |
+| m191119_0038.fits |            bias |        230.0 |         45.0 |      DOME FLAT | Y-spectroscopy | LONGSLIT-46x1 |     1,1 | 58806.18665518 | 1.41291034 |  11.63832 |       Y |    Stare |  object |     0.0 |   all |      -1 |     -1 |
+| m191119_0039.fits |            bias |        230.0 |         45.0 |      DOME FLAT | Y-spectroscopy | LONGSLIT-46x1 |     1,1 | 58806.18689719 | 1.41291034 |  11.63832 |       Y |    Stare |  object |     0.0 |   all |      -1 |     -1 |
+| m191119_0040.fits |            bias |        230.0 |         45.0 |      DOME FLAT | Y-spectroscopy | LONGSLIT-46x1 |     1,1 |  58806.1871333 | 1.41291034 |  11.63832 |       Y |    Stare |  object |     0.0 |   all |      -1 |     -1 |
+| m191119_0041.fits |            bias |        230.0 |         45.0 |      DOME FLAT | Y-spectroscopy | LONGSLIT-46x1 |     1,1 | 58806.18737532 | 1.41291034 |  11.63832 |       Y |    Stare |  object |     0.0 |   all |      -1 |     -1 |
 # Standard from first night
-| m191118_0064.fits |        standard |  88.12398597 | 15.88291243 |          GD 71 | spectroscopy | LONGSLIT-46x1 |     1,1 | 58805.44935772 | 1.09461722 |  59.64639  |       Y |     4 |      25 |     24 |
-| m191118_0065.fits |        standard |  88.12816249 | 15.88180566 |          GD 71 | spectroscopy | LONGSLIT-46x1 |     1,1 | 58805.45082161 | 1.09057571 |  59.64639  |       Y |     4 |      24 |     25 |
+| m191118_0064.fits |standard,arc,tilt|  88.12398597 |  15.88291243 |          GD 71 | Y-spectroscopy | LONGSLIT-46x1 |     1,1 | 58805.44935772 | 1.09461722 |  59.64639 |       Y |    Stare |  object |     0.0 |     1 |      10 |     11 |
+| m191118_0065.fits |standard,arc,tilt|  88.12816249 |  15.88180566 |          GD 71 | Y-spectroscopy | LONGSLIT-46x1 |     1,1 | 58805.45082161 | 1.09057571 |  59.64639 |       Y |    Stare |  object |     0.0 |     1 |      11 |     10 |
 # Data for 11/20
-| m191120_0043.fits |science,arc,tilt | 323.13191558 | -14.57624247| J2132-1434_OFF | spectroscopy | LONGSLIT-46x1 |     1,1 | 58807.25895078 |  1.47652532 | 149.84337 |       Y |     4 |       4 |      5 |
-| m191120_0044.fits |science,arc,tilt | 323.13616419 | -14.57470789| J2132-1434_OFF | spectroscopy | LONGSLIT-46x1 |     1,1 | 58807.26107578 |  1.49132421 | 149.84337 |       Y |     5 |       5 |      4 |
-| m191120_0045.fits |science,arc,tilt | 323.13191558 | -14.57624247| J2132-1434_OFF | spectroscopy | LONGSLIT-46x1 |     1,1 | 58807.26320899 |   1.5069382 | 149.84337 |       Y |     4 |       4 |      5 |
-| m191120_0046.fits |science,arc,tilt | 323.13616419 | -14.57470789| J2132-1434_OFF | spectroscopy | LONGSLIT-46x1 |     1,1 | 58807.26531987 |  1.52273222 | 149.84337 |       Y |     5 |       5 |      4 |
+| m191120_0043.fits |science,arc,tilt | 323.13191558 | -14.57624247 | J2132-1434_OFF | Y-spectroscopy | LONGSLIT-46x1 |     1,1 | 58807.25895078 | 1.47652532 | 149.84337 |       Y | Mask Nod |       A |     7.9 |     2 |       1 |      2 |
+| m191120_0044.fits |science,arc,tilt | 323.13616419 | -14.57470789 | J2132-1434_OFF | Y-spectroscopy | LONGSLIT-46x1 |     1,1 | 58807.26107578 | 1.49132421 | 149.84337 |       Y | Mask Nod |       B |    -7.9 |     3 |       2 |      1 |
+| m191120_0045.fits |science,arc,tilt | 323.13191558 | -14.57624247 | J2132-1434_OFF | Y-spectroscopy | LONGSLIT-46x1 |     1,1 | 58807.26320899 |  1.5069382 | 149.84337 |       Y | Mask Nod |       A |     7.9 |     2 |       1 |      2 |
+| m191120_0046.fits |science,arc,tilt | 323.13616419 | -14.57470789 | J2132-1434_OFF | Y-spectroscopy | LONGSLIT-46x1 |     1,1 | 58807.26531987 | 1.52273222 | 149.84337 |       Y | Mask Nod |       B |    -7.9 |     3 |       2 |      1 |
 data end
 
