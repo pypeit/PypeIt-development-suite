@@ -164,6 +164,17 @@ _sensfunc = {'shane_kast_blue/600_4310_d55':
                  {'std_file': 'spec1d_*0064-GD71*.fits'}
              }
 
+
+
+
+
+
+
+
+
+
+
+
 _flux_setup = ['shane_kast_blue/600_4310_d55',
                'gemini_gnirs/32_SB_SXD',
                'gemini_gmos/GS_HAM_R400_860',
