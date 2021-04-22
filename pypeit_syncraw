@@ -50,6 +50,10 @@ def main():
     elif pargs.developer == 'rjc':
         raw_path = 'PypeIt:RAW_DATA'
         calib_path = None
+    elif pargs.developer == 'jfh':
+        raw_path = '/mnt/quasar/joe/google_drive/PypeIt-development-suite/RAW_DATA'
+        calib_path = None
+
 
     # Do it
     praw = ['rclone', command, raw_path, 'RAW_DATA', '-v']
