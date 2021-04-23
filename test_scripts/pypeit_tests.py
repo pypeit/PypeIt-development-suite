@@ -111,6 +111,7 @@ class PypeItTest(ABC):
         files generated during testing should be included"""
         return []
 
+
 class PypeItSetupTest(PypeItTest):
     """Test subclass that runs pypeit_setup"""
     def __init__(self, setup, pargs):
@@ -153,17 +154,13 @@ class PypeItReduceTest(PypeItTest):
         super().__init__(setup, description, "test")
 
         self.std = std
-
+        # If the pypeit file isn't being created by pypeit_setup, copy it and update it's path
         if not self.setup.generate_pyp_file:
             self.pyp_file = template_pypeit_file(self.setup.dev_path,
                                                  self.setup.instr,
                                                  self.setup.name,
                                                  self.std)
 
-    def build_command_line(self):
-        if self.setup.generate_pyp_file:
-            self.pyp_file = self.setup.pyp_file
-        else:
             self.pyp_file = fix_pypeit_file_directory(self.pyp_file,
                                                       self.setup.dev_path,
                                                       self.setup.rawdir,
@@ -171,6 +168,10 @@ class PypeItReduceTest(PypeItTest):
                                                       self.setup.name,
                                                       self.setup.rdxdir,
                                                       self.std)
+
+    def build_command_line(self):
+        if self.setup.generate_pyp_file:
+            self.pyp_file = self.setup.pyp_file
 
         command_line = ['run_pypeit', self.pyp_file, '-o']
         if self.masters:
@@ -312,51 +313,70 @@ class PypeItTelluricTest(PypeItTest):
         return command_line
 
 class PypeItQuickLookTest(PypeItTest):
-    """Test subclass that runs pypeit_ql* scripts"""
+    """Test subclass that runs quick look tests.
+       The specific test script run depends on the instrument type.
+    """
 
-    def __init__(self, setup, pargs, files, mos=False):
+    def __init__(self, setup, pargs, files,  **options):
         super().__init__(setup, "pypeit_ql", "test_ql")
         self.files = files
-        self.mos = mos
+        self.options = options
+        self.redux_dir = os.path.abspath(pargs.outputdir)
+        self.pargs = pargs
 
     def build_command_line(self):
-        command_line = ['pypeit_ql_mos', self.setup.instr] if self.mos else ['pypeit_ql_keck_nires']
+
+        if self.setup.instr == 'keck_nires':
+            command_line = ['pypeit_ql_keck_nires']
+        elif self.setup.instr == 'keck_mosfire':
+            command_line = ['pypeit_ql_keck_mosfire']
+            if self.pargs.quiet:
+                command_line += ['--no_gui', '--writefits']
+        else:
+            command_line = ['pypeit_ql_mos', self.setup.instr]
+
         command_line += [self.setup.rawdir] + self.files
+
+        for option in self.options:
+            command_line += [option, str(self.options[option])]
 
         return command_line
 
     def run(self):
         """Generate any required quick look masters before running the quick look test"""
 
-        if not self.mos:
+        #if not self.mos:
+        # JFH Is this correct
+        if self.setup.instr == 'keck_nires':
 
             try:
-                # Place the masters into the NIRES_MASTERS environment variable if defined, otherwise
+                # Place the masters into the QL_MASTERS environment variable if defined, otherwise
                 # default to ${PYPEIT_DEV}/QL/NIRES_MASTERS.  To set that default we set the
                 # NIRES_MASTERS variable in the tests's environment
-                if 'NIRES_MASTERS' in os.environ:
-                    output_dir = os.environ['NIRES_MASTERS']
-                else:
-                    output_dir = os.path.join(self.setup.dev_path, 'QL', 'NIRES_MASTERS')
+                if 'QL_MASTERS' not in os.environ:
                     self.env = os.environ.copy()
-                    self.env['NIRES_MASTERS'] = output_dir
+                    self.env['QL_MASTERS'] = os.path.join(os.environ['PYPEIT_DEV'], 'QL')
+
+                output_dir = os.path.join(os.environ['QL_MASTERS'], 'NIRES_MASTERS')
 
                 # Build the masters with the output going to a log file
                 logfile = get_unique_file(os.path.join(self.setup.rdxdir, "build_nires_masters_output.log"))
                 with open(logfile, "w") as log:
                     result = subprocess.run([os.path.join(self.setup.dev_path, 'build_nires_masters'),
-                                             '--force_copy', '--output_dir', output_dir],
+                                             '--redux_dir', self.redux_dir, '--force_copy', '--output_dir', output_dir],
                                             stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
 
                     print(result.stdout, file=log)
 
                 if result.returncode != 0:
                     self.error_msgs.append("Failed to generate NIRES masters.")
+                    self.passed = False
                     return False
             except Exception:
                 # Prevent any exceptions from escaping the "run" method
                 self.error_msgs.append("Exception building NIRES masters:")
                 self.error_msgs.append(traceback.format_exc())
+                self.passed = False
                 return False
 
         # Run the quick look test via the parent's run method
@@ -389,7 +409,7 @@ def fix_pypeit_file_directory(pyp_file, dev_path, raw_data, instr, setup, rdxdir
     """
     # Read the pypeit file
     if not os.path.isfile(pyp_file):
-        raise FileNotFoundError('File does not exist: {0}'.format(pyp_file))
+        raise FileNotFoundError(pyp_file)
     with open(pyp_file, 'r') as infile:
         lines = infile.readlines()
 

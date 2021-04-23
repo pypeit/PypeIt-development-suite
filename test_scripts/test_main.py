@@ -124,6 +124,8 @@ class TestSetup(object):
         tests (:obj:`list` of :obj:`PypeItTest`): The list of tests to run in this test setup. The tests will be run
                                                   in sequential order
 
+        missing_files (:obj:`list` of str): List of missing files preventing the test setup from running.
+
     """
     def __init__(self, instr, name, rawdir, rdxdir, dev_path):
         self.instr = instr
@@ -136,6 +138,7 @@ class TestSetup(object):
         self.std_pyp_file = None
         self.generate_pyp_file = False
         self.tests = []
+        self.missing_files = []
 
     def __str__(self):
         """Return a string representation of this setup of the format "instr/name"""""
@@ -148,23 +151,6 @@ class TestSetup(object):
         """
         return self.priority < other.priority
 
-    def check_for_missing_files(self):
-        """
-        Check for any missing files needed to run the tests in this setup.
-
-        Returns:
-            A list of missing files or paths the test setup requires to run.
-        """
-        missing_files = []
-
-        # Check for missing raw data
-        if not os.path.exists(self.rawdir):
-            missing_files.append(self.rawdir)
-
-        for test in self.tests:
-            missing_files += test.check_for_missing_files()
-
-        return missing_files
 
 def red_text(text):
     """Utiltiy method to wrap text in the escape sequences to make it appear red in a terminal"""
@@ -220,11 +206,31 @@ class TestReport(object):
         self.lock = Lock()
         self.testing_complete = False
 
+        self.testing_started()
+
 
     def _get_test_counts(self):
         """Helper method to create a string with the current test counts"""
         verbose_info = f'{self.num_active:2} active/' if self.pargs.verbose else ''
         return f'{verbose_info}{self.num_passed:2} passed/{self.num_failed:2} failed/{self.num_skipped:2} skipped'
+
+    def testing_started(self):
+        """Called once testing has started"""
+        with self.lock:
+            self.start_time = datetime.datetime.now()
+
+            # Create the report file and write the header to it
+            if self.pargs.report:
+                try:
+                    with open(self.pargs.report, "w") as report_file:
+                        self.detailed_report_header(output=report_file)
+
+                except Exception as e:
+                    print(f"Could not open report file {self.pargs.report}", file=sys.stderr)
+                    traceback.print_exc()
+                    sys.exit(1)
+
+
 
     def test_started(self, test):
         """Called when a test has started executing"""
@@ -238,7 +244,7 @@ class TestReport(object):
                 if self.pargs.verbose:
                     verbose_info = f' at {datetime.datetime.now().ctime()}'
 
-                print(f'{self._get_test_counts()} STARTED {test}{verbose_info}')
+                print(f'{self._get_test_counts()} STARTED {test}{verbose_info}', flush=True)
 
     def test_skipped(self, test):
         """Called when a test has been skipped because a test before it has failed"""
@@ -247,7 +253,7 @@ class TestReport(object):
             self.skipped_tests.append(test)
 
             if not self.pargs.quiet:
-                print(f'{self._get_test_counts()} {red_text("SKIPPED")} {test}')
+                print(f'{self._get_test_counts()} {red_text("SKIPPED")} {test}', flush=True)
 
     def test_completed(self, test):
         """Called when a test has finished executing."""
@@ -270,27 +276,47 @@ class TestReport(object):
                     verbose_info = f' with pid {test.pid} at {datetime.datetime.now().ctime()} Duration {duration}'
 
                 if test.passed:
-                    print(f'{self._get_test_counts()} {green_text("PASSED")}  {test}{verbose_info}')
+                    print(f'{self._get_test_counts()} {green_text("PASSED")}  {test}{verbose_info}', flush=True)
                 else:
-                    print(f'{self._get_test_counts()} {red_text("FAILED")}  {test}{verbose_info}')
-                    self.report_on_test(test)
+                    print(f'{self._get_test_counts()} {red_text("FAILED")}  {test}{verbose_info}', flush=True)
+                    self.report_on_test(test, flush=True)
+
+    def test_setup_completed(self, test_setup):
+        """Called once all of the tests in a test setup have completed"""
+        if self.pargs.report is not None:
+            with self.lock:
+                with open(self.pargs.report, "a") as report_file:
+                    self.report_on_setup(test_setup, report_file)            
+
+    def testing_completed(self):
+        """Called once all testing is complete"""
+        self.end_time = datetime.datetime.now()
+        if self.pargs.report is not None:
+            with open(self.pargs.report, "a") as report_file:
+                print ("-------------------------", file=report_file)
+                self.summary_report(report_file)
 
     def detailed_report(self, output=sys.stdout):
         """Display a detailed report on testing to the given output stream"""
 
+        self.detailed_report_header(output)
+
+        for setup in self.test_setups:
+            self.report_on_setup(setup, output)
+        print ("-------------------------", file=output)
+        self.summary_report(output)
+
+    def detailed_report_header(self, output):
+        """Display the header information of a detaile report"""
+
         # Report header information
-        print('Reducing data for the following setups:', file=output)
+        print('Reduced data for the following setups:', file=output)
         for setup in self.test_setups:
             print(f'    {setup}', file=output)
         print('', file=output)
 
         if self.pargs.threads > 1:
             print(f'Ran tests in {self.pargs.threads} parallel processes\n', file=output)
-
-        for setup in self.test_setups:
-            self.report_on_setup(setup, output)
-        print ("-------------------------", file=output)
-        self.summary_report(output)
 
     def summary_report(self, output=sys.stdout):
         """Display a summary report on the results of testing to the given output stream"""
@@ -318,7 +344,7 @@ class TestReport(object):
         print(f"Total Time: {self.end_time - self.start_time}", file=output)
 
 
-    def report_on_test(self, test, output=sys.stdout):
+    def report_on_test(self, test, output=sys.stdout, flush=False):
         """Print a detailed report on the status of a test to the given output stream."""
 
         if test.passed:
@@ -333,27 +359,27 @@ class TestReport(object):
         else:
             duration = None
 
-        print("----", file=output)
-        print(f"{test.setup} {test.description} Result: {result}\n", file=output)
-        print(f'Logfile:    {test.logfile}', file=output)
-        print(f'Process Id: {test.pid}', file=output)
-        print(f'Start time: {test.start_time.ctime() if test.start_time is not None else "n/a"}', file=output)
-        print(f'End time:   {test.end_time.ctime() if test.end_time is not None else "n/a"}', file=output)
-        print(f'Duration:   {duration}', file=output)
-        print(f"Command:    {' '.join(test.command_line) if test.command_line is not None else ''}", file=output)
-        print('', file=output)
-        print('Error Messages:', file=output)
+        print("----", file=output, flush=flush)
+        print(f"{test.setup} {test.description} Result: {result}\n", file=output, flush=flush)
+        print(f'Logfile:    {test.logfile}', file=output, flush=flush)
+        print(f'Process Id: {test.pid}', file=output, flush=flush)
+        print(f'Start time: {test.start_time.ctime() if test.start_time is not None else "n/a"}', file=output, flush=flush)
+        print(f'End time:   {test.end_time.ctime() if test.end_time is not None else "n/a"}', file=output, flush=flush)
+        print(f'Duration:   {duration}', file=output, flush=flush)
+        print(f"Command:    {' '.join(test.command_line) if test.command_line is not None else ''}", file=output, flush=flush)
+        print('', file=output, flush=flush)
+        print('Error Messages:', file=output, flush=flush)
 
         for msg in test.error_msgs:
-            print(msg, file=output)
+            print(msg, file=output, flush=flush)
 
-        print('', file=output)
-        print("End of Log:", file=output)
+        print('', file=output, flush=flush)
+        print("End of Log:", file=output, flush=flush)
         if test.logfile is not None and os.path.exists(test.logfile):
             result = subprocess.run(['tail', '-3', test.logfile], stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
-            print(result.stdout.decode(), file=output)
+            print(result.stdout.decode(), file=output, flush=flush)
 
-        print('\n', file=output)
+        print('\n', file=output, flush=flush)
 
     def report_on_setup(self, setup, output=sys.stdout):
         """Print a detailed report on the status of a test setup and the tests within it to the given output stream."""
@@ -453,6 +479,8 @@ def thread_target(test_report):
                 test_report.test_started(test)
                 passed = test.run()
                 test_report.test_completed(test)
+
+        test_report.test_setup_completed(test_setup)
 
         # Count the test setup as done. This needs to be done to allow the join() call in main to return when
         # all of the tests have been completed
@@ -582,11 +610,12 @@ def main():
         if pargs.tests in tests_that_only_use_dev_setups:
             setup_names = devsetups[instr]
 
-        # Build test setups and check for missing files
+        # Build test setups, check for missing files, and run any prep work
         for setup_name in setup_names:
 
             setup = build_test_setup(pargs, instr, setup_name, flg_after, flg_ql, priority_list)
-            missing_files += setup.check_for_missing_files()
+            missing_files += setup.missing_files
+
             # set setup priority from file
             setups.append(setup)
 
@@ -605,6 +634,7 @@ def main():
 
     # ---------------------------------------------------------------------------
     # Run the tests
+    test_report = TestReport(pargs, setups)
 
 
     # Add tests to the test_run_queue
@@ -645,11 +675,8 @@ def main():
 
 
     # ---------------------------------------------------------------------------
-    # Report on the test results
-    test_report.end_time = datetime.datetime.now()
-
-    if pargs.report is not None:
-        test_report.detailed_report(report_file)
+    # Finish up the report on the test results
+    test_report.testing_completed()
 
     if not pargs.quiet:
         if pargs.verbose:
@@ -676,38 +703,58 @@ def build_test_setup(pargs, instr, setup_name, flg_after, flg_ql, priority_list)
         # Make the directory
         os.makedirs(rdxdir)
 
+    # Create the test setup and set it's priority
     setup = TestSetup(instr, setup_name, rawdir, rdxdir, dev_path)
-
     priority_list.set_test_setup_priority(setup)
 
-    for test in all_tests:
-        if '*' in test['setups']:
+    # Go through each test for this setup and add it to the setup if it's
+    # selected by the command line arguments
+    for test_descr in all_tests:
+        if '*' in test_descr['setups']:
             key = '*'
-        elif setup.instr in test['setups']:
+        elif setup.instr in test_descr['setups']:
             key = setup.instr
-        elif setup.key in test['setups']:
+        elif setup.key in test_descr['setups']:
             key = setup.key
         else:
             continue
 
-        if pargs.prep_only and test['type'] != TestPhase.PREP:
-            continue
-
-        if pargs.tests == "reduce" and test['type'] not in (TestPhase.PREP, TestPhase.REDUCE):
-            continue
-
-        if flg_after and test['type'] not in (TestPhase.PREP, TestPhase.AFTERBURN):
-            continue
-
-        if flg_ql and test['type'] not in (TestPhase.PREP, TestPhase.QL):
-            continue
-
-        if isinstance(test['setups'], dict):
-            kwargs = test['setups'][key]
+        if isinstance(test_descr['setups'], dict):
+            kwargs = test_descr['setups'][key]
         else:
             kwargs = dict()
 
-        setup.tests.append(test['factory'](setup, pargs, **kwargs))
+        # Create the test, this will also run any prep_only steps in the
+        # __init__ method
+        try:
+            test = test_descr['factory'](setup, pargs, **kwargs)
+        except FileNotFoundError as e:
+            # If the test prep work found a missing file, just record it in the
+            # list of missing files. This allows all missing files for the
+            # test suite to be reported at once
+            setup.missing_files.append(str(e))
+            continue
+
+        # Check for any missing files
+        missing_files = test.check_for_missing_files()
+        if len(missing_files) > 0:
+            setup.missing_files += missing_files
+            continue
+
+        # Skip the test if it wasn't selected by the command line
+        if pargs.prep_only and test_descr['type'] != TestPhase.PREP:
+            continue
+
+        if pargs.tests == "reduce" and test_descr['type'] not in (TestPhase.PREP, TestPhase.REDUCE):
+            continue
+
+        if flg_after and test_descr['type'] not in (TestPhase.PREP, TestPhase.AFTERBURN):
+            continue
+
+        if flg_ql and test_descr['type'] not in (TestPhase.PREP, TestPhase.QL):
+            continue
+
+        setup.tests.append(test)
 
     return setup
 

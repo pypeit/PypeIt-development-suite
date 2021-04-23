@@ -74,9 +74,10 @@ Attributes:
                             _flux_setup:        Test setups that run pypeit_flux_setup.
                             _flux:              Test setups that run pypeit_flux_calib.
                             _coadd1d:           Test setups that run pypeit_coadd_1dspec.
-                            _coadd2d:           Test setups that run pypeit_coadd_2dspec. For each test setup the
-                            _telluric:          Test setups that run pypeit_tellfit. For each test setup the
-                            _quick_look:        Test setups that run pypeit_ql_mos. For each test setup the
+                            _coadd2d:           Test setups that run pypeit_coadd_2dspec.
+                            _telluric:          Test setups that run pypeit_tellfit.
+                            _quick_look:        Test setups that run quick look script. The actual script run is chosen
+                                                based on the instrument.
 
 """
 
@@ -100,14 +101,16 @@ class TestPhase(Enum):
 
 supported_instruments = ['kast', 'deimos', 'kcwi', 'nires', 'nirspec', 'mosfire', 'lris', 'xshooter', 'gnirs', 'gmos',
                          'flamingos2', 'mage', 'fire', 'luci', 'mdm', 'alfosc', 'fors2', 'binospec', 'mmirs', 'bluechannel',
-                         'mods', 'dbsp', 'tspec']
+                         'mods', 'dbsp', 'tspec', 'bc']
 
 
-develop_setups = {'gemini_gnirs': ['32_SB_SXD', '10_LB_SXD'],
+develop_setups = {'bok_bc': ['600'],
+                  'gemini_gnirs': ['32_SB_SXD', '10_LB_SXD'],
                   'gemini_gmos': ['GS_HAM_R400_700', 'GS_HAM_R400_860', 'GN_HAM_R400_885', 'GN_HAM_NS_B600_620'],
                   'gemini_flamingos2': ['HK_HK', 'JH_JH'],
+                  'gtc_osiris': ['R1000B', 'R1000BMOS', 'R1000RMOS', 'R2500R', 'R2500V'],
                   'keck_deimos': ['600ZD_M_6500', '600ZD_tilted', '1200G_M_7750', '830G_LVM_8400', '830G_M_8100_26',
-                                  '830G_M_8500', '830G_L_8100', '1200B_M_5200', '1200G_M_5500'],
+                                  '830G_M_8500', '830G_L_8100', '1200B_M_5200', '1200G_M_5500', '900ZD_M_6000', '1200B_LVM_5200', '900ZD_LVM_5500'],
                   'keck_kcwi': ['bh2_4200'],
                   'keck_nires': ['NIRES'],
                   'keck_nirspec': ['LOW_NIRSPEC-1'],
@@ -136,6 +139,7 @@ develop_setups = {'gemini_gnirs': ['32_SB_SXD', '10_LB_SXD'],
                   'shane_kast_red': ['300_7500_Ne', '600_7500_d55_ret', '600_7500_d57', '600_5000_d46', '1200_5000_d57'],
                   'vlt_fors2': ['300I'],
                   'vlt_xshooter': ['VIS_1x1', 'VIS_2x1', 'VIS_2x2', 'VIS_manual', 'NIR'],
+                  'vlt_sinfoni': ['K_0.8'],
                   }
 
 _pypeit_setup = ['shane_kast_blue/600_4310_d55']
@@ -148,11 +152,28 @@ _additional_reduce = {'keck_lris_red':
 
 _sensfunc = {'shane_kast_blue/600_4310_d55':
                  {'std_file': 'spec1d_*Feige66*.fits'},
+             #'keck_demos/830G_LVM_8400':
+             #    {'std_file': 'spec1d_*S0206-HIP62745*.fits', 'sens_file': 'gemini_gnirs_32_sb_sxd.sens'},
              'gemini_gnirs/32_SB_SXD':
                  {'std_file': 'spec1d_*S0206-HIP62745*.fits', 'sens_file': 'gemini_gnirs_32_sb_sxd.sens'},
              'gemini_gmos/GS_HAM_R400_860':
                  {'std_file': 'spec1d_**GD71*.fits'},
+             'keck_deimos/900ZD_LVM_5500':
+                 {'std_file': 'spec1d_*Feige110*.fits', 'sens_file': 'keck_deimos_900zd_lvm_5500.sens'},
+             'keck_mosfire/Y_long':
+                 {'std_file': 'spec1d_*0064-GD71*.fits'}
              }
+
+
+
+
+
+
+
+
+
+
+
 
 _flux_setup = ['shane_kast_blue/600_4310_d55',
                'gemini_gnirs/32_SB_SXD',
@@ -160,8 +181,10 @@ _flux_setup = ['shane_kast_blue/600_4310_d55',
                ]
 
 _flux = ['shane_kast_blue/600_4310_d55',
+         #'keck_deimos/830G_LVM_8400',
          'gemini_gnirs/32_SB_SXD',
          'gemini_gmos/GS_HAM_R400_860',
+         'keck_deimos/900ZD_LVM_5500',
          ]
 
 _coadd1d = ['shane_kast_blue/600_4310_d55',
@@ -182,9 +205,13 @@ _telluric = {'gemini_gnirs/32_SB_SXD':
              }
 
 _quick_look = {'shane_kast_blue/600_4310_d55':
-                   {'files': ['b1.fits.gz', 'b10.fits.gz', 'b27.fits.gz'], 'mos': True},
+                   {'files': ['b1.fits.gz', 'b10.fits.gz', 'b27.fits.gz']},
                'keck_nires/NIRES':
-                   {'files': ['s190519_0067.fits', 's190519_0068.fits']}}
+                   {'files': ['s190519_0067.fits', 's190519_0068.fits']},
+               'keck_mosfire/Y_long':
+                   {'files': ['m191120_0043.fits', 'm191120_0044.fits',  'm191120_0045.fits', 'm191120_0046.fits'],
+                    '--spec_samp_fact': 2.0, '--spat_samp_fact': 2.0}}
+
 
 all_tests = [{'factory': pypeit_tests.PypeItSetupTest,
               'type':    TestPhase.PREP,

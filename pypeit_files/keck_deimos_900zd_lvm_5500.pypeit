@@ -1,0 +1,36 @@
+# Auto-generated PypeIt file
+# Tue 06 Apr 2021 15:55:23
+
+# User-defined execution parameters
+[rdx]
+spectrograph = keck_deimos
+detnum = 3,7
+[reduce]
+   [[findobj]]
+        maxnumber = 3
+[calibrations]
+  [[slitedges]]
+    edge_thresh = 20.0
+
+# Setup
+setup read
+    Setup A:
+         dispname: 900ZD
+           decker: LVMslits
+          binning: 1,1
+        dispangle: 5499.95605469
+              amp: SINGLE:B
+setup end
+
+# Read in the data
+data read
+ path /Users/joe/python/PypeIt-development-suite/RAW_DATA/keck_deimos/900ZD_LVM_5500
+|               filename |                 frametype |                ra |                dec |    target | dispname |   decker | binning |          mjd |    airmass | exptime |     dispangle |      amp |    dateobs |         utc |
+| DE.20110729.15259.fits |                  arc,tilt | 57.99999999999999 |               45.0 |   unknown |    900ZD | LVMslits |     1,1 | 55771.176546 | 1.41291034 |     1.0 | 5499.95605469 | SINGLE:B | 2011-07-29 | 04:14:19.03 |
+| DE.20110729.15541.fits |                  arc,tilt | 57.99999999999999 |               45.0 |   unknown |    900ZD | LVMslits |     1,1 | 55771.179802 | 1.41291034 |    12.0 | 5499.95605469 | SINGLE:B | 2011-07-29 | 04:19:01.63 |
+| DE.20110729.15697.fits | pixelflat,illumflat,trace | 57.99999999999999 |               45.0 |   unknown |    900ZD | LVMslits |     1,1 | 55771.181591 | 1.41291034 |    12.0 | 5499.95605469 | SINGLE:B | 2011-07-29 | 04:21:37.28 |
+| DE.20110729.15779.fits | pixelflat,illumflat,trace | 57.99999999999999 |               45.0 |   unknown |    900ZD | LVMslits |     1,1 | 55771.182552 | 1.41291034 |    12.0 | 5499.95605469 | SINGLE:B | 2011-07-29 | 04:22:59.23 |
+| DE.20110729.15861.fits | pixelflat,illumflat,trace | 57.99999999999999 |               45.0 |   unknown |    900ZD | LVMslits |     1,1 | 55771.183496 | 1.41291034 |    12.0 | 5499.95605469 | SINGLE:B | 2011-07-29 | 04:24:21.13 |
+| DE.20110729.54545.fits |                   science | 349.9933333333333 | -5.165555555555556 | Feige 110 |    900ZD | LVMslits |     1,1 | 55771.631213 |  1.2591316 |   180.0 | 5499.95605469 | SINGLE:B | 2011-07-29 | 15:09:05.27 |
+data end
+

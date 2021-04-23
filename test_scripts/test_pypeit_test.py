@@ -230,7 +230,10 @@ def test_main_develop_without_failures(monkeypatch, tmp_path):
         missing_files = ['gemini_gmos/GS_HAM_R400_860/Science/spec1d_S20181219S0316-GD71_GMOS-S_1864May27T230832.356.fits',
                          'gemini_gnirs/32_SB_SXD/Science/spec1d_cN20170331S0206-HIP62745_GNIRS_2017Mar31T083351.681.fits',
                          'shane_kast_blue/600_4310_d55/shane_kast_blue_A/shane_kast_blue_A.pypeit',
-                         'shane_kast_blue/600_4310_d55/shane_kast_blue_A/Science/spec1d_b24-Feige66_KASTb_2015May20T041246.960.fits']
+                         'shane_kast_blue/600_4310_d55/shane_kast_blue_A/Science/spec1d_b24-Feige66_KASTb_2015May20T041246.960.fits',
+                         'keck_deimos/900ZD_LVM_5500/Science/spec1d_DE.20110729.54545-Feige110_DEIMOS_2011Jul29T150856.803.fits',
+                         'keck_mosfire/Y_long/Science/spec1d_m191118_0064-GD71_MOSFIRE_2019Nov18T104704.507.fits']
+
         create_dummy_files(tmp_path, missing_files)
 
         # Change to the temp path so that the test_priority_list is written there
@@ -331,7 +334,11 @@ def test_main_debug_priority_list(monkeypatch, tmp_path, capsys):
                     if word == last_setup_found:
                         # Don't check against the next test setup if this is a test in the previous test setup
                         continue
-
+                    # If more tests have been added to the debug tests, don't get an index out of
+                    # bound exception
+                    if current_pos >= len(test_order):
+                        break
+                        
                     assert word == test_order[current_pos]
                     last_setup_found = word
                     current_pos += 1
@@ -392,6 +399,7 @@ def test_main_in_steps(monkeypatch, tmp_path):
         monkeypatch.setattr(sys, "argv", ['pypeit_test', '-o', str(tmp_path), '-t', '4',
                                           '-i', 'shane_kast_blue', '--prep_only', '-s', '600_4310_d55', 'develop'])
         assert test_main.main() == 0
+        assert (tmp_path / "shane_kast_blue" / "452_3306_d57" / "shane_kast_blue_452_3306_d57.pypeit").exists()
 
         monkeypatch.setattr(sys, "argv", ['pypeit_test', '-o', str(tmp_path), '-t', '4',
                                           '-i', 'shane_kast_blue', '-s', '600_4310_d55', 'reduce'])
