@@ -73,6 +73,7 @@ Attributes:
                             _sensfunc:          Test setups that run pypeit_sensfunc.
                             _flux_setup:        Test setups that run pypeit_flux_setup.
                             _flux:              Test setups that run pypeit_flux_calib.
+                            _flexure:           Test setups that run pypeit_deimos_flexure.
                             _coadd1d:           Test setups that run pypeit_coadd_1dspec.
                             _coadd2d:           Test setups that run pypeit_coadd_2dspec.
                             _telluric:          Test setups that run pypeit_tellfit.
@@ -165,16 +166,6 @@ _sensfunc = {'shane_kast_blue/600_4310_d55':
              }
 
 
-
-
-
-
-
-
-
-
-
-
 _flux_setup = ['shane_kast_blue/600_4310_d55',
                'gemini_gnirs/32_SB_SXD',
                'gemini_gmos/GS_HAM_R400_860',
@@ -186,6 +177,8 @@ _flux = ['shane_kast_blue/600_4310_d55',
          'gemini_gmos/GS_HAM_R400_860',
          'keck_deimos/900ZD_LVM_5500',
          ]
+
+_flexure = ['keck_deimos/830g_m_8500']
 
 _coadd1d = ['shane_kast_blue/600_4310_d55',
             'gemini_gnirs/32_SB_SXD',
@@ -231,6 +224,9 @@ all_tests = [{'factory': pypeit_tests.PypeItSetupTest,
              {'factory': pypeit_tests.PypeItFluxTest,
               'type':    TestPhase.AFTERBURN,
               'setups':  _flux},
+             {'factory': pypeit_tests.PypeItFlexureTest,
+              'type':    TestPhase.AFTERBURN,
+              'setups':  _flexure},
              {'factory': pypeit_tests.PypeItCoadd1DTest,
               'type':    TestPhase.AFTERBURN,
               'setups':  _coadd1d},
