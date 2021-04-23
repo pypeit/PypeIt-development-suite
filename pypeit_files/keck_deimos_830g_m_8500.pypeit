@@ -8,7 +8,7 @@
    use_biasimage=False
 [reduce]
    [[findobj]]
-         sig_thresh = 100.
+         sig_thresh = 100.  #  This is purposely set to a high value to miss some obvious targets, so that we can check if PypeIt finds them using the slitmask design info.
    [[extraction]]
       use_2dmodel_mask = False
       boxcar_radius = 1.5  # arcsec
