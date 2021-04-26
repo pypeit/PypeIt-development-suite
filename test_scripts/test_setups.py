@@ -212,9 +212,6 @@ _quick_look = {'shane_kast_blue/600_4310_d55':
                    {'files': ['m191120_0043.fits', 'm191120_0044.fits',  'm191120_0045.fits', 'm191120_0046.fits'],
                     '--spec_samp_fact': 2.0, '--spat_samp_fact': 2.0}}
 
-ql_master_setups = {'keck_nires': ['NIRES'], 
-                    'keck_mosfire': ['Y_long'] }
-
 all_tests = [{'factory': pypeit_tests.PypeItSetupTest,
               'type':    TestPhase.PREP,
               'setups':  _pypeit_setup},

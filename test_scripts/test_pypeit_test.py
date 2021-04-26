@@ -397,7 +397,7 @@ def test_main_in_steps(monkeypatch, tmp_path):
         create_dummy_files(tmp_path, missing_files)
 
         monkeypatch.setattr(sys, "argv", ['pypeit_test', '-o', str(tmp_path), '-t', '4',
-                                          '-i', 'shane_kast_blue', '--prep_only', '-s', '600_4310_d55', 'develop'])
+                                          '-i', 'shane_kast_blue', '--prep_only', 'develop'])
         assert test_main.main() == 0
         assert (tmp_path / "shane_kast_blue" / "452_3306_d57" / "shane_kast_blue_452_3306_d57.pypeit").exists()
 
