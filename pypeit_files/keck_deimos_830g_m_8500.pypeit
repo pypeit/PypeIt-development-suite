@@ -15,6 +15,12 @@
    [[skysub]]
       mask_by_boxcar = True
       no_local_sky = True
+# For testing pypeit_deimos_flexure   
+[flexure]
+   spec_method = skip 
+[calibrations]
+   [[wavelengths]]
+      refframe= observed
 
 
 # Setup
