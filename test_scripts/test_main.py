@@ -136,6 +136,7 @@ class TestSetup(object):
         self.dev_path = dev_path
         self.pyp_file = None
         self.std_pyp_file = None
+        self.priority = 0
         self.generate_pyp_file = False
         self.tests = []
         self.missing_files = []
@@ -458,7 +459,6 @@ def parser(options=None):
                              'detailed report at the end of testing. This has no effect if -q is given')
     parser.add_argument('-r', '--report', default=None, type=str,
                         help='Write a detailed test report to REPORT.')
-
     return parser.parse_args() if options is None else parser.parse_args(options)
 
 def thread_target(test_report):
@@ -607,16 +607,18 @@ def main():
         if pargs.setup is not None:
             setup_names = [ pargs.setup ]
         # Limit to development setups
-        if pargs.tests in tests_that_only_use_dev_setups:
+        elif pargs.tests in tests_that_only_use_dev_setups:
             setup_names = devsetups[instr]
 
         # Build test setups, check for missing files, and run any prep work
         for setup_name in setup_names:
 
-            setup = build_test_setup(pargs, instr, setup_name, flg_after, flg_ql, priority_list)
+            setup = build_test_setup(pargs, instr, setup_name, flg_after, flg_ql)
             missing_files += setup.missing_files
 
             # set setup priority from file
+            priority_list.set_test_setup_priority(setup)
+
             setups.append(setup)
 
         # Report
@@ -687,7 +689,7 @@ def main():
     return test_report.num_failed
 
 
-def build_test_setup(pargs, instr, setup_name, flg_after, flg_ql, priority_list):
+def build_test_setup(pargs, instr, setup_name, flg_after, flg_ql):
     """Builds a TestSetup object including the tests that it will run"""
 
     dev_path = os.getenv('PYPEIT_DEV')
@@ -705,7 +707,6 @@ def build_test_setup(pargs, instr, setup_name, flg_after, flg_ql, priority_list)
 
     # Create the test setup and set it's priority
     setup = TestSetup(instr, setup_name, rawdir, rdxdir, dev_path)
-    priority_list.set_test_setup_priority(setup)
 
     # Go through each test for this setup and add it to the setup if it's
     # selected by the command line arguments

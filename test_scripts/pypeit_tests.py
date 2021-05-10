@@ -323,6 +323,8 @@ class PypeItQuickLookTest(PypeItTest):
         self.options = options
         self.redux_dir = os.path.abspath(pargs.outputdir)
         self.pargs = pargs
+        # Place the masters into REDUX_DIR/QL_MASTERS directory.
+        self.output_dir = os.path.join(self.redux_dir, 'QL_MASTERS')
 
     def build_command_line(self):
 
@@ -345,41 +347,33 @@ class PypeItQuickLookTest(PypeItTest):
     def run(self):
         """Generate any required quick look masters before running the quick look test"""
 
-        #if not self.mos:
-        # JFH Is this correct
-        if self.setup.instr == 'keck_nires':
-
+        if self.setup.instr == 'keck_nires' or (self.setup.instr == 'keck_mosfire' and self.setup.name == 'Y_long'):
             try:
-                # Place the masters into the QL_MASTERS environment variable if defined, otherwise
-                # default to ${PYPEIT_DEV}/QL/NIRES_MASTERS.  To set that default we set the
-                # NIRES_MASTERS variable in the tests's environment
-                if 'QL_MASTERS' not in os.environ:
-                    self.env = os.environ.copy()
-                    self.env['QL_MASTERS'] = os.path.join(os.environ['PYPEIT_DEV'], 'QL')
-
-                output_dir = os.path.join(os.environ['QL_MASTERS'], 'NIRES_MASTERS')
 
                 # Build the masters with the output going to a log file
-                logfile = get_unique_file(os.path.join(self.setup.rdxdir, "build_nires_masters_output.log"))
+                logfile = get_unique_file(os.path.join(self.setup.rdxdir, "build_ql_masters_output.log"))
                 with open(logfile, "w") as log:
-                    result = subprocess.run([os.path.join(self.setup.dev_path, 'build_nires_masters'),
-                                             '--redux_dir', self.redux_dir, '--force_copy', '--output_dir', output_dir],
+                    result = subprocess.run([os.path.join(self.setup.dev_path, 'build_ql_masters'),
+                                             self.setup.instr, "-s", self.setup.name, '--output_dir', self.output_dir, '--redux_dir', self.redux_dir, '--force_copy'],
                                             stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
 
-                    print(result.stdout, file=log)
+                    print(result.stdout if isinstance(result.stdout, str) else result.stdout.decode(errors='replace'), file=log)
 
                 if result.returncode != 0:
-                    self.error_msgs.append("Failed to generate NIRES masters.")
+                    self.error_msgs.append("Failed to generate QL masters.")
                     self.passed = False
                     return False
             except Exception:
                 # Prevent any exceptions from escaping the "run" method
-                self.error_msgs.append("Exception building NIRES masters:")
+                self.error_msgs.append("Exception building QL masters:")
                 self.error_msgs.append(traceback.format_exc())
                 self.passed = False
                 return False
 
-        # Run the quick look test via the parent's run method
+        # Run the quick look test via the parent's run method, setting the environment
+        # to use the newly generated masters
+        self.env = os.environ.copy()
+        self.env['QL_MASTERS'] = self.output_dir
         return super().run()
 
 def pypeit_file_name(instr, setup, std=False):
