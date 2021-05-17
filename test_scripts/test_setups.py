@@ -179,7 +179,7 @@ _flux = ['shane_kast_blue/600_4310_d55',
          'keck_deimos/900ZD_LVM_5500',
          ]
 
-_flexure = ['keck_deimos/830g_m_8500']
+_flexure = ['keck_deimos/830G_M_8500']
 
 _coadd1d = ['shane_kast_blue/600_4310_d55',
             'gemini_gnirs/32_SB_SXD',
