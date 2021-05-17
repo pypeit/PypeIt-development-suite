@@ -257,7 +257,7 @@ class PypeItFlexureTest(PypeItTest):
         super().__init__(setup, "pypeit_deimos_flexure", "test_flexure")
 
         self.flexure_file = os.path.join(self.setup.dev_path, 'flexure_files',
-                                      '{0}_{1}.flux'.format(self.setup.instr.lower(), self.setup.name.lower()))
+                                      '{0}_{1}.flex'.format(self.setup.instr.lower(), self.setup.name.lower()))
 
     def build_command_line(self):
         return ['pypeit_deimos_flexure', self.flexure_file, 'testing_']
