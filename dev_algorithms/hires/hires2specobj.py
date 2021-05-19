@@ -14,6 +14,7 @@ from pypeit.spectrographs.util import load_spectrograph
 
 # Read in a Cowie xidl output for a single exposure
 xidl_file = '/Users/joe/HIRES_redux/J0100+2802/Cowie/Extract/Obj_0147R.fits.gz'
+xidl_file = '/Users/suksientie/Research/J0100+2802/Cowie/Extract/Obj_0147R.fits.gz'
 head2d = fits.getheader(xidl_file, ext=1)
 
 hdu = fits.open(xidl_file)
@@ -26,25 +27,24 @@ for iord in range(norders-1,-1,-1):
     thisobj = specobj.SpecObj('Echelle', DET=1, OBJTYPE='science', ECH_ORDERINDX=iord, ECH_ORDER=data[iord]['ORDER'])
     # Set boxcar extracted flux
     thisobj.BOX_WAVE = data[iord]['BOX_WV']
-    thisobj.BOX_COUNTS = data[iord]['BOX_FX']
-    thisobj.BOX_COUNTS_IVAR = utils.inverse(data[iord]['BOX_VAR'])
-    thisobj.BOX_COUNTS_SIG = np.sqrt(data[iord]['BOX_VAR'])
+    thisobj.BOX_COUNTS = data[iord]['BOX_FX'].astype(float) # otherwise TypeError
+    thisobj.BOX_COUNTS_IVAR = utils.inverse(data[iord]['BOX_VAR'].astype(float))
+    thisobj.BOX_COUNTS_SIG = np.sqrt(data[iord]['BOX_VAR'].astype(float))
     thisobj.BOX_MASK = data[iord]['BOX_VAR'] > 0.0
     # Do the same things for the opt flags
     thisobj.OPT_WAVE = data[iord]['WAVE']
-    thisobj.OPT_COUNTS = data[iord]['FX']
-    thisobj.OPT_COUNTS_IVAR = utils.inverse(data[iord]['VAR'])
-    thisobj.OPT_COUNTS_SIG = np.sqrt(data[iord]['VAR'])
-    thisobj.TRACE_SPAT = data[iord]['TRACE']
-    thisobj.FHWM = data[iord]['SPATIAL_FWHM'] # want this?
+    thisobj.OPT_COUNTS = data[iord]['FX'].astype(float)
+    thisobj.OPT_COUNTS_IVAR = utils.inverse(data[iord]['VAR'].astype(float))
+    thisobj.OPT_COUNTS_SIG = np.sqrt(data[iord]['VAR'].astype(float))
+    thisobj.TRACE_SPAT = data[iord]['TRACE'].astype(float)
+    #thisobj.FHWM = data[iord]['SPATIAL_FWHM'] # want this?
     thisobj.NAME = data[iord]['FIELD'] # want this?
-    thisobj.OPT_COUNTS_SKY = data[iord]['SKY'] # want this?
+    thisobj.OPT_COUNTS_SKY = data[iord]['SKY'].astype(float) # want this?
 
     thisobj.set_name()
     sobjs.add_sobj(thisobj)
 
-
-spectrograph = load_spectrograph('keck_hires')
+spectrograph = load_spectrograph('keck_hires_red') # apparently spectrographs.keck_hires.py exists, but name is set to keck_hires_red at the moment
 # Somehow hack the fitstbl or whatever
 # keywords from pypeit.core.meta.define_core_meta
 row_fitstbl = hdu[0].header
@@ -57,6 +57,7 @@ row_fitstbl['binning'] = None
 row_fitstbl['mjd'] = None
 row_fitstbl['airmass'] = None
 row_fitstbl['exptime'] = None
+row_fitstbl['filename'] = None
 
 subheader = spectrograph.subheader_for_spec(row_fitstbl, head2d)
 outfile = 'test.fits'
