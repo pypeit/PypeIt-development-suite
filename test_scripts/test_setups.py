@@ -101,7 +101,7 @@ class TestPhase(Enum):
 
 supported_instruments = ['kast', 'deimos', 'kcwi', 'nires', 'nirspec', 'mosfire', 'lris', 'xshooter', 'gnirs', 'gmos',
                          'flamingos2', 'mage', 'fire', 'luci', 'mdm', 'alfosc', 'fors2', 'binospec', 'mmirs', 'bluechannel',
-                         'mods', 'dbsp', 'tspec', 'bc']
+                         'mods', 'dbsp', 'tspec', 'bc', 'efosc2']
 
 
 develop_setups = {'bok_bc': ['600'],
@@ -131,6 +131,7 @@ develop_setups = {'bok_bc': ['600'],
                   'mmt_binospec': ['Longslit_G600', 'Multislit_G270'],
                   'mmt_mmirs': ['HK_zJ', 'J_zJ', 'K_K'],
                   'mmt_bluechannel': ['300l'],
+                  'ntt_efosc2': ['gr5_g4target3', 'gr6_g4target3'],
                   'not_alfosc': ['grism4', 'grism19'],
                   'p200_dbsp_blue': ['600_4000_d55'],
                   'p200_dbsp_red': ['316_7500_d55'],
