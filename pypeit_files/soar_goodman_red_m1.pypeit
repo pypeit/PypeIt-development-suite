@@ -1,0 +1,25 @@
+# Auto-generated PypeIt file
+# Wed 28 Apr 2021 08:41:52
+
+# User-defined execution parameters
+[rdx]
+spectrograph = soar_goodman_red
+
+# Setup
+setup read
+    Setup A:
+         dispname: 400_SYZY
+           decker: 1.0_LONG_SLIT
+          binning: 2,2
+        dispangle: 5.7999
+setup end
+
+# Read in the data
+data read
+ path /data/Projects/PypeIt-development-suite/RAW_DATA/soar_goodman_red/M1
+|                                 filename |                 frametype |                 ra |                dec |         target | dispname |        decker | binning |                mjd | airmass | exptime | dispangle |
+| 0180_FRB201123_host_24-03-2021_comp.fits |                  arc,tilt |         263.659925 | -50.76396916666667 | FRB201123_host | 400_SYZY | 1.0_LONG_SLIT |     2,2 |  59297.35279023148 |    1.14 |     0.5 |       5.8 |
+|    0002_GHTS_R_400m1_2x2_23-03-2021.fits | pixelflat,illumflat,trace |  44.96569166666666 |  22.32341611111111 |          DFLAT | 400_SYZY | 1.0_LONG_SLIT |     2,2 |  59296.81861011574 |    1.66 |     7.0 |    5.7999 |
+|      0181_FRB201123_host_24-03-2021.fits |                   science | 263.64798749999994 | -50.76886694444444 | FRB201123_host | 400_SYZY | 1.0_LONG_SLIT |     2,2 | 59297.363939710645 |    1.12 |  1200.0 |    5.7999 |
+data end
+
