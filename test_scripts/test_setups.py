@@ -101,12 +101,7 @@ class TestPhase(Enum):
 
 supported_instruments = ['kast', 'deimos', 'kcwi', 'nires', 'nirspec', 'mosfire', 'lris', 'xshooter', 'gnirs', 'gmos',
                          'flamingos2', 'mage', 'fire', 'luci', 'mdm', 'alfosc', 'fors2', 'binospec', 'mmirs', 'bluechannel',
-<<<<<<< HEAD
-                         'mods', 'dbsp', 'tspec', 'bc', 'efosc2']
-=======
-                         'mods', 'dbsp', 'tspec', 'bc', 'goodman']
->>>>>>> fe97e28cac0708a0f90f4b43e6713c63d584e9aa
-
+                         'mods', 'dbsp', 'tspec', 'bc', 'goodman', 'efosc2']
 
 develop_setups = {'bok_bc': ['600'],
                   'gemini_gnirs': ['32_SB_SXD', '10_LB_SXD'],
