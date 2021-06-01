@@ -120,7 +120,7 @@ develop_setups = {'bok_bc': ['600'],
                   'keck_lris_blue_orig': ['long_600_4000_d500'],
                   'keck_lris_red': ['long_600_7500_d560', 'multi_1200_9000_d680_1x2',
                                     'multi_600_5000_d560', 'multi_1200_9000_d680',
-                                    'multi_400_8500_d560',
+                                    'multi_400_8500_d560', 'long_600_10000_d680',
                                     'long_400_8500_longread'],  # Longslit read-out mode
                   'keck_lris_red_orig': ['long_300_5000'],
                   'lbt_luci': ['LUCI-I', 'LUCI-II'],
