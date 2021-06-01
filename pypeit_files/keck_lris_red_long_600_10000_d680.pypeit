@@ -1,0 +1,45 @@
+# Auto-generated PypeIt file
+# Mon 31 May 2021 12:42:38
+
+# User-defined execution parameters
+[rdx]
+spectrograph = keck_lris_red
+[baseprocess]
+    use_biasimage = False
+    use_overscan = True
+    use_pixelflat = False
+    use_illumflat = False
+[calibrations]
+	[[slitedges]]
+		edge_thresh=50.
+	[[wavelengths]]
+		method=full_template
+		reid_arxiv=wvarxiv_order6.fits
+[reduce]
+  [[findobj]]
+      sig_thresh = 3.
+      maxnumber = 1
+      find_fwhm = 8.
+  [[skysub]]
+      no_local_sky = True
+
+# Setup
+setup read
+    Setup A:
+         dispname: 600/10000
+         dichroic: 680
+           decker: long_1.0
+          binning: 1,1
+        dispangle: 31.1117382
+setup end
+
+# Read in the data
+data read
+ path /Users/chloecheng/Documents/Research/IMF/LRIS_2016oct/2016oct27/pypeit_wavelength_sln_files
+|          filename | frametype |                 ra |      dec |        target |  dispname |   decker | binning |          mjd |     airmass | exptime | dichroic |   dispangle |
+| r161027_0069.fits | pixelflat,illumflat,trace | 247.35829166666664 |      0.0 | LRIS (N wrap) | 600/10000 | long_1.0 |     1,1 | 57688.637489 | 13.37481353 |    20.0 |      680 |  31.1117382 |
+| r161027_0070.fits | pixelflat,illumflat,trace | 247.35829166666664 |      0.0 | LRIS (N wrap) | 600/10000 | long_1.0 |     1,1 |  57688.63962 | 13.37481353 |     8.0 |      680 |  31.1117382 |
+| r161027_0071.fits |  arc,tilt | 247.35829166666664 |      0.0 | LRIS (N wrap) | 600/10000 | long_1.0 |     1,1 |  57688.64415 | 13.37481353 |     1.0 |      680 |  31.1117382 |
+| r161027_0045.fits |   science | 10.513083333333332 | 41.07325 |     B067-G129 | 600/10000 | long_1.0 |     1,1 | 57688.206547 |  1.60498367 |   900.0 |      680 | 31.11060905 |
+data end
+
