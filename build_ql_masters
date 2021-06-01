@@ -106,8 +106,8 @@ def main():
             files = ['Masters/MasterSlits_A_15_01.fits.gz',
                      'Masters/MasterTilts_A_4_01.fits', 
                      'Masters/MasterWaveCalib_A_4_01.fits',
-                     'Science/spec1d_m191118_0064-GD71_MOSFIRE_2019Nov18T104704.507.fits',
-                     'sens_m191118_0064-GD71_MOSFIRE_2019Nov18T104704.507.fits' ]
+                     'Science/spec1d_m191118_0064-GD71_MOSFIRE_20191118T104704.507.fits',
+                     'sens_m191118_0064-GD71_MOSFIRE_20191118T104704.507.fits' ]
 
             source_filters = [os.path.join(redux_dir, 'keck_mosfire', 'Y_long', x) for x in files]
             

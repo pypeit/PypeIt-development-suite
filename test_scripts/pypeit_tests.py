@@ -251,6 +251,22 @@ class PypeItFluxTest(PypeItTest):
         else:
             return []
 
+class PypeItFlexureTest(PypeItTest):
+    """Test subclass that runs pypeit_deimos_flexure"""
+    def __init__(self, setup, pargs):
+        super().__init__(setup, "pypeit_multislit_flexure", "test_flexure")
+
+        self.flexure_file = os.path.join(self.setup.dev_path, 'flexure_files',
+                                      '{0}_{1}.flex'.format(self.setup.instr.lower(), self.setup.name.lower()))
+
+    def build_command_line(self):
+        return ['pypeit_multislit_flexure', self.flexure_file, 'testing_']
+
+    def check_for_missing_files(self):
+        if not os.path.exists(self.flexure_file):
+            return [self.flexure_file]
+        else:
+            return []
 class PypeItCoadd1DTest(PypeItTest):
     """Test subclass that runs pypeit_coadd_1dspec"""
 
