@@ -1,0 +1,10 @@
+- Update doco on reviewing at 
+  http://www.keck.hawaii.edu/realpublic/inst/deimos/throughput.html
+
+- Update programs to generate stats and plots on status of reductions:
+  = fix throughput_file_stats to parse results.db
+  = create program to print for each combo of
+    grating/filter/wavelength the number of spectra which are
+raw/good/bad/review
+
+

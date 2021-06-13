@@ -1,0 +1,20 @@
+cd, '/s/sdata1001/dmoseng/throughput/extract'
+
+infiles = [ $
+          '/s/sdata1001/dmoseng/throughput/raw/2008oct02/d1002_0049.fits.gz', $
+          '/s/sdata1001/dmoseng/throughput/raw/2008oct02/d1002_0050.fits.gz' $
+          ]
+
+outfiles = [ $
+          '2008oct02_d1002_0049.fits', $
+          '2008oct02_d1002_0050.fits' $
+          ]
+
+n = n_elements(infiles)
+for i=0,n-1 do begin
+    deimos_throughput, infiles[i], wavelengths, counts, $
+                       OUTFILE=outfiles[i], $
+                       /DISPLAY
+endfor 
+
+end

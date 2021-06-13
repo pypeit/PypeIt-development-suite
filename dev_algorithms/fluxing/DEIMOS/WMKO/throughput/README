@@ -1,0 +1,101 @@
+NOTE: see other related documentation at:
+
+DEIMOS doco:
+
+Google docs:
+https://docs.google.com/document/d/1Wur2rp2tdbadlcMToWKIGKEU4hWhGQBSjcDX0UvqmO8/edit?usp=sharing
+
+
+------------------------------------------------------------------------
+Master (driver) scripts
+------------------------------------------------------------------------
+run_do_deimos_throughput.pro
+	General script for reducing data
+
+run_do_deimos_throughput_v1.pro
+	Reduces 2 spectra from 2009oct02 to determine difference in
+	result when central wavelength changes.
+
+run_do_deimos_throughput_v2.pro
+	Reduces spectra for BD+28deg4211 with 1200G 
+
+------------------------------------------------------------------------
+Programs for DEIMOS throughput data reduction phase
+------------------------------------------------------------------------
+
+do_deimos_throughput.pro
+	purpose: reduce/extract deimos throughput spectra
+	calls: deimos_throughput
+	       deimos_sensstd_gdw
+
+deimos_throughput.pro
+	purpose: reduce/extract deimos throughput spectra
+
+deimos_sensstd_gdw.pro
+	purpose: convert cts/sec to flux
+
+------------------------------------------------------------------------
+Programs for reviewing throughput spectra
+------------------------------------------------------------------------
+rrdt.pro
+	driver script for reviewing spectra; calls
+	run_review_deimos_throughput 
+run_review_deimos_throughput.pro
+	program which takes user-specified "cuts" on wavelength,
+	filter, target, etc., and compiles list of spectra to be reduced
+review_deimos_throughput.pro
+	engine for reviewing a single DEIMOS spectrum
+
+build_throughput_file_list.pro
+	constructs the file input.lst by scanning through all raw data
+	files and compiling a list of files plus key info from file
+	headers (grating, filters, etc.)
+
+make_review_database.pro
+	routine to merge data from good.lst/bad.lst/review.lst into review.db
+
+throughput_file_stats.pro
+	compile stats on throughput spectra and generate plot
+
+do_review_trace.pro
+review_trace.pro
+	programs used for reviewing trace.  Superseded by
+	review_deimos_throughput.pro 
+
+parse_review_database.pro
+update_review_database.pro
+	routines for working with the review database file; called by
+	others 
+
+------------------------------------------------------------------------
+Programs for DEIMOS throughput data analysis phase
+------------------------------------------------------------------------
+
+deimos_throughput_web_pages.pro
+	calls:		deimos_throughput_grating_plots, 
+			deimos_throughput_grating_web_page
+
+deimos_throughput_grating_plots.pro
+	calls:
+	invoked by: deimos_throughput_web_pages
+
+deimos_throughput_grating_web_page.pro
+	function:	generates a web page for a specific grating
+	calls:		deimos_write_web_page
+	invoked by:	deimos_throughput_web_pages
+
+deimos_write_web_page.pro
+	function: generic utility for generating DEIMOS web pages
+
+------------------------------------------------------------------------
+Obsolete files
+------------------------------------------------------------------------
+
+do_deimos_sensstd.pro
+	calls: deimos_sensstd_gdw
+
+deimos_sensstd_update_web.pro
+	calls: mkhtml_specthru_gdw
+
+mkhtml_specthru_gdw.pro
+	purpose: generates throughput web pages
