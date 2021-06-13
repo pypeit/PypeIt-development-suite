@@ -1,0 +1,25 @@
+;-----------------------------------------------------------------------
+function sex2dec, array
+;-----------------------------------------------------------------------
+; Converts from sexagesimal (e.g. +HH:MM:SS.SS) to decimal
+;-----------------------------------------------------------------------
+
+result = array
+for i=0,n_elements(array)-1 do begin
+    s = array[i]
+    if (strmid(s,0,1) eq "-") then pm=-1. else pm=1.
+    n = -1
+    sum = 0.
+    for j = 0,10 do begin
+        m = n+1
+        n = strpos( s, ":", m)
+        if( n ge 0 and n-m gt 0) then begin
+            sum = sum + abs(float(strmid(s,m,n-m))/60.^j)
+        endif
+    endfor
+    result[i] = pm*sum
+endfor
+
+return, result
+
+end

@@ -1,0 +1,22 @@
+;-----------------------------------------------------------------------
+pro psport, psfile
+;-----------------------------------------------------------------------
+; psport / GDW / 19 Jan 1999
+;
+; Purpose:
+;   Set up printing for PostScript output to either:
+;      1) the postscript printer
+;      2) a named postscript file
+;-----------------------------------------------------------------------
+
+set_plot, 'ps'
+
+if n_params(0) lt 1 then begin
+    device, /portrait, xsize=7, ysize=10, xoff=0.75, yoff=0.5, /inch
+endif else begin
+    device, filename=psfile, /portrait, xsize=7, ysize=10, xoff=0.75, $
+      yoff=0.5, /inch 
+endelse
+
+end
+
