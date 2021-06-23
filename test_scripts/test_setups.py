@@ -160,6 +160,8 @@ _sensfunc = {'shane_kast_blue/600_4310_d55':
                  {'std_file': 'spec1d_*S0206-HIP62745*.fits', 'sens_file': 'gemini_gnirs_32_sb_sxd.sens'},
              'gemini_gmos/GS_HAM_R400_860':
                  {'std_file': 'spec1d_**GD71*.fits'},
+             'gemini_gmos/GS_HAM_R400_700':
+                 {'std_file': 'spec1d_**LTT7379*.fits', 'sens_file': 'gemini_gmos_gs_ham_r400_700.sens'},
              'keck_deimos/900ZD_LVM_5500':
                  {'std_file': 'spec1d_*Feige110*.fits', 'sens_file': 'keck_deimos_900zd_lvm_5500.sens'},
              'keck_mosfire/Y_long':
@@ -176,6 +178,7 @@ _flux = ['shane_kast_blue/600_4310_d55',
          #'keck_deimos/830G_LVM_8400',
          'gemini_gnirs/32_SB_SXD',
          'gemini_gmos/GS_HAM_R400_860',
+         'gemini_gmos/GS_HAM_R400_700',
          'keck_deimos/900ZD_LVM_5500',
          ]
 
@@ -184,6 +187,7 @@ _flexure = ['keck_deimos/830G_M_8500']
 _coadd1d = ['shane_kast_blue/600_4310_d55',
             'gemini_gnirs/32_SB_SXD',
             'gemini_gmos/GS_HAM_R400_860',
+            'gemini_gmos/GS_HAM_R400_700',
             ]
 
 _coadd2d = {'gemini_gnirs/32_SB_SXD':
@@ -195,7 +199,10 @@ _coadd2d = {'gemini_gnirs/32_SB_SXD':
             }
 
 _telluric = {'gemini_gnirs/32_SB_SXD':
-                 {'coadd_file': 'pisco_coadd.fits', 'redshift': 7.52, 'objmodel': 'qso'},
+#                 {'coadd_file': 'pisco_coadd.fits', 'redshift': 7.52, 'objmodel': 'qso'},
+                 {'coadd_file': 'pisco_coadd.fits', 'tell_file': True},
+             'gemini_gmos/GS_HAM_R400_700':
+                 {'coadd_file': 'FRB180924_opt.fits', 'tell_file': True},
              }
 
 _quick_look = {'shane_kast_blue/600_4310_d55':
