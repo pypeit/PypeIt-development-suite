@@ -199,7 +199,6 @@ _coadd2d = {'gemini_gnirs/32_SB_SXD':
             }
 
 _telluric = {'gemini_gnirs/32_SB_SXD':
-#                 {'coadd_file': 'pisco_coadd.fits', 'redshift': 7.52, 'objmodel': 'qso'},
                  {'coadd_file': 'pisco_coadd.fits', 'tell_file': True},
              'gemini_gmos/GS_HAM_R400_700':
                  {'coadd_file': 'FRB180924_opt.fits', 'tell_file': True},
