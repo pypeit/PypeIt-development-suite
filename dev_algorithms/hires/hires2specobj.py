@@ -126,7 +126,7 @@ def read_in_hires_xidl(path, name, outfile, colors=['R', 'G', 'B'], file_type='.
     row_fitstbl['mjd'] = head_final['MJD']
     row_fitstbl['decker'] = head_final['DECKNAME']
     row_fitstbl['dispname'] = 'HIRES-R'
-
+    row_fitstbl['binning'] = head_final['BINNING']
 
     # row_fitstbl['ra'] = None
     # row_fitstbl['dec'] = None
