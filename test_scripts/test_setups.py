@@ -102,7 +102,7 @@ class TestPhase(Enum):
 
 supported_instruments = ['kast', 'deimos', 'kcwi', 'nires', 'nirspec', 'mosfire', 'lris', 'xshooter', 'gnirs', 'gmos',
                          'flamingos2', 'mage', 'fire', 'luci', 'mdm', 'alfosc', 'fors2', 'binospec', 'mmirs', 'bluechannel',
-                         'mods', 'dbsp', 'tspec', 'bc', 'goodman', 'efosc2']
+                         'mods', 'dbsp', 'tspec', 'bc', 'goodman', 'efosc2','deveny']
 
 develop_setups = {'bok_bc': ['600'],
                   'gemini_gnirs': ['32_SB_SXD', '10_LB_SXD'],
@@ -125,6 +125,7 @@ develop_setups = {'bok_bc': ['600'],
                   'keck_lris_red_orig': ['long_300_5000'],
                   'lbt_luci': ['LUCI-I', 'LUCI-II'],
                   'lbt_mods': ['MODS1R_Longslit', 'MODS2R_Longslit'],
+                  'ldt_deveny': ['DV1', 'DV2', 'DV5', 'DV6', 'DV8'],
                   'magellan_mage': ['1x1'],
                   'magellan_fire': ['FIRE_Echelle', 'FIRE_Long'],
                   'mdm_osmos': ['MDM4K'],
