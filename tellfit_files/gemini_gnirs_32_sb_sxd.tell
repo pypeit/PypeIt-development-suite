@@ -1,0 +1,4 @@
+[telluric]
+  objmodel = qso
+  redshift = 7.6
+
