@@ -9,20 +9,25 @@
 
 # Setup
 setup read
- Setup A
+Setup A
+     dispname: 1200G
+       decker: dra11
+      binning: 1,1
+    dispangle: 7699.95654297
+          amp: SINGLE:B
+      filter1: OG550
 setup end
 
 # Read in the data
 data read
- path /home/xavier/local/Python/PypeIt-development-suite/RAW_DATA/keck_deimos/1200G_M_7750/
-|                  filename |                date | frametype       |  target | exptime | binning | dichroic | dispname |     dispangle | decker |
- 
-| DE.20170425.09554.fits.gz | 2017-04-25T02:39:17 |   	    tilt,arc| unknown |       1 |     1,1 |     None |    1200G | 1096.89782715 |  dra11 |
-| DE.20170425.09632.fits.gz | 2017-04-25T02:40:44 | illumflat,pixelflat,trace | unknown |      12 |     1,1 |     None |    1200G | 1096.89782715 |  dra11 |
-| DE.20170425.09722.fits.gz | 2017-04-25T02:42:15 | illumflat,pixelflat,trace | unknown |      12 |     1,1 |     None |    1200G | 1096.89782715 |  dra11 |
-| DE.20170425.09803.fits.gz | 2017-04-25T02:43:36 | illumflat,pixelflat,trace | unknown |      12 |     1,1 |     None |    1200G | 1096.89782715 |  dra11 |
-| DE.20170425.50487.fits.gz | 2017-04-25T14:21:27 |         science |   dra11 |    1200 |     1,1 |     None |    1200G | 1096.89782715 |  dra11 |
-#| DE.20170425.51771.fits.gz | 2017-04-25T14:43:10 |         science |   dra11 |    1200 |     1,1 |     None |    1200G | 1096.89782715 |  dra11 |
-#| DE.20170425.53065.fits.gz | 2017-04-25T15:01:06 |         science |   dra11 |    1000 |     1,1 |     None |    1200G | 1096.89782715 |  dra11 |
+ path /Users/joe/python/PypeIt-development-suite/RAW_DATA/keck_deimos/1200G_M_7750/
+|                  filename |                 frametype |                 ra |                dec |  target | dispname | decker | binning |          mjd |    airmass | exptime |     dispangle |      amp | filter1 |    dateobs |         utc | calib | comb_id | bkg_id |
+| DE.20170425.09554.fits.gz |                  arc,tilt |  57.99999999999999 |               45.0 | unknown |    1200G |  dra11 |     1,1 | 57868.110529 | 1.41291034 |     1.0 | 7699.95654297 | SINGLE:B |   OG550 | 2017-04-25 | 02:39:14.41 |   all |      -1 |     -1 |
+| DE.20170425.09632.fits.gz | pixelflat,illumflat,trace |  57.99999999999999 |               45.0 | unknown |    1200G |  dra11 |     1,1 | 57868.111418 | 1.41291034 |    12.0 | 7699.95654297 | SINGLE:B |   OG550 | 2017-04-25 | 02:40:32.06 |   all |      -1 |     -1 |
+| DE.20170425.09722.fits.gz | pixelflat,illumflat,trace |  57.99999999999999 |               45.0 | unknown |    1200G |  dra11 |     1,1 | 57868.112443 | 1.41291034 |    12.0 | 7699.95654297 | SINGLE:B |   OG550 | 2017-04-25 | 02:42:02.26 |   all |      -1 |     -1 |
+| DE.20170425.09803.fits.gz | pixelflat,illumflat,trace |  57.99999999999999 |               45.0 | unknown |    1200G |  dra11 |     1,1 | 57868.113392 | 1.41291034 |    12.0 | 7699.95654297 | SINGLE:B |   OG550 | 2017-04-25 | 02:43:23.16 |   all |      -1 |     -1 |
+| DE.20170425.50487.fits.gz |                   science | 260.04999999999995 | 57.958444444444446 |   dra11 |    1200G |  dra11 |     1,1 | 57868.584271 |  1.2765523 |  1200.0 | 7699.95654297 | SINGLE:B |   OG550 | 2017-04-25 | 14:01:27.15 |     0 |       1 |     -1 |
+| DE.20170425.51771.fits.gz |                   science | 260.04999999999995 | 57.958444444444446 |   dra11 |    1200G |  dra11 |     1,1 | 57868.599136 | 1.29137753 |  1200.0 | 7699.95654297 | SINGLE:B |   OG550 | 2017-04-25 | 14:22:51.01 |     0 |       1 |     -1 |
+| DE.20170425.53065.fits.gz |                   science | 260.04999999999995 | 57.958444444444446 |   dra11 |    1200G |  dra11 |     1,1 |   57868.6141 | 1.31412428 |  1000.0 | 7699.95654297 | SINGLE:B |   OG550 | 2017-04-25 | 14:44:25.52 |     0 |       1 |     -1 |
 data end
 
