@@ -102,7 +102,7 @@ class TestPhase(Enum):
 
 supported_instruments = ['kast', 'deimos', 'kcwi', 'nires', 'nirspec', 'mosfire', 'lris', 'xshooter', 'gnirs', 'gmos',
                          'flamingos2', 'mage', 'fire', 'luci', 'mdm', 'alfosc', 'fors2', 'binospec', 'mmirs', 'bluechannel',
-                         'mods', 'dbsp', 'tspec', 'bc', 'goodman', 'efosc2']
+                         'mods', 'dbsp', 'tspec', 'bc', 'goodman', 'efosc2','deveny']
 
 develop_setups = {'bok_bc': ['600'],
                   'gemini_gnirs': ['32_SB_SXD', '10_LB_SXD'],
@@ -125,13 +125,14 @@ develop_setups = {'bok_bc': ['600'],
                   'keck_lris_red_orig': ['long_300_5000'],
                   'lbt_luci': ['LUCI-I', 'LUCI-II'],
                   'lbt_mods': ['MODS1R_Longslit', 'MODS2R_Longslit'],
+                  'ldt_deveny': ['DV1', 'DV2', 'DV5', 'DV6', 'DV8'],
                   'magellan_mage': ['1x1'],
                   'magellan_fire': ['FIRE_Echelle', 'FIRE_Long'],
                   'mdm_osmos': ['MDM4K'],
                   'mmt_binospec': ['Longslit_G600', 'Multislit_G270'],
                   'mmt_mmirs': ['HK_zJ', 'J_zJ', 'K_K'],
                   'mmt_bluechannel': ['300l'],
-                  'ntt_efosc2': ['gr5_g4target3', 'gr6_g4target3'],
+                  'ntt_efosc2': ['gr5', 'gr6'],
                   'not_alfosc': ['grism4', 'grism19'],
                   'p200_dbsp_blue': ['600_4000_d55'],
                   'p200_dbsp_red': ['316_7500_d55'],
@@ -160,6 +161,8 @@ _sensfunc = {'shane_kast_blue/600_4310_d55':
                  {'std_file': 'spec1d_*S0206-HIP62745*.fits', 'sens_file': 'gemini_gnirs_32_sb_sxd.sens'},
              'gemini_gmos/GS_HAM_R400_860':
                  {'std_file': 'spec1d_**GD71*.fits'},
+             'gemini_gmos/GS_HAM_R400_700':
+                 {'std_file': 'spec1d_**LTT7379*.fits', 'sens_file': 'gemini_gmos_gs_ham_r400_700.sens'},
              'keck_deimos/900ZD_LVM_5500':
                  {'std_file': 'spec1d_*Feige110*.fits', 'sens_file': 'keck_deimos_900zd_lvm_5500.sens'},
              'keck_mosfire/Y_long':
@@ -176,6 +179,7 @@ _flux = ['shane_kast_blue/600_4310_d55',
          #'keck_deimos/830G_LVM_8400',
          'gemini_gnirs/32_SB_SXD',
          'gemini_gmos/GS_HAM_R400_860',
+         'gemini_gmos/GS_HAM_R400_700',
          'keck_deimos/900ZD_LVM_5500',
          ]
 
@@ -184,6 +188,7 @@ _flexure = ['keck_deimos/830G_M_8500']
 _coadd1d = ['shane_kast_blue/600_4310_d55',
             'gemini_gnirs/32_SB_SXD',
             'gemini_gmos/GS_HAM_R400_860',
+            'gemini_gmos/GS_HAM_R400_700',
             ]
 
 _coadd2d = {'gemini_gnirs/32_SB_SXD':
@@ -195,7 +200,9 @@ _coadd2d = {'gemini_gnirs/32_SB_SXD':
             }
 
 _telluric = {'gemini_gnirs/32_SB_SXD':
-                 {'coadd_file': 'pisco_coadd.fits', 'redshift': 7.52, 'objmodel': 'qso'},
+                 {'coadd_file': 'pisco_coadd.fits', 'tell_file': True},
+             'gemini_gmos/GS_HAM_R400_700':
+                 {'coadd_file': 'FRB180924_opt.fits', 'tell_file': True},
              }
 
 _quick_look = {'shane_kast_blue/600_4310_d55':

@@ -1,0 +1,5 @@
+[telluric]
+  objmodel = poly
+  polyorder = 7
+  fit_wv_min_max = 4600.0,9400.0
+

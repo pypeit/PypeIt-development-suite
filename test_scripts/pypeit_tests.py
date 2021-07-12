@@ -314,18 +314,17 @@ class PypeItCoadd2DTest(PypeItTest):
 class PypeItTelluricTest(PypeItTest):
     """Test subclass that runs pypeit_tellfit"""
 
-    def __init__(self, setup, pargs, coadd_file, redshift, objmodel):
+    def __init__(self, setup, pargs, coadd_file, tell_file):
         super().__init__(setup, "pypeit_tellfit", 'test_tellfit')
         self.coadd_file = coadd_file
-        self.redshift = redshift
-        self.objmodel = objmodel
 
+        self.tell_file = os.path.join(self.setup.dev_path, 'tellfit_files',
+                                f'{self.setup.instr.lower()}_{self.setup.name.lower()}.tell') \
+                            if tell_file else None
 
     def build_command_line(self):
         command_line = ['pypeit_tellfit', os.path.join(self.setup.rdxdir, self.coadd_file)]
-        command_line += ['--redshift', '{:}'.format(self.redshift)]
-        command_line += ['--objmodel', self.objmodel]
-
+        command_line += ['-t', f'{self.tell_file}']
         return command_line
 
 class PypeItQuickLookTest(PypeItTest):
