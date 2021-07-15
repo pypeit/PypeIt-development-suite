@@ -1,8 +1,9 @@
-# Script to perform LLC extractions
+# Script to perform PypeIt Dev Suite
+#  Jumping into a pod -- kubectl exec -it pod-name -- /bin/bash
 apiVersion: batch/v1
 kind: Job
 metadata:
-  name: xavier-deimos-v0
+  name: xavier-dev-suite-v0
 spec:
   backoffLimit: 0
   template:
@@ -13,32 +14,29 @@ spec:
         imagePullPolicy: Always
         resources:
           requests:
-            cpu: "1"
-            memory: "16Gi"
-            ephemeral-storage: 64Gi
-          limits:
-            cpu: "1"
-            memory: "32Gi"
+            cpu: "2"
+            memory: "20Gi"
             ephemeral-storage: 150Gi
+          limits:
+            cpu: "10"
+            memory: "300Gi"
+            ephemeral-storage: 200Gi
             #nvidia.com/gpu:  "1"  # See docs to exlude certain types
             # https://ucsd-prp.gitlab.io/userdocs/running/gpu-pods/
         command: ["/bin/bash", "-c"]
         args:
-          - cd PypeIt;  
-            git checkout develop; 
-            cd ..;
-            git clone https://github.com/pypeit/adap.git;
-            cd adap;
-            git checkout starting_up; 
-            git pull; 
-            cd ..;
-            mkdir foo;
-            cd foo;
-            mkdir 830G_LVM_8400;
-            aws --endpoint http://rook-ceph-rgw-nautiluss3.rook s3 cp s3://pypeit/RAW_DATA/keck_deimos/830G_LVM_8400 830G_LVM_8400/ --recursive --force;
-            source /adap/kube_tests/deimos_fun.src;
-            aws --endpoint http://rook-ceph-rgw-nautiluss3.rook s3 cp Science s3://pypeit --recursive --force;
+          - sleep 900;
+            cd PypeIt;  
+            git checkout develop;
+            cd /;
+            cd PypeIt-development-suite;
+            git checkout develop;
+            mkdir RAW_DATA;
+            aws --endpoint http://rook-ceph-rgw-nautiluss3.rook s3 cp s3://pypeit/RAW_DATA RAW_DATA/ --recursive --force;
+            ./pypeit_test -t 2 develop;
         env:
+          - name: "PYPEIT_DEV"
+            value: "/PypeIt-development-suite"
           - name: "ENDPOINT_URL"
             value: "http://rook-ceph-rgw-nautiluss3.rook"
           - name: "S3_ENDPOINT"
