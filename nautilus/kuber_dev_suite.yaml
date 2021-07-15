@@ -25,10 +25,8 @@ spec:
             # https://ucsd-prp.gitlab.io/userdocs/running/gpu-pods/
         command: ["/bin/bash", "-c"]
         args:
-          - sleep 900;
-            cd PypeIt;  
-            git checkout develop;
-            cd /;
+          - cd PypeIt;  
+            git checkout develop; cd /;
             cd PypeIt-development-suite;
             git checkout develop;
             mkdir RAW_DATA;
