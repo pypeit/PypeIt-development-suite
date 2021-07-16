@@ -16,11 +16,11 @@ spec:
           requests:
             cpu: "2"
             memory: "20Gi"
-            ephemeral-storage: 150Gi
+            ephemeral-storage: 250Gi
           limits:
             cpu: "10"
             memory: "300Gi"
-            ephemeral-storage: 200Gi
+            ephemeral-storage: 300Gi
             #nvidia.com/gpu:  "1"  # See docs to exlude certain types
             # https://ucsd-prp.gitlab.io/userdocs/running/gpu-pods/
         command: ["/bin/bash", "-c"]

@@ -5,12 +5,12 @@
 # -*- coding: utf-8 -*-
 
 """
-This script runs the PypeIt development suite of tests
+This script generates a kubernetes YAML file to run the PypeIt development suite 
 """
 
 import shutil
 import os
-import subprocess
+import io, yaml
 
 from pkg_resources import resource_filename
 
@@ -21,15 +21,16 @@ def parser(options=None):
     import argparse
 
     parser = argparse.ArgumentParser(formatter_class=argparse.ArgumentDefaultsHelpFormatter,
-                                     description='Generate a YAML file for a Nautilus dev suite job')
+                                     description='Generate a kubernetes YAML file for a Nautilus dev suite job')
 
     parser.add_argument('name', type=str, default=None, help='Name of the job')
-    parser.add_argument('-c', '--copy', default=False, action='store_true',
-                        help='Use copy instead of sync')
-    parser.add_argument('-d', '--dryrun', default=False, action='store_true',
-                        help='Only list the steps')
-    parser.add_argument('-p', '--print', default=False, action='store_true',
-                        help='Print the command')
+    parser.add_argument('outfile', type=str, default=None, help='Name of the YAML outfile')
+    parser.add_argument('--pypeit_branch', type=str, default='develop', help='Name of the PypeIt branch to test')
+    parser.add_argument('--dev_branch', type=str, default='develop', help='Name of the PypeIt Dev-Suite branch to use')
+    parser.add_argument('--ncpu', type=int, default=6, help='Number of CPUs request')
+    parser.add_argument('--ram', type=int, default=80, help='Amount of RAM to request (Gi)')
+    #parser.add_argument('-d', '--dryrun', default=False, action='store_true',
+    #                    help='Only list the steps')
 
     return parser.parse_args() if options is None else parser.parse_args(options)
 
@@ -38,64 +39,39 @@ def main():
 
     pargs = parser()
 
-    if pargs.copy:
-        command = 'copy'
-    else:
-        command = 'sync'
+    # Load the default
+    def_yaml_file = os.path.join(os.getenv('PYPEIT_DEV'), 'nautilus', 'kube_dev_suite.yaml')
+    with open(def_yaml_file, 'r') as stream:
+        data = yaml.safe_load(stream)
 
-    #
-    if pargs.developer == 'jxp':
-        raw_path = 'GoogleDrive:UCO/PypeIt/PypeIt-development-suite/RAW_DATA'
-        calib_path = 'GoogleDrive:UCO/PypeIt/Calibrations'
-    elif pargs.developer == 'rjc':
-        raw_path = 'PypeIt:RAW_DATA'
-        calib_path = None
-    elif pargs.developer == 'jfh':
-        raw_path = '/mnt/quasar/joe/google_drive/PypeIt-development-suite/RAW_DATA'
-        calib_path = None
+    # Modify
+    data['metadata']['name'] = pargs.name
 
+    # Resources
+    requests = data['spec']['template']['spec']['containers'][0]['resources']['requests']
+    requests['cpu'] = str(pargs.ncpu)
+    requests['memory'] = f'{pargs.ram}Gi'
 
-    # Do it
-    praw = ['rclone', command, raw_path, 'RAW_DATA', '-v']
-    pnires1, pnires2, ptell, ptell2 = None, None, None, None
-    if calib_path is not None:
-        # NIRES
-        #pnires1 = ['rclone', command, calib_path+'/nires_masters.tar.gz', '.', '-v']
-        #pnires2 = ['tar', '-zxvf', './nires_masters.tar.gz']
-        # Tellurics
-        ptell = ['rclone', command, calib_path+'/Telluric', 'Telluric', '-v']
-        tell_path = os.path.join(resource_filename('pypeit', 'data'), 'telluric')
-        ptell2 = ['mv', 'Telluric/*.*', tell_path]
+    # Limits
+    limits = data['spec']['template']['spec']['containers'][0]['resources']['limits']
+    limits['cpu'] = str(pargs.ncpu + 1)
+    limits['memory'] = f'{2*pargs.ram}Gi'
 
-    if pargs.dryrun:
-        for p in [praw, pnires1, ptell]:
-            if p is None:
-                continue
-            p += ['--dry-run']
-    for p in [praw, pnires1, pnires2, ptell, ptell2]:
-        if p is None:
-            continue
-        # Only execute these if the clone was performed
-        if p in [pnires2, ptell2] and pargs.dryrun:
-            continue
-        if pargs.print:
-            print(' '.join(p))
-            return
-        subprocess.run(p, check=True)
+    # Args
+    my_args = 'cd PypeIt;'
+    my_args += ' cd PypeIt;'
+    my_args += ' git checkout develop; cd /;'
+    my_args += ' cd PypeIt-development-suite;'
+    my_args += ' git checkout develop;'
+    my_args += ' mkdir RAW_DATA;'
+    my_args += ' aws --endpoint http://rook-ceph-rgw-nautiluss3.rook s3 cp s3://pypeit/RAW_DATA RAW_DATA/ --recursive --force;'
+    my_args += f' ./pypeit_test -t {pargs.ncpu} develop;'
 
-    # Clean up?
-    if ptell is not None:
-        shutil.rmtree('Telluric/')
+    data['spec']['template']['spec']['containers'][0]['args'][0] = my_args
 
+    with io.open(pargs.outfile, 'w', encoding='utf8') as outfile:
+        yaml.dump(data, outfile, default_flow_style=False, allow_unicode=True)
 
 if __name__ == '__main__':
-    # Check for rclone
-    if not any([os.access(os.path.join(path, 'rclone'), os.X_OK)
-                for path in os.environ["PATH"].split(os.pathsep)]):
-        raise RuntimeError("You need to install rclone in your PATH")
-
     # Giddy up
     main()
-
-
-
