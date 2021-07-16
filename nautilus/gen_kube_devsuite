@@ -65,7 +65,8 @@ def main():
     my_args += ' git checkout develop;'
     my_args += ' mkdir RAW_DATA;'
     my_args += ' aws --endpoint http://rook-ceph-rgw-nautiluss3.rook s3 cp s3://pypeit/RAW_DATA RAW_DATA/ --recursive --force;'
-    my_args += f' ./pypeit_test -t {pargs.ncpu} develop;'
+    my_args += f' ./pypeit_test -t {pargs.ncpu} develop -r test.report -o /tmp/REDUX_OUT;'
+    my_args += ' aws --endpoint http://rook-ceph-rgw-nautiluss3.rook s3 cp test.report s3://pypeit/test.report;'
 
     data['spec']['template']['spec']['containers'][0]['args'][0] = my_args
 
