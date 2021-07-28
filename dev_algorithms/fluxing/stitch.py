@@ -1,15 +1,48 @@
+from pypeit.io import fits_open
+from pypeit.sensfunc import SensFunc
+from pypeit.spectrographs import util
+from pypeit.core import fitting
+from pathlib import Path
 
-from matplotlib import pyplot as plt
-from pypeit import sensfunc
 
 
+import sys
+import argparse
 
-# Load in a sensfunc
-sensfile = '/Users/joe/python/PypeIt-development-suite/REDUX_OUT/keck_mosfire/Y_long/sens_m191118_0064-GD71_MOSFIRE_2019Nov18T104704.507.fits'
-wave, zeropoint, meta_table, out_table, header_sens = sensfunc.SensFunc.load(sensfile)
-plt.plot(wave[:,0], zeropoint[:, 0])
-plt.show()
+def parse_args(options=None, return_parser=False):
+    parser = argparse.ArgumentParser(description='Combine DEIMOS sensitivity functions to create a general purpose one.')
+    parser.add_argument("--output", type=str,
+                        help="Full path name of the output file")        
+    parser.add_argument("filelist", type=str, nargs="+",
+                        help="List of sensfunc files to combine.")
+            
 
-# Read in multiple sensfuncs for the same grating (can be different stars) but different dispangle (central wavelength).
-# Overpolot them, then we will code up the stitching together.
+    if return_parser:
+        return parser
 
+    return parser.parse_args() if options is None else parser.parse_args(options)
+
+
+def main(args):
+    """ Executes sensitivity function computation.
+    """
+    sflist = []
+    for file in args.filelist:
+        sf = SensFunc.from_file(file)
+        sf.sensfile = file
+        sflist.append(sf)
+
+    sflist.sort(key=lambda x: x.sens['WAVE_MIN'][0])
+    for sf in sflist:
+        print(sf.sensfile)
+        base_name = Path(sf.sensfile).stem
+        for order in [5, 6, 7, 8, 9, 10]:
+            pf = fitting.robust_fit(sf.sens['SENS_WAVE'][0], sf.sens['SENS_ZEROPOINT_FIT'][0], order)
+            pf.to_file(str(base_name) + f"_fit_{order}.fits")
+
+def entry_point():
+    main(parse_args())
+
+
+if __name__ == '__main__':
+    entry_point()
