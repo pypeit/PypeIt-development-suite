@@ -4,6 +4,10 @@
 # User-defined execution parameters
 [rdx]
 spectrograph = soar_goodman_red
+# Test pixelflat_min_wave
+[calibrations]
+  [[flatfield]]
+     pixelflat_min_wave = 3750.
 
 # Setup
 setup read
