@@ -251,6 +251,22 @@ class PypeItFluxTest(PypeItTest):
         else:
             return []
 
+class PypeItFlexureTest(PypeItTest):
+    """Test subclass that runs pypeit_deimos_flexure"""
+    def __init__(self, setup, pargs):
+        super().__init__(setup, "pypeit_multislit_flexure", "test_flexure")
+
+        self.flexure_file = os.path.join(self.setup.dev_path, 'flexure_files',
+                                      '{0}_{1}.flex'.format(self.setup.instr.lower(), self.setup.name.lower()))
+
+    def build_command_line(self):
+        return ['pypeit_multislit_flexure', self.flexure_file, 'testing_']
+
+    def check_for_missing_files(self):
+        if not os.path.exists(self.flexure_file):
+            return [self.flexure_file]
+        else:
+            return []
 class PypeItCoadd1DTest(PypeItTest):
     """Test subclass that runs pypeit_coadd_1dspec"""
 
@@ -298,18 +314,17 @@ class PypeItCoadd2DTest(PypeItTest):
 class PypeItTelluricTest(PypeItTest):
     """Test subclass that runs pypeit_tellfit"""
 
-    def __init__(self, setup, pargs, coadd_file, redshift, objmodel):
+    def __init__(self, setup, pargs, coadd_file, tell_file):
         super().__init__(setup, "pypeit_tellfit", 'test_tellfit')
         self.coadd_file = coadd_file
-        self.redshift = redshift
-        self.objmodel = objmodel
 
+        self.tell_file = os.path.join(self.setup.dev_path, 'tellfit_files',
+                                f'{self.setup.instr.lower()}_{self.setup.name.lower()}.tell') \
+                            if tell_file else None
 
     def build_command_line(self):
         command_line = ['pypeit_tellfit', os.path.join(self.setup.rdxdir, self.coadd_file)]
-        command_line += ['--redshift', '{:}'.format(self.redshift)]
-        command_line += ['--objmodel', self.objmodel]
-
+        command_line += ['-t', f'{self.tell_file}']
         return command_line
 
 class PypeItQuickLookTest(PypeItTest):
@@ -323,6 +338,8 @@ class PypeItQuickLookTest(PypeItTest):
         self.options = options
         self.redux_dir = os.path.abspath(pargs.outputdir)
         self.pargs = pargs
+        # Place the masters into REDUX_DIR/QL_MASTERS directory.
+        self.output_dir = os.path.join(self.redux_dir, 'QL_MASTERS')
 
     def build_command_line(self):
 
@@ -345,41 +362,33 @@ class PypeItQuickLookTest(PypeItTest):
     def run(self):
         """Generate any required quick look masters before running the quick look test"""
 
-        #if not self.mos:
-        # JFH Is this correct
-        if self.setup.instr == 'keck_nires':
-
+        if self.setup.instr == 'keck_nires' or (self.setup.instr == 'keck_mosfire' and self.setup.name == 'Y_long'):
             try:
-                # Place the masters into the QL_MASTERS environment variable if defined, otherwise
-                # default to ${PYPEIT_DEV}/QL/NIRES_MASTERS.  To set that default we set the
-                # NIRES_MASTERS variable in the tests's environment
-                if 'QL_MASTERS' not in os.environ:
-                    self.env = os.environ.copy()
-                    self.env['QL_MASTERS'] = os.path.join(os.environ['PYPEIT_DEV'], 'QL')
-
-                output_dir = os.path.join(os.environ['QL_MASTERS'], 'NIRES_MASTERS')
 
                 # Build the masters with the output going to a log file
-                logfile = get_unique_file(os.path.join(self.setup.rdxdir, "build_nires_masters_output.log"))
+                logfile = get_unique_file(os.path.join(self.setup.rdxdir, "build_ql_masters_output.log"))
                 with open(logfile, "w") as log:
-                    result = subprocess.run([os.path.join(self.setup.dev_path, 'build_nires_masters'),
-                                             '--redux_dir', self.redux_dir, '--force_copy', '--output_dir', output_dir],
+                    result = subprocess.run([os.path.join(self.setup.dev_path, 'build_ql_masters'),
+                                             self.setup.instr, "-s", self.setup.name, '--output_dir', self.output_dir, '--redux_dir', self.redux_dir, '--force_copy'],
                                             stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
 
-                    print(result.stdout, file=log)
+                    print(result.stdout if isinstance(result.stdout, str) else result.stdout.decode(errors='replace'), file=log)
 
                 if result.returncode != 0:
-                    self.error_msgs.append("Failed to generate NIRES masters.")
+                    self.error_msgs.append("Failed to generate QL masters.")
                     self.passed = False
                     return False
             except Exception:
                 # Prevent any exceptions from escaping the "run" method
-                self.error_msgs.append("Exception building NIRES masters:")
+                self.error_msgs.append("Exception building QL masters:")
                 self.error_msgs.append(traceback.format_exc())
                 self.passed = False
                 return False
 
-        # Run the quick look test via the parent's run method
+        # Run the quick look test via the parent's run method, setting the environment
+        # to use the newly generated masters
+        self.env = os.environ.copy()
+        self.env['QL_MASTERS'] = self.output_dir
         return super().run()
 
 def pypeit_file_name(instr, setup, std=False):

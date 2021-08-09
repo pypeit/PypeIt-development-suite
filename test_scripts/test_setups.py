@@ -73,6 +73,7 @@ Attributes:
                             _sensfunc:          Test setups that run pypeit_sensfunc.
                             _flux_setup:        Test setups that run pypeit_flux_setup.
                             _flux:              Test setups that run pypeit_flux_calib.
+                            _flexure:           Test setups that run pypeit_deimos_flexure.
                             _coadd1d:           Test setups that run pypeit_coadd_1dspec.
                             _coadd2d:           Test setups that run pypeit_coadd_2dspec.
                             _telluric:          Test setups that run pypeit_tellfit.
@@ -101,8 +102,7 @@ class TestPhase(Enum):
 
 supported_instruments = ['kast', 'deimos', 'kcwi', 'nires', 'nirspec', 'mosfire', 'lris', 'xshooter', 'gnirs', 'gmos',
                          'flamingos2', 'mage', 'fire', 'luci', 'mdm', 'alfosc', 'fors2', 'binospec', 'mmirs', 'bluechannel',
-                         'mods', 'dbsp', 'tspec', 'bc']
-
+                         'mods', 'dbsp', 'tspec', 'bc', 'goodman', 'efosc2','deveny']
 
 develop_setups = {'bok_bc': ['600'],
                   'gemini_gnirs': ['32_SB_SXD', '10_LB_SXD'],
@@ -120,23 +120,26 @@ develop_setups = {'bok_bc': ['600'],
                   'keck_lris_blue_orig': ['long_600_4000_d500'],
                   'keck_lris_red': ['long_600_7500_d560', 'multi_1200_9000_d680_1x2',
                                     'multi_600_5000_d560', 'multi_1200_9000_d680',
-                                    'multi_400_8500_d560',
+                                    'multi_400_8500_d560', 'long_600_10000_d680',
                                     'long_400_8500_longread'],  # Longslit read-out mode
                   'keck_lris_red_orig': ['long_300_5000'],
                   'lbt_luci': ['LUCI-I', 'LUCI-II'],
                   'lbt_mods': ['MODS1R_Longslit', 'MODS2R_Longslit'],
+                  'ldt_deveny': ['DV1', 'DV2', 'DV5', 'DV6', 'DV8'],
                   'magellan_mage': ['1x1'],
                   'magellan_fire': ['FIRE_Echelle', 'FIRE_Long'],
                   'mdm_osmos': ['MDM4K'],
                   'mmt_binospec': ['Longslit_G600', 'Multislit_G270'],
                   'mmt_mmirs': ['HK_zJ', 'J_zJ', 'K_K'],
                   'mmt_bluechannel': ['300l'],
+                  'ntt_efosc2': ['gr5', 'gr6'],
                   'not_alfosc': ['grism4', 'grism19'],
-                  'p200_dbsp_blue': ['600_4000_d55'],
-                  'p200_dbsp_red': ['316_7500_d55'],
+                  'p200_dbsp_blue': ['600_4000_d55', '600_4000_d68', '1200_5000_d68'],
+                  'p200_dbsp_red': ['316_7500_d55', '600_10000_d55', '1200_7100_d68'],
                   'p200_tspec': ['TSPEC'],
                   'shane_kast_blue': ['452_3306_d57', '600_4310_d55', '830_3460_d46'],
                   'shane_kast_red': ['300_7500_Ne', '600_7500_d55_ret', '600_7500_d57', '600_5000_d46', '1200_5000_d57'],
+                  'soar_goodman_red': ['M1','M2'],
                   'vlt_fors2': ['300I'],
                   'vlt_xshooter': ['VIS_1x1', 'VIS_2x1', 'VIS_2x2', 'VIS_manual', 'NIR'],
                   'vlt_sinfoni': ['K_0.8'],
@@ -158,21 +161,13 @@ _sensfunc = {'shane_kast_blue/600_4310_d55':
                  {'std_file': 'spec1d_*S0206-HIP62745*.fits', 'sens_file': 'gemini_gnirs_32_sb_sxd.sens'},
              'gemini_gmos/GS_HAM_R400_860':
                  {'std_file': 'spec1d_**GD71*.fits'},
+             'gemini_gmos/GS_HAM_R400_700':
+                 {'std_file': 'spec1d_**LTT7379*.fits', 'sens_file': 'gemini_gmos_gs_ham_r400_700.sens'},
              'keck_deimos/900ZD_LVM_5500':
                  {'std_file': 'spec1d_*Feige110*.fits', 'sens_file': 'keck_deimos_900zd_lvm_5500.sens'},
              'keck_mosfire/Y_long':
                  {'std_file': 'spec1d_*0064-GD71*.fits'}
              }
-
-
-
-
-
-
-
-
-
-
 
 
 _flux_setup = ['shane_kast_blue/600_4310_d55',
@@ -184,12 +179,16 @@ _flux = ['shane_kast_blue/600_4310_d55',
          #'keck_deimos/830G_LVM_8400',
          'gemini_gnirs/32_SB_SXD',
          'gemini_gmos/GS_HAM_R400_860',
+         'gemini_gmos/GS_HAM_R400_700',
          'keck_deimos/900ZD_LVM_5500',
          ]
+
+_flexure = ['keck_deimos/830G_M_8500']
 
 _coadd1d = ['shane_kast_blue/600_4310_d55',
             'gemini_gnirs/32_SB_SXD',
             'gemini_gmos/GS_HAM_R400_860',
+            'gemini_gmos/GS_HAM_R400_700',
             ]
 
 _coadd2d = {'gemini_gnirs/32_SB_SXD':
@@ -201,7 +200,9 @@ _coadd2d = {'gemini_gnirs/32_SB_SXD':
             }
 
 _telluric = {'gemini_gnirs/32_SB_SXD':
-                 {'coadd_file': 'pisco_coadd.fits', 'redshift': 7.52, 'objmodel': 'qso'},
+                 {'coadd_file': 'pisco_coadd.fits', 'tell_file': True},
+             'gemini_gmos/GS_HAM_R400_700':
+                 {'coadd_file': 'FRB180924_opt.fits', 'tell_file': True},
              }
 
 _quick_look = {'shane_kast_blue/600_4310_d55':
@@ -231,6 +232,9 @@ all_tests = [{'factory': pypeit_tests.PypeItSetupTest,
              {'factory': pypeit_tests.PypeItFluxTest,
               'type':    TestPhase.AFTERBURN,
               'setups':  _flux},
+             {'factory': pypeit_tests.PypeItFlexureTest,
+              'type':    TestPhase.AFTERBURN,
+              'setups':  _flexure},
              {'factory': pypeit_tests.PypeItCoadd1DTest,
               'type':    TestPhase.AFTERBURN,
               'setups':  _coadd1d},

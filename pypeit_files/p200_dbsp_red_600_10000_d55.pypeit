@@ -1,0 +1,32 @@
+# Auto-generated PypeIt file
+# 2021-07-28
+
+# User-defined execution parameters
+[rdx]
+
+spectrograph = p200_dbsp_red
+
+
+# Setup
+setup read
+    Setup A:
+         dispname: 600/10000
+          binning: 1,1
+        dispangle: 30.5
+         dichroic: D55
+setup end
+
+# Read in the data
+data read
+ path ../Raw
+|        filename |                 frametype |                 ra |                dec |    target |  dispname | decker | binning |               mjd | airmass | exptime | dispangle | dichroic | slitwid | calib | comb_id | bkg_id |
+| red0011.fits.gz |                  arc,tilt | 345.90329166666663 |  33.43433333333333 |           | 600/10000 |    1.0 |     1,1 | 59225.97590508102 |     1.0 |     1.0 |      30.5 |      D55 |     1.0 |     0 |      -1 |     -1 |
+| red0001.fits.gz |                      bias |  342.7494583333333 | 33.436138888888884 |           | 600/10000 |    1.0 |     1,1 | 59225.96715628472 |     1.0 |     0.0 |      30.5 |      D55 |     1.0 |   all |      -1 |     -1 |
+| red0002.fits.gz |                      bias |          342.84625 |  33.43608333333333 |           | 600/10000 |    1.0 |     1,1 | 59225.96742454861 |     1.0 |     0.0 |      30.5 |      D55 |     1.0 |   all |      -1 |     -1 |
+| red0003.fits.gz |                      bias | 342.94304166666666 | 33.436027777777774 |           | 600/10000 |    1.0 |     1,1 | 59225.96769293981 |     1.0 |     0.0 |      30.5 |      D55 |     1.0 |   all |      -1 |     -1 |
+| red0065.fits.gz | pixelflat,illumflat,trace | 128.22124999999997 |            33.0075 | domeflats | 600/10000 |    1.0 |     1,1 | 59226.37030190972 |     1.0 |    80.0 |      30.5 |      D55 |     1.0 |   all |      -1 |     -1 |
+| red0066.fits.gz | pixelflat,illumflat,trace | 128.65216666666666 |  33.00819444444444 | domeflats | 600/10000 |    1.0 |     1,1 | 59226.37149612269 |     1.0 |    80.0 |      30.5 |      D55 |     1.0 |   all |      -1 |     -1 |
+| red0067.fits.gz | pixelflat,illumflat,trace | 129.08316666666664 |  33.00888888888889 | domeflats | 600/10000 |    1.0 |     1,1 | 59226.37269027778 |     1.0 |    80.0 |      30.5 |      D55 |     1.0 |   all |      -1 |     -1 |
+| red0058.fits.gz |                  standard | 159.89508333333333 |  43.10252777777778 |   Feige34 | 600/10000 |    2.0 |     1,1 | 59226.34984265047 |   1.177 |    60.0 |      30.5 |      D55 |     2.0 |     0 |       1 |     -1 |
+data end
+
