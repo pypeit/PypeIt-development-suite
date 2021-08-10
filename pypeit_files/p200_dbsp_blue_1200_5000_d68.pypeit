@@ -1,0 +1,31 @@
+# Auto-generated PypeIt file
+# 2021-07-28
+
+# User-defined execution parameters
+[rdx]
+
+spectrograph = p200_dbsp_blue
+
+
+# Setup
+setup read
+    Setup A:
+         dispname: 1200/5000
+          binning: 1,1
+        dispangle: 41.666666666666664
+         dichroic: D68
+setup end
+
+# Read in the data
+data read
+ path ../Raw
+|         filename |                 frametype |                 ra |                 dec |     target |  dispname | decker | binning |                mjd | airmass | exptime |          dispangle | dichroic | slitwid | calib | comb_id | bkg_id |
+| blue0007.fits.gz |                  arc,tilt |  35.88129166666666 |  33.492916666666666 |        arc | 1200/5000 |    2.0 |     1,1 |  59318.86067800926 |     1.0 |    30.0 | 41.666666666666664 |      D68 |     2.0 |     0 |      -1 |     -1 |
+| blue0001.fits.gz |                      bias |  30.78362499999999 |  33.487500000000004 |       bias | 1200/5000 |    0.5 |     1,1 |  59318.84654032408 |     1.0 |     0.0 | 41.666666666666664 |      D68 |     0.5 |   all |      -1 |     -1 |
+| blue0002.fits.gz |                      bias |  30.87416666666666 |   33.48758333333333 |       bias | 1200/5000 |    0.5 |     1,1 | 59318.846791261574 |     1.0 |     0.0 | 41.666666666666664 |      D68 |     0.5 |   all |      -1 |     -1 |
+| blue0003.fits.gz |                      bias | 30.964749999999995 |   33.48769444444444 |       bias | 1200/5000 |    0.5 |     1,1 |  59318.84704226852 |     1.0 |     0.0 | 41.666666666666664 |      D68 |     0.5 |   all |      -1 |     -1 |
+| blue0026.fits.gz | pixelflat,illumflat,trace | 126.18908333333333 |   33.61511111111111 |  dome flat | 1200/5000 |    2.0 |     1,1 |  59319.11084120371 |     1.0 |    90.0 | 41.666666666666664 |      D68 |     2.0 |   all |      -1 |     -1 |
+| blue0027.fits.gz | pixelflat,illumflat,trace | 127.04491666666667 |  33.616527777777776 |  dome flat | 1200/5000 |    2.0 |     1,1 |  59319.11320983796 |     1.0 |    90.0 | 41.666666666666664 |      D68 |     2.0 |   all |      -1 |     -1 |
+| blue0041.fits.gz |                   science | 168.21883333333332 | 0.18091666666666667 | galaxy_168 | 1200/5000 |    2.0 |     1,1 |  59336.22592451389 |   1.246 |  1200.0 | 41.666666666666664 |      D68 |     2.0 |     0 |       1 |     -1 |
+data end
+
