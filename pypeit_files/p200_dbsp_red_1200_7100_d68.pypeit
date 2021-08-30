@@ -1,0 +1,30 @@
+# Auto-generated PypeIt file
+# 2021-07-28
+
+# User-defined execution parameters
+[rdx]
+
+spectrograph = p200_dbsp_red
+
+
+# Setup
+setup read
+    Setup A:
+         dispname: 1200/7100
+          binning: 1,1
+        dispangle: 46.06666666666667
+         dichroic: D68
+setup end
+
+# Read in the data
+data read
+ path ../Raw
+|        filename |                 frametype |                 ra |                 dec |     target |  dispname | decker | binning |                mjd | airmass | exptime |         dispangle | dichroic | slitwid | calib | comb_id | bkg_id |
+| red0006.fits.gz |                  arc,tilt |  34.40474999999999 |            33.49125 |        arc | 1200/7100 |    2.0 |     1,1 |  59318.85658328704 |     1.0 |     5.0 | 46.06666666666667 |      D68 |     2.0 |     0 |      -1 |     -1 |
+| red0001.fits.gz |                      bias |  30.80449999999999 |   33.48752777777778 |       bias | 1200/7100 |    0.5 |     1,1 | 59318.846597696756 |     1.0 |     0.0 | 46.06666666666667 |      D68 |     0.5 |   all |      -1 |     -1 |
+| red0002.fits.gz |                      bias | 30.900874999999992 |  33.487611111111114 |       bias | 1200/7100 |    0.5 |     1,1 |  59318.84686508102 |     1.0 |     0.0 | 46.06666666666667 |      D68 |     0.5 |   all |      -1 |     -1 |
+| red0024.fits.gz | pixelflat,illumflat,trace | 124.41933333333331 |   33.61216666666667 |  dome flat | 1200/7100 |    1.5 |     1,1 |  59319.10594207176 |     1.0 |   360.0 | 46.06666666666667 |      D68 |     1.5 |   all |      -1 |     -1 |
+| red0025.fits.gz | pixelflat,illumflat,trace | 126.20579166666666 |   33.61513888888889 |  dome flat | 1200/7100 |    2.0 |     1,1 | 59319.110887083334 |     1.0 |   360.0 | 46.06666666666667 |      D68 |     2.0 |   all |      -1 |     -1 |
+| red0041.fits.gz |                   science | 168.21874999999994 | 0.18091666666666667 | galaxy_168 | 1200/7100 |    2.0 |     1,1 |  59336.22596747685 |   1.246 |  1200.0 | 46.06666666666667 |      D68 |     2.0 |     0 |       1 |     -1 |
+data end
+

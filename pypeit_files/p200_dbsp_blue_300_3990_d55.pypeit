@@ -1,0 +1,32 @@
+# Auto-generated PypeIt file
+# 2021-07-29
+
+# User-defined execution parameters
+[rdx]
+
+spectrograph = p200_dbsp_blue
+
+
+# Setup
+setup read
+    Setup A:
+         dispname: 300/3990
+          binning: 1,1
+        dispangle: 23.266666666666666
+         dichroic: D55
+setup end
+
+# Read in the data
+data read
+ path ../Raw
+|         filename |                 frametype |                 ra |                dec |  target | dispname | decker | binning |                mjd | airmass | exptime |          dispangle | dichroic | slitwid | calib | comb_id | bkg_id |
+| blue0012.fits.gz |                  arc,tilt |          77.950375 |  33.48013888888889 |    FeAr | 300/3990 |    1.5 |     1,1 |  58580.99767868056 |     1.0 |    60.0 | 23.266666666666666 |      D55 |     1.5 |     0 |      -1 |     -1 |
+| blue0002.fits.gz |                      bias |  72.27920833333333 | 33.470194444444445 |    Bias | 300/3990 |    0.5 |     1,1 |  58580.98196226852 |     1.0 |     0.0 | 23.266666666666666 |      D55 |     0.5 |   all |      -1 |     -1 |
+| blue0003.fits.gz |                      bias |  72.36983333333332 | 33.470333333333336 |    Bias | 300/3990 |    0.5 |     1,1 |  58580.98221326389 |     1.0 |     0.0 | 23.266666666666666 |      D55 |     0.5 |   all |      -1 |     -1 |
+| blue0004.fits.gz |                      bias |  72.46045833333332 |            33.4705 |    Bias | 300/3990 |    0.5 |     1,1 | 58580.982464166664 |     1.0 |     0.0 | 23.266666666666666 |      D55 |     0.5 |   all |      -1 |     -1 |
+| blue0039.fits.gz | pixelflat,illumflat,trace |  92.67991666666666 |  33.50680555555556 |    Flat | 300/3990 |    1.5 |     1,1 |  58581.03848969907 |     1.0 |    70.0 | 23.266666666666666 |      D55 |     1.5 |   all |      -1 |     -1 |
+| blue0041.fits.gz | pixelflat,illumflat,trace |  93.44612499999998 |  33.50819444444444 |    Flat | 300/3990 |    1.5 |     1,1 |  58581.04061185185 |     1.0 |    70.0 | 23.266666666666666 |      D55 |     1.5 |   all |      -1 |     -1 |
+| blue0042.fits.gz | pixelflat,illumflat,trace |  93.82883333333332 |  33.50888888888889 |    Flat | 300/3990 |    1.5 |     1,1 | 58581.041672962965 |     1.0 |    70.0 | 23.266666666666666 |      D55 |     1.5 |   all |      -1 |     -1 |
+| blue0045.fits.gz |                  standard | 159.89333333333332 |  43.10091666666667 | feige34 | 300/3990 |    1.5 |     1,1 | 58581.128145138886 |   1.141 |    60.0 | 23.266666666666666 |      D55 |     1.5 |     0 |       1 |     -1 |
+data end
+
