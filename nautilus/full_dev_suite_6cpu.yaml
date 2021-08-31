@@ -18,7 +18,7 @@ spec:
           --endpoint http://rook-ceph-rgw-nautiluss3.rook s3 cp s3://pypeit/RAW_DATA
           RAW_DATA/ --recursive --force; ./pypeit_test -q -t 6 develop -r pypeit.report
           -o /tmp/REDUX_OUT; aws --endpoint http://rook-ceph-rgw-nautiluss3.rook s3
-          cp pypeit.report s3://pypeit/full-dev.report;
+          cp pypeit.report s3://pypeit/Reports/full-dev-12aug2021.report --force;
         command:
         - /bin/bash
         - -c
