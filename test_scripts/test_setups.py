@@ -145,6 +145,15 @@ develop_setups = {'bok_bc': ['600'],
                   'vlt_sinfoni': ['K_0.8'],
                   }
 
+# The instruments/setups needed to build cooked.
+cooked_setups = {'shane_kast_blue': ['600_4310_d55'],
+                  'keck_kcwi': ['bh2_4200'],
+                  'keck_deimos': ['830G_M_8500'],
+                  'shane_kast_red': ['600_7500_d55_ret'],
+                  'keck_lris_red': ['long_600_7500_d560', 'multi_400_8500_d560'],
+                  'keck_lris_blue': ['long_600_4000_d560', 'multi_600_4000_d560'],
+                }
+
 _pypeit_setup = ['shane_kast_blue/600_4310_d55']
 
 _additional_reduce = {'keck_lris_red':
