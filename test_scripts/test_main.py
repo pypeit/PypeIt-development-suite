@@ -21,6 +21,7 @@ from IPython import embed
 import numpy as np
 
 from .test_setups import TestPhase, all_tests, develop_setups, supported_instruments
+from .test_setups import cooked_setups
 from .pypeit_tests import get_unique_file
 
 test_run_queue = PriorityQueue()
@@ -540,6 +541,9 @@ def main():
     devsetups = develop_setups
     tests_that_only_use_dev_setups = ['develop', 'reduce', 'afterburn', 'ql']
 
+    # Cooked instruments (in returned dictonary keys) and setups
+    cooksetups = cooked_setups
+
     # Setup
     unsupported = []
     if pargs.tests == 'all':
@@ -554,6 +558,9 @@ def main():
             flg_after = True
         elif pargs.tests == 'ql':
             flg_ql = True
+    elif pargs.tests.lower() == 'cooked':
+        instruments = np.array(list(cooksetups.keys())) if pargs.instrument is None \
+                        else np.array([pargs.instrument])
     else:
         instruments = np.array([item for item in all_instruments 
                                     if pargs.tests.lower() in item.lower()])
@@ -574,7 +581,6 @@ def main():
             print("\x1B[" + "1;33m" + "\nWARNING - " + "\x1B[" + "0m" +
                   "The following tests have not been validated and may not pass: {0}\n\n".format(
                   unsupported))
-
 
     # Report
     if not pargs.quiet:
@@ -609,6 +615,8 @@ def main():
         # Limit to development setups
         elif pargs.tests in tests_that_only_use_dev_setups:
             setup_names = devsetups[instr]
+        elif pargs.tests.lower() == 'cooked':
+            setup_names = cooksetups[instr]
 
         # Build test setups, check for missing files, and run any prep work
         for setup_name in setup_names:
