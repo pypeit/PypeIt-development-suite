@@ -593,8 +593,10 @@ def write_stitched_sensfunc(sflist, grating, combined_wave, combined_zp_fit,comb
     newsf.std_dec = None
     newsf.airmass = None
     newsf.telluric = None
-    newsf.wave = combined_wave
-    newsf.zeropoint = combined_zp_fit
+    newsf.wave = np.empty((combined_wave.size,1))
+    newsf.wave[:,0] = combined_wave
+    newsf.zeropoint = np.empty((combined_zp_fit.size,1))
+    newsf.zeropoint[:,0] = combined_zp_fit
     newsf.throughput = None
     file_name = f"keck_deimos_{grating}_sensfunc.fits"
 
