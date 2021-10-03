@@ -1,0 +1,58 @@
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: test
+spec:
+  backoffLimit: 0
+  template:
+    spec:
+      containers:
+      - args:
+        - cd PypeIt; cd PypeIt; git checkout develop; cd /; cd PypeIt-development-suite;
+          git checkout develop; mkdir RAW_DATA; aws --endpoint http://rook-ceph-rgw-nautiluss3.rook
+          s3 cp s3://pypeit/RAW_DATA RAW_DATA/ --recursive --force; ./pypeit_test
+          -t 6 develop -r test.report -o /tmp/REDUX_OUT; aws --endpoint http://rook-ceph-rgw-nautiluss3.rook
+          s3 cp test.report s3://pypeit/test.report;
+        command:
+        - /bin/bash
+        - -c
+        env:
+        - name: PYPEIT_DEV
+          value: /PypeIt-development-suite
+        - name: ENDPOINT_URL
+          value: http://rook-ceph-rgw-nautiluss3.rook
+        - name: S3_ENDPOINT
+          value: rook-ceph-rgw-nautiluss3.rook
+        image: localhost:30081/profxj/pypeit:latest
+        imagePullPolicy: Always
+        name: container
+        resources:
+          limits:
+            cpu: '7'
+            ephemeral-storage: 300Gi
+            memory: 160Gi
+          requests:
+            cpu: '6'
+            ephemeral-storage: 250Gi
+            memory: 80Gi
+        volumeMounts:
+        - mountPath: /root/.aws/credentials
+          name: prp-s3-credentials
+          subPath: credentials
+        - mountPath: /tmp
+          name: ephemeral
+        - mountPath: /dev/shm
+          name: dshm
+      nodeSelector:
+        gpu-type: 1080Ti
+        nautilus.io/disktype: nvme
+      restartPolicy: Never
+      volumes:
+      - name: prp-s3-credentials
+        secret:
+          secretName: prp-s3-credentials
+      - emptyDir:
+          medium: Memory
+        name: dshm
+      - emptyDir: {}
+        name: ephemeral
