@@ -24,7 +24,7 @@ setup end
 
 # Read in the data
 data read
- path /Users/rcooke/Work/Research/Reductions/KCWI_Nik_2021/Raw
+ path /Users/rcooke/Software/PypeIt-development-suite/RAW_DATA/keck_kcwi/bl/
 |            filename |       frametype |                 ra |                dec |       target | dispname | decker | binning |          mjd | airmass | exptime |  dispangle |
 | kb210705_00018.fits |           align |  57.99999999999999 |               45.0 |      unknown |       BL | Medium |     2,2 | 59400.085659 |    1.41 |     0.7 | 27.7546692 |
 | kb210705_00019.fits |        arc,tilt |  57.99999999999999 |               45.0 |      unknown |       BL | Medium |     2,2 | 59400.086344 |    1.41 |    10.0 | 27.7546692 |
