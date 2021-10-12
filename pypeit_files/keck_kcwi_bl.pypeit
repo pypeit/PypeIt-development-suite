@@ -28,9 +28,6 @@ data read
 |            filename |       frametype |                 ra |                dec |       target | dispname | decker | binning |          mjd | airmass | exptime |  dispangle |
 | kb210705_00018.fits |           align |  57.99999999999999 |               45.0 |      unknown |       BL | Medium |     2,2 | 59400.085659 |    1.41 |     0.7 | 27.7546692 |
 | kb210705_00019.fits |        arc,tilt |  57.99999999999999 |               45.0 |      unknown |       BL | Medium |     2,2 | 59400.086344 |    1.41 |    10.0 | 27.7546692 |
-| kb210705_00015.fits |            bias |  57.99999999999999 |               45.0 |      unknown |       BL | Medium |     2,2 | 59400.083239 |    1.41 |     0.0 | 27.7546692 |
-| kb210705_00016.fits |            bias |  57.99999999999999 |               45.0 |      unknown |       BL | Medium |     2,2 | 59400.083935 |    1.41 |     0.0 | 27.7546692 |
-| kb210705_00017.fits |            bias |  57.99999999999999 |               45.0 |      unknown |       BL | Medium |     2,2 |  59400.08462 |    1.41 |     0.0 | 27.7546692 |
 | kb210705_00027.fits | illumflat,trace |  57.99999999999999 |               45.0 |      unknown |       BL | Medium |     2,2 | 59400.092483 |    1.41 |    14.0 | 27.7546692 |
 | kb210705_00028.fits | illumflat,trace |  57.99999999999999 |               45.0 |      unknown |       BL | Medium |     2,2 | 59400.093333 |    1.41 |    14.0 | 27.7546692 |
 | kb210705_00029.fits | illumflat,trace |  57.99999999999999 |               45.0 |      unknown |       BL | Medium |     2,2 | 59400.094183 |    1.41 |    14.0 | 27.7546692 |
