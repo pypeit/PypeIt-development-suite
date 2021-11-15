@@ -10,6 +10,8 @@
         edge_thresh = 5.0
     [[wavelengths]]
         lamps = NeI, ArI, CdI, KrI, XeI, HgI, ZnI
+        wvrng_arxiv = 4000.,5700.
+
      [[tilts]]
         tracethresh = 10
 
