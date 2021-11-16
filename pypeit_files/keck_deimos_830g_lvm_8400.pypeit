@@ -9,7 +9,7 @@
     use_biasimage=False
 [calibrations]
     [[wavelengths]]
-        rms_threshold = 1.0
+        sigdetect = 10.,11.,12.,13.,14.
 [reduce]
     [[findobj]]
         maxnumber = 3
