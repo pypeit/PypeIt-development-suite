@@ -10,18 +10,20 @@ redux_path = os.path.join(os.getenv("PYPEIT_DEV"), 'DEIMOS_QL_TST')
 
 
 def afternoon():
+    QLKD = ql_keck_deimos.QLKeckDEIMOS()
     cmds = [raw_path, '--calibs_only',
             '--root=DE.', '-d=3', '--redux_path={}'.format(redux_path)]
-    pargs = ql_keck_deimos.parse_args(cmds)
+    pargs = QLKD.parse_args(cmds)
     # Run
-    ql_keck_deimos.main(pargs)
+    QLKD.main(pargs)
 
 def one_slit():
+    QLKD = ql_keck_deimos.QLKeckDEIMOS()
     cmds = [raw_path, '--science=DE.20130409.20629.fits',  '--slit_spat=3:763',
             '--redux_path={}'.format(redux_path)]
-    pargs = ql_keck_deimos.parse_args(cmds)
+    pargs = QLKD.parse_args(cmds)
     # Run
-    ql_keck_deimos.main(pargs)
+    QLKD.main(pargs)
 
 # Command line execution
 if __name__ == '__main__':
