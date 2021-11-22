@@ -1,0 +1,32 @@
+# Auto-generated PypeIt file
+# 2021-10-25
+
+# User-defined execution parameters
+[rdx]
+spectrograph = keck_mosfire
+
+# Setup
+setup read
+    Setup A:
+          decker: long2pos
+        dispname: H-spectroscopy
+         filter1: H
+setup end
+
+# Read in the data
+data read
+ path /Users/dpelliccia/PypeIt/PypeIt-development-suite/RAW_DATA/keck_mosfire/long2pos1_H
+|               filename |                 frametype |           ra |         dec |    target |       dispname |   decker | binning |            mjd |    airmass |  exptime | filter1 | lampstat01 |  dithpat | dithpos | dithoff | frameno | calib | comb_id | bkg_id |
+#| MF.20180718.14997.fits |                  arc,tilt |        230.0 |        45.0 | DOME FLAT | H-spectroscopy | long2pos |     1,1 | 58317.17358033 | 1.41291034 |  1.45479 |       H |        off |    Stare |  object |     0.0 |     187 |   all |      -1 |     -1 |
+#| MF.20180718.15008.fits |                  arc,tilt |        230.0 |        45.0 | DOME FLAT | H-spectroscopy | long2pos |     1,1 | 58317.17370429 | 1.41291034 |  1.45479 |       H |        off |    Stare |  object |     0.0 |     188 |   all |      -1 |     -1 |
+#| MF.20180718.15046.fits |                  arc,tilt |        230.0 |        45.0 | DOME FLAT | H-spectroscopy | long2pos |     1,1 |   58317.174147 | 1.41291034 |  1.45479 |       H |        off |    Stare |  object |     0.0 |     190 |   all |      -1 |     -1 |
+#| MF.20180718.15057.fits |                  arc,tilt |        230.0 |        45.0 | DOME FLAT | H-spectroscopy | long2pos |     1,1 | 58317.17427095 | 1.41291034 |  1.45479 |       H |        off |    Stare |  object |     0.0 |     191 |   all |      -1 |     -1 |
+| MF.20180718.14694.fits | pixelflat,illumflat,trace |        230.0 |        45.0 | DOME FLAT | H-spectroscopy | long2pos |     1,1 | 58317.17007998 | 1.41291034 | 10.18353 |       H |         on |    Stare |  object |     0.0 |     174 |   all |      -1 |     -1 |
+| MF.20180718.14713.fits | pixelflat,illumflat,trace |        230.0 |        45.0 | DOME FLAT | H-spectroscopy | long2pos |     1,1 | 58317.17029838 | 1.41291034 | 10.18353 |       H |         on |    Stare |  object |     0.0 |     175 |   all |      -1 |     -1 |
+| MF.20180718.14732.fits | pixelflat,illumflat,trace |        230.0 |        45.0 | DOME FLAT | H-spectroscopy | long2pos |     1,1 | 58317.17051679 | 1.41291034 | 10.18353 |       H |         on |    Stare |  object |     0.0 |     176 |   all |      -1 |     -1 |
+| MF.20180718.22100.fits |          arc,science,tilt | 187.90588123 | 22.12421036 |  HIP61138 | H-spectroscopy | long2pos |     1,1 | 58317.25579422 | 1.33314355 |  43.6437 |       H |        off | long2pos |       B |    -7.0 |     241 |     1 |      10 |     11 |
+| MF.20180718.22154.fits |          arc,science,tilt | 187.90813087 | 22.12749371 |  HIP61138 | H-spectroscopy | long2pos |     1,1 | 58317.25641401 | 1.33738007 |  43.6437 |       H |        off | long2pos |       A |     7.0 |     242 |     0 |      11 |     10 |
+| MF.20180718.22217.fits |          arc,science,tilt | 187.93417724 | 22.12001817 |  HIP61138 | H-spectroscopy | long2pos |     1,1 | 58317.25714595 | 1.34196278 |  43.6437 |       H |        off | long2pos |       B |    -7.0 |     243 |     1 |      10 |     11 |
+| MF.20180718.22270.fits |          arc,science,tilt | 187.93642687 | 22.12330152 |  HIP61138 | H-spectroscopy | long2pos |     1,1 | 58317.25775984 | 1.34618142 |  43.6437 |       H |        off | long2pos |       A |     7.0 |     244 |     0 |      11 |     10 |
+data end
+

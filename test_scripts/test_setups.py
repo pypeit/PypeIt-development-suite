@@ -110,11 +110,11 @@ develop_setups = {'bok_bc': ['600'],
                   'gemini_flamingos2': ['HK_HK', 'JH_JH'],
                   'gtc_osiris': ['R1000B', 'R1000BMOS', 'R1000RMOS', 'R2500R', 'R2500V'],
                   'keck_deimos': ['600ZD_M_6500', '600ZD_tilted', '1200G_M_7750', '830G_LVM_8400', '830G_M_8100_26',
-                                  '830G_M_8500', '830G_L_8100', '1200B_M_5200', '1200G_M_5500', '900ZD_M_6000', '1200B_LVM_5200', '900ZD_LVM_5500'],
-                  'keck_kcwi': ['bh2_4200'],
+                                  '830G_M_8500', '830G_L_8100', '1200B_M_5200', '1200G_M_5500', '900ZD_M_6000', '1200B_LVM_5200', '900ZD_LVM_5500', '830G_M_9000_dither'],
+                  'keck_kcwi': ['bh2_4200', 'bl'],
                   'keck_nires': ['NIRES'],
                   'keck_nirspec': ['LOW_NIRSPEC-1'],
-                  'keck_mosfire': ['Y_long', 'J_multi', 'K_long'],
+                  'keck_mosfire': ['Y_long', 'J_multi', 'K_long', 'Y_multi', 'long2pos1_H', 'longslit_3x0.7_H', 'mask1_K_with_continuum', 'mask1_J_with_continuum'],
                   'keck_lris_blue': ['multi_600_4000_d560', 'long_400_3400_d560', 'long_600_4000_d560',
                                      'multi_300_5000_d680'],
                   'keck_lris_blue_orig': ['long_600_4000_d500'],
@@ -123,6 +123,7 @@ develop_setups = {'bok_bc': ['600'],
                                     'multi_400_8500_d560', 'long_600_10000_d680',
                                     'long_400_8500_longread'],  # Longslit read-out mode
                   'keck_lris_red_orig': ['long_300_5000'],
+                  'keck_lris_red_mark4': ['long_400_8500'],
                   'lbt_luci': ['LUCI-I', 'LUCI-II'],
                   'lbt_mods': ['MODS1R_Longslit', 'MODS2R_Longslit'],
                   'ldt_deveny': ['DV1', 'DV2', 'DV5', 'DV6', 'DV8'],
@@ -144,6 +145,16 @@ develop_setups = {'bok_bc': ['600'],
                   'vlt_xshooter': ['VIS_1x1', 'VIS_2x1', 'VIS_2x2', 'VIS_manual', 'NIR'],
                   'vlt_sinfoni': ['K_0.8'],
                   }
+
+# The instruments/setups needed to build cooked.
+cooked_setups = {'shane_kast_blue': ['600_4310_d55'],
+                  'keck_kcwi': ['bh2_4200'],
+                  'keck_deimos': ['830G_M_8500', '830G_M_9000_dither'],
+                  'keck_mosfire': ['J_multi'],
+                  'shane_kast_red': ['600_7500_d55_ret'],
+                  'keck_lris_red': ['long_600_7500_d560', 'multi_400_8500_d560'],
+                  'keck_lris_blue': ['long_600_4000_d560', 'multi_600_4000_d560'],
+                }
 
 _pypeit_setup = ['shane_kast_blue/600_4310_d55']
 
