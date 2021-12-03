@@ -4,6 +4,10 @@
 # User-defined execution parameters
 [rdx]
 spectrograph = gemini_gnirs
+[calibrations]
+ [[wavelengths]]
+    rms_threshold = 0.8, 0.4, 0.8, 0.8, 0.5, 0.9
+    sigdetect = 5.,5.,6.,6.,5.,7.
 
 # Setup
 setup read
@@ -19,22 +23,22 @@ data read
 | cN20170331S0208.fits | 2017-03-31 |        standard | HIP62745 |    10.0 | 32/mmSB_G5533 | SCXD_G5531 |     A |     0  |    6.1887 | OBJECT |       6 |     5  |
 | cN20170331S0209.fits | 2017-03-31 |        standard | HIP62745 |    10.0 | 32/mmSB_G5533 | SCXD_G5531 |     A |     0  |    6.1887 | OBJECT |       5 |     6  |
 | cN20170331S0216.fits | 2017-03-31 |tilt,arc,science |    pisco |   300.0 | 32/mmSB_G5533 | SCXD_G5531 |     A |     0  |    6.1887 | OBJECT |       1 |     2  |
-| cN20170331S0217.fits | 2017-03-31 |tilt,arc,science |    pisco |   300.0 | 32/mmSB_G5533 | SCXD_G5531 |     A |     1  |    6.1887 | OBJECT |       2 |     1  |
-| cN20170331S0218.fits | 2017-03-31 |tilt,arc,science |    pisco |   300.0 | 32/mmSB_G5533 | SCXD_G5531 |     A |     1  |    6.1887 | OBJECT |       2 |     1  |
+| cN20170331S0217.fits | 2017-03-31 |tilt,arc,science |    pisco |   300.0 | 32/mmSB_G5533 | SCXD_G5531 |     A |     0  |    6.1887 | OBJECT |       2 |     1  |
+| cN20170331S0218.fits | 2017-03-31 |tilt,arc,science |    pisco |   300.0 | 32/mmSB_G5533 | SCXD_G5531 |     A |     0  |    6.1887 | OBJECT |       2 |     1  |
 | cN20170331S0219.fits | 2017-03-31 |tilt,arc,science |    pisco |   300.0 | 32/mmSB_G5533 | SCXD_G5531 |     A |     0  |    6.1887 | OBJECT |       1 |     2  |
-| cN20170331S0220.fits | 2017-03-31 |tilt,arc,science |    pisco |   300.0 | 32/mmSB_G5533 | SCXD_G5531 |     A |     2  |    6.1887 | OBJECT |       3 |     4  |
-| cN20170331S0221.fits | 2017-03-31 |tilt,arc,science |    pisco |   300.0 | 32/mmSB_G5533 | SCXD_G5531 |     A |     3  |    6.1887 | OBJECT |       4 |     3  |
-| cN20170331S0222.fits | 2017-03-31 |tilt,arc,science |    pisco |   300.0 | 32/mmSB_G5533 | SCXD_G5531 |     A |     3  |    6.1887 | OBJECT |       4 |     3  |
-| cN20170331S0223.fits | 2017-03-31 |tilt,arc,science |    pisco |   300.0 | 32/mmSB_G5533 | SCXD_G5531 |     A |     2  |    6.1887 | OBJECT |       3 |     4  |
-| cN20170331S0252.fits | 2017-03-31 | trace,pixelflat | GCALflat |    0.84 | 32/mmSB_G5533 | SCXD_G5531 |     A | 0,1,2,3|    6.1887 |   FLAT |      -1 |     -1 |
-| cN20170331S0253.fits | 2017-03-31 | trace,pixelflat | GCALflat |    0.84 | 32/mmSB_G5533 | SCXD_G5531 |     A | 0,1,2,3|    6.1887 |   FLAT |      -1 |     -1 |
-| cN20170331S0254.fits | 2017-03-31 | trace,pixelflat | GCALflat |    0.84 | 32/mmSB_G5533 | SCXD_G5531 |     A | 0,1,2,3|    6.1887 |   FLAT |      -1 |     -1 |
-| cN20170331S0255.fits | 2017-03-31 | trace,pixelflat | GCALflat |    0.84 | 32/mmSB_G5533 | SCXD_G5531 |     A | 0,1,2,3|    6.1887 |   FLAT |      -1 |     -1 |
-| cN20170331S0256.fits | 2017-03-31 | trace,pixelflat | GCALflat |    0.84 | 32/mmSB_G5533 | SCXD_G5531 |     A | 0,1,2,3|    6.1887 |   FLAT |      -1 |     -1 |
-| cN20170331S0257.fits | 2017-03-31 | trace,pixelflat | GCALflat |    0.84 | 32/mmSB_G5533 | SCXD_G5531 |     A | 0,1,2,3|    6.1887 |   FLAT |      -1 |     -1 |
-| cN20170331S0258.fits | 2017-03-31 | trace,pixelflat | GCALflat |    0.84 | 32/mmSB_G5533 | SCXD_G5531 |     A | 0,1,2,3|    6.1887 |   FLAT |      -1 |     -1 |
-| cN20170331S0259.fits | 2017-03-31 | trace,pixelflat | GCALflat |    0.84 | 32/mmSB_G5533 | SCXD_G5531 |     A | 0,1,2,3|    6.1887 |   FLAT |      -1 |     -1 |
-| cN20170331S0260.fits | 2017-03-31 | trace,pixelflat | GCALflat |    0.84 | 32/mmSB_G5533 | SCXD_G5531 |     A | 0,1,2,3|    6.1887 |   FLAT |      -1 |     -1 |
-| cN20170331S0261.fits | 2017-03-31 | trace,pixelflat | GCALflat |    0.84 | 32/mmSB_G5533 | SCXD_G5531 |     A | 0,1,2,3|    6.1887 |   FLAT |      -1 |     -1 |
+| cN20170331S0220.fits | 2017-03-31 |tilt,arc,science |    pisco |   300.0 | 32/mmSB_G5533 | SCXD_G5531 |     A |     1  |    6.1887 | OBJECT |       3 |     4  |
+| cN20170331S0221.fits | 2017-03-31 |tilt,arc,science |    pisco |   300.0 | 32/mmSB_G5533 | SCXD_G5531 |     A |     1  |    6.1887 | OBJECT |       4 |     3  |
+| cN20170331S0222.fits | 2017-03-31 |tilt,arc,science |    pisco |   300.0 | 32/mmSB_G5533 | SCXD_G5531 |     A |     1  |    6.1887 | OBJECT |       4 |     3  |
+| cN20170331S0223.fits | 2017-03-31 |tilt,arc,science |    pisco |   300.0 | 32/mmSB_G5533 | SCXD_G5531 |     A |     1  |    6.1887 | OBJECT |       3 |     4  |
+| cN20170331S0252.fits | 2017-03-31 | trace,pixelflat | GCALflat |    0.84 | 32/mmSB_G5533 | SCXD_G5531 |     A |    all |    6.1887 |   FLAT |      -1 |     -1 |
+| cN20170331S0253.fits | 2017-03-31 | trace,pixelflat | GCALflat |    0.84 | 32/mmSB_G5533 | SCXD_G5531 |     A |    all |    6.1887 |   FLAT |      -1 |     -1 |
+| cN20170331S0254.fits | 2017-03-31 | trace,pixelflat | GCALflat |    0.84 | 32/mmSB_G5533 | SCXD_G5531 |     A |    all |    6.1887 |   FLAT |      -1 |     -1 |
+| cN20170331S0255.fits | 2017-03-31 | trace,pixelflat | GCALflat |    0.84 | 32/mmSB_G5533 | SCXD_G5531 |     A |    all |    6.1887 |   FLAT |      -1 |     -1 |
+| cN20170331S0256.fits | 2017-03-31 | trace,pixelflat | GCALflat |    0.84 | 32/mmSB_G5533 | SCXD_G5531 |     A |    all |    6.1887 |   FLAT |      -1 |     -1 |
+| cN20170331S0257.fits | 2017-03-31 | trace,pixelflat | GCALflat |    0.84 | 32/mmSB_G5533 | SCXD_G5531 |     A |    all |    6.1887 |   FLAT |      -1 |     -1 |
+| cN20170331S0258.fits | 2017-03-31 | trace,pixelflat | GCALflat |    0.84 | 32/mmSB_G5533 | SCXD_G5531 |     A |    all |    6.1887 |   FLAT |      -1 |     -1 |
+| cN20170331S0259.fits | 2017-03-31 | trace,pixelflat | GCALflat |    0.84 | 32/mmSB_G5533 | SCXD_G5531 |     A |    all |    6.1887 |   FLAT |      -1 |     -1 |
+| cN20170331S0260.fits | 2017-03-31 | trace,pixelflat | GCALflat |    0.84 | 32/mmSB_G5533 | SCXD_G5531 |     A |    all |    6.1887 |   FLAT |      -1 |     -1 |
+| cN20170331S0261.fits | 2017-03-31 | trace,pixelflat | GCALflat |    0.84 | 32/mmSB_G5533 | SCXD_G5531 |     A |    all |    6.1887 |   FLAT |      -1 |     -1 |
 data end
 
