@@ -19,9 +19,9 @@ setup end
 data read
  path /home/xavier/local/Python/PypeIt-development-suite/RAW_DATA/keck_mosfire/Y_multi
 |             filename |       frametype |           ra |         dec |       target |     dispname |       decker | binning |            mjd |    airmass |   exptime | filter1 | calib | comb_id | bkg_id |
-| m190508_0005.fits.gz | pixelflat,trace |          230 |          45 |      unknown | spectroscopy | pg1338_mask1 |     1,1 | 58611.14918409 | 1.41291034 |  16.00269 |       Y | all |      1  |     -1 |
-| m190508_0006.fits.gz | pixelflat,trace |          230 |          45 |      unknown | spectroscopy | pg1338_mask1 |     1,1 | 58611.14947923 | 1.41291034 |  16.00269 |       Y | all |      1  |     -1 |
-| m190508_0007.fits.gz | pixelflat,trace |          230 |          45 |      unknown | spectroscopy | pg1338_mask1 |     1,1 | 58611.14976846 | 1.41291034 |  16.00269 |       Y | all |      1  |     -1 |
+| m190508_0005.fits.gz | pixelflat,illumflat,trace |          230 |          45 |      unknown | spectroscopy | pg1338_mask1 |     1,1 | 58611.14918409 | 1.41291034 |  16.00269 |       Y | all |      1  |     -1 |
+| m190508_0006.fits.gz | pixelflat,illumflat,trace |          230 |          45 |      unknown | spectroscopy | pg1338_mask1 |     1,1 | 58611.14947923 | 1.41291034 |  16.00269 |       Y | all |      1  |     -1 |
+| m190508_0007.fits.gz | pixelflat,illumflat,trace |          230 |          45 |      unknown | spectroscopy | pg1338_mask1 |     1,1 | 58611.14976846 | 1.41291034 |  16.00269 |       Y | all |      1  |     -1 |
 | m190508_0140.fits.gz | tilt,arc,science | 205.25418716 |  41.3862331 | pg1338_mask1 | spectroscopy | pg1338_mask1 |     1,1 | 58611.27339624 | 1.26408579 | 178.93917 |       Y |     0 |      10 |      20 |
 | m190508_0141.fits.gz | tilt,arc,science |  205.2549366 | 41.38573677 | pg1338_mask1 | spectroscopy | pg1338_mask1 |     1,1 |  58611.2758459 | 1.25389898 | 178.93917 |       Y |     1 |      20 |      10 |
 | m190508_0142.fits.gz | tilt,arc,science | 205.25427043 | 41.38617795 | pg1338_mask1 | spectroscopy | pg1338_mask1 |     1,1 | 58611.27828965 | 1.24405577 | 178.93917 |       Y |     2 |      30 |      40 |

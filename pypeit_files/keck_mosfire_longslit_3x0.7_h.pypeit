@@ -1,0 +1,30 @@
+# Auto-generated PypeIt file
+# 2021-10-25
+
+# User-defined execution parameters
+[rdx]
+spectrograph = keck_mosfire
+
+# Setup
+setup read
+    Setup B:
+          decker: LONGSLIT-3x0.7
+        dispname: H-spectroscopy
+         filter1: H
+setup end
+
+# Read in the data
+data read
+ path /Users/dpelliccia/PypeIt/PypeIt-development-suite/RAW_DATA/keck_mosfire/longslit_3x0.7_H
+|          filename |                 frametype |  ra |  dec |  target |       dispname |          decker | binning |            mjd |    airmass |  exptime | filter1 | lampstat01 | dithpat | dithpos | dithoff | frameno | calib | comb_id | bkg_id |
+#| m131015_0089.fits |                  arc,tilt | 7.8 | 45.0 | unknown | H-spectroscopy | LONGSLIT-46x0.7 |     1,1 | 56580.10277302 | 1.41291034 |  1.45479 |       H |        off |    none |    none |     0.0 |      89 |   all |      -1 |     -1 |
+#| m131015_0090.fits |                  arc,tilt | 7.8 | 45.0 | unknown | H-spectroscopy | LONGSLIT-46x0.7 |     1,1 | 56580.10313761 | 1.41291034 |  1.45479 |       H |        off |    none |    none |     0.0 |      90 |   all |      -1 |     -1 |
+| m131015_0064.fits | pixelflat,illumflat,trace | 7.8 | 45.0 | unknown | H-spectroscopy | LONGSLIT-46x0.7 |     1,1 | 56580.09655538 | 1.41291034 | 11.63832 |       H |         on |    none |    none |     0.0 |      64 |   all |      -1 |     -1 |
+| m131015_0065.fits | pixelflat,illumflat,trace | 7.8 | 45.0 | unknown | H-spectroscopy | LONGSLIT-46x0.7 |     1,1 | 56580.09679785 | 1.41291034 | 11.63832 |       H |         on |    none |    none |     0.0 |      65 |   all |      -1 |     -1 |
+| m131015_0066.fits | pixelflat,illumflat,trace | 7.8 | 45.0 | unknown | H-spectroscopy | LONGSLIT-46x0.7 |     1,1 | 56580.09702876 | 1.41291034 | 11.63832 |       H |         on |    none |    none |     0.0 |      66 |   all |      -1 |     -1 |
+| m121128_0320.fits | arc,standard,tilt | 57.63356529 | 29.74598113 | HIP17971 | H-spectroscopy | LONGSLIT-3x0.7 |     1,1 | 56259.39697532 | 1.01611757 | 2.90958 |       H |        off |   Stare |       A |     5.0 |     320 |     1 |      10 |     11 |
+| m121128_0321.fits | arc,standard,tilt | 57.63337538 | 29.74320825 | HIP17971 | H-spectroscopy | LONGSLIT-3x0.7 |     1,1 | 56259.39718712 | 1.01605648 | 2.90958 |       H |        off |   Stare |       B |    -5.0 |     321 |     0 |      11 |     10 |
+| m121128_0366.fits | arc,standard,tilt | 57.63332368 | 29.74621624 | HIP17971 | H-spectroscopy | LONGSLIT-3x0.7 |     1,1 | 56259.44774572 | 1.04706663 | 2.90958 |       H |        off |   Stare |       A |     5.0 |     366 |     1 |      10 |     11 |
+| m121128_0367.fits | arc,standard,tilt | 57.63313374 | 29.74344336 | HIP17971 | H-spectroscopy | LONGSLIT-3x0.7 |     1,1 | 56259.44794537 |  1.0473621 | 2.90958 |       H |        off |   Stare |       B |    -5.0 |     367 |     0 |      11 |     10 |
+data end
+
