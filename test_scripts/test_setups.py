@@ -153,6 +153,9 @@ cooked_setups = {'shane_kast_blue': ['600_4310_d55'],
                   'keck_lris_red': ['long_600_7500_d560', 'multi_400_8500_d560'],
                   'keck_lris_blue': ['long_600_4000_d560', 'multi_600_4000_d560'],
                 }
+ql_setups = {'keck_nires':   ['NIRES'], 
+             'keck_mosfire': ['Y_long'],
+             'keck_deimos':  ['QL']}
 
 _pypeit_setup = ['shane_kast_blue/600_4310_d55']
 
@@ -224,10 +227,17 @@ _quick_look = {'shane_kast_blue/600_4310_d55':
                    {'files': ['m191120_0043.fits', 'm191120_0044.fits',  'm191120_0045.fits', 'm191120_0046.fits'],
                     '--spec_samp_fact': 2.0, '--spat_samp_fact': 2.0}}
 
-
+# The order of these tests matter slightly, in that PypeItSetupTest
+# and PypeItQuickLookTest must come before PypeItReduceTest. 
+# This prevents PypeItReduceTest from failing in the prep phase
+# because of missing pypeit files that don't and shouldn't exist.
+# 
 all_tests = [{'factory': pypeit_tests.PypeItSetupTest,
               'type':    TestPhase.PREP,
               'setups':  _pypeit_setup},
+             {'factory': pypeit_tests.PypeItQuickLookTest,
+              'type':    TestPhase.QL,
+              'setups':  _quick_look},
              {'factory': pypeit_tests.PypeItReduceTest,
               'type':    TestPhase.REDUCE,
               'setups':  ['*']},
@@ -255,7 +265,4 @@ all_tests = [{'factory': pypeit_tests.PypeItSetupTest,
              {'factory': pypeit_tests.PypeItTelluricTest,
               'type':    TestPhase.AFTERBURN,
               'setups':  _telluric},
-             {'factory': pypeit_tests.PypeItQuickLookTest,
-              'type':    TestPhase.QL,
-              'setups':  _quick_look},
              ]
