@@ -349,10 +349,17 @@ class PypeItQuickLookTest(PypeItTest):
             command_line = ['pypeit_ql_keck_mosfire']
             if self.pargs.quiet:
                 command_line += ['--no_gui', '--writefits']
+        elif self.setup.instr == 'keck_deimos':
+            command_line = ['pypeit_ql_keck_deimos', 
+                            f"{os.path.join(os.getenv('PYPEIT_DEV'), 'RAW_DATA', 'keck_deimos', 'QL')}", \
+                            "--root=DE.", "-d=3", 
+                            f"{os.path.join(os.getenv('PYPEIT_DEV'), 'REDUX_OUT', 'keck_deimos', 'QL')}", \
+                            "--calibs_only"]
         else:
             command_line = ['pypeit_ql_mos', self.setup.instr]
 
-        command_line += [self.setup.rawdir] + self.files
+        if self.setup_instr != 'keck_deimos':
+            command_line += [self.setup.rawdir] + self.files
 
         for option in self.options:
             command_line += [option, str(self.options[option])]

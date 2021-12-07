@@ -216,6 +216,8 @@ _telluric = {'gemini_gnirs/32_SB_SXD':
 
 _quick_look = {'shane_kast_blue/600_4310_d55':
                    {'files': ['b1.fits.gz', 'b10.fits.gz', 'b27.fits.gz']},
+               'keck_deimos/QL':
+                   {'files': ['*.fits']},
                'keck_nires/NIRES':
                    {'files': ['s190519_0067.fits', 's190519_0068.fits']},
                'keck_mosfire/Y_long':
