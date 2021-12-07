@@ -24,6 +24,10 @@ def write_stitched_sensfunc(sflist, args, combined_wave, combined_zp_fit,combine
     
     newsf = copy.deepcopy(sflist[0])
     newsf.sens =  None
+    newsf.splice_multi_det = False
+    newsf.wave_splice = None
+    newsf.zeropoint_splice = None
+
     newsens = SensFunc.empty_sensfunc_table(1, len(combined_wave))
     newsens['SENS_WAVE'] = combined_wave
     newsens['SENS_ZEROPOINT_FIT'] = combined_zp_fit

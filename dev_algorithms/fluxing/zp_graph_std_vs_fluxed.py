@@ -38,12 +38,12 @@ def create_plot(axis, color, label, x, y, linewidth=2.5, linestyle='solid'):
 
     return xmin, xmax, ymin, ymax
 
-def setup_axes(axis,xmin, ymin, xmax, ymax):
+def setup_axes(axis,xmin, ymin, xmax, ymax, args):
     axis.set_xlim(xmin, xmax)
     axis.set_ylim(ymin, ymax)
     axis.legend()
     axis.set_xlabel('Wavelength (Angstroms)')
-    axis.set_ylabel('Zeropoint Fit (AB mag)')
+    axis.set_ylabel(f'Flux (1e-17 erg/s/cm^2/Ang)')
     axis.set_title(f'PypeIt DEIMOS fluxed standard star spectrum vs archived spectrum')
 
 
@@ -55,7 +55,7 @@ def get_sobj_legend(args, sobj):
     grating = spec.get_meta_value(headarr, "dispname")
     target = spec.get_meta_value(headarr, "target")
     det = sobj['DET'][0]
-    return f"Fluxed {os.path.basename(args.raw_data)} {target} {grating} dispangle {dispangle} filter {filter} det {det}"
+    return f"Fluxed {os.path.basename(args.fluxed_standard)} x {args.scale} {target} {grating} dispangle {round(dispangle)} filter {filter} det {det}"
 
 def find_nearby_value(x, y, value):
     sorted_idx = np.argsort(x)
@@ -67,7 +67,7 @@ def parse_args(options=None, return_parser=False):
     parser.add_argument("fluxed_standard", type=str,
                         help="Flux calibrated spec1d file of a standard star.")
     parser.add_argument("raw_data", type=str)
-    parser.add_argument("equiv_point", type=float)
+    parser.add_argument("scale", type=float)
     parser.add_argument("pdfFile", type=str)
     parser.add_argument("names", type=str, nargs="+")
     if return_parser:
@@ -102,19 +102,13 @@ def main(args):
                 idx = sobjs.NAME == name
                 sobj = sobjs[idx]
                 mask = sobj['OPT_MASK']
-                if (np.min(sobj['OPT_WAVE'][mask]) <= args.equiv_point) and (np.max(sobj['OPT_WAVE'][mask])>=args.equiv_point):
-                    flux_equiv_point_value = find_nearby_value(sobj['OPT_WAVE'][mask], sobj['OPT_FLAM'][mask], args.equiv_point)
-
-            arxiv_equiv_point_value = find_nearby_value(std_wave, std_flux, args.equiv_point)
-
-            delta = arxiv_equiv_point_value - flux_equiv_point_value
 
             for name in args.names:
                 idx = sobjs.NAME == name
                 sobj = sobjs[idx]
                 mask = sobj['OPT_MASK']
                 x = sobj['OPT_WAVE'][mask]
-                y = sobj['OPT_FLAM'][mask] + delta
+                y = sobj['OPT_FLAM'][mask] * args.scale
                 legend = get_sobj_legend(args, sobj)
                 (xmin[i], xmax[i], ymin[i], ymax[i]) = create_plot(axis, None, legend, x, y)#, linestyle='dashed')
                 i+=1 
@@ -126,7 +120,7 @@ def main(args):
             create_plot(axis, None, f"Archived spectrum for {std_dict['name']} from {std_dict['std_source']}.", std_wave[wave_mask], std_flux[wave_mask])#, linestyle='dashed')
             #i+=1 
            
-            setup_axes(axis, np.min(xmin), np.min(ymin), np.max(xmax),np.max(ymax))
+            setup_axes(axis, np.min(xmin), np.min(ymin), np.max(xmax),np.max(ymax), args)
 
             pdf.savefig(fig)
 
