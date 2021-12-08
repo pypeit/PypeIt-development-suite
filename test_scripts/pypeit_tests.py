@@ -345,6 +345,7 @@ class PypeItQuickLookTest(PypeItTest):
         # for keck_deimos quicklook
         if self.setup.instr == 'keck_deimos':
             self.setup.generate_pyp_file = True
+            self.command = 0
 
     def build_command_line(self):
 
@@ -355,11 +356,20 @@ class PypeItQuickLookTest(PypeItTest):
             if self.pargs.quiet:
                 command_line += ['--no_gui', '--writefits']
         elif self.setup.instr == 'keck_deimos':
-            command_line = ['pypeit_ql_keck_deimos', 
-                            f"{os.path.join(os.getenv('PYPEIT_DEV'), 'RAW_DATA', 'keck_deimos', 'QL')}", \
+            # Two commands!
+            if self.command == 'calib':
+                command_line = ['pypeit_ql_keck_deimos', 
+                            f"{os.path.join(os.getenv('PYPEIT_DEV'), 'RAW_DATA', 'keck_deimos', 'QL')}", 
                             "--root=DE.", "-d=3", 
-                            f"{os.path.join(os.getenv('PYPEIT_DEV'), 'REDUX_OUT', 'keck_deimos', 'QL')}", \
+                            f"--redux_path={os.path.join(os.getenv('PYPEIT_DEV'), 'REDUX_OUT', 'keck_deimos', 'QL')}",
                             "--calibs_only"]
+            elif self.command == 'science':
+                command_line = ['pypeit_ql_keck_deimos', 
+                            f"{os.path.join(os.getenv('PYPEIT_DEV'), 'RAW_DATA', 'keck_deimos', 'QL')}", 
+                            '--science=DE.20130409.20629.fits',  '--slit_spat=3:763',
+                            f"--redux_path={os.path.join(os.getenv('PYPEIT_DEV'), 'REDUX_OUT', 'keck_deimos', 'QL')}"]
+            else:
+                raise ValueError("Bad command")
         else:
             command_line = ['pypeit_ql_mos', self.setup.instr]
 
@@ -401,7 +411,14 @@ class PypeItQuickLookTest(PypeItTest):
         # to use the newly generated masters
         self.env = os.environ.copy()
         self.env['QL_MASTERS'] = self.output_dir
-        return super().run()
+        if self.setup.instr == 'keck_deimos':
+            # Need to run 2 commands!
+            self.command = 'calib'
+            run0 = super().run()
+            self.command = 'science'
+            return super().run()
+        else:
+            return super().run()
 
 def pypeit_file_name(instr, setup, std=False):
     base = '{0}_{1}'.format(instr.lower(), setup.lower())
