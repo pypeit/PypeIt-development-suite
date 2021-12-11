@@ -18,8 +18,8 @@ setup end
 data read
  path ../raw
 |                                 filename |                 frametype |                 ra |                 dec |         target | dispname |        decker | binning |                mjd | airmass | exptime | dispangle |
-| 0323_FRB210320_host_05-04-2021_comp.fits.fz |                  arc,tilt | 204.46196666666663 | -16.124710833333335 | FRB210320_host | 400_SYZY | 1.0_LONG_SLIT |     2,2 |  59309.26052383102 |    1.05 |     0.5 |    7.5009 |
-|    0146_GHTS_R_400m2_2x2_04-04-2021.fits.fz | pixelflat,illumflat,trace | 135.85109583333335 |  -17.54484111111111 |          DFLAT | 400_SYZY | 1.0_LONG_SLIT |     2,2 | 59308.880315092596 |    1.66 |     5.0 |    7.4999 |
-|      0320_FRB210320_host_05-04-2021.fits.fz |                   science | 204.46191666666667 | -16.124544444444446 | FRB210320_host | 400_SYZY | 1.0_LONG_SLIT |     2,2 |  59309.21145188657 |    1.04 |  1200.0 |    7.5005 |
+| 0323_FRB210320_host_05-04-2021_comp.fits |                  arc,tilt | 204.46196666666663 | -16.124710833333335 | FRB210320_host | 400_SYZY | 1.0_LONG_SLIT |     2,2 |  59309.26052383102 |    1.05 |     0.5 |    7.5009 |
+|    0146_GHTS_R_400m2_2x2_04-04-2021.fits | pixelflat,illumflat,trace | 135.85109583333335 |  -17.54484111111111 |          DFLAT | 400_SYZY | 1.0_LONG_SLIT |     2,2 | 59308.880315092596 |    1.66 |     5.0 |    7.4999 |
+|      0320_FRB210320_host_05-04-2021.fits |                   science | 204.46191666666667 | -16.124544444444446 | FRB210320_host | 400_SYZY | 1.0_LONG_SLIT |     2,2 |  59309.21145188657 |    1.04 |  1200.0 |    7.5005 |
 data end
 
