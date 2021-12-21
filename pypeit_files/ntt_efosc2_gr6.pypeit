@@ -11,6 +11,7 @@ setup read
         dispname: Gr6
           decker: slit1.0
          binning: 2,2
+         datasec: "[1:2048,:2048]"
 setup end
 
 # Read in the data
