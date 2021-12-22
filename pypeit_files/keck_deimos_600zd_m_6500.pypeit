@@ -8,7 +8,7 @@
 
 # Setup
 setup read
- Setup A
+ Setup A:
  --:
    dichroic: None
    disperser: {angle: 6500.0, name: 600ZD}
