@@ -13,6 +13,9 @@ import datetime
 import traceback
 import glob
 from abc import ABC, abstractmethod
+from IPython.terminal.embed import embed
+
+from pypeit import spec2dobj
 
 class PypeItTest(ABC):
     """Abstract base class for classes that run pypeit tests and hold the results from those tests."""
@@ -390,6 +393,32 @@ class PypeItQuickLookTest(PypeItTest):
         self.env = os.environ.copy()
         self.env['QL_MASTERS'] = self.output_dir
         return super().run()
+
+
+# TODO -- Move this to its own module as it is bound to grow (a lot!)
+class PypeItVet(PypeItTest):
+    """Test subclass that runs vet methods"""
+
+    def __init__(self, setup, pargs):
+        super().__init__(None, None, None)
+        self.passed = True
+
+    def build_command_line(self):
+        return ''
+
+    def run(self):
+        # Check that spatial flexure shift was set!
+        file_path = os.path.join(self.env['PYPEIT_DEV'],
+                                 'REDUX_OUT',
+                                 'keck_lris_red', 
+                                 'multi_600_5000_d560',
+                                 'Science', 
+                                 'spec2d_LR.20181206.40617-nR2n25061_LRISr_20181206T111657.418.fits')
+        # Load                                
+        spec2dObj = spec2dobj.Spec2DObj.from_file(file_path, det=1)
+        assert spec2dObj.sci_spat_flexure is not None
+        assert spec2dObj.sci_spat_flexure > 0.
+
 
 def pypeit_file_name(instr, setup, std=False):
     base = '{0}_{1}'.format(instr.lower(), setup.lower())

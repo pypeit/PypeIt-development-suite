@@ -536,10 +536,11 @@ def main():
     all_instruments = available_data()
     flg_after = False
     flg_ql = False
+    flg_vet = False
 
     # Development instruments (in returned dictonary keys) and setups
     devsetups = develop_setups
-    tests_that_only_use_dev_setups = ['develop', 'reduce', 'afterburn', 'ql']
+    tests_that_only_use_dev_setups = ['develop', 'reduce', 'afterburn', 'ql', 'vet']
 
     # Cooked instruments (in returned dictonary keys) and setups
     cooksetups = cooked_setups
@@ -558,6 +559,8 @@ def main():
             flg_after = True
         elif pargs.tests == 'ql':
             flg_ql = True
+        elif pargs.tests == 'vet':
+            flg_vet = True
     elif pargs.tests.lower() == 'cooked':
         instruments = np.array(list(cooksetups.keys())) if pargs.instrument is None \
                         else np.array([pargs.instrument])
@@ -621,7 +624,7 @@ def main():
         # Build test setups, check for missing files, and run any prep work
         for setup_name in setup_names:
 
-            setup = build_test_setup(pargs, instr, setup_name, flg_after, flg_ql)
+            setup = build_test_setup(pargs, instr, setup_name, flg_after, flg_ql, flg_vet)
             missing_files += setup.missing_files
 
             # set setup priority from file
@@ -697,7 +700,7 @@ def main():
     return test_report.num_failed
 
 
-def build_test_setup(pargs, instr, setup_name, flg_after, flg_ql):
+def build_test_setup(pargs, instr, setup_name, flg_after, flg_ql, flg_vet):
     """Builds a TestSetup object including the tests that it will run"""
 
     dev_path = os.getenv('PYPEIT_DEV')
@@ -761,6 +764,9 @@ def build_test_setup(pargs, instr, setup_name, flg_after, flg_ql):
             continue
 
         if flg_ql and test_descr['type'] not in (TestPhase.PREP, TestPhase.QL):
+            continue
+
+        if flg_vet and test_descr['type'] not in (TestPhase.VET, TestPhase.VET):
             continue
 
         setup.tests.append(test)

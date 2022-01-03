@@ -89,15 +89,18 @@ class TestPhase(Enum):
     """Enumeration for specifying the test phase that a test runs in.
 
     Values:
+
     PREP
     REDUCE
     AFTERBURN
     QL
+    VET
     """
     PREP      = auto()
     REDUCE    = auto()
     AFTERBURN = auto()
     QL        = auto()
+    VET       = auto()
 
 
 supported_instruments = ['kast', 'deimos', 'kcwi', 'nires', 'nirspec', 'mosfire', 'lris', 'xshooter', 'gnirs', 'gmos',
@@ -224,6 +227,9 @@ _quick_look = {'shane_kast_blue/600_4310_d55':
                    {'files': ['m191120_0043.fits', 'm191120_0044.fits',  'm191120_0045.fits', 'm191120_0046.fits'],
                     '--spec_samp_fact': 2.0, '--spat_samp_fact': 2.0}}
 
+_vet = {'keck_lris_red/multi_600_5000_d560':
+                   {},
+}
 
 all_tests = [{'factory': pypeit_tests.PypeItSetupTest,
               'type':    TestPhase.PREP,
@@ -258,4 +264,7 @@ all_tests = [{'factory': pypeit_tests.PypeItSetupTest,
              {'factory': pypeit_tests.PypeItQuickLookTest,
               'type':    TestPhase.QL,
               'setups':  _quick_look},
+             {'factory': pypeit_tests.PypeItVet,
+              'type':    TestPhase.VET,
+              'setups':  _vet},
              ]
