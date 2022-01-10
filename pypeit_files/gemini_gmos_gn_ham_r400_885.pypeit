@@ -4,7 +4,6 @@
 # User-defined execution parameters
 [rdx]
     spectrograph = gemini_gmos_north_ham
-    detnum = (1,2,3)
 [calibrations]
     [[wavelengths]]
         lamps=['OH_GMOS']
