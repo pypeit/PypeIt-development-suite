@@ -227,7 +227,7 @@ _quick_look = {'shane_kast_blue/600_4310_d55':
                    {'files': ['s190519_0067.fits', 's190519_0068.fits']},
                'keck_mosfire/Y_long':
                    {'files': ['m191120_0043.fits', 'm191120_0044.fits',  'm191120_0045.fits', 'm191120_0046.fits'],
-                    '--spec_samp_fact': 2.0, '--spat_samp_fact': 2.0}}
+                    '--spec_samp_fact': 2.0, '--spat_samp_fact': 2.0, '--flux':''}}
 
 # The order of these tests matter slightly, in that PypeItSetupTest
 # and PypeItQuickLookTest must come before PypeItReduceTest. 
