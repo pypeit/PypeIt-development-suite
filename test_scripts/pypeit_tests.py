@@ -344,6 +344,12 @@ class PypeItQuickLookTest(PypeItTest):
         # Place the masters into REDUX_DIR/QL_MASTERS directory.
         self.output_dir = os.path.join(self.redux_dir, 'QL_MASTERS')
 
+        # This is a hack to keep the code from looking for a .pypeit file
+        # for keck_deimos quicklook
+        if self.setup.instr == 'keck_deimos':
+            self.setup.generate_pyp_file = True
+            self.command = 0
+
     def build_command_line(self):
 
         if self.setup.instr == 'keck_nires':
@@ -352,10 +358,26 @@ class PypeItQuickLookTest(PypeItTest):
             command_line = ['pypeit_ql_keck_mosfire']
             if self.pargs.quiet:
                 command_line += ['--no_gui', '--writefits']
+        elif self.setup.instr == 'keck_deimos':
+            # Two commands!
+            if self.command == 'calib':
+                command_line = ['pypeit_ql_keck_deimos', 
+                            f"{os.path.join(os.getenv('PYPEIT_DEV'), 'RAW_DATA', 'keck_deimos', 'QL')}", 
+                            "--root=DE.", "-d=3", 
+                            f"--redux_path={os.path.join(os.getenv('PYPEIT_DEV'), 'REDUX_OUT', 'keck_deimos', 'QL')}",
+                            "--calibs_only"]
+            elif self.command == 'science':
+                command_line = ['pypeit_ql_keck_deimos', 
+                            f"{os.path.join(os.getenv('PYPEIT_DEV'), 'RAW_DATA', 'keck_deimos', 'QL')}", 
+                            '--science=DE.20130409.20629.fits',  '--slit_spat=3:763',
+                            f"--redux_path={os.path.join(os.getenv('PYPEIT_DEV'), 'REDUX_OUT', 'keck_deimos', 'QL')}"]
+            else:
+                raise ValueError("Bad command")
         else:
             command_line = ['pypeit_ql_mos', self.setup.instr]
 
-        command_line += [self.setup.rawdir] + self.files
+        if self.setup.instr != 'keck_deimos':
+            command_line += [self.setup.rawdir] + self.files
 
         for option in self.options:
             command_line += [option, str(self.options[option])]
@@ -392,7 +414,14 @@ class PypeItQuickLookTest(PypeItTest):
         # to use the newly generated masters
         self.env = os.environ.copy()
         self.env['QL_MASTERS'] = self.output_dir
-        return super().run()
+        if self.setup.instr == 'keck_deimos':
+            # Need to run 2 commands!
+            self.command = 'calib'
+            run0 = super().run()
+            self.command = 'science'
+            return super().run()
+        else:
+            return super().run()
 
 
 class PypeItVet(PypeItTest):
