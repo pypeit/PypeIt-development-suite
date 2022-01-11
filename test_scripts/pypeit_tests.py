@@ -15,6 +15,7 @@ import glob
 from abc import ABC, abstractmethod
 from IPython.terminal.embed import embed
 
+import pytest
 
 class PypeItTest(ABC):
     """Abstract base class for classes that run pypeit tests and hold the results from those tests."""
@@ -394,7 +395,6 @@ class PypeItQuickLookTest(PypeItTest):
         return super().run()
 
 
-# TODO -- Have this point to the uni tests in vet_tests/
 class PypeItVet(PypeItTest):
     """Test subclass that runs vet "unit" tests"""
 
@@ -406,7 +406,10 @@ class PypeItVet(PypeItTest):
         return ''
 
     def run(self):
+        # TODO -- figure out how to run unit tests from here
         pass
+        #tmp = pytest.main(["-x", os.path.join(self.env['PYPEIT_DEV'], 'vet_tests')])
+        # TODO -- figure out how to query tmp
 
 
 def pypeit_file_name(instr, setup, std=False):
