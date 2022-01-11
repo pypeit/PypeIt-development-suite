@@ -406,6 +406,7 @@ class PypeItVet(PypeItTest):
     def build_command_line(self):
         return ''
 
+    # TODO -- Abstract this name?
     def run(self):
         # Check that spatial flexure shift was set!
         file_path = os.path.join(self.env['PYPEIT_DEV'],
