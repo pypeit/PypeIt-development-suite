@@ -86,8 +86,6 @@ def main():
 
             if len(found_files) == 0:
                 print ("Could not find all NIRES masters, attempting to generate them...")
-                embed()
-                exit()
                 run_devsuite('keck_nires', 'NIRES', redux_dir)
 
                 found_files = find_source_files(source_filters)
@@ -123,8 +121,6 @@ def main():
 
             if len(found_files) == 0:
                 print("Could not find all MOSFIRE masters, attempting to generate them.")
-                embed()
-                exit()
                 run_devsuite("keck_mosfire", 'Y_long', redux_dir)
 
                 found_files = find_source_files(source_filters)
