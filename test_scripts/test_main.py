@@ -21,7 +21,7 @@ from IPython import embed
 import numpy as np
 
 from .test_setups import TestPhase, all_tests, develop_setups, supported_instruments
-from .test_setups import cooked_setups
+from .test_setups import cooked_setups, ql_setups
 from .pypeit_tests import get_unique_file
 
 test_run_queue = PriorityQueue()
@@ -539,7 +539,7 @@ def main():
 
     # Development instruments (in returned dictonary keys) and setups
     devsetups = develop_setups
-    tests_that_only_use_dev_setups = ['develop', 'reduce', 'afterburn', 'ql']
+    tests_that_only_use_dev_setups = ['develop', 'reduce', 'afterburn']
 
     # Cooked instruments (in returned dictonary keys) and setups
     cooksetups = cooked_setups
@@ -556,10 +556,12 @@ def main():
         if pargs.tests == 'afterburn':
             # Only do the flux-calibration and coadding tests
             flg_after = True
-        elif pargs.tests == 'ql':
-            flg_ql = True
     elif pargs.tests.lower() == 'cooked':
         instruments = np.array(list(cooksetups.keys())) if pargs.instrument is None \
+                        else np.array([pargs.instrument])
+    elif pargs.tests.lower() == 'ql':      
+        flg_ql = True    
+        instruments = np.array(list(ql_setups.keys())) if pargs.instrument is None \
                         else np.array([pargs.instrument])
     else:
         instruments = np.array([item for item in all_instruments 
@@ -617,6 +619,8 @@ def main():
             setup_names = devsetups[instr]
         elif pargs.tests.lower() == 'cooked':
             setup_names = cooksetups[instr]
+        elif pargs.tests.lower() == 'ql':
+            setup_names = ql_setups[instr]
 
         # Build test setups, check for missing files, and run any prep work
         for setup_name in setup_names:

@@ -9,6 +9,8 @@
  [[wavelengths]]
   lamps=['OH_GMOS']
   method = 'holy-grail'
+  rms_threshold = 1.,0.3,0.4,0.5
+  sigdetect = 5.,5.,6.,6.
 [reduce]
  [[findobj]]
   sig_thresh = 5

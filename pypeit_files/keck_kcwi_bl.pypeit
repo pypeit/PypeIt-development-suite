@@ -1,0 +1,39 @@
+# Auto-generated PypeIt file
+# 2021-08-20
+
+# User-defined execution parameters
+[rdx]
+spectrograph = keck_kcwi
+
+[reduce]
+    [[skysub]]
+        joint_fit = False
+        user_regions = :25,75:
+[baseprocess]
+    use_biasimage = False
+    use_darkimage = False
+
+# Setup
+setup read
+    Setup A:
+         dispname: BL
+           decker: Medium
+          binning: 2,2
+        dispangle: 27.7546692
+setup end
+
+# Read in the data
+data read
+ path /Users/rcooke/Software/PypeIt-development-suite/RAW_DATA/keck_kcwi/bl/
+|            filename |       frametype |                 ra |                dec |       target | dispname | decker | binning |          mjd | airmass | exptime |  dispangle |
+| kb210705_00018.fits |           align |  57.99999999999999 |               45.0 |      unknown |       BL | Medium |     2,2 | 59400.085659 |    1.41 |     0.7 | 27.7546692 |
+| kb210705_00019.fits |        arc,tilt |  57.99999999999999 |               45.0 |      unknown |       BL | Medium |     2,2 | 59400.086344 |    1.41 |    10.0 | 27.7546692 |
+| kb210705_00027.fits | illumflat,trace |  57.99999999999999 |               45.0 |      unknown |       BL | Medium |     2,2 | 59400.092483 |    1.41 |    14.0 | 27.7546692 |
+| kb210705_00028.fits | illumflat,trace |  57.99999999999999 |               45.0 |      unknown |       BL | Medium |     2,2 | 59400.093333 |    1.41 |    14.0 | 27.7546692 |
+| kb210705_00029.fits | illumflat,trace |  57.99999999999999 |               45.0 |      unknown |       BL | Medium |     2,2 | 59400.094183 |    1.41 |    14.0 | 27.7546692 |
+| kb210705_00021.fits |       pixelflat |  57.99999999999999 |               45.0 |      unknown |       BL | Medium |     2,2 | 59400.087288 |    1.41 |     0.7 | 27.7546692 |
+| kb210705_00022.fits |       pixelflat |  57.99999999999999 |               45.0 |      unknown |       BL | Medium |     2,2 | 59400.087985 |    1.41 |     0.7 | 27.7546692 |
+| kb210705_00023.fits |       pixelflat |  57.99999999999999 |               45.0 |      unknown |       BL | Medium |     2,2 | 59400.088681 |    1.41 |     0.7 | 27.7546692 |
+| kb210705_00051.fits |         science | 349.99274999999994 | -5.166055555555556 |     feige110 |       BL | Medium |     2,2 | 59400.618459 |     1.1 |     5.0 | 27.7546692 |
+data end
+
