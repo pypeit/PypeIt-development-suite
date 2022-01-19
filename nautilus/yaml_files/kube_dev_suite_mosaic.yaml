@@ -1,11 +1,20 @@
 apiVersion: batch/v1
 kind: Job
 metadata:
-  name: pypeit-moaic
+  name: pypeit-mosaic
 spec:
   backoffLimit: 0
   template:
     spec:
+      affinity:
+        nodeAffinity:
+          requiredDuringSchedulingIgnoredDuringExecution:
+            nodeSelectorTerms:
+            - matchExpressions:
+              - key: kubernetes.io/hostname
+                operator: NotIn
+                values:
+                  - k8s-chase-ci-01.noc.ucsb.edu
       containers:
       - args:
         - cd PypeIt; git fetch; git checkout mosaic; git pull --ff-only; cd pypeit/data/telluric/atm_grids;
