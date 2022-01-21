@@ -78,7 +78,7 @@ def main():
     # Raw Data
     my_args += ' mkdir RAW_DATA;'
     my_args += ' aws --endpoint http://rook-ceph-rgw-nautiluss3.rook s3 cp s3://pypeit/RAW_DATA RAW_DATA/ --recursive --force;'
-    my_args += f' ./pypeit_test -q -t {pargs.ncpu} develop -r pypeit.report -o /tmp/REDUX_OUT;'
+    my_args += f' ./pypeit_test --no_gui -t {pargs.ncpu} develop -r pypeit.report -o /tmp/REDUX_OUT;'
     my_args += f' aws --endpoint http://rook-ceph-rgw-nautiluss3.rook s3 cp pypeit.report s3://pypeit/Reports/{pargs.name}.report;'
 
     data['spec']['template']['spec']['containers'][0]['args'][0] = my_args
