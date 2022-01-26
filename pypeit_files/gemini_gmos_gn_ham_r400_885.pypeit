@@ -3,19 +3,23 @@
 
 # User-defined execution parameters
 [rdx]
- spectrograph = gemini_gmos_north_ham
- detnum = 1,2,3
+    spectrograph = gemini_gmos_north_ham
 [calibrations]
- [[wavelengths]]
-  lamps=['OH_GMOS']
-  method = 'holy-grail'
-  rms_threshold = 1.,0.3,0.4,0.5
-  sigdetect = 5.,5.,6.,6.
+    [[wavelengths]]
+        lamps=['OH_GMOS']
+        method = 'holy-grail'
+        rms_threshold = 1.,0.3,0.4,0.5
+        sigdetect = 5.,5.,6.,6.
+    [[slitedges]]
+        # Allow the tracing to skip over the chip gap
+        follow_span = 50
+        # Remove false detection at left edge
+        edge_thresh = 100.
 [reduce]
- [[findobj]]
-  sig_thresh = 5
-  maxnumber = 2
-  find_trim_edge = 250,250
+    [[findobj]]
+        sig_thresh = 5
+        maxnumber = 2
+        find_trim_edge = 250,250
 
 # Setup
 setup read
