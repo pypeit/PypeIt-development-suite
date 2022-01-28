@@ -2,6 +2,7 @@
 *.swp
 RAW_DATA/
 REDUX_OUT/
+REDUX_DATA/
 Cooked
 CALIBS
 *.pckl
