@@ -4,7 +4,6 @@
 # User-defined execution parameters
 [rdx]
   spectrograph = gemini_gmos_south_ham
-  detnum = 1,2,3
 [baseprocess]
    use_biasimage=False  
 [calibrations]

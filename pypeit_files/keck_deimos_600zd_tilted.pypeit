@@ -15,12 +15,12 @@
     [[tilts]]
 	tracethresh = 25
 
-[reduce]
-  [[extraction]]
-    [[[manual]]]
-       spat_spec = 68:2960,211:3082,607:3361,666:4058,978:2447,1020:2673,1578:2775
-       det = 1,1,1,1,1,1,1
-       fwhm = 3.,3.,3.,3.,3.,3.,3.
+#[reduce]
+#  [[extraction]]
+#    [[[manual]]]
+#       spat_spec = 68:2960,211:3082,607:3361,666:4058,978:2447,1020:2673,1578:2775
+#       det = 1,1,1,1,1,1,1
+#       fwhm = 3.,3.,3.,3.,3.,3.,3.
 
 # Setup
 setup read
@@ -40,14 +40,14 @@ setup end
 # Read in the data
 data read
  path /Users/dpelliccia/PypeIt-development-suite/PypeIt-development-suite_master/RAW_DATA/keck_deimos/600ZD_tilted
-|        filename |                 frametype |                 ra |                dec |     target | dispname | decker | binning |          mjd |    airmass | exptime |     dispangle |
-| d0225_0088.fits |                  arc,tilt |  57.99999999999999 |               45.0 | DOME PHLAT |    600ZD | 16045h |     1,1 | 58539.696797 | 1.41291034 |     1.0 | 7899.99072266 |
-| d0225_0091.fits |                  arc,tilt |  57.99999999999999 |               45.0 | DOME PHLAT |    600ZD | 16045h |     1,1 | 58539.703048 | 1.41291034 |     3.0 | 7899.99072266 |
-| d0225_0094.fits |                  arc,tilt |  57.99999999999999 |               45.0 | DOME PHLAT |    600ZD | 16045h |     1,1 | 58539.711725 | 1.41291034 |    12.0 | 7899.99072266 |
-| d0225_0103.fits | pixelflat,illumflat,trace |  57.99999999999999 |               45.0 | DOME PHLAT |    600ZD | 16045h |     1,1 | 58539.726423 | 1.41291034 |     6.0 | 7899.99072266 |
-| d0225_0104.fits | pixelflat,illumflat,trace |  57.99999999999999 |               45.0 | DOME PHLAT |    600ZD | 16045h |     1,1 | 58539.727291 | 1.41291034 |     6.0 | 7899.99072266 |
-| d0225_0105.fits | pixelflat,illumflat,trace |  57.99999999999999 |               45.0 | DOME PHLAT |    600ZD | 16045h |     1,1 | 58539.728153 | 1.41291034 |     6.0 | 7899.99072266 |
-| d0225_0106.fits | pixelflat,illumflat,trace |  57.99999999999999 |               45.0 | DOME PHLAT |    600ZD | 16045h |     1,1 | 58539.729021 | 1.41291034 |     6.0 | 7899.99072266 |
-| d0225_0054.fits |                   science |  241.1328333333333 | 43.256277777777775 |     16045h |    600ZD | 16045h |     1,1 | 58539.623231 |  1.1266414 |  1320.0 | 7899.99072266 |
+|        filename |                 frametype |                 ra |                dec |     target | dispname | decker | binning |          mjd |    airmass | exptime |     dispangle | manual |
+| d0225_0088.fits |                  arc,tilt |  57.99999999999999 |               45.0 | DOME PHLAT |    600ZD | 16045h |     1,1 | 58539.696797 | 1.41291034 |     1.0 | 7899.99072266 |        |
+| d0225_0091.fits |                  arc,tilt |  57.99999999999999 |               45.0 | DOME PHLAT |    600ZD | 16045h |     1,1 | 58539.703048 | 1.41291034 |     3.0 | 7899.99072266 |        |
+| d0225_0094.fits |                  arc,tilt |  57.99999999999999 |               45.0 | DOME PHLAT |    600ZD | 16045h |     1,1 | 58539.711725 | 1.41291034 |    12.0 | 7899.99072266 |        |
+| d0225_0103.fits | pixelflat,illumflat,trace |  57.99999999999999 |               45.0 | DOME PHLAT |    600ZD | 16045h |     1,1 | 58539.726423 | 1.41291034 |     6.0 | 7899.99072266 |        |
+| d0225_0104.fits | pixelflat,illumflat,trace |  57.99999999999999 |               45.0 | DOME PHLAT |    600ZD | 16045h |     1,1 | 58539.727291 | 1.41291034 |     6.0 | 7899.99072266 |        |
+| d0225_0105.fits | pixelflat,illumflat,trace |  57.99999999999999 |               45.0 | DOME PHLAT |    600ZD | 16045h |     1,1 | 58539.728153 | 1.41291034 |     6.0 | 7899.99072266 |        |
+| d0225_0106.fits | pixelflat,illumflat,trace |  57.99999999999999 |               45.0 | DOME PHLAT |    600ZD | 16045h |     1,1 | 58539.729021 | 1.41291034 |     6.0 | 7899.99072266 |        |
+| d0225_0054.fits |                   science |  241.1328333333333 | 43.256277777777775 |     16045h |    600ZD | 16045h |     1,1 | 58539.623231 |  1.1266414 |  1320.0 | 7899.99072266 | 1:68.0:2960.0:3.,1:211.0:3082.0:3.,1:607.0:3361.0:3.,1:666.0:4058.0:3.,1:978.0:2447.0:3.,1:1020.0:2673.0:3.,1:1578.0:2775.0:3. |
 data end
 

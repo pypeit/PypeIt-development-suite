@@ -19,6 +19,8 @@ from test_scripts.test_main import build_test_setup
 from test_scripts.pypeit_tests import PypeItQuickLookTest
 import argparse
 
+from IPython import embed
+
 from pypeit import version as pypeit_version
 
 def parser(options=None):
@@ -73,9 +75,9 @@ def main():
             os.makedirs(nires_dest_dir, exist_ok=True)
 
             keck_nires_path = os.path.join(redux_dir, 'keck_nires', 'NIRES', 'Masters')
-            source_filters = [os.path.join(keck_nires_path, '*2_01*'),
-                            os.path.join(keck_nires_path, 'MasterFlat_A_7_01.fits'), 
-                            os.path.join(keck_nires_path, 'MasterSlits_A_7_01.fits.gz')]
+            source_filters = [os.path.join(keck_nires_path, '*2_DET01*'),
+                            os.path.join(keck_nires_path, 'MasterFlat_A_7_DET01.fits'), 
+                            os.path.join(keck_nires_path, 'MasterSlits_A_7_DET01.fits.gz')]
 
             if not pargs.force_build:
                 found_files = find_source_files(source_filters)
@@ -103,9 +105,9 @@ def main():
             dest_dir = os.path.join(ql_masters, 'MOSFIRE_MASTERS', 'Y')
             os.makedirs(dest_dir, exist_ok=True)
 
-            files = ['Masters/MasterSlits_A_15_01.fits.gz',
-                     'Masters/MasterTilts_A_4_01.fits', 
-                     'Masters/MasterWaveCalib_A_4_01.fits',
+            files = ['Masters/MasterSlits_A_15_DET01.fits.gz',
+                     'Masters/MasterTilts_A_4_DET01.fits', 
+                     'Masters/MasterWaveCalib_A_4_DET01.fits',
                      'Science/spec1d_m191118_0064-GD71_MOSFIRE_20191118T104704.507.fits',
                      'sens_m191118_0064-GD71_MOSFIRE_20191118T104704.507.fits' ]
 
