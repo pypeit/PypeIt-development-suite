@@ -341,12 +341,6 @@ class PypeItQuickLookTest(PypeItTest):
         # Place the masters into REDUX_DIR/QL_MASTERS directory.
         self.output_dir = os.path.join(self.redux_dir, 'QL_MASTERS')
 
-        # This is a hack to keep the code from looking for a .pypeit file
-        # for keck_deimos quicklook
-        if self.setup.instr == 'keck_deimos':
-            self.setup.generate_pyp_file = True
-            self.command = 0
-
     def build_command_line(self):
 
         if self.setup.instr == 'keck_nires':
