@@ -1,0 +1,32 @@
+# Auto-generated PypeIt file
+# 2022-02-04
+
+# User-defined execution parameters
+[rdx]
+spectrograph = gemini_gmos_north_e2v
+
+# Setup
+setup read
+    Setup A:
+         dispname: R400+_G5305
+         dichroic: open1-6
+           decker: GN2014AQ001-03
+        dispangle: 600.0
+          datasec: "[33:544,1:2304]"
+setup end
+
+# Read in the data
+data read
+ path /data/Projects/PypeIt-codes/PypeIt-development-suite/RAW_DATA/gemini_gmos/GN_E2V_MULTI_R400_600
+|            filename |                 frametype |         ra |         dec |     target |    dispname |         decker | binning |              mjd | airmass |              exptime | dichroic | dispangle |         datasec |
+| N20141121s0408.fits |                  arc,tilt |       22.0 |       89.97 |       CuAr | R400+_G5305 | GN2014AQ001-03 |     2,2 | 2014.88896072537 |     1.0 |      19.999128818512 |  open1-6 |     600.0 | [33:544,1:2304] |
+| N20140217S0031.fits |                      bias |       22.0 |       89.97 |       Bias |      MIRROR |           None |     2,2 | 2014.12961241556 |     1.0 | 0.000377178192138672 |  open1-6 |       0.0 | [33:544,1:2304] |
+| N20140217S0032.fits |                      bias |       22.0 |       89.97 |       Bias |      MIRROR |           None |     2,2 |  2014.1296133864 |     1.0 | 0.000303030014038086 |  open1-6 |       0.0 | [33:544,1:2304] |
+| N20140217S0033.fits |                      bias |       22.0 |       89.97 |       Bias |      MIRROR |           None |     2,2 | 2014.12961435421 |     1.0 | 0.000518083572387695 |  open1-6 |       0.0 | [33:544,1:2304] |
+| N20140217S0034.fits |                      bias |       22.0 |       89.97 |       Bias |      MIRROR |           None |     2,2 | 2014.12961532283 |     1.0 | 0.000516891479492188 |  open1-6 |       0.0 | [33:544,1:2304] |
+| N20140217S0035.fits |                      bias |       22.0 |       89.97 |       Bias |      MIRROR |           None |     2,2 | 2014.12961629173 |     1.0 | 0.000375986099243164 |  open1-6 |       0.0 | [33:544,1:2304] |
+| N20141121s0305.fits | pixelflat,illumflat,trace | 122.287625 | 46.32661111 |   GCALflat | R400+_G5305 | GN2014AQ001-03 |     2,2 | 2014.88847482518 |   1.254 |     1.99969220161438 |  open1-6 |     600.0 | [33:544,1:2304] |
+| N20141121s0303.fits |                   science | 122.287625 | 46.32661111 | J0809+4619 | R400+_G5305 | GN2014AQ001-03 |     2,2 | 2014.88840591645 |    1.33 |     1049.98677301407 |  open1-6 |     600.0 | [33:544,1:2304] |
+| N20141121s0304.fits |                   science | 122.287625 | 46.32661111 | J0809+4619 | R400+_G5305 | GN2014AQ001-03 |     2,2 |  2014.8884401053 |   1.278 |     1049.98701095581 |  open1-6 |     600.0 | [33:544,1:2304] |
+data end
+
