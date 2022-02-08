@@ -1,5 +1,6 @@
 [fluxcalib]
 use_archived_sens = True
+extrap_sens = True
 
 # User-defined fluxing parameters
 flux read
