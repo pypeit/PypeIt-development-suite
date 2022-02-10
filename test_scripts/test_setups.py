@@ -233,7 +233,7 @@ _quick_look = {'shane_kast_blue/600_4310_d55':
                     '--spec_samp_fact': 2.0, '--spat_samp_fact': 2.0}}
 
 _vet = {'keck_lris_red/multi_600_5000_d560':
-                   {},
+                   {'tests': ['test_slitmask.py', 'test_flexure.py'] },
 }
 
 # The order of these tests matter slightly, in that PypeItSetupTest

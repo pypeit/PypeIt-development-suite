@@ -564,10 +564,10 @@ def main():
         flg_ql = True    
         instruments = np.array(list(ql_setups.keys())) if pargs.instrument is None \
                         else np.array([pargs.instrument])
-    elif pargs.tests == 'vet':
-        flg_vet = True
-        instruments = np.array(list(ql_setups.keys())) if pargs.instrument is None \
-                        else np.array([pargs.instrument])
+    #elif pargs.tests == 'vet':
+    #    flg_vet = True
+    #    instruments = np.array(list(ql_setups.keys())) if pargs.instrument is None \
+    #                    else np.array([pargs.instrument])
     else:
         instruments = np.array([item for item in all_instruments 
                                     if pargs.tests.lower() in item.lower()])

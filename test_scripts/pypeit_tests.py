@@ -9,6 +9,7 @@ Classes and utility functions for running individual pypeit tests.
 
 import os.path
 import subprocess
+import contextlib
 import datetime
 import traceback
 import glob
@@ -427,7 +428,7 @@ class PypeItQuickLookTest(PypeItTest):
 class PypeItVet(PypeItTest):
     """Test subclass that runs vet "unit" tests"""
 
-    def __init__(self, setup, pargs):
+    def __init__(self, setup, pargs, tests):
         super().__init__(None, None, None)
         self.passed = True
 
@@ -439,7 +440,11 @@ class PypeItVet(PypeItTest):
         pass
         #tmp = pytest.main(["-x", os.path.join(self.env['PYPEIT_DEV'], 'vet_tests')])
         # TODO -- figure out how to query tmp
-
+        logfile = 'tmp.out'
+        with open(logfile, "w") as f:
+             with contextlib.redirect_stdout(f):
+                 s = pytest.main(['-x', self.tests])
+             self.passed == (s == 0)
 
 def pypeit_file_name(instr, setup, std=False):
     base = '{0}_{1}'.format(instr.lower(), setup.lower())
