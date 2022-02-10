@@ -10,7 +10,7 @@
 
 [coadd2d]
   use_slits4wvgrid = True
-  offsets = 0.,0.,0.,0.,0.,0.
+  offsets = 0.,0.
   weights = uniform
   manual = 1:22.4:608.1:3.
 
