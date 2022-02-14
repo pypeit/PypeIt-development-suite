@@ -1,4 +1,10 @@
-
+#!/usr/bin/env python3
+"""
+This script takes the reduced output file from Greg Writh's IDL scripts, converts them into 
+PypeIt spec1d files, creates sensitivity functions from those spec1ds, and then stitches 
+those sensitivity functions into combined fucntions intended to be used as archived
+sensitivity files for DEIMOS.
+"""
 import argparse
 import copy
 import os
@@ -20,8 +26,9 @@ from matplotlib import pyplot as plot
 from matplotlib.backends.backend_pdf import PdfPages
 from stitchdeimos import stitch_sensfunc
 
-def write_stitched_sensfunc(sflist, args, combined_wave, combined_zp_fit,combined_zp_fit_gpm):
-    
+def write_stitched_sensfunc(sflist, args, grating, combined_wave, combined_zp_fit,combined_zp_fit_gpm):
+    """Write stitched sensfunc data in combined_wave, combined_zp_fit, and combined_zp_fit_gpm to
+       a SensFunc file"""
     newsf = copy.deepcopy(sflist[0])
     newsf.sens =  None
     newsf.splice_multi_det = False
@@ -52,7 +59,7 @@ def write_stitched_sensfunc(sflist, args, combined_wave, combined_zp_fit,combine
     newsf.spectrograph = load_spectrograph("keck_deimos")    
     newsf.throughput = newsf.compute_throughput()[0]
 
-    file_name = os.path.join(args.dest_path, f"keck_deimos_{args.grating}_sensfunc.fits")
+    file_name = os.path.join(args.dest_path, f"keck_deimos_{grating}_sensfunc.fits")
 
     hdr = pypeit.io.initialize_header(primary=True)
     hdr['HISTORY'] = "This DEIMOS sensfunc was stitched together from the following source files."
@@ -65,14 +72,14 @@ def write_stitched_sensfunc(sflist, args, combined_wave, combined_zp_fit,combine
     return (newsf, file_name)
 
 def build_figure():
-
+    """Build pyplot figure and axis for the QA plot"""
     utils.pyplot_rcparams()
     fig = plot.figure(figsize=(12,8))
     axis = fig.add_axes([0.1, 0.1, 0.8, 0.8])
     return fig, axis
 
 def create_plot(axis, color, label, x, y, linewidth=2.5, marker = '', linestyle='solid'):
-
+    """Plot a single line of data"""
     axis.plot(x, y, color=color, linewidth=linewidth, marker=marker, linestyle=linestyle, label=label)
     xmin = (0.98*x.min())
     #xmin = 3000
@@ -86,6 +93,7 @@ def create_plot(axis, color, label, x, y, linewidth=2.5, marker = '', linestyle=
 
 
 def setup_axes(axis,xmin, ymin, xmax, ymax, title):
+    "Setup axes and labels for QA plot"
     axis.set_xlim(xmin, xmax)
     axis.set_ylim(ymin, ymax)
     axis.legend()
@@ -94,7 +102,8 @@ def setup_axes(axis,xmin, ymin, xmax, ymax, title):
     axis.set_title('PypeIt stitched SensFunc ' + title)
 
 def plot_stitch_results(sf, polyfit_areas, sflist, filename, showQA):
-
+    """Create a QA plot for stitched that shows the original sensfuncs in the background,
+       and shows the bad pixels and polyfit sections in distinct colors. """
     fig, axis = build_figure()
 
     sens_gpm = sf.sens['SENS_ZEROPOINT_FIT_GPM'][0]
@@ -162,6 +171,7 @@ def plot_stitch_results(sf, polyfit_areas, sflist, filename, showQA):
         pdf.savefig(fig)
 
 def get_basename(source_file, source_meta):
+    """Get the basename from the IDL reduced source and create a new one for a spec1d"""
     obsdate = datetime.datetime.strptime(source_meta['DATE'][0], "%d%b%Y")
 
     # Strip off path and .fits extension from the source name
@@ -172,11 +182,12 @@ def get_basename(source_file, source_meta):
     return f"{source_basename}-{source_meta['STD_NAME'][0].replace(' ', '')}_{source_meta['INSTRUMENT'][0]}_{obsdate.strftime('%Y%m%d')}"
 
 def get_source_meta(source_file):
+    # Get the metadata from the IDL reduced source image
     hdul = fits.open(source_file)
     return Table(hdul[1].data)
 
 def create_spec1d_files(args, source_files):
-
+    """Create spec1d files from IDL reduced source files"""
     source_meta = []
     spec1d_files = []
 
@@ -191,7 +202,7 @@ def create_spec1d_files(args, source_files):
     return source_meta, spec1d_files
 
 def create_sens_files(args, spec1d_files):
-
+    """Generate sensitivity functions from the spec1d files created from the IDL reduced source"""
     sflist = []
 
 
@@ -221,16 +232,13 @@ def create_sens_files(args, spec1d_files):
 
         sflist.append(sensobj)
 
-
-
-
     return sflist 
 
-def create_stitched_sensfuncs(args, sflist):
+def create_stitched_sensfuncs(args, grating, sflist):
+    # Create a stitched sensfunc from multiple SensFuncs
+    (combined_wave,  combined_zp_fit, combined_zp_fit_gpm, polyfit_areas) = stitch_sensfunc(grating, sflist)
 
-    (combined_wave,  combined_zp_fit, combined_zp_fit_gpm, polyfit_areas) = stitch_sensfunc(args.grating, sflist)
-
-    (newsf, newfile) = write_stitched_sensfunc(sflist, args, combined_wave, combined_zp_fit, combined_zp_fit_gpm)
+    (newsf, newfile) = write_stitched_sensfunc(sflist, args, grating, combined_wave, combined_zp_fit, combined_zp_fit_gpm)
 
     plot_stitch_results(newsf, polyfit_areas, sflist, newfile, args.showQA)
 
@@ -240,7 +248,7 @@ def create_stitched_sensfuncs(args, sflist):
 
 def parse_args(options=None, return_parser=False):
     parser = argparse.ArgumentParser(description='Combine DEIMOS sensitivity functions to create a general purpose one.')
-    parser.add_argument("grating", type=str, choices=['1200G', '1200B', '600ZD', '830G', '900ZD'])
+    parser.add_argument("grating", type=str, choices=['1200G', '1200B', '600ZD', '830G', '900ZD', 'all'])
     parser.add_argument("source_path", type=str, help="Path of the throughput fits files generated by Greg Writh's IDL script")
     parser.add_argument("dest_path", type=str, help = "Path to place generated spec1ds, sensfunc files, and the final stitched sensfunc.")
     parser.add_argument("--showQA", action="store_true", default=False, help="Show the the QA plots before saving the QA pdf.")
@@ -272,13 +280,19 @@ def main(args):
                             'extract/830G/2010oct06_d1006_0136.fits',
                             'extract/830G/2010oct06_d1006_0137.fits']}
 
-    source_files = [os.path.join(args.source_path, x) for x in source_map[args.grating]]
+    if args.grating == "all":
+        grating_list = source_map.keys()
+    else:
+        grating_list = [args.grating]
 
-    source_meta, spec1d_files = create_spec1d_files(args, source_files)
+    for grating in grating_list:
+        source_files = [os.path.join(args.source_path, x) for x in source_map[grating]]
 
-    sflist = create_sens_files(args, spec1d_files)
+        source_meta, spec1d_files = create_spec1d_files(args, source_files)
 
-    create_stitched_sensfuncs(args, sflist)
+        sflist = create_sens_files(args, spec1d_files)
+
+        create_stitched_sensfuncs(args, grating, sflist)
 
 
 
