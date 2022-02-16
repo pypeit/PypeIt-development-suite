@@ -34,7 +34,7 @@ data read
 | mods1r.20180112.0066.fits.gz | pixelflat,illumflat,trace |                0.0 |                0.0 | VF10+Clear LS5x60x1.0 Spectral Flat |    G670L | LS5x60x1.0 |     1,1 | 58130.599561 |     1.0 |     1.0 |
 | mods1r.20180112.0067.fits.gz | pixelflat,illumflat,trace |                0.0 |                0.0 | VF10+Clear LS5x60x1.0 Spectral Flat |    G670L | LS5x60x1.0 |     1,1 |  58130.60074 |     1.0 |     1.0 |
 | mods1r.20180112.0051.fits.gz |                   science |  166.1085083333333 |  21.55998888888889 |                      QSO_J1104+2134 |    G670L | LS5x60x1.0 |     1,1 | 58130.484268 |    1.03 |  1200.0 |
-| mods1r.20180112.0052.fits.gz |                   science |  166.1085083333333 |  21.55998888888889 |                      QSO_J1104+2134 |    G670L | LS5x60x1.0 |     1,1 | 58130.499298 |    1.05 |  1200.0 |
+#| mods1r.20180112.0052.fits.gz |                   science |  166.1085083333333 |  21.55998888888889 |                      QSO_J1104+2134 |    G670L | LS5x60x1.0 |     1,1 | 58130.499298 |    1.05 |  1200.0 |
 | mods1r.20180112.0056.fits.gz |                  standard | 159.90308333333334 |  43.10257222222222 |                            Feige 34 |    G670L |     LS60x5 |     1,1 | 58130.543707 |    1.17 |   120.0 |
 data end
 
