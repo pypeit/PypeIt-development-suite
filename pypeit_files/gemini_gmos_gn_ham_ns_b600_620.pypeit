@@ -4,6 +4,13 @@
 # User-defined execution parameters
 [rdx]
 spectrograph = gemini_gmos_north_ham_ns
+[calibrations]
+    [[slitedges]]
+        # Need to be able to jump the chip gaps
+        follow_span = 80
+        # Significantly boost detection threshold to ignore
+        # artifacts/ghosts at low spatial pixel numbers
+        edge_thresh = 300
 
 # Setup
 setup read

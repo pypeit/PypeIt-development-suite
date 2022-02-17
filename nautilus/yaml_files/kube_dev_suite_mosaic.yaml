@@ -1,24 +1,33 @@
 apiVersion: batch/v1
 kind: Job
 metadata:
-  name: develop-full-dev-suite-6cpu
+  name: pypeit-mosaic
 spec:
   backoffLimit: 0
   template:
     spec:
+      affinity:
+        nodeAffinity:
+          requiredDuringSchedulingIgnoredDuringExecution:
+            nodeSelectorTerms:
+            - matchExpressions:
+              - key: kubernetes.io/hostname
+                operator: NotIn
+                values:
+                  - k8s-chase-ci-01.noc.ucsb.edu
       containers:
       - args:
-        - cd PypeIt; git fetch; git checkout develop; git pull --ff-only; cd pypeit/data/telluric/atm_grids;
+        - cd PypeIt; git fetch; git checkout mosaic; git pull --ff-only; cd pypeit/data/telluric/atm_grids;
           aws --endpoint http://rook-ceph-rgw-nautiluss3.rook s3 cp s3://pypeit/telluric/atm_grids/TelFit_MaunaKea_3100_26100_R20000.fits
           TelFit_MaunaKea_3100_26100_R20000.fits --force; aws --endpoint http://rook-ceph-rgw-nautiluss3.rook
           s3 cp s3://pypeit/telluric/atm_grids/TelFit_LasCampanas_3100_26100_R20000.fits
           TelFit_LasCampanas_3100_26100_R20000.fits --force; cd /; cd PypeIt-development-suite;
-          git fetch; git checkout develop; git pull --ff-only; mkdir CALIBS; aws --endpoint
+          git fetch; git checkout mosaic; git pull --ff-only; mkdir CALIBS; aws --endpoint
           http://rook-ceph-rgw-nautiluss3.rook s3 cp s3://pypeit/CALIBS CALIBS/ --recursive
           --force; mkdir RAW_DATA; aws --endpoint http://rook-ceph-rgw-nautiluss3.rook
           s3 cp s3://pypeit/RAW_DATA RAW_DATA/ --recursive --force; ./pypeit_test
           -q -t 6 develop -r pypeit.report -o /tmp/REDUX_OUT; aws --endpoint http://rook-ceph-rgw-nautiluss3.rook
-          s3 cp pypeit.report s3://pypeit/Reports/develop-full-dev-suite-6cpu.report;
+          s3 cp pypeit.report s3://pypeit/Reports/pypeit-moaic.report;
         command:
         - /bin/bash
         - -c

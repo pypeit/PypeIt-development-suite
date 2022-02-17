@@ -155,6 +155,9 @@ cooked_setups = {'shane_kast_blue': ['600_4310_d55'],
                   'keck_lris_red': ['long_600_7500_d560', 'multi_400_8500_d560'],
                   'keck_lris_blue': ['long_600_4000_d560', 'multi_600_4000_d560'],
                 }
+ql_setups = {'keck_nires':   ['NIRES'], 
+             'keck_mosfire': ['Y_long'],
+             'keck_deimos':  ['QL']}
 
 _pypeit_setup = ['shane_kast_blue/600_4310_d55']
 
@@ -192,6 +195,7 @@ _flux = ['shane_kast_blue/600_4310_d55',
          'gemini_gmos/GS_HAM_R400_860',
          'gemini_gmos/GS_HAM_R400_700',
          'keck_deimos/900ZD_LVM_5500',
+         'keck_deimos/600ZD_M_6500'
          ]
 
 _flexure = ['keck_deimos/830G_M_8500']
@@ -218,16 +222,25 @@ _telluric = {'gemini_gnirs/32_SB_SXD':
 
 _quick_look = {'shane_kast_blue/600_4310_d55':
                    {'files': ['b1.fits.gz', 'b10.fits.gz', 'b27.fits.gz']},
+               'keck_deimos/QL':
+                   {'files': ['*.fits']},
                'keck_nires/NIRES':
                    {'files': ['s190519_0067.fits', 's190519_0068.fits']},
                'keck_mosfire/Y_long':
                    {'files': ['m191120_0043.fits', 'm191120_0044.fits',  'm191120_0045.fits', 'm191120_0046.fits'],
                     '--spec_samp_fact': 2.0, '--spat_samp_fact': 2.0}}
 
-
+# The order of these tests matter slightly, in that PypeItSetupTest
+# and PypeItQuickLookTest must come before PypeItReduceTest. 
+# This prevents PypeItReduceTest from failing in the prep phase
+# because of missing pypeit files that don't and shouldn't exist.
+# 
 all_tests = [{'factory': pypeit_tests.PypeItSetupTest,
               'type':    TestPhase.PREP,
               'setups':  _pypeit_setup},
+             {'factory': pypeit_tests.PypeItQuickLookTest,
+              'type':    TestPhase.QL,
+              'setups':  _quick_look},
              {'factory': pypeit_tests.PypeItReduceTest,
               'type':    TestPhase.REDUCE,
               'setups':  ['*']},
@@ -255,7 +268,4 @@ all_tests = [{'factory': pypeit_tests.PypeItSetupTest,
              {'factory': pypeit_tests.PypeItTelluricTest,
               'type':    TestPhase.AFTERBURN,
               'setups':  _telluric},
-             {'factory': pypeit_tests.PypeItQuickLookTest,
-              'type':    TestPhase.QL,
-              'setups':  _quick_look},
              ]

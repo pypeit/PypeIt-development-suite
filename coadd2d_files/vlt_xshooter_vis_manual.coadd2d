@@ -1,17 +1,18 @@
 
 [rdx]
   spectrograph = vlt_xshooter_vis
-[reduce]
-  [[extraction]]
-     [[[manual]]]
-        spat_spec = 22.4:608.1,
-        det = 1,
-        fwhm = 3.,
+#[reduce]
+#  [[extraction]]
+#     [[[manual]]]
+#        spat_spec = 22.4:608.1,
+#        det = 1,
+#        fwhm = 3.,
 
 [coadd2d]
   use_slits4wvgrid = True
-  offsets = 0.,0.,0.,0.,0.,0.
+  offsets = 0.,0.
   weights = uniform
+  manual = 1:22.4:608.1:3.
 
 spec2d read
 Science/spec2d_XSHOO.2019-08-21T07:55:35.020-FRB190711_XShooter_VIS_20190821T075535.019.fits

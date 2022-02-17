@@ -9,7 +9,7 @@
 
 # Setup
 setup read
-Setup A
+Setup A:
      dispname: 1200G
        decker: dra11
       binning: 1,1
