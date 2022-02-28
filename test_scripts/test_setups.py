@@ -202,6 +202,7 @@ _flux = ['shane_kast_blue/600_4310_d55',
          'gemini_gmos/GS_HAM_R400_860',
          'gemini_gmos/GS_HAM_R400_700',
          'keck_deimos/900ZD_LVM_5500',
+         'keck_deimos/600ZD_M_6500'
          ]
 
 _flexure = ['keck_deimos/830G_M_8500']
