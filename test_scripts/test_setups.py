@@ -123,7 +123,7 @@ develop_setups = {'bok_bc': ['600'],
                                     'multi_400_8500_d560', 'long_600_10000_d680',
                                     'long_400_8500_longread'],  # Longslit read-out mode
                   'keck_lris_red_orig': ['long_300_5000'],
-                  'keck_lris_red_mark4': ['long_400_8500_d560'],
+                  'keck_lris_red_mark4': ['long_400_8500_d560', 'long_600_10000_d680'],
                   'lbt_luci': ['LUCI-I', 'LUCI-II'],
                   'lbt_mods': ['MODS1R_Longslit', 'MODS2R_Longslit'],
                   'ldt_deveny': ['DV1', 'DV2', 'DV5', 'DV6', 'DV8'],
