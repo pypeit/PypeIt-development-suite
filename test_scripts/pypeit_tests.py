@@ -86,7 +86,11 @@ class PypeItTest(ABC):
             with open(self.logfile, "w") as f:
                 try:
                     self.command_line = self.build_command_line()
-                    self.start_time = datetime.datetime.now()
+                    if self.start_time is None:
+                        # If a subclass sets the start time or calls run multiple times,
+                        # (see deimos QL) use the first value as the start rather than overwriting it.
+                        self.start_time = datetime.datetime.now()
+                        
                     child = subprocess.Popen(self.command_line, stdout=f, stderr=f, env=self.env, cwd=self.setup.rdxdir)
                     self.pid = child.pid
                     child.wait()
