@@ -211,6 +211,8 @@ _coadd2d = {'gemini_gnirs/32_SB_SXD':
             'keck_lris_blue/multi_600_4000_d560':
                 {'coadd_file': True},
             'vlt_xshooter/VIS_manual':
+                {'coadd_file': True},
+            'keck_deimos/830G_M_9000_dither':
                 {'coadd_file': True}
             }
 
