@@ -86,7 +86,11 @@ class PypeItTest(ABC):
             with open(self.logfile, "w") as f:
                 try:
                     self.command_line = self.build_command_line()
-                    self.start_time = datetime.datetime.now()
+                    if self.start_time is None:
+                        # If a subclass sets the start time or calls run multiple times,
+                        # (see deimos QL) use the first value as the start rather than overwriting it.
+                        self.start_time = datetime.datetime.now()
+                        
                     child = subprocess.Popen(self.command_line, stdout=f, stderr=f, env=self.env, cwd=self.setup.rdxdir)
                     self.pid = child.pid
                     child.wait()
@@ -341,19 +345,13 @@ class PypeItQuickLookTest(PypeItTest):
         # Place the masters into REDUX_DIR/QL_MASTERS directory.
         self.output_dir = os.path.join(self.redux_dir, 'QL_MASTERS')
 
-        # This is a hack to keep the code from looking for a .pypeit file
-        # for keck_deimos quicklook
-        if self.setup.instr == 'keck_deimos':
-            self.setup.generate_pyp_file = True
-            self.command = 0
-
     def build_command_line(self):
 
         if self.setup.instr == 'keck_nires':
             command_line = ['pypeit_ql_keck_nires']
         elif self.setup.instr == 'keck_mosfire':
             command_line = ['pypeit_ql_keck_mosfire']
-            if self.pargs.quiet:
+            if self.pargs.quiet or self.pargs.no_gui:
                 command_line += ['--no_gui', '--writefits']
         elif self.setup.instr == 'keck_deimos':
             # Two commands!
