@@ -1,6 +1,10 @@
 Expose s3 files to the public:
 
-aws s3api put-object-acl --key telluric/atm_grids/TelFit_MaunaKea_3100_26100_R20000.fits  --bucket pypeit --endpoint https://s3.nautilus.optiputer.net --acl public-read
+aws s3api put-object-acl --key telluric/atm_grids/TelFit_MaunaKea_3100_26100_R20000.fits  --bucket pypeit --endpoint https://s3-west.nrp-nautilus.io --acl public-read
+
+And it appears here
+
+  https://s3-west.nrp-nautilus.io/pypeit/telluric/atm_grids/TelFit_MaunaKea_3100_26100_R20000.fits
 
 Add s3 access:
 
