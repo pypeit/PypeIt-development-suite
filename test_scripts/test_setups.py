@@ -35,9 +35,11 @@ To add a new type of test:
 Attributes:
     supported_instruments:   A list of the instruments supported by the test suite. This can be a substring of the
                              instrument name.
-    develop_setups:          A dict of instruments to the supported test setups for the instrument. Each setup should
-                             have data in $PYPEIT_DEV/RAW_DATA/instrument/setup
-
+    reduce_setups:           The test setups that support reduction. A dict of instruments to the supported test 
+                             setups for the instrument. 
+                             Each setup should have data in $PYPEIT_DEV/RAW_DATA/instrument/setup
+    develop_setups:          The test setups that comprise the "develop" tests in the dev suite. Currently this
+                             is a copy of reduce_setups with additional tests added that don't require reduction.
     all_tests:               A list of the test types supported by the dev suite and which test setups they are run
                              on.  The test types are listed in the order they run in so that tests can depend on the
                              result of previous tests.
@@ -84,6 +86,7 @@ Attributes:
 
 from . import pypeit_tests
 from enum import Enum, IntEnum, auto
+import copy
 
 class TestPhase(Enum):
     """Enumeration for specifying the test phase that a test runs in.
@@ -104,7 +107,7 @@ supported_instruments = ['kast', 'deimos', 'kcwi', 'nires', 'nirspec', 'mosfire'
                          'flamingos2', 'mage', 'fire', 'luci', 'mdm', 'alfosc', 'fors2', 'binospec', 'mmirs', 'bluechannel',
                          'mods', 'dbsp', 'tspec', 'bc', 'goodman', 'efosc2','deveny']
 
-develop_setups = {'bok_bc': ['600'],
+reduce_setups  = {'bok_bc': ['600'],
                   'gemini_gnirs': ['32_SB_SXD', '10_LB_SXD'],
                   'gemini_gmos': ['GS_HAM_R400_700', 'GS_HAM_R400_860', 'GN_HAM_R400_885', 'GN_HAM_NS_B600_620'],
                   'gemini_flamingos2': ['HK_HK', 'JH_JH'],
@@ -145,6 +148,10 @@ develop_setups = {'bok_bc': ['600'],
                   'vlt_xshooter': ['VIS_1x1', 'VIS_2x1', 'VIS_2x2', 'VIS_manual', 'NIR'],
                   'vlt_sinfoni': ['K_0.8'],
                   }
+
+# Currently there is only one setup (keck_deimos QL) that is run for develop tests, but doesn't run a reduction
+develop_setups = copy.deepcopy(reduce_setups)
+develop_setups['keck_deimos'].append('QL')
 
 # The instruments/setups needed to build cooked.
 cooked_setups = {'shane_kast_blue': ['600_4310_d55'],
@@ -232,20 +239,18 @@ _quick_look = {'shane_kast_blue/600_4310_d55':
                    {'files': ['m191120_0043.fits', 'm191120_0044.fits',  'm191120_0045.fits', 'm191120_0046.fits'],
                     '--spec_samp_fact': 2.0, '--spat_samp_fact': 2.0}}
 
-# The order of these tests matter slightly, in that PypeItSetupTest
-# and PypeItQuickLookTest must come before PypeItReduceTest. 
-# This prevents PypeItReduceTest from failing in the prep phase
-# because of missing pypeit files that don't and shouldn't exist.
+# The order of these tests in all_tests determine the order they run
+# in for the setup. So that tests that depend on previous tests must
+# be in the right order. e.g. PypeItSetupTest must come before 
+# PypeItReduceTest and PypeItSensFuncTest must come before
+# PypeItFluxTest.
 # 
 all_tests = [{'factory': pypeit_tests.PypeItSetupTest,
               'type':    TestPhase.PREP,
               'setups':  _pypeit_setup},
-             {'factory': pypeit_tests.PypeItQuickLookTest,
-              'type':    TestPhase.QL,
-              'setups':  _quick_look},
              {'factory': pypeit_tests.PypeItReduceTest,
               'type':    TestPhase.REDUCE,
-              'setups':  ['*']},
+              'setups':  reduce_setups},
              {'factory': pypeit_tests.PypeItReduceTest,
               'type':    TestPhase.REDUCE,
               'setups':  _additional_reduce},
@@ -270,4 +275,7 @@ all_tests = [{'factory': pypeit_tests.PypeItSetupTest,
              {'factory': pypeit_tests.PypeItTelluricTest,
               'type':    TestPhase.AFTERBURN,
               'setups':  _telluric},
+             {'factory': pypeit_tests.PypeItQuickLookTest,
+              'type':    TestPhase.QL,
+              'setups':  _quick_look},
              ]

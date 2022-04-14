@@ -50,7 +50,6 @@ spec:
         - mountPath: /dev/shm
           name: dshm
       nodeSelector:
-        gpu-type: 1080Ti
         nautilus.io/disktype: nvme
       restartPolicy: Never
       volumes:
