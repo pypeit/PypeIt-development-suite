@@ -40,7 +40,9 @@ def main():
     pargs = parser()
 
     # Load the default
-    def_yaml_file = os.path.join(os.getenv('PYPEIT_DEV'), 'nautilus', 'kube_dev_suite.yaml')
+    def_yaml_file = os.path.join(os.getenv('PYPEIT_DEV'), 
+                                 'nautilus', 
+                                 'kube_dev_suite.yaml')
     with open(def_yaml_file, 'r') as stream:
         data = yaml.safe_load(stream)
 
@@ -57,11 +59,14 @@ def main():
     limits['cpu'] = str(pargs.ncpu + 1)
     limits['memory'] = f'{2*pargs.ram}Gi'
 
-    # Args
+    ###### Args #####
+
+    # Get PypeIt git up to date
     my_args = 'cd PypeIt;'
     my_args += ' git fetch;'
     my_args += f' git checkout {pargs.pypeit_branch};' 
     my_args += ' git pull --ff-only;'
+    my_args += ' pip install -e ".[console_scripts]";'
     # Telluric
     my_args += ' cd pypeit/data/telluric/atm_grids;'
     my_args += ' aws --endpoint http://rook-ceph-rgw-nautiluss3.rook s3 cp s3://pypeit/telluric/atm_grids/TelFit_MaunaKea_3100_26100_R20000.fits TelFit_MaunaKea_3100_26100_R20000.fits --force;'
@@ -78,7 +83,7 @@ def main():
     # Raw Data
     my_args += ' mkdir RAW_DATA;'
     my_args += ' aws --endpoint http://rook-ceph-rgw-nautiluss3.rook s3 cp s3://pypeit/RAW_DATA RAW_DATA/ --recursive --force;'
-    my_args += f' ./pypeit_test -q -t {pargs.ncpu} develop -r pypeit.report -o /tmp/REDUX_OUT;'
+    my_args += f' ./pypeit_test --no_gui -t {pargs.ncpu} develop -r pypeit.report -o /tmp/REDUX_OUT;'
     my_args += f' aws --endpoint http://rook-ceph-rgw-nautiluss3.rook s3 cp pypeit.report s3://pypeit/Reports/{pargs.name}.report;'
 
     data['spec']['template']['spec']['containers'][0]['args'][0] = my_args
