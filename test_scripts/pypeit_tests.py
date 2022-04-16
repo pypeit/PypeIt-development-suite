@@ -430,6 +430,7 @@ class PypeItVet(PypeItTest):
 
     def __init__(self, setup, pargs, tests):
         super().__init__(None, None, None)
+        self.tests = tests
         self.passed = True
 
     def build_command_line(self):
