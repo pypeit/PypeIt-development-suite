@@ -7,6 +7,9 @@
     [[findobj]]
         sig_thresh=5.0
 
+[coadd2d]
+  offsets = maskdef_offsets
+
 
 # Read in the data
 spec2d read
