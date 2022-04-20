@@ -2,7 +2,7 @@
 # User-defined execution parameters
 [rdx]
   spectrograph = keck_deimos
-  detnum = (1,5)
+  detnum = (4,8)
 [reduce]
     [[findobj]]
         sig_thresh=5.0
