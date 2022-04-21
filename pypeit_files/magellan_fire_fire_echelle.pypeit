@@ -33,8 +33,8 @@ data read
 | fire_0070.fits |         standard | 325.3824213 | -24.2024203 |        HD206108 |  Echelle | default |     1,1 | 2458387.6501736115 |   1.066 |    30.0 |  default |     0 |       5 |      6 |
 | fire_0048.fits | tilt,science,arc | 321.6805004 | -17.2467934 |      J2125-1719 |  Echelle | default |     1,1 | 2458387.5337500004 |   1.068 |   602.4 |  default |     0 |       1 |      2 |
 | fire_0049.fits | tilt,science,arc | 321.6799593 | -17.2470996 |      J2125-1719 |  Echelle | default |     1,1 | 2458387.5418518526 |   1.054 |   602.4 |  default |     0 |       2 |      1 |
-| fire_0050.fits | tilt,science,arc | 321.6799594 | -17.2471552 |      J2125-1719 |  Echelle | default |     1,1 | 2458387.5499652782 |   1.043 |   602.4 |  default |     0 |       3 |      4 |
-| fire_0051.fits | tilt,science,arc | 321.6802919 | -17.2465992 |      J2125-1719 |  Echelle | default |     1,1 | 2458387.5586458337 |   1.033 |   602.4 |  default |     0 |       4 |      3 |
+#| fire_0050.fits | tilt,science,arc | 321.6799594 | -17.2471552 |      J2125-1719 |  Echelle | default |     1,1 | 2458387.5499652782 |   1.043 |   602.4 |  default |     0 |       3 |      4 |
+#| fire_0051.fits | tilt,science,arc | 321.6802919 | -17.2465992 |      J2125-1719 |  Echelle | default |     1,1 | 2458387.5586458337 |   1.033 |   602.4 |  default |     0 |       4 |      3 |
 | fire_0056.fits |  trace,pixelflat | 321.6808342 | -17.2473208 | J2125-1719 flat |  Echelle | default |     1,1 |  2458387.610185186 |   1.038 |    40.0 |  default |     0 |      -1 |     -1 |
 | fire_0057.fits |  trace,pixelflat | 321.6808342 | -17.2473208 | J2125-1719 flat |  Echelle | default |     1,1 |  2458387.611516204 |    1.04 |    40.0 |  default |     0 |      -1 |     -1 |
 | fire_0058.fits |  trace,pixelflat | 321.6808342 | -17.2473208 | J2125-1719 flat |  Echelle | default |     1,1 |  2458387.612743056 |    1.04 |    40.0 |  default |     0 |      -1 |     -1 |

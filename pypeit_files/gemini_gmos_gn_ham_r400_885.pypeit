@@ -17,7 +17,7 @@
         edge_thresh = 100.
 [reduce]
     [[findobj]]
-        sig_thresh = 5
+        snr_thresh = 5
         maxnumber = 2
         find_trim_edge = 250,250
 

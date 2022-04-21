@@ -16,7 +16,7 @@
     method = 'holy-grail'
 [reduce]
   [[findobj]]
-    sig_thresh = 0.5
+    snr_thresh = 0.5
     maxnumber = 5
 
 # Setup

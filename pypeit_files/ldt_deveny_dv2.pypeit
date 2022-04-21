@@ -11,7 +11,7 @@
   use_illumflat = True
 [reduce]
   [[findobj]]
-    sig_thresh = 3.0
+    snr_thresh = 3.0
 
 # Setup
 setup read
