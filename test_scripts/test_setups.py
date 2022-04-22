@@ -162,7 +162,8 @@ cooked_setups = {'shane_kast_blue': ['600_4310_d55'],
                   'keck_lris_red': ['long_600_7500_d560', 'multi_400_8500_d560'],
                   'keck_lris_blue': ['long_600_4000_d560', 'multi_600_4000_d560'],
                 }
-ql_setups = {'keck_nires':   ['NIRES'], 
+ql_setups = {'keck_nires':   ['NIRES'],
+             'keck_lris_red_mark4': ['long_600_10000_d680'],
              'keck_mosfire': ['Y_long'],
              'keck_deimos':  ['QL']}
 
@@ -187,7 +188,9 @@ _sensfunc = {'shane_kast_blue/600_4310_d55':
              'keck_deimos/900ZD_LVM_5500':
                  {'std_file': 'spec1d_*Feige110*.fits', 'sens_file': 'keck_deimos_900zd_lvm_5500.sens'},
              'keck_mosfire/Y_long':
-                 {'std_file': 'spec1d_*0064-GD71*.fits'}
+                 {'std_file': 'spec1d_*0064-GD71*.fits'},
+             'keck_lris_red_mark4/long_600_10000_d680':
+                 {'std_file': 'spec1d_*00127-GD153*.fits'}
              }
 
 
@@ -234,8 +237,12 @@ _quick_look = {'shane_kast_blue/600_4310_d55':
                'keck_nires/NIRES':
                    {'files': ['s190519_0067.fits', 's190519_0068.fits']},
                'keck_mosfire/Y_long':
-                   {'files': ['m191120_0043.fits', 'm191120_0044.fits',  'm191120_0045.fits', 'm191120_0046.fits'],
-                    '--spec_samp_fact': 2.0, '--spat_samp_fact': 2.0, '--flux':''}}
+                   {'files': ['m191120_0043.fits', 'm191120_0044.fits', 'm191120_0045.fits', 'm191120_0046.fits'],
+                    '--spec_samp_fact': 2.0, '--spat_samp_fact': 2.0, '--flux': '', '--bkg_redux': ''},
+               'keck_lris_red_mark4/long_600_10000_d680':
+                   {'files': ['r220127_00123.fits', 'r220127_00124.fits'],
+                    '--spec_samp_fact': 2.0, '--spat_samp_fact': 2.0, '--flux': ''}}
+
 
 # The order of these tests in all_tests determine the order they run
 # in for the setup. So that tests that depend on previous tests must
