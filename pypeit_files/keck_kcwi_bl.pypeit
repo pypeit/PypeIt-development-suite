@@ -12,6 +12,9 @@ spectrograph = keck_kcwi
 [baseprocess]
     use_biasimage = False
     use_darkimage = False
+[scienceframe]
+    [[process]]
+        use_specillum = False
 
 # Setup
 setup read
