@@ -21,6 +21,10 @@
  [[wavelengths]]
     rms_threshold = 0.25
 
+[reduce]
+ [[extraction]]
+    return_negative = True
+
 ##########################################################
 setup read
 Setup A

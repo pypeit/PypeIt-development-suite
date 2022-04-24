@@ -4,7 +4,7 @@
 # User-defined execution parameters
 [rdx]
   spectrograph = keck_deimos
-  detnum = 3
+  detnum = (3,7)
 [calibrations]
     [[slitedges]]
          edge_thresh = 5
