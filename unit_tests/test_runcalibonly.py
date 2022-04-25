@@ -1,9 +1,7 @@
 """
-Module to run tests on scripts
+Module to run calibrations only test with run_pypeit
 """
 import os
-import sys
-import glob
 import shutil
 from IPython.terminal.embed import embed
 
