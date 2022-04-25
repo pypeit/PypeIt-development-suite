@@ -5,8 +5,6 @@ import os
 import shutil
 from IPython.terminal.embed import embed
 
-from configobj import ConfigObj
-
 import pytest
 
 from pypeit.scripts.parse_calib_id import ParseCalibID
