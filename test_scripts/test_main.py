@@ -21,6 +21,7 @@ from pathlib import Path
 from IPython import embed
 
 import numpy as np
+from torch import embedding
 
 from .test_setups import TestPhase, all_tests, develop_setups, supported_instruments
 from .test_setups import cooked_setups, ql_setups
@@ -443,7 +444,7 @@ def parser(options=None):
                              'can provide the telescope or the spectrograph, but beware of '
                              'non-unique matches.  E.g. \'mage\' selects all the magellan '
                              'instruments, not just \'magellan_mage\'.  Options include: '
-                             'develop, reduce, afterburn, all, ql, {0}'.format(', '.join(all_tests)))
+                             'develop, reduce, afterburn, all, ql, vet {0}'.format(', '.join(all_tests)))
     parser.add_argument('-o', '--outputdir', type=str, default='REDUX_OUT',
                         help='Output folder.')
     # TODO: Why is this an option?
@@ -564,6 +565,8 @@ def main():
         if pargs.tests == 'afterburn':
             # Only do the flux-calibration and coadding tests
             flg_after = True
+        elif pargs.tests == 'vet':
+            flg_vet = True
     elif pargs.tests.lower() == 'cooked':
         instruments = np.array(list(cooksetups.keys())) if pargs.instrument is None \
                         else np.array([pargs.instrument])
@@ -571,10 +574,6 @@ def main():
         flg_ql = True    
         instruments = np.array(list(ql_setups.keys())) if pargs.instrument is None \
                         else np.array([pargs.instrument])
-    #elif pargs.tests == 'vet':
-    #    flg_vet = True
-    #    instruments = np.array(list(ql_setups.keys())) if pargs.instrument is None \
-    #                    else np.array([pargs.instrument])
     else:
         instruments = np.array([item for item in all_instruments 
                                     if pargs.tests.lower() in item.lower()])
@@ -623,8 +622,8 @@ def main():
         if pargs.setup is not None and pargs.setup not in setup_names:
             # No setups selected
             continue
-        # Limit to a single setup
-        if pargs.setup is not None:
+        # Limit to a single setup?
+        elif pargs.setup is not None:
             setup_names = [ pargs.setup ]
         # Limit to development setups
         elif pargs.tests in tests_that_only_use_dev_setups:
@@ -633,6 +632,7 @@ def main():
             setup_names = cooksetups[instr]
         elif pargs.tests.lower() == 'ql':
             setup_names = ql_setups[instr]
+
 
         # Build test setups, check for missing files, and run any prep work
         for setup_name in setup_names:
@@ -665,6 +665,8 @@ def main():
 
     # Add tests to the test_run_queue
     for setup in setups:
+        if len(setup.tests) == 0:
+            continue
         test_run_queue.put(setup)
 
     # Start threads to run the tests
@@ -713,7 +715,8 @@ def main():
     return test_report.num_failed
 
 
-def build_test_setup(pargs, instr, setup_name, flg_after, flg_ql, flg_vet):
+def build_test_setup(pargs, instr, setup_name, flg_after, 
+                     flg_ql, flg_vet):
     """Builds a TestSetup object including the tests that it will run"""
 
     dev_path = os.getenv('PYPEIT_DEV')
@@ -792,6 +795,7 @@ def build_test_setup(pargs, instr, setup_name, flg_after, flg_ql, flg_vet):
 
         if flg_ql and test_descr['type'] not in (TestPhase.PREP, TestPhase.QL):
             continue
+
 
         if flg_vet and test_descr['type'] not in (TestPhase.VET, TestPhase.VET):
             continue

@@ -442,8 +442,10 @@ class PypeItVet(PypeItTest):
         logfile = 'tmp.out'
         with open(logfile, "w") as f:
              with contextlib.redirect_stdout(f):
-                 s = pytest.main(['-x', self.tests])
-             self.passed == (s == 0)
+                 for test in self.tests:
+                    s = pytest.main(['-x']+ os.path.join(
+                        'vet_tests', test))
+                    self.passed &= (s == 0)
 
 def pypeit_file_name(instr, setup, std=False):
     base = '{0}_{1}'.format(instr.lower(), setup.lower())
