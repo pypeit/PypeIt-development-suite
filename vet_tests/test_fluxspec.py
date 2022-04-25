@@ -13,7 +13,6 @@ import numpy as np
 from pypeit import fluxcalibrate
 from pypeit import sensfunc
 from pypeit.par import pypeitpar
-from pypeit.scripts import flux_calib
 from pypeit.tests.tstutils import data_path
 from pypeit.spectrographs.util import load_spectrograph
 from pypeit.spectrographs import keck_deimos
