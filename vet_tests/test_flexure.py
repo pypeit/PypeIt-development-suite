@@ -1,4 +1,5 @@
 import os
+import numpy as np
 from pypeit import spec2dobj
 
 from pypeit.core import flexure
