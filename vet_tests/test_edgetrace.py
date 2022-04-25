@@ -82,7 +82,7 @@ def test_sobel_enhance():
     sobenh1 = np.max(sobelsig)
     assert sobenh1 > 2*sobenh0, 'Sobel enhancement did not significantly improve edge detection.'
 
-# TODO: Can we (and is it useful to) get these tests back?
+# TODO -- Can we turn any of these back on [KW]
 
 '''
 @cooked_required
