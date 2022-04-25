@@ -35,9 +35,11 @@ To add a new type of test:
 Attributes:
     supported_instruments:   A list of the instruments supported by the test suite. This can be a substring of the
                              instrument name.
-    develop_setups:          A dict of instruments to the supported test setups for the instrument. Each setup should
-                             have data in $PYPEIT_DEV/RAW_DATA/instrument/setup
-
+    reduce_setups:           The test setups that support reduction. A dict of instruments to the supported test 
+                             setups for the instrument. 
+                             Each setup should have data in $PYPEIT_DEV/RAW_DATA/instrument/setup
+    develop_setups:          The test setups that comprise the "develop" tests in the dev suite. Currently this
+                             is a copy of reduce_setups with additional tests added that don't require reduction.
     all_tests:               A list of the test types supported by the dev suite and which test setups they are run
                              on.  The test types are listed in the order they run in so that tests can depend on the
                              result of previous tests.
@@ -84,6 +86,7 @@ Attributes:
 
 from . import pypeit_tests
 from enum import Enum, IntEnum, auto
+import copy
 
 class TestPhase(Enum):
     """Enumeration for specifying the test phase that a test runs in.
@@ -107,7 +110,7 @@ supported_instruments = ['kast', 'deimos', 'kcwi', 'nires', 'nirspec', 'mosfire'
                          'flamingos2', 'mage', 'fire', 'luci', 'mdm', 'alfosc', 'fors2', 'binospec', 'mmirs', 'bluechannel',
                          'mods', 'dbsp', 'tspec', 'bc', 'goodman', 'efosc2','deveny']
 
-develop_setups = {'bok_bc': ['600'],
+reduce_setups  = {'bok_bc': ['600'],
                   'gemini_gnirs': ['32_SB_SXD', '10_LB_SXD'],
                   'gemini_gmos': ['GS_HAM_R400_700', 'GS_HAM_R400_860', 'GN_HAM_R400_885', 'GN_HAM_NS_B600_620'],
                   'gemini_flamingos2': ['HK_HK', 'JH_JH'],
@@ -126,7 +129,7 @@ develop_setups = {'bok_bc': ['600'],
                                     'multi_400_8500_d560', 'long_600_10000_d680',
                                     'long_400_8500_longread'],  # Longslit read-out mode
                   'keck_lris_red_orig': ['long_300_5000'],
-                  'keck_lris_red_mark4': ['long_400_8500'],
+                  'keck_lris_red_mark4': ['long_400_8500_d560'],
                   'lbt_luci': ['LUCI-I', 'LUCI-II'],
                   'lbt_mods': ['MODS1R_Longslit', 'MODS2R_Longslit'],
                   'ldt_deveny': ['DV1', 'DV2', 'DV5', 'DV6', 'DV8'],
@@ -148,6 +151,10 @@ develop_setups = {'bok_bc': ['600'],
                   'vlt_xshooter': ['VIS_1x1', 'VIS_2x1', 'VIS_2x2', 'VIS_manual', 'NIR'],
                   'vlt_sinfoni': ['K_0.8'],
                   }
+
+# Currently there is only one setup (keck_deimos QL) that is run for develop tests, but doesn't run a reduction
+develop_setups = copy.deepcopy(reduce_setups)
+develop_setups['keck_deimos'].append('QL')
 
 # The instruments/setups needed to build cooked.
 cooked_setups = {'shane_kast_blue': ['600_4310_d55'],
@@ -198,6 +205,7 @@ _flux = ['shane_kast_blue/600_4310_d55',
          'gemini_gmos/GS_HAM_R400_860',
          'gemini_gmos/GS_HAM_R400_700',
          'keck_deimos/900ZD_LVM_5500',
+         'keck_deimos/600ZD_M_6500'
          ]
 
 _flexure = ['keck_deimos/830G_M_8500']
@@ -213,6 +221,8 @@ _coadd2d = {'gemini_gnirs/32_SB_SXD':
             'keck_lris_blue/multi_600_4000_d560':
                 {'coadd_file': True},
             'vlt_xshooter/VIS_manual':
+                {'coadd_file': True},
+            'keck_deimos/830G_M_9000_dither':
                 {'coadd_file': True}
             }
 
@@ -236,20 +246,18 @@ _vet = {'keck_lris_red/multi_600_5000_d560':
                    {'tests': ['test_slitmask.py', 'test_flexure.py'] },
 }
 
-# The order of these tests matter slightly, in that PypeItSetupTest
-# and PypeItQuickLookTest must come before PypeItReduceTest. 
-# This prevents PypeItReduceTest from failing in the prep phase
-# because of missing pypeit files that don't and shouldn't exist.
+# The order of these tests in all_tests determine the order they run
+# in for the setup. So that tests that depend on previous tests must
+# be in the right order. e.g. PypeItSetupTest must come before 
+# PypeItReduceTest and PypeItSensFuncTest must come before
+# PypeItFluxTest.
 # 
 all_tests = [{'factory': pypeit_tests.PypeItSetupTest,
               'type':    TestPhase.PREP,
               'setups':  _pypeit_setup},
-             {'factory': pypeit_tests.PypeItQuickLookTest,
-              'type':    TestPhase.QL,
-              'setups':  _quick_look},
              {'factory': pypeit_tests.PypeItReduceTest,
               'type':    TestPhase.REDUCE,
-              'setups':  ['*']},
+              'setups':  reduce_setups},
              {'factory': pypeit_tests.PypeItReduceTest,
               'type':    TestPhase.REDUCE,
               'setups':  _additional_reduce},
@@ -274,6 +282,9 @@ all_tests = [{'factory': pypeit_tests.PypeItSetupTest,
              {'factory': pypeit_tests.PypeItTelluricTest,
               'type':    TestPhase.AFTERBURN,
               'setups':  _telluric},
+             {'factory': pypeit_tests.PypeItQuickLookTest,
+              'type':    TestPhase.QL,
+              'setups':  _quick_look},
              {'factory': pypeit_tests.PypeItVet,
               'type':    TestPhase.VET,
               'setups':  _vet},

@@ -16,6 +16,8 @@ from queue import PriorityQueue, Empty
 from threading import Thread, Lock
 import traceback
 import datetime
+from pathlib import Path
+
 from IPython import embed
 
 import numpy as np
@@ -407,8 +409,11 @@ def raw_data_dir():
 
 
 def available_data():
-    walk = os.walk(raw_data_dir())
-    return next(walk)[1]
+    return [x.name for x in Path(raw_data_dir()).glob('*') if x.is_dir()]
+
+def available_setups(raw_data, instr):
+    """Return the setups available in RAW_DATA directory for a given instrument."""
+    return [x.name for x in Path(raw_data).joinpath(instr).glob('*') if x.is_dir()]    
 
 
 def parser(options=None):
@@ -455,6 +460,8 @@ def parser(options=None):
     parser.add_argument('-q', '--quiet', default=False, action='store_true',
                         help='Supress all output to stdout. If -r is not a given, a report file will be '
                              'written to <outputdir>/pypeit_test_results.txt')
+    parser.add_argument('--no_gui', default=False, action='store_true',
+                        help='Supress any GUIs displayed by any tests.')
     parser.add_argument('-v', '--verbose', default=False, action='store_true',
                         help='Output additional detailed information while running the tests and output a '
                              'detailed report at the end of testing. This has no effect if -q is given')
@@ -612,7 +619,7 @@ def main():
             continue
 
         # Setups
-        setup_names = next(os.walk(os.path.join(raw_data, instr)))[1]
+        setup_names = available_setups(raw_data, instr)
         if pargs.setup is not None and pargs.setup not in setup_names:
             # No setups selected
             continue
@@ -725,19 +732,33 @@ def build_test_setup(pargs, instr, setup_name, flg_after, flg_ql, flg_vet):
     # Create the test setup and set it's priority
     setup = TestSetup(instr, setup_name, rawdir, rdxdir, dev_path)
 
-    # Go through each test for this setup and add it to the setup if it's
+    # Go through each test type and add it to this setup if it's applicable and
     # selected by the command line arguments
     for test_descr in all_tests:
-        if '*' in test_descr['setups']:
-            key = '*'
-        elif setup.instr in test_descr['setups']:
-            key = setup.instr
+        # Depending on the test there can be different data structures for "setups"
+        # Some of those will have arguments for the test's __init__ based on a key
+        if setup.instr in test_descr['setups']:
+            if isinstance(test_descr['setups'][setup.instr], list):
+                # A dict of lists, mapping instruments to a list of supported setups
+                key = None # No arguments in this format
+                if setup.name not in test_descr['setups'][setup.instr]:
+                    # This test type isn't applicable to the setup
+                    # But we make an exception for "all" and reduce tests
+                    if not (pargs.tests == "all" and test_descr['type'] == TestPhase.REDUCE):
+                        continue
+            else:
+                # A dict mapping to arguments that apply to all setups for this instrument
+                key = setup.instr
+
         elif setup.key in test_descr['setups']:
+            # Either a dict or list of setups
             key = setup.key
         else:
             continue
 
-        if isinstance(test_descr['setups'], dict):
+        # Read arguments for the test from the setups, but only for test
+        # types that support it
+        if isinstance(test_descr['setups'], dict) and key is not None:
             kwargs = test_descr['setups'][key]
         else:
             kwargs = dict()

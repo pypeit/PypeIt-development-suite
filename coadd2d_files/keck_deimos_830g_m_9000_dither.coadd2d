@@ -1,0 +1,18 @@
+
+# User-defined execution parameters
+[rdx]
+  spectrograph = keck_deimos
+  detnum = (4,8)
+[reduce]
+    [[findobj]]
+        sig_thresh=5.0
+
+[coadd2d]
+  offsets = maskdef_offsets
+
+
+# Read in the data
+spec2d read
+Science/spec2d_DE.20141021.34721-GOODSS_DEIMOS_20141021T093833.706.fits
+Science/spec2d_DE.20141021.35719-GOODSS_DEIMOS_20141021T095514.045.fits
+spec2d end
