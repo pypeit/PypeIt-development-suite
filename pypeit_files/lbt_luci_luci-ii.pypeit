@@ -27,10 +27,10 @@ setup end
 data read
  path /home/xavier/local/Python/PypeIt-development-suite/RAW_DATA/lbt_luci/LUCI-II
 |                 filename |        frametype |           ra |           dec |              target |   dispname |        decker | binning |          mjd |      airmass | exptime | calib | comb_id | bkg_id |   idname |
-| luci2.20181124.0475.fits |         standard | 08 31 19.941 | +37 15 53.213 |            HD 71906 | G200 LoRes | LS_1.00arcsec |     1,1 | 58446.419337 | 1.0635005227 |   62.75 |     0 |       1 |      2 | standard |
-| luci2.20181124.0476.fits |         standard | 08 31 19.941 | +37 15 53.213 |            HD 71906 | G200 LoRes | LS_1.00arcsec |     1,1 | 58446.420648 | 1.0610274989 |   62.75 |     0 |       2 |      1 | standard |
-| luci2.20181124.0477.fits |         standard | 08 31 19.941 | +37 15 53.213 |            HD 71906 | G200 LoRes | LS_1.00arcsec |     1,1 | 58446.421574 | 1.0592982677 |   62.75 |     0 |       2 |      1 | standard |
-| luci2.20181124.0478.fits |         standard | 08 31 19.941 | +37 15 53.213 |            HD 71906 | G200 LoRes | LS_1.00arcsec |     1,1 | 58446.422787 | 1.0570842726 |   62.75 |     0 |       1 |      2 | standard |
+#| luci2.20181124.0475.fits |         standard | 08 31 19.941 | +37 15 53.213 |            HD 71906 | G200 LoRes | LS_1.00arcsec |     1,1 | 58446.419337 | 1.0635005227 |   62.75 |     0 |       1 |      2 | standard |
+#| luci2.20181124.0476.fits |         standard | 08 31 19.941 | +37 15 53.213 |            HD 71906 | G200 LoRes | LS_1.00arcsec |     1,1 | 58446.420648 | 1.0610274989 |   62.75 |     0 |       2 |      1 | standard |
+#| luci2.20181124.0477.fits |         standard | 08 31 19.941 | +37 15 53.213 |            HD 71906 | G200 LoRes | LS_1.00arcsec |     1,1 | 58446.421574 | 1.0592982677 |   62.75 |     0 |       2 |      1 | standard |
+#| luci2.20181124.0478.fits |         standard | 08 31 19.941 | +37 15 53.213 |            HD 71906 | G200 LoRes | LS_1.00arcsec |     1,1 | 58446.422787 | 1.0570842726 |   62.75 |     0 |       1 |      2 | standard |
 | luci2.20181124.0483.fits | tilt,science,arc |  09 07 9.895 | +25 06 20.808 | J090709.89+250620.8 | G200 LoRes | LS_1.00arcsec |     1,1 | 58446.437617 | 1.0946836993 |   225.0 |     0 |       5 |      6 |   object |
 | luci2.20181124.0484.fits | tilt,science,arc |  09 07 9.895 | +25 06 20.808 | J090709.89+250620.8 | G200 LoRes | LS_1.00arcsec |     1,1 | 58446.440699 | 1.0870045323 |   225.0 |     0 |       6 |      5 |   object |
 #| luci2.20181124.0485.fits | tilt,science,arc |  09 07 9.895 | +25 06 20.808 | J090709.89+250620.8 | G200 LoRes | LS_1.00arcsec |     1,1 | 58446.443491 | 1.0804984441 |   225.0 |     0 |       7 |      8 |   object |
