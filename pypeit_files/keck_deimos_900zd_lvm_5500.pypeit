@@ -4,13 +4,15 @@
 # User-defined execution parameters
 [rdx]
 spectrograph = keck_deimos
-detnum = 3,7
+detnum = (3,7)
 [reduce]
    [[findobj]]
         maxnumber = 3
 [calibrations]
   [[slitedges]]
     edge_thresh = 20.0
+  [[wavelengths]]
+      lamps = NeI, ArI, CdI, KrI, XeI, HgI, ZnI
 
 # Setup
 setup read

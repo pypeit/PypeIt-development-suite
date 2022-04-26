@@ -4,7 +4,7 @@
 # User-defined execution parameters
 [rdx]
 spectrograph = keck_deimos
-detnum = 1,5
+detnum = (1,5)
 [reduce]
    [[findobj]]
          snr_thresh = 5
