@@ -423,28 +423,31 @@ class PypeItQuickLookTest(PypeItTest):
             return super().run()
 
 
-class PypeItVet(PypeItTest):
-    """Test subclass that runs vet "unit" tests"""
+class PypeItUnit(PypeItTest):
+    """Test subclass that runs "unit" tests in the DevSuite
+
+    These require the Raw files but *not* any other processing
+    """
 
     def __init__(self, setup, pargs, tests):
         super().__init__(None, None, None)
-        self.tests = tests
+        self.tests = None # We set it in run()
         self.passed = True
 
     def build_command_line(self):
         return ''
 
     def run(self):
-        # TODO -- figure out how to run unit tests from here
-        pass
-        #tmp = pytest.main(["-x", os.path.join(self.env['PYPEIT_DEV'], 'vet_tests')])
-        # TODO -- figure out how to query tmp
+        # Grab list of test*.py files
+        self.tests = glob.glob('unit_tests/test*.py')
+        self.tests.sort() 
+        embed(header='444 of pypeit_tests')
+        # Things are broken after this...
         logfile = 'tmp.out'
         with open(logfile, "w") as f:
              with contextlib.redirect_stdout(f):
-                 for test in self.tests:
-                    s = pytest.main(['-x']+ os.path.join(
-                        'vet_tests', test))
+                for test in self.tests: 
+                    s = pytest.main(['-x', test])
                     self.passed &= (s == 0)
 
 def pypeit_file_name(instr, setup, std=False):
