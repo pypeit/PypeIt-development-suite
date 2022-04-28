@@ -18,7 +18,7 @@ spec:
           http://rook-ceph-rgw-nautiluss3.rook s3 cp s3://pypeit/CALIBS CALIBS/ --recursive
           --force; mkdir RAW_DATA; aws --endpoint http://rook-ceph-rgw-nautiluss3.rook
           s3 cp s3://pypeit/RAW_DATA RAW_DATA/ --recursive --force; ./pypeit_test
-          --no_gui -t 6 develop -r pypeit.report -o /tmp/REDUX_OUT; aws --endpoint
+          -t 6 develop -r pypeit.report -o /tmp/REDUX_OUT; aws --endpoint
           http://rook-ceph-rgw-nautiluss3.rook s3 cp pypeit.report s3://pypeit/Reports/release-master.report;
         command:
         - /bin/bash
