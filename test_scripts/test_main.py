@@ -23,7 +23,7 @@ from IPython import embed
 import numpy as np
 from torch import embedding
 
-from .test_setups import TestPhase, all_tests, develop_setups, supported_instruments
+from .test_setups import TestPhase, all_tests, all_setups, supported_instruments
 from .test_setups import cooked_setups, ql_setups
 from .pypeit_tests import get_unique_file
 
@@ -426,25 +426,24 @@ def parser(options=None):
     parser = argparse.ArgumentParser(formatter_class=argparse.ArgumentDefaultsHelpFormatter,
                                      description='Run pypeit tests on a set of instruments.  '
                                                  'Typical call for testing pypeit when developing '
-                                                 'new code is `./pypeit_test develop`.  Execution '
+                                                 'new code is `./pypeit_test all`.  Execution '
                                                  'requires you to have a PYPEIT_DEV environmental '
                                                  'variable, pointing to the top-level directory '
                                                  'of the dev-suite repository (typically the '
                                                  'location of this script).  Raw data for testing '
                                                  'is expected to be at ${PYPEIT_DEV}/RAW_DATA.  '
                                                  'To run all tests for the supported instruments, '
-                                                 'use \'develop\'.  To only run the basic '
+                                                 'use \'all\'.  To only run the basic '
                                                  'reductions, use \'reduce\'.  To only run the '
                                                  'tests that use the results of the reductions, '
-                                                 'use \'afterburn\'.  To run all possible tests '
-                                                 '(beware!), use \'all\'.')
+                                                 'use \'afterburn\'\'.')
 
     parser.add_argument('tests', type=str, default=None,
                         help='Instrument or test to run.  For instrument-specific tests, you '
                              'can provide the telescope or the spectrograph, but beware of '
                              'non-unique matches.  E.g. \'mage\' selects all the magellan '
                              'instruments, not just \'magellan_mage\'.  Options include: '
-                             'develop, reduce, afterburn, all, ql, unit {0}'.format(', '.join(all_tests)))
+                             'reduce, afterburn, all, ql, unit, vet {0}'.format(', '.join(all_tests)))
     parser.add_argument('-o', '--outputdir', type=str, default='REDUX_OUT',
                         help='Output folder.')
     # TODO: Why is this an option?
@@ -532,8 +531,8 @@ def main():
             traceback.print_exc()
             sys.exit(1)
 
-    # Only write the test priority file if all develop tests are being run
-    if pargs.tests == "develop" and pargs.instrument is None and pargs.setup is None and pargs.debug is False:
+    # Only write the test priority file if all tests are being run
+    if pargs.tests == "all" and pargs.instrument is None and pargs.setup is None and pargs.debug is False:
         write_priorities = True
     else:
         write_priorities = False
@@ -547,8 +546,8 @@ def main():
     flg_unit = False
 
     # Development instruments (in returned dictonary keys) and setups
-    devsetups = develop_setups
-    tests_that_only_use_dev_setups = ['develop', 'reduce', 'afterburn', 'unit']
+    devsetups = all_setups
+    tests_that_only_use_dev_setups = ['reduce', 'afterburn', 'unit']
 
     # Cooked instruments (in returned dictonary keys) and setups
     cooksetups = cooked_setups
@@ -556,9 +555,14 @@ def main():
     # Setup
     unsupported = []
     if pargs.tests == 'all':
-        instruments = np.array([item for item in all_instruments
-                                        for inst in supported_instruments
-                                            if inst.lower() in item.lower()])
+        #instruments = np.array([item for item in all_instruments
+        #                                for inst in supported_instruments
+        #                                    if inst.lower() in item.lower()])
+        instruments = np.array([item for item in all_instruments 
+                                    if pargs.tests.lower() in item.lower()])
+        unsupported = [item for item in instruments 
+                            if not np.any([inst.lower() in item.lower()
+                                for inst in supported_instruments]) ]
     elif pargs.tests in tests_that_only_use_dev_setups:
         instruments = np.array(list(devsetups.keys())) if pargs.instrument is None \
                         else np.array([pargs.instrument])
@@ -574,12 +578,8 @@ def main():
         flg_ql = True    
         instruments = np.array(list(ql_setups.keys())) if pargs.instrument is None \
                         else np.array([pargs.instrument])
-    else:
-        instruments = np.array([item for item in all_instruments 
-                                    if pargs.tests.lower() in item.lower()])
-        unsupported = [item for item in instruments 
-                            if not np.any([inst.lower() in item.lower()
-                                for inst in supported_instruments]) ]
+    else:  # Error catching occurs below
+        instruments = []
 
     # Check that instruments is not blank
     if len(instruments) == 0:
@@ -694,7 +694,7 @@ def main():
 
     # ---------------------------------------------------------------------------
     # Build test priority list for next time, but only if all tests succeeded
-    # and all develop tests were being run
+    # and all tests were being run
     if write_priorities and test_report.num_passed == test_report.num_tests:
         priority_list.update_priorities(setups)
         priority_list.write()

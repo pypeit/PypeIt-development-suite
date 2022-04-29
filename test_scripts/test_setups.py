@@ -10,7 +10,7 @@ To add a new instrument and/or setup to the dev suite:
 
 1) Make sure the necessary raw data, pypeit files, and other test files are in the PypeIt-development-suite repo and
    the development suite google drive. See https://pypeit.readthedocs.io/en/latest/development.html#development-suite
-2) Add the instrument and setup(s) to the develop_setups dict
+2) Add the instrument and setup(s) to the all_setups dict
 3) If this is a new instrument, add the instrument to the supported_instruments list.
 3) If additional tests are desired add 'instrument/setup' to the desired test attribute.
 
@@ -38,7 +38,7 @@ Attributes:
     reduce_setups:           The test setups that support reduction. A dict of instruments to the supported test 
                              setups for the instrument. 
                              Each setup should have data in $PYPEIT_DEV/RAW_DATA/instrument/setup
-    develop_setups:          The test setups that comprise the "develop" tests in the dev suite. Currently this
+    all_setups:          The test setups that comprise the "develop" tests in the dev suite. Currently this
                              is a copy of reduce_setups with additional tests added that don't require reduction.
     all_tests:               A list of the test types supported by the dev suite and which test setups they are run
                              on.  The test types are listed in the order they run in so that tests can depend on the
@@ -152,9 +152,9 @@ reduce_setups  = {'bok_bc': ['600'],
                   'vlt_sinfoni': ['K_0.8'],
                   }
 
-# Currently there is only one setup (keck_deimos QL) that is run for develop tests, but doesn't run a reduction
-develop_setups = copy.deepcopy(reduce_setups)
-develop_setups['keck_deimos'].append('QL')
+# Currently there is only one setup (keck_deimos QL) that is run for reduce tests, but doesn't run a reduction
+all_setups = copy.deepcopy(reduce_setups)
+all_setups['keck_deimos'].append('QL')
 
 # The instruments/setups needed to build cooked.
 cooked_setups = {'shane_kast_blue': ['600_4310_d55'],
