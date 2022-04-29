@@ -288,4 +288,7 @@ all_tests = [{'factory': pypeit_tests.PypeItSetupTest,
              {'factory': pypeit_tests.PypeItUnit,
               'type':    TestPhase.UNIT,
               'setups':  _unit},
+             {'factory': pypeit_tests.PypeItVet,
+              'type':    TestPhase.VET,
+              'setups':  _unit},
              ]

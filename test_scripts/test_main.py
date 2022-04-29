@@ -544,10 +544,12 @@ def main():
     flg_after = False
     flg_ql = False
     flg_unit = False
+    flg_vet = False
 
     # Development instruments (in returned dictonary keys) and setups
     devsetups = all_setups
-    tests_that_only_use_dev_setups = ['reduce', 'afterburn', 'unit']
+    tests_that_only_use_dev_setups = ['reduce', 'afterburn', 
+                                      'unit', 'vet']
 
     # Cooked instruments (in returned dictonary keys) and setups
     cooksetups = cooked_setups
@@ -571,9 +573,8 @@ def main():
             flg_after = True
         elif pargs.tests == 'unit':
             flg_unit = True
-    elif pargs.tests.lower() == 'cooked':
-        instruments = np.array(list(cooksetups.keys())) if pargs.instrument is None \
-                        else np.array([pargs.instrument])
+        elif pargs.tests == 'vet':
+            flg_vet = True
     elif pargs.tests.lower() == 'ql':      
         flg_ql = True    
         instruments = np.array(list(ql_setups.keys())) if pargs.instrument is None \
@@ -637,7 +638,8 @@ def main():
         # Build test setups, check for missing files, and run any prep work
         for setup_name in setup_names:
 
-            setup = build_test_setup(pargs, instr, setup_name, flg_after, flg_ql, flg_unit)
+            setup = build_test_setup(pargs, instr, setup_name, flg_after, 
+                                     flg_ql, flg_unit, flg_vet)
             missing_files += setup.missing_files
 
             # set setup priority from file
@@ -716,8 +718,22 @@ def main():
 
 
 def build_test_setup(pargs, instr, setup_name, flg_after, 
-                     flg_ql, flg_unit):
-    """Builds a TestSetup object including the tests that it will run"""
+                     flg_ql, flg_unit, flg_vet):
+    """_summary_
+    Builds a TestSetup object including the tests that it will run
+
+    Args:
+        pargs (_type_): _description_
+        instr (_type_): _description_
+        setup_name (_type_): _description_
+        flg_after (bool): _description_
+        flg_ql (bool): _description_
+        flg_unit (bool): _description_
+        flg_vet (bool): _description_
+
+    Returns:
+        _type_: _description_
+    """
 
     dev_path = os.getenv('PYPEIT_DEV')
     raw_data = raw_data_dir()
@@ -796,8 +812,10 @@ def build_test_setup(pargs, instr, setup_name, flg_after,
         if flg_ql and test_descr['type'] not in (TestPhase.PREP, TestPhase.QL):
             continue
 
-
         if flg_unit and test_descr['type'] not in (TestPhase.UNIT, TestPhase.UNIT):
+            continue
+
+        if flg_vet and test_descr['type'] not in (TestPhase.VET, TestPhase.VET):
             continue
 
         setup.tests.append(test)

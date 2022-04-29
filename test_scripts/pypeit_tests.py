@@ -450,6 +450,34 @@ class PypeItUnit(PypeItTest):
                     s = pytest.main(['-x', test])
                     self.passed &= (s == 0)
 
+
+class PypeItVet(PypeItTest):
+    """Test subclass that runs "vet" tests in the DevSuite
+
+    These require that the all of the processing
+    steps be completed prior to running
+    """
+
+    def __init__(self, setup, pargs, tests):
+        super().__init__(None, None, None)
+        self.tests = None # We set it in run()
+        self.passed = True
+
+    def build_command_line(self):
+        return ''
+
+    def run(self):
+        # Grab list of test*.py files
+        self.tests = glob.glob('vet_tests/test*.py')
+        self.tests.sort() 
+        # Things are broken after this...
+        logfile = 'tmp.out'
+        with open(logfile, "w") as f:
+             with contextlib.redirect_stdout(f):
+                for test in self.tests: 
+                    s = pytest.main(['-x', test])
+                    self.passed &= (s == 0)
+
 def pypeit_file_name(instr, setup, std=False):
     base = '{0}_{1}'.format(instr.lower(), setup.lower())
     return '{0}_std.pypeit'.format(base) if std else '{0}.pypeit'.format(base)
