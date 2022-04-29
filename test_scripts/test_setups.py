@@ -126,7 +126,7 @@ reduce_setups  = {'bok_bc': ['600'],
                                     'multi_400_8500_d560', 'long_600_10000_d680',
                                     'long_400_8500_longread'],  # Longslit read-out mode
                   'keck_lris_red_orig': ['long_300_5000'],
-                  'keck_lris_red_mark4': ['long_400_8500'],
+                  'keck_lris_red_mark4': ['long_400_8500_d560'],
                   'lbt_luci': ['LUCI-I', 'LUCI-II'],
                   'lbt_mods': ['MODS1R_Longslit', 'MODS2R_Longslit'],
                   'ldt_deveny': ['DV1', 'DV2', 'DV5', 'DV6', 'DV8'],
@@ -218,6 +218,8 @@ _coadd2d = {'gemini_gnirs/32_SB_SXD':
             'keck_lris_blue/multi_600_4000_d560':
                 {'coadd_file': True},
             'vlt_xshooter/VIS_manual':
+                {'coadd_file': True},
+            'keck_deimos/830G_M_9000_dither':
                 {'coadd_file': True}
             }
 

@@ -3,7 +3,7 @@
 [rdx]
     spectrograph = keck_deimos
     sortroot = keck_deimos_setup_A
-    detnum = 7
+    detnum = (3,7)
 [baseprocess]
     use_biasimage=False
 
