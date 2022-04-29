@@ -4,7 +4,11 @@
 [rdx]
     spectrograph = keck_deimos
     sortroot = keck_deimos_600zd_m_6500
-    detnum = 3,4
+    detnum = (3,7)
+[calibrations]
+    [[wavelengths]]
+	lamps = NeI, ArI, CdI, KrI, XeI, HgI, ZnI
+
 
 # Setup
 setup read
