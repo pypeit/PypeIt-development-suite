@@ -16,6 +16,7 @@ from pypeit.core.wavecal import templates
 from pypeit.core.wavecal import wvutils
 from pypeit.core.fitting import robust_fit
 from pypeit.core import coadd
+from pypeit.core import fitting
 from pypeit.core.wavecal import autoid, waveio, wv_fitting
 from pypeit.core.wavecal.wvutils import  smooth_ceil_cont, xcorr_shift
 from pypeit import utils
@@ -248,6 +249,22 @@ def get_variable_dlam_wavegrid(lam_min, lam_max, wave_grid_fit, dwave_fit):
 
     return np.array(lam_out, dtype=float)
 
+
+use_unknowns = True
+line_lists_all = waveio.load_line_lists(['ThAr'])
+line_lists = line_lists_all[np.where(line_lists_all['ion'] != 'UNKNWN')]
+unknwns = line_lists_all[np.where(line_lists_all['ion'] == 'UNKNWN')]
+tot_line_list = table.vstack([line_lists, unknwns]) if use_unknowns else line_lists
+spectrograph = load_spectrograph('keck_hires')
+par = spectrograph.default_pypeit_par()['calibrations']['wavelengths']
+n_final = 4
+# xmin, xmax for wavelength vs pixel fits
+fmin, fmax = 0.0, 1.0
+color_tuple = ('green', 'cyan', 'magenta', 'blue', 'darkorange', 'yellow', 'dodgerblue', 'purple',
+               'lightgreen', 'cornflowerblue')
+colors = itertools.cycle(color_tuple)
+
+
 # Read template file
 templ_table_file = os.path.join(
     resource_filename('pypeit', 'data'), 'arc_lines',
@@ -269,7 +286,7 @@ XDISP_is_red = np.zeros((norders, nrows), dtype=bool)
 binspec = np.zeros((norders, nrows), dtype=int)
 det = np.zeros((norders, nrows), dtype=int)
 xd_angle = np.zeros((norders, nrows))
-
+coeff = np.zeros((norders, nrows, n_final+1))
 bluest_order = np.zeros(nrows, dtype=int)
 xd_angle_file = np.zeros(nrows)
 ech_angle_file = np.zeros(nrows)
@@ -281,12 +298,15 @@ for irow in np.arange(nrows):
         os.path.join(os.getenv('HIRES_CALIBS'), 'ARCS', tbl[irow]['Name']), specbin=tbl[irow]['Rbin'])
     if irow == 0:
         nspec = this_wave.shape[1]
+        xnspecmin1 = float(nspec - 1)
+        xvec = np.arange(nspec)/xnspecmin1
         wave = np.zeros((norders, nrows, nspec))
         arcspec = np.zeros((norders, nrows, nspec))
     else:
         assert this_wave.shape[1] == nspec
     # Restrict to what is labeled as good in the Table
     igood = (this_order_vec_raw >= tbl[irow]['IOrder']) & (this_order_vec_raw <= tbl[irow]['EOrder'])
+    nsolns = np.sum(igood)
     this_order_vec = this_order_vec_raw[igood]
     indx = this_order_vec - order_min
     populated[indx, irow] = True
@@ -299,6 +319,14 @@ for irow in np.arange(nrows):
     wave[indx, irow, :] = this_wave[igood, :]
     arcspec[indx, irow, :] = this_arc[igood, :]
     lambda_cen[indx, irow] = np.median(this_wave[igood, :], axis=1)
+    # Fit the wavelengths
+    coeff_array = np.zeros((nsolns, n_final +1))
+    for ii, iwave in enumerate(this_wave[igood, :]):
+        pypeitFit = fitting.robust_fit(xvec, iwave, n_final, function=par['func'], maxiter=10,
+                                       lower=1e10, upper=1e10, maxrej=0, sticky=True,
+                                       minx=fmin, maxx=fmax, weights=None)
+        coeff_array[ii, :] = pypeitFit.fitc
+    coeff[indx, irow, :] = coeff_array
     # file specific
     bluest_order[irow] = this_order_vec[-1]
     ech_angle_file[irow] = tbl[irow]['ECH']
@@ -310,35 +338,71 @@ for irow in np.arange(nrows):
 #all_lam = []
 #all_orders = []
 
-color_tuple = ('green', 'cyan', 'magenta', 'blue', 'darkorange', 'yellow', 'dodgerblue', 'purple',
-               'lightgreen', 'cornflowerblue')
-colors = itertools.cycle(color_tuple)
+pad_factor = 0.10
+xvec_pad = np.arange(-int(np.round(pad_factor*nspec)), int(np.round((1.0 + pad_factor)*nspec)))/xnspecmin1
 
-use_unknowns = True
-line_lists_all = waveio.load_line_lists(['ThAr'])
-line_lists = line_lists_all[np.where(line_lists_all['ion'] != 'UNKNWN')]
-unknwns = line_lists_all[np.where(line_lists_all['ion'] == 'UNKNWN')]
-tot_line_list = table.vstack([line_lists, unknwns]) if use_unknowns else line_lists
-spectrograph = load_spectrograph('keck_hires')
-par = spectrograph.default_pypeit_par()['calibrations']['wavelengths']
-n_final = 4
+# Plot the polynomial coefficients versus echelle angle order by order
+debug_all=False
+show_wv_grid=False
+ncoeff_fit_order = 2
+coeff_vs_order = np.zeros((norders, n_final + 1, ncoeff_fit_order+1))
+ech_min, ech_max = ech_angle_file.min(), ech_angle_file.max()
+ech_vec = ech_min + (ech_max-ech_min)*np.arange(100)/99
+func = 'legendre'
+debug_fits=False
+for iord, this_order in enumerate(order_vec):
+    if np.any(populated[iord, :]):
+        nsolns = np.sum( populated[iord, :])
+        this_ech = ech_angle[iord, populated[iord, :]]
+        this_xd_angle = xd_angle[iord, populated[iord, :]]
+        this_lambda_cen = lambda_cen[iord, populated[iord, :]]
+        this_coeff = coeff[iord, populated[iord, :], :]
+        for ic in range(n_final + 1):
+            pypeitFit = fitting.robust_fit(this_ech, this_coeff[:, ic], ncoeff_fit_order, function=func,
+                                           minx=ech_min, maxx=ech_max, maxiter=25,
+                                           lower=3.0, upper=3.0, maxrej=2, sticky=True,use_mad=True, weights=None)
+            coeff_vs_order[iord, ic, :] = pypeitFit.fitc
+            if debug_fits:
+                this_fit = fitting.evaluate_fit(pypeitFit.fitc, func, ech_vec, minx=ech_min, maxx=ech_max)
+                plt.plot(ech_vec, this_fit, color='blue', label='fit')
+                fit_gpm = pypeitFit.bool_gpm
+                plt.plot(this_ech[fit_gpm], this_coeff[fit_gpm, ic], marker='o', markersize=7.0, mfc='black',
+                         mec='black', fillstyle='full', linestyle='None', zorder=5, label='used by fit')
+                plt.plot(this_ech[np.logical_not(fit_gpm)], this_coeff[np.logical_not(fit_gpm), ic],
+                         marker='s', markersize=9.0, mfc='red', mec='red',fillstyle='full', linestyle='None', zorder=7,label='rejected')
+                plt.legend()
+                plt.title(f'order={this_order}, cc_ii={ic}, nkept={np.sum(fit_gpm)}, nrej={np.sum(np.logical_not(fit_gpm))}')
+                plt.xlabel('ech_angle')
+                plt.ylabel('coeff')
+                plt.ylim(this_fit.min() - 0.05*np.abs(this_fit.min()), this_fit.max() + 0.05*np.abs(this_fit.max()))
+                plt.show()
+        #for ii in range(n_final+1):
+        #    plt.plot(this_xd_angle, this_coeff[:, ii], 'k.', label=f'order={iorder}, cc_ii={ii}')
+        #    plt.legend()
+        #    plt.xlabel('xd_angle')
+        #    plt.ylabel('coeff')
+        #    plt.show()
+
 
 # Plot lam vs dlam/lam for each order
-debug_all=False
-for indx, iorder in enumerate(order_vec):
-    if np.any(populated[indx, :]):
-        nsolns = np.sum( populated[indx, :])
-        this_ech = ech_angle[indx, populated[indx, :]]
-        this_xd_angle = xd_angle[indx, populated[indx, :]]
-        this_lambda_cen = lambda_cen[indx, populated[indx, :]]
-        this_wave = wave[indx, populated[indx, :], :]
-        this_arc = arcspec[indx, populated[indx, :], :]
+
+#for iord, this_order in enumerate(order_vec):
+for iord in np.arange(norders)[::-1]:
+    this_order = order_vec[iord]
+    if np.any(populated[iord, :]):
+        nsolns = np.sum(populated[iord, :])
+        this_ech = ech_angle[iord, populated[iord, :]]
+        this_xd_angle = xd_angle[iord, populated[iord, :]]
+        this_lambda_cen = lambda_cen[iord, populated[iord, :]]
+        this_wave = wave[iord, populated[iord, :], :]
+        this_arc = arcspec[iord, populated[iord, :], :]
+        this_coeff = coeff[iord, populated[iord, :], :]
 
         this_dwave = np.zeros_like(this_wave)
         for ii, iwave in enumerate(this_wave):
             this_dwave[ii, :] = wvutils.get_delta_wave(iwave, (iwave > 0.0))
 
-        # Now try a fit
+        # Now try a fit. TODO any wavelength grid will work here
         med_dlam = np.median(this_dwave[this_wave > 1.0])
         fit = robust_fit(this_wave.flatten(), this_dwave.flatten(), 3, maxiter=25, maxdev = 0.10*med_dlam, groupbadpix=True)
         wave_grid_fit, wave_grid_fit_mid, dsamp = wvutils.get_wave_grid(this_wave.T,wave_method='log10')
@@ -346,18 +410,20 @@ for indx, iorder in enumerate(order_vec):
         gpm = fit.bool_gpm.copy()
         gpm.resize(this_wave.shape)
 
-        for ii, iwave in enumerate(this_wave):
-            this_color=next(colors)
-            this_gpm = gpm[ii, :]
-            plt.plot(iwave[this_gpm], this_dwave[ii, this_gpm], marker='o', markersize=1.0, mfc=this_color,
-                     fillstyle='full',  linestyle='None', zorder=1)
-            plt.plot(iwave[np.logical_not(this_gpm)], this_dwave[ii, np.logical_not(this_gpm)], marker='o',
+        if show_wv_grid:
+            for ii, iwave in enumerate(this_wave):
+                this_color=next(colors)
+                this_gpm = gpm[ii, :]
+                plt.plot(iwave[this_gpm], this_dwave[ii, this_gpm], marker='o', markersize=1.0, mfc=this_color,
+                fillstyle='full',  linestyle='None', zorder=1)
+                plt.plot(iwave[np.logical_not(this_gpm)], this_dwave[ii, np.logical_not(this_gpm)], marker='o',
                      markersize=2.0, mfc='red', fillstyle='full', zorder=3, linestyle='None')
 
-        plt.plot(wave_grid_fit, dwave_fit, color='black', label='fit', zorder=10)
-        plt.title(f'order={iorder}', fontsize=14)
-        plt.legend()
-        plt.show()
+            plt.plot(wave_grid_fit, dwave_fit, color='black', label='fit', zorder=10)
+            plt.title(f'order={this_order}', fontsize=14)
+            plt.legend()
+            plt.show()
+
         lam_min, lam_max = this_wave[gpm].min(), this_wave[gpm].max()
         wave_grid = get_variable_dlam_wavegrid(lam_min, lam_max, wave_grid_fit, dwave_fit)
         nspec_tmpl = wave_grid.shape[0]
@@ -375,10 +441,11 @@ for indx, iorder in enumerate(order_vec):
             in_gpm = this_arc[ii, :] != 0.0
             tmpl_iord[ii, :] = interpolate.interp1d(iwave[in_gpm], this_arc[ii, in_gpm], kind='cubic', bounds_error=False, fill_value=-1e10)(wave_grid)
             gpm_tmpl[ii, :] = tmpl_iord[ii, :] > -1e9
-            #plt.plot(iwave[in_gpm], this_arc[ii, in_gpm], color=next(colors), alpha=0.7)
-            plt.plot(wave_grid[gpm_tmpl[ii, :]], tmpl_iord[ii, gpm_tmpl[ii, :]], color=next(colors), alpha=0.7)
+            if show_wv_grid:
+                #plt.plot(iwave[in_gpm], this_arc[ii, in_gpm], color=next(colors), alpha=0.7)
+                plt.plot(wave_grid[gpm_tmpl[ii, :]], tmpl_iord[ii, gpm_tmpl[ii, :]], color=next(colors), alpha=0.7)
+                plt.show()
 
-        plt.show()
         sn_smooth_npix = 1 # Should not matter since we use uniform weights
         wave_grid_in = np.repeat(wave_grid[:, np.newaxis], nsolns, axis=1)
         ivar_tmpl_iord = utils.inverse(np.abs(tmpl_iord) + 10.0)
@@ -392,33 +459,59 @@ for indx, iorder in enumerate(order_vec):
         detections = {}
         wv_calib = {}
 
-        for slit, iwave in enumerate(this_wave):
+        all_patt_dict_pad = {}
+        detections_pad = {}
+        wv_calib_pad = {}
+
+        for slit in range(nsolns):
             print('Working on soln={:d}'.format(slit))
             # Trim the template to the relevant range. Hack this for now
             #itmpl = (wave_grid_mid >= 0.999*iwave.min()) & (wave_grid_mid <= 1.001*iwave.max())
+            coeff_predict = np.zeros(n_final + 1)
+            for ic in range(n_final+1):
+                coeff_predict[ic] = fitting.evaluate_fit(coeff_vs_order[iord, ic, :], func, this_ech[slit], minx=ech_min, maxx=ech_max)
+
+            wave_predict = fitting.evaluate_fit(coeff_predict, par['func'], xvec, minx=fmin, maxx=fmax)
+            wave_predict_pad = fitting.evaluate_fit(coeff_predict, par['func'], xvec_pad, minx=fmin, maxx=fmax)
+            wave_true = this_wave[slit, :]
+            # Substitute wave_true here as a test
+            arcspec_templ_predict_pad =  interpolate.interp1d(wave_grid_stack[arcspec_tmpl_gpm], arcspec_tmpl[arcspec_tmpl_gpm],
+                                                          kind='cubic', bounds_error=False, fill_value=0.0)(wave_predict_pad)
+            arcspec_templ_predict =  interpolate.interp1d(wave_grid_stack[arcspec_tmpl_gpm], arcspec_tmpl[arcspec_tmpl_gpm],
+                                                          kind='cubic', bounds_error=False, fill_value=0.0)(wave_predict)
             #arcspec_tmpl_trim = arcspec_tmpl[itmpl]
             #wave_grid_mid_trim = wave_grid_mid[itmpl]
             #arc_in_pad = np.zeros_like(arcspec_tmpl_trim)
-            in_gpm = this_arc[slit, :] != 0.0
+            #in_gpm = this_arc[slit, :] != 0.0
             #npix = np.sum(in_gpm)
             #arc_in_pad[:npix] = this_arc[slit, in_gpm]
-            xcorr_poly(this_wave[slit, in_gpm], this_arc[slit, in_gpm], wave_grid_mid, arcspec_tmpl, smooth=1.0, percent_ceil=50.0, use_raw_arc=False,
-                       sigdetect=10.0, fwhm=4.0, debug=True, seed=42)
+            #xcorr_poly(this_wave[slit, in_gpm], this_arc[slit, in_gpm], wave_grid_mid, arcspec_tmpl, smooth=1.0, percent_ceil=50.0, use_raw_arc=False,
+            #           sigdetect=10.0, fwhm=4.0, debug=True, seed=42)
 
-#            detections[str(slit)], spec_cont_sub, all_patt_dict[str(slit)] = autoid.reidentify(
-#                arc_in_pad, arcspec_tmpl_trim, wave_grid_mid,  tot_line_list, par['nreid_min'],
-#                cc_thresh=par['cc_thresh'], match_toler=par['match_toler'], cc_local_thresh=par['cc_local_thresh'],
-#                nlocal_cc=par['nlocal_cc'], nonlinear_counts=1e10,
-#                sigdetect=par['sigdetect'], fwhm=par['fwhm'], debug_peaks=True, debug_xcorr=True, debug_reid=True)
+            # WITH PADDING
+            #arc_pad = np.zeros_like(xvec_pad)
+            #arc_pad[0:nspec] = this_arc[slit, :]
+            #detections_pad[str(slit)], spec_cont_sub_pad, all_patt_dict_pad[str(slit)] = autoid.reidentify(
+            #    arc_pad, arcspec_templ_predict_pad, wave_predict_pad,  tot_line_list, par['nreid_min'],
+            #    cc_thresh=par['cc_thresh'], match_toler=par['match_toler'], cc_local_thresh=par['cc_local_thresh'],
+            #    nlocal_cc=par['nlocal_cc'], nonlinear_counts=1e10,
+            #    sigdetect=par['sigdetect'], fwhm=par['fwhm'], debug_peaks=True, debug_xcorr=True, debug_reid=True)
+
+            # WITHOUT PADDING
+            detections[str(slit)], spec_cont_sub, all_patt_dict[str(slit)] = autoid.reidentify(
+                this_arc[slit, :], arcspec_templ_predict, wave_predict,  tot_line_list, par['nreid_min'],
+                cc_thresh=par['cc_thresh'], match_toler=par['match_toler'], cc_local_thresh=par['cc_local_thresh'],
+                nlocal_cc=par['nlocal_cc'], nonlinear_counts=1e10,
+                sigdetect=par['sigdetect'], fwhm=par['fwhm'], debug_peaks=True, debug_xcorr=True, debug_reid=True)
 
             # Check if an acceptable reidentification solution was found
-            #if not all_patt_dict[str(slit)]['acceptable']:
-            #    wv_calib[str(slit)] = None
-            #    continue
+            if not all_patt_dict[str(slit)]['acceptable']:
+                wv_calib[str(slit)] = None
+                continue
 
-            #final_fit = wv_fitting.fit_slit(spec_cont_sub, all_patt_dict[str(slit)], detections[str(slit)],
-            #                             tot_line_list, match_toler=par['match_toler'],func=par['func'], n_first=par['n_first'],
-            #                             sigrej_first=par['sigrej_first'], n_final=n_final,sigrej_final=par['sigrej_final'])
+            final_fit = wv_fitting.fit_slit(spec_cont_sub, all_patt_dict[str(slit)], detections[str(slit)],
+                                            tot_line_list, match_toler=par['match_toler'],func=par['func'], n_first=par['n_first'],
+                                            sigrej_first=par['sigrej_first'], n_final=n_final,sigrej_final=par['sigrej_final'])
 
             #autoid.arc_fit_qa(final_fit, title='Silt: {}'.format(str(slit)))
 
@@ -443,11 +536,11 @@ for indx, iorder in enumerate(order_vec):
 #plt.show()
 
 # Plot the central wavelength vs echelle angle order by order
-for indx, iorder in enumerate(order_vec):
-    if np.any(populated[indx, :]):
-        this_ech = ech_angle[indx, populated[indx, :]]
-        this_xd_angle = xd_angle[indx, populated[indx, :]]
-        this_lambda_cen = lambda_cen[indx, populated[indx, :]]
+for iord, iorder in enumerate(order_vec):
+    if np.any(populated[iord, :]):
+        this_ech = ech_angle[iord, populated[iord, :]]
+        this_xd_angle = xd_angle[iord, populated[iord, :]]
+        this_lambda_cen = lambda_cen[iord, populated[iord, :]]
         plt.plot(this_ech, this_lambda_cen, 'k.', label=f'order={iorder}')
         plt.legend()
         plt.show()
@@ -455,8 +548,8 @@ for indx, iorder in enumerate(order_vec):
 
 for xdisp in ['UV', 'RED']:
     for idet in [1,2,3]:
-        indx = (XDISP_is_red_file == (xdisp == 'RED')) & (det_file == idet)
-        plt.plot(xd_angle_file[indx], bluest_order[indx], 'k.', label=f'XDISP={xdisp}, det={idet}')
+        iord = (XDISP_is_red_file == (xdisp == 'RED')) & (det_file == idet)
+        plt.plot(xd_angle_file[iord], bluest_order[iord], 'k.', label=f'XDISP={xdisp}, det={idet}')
         plt.legend()
         plt.show()
 
