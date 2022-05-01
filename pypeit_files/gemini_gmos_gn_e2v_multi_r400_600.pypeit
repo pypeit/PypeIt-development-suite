@@ -4,6 +4,9 @@
 # User-defined execution parameters
 [rdx]
 spectrograph = gemini_gmos_north_e2v
+[calibrations]
+    [[tilts]]
+        tracethresh = 10.
 
 # Setup
 setup read
