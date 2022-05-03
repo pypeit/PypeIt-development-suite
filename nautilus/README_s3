@@ -12,7 +12,7 @@ Add s3 access:
 aws s3api  get-bucket-acl --bucket pypeit --endpoint https://s3.nautilus.optiputer.net 
 
 1. Add Grantee, keeping all previous: 
-aws s3api put-bucket-acl --profile default --bucket pypeit --grant-full-control id=profx,id=jreichwe,id=dpellicc,id=bradpholden,id=mgeha --endpoint https://s3.nautilus.optiputer.net
+aws s3api put-bucket-acl --profile default --bucket pypeit --grant-full-control id=profx,id=jreichwe,id=dpellicc,id=bradpholden,id=mgeha,id=rcooke,id=westfall --endpoint https://s3-west.nrp-nautilus.io
 
    Note:  the id may not exactly match that on Matrix.  e.g. katmar instead of katmar4141
 
