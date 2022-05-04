@@ -107,7 +107,7 @@ supported_instruments = ['kast', 'deimos', 'kcwi', 'nires', 'nirspec', 'mosfire'
                          'flamingos2', 'mage', 'fire', 'luci', 'mdm', 'alfosc', 'fors2', 'binospec', 'mmirs', 'bluechannel',
                          'mods', 'dbsp', 'tspec', 'bc', 'goodman', 'efosc2','deveny', 'dolores']
 
-reduce_setups  = {'bok_bc': ['600'],
+reduce_setups  = {'bok_bc': ['300','600'],
                   'gemini_gnirs': ['32_SB_SXD', '10_LB_SXD'],
                   'gemini_gmos': ['GS_HAM_R400_700', 'GS_HAM_R400_860', 
                                   'GN_HAM_R400_885', 'GN_HAM_NS_B600_620',
