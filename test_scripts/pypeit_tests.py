@@ -9,14 +9,11 @@ Classes and utility functions for running individual pypeit tests.
 
 import os.path
 import subprocess
-import contextlib
 import datetime
 import traceback
 import glob
 from abc import ABC, abstractmethod
-from IPython.terminal.embed import embed
 
-import pytest
 
 class PypeItTest(ABC):
     """Abstract base class for classes that run pypeit tests and hold the results from those tests."""
@@ -154,11 +151,11 @@ class PypeItSetupTest(PypeItTest):
 class PypeItReduceTest(PypeItTest):
     """Test subclass that runs run_pypeit"""
 
-    def __init__(self, setup, pargs, masters=None, std=False):
+    def __init__(self, setup, pargs, ignore_masters=None, std=False):
 
-        self.masters = masters if masters is not None else pargs.masters
+        self.ignore_masters = ignore_masters if ignore_masters is not None else pargs.do_not_reuse_masters
 
-        description = f"pypeit {'standards ' if std else ''}(with{'out' if not self.masters else ''} masters)"
+        description = f"pypeit {'standards ' if std else ''}{'(ignore masters)' if self.ignore_masters else ''}"
         super().__init__(setup, description, "test")
 
         self.std = std
@@ -182,7 +179,7 @@ class PypeItReduceTest(PypeItTest):
             self.pyp_file = self.setup.pyp_file
 
         command_line = ['run_pypeit', self.pyp_file, '-o']
-        if self.masters:
+        if self.ignore_masters:
             command_line += ['-m']
 
         return command_line
@@ -422,61 +419,6 @@ class PypeItQuickLookTest(PypeItTest):
         else:
             return super().run()
 
-
-class PypeItUnit(PypeItTest):
-    """Test subclass that runs "unit" tests in the DevSuite
-
-    These require the Raw files but *not* any other processing
-    """
-
-    def __init__(self, setup, pargs, tests):
-        super().__init__(None, None, None)
-        self.tests = None # We set it in run()
-        self.passed = True
-
-    def build_command_line(self):
-        return ''
-
-    def run(self):
-        # Grab list of test*.py files
-        self.tests = glob.glob('unit_tests/test*.py')
-        self.tests.sort() 
-        embed(header='444 of pypeit_tests')
-        # Things are broken after this...
-        logfile = 'tmp.out'
-        with open(logfile, "w") as f:
-             with contextlib.redirect_stdout(f):
-                for test in self.tests: 
-                    s = pytest.main(['-x', test])
-                    self.passed &= (s == 0)
-
-
-class PypeItVet(PypeItTest):
-    """Test subclass that runs "vet" tests in the DevSuite
-
-    These require that the all of the processing
-    steps be completed prior to running
-    """
-
-    def __init__(self, setup, pargs, tests):
-        super().__init__(None, None, None)
-        self.tests = None # We set it in run()
-        self.passed = True
-
-    def build_command_line(self):
-        return ''
-
-    def run(self):
-        # Grab list of test*.py files
-        self.tests = glob.glob('vet_tests/test*.py')
-        self.tests.sort() 
-        # Things are broken after this...
-        logfile = 'tmp.out'
-        with open(logfile, "w") as f:
-             with contextlib.redirect_stdout(f):
-                for test in self.tests: 
-                    s = pytest.main(['-x', test])
-                    self.passed &= (s == 0)
 
 def pypeit_file_name(instr, setup, std=False):
     base = '{0}_{1}'.format(instr.lower(), setup.lower())

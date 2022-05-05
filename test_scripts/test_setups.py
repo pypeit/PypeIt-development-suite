@@ -103,7 +103,6 @@ class TestPhase(Enum):
     REDUCE    = auto()
     AFTERBURN = auto()
     QL        = auto()
-    UNIT       = auto()
 
 
 supported_instruments = ['kast', 'deimos', 'kcwi', 'nires', 'nirspec', 'mosfire', 'lris', 'xshooter', 'gnirs', 'gmos',
@@ -152,7 +151,7 @@ reduce_setups  = {'bok_bc': ['600'],
                   'vlt_sinfoni': ['K_0.8'],
                   }
 
-# Currently there is only one setup (keck_deimos QL) that is run for reduce tests, but doesn't run a reduction
+# Currently there is only one setup (keck_deimos QL) that doesn't run a reduction
 all_setups = copy.deepcopy(reduce_setups)
 all_setups['keck_deimos'].append('QL')
 
@@ -172,7 +171,7 @@ ql_setups = {'keck_nires':   ['NIRES'],
 _pypeit_setup = ['shane_kast_blue/600_4310_d55']
 
 _additional_reduce = {'keck_lris_red':
-                          {'masters': True},
+                          {'ignore_masters': True},
                       'gemini_gmos/GS_HAM_R400_860':
                           {'std': True},
                       }
@@ -242,10 +241,6 @@ _quick_look = {'shane_kast_blue/600_4310_d55':
                    {'files': ['m191120_0043.fits', 'm191120_0044.fits',  'm191120_0045.fits', 'm191120_0046.fits'],
                     '--spec_samp_fact': 2.0, '--spat_samp_fact': 2.0}}
 
-_unit = {'keck_lris_red/multi_600_5000_d560':  # This should not be used!
-                   {'tests': ['test_*.py']}  # This isn't used!
-}
-
 # The order of these tests in all_tests determine the order they run
 # in for the setup. So that tests that depend on previous tests must
 # be in the right order. e.g. PypeItSetupTest must come before 
@@ -285,10 +280,4 @@ all_tests = [{'factory': pypeit_tests.PypeItSetupTest,
              {'factory': pypeit_tests.PypeItQuickLookTest,
               'type':    TestPhase.QL,
               'setups':  _quick_look},
-             {'factory': pypeit_tests.PypeItUnit,
-              'type':    TestPhase.UNIT,
-              'setups':  _unit},
-             {'factory': pypeit_tests.PypeItVet,
-              'type':    TestPhase.VET,
-              'setups':  _unit},
              ]
