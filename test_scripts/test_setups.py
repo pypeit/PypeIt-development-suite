@@ -240,10 +240,10 @@ _quick_look = {'shane_kast_blue/600_4310_d55':
                    {'files': ['s190519_0067.fits', 's190519_0068.fits']},
                'keck_mosfire/Y_long':
                    {'files': ['m191120_0043.fits', 'm191120_0044.fits', 'm191120_0045.fits', 'm191120_0046.fits'],
-                    '--spec_samp_fact': 2.0, '--spat_samp_fact': 2.0, '--flux': '', '--bkg_redux': ''},
+                    '--spec_samp_fact': 2.0, '--spat_samp_fact': 2.0, '--flux': None, '--bkg_redux': None},
                'keck_lris_red_mark4/long_600_10000_d680':
                    {'files': ['r220127_00123.fits', 'r220127_00124.fits'],
-                    '--spec_samp_fact': 2.0, '--spat_samp_fact': 2.0, '--flux': ''}}
+                    '--spec_samp_fact': 2.0, '--spat_samp_fact': 2.0, '--flux': None}}
 
 
 # The order of these tests in all_tests determine the order they run
