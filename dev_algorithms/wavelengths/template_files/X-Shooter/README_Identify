@@ -16,3 +16,14 @@ pypeit_identify MasterArc_A_1_DET01.fits MasterSlits_A_1_DET01.fits.gz --slit 5 
 Order 17
 pypeit_identify MasterArc_A_1_DET01.fits MasterSlits_A_1_DET01.fits.gz --slit 6 --wmin 4100 --wmax 4580 --fwhm 10 --pixtol 0.5 --sigdetect 3. --rmstol 0.3
    Good solution with 4th order
+
+Order 16
+pypeit_identify MasterArc_A_1_DET01.fits MasterSlits_A_1_DET01.fits.gz --slit 7 --wmin 4350 --wmax 4860 --fwhm 10 --pixtol 0.5 --sigdetect 3. --rmstol 0.3
+   Good solution with 3rd order
+
+Order 15
+pypeit_identify MasterArc_A_1_DET01.fits MasterSlits_A_1_DET01.fits.gz --slit 8 --wmin 4630 --wmax 5170 --fwhm 10 --pixtol 0.5 --sigdetect 3. --rmstol 0.3
+   Good solution with 3rd order
+
+Order 14
+pypeit_identify MasterArc_A_1_DET01.fits MasterSlits_A_1_DET01.fits.gz --slit 9 --wmin 4630 --wmax 5170 --fwhm 10 --pixtol 0.5 --sigdetect 3. --rmstol 0.3
