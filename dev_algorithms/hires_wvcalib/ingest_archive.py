@@ -510,7 +510,7 @@ def echelle_composite_arcspec(arxiv_file, outfile, show_individual_solns=False, 
             arc_composite[0:wave_grid_mid.size, iord] = arcspec_stack
             gpm_composite[0:wave_grid_mid.size, iord] = arcspec_gpm
 
-    # Now generate a final composite arc
+    # Now generate a final composite arc combining all the orders. Experimental. Not sure we need this.
     if do_total:
         show_total=False
         ivar_composite = utils.inverse(np.abs(arc_composite) + 10.0)
@@ -518,10 +518,6 @@ def echelle_composite_arcspec(arxiv_file, outfile, show_individual_solns=False, 
             wave_composite, arc_composite, ivar_composite, gpm_composite, sn_smooth_npix,
             wave_method='user_input', wave_grid_input=wave_total_composite, ref_percentile=70.0, maxiter_scale=5, sigrej_scale=3.0, scale_method='median',
             sn_min_polyscale=2.0, sn_min_medscale=0.5, const_weights=True, maxiter_reject=5, sn_clip=30.0,
-
-
-
-
             lower=5.0, upper=5.0,
             debug=debug, debug_scale=debug, show_scale=debug, show=show_total, verbose=True)
 
@@ -543,7 +539,7 @@ def echelle_composite_arcspec(arxiv_file, outfile, show_individual_solns=False, 
 xidl_arxiv_file = os.path.join(os.getenv('PYPEIT_DEV'), 'dev_algorithms', 'hires_wvcalib', 'hires_wvcalib_xidl.fits')
 # Create the astropy table form of the xidl save file arxiv
 if not os.path.isfile(xidl_arxiv_file):
-    ingest_xidl_archive(outfile=xidl_arxiv_file)
+    ingest_xidl_archive(xidl_arxiv_file)
 
 # Perform fits to the coefficients vs ech angle
 # TODO see if pca works better here
@@ -553,6 +549,9 @@ fit_coeffs_vs_ech_angle(xidl_arxiv_file, ech_angle_fit_file, debug=False)
 # Compute a composite arc from the solution arxiv
 composite_arcfile = os.path.join(os.getenv('PYPEIT_DEV'), 'dev_algorithms', 'hires_wvcalib', 'HIRES_composite_arc.fits')
 echelle_composite_arcspec(xidl_arxiv_file, composite_arcfile)
+
+
+
 sys.exit(-1)
 
 
