@@ -8,6 +8,7 @@ Classes and utility functions for running individual pypeit tests.
 
 
 import os.path
+import shutil
 import subprocess
 import datetime
 import traceback
@@ -19,7 +20,7 @@ class PypeItTest(ABC):
     """Abstract base class for classes that run pypeit tests and hold the results from those tests."""
 
 
-    def __init__(self, setup, description, log_suffix):
+    def __init__(self, setup, pargs, description, log_suffix):
         """
         Constructor
 
@@ -32,7 +33,7 @@ class PypeItTest(ABC):
         self.setup = setup
         self.description = description
         self.log_suffix = log_suffix
-
+        self.coverage = pargs.coverage is not None
         self.env = os.environ
         """ :obj:`Mapping`: OS Environment to run the test under."""
 
@@ -87,6 +88,15 @@ class PypeItTest(ABC):
             with open(self.logfile, "w") as f:
                 try:
                     self.command_line = self.build_command_line()
+                    if self.coverage:
+                        # Coverage will need the full path to the script
+                        full_path_to_command = shutil.which(self.command_line[0])
+                        if full_path_to_command is not None:
+                            self.command_line[0] = full_path_to_command
+                        else:
+                            raise RuntimeError(f"Could not find full path for {self.command_line[0]}")
+
+                        self.command_line = ["coverage", "run", "--source", "pypeit", "--parallel-mode"] + self.command_line
                     if self.start_time is None:
                         # If a subclass sets the start time or calls run multiple times,
                         # (see deimos QL) use the first value as the start rather than overwriting it.
@@ -120,7 +130,7 @@ class PypeItTest(ABC):
 class PypeItSetupTest(PypeItTest):
     """Test subclass that runs pypeit_setup"""
     def __init__(self, setup, pargs):
-        super().__init__(setup, "pypeit_setup", "setup")
+        super().__init__(setup, pargs, "pypeit_setup", "setup")
         setup.generate_pyp_file = True
 
     def run(self):
@@ -156,7 +166,7 @@ class PypeItReduceTest(PypeItTest):
         self.ignore_masters = ignore_masters if ignore_masters is not None else pargs.do_not_reuse_masters
 
         description = f"pypeit {'standards ' if std else ''}{'(ignore masters)' if self.ignore_masters else ''}"
-        super().__init__(setup, description, "test")
+        super().__init__(setup, pargs, description, "test")
 
         self.std = std
         # If the pypeit file isn't being created by pypeit_setup, copy it and update it's path
@@ -193,7 +203,7 @@ class PypeItReduceTest(PypeItTest):
 class PypeItSensFuncTest(PypeItTest):
     """Test subclass that runs pypeit_sensfunc"""
     def __init__(self, setup, pargs, std_file, sens_file=None):
-        super().__init__(setup, "pypeit_sensfunc", "test_sens")
+        super().__init__(setup, pargs, "pypeit_sensfunc", "test_sens")
         self.std_file = std_file
         self.sens_file = sens_file
 
@@ -233,7 +243,7 @@ class PypeItSensFuncTest(PypeItTest):
 class PypeItFluxSetupTest(PypeItTest):
     """Test subclass that runs pypeit_flux_setup"""
     def __init__(self, setup, pargs):
-        super().__init__(setup, "pypeit_flux_setup", "test_flux_setup")
+        super().__init__(setup, pargs, "pypeit_flux_setup", "test_flux_setup")
 
     def build_command_line(self):
         return ['pypeit_flux_setup', os.path.join(self.setup.rdxdir, 'Science')]
@@ -242,7 +252,7 @@ class PypeItFluxSetupTest(PypeItTest):
 class PypeItFluxTest(PypeItTest):
     """Test subclass that runs pypeit_flux_calib"""
     def __init__(self, setup, pargs):
-        super().__init__(setup, "pypeit_flux", "test_flux")
+        super().__init__(setup, pargs, "pypeit_flux", "test_flux")
 
         self.flux_file = os.path.join(self.setup.dev_path, 'fluxing_files',
                                       '{0}_{1}.flux'.format(self.setup.instr.lower(), self.setup.name.lower()))
@@ -259,7 +269,7 @@ class PypeItFluxTest(PypeItTest):
 class PypeItFlexureTest(PypeItTest):
     """Test subclass that runs pypeit_deimos_flexure"""
     def __init__(self, setup, pargs):
-        super().__init__(setup, "pypeit_multislit_flexure", "test_flexure")
+        super().__init__(setup, pargs, "pypeit_multislit_flexure", "test_flexure")
 
         self.flexure_file = os.path.join(self.setup.dev_path, 'flexure_files',
                                       '{0}_{1}.flex'.format(self.setup.instr.lower(), self.setup.name.lower()))
@@ -276,7 +286,7 @@ class PypeItCoadd1DTest(PypeItTest):
     """Test subclass that runs pypeit_coadd_1dspec"""
 
     def __init__(self, setup, pargs):
-        super().__init__(setup, "pypeit_coadd_1dspec", "test_1dcoadd")
+        super().__init__(setup, pargs, "pypeit_coadd_1dspec", "test_1dcoadd")
 
         self.coadd_file = os.path.join(self.setup.dev_path, 'coadd1d_files',
                                        '{0}_{1}.coadd1d'.format(self.setup.instr.lower(), self.setup.name.lower()))
@@ -293,7 +303,7 @@ class PypeItCoadd1DTest(PypeItTest):
 class PypeItCoadd2DTest(PypeItTest):
     """Test subclass that runs pypeit_coadd_2dspec"""
     def __init__(self, setup, pargs, coadd_file=None, obj=None):
-        super().__init__(setup, "pypeit_coadd_2dspec", "test_2dcoadd")
+        super().__init__(setup, pargs, "pypeit_coadd_2dspec", "test_2dcoadd")
         self.obj = obj
 
         if coadd_file:
@@ -320,7 +330,7 @@ class PypeItTelluricTest(PypeItTest):
     """Test subclass that runs pypeit_tellfit"""
 
     def __init__(self, setup, pargs, coadd_file, tell_file):
-        super().__init__(setup, "pypeit_tellfit", 'test_tellfit')
+        super().__init__(setup, pargs, "pypeit_tellfit", 'test_tellfit')
         self.coadd_file = coadd_file
 
         self.tell_file = os.path.join(self.setup.dev_path, 'tellfit_files',
@@ -338,7 +348,7 @@ class PypeItQuickLookTest(PypeItTest):
     """
 
     def __init__(self, setup, pargs, files,  **options):
-        super().__init__(setup, "pypeit_ql", "test_ql")
+        super().__init__(setup, pargs, "pypeit_ql", "test_ql")
         self.files = files
         self.options = options
         self.redux_dir = os.path.abspath(pargs.outputdir)
