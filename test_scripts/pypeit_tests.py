@@ -350,11 +350,11 @@ class PypeItQuickLookTest(PypeItTest):
         if self.setup.instr == 'keck_nires':
             command_line = ['pypeit_ql_keck_nires']
         elif self.setup.instr == 'keck_mosfire':
-            command_line = ['pypeit_ql_multislit']
+            command_line = ['pypeit_ql_multislit', 'keck_mosfire']
             if self.pargs.quiet or self.pargs.no_gui:
                 command_line += ['--no_gui', '--writefits']
         elif self.setup.instr == 'keck_lris_red_mark4':
-            command_line = ['pypeit_ql_multislit']
+            command_line = ['pypeit_ql_multislit', 'keck_lris_red_mark4']
             if self.pargs.quiet or self.pargs.no_gui:
                 command_line += ['--no_gui', '--writefits']
         elif self.setup.instr == 'keck_deimos':
@@ -379,7 +379,10 @@ class PypeItQuickLookTest(PypeItTest):
             command_line += [self.setup.rawdir] + self.files
 
         for option in self.options:
-            command_line += [option, str(self.options[option])]
+            if self.options[option] is None:
+                command_line += [option]
+            else:
+                command_line += [option, str(self.options[option])]
 
         return command_line
 

@@ -107,9 +107,9 @@ supported_instruments = ['kast', 'deimos', 'kcwi', 'nires', 'nirspec', 'mosfire'
                          'flamingos2', 'mage', 'fire', 'luci', 'mdm', 'alfosc', 'fors2', 'binospec', 'mmirs', 'bluechannel',
                          'mods', 'dbsp', 'tspec', 'bc', 'goodman', 'efosc2','deveny', 'dolores']
 
-reduce_setups  = {'bok_bc': ['600'],
+reduce_setups  = {'bok_bc': ['300','600'],
                   'gemini_gnirs': ['32_SB_SXD', '10_LB_SXD'],
-                  'gemini_gmos': ['GS_HAM_R400_700', 'GS_HAM_R400_860', 
+                  'gemini_gmos': ['GS_HAM_R400_700', 'GS_HAM_R400_860',
                                   'GN_HAM_R400_885', 'GN_HAM_NS_B600_620',
                                   'GS_HAM_MULTI_R400_700', 'GN_E2V_MULTI_R400_600'],
                   'gemini_flamingos2': ['HK_HK', 'JH_JH'],
@@ -131,7 +131,7 @@ reduce_setups  = {'bok_bc': ['600'],
                   'keck_lris_red_mark4': ['long_400_8500_d560', 'long_600_10000_d680'],
                   'lbt_luci': ['LUCI-I', 'LUCI-II'],
                   'lbt_mods': ['MODS1R_Longslit', 'MODS2R_Longslit'],
-                  'ldt_deveny': ['DV1', 'DV2', 'DV5', 'DV6', 'DV8'],
+                  'ldt_deveny': ['DV1', 'DV2', 'DV5', 'DV6', 'DV8', 'DV9'],
                   'magellan_mage': ['1x1'],
                   'magellan_fire': ['FIRE_Echelle', 'FIRE_Long'],
                   'mdm_osmos': ['MDM4K'],
@@ -147,7 +147,7 @@ reduce_setups  = {'bok_bc': ['600'],
                   'shane_kast_red': ['300_7500_Ne', '600_7500_d55_ret', '600_7500_d57', '600_5000_d46', '1200_5000_d57'],
                   'soar_goodman_red': ['M1','M2'],
                   'tng_dolores': ['LRB'],
-                  'vlt_fors2': ['300I'],
+                  'vlt_fors2': ['300I', '600Z'],
                   'vlt_xshooter': ['VIS_1x1', 'VIS_2x1', 'VIS_2x2', 'VIS_manual', 'NIR'],
                   'vlt_sinfoni': ['K_0.8'],
                   }
@@ -243,10 +243,10 @@ _quick_look = {'shane_kast_blue/600_4310_d55':
                    {'files': ['s190519_0067.fits', 's190519_0068.fits']},
                'keck_mosfire/Y_long':
                    {'files': ['m191120_0043.fits', 'm191120_0044.fits', 'm191120_0045.fits', 'm191120_0046.fits'],
-                    '--spec_samp_fact': 2.0, '--spat_samp_fact': 2.0, '--flux': '', '--bkg_redux': ''},
+                    '--spec_samp_fact': 2.0, '--spat_samp_fact': 2.0, '--flux': None, '--bkg_redux': None},
                'keck_lris_red_mark4/long_600_10000_d680':
                    {'files': ['r220127_00123.fits', 'r220127_00124.fits'],
-                    '--spec_samp_fact': 2.0, '--spat_samp_fact': 2.0, '--flux': ''}}
+                    '--spec_samp_fact': 2.0, '--spat_samp_fact': 2.0, '--flux': None}}
 
 
 # The order of these tests in all_tests determine the order they run
