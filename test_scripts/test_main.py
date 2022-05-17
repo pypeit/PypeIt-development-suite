@@ -19,7 +19,7 @@ import datetime
 from pathlib import Path
 
 import numpy as np
-
+import pypeit 
 from .test_setups import TestPhase, all_tests, all_setups, supported_instruments
 from .test_setups import cooked_setups, ql_setups
 from .pypeit_tests import get_unique_file
@@ -300,7 +300,6 @@ class TestReport(object):
         self.end_time = datetime.datetime.now()
         if self.pargs.report is not None:
             with open(self.pargs.report, "a") as report_file:
-                print ("-------------------------", file=report_file)
                 self.summary_report(report_file)
 
     def pytest_started(self, test_descr):
@@ -385,12 +384,24 @@ class TestReport(object):
             print("\x1B[" + "1;32m" + f"--- PYTEST {test_descr.upper()} PASSED " + "\x1B[" + "0m"
                   + results +  "\x1B[" + "1;32m" + "---" + "\x1B[" + "0m" + "\r", file=output)
 
+    def print_tail(self, file, num_lines, output=sys.stdout, flush=False):
+        """Print the last num_lines of a file."""
+        result = subprocess.run(['tail', f'-{num_lines}', file], stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
+        print(result.stdout.decode(), file=output, flush=flush)
+
+
     def summary_report(self, output=sys.stdout):
         """Display a summary report on the results of testing to the given output stream"""
 
+        print ("\nTest Summary\n--------------------------------------------------------", file=output)
+        self.summarize_pytest_results("PypeIt Unit Tests", output)
         self.summarize_pytest_results("Unit Tests", output)
         self.summarize_pytest_results("Vet Tests", output)
         self.summarize_setup_tests(output)
+
+        if self.pargs.coverage is not None:
+            print(f"Coverage results:", file=output)
+            self.print_tail(self.pargs.coverage, 1, output)
 
         print(f"Testing Started at {self.start_time.isoformat()}", file=output)
         print(f"Testing Completed at {self.end_time.isoformat()}", file=output)
@@ -429,8 +440,7 @@ class TestReport(object):
         print('', file=output, flush=flush)
         print("End of Log:", file=output, flush=flush)
         if test.logfile is not None and os.path.exists(test.logfile):
-            result = subprocess.run(['tail', '-3', test.logfile], stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
-            print(result.stdout.decode(), file=output, flush=flush)
+            self.print_tail(test.logfile, 3, output, flush)
 
         print('\n', file=output, flush=flush)
 
@@ -459,9 +469,12 @@ def run_pytest(pargs, test_descr, test_dir, test_report):
         pargs
     """
     test_report.pytest_started(test_descr)
-    # Tests written to run in parallel yet
+    # Tests not written to run in parallel yet
     #args = ["pytest", "-v", "--color=yes", "-n", str(pargs.threads)]
-    args = ["pytest", "-v", "--color=yes"]
+    if pargs.coverage is not None:
+        args = ["coverage", "run", "--source", "pypeit", "--data-file", os.path.join(pargs.outputdir, ".coverage"), "--parallel-mode", "-m", "pytest", "-v", "--color=yes"]
+    else:
+        args = ["pytest", "-v", "--color=yes"]
     if not pargs.show_warnings:
         args.append("--disable-warnings")
         
@@ -471,6 +484,29 @@ def run_pytest(pargs, test_descr, test_dir, test_report):
         while(p.poll() is None):
             test_report.pytest_line(test_descr, p.stdout.readline().decode().strip())
 
+def generate_coverage_report(pargs):
+    coverage_files = [str(path) for path in Path(pargs.outputdir).rglob(".coverage.*")]
+    
+    if len(coverage_files) > 0:
+        if not pargs.quiet:
+            print("Combining coverage files...", flush=True)
+    else:
+        with open(pargs.coverage, "w") as f:
+            print("Couldn't find coverage files to combine.", file=f)
+        return
+    data_file = os.path.join(pargs.outputdir, ".coverage")
+    process = subprocess.run(["coverage", "combine", "--data-file", data_file] + coverage_files, stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
+    if process.returncode != 0:
+        if not pargs.quiet:
+            print("Failed to combine coverage data.", flush=True)
+        with open(pargs.coverage, "w") as f:
+            print("Failed to combine coverage files. Output:", file=f)
+            print(process.stdout, file=f)
+        return
+
+    # Generate the report.
+    with open(pargs.coverage, "w") as f:
+        process = subprocess.run(["coverage", "report", "--data-file", data_file], stdout=f, stderr=subprocess.STDOUT)
 
 def raw_data_dir():
     return os.path.join(os.environ['PYPEIT_DEV'], 'RAW_DATA')
@@ -532,6 +568,8 @@ def parser(options=None):
     parser.add_argument('-v', '--verbose', default=False, action='store_true',
                         help='Output additional detailed information while running the tests and output a '
                              'detailed report at the end of testing. This has no effect if -q is given')
+    parser.add_argument('--coverage', default=None, type=str, 
+                        help='Collect code coverage information. and write it to the given file.')
     parser.add_argument('-r', '--report', default=None, type=str,
                         help='Write a detailed test report to REPORT.')
     parser.add_argument('-w', '--show_warnings', default=False, action='store_true',
@@ -660,9 +698,9 @@ def main():
             print('Running all tests.')
         elif pargs.tests.lower() == 'reduce':
             print('Running only reduce tests.')
-        elif pargs.flg_after is True:
+        elif flg_after is True:
             print('Running only afterburner tests')
-        elif pargs.flg_ql is True:
+        elif flg_ql is True:
             print('Running only quick look tests')
         elif flg_unit is True:
             print('Running only unit tests')
@@ -672,6 +710,11 @@ def main():
 
     # Start Unit Tests
     test_report = TestReport(pargs)
+
+    # For coverage testing, run the PypeIt unit tests too
+    if pargs.tests == "all" and pargs.coverage is not None:
+        pypeit_tests_dir = Path(pypeit.__file__).parent.joinpath("tests")
+        run_pytest(pargs, "PypeIt Unit Tests", str(pypeit_tests_dir), test_report)
 
     if pargs.tests == "all" or flg_unit is True:
         run_pytest(pargs, "Unit Tests", "unit_tests", test_report)
@@ -697,7 +740,7 @@ def main():
     missing_files = []
     for instr in instruments:
         # Only do blue instruments
-        if pargs.debug and 'blue' not in instr:
+        if pargs.debug and instr != 'shane_kast_blue':
             continue
 
         # Setups
@@ -705,6 +748,8 @@ def main():
         if pargs.setup is not None and pargs.setup not in setup_names:
             # No setups selected
             continue
+        elif pargs.debug:
+            setup_names = ['600_4310_d55']
         # Limit to a single setup?
         elif pargs.setup is not None:
             setup_names = [ pargs.setup ]
@@ -787,6 +832,8 @@ def main():
         if not pargs.quiet and pargs.verbose:
             print(f'Wrote {len(priority_list)} setup priorities')
 
+    if pargs.coverage is not None:
+        generate_coverage_report(pargs)
 
     # ---------------------------------------------------------------------------
     # Finish up the report on the test results
