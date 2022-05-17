@@ -1,0 +1,1 @@
+''' Simple script to show a HIRES arc'''
