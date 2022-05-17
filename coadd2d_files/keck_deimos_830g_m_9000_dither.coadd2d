@@ -9,6 +9,8 @@
 
 [coadd2d]
   offsets = maskdef_offsets
+  weights = auto
+  user_obj = 1305,1
 
 
 # Read in the data
