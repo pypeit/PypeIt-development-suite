@@ -1,4 +1,10 @@
+Using 1x1 arc with 0.5" slit width
 
 Order 20
 
 pypeit_identify MasterArc_A_1_DET01.fits MasterSlits_A_1_DET01.fits.gz --slit 3 --wmin 3500 --wmax 3860 --fwhm 10 --pixtol 0.5 --sigdetect 3. --rmstol 0.3
+   Good solution
+
+Order 19
+pypeit_identify MasterArc_A_1_DET01.fits MasterSlits_A_1_DET01.fits.gz --slit 4 --wmin 3500 --wmax 3860 --fwhm 10 --pixtol 0.5 --sigdetect 3. --rmstol 0.3
+   Good solution
