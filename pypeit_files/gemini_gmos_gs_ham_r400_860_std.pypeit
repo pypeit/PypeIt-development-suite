@@ -18,7 +18,7 @@
 [reduce]
   [[findobj]]
     snr_thresh = 10.0 
-    maxnumber = 1
+    maxnumber_sci = 1
 
 # Setup
 setup read
