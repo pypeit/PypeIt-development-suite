@@ -5,7 +5,7 @@
   detnum = (4,8)
 [reduce]
     [[findobj]]
-        sig_thresh=5.0
+        snr_thresh=5.0
 
 [coadd2d]
   offsets = maskdef_offsets

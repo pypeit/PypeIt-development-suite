@@ -4,21 +4,19 @@
 # User-defined execution parameters
 [rdx]
   spectrograph = ldt_deveny
-[calibrations]
-  [[wavelengths]]
-    lamps = ArI, NeI, HgI
 
 # Setup
 setup read
     Setup A:
-         dispname: DV8 (831/8000)
-        dispangle: 34.09
-          filter1: GG495
+        dispname: DV8 (831/8000)
+         cenwave: 6095.0
+         filter1: GG495
+         binning: 1,1
 setup end
 
 # Read in the data
 data read
- path /Users/tbowers/d1/data/L20_20201113
+ path RAWDIR
 |           filename |       frametype |                 ra |                 dec |                target |       dispname | decker | binning |                mjd | airmass | exptime | dispangle | filter1 | slitwid | lampstat01 |
 | 20201113.0043.fits |        arc,tilt |         211.596625 | -10.422305555555555 |               Arcs_Na | DV8 (831/8000) |   None |     1,1 |  59166.58690879629 |    1.47 |    60.0 |     34.09 |   GG495 |     0.8 | Ar, Ne, Hg |
 | 20201113.0044.fits |        arc,tilt | 211.59816666666663 | -10.422916666666666 |               Arcs_Na | DV8 (831/8000) |   None |     1,1 |  59166.58826574074 |    1.47 |   180.0 |     34.09 |   GG495 |     0.8 | Ar, Ne, Hg |

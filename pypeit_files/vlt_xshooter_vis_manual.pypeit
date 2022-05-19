@@ -6,7 +6,7 @@
 spectrograph = vlt_xshooter_vis
 [reduce]
   [[findobj]]
-    sig_thresh = 5.
+    snr_thresh = 5.
 #  [[extraction]]
 #    [[[manual]]]
 #       spat_spec = 1181.8:3820.6
