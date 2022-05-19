@@ -73,7 +73,7 @@ def parser(options=None):
     # Parse
     parser = argparse.ArgumentParser(description='Script to fuss with FRB galaxies [v1.1]')
     parser.add_argument("xidl_file", type=str, help="XIDL filename")
-    parser.add_argument("order", type=int, help="Order number")
+    parser.add_argument("order", type=str, help="Order number(s); e.g. 107 or 106,107")
 
     if options is None:
         pargs = parser.parse_args()
@@ -82,17 +82,23 @@ def parser(options=None):
     return pargs
 
 def main(pargs):
-    # Load up the spectrum
+    # Load up the spectra
     full_path = os.path.join(os.getenv('XIDL'), 'Keck', 'HIRES', 'CALIBS',
         'ARCS', pargs.xidl_file)
     orders, wave, spec = xidl_hires(full_path)
 
-    this_order = np.where(orders == pargs.order)[0][0]
+    # Parse the input order(s)
+    inp_orders = [int(item) for item in pargs.order.split(',')]
 
     # Plot
     plt.clf()
     ax = plt.gca()
-    ax.plot(wave[this_order], spec[this_order], 'k')
+
+    # Loop on em
+    for iorder in inp_orders:
+        this_order = np.where(orders == iorder)[0][0]
+        ax.plot(wave[this_order], spec[this_order], label=f'{iorder}')
+    ax.legend()
     plt.show()
 
 if __name__ == "__main__":
