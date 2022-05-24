@@ -14,8 +14,8 @@ spectrograph = keck_lris_red
 		edge_thresh=50.
 [reduce]
   [[findobj]]
-      sig_thresh = 3.
-      maxnumber = 1
+      snr_thresh = 3.
+      maxnumber_sci = 1
       find_fwhm = 8.
 
 # Setup

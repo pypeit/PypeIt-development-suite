@@ -10,7 +10,7 @@
          maskdesign_sigrej = 2.
 [reduce]
    [[findobj]]
-         sig_thresh = 5
+         snr_thresh = 5
    [[slitmask]]
 	obj_toler = 0.5
 	use_alignbox = True

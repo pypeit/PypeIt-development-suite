@@ -7,7 +7,7 @@ spectrograph = keck_deimos
 detnum = (3,7)
 [reduce]
    [[findobj]]
-        maxnumber = 3
+        maxnumber_sci = 3
 [calibrations]
   [[slitedges]]
     edge_thresh = 20.0

@@ -11,7 +11,7 @@
         IDwaves = 3248.4769,3274.905,4159.763,4610.656,5402.0634,5854.110
 
 [extract]
-    maxnumber = 3
+    maxnumber_sci = 3
 
 # Setup
 setup read
