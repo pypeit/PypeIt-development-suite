@@ -20,6 +20,10 @@ from pathlib import Path
 
 import numpy as np
 import pypeit 
+# Stop logging from pypeit.par.utils when reading/writing coadd1d files
+pypeit.msgs.reset(verbosity=0) 
+
+
 from .test_setups import TestPhase, all_tests, all_setups, supported_instruments
 from .test_setups import cooked_setups, ql_setups
 from .pypeit_tests import get_unique_file
@@ -541,7 +545,7 @@ def parser(options=None):
                                                  'tests that use the results of the reductions, '
                                                  'use \'afterburn\'\'.')
 
-    parser.add_argument('tests', type=str, default=None,
+    parser.add_argument('tests', type=str, nargs='+', default=None,
                         help='Instrument or test to run.  For instrument-specific tests, you '
                              'can provide the telescope or the spectrograph, but beware of '
                              'non-unique matches.  E.g. \'mage\' selects all the magellan '
@@ -550,8 +554,8 @@ def parser(options=None):
     parser.add_argument('-o', '--outputdir', type=str, default='REDUX_OUT',
                         help='Output folder.')
     # TODO: Why is this an option?
-    parser.add_argument('-i', '--instrument', type=str, help="Restrict to input instrument")
-    parser.add_argument('-s', '--setup', type=str, help="Single out a setup to run")
+    parser.add_argument('-i', '--instruments', type=str, nargs='+', help="Restrict to input instrument")
+    parser.add_argument('-s', '--setups', type=str, nargs='+', help="Single out a setup to run")
     parser.add_argument('--debug', default=False, action='store_true',
                         help='Debug using only blue setups')
     parser.add_argument('-p', '--prep_only', default=False, action='store_true',
@@ -630,196 +634,212 @@ def main():
         # make up a report file name
         pargs.report = get_unique_file(os.path.join(outputdir, "pypeit_test_results.txt"))
 
-    # Only write the test priority file if all tests are being run
-    if pargs.tests == "all" and pargs.instrument is None and pargs.setup is None and pargs.debug is False:
-        write_priorities = True
-    else:
-        write_priorities = False
-
     # ---------------------------------------------------------------------------
-    # Determine which instruments and setups will be tested
+    # Determine which tests to run
 
-    all_instruments = available_data()
+    flg_pypeit_tests = False
+    flg_unit = False
+    flg_reduce = False
     flg_after = False
     flg_ql = False
-    flg_unit = False
     flg_vet = False
 
-    # Development instruments (in returned dictonary keys) and setups
-    devsetups = all_setups
-    tests_that_only_use_dev_setups = ['reduce', 'afterburn', 
-                                      'unit', 'vet']
+    write_priorities = False
 
-    # Cooked instruments (in returned dictonary keys) and setups
-    cooksetups = cooked_setups
-
-    # Setup
-    unsupported = []
-    if pargs.tests == 'all':
-        #instruments = np.array([item for item in all_instruments
-        #                                for inst in supported_instruments
-        #                                    if inst.lower() in item.lower()])
-        instruments = all_setups.keys() if pargs.instrument is None \
-                        else np.array([pargs.instrument])
-    elif pargs.tests in tests_that_only_use_dev_setups:
-        instruments = np.array(list(devsetups.keys())) if pargs.instrument is None \
-                        else np.array([pargs.instrument])
-        if pargs.tests == 'afterburn':
-            # Only do the flux-calibration and coadding tests
-            flg_after = True
-        elif pargs.tests == 'unit':
+    for test in pargs.tests:
+        if test == "all":
+            flg_pypeit_tests = True
             flg_unit = True
-        elif pargs.tests == 'vet':
+            flg_reduce = True
+            flg_after = True
+            flg_ql = True
             flg_vet = True
-    elif pargs.tests.lower() == 'ql':      
-        flg_ql = True    
-        instruments = np.array(list(ql_setups.keys())) if pargs.instrument is None \
-                        else np.array([pargs.instrument])
-    else:  # Error catching occurs below
-        instruments = []
 
-    # Check that instruments is not blank
-    if len(instruments) == 0:
-        print("\x1B[" + "1;31m" + "\nERROR - " + "\x1B[" + "0m" +
-              "Invalid test selected: {0:s}\n\n".format(pargs.tests) +
-              "Consult the help (pypeit_test -h) or select one of the " +
-              "available RAW_DATA directories: {0}".format(', '.join(all_instruments)))
-        return 1
+            # Write the test priority file if all tests are being run
+            if pargs.instruments is None and pargs.setups is None and pargs.debug == False:
+                write_priorities = True
+
+        elif test == "pypeit_tests":
+            flg_pypeit_tests = True
+        elif test == "unit":
+            flg_unit = True
+        elif test == "reduce":
+            flg_reduce = True
+        elif test == "after" or test=="afterburn":
+            flg_after = True
+        elif test == "ql":
+            flg_ql = True
+        elif test == "vet":
+            flg_vet = True
+        else:
+            print("\x1B[" + "1;31m" + "\nERROR - " + "\x1B[" + "0m" +
+                  "Invalid test selected: {}\n\n".format(test) +
+                  "Consult the help (pypeit_test -h)")
+            return 1
+            
+
+    # ---------------------------------------------------------------------------
+    # Determine which instruments will be tested
+
+
+    unsupported = []
+    instruments = []
+    all_instruments = all_setups.keys()
+    if pargs.instruments is not None and len(pargs.instruments) > 0:
+        for instr in pargs.instruments:
+            if instr in all_instruments:
+                instruments.append(instr) 
+            else:
+                unsupported.append(instr)
+    else:
+        instruments = all_instruments
+
+    # Setups may be specified with a "instr/setup" syntax, parse those out
+    # and make sure the instruments are included
+    argument_setup_names = []
+    if pargs.setups is not None and len(pargs.setups) > 0:
+        for setup in pargs.setups:
+            if "/" in setup:
+                (instr, setup_name) = setup.split("/")
+                if instr not in instruments and instr in all_instruments:
+                    instruments.append(instr)
+                argument_setup_names.append(setup_name)
+            else:
+                argument_setup_names.append(setup)
+
 
     if len(unsupported) > 0:
-        if not pargs.quiet:
-            print("\x1B[" + "1;33m" + "\nWARNING - " + "\x1B[" + "0m" +
-                  "The following tests have not been validated and may not pass: {0}\n\n".format(
-                  unsupported))
+        print("\x1B[" + "1;33m" + "\nWARNING - " + "\x1B[" + "0m" +
+                "The following instruments are not supported: {0}\n\n".format(
+                unsupported))
+        return 1
+
 
     # Report
     if not pargs.quiet:
-        if pargs.tests.lower() == 'all':
+        if "all" in pargs.tests:
             print('Running all tests.')
-        elif pargs.tests.lower() == 'reduce':
-            print('Running only reduce tests.')
-        elif flg_after is True:
-            print('Running only afterburner tests')
-        elif flg_ql is True:
-            print('Running only quick look tests')
-        elif flg_unit is True:
-            print('Running only unit tests')
-        elif flg_vet is True:
-            print('Running only vet tests')
+        else:
+            if flg_pypeit_tests:
+                print('Running unit tests in pypeit/tests')
+            if flg_unit:
+                print('Running dev suite unit tests')
+            if flg_reduce:
+                print('Running reduce tests.')
+            if flg_after:
+                print('Running afterburner tests')
+            if flg_ql is True:
+                print('Running quick look tests')
+            if flg_vet is True:
+                print('Running vet tests')
 
 
     # Start Unit Tests
     test_report = TestReport(pargs)
 
     # For coverage testing, run the PypeIt unit tests too
-    if pargs.tests == "all" and pargs.coverage is not None:
+    if flg_pypeit_tests and not pargs.prep_only:
         pypeit_tests_dir = Path(pypeit.__file__).parent.joinpath("tests")
         run_pytest(pargs, "PypeIt Unit Tests", str(pypeit_tests_dir), test_report)
 
-    if pargs.tests == "all" or flg_unit is True:
+    if flg_unit is True and not pargs.prep_only:
         run_pytest(pargs, "Unit Tests", "unit_tests", test_report)
 
 
-    # ---------------------------------------------------------------------------
-    # Build the TestSetup and PypeItTest objects for testing
+    if flg_reduce or flg_after or flg_ql:
+        # ---------------------------------------------------------------------------
+        # Build the TestSetup and PypeItTest objects for testing
 
-    # Load test setup priority from file
-    priority_list = TestPriorityList('test_priority_list')
-    if not pargs.quiet and pargs.verbose:
-        print(f'Loaded {len(priority_list)} setup priorities')
+        # Load test setup priority from file
+        priority_list = TestPriorityList('test_priority_list')
+        if not pargs.quiet and pargs.verbose:
+            print(f'Loaded {len(priority_list)} setup priorities')
 
-    # Report on instruments
-    if not pargs.quiet:
-        print('Running tests on the following instruments:')
+        # Report on instruments
+        if not pargs.quiet:
+            print('Running tests on the following instruments:')
+            for instr in instruments:
+                print('    {0}'.format(instr))
+            print('')
+
+
+        setups = []
+        missing_files = []
         for instr in instruments:
-            print('    {0}'.format(instr))
-        print('')
+            # Only do blue instruments
+            if pargs.debug and instr != 'shane_kast_blue':
+                continue
+
+            # Setups        
+            if len(argument_setup_names) > 0:
+                setup_names = [name for name in argument_setup_names if name in all_setups[instr]]
+
+                if len(setup_names) == 0:
+                    # No setups for this instrument
+                    setup_names = all_setups[instr]
+            elif pargs.debug:
+                setup_names = ['600_4310_d55']
+            else:
+                setup_names = all_setups[instr]
+
+            # Build test setups, check for missing files, and run any prep work
+            for setup_name in setup_names:
+
+                setup = build_test_setup(pargs, instr, setup_name, flg_reduce, flg_after,
+                                        flg_ql)
+                missing_files += setup.missing_files
+
+                # set setup priority from file
+                priority_list.set_test_setup_priority(setup)
+
+                setups.append(setup)
+
+            print('Reducing data from {0} for the following setups:'.format(instr))
+            for name in setup_names:
+                print('    {0}'.format(name))
+            print('')
+
+        # ---------------------------------------------------------------------------
+        # Check all the data and relevant files exist before starting!
+        if len(missing_files) > 0:
+            raise ValueError('Missing the following files:\n    {0}'.format(
+                            '\n    '.join(missing_files)))
 
 
-    setups = []
-    missing_files = []
-    for instr in instruments:
-        # Only do blue instruments
-        if pargs.debug and instr != 'shane_kast_blue':
-            continue
+        # ---------------------------------------------------------------------------
+        # Run the tests
+        test_report.setup_testing_started(setups)
+        # Add tests to the test_run_queue
+        for setup in setups:
+            if len(setup.tests) == 0:
+                continue
+            test_run_queue.put(setup)
 
-        # Setups
-        setup_names = all_setups[instr]
-        if pargs.setup is not None and pargs.setup not in setup_names:
-            # No setups selected
-            continue
-        elif pargs.debug:
-            setup_names = ['600_4310_d55']
-        # Limit to a single setup?
-        elif pargs.setup is not None:
-            setup_names = [ pargs.setup ]
-        # Limit to development setups
-        elif pargs.tests in tests_that_only_use_dev_setups:
-            setup_names = devsetups[instr]
-        elif pargs.tests.lower() == 'cooked':
-            setup_names = cooksetups[instr]
-        elif pargs.tests.lower() == 'ql':
-            setup_names = ql_setups[instr]
+        # Start threads to run the tests
+        if not pargs.quiet and pargs.threads > 1:
+            print(f'Running tests in {pargs.threads} parallel processes')
 
+        thread_pool = []
+        for i in range(pargs.threads):
+            new_thread = Thread(target=thread_target, args=[test_report])
+            thread_pool.append(new_thread)
+            new_thread.start()
 
-        # Build test setups, check for missing files, and run any prep work
-        for setup_name in setup_names:
+        # Wait for the tests to finish
+        test_run_queue.join()
 
-            setup = build_test_setup(pargs, instr, setup_name, flg_after, 
-                                     flg_ql)
-            missing_files += setup.missing_files
+        # Set the test status to complete and then wait for the threads to finish.
+        # We don't run the threads as daemon threads so that main() can be called multiple times
+        # in unit tests
+        test_report.testing_complete = True
+        for thread in thread_pool:
+            thread.join()
 
-            # set setup priority from file
-            priority_list.set_test_setup_priority(setup)
-
-            setups.append(setup)
-
-        print('Reducing data from {0} for the following setups:'.format(instr))
-        for name in setup_names:
-            print('    {0}'.format(name))
-        print('')
-
-    # ---------------------------------------------------------------------------
-    # Check all the data and relevant files exist before starting!
-    if len(missing_files) > 0:
-        raise ValueError('Missing the following files:\n    {0}'.format(
-                        '\n    '.join(missing_files)))
-
-
-    # ---------------------------------------------------------------------------
-    # Run the tests
-    test_report.setup_testing_started(setups)
-    # Add tests to the test_run_queue
-    for setup in setups:
-        if len(setup.tests) == 0:
-            continue
-        test_run_queue.put(setup)
-
-    # Start threads to run the tests
-    if not pargs.quiet and pargs.threads > 1:
-        print(f'Running tests in {pargs.threads} parallel processes')
-
-    thread_pool = []
-    for i in range(pargs.threads):
-        new_thread = Thread(target=thread_target, args=[test_report])
-        thread_pool.append(new_thread)
-        new_thread.start()
-
-    # Wait for the tests to finish
-    test_run_queue.join()
-
-    # Set the test status to complete and then wait for the threads to finish.
-    # We don't run the threads as daemon threads so that main() can be called multiple times
-    # in unit tests
-    test_report.testing_complete = True
-    for thread in thread_pool:
-        thread.join()
-
-    if not pargs.quiet:
-        test_report.summarize_setup_tests()
+        if not pargs.quiet:
+            test_report.summarize_setup_tests()
 
     # Run the vet tests
-    if pargs.tests == "all" or flg_vet is True:
+    if flg_vet is True:
         run_pytest(pargs, "Vet Tests", "vet_tests", test_report)
 
 
@@ -848,8 +868,7 @@ def main():
     return test_report.num_failed
 
 
-def build_test_setup(pargs, instr, setup_name, flg_after, 
-                     flg_ql, flg_unit=False, flg_vet=False):
+def build_test_setup(pargs, instr, setup_name, flg_reduce, flg_after, flg_ql):
     """_summary_
     Builds a TestSetup object including the tests that it will run
 
@@ -893,8 +912,6 @@ def build_test_setup(pargs, instr, setup_name, flg_after,
                 key = None # No arguments in this format
                 if setup.name not in test_descr['setups'][setup.instr]:
                     # This test type isn't applicable to the setup
-                    # But we make an exception for "all" and reduce tests
-                    #if not (pargs.tests == "all" and test_descr['type'] == TestPhase.REDUCE):
                     continue
             else:
                 # A dict mapping to arguments that apply to all setups for this instrument
@@ -934,19 +951,13 @@ def build_test_setup(pargs, instr, setup_name, flg_after,
         if pargs.prep_only and test_descr['type'] != TestPhase.PREP:
             continue
 
-        if pargs.tests == "reduce" and test_descr['type'] not in (TestPhase.PREP, TestPhase.REDUCE):
+        if not flg_reduce and test_descr['type'] == TestPhase.REDUCE:
             continue
 
-        if flg_after and test_descr['type'] not in (TestPhase.PREP, TestPhase.AFTERBURN):
+        if not flg_after and test_descr['type'] == TestPhase.AFTERBURN:
             continue
 
-        if flg_ql and test_descr['type'] not in (TestPhase.PREP, TestPhase.QL):
-            continue
-
-        if flg_unit and test_descr['type'] not in (TestPhase.UNIT, TestPhase.UNIT):
-            continue
-
-        if flg_vet and test_descr['type'] not in (TestPhase.VET, TestPhase.VET):
+        if not flg_ql and test_descr['type'] == TestPhase.QL:
             continue
 
         setup.tests.append(test)

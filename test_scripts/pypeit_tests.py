@@ -15,6 +15,9 @@ import traceback
 import glob
 from abc import ABC, abstractmethod
 
+from astropy.table import Table
+import numpy as np
+from pypeit import par
 
 class PypeItTest(ABC):
     """Abstract base class for classes that run pypeit tests and hold the results from those tests."""
@@ -84,10 +87,11 @@ class PypeItTest(ABC):
         try:
             # Open a log for the test
             child = None
-            self.logfile = self.get_logfile()
-            with open(self.logfile, "w") as f:
+            self.logfile = self.get_logfile()            
+            self.command_line = self.build_command_line()
+
+            with open(self.logfile, "a") as f:
                 try:
-                    self.command_line = self.build_command_line()
                     if self.coverage:
                         # Coverage will need the full path to the script
                         full_path_to_command = shutil.which(self.command_line[0])
@@ -292,7 +296,70 @@ class PypeItCoadd1DTest(PypeItTest):
                                        '{0}_{1}.coadd1d'.format(self.setup.instr.lower(), self.setup.name.lower()))
 
     def build_command_line(self):
-        return ['pypeit_coadd_1dspec', self.coadd_file]
+
+        # Double check the object ids in the coadd file to see if they are slightly off.
+        # Correct them if they are
+
+        file_to_obj = dict()          # Mapping of files to actual objects within them
+        orig_coadd1d_lines = []       # original coadd1d lines
+        corrected_coadd1d_lines = []  # corrected coadd1d lines
+
+
+        # Read the dev-suite coadd file, and also gather the list of files
+        (cfg_lines, coadd_lines) = par.util.parse_tool_config(self.coadd_file, 'coadd1d')
+        unique_files = set()
+        for file_obj in coadd_lines:
+            (filename, object) = file_obj.split()
+            orig_coadd1d_lines.append((filename, object))
+            unique_files.add(filename)
+        
+        # Build a mapping of files to objects using the spec1d txt info file
+        for unique_file in unique_files:
+            txt_filename = os.path.join(self.setup.rdxdir, os.path.splitext(unique_file)[0] + ".txt")
+            txt_info = Table.read(txt_filename, format='ascii.fixed_width')
+            file_to_obj[unique_file] = txt_info['name']
+
+        # Go through each original coadd1d line and correct the object names
+        # if needed
+        for (filename, object) in orig_coadd1d_lines:
+            if object in file_to_obj[filename]:
+                # No correction needed
+                corrected_coadd1d_lines.append(filename + " " + object)
+            else:
+                # Find the spatial position within object name, which
+                # can start with either SPAT or OBJ
+                object_parts = object.split('-')
+                if object_parts[0].startswith("SPAT"):
+                    object_prefix_len = 4
+                    object_spat_pos = float(object_parts[0][4:])
+                elif object_parts[0].startswith("OBJ"):
+                    object_prefix_len = 3
+                    object_spat_pos = float(object_parts[0][3:])
+                else:
+                    # Unrecognized format, don't try to correct
+                    with open(self.logfile, "a") as f:
+                        print(f"WARNING: Could not correct coadd1d file, unrecognized object id format: {object}", file=f)
+                    corrected_coadd1d_lines.append(filename + " " + object)
+                    continue
+                
+                # Build an array of distances between the actual objects
+                # and the original object, and find the closest one
+                distances = np.fabs(np.array([float(x.split('-')[0][object_prefix_len:]) for x in file_to_obj[filename]]) - object_spat_pos)
+                sorted_dist = np.argsort(distances)
+                if distances[sorted_dist][0] <=2:
+                    # If the closest one is within two pixels, choose it
+                    closest_obj = file_to_obj[filename][sorted_dist][0]
+                    corrected_coadd1d_lines.append(filename + " " + closest_obj)
+                else:
+                    with open(self.logfile, "a") as f:
+                        print(f"WARNING: Could not correct coadd1d file, closest object '{file_to_obj[filename][sorted_dist][0]}' is more than 2 pixels away from: {object}", file=f)
+                    corrected_coadd1d_lines.append(filename + " " + object)
+
+        
+        final_coadd_file = get_unique_file(os.path.join(self.setup.rdxdir, f"{self.setup.instr.lower()}_{self.setup.name.lower()}_merged.coadd1d"))
+        par.util.make_tool_config(final_coadd_file, cfg_lines, corrected_coadd1d_lines, 'coadd1d')
+
+        return ['pypeit_coadd_1dspec', final_coadd_file]
 
     def check_for_missing_files(self):
         if not os.path.exists(self.coadd_file):

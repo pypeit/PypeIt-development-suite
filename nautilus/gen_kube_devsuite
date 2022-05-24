@@ -29,6 +29,8 @@ def parser(options=None):
     parser.add_argument('-d', '--dev_branch', type=str, default='develop', help='Name of the PypeIt Dev-Suite branch to use')
     parser.add_argument('--ncpu', type=int, default=6, help='Number of CPUs request')
     parser.add_argument('--ram', type=int, default=50, help='Amount of RAM to request (Gi)')
+    parser.add_argument('--coverage', default=False, action="store_true", help="Collect code coverage data.")
+    parser.add_argument('additional_args', type=str, nargs='*', default=["all"], help="Additional arguments to pypeit_test. Defaults to 'all'.")
     #parser.add_argument('-d', '--dryrun', default=False, action='store_true',
     #                    help='Only list the steps')
 
@@ -60,9 +62,13 @@ def main():
     limits['memory'] = f'{2*pargs.ram}Gi'
 
     ###### Args #####
+    arguments = pargs.additional_args
+    if pargs.coverage:
+        arguments += ["--coverage", "coverage.report"]
 
     # Get PypeIt git up to date
-    my_args = 'cd PypeIt;'
+    my_args = 'apt install -y xvfb;'
+    my_args += ' cd PypeIt;'
     my_args += ' git fetch;'
     my_args += f' git checkout {pargs.pypeit_branch};' 
     my_args += ' git pull --ff-only;'
@@ -77,14 +83,17 @@ def main():
     my_args += ' git fetch;'
     my_args += f' git checkout {pargs.dev_branch};'
     my_args += ' git pull --ff-only;'
+    my_args += ' source headless_test.sh;'
     # Pixel flat
     my_args += ' mkdir CALIBS;'
     my_args += ' aws --endpoint http://rook-ceph-rgw-nautiluss3.rook s3 cp s3://pypeit/CALIBS CALIBS/ --recursive --force;'
     # Raw Data
     my_args += ' mkdir RAW_DATA;'
     my_args += ' aws --endpoint http://rook-ceph-rgw-nautiluss3.rook s3 cp s3://pypeit/RAW_DATA RAW_DATA/ --recursive --force;'
-    my_args += f' ./pypeit_test --no_gui -t {pargs.ncpu} develop -r pypeit.report -o /tmp/REDUX_OUT;'
+    my_args += f' ./pypeit_test --no_gui -t {pargs.ncpu} {" ".join(arguments)} -r pypeit.report -o /tmp/REDUX_OUT;'
     my_args += f' aws --endpoint http://rook-ceph-rgw-nautiluss3.rook s3 cp pypeit.report s3://pypeit/Reports/{pargs.name}.report;'
+    if pargs.coverage:
+        my_args += f' aws --endpoint http://rook-ceph-rgw-nautiluss3.rook s3 cp coverage.report s3://pypeit/Reports/{pargs.name}.coverage.report;'
 
     data['spec']['template']['spec']['containers'][0]['args'][0] = my_args
 
