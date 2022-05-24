@@ -1,0 +1,44 @@
+# Auto-generated PypeIt file
+# 2022-05-09
+
+# User-defined execution parameters
+[rdx]
+    spectrograph = vlt_fors2
+    detnum = 1
+[calibrations]
+ [[slitedges]]
+   sync_predict = nearest
+ [[tilts]]
+   tracethresh = 10.0
+   sig_neigh = 8.0
+[reduce]
+ [[skysub]]
+     bspline_spacing = 0.6
+     
+setup read
+Setup A
+     dispname: GRIS_600z
+    dispangle: 892.7
+       decker: lSlit1_0arcsec
+     detector: CHIP1
+setup end
+
+# Read in the data
+data read
+path /home/riccardo/Desktop/J032021.435-352104.194/
+|                           filename |                 frametype |        ra |       dec |     target |  dispname |         decker | binning |            mjd | airmass |  exptime | dispangle | detector | calib | comb_id | bkg_id |
+| FORS2.2020-11-11T05:35:09.343.fits |          science,arc,tilt | 50.095099 | -35.36866 | N0320-3521 | GRIS_600z | lSlit1_0arcsec |     2,2 | 59164.23274703 |   1.041 | 299.9926 |     892.7 |    CHIP1 |     0 |      -1 |     -1 |
+#| FORS2.2020-11-11T05:41:49.466.fits |          science,arc,tilt | 50.094082 | -35.36755 | N0320-3521 | GRIS_600z | lSlit1_0arcsec |     2,2 | 59164.23737807 |   1.047 | 299.9826 |     892.7 |    CHIP1 |     0 |      -1 |     -1 |
+| FORS2.2020-11-11T08:28:07.308.fits |                  standard | 89.097542 | -27.85993 |        STD | GRIS_600z | LSS_1.0_arcsec |     2,2 | 59164.35286236 |   1.044 |  45.0009 |     892.7 |    CHIP1 |     0 |      -1 |     -1 |
+| FORS2.2020-11-11T09:38:03.511.fits |                      bias |      None |      None |       BIAS |      None |           None |     2,2 | 59164.40142951 |    None |      0.0 |      None |    CHIP1 |     all |      -1 |     -1 |
+| FORS2.2020-11-11T09:38:37.103.fits |                      bias |      None |      None |       BIAS |      None |           None |     2,2 | 59164.40181831 |    None |      0.0 |      None |    CHIP1 |     all |      -1 |     -1 |
+| FORS2.2020-11-11T09:39:10.086.fits |                      bias |      None |      None |       BIAS |      None |           None |     2,2 | 59164.40220006 |    None |      0.0 |      None |    CHIP1 |     all |      -1 |     -1 |
+| FORS2.2020-11-11T09:39:43.109.fits |                      bias |      None |      None |       BIAS |      None |           None |     2,2 | 59164.40258227 |    None |      0.0 |      None |    CHIP1 |     all |      -1 |     -1 |
+| FORS2.2020-11-11T09:40:16.101.fits |                      bias |      None |      None |       BIAS |      None |           None |     2,2 | 59164.40296412 |    None |      0.0 |      None |    CHIP1 |     all |      -1 |     -1 |
+| FORS2.2020-11-11T09:49:55.586.fits | pixelflat,illumflat,trace |      None |      None |  FLAT,LAMP | GRIS_600z | lSlit1_0arcsec |     2,2 | 59164.40967114 |    None |   7.4973 |     892.7 |    CHIP1 |     all |      -1 |     -1 |
+| FORS2.2020-11-11T09:50:39.221.fits | pixelflat,illumflat,trace |      None |      None |  FLAT,LAMP | GRIS_600z | lSlit1_0arcsec |     2,2 | 59164.41017616 |    None |   7.4955 |     892.7 |    CHIP1 |     all |      -1 |     -1 |
+| FORS2.2020-11-11T09:51:22.204.fits | pixelflat,illumflat,trace |      None |      None |  FLAT,LAMP | GRIS_600z | lSlit1_0arcsec |     2,2 | 59164.41067365 |    None |      7.5 |     892.7 |    CHIP1 |     all |      -1 |     -1 |
+| FORS2.2020-11-11T09:52:06.217.fits | pixelflat,illumflat,trace |      None |      None |  FLAT,LAMP | GRIS_600z | lSlit1_0arcsec |     2,2 | 59164.41118306 |    None |   7.4975 |     892.7 |    CHIP1 |     all |      -1 |     -1 |
+| FORS2.2020-11-11T09:52:49.220.fits | pixelflat,illumflat,trace |      None |      None |  FLAT,LAMP | GRIS_600z | lSlit1_0arcsec |     2,2 | 59164.41168079 |    None |    7.496 |     892.7 |    CHIP1 |     all |      -1 |     -1 |
+data end
+

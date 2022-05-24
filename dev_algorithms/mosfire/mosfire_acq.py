@@ -1,4 +1,4 @@
-#!/usr/local/anaconda3-5.0.0.1/bin/1python
+#!/usr/local/anaconda/bin/python3
 
 """
 Show difference MOSFIRE acquisition frames.

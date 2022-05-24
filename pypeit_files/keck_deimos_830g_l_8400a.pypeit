@@ -8,7 +8,7 @@
 #    sortroot = keck_deimos_830g
 
 [extract]
-    maxnumber = 5
+    maxnumber_sci = 5
 
 # Setup
 setup read
