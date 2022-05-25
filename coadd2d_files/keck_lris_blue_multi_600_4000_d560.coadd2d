@@ -8,7 +8,12 @@
   detnum = 2
 [reduce]
     [[findobj]]
-        sig_thresh=5.0
+        snr_thresh=5.0
+[coadd2d]
+   offsets = auto
+   weights = auto
+
+
 
 # Read in the data
 spec2d read

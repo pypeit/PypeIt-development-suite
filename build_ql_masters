@@ -22,6 +22,8 @@ import argparse
 from IPython import embed
 
 from pypeit import version as pypeit_version
+from pypeit.spectrographs import util as spec_util
+from pypeit import utils 
 
 def parser(options=None):
 
@@ -102,7 +104,12 @@ def main():
     if pargs.instrument == 'all' or pargs.instrument == 'keck_mosfire':
 
         if pargs.setup == 'all' or pargs.setup == "Y_long":
-            dest_dir = os.path.join(ql_masters, 'MOSFIRE_MASTERS', 'Y')
+            spec = spec_util.load_spectrograph("keck_mosfire")
+            # Use a spec2d to get the QL master_dir as it will have the
+            # header information from the RAW science file
+            dev_suite_output = os.path.join(redux_dir, 'keck_mosfire', 'Y_long')
+            spec2d = utils.find_single_file(os.path.join(dev_suite_output, "Science", "spec2d*"))
+            dest_dir = os.path.join(ql_masters, spec.get_ql_master_dir(spec2d))
             os.makedirs(dest_dir, exist_ok=True)
 
             files = ['Masters/MasterSlits_A_15_DET01.fits.gz',
@@ -111,7 +118,7 @@ def main():
                      'Science/spec1d_m191118_0064-GD71_MOSFIRE_20191118T104704.507.fits',
                      'sens_m191118_0064-GD71_MOSFIRE_20191118T104704.507.fits' ]
 
-            source_filters = [os.path.join(redux_dir, 'keck_mosfire', 'Y_long', x) for x in files]
+            source_filters = [os.path.join(dev_suite_output, x) for x in files]
             
             
             if not pargs.force_build:
@@ -131,7 +138,38 @@ def main():
             source_files += found_files
 
             for file in found_files:
-                dest_files.append(os.path.join(ql_masters, 'MOSFIRE_MASTERS', 'Y', os.path.basename(file)))
+                dest_files.append(os.path.join(dest_dir, os.path.basename(file)))
+    
+    if pargs.instrument == 'all' or pargs.instrument == 'keck_lris_red_mark4':
+        if pargs.setup == 'all' or pargs.setup == "long_600_10000_d680":
+
+            dev_suite_output = os.path.join(redux_dir, 'keck_lris_red_mark4', 'long_600_10000_d680')
+            rdx_masters = os.path.join(dev_suite_output, "Masters")
+            rdx_science = os.path.join(dev_suite_output, "Science")
+
+            # Use a spec2d to get the QL master_dir as it will have the
+            # header information from the RAW science file
+            spec = spec_util.load_spectrograph("keck_lris_red_mark4")            
+            spec2d = utils.find_single_file(os.path.join(rdx_science, "spec2d*"))
+            if spec2d is None:
+                print(f"Couldn't find spec2d file in {rdx_science} to read")
+                sys.exit(1)
+            dest_dir = os.path.join(ql_masters, spec.get_ql_master_dir(spec2d))            
+            os.makedirs(dest_dir, exist_ok=True)
+
+            # Find the masters
+            bias_file  = utils.find_single_file(os.path.join(rdx_masters, 'MasterBias*'))
+            slits_file = utils.find_single_file(os.path.join(rdx_masters, 'MasterSlits*'))
+            tilts_file = utils.find_single_file(os.path.join(rdx_masters, 'MasterTilts*'))
+            wave_calib = utils.find_single_file(os.path.join(rdx_masters, 'MasterWaveCalib*'))
+            std_spec1d = utils.find_single_file(os.path.join(rdx_science, 'spec1d_*00127-GD153*.fits'))
+            sens_file  = utils.find_single_file(os.path.join(dev_suite_output, 'sens_*.fits'))
+
+            if (bias_file is None or slits_file is None or tilts_file is None or wave_calib is None or 
+                std_spec1d is None or sens_file is None):
+                print(f"Couldn't find all QL masters in {dev_suite_output}")
+            source_files = [bias_file, slits_file, tilts_file, wave_calib, std_spec1d, sens_file]
+            dest_files = [os.path.join(dest_dir, os.path.basename(file)) for file in source_files]
 
     # Copy the files
     for source_file, dest_file in zip(source_files, dest_files):

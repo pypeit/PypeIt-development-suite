@@ -107,11 +107,13 @@ class TestPhase(Enum):
 
 supported_instruments = ['kast', 'deimos', 'kcwi', 'nires', 'nirspec', 'mosfire', 'lris', 'xshooter', 'gnirs', 'gmos',
                          'flamingos2', 'mage', 'fire', 'luci', 'mdm', 'alfosc', 'fors2', 'binospec', 'mmirs', 'bluechannel',
-                         'mods', 'dbsp', 'tspec', 'bc', 'goodman', 'efosc2','deveny']
+                         'mods', 'dbsp', 'tspec', 'bc', 'goodman', 'efosc2','deveny', 'dolores']
 
-reduce_setups  = {'bok_bc': ['600'],
+reduce_setups  = {'bok_bc': ['300','600'],
                   'gemini_gnirs': ['32_SB_SXD', '10_LB_SXD'],
-                  'gemini_gmos': ['GS_HAM_R400_700', 'GS_HAM_R400_860', 'GN_HAM_R400_885', 'GN_HAM_NS_B600_620'],
+                  'gemini_gmos': ['GS_HAM_R400_700', 'GS_HAM_R400_860',
+                                  'GN_HAM_R400_885', 'GN_HAM_NS_B600_620',
+                                  'GS_HAM_MULTI_R400_700', 'GN_E2V_MULTI_R400_600'],
                   'gemini_flamingos2': ['HK_HK', 'JH_JH'],
                   'gtc_osiris': ['R1000B', 'R1000BMOS', 'R1000RMOS', 'R2500R', 'R2500V'],
                   'keck_deimos': ['600ZD_M_6500', '600ZD_tilted', '1200G_M_7750', '830G_LVM_8400', '830G_M_8100_26',
@@ -128,10 +130,10 @@ reduce_setups  = {'bok_bc': ['600'],
                                     'multi_400_8500_d560', 'long_600_10000_d680',
                                     'long_400_8500_longread'],  # Longslit read-out mode
                   'keck_lris_red_orig': ['long_300_5000'],
-                  'keck_lris_red_mark4': ['long_400_8500_d560'],
+                  'keck_lris_red_mark4': ['long_400_8500_d560', 'long_600_10000_d680'],
                   'lbt_luci': ['LUCI-I', 'LUCI-II'],
                   'lbt_mods': ['MODS1R_Longslit', 'MODS2R_Longslit'],
-                  'ldt_deveny': ['DV1', 'DV2', 'DV5', 'DV6', 'DV8'],
+                  'ldt_deveny': ['DV1', 'DV2', 'DV5', 'DV6', 'DV8', 'DV9'],
                   'magellan_mage': ['1x1'],
                   'magellan_fire': ['FIRE_Echelle', 'FIRE_Long'],
                   'mdm_osmos': ['MDM4K'],
@@ -146,7 +148,8 @@ reduce_setups  = {'bok_bc': ['600'],
                   'shane_kast_blue': ['452_3306_d57', '600_4310_d55', '830_3460_d46'],
                   'shane_kast_red': ['300_7500_Ne', '600_7500_d55_ret', '600_7500_d57', '600_5000_d46', '1200_5000_d57'],
                   'soar_goodman_red': ['M1','M2'],
-                  'vlt_fors2': ['300I'],
+                  'tng_dolores': ['LRB'],
+                  'vlt_fors2': ['300I', '600Z'],
                   'vlt_xshooter': ['VIS_1x1', 'VIS_2x1', 'VIS_2x2', 'VIS_manual', 'NIR'],
                   'vlt_sinfoni': ['K_0.8'],
                   }
@@ -164,7 +167,8 @@ cooked_setups = {'shane_kast_blue': ['600_4310_d55'],
                   'keck_lris_red': ['long_600_7500_d560', 'multi_400_8500_d560'],
                   'keck_lris_blue': ['long_600_4000_d560', 'multi_600_4000_d560'],
                 }
-ql_setups = {'keck_nires':   ['NIRES'], 
+ql_setups = {'keck_nires':   ['NIRES'],
+             'keck_lris_red_mark4': ['long_600_10000_d680'],
              'keck_mosfire': ['Y_long'],
              'keck_deimos':  ['QL']}
 
@@ -189,7 +193,9 @@ _sensfunc = {'shane_kast_blue/600_4310_d55':
              'keck_deimos/900ZD_LVM_5500':
                  {'std_file': 'spec1d_*Feige110*.fits', 'sens_file': 'keck_deimos_900zd_lvm_5500.sens'},
              'keck_mosfire/Y_long':
-                 {'std_file': 'spec1d_*0064-GD71*.fits'}
+                 {'std_file': 'spec1d_*0064-GD71*.fits'},
+             'keck_lris_red_mark4/long_600_10000_d680':
+                 {'std_file': 'spec1d_*00127-GD153*.fits'}
              }
 
 
@@ -216,12 +222,14 @@ _coadd1d = ['shane_kast_blue/600_4310_d55',
             ]
 
 _coadd2d = {'gemini_gnirs/32_SB_SXD':
-                {'obj': 'pisco'},
+                {'coadd_file': True},
             'keck_lris_blue/multi_600_4000_d560':
                 {'coadd_file': True},
             'vlt_xshooter/VIS_manual':
                 {'coadd_file': True},
             'keck_deimos/830G_M_9000_dither':
+                {'coadd_file': True},
+            'keck_mosfire/long2pos1_H':
                 {'coadd_file': True}
             }
 
@@ -238,8 +246,12 @@ _quick_look = {'shane_kast_blue/600_4310_d55':
                'keck_nires/NIRES':
                    {'files': ['s190519_0067.fits', 's190519_0068.fits']},
                'keck_mosfire/Y_long':
-                   {'files': ['m191120_0043.fits', 'm191120_0044.fits',  'm191120_0045.fits', 'm191120_0046.fits'],
-                    '--spec_samp_fact': 2.0, '--spat_samp_fact': 2.0}}
+                   {'files': ['m191120_0043.fits', 'm191120_0044.fits', 'm191120_0045.fits', 'm191120_0046.fits'],
+                    '--spec_samp_fact': 2.0, '--spat_samp_fact': 2.0, '--flux': None, '--bkg_redux': None},
+               'keck_lris_red_mark4/long_600_10000_d680':
+                   {'files': ['r220127_00123.fits', 'r220127_00124.fits'],
+                    '--spec_samp_fact': 2.0, '--spat_samp_fact': 2.0, '--flux': None}}
+
 
 # The order of these tests in all_tests determine the order they run
 # in for the setup. So that tests that depend on previous tests must

@@ -5,10 +5,12 @@
   detnum = (4,8)
 [reduce]
     [[findobj]]
-        sig_thresh=5.0
+        snr_thresh=5.0
 
 [coadd2d]
   offsets = maskdef_offsets
+  weights = auto
+  user_obj = 1305,1
 
 
 # Read in the data
