@@ -67,7 +67,8 @@ def main():
         arguments += ["--coverage", "coverage.report"]
 
     # Get PypeIt git up to date
-    my_args = 'apt install -y xvfb;'
+    my_args = 'apt update -y;'
+    my_args += ' apt install -y xvfb;'
     my_args += ' cd PypeIt;'
     my_args += ' git fetch;'
     my_args += f' git checkout {pargs.pypeit_branch};' 
@@ -83,7 +84,7 @@ def main():
     my_args += ' git fetch;'
     my_args += f' git checkout {pargs.dev_branch};'
     my_args += ' git pull --ff-only;'
-    my_args += ' source headless_test.sh;'
+    my_args += ' source source_headless_test.sh;'
     # Pixel flat
     my_args += ' mkdir CALIBS;'
     my_args += ' aws --endpoint http://rook-ceph-rgw-nautiluss3.rook s3 cp s3://pypeit/CALIBS CALIBS/ --recursive --force;'

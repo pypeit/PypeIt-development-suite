@@ -472,21 +472,34 @@ def run_pytest(pargs, test_descr, test_dir, test_report):
     Args:
         pargs
     """
-    test_report.pytest_started(test_descr)
-    # Tests not written to run in parallel yet
-    #args = ["pytest", "-v", "--color=yes", "-n", str(pargs.threads)]
-    if pargs.coverage is not None:
-        args = ["coverage", "run", "--source", "pypeit", "--data-file", os.path.join(pargs.outputdir, ".coverage"), "--parallel-mode", "-m", "pytest", "-v", "--color=yes"]
-    else:
-        args = ["pytest", "-v", "--color=yes"]
-    if not pargs.show_warnings:
-        args.append("--disable-warnings")
-        
-    args.append(test_dir)
+    orig_directory = os.getcwd()
+    abs_test_dir = os.path.abspath(test_dir)
+    try:
+        # Change directory so that the coverage output goes to the outputdir
+        os.chdir(pargs.outputdir)
 
-    with subprocess.Popen(args,stderr=subprocess.STDOUT, stdout=subprocess.PIPE) as p:
-        while(p.poll() is None):
-            test_report.pytest_line(test_descr, p.stdout.readline().decode().strip())
+        test_report.pytest_started(test_descr)
+
+        # Tests not written to run in parallel yet
+        #args = ["pytest", "-v", "--color=yes", "-n", str(pargs.threads)]
+
+        # Run pytest using coverage if requested
+        if pargs.coverage is not None:
+            args = ["coverage", "run", "--source", "pypeit", "--parallel-mode", "-m", "pytest", "-v", "--color=yes"]
+        else:
+            args = ["pytest", "-v", "--color=yes"]
+
+        if not pargs.show_warnings:
+            args.append("--disable-warnings")
+            
+        args.append(abs_test_dir)
+
+        with subprocess.Popen(args,stderr=subprocess.STDOUT, stdout=subprocess.PIPE) as p:
+            while(p.poll() is None):
+                test_report.pytest_line(test_descr, p.stdout.readline().decode().strip())
+    finally:
+        # Make sure we always restore the original directory
+        os.chdir(orig_directory)
 
 def generate_coverage_report(pargs):
     coverage_files = [str(path) for path in Path(pargs.outputdir).rglob(".coverage.*")]
@@ -626,13 +639,13 @@ def main():
 
     if not os.path.exists(pargs.outputdir):
         os.mkdir(pargs.outputdir)
-    outputdir = os.path.abspath(pargs.outputdir)
+    pargs.outputdir = os.path.abspath(pargs.outputdir)
 
     # Make sure we can create a writable report file (if needed) before starting the tests
     if pargs.report is None and pargs.quiet:
         # If there's no report file specified in the command line, but we're in quiet mode,
         # make up a report file name
-        pargs.report = get_unique_file(os.path.join(outputdir, "pypeit_test_results.txt"))
+        pargs.report = get_unique_file(os.path.join(pargs.outputdir, "pypeit_test_results.txt"))
 
     # ---------------------------------------------------------------------------
     # Determine which tests to run
@@ -887,13 +900,12 @@ def build_test_setup(pargs, instr, setup_name, flg_reduce, flg_after, flg_ql):
 
     dev_path = os.getenv('PYPEIT_DEV')
     raw_data = raw_data_dir()
-    outputdir = os.path.abspath(pargs.outputdir)
 
     # Directory with raw data
     rawdir = os.path.join(raw_data, instr, setup_name)
 
     # Directory for reduced data
-    rdxdir = os.path.join(outputdir, instr, setup_name)
+    rdxdir = os.path.join(pargs.outputdir, instr, setup_name)
     if not os.path.exists(rdxdir):
         # Make the directory
         os.makedirs(rdxdir)
