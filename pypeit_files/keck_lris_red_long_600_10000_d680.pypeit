@@ -15,7 +15,7 @@ spectrograph = keck_lris_red
 [reduce]
   [[findobj]]
       snr_thresh = 3.
-      maxnumber = 1
+      maxnumber_sci = 1
       find_fwhm = 8.
 
 # Setup

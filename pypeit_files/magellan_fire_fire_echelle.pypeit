@@ -4,6 +4,10 @@
 # User-defined execution parameters
 [rdx]
 spectrograph = magellan_fire
+[reduce]
+ [[findobj]]
+   maxnumber_sci = 1
+   maxnumber_std = 1
 
 # Setup
 setup read

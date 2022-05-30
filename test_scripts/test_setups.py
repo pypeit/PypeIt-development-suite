@@ -148,8 +148,8 @@ reduce_setups  = {'bok_bc': ['300','600'],
                   'soar_goodman_red': ['M1','M2'],
                   'tng_dolores': ['LRB'],
                   'vlt_fors2': ['300I', '600Z'],
-                  'vlt_xshooter': ['VIS_1x1', 'VIS_2x1', 'VIS_2x2', 'VIS_manual', 'NIR'],
                   'vlt_sinfoni': ['K_0.8'],
+                  'vlt_xshooter': ['VIS_1x1', 'VIS_2x1', 'VIS_2x2', 'VIS_manual', 'NIR', 'UVB_1x1'],
                   }
 
 # Currently there is only one setup (keck_deimos QL) that is run for develop tests, but doesn't run a reduction
@@ -220,12 +220,14 @@ _coadd1d = ['shane_kast_blue/600_4310_d55',
             ]
 
 _coadd2d = {'gemini_gnirs/32_SB_SXD':
-                {'obj': 'pisco'},
+                {'coadd_file': True},
             'keck_lris_blue/multi_600_4000_d560':
                 {'coadd_file': True},
             'vlt_xshooter/VIS_manual':
                 {'coadd_file': True},
             'keck_deimos/830G_M_9000_dither':
+                {'coadd_file': True},
+            'keck_mosfire/long2pos1_H':
                 {'coadd_file': True}
             }
 

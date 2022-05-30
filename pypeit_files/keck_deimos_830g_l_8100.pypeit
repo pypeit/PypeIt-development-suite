@@ -9,7 +9,7 @@
     use_biasimage=False
 [reduce]
     [[findobj]]
-        maxnumber = 5
+        maxnumber_sci = 5
         find_fwhm = 9.  #pixels
    [[extraction]]
 	use_user_fwhm = True
