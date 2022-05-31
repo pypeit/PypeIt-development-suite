@@ -228,6 +228,7 @@ def test_main_develop_without_failures(monkeypatch, tmp_path):
         monkeypatch.setattr(sys, "argv", ['pypeit_test', '-o', str(tmp_path), '-t', '4', 'develop'])
 
         missing_files = ['gemini_gmos/GS_HAM_R400_860/Science/spec1d_S20181219S0316-GD71_GMOS-S_1864May27T230832.356.fits',
+                         'gemini_gmos/GS_HAM_R400_700/Science/spec1d_S20181005S0029-LTT7379_GMOS-S_18640527T181202.909.fits',
                          'gemini_gnirs/32_SB_SXD/Science/spec1d_cN20170331S0206-HIP62745_GNIRS_2017Mar31T083351.681.fits',
                          'shane_kast_blue/600_4310_d55/shane_kast_blue_A/shane_kast_blue_A.pypeit',
                          'shane_kast_blue/600_4310_d55/shane_kast_blue_A/Science/spec1d_b24-Feige66_KASTb_2015May20T041246.960.fits',
@@ -282,6 +283,7 @@ def test_main_debug_priority_list(monkeypatch, tmp_path, capsys):
                   'keck_lris_blue_orig/long_600_4000_d500',
                   'keck_lris_blue/multi_600_4000_d560',
                   'shane_kast_blue/452_3306_d57',
+                  'mmt_bluechannel/300l',
                   'keck_lris_blue/long_600_4000_d560',
                   'keck_lris_blue/long_400_3400_d560'
                   ]

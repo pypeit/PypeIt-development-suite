@@ -4,10 +4,10 @@
 # User-defined execution parameters
 [rdx]
 spectrograph = keck_deimos
-detnum = 1,5
+detnum = (1,5)
 [reduce]
    [[findobj]]
-         sig_thresh = 5
+         snr_thresh = 5
    [[slitmask]]
 	use_alignbox = True
 

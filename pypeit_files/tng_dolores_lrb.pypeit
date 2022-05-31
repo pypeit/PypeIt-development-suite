@@ -1,0 +1,24 @@
+# User-defined execution parameters
+[rdx]
+  spectrograph = tng_dolores
+
+# Setup
+setup read
+  Setup A:
+    dispname: LR-B
+      decker: Long_Slit_1.0
+setup end
+
+# Read in the data
+data read
+ path ../Raw
+|                      filename |                 frametype |                 ra |                dec |                   target | dispname |        decker | binning |                mjd |            airmass | exptime |
+|   190428_Ne+Hg_LR-B_1_ed.fits |                  arc,tilt |  2.700000047683716 |  47.33333206176758 |                    Ne+Hg |     LR-B | Long_Slit_1.0 |     1,1 |  58601.65534322917 |                1.0 |     1.0 |
+|         190428_bias_1_ed.fits |                      bias | 15.916666984558105 |  32.04999923706055 |      dolores-calibs bias |     OPEN |        GIARPS |     1,1 |  58601.62905696759 | 1.633123948089e+16 |     0.0 |
+|         190428_bias_2_ed.fits |                      bias | 15.916666984558105 |  32.04999923706055 |      dolores-calibs bias |     OPEN |        GIARPS |     1,1 |  58601.62935611111 | 1.633123948089e+16 |     0.0 |
+|         190428_bias_3_ed.fits |                      bias | 15.916666984558105 |  32.04999923706055 |      dolores-calibs bias |     OPEN |        GIARPS |     1,1 |  58601.62965372685 | 1.633123948089e+16 |     0.0 |
+| 190428_Halogen_LR-B_1_ed.fits | pixelflat,illumflat,trace |  2.700000047683716 |  47.33333206176758 | Halogen 1 dolores-calibs |     LR-B | Long_Slit_1.0 |     1,1 |  58601.65361231482 |                1.0 |     2.0 |
+| 190428_Halogen_LR-B_2_ed.fits | pixelflat,illumflat,trace |  2.700000047683716 |  47.33333206176758 | Halogen 2 dolores-calibs |     LR-B | Long_Slit_1.0 |     1,1 |  58601.65393707176 |                1.0 |     2.0 |
+| 190428_Halogen_LR-B_3_ed.fits | pixelflat,illumflat,trace |  2.700000047683716 |  47.33333206176758 | Halogen 3 dolores-calibs |     LR-B | Long_Slit_1.0 |     1,1 |  58601.65425496528 |                1.0 |     2.0 |
+|     190428_HD121409_LR-B.fits |                   science | 13.897527694702148 | 53.728668212890625 |                 HD121409 |     LR-B | Long_Slit_1.0 |     1,1 | 58601.882732094906 | 1.4163235425949097 |     0.1 |
+data end
