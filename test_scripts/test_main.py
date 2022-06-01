@@ -24,8 +24,7 @@ import pypeit
 pypeit.msgs.reset(verbosity=0) 
 
 
-from .test_setups import TestPhase, all_tests, all_setups, supported_instruments
-from .test_setups import cooked_setups, ql_setups
+from .test_setups import TestPhase, all_tests, all_setups
 from .pypeit_tests import get_unique_file
 
 test_run_queue = PriorityQueue()

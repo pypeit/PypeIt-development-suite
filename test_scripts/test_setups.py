@@ -33,13 +33,11 @@ To add a new type of test:
    PypeItTest subclass that runs the test, and the test phase (prep, reduce, afterburn, quicklook).
 
 Attributes:
-    supported_instruments:   A list of the instruments supported by the test suite. This can be a substring of the
-                             instrument name.
     reduce_setups:           The test setups that support reduction. A dict of instruments to the supported test 
                              setups for the instrument. 
                              Each setup should have data in $PYPEIT_DEV/RAW_DATA/instrument/setup
-    all_setups:          The test setups that comprise the "develop" tests in the dev suite. Currently this
-                             is a copy of reduce_setups with additional tests added that don't require reduction.
+    all_setups:              All of test setups that comprise the "reduce", "afterburn", and "ql" tests in the dev 
+                             suite. Effectively all of the test that are not run by pytest.
     all_tests:               A list of the test types supported by the dev suite and which test setups they are run
                              on.  The test types are listed in the order they run in so that tests can depend on the
                              result of previous tests.
@@ -54,10 +52,6 @@ Attributes:
                              'type': A TestPhase enum that is either PREP, REDUCE, AFTERBURN, or QL.
 
                              'setups': Which setups should run the test along with any arguments needed to run the test.
-
-                             The setup can be specified as '*' to indicate every setup should run the test type.
-                             This is currently used so that every test setup will run at least one "run_pypeit"
-                             data reduction test.
 
                              The setup can also be specified as an instrument name to indicate every setup for the
                              instrument should run the test type, or as 'instrument/setup' to indicate only a specific
@@ -105,9 +99,6 @@ class TestPhase(Enum):
     QL        = auto()
 
 
-supported_instruments = ['kast', 'deimos', 'kcwi', 'nires', 'nirspec', 'mosfire', 'lris', 'xshooter', 'gnirs', 'gmos',
-                         'flamingos2', 'mage', 'fire', 'luci', 'mdm', 'alfosc', 'fors2', 'binospec', 'mmirs', 'bluechannel',
-                         'mods', 'dbsp', 'tspec', 'bc', 'goodman', 'efosc2','deveny', 'dolores']
 
 reduce_setups  = {'bok_bc': ['300','600'],
                   'gemini_gnirs': ['32_SB_SXD', '10_LB_SXD'],
@@ -157,20 +148,6 @@ reduce_setups  = {'bok_bc': ['300','600'],
 # Currently there is only one setup (keck_deimos QL) that doesn't run a reduction
 all_setups = copy.deepcopy(reduce_setups)
 all_setups['keck_deimos'].append('QL')
-
-# The instruments/setups needed to build cooked.
-cooked_setups = {'shane_kast_blue': ['600_4310_d55'],
-                  'keck_kcwi': ['bh2_4200'],
-                  'keck_deimos': ['830G_M_8500', '830G_M_9000_dither'],
-                  'keck_mosfire': ['J_multi'],
-                  'shane_kast_red': ['600_7500_d55_ret'],
-                  'keck_lris_red': ['long_600_7500_d560', 'multi_400_8500_d560'],
-                  'keck_lris_blue': ['long_600_4000_d560', 'multi_600_4000_d560'],
-                }
-ql_setups = {'keck_nires':   ['NIRES'],
-             'keck_lris_red_mark4': ['long_600_10000_d680'],
-             'keck_mosfire': ['Y_long'],
-             'keck_deimos':  ['QL']}
 
 _pypeit_setup = ['shane_kast_blue/600_4310_d55']
 
