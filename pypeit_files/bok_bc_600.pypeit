@@ -7,7 +7,7 @@ spectrograph = bok_bc
 
 [reduce]
   [[findobj]]
-    sig_thresh = 3.
+    snr_thresh = 5.
 #   [[skysub]]
 #    no_local_sky = False
 #    mask_by_boxcar = False

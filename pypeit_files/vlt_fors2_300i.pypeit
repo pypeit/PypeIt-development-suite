@@ -12,7 +12,7 @@ spectrograph = vlt_fors2
 	bspline_spacing = 1.
 	no_poly = True
  [[findobj]]
-	sig_thresh = 5.
+	snr_thresh = 5.
 
 # Setup
 setup read

@@ -12,7 +12,7 @@
         sigdetect = 10.,11.,12.,13.,14.
 [reduce]
     [[findobj]]
-        maxnumber = 3
+        maxnumber_sci = 3
 
 # Setup
 setup read
