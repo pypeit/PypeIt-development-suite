@@ -150,8 +150,8 @@ reduce_setups  = {'bok_bc': ['300','600'],
                   'soar_goodman_red': ['M1','M2'],
                   'tng_dolores': ['LRB'],
                   'vlt_fors2': ['300I', '600Z'],
-                  'vlt_xshooter': ['VIS_1x1', 'VIS_2x1', 'VIS_2x2', 'VIS_manual', 'NIR'],
                   'vlt_sinfoni': ['K_0.8'],
+                  'vlt_xshooter': ['VIS_1x1', 'VIS_2x1', 'VIS_2x2', 'VIS_manual', 'NIR', 'UVB_1x1'],
                   }
 
 # Currently there is only one setup (keck_deimos QL) that doesn't run a reduction
