@@ -17,7 +17,7 @@
     assign_obj = True
     extract_missing_objs = True
   [[findobj]]
-    sig_thresh = 5.0
+    snr_thresh = 5.0
 
 # Setup
 setup read

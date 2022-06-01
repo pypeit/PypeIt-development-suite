@@ -472,36 +472,33 @@ def run_pytest(pargs, test_descr, test_dir, test_report):
     Args:
         pargs
     """
-    orig_directory = os.getcwd()
     abs_test_dir = os.path.abspath(test_dir)
-    try:
-        # Change directory so that the coverage output goes to the outputdir
-        os.chdir(pargs.outputdir)
 
-        test_report.pytest_started(test_descr)
+    test_report.pytest_started(test_descr)
 
-        # Tests not written to run in parallel yet
-        #args = ["pytest", "-v", "--color=yes", "-n", str(pargs.threads)]
+    # Tests not written to run in parallel yet
+    #args = ["pytest", "-v", "--color=yes", "-n", str(pargs.threads)]
 
-        # Run pytest using coverage if requested
-        if pargs.coverage is not None:
-            args = ["coverage", "run", "--source", "pypeit", "--parallel-mode", "-m", "pytest", "-v", "--color=yes"]
-        else:
-            args = ["pytest", "-v", "--color=yes"]
+    # Run pytest using coverage if requested
+    if pargs.coverage is not None:
+        args = ["coverage", "run", "--source", "pypeit", "--parallel-mode", "-m", "pytest", "-v", "--color=yes"]
+    else:
+        args = ["pytest", "-v", "--color=yes"]
 
-        if not pargs.show_warnings:
-            args.append("--disable-warnings")
-            
-        args.append(abs_test_dir)
+    if not pargs.show_warnings:
+        args.append("--disable-warnings")
+        
+    args.append(abs_test_dir)
 
-        with subprocess.Popen(args,stderr=subprocess.STDOUT, stdout=subprocess.PIPE) as p:
-            while(p.poll() is None):
-                test_report.pytest_line(test_descr, p.stdout.readline().decode().strip())
-    finally:
-        # Make sure we always restore the original directory
-        os.chdir(orig_directory)
+    # Run pytest, sending the outpu to the test report.
+    # We change the current directory so that the coverage output goes to the outputdir
+    with subprocess.Popen(args,stderr=subprocess.STDOUT, stdout=subprocess.PIPE,cwd=pargs.outputdir) as p:
+        while(p.poll() is None):
+            test_report.pytest_line(test_descr, p.stdout.readline().decode().strip())
 
 def generate_coverage_report(pargs):
+
+    # Find the coverage files
     coverage_files = [str(path) for path in Path(pargs.outputdir).rglob(".coverage.*")]
     
     if len(coverage_files) > 0:
@@ -511,8 +508,10 @@ def generate_coverage_report(pargs):
         with open(pargs.coverage, "w") as f:
             print("Couldn't find coverage files to combine.", file=f)
         return
-    data_file = os.path.join(pargs.outputdir, ".coverage")
-    process = subprocess.run(["coverage", "combine", "--data-file", data_file] + coverage_files, stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
+
+    # Combine them, changing to the output dir to keep the coverage 
+    # data files there
+    process = subprocess.run(["coverage", "combine"] + coverage_files, stdout=subprocess.PIPE, stderr=subprocess.STDOUT, cwd=pargs.outputdir)
     if process.returncode != 0:
         if not pargs.quiet:
             print("Failed to combine coverage data.", flush=True)
@@ -523,7 +522,7 @@ def generate_coverage_report(pargs):
 
     # Generate the report.
     with open(pargs.coverage, "w") as f:
-        process = subprocess.run(["coverage", "report", "--data-file", data_file], stdout=f, stderr=subprocess.STDOUT)
+        process = subprocess.run(["coverage", "report", "-m"], stdout=f, stderr=subprocess.STDOUT, cwd=pargs.outputdir)
 
 def raw_data_dir():
     return os.path.join(os.environ['PYPEIT_DEV'], 'RAW_DATA')
@@ -704,8 +703,6 @@ def main():
                 instruments.append(instr) 
             else:
                 unsupported.append(instr)
-    else:
-        instruments = all_instruments
 
     # Setups may be specified with a "instr/setup" syntax, parse those out
     # and make sure the instruments are included
@@ -720,13 +717,16 @@ def main():
             else:
                 argument_setup_names.append(setup)
 
-
     if len(unsupported) > 0:
         print("\x1B[" + "1;33m" + "\nWARNING - " + "\x1B[" + "0m" +
                 "The following instruments are not supported: {0}\n\n".format(
                 unsupported))
         return 1
 
+    # If no instruments were supplied by either the instruments or
+    # setups arguments, test all instruments
+    if len(instruments) == 0:
+        instruments = all_instruments
 
     # Report
     if not pargs.quiet:
@@ -787,9 +787,9 @@ def main():
             if len(argument_setup_names) > 0:
                 setup_names = [name for name in argument_setup_names if name in all_setups[instr]]
 
-                if len(setup_names) == 0:
-                    # No setups for this instrument
-                    setup_names = all_setups[instr]
+                # No setups for this instrument specified, so run all setups
+                if len(setup_names)==0:
+                    setup_names = all_setups[instr]                    
             elif pargs.debug:
                 setup_names = ['600_4310_d55']
             else:
