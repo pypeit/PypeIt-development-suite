@@ -28,11 +28,11 @@ data read
 | tspec0046.fits | arc,science,tilt |          330.60625 | 15.159194444444445 | J2202+1509 | TSPEC_SPEC | default |     1,1 |   57318.1567884375 |   1.052 |   300.0 |     2 |       2 |      1 |
 | tspec0047.fits | arc,science,tilt | 330.60641666666663 |           15.15925 | J2202+1509 | TSPEC_SPEC | default |     1,1 |  57318.16055525463 |   1.052 |   300.0 |     2 |       2 |      1 |
 | tspec0048.fits | arc,science,tilt | 330.60112499999997 | 15.159277777777778 | J2202+1509 | TSPEC_SPEC | default |     1,1 |  57318.16433137732 |   1.053 |   300.0 |     1 |       1 |      2 |
-| tspec0016.fits |             dark |         264.020625 |           33.34075 |   lamp_off | TSPEC_SPEC | default |     1,1 |  57317.97214409722 |     1.0 |    30.0 |   all |      -1 |     -1 |
-| tspec0017.fits |             dark |          264.16225 |  33.34052777777778 |   lamp_off | TSPEC_SPEC | default |     1,1 |  57317.97253561343 |     1.0 |    30.0 |   all |      -1 |     -1 |
-| tspec0018.fits |             dark |           264.3035 |  33.34030555555556 |   lamp_off | TSPEC_SPEC | default |     1,1 | 57317.972926967595 |     1.0 |    30.0 |   all |      -1 |     -1 |
-| tspec0019.fits |             dark | 264.44470833333327 |  33.34008333333333 |   lamp_off | TSPEC_SPEC | default |     1,1 |  57317.97331851852 |     1.0 |    30.0 |   all |      -1 |     -1 |
-| tspec0020.fits |             dark | 264.58591666666666 |  33.33986111111111 |   lamp_off | TSPEC_SPEC | default |     1,1 |   57317.9737099537 |     1.0 |    30.0 |   all |      -1 |     -1 |
+| tspec0016.fits |     lampoffflats |         264.020625 |           33.34075 |   lamp_off | TSPEC_SPEC | default |     1,1 |  57317.97214409722 |     1.0 |    30.0 |   all |      -1 |     -1 |
+| tspec0017.fits |     lampoffflats |          264.16225 |  33.34052777777778 |   lamp_off | TSPEC_SPEC | default |     1,1 |  57317.97253561343 |     1.0 |    30.0 |   all |      -1 |     -1 |
+| tspec0018.fits |     lampoffflats |           264.3035 |  33.34030555555556 |   lamp_off | TSPEC_SPEC | default |     1,1 | 57317.972926967595 |     1.0 |    30.0 |   all |      -1 |     -1 |
+| tspec0019.fits |     lampoffflats | 264.44470833333327 |  33.34008333333333 |   lamp_off | TSPEC_SPEC | default |     1,1 |  57317.97331851852 |     1.0 |    30.0 |   all |      -1 |     -1 |
+| tspec0020.fits |     lampoffflats | 264.58591666666666 |  33.33986111111111 |   lamp_off | TSPEC_SPEC | default |     1,1 |   57317.9737099537 |     1.0 |    30.0 |   all |      -1 |     -1 |
 | tspec0036.fits |  pixelflat,trace | 267.44237499999997 |  33.33538888888889 |    lamp_on | TSPEC_SPEC | default |     1,1 | 57317.981622534724 |     1.0 |    30.0 |   all |      -1 |     -1 |
 | tspec0037.fits |  pixelflat,trace | 267.58349999999996 | 33.335166666666666 |    lamp_on | TSPEC_SPEC | default |     1,1 | 57317.982014016205 |     1.0 |    30.0 |   all |      -1 |     -1 |
 | tspec0038.fits |  pixelflat,trace |  267.7247083333333 | 33.334944444444446 |    lamp_on | TSPEC_SPEC | default |     1,1 |  57317.98240543981 |     1.0 |    30.0 |   all |      -1 |     -1 |
