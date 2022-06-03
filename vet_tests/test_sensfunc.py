@@ -18,7 +18,7 @@ def sensfunc_io_uvis_test():
 
 # TODO -- THERE IS NO TEST HERE?!
 #   THIS WAS WRITTEN BY MILAN
-def sensfunc_io_tester(algorithm):
+def sensfunc_io_tester(algorithm, redux_out):
 
     # Remove any existing file from previous runs that were interrupted
     test_file = 'test_sens.fits'
@@ -26,8 +26,7 @@ def sensfunc_io_tester(algorithm):
         os.remove(test_file) 
 
     # Random spec1d file of a standard from cooked
-    spec1dfile = os.path.join(os.getenv('PYPEIT_DEV'), 
-                            'REDUX_OUT',
+    spec1dfile = os.path.join(redux_out,
                              'shane_kast_blue', '600_4310_d55',
                              'shane_kast_blue_A', 'Science',
                               'spec1d_b24-Feige66_KASTb_20150520T041246.960.fits')

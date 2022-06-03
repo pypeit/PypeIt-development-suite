@@ -486,7 +486,10 @@ def run_pytest(pargs, test_descr, test_dir, test_report):
 
     if not pargs.show_warnings:
         args.append("--disable-warnings")
-        
+    
+    if test_dir == "vet_tests":
+        args += ["--redux_out", pargs.outputdir]
+
     args.append(abs_test_dir)
 
     # Run pytest, sending the outpu to the test report.

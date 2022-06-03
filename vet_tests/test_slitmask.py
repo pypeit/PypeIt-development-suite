@@ -19,14 +19,14 @@ from pypeit.tests.tstutils import data_path
 # Load flats files
 def flat_files(instr='keck_deimos'):
     if instr == 'keck_deimos':
-        return [os.path.join(os.getenv('PYPEIT_DEV'), 'RAW_DATA', 'keck_deimos', '830G_M_8500', ifile)
+        return [os.path.join(os.environ['PYPEIT_DEV'], 'RAW_DATA', 'keck_deimos', '830G_M_8500', ifile)
                 for ifile in ['DE.20100913.57161.fits.gz', 'DE.20100913.57006.fits.gz']]
     elif instr == 'keck_mosfire':
-        return [os.path.join(os.getenv('PYPEIT_DEV'), 'RAW_DATA', 'keck_mosfire', 'J_multi', ifile)
+        return [os.path.join(os.environ['PYPEIT_DEV'], 'RAW_DATA', 'keck_mosfire', 'J_multi', ifile)
                     for ifile in ['m191015_0002.fits', 'm191015_0003.fits', 'm191015_0004.fits']]
 
 
-def test_assign_maskinfo_add_missing():
+def test_assign_maskinfo_add_missing(redux_out):
     instr_names = ['keck_deimos', 'keck_mosfire']
     for name in instr_names:
         # Spectrograph
@@ -54,8 +54,7 @@ def test_assign_maskinfo_add_missing():
         det_par = instrument.get_detector_par(det, hdu=hdul)
 
         if name == 'keck_deimos':
-            deimos_dir = os.path.join(os.getenv('PYPEIT_DEV'), 
-                              'REDUX_OUT', 
+            deimos_dir = os.path.join(redux_out, 
                               'keck_deimos',
                               '830G_M_8500', 
                               'Science')
@@ -71,8 +70,7 @@ def test_assign_maskinfo_add_missing():
             true_spat_pixpos_2 = round(sobjs[sobjs.MASKDEF_OBJNAME == 'ero191'].SPAT_PIXPOS[0])
 
         elif name == 'keck_mosfire':
-            mosfire_dir = os.path.join(os.getenv('PYPEIT_DEV'), 
-                              'REDUX_OUT', 'keck_mosfire','J_multi', 'Science')
+            mosfire_dir = os.path.join(redux_out, 'keck_mosfire','J_multi', 'Science')
             specobjs_file = os.path.join(mosfire_dir,
                                          'spec1d_m191014_0170-2M2228_12_MOSFIRE_20191014T095212.598.fits')
             sobjs = specobjs.SpecObjs.from_fitsfile(specobjs_file)
@@ -227,10 +225,9 @@ def test_deimosslitmask():
     assert spec.slitmask.nslits == 106, 'Incorrect number of slits read!'
 
 
-def test_lris_slitmask():
+def test_lris_slitmask(redux_out):
     # Check that the LRIS slitmask was read in and used!
-    file_path = os.path.join(os.environ['PYPEIT_DEV'],
-                             'REDUX_OUT',
+    file_path = os.path.join(redux_out,
                              'keck_lris_blue', 
                              'multi_600_4000_slitmask',
                              'Science', 

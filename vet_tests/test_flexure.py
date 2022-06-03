@@ -9,10 +9,9 @@ from pypeit.tests.tstutils import data_path
 
 import pytest
 
-def test_spat_flexure():
+def test_spat_flexure(redux_out):
     # Check that spatial flexure shift was set!
-    file_path = os.path.join(os.environ['PYPEIT_DEV'],
-                             'REDUX_OUT',
+    file_path = os.path.join(redux_out,
                              'keck_lris_red', 
                              'multi_600_5000_d560',
                              'Science', 
@@ -23,7 +22,7 @@ def test_spat_flexure():
     assert spec2dObj.sci_spat_flexure > 0.
 
 
-def test_flex_multi():
+def test_flex_multi(redux_out):
 
     # Set output file
     outfile = data_path('tst_multi_flex.fits')
@@ -31,8 +30,7 @@ def test_flex_multi():
         # Remove it if it already exists
         os.remove(outfile)
 
-    spec1d_file = os.path.join(os.getenv('PYPEIT_DEV'), 
-                             'REDUX_OUT', 
+    spec1d_file = os.path.join(redux_out,
                              'keck_deimos',
                              '830G_M_8500', 
                              'Science', 

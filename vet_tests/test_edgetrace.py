@@ -15,12 +15,11 @@ from pypeit.spectrographs import util
 from pypeit import edgetrace
 from pypeit.core import trace
 
-def test_addrm_slit():
+def test_addrm_slit(redux_out):
     """ This tests the add and remove methods for user-supplied slit fussing. """
 
     # Check for files
-    trace_file = os.path.join(os.getenv('PYPEIT_DEV'), 
-                              'REDUX_OUT', 
+    trace_file = os.path.join(redux_out,
                               'keck_lris_red', 
                               'multi_400_8500_d560', 
                               'Masters', 
@@ -47,12 +46,11 @@ def test_addrm_slit():
     assert edges.ntrace//2 == nslits, 'Did not remove trace.'
 
 
-def test_sobel_enhance():
+def test_sobel_enhance(redux_out):
     """ This tests if the sobel enhance improves the edge detection. """
 
     # Check for files
-    trace_file = os.path.join(os.getenv('PYPEIT_DEV'), 
-                              'REDUX_OUT', 
+    trace_file = os.path.join(redux_out, 
                               'keck_lris_blue', 
                               'long_600_4000_d560',
                               'Masters', 

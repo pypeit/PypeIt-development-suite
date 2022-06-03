@@ -19,14 +19,7 @@ from pypeit.tests.tstutils import data_path
 
 
 
-kastb_dir = os.path.join(os.getenv('PYPEIT_DEV'), 
-                            'REDUX_OUT',
-                             'shane_kast_blue', '600_4310_d55',
-                             'shane_kast_blue_A')
-
-@pytest.fixture
-def master_dir():
-    return os.path.join(os.getenv('PYPEIT_DEV'), 'Cooked', 'shane_kast_blue')
+kastb_dir = os.path.join('shane_kast_blue', '600_4310_d55','shane_kast_blue_A')
 
 instant_dict = dict(coeffs=np.ones((6,4,1)),
                     nslit=1,
@@ -36,10 +29,10 @@ instant_dict = dict(coeffs=np.ones((6,4,1)),
                     func2d='legendre2d')
 
 
-def test_instantiate_from_master(master_dir):
-    master_file = os.path.join(kastb_dir, 'Masters',
+def test_instantiate_from_master(redux_out):
+    master_file = os.path.join(redux_out, kastb_dir, 'Masters',
                                'MasterTilts_A_1_DET01.fits')
-    slit_master_file = os.path.join(kastb_dir, 'Masters',
+    slit_master_file = os.path.join(redux_out, kastb_dir, 'Masters',
                                'MasterSlits_A_1_DET01.fits.gz')
     slits = slittrace.SlitTraceSet.from_file(slit_master_file)
     waveTilts = wavetilts.WaveTilts.from_file(master_file)
@@ -48,13 +41,13 @@ def test_instantiate_from_master(master_dir):
 
 
 # Test rebuild tilts with a flexure offset
-def test_flexure(master_dir):
+def test_flexure(redux_out):
     flexure = 1.
-    master_file = os.path.join(kastb_dir, 'Masters',
+    master_file = os.path.join(redux_out, kastb_dir, 'Masters',
                                'MasterTilts_A_1_DET01.fits')
     waveTilts = wavetilts.WaveTilts.from_file(master_file)
     # Need slitmask
-    slit_file = os.path.join(kastb_dir, 'Masters',
+    slit_file = os.path.join(redux_out, kastb_dir, 'Masters',
                              'MasterSlits_A_1_DET01.fits.gz')
     slits = slittrace.SlitTraceSet.from_file(slit_file)
     slitmask = slits.slit_img(flexure=flexure)
@@ -62,13 +55,13 @@ def test_flexure(master_dir):
     new_tilts = waveTilts.fit2tiltimg(slitmask, flexure=flexure)
     # Test?
 
-def test_run(master_dir):
+def test_run(redux_out):
     # Masters
     spectrograph = load_spectrograph('shane_kast_blue')
-    master_file = os.path.join(kastb_dir, 'Masters',
+    master_file = os.path.join(redux_out, kastb_dir, 'Masters',
                                'MasterTiltimg_A_1_DET01.fits')
     mstilt = buildimage.TiltImage.from_file(master_file)
-    trace_file = os.path.join(kastb_dir, 'Masters',
+    trace_file = os.path.join(redux_out, kastb_dir, 'Masters',
                                'MasterEdges_A_1_DET01.fits.gz')
     edges = edgetrace.EdgeTraceSet.from_file(trace_file)
     # Instantiate
