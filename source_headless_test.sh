@@ -1,9 +1,8 @@
 # Source this file to enable running the dev suite in a headless linux environment
-# It requires installing Xvfb
+# It requires the QT libraries, which on Ubuntu 20.04 can be done with apt install -y qt5-default
 # e.g. 
 #
 # $ source source_headless_test.sh
 # $ ./pypeit_test all
 #
-Xvfb :1 -screen 0 800x600x24 &
-export DISPLAY=1:0
+export QT_QPA_PLATFORM=offscreen
