@@ -521,8 +521,8 @@ def fit_reddest_vs_xd_angle(arxiv, func='legendre', polyorder = 2, sigrej=3.0, m
     xd_min, xd_max = xd_angles.min(), xd_angles.max()
     xd_vec = xd_min + (xd_max - xd_min) * np.arange(100) / 99
 
-    xd_angle_fit_params=Table([[xd_min],[xd_max], [polyorder], [func]]
-                ,names=('ech_min','ech_max','xd_order', 'xd_func'))
+    xd_angle_fit_params=Table([[xd_min],[xd_max], [['UV', 'RED']], [polyorder], [func]]
+                ,names=('xd_min','xd_max','xdisp_vec', 'xd_polyorder', 'xd_func'))
 
     # First dimension is UV or RED, second dimension is the set of polynomial coefficients
     xd_angle_fit_coeffs = np.zeros((2, polyorder + 1))
@@ -554,6 +554,18 @@ def fit_reddest_vs_xd_angle(arxiv, func='legendre', polyorder = 2, sigrej=3.0, m
             plt.show()
 
     return xd_angle_fit_params, xd_angle_fit_coeffs
+
+def predict_order_coverage(arxiv_params, arxiv, xd_angle, xdisp, norders, pad=0):
+
+    xd_min, xd_max = arxiv_params['xd_min'][0], arxiv_params['xd_max'][0]
+    idisp = arxiv_params['xdisp_vec'] == xdisp
+    reddest_order_fit = int(np.round(fitting.evaluate_fit(
+        arxiv['xd_coeffs'][idisp, :], arxiv_params['xd_func'], xd_angle, minx=xd_min, maxx=xd_max)))
+    order_vec = reddest_order_fit + (np.arange(norders + 2*pad) - pad)[::-1]
+
+    return order_vec
+
+
 
 
 def echelle_composite_arcspec(arxiv_file, outfile, show_individual_solns=False, do_total=False, show_orders=False, debug=False):
