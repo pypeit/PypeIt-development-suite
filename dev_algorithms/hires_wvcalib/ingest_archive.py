@@ -278,16 +278,28 @@ def ingest_xidl_archive(outfile, n_final=4, func='legendre'):
     table_xidl = Table([np.zeros(nrows, dtype="<U30"),
                         np.zeros(nrows, dtype=int),
                         np.zeros(nrows, dtype=int),
+                        np.zeros(nrows, dtype=int),
+                        np.zeros(nrows, dtype=int),
+                        np.zeros(nrows, dtype=int),
+                        np.zeros(nrows, dtype=int),
+                        np.zeros(nrows, dtype="<U3"),
+                        np.zeros(nrows, dtype=float),
+                        np.zeros(nrows, dtype=float),
+                        np.zeros(nrows, dtype=int),
                         np.zeros((nrows, norders), dtype=int),
                         np.zeros((nrows, norders), dtype=bool),
-                        np.zeros((nrows, norders)),
-                        np.zeros((nrows, norders)),
+                        np.zeros((nrows, norders), dtype=bool),
+                        np.full((nrows, norders), -1e10),
+                        np.full((nrows, norders), -1e10),
                         np.zeros((nrows, norders), dtype="<U3"),
                         np.zeros((nrows, norders), dtype=int),
                         np.zeros((nrows, norders), dtype=int),
                         np.zeros((nrows, norders)),
                         np.zeros((nrows, norders, n_final + 1)),],
-                        names=('filename', 'nsolns', 'bluest_order', 'order', 'populated', 'ech_angle', 'xd_angle',
+                        names=('filename', 'nsolns', 'nsolns_good', 'bluest_order', 'bluest_good_order',
+                               'reddest_order', 'reddest_good_order', 'xdisp_file',
+                               'ech_angle_file', 'xd_angle_file', 'det_file',
+                               'order', 'populated', 'populated_and_good', 'ech_angle', 'xd_angle',
                                'xdisp', 'det', 'binspec','lambda_cen', 'coeff'))
 
     for irow in np.arange(nrows):
@@ -303,24 +315,37 @@ def ingest_xidl_archive(outfile, n_final=4, func='legendre'):
         else:
             assert this_wave.shape[1] == nspec
 
-        # Restrict to what is labeled as good in the Table
+        # Good is what is labeled as good in the Table, we also store everything in the file
         igood = (this_order_vec_raw >= tbl[irow]['IOrder']) & (this_order_vec_raw <= tbl[irow]['EOrder'])
-        nsolns = np.sum(igood)
+        nsolns_good = np.sum(igood)
         this_order_vec = this_order_vec_raw[igood]
-        indx = this_order_vec - order_min
+        indx = this_order_vec_raw - order_min
+        indx_good = this_order_vec - order_min
+        nsolns = this_order_vec_raw.size
+        # Information for the file is stored for convenience, although this is redundant with the arrays below
         table_xidl['filename'][irow] = tbl[irow]['Name']
         table_xidl['nsolns'][irow] = nsolns
+        table_xidl['nsolns_good'][irow] = nsolns_good
         table_xidl['bluest_order'][irow] = this_order_vec[-1]
-        table_xidl['order'][irow, indx] = this_order_vec
+        table_xidl['bluest_good_order'][irow] = this_order_vec_raw[-1]
+        table_xidl['reddest_order'][irow] = this_order_vec[0]
+        table_xidl['reddest_good_order'][irow] = this_order_vec_raw[0]
+        table_xidl['xdisp_file'][irow] = tbl[irow]['XDISP']
+        table_xidl['ech_angle_file'][irow] = tbl[irow]['ECH']
+        table_xidl['xd_angle_file'][irow] = tbl[irow]['XDAng']
+        table_xidl['det_file'][irow] = tbl[irow]['Chip']
+        # Arrays (nfile, norders)
+        table_xidl['order'][irow, indx] = this_order_vec_raw
         table_xidl['populated'][irow, indx] = True
+        table_xidl['populated_and_good'][irow, indx_good] = True
         table_xidl['ech_angle'][irow, indx] = tbl[irow]['ECH']
         table_xidl['xd_angle'][irow, indx] = tbl[irow]['XDAng']
         table_xidl['xdisp'][irow, indx] = tbl[irow]['XDISP']
         table_xidl['det'][irow, indx] = tbl[irow]['Chip']
         table_xidl['binspec'][irow, indx] = tbl[irow]['Rbin']
-        table_xidl['lambda_cen'][irow, indx] = np.median(this_wave[igood, :], axis=1)
-        table_xidl['wave'][irow, indx, :] = this_wave[igood, :]
-        table_xidl['arcspec'][irow, indx, :] = this_arc[igood, :]
+        table_xidl['lambda_cen'][irow, indx] = np.median(this_wave, axis=1)
+        table_xidl['wave'][irow, indx, :] = this_wave
+        table_xidl['arcspec'][irow, indx, :] = this_arc
         # Fit the wavelengths
         this_coeff_array = np.zeros((nsolns, n_final + 1))
         for ii, iwave in enumerate(this_wave[igood, :]):
@@ -343,33 +368,116 @@ def ingest_xidl_archive(outfile, n_final=4, func='legendre'):
     return
 
 
-def fit_coeffs_vs_ech_angle(arxiv_file, outfile, func='legendre', nmax = 3, coeff_fit_order_min=1, coeff_fit_order_max=2,
-                            sigrej=3.0, maxrej=1, debug=False):
+def fit_wvcalib_vs_angles(arxiv_file, outfile, func='legendre',
+                         ech_nmax = 3, ech_coeff_fit_order_min=1, ech_coeff_fit_order_max=2,
+                         xd_reddest_fit_polyorder=2, sigrej=3.0, maxrej=1, debug=False):
+    """
+    Fit the coefficients of the wavelength solution vs. the ECH angle. Also fit the bluest_order as a function of XD angle
+    for each XDISP
+
+    Args:
+        arxiv_file (str):
+             File containing the XIDL archive of the HIRES calibration
+        outfile (str):
+            File to write the output to.
+        func (str):
+            Function to fit the coefficients.
+        ech_nmax (int):
+            Polynomial coefficients from nmax to n_final + 1 will be fit with the lower order coeff_fit_order_min
+        ech_coeff_fit_order_min (int):
+            Polynomial order to fit the set of coefficients from nmax to n_final+1. These coefficients have
+            weaker trends with ech_angle so we fit them with lower order.
+        ech_coeff_fit_order_max (int):
+            Polynomial order to fit the set of coefficients from 0 to nmax. These coefficients show stronger
+            trends with ech_angle so we fit them with higher order.
+        sigrej (float):
+             Rejection threshold for the coefficient fits.
+        maxrej (int):
+             Maximum number of rejections to allow for each iteration of the coefficient fits rejection.
+        debug (bool):
+             If True, show plots illustring the fits
+
+    Returns:
+        None
+    """
+
 
     arxiv_params = Table.read(arxiv_file, hdu=1)[0]
     arxiv = Table.read(arxiv_file, hdu=2)
 
+    ech_angle_fit_params, ech_angle_fit_coeffs = fit_coeffs_vs_ech_angle(
+        arxiv_params, arxiv, func=func, nmax = ech_nmax, coeff_fit_order_min=ech_coeff_fit_order_min,
+        coeff_fit_order_max=ech_coeff_fit_order_max, sigrej=sigrej, maxrej=maxrej, debug=debug)
+
+    xd_angle_fit_params, xd_angle_fit_coeffs = fit_reddest_vs_xd_angle(
+        arxiv, polyorder=xd_reddest_fit_polyorder, func=func, sigrej=sigrej, maxrej=maxrej, debug=True)
+
+    fit_params = table.hstack((ech_angle_fit_params, xd_angle_fit_params))
+
+    hdulist = fits.HDUList()
+    hdulist.append(fits.BinTableHDU(fit_params.as_array()))  # hdu = 1
+    hdulist.append(fits.ImageHDU(np.array(ech_angle_fit_coeffs)))  # hdu = 2
+    hdulist.append(fits.ImageHDU(np.array(xd_angle_fit_coeffs)))  # hdu = 2
+    hdulist.writeto(outfile, overwrite=True)
+
+
+def fit_coeffs_vs_ech_angle(arxiv_params, arxiv, func='legendre', nmax = 3, coeff_fit_order_min=1, coeff_fit_order_max=2,
+                            sigrej=3.0, maxrej=1, debug=False):
+    """
+    Fit the coefficients of the wavelength solution vs. the ECH angle. Called by fit_coeffs_vs_angles
+
+    Args:
+        arxiv_file (str):
+             File containing the XIDL archive of the HIRES calibration
+        outfile (str):
+            File to write the output to.
+        func (str):
+            Function to fit the coefficients.
+        nmax (int):
+            Polynomial coefficients from nmax to n_final + 1 will be fit with the lower order coeff_fit_order_min
+        coeff_fit_order_min (int):
+            Polynomial order to fit the set of coefficients from nmax to n_final+1. These coefficients have
+            weaker trends with ech_angle so we fit them with lower order.
+        coeff_fit_order_max (int):
+            Polynomial order to fit the set of coefficients from 0 to nmax. These coefficients show stronger
+            trends with ech_angle so we fit them with higher order.
+        sigrej (float):
+             Rejection threshold for the coefficient fits.
+        maxrej (int):
+             Maximum number of rejections to allow for each iteration of the coefficient fits rejection.
+        debug (bool):
+             If True, show plots illustring the fits
+
+    Returns:
+        ech_angle_fit_params (astropy.table.Table):
+            Table containing the fit parameters.
+        ech_angle_fit_coeffs (numpy.ndarray):
+            Array containing the fit coefficients.
+    """
+
+
     order_vec = np.arange(arxiv_params['order_min'], arxiv_params['order_max'] + 1, 1)
     norders = arxiv_params['norders'] # Total number of orders in the arxiv
-    n_final = arxiv_params['n_final'] # order of wavelength solution fits wavelength solution
-    ech_angles = arxiv["ech_angle"][arxiv["populated"]]
+    n_final = arxiv_params['n_final'] # order of wavelength solution fits
+    ech_angles = arxiv["ech_angle"][arxiv["populated_and_good"]]
     # Determine the min,max params for the fits using all the echelle angles in the arxiv
     ech_min, ech_max = ech_angles.min(), ech_angles.max()
     ech_vec = ech_min + (ech_max - ech_min) * np.arange(100) / 99
 
-    #
+    # Assign orders for each coefficient that we are fitting
     if nmax > n_final + 1:
         msgs.error(f'nmax={nmax} cannot be greater than n_final+1={n_final+1}. Reduce nmax')
+    # This vector holds the polynomial order used to fit each coefficient
     coeff_fit_order_vec = np.full(n_final+1, coeff_fit_order_min)
     coeff_fit_order_vec[0:nmax] = coeff_fit_order_max
 
     ech_angle_fit_params=Table([[ech_min],[ech_max],[norders], [n_final],[coeff_fit_order_vec], [func]]
-                ,names=('ech_min','ech_max','norders','n_final','coeff_fit_order', 'func'))
+                ,names=('ech_min','ech_max','ech_norders','ech_n_final','ech_coeff_fit_order', 'ech_func'))
 
     ech_angle_fit_coeffs = np.zeros((norders, n_final + 1, coeff_fit_order_max + 1))
 
     for iord, this_order in enumerate(order_vec):
-        populated = arxiv['populated'][:, iord]
+        populated = arxiv['populated_and_good'][:, iord] # & (arxiv['xdisp'][:, iord] == xdisp)
         nsolns_this_order = np.sum(populated)
         if nsolns_this_order > 0:
             ech_angle_this_order = arxiv['ech_angle'][:, iord][populated]
@@ -401,10 +509,52 @@ def fit_coeffs_vs_ech_angle(arxiv_file, outfile, func='legendre', nmax = 3, coef
                     plt.show()
 
 
-    hdulist = fits.HDUList()
-    hdulist.append(fits.BinTableHDU(ech_angle_fit_params.as_array()))  # hdu = 1
-    hdulist.append(fits.ImageHDU(np.array(ech_angle_fit_coeffs)))  # hdu = 2
-    hdulist.writeto(outfile, overwrite=True)
+    return ech_angle_fit_params, ech_angle_fit_coeffs
+
+
+def fit_reddest_vs_xd_angle(arxiv, func='legendre', polyorder = 2, sigrej=3.0, maxrej=1, debug=False):
+
+    # Fit the reddest order on detector 3. We use this as the reference since the bluest order seems
+    # to have a more noisy trend
+    xd_angles = arxiv['xd_angle_file']
+    # Determine the min,max params for the fits using all the XD angles in the arxiv
+    xd_min, xd_max = xd_angles.min(), xd_angles.max()
+    xd_vec = xd_min + (xd_max - xd_min) * np.arange(100) / 99
+
+    xd_angle_fit_params=Table([[xd_min],[xd_max], [polyorder], [func]]
+                ,names=('ech_min','ech_max','xd_order', 'xd_func'))
+
+    # First dimension is UV or RED, second dimension is the set of polynomial coefficients
+    xd_angle_fit_coeffs = np.zeros((2, polyorder + 1))
+
+    for idisp, xdisp in enumerate(['UV', 'RED']):
+
+        indx = (arxiv['det_file'] == 3) & (arxiv['xdisp_file'] == xdisp)
+        xd_angles_this_disp = xd_angles[indx]
+        reddest_order_this_disp = arxiv['reddest_order'][indx].astype(float)
+        pypeitFit = fitting.robust_fit(xd_angles_this_disp, reddest_order_this_disp, polyorder,
+                                       function=func, minx=xd_min, maxx=xd_max, maxiter=25,
+                                       lower=sigrej, upper=sigrej, maxrej=maxrej, sticky=True, use_mad=True,
+                                       weights=None)
+        xd_angle_fit_coeffs[idisp, :] = pypeitFit.fitc
+        if debug:
+            this_fit = fitting.evaluate_fit(pypeitFit.fitc, func, xd_vec, minx=xd_min, maxx=xd_max)
+            plt.plot(xd_vec, this_fit, color='green', label='fit')
+            fit_gpm = pypeitFit.bool_gpm
+            plt.plot(xd_angles_this_disp[fit_gpm], reddest_order_this_disp[fit_gpm], marker='o', markersize=7.0,
+                     mfc='black', mec='black', fillstyle='full', linestyle='None', zorder=5, label='used by fit')
+            plt.plot(xd_angles_this_disp[np.logical_not(fit_gpm)],reddest_order_this_disp[np.logical_not(fit_gpm)],
+                     marker='s', markersize=9.0, mfc='red', mec='red', fillstyle='full', linestyle='None',
+                     zorder=7, label='rejected')
+            plt.legend()
+            plt.title(f'XDISP={xdisp}, nkept={np.sum(fit_gpm)}, nrej={np.sum(np.logical_not(fit_gpm))}')
+            plt.xlabel('xd_angle')
+            plt.ylabel('reddest_order')
+            plt.ylim(this_fit.min()-3, this_fit.max() +3)
+            plt.show()
+
+    return xd_angle_fit_params, xd_angle_fit_coeffs
+
 
 def echelle_composite_arcspec(arxiv_file, outfile, show_individual_solns=False, do_total=False, show_orders=False, debug=False):
 
@@ -425,7 +575,8 @@ def echelle_composite_arcspec(arxiv_file, outfile, show_individual_solns=False, 
     dloglam_pix = np.zeros(norders)
     nspec_per_order = np.zeros(norders, dtype=int)
     for iord, this_order in enumerate(order_vec):
-        populated = arxiv['populated'][:, iord]
+        # TODO Should we make XDISP specific composites? I don't think so
+        populated = arxiv['populated_and_good'][:, iord]
         nsolns_this_order = np.sum(populated)
         if nsolns_this_order > 0:
             this_wave = arxiv['wave'][:, iord, :][populated, :]
@@ -469,7 +620,7 @@ def echelle_composite_arcspec(arxiv_file, outfile, show_individual_solns=False, 
 
     sn_smooth_npix = 1  # Should not matter since we use uniform weights
     for iord, this_order in enumerate(order_vec):
-        populated = arxiv['populated'][:, iord]
+        populated = arxiv['populated_and_good'][:, iord]
         nsolns_this_order = np.sum(populated)
         if nsolns_this_order > 0:
             this_wave = arxiv['wave'][:, iord, :][populated, :]
@@ -540,12 +691,14 @@ xidl_arxiv_file = os.path.join(os.getenv('PYPEIT_DEV'), 'dev_algorithms', 'hires
 # Create the astropy table form of the xidl save file arxiv
 if not os.path.isfile(xidl_arxiv_file):
     ingest_xidl_archive(xidl_arxiv_file)
-
 # Perform fits to the coefficients vs ech angle
 # TODO see if pca works better here
-ech_angle_fit_file = os.path.join(os.getenv('PYPEIT_DEV'), 'dev_algorithms', 'hires_wvcalib', 'ech_angle_vs_order_fits.fits')
-fit_coeffs_vs_ech_angle(xidl_arxiv_file, ech_angle_fit_file, debug=False)
+wvcalib_angle_fit_file = os.path.join(os.getenv('PYPEIT_DEV'), 'dev_algorithms', 'hires_wvcalib', 'wvcalib_angle_fits.fits')
+fit_wvcalib_vs_angles(xidl_arxiv_file, wvcalib_angle_fit_file, func='legendre',
+                      ech_nmax = 3, ech_coeff_fit_order_min=1, ech_coeff_fit_order_max=2,
+                      xd_reddest_fit_polyorder=2, sigrej=3.0, maxrej=1, debug=False)
 
+sys.exit(-1)
 # Compute a composite arc from the solution arxiv
 composite_arcfile = os.path.join(os.getenv('PYPEIT_DEV'), 'dev_algorithms', 'hires_wvcalib', 'HIRES_composite_arc.fits')
 echelle_composite_arcspec(xidl_arxiv_file, composite_arcfile)
