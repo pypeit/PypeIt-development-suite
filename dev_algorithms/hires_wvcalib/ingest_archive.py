@@ -410,14 +410,14 @@ def fit_wvcalib_vs_angles(arxiv_file, outfile, func='legendre',
         coeff_fit_order_max=ech_coeff_fit_order_max, sigrej=sigrej, maxrej=maxrej, debug=debug)
 
     xd_angle_fit_params, xd_angle_fit_coeffs = fit_reddest_vs_xd_angle(
-        arxiv, polyorder=xd_reddest_fit_polyorder, func=func, sigrej=sigrej, maxrej=maxrej, debug=True)
+        arxiv, polyorder=xd_reddest_fit_polyorder, func=func, sigrej=sigrej, maxrej=maxrej, debug=debug)
 
     fit_params = table.hstack((ech_angle_fit_params, xd_angle_fit_params))
 
     hdulist = fits.HDUList()
     hdulist.append(fits.BinTableHDU(fit_params.as_array()))  # hdu = 1
     hdulist.append(fits.ImageHDU(np.array(ech_angle_fit_coeffs)))  # hdu = 2
-    hdulist.append(fits.ImageHDU(np.array(xd_angle_fit_coeffs)))  # hdu = 2
+    hdulist.append(fits.ImageHDU(np.array(xd_angle_fit_coeffs)))  # hdu = 3
     hdulist.writeto(outfile, overwrite=True)
 
 
@@ -455,8 +455,8 @@ def fit_coeffs_vs_ech_angle(arxiv_params, arxiv, func='legendre', nmax = 3, coef
             Array containing the fit coefficients.
     """
 
-
-    order_vec = np.arange(arxiv_params['order_min'], arxiv_params['order_max'] + 1, 1)
+    order_min, order_max = arxiv_params['order_min'], arxiv_params['order_max']
+    order_vec = np.arange(order_min, order_max + 1, 1)
     norders = arxiv_params['norders'] # Total number of orders in the arxiv
     n_final = arxiv_params['n_final'] # order of wavelength solution fits
     ech_angles = arxiv["ech_angle"][arxiv["populated_and_good"]]
@@ -471,8 +471,12 @@ def fit_coeffs_vs_ech_angle(arxiv_params, arxiv, func='legendre', nmax = 3, coef
     coeff_fit_order_vec = np.full(n_final+1, coeff_fit_order_min)
     coeff_fit_order_vec[0:nmax] = coeff_fit_order_max
 
-    ech_angle_fit_params=Table([[ech_min],[ech_max],[norders], [n_final],[coeff_fit_order_vec], [func]]
-                ,names=('ech_min','ech_max','ech_norders','ech_n_final','ech_coeff_fit_order', 'ech_func'))
+    ech_angle_fit_params=Table([
+        [ech_min],[ech_max],[norders], [order_min], [order_max], [n_final],[coeff_fit_order_vec], [func],[arxiv_params['func']],
+        [arxiv_params['xmin']], [arxiv_params['xmax']]],
+        names=('ech_xmin','ech_xmax','norders','order_min', 'order_max', 'ech_n_final','ech_coeff_fit_order', 'ech_func',
+               'wave_func',
+               'wave_xmin', 'wave_xmax'))
 
     ech_angle_fit_coeffs = np.zeros((norders, n_final + 1, coeff_fit_order_max + 1))
 
@@ -522,7 +526,7 @@ def fit_reddest_vs_xd_angle(arxiv, func='legendre', polyorder = 2, sigrej=3.0, m
     xd_vec = xd_min + (xd_max - xd_min) * np.arange(100) / 99
 
     xd_angle_fit_params=Table([[xd_min],[xd_max], [['UV', 'RED']], [polyorder], [func]]
-                ,names=('xd_min','xd_max','xdisp_vec', 'xd_polyorder', 'xd_func'))
+                ,names=('xd_xmin','xd_xmax','xdisp_vec', 'xd_polyorder', 'xd_func'))
 
     # First dimension is UV or RED, second dimension is the set of polynomial coefficients
     xd_angle_fit_coeffs = np.zeros((2, polyorder + 1))
@@ -555,15 +559,6 @@ def fit_reddest_vs_xd_angle(arxiv, func='legendre', polyorder = 2, sigrej=3.0, m
 
     return xd_angle_fit_params, xd_angle_fit_coeffs
 
-def predict_order_coverage(arxiv_params, arxiv, xd_angle, xdisp, norders, pad=0):
-
-    xd_min, xd_max = arxiv_params['xd_min'][0], arxiv_params['xd_max'][0]
-    idisp = arxiv_params['xdisp_vec'] == xdisp
-    reddest_order_fit = int(np.round(fitting.evaluate_fit(
-        arxiv['xd_coeffs'][idisp, :], arxiv_params['xd_func'], xd_angle, minx=xd_min, maxx=xd_max)))
-    order_vec = reddest_order_fit + (np.arange(norders + 2*pad) - pad)[::-1]
-
-    return order_vec
 
 
 
@@ -660,7 +655,7 @@ def echelle_composite_arcspec(arxiv_file, outfile, show_individual_solns=False, 
             wave_grid_in = np.repeat(this_wave_composite[:, np.newaxis], nsolns_this_order, axis=1)
             ivar_arc_iord = utils.inverse(np.abs(arc_interp_iord) + 10.0)
 
-            wave_grid_mid, wave_grid_stack, arcspec_stack, _, arcspec_gpm = coadd.combspec(
+            wave_grid_mid, wave_grid_stack, arcspec_stack, _, arcspec_gpm, outmask = coadd.combspec(
                 wave_grid_in, arc_interp_iord, ivar_arc_iord, gpm_arc_iord, sn_smooth_npix,
                 wave_method='user_input', wave_grid_input=this_wave_composite,
                 ref_percentile=70.0, maxiter_scale=5, sigrej_scale=3.0, scale_method='median',
@@ -710,14 +705,11 @@ fit_wvcalib_vs_angles(xidl_arxiv_file, wvcalib_angle_fit_file, func='legendre',
                       ech_nmax = 3, ech_coeff_fit_order_min=1, ech_coeff_fit_order_max=2,
                       xd_reddest_fit_polyorder=2, sigrej=3.0, maxrej=1, debug=False)
 
-sys.exit(-1)
 # Compute a composite arc from the solution arxiv
+sys.exit(-1)
 composite_arcfile = os.path.join(os.getenv('PYPEIT_DEV'), 'dev_algorithms', 'hires_wvcalib', 'HIRES_composite_arc.fits')
 echelle_composite_arcspec(xidl_arxiv_file, composite_arcfile)
 
-
-
-sys.exit(-1)
 
 
 
