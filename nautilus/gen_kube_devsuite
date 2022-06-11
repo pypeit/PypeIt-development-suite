@@ -30,6 +30,7 @@ def parser(options=None):
     parser.add_argument('--ncpu', type=int, default=6, help='Number of CPUs request')
     parser.add_argument('--ram', type=int, default=50, help='Amount of RAM to request (Gi)')
     parser.add_argument('--coverage', default=False, action="store_true", help="Collect code coverage data.")
+    parser.add_argument('--priority_list', default=False, action="store_true", help="Copy the test_priority_list to S3 after testing.")
     parser.add_argument('additional_args', type=str, nargs='*', default=["all"], help="Additional arguments to pypeit_test. Defaults to 'all'.")
     #parser.add_argument('-d', '--dryrun', default=False, action='store_true',
     #                    help='Only list the steps')
@@ -95,6 +96,8 @@ def main():
     my_args += f' aws --endpoint http://rook-ceph-rgw-nautiluss3.rook s3 cp pypeit.report s3://pypeit/Reports/{pargs.name}.report;'
     if pargs.coverage:
         my_args += f' aws --endpoint http://rook-ceph-rgw-nautiluss3.rook s3 cp coverage.report s3://pypeit/Reports/{pargs.name}.coverage.report;'
+    if pargs.priority_list:
+        my_args += f' aws --endpoint http://rook-ceph-rgw-nautiluss3.rook s3 cp test_priority_list s3://pypeit/Reports/{pargs.name}.test_priority_list;'
 
     data['spec']['template']['spec']['containers'][0]['args'][0] = my_args
 

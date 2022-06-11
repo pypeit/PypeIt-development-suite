@@ -19,6 +19,8 @@ from astropy.table import Table
 import numpy as np
 from pypeit import par
 
+_COVERAGE_ARGS = ["--source", "pypeit", "--omit", "*PypeIt/pypeit/tests/*,*PypeIt/pypeit/deprecated/*", "--parallel-mode"] 
+
 class PypeItTest(ABC):
     """Abstract base class for classes that run pypeit tests and hold the results from those tests."""
 
@@ -100,7 +102,7 @@ class PypeItTest(ABC):
                         else:
                             raise RuntimeError(f"Could not find full path for {self.command_line[0]}")
 
-                        self.command_line = ["coverage", "run", "--source", "pypeit", "--parallel-mode"] + self.command_line
+                        self.command_line = ["coverage", "run"] + _COVERAGE_ARGS + self.command_line
                     if self.start_time is None:
                         # If a subclass sets the start time or calls run multiple times,
                         # (see deimos QL) use the first value as the start rather than overwriting it.

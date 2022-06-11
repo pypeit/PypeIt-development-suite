@@ -17,6 +17,7 @@ from threading import Thread, Lock
 import traceback
 import datetime
 from pathlib import Path
+import textwrap
 
 import numpy as np
 import pypeit 
@@ -25,7 +26,7 @@ pypeit.msgs.reset(verbosity=0)
 
 
 from .test_setups import TestPhase, all_tests, all_setups
-from .pypeit_tests import get_unique_file
+from .pypeit_tests import get_unique_file, _COVERAGE_ARGS
 
 test_run_queue = PriorityQueue()
 """:obj:`queue.Queue`: FIFO queue for test setups to be run."""
@@ -465,7 +466,7 @@ class TestReport(object):
         for t in setup.tests:
             self.report_on_test(t, output)
 
-def run_pytest(pargs, test_descr, test_dir, test_report):
+def run_pytest(pargs, test_descr, test_dir, test_report, redux_out=None):
     """Run pytest on a directory of test files.
     
     Args:
@@ -480,15 +481,15 @@ def run_pytest(pargs, test_descr, test_dir, test_report):
 
     # Run pytest using coverage if requested
     if pargs.coverage is not None:
-        args = ["coverage", "run", "--source", "pypeit", "--parallel-mode", "-m", "pytest", "-v", "--color=yes"]
+        args = ["coverage", "run"] + _COVERAGE_ARGS + ["-m", "pytest", "-v", "--color=yes"]
     else:
         args = ["pytest", "-v", "--color=yes"]
 
     if not pargs.show_warnings:
         args.append("--disable-warnings")
     
-    if test_dir == "vet_tests":
-        args += ["--redux_out", pargs.outputdir]
+    if redux_out is not None:
+        args += ["--redux_out", redux_out]
 
     args.append(abs_test_dir)
 
@@ -557,19 +558,18 @@ def parser(options=None):
                                                  'use \'all\'.  To only run the basic '
                                                  'reductions, use \'reduce\'.  To only run the '
                                                  'tests that use the results of the reductions, '
-                                                 'use \'afterburn\'\'.')
+                                                 'use \'afterburn\'\'. Use \'list\' to view all '
+                                                 'supported setups.')
 
     parser.add_argument('tests', type=str, nargs='+', default=None,
-                        help='Instrument or test to run.  For instrument-specific tests, you '
-                             'can provide the telescope or the spectrograph, but beware of '
-                             'non-unique matches.  E.g. \'mage\' selects all the magellan '
-                             'instruments, not just \'magellan_mage\'.  Options include: '
-                             'reduce, afterburn, all, ql, unit, vet {0}'.format(', '.join(all_tests)))
+                        help='Which test types to run. Options are:  '
+                             'pypeit_tests, unit, reduce, afterburn, ql, vet, or all. Use list to show all supported instruments and setups.')
     parser.add_argument('-o', '--outputdir', type=str, default='REDUX_OUT',
                         help='Output folder.')
-    # TODO: Why is this an option?
-    parser.add_argument('-i', '--instruments', type=str, nargs='+', help="Restrict to input instrument")
-    parser.add_argument('-s', '--setups', type=str, nargs='+', help="Single out a setup to run")
+    parser.add_argument('-i', '--instruments', type=str, nargs='+', 
+                        help='One or more instruments to run tests for. Use "pypeit_test list" to see all supported instruments.')
+    parser.add_argument('-s', '--setups', type=str, nargs='+', 
+                        help='One or more setups to run tests for. Use "pypeit_test list" to see all supported setups.')
     parser.add_argument('--debug', default=False, action='store_true',
                         help='Debug using only blue setups')
     parser.add_argument('-p', '--prep_only', default=False, action='store_true',
@@ -593,6 +593,19 @@ def parser(options=None):
     parser.add_argument('-w', '--show_warnings', default=False, action='store_true',
                         help='Show warnings when running unit tests and vet tests.')
     return parser.parse_args() if options is None else parser.parse_args(options)
+
+def show_setup_list():
+    """Show a list of all instruments and the setups they support."""
+    print("All instruments and test setups supported by the dev-suite:\n")
+    for instrument in all_setups.keys():
+        print(instrument)
+        # Print an indented line wrapped list of setups beneath the instrument.
+        # "break_long_words=False" prevents it from breaking up setup names at an underscore,
+        # which looks bad.
+        setups = " ".join(all_setups[instrument])
+        for line in textwrap.wrap(setups, width=80, initial_indent = "    ", 
+                                  subsequent_indent="    ", break_long_words=False):
+            print(line)
 
 def thread_target(test_report):
     """Thread target method for running tests."""
@@ -626,6 +639,10 @@ def main():
     # Parse command line arguments
 
     pargs = parser()
+
+    if 'list' in pargs.tests:
+        show_setup_list()
+        return 0
 
     if pargs.threads <=0:
         raise ValueError("Number of threads must be >= 1")
@@ -757,8 +774,9 @@ def main():
         pypeit_tests_dir = Path(pypeit.__file__).parent.joinpath("tests")
         run_pytest(pargs, "PypeIt Unit Tests", str(pypeit_tests_dir), test_report)
 
+    dev_path = os.getenv('PYPEIT_DEV')
     if flg_unit is True and not pargs.prep_only:
-        run_pytest(pargs, "Unit Tests", "unit_tests", test_report)
+        run_pytest(pargs, "Unit Tests", os.path.join(dev_path, "unit_tests"), test_report)
 
 
     if flg_reduce or flg_after or flg_ql:
@@ -855,7 +873,7 @@ def main():
 
     # Run the vet tests
     if flg_vet is True:
-        run_pytest(pargs, "Vet Tests", "vet_tests", test_report)
+        run_pytest(pargs, "Vet Tests", os.path.join(dev_path, "vet_tests"), test_report, redux_out=pargs.outputdir)
 
 
     # ---------------------------------------------------------------------------
