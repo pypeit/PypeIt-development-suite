@@ -217,7 +217,7 @@ def run_devsuite(instrument, setup, redux_dir):
                                                    "outputdir"])
     pargs = DevSuiteParams(tests="develop", prep_only=False, masters=False,
                            outputdir = redux_dir)
-    test_setup = build_test_setup(pargs, instrument, setup, False, False)
+    test_setup = build_test_setup(pargs, instrument, setup, False, False, False)
 
     for test in test_setup.tests:
         # A quick look test will run build_ql_masters, potentially creating an 
