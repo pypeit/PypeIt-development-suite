@@ -16,6 +16,7 @@ def test_read_fluxing_files():
     # Loop
     for ifile in fluxing_files:
         fluxFile = inputfiles.FluxFile.from_file(ifile)
+        assert len(fluxFile.data['filename']) > 0
 
 def test_read_coadd1d_files():
     """ Test reading coadd1d files """
@@ -25,15 +26,17 @@ def test_read_coadd1d_files():
     # Loop
     for ifile in coadd1d_files:
         coadd1dFile = inputfiles.Coadd1DFile.from_file(ifile)
+        assert len(coadd1dFile.data['filename']) > 0
 
 def test_read_coadd2d_files():
     """ Test reading coadd2d files """
     # Grab em
     coadd2d_files = glob.glob(os.path.join(
-        os.getenv('PYPEIT_DEV'), 'coadd2d_files', '*.coadd1d'))
+        os.getenv('PYPEIT_DEV'), 'coadd2d_files', '*.coadd2d'))
     # Loop
     for ifile in coadd2d_files:
         coadd2dFile = inputfiles.Coadd2DFile.from_file(ifile)
+        assert len(coadd2dFile.data['filename']) > 0
 
 def test_read_pypeit_files():
     """ Test reading PypeIt files """
