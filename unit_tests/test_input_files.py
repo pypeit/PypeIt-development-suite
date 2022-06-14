@@ -38,6 +38,16 @@ def test_read_coadd2d_files():
         coadd2dFile = inputfiles.Coadd2DFile.from_file(ifile)
         assert len(coadd2dFile.data['filename']) > 0
 
+def test_read_flexure_files():
+    """ Test reading flexure files """
+    # Grab em
+    flexure_files = glob.glob(os.path.join(
+        os.getenv('PYPEIT_DEV'), 'flexure_files', '*.flex'))
+    # Loop
+    for ifile in flexure_files:
+        flexureFile = inputfiles.FlexureFile.from_file(ifile)
+        assert len(flexureFile.data['filename']) > 0
+
 def test_read_pypeit_files():
     """ Test reading PypeIt files """
     # Grab em
