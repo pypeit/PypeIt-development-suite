@@ -39,17 +39,18 @@ Stream](https://support.google.com/drive/answer/7329379?hl=en).  Google
 File Stream is a Dropbox-like application that syncs your Google Drive
 with a local directory on your machine.  
 
-If you cannot or would rather
-not use Google File Stream, you can simply download the appropriate
-files directly using the Google Drive web interface (although this can
-be a bit onerous and does not keep in sync with the remote Team Drive).
-
 Using Google File Stream, the PypeIt team drive you will be able to
 access the development suite data at the path: 
 
 ```
 /Volumes/GoogleDrive/Team\ Drives/PHYS-GP-Hennawi/PypeIt/PypeIt-development-suite/
 ```
+
+If you cannot or would rather
+not use Google File Stream, you can simply download the appropriate
+files directly using the Google Drive web interface (although this can
+be a bit onerous and does not keep in sync with the remote Team Drive). Alternately you can use [rclone](https://rclone.org/) to manually copy or sync with the Google Drive.
+
 
 The Team Drive contains three directories that should be accessible for
 testing PypeIt (see below): `RAW_DATA`, and `CALIBS`.
@@ -76,7 +77,7 @@ for some of the supported instruments.
 
 If you have [PypeIt](https://github.com/pypeit/PypeIt) installed, you
 should be able to run the tests in this directory using the
-`pypeit_test` script:
+`pypeit_test` script. It has one required argument, the type of tests to run.
 
 ```
 $ $PYPEIT_DEV/pypeit_test all
@@ -94,7 +95,7 @@ $ $PYPEIT_DEV/pypeit_test reduce vet
 
 All of the supported test test types are shown in the table below.
 
-| Test Name   | Description                                                    |
+| Test Type   | Description                                                    |
 |-------------|----------------------------------------------------------------|
 |pypeit_tests | Runs the pytest tests installed with PypeIt in pypeit/tests. These tests are self contained and can run in CI.                              |
 |unit         | Runs the pytest tests installed in $PYPEIT_DEV/unit. These tests require the RAW_DATA directory.                                          |
@@ -154,37 +155,74 @@ A test report can be generated using the ``-r`` option, for example:
 $PYPEIT_DEV/pypeit_test all -r test_report.txt
 ```
 
-The contents of the report contain additional information about the test
-setups run. Below is an example of for one test setup:
+The contents of the report contain complete pytest output and additional information about the test setups run. Below is an example of some of the output:
 
 ```
+PypeIt Unit Tests Results:
 -------------------------
-Test Setup: keck_mosfire/Y_multi
+============================= test session starts ==============================
+platform linux -- Python 3.8.5, pytest-6.2.4, py-1.10.0, pluggy-0.13.1 -- /root/miniconda3/bin/python
+cachedir: .pytest_cache
+hypothesis profile 'default' -> database=DirectoryBasedExampleDatabase('/tmp/REDUX_OUT/.hypothesis/examples')
+rootdir: /PypeIt, configfile: setup.cfg
+plugins: hypothesis-6.14.2, arraydiff-0.3, astropy-header-0.1.2, cov-2.12.1, doctestplus-0.10.0, filter-subpackage-0.1.1, openfiles-0.5.0, remotedata-0.3.2
+collecting ... collected 193 items
+
+../../PypeIt/pypeit/tests/test_alignments.py::test_alignments PASSED     [  0%]
+../../PypeIt/pypeit/tests/test_arc.py::test_detect_lines PASSED          [  1%]
+../../PypeIt/pypeit/tests/test_archive.py::test_archive_meta PASSED      [  1%]
+../../PypeIt/pypeit/tests/test_archive.py::test_archive_dir PASSED       [  2%]
+
+...
+
+Reduced data for the following setups:
+    shane_kast_blue/452_3306_d57
+    shane_kast_blue/600_4310_d55
+    shane_kast_blue/830_3460_d46
+
+Ran tests in 4 parallel processes
+
+-------------------------
+Test Setup: shane_kast_blue/830_3460_d46
 
 -------------------------
 Directories:
-         Raw data: /PypeIt-development-suite/RAW_DATA/keck_mosfire/Y_multi
-    PypeIt output: /tmp/REDUX_OUT/keck_mosfire/Y_multi
+         Raw data: /home/dusty/work/PypeIt-development-suite/RAW_DATA/shane_kast_blue/830_3460_d46
+    PypeIt output: /home/dusty/work/PypeIt-development-suite/REDUX_OUT/shane_kast_blue/830_3460_d46
 Files:
      .pypeit file: None
  Std .pypeit file: None
 Tests:
 ----
-keck_mosfire/Y_multi pypeit (without masters) Result: --- PASSED
+shane_kast_blue/830_3460_d46 pypeit  Result: --- PASSED
 
-Logfile:    /tmp/REDUX_OUT/keck_mosfire/Y_multi/keck_mosfire_y_multi.test.log
-Process Id: 300
-Start time: Tue May 17 17:12:43 2022
-End time:   Tue May 17 17:47:25 2022
-Duration:   0:34:41.349185
-Command:    run_pypeit /tmp/REDUX_OUT/keck_mosfire/Y_multi/keck_mosfire_y_multi.pypeit -o
+Logfile:    /home/dusty/work/PypeIt-development-suite/REDUX_OUT/shane_kast_blue/830_3460_d46/shane_kast_blue_830_3460_d46.test.2.log
+Process Id: 20204
+Start time: Tue Jun 14 18:36:14 2022
+End time:   Tue Jun 14 18:36:34 2022
+Duration:   0:00:19.866937
+Command:    coverage run --source pypeit --omit *PypeIt/pypeit/tests/*,*PypeIt/pypeit/deprecated/* --parallel-mode /home/dusty/work/anaconda3/envs/pypeit/bin/run_pypeit /home/dusty/work/PypeIt-development-suite/REDUX_OUT/shane_kast_blue/830_3460_d46/shane_kast_blue_830_3460_d46.pypeit -o
 
 Error Messages:
 
 End of Log:
 [INFO]    :: run_pypeit.py 146 main() - Generating QA HTML
-Wrote: /tmp/REDUX_OUT/keck_mosfire/Y_multi/QA/MF_A.html
-Wrote: /tmp/REDUX_OUT/keck_mosfire/Y_multi/QA/MF_A.html
+Wrote: /home/dusty/work/PypeIt-development-suite/REDUX_OUT/shane_kast_blue/830_3460_d46/QA/MF_A.html
+Wrote: /home/dusty/work/PypeIt-development-suite/REDUX_OUT/shane_kast_blue/830_3460_d46/QA/MF_A.html
+
+...
+
+Test Summary
+--------------------------------------------------------
+--- PYTEST PYPEIT UNIT TESTS PASSED  193 passed, 1182 warnings in 285.37s (0:04:45) ---
+--- PYTEST UNIT TESTS PASSED  109 passed, 1602 warnings in 978.85s (0:16:18) ---
+--- PYTEST VET TESTS PASSED  24 passed, 1474 warnings in 871.64s (0:14:31) ---
+--- PYPEIT DEVELOPMENT SUITE PASSED 151/151 TESTS  ---
+Coverage results:
+TOTAL                                                              39076  26977    31%
+Testing Started at 2022-06-11T02:33:59.381096
+Testing Completed at 2022-06-11T12:27:52.299049
+Total Time: 9:53:52.917953
 ```
 
 ## Code coverage
@@ -267,6 +305,8 @@ The results of the dev-suite are copied to Nautilus S3 under ``s3://pypeit/Repor
 ```
 aws --endpoint  https://s3-west.nrp-nautilus.io s3 cp s3://pypeit/Reports/devsuite-job-name.report .
 ```
+
+``rclone`` can also be used access the Nautilus S3 storage. When configuring use ``https://s3-west.nrp-nautilus.io`` as the endpoint.
 
 ``gen_kube_devsuite`` has additional code for generating coverage information and the test priority list. If ``--coverage`` and ``--priority_list`` are used, these files are also copied to S3:
 
