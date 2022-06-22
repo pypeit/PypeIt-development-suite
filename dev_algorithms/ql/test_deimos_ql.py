@@ -27,5 +27,5 @@ def one_slit():
 
 # Command line execution
 if __name__ == '__main__':
-    afternoon()
+    #afternoon()
     one_slit()
