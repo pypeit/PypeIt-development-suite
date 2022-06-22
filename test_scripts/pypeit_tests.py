@@ -8,17 +8,24 @@ Classes and utility functions for running individual pypeit tests.
 
 
 import os.path
+import shutil
 import subprocess
 import datetime
 import traceback
 import glob
 from abc import ABC, abstractmethod
 
+from astropy.table import Table
+import numpy as np
+from pypeit import par
+
+_COVERAGE_ARGS = ["--source", "pypeit", "--omit", "*PypeIt/pypeit/tests/*,*PypeIt/pypeit/deprecated/*", "--parallel-mode"] 
+
 class PypeItTest(ABC):
     """Abstract base class for classes that run pypeit tests and hold the results from those tests."""
 
 
-    def __init__(self, setup, description, log_suffix):
+    def __init__(self, setup, pargs, description, log_suffix):
         """
         Constructor
 
@@ -31,7 +38,7 @@ class PypeItTest(ABC):
         self.setup = setup
         self.description = description
         self.log_suffix = log_suffix
-
+        self.coverage = pargs.coverage is not None
         self.env = os.environ
         """ :obj:`Mapping`: OS Environment to run the test under."""
 
@@ -82,10 +89,20 @@ class PypeItTest(ABC):
         try:
             # Open a log for the test
             child = None
-            self.logfile = self.get_logfile()
-            with open(self.logfile, "w") as f:
+            self.logfile = self.get_logfile()            
+            self.command_line = self.build_command_line()
+
+            with open(self.logfile, "a") as f:
                 try:
-                    self.command_line = self.build_command_line()
+                    if self.coverage:
+                        # Coverage will need the full path to the script
+                        full_path_to_command = shutil.which(self.command_line[0])
+                        if full_path_to_command is not None:
+                            self.command_line[0] = full_path_to_command
+                        else:
+                            raise RuntimeError(f"Could not find full path for {self.command_line[0]}")
+
+                        self.command_line = ["coverage", "run"] + _COVERAGE_ARGS + self.command_line
                     if self.start_time is None:
                         # If a subclass sets the start time or calls run multiple times,
                         # (see deimos QL) use the first value as the start rather than overwriting it.
@@ -119,7 +136,7 @@ class PypeItTest(ABC):
 class PypeItSetupTest(PypeItTest):
     """Test subclass that runs pypeit_setup"""
     def __init__(self, setup, pargs):
-        super().__init__(setup, "pypeit_setup", "setup")
+        super().__init__(setup, pargs, "pypeit_setup", "setup")
         setup.generate_pyp_file = True
 
     def run(self):
@@ -150,12 +167,12 @@ class PypeItSetupTest(PypeItTest):
 class PypeItReduceTest(PypeItTest):
     """Test subclass that runs run_pypeit"""
 
-    def __init__(self, setup, pargs, masters=None, std=False):
+    def __init__(self, setup, pargs, ignore_masters=None, std=False):
 
-        self.masters = masters if masters is not None else pargs.masters
+        self.ignore_masters = ignore_masters if ignore_masters is not None else pargs.do_not_reuse_masters
 
-        description = f"pypeit {'standards ' if std else ''}(with{'out' if not self.masters else ''} masters)"
-        super().__init__(setup, description, "test")
+        description = f"pypeit {'standards ' if std else ''}{'(ignore masters)' if self.ignore_masters else ''}"
+        super().__init__(setup, pargs, description, "test")
 
         self.std = std
         # If the pypeit file isn't being created by pypeit_setup, copy it and update it's path
@@ -178,7 +195,7 @@ class PypeItReduceTest(PypeItTest):
             self.pyp_file = self.setup.pyp_file
 
         command_line = ['run_pypeit', self.pyp_file, '-o']
-        if self.masters:
+        if self.ignore_masters:
             command_line += ['-m']
 
         return command_line
@@ -192,7 +209,7 @@ class PypeItReduceTest(PypeItTest):
 class PypeItSensFuncTest(PypeItTest):
     """Test subclass that runs pypeit_sensfunc"""
     def __init__(self, setup, pargs, std_file, sens_file=None):
-        super().__init__(setup, "pypeit_sensfunc", "test_sens")
+        super().__init__(setup, pargs, "pypeit_sensfunc", "test_sens")
         self.std_file = std_file
         self.sens_file = sens_file
 
@@ -232,7 +249,7 @@ class PypeItSensFuncTest(PypeItTest):
 class PypeItFluxSetupTest(PypeItTest):
     """Test subclass that runs pypeit_flux_setup"""
     def __init__(self, setup, pargs):
-        super().__init__(setup, "pypeit_flux_setup", "test_flux_setup")
+        super().__init__(setup, pargs, "pypeit_flux_setup", "test_flux_setup")
 
     def build_command_line(self):
         return ['pypeit_flux_setup', os.path.join(self.setup.rdxdir, 'Science')]
@@ -241,7 +258,7 @@ class PypeItFluxSetupTest(PypeItTest):
 class PypeItFluxTest(PypeItTest):
     """Test subclass that runs pypeit_flux_calib"""
     def __init__(self, setup, pargs):
-        super().__init__(setup, "pypeit_flux", "test_flux")
+        super().__init__(setup, pargs, "pypeit_flux", "test_flux")
 
         self.flux_file = os.path.join(self.setup.dev_path, 'fluxing_files',
                                       '{0}_{1}.flux'.format(self.setup.instr.lower(), self.setup.name.lower()))
@@ -258,7 +275,7 @@ class PypeItFluxTest(PypeItTest):
 class PypeItFlexureTest(PypeItTest):
     """Test subclass that runs pypeit_deimos_flexure"""
     def __init__(self, setup, pargs):
-        super().__init__(setup, "pypeit_multislit_flexure", "test_flexure")
+        super().__init__(setup, pargs, "pypeit_multislit_flexure", "test_flexure")
 
         self.flexure_file = os.path.join(self.setup.dev_path, 'flexure_files',
                                       '{0}_{1}.flex'.format(self.setup.instr.lower(), self.setup.name.lower()))
@@ -275,13 +292,76 @@ class PypeItCoadd1DTest(PypeItTest):
     """Test subclass that runs pypeit_coadd_1dspec"""
 
     def __init__(self, setup, pargs):
-        super().__init__(setup, "pypeit_coadd_1dspec", "test_1dcoadd")
+        super().__init__(setup, pargs, "pypeit_coadd_1dspec", "test_1dcoadd")
 
         self.coadd_file = os.path.join(self.setup.dev_path, 'coadd1d_files',
                                        '{0}_{1}.coadd1d'.format(self.setup.instr.lower(), self.setup.name.lower()))
 
     def build_command_line(self):
-        return ['pypeit_coadd_1dspec', self.coadd_file]
+
+        # Double check the object ids in the coadd file to see if they are slightly off.
+        # Correct them if they are
+
+        file_to_obj = dict()          # Mapping of files to actual objects within them
+        orig_coadd1d_lines = []       # original coadd1d lines
+        corrected_coadd1d_lines = []  # corrected coadd1d lines
+
+
+        # Read the dev-suite coadd file, and also gather the list of files
+        (cfg_lines, coadd_lines) = par.util.parse_tool_config(self.coadd_file, 'coadd1d')
+        unique_files = set()
+        for file_obj in coadd_lines:
+            (filename, object) = file_obj.split()
+            orig_coadd1d_lines.append((filename, object))
+            unique_files.add(filename)
+        
+        # Build a mapping of files to objects using the spec1d txt info file
+        for unique_file in unique_files:
+            txt_filename = os.path.join(self.setup.rdxdir, os.path.splitext(unique_file)[0] + ".txt")
+            txt_info = Table.read(txt_filename, format='ascii.fixed_width')
+            file_to_obj[unique_file] = txt_info['name']
+
+        # Go through each original coadd1d line and correct the object names
+        # if needed
+        for (filename, object) in orig_coadd1d_lines:
+            if object in file_to_obj[filename]:
+                # No correction needed
+                corrected_coadd1d_lines.append(filename + " " + object)
+            else:
+                # Find the spatial position within object name, which
+                # can start with either SPAT or OBJ
+                object_parts = object.split('-')
+                if object_parts[0].startswith("SPAT"):
+                    object_prefix_len = 4
+                    object_spat_pos = float(object_parts[0][4:])
+                elif object_parts[0].startswith("OBJ"):
+                    object_prefix_len = 3
+                    object_spat_pos = float(object_parts[0][3:])
+                else:
+                    # Unrecognized format, don't try to correct
+                    with open(self.logfile, "a") as f:
+                        print(f"WARNING: Could not correct coadd1d file, unrecognized object id format: {object}", file=f)
+                    corrected_coadd1d_lines.append(filename + " " + object)
+                    continue
+                
+                # Build an array of distances between the actual objects
+                # and the original object, and find the closest one
+                distances = np.fabs(np.array([float(x.split('-')[0][object_prefix_len:]) for x in file_to_obj[filename]]) - object_spat_pos)
+                sorted_dist = np.argsort(distances)
+                if distances[sorted_dist][0] <=2:
+                    # If the closest one is within two pixels, choose it
+                    closest_obj = file_to_obj[filename][sorted_dist][0]
+                    corrected_coadd1d_lines.append(filename + " " + closest_obj)
+                else:
+                    with open(self.logfile, "a") as f:
+                        print(f"WARNING: Could not correct coadd1d file, closest object '{file_to_obj[filename][sorted_dist][0]}' is more than 2 pixels away from: {object}", file=f)
+                    corrected_coadd1d_lines.append(filename + " " + object)
+
+        
+        final_coadd_file = get_unique_file(os.path.join(self.setup.rdxdir, f"{self.setup.instr.lower()}_{self.setup.name.lower()}_merged.coadd1d"))
+        par.util.make_tool_config(final_coadd_file, cfg_lines, corrected_coadd1d_lines, 'coadd1d')
+
+        return ['pypeit_coadd_1dspec', final_coadd_file]
 
     def check_for_missing_files(self):
         if not os.path.exists(self.coadd_file):
@@ -292,7 +372,7 @@ class PypeItCoadd1DTest(PypeItTest):
 class PypeItCoadd2DTest(PypeItTest):
     """Test subclass that runs pypeit_coadd_2dspec"""
     def __init__(self, setup, pargs, coadd_file=None, obj=None):
-        super().__init__(setup, "pypeit_coadd_2dspec", "test_2dcoadd")
+        super().__init__(setup, pargs, "pypeit_coadd_2dspec", "test_2dcoadd")
         self.obj = obj
 
         if coadd_file:
@@ -319,7 +399,7 @@ class PypeItTelluricTest(PypeItTest):
     """Test subclass that runs pypeit_tellfit"""
 
     def __init__(self, setup, pargs, coadd_file, tell_file):
-        super().__init__(setup, "pypeit_tellfit", 'test_tellfit')
+        super().__init__(setup, pargs, "pypeit_tellfit", 'test_tellfit')
         self.coadd_file = coadd_file
 
         self.tell_file = os.path.join(self.setup.dev_path, 'tellfit_files',
@@ -337,7 +417,7 @@ class PypeItQuickLookTest(PypeItTest):
     """
 
     def __init__(self, setup, pargs, files,  **options):
-        super().__init__(setup, "pypeit_ql", "test_ql")
+        super().__init__(setup, pargs, "pypeit_ql", "test_ql")
         self.files = files
         self.options = options
         self.redux_dir = os.path.abspath(pargs.outputdir)
@@ -351,11 +431,11 @@ class PypeItQuickLookTest(PypeItTest):
             command_line = ['pypeit_ql_keck_nires']
         elif self.setup.instr == 'keck_mosfire':
             command_line = ['pypeit_ql_multislit', 'keck_mosfire']
-            if self.pargs.quiet or self.pargs.no_gui:
+            if self.pargs.quiet:
                 command_line += ['--no_gui', '--writefits']
         elif self.setup.instr == 'keck_lris_red_mark4':
             command_line = ['pypeit_ql_multislit', 'keck_lris_red_mark4']
-            if self.pargs.quiet or self.pargs.no_gui:
+            if self.pargs.quiet:
                 command_line += ['--no_gui', '--writefits']
         elif self.setup.instr == 'keck_deimos':
             # Two commands!
@@ -425,6 +505,7 @@ class PypeItQuickLookTest(PypeItTest):
             return super().run()
         else:
             return super().run()
+
 
 def pypeit_file_name(instr, setup, std=False):
     base = '{0}_{1}'.format(instr.lower(), setup.lower())

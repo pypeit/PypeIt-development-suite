@@ -17,14 +17,16 @@ from threading import Thread, Lock
 import traceback
 import datetime
 from pathlib import Path
-
-from IPython import embed
+import textwrap
 
 import numpy as np
+import pypeit 
+# Stop logging from pypeit.par.utils when reading/writing coadd1d files
+pypeit.msgs.reset(verbosity=0) 
 
-from .test_setups import TestPhase, all_tests, develop_setups, supported_instruments
-from .test_setups import cooked_setups, ql_setups
-from .pypeit_tests import get_unique_file
+
+from .test_setups import TestPhase, all_tests, all_setups
+from .pypeit_tests import get_unique_file, _COVERAGE_ARGS
 
 test_run_queue = PriorityQueue()
 """:obj:`queue.Queue`: FIFO queue for test setups to be run."""
@@ -194,10 +196,9 @@ class TestReport(object):
     lock (:obj:`threading.Lock`): Lock used to synchronize access when multiple threads are reporting status. This
                                   prevents scrambled output being sent to stdout.
     """
-    def __init__(self, pargs, setups):
+    def __init__(self, pargs):
         self.pargs = pargs
-        self.test_setups = setups
-        self.start_time = None
+        self.test_setups = []
         self.end_time = None
 
         self.num_tests = 0
@@ -209,8 +210,15 @@ class TestReport(object):
         self.skipped_tests = []
         self.lock = Lock()
         self.testing_complete = False
+        self.start_time = datetime.datetime.now()
 
-        self.testing_started()
+        self.pytest_results=dict()
+
+        if pargs.report is not None and os.path.exists(pargs.report):
+            # Remove any old report files if we've been asked to overwrite it
+            if not pargs.quiet:
+                print(f"Overwriting existing report {pargs.report}",flush=True)
+            os.unlink(pargs.report)
 
 
     def _get_test_counts(self):
@@ -218,15 +226,21 @@ class TestReport(object):
         verbose_info = f'{self.num_active:2} active/' if self.pargs.verbose else ''
         return f'{verbose_info}{self.num_passed:2} passed/{self.num_failed:2} failed/{self.num_skipped:2} skipped'
 
-    def testing_started(self):
-        """Called once testing has started"""
-        with self.lock:
-            self.start_time = datetime.datetime.now()
+    def setup_testing_started(self,setups):
+        """Called once test setup testing has started.
+        
+        Args:
+            setups (list of :obj:`TestSetup`):
+                The list of test setups being run. These are used to generate the detailed report once
+                testing is complete.
 
-            # Create the report file and write the header to it
+        """
+        with self.lock:
+            self.test_setups = setups
+            # Create the report file (if needed) and write the header to it
             if self.pargs.report:
                 try:
-                    with open(self.pargs.report, "w") as report_file:
+                    with open(self.pargs.report, "a") as report_file:
                         self.detailed_report_header(output=report_file)
 
                 except Exception as e:
@@ -293,12 +307,54 @@ class TestReport(object):
                     self.report_on_setup(test_setup, report_file)            
 
     def testing_completed(self):
-        """Called once all testing is complete"""
+        """Called once all test setups have complete"""
         self.end_time = datetime.datetime.now()
         if self.pargs.report is not None:
             with open(self.pargs.report, "a") as report_file:
-                print ("-------------------------", file=report_file)
                 self.summary_report(report_file)
+
+    def pytest_started(self, test_descr):
+        """Called when a set of pytest tests have started.
+        
+        Args:
+            test_descr (str): A short description of the pytest test suite that
+                              will be displayed in the test report and uniquely
+                              identify the test suite. For example:
+                              "Unit Tests".
+        """
+
+        if not self.pargs.quiet:
+            print(f"Running {test_descr}", flush=True)
+
+        if self.pargs.report is not None:
+            with open(self.pargs.report, "a") as report_file:
+                print(f"{test_descr} Results:", file=report_file)
+                print ("-------------------------", file=report_file)                
+
+    def pytest_line(self, test_descr, line):
+        """Called for each line ouptut from a pytest run. Each line is echoed to
+        stdout and, if requested, a report file.
+        
+        Args:
+            test_descr (str): A short description of the pytest test suite that
+                              will be displayed in the test report and uniquely
+                              identify the test suite. For example:
+                              "Unit Tests".
+
+            line (str):       A line from the stdout of pytest.
+        
+        """
+        if not self.pargs.quiet:
+            print(line, flush=True)
+
+        if self.pargs.report is not None:
+            with open(self.pargs.report, "a") as report_file:
+                print(line, file=report_file)
+        
+        # Save any summary lines found for reporting later.
+        if "warnings" in line or "passed" in line or "failed" in line:
+            self.pytest_results[test_descr] = line.replace("=", "")
+
 
     def detailed_report(self, output=sys.stdout):
         """Display a detailed report on testing to the given output stream"""
@@ -322,18 +378,18 @@ class TestReport(object):
         if self.pargs.threads > 1:
             print(f'Ran tests in {self.pargs.threads} parallel processes\n', file=output)
 
-    def summary_report(self, output=sys.stdout):
-        """Display a summary report on the results of testing to the given output stream"""
+    def summarize_setup_tests(self, output=sys.stdout):
+        """Display a summary of the PypeIt setup tests"""
 
-        masters_text = 'reused' if self.pargs.masters else 'ignored'
+        masters_text = '(Masters ignored)' if self.pargs.do_not_reuse_masters else ''
         if self.num_tests == self.num_passed:
-            print("\n" + "\x1B[" + "1;32m" +
-                  "--- PYPEIT DEVELOPMENT SUITE PASSED {0}/{1} TESTS (Masters {2}) ---".format(
+            print("\x1B[" + "1;32m" +
+                  "--- PYPEIT DEVELOPMENT SUITE PASSED {0}/{1} TESTS {2} ---".format(
                       self.num_passed, self.num_tests, masters_text)
                   + "\x1B[" + "0m" + "\r", file=output)
         else:
-            print("\n" + "\x1B[" + "1;31m" +
-                  "--- PYPEIT DEVELOPMENT SUITE FAILED {0}/{1} TESTS (Masters {2}) ---".format(
+            print("\x1B[" + "1;31m" +
+                  "--- PYPEIT DEVELOPMENT SUITE FAILED {0}/{1} TESTS {2} ---".format(
                       self.num_failed, self.num_tests, masters_text)
                   + "\x1B[" + "0m" + "\r", file=output)
             print('Failed tests:', file=output)
@@ -342,6 +398,38 @@ class TestReport(object):
             print('Skipped tests:', file=output)
             for t in self.skipped_tests:
                 print('    {0}'.format(t), file=output)
+
+    def summarize_pytest_results(self, test_descr, output=sys.stdout):
+        """Display a summary of a pytest run."""
+        if test_descr not in self.pytest_results:
+            # The tests weren't run, so no results
+            return
+        results = self.pytest_results[test_descr]
+        if "failed" in results:
+            print("\x1B[" + "1;31m" + f"--- PYTEST {test_descr.upper()} FAILED " + "\x1B[" + "0m"
+                  + results +  "\x1B[" + "1;32m" + "---" + "\x1B[" + "0m" + "\r", file=output)
+        else:
+            print("\x1B[" + "1;32m" + f"--- PYTEST {test_descr.upper()} PASSED " + "\x1B[" + "0m"
+                  + results +  "\x1B[" + "1;32m" + "---" + "\x1B[" + "0m" + "\r", file=output)
+
+    def print_tail(self, file, num_lines, output=sys.stdout, flush=False):
+        """Print the last num_lines of a file."""
+        result = subprocess.run(['tail', f'-{num_lines}', file], stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
+        print(result.stdout.decode(), file=output, flush=flush)
+
+
+    def summary_report(self, output=sys.stdout):
+        """Display a summary report on the results of testing to the given output stream"""
+
+        print ("\nTest Summary\n--------------------------------------------------------", file=output)
+        self.summarize_pytest_results("PypeIt Unit Tests", output)
+        self.summarize_pytest_results("Unit Tests", output)
+        self.summarize_pytest_results("Vet Tests", output)
+        self.summarize_setup_tests(output)
+
+        if self.pargs.coverage is not None:
+            print(f"Coverage results:", file=output)
+            self.print_tail(self.pargs.coverage, 1, output)
 
         print(f"Testing Started at {self.start_time.isoformat()}", file=output)
         print(f"Testing Completed at {self.end_time.isoformat()}", file=output)
@@ -380,8 +468,7 @@ class TestReport(object):
         print('', file=output, flush=flush)
         print("End of Log:", file=output, flush=flush)
         if test.logfile is not None and os.path.exists(test.logfile):
-            result = subprocess.run(['tail', '-3', test.logfile], stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
-            print(result.stdout.decode(), file=output, flush=flush)
+            self.print_tail(test.logfile, 3, output, flush)
 
         print('\n', file=output, flush=flush)
 
@@ -403,6 +490,88 @@ class TestReport(object):
         for t in setup.tests:
             self.report_on_test(t, output)
 
+def clear_coverage_data(redux_out):
+    """Clear any leftover coverage data that may be left over form an interrupted prior run."""
+    path = Path(redux_out)
+    for file in path.rglob(".coverage*"):
+        file.unlink(missing_ok = True)
+
+def run_pytest(pargs, test_descr, test_dir, test_report, redux_out=None):
+    """Run pytest on a directory of test files.
+    
+    Args:
+        pargs (:obj:`argparse.Namespace`): The arguments to pypeit_test, as returned by argparse.
+
+        test_descr (str): 
+            A short description of the pytest test suite that will be displayed in 
+            the test report and uniquely identify the test suite. For example:
+            "Unit Tests".
+
+        test_dir (str): 
+            The directory where the pytest tests to run are stored.
+
+        test_report (:obj:`TestReport`): 
+            The test report object for this test run. Output from the pytest run
+            will be passed to this object.
+
+        redux_out (str):
+            The location of the output of this dev-suite run. Optional, only required
+            if the pytest suite requires the output from the dev-suite (i.e vet_tests).
+    """
+    abs_test_dir = os.path.abspath(test_dir)
+
+    test_report.pytest_started(test_descr)
+
+    # Tests not written to run in parallel yet
+    #args = ["pytest", "-v", "--color=yes", "-n", str(pargs.threads)]
+
+    # Run pytest using coverage if requested
+    if pargs.coverage is not None:
+        args = ["coverage", "run"] + _COVERAGE_ARGS + ["-m", "pytest", "-v", "--color=yes"]
+    else:
+        args = ["pytest", "-v", "--color=yes"]
+
+    if not pargs.show_warnings:
+        args.append("--disable-warnings")
+    
+    if redux_out is not None:
+        args += ["--redux_out", redux_out]
+
+    args.append(abs_test_dir)
+
+    # Run pytest, sending the outpu to the test report.
+    # We change the current directory so that the coverage output goes to the outputdir
+    with subprocess.Popen(args,stderr=subprocess.STDOUT, stdout=subprocess.PIPE,cwd=pargs.outputdir) as p:
+        while(p.poll() is None):
+            test_report.pytest_line(test_descr, p.stdout.readline().decode().strip())
+
+def generate_coverage_report(pargs):
+
+    # Find the coverage files
+    coverage_files = [str(path) for path in Path(pargs.outputdir).rglob(".coverage.*")]
+    
+    if len(coverage_files) > 0:
+        if not pargs.quiet:
+            print("Combining coverage files...", flush=True)
+    else:
+        with open(pargs.coverage, "w") as f:
+            print("Couldn't find coverage files to combine.", file=f)
+        return
+
+    # Combine them, changing to the output dir to keep the coverage 
+    # data files there
+    process = subprocess.run(["coverage", "combine"] + coverage_files, stdout=subprocess.PIPE, stderr=subprocess.STDOUT, cwd=pargs.outputdir)
+    if process.returncode != 0:
+        if not pargs.quiet:
+            print("Failed to combine coverage data.", flush=True)
+        with open(pargs.coverage, "w") as f:
+            print("Failed to combine coverage files. Output:", file=f)
+            print(process.stdout, file=f)
+        return
+
+    # Generate the report.
+    with open(pargs.coverage, "w") as f:
+        process = subprocess.run(["coverage", "report", "-m"], stdout=f, stderr=subprocess.STDOUT, cwd=pargs.outputdir)
 
 def raw_data_dir():
     return os.path.join(os.environ['PYPEIT_DEV'], 'RAW_DATA')
@@ -425,49 +594,62 @@ def parser(options=None):
     parser = argparse.ArgumentParser(formatter_class=argparse.ArgumentDefaultsHelpFormatter,
                                      description='Run pypeit tests on a set of instruments.  '
                                                  'Typical call for testing pypeit when developing '
-                                                 'new code is `./pypeit_test develop`.  Execution '
+                                                 'new code is `./pypeit_test all`.  Execution '
                                                  'requires you to have a PYPEIT_DEV environmental '
                                                  'variable, pointing to the top-level directory '
                                                  'of the dev-suite repository (typically the '
                                                  'location of this script).  Raw data for testing '
                                                  'is expected to be at ${PYPEIT_DEV}/RAW_DATA.  '
                                                  'To run all tests for the supported instruments, '
-                                                 'use \'develop\'.  To only run the basic '
+                                                 'use \'all\'.  To only run the basic '
                                                  'reductions, use \'reduce\'.  To only run the '
                                                  'tests that use the results of the reductions, '
-                                                 'use \'afterburn\'.  To run all possible tests '
-                                                 '(beware!), use \'all\'.')
+                                                 'use \'afterburn\'\'. Use \'list\' to view all '
+                                                 'supported setups.')
 
-    parser.add_argument('tests', type=str, default=None,
-                        help='Instrument or test to run.  For instrument-specific tests, you '
-                             'can provide the telescope or the spectrograph, but beware of '
-                             'non-unique matches.  E.g. \'mage\' selects all the magellan '
-                             'instruments, not just \'magellan_mage\'.  Options include: '
-                             'develop, reduce, afterburn, all, ql, {0}'.format(', '.join(all_tests)))
+    parser.add_argument('tests', type=str, nargs='+', default=None,
+                        help='Which test types to run. Options are:  '
+                             'pypeit_tests, unit, reduce, afterburn, ql, vet, or all. Use list to show all supported instruments and setups.')
     parser.add_argument('-o', '--outputdir', type=str, default='REDUX_OUT',
                         help='Output folder.')
-    # TODO: Why is this an option?
-    parser.add_argument('-i', '--instrument', type=str, help="Restrict to input instrument")
-    parser.add_argument('-s', '--setup', type=str, help="Single out a setup to run")
+    parser.add_argument('-i', '--instruments', type=str, nargs='+', 
+                        help='One or more instruments to run tests for. Use "pypeit_test list" to see all supported instruments.')
+    parser.add_argument('-s', '--setups', type=str, nargs='+', 
+                        help='One or more setups to run tests for. Use "pypeit_test list" to see all supported setups.')
     parser.add_argument('--debug', default=False, action='store_true',
                         help='Debug using only blue setups')
     parser.add_argument('-p', '--prep_only', default=False, action='store_true',
                         help='Only prepare to execute run_pypeit, but do not actually run it.')
-    parser.add_argument('-m', '--masters', default=False, action='store_true',
-                        help='run pypeit using any existing masters')
+    parser.add_argument('-m', '--do_not_reuse_masters', default=False, action='store_true',
+                        help='run pypeit without using any existing masters')
     parser.add_argument('-t', '--threads', default=1, type=int,
                         help='Run THREADS number of parallel tests.')
     parser.add_argument('-q', '--quiet', default=False, action='store_true',
                         help='Supress all output to stdout. If -r is not a given, a report file will be '
                              'written to <outputdir>/pypeit_test_results.txt')
-    parser.add_argument('--no_gui', default=False, action='store_true',
-                        help='Supress any GUIs displayed by any tests.')
     parser.add_argument('-v', '--verbose', default=False, action='store_true',
                         help='Output additional detailed information while running the tests and output a '
                              'detailed report at the end of testing. This has no effect if -q is given')
+    parser.add_argument('--coverage', default=None, type=str, 
+                        help='Collect code coverage information. and write it to the given file.')
     parser.add_argument('-r', '--report', default=None, type=str,
                         help='Write a detailed test report to REPORT.')
+    parser.add_argument('-w', '--show_warnings', default=False, action='store_true',
+                        help='Show warnings when running unit tests and vet tests.')
     return parser.parse_args() if options is None else parser.parse_args(options)
+
+def show_setup_list():
+    """Show a list of all instruments and the setups they support."""
+    print("All instruments and test setups supported by the dev-suite:\n")
+    for instrument in all_setups.keys():
+        print(instrument)
+        # Print an indented line wrapped list of setups beneath the instrument.
+        # "break_long_words=False" prevents it from breaking up setup names at an underscore,
+        # which looks bad.
+        setups = " ".join(all_setups[instrument])
+        for line in textwrap.wrap(setups, width=80, initial_indent = "    ", 
+                                  subsequent_indent="    ", break_long_words=False):
+            print(line)
 
 def thread_target(test_report):
     """Thread target method for running tests."""
@@ -502,6 +684,10 @@ def main():
 
     pargs = parser()
 
+    if 'list' in pargs.tests:
+        show_setup_list()
+        return 0
+
     if pargs.threads <=0:
         raise ValueError("Number of threads must be >= 1")
     elif pargs.threads > 1:
@@ -515,185 +701,240 @@ def main():
 
     if not os.path.exists(pargs.outputdir):
         os.mkdir(pargs.outputdir)
-    outputdir = os.path.abspath(pargs.outputdir)
+    pargs.outputdir = os.path.abspath(pargs.outputdir)
 
     # Make sure we can create a writable report file (if needed) before starting the tests
     if pargs.report is None and pargs.quiet:
         # If there's no report file specified in the command line, but we're in quiet mode,
         # make up a report file name
-        pargs.report = get_unique_file(os.path.join(outputdir, "pypeit_test_results.txt"))
-
-    if pargs.report:
-        try:
-            report_file = open(pargs.report, "w")
-        except Exception as e:
-            print(f"Could not open report file {pargs.report}", file=sys.stderr)
-            traceback.print_exc()
-            sys.exit(1)
-
-    # Only write the test priority file if all develop tests are being run
-    if pargs.tests == "develop" and pargs.instrument is None and pargs.setup is None and pargs.debug is False:
-        write_priorities = True
-    else:
-        write_priorities = False
+        pargs.report = get_unique_file(os.path.join(pargs.outputdir, "pypeit_test_results.txt"))
 
     # ---------------------------------------------------------------------------
-    # Determine which instruments and setups will be tested
+    # Determine which tests to run
 
-    all_instruments = available_data()
+    flg_pypeit_tests = False
+    flg_unit = False
+    flg_reduce = False
     flg_after = False
     flg_ql = False
+    flg_vet = False
 
-    # Development instruments (in returned dictonary keys) and setups
-    devsetups = develop_setups
-    tests_that_only_use_dev_setups = ['develop', 'reduce', 'afterburn']
+    write_priorities = False
 
-    # Cooked instruments (in returned dictonary keys) and setups
-    cooksetups = cooked_setups
-
-    # Setup
-    unsupported = []
-    if pargs.tests == 'all':
-        instruments = np.array([item for item in all_instruments
-                                        for inst in supported_instruments
-                                            if inst.lower() in item.lower()])
-    elif pargs.tests in tests_that_only_use_dev_setups:
-        instruments = np.array(list(devsetups.keys())) if pargs.instrument is None \
-                        else np.array([pargs.instrument])
-        if pargs.tests == 'afterburn':
-            # Only do the flux-calibration and coadding tests
+    for test in pargs.tests:
+        if test == "all":
+            flg_pypeit_tests = True
+            flg_unit = True
+            flg_reduce = True
             flg_after = True
-    elif pargs.tests.lower() == 'cooked':
-        instruments = np.array(list(cooksetups.keys())) if pargs.instrument is None \
-                        else np.array([pargs.instrument])
-    elif pargs.tests.lower() == 'ql':      
-        flg_ql = True    
-        instruments = np.array(list(ql_setups.keys())) if pargs.instrument is None \
-                        else np.array([pargs.instrument])
-    else:
-        instruments = np.array([item for item in all_instruments 
-                                    if pargs.tests.lower() in item.lower()])
-        unsupported = [item for item in instruments 
-                            if not np.any([inst.lower() in item.lower()
-                                for inst in supported_instruments]) ]
+            flg_ql = True
+            flg_vet = True
 
-    # Check that instruments is not blank
-    if len(instruments) == 0:
-        print("\x1B[" + "1;31m" + "\nERROR - " + "\x1B[" + "0m" +
-              "Invalid test selected: {0:s}\n\n".format(pargs.tests) +
-              "Consult the help (pypeit_test -h) or select one of the " +
-              "available RAW_DATA directories: {0}".format(', '.join(all_instruments)))
-        return 1
+            # Write the test priority file if all tests are being run
+            if pargs.instruments is None and pargs.setups is None and pargs.debug == False:
+                write_priorities = True
+
+        elif test == "pypeit_tests":
+            flg_pypeit_tests = True
+        elif test == "unit":
+            flg_unit = True
+        elif test == "reduce":
+            flg_reduce = True
+        elif test == "after" or test=="afterburn":
+            flg_after = True
+        elif test == "ql":
+            flg_ql = True
+        elif test == "vet":
+            flg_vet = True
+        else:
+            print("\x1B[" + "1;31m" + "\nERROR - " + "\x1B[" + "0m" +
+                  "Invalid test selected: {}\n\n".format(test) +
+                  "Consult the help (pypeit_test -h)")
+            return 1
+            
+
+    # ---------------------------------------------------------------------------
+    # Determine which instruments will be tested
+
+
+    unsupported = []
+    instruments = []
+    all_instruments = all_setups.keys()
+    if pargs.instruments is not None and len(pargs.instruments) > 0:
+        for instr in pargs.instruments:
+            if instr in all_instruments:
+                instruments.append(instr) 
+            else:
+                unsupported.append(instr)
+
+    # Setups may be specified with a "instr/setup" syntax, parse those out
+    # and make sure the instruments are included
+    argument_setup_names = []
+    if pargs.setups is not None and len(pargs.setups) > 0:
+        for setup in pargs.setups:
+            if "/" in setup:
+                (instr, setup_name) = setup.split("/")
+                if instr not in instruments and instr in all_instruments:
+                    instruments.append(instr)
+                argument_setup_names.append(setup_name)
+            else:
+                argument_setup_names.append(setup)
 
     if len(unsupported) > 0:
-        if not pargs.quiet:
-            print("\x1B[" + "1;33m" + "\nWARNING - " + "\x1B[" + "0m" +
-                  "The following tests have not been validated and may not pass: {0}\n\n".format(
-                  unsupported))
+        print("\x1B[" + "1;33m" + "\nWARNING - " + "\x1B[" + "0m" +
+                "The following instruments are not supported: {0}\n\n".format(
+                unsupported))
+        return 1
+
+    # If no instruments were supplied by either the instruments or
+    # setups arguments, test all instruments
+    if len(instruments) == 0:
+        instruments = all_instruments
 
     # Report
     if not pargs.quiet:
-        print('Running tests on the following instruments:')
-        for instr in instruments:
-            print('    {0}'.format(instr))
-        print('')
+        if "all" in pargs.tests:
+            print('Running all tests.')
+        else:
+            if flg_pypeit_tests:
+                print('Running unit tests in pypeit/tests')
+            if flg_unit:
+                print('Running dev suite unit tests')
+            if flg_reduce:
+                print('Running reduce tests.')
+            if flg_after:
+                print('Running afterburner tests')
+            if flg_ql is True:
+                print('Running quick look tests')
+            if flg_vet is True:
+                print('Running vet tests')
 
-    # ---------------------------------------------------------------------------
-    # Build the TestSetup and PypeItTest objects for testing
+    # Clean up prior coverage results that could be left over from an
+    # interrupted dev suite run
+    if pargs.coverage is not None:
+        clear_coverage_data(pargs.outputdir)
+ 
+    # Start Unit Tests
+    test_report = TestReport(pargs)
 
-    # Load test setup priority from file
-    priority_list = TestPriorityList('test_priority_list')
-    if not pargs.quiet and pargs.verbose:
-        print(f'Loaded {len(priority_list)} setup priorities')
+    # For coverage testing, run the PypeIt unit tests too
+    if flg_pypeit_tests and not pargs.prep_only:
+        pypeit_tests_dir = Path(pypeit.__file__).parent.joinpath("tests")
+        run_pytest(pargs, "PypeIt Unit Tests", str(pypeit_tests_dir), test_report)
 
-    setups = []
-    missing_files = []
-    for instr in instruments:
-        # Only do blue instruments
-        if pargs.debug and 'blue' not in instr:
-            continue
+    dev_path = os.getenv('PYPEIT_DEV')
+    if flg_unit is True and not pargs.prep_only:
+        run_pytest(pargs, "Unit Tests", os.path.join(dev_path, "unit_tests"), test_report)
 
-        # Setups
-        setup_names = available_setups(raw_data, instr)
-        if pargs.setup is not None and pargs.setup not in setup_names:
-            # No setups selected
-            continue
-        # Limit to a single setup
-        if pargs.setup is not None:
-            setup_names = [ pargs.setup ]
-        # Limit to development setups
-        elif pargs.tests in tests_that_only_use_dev_setups:
-            setup_names = devsetups[instr]
-        elif pargs.tests.lower() == 'cooked':
-            setup_names = cooksetups[instr]
-        elif pargs.tests.lower() == 'ql':
-            setup_names = ql_setups[instr]
 
-        # Build test setups, check for missing files, and run any prep work
-        for setup_name in setup_names:
+    if flg_reduce or flg_after or flg_ql:
+        # ---------------------------------------------------------------------------
+        # Build the TestSetup and PypeItTest objects for testing
 
-            setup = build_test_setup(pargs, instr, setup_name, flg_after, flg_ql)
-            missing_files += setup.missing_files
+        # Load test setup priority from file
+        priority_list = TestPriorityList('test_priority_list')
+        if not pargs.quiet and pargs.verbose:
+            print(f'Loaded {len(priority_list)} setup priorities')
 
-            # set setup priority from file
-            priority_list.set_test_setup_priority(setup)
-
-            setups.append(setup)
-
-        # Report
+        # Report on instruments
         if not pargs.quiet:
+            print('Running tests on the following instruments:')
+            for instr in instruments:
+                print('    {0}'.format(instr))
+            print('')
+
+
+        setups = []
+        missing_files = []
+        for instr in instruments:
+            # Only do blue instruments
+            if pargs.debug and instr != 'shane_kast_blue':
+                continue
+
+            # Setups        
+            if len(argument_setup_names) > 0:
+                setup_names = [name for name in argument_setup_names if name in all_setups[instr]]
+
+                # No setups for this instrument specified, so run all setups
+                if len(setup_names)==0:
+                    setup_names = all_setups[instr]                    
+            elif pargs.debug:
+                setup_names = ['600_4310_d55']
+            else:
+                setup_names = all_setups[instr]
+
+            # Build test setups, check for missing files, and run any prep work
+            for setup_name in setup_names:
+
+                setup = build_test_setup(pargs, instr, setup_name, flg_reduce, flg_after,
+                                        flg_ql)
+                missing_files += setup.missing_files
+
+                # set setup priority from file
+                priority_list.set_test_setup_priority(setup)
+
+                setups.append(setup)
+
             print('Reducing data from {0} for the following setups:'.format(instr))
             for name in setup_names:
                 print('    {0}'.format(name))
             print('')
 
-    # ---------------------------------------------------------------------------
-    # Check all the data and relevant files exist before starting!
-    if len(missing_files) > 0:
-        raise ValueError('Missing the following files:\n    {0}'.format(
-                         '\n    '.join(missing_files)))
-
-    # ---------------------------------------------------------------------------
-    # Run the tests
-    test_report = TestReport(pargs, setups)
+        # ---------------------------------------------------------------------------
+        # Check all the data and relevant files exist before starting!
+        if len(missing_files) > 0:
+            raise ValueError('Missing the following files:\n    {0}'.format(
+                            '\n    '.join(missing_files)))
 
 
-    # Add tests to the test_run_queue
-    for setup in setups:
-        test_run_queue.put(setup)
+        # ---------------------------------------------------------------------------
+        # Run the tests
+        test_report.setup_testing_started(setups)
+        # Add tests to the test_run_queue
+        for setup in setups:
+            if len(setup.tests) == 0:
+                continue
+            test_run_queue.put(setup)
 
-    # Start threads to run the tests
-    if not pargs.quiet and pargs.threads > 1:
-        print(f'Running tests in {pargs.threads} parallel processes')
+        # Start threads to run the tests
+        if not pargs.quiet and pargs.threads > 1:
+            print(f'Running tests in {pargs.threads} parallel processes')
 
-    test_report = TestReport(pargs, setups)
-    test_report.start_time = datetime.datetime.now()
+        thread_pool = []
+        for i in range(pargs.threads):
+            new_thread = Thread(target=thread_target, args=[test_report])
+            thread_pool.append(new_thread)
+            new_thread.start()
 
-    thread_pool = []
-    for i in range(pargs.threads):
-        new_thread = Thread(target=thread_target, args=[test_report])
-        thread_pool.append(new_thread)
-        new_thread.start()
+        # Wait for the tests to finish
+        test_run_queue.join()
 
-    # Wait for the tests to finish
-    test_run_queue.join()
+        # Set the test status to complete and then wait for the threads to finish.
+        # We don't run the threads as daemon threads so that main() can be called multiple times
+        # in unit tests
+        test_report.testing_complete = True
+        for thread in thread_pool:
+            thread.join()
 
-    # Set the test status to complete and then wait for the threads to finish.
-    # We don't run the threads as daemon threads so that main() can be called multiple times
-    # in unit tests
-    test_report.testing_complete = True
-    for thread in thread_pool:
-        thread.join()
+        if not pargs.quiet:
+            test_report.summarize_setup_tests()
+
+    # Run the vet tests
+    if flg_vet is True:
+        run_pytest(pargs, "Vet Tests", os.path.join(dev_path, "vet_tests"), test_report, redux_out=pargs.outputdir)
+
 
     # ---------------------------------------------------------------------------
     # Build test priority list for next time, but only if all tests succeeded
-    # and all develop tests were being run
+    # and all tests were being run
     if write_priorities and test_report.num_passed == test_report.num_tests:
         priority_list.update_priorities(setups)
         priority_list.write()
         if not pargs.quiet and pargs.verbose:
             print(f'Wrote {len(priority_list)} setup priorities')
 
+    if pargs.coverage is not None:
+        generate_coverage_report(pargs)
 
     # ---------------------------------------------------------------------------
     # Finish up the report on the test results
@@ -708,18 +949,42 @@ def main():
     return test_report.num_failed
 
 
-def build_test_setup(pargs, instr, setup_name, flg_after, flg_ql):
-    """Builds a TestSetup object including the tests that it will run"""
+def build_test_setup(pargs, instr, setup_name, flg_reduce, flg_after, flg_ql):
+    """
+    Builds a TestSetup object including the tests that it will run
+
+    Args:
+        pargs (:obj:`argparse.Namespace`): 
+            The arguments to pypeit_test, as returned by argparse.
+        
+        instr (str): 
+            The instrument the setup is for.
+
+        setup_name (str): 
+            The name of the test setup.
+
+        flg_reduce (bool): 
+            Whether or not reduce tests are being run.
+
+        flg_after (bool): 
+            Whether or not afterburner tests are being run.
+
+        flg_ql (bool): 
+            Whether or not quick look tests are being run.
+
+    Returns:
+        :obj:`TestSetup`:
+            A TestSetup object representing the test setup.
+    """
 
     dev_path = os.getenv('PYPEIT_DEV')
     raw_data = raw_data_dir()
-    outputdir = os.path.abspath(pargs.outputdir)
 
     # Directory with raw data
     rawdir = os.path.join(raw_data, instr, setup_name)
 
     # Directory for reduced data
-    rdxdir = os.path.join(outputdir, instr, setup_name)
+    rdxdir = os.path.join(pargs.outputdir, instr, setup_name)
     if not os.path.exists(rdxdir):
         # Make the directory
         os.makedirs(rdxdir)
@@ -738,9 +1003,7 @@ def build_test_setup(pargs, instr, setup_name, flg_after, flg_ql):
                 key = None # No arguments in this format
                 if setup.name not in test_descr['setups'][setup.instr]:
                     # This test type isn't applicable to the setup
-                    # But we make an exception for "all" and reduce tests
-                    if not (pargs.tests == "all" and test_descr['type'] == TestPhase.REDUCE):
-                        continue
+                    continue
             else:
                 # A dict mapping to arguments that apply to all setups for this instrument
                 key = setup.instr
@@ -779,13 +1042,13 @@ def build_test_setup(pargs, instr, setup_name, flg_after, flg_ql):
         if pargs.prep_only and test_descr['type'] != TestPhase.PREP:
             continue
 
-        if pargs.tests == "reduce" and test_descr['type'] not in (TestPhase.PREP, TestPhase.REDUCE):
+        if not flg_reduce and test_descr['type'] == TestPhase.REDUCE:
             continue
 
-        if flg_after and test_descr['type'] not in (TestPhase.PREP, TestPhase.AFTERBURN):
+        if not flg_after and test_descr['type'] == TestPhase.AFTERBURN:
             continue
 
-        if flg_ql and test_descr['type'] not in (TestPhase.PREP, TestPhase.QL):
+        if not flg_ql and test_descr['type'] == TestPhase.QL:
             continue
 
         setup.tests.append(test)
