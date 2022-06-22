@@ -466,6 +466,12 @@ class TestReport(object):
         for t in setup.tests:
             self.report_on_test(t, output)
 
+def clear_coverage_data(redux_out):
+    """Clear any leftover coverage data that may be left over form an interrupted prior run."""
+    path = Path(redux_out)
+    for file in path.rglob(".coverage*"):
+        file.unlink(missing_ok = True)
+
 def run_pytest(pargs, test_descr, test_dir, test_report, redux_out=None):
     """Run pytest on a directory of test files.
     
@@ -581,8 +587,6 @@ def parser(options=None):
     parser.add_argument('-q', '--quiet', default=False, action='store_true',
                         help='Supress all output to stdout. If -r is not a given, a report file will be '
                              'written to <outputdir>/pypeit_test_results.txt')
-    parser.add_argument('--no_gui', default=False, action='store_true',
-                        help='Supress any GUIs displayed by any tests.')
     parser.add_argument('-v', '--verbose', default=False, action='store_true',
                         help='Output additional detailed information while running the tests and output a '
                              'detailed report at the end of testing. This has no effect if -q is given')
@@ -765,7 +769,11 @@ def main():
             if flg_vet is True:
                 print('Running vet tests')
 
-
+    # Clean up prior coverage results that could be left over from an
+    # interrupted dev suite run
+    if pargs.coverage is not None:
+        clear_coverage_data(pargs.outputdir)
+ 
     # Start Unit Tests
     test_report = TestReport(pargs)
 

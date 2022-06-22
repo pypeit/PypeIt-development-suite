@@ -7,16 +7,14 @@
 """
 This script runs the PypeIt development suite of tests
 """
-
 import sys
+import shutil
 import os
-import os.path
 from test_scripts.test_main import main
 
 if __name__ == '__main__':
     # Check for pypeit executable
-    if not any([os.access(os.path.join(path, 'run_pypeit'), os.X_OK)
-                for path in os.environ["PATH"].split(os.pathsep)]):
+    if shutil.which("run_pypeit") is None:
         raise RuntimeError("You need to install run_pypeit in your PATH")
 
     # Check for PYPEIT_DEV

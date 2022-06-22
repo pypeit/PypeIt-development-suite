@@ -447,11 +447,11 @@ class PypeItQuickLookTest(PypeItTest):
             command_line = ['pypeit_ql_keck_nires']
         elif self.setup.instr == 'keck_mosfire':
             command_line = ['pypeit_ql_multislit', 'keck_mosfire']
-            if self.pargs.quiet or self.pargs.no_gui:
+            if self.pargs.quiet:
                 command_line += ['--no_gui', '--writefits']
         elif self.setup.instr == 'keck_lris_red_mark4':
             command_line = ['pypeit_ql_multislit', 'keck_lris_red_mark4']
-            if self.pargs.quiet or self.pargs.no_gui:
+            if self.pargs.quiet:
                 command_line += ['--no_gui', '--writefits']
         elif self.setup.instr == 'keck_deimos':
             # Two commands!
