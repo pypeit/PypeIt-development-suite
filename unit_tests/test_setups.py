@@ -15,13 +15,13 @@ from configobj import ConfigObj
 from pypeit.pypmsgs import PypeItError
 from pypeit.metadata import PypeItMetaData
 from pypeit.par import PypeItPar
-from pypeit.par.util import parse_pypeit_file
 from pypeit.scripts.setup import Setup
 from pypeit.scripts.chk_for_calibs import ChkForCalibs
 from pypeit.spectrographs.util import load_spectrograph
 from pypeit.tests.tstutils import data_path
 from pypeit import pypeit
 from pypeit import pypeitsetup
+from pypeit import inputfiles
 
 
 def expected_file_extensions():
@@ -217,23 +217,29 @@ def test_setup_keck_deimos_multiconfig():
         # be put into a function.
 
         # Read the pypeit file
-        cfg_lines, data_files, frametype, usrdata, setups, _ = parse_pypeit_file(f, runtime=True)
+        pypeitFile = inputfiles.PypeItFile.from_file(f)
+        #cfg_lines, data_files, frametype, usrdata, setups, _ = parse_pypeit_file(f, runtime=True)
         # Spectrograph
-        cfg = ConfigObj(cfg_lines)
+        cfg = ConfigObj(pypeitFile.cfg_lines)
         spectrograph = load_spectrograph(cfg['rdx']['spectrograph'])
         # Configuration-specific parameters
-        for idx, row in enumerate(usrdata):
+        for idx, row in enumerate(pypeitFile.data):
             if 'science' in row['frametype'] or 'standard' in row['frametype']:
                 break
-        spectrograph_cfg_lines = spectrograph.config_specific_par(data_files[idx]).to_config()
+        spectrograph_cfg_lines = spectrograph.config_specific_par(
+            pypeitFile.filenames[idx]).to_config()
         #  PypeIt parameters
-        par = PypeItPar.from_cfg_lines(cfg_lines=spectrograph_cfg_lines, merge_with=cfg_lines)
+        par = PypeItPar.from_cfg_lines(cfg_lines=spectrograph_cfg_lines, 
+                                       merge_with=pypeitFile.cfg_lines)
         #  Metadata
-        fitstbl = PypeItMetaData(spectrograph, par, files=data_files, usrdata=usrdata, strict=True)
-        fitstbl.finalize_usr_build(frametype, setups[0])
+        fitstbl = PypeItMetaData(spectrograph, par, 
+                                 files=pypeitFile.filenames, 
+                                 usrdata=pypeitFile.data, 
+                                 strict=True)
+        fitstbl.finalize_usr_build(pypeitFile.frametypes, pypeitFile.setup_name)
 
         assert np.all(fitstbl['setup'] == s), 'Setup is wrong'
-        assert np.all(fitstbl['calib'] == c), 'Calibration group is wrong'
+        assert np.all(fitstbl['calib'].astype(str) == c), 'Calibration group is wrong'
 
     # Clean-up
     shutil.rmtree(output_path)
