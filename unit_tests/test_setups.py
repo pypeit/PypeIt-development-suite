@@ -25,7 +25,7 @@ from pypeit import inputfiles
 
 
 def expected_file_extensions():
-    return ['pypeit', 'sorted']
+    return ['sorted']
 
 
 def test_setup_keck_lris_red_mark4():

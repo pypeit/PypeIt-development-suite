@@ -165,6 +165,8 @@ def test_view_fits_mosaic():
 
 
 
+# TODO -- REMOVE if this test is being run in the DEV SUITE afterburn.
+#   Am pretty sure it is..
 def test_coadd1d_1(monkeypatch):
     """
     Test basic coadd using shane_kast_blue
@@ -199,38 +201,6 @@ def test_coadd1d_1(monkeypatch):
     os.remove(parfile)
     os.remove(coadd_ofile)
 
-
-def test_coadd1d_2():
-    """
-    Test combining Echelle
-    """
-    # NOTE: flux_value is False
-    parfile = 'coadd1d.par'
-    if os.path.isfile(parfile):
-        os.remove(parfile)
-    coadd_ofile = data_path('pisco_coadd.fits')
-    if os.path.isfile(coadd_ofile):
-        os.remove(coadd_ofile)
-
-    coadd_ifile = data_path('gemini_gnirs_32_sb_sxd.coadd1d')
-    scripts.coadd_1dspec.CoAdd1DSpec.main(
-            scripts.coadd_1dspec.CoAdd1DSpec.parse_args([coadd_ifile, '--test_spec_path',
-                                                         data_path('')]))
-
-    hdu = io.fits_open(coadd_ofile)
-    assert hdu[1].header['EXT_MODE'] == 'OPT'
-    assert hdu[1].header['FLUXED'] is False
-
-    # Test that the output file is kosher and contains the right quantities
-    spec = onespec.OneSpec.from_file(coadd_ofile)
-    assert spec.wave.shape == spec.wave_grid_mid.shape
-
-    # Clean up
-    hdu.close()
-    os.remove(parfile)
-    os.remove(coadd_ofile)
-
-#test_coadd1d_2()
 
 
 def test_obslog():
@@ -250,173 +220,37 @@ def test_obslog():
     shutil.rmtree(setupdir)
 
 
-def test_flux_calib(tmp_path, monkeypatch):
 
-    # Change to the tmp_path so the fluxing.par file is written there
-    os.chdir(tmp_path)
-
-    # Test the flux_calib script (but not fluxing itself)
-    def mock_get_header(*args, **kwargs):
-        return {"DISPNAME": "600ZD",
-                "PYP_SPEC": "keck_deimos" }
-
-    def mock_get_flux_calib_instance(*args, **kwargs):
-        # The flux_calib caller doesn't use the output, it just
-        # depends on the side effect of fluxing
-        return None 
-
-
-    with monkeypatch.context() as m:
-        monkeypatch.setattr(fits, "getheader", mock_get_header)
-        monkeypatch.setattr(fluxcalibrate.FluxCalibrate, "get_instance", mock_get_flux_calib_instance)
-
-        # Test with a flux file missing "flux end"
-
-        config_file_missing_end = str(tmp_path / "test_flux_calib_missing_end.flux")
-
-        with open(config_file_missing_end, "w") as f:
-            print("flux read", file=f)
-            print(" spec1d_file1.fits sens_file1.fits", file=f)
-            print(" spec1d_file2.fits sens_file2.fits", file=f)
-
-
-        with pytest.raises(PypeItError, match="Missing 'flux end'"):
-            parsed_args = scripts.flux_calib.FluxCalib.parse_args([config_file_missing_end])
-            scripts.flux_calib.FluxCalib.main(parsed_args)
-
-        # Test with a flux file missing the flux block entirely
-        config_file_missing_flux = str(tmp_path / "test_flux_calib_missing_flux.flux")
-        with open(config_file_missing_flux, "w") as f:
-            print(" spec1d_file1.fits sens_file1.fits", file=f)
-            print(" spec1d_file2.fits sens_file2.fits", file=f)
-        
-        with pytest.raises(PypeItError, match="Missing flux block in"):
-            parsed_args = scripts.flux_calib.FluxCalib.parse_args([config_file_missing_flux])
-            scripts.flux_calib.FluxCalib.main(parsed_args)
-
-        # Test 1 sens file with multiple spec1ds
-        config_file_one_to_many = str(tmp_path / "test_flux_calib_1_to_many.flux")
-        with open(config_file_one_to_many, "w") as f:
-            print("flux read", file=f)
-            print(" spec1d_file1.fits sens_file1.fits", file=f)
-            print(" spec1d_file2.fits", file=f)
-            print(" spec1d_file3.fits", file=f)
-            print("flux end", file=f)
-
-        parsed_args = scripts.flux_calib.FluxCalib.parse_args([config_file_one_to_many])
-        assert scripts.flux_calib.FluxCalib.main(parsed_args) == 0
-
-        # Test 1 sens file per spec1d
-        config_file_one_to_one = str(tmp_path / "test_flux_calib_one_to_one.flux")
-        with open(config_file_one_to_one, "w") as f:
-            print("flux read", file=f)
-            print(" spec1d_file1.fits sens_file1.fits", file=f)
-            print(" spec1d_file2.fits sens_file2.fits", file=f)
-            print(" spec1d_file3.fits sens_file1.fits", file=f)
-            print("flux end", file=f)
-
-        parsed_args = scripts.flux_calib.FluxCalib.parse_args([config_file_one_to_one])
-        assert scripts.flux_calib.FluxCalib.main(parsed_args) == 0
-        
-        # Test with no sensfunc, but using an archived sensfunc
-        config_file_use_arxiv = str(tmp_path / "test_flux_calib_use_arxiv.flux")
-        with open(config_file_use_arxiv, "w") as f:
-            print("[fluxcalib]", file=f)
-            print(" use_archived_sens = True", file=f)
-            print("flux read", file=f)
-            print(" spec1d_file1.fits", file=f)
-            print(" spec1d_file2.fits", file=f)
-            print(" spec1d_file3.fits", file=f)
-            print("flux end", file=f)
-
-        parsed_args = scripts.flux_calib.FluxCalib.parse_args([config_file_use_arxiv])
-        assert scripts.flux_calib.FluxCalib.main(parsed_args) == 0
-        
-        
-        # Test with no sensfunc, but it's an error because an archive sensfunc
-        # was not requested
-        config_file_no_sens = str(tmp_path / "test_flux_calib_no_sens.flux")
-        with open(config_file_no_sens, "w") as f:
-            print("flux read", file=f)
-            print(" spec1d_file1.fits", file=f)
-            print(" spec1d_file2.fits", file=f)
-            print(" spec1d_file3.fits", file=f)
-            print("flux end", file=f)
-
-        with pytest.raises(PypeItError, match = 'Invalid format for .flux'):
-            parsed_args = scripts.flux_calib.FluxCalib.parse_args([config_file_no_sens])
-            scripts.flux_calib.FluxCalib.main(parsed_args)
-        
-
-# TODO: Include tests for coadd2d, sensfunc
-
-
-
-# NOTE: May fail if DetectorContainer datamodel changes.
-def test_coadd1d_1(monkeypatch):
-    """
-    Test basic coadd using shane_kast_blue
-    """
-    dp = data_path('')
-    # Change to the parent directory of the data path, so we can test that
-    # coadding without a coadd output file specified places the output next
-    # to the spec1ds. Using monkeypatch means the current working directory
-    # will be restored after the test.
-    monkeypatch.chdir(Path(dp).parent)
-
-    # NOTE: flux_value is False
-    parfile = 'files/coadd1d.par'
-    if os.path.isfile(parfile):
-        os.remove(parfile)
-    coadd_ofile = data_path('coadd1d_J1217p3905_KASTb_20150520_20150520.fits')
-    if os.path.isfile(coadd_ofile):
-        os.remove(coadd_ofile)
-
-    coadd_ifile = data_path('shane_kast_blue.coadd1d')
-    scripts.coadd_1dspec.CoAdd1DSpec.main(
-            scripts.coadd_1dspec.CoAdd1DSpec.parse_args([coadd_ifile, "--par_outfile", parfile]))
-    hdu = io.fits_open(coadd_ofile)
-    assert hdu[1].header['EXT_MODE'] == 'OPT'
-    assert hdu[1].header['FLUXED'] is False
-    # Test that the output file is kosher and contains the right quantities
-    spec = onespec.OneSpec.from_file(coadd_ofile)
-    assert spec.wave.shape == spec.wave_grid_mid.shape
-
-    # Clean up
-    hdu.close()
-    os.remove(parfile)
-    os.remove(coadd_ofile)
-
-
-# NOTE: May fail if DetectorContainer datamodel changes.
-def test_coadd1d_2():
-    """
-    Test combining Echelle
-    """
-    # NOTE: flux_value is False
-    parfile = 'coadd1d.par'
-    if os.path.isfile(parfile):
-        os.remove(parfile)
-    coadd_ofile = data_path('pisco_coadd.fits')
-    if os.path.isfile(coadd_ofile):
-        os.remove(coadd_ofile)
-
-    coadd_ifile = data_path('gemini_gnirs_32_sb_sxd.coadd1d')
-    scripts.coadd_1dspec.CoAdd1DSpec.main(
-            scripts.coadd_1dspec.CoAdd1DSpec.parse_args([coadd_ifile, '--test_spec_path',
-                                                         data_path('')]))
-
-    hdu = io.fits_open(coadd_ofile)
-    assert hdu[1].header['EXT_MODE'] == 'OPT'
-    assert hdu[1].header['FLUXED'] is False
-
-    # Test that the output file is kosher and contains the right quantities
-    spec = onespec.OneSpec.from_file(coadd_ofile)
-    assert spec.wave.shape == spec.wave_grid_mid.shape
-
-    # Clean up
-    hdu.close()
-    os.remove(parfile)
-    os.remove(coadd_ofile)
-
-#test_coadd1d_2()
+#  THIS TEST IS RUN IN THE DEV SUITE AS PART OF AFTERBURN
+#   AND THE VERSION BELOW IS A MISH-MASH OF PYPEIT TEST + COOKED
+#  TODO -- Could add the checking part as a VET test
+#def test_coadd1d_2():
+#    """
+#    Test combining Echelle
+#    """
+#    # NOTE: flux_value is False
+#    parfile = 'coadd1d.par'
+#    if os.path.isfile(parfile):
+#        os.remove(parfile)
+#    coadd_ofile = data_path('pisco_coadd.fits')
+#    if os.path.isfile(coadd_ofile):
+#        os.remove(coadd_ofile)
+#
+#    coadd_ifile = data_path('gemini_gnirs_32_sb_sxd.coadd1d')
+#    pytest.set_trace()
+#    scripts.coadd_1dspec.CoAdd1DSpec.main(
+#            scripts.coadd_1dspec.CoAdd1DSpec.parse_args([coadd_ifile, '--test_spec_path',
+#                                                         data_path('')]))
+#
+#    hdu = io.fits_open(coadd_ofile)
+#    assert hdu[1].header['EXT_MODE'] == 'OPT'
+#    assert hdu[1].header['FLUXED'] is False
+#
+#    # Test that the output file is kosher and contains the right quantities
+#    spec = onespec.OneSpec.from_file(coadd_ofile)
+#    assert spec.wave.shape == spec.wave_grid_mid.shape
+#
+#    # Clean up
+#    hdu.close()
+#    os.remove(parfile)
+#    os.remove(coadd_ofile)
