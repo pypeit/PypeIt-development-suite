@@ -7,7 +7,8 @@ import pytest
 
 from pypeit.core.datacube import coadd_cube
 from pypeit.spectrographs.util import load_spectrograph
-from pypeit import io
+from pypeit import inputfiles
+from astropy.table import Table
 
 from IPython import embed
 
@@ -25,8 +26,13 @@ def test_coadd_datacube(redux_out):
              os.path.join(droot,
                           'spec2d_KB.20191219.57662-BB1245p4238_KCWI_20191219T160102.755.fits')]
     output_filename = "BB1245p4238_KCWI_20191219.fits"
+    # Generate a dummy CubeFile
+    data = Table()
+    data['filename'] = files
+    confdict = {'rdx': {'spectrograph': 'keck_kcwi'}}
+    cubeFile = inputfiles.CubeFile(data_table=data, config=confdict)
     # Get some options
-    opts = [io.load_spec2d_opts(None)]*len(files)
+    opts = [cubeFile.cube_opts(None)]*len(files)
     # Grab the spectrograph and parset
     spec = load_spectrograph("keck_kcwi")
     parset = spec.default_pypeit_par()
