@@ -227,7 +227,14 @@ class TestReport(object):
         return f'{verbose_info}{self.num_passed:2} passed/{self.num_failed:2} failed/{self.num_skipped:2} skipped'
 
     def setup_testing_started(self,setups):
-        """Called once test setup testing has started"""
+        """Called once test setup testing has started.
+        
+        Args:
+            setups (list of :obj:`TestSetup`):
+                The list of test setups being run. These are used to generate the detailed report once
+                testing is complete.
+
+        """
         with self.lock:
             self.test_setups = setups
             # Create the report file (if needed) and write the header to it
@@ -307,7 +314,14 @@ class TestReport(object):
                 self.summary_report(report_file)
 
     def pytest_started(self, test_descr):
-        """Called when a set of pytest tests have started."""
+        """Called when a set of pytest tests have started.
+        
+        Args:
+            test_descr (str): A short description of the pytest test suite that
+                              will be displayed in the test report and uniquely
+                              identify the test suite. For example:
+                              "Unit Tests".
+        """
 
         if not self.pargs.quiet:
             print(f"Running {test_descr}", flush=True)
@@ -319,7 +333,17 @@ class TestReport(object):
 
     def pytest_line(self, test_descr, line):
         """Called for each line ouptut from a pytest run. Each line is echoed to
-        stdout and if requested a report file."""
+        stdout and, if requested, a report file.
+        
+        Args:
+            test_descr (str): A short description of the pytest test suite that
+                              will be displayed in the test report and uniquely
+                              identify the test suite. For example:
+                              "Unit Tests".
+
+            line (str):       A line from the stdout of pytest.
+        
+        """
         if not self.pargs.quiet:
             print(line, flush=True)
 
@@ -476,7 +500,23 @@ def run_pytest(pargs, test_descr, test_dir, test_report, redux_out=None):
     """Run pytest on a directory of test files.
     
     Args:
-        pargs
+        pargs (:obj:`argparse.Namespace`): The arguments to pypeit_test, as returned by argparse.
+
+        test_descr (str): 
+            A short description of the pytest test suite that will be displayed in 
+            the test report and uniquely identify the test suite. For example:
+            "Unit Tests".
+
+        test_dir (str): 
+            The directory where the pytest tests to run are stored.
+
+        test_report (:obj:`TestReport`): 
+            The test report object for this test run. Output from the pytest run
+            will be passed to this object.
+
+        redux_out (str):
+            The location of the output of this dev-suite run. Optional, only required
+            if the pytest suite requires the output from the dev-suite (i.e vet_tests).
     """
     abs_test_dir = os.path.abspath(test_dir)
 
@@ -910,20 +950,31 @@ def main():
 
 
 def build_test_setup(pargs, instr, setup_name, flg_reduce, flg_after, flg_ql):
-    """_summary_
+    """
     Builds a TestSetup object including the tests that it will run
 
     Args:
-        pargs (_type_): _description_
-        instr (_type_): _description_
-        setup_name (_type_): _description_
-        flg_after (bool): _description_
-        flg_ql (bool): _description_
-        flg_unit (bool): _description_
-        flg_vet (bool): _description_
+        pargs (:obj:`argparse.Namespace`): 
+            The arguments to pypeit_test, as returned by argparse.
+        
+        instr (str): 
+            The instrument the setup is for.
+
+        setup_name (str): 
+            The name of the test setup.
+
+        flg_reduce (bool): 
+            Whether or not reduce tests are being run.
+
+        flg_after (bool): 
+            Whether or not afterburner tests are being run.
+
+        flg_ql (bool): 
+            Whether or not quick look tests are being run.
 
     Returns:
-        _type_: _description_
+        :obj:`TestSetup`:
+            A TestSetup object representing the test setup.
     """
 
     dev_path = os.getenv('PYPEIT_DEV')
