@@ -96,7 +96,6 @@ def test_lris_blue_pypeit_overwrite():
                      'pypeit_files/keck_lris_blue_long_400_3400_d560.pypeit')
     assert os.path.isfile(f), 'Could not find pypeit file.'
         
-    #cfg_lines, data_files, frametype, usrdata, setups, _ = parse_pypeit_file(f, file_check=False)
     pypeitFile = inputfiles.PypeItFile.from_file(f)
 
     # Reset path
