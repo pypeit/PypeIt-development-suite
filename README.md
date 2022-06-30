@@ -34,40 +34,41 @@ raw test data are hosted by in a
 [Google Drive](https://drive.google.com/drive/folders/1oh19siB1-F0jjmY-F_jr73eA-TQYEiFW?usp=sharing).  
 
 The easiest way to access the
-development suite data is download and use [Google File
-Stream](https://support.google.com/drive/answer/7329379?hl=en).  Google
-File Stream is a Dropbox-like application that syncs your Google Drive
+development suite data is download and use [Google Drive
+for desktop](https://support.google.com/googleone/answer/10838124?visit_id=637915333936129509-3533094830&rd=1).  Google
+Drive for desktop is a Dropbox-like application that syncs your Google Drive
 with a local directory on your machine.  
 
-Using Google File Stream, the PypeIt team drive you will be able to
+Using Google Drive for desktop, the you will be able to
 access the development suite data at the path: 
 
 ```
-/Volumes/GoogleDrive/Team\ Drives/PHYS-GP-Hennawi/PypeIt/PypeIt-development-suite/
+/Volumes/GoogleDrive/My\ Drive/PypeIt-development-suite/
 ```
 
+If `PypeIt-development-suite` does not appear under `My Drive`, go to the Google Drive web interface, find it under `Shared with me`,
+right click it, and select `Add shortcut to drive`.
+
 If you cannot or would rather
-not use Google File Stream, you can simply download the appropriate
-files directly using the Google Drive web interface (although this can
-be a bit onerous and does not keep in sync with the remote Team Drive). Alternately you can use [rclone](https://rclone.org/) to manually copy or sync with the Google Drive.
+not use Google Drive for desktop, you can simply download the appropriate files directly using the Google Drive web interface (although this can be a bit onerous and does not keep in sync with the remote Team Drive). Alternately you can use [rclone](https://rclone.org/) to manually copy or sync with the Google Drive.
 
 
-The Team Drive contains three directories that should be accessible for
+The Google Drive contains two directories that should be accessible for
 testing PypeIt (see below): `RAW_DATA`, and `CALIBS`.
 
-  - If you download the data directly from the Team Drive, place them in
+  - If you download the data directly from the Google Drive, place them in
     your `PypeIt-development-suite` directory.  **Make sure that you *do
     not* add these directories to the repo!**
 
   - If you're using Google File Stream, add symlinks to your
     `PypeIt-development-suite` directory as follows (be sure to include
-    the \ in the Team\ Drives otherwise the space in "Team Drives" will
+    the \ in the My\ Drive otherwise the space in "My Drive" will
     cause problems):
 
     ```
     cd $PYPEIT_DEV
-    ln -s /Volumes/GoogleDrive/Team\ Drives/PHYS-GP-Hennawi/PypeIt/PypeIt-development-suite/RAW_DATA  RAW_DATA
-    ln -s /Volumes/GoogleDrive/Team\ Drives/PHYS-GP-Hennawi/PypeIt/PypeIt-development-suite/CALIBS  CALIBS
+    ln -s /Volumes/GoogleDrive/My\ Drive/PypeIt-development-suite/RAW_DATA  RAW_DATA
+    ln -s /Volumes/GoogleDrive/My\ Drive/PypeIt-development-suite/CALIBS  CALIBS
     ```
 
 ## Testing PypeIt
