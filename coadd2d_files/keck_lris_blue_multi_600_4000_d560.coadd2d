@@ -17,6 +17,7 @@
 
 # Read in the data
 spec2d read
+filename
 Science/spec2d_b170320_2083-c17_60L._LRISb_20170320T055336.211.fits
 Science/spec2d_b170320_2090-c17_60L._LRISb_20170320T082144.525.fits
 Science/spec2d_b170320_2084-c17_60L._LRISb_20170320T062414.630.fits

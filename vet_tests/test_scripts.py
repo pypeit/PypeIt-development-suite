@@ -217,13 +217,15 @@ def test_collate_1d(tmp_path, monkeypatch, redux_out):
         print("exclude_serendip = False", file=f)
         print("wv_rms_thresh = 0.1", file=f)
         print("spec1d read", file=f)
-        print(alt_spec1d, file=f)
+        print("filename | obj_id", file=f)
+        print(alt_spec1d + ' | DUMMY', file=f)
         print("spec1d end", file=f)
 
     config_file_spec1d = str(tmp_path / "test_collate1d_spec1d_only.collate1d")
     with open(config_file_spec1d, "w") as f:
         print("[collate1d]", file=f)
         print("spec1d read", file=f)
+        print("filename", file=f)
         print(spec1d_file, file=f)
         print("spec1d end", file=f)
 
@@ -231,6 +233,12 @@ def test_collate_1d(tmp_path, monkeypatch, redux_out):
     with open(config_file_coadd1d, "w") as f:
         print("[coadd1d]", file=f)
         print("ex_value = BOX", file=f)
+        # Need a data block
+        print(" ", file=f)
+        print("coadd1d read", file=f)
+        print("filename | obj_id", file=f)
+        print(alt_spec1d + ' | DUMMY', file=f)
+        print("coadd1d end", file=f)
 
     # Args only, nospec1d files should exit with an errror
     with pytest.raises(SystemExit):

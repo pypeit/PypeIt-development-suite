@@ -11,6 +11,7 @@ spectrograph = gemini_gnirs
 
 # Read in the data
 spec2d read
+filename
 Science/spec2d_cN20170331S0216-pisco_GNIRS_20170331T085412.181.fits
 Science/spec2d_cN20170331S0217-pisco_GNIRS_20170331T085933.097.fits
 Science/spec2d_cN20170331S0220-pisco_GNIRS_20170331T091538.731.fits
