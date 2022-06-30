@@ -81,7 +81,7 @@ def test_continuum_subtraction(kast_blue_arc_file):
     det = 1
     rawImage = rawimage.RawImage(one_file, spectograph, det)
     defpar = spectograph.default_pypeit_par()['calibrations']['arcframe']['process']
-    defpar['use_continuum'] = True
+    defpar['subtract_continuum'] = True
     rawImage.par = defpar
     # Subtract continuum
     rawImage.subtract_continuum(force=True)
