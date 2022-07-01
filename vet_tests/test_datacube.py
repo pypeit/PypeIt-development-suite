@@ -24,8 +24,7 @@ def test_coadd_datacube(redux_out):
                          'keck_kcwi', 
                          'bh2_4200', 
                          'Science')
-    files = ['filename',
-             'spec2d_KB.20191219.56886-BB1245p4238_KCWI_20191219T154806.538.fits',
+    files = ['spec2d_KB.20191219.56886-BB1245p4238_KCWI_20191219T154806.538.fits',
              'spec2d_KB.20191219.57662-BB1245p4238_KCWI_20191219T160102.755.fits']
     config = ['[rdx]',
               '  spectrograph = keck_kcwi']
@@ -33,7 +32,7 @@ def test_coadd_datacube(redux_out):
     # Fake data table
     #tbl = ascii.read([files], header_start=0, data_start=1, delimiter='|', format='basic')
     tbl = Table()
-    tbl['filename'] = files[1:]
+    tbl['filename'] = files
 
     # Generate a mock coadd3dfile
     coadd3dfile = inputfiles.Coadd3DFile(config=config,
@@ -47,10 +46,9 @@ def test_coadd_datacube(redux_out):
     parset['reduce']['cube']['combine'] = True    
     coadd_cube(coadd3dfile.filenames, coadd3dfile.options, parset=parset, overwrite=True)
     # Now test the fluxing - make a shorter set of files to speed it up
-    files = ['filename',
-             'spec2d_KB.20191219.56886-BB1245p4238_KCWI_20191219T154806.538.fits']
+    files = ['spec2d_KB.20191219.56886-BB1245p4238_KCWI_20191219T154806.538.fits']
     tbl = Table()
-    tbl['filename'] = files[1:]
+    tbl['filename'] = files
     #tbl = ascii.read([files], header_start=0, data_start=1, delimiter='|', format='basic')
 
     # Generate a mock coadd3dfile
