@@ -5,6 +5,8 @@ import os
 
 import pytest
 
+from astropy.table import Table
+
 from pypeit.core.datacube import coadd_cube
 from pypeit.spectrographs.util import load_spectrograph
 from pypeit import inputfiles
@@ -29,7 +31,9 @@ def test_coadd_datacube(redux_out):
               '  spectrograph = keck_kcwi']
     output_filename = "BB1245p4238_KCWI_20191219.fits"
     # Fake data table
-    tbl = ascii.read([files], header_start=0, data_start=1, delimiter='|', format='basic')
+    #tbl = ascii.read([files], header_start=0, data_start=1, delimiter='|', format='basic')
+    tbl = Table()
+    tbl['filename'] = files[1:]
 
     # Generate a mock coadd3dfile
     coadd3dfile = inputfiles.Coadd3DFile(config=config,
@@ -45,7 +49,9 @@ def test_coadd_datacube(redux_out):
     # Now test the fluxing - make a shorter set of files to speed it up
     files = ['filename',
              'spec2d_KB.20191219.56886-BB1245p4238_KCWI_20191219T154806.538.fits']
-    tbl = ascii.read([files], header_start=0, data_start=1, delimiter='|', format='basic')
+    tbl = Table()
+    tbl['filename'] = files[1:]
+    #tbl = ascii.read([files], header_start=0, data_start=1, delimiter='|', format='basic')
 
     # Generate a mock coadd3dfile
     coadd3dfile = inputfiles.Coadd3DFile(config=config,
