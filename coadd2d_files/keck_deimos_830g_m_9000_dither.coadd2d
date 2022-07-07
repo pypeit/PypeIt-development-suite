@@ -15,6 +15,7 @@
 
 # Read in the data
 spec2d read
+filename
 Science/spec2d_DE.20141021.34721-GOODSS_DEIMOS_20141021T093833.706.fits
 Science/spec2d_DE.20141021.35719-GOODSS_DEIMOS_20141021T095514.045.fits
 spec2d end

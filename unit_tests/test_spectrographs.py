@@ -9,10 +9,6 @@ import pytest
 
 from pypeit.pypmsgs import PypeItError
 from pypeit import spectrographs
-from pypeit.spectrographs.util import load_spectrograph
-from pypeit import pypeitsetup
-from pypeit.par.util import make_pypeit_file
-from pypeit.tests.tstutils import data_path
 
 
 def test_mdm_osmos():

@@ -8,11 +8,11 @@ import pytest
 
 import numpy as np
 
-from pypeit.par.util import parse_pypeit_file
 from pypeit.pypeitsetup import PypeItSetup
 from pypeit.tests.tstutils import data_path
 from pypeit.metadata import PypeItMetaData
 from pypeit.spectrographs.util import load_spectrograph
+from pypeit import inputfiles
 
 
 def test_lris_red_multi_400():
@@ -96,21 +96,20 @@ def test_lris_blue_pypeit_overwrite():
                      'pypeit_files/keck_lris_blue_long_400_3400_d560.pypeit')
     assert os.path.isfile(f), 'Could not find pypeit file.'
         
-    cfg_lines, data_files, frametype, usrdata, setups, _ = parse_pypeit_file(f, file_check=False)
+    pypeitFile = inputfiles.PypeItFile.from_file(f)
 
-    # Change the dev path
-    for i in range(len(data_files)):
-        path_list = data_files[i].split('/')
-        for j,p in enumerate(path_list):
-            if p == 'RAW_DATA':
-                break
-        data_files[i] = os.path.join(os.environ['PYPEIT_DEV'], '/'.join(path_list[j:]))
+    # Reset path
+    istr = pypeitFile.file_paths[0].find('RAW_DATA')
+    pypeitFile.file_paths = [os.path.join(os.environ['PYPEIT_DEV'], 
+                                          pypeitFile.file_paths[0][istr:])]
+    data_files = pypeitFile.filenames
 
     # Read the fits table with and without the user data
     spectrograph = load_spectrograph('keck_lris_blue')
     par = spectrograph.default_pypeit_par()
     fitstbl = PypeItMetaData(spectrograph, par, files=data_files)
-    fitstbl_usr = PypeItMetaData(spectrograph, par, files=data_files, usrdata=usrdata)
+    fitstbl_usr = PypeItMetaData(spectrograph, par, files=data_files, 
+                                 usrdata=pypeitFile.data)
 
     assert fitstbl['target'][0] == 'unknown', 'Grating name changed in file header'
     assert fitstbl_usr['target'][0] == 'test', 'Grating name changed in pypeit file'

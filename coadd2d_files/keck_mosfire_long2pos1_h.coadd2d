@@ -10,6 +10,7 @@ spectrograph = keck_mosfire
   weights = 1.,1.
 
 spec2d read
+filename
 Science/spec2d_MF.20180718.22100-HIP61138_MOSFIRE_20180718T060820.621.fits
 Science/spec2d_MF.20180718.22154-HIP61138_MOSFIRE_20180718T060914.170.fits
 spec2d end
