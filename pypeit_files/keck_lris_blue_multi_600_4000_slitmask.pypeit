@@ -1,0 +1,39 @@
+# Auto-generated PypeIt file
+# 2022-01-02
+
+# User-defined execution parameters
+[rdx]
+  spectrograph = keck_lris_blue
+[baseprocess]
+    use_biasimage = False
+[calibrations]
+ [[slitedges]]
+   use_maskdesign = True
+   minimum_slit_length = 3.
+   minimum_slit_gap = 0.
+[reduce]
+ [[slitmask]]
+    use_alignbox = False
+    assign_obj = True
+    extract_missing_objs = True
+  [[findobj]]
+    snr_thresh = 5.0
+
+# Setup
+setup read
+    Setup J:
+        dispname: 600/4000
+        dichroic: 560
+          decker: frb19071
+         binning: 2,2
+setup end
+
+# Read in the data
+data read
+ path b
+|                           filename | frametype |                 ra |                 dec |   target | dispname |   decker | binning |          mjd |    airmass | exptime | dichroic | frameno |
+|          LB.20200129.08144.fits.gz |  arc,tilt | 229.99999999999997 |                45.0 |  unknown | 600/4000 | frb19071 |     2,2 | 58877.094271 | 1.41291034 |     1.0 |      560 |    1019 |
+|          LB.20200129.48812.fits.gz |   science | 183.97574999999998 | -13.041472222222222 | frb19071 | 600/4000 | frb19071 |     2,2 | 58877.564964 | 1.20299202 |   900.0 |      560 |    1136 |
+| LB_test_190714_mask2_trace.fits.gz |  pixelflat,illumflat,trace | 359.16666666666663 |               59.75 |   BLANK6 | 600/4000 | frb19071 |     2,2 | 58877.195379 | 1.56442282 |    20.0 |      560 |    1068 |
+data end
+
