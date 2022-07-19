@@ -189,7 +189,7 @@ def test_collate_1d(tmp_path, monkeypatch, redux_out):
                               'Science')
 
     # Build up arguments for testing command line parsing
-    args = ['--dry_run', '--ignore_flux', '--flux', '--outdir', '/outdir2', '--match', 'ra/dec', '--exclude_slit_bm', 'BOXSLIT', '--exclude_serendip', '--wv_rms_thresh', '0.2']
+    args = ['--dry_run', '--ignore_flux', '--flux', '--outdir', '/outdir2', '--match', 'ra/dec', '--exclude_slit_bm', 'BOXSLIT', '--exclude_serendip', '--wv_rms_thresh', '0.2', '--refframe', 'heliocentric']
     spec1d_file = os.path.join(kastb_dir, 'spec1d_b27*fits')
     spec1d_args = ['--spec1d_files', spec1d_file]
     tol_args = ['--tolerance', '0.03d']
@@ -216,9 +216,10 @@ def test_collate_1d(tmp_path, monkeypatch, redux_out):
         print("exclude_slit_trace_bm = BADREDUCE", file=f)
         print("exclude_serendip = False", file=f)
         print("wv_rms_thresh = 0.1", file=f)
+        print("refframe = 'observed'", file=f)
         print("spec1d read", file=f)
-        print("filename | obj_id", file=f)
-        print(alt_spec1d + ' | DUMMY', file=f)
+        print("filename", file=f)
+        print(alt_spec1d, file=f)
         print("spec1d end", file=f)
 
     config_file_spec1d = str(tmp_path / "test_collate1d_spec1d_only.collate1d")
@@ -261,6 +262,7 @@ def test_collate_1d(tmp_path, monkeypatch, redux_out):
     assert len(expanded_spec1d_files) == 1 and expanded_spec1d_files[0] == expanded_spec1d
 
     # Full config file, should work
+    import pdb; pdb.set_trace()
     parsed_args = scripts.collate_1d.Collate1D.parse_args([config_file_full])
     params, spectrograph, expanded_spec1d_files = scripts.collate_1d.build_parameters(parsed_args)
     assert params['collate1d']['dry_run'] is False
@@ -273,6 +275,7 @@ def test_collate_1d(tmp_path, monkeypatch, redux_out):
     assert params['collate1d']['exclude_serendip'] is False
     assert params['collate1d']['wv_rms_thresh'] == 0.1
     assert params['coadd1d']['ex_value'] == 'BOX'
+    assert params['collate1d']['refframe'] == 'observed'
     assert spectrograph.name == 'keck_deimos'
     assert len(expanded_spec1d_files) == 1 and expanded_spec1d_files[0] == expanded_alt_spec1d
 
@@ -289,6 +292,7 @@ def test_collate_1d(tmp_path, monkeypatch, redux_out):
     assert params['collate1d']['exclude_slit_trace_bm'] == ['BOXSLIT']
     assert params['collate1d']['exclude_serendip'] is True
     assert params['collate1d']['wv_rms_thresh'] == 0.2
+    assert params['collate1d']['refframe'] == 'heliocentric'
     assert spectrograph.name == 'shane_kast_blue'
     assert len(expanded_spec1d_files) == 1 and expanded_spec1d_files[0] == expanded_spec1d
 
@@ -296,7 +300,7 @@ def test_collate_1d(tmp_path, monkeypatch, redux_out):
     # Also test using an external coadd1d file with the same name
     parsed_args = scripts.collate_1d.Collate1D.parse_args([config_file_spec1d])
     params, spectrograph, expanded_spec1d_files = scripts.collate_1d.build_parameters(parsed_args)
-    assert params['collate1d']['tolerance'] == 3.0
+    assert params['collate1d']['tolerance'] == 1.0
     assert params['collate1d']['match_using'] == 'ra/dec'
     assert params['coadd1d']['ex_value'] == 'BOX'
     assert spectrograph.name == 'shane_kast_blue'

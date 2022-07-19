@@ -427,6 +427,30 @@ class PypeItTelluricTest(PypeItTest):
         command_line += ['-t', f'{self.tell_file}']
         return command_line
 
+class PypeItCollate1DTest(PypeItTest):
+    """Test subclass that runs pypeit_collate_1d"""
+    def __init__(self, setup, pargs, files, **options):
+        super().__init__(setup, pargs, "pypeit_collate", "test_collate")
+        self.files = files
+        self.options = options
+
+    def build_command_line(self):
+
+        expanded_files = []
+        for file_pattern in self.files:
+            expanded_files += glob.glob(os.path.join(self.setup.rdxdir, file_pattern))
+            
+        command_line = ['pypeit_collate_1d', '--spec1d_files'] + expanded_files
+
+        for option in self.options:
+            if self.options[option] is None:
+                command_line += [option]
+            else:
+                command_line += [option, str(self.options[option])]
+
+        return command_line
+
+
 class PypeItQuickLookTest(PypeItTest):
     """Test subclass that runs quick look tests.
        The specific test script run depends on the instrument type.
