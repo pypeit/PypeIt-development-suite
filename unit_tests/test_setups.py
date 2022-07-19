@@ -307,6 +307,8 @@ def test_setup_keck_mosfire_multiconfig():
     root = os.path.join(os.environ['PYPEIT_DEV'], 'RAW_DATA', 'keck_mosfire')
     files = glob.glob(os.path.join(root, 'K_long', '*fits*'))
     files += glob.glob(os.path.join(root, 'long2pos1_H', '*fits*'))
+    files += glob.glob(os.path.join(root, 'mask1_K_with_continuum', '*fits*'))
+    files += glob.glob(os.path.join(root, 'Y_multi', '*fits*'))
 
     output_path = os.path.join(os.getcwd(), 'output')
     if os.path.isdir(output_path):
@@ -319,11 +321,20 @@ def test_setup_keck_mosfire_multiconfig():
     pypeit_files = ps.fitstbl.write_pypeit(output_path, cfg_lines=ps.user_cfg,
                                            write_bkg_pairs=True)
 
-    assert len(pypeit_files) == 2, 'Should have created two pypeit files'
+    assert len(pypeit_files) == 4, 'Should have created two pypeit files'
 
     # Test the pypeit files for the correct configuration,
     # calibration group and combination group results
-    for f, s, c, comb, bkg in zip(pypeit_files, ['A', 'B'], ['0', '1'], [[1,2,3,4],[5,6,7,8]], [[2,1,4,3],[6,5,8,7]]):
+    # expected values
+    setups = ['A', 'B', 'C', 'D']
+    calib_ids = ['0', '1', '2', '3']
+    abba_dpat = [1,2,2,1], [2,1,1,2]
+    long2pos_dpat = [5,6,7,8], [6,5,8,7]
+    abab_dpat = [9,10,11,12],[10,9,12,11]   # tihs is ABA'B'
+    masknod_dpat = [13,14,15,16], [14,13,16,15]
+    for f, s, c, comb, bkg in zip(pypeit_files,setups, calib_ids,
+                                  [abba_dpat[0], long2pos_dpat[0], abab_dpat[0], masknod_dpat[0]],
+                                  [abba_dpat[1], long2pos_dpat[1], abab_dpat[1], masknod_dpat[1]]):
 
         # TODO: All of this front-end stuff, pulled from pypeit.py, should
         # be put into a function.
