@@ -258,11 +258,11 @@ def test_collate_1d(tmp_path, monkeypatch, redux_out):
     assert params['collate1d']['exclude_serendip'] is True
     assert params['collate1d']['wv_rms_thresh'] == 0.2
     assert params['coadd1d']['ex_value'] == 'OPT'
+    assert params['collate1d']['refframe'] == 'heliocentric'
     assert spectrograph.name == 'shane_kast_blue'
     assert len(expanded_spec1d_files) == 1 and expanded_spec1d_files[0] == expanded_spec1d
 
     # Full config file, should work
-    import pdb; pdb.set_trace()
     parsed_args = scripts.collate_1d.Collate1D.parse_args([config_file_full])
     params, spectrograph, expanded_spec1d_files = scripts.collate_1d.build_parameters(parsed_args)
     assert params['collate1d']['dry_run'] is False
@@ -332,15 +332,18 @@ def test_collate_1d(tmp_path, monkeypatch, redux_out):
         # * creation of collate1d.par
         # * parsing of pixel tolerance
         # * detection of spec2d files and excluding by slit bitmask
-
+        # * copying of spec1d file when doing refframe correction and spec1d_output is set.
         archive_dir = tmp_path / 'archive'
 
         parsed_args = scripts.collate_1d.Collate1D.parse_args(['--par_outfile', par_file, '--match',
                                                                'pixel', '--tolerance', '3',
                                                                '--spec1d_files', expanded_spec1d,
+                                                               '--spec1d_outdir', str(tmp_path),
+                                                               '--refframe', 'heliocentric',
                                                                '--exclude_slit_bm', 'BADREDUCE'])
         assert scripts.collate_1d.Collate1D.main(parsed_args) == 0
         assert os.path.exists(par_file)
+        assert os.path.exists(os.path.join(str(tmp_path), os.path.basename(expanded_spec1d)))
 
         # Remove par_file to avoid a warning
         os.unlink(par_file)

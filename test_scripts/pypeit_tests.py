@@ -434,13 +434,17 @@ class PypeItCollate1DTest(PypeItTest):
         self.files = files
         self.options = options
 
+        # Cleanup some files so tests are repeatable (collate normally appends to these files)
+        os.unlink(os.path.join(setup.rdxdir, "collate_report.dat"))
+        os.unlink(os.path.join(setup.rdxdir, "collate_warnings.txt"))
+
     def build_command_line(self):
 
         expanded_files = []
         for file_pattern in self.files:
             expanded_files += glob.glob(os.path.join(self.setup.rdxdir, file_pattern))
             
-        command_line = ['pypeit_collate_1d', '--spec1d_files'] + expanded_files
+        command_line = ['pypeit_collate_1d', '--spec1d_outdir', self.setup.rdxdir, '--spec1d_files'] + expanded_files
 
         for option in self.options:
             if self.options[option] is None:
