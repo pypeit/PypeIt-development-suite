@@ -435,8 +435,13 @@ class PypeItCollate1DTest(PypeItTest):
         self.options = options
 
         # Cleanup some files so tests are repeatable (collate normally appends to these files)
-        os.unlink(os.path.join(setup.rdxdir, "collate_report.dat"))
-        os.unlink(os.path.join(setup.rdxdir, "collate_warnings.txt"))
+        report_file = os.path.join(setup.rdxdir, "collate_report.dat")
+        warnings_file = os.path.join(setup.rdxdir, "collate_warnings.txt")
+        if os.path.exists(report_file):
+            os.remove(report_file)
+        if os.path.exists(warnings_file):
+            os.remove(warnings_file)
+
 
     def build_command_line(self):
 
