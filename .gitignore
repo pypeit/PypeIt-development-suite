@@ -2,9 +2,11 @@
 *.swp
 RAW_DATA/
 REDUX_OUT/
+REDUX_DATA/
 Cooked
 CALIBS
 *.pckl
+*.pyc
 dev_algorithms/data
 NIRES_MASTERS
 Telluric
