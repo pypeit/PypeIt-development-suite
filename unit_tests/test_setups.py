@@ -281,6 +281,99 @@ def test_setup_keck_deimos_multiconfig_clean():
     assert len(ps.fitstbl) == 23, 'Incorrect number of table rows.'
 
 
+def test_setup_keck_mosfire():
+
+    droot = os.path.join(os.environ['PYPEIT_DEV'], 'RAW_DATA/keck_mosfire/J_multi')
+    droot += '/'
+    pargs = Setup.parse_args(['-r', droot, '-s', 'keck_mosfire'])
+    Setup.main(pargs)
+
+    cwd = os.getcwd()
+    setup_dir = os.path.join(cwd, 'setup_files')
+    assert os.path.isdir(setup_dir), 'No setup_files directory created'
+
+    files = glob.glob(os.path.join(setup_dir, 'keck_mosfire*'))
+    ext = [f.split('.')[-1] for f in files]
+    expected = expected_file_extensions()
+    assert np.all([e in ext for e in expected]), \
+            'Did not find all setup file extensions: {0}'.format(expected)
+
+    # Clean-up
+    shutil.rmtree(setup_dir)
+
+
+def test_setup_keck_mosfire_multiconfig():
+
+    root = os.path.join(os.environ['PYPEIT_DEV'], 'RAW_DATA', 'keck_mosfire')
+    files = glob.glob(os.path.join(root, 'K_long', '*fits*'))
+    files += glob.glob(os.path.join(root, 'long2pos1_H', '*fits*'))
+    files += glob.glob(os.path.join(root, 'mask1_K_with_continuum', '*fits*'))
+    files += glob.glob(os.path.join(root, 'Y_multi', '*fits*'))
+
+    output_path = os.path.join(os.getcwd(), 'output')
+    if os.path.isdir(output_path):
+        shutil.rmtree(output_path)
+    os.makedirs(output_path)
+
+    ps = pypeitsetup.PypeItSetup(files, spectrograph_name='keck_mosfire')
+    ps.run(setup_only=True, sort_dir=output_path, write_bkg_pairs=True)
+    # Write the automatically generated pypeit data
+    pypeit_files = ps.fitstbl.write_pypeit(output_path, cfg_lines=ps.user_cfg,
+                                           write_bkg_pairs=True)
+
+    assert len(pypeit_files) == 4, 'Should have created two pypeit files'
+
+    # Test the pypeit files for the correct configuration,
+    # calibration group and combination group results
+    # expected values
+    setups = ['A', 'B', 'C', 'D']
+    calib_ids = ['0', '1', '2', '3']
+    abba_dpat = [1,2,2,1], [2,1,1,2]
+    long2pos_dpat = [5,6,7,8], [6,5,8,7]
+    abab_dpat = [9,10,11,12],[10,9,12,11]   # tihs is ABA'B'
+    masknod_dpat = [13,14,15,16], [14,13,16,15]
+    for f, s, c, comb, bkg in zip(pypeit_files,setups, calib_ids,
+                                  [abba_dpat[0], long2pos_dpat[0], abab_dpat[0], masknod_dpat[0]],
+                                  [abba_dpat[1], long2pos_dpat[1], abab_dpat[1], masknod_dpat[1]]):
+
+        # TODO: All of this front-end stuff, pulled from pypeit.py, should
+        # be put into a function.
+
+        # Read the pypeit file
+        pypeitFile = inputfiles.PypeItFile.from_file(f)
+        # Spectrograph
+        cfg = ConfigObj(pypeitFile.cfg_lines)
+        spectrograph = load_spectrograph(cfg['rdx']['spectrograph'])
+        # Configuration-specific parameters
+        for idx, row in enumerate(pypeitFile.data):
+            if 'science' in row['frametype'] or 'standard' in row['frametype']:
+                # assume there is always a science/standard for this test
+                config_specific_file = pypeitFile.filenames[idx]
+        spectrograph_cfg_lines = spectrograph.config_specific_par(config_specific_file).to_config()
+        #  PypeIt parameters
+        par = PypeItPar.from_cfg_lines(cfg_lines=spectrograph_cfg_lines,
+                                       merge_with=pypeitFile.cfg_lines)
+        #  Metadata
+        fitstbl = PypeItMetaData(spectrograph, par,
+                                 files=pypeitFile.filenames,
+                                 usrdata=pypeitFile.data,
+                                 strict=True)
+        fitstbl.finalize_usr_build(pypeitFile.frametypes, pypeitFile.setup_name)
+
+        # Check setup
+        assert np.all(fitstbl['setup'] == s), 'Setup is wrong'
+        # Check calibration group
+        assert np.all(fitstbl['calib'].astype(str) == c), 'Calibration group is wrong'
+        # Check combination and background group for only science/standard
+        sci_std_idx = np.array(['science' in _tab or 'standard' in _tab for _tab in fitstbl['frametype']]) & \
+                      (fitstbl['setup'] == s)
+        assert np.all(fitstbl['comb_id'][sci_std_idx] == comb), 'Combination group is wrong'
+        assert np.all(fitstbl['bkg_id'][sci_std_idx] == bkg), 'Background group is wrong'
+
+    # Clean-up
+    shutil.rmtree(output_path)
+
+
 def test_setup_keck_nires():
     droot = os.path.join(os.environ['PYPEIT_DEV'], 'RAW_DATA/keck_nires/NIRES/')
     droot += '/'
