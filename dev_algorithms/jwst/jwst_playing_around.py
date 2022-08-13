@@ -23,4 +23,4 @@ image3, err3 = hdu3[1].data, hdu3[2].data
 
 diff = image1 - (image2 + image3)/2.0
 
-display.show_image(diff)
+display.show_image(diff, chname='diff')
