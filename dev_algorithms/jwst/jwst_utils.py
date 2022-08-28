@@ -3,7 +3,11 @@ import numpy as np
 from astropy.io import fits
 from astropy.stats import sigma_clipped_stats
 from pypeit.display import display
+from pypeit.core import fitting
 from gwcs import wcstools
+from matplotlib import pyplot as plt
+
+from IPython import embed
 
 def show_diff(scifile, bkgfile1, bkgfile2):
     hdu_sci = fits.open(scifile)
@@ -23,14 +27,70 @@ def get_cuts(image):
     cut_max = mean + 4.0 * sigma
     return (cut_min, cut_max)
 
+def fit_slit(thismask, left_or_right, polyorder=2, function='legendre', debug=False):
 
-def show_2dspec(final2d, islit, intflat=None):
+    slit_width = np.sum(thismask, axis=1)
+    med_slit_width = np.median(slit_width[slit_width > 0])
+    nspec, nspat = thismask.shape
+    spec_vec = np.arange(nspec, dtype=float)
+    spat_vec = np.arange(nspat, dtype=float)
+    spat_img, spec_img = np.meshgrid(spat_vec, spec_vec)
+
+    dummy_spat_img = spat_img.copy()
+    bad_value = +np.inf if 'left' in left_or_right else -np.inf
+    dummy_spat_img[np.logical_not(thismask)] = bad_value
+    slit_mask = np.min(dummy_spat_img, axis=1) if 'left' in left_or_right else np.max(dummy_spat_img, axis=1)
+    good_for_slit = (slit_width > 0.5 * med_slit_width) & (slit_mask != bad_value)
+    bad_for_slit = np.logical_not(good_for_slit)
+
+    pypeitFit = fitting.robust_fit(spec_vec[good_for_slit], slit_mask[good_for_slit], polyorder, function=function,
+                                   maxiter=25,
+                                   lower=3.0, upper=2.0, maxrej=1, sticky=True,
+                                   minx=0.0, maxx=float(nspec - 1))
+    slit = pypeitFit.eval(spec_vec)
+    if debug:
+        plt.plot(spec_vec[good_for_slit], slit_mask[good_for_slit], 'k.')
+        plt.plot(spec_vec[bad_for_slit], slit_mask[bad_for_slit], 'r.')
+        plt.plot(spec_vec, slit, 'b')
+        plt.show()
+
+
+    return slit
+
+def get_jwst_slits(thismask, polyorder=2, function='legendre', debug=False):
+
+    slit_left = fit_slit(thismask, 'left', polyorder=polyorder, function=function, debug=debug)
+    slit_righ = fit_slit(thismask, 'righ', polyorder=polyorder, function=function, debug=debug)
+    return slit_left, slit_righ
+
+
+
+def show_2dspec(rawscience, final2d, islit, intflat=None, emb=None):
+
 
     # Read in data print out slit name
     slit_name = final2d.slits[islit].name
     print('Slit={:s}'.format(slit_name))
     calsci = np.array(final2d.slits[islit].data, dtype=float)  # contains the pixel data from the cal file (SCI extension)
     nspat, nspec = calsci.shape
+
+
+    ########################
+    # Plot the image segment being used for each slit
+    xlo = final2d.slits[islit].xstart - 1
+    xhi = xlo + final2d.slits[islit].xsize
+    ylo = final2d.slits[islit].ystart - 1
+    yhi = ylo + final2d.slits[islit].ysize
+    # This is the segment of the 2d image
+    slit_slice = np.s_[ylo: yhi, xlo: xhi]
+    # xvals = xlo + np.arange(xhi - xlo)
+    # yvals = ylo + np.arange(yhi - ylo)
+    slit_left = np.full(nspec, ylo)
+    slit_righ = np.full(nspec, yhi)
+    spec_val = xlo + np.arange(xhi - xlo)
+    viewer_sci, ch_sci = display.show_image(rawscience.T, cuts=get_cuts(rawscience), chname='raw')
+    display.show_slits(viewer_sci, ch_sci, slit_left, slit_righ, spec_vals=spec_val, pstep=1,
+                       slit_ids=np.array([int(slit_name)]))
 
     # get the source RA and Dec coordinates from the metadata (also located in the header of the fits SCI extension)
     source_ra = final2d.slits[islit].meta.target.ra
@@ -74,3 +134,7 @@ def show_2dspec(final2d, islit, intflat=None):
     viewer_path, ch_path = display.show_image(barshadow, waveimg=waveimg, chname=slit_name + '_barshadow')
     display.show_trace(viewer_data, ch_data, cal_src_from_ra_spat, 'RA', color='#f0e442')
     display.show_trace(viewer_data, ch_data, cal_src_from_dec_spat, 'DEC', color='#f0e442')
+    if emb:
+        embed(header='Slit={:s}'.format(slit_name))
+
+
