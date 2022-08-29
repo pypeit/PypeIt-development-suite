@@ -9,7 +9,7 @@ from matplotlib import pyplot as plt
 
 from IPython import embed
 
-def show_diff(scifile, bkgfile1, bkgfile2):
+def compute_diff(scifile, bkgfile1, bkgfile2):
     hdu_sci = fits.open(scifile)
     sci,  sci_err = hdu_sci[1].data, hdu_sci[2].data
     hdu_bkg1 = fits.open(bkgfile1)
@@ -65,7 +65,7 @@ def get_jwst_slits(thismask, polyorder=2, function='legendre', debug=False):
 
 
 
-def show_2dspec(rawscience, final2d, islit, intflat=None, emb=None):
+def show_2dspec(rawscience, final2d, islit, intflat=None, clear=True, emb=None):
 
 
     # Read in data print out slit name
@@ -88,7 +88,7 @@ def show_2dspec(rawscience, final2d, islit, intflat=None, emb=None):
     slit_left = np.full(nspec, ylo)
     slit_righ = np.full(nspec, yhi)
     spec_val = xlo + np.arange(xhi - xlo)
-    viewer_sci, ch_sci = display.show_image(rawscience.T, cuts=get_cuts(rawscience), chname='raw')
+    viewer_sci, ch_sci = display.show_image(rawscience.T, cuts=get_cuts(rawscience), chname='raw', clear=clear)
     display.show_slits(viewer_sci, ch_sci, slit_left, slit_righ, spec_vals=spec_val, pstep=1,
                        slit_ids=np.array([int(slit_name)]))
 
@@ -120,7 +120,8 @@ def show_2dspec(rawscience, final2d, islit, intflat=None, emb=None):
     # Now transpose everything to PypeIt convention for viewing.
 
     # plot the unrectified calibrated 2D spectrum
-    waveimg = np.array(final2d.slits[islit].wavelength.T,dtype=float)
+    waveimg = calwave.T if (final2d.slits[islit].wavelength.shape == (0,0)) \
+            else np.array(final2d.slits[islit].wavelength.T,dtype=float)
     pathloss = np.array(final2d.slits[islit].pathloss_uniform.T,dtype=float) \
         if final2d.slits[islit].source_type == 'EXTENDED' else np.array(final2d.slits[islit].pathloss_point.T,dtype=float)
     barshadow = np.array(final2d.slits[islit].barshadow.T,dtype=float)
@@ -130,10 +131,13 @@ def show_2dspec(rawscience, final2d, islit, intflat=None, emb=None):
     if intflat is not None:
         flat = np.array(intflat.slits[islit].data.T,dtype=float)
         viewer_flat, ch_flat = display.show_image(flat, waveimg=waveimg, chname=slit_name + '_flat')
-    viewer_path, ch_path = display.show_image(pathloss, waveimg=waveimg, chname=slit_name + '_pathloss')
-    viewer_path, ch_path = display.show_image(barshadow, waveimg=waveimg, chname=slit_name + '_barshadow')
-    display.show_trace(viewer_data, ch_data, cal_src_from_ra_spat, 'RA', color='#f0e442')
-    display.show_trace(viewer_data, ch_data, cal_src_from_dec_spat, 'DEC', color='#f0e442')
+    display.show_trace(viewer_data, ch_data, cal_src_from_ra_spat, trc_name='RA', pstep=1, color='#f0e442')
+    display.show_trace(viewer_data, ch_data, cal_src_from_dec_spat, trc_name='DEC', pstep=1,  color='#f0e442')
+    if pathloss.shape != (0,0):
+        viewer_path, ch_path = display.show_image(pathloss, waveimg=waveimg, chname=slit_name + '_pathloss')
+    if barshadow.shape != (0,0):
+        viewer_bar, ch_bar = display.show_image(barshadow, waveimg=waveimg, chname=slit_name + '_barshadow')
+
     if emb:
         embed(header='Slit={:s}'.format(slit_name))
 
