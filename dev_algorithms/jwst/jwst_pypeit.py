@@ -45,6 +45,7 @@ from pypeit.core import skysub, coadd
 
 det = 'nrs1'
 disperser = 'G395M'
+#disperser='PRISM'
 if 'PRISM' in disperser:
     # PRISM data
     rawpath_level2 = '/Users/joe/jwst_redux/redux/NIRSPEC_PRISM/01133_COM_CLEAR_PRISM/calwebb/Raw'
@@ -80,6 +81,7 @@ rawscience, diff = compute_diff(scifile, bkgfile1, bkgfile2, )
 basename = os.path.basename(scifile).replace('rate.fits', '')
 
 param_dict = {
+    'extract_2d': {'save_results': True},
     'bkg_subtract': {'skip': True},
     'master_background_mos': {'skip': True},
     'srctype': {'source_type':'EXTENDED'},
@@ -96,17 +98,21 @@ if runflag:
 
 # Read in the files
 intflat_output_file = os.path.join(output_dir, basename + 'interpolatedflat.fits')
+e2d_output_file = os.path.join(output_dir, basename + 'extract_2d.fits')
 cal_output_file = os.path.join(output_dir, basename + 'cal.fits')
 s2d_output_file = os.path.join(output_dir, basename + 's2d.fits')
 # TESTING
 #final2d = datamodels.open(s2d_output_file)
 #intflat = None
+#e2d = datamodels.open(e2d_output_file)
 final2d = datamodels.open(cal_output_file)
 intflat = datamodels.open(intflat_output_file)
 #islit = 10
 islit = 37
+#islit =18
 
 show_2dspec(rawscience, final2d, islit, intflat=intflat, emb=False, clear=True)
+
 
 
 slit_name = final2d.slits[islit].name
@@ -114,7 +120,9 @@ scale_fact = 1e9 # There images are in stupid units with very large numbers
 science = np.array(final2d.slits[islit].data.T, dtype=float)/scale_fact
 # TESTING!!  kludge the error by multiplying by a small number
 #kludge_err = 0.1667
-kludge_err = 0.28
+#kludge_err = 0.28
+#kludge_err =0.36
+kludge_err = 1.0
 err = kludge_err*np.array(final2d.slits[islit].err.T, dtype=float)/scale_fact
 base_var = np.array(final2d.slits[islit].var_rnoise.T, dtype=float)/scale_fact**2
 
@@ -133,6 +141,8 @@ science[nanmask]= 0.0
 err[nanmask] = 0.0
 sciivar = inverse(err**2)*gpm
 base_var[nanmask] = 0.0
+base_var = None
+
 # Wave nanmask is different from data nanmask
 nanmask_wave = np.logical_not(np.isfinite(waveimg))
 wave_min = np.min(waveimg[np.logical_not(nanmask_wave)])
@@ -164,11 +174,13 @@ nperslit = 2
 no_poly=False
 ncoeff = 5
 snr_thresh = 5.0
+pos_mask = False
+model_noise = False
 
 # First pass sky-subtraction and object finding
 initial_sky0 = np.zeros_like(science)
 initial_sky0[thismask] = skysub.global_skysub(science, sciivar, tilts, thismask, slit_left, slit_righ,
-                                              inmask = gpm, bsp=bsp, pos_mask=True, no_poly=no_poly, show_fit=True,
+                                              inmask = gpm, bsp=bsp, pos_mask=pos_mask, no_poly=no_poly, show_fit=True,
                                               trim_edg=trim_edg)
 sobjs_slit0 = findobj_skymask.objs_in_slit(science-initial_sky0, sciivar, thismask, slit_left, slit_righ, inmask=gpm, ncoeff=ncoeff,
                                           snr_thresh=snr_thresh, show_peaks=True, show_trace=True,
@@ -182,8 +194,12 @@ skymask[thismask] = findobj_skymask.create_skymask(sobjs_slit0, thismask,
                                                    trim_edg=trim_edg) #, box_rad_pix=boxcar_rad_pix,)
 initial_sky = np.zeros_like(science)
 initial_sky[thismask] = skysub.global_skysub(science, sciivar, tilts, thismask, slit_left, slit_righ,
-                                             inmask = (gpm & skymask), bsp=bsp, pos_mask=True, no_poly=no_poly, show_fit=True,
+                                             inmask = (gpm & skymask), bsp=bsp, pos_mask=pos_mask, no_poly=no_poly, show_fit=True,
                                              trim_edg=trim_edg)
+# TESTING Let's try to update the variance model and see if it makes sense
+#var = procimg.variance_model(base_var, counts=initial_sky, count_scale=self.sciImg.img_scale,
+#                             noise_floor=self.sciImg.noise_floor)
+
 sobjs_slit = findobj_skymask.objs_in_slit(science-initial_sky, sciivar, thismask, slit_left, slit_righ, inmask=gpm, ncoeff=ncoeff,
                                           snr_thresh=snr_thresh, show_peaks=True, show_trace=True,
                                           trim_edg=trim_edg,  fwhm=fwhm, boxcar_rad=boxcar_rad_pix, maxdev = 2.0, find_min_max=None,
@@ -209,7 +225,8 @@ sobjs = sobjs_slit.copy()
 # TODO Need to figure out what the count_scale is order to update the noise in the low-background regime.
 skymodel[thismask], objmodel[thismask], ivarmodel[thismask], extractmask[thismask] = skysub.local_skysub_extract(
     science, sciivar, tilts, waveimg, initial_sky, thismask, slit_left, slit_righ, sobjs, ingpm = gpm,
-    base_var = base_var, bsp = bsp, sn_gauss = sn_gauss, trim_edg=trim_edg, spat_pix=None, model_full_slit=True, model_noise=True, show_profile=True, show_resids=True, debug_bkpts=True)
+    base_var = base_var, bsp = bsp, sn_gauss = sn_gauss, trim_edg=trim_edg, spat_pix=None, model_full_slit=True,
+    model_noise=model_noise,  show_profile=True, show_resids=True, debug_bkpts=True)
 
 n_bins = 50
 sig_range = 7.0

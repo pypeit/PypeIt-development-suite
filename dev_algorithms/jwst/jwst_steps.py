@@ -101,6 +101,10 @@ if bg_subtract:
     # plot the image
     viewer_diff, ch_diff = display.show_image(bsub_img.T, cuts=get_cuts(bsub_img.T), chname='bg_subtracted', wcs_match=True)
 
+# 2b) TODO: Add the imprint subtraction here, which is done for MSA
+
+# 2c) TODO: Add the MSA flagging step
+
 
 # 3) Extract 2d
 ex2d_input = awcs_output_file if not bg_subtract else bsub_output_file

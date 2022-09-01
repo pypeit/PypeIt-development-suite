@@ -6,18 +6,18 @@ from pypeit.display import display
 from pypeit.core import fitting
 from gwcs import wcstools
 from matplotlib import pyplot as plt
+from jwst import datamodels
+
 
 from IPython import embed
 
 def compute_diff(scifile, bkgfile1, bkgfile2):
-    hdu_sci = fits.open(scifile)
-    sci,  sci_err = hdu_sci[1].data, hdu_sci[2].data
-    hdu_bkg1 = fits.open(bkgfile1)
-    bkg1, bkg1_err = hdu_bkg1[1].data, hdu_bkg1[2].data
-    hdu_bkg2 = fits.open(bkgfile2)
-    bkg2, bkg2_err = hdu_bkg2[1].data, hdu_bkg2[2].data
+    sci_rate = datamodels.open(scifile)
+    bkg1_rate = datamodels.open(bkgfile1)
+    bkg2_rate = datamodels.open(bkgfile2)
 
-    diff = sci - (bkg1 + bkg2)/2.0
+    sci = sci_rate.data
+    diff = sci_rate.data - (bkg1_rate.data + bkg2_rate.data)/2.0
 
     return sci, diff
 
