@@ -53,6 +53,8 @@ sci, diff = show_diff(scifile, bkgfile1, bkgfile2)
 viewer_sci,  ch_sci = display.show_image(sci.T, cuts=get_cuts(sci), chname='raw', wcs_match=True)
 basename = os.path.basename(scifile).replace('rate.fits', '')
 
+# List of images that get multiplied into the data
+#
 
 # 1) Assign WCS
 step = AssignWcsStep()
