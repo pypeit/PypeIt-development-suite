@@ -45,8 +45,8 @@ from pypeit.core import skysub, coadd
 from pypeit.core import procimg
 
 det = 'nrs1'
-#disperser = 'G395M'
-disperser='PRISM'
+disperser = 'G395M'
+#disperser='PRISM'
 if 'PRISM' in disperser:
     # PRISM data
     rawpath_level2 = '/Users/joe/jwst_redux/redux/NIRSPEC_PRISM/01133_COM_CLEAR_PRISM/calwebb/Raw'
@@ -69,8 +69,8 @@ elif 'G395M' in disperser:
     output_dir = '/Users/joe/jwst_redux/redux/NIRSPEC_ERO/02736_ERO_SMACS0723_G395MG235M/calwebb/output'
 
     # NIRSPEC 3-point dither
-    scifile = os.path.join(rawpath_level2, 'jw02736007001_03103_00001_' + det + '_rate.fits')
-    bkgfile1 = os.path.join(rawpath_level2, 'jw02736007001_03103_00002_' + det + '_rate.fits')
+    bkgfile1 = os.path.join(rawpath_level2, 'jw02736007001_03103_00001_' + det + '_rate.fits')
+    scifile = os.path.join(rawpath_level2, 'jw02736007001_03103_00002_' + det + '_rate.fits')
     bkgfile2 = os.path.join(rawpath_level2, 'jw02736007001_03103_00003_' + det + '_rate.fits')
 
 
@@ -89,10 +89,10 @@ param_dict = {
     'bkg_subtract': {'skip': True},
     'master_background_mos': {'skip': True},
     'srctype': {'source_type':'EXTENDED'},
-    'flat_field': {'skip': True},
+    #'flat_field': {'skip': True},
     'resample_spec': {'skip': True},
     'extract_1d': {'skip': True},
-    #    'flat_field': {'save_interpolated_flat': True},
+    'flat_field': {'save_interpolated_flat': True},
 }
 
 
@@ -104,7 +104,7 @@ if runflag:
     result = spec2(scifile)
 
 # Read in the files
-#intflat_output_file = os.path.join(output_dir, basename + 'interpolatedflat.fits')
+intflat_output_file = os.path.join(output_dir, basename + 'interpolatedflat.fits')
 e2d_output_file = os.path.join(output_dir, basename + 'extract_2d.fits')
 cal_output_file = os.path.join(output_dir, basename + 'cal.fits')
 s2d_output_file = os.path.join(output_dir, basename + 's2d.fits')
@@ -113,10 +113,10 @@ s2d_output_file = os.path.join(output_dir, basename + 's2d.fits')
 #intflat = None
 e2d = datamodels.open(e2d_output_file)
 final2d = datamodels.open(cal_output_file)
-#intflat = datamodels.open(intflat_output_file)
-intflat = None
-islit = 10
-#islit = 37
+intflat = datamodels.open(intflat_output_file)
+#intflat = None
+#islit = 10
+islit = 37
 #islit =18
 
 show_2dspec(rawscience, final2d, islit, intflat=intflat, emb=False, clear=True)
@@ -125,20 +125,22 @@ show_2dspec(rawscience, final2d, islit, intflat=intflat, emb=False, clear=True)
 slit_name = final2d.slits[islit].name
 pathloss = np.array(final2d.slits[islit].pathloss_uniform.T, dtype=float) \
     if final2d.slits[islit].source_type == 'EXTENDED' else np.array(final2d.slits[islit].pathloss_point.T, dtype=float)
-#flat = np.array(intflat.slits[islit].data.T, dtype=float)
-flat = np.ones_like(pathloss)
+flat = np.array(intflat.slits[islit].data.T, dtype=float)
+#flat = np.ones_like(pathloss)
 barshadow = np.array(final2d.slits[islit].barshadow.T, dtype=float)
 photom_conversion = final2d.slits[islit].meta.photometry.conversion_megajanskys
 
 # This is the conversion between final2d and e2d, i.e. final2d = jwst_scale*e2d
 jwst_scale = photom_conversion/flat/pathloss/barshadow
 # I think there is a logical inconsistency here associated with the flat, since it works great without flat fielding
-count_scale = flat*pathloss*barshadow # These are the things that the raw rate data were divided by
+#count_scale = flat*pathloss*barshadow # These are the things that the raw rate data were divided by
+count_scale = inverse(flat*pathloss*barshadow) # These are the things that the raw rate data were multiplied by.
 t_eff = final2d.slits[islit].meta.exposure.effective_exposure_time # TODO I don't konw what this means! Find out
 
 # Let's get these images into counts so that PypeIt will make sense
 flux_to_counts = t_eff/photom_conversion
 science = np.array(final2d.slits[islit].data.T, dtype=float)*flux_to_counts
+
 # TESTING!!  kludge the error by multiplying by a small number
 #kludge_err = 0.1667
 #kludge_err = 0.28
@@ -152,7 +154,8 @@ var_rnoise = final2d.slits[islit].var_rnoise.T*flux_to_counts**2
 var = kludge_err*np.array(var_poisson + var_rnoise, dtype=float)
 # This needs to be multiplied by count_scale to get it into units of counts which is what pypeit requires. I checked
 # that this base_var is equal to e2d.var_rnoise if you remove the flux_to_counts factor.
-base_var = np.array(final2d.slits[islit].var_rnoise.T, dtype=float)*flux_to_counts**2*count_scale**2
+#base_var = np.array(final2d.slits[islit].var_rnoise.T, dtype=float)*flux_to_counts**2*count_scale**2
+base_var = np.array(final2d.slits[islit].var_rnoise.T, dtype=float)*flux_to_counts**2
 dq = np.array(final2d.slits[islit].dq.T, dtype=int)
 waveimg = np.array(final2d.slits[islit].wavelength.T, dtype=float)
 
