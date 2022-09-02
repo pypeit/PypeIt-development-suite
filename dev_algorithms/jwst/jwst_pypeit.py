@@ -45,8 +45,8 @@ from pypeit.core import skysub, coadd
 from pypeit.core import procimg
 
 det = 'nrs1'
-disperser = 'G395M'
-#disperser='PRISM'
+#disperser = 'G395M'
+disperser='PRISM'
 if 'PRISM' in disperser:
     # PRISM data
     rawpath_level2 = '/Users/joe/jwst_redux/redux/NIRSPEC_PRISM/01133_COM_CLEAR_PRISM/calwebb/Raw'
@@ -96,7 +96,7 @@ param_dict = {
 }
 
 
-runflag = True
+runflag = False
 if runflag:
     spec2 = Spec2Pipeline(steps=param_dict)
     spec2.save_results = True
@@ -115,8 +115,8 @@ e2d = datamodels.open(e2d_output_file)
 final2d = datamodels.open(cal_output_file)
 intflat = datamodels.open(intflat_output_file)
 #intflat = None
-#islit = 10
-islit = 37
+islit = 10
+#islit = 37
 #islit =18
 
 show_2dspec(rawscience, final2d, islit, intflat=intflat, emb=False, clear=True)

@@ -52,10 +52,18 @@ xhi = 2048
 ylo = 950
 yhi = 971
 
+#nspat, nspec = sci_rate.shape
 cuts = get_cuts(sci_rate[ylo:yhi, xlo:xhi])
 cuts_var = get_cuts(sci_err[ylo:yhi, xlo:xhi]**2)
 
-display.show_image(sci_rate[ylo:yhi, xlo:xhi], cuts=cuts, chname='science', wcs_match=True, clear=True)
+# yvals = ylo + np.arange(yhi - ylo)
+#slit_left = np.full(nspec, ylo)
+#slit_righ = np.full(nspec, yhi)
+#spec_val = xlo + np.arange(xhi - xlo)
+#viewer_sci, ch_sci = display.show_image(sci_rate.T, cuts=get_cuts(sci_rate), chname='raw', clear=True)
+#display.show_slits(viewer_sci, ch_sci, slit_left, slit_righ, spec_vals=spec_val, pstep=1)
+
+display.show_image(sci_rate[ylo:yhi, xlo:xhi], cuts=cuts, chname='science', wcs_match=True)
 display.show_image(sci_err[ylo:yhi, xlo:xhi]**2, cuts=cuts_var, chname='sci_var', wcs_match=True)
 display.show_image(sci_var_poisson[ylo:yhi, xlo:xhi], cuts=cuts_var, chname='sci_var_poi', wcs_match=True)
 display.show_image(sci_var_rnoise[ylo:yhi, xlo:xhi], cuts=cuts_var, chname='sci_var_rn', wcs_match=True)
