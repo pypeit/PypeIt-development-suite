@@ -47,8 +47,8 @@ from pypeit.core import procimg
 det = 'nrs1'
 #disperser = 'G395M'
 #disperser = 'G235M'
-#disperser='PRISM_01133'
-disperser='PRISM_01117'
+disperser='PRISM_01133'
+#disperser='PRISM_01117'
 if 'PRISM_01133' in disperser:
     # PRISM data
     rawpath_level2 = '/Users/joe/jwst_redux/redux/NIRSPEC_PRISM/01133_COM_CLEAR_PRISM/calwebb/Raw'
@@ -56,8 +56,8 @@ if 'PRISM_01133' in disperser:
 
     # NIRSPEC 3-point dither
     # dither center
-    bkgfile1  = os.path.join(rawpath_level2, 'jw01133003001_0310x_00001_' + det + '_rate.fits')
-    scifile = os.path.join(rawpath_level2, 'jw01133003001_0310x_00002_' + det + '_rate.fits')
+    scifile  = os.path.join(rawpath_level2, 'jw01133003001_0310x_00001_' + det + '_rate.fits')
+    bkgfile1 = os.path.join(rawpath_level2, 'jw01133003001_0310x_00002_' + det + '_rate.fits')
     bkgfile2 = os.path.join(rawpath_level2, 'jw01133003001_0310x_00003_' + det + '_rate.fits')
 
     # dither offset
@@ -120,7 +120,7 @@ param_dict = {
 }
 
 
-runflag = True
+runflag = False
 if runflag:
     spec2 = Spec2Pipeline(steps=param_dict)
     spec2.save_results = True
@@ -144,7 +144,7 @@ intflat = datamodels.open(intflat_output_file)
 
 
 #islit = 38
-islit = 6 #43
+islit = 10 #43
 slit_name = final2d.slits[islit].name
 
 sci_rate = datamodels.open(scifile)

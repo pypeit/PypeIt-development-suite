@@ -45,9 +45,12 @@ from pypeit.core import findobj_skymask
 from pypeit.core import skysub, coadd
 from pypeit.core import procimg
 from pypeit.spectrographs.util import load_spectrograph
-
+from pypeit.images import pypeitimage
+from pypeit import calibrations
+from pypeit import find_objects
 
 detname = 'nrs1'
+detector = 1 if 'nrs1' in detname else 2
 #disperser = 'G395M'
 #disperser = 'G235M'
 #disperser='PRISM_01133'
@@ -141,15 +144,15 @@ s2d_output_file = os.path.join(output_dir, basename + 's2d.fits')
 #e2d = datamodels.open(e2d_output_file)
 final2d = datamodels.open(cal_output_file)
 intflat = datamodels.open(intflat_output_file)
-nslits = len(final2d.slits)
+nslits_final2d = len(final2d.slits)
 
-reduce_gpm = np.ones(nslits, dtype=bool)
+final2d_reduce_gpm = np.ones(nslits_final2d, dtype=bool)
 for islit, slit in enumerate(final2d.slits):
     if np.all(np.isnan(slit.data)):
-        reduce_gpm[islit] = False
+        final2d_reduce_gpm[islit] = False
 
-gdslits =np.where(reduce_gpm)[0]
-nslits_good = len(gdslits)
+gdslits = np.where(final2d_reduce_gpm)[0]
+nslits = len(gdslits)
 
 sci_rate = datamodels.open(scifile)
 #jwst_show_msa(sci_rate, final2d, clear=True)
@@ -173,7 +176,7 @@ slit_righ = np.zeros((nspec, nslits))
 spec_min = np.zeros(nslits)
 spec_max = np.zeros(nslits)
 
-for islit in gdslits:
+for ii, islit in enumerate(gdslits):
     # Read in data print out slit name
     slit_name = final2d.slits[islit].name
     print('Slit={:s}'.format(slit_name))
@@ -203,22 +206,62 @@ for islit in gdslits:
     count_scale[slit_slice][sub_thismask] = sub_count_scale[sub_thismask]
     tilts[slit_slice][sub_thismask]       = sub_tilts[sub_thismask]
     waveimg[slit_slice][sub_thismask]     = sub_waveimg[sub_thismask]
-    slit_left[spec_lo: spec_hi, islit]    = spat_lo + sub_slit_left
-    slit_righ[spec_lo: spec_hi, islit]    = spat_lo + sub_slit_righ
-    spec_min[islit] = spec_lo
-    spec_max[islit] = spec_hi
+    slit_left[spec_lo: spec_hi, ii]    = spat_lo + sub_slit_left
+    slit_righ[spec_lo: spec_hi, ii]    = spat_lo + sub_slit_righ
+    # This is a hack for now until we figure out how to deal with spec_min and spec_max slits
+    slit_left[:spec_lo, ii] = spat_lo + sub_slit_left[0]
+    slit_left[spec_hi:, ii] = spat_lo + sub_slit_left[-1]
+    slit_righ[:spec_lo, ii] = spat_lo + sub_slit_righ[0]
+    slit_righ[spec_hi:, ii] = spat_lo + sub_slit_righ[-1]
+
+    spec_min[ii] = spec_lo
+    spec_max[ii] = spec_hi
 
     #display.show_slits(viewer_sci, ch_sci, seg_left, seg_righ, spec_vals=spec_val, pstep=1,
     #                   slit_ids=np.array([int(slit_name)]))
-    display.show_slits(viewer_sci, ch_sci, slit_left[spec_lo:spec_hi, islit], slit_righ[spec_lo:spec_hi, islit], spec_vals=spec_val, pstep=1,
+    display.show_slits(viewer_sci, ch_sci, slit_left[spec_lo:spec_hi, ii], slit_righ[spec_lo:spec_hi, ii], spec_vals=spec_val, pstep=1,
                        slit_ids=np.array([int(slit_name)]))
+
 
 pypeline='MultiSlit'
 
 slits = slittrace.SlitTraceSet(slit_left, slit_righ, pypeline, detname=detname, nspat=nspat,
                              PYP_SPEC=spectrograph.name, specmin=spec_min, specmax=spec_max)
-# master_key=self.stack_dict['master_key_dict']['trace'],
-# master_dir=self.master_dir)
 
 
+det_container = spectrograph.get_detector_par(detector)
 
+sciImage = pypeitimage.PypeItImage(image=science,
+                                   ivar=sciivar,
+                                   base_var=base_var,
+                                   img_scale=count_scale,
+                                   detector=det_container,
+                                   crmask=np.invert(gpm))
+
+slitmask = slits.slit_img()
+par = spectrograph.default_pypeit_par()
+
+# Build the Calibrate object
+caliBrate = calibrations.Calibrations(None, par['calibrations'], spectrograph, None)
+caliBrate.slits = slits
+caliBrate.det = det_container.det
+caliBrate.binning = det_container.binning
+
+# TODO add hooks here for manual extraction using the location of the trace as predicted by the JWST meta data. Right now
+# this does not work since the WCS and hence trace is garbabe. See coadd2d.py for an example
+
+
+# Initiate FindObjects object
+objFind = find_objects.FindObjects.get_instance(sciImage, spectrograph, par, caliBrate,
+                                                'science_coadd2d', manual=None, show=True)
+
+# Set the tilts and waveimg attributes from here, since we generate these dynamically from fits
+# normally, but this is not possible for JWST
+#reduce_bpm = np.zeros(nslits, dtype=bool)
+#objFind.tilts = tilts
+#objFind.waveimg = waveimg
+#objFind.binning = det_container.binning
+#objFind.basename = basename
+#objFind.reduce_bpm = reduce_bpm
+
+global_sky, sobjs_obj = objFind.run(show_peaks=True, tilts=tilts)
