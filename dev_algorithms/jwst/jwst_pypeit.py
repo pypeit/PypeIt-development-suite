@@ -39,7 +39,7 @@ DO_NOT_USE = datamodels.dqflags.pixel['DO_NOT_USE']
 # PypeIt imports
 from jwst_utils import compute_diff, get_cuts, jwst_show_spec2, jwst_show_msa, jwst_proc
 from pypeit.display import display
-from pypeit.utils import inverse
+from pypeit.utils import inverse, fast_running_median
 from pypeit.core import findobj_skymask
 from pypeit.core import skysub, coadd
 from pypeit.core import procimg
@@ -92,9 +92,9 @@ elif 'G235M' in disperser:
     output_dir = '/Users/joe/jwst_redux/redux/NIRSPEC_ERO/02736_ERO_SMACS0723_G395MG235M/calwebb/output'
 
     # NIRSPEC 3-point dither
-    scifile  = os.path.join(rawpath_level2, 'jw02736007001_03101_00002_' + det + '_rate.fits')
+    bkgfile2  = os.path.join(rawpath_level2, 'jw02736007001_03101_00002_' + det + '_rate.fits')
     bkgfile1 = os.path.join(rawpath_level2, 'jw02736007001_03101_00003_' + det + '_rate.fits')
-    bkgfile2 = os.path.join(rawpath_level2, 'jw02736007001_03101_00004_' + det + '_rate.fits')
+    scifile = os.path.join(rawpath_level2, 'jw02736007001_03101_00004_' + det + '_rate.fits')
 
 
 
@@ -250,10 +250,17 @@ chi = chi.flatten()
 maskchi = extractmask.flatten()
 sigma_corr, maskchi = coadd.renormalize_errors(chi, maskchi, max_corr = 20.0, title='jwst_sigma_corr', debug=True)
 
+#
+smooth_spec = fast_running_median(sobjs[0].OPT_COUNTS, 15)
+smooth_sig = fast_running_median(sobjs[0].OPT_COUNTS_SIG, 15)
+ymax = smooth_spec.max()*1.2
+ymin = - (np.abs(smooth_sig)).max()
+
 plt.plot(sobjs[0].OPT_WAVE,sobjs[0].OPT_COUNTS, drawstyle='steps-mid', color='black', label='optimal')
 plt.plot(sobjs[0].OPT_WAVE,sobjs[0].OPT_COUNTS_SIG, drawstyle='steps-mid', color='red', label='optimal')
 plt.plot(sobjs[0].BOX_WAVE,sobjs[0].BOX_COUNTS, drawstyle='steps-mid', color='green', label='boxcar')
 plt.plot(sobjs[0].BOX_WAVE,sobjs[0].BOX_COUNTS_SIG, drawstyle='steps-mid', color='blue', label='boxcar')
+plt.ylim((ymin, ymax))
 plt.legend()
 plt.show()
 
