@@ -189,7 +189,7 @@ def test_collate_1d(tmp_path, monkeypatch, redux_out):
                               'Science')
 
     # Build up arguments for testing command line parsing
-    args = ['--dry_run', '--ignore_flux', '--flux', '--outdir', '/outdir2', '--match', 'ra/dec', '--exclude_slit_bm', 'BOXSLIT', '--exclude_serendip', '--wv_rms_thresh', '0.2']
+    args = ['--dry_run', '--ignore_flux', '--flux', '--outdir', '/outdir2', '--match', 'ra/dec', '--exclude_slit_bm', 'BOXSLIT', '--exclude_serendip', '--wv_rms_thresh', '0.2', '--refframe', 'heliocentric']
     spec1d_file = os.path.join(kastb_dir, 'spec1d_b27*fits')
     spec1d_args = ['--spec1d_files', spec1d_file]
     tol_args = ['--tolerance', '0.03d']
@@ -216,9 +216,10 @@ def test_collate_1d(tmp_path, monkeypatch, redux_out):
         print("exclude_slit_trace_bm = BADREDUCE", file=f)
         print("exclude_serendip = False", file=f)
         print("wv_rms_thresh = 0.1", file=f)
+        print("refframe = 'observed'", file=f)
         print("spec1d read", file=f)
-        print("filename | obj_id", file=f)
-        print(alt_spec1d + ' | DUMMY', file=f)
+        print("filename", file=f)
+        print(alt_spec1d, file=f)
         print("spec1d end", file=f)
 
     config_file_spec1d = str(tmp_path / "test_collate1d_spec1d_only.collate1d")
@@ -257,6 +258,7 @@ def test_collate_1d(tmp_path, monkeypatch, redux_out):
     assert params['collate1d']['exclude_serendip'] is True
     assert params['collate1d']['wv_rms_thresh'] == 0.2
     assert params['coadd1d']['ex_value'] == 'OPT'
+    assert params['collate1d']['refframe'] == 'heliocentric'
     assert spectrograph.name == 'shane_kast_blue'
     assert len(expanded_spec1d_files) == 1 and expanded_spec1d_files[0] == expanded_spec1d
 
@@ -273,6 +275,7 @@ def test_collate_1d(tmp_path, monkeypatch, redux_out):
     assert params['collate1d']['exclude_serendip'] is False
     assert params['collate1d']['wv_rms_thresh'] == 0.1
     assert params['coadd1d']['ex_value'] == 'BOX'
+    assert params['collate1d']['refframe'] == 'observed'
     assert spectrograph.name == 'keck_deimos'
     assert len(expanded_spec1d_files) == 1 and expanded_spec1d_files[0] == expanded_alt_spec1d
 
@@ -289,6 +292,7 @@ def test_collate_1d(tmp_path, monkeypatch, redux_out):
     assert params['collate1d']['exclude_slit_trace_bm'] == ['BOXSLIT']
     assert params['collate1d']['exclude_serendip'] is True
     assert params['collate1d']['wv_rms_thresh'] == 0.2
+    assert params['collate1d']['refframe'] == 'heliocentric'
     assert spectrograph.name == 'shane_kast_blue'
     assert len(expanded_spec1d_files) == 1 and expanded_spec1d_files[0] == expanded_spec1d
 
@@ -296,7 +300,7 @@ def test_collate_1d(tmp_path, monkeypatch, redux_out):
     # Also test using an external coadd1d file with the same name
     parsed_args = scripts.collate_1d.Collate1D.parse_args([config_file_spec1d])
     params, spectrograph, expanded_spec1d_files = scripts.collate_1d.build_parameters(parsed_args)
-    assert params['collate1d']['tolerance'] == 3.0
+    assert params['collate1d']['tolerance'] == 1.0
     assert params['collate1d']['match_using'] == 'ra/dec'
     assert params['coadd1d']['ex_value'] == 'BOX'
     assert spectrograph.name == 'shane_kast_blue'
@@ -328,15 +332,18 @@ def test_collate_1d(tmp_path, monkeypatch, redux_out):
         # * creation of collate1d.par
         # * parsing of pixel tolerance
         # * detection of spec2d files and excluding by slit bitmask
-
+        # * copying of spec1d file when doing refframe correction and spec1d_output is set.
         archive_dir = tmp_path / 'archive'
 
         parsed_args = scripts.collate_1d.Collate1D.parse_args(['--par_outfile', par_file, '--match',
                                                                'pixel', '--tolerance', '3',
                                                                '--spec1d_files', expanded_spec1d,
+                                                               '--spec1d_outdir', str(tmp_path),
+                                                               '--refframe', 'heliocentric',
                                                                '--exclude_slit_bm', 'BADREDUCE'])
         assert scripts.collate_1d.Collate1D.main(parsed_args) == 0
         assert os.path.exists(par_file)
+        assert os.path.exists(os.path.join(str(tmp_path), os.path.basename(expanded_spec1d)))
 
         # Remove par_file to avoid a warning
         os.unlink(par_file)

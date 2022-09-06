@@ -216,6 +216,12 @@ _telluric = {'gemini_gnirs/32_SB_SXD':
                  {'coadd_file': 'FRB180924_opt.fits', 'tell_file': True},
              }
 
+_collate1d = {'keck_deimos/830G_M_8500':
+                   {'files': ['Science/spec1d_*DE.20100913.22358*.fits'],
+                    '--refframe': 'heliocentric',
+                    '--wv_rms_thresh': 0.1,
+                    '--flux': None}}
+
 _quick_look = {'shane_kast_blue/600_4310_d55':
                    {'files': ['b1.fits.gz', 'b10.fits.gz', 'b27.fits.gz']},
                'keck_deimos/QL':
@@ -257,6 +263,9 @@ all_tests = [{'factory': pypeit_tests.PypeItSetupTest,
              {'factory': pypeit_tests.PypeItFlexureTest,
               'type':    TestPhase.AFTERBURN,
               'setups':  _flexure},
+             {'factory': pypeit_tests.PypeItCollate1DTest,
+              'type':    TestPhase.AFTERBURN,
+              'setups':  _collate1d},
              {'factory': pypeit_tests.PypeItCoadd1DTest,
               'type':    TestPhase.AFTERBURN,
               'setups':  _coadd1d},
