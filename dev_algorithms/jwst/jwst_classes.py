@@ -37,7 +37,7 @@ DO_NOT_USE = datamodels.dqflags.pixel['DO_NOT_USE']
 
 
 # PypeIt imports
-from jwst_utils import compute_diff, get_cuts, jwst_show_spec2, jwst_show_msa, jwst_proc
+from jwst_utils import compute_diff, get_cuts, jwst_show_spec2, jwst_show_msa, jwst_proc, jwst_populate_calibs
 from pypeit.display import display
 from pypeit import slittrace
 from pypeit.utils import inverse, fast_running_median
@@ -48,13 +48,16 @@ from pypeit.spectrographs.util import load_spectrograph
 from pypeit.images import pypeitimage
 from pypeit import calibrations
 from pypeit import find_objects
+from pypeit import extraction
+from pypeit import spec2dobj
+
 
 detname = 'nrs1'
 detector = 1 if 'nrs1' in detname else 2
-#disperser = 'G395M'
+disperser = 'G395M'
 #disperser = 'G235M'
 #disperser='PRISM_01133'
-disperser='PRISM_01117'
+#disperser='PRISM_01117'
 if 'PRISM_01133' in disperser:
     # PRISM data
     rawpath_level2 = '/Users/joe/jwst_redux/redux/NIRSPEC_PRISM/01133_COM_CLEAR_PRISM/calwebb/Raw'
@@ -62,8 +65,8 @@ if 'PRISM_01133' in disperser:
 
     # NIRSPEC 3-point dither
     # dither center
-    bkgfile1  = os.path.join(rawpath_level2, 'jw01133003001_0310x_00001_' + detname + '_rate.fits')
-    scifile = os.path.join(rawpath_level2, 'jw01133003001_0310x_00002_' + detname + '_rate.fits')
+    scifile  = os.path.join(rawpath_level2, 'jw01133003001_0310x_00001_' + detname + '_rate.fits')
+    bkgfile = os.path.join(rawpath_level2, 'jw01133003001_0310x_00002_' + detname + '_rate.fits')
     bkgfile2 = os.path.join(rawpath_level2, 'jw01133003001_0310x_00003_' + detname + '_rate.fits')
 
     # dither offset
@@ -77,8 +80,8 @@ elif 'PRISM_01117' in disperser:
 
     # NIRSPEC 3-point dither
     # dither center
-    bkgfile1  = os.path.join(rawpath_level2, 'jw01117007001_03101_00002_' + detname + '_rate.fits')
-    scifile = os.path.join(rawpath_level2, 'jw01117007001_03101_00003_' + detname + '_rate.fits')
+    scifile  = os.path.join(rawpath_level2, 'jw01117007001_03101_00002_' + detname + '_rate.fits')
+    bkgfile1 = os.path.join(rawpath_level2, 'jw01117007001_03101_00003_' + detname + '_rate.fits')
     bkgfile2 = os.path.join(rawpath_level2, 'jw01117007001_03101_00004_' + detname + '_rate.fits')
 
 elif 'G395M' in disperser:
@@ -88,8 +91,8 @@ elif 'G395M' in disperser:
     output_dir = '/Users/joe/jwst_redux/redux/NIRSPEC_ERO/02736_ERO_SMACS0723_G395MG235M/calwebb/output'
 
     # NIRSPEC 3-point dither
-    bkgfile1 = os.path.join(rawpath_level2, 'jw02736007001_03103_00001_' + detname + '_rate.fits')
-    scifile = os.path.join(rawpath_level2, 'jw02736007001_03103_00002_' + detname + '_rate.fits')
+    scifile = os.path.join(rawpath_level2, 'jw02736007001_03103_00001_' + detname + '_rate.fits')
+    bkgfile1 = os.path.join(rawpath_level2, 'jw02736007001_03103_00002_' + detname + '_rate.fits')
     bkgfile2 = os.path.join(rawpath_level2, 'jw02736007001_03103_00003_' + detname + '_rate.fits')
 elif 'G235M' in disperser:
     # Use islit = 38 for nrs1
@@ -117,12 +120,14 @@ basename = os.path.basename(scifile).replace('rate.fits', '')
 param_dict = {
     'extract_2d': {'save_results': True},
     'bkg_subtract': {'skip': True},
+    'imprint_subtract': {'save_results': True},
+    'msa_flagging': {'save_results': True},
     'master_background_mos': {'skip': True},
     'srctype': {'source_type':'EXTENDED'},
-    #'flat_field': {'skip': True},
+#    'flat_field': {'skip': True},
     'resample_spec': {'skip': True},
     'extract_1d': {'skip': True},
-    'flat_field': {'save_interpolated_flat': True},
+    'flat_field': {'save_interpolated_flat': True}, # Flats appear to be just nonsense. So skip for now.
 }
 
 
@@ -137,32 +142,49 @@ if runflag:
 intflat_output_file = os.path.join(output_dir, basename + 'interpolatedflat.fits')
 e2d_output_file = os.path.join(output_dir, basename + 'extract_2d.fits')
 cal_output_file = os.path.join(output_dir, basename + 'cal.fits')
-s2d_output_file = os.path.join(output_dir, basename + 's2d.fits')
+# This is the output after the MSA flagging step, which is a 2d image that has been background subtraced (disabled),
+# imprint subtracted (currently this does nothing since files are missing), and msa flagging
+msa_flag_output_file = os.path.join(output_dir, basename +  'msa_flagging.fits')
+
+
+#s2d_output_file = os.path.join(output_dir, basename + 's2d.fits')
 # TESTING
 #final2d = datamodels.open(s2d_output_file)
 #intflat = None
-#e2d = datamodels.open(e2d_output_file)
-final2d = datamodels.open(cal_output_file)
-intflat = datamodels.open(intflat_output_file)
-nslits_final2d = len(final2d.slits)
-
-final2d_reduce_gpm = np.ones(nslits_final2d, dtype=bool)
-for islit, slit in enumerate(final2d.slits):
-    if np.all(np.isnan(slit.data)):
-        final2d_reduce_gpm[islit] = False
-
-gdslits = np.where(final2d_reduce_gpm)[0]
-nslits = len(gdslits)
+e2d = datamodels.open(e2d_output_file)
+final_multi = datamodels.open(cal_output_file)
+intflat_multi = datamodels.open(intflat_output_file)
 
 sci_rate = datamodels.open(scifile)
+msa_flagged_rate = datamodels.open(msa_flag_output_file)
+
+sci_data = np.array(msa_flagged_rate.data.T, dtype=float)
+nspec, nspat = sci_data.shape
+viewer_sci, ch_sci = display.show_image(sci_data, cuts=get_cuts(sci_data), chname='raw rate', clear=True)
+
+spectrograph = load_spectrograph('jwst_nirspec')
+reduce_gpm, ra, dec, waveimg, tilts, flatfield, pathloss, barshadow, photom_conversion, calwebb_final, subimg_count, \
+slit_left, slit_righ, spec_min, spec_max, meta_list = jwst_populate_calibs(nspec, nspat, final_multi, intflat_multi)
+sys.exit(-1)
+
+#intflat = None
+#nslits_final2d = len(final2d.slits)
+
+#final2d_reduce_gpm = np.ones(nslits_final2d, dtype=bool)
+#for islit, slit in enumerate(final2d.slits):
+#    if np.all(np.isnan(slit.data)):
+#        final2d_reduce_gpm[islit] = False
+
+#gdslits = np.where(final2d_reduce_gpm)[0]
+#nslits = len(gdslits)
+
+
 #jwst_show_msa(sci_rate, final2d, clear=True)
 
 #jwst_show_spec2(final2d.slits[islit], intflat_slit=intflat.slits[islit], emb=False, clear=False)
 
-spectrograph = load_spectrograph('jwst_nirspec')
-sci_data = np.array(sci_rate.data.T, dtype=float)
-nspec, nspat = sci_data.shape
-viewer_sci, ch_sci = display.show_image(sci_data, cuts=get_cuts(sci_data), chname='raw rate', clear=True)
+
+
 
 science = np.zeros((nspec, nspat))
 sciivar = np.zeros_like(science)
@@ -175,6 +197,7 @@ slit_left = np.zeros((nspec, nslits))
 slit_righ = np.zeros((nspec, nslits))
 spec_min = np.zeros(nslits)
 spec_max = np.zeros(nslits)
+
 
 for ii, islit in enumerate(gdslits):
     # Read in data print out slit name
@@ -194,10 +217,10 @@ for ii, islit in enumerate(gdslits):
     seg_left = np.full(nspec_sub, spat_lo)
     seg_righ = np.full(nspec_sub, spat_hi)
     spec_val = spec_lo + np.arange(spec_hi - spec_lo)
-
-
+    #intflat_slit = intflat.slits[islit] if intflat is not None else None
     sub_science, sub_sciivar, sub_gpm, sub_base_var, sub_count_scale, sub_tilts, sub_waveimg, sub_thismask, \
-    sub_slit_left, sub_slit_righ, t_eff = jwst_proc(final2d.slits[islit], intflat_slit=intflat.slits[islit])
+    sub_slit_left, sub_slit_righ, t_eff = jwst_proc(e2d.slits[islit], final2d.slits[islit], intflat_slit=intflat.slits[islit])
+
 
     science[slit_slice][sub_thismask]     = sub_science[sub_thismask]
     sciivar[slit_slice][sub_thismask]     = sub_sciivar[sub_thismask]
@@ -223,6 +246,7 @@ for ii, islit in enumerate(gdslits):
                        slit_ids=np.array([int(slit_name)]))
 
 
+show=True
 pypeline='MultiSlit'
 
 slits = slittrace.SlitTraceSet(slit_left, slit_righ, pypeline, detname=detname, nspat=nspat,
@@ -231,7 +255,7 @@ slits = slittrace.SlitTraceSet(slit_left, slit_righ, pypeline, detname=detname, 
 
 det_container = spectrograph.get_detector_par(detector)
 
-sciImage = pypeitimage.PypeItImage(image=science,
+sciImg = pypeitimage.PypeItImage(image=science,
                                    ivar=sciivar,
                                    base_var=base_var,
                                    img_scale=count_scale,
@@ -241,27 +265,86 @@ sciImage = pypeitimage.PypeItImage(image=science,
 slitmask = slits.slit_img()
 par = spectrograph.default_pypeit_par()
 
-# Build the Calibrate object
-caliBrate = calibrations.Calibrations(None, par['calibrations'], spectrograph, None)
-caliBrate.slits = slits
-caliBrate.det = det_container.det
-caliBrate.binning = det_container.binning
 
 # TODO add hooks here for manual extraction using the location of the trace as predicted by the JWST meta data. Right now
 # this does not work since the WCS and hence trace is garbabe. See coadd2d.py for an example
 
 
 # Initiate FindObjects object
-objFind = find_objects.FindObjects.get_instance(sciImage, spectrograph, par, caliBrate,
-                                                'science_coadd2d', manual=None, show=True)
+objFind = find_objects.FindObjects.get_instance(sciImg, slits, spectrograph, par, 'science_coadd2d', tilts=tilts,
+                                                manual=None, show=True)
+global_sky0, sobjs_obj = objFind.run(show_peaks=True)
 
-# Set the tilts and waveimg attributes from here, since we generate these dynamically from fits
-# normally, but this is not possible for JWST
-#reduce_bpm = np.zeros(nslits, dtype=bool)
-#objFind.tilts = tilts
-#objFind.waveimg = waveimg
-#objFind.binning = det_container.binning
-#objFind.basename = basename
-#objFind.reduce_bpm = reduce_bpm
+# TODO add this as optional to objFind.run()
+skymask = objFind.create_skymask(sobjs_obj)
+global_sky = objFind.global_skysub(previous_sky=global_sky0, skymask=skymask, show=True)
 
-global_sky, sobjs_obj = objFind.run(show_peaks=True, tilts=tilts)
+# Initiate Extract object
+extract = extraction.Extract.get_instance(sciImg, slits, sobjs_obj, spectrograph, par, 'science_coadd2d',
+                                          tilts=tilts, waveimg=waveimg, basename=basename, show=True)
+
+
+
+if not par['reduce']['extraction']['skip_extraction']:
+    skymodel, objmodel, ivarmodel, outmask, sobjs, waveimg, tilts = extract.run(global_sky, sobjs_obj)
+else:
+    # Although exrtaction is not performed, still need to prepare some masks and the tilts
+    # self.exTract.prepare_extraction()
+    # Since the extraction was not performed, fill the arrays with the best available information
+    skymodel = global_sky
+    objmodel = np.zeros_like(extract.sciImg.image)
+    ivarmodel = np.copy(extract.sciImg.ivar)
+    outmask = extract.sciImg.fullmask
+    waveImg = waveimg
+    tilts = tilts
+    sobjs = sobjs_obj
+
+# TODO -- Do this upstream
+# Tack on detector
+for sobj in sobjs:
+    sobj.DETECTOR = sciImg.detector
+
+
+# Construct the Spec2DObj with the positive image
+spec2DObj = spec2dobj.Spec2DObj(sciimg=sciImg.image,
+                                ivarraw=sciImg.ivar,
+                                skymodel=skymodel,
+                                objmodel=objmodel,
+                                ivarmodel=ivarmodel,
+                                scaleimg=None,
+                                waveimg=waveimg,
+                                bpmmask=outmask,
+                                detector=sciImg.detector,
+                                sci_spat_flexure=sciImg.spat_flexure,
+                                sci_spec_flexure=None,
+                                vel_corr=None,
+                                vel_type=None,
+                                tilts=tilts,
+                                slits=slits,
+                                wavesol=None,
+                                maskdef_designtab=None)
+spec2DObj.process_steps = sciImg.process_steps
+
+# QA
+spec2DObj.gen_qa()
+
+# Make a plot of the residuals for a random slit
+chi = (science-objmodel-skymodel)*np.sqrt(ivarmodel)*outmask
+
+islit = 10
+slitmask = slits.slit_img(initial=False, flexure=None, exclude_flag=None)
+slitord_id = slits.slitord_id[islit]
+thismask = slitmask == slitord_id
+
+n_bins = 50
+sig_range = 7.0
+binsize = 2.0 * sig_range / n_bins
+bins_histo = -sig_range + np.arange(n_bins) * binsize + binsize / 2.0
+
+xvals = np.arange(-10.0, 10, 0.02)
+gauss = scipy.stats.norm(loc=0.0, scale=1.0)
+gauss_corr = scipy.stats.norm(loc=0.0, scale=1.0)
+
+maskchi = thismask & outmask
+sigma_corr, maskchi = coadd.renormalize_errors(chi, maskchi, max_corr = 20.0, title='jwst_sigma_corr', debug=True)
+
