@@ -65,6 +65,7 @@ def jwst_get_slits(finitemask, polyorder=5, function='legendre', debug=False):
     slit_righ = fit_slit(finitemask, 'righ', polyorder=polyorder, function=function, debug=debug)
     return slit_left, slit_righ
 
+# TODO This won't work now that I realize slits can overlap. So just use it as a visualization tool or something??
 def jwst_populate_calibs(nspec, nspat, e2d_multi, final_multi, intflat_multi):
 
     ra = np.zeros((nspec, nspat))
@@ -150,7 +151,7 @@ def jwst_populate_calibs(nspec, nspat, e2d_multi, final_multi, intflat_multi):
             pathloss[slit_slice][finitemask_sub] = pathloss_sub[finitemask_sub]
             barshadow[slit_slice][finitemask_sub] = barshadow_sub[finitemask_sub]
             photom_conversion[slit_slice][finitemask_sub] = photom_conversion_sub # Currently just a float but may be an image in the future
-            calwebb_final[slit_slice][finitemask_sub] = calwebb_final_sub[finitemask_sub]
+            calwebb_final[slit_slice][finitemask_sub] = final_sub[finitemask_sub]
             subimg_count[slit_slice][finitemask_sub] += 1
 
     return reduce_gpm, ra, dec, waveimg, tilts, flatfield, pathloss, barshadow, photom_conversion, calwebb_final, subimg_count, \
@@ -168,9 +169,26 @@ def jwst_extract_subimgs(e2d_slit, final_slit, intflat_slit):
     calra, caldec, calwave = slit_wcs(x, y)
     ra = calra.T
     dec = caldec.T
+
+    # get the source RA and Dec coordinates from the metadata (also located in the header of the fits SCI extension)
+    nspec, nspat = ra.shape
+    src_ra, src_dec= final_slit.meta.target.ra, final_slit.meta.target.dec
+
+    cal_spat = np.arange(nspat)  # spatial position
+    src_trace_ra = np.zeros(nspec)  # Array to hold the source_RA as a function of spectral position
+    src_trace_dec = np.zeros(nspec)  # Array to hold the source_DEC as a function of spectral position
+    for ispec in range(nspec):
+        ra_vs_spat = calra[:, ispec]  #
+        # Interpolate y-pixel as a functio of RA onto the source RA
+        src_trace_ra[ispec] = np.interp(src_ra, ra_vs_spat[np.isfinite(ra_vs_spat)],
+                                                cal_spat[np.isfinite(ra_vs_spat)])
+        dec_vs_spat = caldec[:, ispec]
+        src_trace_dec[ispec] = np.interp(src_dec, dec_vs_spat[np.isfinite(dec_vs_spat)], cal_spat[np.isfinite(dec_vs_spat)])
+
+
+
     waveimg_from_wcs = calwave.T
     assert np.allclose(waveimg, waveimg_from_wcs, equal_nan=True)
-
 
     flatfield = np.array(intflat_slit.data.T, dtype=float) #if intflat_slit is not None else np.ones_like(pathloss)
     pathloss = np.array(final_slit.pathloss_uniform.T, dtype=float) if final_slit.source_type == 'EXTENDED' else \
@@ -187,6 +205,7 @@ def jwst_extract_subimgs(e2d_slit, final_slit, intflat_slit):
     rate_var_poisson = np.array(e2d_slit.var_poisson.T, dtype=float)
     # This is currently buggy as it includes flat field error
     rate_var_tot = np.square(np.array(e2d_slit.err.T, dtype=float))
+    dq = np.array(final_slit.dq.T, dtype=int)
 
 
     # Generate some tilts and a spatial image
@@ -203,11 +222,24 @@ def jwst_extract_subimgs(e2d_slit, final_slit, intflat_slit):
     # spat_pix_sub[finitemask_sub] = spat_lo + (ra[finitemask_sub] - ra_min) / (ra_max - ra_min) * (nspat_sub - 1)
 
     # Get slit bounadries
-    nspec_sub, nspat_sub = ra.shape
     slit_left, slit_righ = jwst_get_slits(finitemask)
 
+    ########################
+    # The image segment being used for each slit
+    spec_lo = final_slit.xstart - 1
+    spec_hi = spec_lo + final_slit.xsize
+    spat_lo = final_slit.ystart - 1
+    spat_hi = spat_lo + final_slit.ysize
+    # slice object for the segment
+    slit_slice = np.s_[spec_lo: spec_hi, spat_lo: spat_hi]
 
-    return slit_left, slit_righ, rate, rate_var_rnoise, rate_var_poisson, rate_var_tot, \
+    slit_left_orig = spat_lo + slit_left
+    slit_righ_orig = spat_lo + slit_righ
+    spec_vals_orig = spec_lo + np.arange(spec_hi - spec_lo)
+
+
+    return slit_left, slit_righ, slit_left_orig, slit_righ_orig, spec_vals_orig, src_trace_ra, src_trace_dec, \
+           rate, rate_var_rnoise, rate_var_poisson, rate_var_tot, dq, \
            ra, dec, waveimg, tilts, flatfield, pathloss, barshadow, photom_conversion, final
 
 
