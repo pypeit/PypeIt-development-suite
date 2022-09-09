@@ -60,10 +60,10 @@ DO_NOT_USE = datamodels.dqflags.pixel['DO_NOT_USE']
 
 detname = 'nrs1'
 detector = 1 if 'nrs1' in detname else 2
-disperser = 'G395M'
+#disperser = 'G395M'
 #disperser = 'G235M'
 #disperser='PRISM_01133'
-#disperser='PRISM_01117'
+disperser='PRISM_01117'
 if 'PRISM_01133' in disperser:
     # PRISM data
     rawpath_level2 = '/Users/joe/jwst_redux/redux/NIRSPEC_PRISM/01133_COM_CLEAR_PRISM/calwebb/Raw'
@@ -117,7 +117,11 @@ elif 'G235M' in disperser:
     bkgfile1 = os.path.join(rawpath_level2, 'jw02736007001_03101_00003_' + detname + '_rate.fits')
     scifile = os.path.join(rawpath_level2, 'jw02736007001_03101_00004_' + detname + '_rate.fits')
 
-
+# Plot the 2d differnence image
+#sci, diff = compute_diff(scifile, bkgfile1, bkgfile2)
+#viewer_diff, ch_diff = display.show_image(diff.T, cuts=get_cuts(diff), chname='diff2d')
+#viewer_sci,  ch_sci = display.show_image(sci.T, cuts=get_cuts(sci), chname='science')
+#sys.exit(-1)
 
 
 # Plot the 2d differnence image
@@ -287,7 +291,7 @@ for ii, islit in enumerate(gdslits):
                                               tilts=tilts, waveimg=waveimg, basename=basename, show=True)
 
     if not par['reduce']['extraction']['skip_extraction']:
-        skymodel, objmodel, ivarmodel, outmask, sobjs, waveimg, tilts = extract.run(global_sky, sobjs_obj)
+        skymodel, objmodel, ivarmodel, outmask, sobjs, waveimg, tilts = extract.run(global_sky*0.0, sobjs_obj)
     else:
         # Although exrtaction is not performed, still need to prepare some masks and the tilts
         # self.exTract.prepare_extraction()
