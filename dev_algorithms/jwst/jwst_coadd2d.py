@@ -61,10 +61,10 @@ DO_NOT_USE = datamodels.dqflags.pixel['DO_NOT_USE']
 
 detname = 'nrs1'
 detector = 1 if 'nrs1' in detname else 2
-disperser = 'G395M'
+#disperser = 'G395M'
 #disperser = 'G235M'
 #disperser='PRISM_01133'
-#disperser='PRISM_01117'
+disperser='PRISM_01117'
 if 'PRISM_01133' in disperser:
     # PRISM data
     rawpath_level2 = '/Users/joe/jwst_redux/redux/NIRSPEC_PRISM/01133_COM_CLEAR_PRISM/calwebb/Raw'
@@ -149,7 +149,7 @@ for sci in scifiles:
     basenames.append(os.path.basename(sci).replace('_rate.fits', ''))
 
 # Run the spec2 pipeline
-runflag = False
+runflag = True
 if runflag:
     for sci in scifiles:
         spec2 = Spec2Pipeline(steps=param_dict)
@@ -216,6 +216,7 @@ for iexp in range(nexp):
     t_eff[iexp] = e2d_multi_list[iexp].meta.exposure.effective_exposure_time
     nslits[iexp] = len(final_multi_list[iexp].slits)
 
+#islit = 8
 islit = None
 gdslits = np.arange(nslits[0]) if islit is None else [islit]
 bad_slits = []
@@ -233,7 +234,7 @@ for ii, islit in enumerate(gdslits):
 
 
         # If no finite pixels in the waveimg then skip this slit
-        if not np.any(np.isfinite(waveimg)):
+        if not np.any(gpm):
             bad_slits.append(islit)
             continue
 
@@ -271,112 +272,113 @@ for ii, islit in enumerate(gdslits):
 
         spec2d_list.append(spec2DObj)
 
-    basename = '{:s}_{:s}'.format(out_filename, 'slit' + slit_name)
+    if len(spec2d_list) > 0:
+        basename = '{:s}_{:s}'.format(out_filename, 'slit' + slit_name)
 
 
-    # Instantiate Coadd2d
-    coAdd = coadd2d.CoAdd2D.get_instance(spec2d_list, spectrograph, par, det=det_container.det,
-                                         offsets=offsets_pixels, weights='uniform',
-                                         spec_samp_fact=spec_samp_fact,
-                                         spat_samp_fact=spat_samp_fact,
-                                         bkg_redux=False, debug=show)
+        # Instantiate Coadd2d
+        coAdd = coadd2d.CoAdd2D.get_instance(spec2d_list, spectrograph, par, det=det_container.det,
+                                             offsets=offsets_pixels, weights='uniform',
+                                             spec_samp_fact=spec_samp_fact,
+                                             spat_samp_fact=spat_samp_fact,
+                                             bkg_redux=False, debug=show)
 
-    coadd_dict_list = coAdd.coadd(only_slits=None, interp_dspat=True)
-    # Create the pseudo images
-    pseudo_dict = coAdd.create_pseudo_image(coadd_dict_list)
+        coadd_dict_list = coAdd.coadd(only_slits=None, interp_dspat=True)
+        # Create the pseudo images
+        pseudo_dict = coAdd.create_pseudo_image(coadd_dict_list)
 
-    sciimg_coadd, sciivar_coadd, skymodel_coadd, objmodel_coadd, ivarmodel_coadd, \
-    outmask_coadd, sobjs_coadd, detector_coadd, slits_coadd, tilts_coadd, waveimg_coadd = coAdd.reduce(
-        pseudo_dict, global_sky_subtract=True, show=show, show_peaks=show, basename=basename)
+        sciimg_coadd, sciivar_coadd, skymodel_coadd, objmodel_coadd, ivarmodel_coadd, \
+        outmask_coadd, sobjs_coadd, detector_coadd, slits_coadd, tilts_coadd, waveimg_coadd = coAdd.reduce(
+            pseudo_dict, global_sky_subtract=True, show=show, show_peaks=show, basename=basename)
 
-    # Tack on detector (similarly to pypeit.extract_one)
-    for sobj in sobjs_coadd:
-        sobj.DETECTOR = det_container
+        # Tack on detector (similarly to pypeit.extract_one)
+        for sobj in sobjs_coadd:
+            sobj.DETECTOR = det_container
 
-    # TODO not currently using counts_scale and base_var. Need to rework coadd2d to operate on sciimgs
-
-
-    # Construct the Spec2DObj with the positive image
-    spec2DObj_coadd = spec2dobj.Spec2DObj(sciimg=sciimg_coadd,
-                                          ivarraw=sciivar_coadd,
-                                          skymodel=skymodel_coadd,
-                                          objmodel=objmodel_coadd,
-                                          ivarmodel=ivarmodel_coadd,
-                                          scaleimg=None,
-                                          waveimg=waveimg_coadd,
-                                          bpmmask=outmask_coadd,
-                                          detector=detector_coadd,
-                                          sci_spat_flexure=None,
-                                          sci_spec_flexure=None,
-                                          vel_corr=None,
-                                          vel_type=None,
-                                          tilts=tilts_coadd,
-                                          slits=slits_coadd,
-                                          wavesol=None,
-                                          maskdef_designtab=None)
-
-    # QA
-    if show:
-        spec2DObj_coadd.gen_qa()
+        # TODO not currently using counts_scale and base_var. Need to rework coadd2d to operate on sciimgs
 
 
-        slitmask_coadd = slits_coadd.slit_img(initial=False, flexure=None, exclude_flag=None)
-        slitord_id = slits_coadd.slitord_id[0]
-        thismask = slitmask_coadd == slitord_id
+        # Construct the Spec2DObj with the positive image
+        spec2DObj_coadd = spec2dobj.Spec2DObj(sciimg=sciimg_coadd,
+                                              ivarraw=sciivar_coadd,
+                                              skymodel=skymodel_coadd,
+                                              objmodel=objmodel_coadd,
+                                              ivarmodel=ivarmodel_coadd,
+                                              scaleimg=None,
+                                              waveimg=waveimg_coadd,
+                                              bpmmask=outmask_coadd,
+                                              detector=detector_coadd,
+                                              sci_spat_flexure=None,
+                                              sci_spec_flexure=None,
+                                              vel_corr=None,
+                                              vel_type=None,
+                                              tilts=tilts_coadd,
+                                              slits=slits_coadd,
+                                              wavesol=None,
+                                              maskdef_designtab=None)
 
-        gpm_extract = spec2DObj_coadd.bpmmask == 0
-        # Make a plot of the residuals for a random slit
-        chi = (spec2DObj_coadd.sciimg - spec2DObj_coadd.objmodel - spec2DObj_coadd.skymodel) * np.sqrt(spec2DObj_coadd.ivarmodel) * gpm_extract
-
-        maskchi = thismask & gpm_extract
-
-        n_bins = 50
-        sig_range = 7.0
-        binsize = 2.0 * sig_range / n_bins
-        bins_histo = -sig_range + np.arange(n_bins) * binsize + binsize / 2.0
-
-        xvals = np.arange(-10.0, 10, 0.02)
-        gauss = scipy.stats.norm(loc=0.0, scale=1.0)
-        gauss_corr = scipy.stats.norm(loc=0.0, scale=1.0)
-
-        sigma_corr, maskchi = coadd.renormalize_errors(chi, maskchi, max_corr=20.0, title='jwst_sigma_corr', debug=True)
+        # QA
+        if show:
+            spec2DObj_coadd.gen_qa()
 
 
-    # container for specobjs and Spec2d
-    all_specobjs = specobjs.SpecObjs()
+            slitmask_coadd = slits_coadd.slit_img(initial=False, flexure=None, exclude_flag=None)
+            slitord_id = slits_coadd.slitord_id[0]
+            thismask = slitmask_coadd == slitord_id
 
-    all_spec2d = spec2dobj.AllSpec2DObj()
-    # set some meta
-    all_spec2d['meta']['bkg_redux'] = False
-    all_spec2d['meta']['find_negative'] = False
+            gpm_extract = spec2DObj_coadd.bpmmask == 0
+            # Make a plot of the residuals for a random slit
+            chi = (spec2DObj_coadd.sciimg - spec2DObj_coadd.objmodel - spec2DObj_coadd.skymodel) * np.sqrt(spec2DObj_coadd.ivarmodel) * gpm_extract
 
-    # fill the specobjs container
-    all_specobjs.add_sobj(sobjs_coadd)
-    all_spec2d[det_container.name] = spec2DObj_coadd
+            maskchi = thismask & gpm_extract
 
-    # THE FOLLOWING MIMICS THE CODE IN pypeit.save_exposure()
-    scipath = os.path.join(pypeit_output_dir, 'Science')
-    if not os.path.isdir(scipath):
-        msgs.info('Creating directory for Science output: {0}'.format(scipath))
+            n_bins = 50
+            sig_range = 7.0
+            binsize = 2.0 * sig_range / n_bins
+            bins_histo = -sig_range + np.arange(n_bins) * binsize + binsize / 2.0
 
-    # Write out specobjs
-    # Build header for spec2d
-    head2d = fits.getheader(cal_output_files[0])
-    subheader = spectrograph.subheader_for_spec(head2d, head2d, allow_missing=True)
-    if all_specobjs.nobj > 0:
-        outfile1d = os.path.join(scipath, 'spec1d_{:s}.fits'.format(basename))
-        all_specobjs.write_to_fits(subheader, outfile1d)
+            xvals = np.arange(-10.0, 10, 0.02)
+            gauss = scipy.stats.norm(loc=0.0, scale=1.0)
+            gauss_corr = scipy.stats.norm(loc=0.0, scale=1.0)
 
-        # Info
-        outfiletxt = os.path.join(scipath, 'spec1d_{:s}.txt'.format(basename))
-        sobjs = specobjs.SpecObjs.from_fitsfile(outfile1d, chk_version=False)
-        sobjs.write_info(outfiletxt, spectrograph.pypeline)
+            sigma_corr, maskchi = coadd.renormalize_errors(chi, maskchi, max_corr=20.0, title='jwst_sigma_corr', debug=True)
 
-    # Build header for spec2d
-    outfile2d = os.path.join(scipath, 'spec2d_{:s}.fits'.format(basename))
-    # TODO For the moment hack so that we can write this out
-    pri_hdr = all_spec2d.build_primary_hdr(head2d, spectrograph, subheader=subheader,
-                                           redux_path=None, master_key_dict=None, master_dir=None)
-    # Write spec2d
-    all_spec2d.write_to_fits(outfile2d, pri_hdr=pri_hdr, overwrite=True)
+
+        # container for specobjs and Spec2d
+        all_specobjs = specobjs.SpecObjs()
+
+        all_spec2d = spec2dobj.AllSpec2DObj()
+        # set some meta
+        all_spec2d['meta']['bkg_redux'] = False
+        all_spec2d['meta']['find_negative'] = False
+
+        # fill the specobjs container
+        all_specobjs.add_sobj(sobjs_coadd)
+        all_spec2d[det_container.name] = spec2DObj_coadd
+
+        # THE FOLLOWING MIMICS THE CODE IN pypeit.save_exposure()
+        scipath = os.path.join(pypeit_output_dir, 'Science')
+        if not os.path.isdir(scipath):
+            msgs.info('Creating directory for Science output: {0}'.format(scipath))
+
+        # Write out specobjs
+        # Build header for spec2d
+        head2d = fits.getheader(cal_output_files[0])
+        subheader = spectrograph.subheader_for_spec(head2d, head2d, allow_missing=True)
+        if all_specobjs.nobj > 0:
+            outfile1d = os.path.join(scipath, 'spec1d_{:s}.fits'.format(basename))
+            all_specobjs.write_to_fits(subheader, outfile1d)
+
+            # Info
+            outfiletxt = os.path.join(scipath, 'spec1d_{:s}.txt'.format(basename))
+            sobjs = specobjs.SpecObjs.from_fitsfile(outfile1d, chk_version=False)
+            sobjs.write_info(outfiletxt, spectrograph.pypeline)
+
+        # Build header for spec2d
+        outfile2d = os.path.join(scipath, 'spec2d_{:s}.fits'.format(basename))
+        # TODO For the moment hack so that we can write this out
+        pri_hdr = all_spec2d.build_primary_hdr(head2d, spectrograph, subheader=subheader,
+                                               redux_path=None, master_key_dict=None, master_dir=None)
+        # Write spec2d
+        all_spec2d.write_to_fits(outfile2d, pri_hdr=pri_hdr, overwrite=True)
 
