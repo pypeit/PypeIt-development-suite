@@ -11,6 +11,8 @@ from pypeit.utils import inverse
 DO_NOT_USE = datamodels.dqflags.pixel['DO_NOT_USE']
 from pypeit import msgs
 from pypeit.core import flat
+from pypeit.core import procimg
+
 
 from IPython import embed
 
@@ -65,7 +67,7 @@ def jwst_get_slits(finitemask, polyorder=5, function='legendre', debug=False):
     slit_righ = fit_slit(finitemask, 'righ', polyorder=polyorder, function=function, debug=debug)
     return slit_left, slit_righ
 
-# TODO This won't work now that I realize slits can overlap. So just use it as a visualization tool or something??
+# TODO Deprecaed. This won't work now that I realize slits can overlap. So just use it as a visualization tool or something??
 def jwst_populate_calibs(nspec, nspat, e2d_multi, final_multi, intflat_multi):
 
     ra = np.zeros((nspec, nspat))
@@ -157,7 +159,74 @@ def jwst_populate_calibs(nspec, nspat, e2d_multi, final_multi, intflat_multi):
     return reduce_gpm, ra, dec, waveimg, tilts, flatfield, pathloss, barshadow, photom_conversion, calwebb_final, subimg_count, \
            slit_left, slit_righ, spec_min, spec_max, meta_list
 
+def jwst_proc(t_eff, e2d_slit, final_slit, intflat_slit, kludge_err=1.0, ronoise=5.17, saturation=65000, noise_floor=0.01,
+              show=False):
 
+    # Read in data print out slit name
+    slit_name = final_slit.name
+
+    slit_left, slit_righ, slit_left_orig, slit_righ_orig, spec_vals_orig, src_trace_ra, src_trace_dec, \
+    rate, rate_var_rnoise, rate_var_poisson, rate_var_tot, dq, ra, dec, waveimg, tilts, flatfield, pathloss, \
+    barshadow, photom_conversion, final = jwst_extract_subimgs(e2d_slit, final_slit, intflat_slit)
+
+    # Now deal with the image processing
+    finitemask = np.isfinite(waveimg)
+    if not np.any(finitemask):
+        return (None,)*21
+
+
+    # Now perform the image processing
+    raw_counts = rate*t_eff
+    raw_var_poisson = kludge_err**2*rate_var_poisson*t_eff**2
+    raw_var_rnoise = kludge_err**2*rate_var_rnoise*t_eff**2
+    # Is this correct? I'm not sure I should be using their poisson variance for the noise floor
+    raw_var = procimg.variance_model(raw_var_rnoise, counts = raw_var_poisson, noise_floor=noise_floor)
+    # TODO This  is a hack until I can understand how to get rid of the hot pixels in the JWST variance arrays using DQ flags
+    raw_gpm = (raw_var_rnoise < 2*ronoise**2) & (raw_var_poisson < saturation)
+    #raw_var_poisson + raw_var_rnoise # TODO Leaving out problematic flat field term from pipeline
+
+    # This is the conversion between final2d and e2d, i.e. final2d = jwst_scale*e2d
+    # total_flat = flatfield*pathloss*barshadow
+    #flux_to_counts = t_eff / photom_conversion  # This converts s2d outputs of flux to counts.
+    #jwst_scale = photom_conversion/flatfield/pathloss/barshadow
+    total_flat = pathloss*barshadow
+    total_flat_square = np.square(total_flat)
+
+    count_scale = inverse(total_flat)  # This is the quantity that goes into PypeIt for var modeling
+    science, flat_bpm = flat.flatfield(raw_counts, total_flat)
+    var_poisson, _ = flat.flatfield(raw_var_poisson, total_flat_square)
+    base_var, _ = flat.flatfield(raw_var_rnoise, total_flat_square)
+    var, _ = flat.flatfield(raw_var, total_flat_square)
+    sciivar = inverse(var)
+    dq_gpm = np.logical_not(dq & DO_NOT_USE)
+    gpm = finitemask & dq_gpm & np.logical_not(flat_bpm) & (sciivar > 0.0) & raw_gpm
+
+
+    if show:
+        viewer_data, ch_data = display.show_image(science, waveimg = waveimg, cuts = get_cuts(science), chname='science')
+        viewer_wave, ch_wave = display.show_image(waveimg, chname='wave')
+        viewer_tilts, ch_tilts = display.show_image(tilts, waveimg=waveimg, chname='tilts')
+        viewer_flat, ch_flat = display.show_image(flatfield, waveimg=waveimg, chname='flat')
+        viewer_path, ch_path = display.show_image(pathloss, waveimg=waveimg, chname='pathloss')
+        viewer_bar , ch_bar  = display.show_image(barshadow, waveimg=waveimg, chname='barshadow')
+        display.show_trace(viewer_data, ch_data, src_trace_ra, 'trace-RA', color='#f0e442')
+        display.show_trace(viewer_data, ch_data, src_trace_dec, 'trace-DEC', color='#f0e442')
+
+    nanmask = np.logical_not(finitemask)
+    count_scale[nanmask] = 0.0
+    science[nanmask] = 0.0
+    var_poisson[nanmask] = 0.0
+    base_var[nanmask] = 0.0
+    var[nanmask] = 0.0
+    sciivar[nanmask] = 0.0
+    tilts[nanmask] = 0.0
+    waveimg[nanmask] = 0.0
+
+    waveimg = 1e4*waveimg  # Convert to angstroms for pypeit
+
+
+    return waveimg, tilts, slit_left, slit_righ, science, sciivar, gpm, base_var, count_scale, \
+           slit_left_orig, slit_righ_orig, spec_vals_orig
 
 def jwst_extract_subimgs(e2d_slit, final_slit, intflat_slit):
 
@@ -245,7 +314,7 @@ def jwst_extract_subimgs(e2d_slit, final_slit, intflat_slit):
 
 
 #TODO Deprecated
-def jwst_proc(e2d_slit, final_slit, intflat_slit=None, kludge_err=1.0):
+def jwst_proc_old(e2d_slit, final_slit, intflat_slit=None, kludge_err=1.0):
 
 
     # Try to reverse engineer all the things they multiply into the data

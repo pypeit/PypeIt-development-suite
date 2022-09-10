@@ -60,10 +60,10 @@ DO_NOT_USE = datamodels.dqflags.pixel['DO_NOT_USE']
 
 detname = 'nrs1'
 detector = 1 if 'nrs1' in detname else 2
-#disperser = 'G395M'
+disperser = 'G395M'
 #disperser = 'G235M'
 #disperser='PRISM_01133'
-disperser='PRISM_01117'
+#disperser='PRISM_01117'
 if 'PRISM_01133' in disperser:
     # PRISM data
     rawpath_level2 = '/Users/joe/jwst_redux/redux/NIRSPEC_PRISM/01133_COM_CLEAR_PRISM/calwebb/Raw'
@@ -172,7 +172,7 @@ e2d_multi = datamodels.open(e2d_output_file)
 final_multi = datamodels.open(cal_output_file)
 intflat_multi = datamodels.open(intflat_output_file)
 nslits = len(final_multi.slits)
-
+sys.exit(-1)
 sci_rate = datamodels.open(scifile)
 sci_data = np.array(sci_rate.data.T, dtype=float)
 nspec_raw, nspat_raw = sci_data.shape
@@ -187,8 +187,8 @@ show=True
 if show:
     display.connect_to_ginga(raise_err=True, allow_new=True)
 
-#islit = 37
-islit = None
+islit = 37
+#islit = None
 gdslits = np.arange(nslits) if islit is None else [islit]
 bad_slits = []
 
@@ -384,11 +384,11 @@ if all_specobjs.nobj > 0:
     sobjs = specobjs.SpecObjs.from_fitsfile(outfile1d, chk_version=False)
     sobjs.write_info(outfiletxt, spectrograph.pypeline)
 
-    # Build header for spec2d
-    outfile2d = os.path.join(scipath, 'spec2d_{:s}.fits'.format(basename))
-    # TODO For the moment hack so that we can write this out
-    pri_hdr = all_spec2d.build_primary_hdr(head2d, spectrograph, subheader=subheader,
-                                           redux_path=None, master_key_dict=None, master_dir=None)
+# Build header for spec2d
+outfile2d = os.path.join(scipath, 'spec2d_{:s}.fits'.format(basename))
+# TODO For the moment hack so that we can write this out
+pri_hdr = all_spec2d.build_primary_hdr(head2d, spectrograph, subheader=subheader,
+                                       redux_path=None, master_key_dict=None, master_dir=None)
 
-    # Write spec2d
-    all_spec2d.write_to_fits(outfile2d, pri_hdr=pri_hdr)
+# Write spec2d
+all_spec2d.write_to_fits(outfile2d, pri_hdr=pri_hdr)
