@@ -187,7 +187,7 @@ show=True
 if show:
     display.connect_to_ginga(raise_err=True, allow_new=True)
 
-islit = 37
+#islit = 37
 #islit = None
 gdslits = np.arange(nslits) if islit is None else [islit]
 bad_slits = []

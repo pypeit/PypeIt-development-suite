@@ -102,9 +102,9 @@ for detname in detectors:
     elif 'G395M' in disperser:
         # Use islit = 37 for nrs1
         # G395M data
-        rawpath_level2 = '/Users/joe/jwst_redux/redux/NIRSPEC_ERO/02736_ERO_SMACS0723_G395MG235M/calwebb/Raw'
-        output_dir = '/Users/joe/jwst_redux/redux/NIRSPEC_ERO/02736_ERO_SMACS0723_G395MG235M/calwebb/output'
-        pypeit_output_dir = '/Users/joe/jwst_redux/redux/NIRSPEC_ERO/02736_ERO_SMACS0723_G395MG235M/calwebb/pypeit'
+        rawpath_level2 = '/Users/joe/jwst_redux/redux/NIRSPEC_ERO/02736_ERO_SMACS0723_G395M/calwebb/Raw'
+        output_dir = '/Users/joe/jwst_redux/redux/NIRSPEC_ERO/02736_ERO_SMACS0723_G395M/calwebb/output'
+        pypeit_output_dir = '/Users/joe/jwst_redux/redux/NIRSPEC_ERO/02736_ERO_SMACS0723_G395M/calwebb/pypeit'
 
         # NIRSPEC 3-point dither
         scifile1 = os.path.join(rawpath_level2, 'jw02736007001_03103_00001_' + detname + '_rate.fits')
@@ -114,8 +114,8 @@ for detname in detectors:
         # Use islit = 38 for nrs1
         # G235M data
         rawpath_level2 = '/Users/joe/jwst_redux/Raw/NIRSPEC_ERO/02736_ERO_SMACS0723_G395MG235M/level_2/'
-        output_dir = '/Users/joe/jwst_redux/redux/NIRSPEC_ERO/02736_ERO_SMACS0723_G395MG235M/calwebb/output'
-        pypeit_output_dir = '/Users/joe/jwst_redux/redux/NIRSPEC_ERO/02736_ERO_SMACS0723_G395MG235M/calwebb/pypeit/'
+        output_dir = '/Users/joe/jwst_redux/redux/NIRSPEC_ERO/02736_ERO_SMACS0723_G235M/calwebb/output'
+        pypeit_output_dir = '/Users/joe/jwst_redux/redux/NIRSPEC_ERO/02736_ERO_SMACS0723_G235M/calwebb/pypeit/'
 
         # NIRSPEC 3-point dither
         scifile1  = os.path.join(rawpath_level2, 'jw02736007001_03101_00002_' + detname + '_rate.fits')
@@ -262,9 +262,10 @@ slit_names_2 = [int(slit.name) for slit in e2d_multi_list_2[0].slits]
 slit_names_uni = np.unique(np.hstack([slit_names_1, slit_names_2]))
 
 # Loop over slits
-islit = None
+islit = 10
 #islit = 64
-gdslits = slit_names_uni if islit is None else [islit]
+#islit=None
+gdslits = slit_names_uni[::-1] if islit is None else [islit]
 bad_slits = []
 
 # First index is detector, second index is exposure
@@ -272,6 +273,8 @@ e2d_multi_list = [e2d_multi_list_1, e2d_multi_list_2]
 intflat_multi_list = [intflat_multi_list_1, intflat_multi_list_2]
 final_multi_list = [final_multi_list_1, final_multi_list_2]
 slit_names_list = [slit_names_1, slit_names_2]
+kludge_err = 1.5
+
 
 
 # Loop over all slits, create a list of spec2d objects and run 2d coadd
@@ -279,6 +282,8 @@ for islit in gdslits:
     slit_name_str = str(islit)
     spec2d_list = []
     offsets_pixels = []
+    if show:
+        display.clear_all()
     for idet in range(2):
         for iexp in range(nexp):
             indx = np.where(np.array(slit_names_list[idet]) == islit)[0]
@@ -287,21 +292,21 @@ for islit in gdslits:
                 waveimg, tilts, slit_left, slit_righ, science, sciivar, gpm, base_var, count_scale, \
                 slit_left_orig, slit_righ_orig, spec_vals_orig =jwst_proc(
                     t_eff[iexp], e2d_multi_list[idet][iexp].slits[ii], final_multi_list[idet][iexp].slits[ii],
-                    intflat_multi_list[idet][iexp].slits[ii], noise_floor=par['scienceframe']['process']['noise_floor'],  show=False)
-
+                    intflat_multi_list[idet][iexp].slits[ii], noise_floor=par['scienceframe']['process']['noise_floor'],
+                    kludge_err=kludge_err, show=(iexp == 0), ronoise=det_container_list[idet].ronoise)
 
                 # If no finite pixels in the waveimg then skip this slit
                 if not np.any(gpm):
                     bad_slits.append(islit)
                     continue
 
-                #if show:
-                #    sci_rate = datamodels.open(scifiles[idet][iexp])
-                #    sci_data = np.array(sci_rate.data.T, dtype=float)
-                #    viewer_sci, ch_sci = display.show_image(sci_data, cuts=get_cuts(sci_data),
-                #                                            chname='raw rate_iexp_{:d}_idet_{:d}'.format(iexp, idet), clear=False)
-                #    display.show_slits(viewer_sci, ch_sci, slit_left_orig, slit_righ_orig, spec_vals=spec_vals_orig, pstep=1,
-                #                       slit_ids=np.array([islit]))
+                if show and (iexp ==0):
+                    sci_rate = datamodels.open(scifiles[idet][iexp])
+                    sci_data = np.array(sci_rate.data.T, dtype=float)
+                    viewer_sci, ch_sci = display.show_image(sci_data, cuts=get_cuts(sci_data),
+                                                            chname='raw rate_iexp_{:d}_idet_{:d}'.format(iexp, idet), clear=False)
+                    display.show_slits(viewer_sci, ch_sci, slit_left_orig, slit_righ_orig, spec_vals=spec_vals_orig, pstep=1,
+                                       slit_ids=np.array([islit]))
 
                 nspec, nspat = waveimg.shape
                 slits = slittrace.SlitTraceSet(slit_left, slit_righ, pypeline, detname=det_container_list[idet].name, nspat=nspat,
@@ -335,6 +340,7 @@ for islit in gdslits:
     if len(spec2d_list) > 0:
         basename = '{:s}_{:s}'.format(out_filename, 'slit' + slit_name_str)
 
+
         #TODO Not sure what to do with the detector container here
         # Instantiate Coadd2d
         coAdd = coadd2d.CoAdd2D.get_instance(spec2d_list, spectrograph, par, det=det_container_list[0].det,
@@ -344,12 +350,18 @@ for islit in gdslits:
                                              bkg_redux=False, debug=show)
 
         coadd_dict_list = coAdd.coadd(only_slits=None, interp_dspat=True)
+
+
+        # TODO THe rebin2d images have all kinds of holes in them, which happens before any kind of sigma clipping.
+        # I need to get to the bottom of this!!
+        #display.show_image(coadd_dict_list[0]['rebin_sciimg_stack'][3, :, :], chname='img4')
+
         # Create the pseudo images
         pseudo_dict = coAdd.create_pseudo_image(coadd_dict_list)
 
         sciimg_coadd, sciivar_coadd, skymodel_coadd, objmodel_coadd, ivarmodel_coadd, \
         outmask_coadd, sobjs_coadd, detector_coadd, slits_coadd, tilts_coadd, waveimg_coadd = coAdd.reduce(
-            pseudo_dict, global_sky_subtract=True, show=show, show_peaks=show, basename=basename)
+            pseudo_dict, global_sky_subtract=True, show_skysub_fit=True, show=show, clear_ginga=False, show_peaks=show, basename=basename)
 
         # Tack on detector (similarly to pypeit.extract_one)
         for sobj in sobjs_coadd:
@@ -367,7 +379,7 @@ for islit in gdslits:
                                               scaleimg=None,
                                               waveimg=waveimg_coadd,
                                               bpmmask=outmask_coadd,
-                                              detector=detector_coadd,
+                                              detector=det_container_list[0],
                                               sci_spat_flexure=None,
                                               sci_spec_flexure=None,
                                               vel_corr=None,
@@ -431,8 +443,7 @@ for islit in gdslits:
 
             # Info
             outfiletxt = os.path.join(scipath, 'spec1d_{:s}.txt'.format(basename))
-            sobjs = specobjs.SpecObjs.from_fitsfile(outfile1d, chk_version=False)
-            sobjs.write_info(outfiletxt, spectrograph.pypeline)
+            all_specobjs.write_info(outfiletxt, spectrograph.pypeline)
 
         # Build header for spec2d
         outfile2d = os.path.join(scipath, 'spec2d_{:s}.fits'.format(basename))

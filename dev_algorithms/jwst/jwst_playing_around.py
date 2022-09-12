@@ -5,7 +5,7 @@ from astropy.io import fits
 from pypeit.display import display
 
 
-path = '/Users/joe/jwst_redux/NIRSPEC/Raw/02736_ERO_SMACS0723_G395MG235M/level_2'
+path = '/Users/joe/jwst_redux/NIRSPEC_ER/Raw/02736_ERO_SMACS0723_G395/level_2'
 
 # NIRSPEC 3-point dither
 file1 = os.path.join(path, 'jw02736007001_03103_00001_nrs1_rate.fits')

@@ -11,15 +11,15 @@ DO_NOT_USE = datamodels.dqflags.pixel['DO_NOT_USE']
 
 
 # PypeIt imports
-from jwst_utils import compute_diff, get_cuts, show_2dspec, get_jwst_slits
+from jwst_utils import compute_diff, get_cuts
 from pypeit.display import display
 from pypeit.utils import inverse
 from pypeit.core import findobj_skymask
 from pypeit.core import skysub, coadd
 
 # G395M data
-rawpath_level2 = '/Users/joe/jwst_redux/redux/NIRSPEC_ERO/02736_ERO_SMACS0723_G395MG235M/calwebb/Raw'
-output_dir = '/Users/joe/jwst_redux/redux/NIRSPEC_ERO/02736_ERO_SMACS0723_G395MG235M/calwebb/output'
+rawpath_level2 = '/Users/joe/jwst_redux/redux/NIRSPEC_ERO/02736_ERO_SMACS0723_G395M/calwebb/Raw'
+output_dir = '/Users/joe/jwst_redux/redux/NIRSPEC_ERO/02736_ERO_SMACS0723_G395M/calwebb/output'
 
 det = 'nrs1'
 # NIRSPEC 3-point dither
