@@ -7,6 +7,10 @@ spectrograph = shane_kast_red
 [baseprocess]
 use_biasimage = False
 
+# sky is bad. Flexure fails
+[flexure]
+   spec_method = skip 
+
 # Setup
 setup read
     Setup B:

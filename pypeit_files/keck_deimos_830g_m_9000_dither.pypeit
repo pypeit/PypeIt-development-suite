@@ -15,6 +15,10 @@
 	obj_toler = 0.5
 	use_alignbox = True
 
+# one slit has bad sky and flexure shift is too large. set_to_zero
+[flexure]
+   excessive_shift = set_to_zero 
+
 # Setup
 setup read
     Setup A:
