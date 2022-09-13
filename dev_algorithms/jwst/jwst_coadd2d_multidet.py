@@ -62,14 +62,16 @@ DO_NOT_USE = datamodels.dqflags.pixel['DO_NOT_USE']
 #detname = 'nrs1'
 #detector = 1 if 'nrs1' in detname else 2
 
-disperser = 'G395M'
+#disperser = 'G395M'
 #disperser = 'G235M'
 #disperser='PRISM_01133'
 detectors = ['nrs1', 'nrs2']
-#disperser='PRISM_01117'
+disperser='PRISM_01117'
 exp_list = []
 for detname in detectors:
+    # TODO add the kendrew FS SN data to this.
     if 'PRISM_01133' in disperser:
+        ## Prorgram for Slit Loss Characterization for MSA shutters
         # PRISM data
         rawpath_level2 = '/Users/joe/jwst_redux/redux/NIRSPEC_PRISM/01133_COM_CLEAR_PRISM/calwebb/Raw'
         output_dir = '/Users/joe/jwst_redux/redux/NIRSPEC_PRISM/01133_COM_CLEAR_PRISM/calwebb/output'
@@ -262,8 +264,8 @@ slit_names_2 = [int(slit.name) for slit in e2d_multi_list_2[0].slits]
 slit_names_uni = np.unique(np.hstack([slit_names_1, slit_names_2]))
 
 # Loop over slits
-islit = 10
-#islit = 64
+#islit = 10
+islit = 64
 #islit=None
 gdslits = slit_names_uni[::-1] if islit is None else [islit]
 bad_slits = []
@@ -340,6 +342,8 @@ for islit in gdslits:
     if len(spec2d_list) > 0:
         basename = '{:s}_{:s}'.format(out_filename, 'slit' + slit_name_str)
 
+        # TODO implement an option to extract everything onto the same wavelength grid optimized to match the
+        # coverage of JWST. For example for the prism things are quite nonlinear
 
         #TODO Not sure what to do with the detector container here
         # Instantiate Coadd2d

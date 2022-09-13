@@ -90,8 +90,9 @@ def jwst_proc(t_eff, e2d_slit, final_slit, intflat_slit, kludge_err=1.0, ronoise
     raw_var_rnoise = kludge_err**2*rate_var_rnoise*t_eff**2
     # Is this correct? I'm not sure I should be using their poisson variance for the noise floor
     raw_var = procimg.variance_model(raw_var_rnoise, counts = raw_var_poisson, noise_floor=noise_floor)
-    # TODO This  is a hack until I can understand how to get rid of the hot pixels in the JWST variance arrays using DQ flags
-    raw_gpm = (raw_var_rnoise < 3.0*ronoise**2) & (raw_var_poisson < saturation)
+    # TODO This  is a hack until I can understand how to get rid of the hot pixels in the JWST variance arrays using DQ flags.
+    # I don't know what the value of this parameter currently set to 20 should be?? Look into this via a github issue.
+    raw_gpm = (raw_var_rnoise < 20.0*ronoise**2) & (raw_var_poisson < saturation)
     #raw_var_poisson + raw_var_rnoise # TODO Leaving out problematic flat field term from pipeline
 
     # This is the conversion between final2d and e2d, i.e. final2d = jwst_scale*e2d
