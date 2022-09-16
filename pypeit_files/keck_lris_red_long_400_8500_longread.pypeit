@@ -12,6 +12,10 @@ spectrograph = keck_lris_red
    [[findobj]]
          snr_thresh = 50.
 
+# sky is bad. Flexure fails
+[flexure]
+   spec_method = skip 
+
 # Setup
 setup read
  Setup A:
