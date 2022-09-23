@@ -62,11 +62,12 @@ DO_NOT_USE = datamodels.dqflags.pixel['DO_NOT_USE']
 #detname = 'nrs1'
 #detector = 1 if 'nrs1' in detname else 2
 
+disperser = 'G395M_Maseda'
 #disperser = 'G395M'
 #disperser = 'G235M'
 #disperser='PRISM_01133'
 #detectors = ['nrs1', 'nrs2']
-disperser='PRISM_01117'
+#disperser='PRISM_01117'
 #disperser='PRISM_FS'
 mode = 'MSA'
 #mode ='FS'
@@ -74,7 +75,7 @@ detectors = ['nrs1', 'nrs2']
 exp_list = []
 for detname in detectors:
     # TODO add the kendrew FS SN data to this.
-    if 'PRISM_01133' in disperser:
+    if 'PRISM_01133' == disperser:
         ## Prorgram for Slit Loss Characterization for MSA shutters
         # PRISM data
         rawpath_level2 = '/Users/joe/jwst_redux/redux/NIRSPEC_PRISM/01133_COM_CLEAR_PRISM/calwebb/Raw'
@@ -92,7 +93,7 @@ for detname in detectors:
         #scifile  = os.path.join(rawpath_level2, 'jw01133003001_0310x_00003_' + detname + '_rate.fits')
         #bkgfile1 = os.path.join(rawpath_level2, 'jw01133003001_0310x_00001_' + detname + '_rate.fits')
         #bkgfile2 = os.path.join(rawpath_level2, 'jw01133003001_0310x_00002_' + detname + '_rate.fits')
-    if 'PRISM_FS' in disperser:
+    if 'PRISM_FS' == disperser:
         ## Prorgram for Slit Loss Characterization for MSA shutters
         # PRISM data
         rawpath_level2 = '/Users/joe/jwst_redux/Raw/NIRSPEC_FS/2072/level_12'
@@ -119,7 +120,7 @@ for detname in detectors:
         scifile2 = os.path.join(rawpath_level2, 'jw01117007001_03101_00003_' + detname + '_rate.fits')
         scifile3 = os.path.join(rawpath_level2, 'jw01117007001_03101_00004_' + detname + '_rate.fits')
 
-    elif 'G395M' in disperser:
+    elif 'G395M' == disperser:
         # Use islit = 37 for nrs1
         # G395M data
         rawpath_level2 = '/Users/joe/jwst_redux/redux/NIRSPEC_MSA/NIRSPEC_ERO/02736_ERO_SMACS0723_G395M/calwebb/Raw'
@@ -130,7 +131,19 @@ for detname in detectors:
         scifile1 = os.path.join(rawpath_level2, 'jw02736007001_03103_00001_' + detname + '_rate.fits')
         scifile2 = os.path.join(rawpath_level2, 'jw02736007001_03103_00002_' + detname + '_rate.fits')
         scifile3 = os.path.join(rawpath_level2, 'jw02736007001_03103_00003_' + detname + '_rate.fits')
-    elif 'G235M' in disperser:
+    elif 'G395M_Maseda' == disperser:
+        # Use islit = 37 for nrs1
+        # G395M data
+        rawpath_level2 = '/Users/joe/jwst_redux/Raw/NIRSPEC_MSA/Maseda/'
+        output_dir = '/Users/joe/jwst_redux/redux/NIRSPEC_MSA/Maseda/395M/calwebb/output'
+        pypeit_output_dir = '/Users/joe/jwst_redux/redux/NIRSPEC_MSA/Maseda/395M/calwebb/pypeit'
+
+        # NIRSPEC 3-point dither
+        scifile1 = os.path.join(rawpath_level2, 'jw01671001001_03101_00002_' + detname + '_rate.fits')
+        scifile2 = os.path.join(rawpath_level2, 'jw01671001001_03101_00003_' + detname + '_rate.fits')
+        scifile3 = os.path.join(rawpath_level2, 'jw01671001001_03101_00004_' + detname + '_rate.fits')
+        
+    elif 'G235M' == disperser:
         # Use islit = 38 for nrs1
         # G235M data
         rawpath_level2 = '/Users/joe/jwst_redux/Raw/NIRSPEC_ERO/02736_ERO_SMACS0723_G395MG235M/level_2/'
@@ -184,7 +197,7 @@ for sci1, sci2 in zip(scifiles_1, scifiles_2):
     basenames_2.append(os.path.basename(sci2).replace('_rate.fits', ''))
 
 # Run the spec2 pipeline
-runflag = False
+runflag = True
 if runflag:
     for sci in scifiles_all:
         spec2 = Spec2Pipeline(steps=param_dict)
@@ -287,9 +300,9 @@ slit_names_2 = [slit.name for slit in e2d_multi_list_2[0].slits]
 slit_names_uni = np.unique(np.hstack([slit_names_1, slit_names_2]))
 
 # Loop over slits
-islit = '10'
+#islit = '10'
 #islit = 'S200A1'
-#islit = '64'
+islit = '64'
 #islit=None
 gdslits = slit_names_uni[::-1] if islit is None else [islit]
 bad_slits = []
