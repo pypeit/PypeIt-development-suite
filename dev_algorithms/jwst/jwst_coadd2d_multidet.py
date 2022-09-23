@@ -65,8 +65,12 @@ DO_NOT_USE = datamodels.dqflags.pixel['DO_NOT_USE']
 #disperser = 'G395M'
 #disperser = 'G235M'
 #disperser='PRISM_01133'
-detectors = ['nrs1', 'nrs2']
+#detectors = ['nrs1', 'nrs2']
 disperser='PRISM_01117'
+#disperser='PRISM_FS'
+mode = 'MSA'
+#mode ='FS'
+detectors = ['nrs1', 'nrs2']
 exp_list = []
 for detname in detectors:
     # TODO add the kendrew FS SN data to this.
@@ -88,11 +92,25 @@ for detname in detectors:
         #scifile  = os.path.join(rawpath_level2, 'jw01133003001_0310x_00003_' + detname + '_rate.fits')
         #bkgfile1 = os.path.join(rawpath_level2, 'jw01133003001_0310x_00001_' + detname + '_rate.fits')
         #bkgfile2 = os.path.join(rawpath_level2, 'jw01133003001_0310x_00002_' + detname + '_rate.fits')
+    if 'PRISM_FS' in disperser:
+        ## Prorgram for Slit Loss Characterization for MSA shutters
+        # PRISM data
+        rawpath_level2 = '/Users/joe/jwst_redux/Raw/NIRSPEC_FS/2072/level_12'
+        output_dir = '/Users/joe/jwst_redux/redux/NIRSPEC_FS/02027_PRISM/calwebb/output'
+        pypeit_output_dir = '/Users/joe/jwst_redux/redux/NIRSPEC_FS/02027_PRISM/calwebb/pypeit'
+
+
+        # NIRSPEC 3-point dither
+        # dither center
+        scifile1 = os.path.join(rawpath_level2, 'jw02072002001_05101_00001_' + detname + '_rate.fits')
+        scifile2 = os.path.join(rawpath_level2, 'jw02072002001_05101_00002_' + detname + '_rate.fits')
+        scifile3 = os.path.join(rawpath_level2, 'jw02072002001_05101_00003_' + detname + '_rate.fits')
+
     elif 'PRISM_01117' in disperser:
         # PRISM data
-        rawpath_level2 = '//Users/joe/jwst_redux/Raw/NIRSPEC_PRISM/01117_COM_CLEAR_PRISM/level_12/01117'
-        output_dir = '/Users/joe/jwst_redux/redux/NIRSPEC_PRISM/01117_COM_CLEAR_PRISM/calwebb/output'
-        pypeit_output_dir = '/Users/joe/jwst_redux/redux/NIRSPEC_PRISM/01117_COM_CLEAR_PRISM/calwebb/pypeit'
+        rawpath_level2 = '//Users/joe/jwst_redux/Raw/NIRSPEC_MSA/NIRSPEC_PRISM/01117_COM_CLEAR_PRISM/level_12/01117'
+        output_dir = '/Users/joe/jwst_redux/redux/NIRSPEC_MSA/NIRSPEC_PRISM/01117_COM_CLEAR_PRISM/calwebb/output'
+        pypeit_output_dir = '/Users/joe/jwst_redux/redux/NIRSPEC_MSA/NIRSPEC_PRISM/01117_COM_CLEAR_PRISM/calwebb/pypeit'
 
 
         # NIRSPEC 3-point dither
@@ -104,9 +122,9 @@ for detname in detectors:
     elif 'G395M' in disperser:
         # Use islit = 37 for nrs1
         # G395M data
-        rawpath_level2 = '/Users/joe/jwst_redux/redux/NIRSPEC_ERO/02736_ERO_SMACS0723_G395M/calwebb/Raw'
-        output_dir = '/Users/joe/jwst_redux/redux/NIRSPEC_ERO/02736_ERO_SMACS0723_G395M/calwebb/output'
-        pypeit_output_dir = '/Users/joe/jwst_redux/redux/NIRSPEC_ERO/02736_ERO_SMACS0723_G395M/calwebb/pypeit'
+        rawpath_level2 = '/Users/joe/jwst_redux/redux/NIRSPEC_MSA/NIRSPEC_ERO/02736_ERO_SMACS0723_G395M/calwebb/Raw'
+        output_dir = '/Users/joe/jwst_redux/redux/NIRSPEC_MSA/NIRSPEC_ERO/02736_ERO_SMACS0723_G395M/calwebb/output'
+        pypeit_output_dir = '/Users/joe/jwst_redux/redux/NIRSPEC_MSA/NIRSPEC_ERO/02736_ERO_SMACS0723_G395M/calwebb/pypeit'
 
         # NIRSPEC 3-point dither
         scifile1 = os.path.join(rawpath_level2, 'jw02736007001_03103_00001_' + detname + '_rate.fits')
@@ -125,8 +143,14 @@ for detname in detectors:
         scifile3 = os.path.join(rawpath_level2, 'jw02736007001_03101_00004_' + detname + '_rate.fits')
     exp_list.append([scifile1, scifile2, scifile3])
 
+if 'MSA' in mode:
+    offsets_pixels_list = [[0, 5.0, -5.0], [0, 5.0, -5.0]]
+elif 'FS' in mode:
+    offsets_pixels_list = [[0, 8.0, 18.0], [0, 8.0, 18.0]]
+
+
 scifiles_1 = exp_list[0]
-scifiles_2 = exp_list[1]
+scifiles_2 = exp_list[1] if len(exp_list) > 1 else []
 scifiles = [scifiles_1, scifiles_2]
 scifiles_all = scifiles_1 + scifiles_2
 nexp = len(scifiles_1)
@@ -252,20 +276,20 @@ out_filename = prefix_first + split_first[-3] + "-" + split_last[-3]
 
 show=True
 
-offsets_pixels_list = [[0, 5.0, -5.0], [0, 5.0, -5.0]]
 
 
 spec_samp_fact = 1.0
 spat_samp_fact = 1.0
 
 
-slit_names_1 = [int(slit.name) for slit in e2d_multi_list_1[0].slits]
-slit_names_2 = [int(slit.name) for slit in e2d_multi_list_2[0].slits]
+slit_names_1 = [slit.name for slit in e2d_multi_list_1[0].slits]
+slit_names_2 = [slit.name for slit in e2d_multi_list_2[0].slits]
 slit_names_uni = np.unique(np.hstack([slit_names_1, slit_names_2]))
 
 # Loop over slits
-#islit = 10
-islit = 64
+islit = '10'
+#islit = 'S200A1'
+#islit = '64'
 #islit=None
 gdslits = slit_names_uni[::-1] if islit is None else [islit]
 bad_slits = []
@@ -277,16 +301,15 @@ final_multi_list = [final_multi_list_1, final_multi_list_2]
 slit_names_list = [slit_names_1, slit_names_2]
 kludge_err = 1.5
 
-
+# TODO Are the tilts working correctly for the mosaics? I'm not so sure??
 
 # Loop over all slits, create a list of spec2d objects and run 2d coadd
-for islit in gdslits:
-    slit_name_str = str(islit)
+for ii, islit in enumerate(gdslits):
     spec2d_list = []
     offsets_pixels = []
     if show:
         display.clear_all()
-    for idet in range(2):
+    for idet in range(len(detectors)):
         for iexp in range(nexp):
             indx = np.where(np.array(slit_names_list[idet]) == islit)[0]
             if len(indx) > 0:
@@ -313,7 +336,7 @@ for islit in gdslits:
                 nspec, nspat = waveimg.shape
                 slits = slittrace.SlitTraceSet(slit_left, slit_righ, pypeline, detname=det_container_list[idet].name, nspat=nspat,
                                                PYP_SPEC=spectrograph.name)
-                slits.maskdef_id = np.array([islit])
+                slits.maskdef_id = np.array([ii])
 
                 # Construct the Spec2DObj with the positive image
                 spec2DObj = spec2dobj.Spec2DObj(sciimg=science,
@@ -340,7 +363,7 @@ for islit in gdslits:
                 continue
 
     if len(spec2d_list) > 0:
-        basename = '{:s}_{:s}'.format(out_filename, 'slit' + slit_name_str)
+        basename = '{:s}_{:s}'.format(out_filename, 'slit' + islit)
 
         # TODO implement an option to extract everything onto the same wavelength grid optimized to match the
         # coverage of JWST. For example for the prism things are quite nonlinear

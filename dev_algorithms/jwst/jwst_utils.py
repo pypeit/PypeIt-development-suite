@@ -92,7 +92,8 @@ def jwst_proc(t_eff, e2d_slit, final_slit, intflat_slit, kludge_err=1.0, ronoise
     raw_var = procimg.variance_model(raw_var_rnoise, counts = raw_var_poisson, noise_floor=noise_floor)
     # TODO This  is a hack until I can understand how to get rid of the hot pixels in the JWST variance arrays using DQ flags.
     # I don't know what the value of this parameter currently set to 20 should be?? Look into this via a github issue.
-    raw_gpm = (raw_var_rnoise < 20.0*ronoise**2) & (raw_var_poisson < saturation)
+    #raw_gpm = (raw_var_rnoise < 20.0*ronoise**2) & (raw_var_poisson < saturation)
+    raw_gpm = (raw_var_rnoise < saturation) & (raw_var_poisson < saturation)
     #raw_var_poisson + raw_var_rnoise # TODO Leaving out problematic flat field term from pipeline
 
     # This is the conversion between final2d and e2d, i.e. final2d = jwst_scale*e2d
@@ -179,6 +180,10 @@ def jwst_extract_subimgs(e2d_slit, final_slit, intflat_slit):
         pathloss = np.ones_like(flatfield)
 
     barshadow = np.array(final_slit.barshadow.T, dtype=float)
+    if barshadow.shape == (0,0):
+        msgs.warn('No barshadow for slit {0}'.format(slit_name) + ', setting to 1.0')
+        barshadow = np.ones_like(flatfield)
+
     photom_conversion = final_slit.meta.photometry.conversion_megajanskys
     final = np.array(final_slit.data.T, dtype=float)
     rate = np.array(e2d_slit.data.T, dtype=float)
