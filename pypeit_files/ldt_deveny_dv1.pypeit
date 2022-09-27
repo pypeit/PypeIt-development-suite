@@ -4,6 +4,9 @@
 # User-defined execution parameters
 [rdx]
   spectrograph = ldt_deveny
+[reduce]
+   [[findobj]]
+         snr_thresh = 50.
 
 # Setup
 setup read
