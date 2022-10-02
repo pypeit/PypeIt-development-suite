@@ -415,10 +415,6 @@ for ii, islit in enumerate(gdslits):
 
         coadd_dict_list = coAdd.coadd(only_slits=None, interp_dspat=True)
 
-        # TODO THe rebin2d images have all kinds of holes in them, which happens before any kind of sigma clipping.
-        # I need to get to the bottom of this!!
-        # display.show_image(coadd_dict_list[0]['rebin_sciimg_stack'][3, :, :], chname='img4')
-
         # Create the pseudo images
         pseudo_dict = coAdd.create_pseudo_image(coadd_dict_list)
 
