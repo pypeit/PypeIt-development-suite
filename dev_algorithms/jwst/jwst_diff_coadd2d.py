@@ -62,8 +62,8 @@ DO_NOT_USE = datamodels.dqflags.pixel['DO_NOT_USE']
 # detname = 'nrs1'
 # detector = 1 if 'nrs1' in detname else 2
 
-disperser = 'G395M_Maseda'
-# disperser = 'G395M'
+#disperser = 'G395M_Maseda'
+disperser = 'G395M'
 # disperser = 'G235M'
 # disperser='PRISM_01133'
 # detectors = ['nrs1', 'nrs2']
@@ -266,6 +266,10 @@ if not os.path.isdir(qa_dir):
     os.makedirs(qa_dir)
 if not os.path.isdir(png_dir):
     os.makedirs(png_dir)
+# Set some parameters for difference imaging
+par['reduce']['findobj']['skip_skysub'] = True # Do not sky-subtract when object finding
+par['reduce']['extraction']['skip_optimal'] = True # Skip local_skysubtraction and profile fitting
+
 
 # TODO Fix this, currently does not work if target names have - or _
 filename_first = os.path.basename(scifiles_1[0])
@@ -290,7 +294,7 @@ slit_names_uni = np.unique(np.hstack([slit_names_1, slit_names_2]))
 # Loop over slits
 # islit = '10'
 # islit = 'S200A1'
-islit = '20'
+islit = '64'
 #islit = None
 gdslits = slit_names_uni[::-1] if islit is None else [islit]
 bad_slits = []
@@ -362,6 +366,7 @@ for ii, islit in enumerate(gdslits):
                                      rn2img=np.full_like(bkg, det_container_list[idet].ronoise[0]**2),
                                      detector=det_container_list[idet])
 
+                # Perform the difference imaging, propagate the error and masking
                 sciImg = sciImg.sub(bkgImg, par['scienceframe']['process'])
 
                 nspec, nspat = waveimg.shape
@@ -419,7 +424,7 @@ for ii, islit in enumerate(gdslits):
 
         sciimg_coadd, sciivar_coadd, skymodel_coadd, objmodel_coadd, ivarmodel_coadd, \
         outmask_coadd, sobjs_coadd, detector_coadd, slits_coadd, tilts_coadd, waveimg_coadd = coAdd.reduce(
-            pseudo_dict, global_sky_subtract=True, show_skysub_fit=True, show=show, clear_ginga=False, show_peaks=show,
+            pseudo_dict, show=show, clear_ginga=False, show_peaks=show,
             basename=basename)
 
         # Tack on detector (similarly to pypeit.extract_one)
@@ -449,6 +454,15 @@ for ii, islit in enumerate(gdslits):
 
         # QA
         if show:
+            wv_gpm = sobjs_coadd[0].BOX_WAVE > 1.0
+            plt.plot(sobjs_coadd[0].BOX_WAVE[wv_gpm], sobjs_coadd[0].BOX_COUNTS[wv_gpm]*sobjs_coadd[0].BOX_MASK[wv_gpm],
+                     color='black', drawstyle='steps-mid', label='Counts')
+            plt.plot(sobjs_coadd[0].BOX_WAVE[wv_gpm], sobjs_coadd[0].BOX_COUNTS_SIG[wv_gpm]*sobjs_coadd[0].BOX_MASK[wv_gpm],
+                     color='red', drawstyle='steps-mid', label='Counts Error')
+            plt.legend()
+            plt.show()
+
+
             spec2DObj_coadd.gen_qa()
 
             slitmask_coadd = slits_coadd.slit_img(initial=False, flexure=None, exclude_flag=None)
