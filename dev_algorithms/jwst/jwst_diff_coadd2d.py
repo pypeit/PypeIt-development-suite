@@ -56,6 +56,7 @@ from pypeit import msgs
 from pypeit import spec2dobj
 from pypeit import coadd2d
 from pypeit.images.pypeitimage import PypeItImage
+from pypeit.scripts.show_2dspec import show_trace
 
 DO_NOT_USE = datamodels.dqflags.pixel['DO_NOT_USE']
 
@@ -294,8 +295,8 @@ slit_names_uni = np.unique(np.hstack([slit_names_1, slit_names_2]))
 # Loop over slits
 # islit = '10'
 # islit = 'S200A1'
-islit = '64'
-#islit = None
+#islit = '64'
+islit = None
 gdslits = slit_names_uni[::-1] if islit is None else [islit]
 bad_slits = []
 
@@ -420,7 +421,7 @@ for ii, islit in enumerate(gdslits):
 
         sciimg_coadd, sciivar_coadd, skymodel_coadd, objmodel_coadd, ivarmodel_coadd, \
         outmask_coadd, sobjs_coadd, detector_coadd, slits_coadd, tilts_coadd, waveimg_coadd = coAdd.reduce(
-            pseudo_dict, show=show, clear_ginga=False, show_peaks=show,
+            pseudo_dict, show=False, clear_ginga=False, show_peaks=show,
             basename=basename)
 
         # Tack on detector (similarly to pypeit.extract_one)
@@ -450,6 +451,49 @@ for ii, islit in enumerate(gdslits):
 
         # QA
         if show:
+            # Plot the 2d
+            nobj = len(sobjs_coadd)
+            left, right, mask = spec2DObj_coadd.slits.select_edges()
+            slid_IDs = spec2DObj_coadd.slits.slitord_id
+            image = spec2DObj_coadd.sciimg  # Processed science image
+            mean, med, sigma = sigma_clipped_stats(image[spec2DObj_coadd.bpmmask == 0], sigma_lower=5.0, sigma_upper=5.0)
+            cut_min = mean - 4.0 * sigma
+            cut_max = mean + 4.0 * sigma
+            chname_sci = 'slit-science-' + islit
+            # Clear all channels at the beginning
+            viewer, ch_sci = display.show_image(image, chname=chname_sci,
+                                                waveimg=spec2DObj_coadd.waveimg,
+                                                clear=False,
+                                                cuts=(cut_min, cut_max))
+
+            if nobj > 0:
+                show_trace(sobjs_coadd, 'DET01', viewer, ch_sci)
+            display.show_slits(viewer, ch_sci, left, right, slit_ids=slid_IDs)
+
+            image = np.sqrt(inverse(spec2DObj_coadd.ivarmodel))  # Processed science image
+            mean, med, sigma = sigma_clipped_stats(image[spec2DObj_coadd.bpmmask == 0], sigma_lower=5.0, sigma_upper=5.0)
+            cut_min = mean - 1.0 * sigma
+            cut_max = mean + 4.0 * sigma
+            chname_sig = 'slit-sigma-' + islit
+            # Clear all channels at the beginning
+            viewer, ch_sig = display.show_image(image, chname=chname_sig,
+                                                waveimg=spec2DObj_coadd.waveimg,
+                                                clear=False,
+                                                cuts=(cut_min, cut_max))
+
+            if nobj > 0:
+                show_trace(sobjs_coadd, 'DET01', viewer, ch_sig)
+            display.show_slits(viewer, ch_sig, left, right, slit_ids=slid_IDs)
+
+            channel_names = [chname_sci, chname_sig]
+
+            # After displaying all the images sync up the images with WCS_MATCH
+            shell = viewer.shell()
+            shell.start_global_plugin('WCSMatch')
+            shell.call_global_plugin_method('WCSMatch', 'set_reference_channel', [channel_names[-1]],
+                                            {})
+
+
             wv_gpm = sobjs_coadd[0].BOX_WAVE > 1.0
             plt.plot(sobjs_coadd[0].BOX_WAVE[wv_gpm], sobjs_coadd[0].BOX_COUNTS[wv_gpm]*sobjs_coadd[0].BOX_MASK[wv_gpm],
                      color='black', drawstyle='steps-mid', label='Counts')
@@ -459,30 +503,7 @@ for ii, islit in enumerate(gdslits):
             plt.show()
 
 
-            spec2DObj_coadd.gen_qa()
 
-            slitmask_coadd = slits_coadd.slit_img(initial=False, flexure=None, exclude_flag=None)
-            slitord_id = slits_coadd.slitord_id[0]
-            thismask = slitmask_coadd == slitord_id
-
-            gpm_extract = spec2DObj_coadd.bpmmask == 0
-            # Make a plot of the residuals for a random slit
-            chi = (spec2DObj_coadd.sciimg - spec2DObj_coadd.objmodel - spec2DObj_coadd.skymodel) * np.sqrt(
-                spec2DObj_coadd.ivarmodel) * gpm_extract
-
-            maskchi = thismask & gpm_extract
-
-            n_bins = 50
-            sig_range = 7.0
-            binsize = 2.0 * sig_range / n_bins
-            bins_histo = -sig_range + np.arange(n_bins) * binsize + binsize / 2.0
-
-            xvals = np.arange(-10.0, 10, 0.02)
-            gauss = scipy.stats.norm(loc=0.0, scale=1.0)
-            gauss_corr = scipy.stats.norm(loc=0.0, scale=1.0)
-
-            sigma_corr, maskchi = coadd.renormalize_errors(chi, maskchi, max_corr=20.0, title='jwst_sigma_corr',
-                                                           debug=True)
 
         # container for specobjs and Spec2d
         all_specobjs = specobjs.SpecObjs()
