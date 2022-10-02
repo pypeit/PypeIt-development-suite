@@ -335,6 +335,10 @@ for ii, islit in enumerate(gdslits):
                     intflat_multi_list[idet][ibkg].slits[ii], noise_floor=par['scienceframe']['process']['noise_floor'],
                     kludge_err=kludge_err, show=False, ronoise=det_container_list[idet].ronoise)
 
+                # TODO It can be the case that calwebb returns different size sub-images for the same slit. I do not
+                #  understand what causes this, but it then requires that we extract the sub-images ourselves directly
+                # from the rate files.
+
                 # If no finite pixels in the waveimg then skip this slit
                 if not np.any(gpm) or not np.any(bkg_gpm):
                     bad_slits.append(islit)
@@ -493,14 +497,14 @@ for ii, islit in enumerate(gdslits):
             shell.call_global_plugin_method('WCSMatch', 'set_reference_channel', [channel_names[-1]],
                                             {})
 
-
-            wv_gpm = sobjs_coadd[0].BOX_WAVE > 1.0
-            plt.plot(sobjs_coadd[0].BOX_WAVE[wv_gpm], sobjs_coadd[0].BOX_COUNTS[wv_gpm]*sobjs_coadd[0].BOX_MASK[wv_gpm],
-                     color='black', drawstyle='steps-mid', label='Counts')
-            plt.plot(sobjs_coadd[0].BOX_WAVE[wv_gpm], sobjs_coadd[0].BOX_COUNTS_SIG[wv_gpm]*sobjs_coadd[0].BOX_MASK[wv_gpm],
-                     color='red', drawstyle='steps-mid', label='Counts Error')
-            plt.legend()
-            plt.show()
+            if nobj > 0:
+                wv_gpm = sobjs_coadd[0].BOX_WAVE > 1.0
+                plt.plot(sobjs_coadd[0].BOX_WAVE[wv_gpm], sobjs_coadd[0].BOX_COUNTS[wv_gpm]*sobjs_coadd[0].BOX_MASK[wv_gpm],
+                color='black', drawstyle='steps-mid', label='Counts')
+                plt.plot(sobjs_coadd[0].BOX_WAVE[wv_gpm], sobjs_coadd[0].BOX_COUNTS_SIG[wv_gpm]*sobjs_coadd[0].BOX_MASK[wv_gpm],
+                color='red', drawstyle='steps-mid', label='Counts Error')
+                plt.legend()
+                plt.show()
 
 
 
