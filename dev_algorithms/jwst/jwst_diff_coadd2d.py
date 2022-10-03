@@ -536,6 +536,30 @@ for ii, islit in enumerate(gdslits):
             shell.start_global_plugin('WCSMatch')
             shell.call_global_plugin_method('WCSMatch', 'set_reference_channel', [channel_names[-1]],
                                             {})
+            if not bkg_redux:
+                slitmask_coadd = slits_coadd.slit_img(initial=False, flexure=None, exclude_flag=None)
+                slitord_id = slits_coadd.slitord_id[0]
+                thismask = slitmask_coadd == slitord_id
+
+                gpm_extract = spec2DObj_coadd.bpmmask == 0
+                # Make a plot of the residuals for a random slit
+                chi = (spec2DObj_coadd.sciimg - spec2DObj_coadd.objmodel - spec2DObj_coadd.skymodel) * np.sqrt(
+                    spec2DObj_coadd.ivarmodel) * gpm_extract
+
+                maskchi = thismask & gpm_extract
+
+                n_bins = 50
+                sig_range = 7.0
+                binsize = 2.0 * sig_range / n_bins
+                bins_histo = -sig_range + np.arange(n_bins) * binsize + binsize / 2.0
+
+                xvals = np.arange(-10.0, 10, 0.02)
+                gauss = scipy.stats.norm(loc=0.0, scale=1.0)
+                gauss_corr = scipy.stats.norm(loc=0.0, scale=1.0)
+
+                sigma_corr, maskchi = coadd.renormalize_errors(chi, maskchi, max_corr=20.0, title='jwst_sigma_corr',
+                                                               debug=True)
+
 
             if nobj > 0:
                 wv_gpm = sobjs_coadd[0].BOX_WAVE > 1.0
