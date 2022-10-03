@@ -74,6 +74,7 @@ mode = 'MSA'
 # mode ='FS'
 detectors = ['nrs1', 'nrs2']
 exp_list = []
+bkg_redux = False
 for detname in detectors:
     # TODO add the kendrew FS SN data to this.
     if 'PRISM_01133' == disperser:
@@ -202,28 +203,35 @@ if runflag:
 
 # Output file names
 intflat_output_files_1 = []
-e2d_output_files_1 = []
+#e2d_output_files_1 = []
 cal_output_files_1 = []
+msa_output_files_1 = []
 
 intflat_output_files_2 = []
-e2d_output_files_2 = []
+#e2d_output_files_2 = []
 cal_output_files_2 = []
+msa_output_files_2 = []
+
 for base1, base2 in zip(basenames_1, basenames_2):
-    e2d_output_files_1.append(os.path.join(output_dir, base1 + '_extract_2d.fits'))
+    #e2d_output_files_1.append(os.path.join(output_dir, base1 + '_extract_2d.fits'))
     intflat_output_files_1.append(os.path.join(output_dir, base1 + '_interpolatedflat.fits'))
     cal_output_files_1.append(os.path.join(output_dir, base1 + '_cal.fits'))
+    msa_output_files_1.append(os.path.join(output_dir, base1 + '_msa_flagging.fits'))
 
-    e2d_output_files_2.append(os.path.join(output_dir, base2 + '_extract_2d.fits'))
+    #e2d_output_files_2.append(os.path.join(output_dir, base2 + '_extract_2d.fits'))
     intflat_output_files_2.append(os.path.join(output_dir, base2 + '_interpolatedflat.fits'))
     cal_output_files_2.append(os.path.join(output_dir, base2 + '_cal.fits'))
+    msa_output_files_2.append(os.path.join(output_dir, base2 + '_msa_flagging.fits'))
 
 # Read in calwebb outputs for everytihng
 
 # Read in multi exposure calwebb outputs
-e2d_multi_list_1 = []
+msa_multi_list_1 = []
+#e2d_multi_list_1 = []
 intflat_multi_list_1 = []
 final_multi_list_1 = []
-e2d_multi_list_2 = []
+msa_multi_list_2 = []
+#e2d_multi_list_2 = []
 intflat_multi_list_2 = []
 final_multi_list_2 = []
 nslits_1 = np.zeros(nexp, dtype=int)
@@ -232,15 +240,16 @@ t_eff = np.zeros(nexp, dtype=float)
 
 for iexp in range(nexp):
     # Open some JWST data models
-    e2d_multi_list_1.append(datamodels.open(e2d_output_files_1[iexp]))
+    #e2d_multi_list_1.append(datamodels.open(e2d_output_files_1[iexp]))
+    msa_multi_list_1.append(datamodels.open(msa_output_files_1[iexp]))
     intflat_multi_list_1.append(datamodels.open(intflat_output_files_1[iexp]))
     final_multi_list_1.append(datamodels.open(cal_output_files_1[iexp]))
 
-    e2d_multi_list_2.append(datamodels.open(e2d_output_files_2[iexp]))
+    msa_multi_list_2.append(datamodels.open(msa_output_files_2[iexp]))
     intflat_multi_list_2.append(datamodels.open(intflat_output_files_2[iexp]))
     final_multi_list_2.append(datamodels.open(cal_output_files_2[iexp]))
 
-    t_eff[iexp] = e2d_multi_list_1[iexp].meta.exposure.effective_exposure_time
+    t_eff[iexp] = final_multi_list_1[iexp].meta.exposure.effective_exposure_time
     nslits_1[iexp] = len(final_multi_list_1[iexp].slits)
     nslits_2[iexp] = len(final_multi_list_2[iexp].slits)
 
@@ -267,9 +276,12 @@ if not os.path.isdir(qa_dir):
     os.makedirs(qa_dir)
 if not os.path.isdir(png_dir):
     os.makedirs(png_dir)
+
 # Set some parameters for difference imaging
-par['reduce']['findobj']['skip_skysub'] = True # Do not sky-subtract when object finding
-par['reduce']['extraction']['skip_optimal'] = True # Skip local_skysubtraction and profile fitting
+if bkg_redux:
+    par['reduce']['findobj']['skip_skysub'] = True # Do not sky-subtract when object finding
+    par['reduce']['extraction']['skip_optimal'] = True # Skip local_skysubtraction and profile fitting
+
 
 
 # TODO Fix this, currently does not work if target names have - or _
@@ -288,20 +300,21 @@ spec_samp_fact = 1.0
 spat_samp_fact = 1.0
 
 # Use the first exposure to se the slit names
-slit_names_1 = [slit.name for slit in e2d_multi_list_1[0].slits]
-slit_names_2 = [slit.name for slit in e2d_multi_list_2[0].slits]
+slit_names_1 = [slit.name for slit in final_multi_list_1[0].slits]
+slit_names_2 = [slit.name for slit in final_multi_list_2[0].slits]
 slit_names_uni = np.unique(np.hstack([slit_names_1, slit_names_2]))
 
 # Loop over slits
 # islit = '10'
 # islit = 'S200A1'
-#islit = '64'
-islit = None
+islit = '64'
+#islit = None
 gdslits = slit_names_uni[::-1] if islit is None else [islit]
 bad_slits = []
 
 # First index is detector, second index is exposure
-e2d_multi_list = [e2d_multi_list_1, e2d_multi_list_2]
+#e2d_multi_list = [e2d_multi_list_1, e2d_multi_list_2]
+msa_multi_list = [msa_multi_list_1, msa_multi_list_2]
 intflat_multi_list = [intflat_multi_list_1, intflat_multi_list_2]
 final_multi_list = [final_multi_list_1, final_multi_list_2]
 slit_names_list = [slit_names_1, slit_names_2]
@@ -322,42 +335,26 @@ for ii, islit in enumerate(gdslits):
         for iexp in range(nexp):
             indx = np.where(np.array(slit_names_list[idet]) == islit)[0]
             if len(indx) > 0:
-                ii = indx[0]
-                waveimg, tilts, slit_left, slit_righ, science, sciivar, gpm, base_var, count_scale, \
-                slit_left_orig, slit_righ_orig, spec_vals_orig = jwst_proc(
-                    t_eff[iexp], e2d_multi_list[idet][iexp].slits[ii], final_multi_list[idet][iexp].slits[ii],
-                    intflat_multi_list[idet][iexp].slits[ii], noise_floor=par['scienceframe']['process']['noise_floor'],
-                    kludge_err=kludge_err, show=(iexp == 0), ronoise=det_container_list[idet].ronoise)
-
+                jj = indx[0]
                 ibkg = bkg_indices[iexp]
-                _, _, _, _, bkg, bkgivar, bkg_gpm, bkg_base_var, bkg_count_scale, \
-                _, _, _ = jwst_proc(t_eff[ibkg], e2d_multi_list[idet][ibkg].slits[ii], final_multi_list[idet][ibkg].slits[ii],
-                    intflat_multi_list[idet][ibkg].slits[ii], noise_floor=par['scienceframe']['process']['noise_floor'],
-                    kludge_err=kludge_err, show=False, ronoise=det_container_list[idet].ronoise)
+                # Grab the calibration subimages for the first exposure, use for all subsequent exposures since
+                # sometimes (because of a bug) the sizes of these calibraition (and scienc) sub-images can change.
+                if iexp == 0:
+                    slit_slice, slit_left, slit_righ, slit_left_orig, slit_righ_orig, spec_vals_orig, \
+                    src_trace_ra, src_trace_dec, dq_sub, ra, dec, finitemask, waveimg, tilts, flatfield, pathloss, barshadow, \
+                    photom_conversion, calwebb = jwst_extract_subimgs(
+                        final_multi_list[idet][iexp].slits[jj], intflat_multi_list[idet][iexp].slits[jj])
 
-                # TODO It can be the case that calwebb returns different size sub-images for the same slit. I do not
-                #  understand what causes this, but it then requires that we extract the sub-images ourselves directly
-                # from the rate files.
+                # Process the science image for this exposure
+                science, sciivar, gpm, base_var, count_scale = jwst_proc(
+                    msa_multi_list[idet][iexp], t_eff[iexp], slit_slice, finitemask, pathloss, barshadow,
+                    noise_floor=par['scienceframe']['process']['noise_floor'],
+                    kludge_err=kludge_err, ronoise=det_container_list[idet].ronoise)
 
-                # If no finite pixels in the waveimg then skip this slit
-                if not np.any(gpm) or not np.any(bkg_gpm):
+                # If there are not good pixels continue
+                if not np.any(gpm):
                     bad_slits.append(islit)
                     continue
-
-
-                if show and (iexp == 0):
-                    sci_rate = datamodels.open(scifiles[idet][iexp])
-                    sci_data = np.array(sci_rate.data.T, dtype=float)
-
-                    bkg_rate = datamodels.open(scifiles[idet][ibkg])
-                    bkg_data = np.array(bkg_rate.data.T, dtype=float)
-
-                    viewer_sci, ch_sci = display.show_image(sci_data-bkg_data, cuts=get_cuts(sci_data-bkg_data),
-                                                            chname='raw rate_iexp_{:d}_idet_{:d}'.format(iexp, idet),
-                                                            clear=False)
-                    display.show_slits(viewer_sci, ch_sci, slit_left_orig, slit_righ_orig, spec_vals=spec_vals_orig,
-                                       pstep=1,
-                                       slit_ids=np.array([islit]))
 
                 # Instantiate
                 sciImg = PypeItImage(image=science, ivar=sciivar, bpm=np.logical_not(gpm).astype(int),
@@ -365,20 +362,33 @@ for ii, islit in enumerate(gdslits):
                                      rn2img=np.full_like(science, det_container_list[idet].ronoise[0]**2),
                                      detector=det_container_list[idet])
 
-                # Instantiate
-                bkgImg = PypeItImage(image=bkg, ivar=bkgivar, bpm=np.logical_not(bkg_gpm).astype(int),
-                                     base_var=bkg_base_var, img_scale=bkg_count_scale,
-                                     rn2img=np.full_like(bkg, det_container_list[idet].ronoise[0]**2),
-                                     detector=det_container_list[idet])
+                if bkg_redux:
+                    # Process the background image using the same calibrations as the science
+                    bkg, bkgivar, bkg_gpm, bkg_base_var, bkg_count_scale = jwst_proc(
+                        msa_multi_list[idet][ibkg], t_eff[ibkg], slit_slice, finitemask, pathloss, barshadow,
+                        noise_floor=par['scienceframe']['process']['noise_floor'],
+                        kludge_err=kludge_err, ronoise=det_container_list[idet].ronoise)
 
-                # Perform the difference imaging, propagate the error and masking
-                sciImg = sciImg.sub(bkgImg, par['scienceframe']['process'])
+                    # If there are not good pixels continue
+                    if not np.any(bkg_gpm):
+                        bad_slits.append(islit)
+                        continue
+
+                    # Instantiate
+                    bkgImg = PypeItImage(image=bkg, ivar=bkgivar, bpm=np.logical_not(bkg_gpm).astype(int),
+                                         base_var=bkg_base_var, img_scale=bkg_count_scale,
+                                         rn2img=np.full_like(bkg, det_container_list[idet].ronoise[0]**2),
+                                         detector=det_container_list[idet])
+
+                    # Perform the difference imaging, propagate the error and masking
+                    sciImg = sciImg.sub(bkgImg, par['scienceframe']['process'])
 
                 nspec, nspat = waveimg.shape
                 slits = slittrace.SlitTraceSet(slit_left, slit_righ, pypeline, detname=det_container_list[idet].name,
                                                nspat=nspat,
                                                PYP_SPEC=spectrograph.name)
                 slits.maskdef_id = np.array([ii])
+
 
                 # Construct the Spec2DObj with the positive image
                 spec2DObj = spec2dobj.Spec2DObj(sciimg=sciImg.image,
@@ -401,6 +411,34 @@ for ii, islit in enumerate(gdslits):
 
                 spec2d_list.append(spec2DObj)
                 offsets_pixels.append(offsets_pixels_list[idet][iexp])
+
+                if show and (iexp == 0):
+                    sci_rate = datamodels.open(msa_multi_list[idet][iexp])
+                    sci_data = np.array(sci_rate.data.T, dtype=float)
+
+                    bkg_rate = datamodels.open(msa_multi_list[idet][ibkg])
+                    bkg_data = np.array(bkg_rate.data.T, dtype=float)
+
+                    viewer_sci, ch_sci = display.show_image(sci_data-bkg_data, cuts=get_cuts(sci_data-bkg_data),
+                                                            chname='raw rate_iexp_{:d}_idet_{:d}'.format(iexp, idet))
+                    display.show_slits(viewer_sci, ch_sci, slit_left_orig, slit_righ_orig, spec_vals=spec_vals_orig,
+                                       pstep=1, slit_ids=np.array([islit]))
+                    viewer_data, ch_data = display.show_image(calwebb, waveimg=waveimg, cuts=get_cuts(calwebb),
+                                                              chname='calwebb_idet_{:d}'.format(idet))
+                    display.show_trace(viewer_data, ch_data, src_trace_ra, 'trace-RA_idet_{:d}'.format(idet), color='#f0e442', pstep=1)
+                    display.show_trace(viewer_data, ch_data, src_trace_dec, 'trace-DEC_idet_{:d}'.format(idet), color='#f0e442', pstep=1)
+
+                    viewer_pypeit, ch_pypeit = display.show_image(sciImg.image, waveimg=waveimg, cuts=get_cuts(sciImg.image),
+                                                              chname='pypeit_idet_{:d}'.format(idet))
+                    display.show_slits(viewer_pypeit, ch_pypeit, slit_left, slit_righ, pstep=1, slit_ids=np.array([islit]))
+                    viewer_wave, ch_wave = display.show_image(waveimg, chname='wave_idet_{:d}'.format(idet))
+                    viewer_tilts, ch_tilts = display.show_image(tilts, waveimg=waveimg, chname='tilts_idet_{:d}'.format(idet))
+                    viewer_flat, ch_flat = display.show_image(flatfield, waveimg=waveimg, chname='flat_idet_{:d}'.format(idet))
+                    viewer_path, ch_path = display.show_image(pathloss, waveimg=waveimg, chname='pathloss_idet_{:d}'.format(idet))
+                    viewer_bar, ch_bar = display.show_image(barshadow, waveimg=waveimg, chname='barshadow_idet_{:d}'.format(idet),
+                                                            cuts=(0.0, 1.0))
+
+
             else:
                 continue
 
@@ -425,7 +463,7 @@ for ii, islit in enumerate(gdslits):
 
         sciimg_coadd, sciivar_coadd, skymodel_coadd, objmodel_coadd, ivarmodel_coadd, \
         outmask_coadd, sobjs_coadd, detector_coadd, slits_coadd, tilts_coadd, waveimg_coadd = coAdd.reduce(
-            pseudo_dict, show=False, clear_ginga=False, show_peaks=show,
+            pseudo_dict, show=show, clear_ginga=False, show_peaks=show,
             basename=basename)
 
         # Tack on detector (similarly to pypeit.extract_one)

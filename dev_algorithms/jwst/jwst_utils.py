@@ -68,21 +68,25 @@ def jwst_get_slits(finitemask, polyorder=5, function='legendre', debug=False):
     return slit_left, slit_righ
 
 
-def jwst_proc(t_eff, e2d_slit, final_slit, intflat_slit, kludge_err=1.0, ronoise=5.17, saturation=65000, noise_floor=0.01,
-              show=False):
+def jwst_proc(msa_data, t_eff, slit_slice, finitemask, pathloss, barshadow,
+              kludge_err=1.0, ronoise=5.17, saturation=65000, noise_floor=0.01):
 
-    # Read in data print out slit name
-    slit_name = final_slit.name
 
-    slit_left, slit_righ, slit_left_orig, slit_righ_orig, spec_vals_orig, src_trace_ra, src_trace_dec, \
-    rate, rate_var_rnoise, rate_var_poisson, rate_var_tot, dq, ra, dec, waveimg, tilts, flatfield, pathloss, \
-    barshadow, photom_conversion, final = jwst_extract_subimgs(e2d_slit, final_slit, intflat_slit)
+    #slit_slice, slit_left, slit_righ, slit_left_orig, slit_righ_orig, spec_vals_orig, src_trace_ra, src_trace_dec, dq, \
+    #ra, dec, waveimg, tilts, flatfield, pathloss, barshadow, photom_conversion, final = jwst_extract_subimgs(
+    #    final_slit, intflat_slit)
 
     # Now deal with the image processing
-    finitemask = np.isfinite(waveimg)
-    if not np.any(finitemask):
-        return (None,)*21
+    #if not np.any(finitemask):
+    #    return (None,)*21
 
+    # Read in the output after msa_flagging. Extract the sub-images, rotate to PypeIt format.
+    rate = np.array(msa_data.data.T[slit_slice], dtype=float)
+    rate_var_rnoise = np.array(msa_data.var_rnoise.T[slit_slice], dtype=float)
+    rate_var_poisson = np.array(msa_data.var_poisson.T[slit_slice], dtype=float)
+    # This is currently buggy as it includes flat field error
+    # rate_var_tot = np.square(np.array(e2d_slit.err.T, dtype=float))
+    dq = np.array(msa_data.dq.T[slit_slice], dtype=int)
 
     # Now perform the image processing
     raw_counts = rate*t_eff
@@ -112,18 +116,6 @@ def jwst_proc(t_eff, e2d_slit, final_slit, intflat_slit, kludge_err=1.0, ronoise
     dq_gpm = np.logical_not(dq & DO_NOT_USE)
     gpm = finitemask & dq_gpm & np.logical_not(flat_bpm) & (sciivar > 0.0) & raw_gpm
 
-
-    if show:
-        viewer_data, ch_data = display.show_image(science, waveimg = waveimg, cuts = get_cuts(science), chname='science')
-        display.show_trace(viewer_data, ch_data, src_trace_ra, 'trace-RA', color='#f0e442')
-        display.show_trace(viewer_data, ch_data, src_trace_dec, 'trace-DEC', color='#f0e442')
-        viewer_wave, ch_wave = display.show_image(waveimg, chname='wave')
-        viewer_tilts, ch_tilts = display.show_image(tilts, waveimg=waveimg, chname='tilts')
-        viewer_flat, ch_flat = display.show_image(flatfield, waveimg=waveimg, chname='flat')
-        viewer_path, ch_path = display.show_image(pathloss, waveimg=waveimg, chname='pathloss')
-        viewer_bar , ch_bar  = display.show_image(barshadow, waveimg=waveimg, chname='barshadow', cuts=(0.0, 1.0))
-
-
     nanmask = np.logical_not(finitemask)
     count_scale[nanmask] = 0.0
     science[nanmask] = 0.0
@@ -131,16 +123,11 @@ def jwst_proc(t_eff, e2d_slit, final_slit, intflat_slit, kludge_err=1.0, ronoise
     base_var[nanmask] = 0.0
     var[nanmask] = 0.0
     sciivar[nanmask] = 0.0
-    tilts[nanmask] = 0.0
-    waveimg[nanmask] = 0.0
-
-    waveimg = 1e4*waveimg  # Convert to angstroms for pypeit
 
 
-    return waveimg, tilts, slit_left, slit_righ, science, sciivar, gpm, base_var, count_scale, \
-           slit_left_orig, slit_righ_orig, spec_vals_orig
+    return science, sciivar, gpm, base_var, count_scale
 
-def jwst_extract_subimgs(e2d_slit, final_slit, intflat_slit):
+def jwst_extract_subimgs(final_slit, intflat_slit):
 
     # The various multiplicative calibrations we need.
     slit_name = final_slit.name
@@ -186,16 +173,15 @@ def jwst_extract_subimgs(e2d_slit, final_slit, intflat_slit):
 
     photom_conversion = final_slit.meta.photometry.conversion_megajanskys
     final = np.array(final_slit.data.T, dtype=float)
-    rate = np.array(e2d_slit.data.T, dtype=float)
-    rate_var_rnoise = np.array(e2d_slit.var_rnoise.T, dtype=float)
-    rate_var_poisson = np.array(e2d_slit.var_poisson.T, dtype=float)
-    # This is currently buggy as it includes flat field error
-    rate_var_tot = np.square(np.array(e2d_slit.err.T, dtype=float))
-    dq = np.array(final_slit.dq.T, dtype=int)
 
 
     # Generate some tilts and a spatial image
     finitemask = np.isfinite(waveimg)
+    # Get slit bounadries
+    slit_left, slit_righ = jwst_get_slits(finitemask)
+
+    waveimg = 1e4*waveimg
+    waveimg[np.logical_not(finitemask)] = 0.0
     wave_min, wave_max = np.min(waveimg[finitemask]), np.max(waveimg[finitemask])
 
     tilts = np.zeros_like(waveimg)
@@ -207,8 +193,7 @@ def jwst_extract_subimgs(e2d_slit, final_slit, intflat_slit):
     # spat_pix_sub = np.zeros_like(ra_sub)
     # spat_pix_sub[finitemask_sub] = spat_lo + (ra[finitemask_sub] - ra_min) / (ra_max - ra_min) * (nspat_sub - 1)
 
-    # Get slit bounadries
-    slit_left, slit_righ = jwst_get_slits(finitemask)
+
 
     ########################
     # The image segment being used for each slit
@@ -219,14 +204,21 @@ def jwst_extract_subimgs(e2d_slit, final_slit, intflat_slit):
     # slice object for the segment
     slit_slice = np.s_[spec_lo: spec_hi, spat_lo: spat_hi]
 
+    #embed()
+    #rate = np.array(e2d_slit.data.T, dtype=float)
+    #rate_var_rnoise = np.array(e2d_slit.var_rnoise.T, dtype=float)
+    #rate_var_poisson = np.array(e2d_slit.var_poisson.T, dtype=float)
+    # This is currently buggy as it includes flat field error
+    #rate_var_tot = np.square(np.array(e2d_slit.err.T, dtype=float))
+    dq = np.array(final_slit.dq.T, dtype=int)
+
     slit_left_orig = spat_lo + slit_left
     slit_righ_orig = spat_lo + slit_righ
     spec_vals_orig = spec_lo + np.arange(spec_hi - spec_lo)
 
 
-    return slit_left, slit_righ, slit_left_orig, slit_righ_orig, spec_vals_orig, src_trace_ra, src_trace_dec, \
-           rate, rate_var_rnoise, rate_var_poisson, rate_var_tot, dq, \
-           ra, dec, waveimg, tilts, flatfield, pathloss, barshadow, photom_conversion, final
+    return slit_slice, slit_left, slit_righ, slit_left_orig, slit_righ_orig, spec_vals_orig, src_trace_ra, src_trace_dec, dq, \
+           ra, dec, finitemask, waveimg, tilts, flatfield, pathloss, barshadow, photom_conversion, final
 
 
 def jwst_show_msa(sci_rate, final2d, clear=True):
@@ -429,9 +421,6 @@ def jwst_populate_calibs(nspec, nspat, e2d_multi, final_multi, intflat_multi):
            slit_left, slit_righ, spec_min, spec_max, meta_list
 
 
-
-
-#TODO Deprecated
 def jwst_proc_old(e2d_slit, final_slit, intflat_slit=None, kludge_err=1.0):
 
 
@@ -525,8 +514,97 @@ def jwst_proc_old(e2d_slit, final_slit, intflat_slit=None, kludge_err=1.0):
     spat_pix = (ra - ra_min) / (ra_max - ra_min) * (nspat - 1)
     spat_pix[nanmask_ra] = 0.0
 
-    embed()
 
     return science, sciivar, gpm, base_var, count_scale, tilts, waveimg, finite_mask, slit_left, slit_righ, t_eff
 
+
+
+
+def jwst_extract_subimgs_old(e2d_slit, final_slit, intflat_slit):
+
+    # The various multiplicative calibrations we need.
+    slit_name = final_slit.name
+    waveimg = np.array(final_slit.wavelength.T, dtype=float)
+    slit_wcs = final_slit.meta.wcs
+    x, y = wcstools.grid_from_bounding_box(slit_wcs.bounding_box, step=(1, 1))
+    calra, caldec, calwave = slit_wcs(x, y)
+    ra = calra.T
+    dec = caldec.T
+
+    # get the source RA and Dec coordinates from the metadata (also located in the header of the fits SCI extension)
+    nspec, nspat = ra.shape
+    src_ra, src_dec= final_slit.meta.target.ra, final_slit.meta.target.dec
+
+    cal_spat = np.arange(nspat)  # spatial position
+    src_trace_ra = np.zeros(nspec)  # Array to hold the source_RA as a function of spectral position
+    src_trace_dec = np.zeros(nspec)  # Array to hold the source_DEC as a function of spectral position
+    for ispec in range(nspec):
+        ra_vs_spat = calra[:, ispec]  #
+        # Interpolate y-pixel as a functio of RA onto the source RA
+        src_trace_ra[ispec] = np.interp(src_ra, ra_vs_spat[np.isfinite(ra_vs_spat)],
+                                                cal_spat[np.isfinite(ra_vs_spat)])
+        dec_vs_spat = caldec[:, ispec]
+        src_trace_dec[ispec] = np.interp(src_dec, dec_vs_spat[np.isfinite(dec_vs_spat)], cal_spat[np.isfinite(dec_vs_spat)])
+
+
+    waveimg_from_wcs = calwave.T
+    # Sometimes this fails at the 1e-4 level and disagreess about nans???
+    #assert np.allclose(waveimg, waveimg_from_wcs, rtol=1e-3, atol=1e-3, equal_nan=True)
+
+
+    flatfield = np.array(intflat_slit.data.T, dtype=float) #if intflat_slit is not None else np.ones_like(pathloss)
+    pathloss = np.array(final_slit.pathloss_uniform.T, dtype=float) if final_slit.source_type == 'EXTENDED' else \
+        np.array(final_slit.pathloss_point.T, dtype=float)
+    if pathloss.shape == (0,0):
+        msgs.warn('No pathloss for slit {0}'.format(slit_name) + ', setting to 1.0')
+        pathloss = np.ones_like(flatfield)
+
+    barshadow = np.array(final_slit.barshadow.T, dtype=float)
+    if barshadow.shape == (0,0):
+        msgs.warn('No barshadow for slit {0}'.format(slit_name) + ', setting to 1.0')
+        barshadow = np.ones_like(flatfield)
+
+    photom_conversion = final_slit.meta.photometry.conversion_megajanskys
+    final = np.array(final_slit.data.T, dtype=float)
+    rate = np.array(e2d_slit.data.T, dtype=float)
+    rate_var_rnoise = np.array(e2d_slit.var_rnoise.T, dtype=float)
+    rate_var_poisson = np.array(e2d_slit.var_poisson.T, dtype=float)
+    # This is currently buggy as it includes flat field error
+    rate_var_tot = np.square(np.array(e2d_slit.err.T, dtype=float))
+    dq = np.array(final_slit.dq.T, dtype=int)
+
+
+    # Generate some tilts and a spatial image
+    finitemask = np.isfinite(waveimg)
+    wave_min, wave_max = np.min(waveimg[finitemask]), np.max(waveimg[finitemask])
+
+    tilts = np.zeros_like(waveimg)
+    tilts[finitemask] = (waveimg[finitemask] - wave_min) / (wave_max - wave_min)
+
+    # TODO Fix this spat_pix to make it increasing with pixel. For now don't use it
+    # This currnetly depends on poisition angle which I need to hack to fix
+    # ra_min, ra_max = np.min(ra_sub[finitemask_sub]),  np.max(ra_sub[finitemask_sub])
+    # spat_pix_sub = np.zeros_like(ra_sub)
+    # spat_pix_sub[finitemask_sub] = spat_lo + (ra[finitemask_sub] - ra_min) / (ra_max - ra_min) * (nspat_sub - 1)
+
+    # Get slit bounadries
+    slit_left, slit_righ = jwst_get_slits(finitemask)
+
+    ########################
+    # The image segment being used for each slit
+    spec_lo = final_slit.xstart - 1
+    spec_hi = spec_lo + final_slit.xsize
+    spat_lo = final_slit.ystart - 1
+    spat_hi = spat_lo + final_slit.ysize
+    # slice object for the segment
+    slit_slice = np.s_[spec_lo: spec_hi, spat_lo: spat_hi]
+
+    slit_left_orig = spat_lo + slit_left
+    slit_righ_orig = spat_lo + slit_righ
+    spec_vals_orig = spec_lo + np.arange(spec_hi - spec_lo)
+
+
+    return slit_left, slit_righ, slit_left_orig, slit_righ_orig, spec_vals_orig, src_trace_ra, src_trace_dec, \
+           rate, rate_var_rnoise, rate_var_poisson, rate_var_tot, dq, \
+           ra, dec, waveimg, tilts, flatfield, pathloss, barshadow, photom_conversion, final
 
