@@ -75,6 +75,8 @@ mode = 'MSA'
 detectors = ['nrs1', 'nrs2']
 exp_list = []
 bkg_redux = False
+# If bkg_redux is False, the code will model the sky and the object profile and perform optimal extraction.
+# If bgk_redux is True, the code will difference image and simply boxcar extract (optimal not implemented yet)
 for detname in detectors:
     # TODO add the kendrew FS SN data to this.
     if 'PRISM_01133' == disperser:
