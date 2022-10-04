@@ -256,12 +256,6 @@ for iexp in range(nexp):
     nslits_1[iexp] = len(final_multi_list_1[iexp].slits)
     nslits_2[iexp] = len(final_multi_list_2[iexp].slits)
 
-#
-# the multi-exposure calwebb outputs
-
-
-# slit_name = slit_names_1[islit_1]
-# islit_2 = np.where(np.array(slit_names_2) == slit_name)[0][0]
 
 
 # Some pypeit things
@@ -335,6 +329,7 @@ for ii, islit in enumerate(gdslits):
     offsets_pixels = []
     if show:
         display.clear_all()
+    # Loop over detectors, and exposures
     for idet in range(len(detectors)):
         for iexp in range(nexp):
             indx = np.where(np.array(slit_names_list[idet]) == islit)[0]
@@ -342,7 +337,7 @@ for ii, islit in enumerate(gdslits):
                 jj = indx[0]
                 ibkg = bkg_indices[iexp]
                 # Grab the calibration subimages for the first exposure, use for all subsequent exposures since
-                # sometimes (because of a bug) the sizes of these calibraition (and scienc) sub-images can change.
+                # sometimes (because of a bug) the sizes of these calibraition (and science) sub-images can change.
                 if iexp == 0:
                     slit_slice, slit_left, slit_righ, slit_left_orig, slit_righ_orig, spec_vals_orig, \
                     src_trace_ra, src_trace_dec, dq_sub, ra, dec, finitemask, waveimg, tilts, flatfield, pathloss, barshadow, \
@@ -416,31 +411,36 @@ for ii, islit in enumerate(gdslits):
                 spec2d_list.append(spec2DObj)
                 offsets_pixels.append(offsets_pixels_list[idet][iexp])
 
-                if show and (iexp == 0) and (idet == 0):
+                if show and (iexp == 0):
                     sci_rate = datamodels.open(msa_multi_list[idet][iexp])
                     sci_data = np.array(sci_rate.data.T, dtype=float)
 
                     bkg_rate = datamodels.open(msa_multi_list[idet][ibkg])
                     bkg_data = np.array(bkg_rate.data.T, dtype=float)
 
+                    viewer_raw, ch_raw = display.show_image(sci_data, cuts=get_cuts(sci_data),
+                                                            chname='raw_rate_iexp_{:d}_{:s}'.format(iexp, detectors[idet]))
                     viewer_sci, ch_sci = display.show_image(sci_data-bkg_data, cuts=get_cuts(sci_data-bkg_data),
-                                                            chname='raw rate_iexp_{:d}_idet_{:d}'.format(iexp, idet))
+                                                            chname='diff_rate_iexp_{:d}_{:s}'.format(iexp, detectors[idet]))
                     display.show_slits(viewer_sci, ch_sci, slit_left_orig, slit_righ_orig, spec_vals=spec_vals_orig,
                                        pstep=1, slit_ids=np.array([islit]))
-                    viewer_data, ch_data = display.show_image(calwebb, waveimg=waveimg, cuts=get_cuts(calwebb),
-                                                              chname='calwebb_idet_{:d}'.format(idet))
-                    display.show_trace(viewer_data, ch_data, src_trace_ra, 'trace-RA_idet_{:d}'.format(idet), color='#f0e442', pstep=1)
-                    display.show_trace(viewer_data, ch_data, src_trace_dec, 'trace-DEC_idet_{:d}'.format(idet), color='#f0e442', pstep=1)
-
-                    viewer_pypeit, ch_pypeit = display.show_image(sciImg.image, waveimg=waveimg, cuts=get_cuts(sciImg.image),
-                                                              chname='pypeit_idet_{:d}'.format(idet))
-                    display.show_slits(viewer_pypeit, ch_pypeit, slit_left, slit_righ, pstep=1, slit_ids=np.array([islit]))
-                    viewer_wave, ch_wave = display.show_image(waveimg, chname='wave_idet_{:d}'.format(idet))
-                    viewer_tilts, ch_tilts = display.show_image(tilts, waveimg=waveimg, chname='tilts_idet_{:d}'.format(idet))
-                    viewer_flat, ch_flat = display.show_image(flatfield, waveimg=waveimg, chname='flat_idet_{:d}'.format(idet))
-                    viewer_path, ch_path = display.show_image(pathloss, waveimg=waveimg, chname='pathloss_idet_{:d}'.format(idet))
-                    viewer_bar, ch_bar = display.show_image(barshadow, waveimg=waveimg, chname='barshadow_idet_{:d}'.format(idet),
-                                                            cuts=(0.0, 1.0))
+                    display.show_slits(viewer_raw, ch_raw, slit_left_orig, slit_righ_orig, spec_vals=spec_vals_orig,
+                                       pstep=1, slit_ids=np.array([islit]))
+                    # Show individual calibrations
+                    if idet == 0:
+                        viewer_data, ch_data = display.show_image(calwebb, waveimg=waveimg, cuts=get_cuts(calwebb),
+                                                                  chname='calwebb_{:s}'.format(detectors[idet]))
+                        display.show_trace(viewer_data, ch_data, src_trace_ra, 'trace-RA_{:s}'.format(detectors[idet]), color='#f0e442', pstep=1)
+                        display.show_trace(viewer_data, ch_data, src_trace_dec, 'trace-DEC_{:s}'.format(detectors[idet]), color='#f0e442', pstep=1)
+                        viewer_pypeit, ch_pypeit = display.show_image(sciImg.image, waveimg=waveimg, cuts=get_cuts(sciImg.image),
+                                                                      chname='pypeit_{:s}'.format(detectors[idet]))
+                        display.show_slits(viewer_pypeit, ch_pypeit, slit_left, slit_righ, pstep=1, slit_ids=np.array([islit]))
+                        viewer_wave, ch_wave = display.show_image(waveimg, chname='wave_{:s}'.format(detectors[idet]))
+                        viewer_tilts, ch_tilts = display.show_image(tilts, waveimg=waveimg, chname='tilts_{:s}'.format(detectors[idet]))
+                        viewer_flat, ch_flat = display.show_image(flatfield, waveimg=waveimg, chname='flat_{:s}'.format(detectors[idet]))
+                        viewer_path, ch_path = display.show_image(pathloss, waveimg=waveimg, chname='pathloss_{:s}'.format(detectors[idet]))
+                        viewer_bar, ch_bar = display.show_image(barshadow, waveimg=waveimg, chname='barshadow_{:s}'.format(detectors[idet]),
+                                                                cuts=(0.0, 1.0))
 
 
             else:
