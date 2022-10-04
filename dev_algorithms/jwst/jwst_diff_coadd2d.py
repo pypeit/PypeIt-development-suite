@@ -74,9 +74,9 @@ mode = 'MSA'
 # mode ='FS'
 detectors = ['nrs1', 'nrs2']
 exp_list = []
-bkg_redux = False
-# If bkg_redux is False, the code will model the sky and the object profile and perform optimal extraction.
-# If bgk_redux is True, the code will difference image and simply boxcar extract (optimal not implemented yet)
+diff_redux = False
+# If diff_redux is False, the code will model the sky and the object profile and perform optimal extraction.
+# If diff_redux is True, the code will difference image and simply boxcar extract (optimal not implemented yet)
 for detname in detectors:
     # TODO add the kendrew FS SN data to this.
     if 'PRISM_01133' == disperser:
@@ -240,6 +240,7 @@ nslits_1 = np.zeros(nexp, dtype=int)
 nslits_2 = np.zeros(nexp, dtype=int)
 t_eff = np.zeros(nexp, dtype=float)
 
+# TODO Figure out why this is so damn slow! I suspect it is calwebb
 for iexp in range(nexp):
     # Open some JWST data models
     #e2d_multi_list_1.append(datamodels.open(e2d_output_files_1[iexp]))
@@ -280,7 +281,7 @@ if not os.path.isdir(png_dir):
     os.makedirs(png_dir)
 
 # Set some parameters for difference imaging
-if bkg_redux:
+if diff_redux:
     par['reduce']['findobj']['skip_skysub'] = True # Do not sky-subtract when object finding
     par['reduce']['extraction']['skip_optimal'] = True # Skip local_skysubtraction and profile fitting
 
@@ -294,7 +295,8 @@ split_last = filename_last.split('_')
 prefix_first = ''
 for ii in range(len(split_first) - 3):
     prefix_first += split_first[ii] + "_"
-out_filename = prefix_first + split_first[-3] + "-" + split_last[-3]
+diff_str = 'diff_' if diff_redux else ''
+out_filename = diff_str + prefix_first + split_first[-3] + "-" + split_last[-3]
 
 show = True
 
@@ -364,7 +366,7 @@ for ii, islit in enumerate(gdslits):
                                      rn2img=np.full_like(science, det_container_list[idet].ronoise[0]**2),
                                      detector=det_container_list[idet])
 
-                if bkg_redux:
+                if diff_redux:
                     # Process the background image using the same calibrations as the science
                     bkg, bkgivar, bkg_gpm, bkg_base_var, bkg_count_scale = jwst_proc(
                         msa_multi_list[idet][ibkg], t_eff[ibkg], slit_slice, finitemask, pathloss, barshadow,
@@ -414,7 +416,7 @@ for ii, islit in enumerate(gdslits):
                 spec2d_list.append(spec2DObj)
                 offsets_pixels.append(offsets_pixels_list[idet][iexp])
 
-                if show and (iexp == 0):
+                if show and (iexp == 0) and (idet == 0):
                     sci_rate = datamodels.open(msa_multi_list[idet][iexp])
                     sci_data = np.array(sci_rate.data.T, dtype=float)
 
@@ -465,7 +467,7 @@ for ii, islit in enumerate(gdslits):
 
         sciimg_coadd, sciivar_coadd, skymodel_coadd, objmodel_coadd, ivarmodel_coadd, \
         outmask_coadd, sobjs_coadd, detector_coadd, slits_coadd, tilts_coadd, waveimg_coadd = coAdd.reduce(
-            pseudo_dict, show=show, clear_ginga=False, show_peaks=show,
+            pseudo_dict, show=False, clear_ginga=False, show_peaks=show,
             basename=basename)
 
         # Tack on detector (similarly to pypeit.extract_one)
@@ -536,7 +538,7 @@ for ii, islit in enumerate(gdslits):
             shell.start_global_plugin('WCSMatch')
             shell.call_global_plugin_method('WCSMatch', 'set_reference_channel', [channel_names[-1]],
                                             {})
-            if not bkg_redux:
+            if not diff_redux:
                 slitmask_coadd = slits_coadd.slit_img(initial=False, flexure=None, exclude_flag=None)
                 slitord_id = slits_coadd.slitord_id[0]
                 thismask = slitmask_coadd == slitord_id
