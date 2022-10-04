@@ -8,7 +8,7 @@ import numpy as np
 #from jax import jit
 #import optax
 import itertools
-from tqdm.auto import trange
+#from tqdm.auto import trange
 from astropy.table import Table
 from astropy.io import fits
 from pkg_resources import resource_filename
@@ -20,7 +20,7 @@ from pypeit.core.fitting import robust_fit
 from pypeit.core import coadd
 from pypeit.core import fitting
 from pypeit.core.wavecal import autoid, waveio, wv_fitting
-from pypeit.core.wavecal.wvutils import  smooth_ceil_cont, xcorr_shift
+from pypeit.core.wavecal.wvutils import  get_xcorr_arc, xcorr_shift
 from pypeit import utils
 from pypeit import msgs
 from astropy import table
