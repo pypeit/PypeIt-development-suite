@@ -64,7 +64,8 @@ DO_NOT_USE = datamodels.dqflags.pixel['DO_NOT_USE']
 # detector = 1 if 'nrs1' in detname else 2
 
 #disperser = 'G395M_Maseda'
-disperser = 'G395M'
+#disperser = 'G395M'
+disperser = 'PRISM_01117'
 # disperser = 'G235M'
 # disperser='PRISM_01133'
 # detectors = ['nrs1', 'nrs2']
@@ -74,7 +75,7 @@ mode = 'MSA'
 # mode ='FS'
 detectors = ['nrs1', 'nrs2']
 exp_list = []
-diff_redux = False
+diff_redux = True
 # If diff_redux is False, the code will model the sky and the object profile and perform optimal extraction.
 # If diff_redux is True, the code will difference image and simply boxcar extract (optimal not implemented yet)
 for detname in detectors:
@@ -195,7 +196,7 @@ for sci1, sci2 in zip(scifiles_1, scifiles_2):
     basenames_2.append(os.path.basename(sci2).replace('_rate.fits', ''))
 
 # Run the spec2 pipeline
-runflag = False
+runflag = True
 if runflag:
     for sci in scifiles_all:
         spec2 = Spec2Pipeline(steps=param_dict)
