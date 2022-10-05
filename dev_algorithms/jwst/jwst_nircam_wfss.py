@@ -166,12 +166,12 @@ for base in basenames:
 
 RA, DEC =  15.05428, 28.040513
 rate_obj, science, sciivar, gpm, dq_gpm, base_var, count_scale, finitemask, tilts, waveimg, spat_img = jwst_nircam_proc(
-    flat_output_files[0], configfile, RA, DEC, kludge_err=1.15, noise_floor=0.01, saturation=65000)
+    flat_output_files[0], configfile, RA, DEC, kludge_err=1.30, noise_floor=0.03, saturation=65000)
 
 
 # Create PypeIt sciimg object
 sciImg = pypeitimage.PypeItImage(image=science,ivar=sciivar, base_var=base_var, img_scale=count_scale,
-                                 detector=det_container, bpm=np.logical_not(gpm).astype(int))
+                                 detector=det_container, noise_floor=0.01, bpm=np.logical_not(gpm).astype(int))
 # Create bogus rectilinear slit boundaries -- replace with a tracing model when that finally works
 nspec, nspat = science.shape
 slit_left = np.full(nspec, 0.0, dtype=float)
@@ -217,7 +217,7 @@ extract = extraction.Extract.get_instance(sciImg, slits, sobjs_obj, spectrograph
 
 
 if not par['reduce']['extraction']['skip_extraction']:
-    skymodel, objmodel, ivarmodel, outmask, sobjs, waveimg, tilts = extract.run(global_sky, sobjs_obj)
+    skymodel, objmodel, ivarmodel, outmask, sobjs, waveimg, tilts = extract.run(global_sky, model_noise=True)
 else:
     # Although exrtaction is not performed, still need to prepare some masks and the tilts
     # self.exTract.prepare_extraction()
@@ -254,100 +254,68 @@ spec2DObj = spec2dobj.Spec2DObj(sciimg=sciImg.image,
                                 maskdef_designtab=None)
 spec2DObj.process_steps = sciImg.process_steps
 
-# QA
-spec2DObj.gen_qa()
-
-# Make a plot of the residuals for a random slit
-chi = (science-objmodel-skymodel)*np.sqrt(ivarmodel)*outmask
-
-islit = 0
-slitmask = slits.slit_img(initial=False, flexure=None, exclude_flag=None)
-slitord_id = slits.slitord_id[islit]
-thismask = slitmask == slitord_id
-
-n_bins = 50
-sig_range = 7.0
-binsize = 2.0 * sig_range / n_bins
-bins_histo = -sig_range + np.arange(n_bins) * binsize + binsize / 2.0
-
-xvals = np.arange(-10.0, 10, 0.02)
-gauss = scipy.stats.norm(loc=0.0, scale=1.0)
-gauss_corr = scipy.stats.norm(loc=0.0, scale=1.0)
-
-maskchi = thismask & outmask
-sigma_corr, maskchi = coadd.renormalize_errors(chi, maskchi, max_corr = 20.0, title='jwst_sigma_corr', debug=True)
+if show:
+    # QA
+    spec2DObj.gen_qa()
 
 
-#
-#
-#
-# rate_obj = datamodels.open(flat_output_files[0])
-#
-#
-# #TODO Fix all these numbers to be correct
-# kludge_err = 1.0
-# ronoise=5.17
-# saturation=65000
-# noise_floor=0.01
-#
-# RA, DEC =  15.05428, 28.040513
-# t_eff = rate_obj.meta.exposure.effective_exposure_time
-#
-# # TODO Use the spat_img which PypeIt can take, but we are not using!!
-# raw_sub, var_tot_sub, var_poisson_sub, var_rnoise_sub, dq_sub, waveimg_sub, spat_img_sub  = jwst_nircam_subimgs(configfile, RA, DEC, flat_output_files[0])
-#
-#
-# # slit_slice, slit_left, slit_righ, slit_left_orig, slit_righ_orig, spec_vals_orig, src_trace_ra, src_trace_dec, dq, \
-# # ra, dec, waveimg, tilts, flatfield, pathloss, barshadow, photom_conversion, final = jwst_extract_subimgs(
-# #    final_slit, intflat_slit)
-#
-# # Now deal with the image processing
-# # if not np.any(finitemask):
-# #    return (None,)*21
-#
-# # Read in the output after msa_flagging. Extract the sub-images, rotate to PypeIt format.
-# rate = raw_sub.T
-# rate_var_tot = var_tot_sub.T
-# rate_var_poisson = var_poisson_sub.T
-# rate_var_rnoise = var_rnoise_sub.T
-# # TODO Check that the errors don't have nonsense from the flat field error budget
-# dq = dq_sub.T
-# # Now perform the image processing
-# raw_counts = rate * t_eff
-# raw_var_poisson = kludge_err ** 2 * rate_var_poisson * t_eff ** 2
-# raw_var_rnoise = kludge_err ** 2 * rate_var_rnoise * t_eff ** 2
-# # Is this correct? I'm not sure I should be using their poisson variance for the noise floor
-# raw_var = procimg.variance_model(raw_var_rnoise, counts=raw_var_poisson, noise_floor=noise_floor)
-# # TODO This  is a hack until I can understand how to get rid of the hot pixels in the JWST variance arrays using DQ flags.
-# # I don't know what the value of this parameter currently set to 20 should be?? Look into this via a github issue.
-# # raw_gpm = (raw_var_rnoise < 20.0*ronoise**2) & (raw_var_poisson < saturation)
-# raw_gpm = (raw_var_rnoise < saturation) & (raw_var_poisson < saturation)
-# # raw_var_poisson + raw_var_rnoise # TODO Leaving out problematic flat field term from pipeline
-#
-#
-# # This is the conversion between final2d and e2d, i.e. final2d = jwst_scale*e2d
-# # total_flat = flatfield*pathloss*barshadow
-# # flux_to_counts = t_eff / photom_conversion  # This converts s2d outputs of flux to counts.
-# # jwst_scale = photom_conversion/flatfield/pathloss/barshadow
-#
-# # TODO Perform the flat field correction yourself so as to update the noise model. Setting this to unit
-# total_flat = np.ones_like(rate)
-# finitemask = np.isfinite(rate, dtype=bool) # This was from NIRSPEC and may not be necessary
-# total_flat_square = np.square(total_flat)
-#
-# count_scale = inverse(total_flat)  # This is the quantity that goes into PypeIt for var modeling
-# science, flat_bpm = flat.flatfield(raw_counts, total_flat)
-# var_poisson, _ = flat.flatfield(raw_var_poisson, total_flat_square)
-# base_var, _ = flat.flatfield(raw_var_rnoise, total_flat_square)
-# var, _ = flat.flatfield(raw_var, total_flat_square)
-# sciivar = inverse(var)
-# dq_gpm = np.logical_not(dq & DO_NOT_USE)
-# gpm = finitemask & dq_gpm & np.logical_not(flat_bpm) & (sciivar > 0.0) & raw_gpm
-#
-# nanmask = np.logical_not(finitemask)
-# count_scale[nanmask] = 0.0
-# science[nanmask] = 0.0
-# var_poisson[nanmask] = 0.0
-# base_var[nanmask] = 0.0
-# var[nanmask] = 0.0
-# sciivar[nanmask] = 0.0
+    islit = 0
+    slitmask = slits.slit_img(initial=False, flexure=None, exclude_flag=None)
+    slitord_id = slits.slitord_id[islit]
+    thismask = slitmask == slitord_id
+
+    gpm_extract = spec2DObj.bpmmask == 0
+    # Make a plot of the residuals for a random slit
+    chi = (spec2DObj.sciimg - spec2DObj.objmodel - spec2DObj.skymodel) * np.sqrt(spec2DObj.ivarmodel) * gpm_extract
+
+    maskchi = thismask & gpm_extract
+
+    n_bins = 50
+    sig_range = 7.0
+    binsize = 2.0 * sig_range / n_bins
+    bins_histo = -sig_range + np.arange(n_bins) * binsize + binsize / 2.0
+
+    xvals = np.arange(-10.0, 10, 0.02)
+    gauss = scipy.stats.norm(loc=0.0, scale=1.0)
+    gauss_corr = scipy.stats.norm(loc=0.0, scale=1.0)
+
+    sigma_corr, maskchi = coadd.renormalize_errors(chi, maskchi, max_corr=20.0, title='jwst_sigma_corr', debug=True)
+
+# container for specobjs and Spec2d
+all_specobjs = specobjs.SpecObjs()
+
+all_spec2d = spec2dobj.AllSpec2DObj()
+# set some meta
+all_spec2d['meta']['bkg_redux'] = False
+all_spec2d['meta']['find_negative'] = False
+
+# fill the specobjs container
+all_specobjs.add_sobj(sobjs)
+all_spec2d[det_container.name] = spec2DObj
+
+# THE FOLLOWING MIMICS THE CODE IN pypeit.save_exposure()
+scipath = os.path.join(pypeit_output_dir, 'Science')
+if not os.path.isdir(scipath):
+    msgs.info('Creating directory for Science output: {0}'.format(scipath))
+
+# Write out specobjs
+# Build header for spec2d
+head2d = fits.getheader(flat_output_files[0])
+subheader = spectrograph.subheader_for_spec(head2d, head2d, allow_missing=True)
+if all_specobjs.nobj > 0:
+    outfile1d = os.path.join(scipath, 'spec1d_{:s}.fits'.format(basenames[0]))
+    all_specobjs.write_to_fits(subheader, outfile1d)
+
+    # Info
+    outfiletxt = os.path.join(scipath, 'spec1d_{:s}.txt'.format(basenames[0]))
+    all_specobjs.write_info(outfiletxt, spectrograph.pypeline)
+
+# Build header for spec2d
+outfile2d = os.path.join(scipath, 'spec2d_{:s}.fits'.format(basenames[0]))
+# TODO For the moment hack so that we can write this out
+pri_hdr = all_spec2d.build_primary_hdr(head2d, spectrograph, subheader=subheader,
+                                       redux_path=None, master_key_dict=None, master_dir=None)
+# Write spec2d
+all_spec2d.write_to_fits(outfile2d, pri_hdr=pri_hdr, overwrite=True)
+
+
