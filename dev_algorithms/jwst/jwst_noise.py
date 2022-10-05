@@ -34,15 +34,20 @@ sci_rate = sci.data
 sci_err = sci.err
 sci_var_poisson = sci.var_poisson
 sci_var_rnoise = sci.var_rnoise
+
+
 # Good pixel masks
 gpm_sci = np.logical_not(sci.dq & DO_NOT_USE)
 gpm_bkg1 = np.logical_not(bkg1.dq & DO_NOT_USE)
 
 bkg1_rate = bkg1.data
+bkg1_var_poisson = bkg1.var_poisson
+bkg1_var_rnoise = bkg1.var_rnoise
 
 gpm_diff = gpm_sci & gpm_bkg1
 diff = sci_rate - bkg1_rate
-var_diff = sci.err**2 + bkg1.err**2
+#var_diff = sci.err**2 + bkg1.err**2
+var_diff = sci_var_poisson + sci_var_rnoise + bkg1_var_poisson + bkg1_var_rnoise
 sig_diff =np.sqrt(var_diff)
 ivar_diff = inverse(var_diff)
 chi = diff*np.sqrt(ivar_diff)

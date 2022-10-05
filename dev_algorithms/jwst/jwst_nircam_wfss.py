@@ -37,7 +37,7 @@ from jwst import datamodels
 DO_NOT_USE = datamodels.dqflags.pixel['DO_NOT_USE']
 
 # PypeIt imports
-from jwst_utils import compute_diff, get_cuts, jwst_show_spec2, jwst_show_msa, jwst_proc, jwst_extract_subimgs, jwst_nircam_subimgs
+from jwst_utils import compute_diff, get_cuts, jwst_nircam_proc, jwst_nircam_subimgs
 from pypeit.display import display
 from pypeit import specobjs
 from pypeit import slittrace
@@ -164,82 +164,10 @@ flat_output_files = []
 for base in basenames:
     flat_output_files.append(os.path.join(output_dir, base + '_flatfieldstep.fits'))
 
-rate_obj = datamodels.open(flat_output_files[0])
-
-
-#TODO Fix all these numbers to be correct
-kludge_err = 1.0
-ronoise=5.17
-saturation=65000
-noise_floor=0.01
-
 RA, DEC =  15.05428, 28.040513
-t_eff = rate_obj.meta.exposure.effective_exposure_time
+rate_obj, science, sciivar, gpm, dq_gpm, base_var, count_scale, finitemask, tilts, waveimg, spat_img = jwst_nircam_proc(
+    flat_output_files[0], configfile, RA, DEC, kludge_err=1.15, noise_floor=0.01, saturation=65000)
 
-# TODO Use the spat_img which PypeIt can take, but we are not using!!
-raw_sub, var_tot_sub, var_poisson_sub, var_rnoise_sub, dq_sub, waveimg_sub, spat_img_sub  = jwst_nircam_subimgs(configfile, RA, DEC, flat_output_files[0])
-
-
-# slit_slice, slit_left, slit_righ, slit_left_orig, slit_righ_orig, spec_vals_orig, src_trace_ra, src_trace_dec, dq, \
-# ra, dec, waveimg, tilts, flatfield, pathloss, barshadow, photom_conversion, final = jwst_extract_subimgs(
-#    final_slit, intflat_slit)
-
-# Now deal with the image processing
-# if not np.any(finitemask):
-#    return (None,)*21
-
-# Read in the output after msa_flagging. Extract the sub-images, rotate to PypeIt format.
-rate = raw_sub.T
-rate_var_tot = var_tot_sub.T
-rate_var_poisson = var_poisson_sub.T
-rate_var_rnoise = var_rnoise_sub.T
-# TODO Check that the errors don't have nonsense from the flat field error budget
-dq = dq_sub.T
-# Now perform the image processing
-raw_counts = rate * t_eff
-raw_var_poisson = kludge_err ** 2 * rate_var_poisson * t_eff ** 2
-raw_var_rnoise = kludge_err ** 2 * rate_var_rnoise * t_eff ** 2
-# Is this correct? I'm not sure I should be using their poisson variance for the noise floor
-raw_var = procimg.variance_model(raw_var_rnoise, counts=raw_var_poisson, noise_floor=noise_floor)
-# TODO This  is a hack until I can understand how to get rid of the hot pixels in the JWST variance arrays using DQ flags.
-# I don't know what the value of this parameter currently set to 20 should be?? Look into this via a github issue.
-# raw_gpm = (raw_var_rnoise < 20.0*ronoise**2) & (raw_var_poisson < saturation)
-raw_gpm = (raw_var_rnoise < saturation) & (raw_var_poisson < saturation)
-# raw_var_poisson + raw_var_rnoise # TODO Leaving out problematic flat field term from pipeline
-
-
-# This is the conversion between final2d and e2d, i.e. final2d = jwst_scale*e2d
-# total_flat = flatfield*pathloss*barshadow
-# flux_to_counts = t_eff / photom_conversion  # This converts s2d outputs of flux to counts.
-# jwst_scale = photom_conversion/flatfield/pathloss/barshadow
-
-# TODO Perform the flat field correction yourself so as to update the noise model. Setting this to unit
-total_flat = np.ones_like(rate)
-finitemask = np.isfinite(rate, dtype=bool) # This was from NIRSPEC and may not be necessary
-total_flat_square = np.square(total_flat)
-
-count_scale = inverse(total_flat)  # This is the quantity that goes into PypeIt for var modeling
-science, flat_bpm = flat.flatfield(raw_counts, total_flat)
-var_poisson, _ = flat.flatfield(raw_var_poisson, total_flat_square)
-base_var, _ = flat.flatfield(raw_var_rnoise, total_flat_square)
-var, _ = flat.flatfield(raw_var, total_flat_square)
-sciivar = inverse(var)
-dq_gpm = np.logical_not(dq & DO_NOT_USE)
-gpm = finitemask & dq_gpm & np.logical_not(flat_bpm) & (sciivar > 0.0) & raw_gpm
-
-nanmask = np.logical_not(finitemask)
-count_scale[nanmask] = 0.0
-science[nanmask] = 0.0
-var_poisson[nanmask] = 0.0
-base_var[nanmask] = 0.0
-var[nanmask] = 0.0
-sciivar[nanmask] = 0.0
-
-# TODO This is kludge city!!
-waveimg = 1e4*waveimg_sub.T
-wave_min, wave_max = np.min(waveimg), np.max(waveimg)
-tilts = (waveimg - wave_min) / (wave_max - wave_min)
-spat_img = spat_img_sub.T
 
 # Create PypeIt sciimg object
 sciImg = pypeitimage.PypeItImage(image=science,ivar=sciivar, base_var=base_var, img_scale=count_scale,
@@ -282,7 +210,6 @@ global_sky0, sobjs_obj = objFind.run(show_peaks=show or show_peaks, show_skysub_
 # TODO Add the option to update global sky as an option to FindObjects
 skymask = objFind.create_skymask(sobjs_obj)
 global_sky = objFind.global_skysub(previous_sky=global_sky0, skymask=skymask, show=True)
-
 
 # Initiate Extract object
 extract = extraction.Extract.get_instance(sciImg, slits, sobjs_obj, spectrograph, par, 'science_coadd2d',
@@ -351,5 +278,76 @@ maskchi = thismask & outmask
 sigma_corr, maskchi = coadd.renormalize_errors(chi, maskchi, max_corr = 20.0, title='jwst_sigma_corr', debug=True)
 
 
-
-
+#
+#
+#
+# rate_obj = datamodels.open(flat_output_files[0])
+#
+#
+# #TODO Fix all these numbers to be correct
+# kludge_err = 1.0
+# ronoise=5.17
+# saturation=65000
+# noise_floor=0.01
+#
+# RA, DEC =  15.05428, 28.040513
+# t_eff = rate_obj.meta.exposure.effective_exposure_time
+#
+# # TODO Use the spat_img which PypeIt can take, but we are not using!!
+# raw_sub, var_tot_sub, var_poisson_sub, var_rnoise_sub, dq_sub, waveimg_sub, spat_img_sub  = jwst_nircam_subimgs(configfile, RA, DEC, flat_output_files[0])
+#
+#
+# # slit_slice, slit_left, slit_righ, slit_left_orig, slit_righ_orig, spec_vals_orig, src_trace_ra, src_trace_dec, dq, \
+# # ra, dec, waveimg, tilts, flatfield, pathloss, barshadow, photom_conversion, final = jwst_extract_subimgs(
+# #    final_slit, intflat_slit)
+#
+# # Now deal with the image processing
+# # if not np.any(finitemask):
+# #    return (None,)*21
+#
+# # Read in the output after msa_flagging. Extract the sub-images, rotate to PypeIt format.
+# rate = raw_sub.T
+# rate_var_tot = var_tot_sub.T
+# rate_var_poisson = var_poisson_sub.T
+# rate_var_rnoise = var_rnoise_sub.T
+# # TODO Check that the errors don't have nonsense from the flat field error budget
+# dq = dq_sub.T
+# # Now perform the image processing
+# raw_counts = rate * t_eff
+# raw_var_poisson = kludge_err ** 2 * rate_var_poisson * t_eff ** 2
+# raw_var_rnoise = kludge_err ** 2 * rate_var_rnoise * t_eff ** 2
+# # Is this correct? I'm not sure I should be using their poisson variance for the noise floor
+# raw_var = procimg.variance_model(raw_var_rnoise, counts=raw_var_poisson, noise_floor=noise_floor)
+# # TODO This  is a hack until I can understand how to get rid of the hot pixels in the JWST variance arrays using DQ flags.
+# # I don't know what the value of this parameter currently set to 20 should be?? Look into this via a github issue.
+# # raw_gpm = (raw_var_rnoise < 20.0*ronoise**2) & (raw_var_poisson < saturation)
+# raw_gpm = (raw_var_rnoise < saturation) & (raw_var_poisson < saturation)
+# # raw_var_poisson + raw_var_rnoise # TODO Leaving out problematic flat field term from pipeline
+#
+#
+# # This is the conversion between final2d and e2d, i.e. final2d = jwst_scale*e2d
+# # total_flat = flatfield*pathloss*barshadow
+# # flux_to_counts = t_eff / photom_conversion  # This converts s2d outputs of flux to counts.
+# # jwst_scale = photom_conversion/flatfield/pathloss/barshadow
+#
+# # TODO Perform the flat field correction yourself so as to update the noise model. Setting this to unit
+# total_flat = np.ones_like(rate)
+# finitemask = np.isfinite(rate, dtype=bool) # This was from NIRSPEC and may not be necessary
+# total_flat_square = np.square(total_flat)
+#
+# count_scale = inverse(total_flat)  # This is the quantity that goes into PypeIt for var modeling
+# science, flat_bpm = flat.flatfield(raw_counts, total_flat)
+# var_poisson, _ = flat.flatfield(raw_var_poisson, total_flat_square)
+# base_var, _ = flat.flatfield(raw_var_rnoise, total_flat_square)
+# var, _ = flat.flatfield(raw_var, total_flat_square)
+# sciivar = inverse(var)
+# dq_gpm = np.logical_not(dq & DO_NOT_USE)
+# gpm = finitemask & dq_gpm & np.logical_not(flat_bpm) & (sciivar > 0.0) & raw_gpm
+#
+# nanmask = np.logical_not(finitemask)
+# count_scale[nanmask] = 0.0
+# science[nanmask] = 0.0
+# var_poisson[nanmask] = 0.0
+# base_var[nanmask] = 0.0
+# var[nanmask] = 0.0
+# sciivar[nanmask] = 0.0
