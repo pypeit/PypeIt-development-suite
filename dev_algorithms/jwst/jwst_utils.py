@@ -12,6 +12,10 @@ DO_NOT_USE = datamodels.dqflags.pixel['DO_NOT_USE']
 from pypeit import msgs
 from pypeit.core import flat
 from pypeit.core import procimg
+from astropy.io import fits
+from astropy.wcs import WCS
+import grismconf
+
 
 
 from IPython import embed
@@ -60,6 +64,111 @@ def fit_slit(thismask, left_or_right, polyorder=2, function='legendre', debug=Fa
 
 
     return slit
+
+
+def jwst_nircam_subimgs(configfile, RA, DEC, rate_file, senscorrect=False, h5name=False, yoffset=0., yhsize=20., use_wcs=False):
+    hdu = fits.open(rate_file)
+    wcs = WCS(hdu[1].header)
+
+    # Information about observing mode of this rate file
+    h = hdu[0].header
+    filt = h["FILTER"]  # Filter name, e.g. F410M
+    grism = h["PUPIL"][-1]  # R or C
+    module = h["MODULE"]  # Which NIRCAM module, A or B
+
+    C = grismconf.Config(configfile)
+
+    # Compute the position of the source in the image in pixel coordinates
+    grism_with_wcs = datamodels.open(rate_file)
+    world_to_pix = grism_with_wcs.meta.wcs.get_transform('world', 'detector')
+    x0, y0, foo, foo2 = world_to_pix(RA, DEC, 0, 0)
+    print('Target is at ', x0, y0)
+
+    y0 = y0 + yoffset
+    xref = x0  # 2048.
+    yref = y0  # 2048.
+
+    t = C.INVDISPL('+1', xref, yref, np.array([2.99, 4.21]))
+    dx = C.DISPX('+1', xref, yref, t)
+    dy = C.DISPY('+1', xref, yref, t)
+    x_line = x0 + dx
+    y_line = y0 + dy
+    minx0 = np.max([0, np.int32(np.min(x_line))])
+    maxx0 = np.min([2047, np.int32(np.max(x_line))])  # where do these numbers come from??
+    miny0 = np.max([0, np.int32(np.min(y_line - yhsize))])
+    maxy0 = np.min([2047, np.int32(np.max(y_line + yhsize))])
+
+    data = grism_with_wcs.data
+    var_tot = grism_with_wcs.err ** 2
+    var_poisson = grism_with_wcs.var_poisson
+    var_rnoise = grism_with_wcs.var_rnoise
+    dq = grism_with_wcs.dq
+    #data = hdu["SCI"].data
+    #err = hdu["ERR"].data
+    #dq = hdu["DQ"].data
+
+    # We trim our data to be the stamp containing the spectrum we want to extract
+    data = data[miny0:maxy0 + 1, minx0:maxx0 + 1]
+    var_tot = var_tot[miny0:maxy0 + 1, minx0:maxx0 + 1]
+    var_poisson = var_poisson[miny0:maxy0 + 1, minx0:maxx0 + 1]
+    var_rnoise = var_rnoise[miny0:maxy0 + 1, minx0:maxx0 + 1]
+    dq = dq[miny0:maxy0 + 1, minx0:maxx0 + 1]
+    print(data.shape, var_tot.shape, dq.shape)  # , model0.shape)
+
+    # These are the coordinates of all the pixels in our 2D stamp, but in the full image (wrt calibration is known)
+    ys, xs = np.indices((maxy0 - miny0 + 1, maxx0 - minx0 + 1))
+    # xs and ys are now the relative dx and dy offsets from the position of our source. They are both 2D arrays of x and y coordinates.
+    xs = xs + minx0 - x0
+    ys = ys + miny0 - y0
+
+    # Depending on whether the grism disperse in the x or y direction, we use the INVDISPX or INVDISPY functions
+    # to compute the value for t for every pixel in our 2D stamps
+    if grism == "R":
+        ts = C.INVDISPX("+1", x0, y0, xs)
+        dys = C.DISPY("+1", x0, y0, ts) + ys - 2 * C.DISPY("+1", x0, y0, ts)
+
+    if grism == "C":
+        ts = C.INVDISPY("+1", x0, y0, ys)
+        dys = C.DISPX("+1", x0, y0, ts) + xs
+
+    # Now compute the wavelength of every pixel in our 2D stamp
+    ws = C.DISPL("+1", x0, y0, ts)
+
+    # Now, depending of whether things are in the row or col, we transpose things so that we can look at them properly (i.e. row direction)
+    if grism == "C":
+        # m = np.transpose(model0) # The model counts in each pixel
+        l = np.transpose(ws)  # The wavelength of each pixel
+        d = np.transpose(data)  # The data counts in each pixel
+        var_tot_out = np.transpose(var_tot)  # THe data error estimates in each pixel
+        var_poisson_out = np.transpose(var_poisson)  # THe data error estimates in each pixel
+        var_rnoise_out = np.transpose(var_rnoise)  # THe data error estimates in each pixel
+        q = np.transpose(dq)  # The data DQ in each pixel
+        y = np.transpose(dys)  # The cross-dispersion distance of each pixel from the trace
+
+    if grism == "R":
+        # m = model0
+        l = ws
+        d = data
+        var_tot_out = var_tot
+        var_poisson_out = var_poisson
+        var_rnoise_out = var_rnoise
+        q = dq
+        y = dys
+
+    # correct for the sensitivity function of the filter
+    if senscorrect:
+        lam = np.nanmean(l, axis=0)
+        sens = 1E-18 * C.SENS["+1"](lam)  # always use the one for module A because Module B data has been rescaled???
+
+        d = d / sens
+        var_tot_out = var_tot / sens
+        var_poisson_out = var_poisson / sens
+        var_rnoise_out= var_rnoise / sens
+
+    # TODO change variable names to be informative. Annoying that we have to recast
+    return d.astype(float), var_tot_out.astype(float), var_poisson_out.astype(float), var_rnoise_out.astype(float), \
+           q.astype(bool), l.astype(float), y.astype(float)  # , m
+
 
 def jwst_get_slits(finitemask, polyorder=5, function='legendre', debug=False):
 
