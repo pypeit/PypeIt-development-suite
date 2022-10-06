@@ -18,8 +18,8 @@ from pypeit.core import findobj_skymask
 from pypeit.core import skysub, coadd
 
 # G395M data
-rawpath_level2 = '/Users/joe/jwst_redux/redux/NIRSPEC_ERO/02736_ERO_SMACS0723_G395M/calwebb/Raw'
-output_dir = '/Users/joe/jwst_redux/redux/NIRSPEC_ERO/02736_ERO_SMACS0723_G395M/calwebb/output'
+rawpath_level2 = '/Users/joe/jwst_redux/redux/NIRSPEC_MSA/NIRSPEC_ERO/02736_ERO_SMACS0723_G395M/calwebb/Raw'
+output_dir = '/Users/joe/jwst_redux/redux/NIRSPEC_MSA/NIRSPEC_ERO/02736_ERO_SMACS0723_G395M/calwebb/output'
 
 det = 'nrs1'
 # NIRSPEC 3-point dither

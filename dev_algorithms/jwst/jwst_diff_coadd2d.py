@@ -64,10 +64,10 @@ DO_NOT_USE = datamodels.dqflags.pixel['DO_NOT_USE']
 # detector = 1 if 'nrs1' in detname else 2
 
 #disperser = 'G395M_Maseda'
-#disperser = 'G395M'
-disperser = 'PRISM_01117'
+disperser = 'G395M'
+#disperser = 'PRISM_01117'
 # disperser = 'G235M'
-# disperser='PRISM_01133'
+#disperser='PRISM_01133'
 # detectors = ['nrs1', 'nrs2']
 # disperser='PRISM_01117'
 # disperser='PRISM_FS'
@@ -83,9 +83,9 @@ for detname in detectors:
     if 'PRISM_01133' == disperser:
         ## Prorgram for Slit Loss Characterization for MSA shutters
         # PRISM data
-        rawpath_level2 = '/Users/joe/jwst_redux/redux/NIRSPEC_PRISM/01133_COM_CLEAR_PRISM/calwebb/Raw'
-        output_dir = '/Users/joe/jwst_redux/redux/NIRSPEC_PRISM/01133_COM_CLEAR_PRISM/calwebb/output'
-        pypeit_output_dir = '/Users/joe/jwst_redux/redux/NIRSPEC_PRISM/01133_COM_CLEAR_PRISM/calwebb/pypeit'
+        rawpath_level2 = '/Users/joe/jwst_redux/redux/NIRSPEC_MSA/NIRSPEC_PRISM/01133_COM_CLEAR_PRISM/calwebb/Raw'
+        output_dir = '/Users/joe/jwst_redux/redux/NIRSPEC_MSA/NIRSPEC_PRISM/01133_COM_CLEAR_PRISM/calwebb/output'
+        pypeit_output_dir = '/Users/joe/jwst_redux/redux/NIRSPEC_MSA/NIRSPEC_PRISM/01133_COM_CLEAR_PRISM/calwebb/pypeit'
 
         # NIRSPEC 3-point dither
         # dither center
