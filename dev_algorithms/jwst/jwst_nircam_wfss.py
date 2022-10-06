@@ -106,6 +106,7 @@ for sci in scifiles:
 runflag = False
 if runflag:
     for sci in scifiles:
+        # TODO This is the wrong way to call the pipeline!!!
         step = AssignWcsStep()
         step.save_results = True
         step.output_dir = output_dir

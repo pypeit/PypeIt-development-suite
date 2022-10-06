@@ -68,13 +68,14 @@ cuts_var = get_cuts(sci_err[ylo:yhi, xlo:xhi]**2)
 #viewer_sci, ch_sci = display.show_image(sci_rate.T, cuts=get_cuts(sci_rate), chname='raw', clear=True)
 #display.show_slits(viewer_sci, ch_sci, slit_left, slit_righ, spec_vals=spec_val, pstep=1)
 
+display.show_image(sci_rate[ylo:yhi, xlo:xhi], cuts=cuts, chname='full_frame', wcs_match=True)
 display.show_image(sci_rate[ylo:yhi, xlo:xhi], cuts=cuts, chname='science', wcs_match=True)
-display.show_image(sci_err[ylo:yhi, xlo:xhi]**2, cuts=cuts_var, chname='sci_var', wcs_match=True)
-display.show_image(sci_var_poisson[ylo:yhi, xlo:xhi], cuts=cuts_var, chname='sci_var_poi', wcs_match=True)
-display.show_image(sci_var_rnoise[ylo:yhi, xlo:xhi], cuts=cuts_var, chname='sci_var_rn', wcs_match=True)
+#display.show_image(sci_err[ylo:yhi, xlo:xhi]**2, cuts=cuts_var, chname='sci_err', wcs_match=True)
+#display.show_image(sci_var_poisson[ylo:yhi, xlo:xhi], cuts=cuts_var, chname='sci_var_poi', wcs_match=True)
+#display.show_image(sci_var_rnoise[ylo:yhi, xlo:xhi], cuts=cuts_var, chname='sci_var_rn', wcs_match=True)
 display.show_image(bkg1_rate[ylo:yhi, xlo:xhi], cuts=cuts, chname='bkg1', wcs_match=True)
 display.show_image(diff[ylo:yhi, xlo:xhi], cuts=get_cuts(diff), chname='diff', wcs_match=True)
-display.show_image(sig_diff[ylo:yhi, xlo:xhi], cuts=get_cuts(sig_diff), chname='sigma', wcs_match=True)
+#display.show_image(sig_diff[ylo:yhi, xlo:xhi], cuts=get_cuts(sig_diff), chname='sigma', wcs_match=True)
 display.show_image(chi[ylo:yhi, xlo:xhi], cuts=(-5.0,5.0), chname='chi', wcs_match=True)
 
 # Grab only non-flagged pixels

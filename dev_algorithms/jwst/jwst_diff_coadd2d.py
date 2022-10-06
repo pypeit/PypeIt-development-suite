@@ -199,10 +199,11 @@ for sci1, sci2 in zip(scifiles_1, scifiles_2):
 runflag = True
 if runflag:
     for sci in scifiles_all:
-        spec2 = Spec2Pipeline(steps=param_dict)
-        spec2.save_results = True
-        spec2.output_dir = output_dir
-        result = spec2(sci)
+        Spec2Pipeline.call(sci, save_results=True, output_dir=output_dir, steps=param_dict)
+        #spec2 = Spec2Pipeline(steps=param_dict)
+        #spec2.save_results = True
+        #spec2.output_dir = output_dir
+        #result = spec2(sci)
 
 # Output file names
 intflat_output_files_1 = []
