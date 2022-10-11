@@ -68,7 +68,7 @@ cuts_var = get_cuts(sci_err[ylo:yhi, xlo:xhi]**2)
 #viewer_sci, ch_sci = display.show_image(sci_rate.T, cuts=get_cuts(sci_rate), chname='raw', clear=True)
 #display.show_slits(viewer_sci, ch_sci, slit_left, slit_righ, spec_vals=spec_val, pstep=1)
 
-display.show_image(sci_rate[ylo:yhi, xlo:xhi], cuts=cuts, chname='full_frame', wcs_match=True)
+display.show_image(sci_rate, cuts=cuts, chname='full_frame', wcs_match=True)
 display.show_image(sci_rate[ylo:yhi, xlo:xhi], cuts=cuts, chname='science', wcs_match=True)
 #display.show_image(sci_err[ylo:yhi, xlo:xhi]**2, cuts=cuts_var, chname='sci_err', wcs_match=True)
 #display.show_image(sci_var_poisson[ylo:yhi, xlo:xhi], cuts=cuts_var, chname='sci_var_poi', wcs_match=True)

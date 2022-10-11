@@ -214,11 +214,12 @@ global_sky = objFind.global_skysub(previous_sky=global_sky0, skymask=skymask, sh
 
 # Initiate Extract object
 extract = extraction.Extract.get_instance(sciImg, slits, sobjs_obj, spectrograph, par, 'science_coadd2d',
-                                          tilts=tilts, waveimg=waveimg, basename=basenames[0], show=show)
+                                          tilts=tilts, waveimg=waveimg, global_sky=global_sky,
+                                          basename=basenames[0], show=show)
 
 
 if not par['reduce']['extraction']['skip_extraction']:
-    skymodel, objmodel, ivarmodel, outmask, sobjs, waveimg, tilts = extract.run(global_sky, model_noise=True)
+    skymodel, objmodel, ivarmodel, outmask, sobjs, waveimg, tilts = extract.run(model_noise=True)
 else:
     # Although exrtaction is not performed, still need to prepare some masks and the tilts
     # self.exTract.prepare_extraction()

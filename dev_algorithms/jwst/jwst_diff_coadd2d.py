@@ -75,7 +75,7 @@ mode = 'MSA'
 # mode ='FS'
 detectors = ['nrs1', 'nrs2']
 exp_list = []
-diff_redux = True
+diff_redux = False
 # If diff_redux is False, the code will model the sky and the object profile and perform optimal extraction.
 # If diff_redux is True, the code will difference image and simply boxcar extract (optimal not implemented yet)
 for detname in detectors:
@@ -196,7 +196,7 @@ for sci1, sci2 in zip(scifiles_1, scifiles_2):
     basenames_2.append(os.path.basename(sci2).replace('_rate.fits', ''))
 
 # Run the spec2 pipeline
-runflag = True
+runflag = False
 if runflag:
     for sci in scifiles_all:
         Spec2Pipeline.call(sci, save_results=True, output_dir=output_dir, steps=param_dict)
@@ -469,7 +469,7 @@ for ii, islit in enumerate(gdslits):
 
         sciimg_coadd, sciivar_coadd, skymodel_coadd, objmodel_coadd, ivarmodel_coadd, \
         outmask_coadd, sobjs_coadd, detector_coadd, slits_coadd, tilts_coadd, waveimg_coadd = coAdd.reduce(
-            pseudo_dict, show=False, clear_ginga=False, show_peaks=show,
+            pseudo_dict, show=True, clear_ginga=False, show_peaks=show,
             basename=basename)
 
         # Tack on detector (similarly to pypeit.extract_one)
