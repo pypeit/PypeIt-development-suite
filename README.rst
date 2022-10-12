@@ -36,7 +36,7 @@ Data Access
 
 Given its volume, this repo does not contain the raw data.  Instead the
 raw test data are hosted by in a 
-`Google Drive <https://drive.google.com/drive/folders/1oh19siB1-F0jjmY-F_jr73eA-TQYEiFW?usp=sharing`__.
+`Google Drive <https://drive.google.com/drive/folders/1oh19siB1-F0jjmY-F_jr73eA-TQYEiFW?usp=sharing>`__.
 
 The easiest way to access the
 development suite data is download and use `Google Drive
@@ -80,7 +80,7 @@ Testing PypeIt
 This suite includes several examples of the PypeIt data reduction process 
 for some of the supported instruments.
 
-If you have `PypeIt <https://github.com/pypeit/PypeIt`__ installed, you
+If you have `PypeIt <https://github.com/pypeit/PypeIt>`__ installed, you
 should be able to run the tests in this directory using the
 ``pypeit_test`` script. It has one required argument, the type of tests to run.
 
