@@ -74,6 +74,10 @@ testing PypeIt (see below): ``RAW_DATA``, and ``CALIBS``.
     ln -s /Volumes/GoogleDrive/My\ Drive/PypeIt-development-suite/RAW_DATA  RAW_DATA
     ln -s /Volumes/GoogleDrive/My\ Drive/PypeIt-development-suite/CALIBS  CALIBS
 
+.. in the "development" doc in the main pypeit repo, we had discussion
+.. of the amount of memory needed for some of these tests, is it worth
+.. adding those details here?
+
 Testing PypeIt
 --------------
 
