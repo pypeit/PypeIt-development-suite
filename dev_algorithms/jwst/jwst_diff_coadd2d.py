@@ -63,8 +63,8 @@ DO_NOT_USE = datamodels.dqflags.pixel['DO_NOT_USE']
 # detname = 'nrs1'
 # detector = 1 if 'nrs1' in detname else 2
 
-#disperser = 'G395M_Maseda'
-disperser = 'G395M'
+disperser = 'G395M_Maseda'
+#disperser = 'G395M'
 #disperser = 'PRISM_01117'
 # disperser = 'G235M'
 #disperser='PRISM_01133'
@@ -75,7 +75,7 @@ mode = 'MSA'
 # mode ='FS'
 detectors = ['nrs1', 'nrs2']
 exp_list = []
-diff_redux = False
+diff_redux = True
 # If diff_redux is False, the code will model the sky and the object profile and perform optimal extraction.
 # If diff_redux is True, the code will difference image and simply boxcar extract (optimal not implemented yet)
 for detname in detectors:
@@ -307,7 +307,7 @@ slit_names_uni = np.unique(np.hstack([slit_names_1, slit_names_2]))
 # Loop over slits
 # islit = '10'
 # islit = 'S200A1'
-islit = '64'
+islit = '83'
 #islit = None
 gdslits = slit_names_uni[::-1] if islit is None else [islit]
 bad_slits = []
