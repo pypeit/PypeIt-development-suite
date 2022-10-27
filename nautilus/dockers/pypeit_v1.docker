@@ -53,10 +53,10 @@ RUN  pip install ipython
 # Some bigger packages
 RUN  pip install scikit-learn
 RUN  pip install pandas
-RUN  pip install astropy=5.1.1
-RUN  pip install scipy=1.9.3
-RUN  pip install numpy=1.23.4
-RUN  pip install matplotlib=3.5.2
+RUN  pip install astropy==5.1.1
+RUN  pip install scipy==1.9.3
+RUN  pip install numpy==1.23.4
+RUN  pip install matplotlib==3.5.2
 RUN  pip install pyarrow  
 RUN  pip install astropy-healpix
 
