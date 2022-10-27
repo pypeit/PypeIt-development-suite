@@ -24,6 +24,9 @@ RUN  apt-get install -y git awscli
 # Download and install Anaconda.
 RUN apt-get update && apt-get install curl -y
 
+# QT
+apt-get install -y qt5-defaul
+
 # Miniconda
 ENV PATH="/root/miniconda3/bin:${PATH}"
 ARG PATH="/root/miniconda3/bin:${PATH}"
