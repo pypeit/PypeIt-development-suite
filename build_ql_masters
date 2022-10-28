@@ -30,7 +30,7 @@ def parser(options=None):
     parser = argparse.ArgumentParser(formatter_class=argparse.ArgumentDefaultsHelpFormatter)
 
     parser.add_argument('instrument', type=str, default="all", help='Instrument to generate quick look masters for. "'
-                                                                    'Options are "keck_nires", "keck_mosfire", '
+                                                                    'Options are "keck_nires", "keck_mosfire", "keck_lris_red_mark4", '
                                                                     'or "all". Defaults to "all".')
     parser.add_argument('-s', '--setup', type=str, default="all", help='Instrument setup to generate quick look masters for. '
                                                                'Options depend on instrument. Defaults to "all".')
