@@ -303,7 +303,7 @@ def ingest_xidl_archive(outfile, n_final=4, func='legendre'):
                                'xdisp', 'det', 'binspec','lambda_cen', 'coeff'))
 
     for irow in np.arange(nrows):
-        this_order_vec_raw, this_wave, this_arc = templates.xidl_hires(
+        this_order_vec_raw, this_wave, this_arc = templates.xidl_esihires(
             os.path.join(os.getenv('HIRES_CALIBS'), 'ARCS', tbl[irow]['Name']), specbin=tbl[irow]['Rbin'])
         if irow == 0:
             nspec = this_wave.shape[1]
