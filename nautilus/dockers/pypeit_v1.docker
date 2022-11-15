@@ -3,6 +3,7 @@
 #docker build -t pypeit_v1 -f ../dockers/pypeit_v1.docker .
 #docker tag pypeit_v1:latest profxj/pypeit_v1:latest
 #docker push profxj/pypeit_v1:latest
+#docker run --name testing_v1 -i -t pypeit_v1
 # Testing: docker exec -it <container> /bin/bash
 
 # install timm version 0.3.2
@@ -25,7 +26,9 @@ RUN  apt-get install -y git awscli
 RUN apt-get update && apt-get install curl -y
 
 # QT
-apt-get install -y qt5-defaul
+#RUN apt-get install build-essential -y
+#RUN apt-get install -y qtcreator 
+#RUN apt-get install qt5-default
 
 # Miniconda
 ENV PATH="/root/miniconda3/bin:${PATH}"
@@ -64,4 +67,4 @@ RUN  pip install astropy-healpix
 RUN git clone https://github.com/pypeit/PypeIt.git
 
 # Other bits and dependencies
-RUN cd pypeit; pip install -e ".[dev,pyqt5]"
+#RUN cd PypeIt; pip install -e ".[dev,pyqt5]"
