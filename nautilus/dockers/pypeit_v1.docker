@@ -11,13 +11,11 @@
 # PyTorch 1.8.1+
 # torchvision 0.8.1+
 
-FROM nvidia/cuda:11.2.1-runtime-ubuntu20.04
+FROM continuumio/miniconda3
 
 ENV DEBIAN_FRONTEND="noninteractive" TZ="US"
 
-RUN  apt-get update && \
-     apt-get install -y tzdata && \
-     apt-get install -y wget glances git 
+RUN  apt-get update 
 
 # Code and storage
 RUN  apt-get install -y git awscli
@@ -26,17 +24,17 @@ RUN  apt-get install -y git awscli
 RUN apt-get update && apt-get install curl -y
 
 # QT
-#RUN apt-get install build-essential -y
-#RUN apt-get install -y qtcreator 
+RUN apt-get install build-essential -y
+RUN apt-get install -y qtcreator 
 #RUN apt-get install qt5-default
 
 # Miniconda
 ENV PATH="/root/miniconda3/bin:${PATH}"
 ARG PATH="/root/miniconda3/bin:${PATH}"
-RUN wget https://repo.anaconda.com/miniconda/Miniconda3-py38_4.9.2-Linux-x86_64.sh \
-    && mkdir /root/.conda \
-    && bash Miniconda3-py38_4.9.2-Linux-x86_64.sh -b \
-    && rm -f Miniconda3-py38_4.9.2-Linux-x86_64.sh 
+#RUN wget https://repo.anaconda.com/miniconda/Miniconda3-py38_4.9.2-Linux-x86_64.sh \
+#    && mkdir /root/.conda \
+#    && bash Miniconda3-py38_4.9.2-Linux-x86_64.sh -b \
+#    && rm -f Miniconda3-py38_4.9.2-Linux-x86_64.sh 
 
 RUN pip install --upgrade pip \
     && pip install scikit-image \
@@ -67,4 +65,4 @@ RUN  pip install astropy-healpix
 RUN git clone https://github.com/pypeit/PypeIt.git
 
 # Other bits and dependencies
-#RUN cd PypeIt; pip install -e ".[dev,pyqt5]"
+RUN cd PypeIt; pip install -e ".[dev,pyqt5]"
