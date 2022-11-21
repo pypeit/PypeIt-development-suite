@@ -68,13 +68,11 @@ def main():
         arguments += ["--coverage", "coverage.report"]
 
     # Get PypeIt git up to date
-    my_args = 'apt update -y;'
-    my_args += ' apt install -y qt5-default;'
-    my_args += ' cd PypeIt;'
+    my_args = ' cd PypeIt;'
     my_args += ' git fetch;'
     my_args += f' git checkout {pargs.pypeit_branch};' 
     my_args += ' git pull --ff-only;'
-    my_args += ' pip install -e ".[dev,pyqt5]";'
+    my_args += ' pip install -e ".[dev]";'
     # Telluric
     my_args += ' cd pypeit/data/telluric/atm_grids;'
     my_args += ' aws --endpoint http://rook-ceph-rgw-nautiluss3.rook s3 cp s3://pypeit/telluric/atm_grids/TelFit_MaunaKea_3100_26100_R20000.fits TelFit_MaunaKea_3100_26100_R20000.fits --force;'
@@ -83,6 +81,9 @@ def main():
     my_args += ' cd /;'
     my_args += ' cd PypeIt-development-suite;'
     my_args += ' git fetch;'
+    my_args += ' cd /tmp;'
+    my_args += ' git clone https://github.com/pypeit/PypeIt-development-suite.git;'
+    my_args += ' cd PypeIt-development-suite;'
     my_args += f' git checkout {pargs.dev_branch};'
     my_args += ' git pull --ff-only;'
     my_args += ' source source_headless_test.sh;'

@@ -15,54 +15,32 @@ FROM continuumio/miniconda3
 
 ENV DEBIAN_FRONTEND="noninteractive" TZ="US"
 
-RUN  apt-get update 
-
-# Code and storage
-RUN  apt-get install -y git awscli
-
-# Download and install Anaconda.
-RUN apt-get update && apt-get install curl -y
-
-# QT
-RUN apt-get install build-essential -y
-RUN apt-get install -y qtcreator 
-#RUN apt-get install qt5-default
+# Apt packages. build-essential is for building PypeIt. qtbase5-dev is for GUI tests 
+# in the dev-suite
+RUN apt-get update && \
+    apt-get install -y git awscli build-essential qtbase5-dev 
 
 # Miniconda
 ENV PATH="/root/miniconda3/bin:${PATH}"
 ARG PATH="/root/miniconda3/bin:${PATH}"
-#RUN wget https://repo.anaconda.com/miniconda/Miniconda3-py38_4.9.2-Linux-x86_64.sh \
-#    && mkdir /root/.conda \
-#    && bash Miniconda3-py38_4.9.2-Linux-x86_64.sh -b \
-#    && rm -f Miniconda3-py38_4.9.2-Linux-x86_64.sh 
 
+# Larger pip packages
 RUN pip install --upgrade pip \
-    && pip install scikit-image \
-    && pip install h5py 
+    && pip install astropy==5.1.1 \
+                   scipy==1.9.3 \
+                   numpy==1.23.4 \
+                   matplotlib==3.5.2 \
+                   scikit-image \
+                   h5py \
+                   smart-open[s3] \
+                   ipython \
+                   scikit-learn \
+                   pandas \
+                   pyarrow \
+                   astropy-healpix 
    
 
-# Other apt
-#RUN  apt-get update && \
-#     apt-get install -y vim
-
-# Storage
-RUN  pip install smart-open[s3]
-
-# Some basics
-RUN  pip install ipython
-
-# Some bigger packages
-RUN  pip install scikit-learn
-RUN  pip install pandas
-RUN  pip install astropy==5.1.1
-RUN  pip install scipy==1.9.3
-RUN  pip install numpy==1.23.4
-RUN  pip install matplotlib==3.5.2
-RUN  pip install pyarrow  
-RUN  pip install astropy-healpix
-
 # PypeIt time
-RUN git clone https://github.com/pypeit/PypeIt.git
-
-# Other bits and dependencies
-RUN cd PypeIt; pip install -e ".[dev,pyqt5]"
+RUN git clone https://github.com/pypeit/PypeIt.git && \
+    git clone https://github.com/pypeit/PypeIt-development-suite.git && \
+    cd PypeIt && pip install -e ".[dev,pyqt5]"
