@@ -502,10 +502,13 @@ class PypeItQuickLookTest(PypeItTest):
             else:
                 raise ValueError("Bad command")
         else:
-            command_line = ['pypeit_ql_mos', self.setup.instr]
+            command_line = ['pypeit_ql', self.setup.instr]
 
         if self.setup.instr != 'keck_deimos':
-            command_line += [self.setup.rawdir] + self.files
+            command_line += ['--full_rawpath', self.setup.rawdir, 
+                             '--rawfiles'] + self.files
+        else:
+            embed(header='510 of pypeit_tests.py')
 
         for option in self.options:
             if self.options[option] is None:
