@@ -108,7 +108,9 @@ reduce_setups  = {'bok_bc': ['300','600'],
                   'gemini_flamingos2': ['HK_HK', 'JH_JH'],
                   'gtc_osiris': ['R1000B', 'R1000BMOS', 'R1000RMOS', 'R2500R', 'R2500V'],
                   'keck_deimos': ['600ZD_M_6500', '600ZD_tilted', '1200G_M_7750', '830G_LVM_8400', '830G_M_8100_26',
-                                  '830G_M_8500', '830G_L_8100', '1200B_M_5200', '1200G_M_5500', '900ZD_M_6000', '1200B_LVM_5200', '900ZD_LVM_5500', '830G_M_9000_dither'],
+                                  '830G_M_8500', '830G_L_8100', '1200B_M_5200', '1200G_M_5500', 
+                                  '900ZD_M_6000', '1200B_LVM_5200', '900ZD_LVM_5500', 
+                                  '830G_M_9000_dither'],
                   'keck_kcwi': ['bh2_4200', 'bl'],
                   'keck_nires': ['NIRES', 'ERIS'],
                   'keck_nirspec': ['LOW_NIRSPEC-1'],
@@ -226,8 +228,8 @@ _quick_look = {'shane_kast_blue/600_4310_d55':
                    {'files': ['b1.fits.gz', 'b10.fits.gz', 'b27.fits.gz']},
                'keck_deimos/QL':
                    {'files': ['*.fits']},
-               'keck_nires/NIRES':
-                   {'files': ['s190519_0067.fits', 's190519_0068.fits']},
+               #'keck_nires/NIRES':  # This will await the refactored quick look
+               #    {'files': ['s190519_0067.fits', 's190519_0068.fits']},
                'keck_mosfire/Y_long':
                    {'files': ['m191120_0043.fits', 'm191120_0044.fits', 'm191120_0045.fits', 'm191120_0046.fits'],
                     '--spec_samp_fact': 2.0, '--spat_samp_fact': 2.0, '--flux': None, '--bkg_redux': None},

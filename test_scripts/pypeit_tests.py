@@ -476,26 +476,25 @@ class PypeItQuickLookTest(PypeItTest):
 
     def build_command_line(self):
 
-        if self.setup.instr == 'keck_nires':
-            command_line = ['pypeit_ql_keck_nires']
-        elif self.setup.instr == 'keck_mosfire':
-            command_line = ['pypeit_ql_multislit', 'keck_mosfire']
+        if self.setup.instr == 'keck_mosfire':
+            command_line = ['pypeit_ql_jfh_multislit', 'keck_mosfire']
             if self.pargs.quiet:
                 command_line += ['--no_gui', '--writefits']
         elif self.setup.instr == 'keck_lris_red_mark4':
-            command_line = ['pypeit_ql_multislit', 'keck_lris_red_mark4']
+            command_line = ['pypeit_ql_jfh_multislit', 'keck_lris_red_mark4']
             if self.pargs.quiet:
                 command_line += ['--no_gui', '--writefits']
         elif self.setup.instr == 'keck_deimos':
             # Two commands!
+            # TURN OFF THIS BEFORE MERGING
             if self.command == 'calib':
-                command_line = ['pypeit_ql_keck_deimos', 
+                command_line = ['pypeit_ql', '--full_rawpath',
                             f"{os.path.join(os.getenv('PYPEIT_DEV'), 'RAW_DATA', 'keck_deimos', 'QL')}", 
-                            "--root=DE.", "-d=3", 
+                            "--raw_extension=.fits", 
                             f"--redux_path={os.path.join(os.getenv('PYPEIT_DEV'), 'REDUX_OUT', 'keck_deimos', 'QL')}",
                             "--calibs_only"]
             elif self.command == 'science':
-                command_line = ['pypeit_ql_keck_deimos', 
+                command_line = ['pypeit_ql', '--full_rawpath',
                             f"{os.path.join(os.getenv('PYPEIT_DEV'), 'RAW_DATA', 'keck_deimos', 'QL')}", 
                             '--science=DE.20130409.20629.fits',  '--slit_spat=3:763',
                             f"--redux_path={os.path.join(os.getenv('PYPEIT_DEV'), 'REDUX_OUT', 'keck_deimos', 'QL')}"]
@@ -507,8 +506,8 @@ class PypeItQuickLookTest(PypeItTest):
         if self.setup.instr != 'keck_deimos':
             command_line += ['--full_rawpath', self.setup.rawdir, 
                              '--rawfiles'] + self.files
-        else:
-            embed(header='510 of pypeit_tests.py')
+        #else:
+        #    embed(header='510 of pypeit_tests.py')
 
         for option in self.options:
             if self.options[option] is None:
