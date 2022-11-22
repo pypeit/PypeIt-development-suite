@@ -503,7 +503,9 @@ class PypeItQuickLookTest(PypeItTest):
         else:
             command_line = ['pypeit_ql', self.setup.instr]
 
-        if self.setup.instr != 'keck_deimos':
+        if self.setup.instr in ['keck_mosfire', 'keck_lris_red_mark4']:  # TESTING USING JFH QL
+            command_line += [self.setup.rawdir] + self.files
+        elif self.setup.instr != 'keck_deimos':
             command_line += ['--full_rawpath', self.setup.rawdir, 
                              '--rawfiles'] + self.files
         #else:

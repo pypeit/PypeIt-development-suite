@@ -224,16 +224,16 @@ _collate1d = {'keck_deimos/830G_M_8500':
                     '--wv_rms_thresh': 0.1,
                     '--flux': None}}
 
-_quick_look = {'shane_kast_blue/600_4310_d55':
+_quick_look = {'shane_kast_blue/600_4310_d55': # Testing on pypeit_ql
                    {'files': ['b1.fits.gz', 'b10.fits.gz', 'b27.fits.gz']},
-               'keck_deimos/QL':
+               'keck_deimos/QL':  # Testing on pypeit_ql
                    {'files': ['*.fits']},
                #'keck_nires/NIRES':  # This will await the refactored quick look
                #    {'files': ['s190519_0067.fits', 's190519_0068.fits']},
-               'keck_mosfire/Y_long':
+               'keck_mosfire/Y_long': # Testing on pypeit_ql_jfh_multislit
                    {'files': ['m191120_0043.fits', 'm191120_0044.fits', 'm191120_0045.fits', 'm191120_0046.fits'],
                     '--spec_samp_fact': 2.0, '--spat_samp_fact': 2.0, '--flux': None, '--bkg_redux': None},
-               'keck_lris_red_mark4/long_600_10000_d680':
+               'keck_lris_red_mark4/long_600_10000_d680': # Testing on pypeit_ql_jfh_multislit
                    {'files': ['r220127_00123.fits', 'r220127_00124.fits'],
                     '--spec_samp_fact': 2.0, '--spat_samp_fact': 2.0, '--flux': None}}
 
