@@ -224,11 +224,11 @@ _collate1d = {'keck_deimos/830G_M_8500':
                     '--wv_rms_thresh': 0.1,
                     '--flux': None}}
 
-_quick_look = {'shane_kast_blue/600_4310_d55':  # Standard call
+_quick_look = {'shane_kast_blue/600_4310_d55_std':  # Standard call
                    {'files': ['b1.fits.gz', 'b10.fits.gz', 'b27.fits.gz']},
-                'shane_kast_blue/600_4310_d55': # Stack two frames
+                'shane_kast_blue/600_4310_d55_stack': # Stack two frames
                    {'files': ['b1.fits.gz', 'b10.fits.gz', 'b27.fits.gz', 'b28.fits.gz']},
-                'shane_kast_blue/600_4310_d55': # Process two frames individually
+                'shane_kast_blue/600_4310_d55_nostack': # Process two frames individually
                    {'files': ['b1.fits.gz', 'b10.fits.gz', 'b27.fits.gz', 'b28.fits.gz'],
                     '--no_stack': None},
                'keck_deimos/QL':
