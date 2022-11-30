@@ -33,7 +33,7 @@ To add a new type of test:
    PypeItTest subclass that runs the test, and the test phase (prep, reduce, afterburn, quicklook).
 
 Attributes:
-    reduce_setups:           The test setups that support reduction. A dict of instruments to the supported test 
+    _reduce_setups:          The test setups that support reduction. A dict of instruments to the supported test 
                              setups for the instrument. 
                              Each setup should have data in $PYPEIT_DEV/RAW_DATA/instrument/setup
     all_setups:              All of test setups that comprise the "reduce", "afterburn", and "ql" tests in the dev 
@@ -100,7 +100,9 @@ class TestPhase(Enum):
 
 
 
-reduce_setups  = {'bok_bc': ['300','600'],
+# This dict specifies all the instruments and setups that are supported by the dev suite.  
+#  The keys are the instruments and the values are a list of the supported setups.
+all_setups  = {'bok_bc': ['300','600'],
                   'gemini_gnirs': ['32_SB_SXD', '10_LB_SXD'],
                   'gemini_gmos': ['GS_HAM_R400_700', 'GS_HAM_R400_860',
                                   'GN_HAM_R400_885', 'GN_HAM_NS_B600_620',
@@ -147,91 +149,102 @@ reduce_setups  = {'bok_bc': ['300','600'],
                   'vlt_xshooter': ['VIS_1x1', 'VIS_2x1', 'VIS_2x2', 'VIS_manual', 'NIR', 'UVB_1x1'],
                   }
 
-# Currently there is only one setup (keck_deimos QL) that doesn't run a reduction
-all_setups = copy.deepcopy(reduce_setups)
-all_setups['keck_deimos'].append('QL')
+# Tests for full reductions
+_reduce_setups = {}
+for instr in all_setups.keys():
+    _reduce_setups[instr] = {}
+    for setup in all_setups[key]:
+        _reduce_setups[instr][setup] = [{}]
 
-_pypeit_setup = ['shane_kast_blue/600_4310_d55']
+#all_setups = copy.deepcopy(reduce_setups)
+#all_setups['keck_deimos'].append('QL')
 
-_additional_reduce = {'keck_lris_red':
-                          {'ignore_masters': True},
-                      'gemini_gmos/GS_HAM_R400_860':
-                          {'std': True},
+_pypeit_setup = {'shane_kast_blue': {'600_4310_d55': [{}]}}
+
+_additional_reduce = {'keck_lris_red': {'long_600_7500_d560': [dict(ignore_masters=True)]},
+                      'gemini_gmos': {'GS_HAM_R400_860': [dict(std=True)]},
                       }
 
-_sensfunc = {'shane_kast_blue/600_4310_d55':
-                 {'std_file': 'spec1d_*Feige66*.fits'},
-             #'keck_demos/830G_LVM_8400':
-             #    {'std_file': 'spec1d_*S0206-HIP62745*.fits', 'sens_file': 'gemini_gnirs_32_sb_sxd.sens'},
-             'gemini_gnirs/32_SB_SXD':
-                 {'std_file': 'spec1d_*S0206-HIP62745*.fits', 'sens_file': 'gemini_gnirs_32_sb_sxd.sens'},
-             'gemini_gmos/GS_HAM_R400_860':
-                 {'std_file': 'spec1d_**GD71*.fits'},
-             'gemini_gmos/GS_HAM_R400_700':
-                 {'std_file': 'spec1d_**LTT7379*.fits', 'sens_file': 'gemini_gmos_gs_ham_r400_700.sens'},
-             'keck_deimos/900ZD_LVM_5500':
-                 {'std_file': 'spec1d_*Feige110*.fits', 'sens_file': 'keck_deimos_900zd_lvm_5500.sens'},
-             'keck_mosfire/Y_long':
-                 {'std_file': 'spec1d_*0064-GD71*.fits'},
-             'keck_lris_red_mark4/long_600_10000_d680':
-                 {'std_file': 'spec1d_*00127-GD153*.fits'}
-             }
+_sensfunc = {
+    'shane_kast_blue': {
+        '600_4310_d55': [dict(std_file='spec1d_*Feige66*.fits')]},
+    'gemini_gnirs': {
+        '32_SB_SXD': [dict(std_file='spec1d_*S0206-HIP62745*.fits', 
+                           sens_file='gemini_gnirs_32_sb_sxd.sens')]},
+    'gemini_gmos': {
+        'GS_HAM_R400_860': [dict(std_file='spec1d_**GD71*.fits')], 
+        'GS_HAM_R400_700': [dict(std_file='spec1d_**LTT7379*.fits', 
+                             sens_file='gemini_gmos_gs_ham_r400_700.sens')]},
+    'gemini_gmos': {
+        'GS_HAM_R400_860': [dict(std_file='spec1d_**GD71*.fits')], 
+        'GS_HAM_R400_700': [
+                                 dict(std_file='spec1d_**LTT7379*.fits', 
+                                  sens_file='gemini_gmos_gs_ham_r400_700.sens')]},
+    'keck_deimos': {
+        '900ZD_LVM_5500':
+                 [{'std_file': 'spec1d_*Feige110*.fits', 
+                   'sens_file': 'keck_deimos_900zd_lvm_5500.sens'}]},
+    'keck_mosfire': {
+        'Y_long': [{'std_file': 'spec1d_*0064-GD71*.fits'}]},
+    'keck_lris_red_mark4': 
+        'long_600_10000_d680': [dict(std_file='spec1d_*00127-GD153*.fits')]
+        },
+    }
 
 
-_flux_setup = ['shane_kast_blue/600_4310_d55',
-               'gemini_gnirs/32_SB_SXD',
-               'gemini_gmos/GS_HAM_R400_860',
-               ]
+_flux_setup = {'shane_kast_blue': {'600_4310_d55': [{}]},
+               'gemini_gnirs': {'32_SB_SXD': [{}]},
+               'gemini_gmos': {'GS_HAM_R400_860': [{}]},
+               }
 
-_flux = ['shane_kast_blue/600_4310_d55',
-         #'keck_deimos/830G_LVM_8400',
-         'gemini_gnirs/32_SB_SXD',
-         'gemini_gmos/GS_HAM_R400_860',
-         'gemini_gmos/GS_HAM_R400_700',
-         'keck_deimos/900ZD_LVM_5500',
-         'keck_deimos/600ZD_M_6500'
-         ]
+_flux = {'shane_kast_blue': {'600_4310_d55': [{}]},
+         'gemini_gnirs': {'32_SB_SXD': [{}]},
+         'gemini_gmos': {'GS_HAM_R400_860': [{}], 'GS_HAM_R400_700': [{}]},
+         'keck_deimos': {'900ZD_LVM_5500': [{}], '600ZD_M_6500': [{}]},
+         }
 
-_flexure = ['keck_deimos/830G_M_8500']
+_flexure ={'keck_deimos': {'830G_M_8500': [{}]}
+           }
 
-_coadd1d = ['shane_kast_blue/600_4310_d55',
-            'gemini_gnirs/32_SB_SXD',
-            'gemini_gmos/GS_HAM_R400_860',
-            'gemini_gmos/GS_HAM_R400_700',
-            ]
-
-_coadd2d = {'gemini_gnirs/32_SB_SXD':
-                {'coadd_file': True},
-            'keck_lris_blue/multi_600_4000_d560':
-                {'coadd_file': True},
-            'vlt_xshooter/VIS_manual':
-                {'coadd_file': True},
-            'keck_deimos/830G_M_9000_dither':
-                {'coadd_file': True},
-            'keck_mosfire/long2pos1_H':
-                {'coadd_file': True}
+_coadd1d = {'shane_kast_blue': {'600_4310_d55': [{}]},
+            'gemini_gnirs': {'32_SB_SXD': [{}]},
+            'gemini_gmos': {'GS_HAM_R400_860': [{}]},
+            'gemini_gmos': {'GS_HAM_R400_700': [{}]},
             }
 
-_telluric = {'gemini_gnirs/32_SB_SXD':
-                 {'coadd_file': 'pisco_coadd.fits', 'tell_file': True},
-             'gemini_gmos/GS_HAM_R400_700':
-                 {'coadd_file': 'FRB180924_opt.fits', 'tell_file': True},
+_coadd2d = {'gemini_gnirs': {'32_SB_SXD':
+                [dict(coadd_file=True)]},
+            'keck_lris_blue': {'multi_600_4000_d560':
+                [dict(coadd_file=True)]},
+            'vlt_xshooter': {'VIS_manual':
+                [dict(coadd_file=True)]},
+            'keck_deimos': {'830G_M_9000_dither':
+                [dict(coadd_file=True)]},
+            'keck_mosfire': {'long2pos1_H':
+                [dict(coadd_file=True)]},
+            }
+
+_telluric = {'gemini_gnirs': {'32_SB_SXD':
+                 [{'coadd_file': 'pisco_coadd.fits', 'tell_file': True}]},
+             'gemini_gmos': {'GS_HAM_R400_700':
+                 [{'coadd_file': 'FRB180924_opt.fits', 'tell_file': True}]},
              }
 
-_collate1d = {'keck_deimos/830G_M_8500':
-                   {'files': ['Science/spec1d_*DE.20100913.22358*.fits'],
+_collate1d = {'keck_deimos': {'830G_M_8500':
+                   [{'files': ['Science/spec1d_*DE.20100913.22358*.fits'],
                     '--refframe': 'heliocentric',
                     '--wv_rms_thresh': 0.1,
-                    '--flux': None}}
+                    '--flux': None}]}
+              }
 
-_quick_look = {'shane_kast_blue/600_4310_d55_std':  # Standard call
-                   {'files': ['b1.fits.gz', 'b10.fits.gz', 'b27.fits.gz']},
-                'shane_kast_blue/600_4310_d55_stack': # Stack two frames
-                   {'files': ['b1.fits.gz', 'b10.fits.gz', 'b27.fits.gz', 'b28.fits.gz']},
+_quick_look = {'shane_kast_blue': 
+    {'600_4310_d55':  [ 
+        dict(name='std', files=['b1.fits.gz', 'b10.fits.gz', 'b27.fits.gz']),
+        dict(name='multi', files=['b1.fits.gz', 'b10.fits.gz', 'b27.fits.gz', 'b28.fits.gz'])],
                 'shane_kast_blue/600_4310_d55_nostack': # Process two frames individually
                    {'files': ['b1.fits.gz', 'b10.fits.gz', 'b27.fits.gz', 'b28.fits.gz'],
                     '--no_stack': None},
-               'keck_deimos/QL':
+               'keck_deimos': {'QL':
                    {'files': ['*.fits']},
                #'keck_nires/NIRES':  # This will await the refactored quick look
                #    {'files': ['s190519_0067.fits', 's190519_0068.fits']},
@@ -254,7 +267,7 @@ all_tests = [{'factory': pypeit_tests.PypeItSetupTest,
               'setups':  _pypeit_setup},
              {'factory': pypeit_tests.PypeItReduceTest,
               'type':    TestPhase.REDUCE,
-              'setups':  reduce_setups},
+              'setups':  _reduce_setups},
              {'factory': pypeit_tests.PypeItReduceTest,
               'type':    TestPhase.REDUCE,
               'setups':  _additional_reduce},

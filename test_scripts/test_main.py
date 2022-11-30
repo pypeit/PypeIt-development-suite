@@ -1024,7 +1024,8 @@ def build_test_setup(pargs, instr, setup_name, flg_reduce, flg_after, flg_ql):
         # Create the test, this will also run any prep_only steps in the
         # __init__ method
         try:
-            test = test_descr['factory'](setup, pargs, **kwargs)
+            #test = test_descr['factory'](setup, pargs, **kwargs)
+            test = test_descr['factory'](setup, pargs, test_descr['setups'])#pargs, **kwargs)
         except FileNotFoundError as e:
             # If the test prep work found a missing file, just record it in the
             # list of missing files. This allows all missing files for the
