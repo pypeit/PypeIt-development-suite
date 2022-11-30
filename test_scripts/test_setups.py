@@ -290,9 +290,15 @@ _quick_look = {
                 '--boxcar_radius': 2.},
             ],
       },
-    #'keck_deimos': {
-    #    'QL': [dict(files=['*.fits'])],
-    #    },
+    'keck_deimos': {
+        '600ZD_M_6500': [
+            {'test_name': 'mask_ID', # Process two frames individually
+                'files': ['d1010_0056.fits.gz'],
+              '--maskID': 958454,
+              '--masters_dir': 'USE_MASTERS_DIR',
+            }, 
+            ]
+        },
     'keck_mosfire': {
         'Y_long': # Testing on pypeit_ql_jfh_multislit
             [{'files': ['m191120_0043.fits', 'm191120_0044.fits', 'm191120_0045.fits', 'm191120_0046.fits'],
