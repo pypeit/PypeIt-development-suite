@@ -290,6 +290,15 @@ _quick_look = {
                 '--boxcar_radius': 2.},
             ],
       },
+    'keck_lris_red': {
+        'long_600_7500_d560': [
+            {'test_name': 'det', # Run with maskID
+                'files': ['LR.20160216.40478.fits.gz'],
+              '--det': 2,
+              '--masters_dir': 'USE_MASTERS_DIR',
+            }, 
+        ],
+    },
     'keck_deimos': {
         '600ZD_M_6500': [
             {'test_name': 'maskID', # Run with maskID

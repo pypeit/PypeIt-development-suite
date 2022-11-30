@@ -74,3 +74,32 @@ def test_keck_deimos_ql(redux_out):
         assert sobjs.nobj == 1
         assert sobjs.SLITID == 452
         assert sobjs.MASKDEF_ID == 958454
+
+def test_keck_lris_red_ql(redux_out):
+
+    instr = 'keck_lris_red' 
+    outroot = os.path.join(redux_out, instr, 
+                           'long_600_7500_d560')
+
+    for test in ['det']:
+        outdir = os.path.join(outroot, f'QL_{test}')
+        rdxfolder = 'LR.20160216.40478'
+        rdxdir = os.path.join(outdir, rdxfolder)
+        scidir = os.path.join(rdxdir, 'Science')
+
+        # PypeIt File
+        pypeit_file = os.path.join(rdxdir, f'{instr}_A.pypeit')
+        assert os.path.isfile(pypeit_file)
+        pypeitFile = PypeItFile.from_file(pypeit_file)
+        assert pypeitFile.config['rdx']['quicklook']
+
+        # Outputs
+        spec2d_files = glob.glob(os.path.join(scidir, 'spec2d*')) 
+        nfiles = 1 
+        assert len(spec2d_files) == nfiles
+        spec1d_files = glob.glob(os.path.join(scidir, 'spec1d*.fits')) 
+        assert len(spec1d_files) == nfiles
+
+        sobjs = specobjs.SpecObjs.from_fitsfile(spec1d_files[0])
+        assert sobjs.nobj == 2
+        assert sobjs.DET[0] == 'DET02'
