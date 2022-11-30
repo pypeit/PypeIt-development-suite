@@ -224,8 +224,19 @@ _collate1d = {'keck_deimos/830G_M_8500':
                     '--wv_rms_thresh': 0.1,
                     '--flux': None}}
 
+# TODO
+# NEED VET TESTS FOR ALL OF THESE
 _quick_look = {'shane_kast_blue/600_4310_d55_std':  # Standard call
                    {'files': ['b1.fits.gz', 'b10.fits.gz', 'b27.fits.gz']},
+                'shane_kast_blue/600_4310_d55_boxcar': # Modify the boxcar radius
+                   {'files': ['b1.fits.gz', 'b10.fits.gz', 'b27.fits.gz'],
+                   '--boxcar': 2.},
+                'shane_kast_blue/600_4310_d55_masters': # Test using existing masters
+                   {'files': ['b1.fits.gz', 'b10.fits.gz', 'b27.fits.gz', 'b28.fits.gz'],
+                    '--masters_dir': path_to_masters},
+                'shane_kast_blue/600_4310_d55_calibdir': # Test using calib_dir
+                   {'files': ['b1.fits.gz', 'b10.fits.gz', 'b27.fits.gz', 'b28.fits.gz'],
+                    '--calib_dir': path_to_calib},
                 'shane_kast_blue/600_4310_d55_stack': # Stack two frames
                    {'files': ['b1.fits.gz', 'b10.fits.gz', 'b27.fits.gz', 'b28.fits.gz']},
                 'shane_kast_blue/600_4310_d55_nostack': # Process two frames individually
