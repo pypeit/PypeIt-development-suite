@@ -292,9 +292,14 @@ _quick_look = {
       },
     'keck_deimos': {
         '600ZD_M_6500': [
-            {'test_name': 'mask_ID', # Process two frames individually
+            {'test_name': 'maskID', # Run with maskID
                 'files': ['d1010_0056.fits.gz'],
               '--maskID': 958454,
+              '--masters_dir': 'USE_MASTERS_DIR',
+            }, 
+            {'test_name': 'slitspatnum', # Run with slitspatnum
+                'files': ['d1010_0056.fits.gz'],
+              '--slitspatnum': 'MSC02:452',
               '--masters_dir': 'USE_MASTERS_DIR',
             }, 
             ]
