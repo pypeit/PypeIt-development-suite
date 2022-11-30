@@ -284,6 +284,10 @@ _quick_look = {
                 'files': ['b1.fits.gz', 'b10.fits.gz', 
                    'b27.fits.gz', 'b28.fits.gz'],
                 '--no_stack': None},
+            {'test_name': 'boxcar', # Process two frames individually
+                'files': ['b1.fits.gz', 'b10.fits.gz', 
+                   'b27.fits.gz'],
+                '--boxcar_radius': 2.},
             ],
       },
     #'keck_deimos': {
