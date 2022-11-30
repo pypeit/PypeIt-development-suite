@@ -20,6 +20,17 @@ from pypeit import coadd1d
 from pypeit.pypmsgs import PypeItError
 
 
+def test_parse_calibs(redux_out):
+    pypeit_file = os.path.join(redux_out, 'keck_nires', 'nires', 'keck_nires_nires.pypeit')
+    # Just list
+    pargs = scripts.parse_calib_id.ParseCalibID.parse_args([pypeit_file])
+    scripts.parse_calib_id.ParseCalibID.main(pargs)
+
+from pathlib import Path
+test_parse_calibs(str(Path('../REDUX_OUT').resolve()))
+
+
+
 def test_show_1dspec(redux_out):
     spec_file = os.path.join(redux_out,
                              'shane_kast_blue', '600_4310_d55',
