@@ -159,6 +159,8 @@ for instr in all_setups:
 #all_setups = copy.deepcopy(reduce_setups)
 #all_setups['keck_deimos'].append('QL')
 
+# If you add a test here and it is in QL
+#   you will need may modify the QuickLookTest class 
 _pypeit_setup = {
     'shane_kast_blue': {
         '600_4310_d55': [{}]}}
@@ -266,19 +268,27 @@ _collate1d = {
 _quick_look = {
     'shane_kast_blue': {
         '600_4310_d55':  [
-            dict(name='std', files=['b1.fits.gz', 'b10.fits.gz', 
+            dict(test_name='std', files=['b1.fits.gz', 'b10.fits.gz', 
                                     'b27.fits.gz']),
-            dict(name='multi', files=['b1.fits.gz', 'b10.fits.gz', 
-                                      'b27.fits.gz', 'b28.fits.gz']),
-            {'name': 'nostack', # Process two frames individually
+            {'test_name': 'masters', 
+              'files': ['b1.fits.gz', 'b10.fits.gz', 'b27.fits.gz'],
+              '--masters_dir': 'USE_MASTERS_DIR',
+            },
+            {'test_name': 'calibs', 
+              'files': ['b1.fits.gz', 'b10.fits.gz', 'b27.fits.gz'],
+              '--calib_dir': 'USE_CALIB_DIR'},
+            {'test_name': 'multi', # Process two frames individually
+                'files': ['b1.fits.gz', 'b10.fits.gz', 
+                   'b27.fits.gz', 'b28.fits.gz']},
+            {'test_name': 'nostack', # Process two frames individually
                 'files': ['b1.fits.gz', 'b10.fits.gz', 
                    'b27.fits.gz', 'b28.fits.gz'],
-                '--no_stack': None}
+                '--no_stack': None},
             ],
       },
-    'keck_deimos': {
-        'QL': [dict(files=['*.fits'])],
-        },
+    #'keck_deimos': {
+    #    'QL': [dict(files=['*.fits'])],
+    #    },
     'keck_mosfire': {
         'Y_long': # Testing on pypeit_ql_jfh_multislit
             [{'files': ['m191120_0043.fits', 'm191120_0044.fits', 'm191120_0045.fits', 'm191120_0046.fits'],

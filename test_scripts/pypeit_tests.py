@@ -147,15 +147,15 @@ class PypeItSetupTest(PypeItTest):
         if super().run():
             # Check for the pypeit file after running the test
             rdxdir = os.path.join(self.setup.rdxdir, self.setup.instr.lower() + '_A')
-            pyp_file_glob = os.path.join(rdxdir, '*_A.pypeit')
-            pyp_file = glob.glob(pyp_file_glob)
-            if len(pyp_file) != 1:
-                self.error_msgs.append(f"Could not find expected pypeit file {pyp_file_glob}")
+            pyp_file = os.path.join(
+                rdxdir, f'{self.setup.instr}_A.pypeit')
+            if not os.path.isfile(pyp_file):
+                self.error_msgs.append(f"Could not find expected pypeit file {pyp_file}")
                 self.passed = False
             else:
                 # If the pypeit file was created, put it's location and the new output
                 # directory into the setup object for subsequent tests to use
-                pyp_file = os.path.split(pyp_file[0])[1]
+                pyp_file = os.path.split(pyp_file)[1]
 
                 self.setup.pyp_file = pyp_file
                 self.setup.rdxdir = rdxdir
@@ -465,12 +465,13 @@ class PypeItQuickLookTest(PypeItTest):
        The specific test script run depends on the instrument type.
     """
 
-    def __init__(self, setup, pargs, files,  **options):
+    def __init__(self, setup, pargs, files:list,  test_name:str=None, **options):
         super().__init__(setup, pargs, "pypeit_ql", "test_ql")
         self.files = files
         self.options = options
         self.redux_dir = os.path.abspath(pargs.outputdir)
         self.pargs = pargs
+        self.test_name = test_name
         # Place the masters into REDUX_DIR/QL_MASTERS directory.
         self.output_dir = os.path.join(self.redux_dir, 'QL_MASTERS')
 
@@ -501,19 +502,41 @@ class PypeItQuickLookTest(PypeItTest):
             else:
                 raise ValueError("Bad command")
         else:
-            command_line = ['pypeit_ql', self.setup.instr]
+            # Redux folder
+            redux_path = os.path.join(self.redux_dir,
+                    self.setup.instr, self.setup.name)
+            last_folder = 'QL'
+            if self.test_name is not None:
+                last_folder += '_' + self.test_name
+            redux_path = os.path.join(redux_path, last_folder)
+                    
+            command_line = [
+                'pypeit_ql', self.setup.instr,
+                '--redux_path', redux_path]
 
         if self.setup.instr in ['keck_mosfire', 'keck_lris_red_mark4']:  # TESTING USING JFH QL
             command_line += [self.setup.rawdir] + self.files
         elif self.setup.instr != 'keck_deimos':
             command_line += ['--full_rawpath', self.setup.rawdir, 
                              '--rawfiles'] + self.files
-        #else:
-        #    embed(header='510 of pypeit_tests.py')
-
+        # Aditional options
         for option in self.options:
             if self.options[option] is None:
                 command_line += [option]
+            elif self.options[option] in ['USE_MASTERS_DIR', 
+                                          'USE_CALIB_DIR']:
+                idir = os.path.join(self.redux_dir,
+                    self.setup.instr, self.setup.name)
+                # Masters?
+                if self.options[option] == 'USE_MASTERS_DIR':
+                    # Crazy hack for pypeit_setup 
+                    if self.setup.instr in ['shane_kast_blue'] and \
+                        self.setup.name in ['600_4310_d55']:
+                            idir = os.path.join(idir,
+                                f'{self.setup.instr}_A')
+                    idir = os.path.join(idir, 'Masters')
+                # Finally
+                command_line += [option, idir]
             else:
                 command_line += [option, str(self.options[option])]
 
