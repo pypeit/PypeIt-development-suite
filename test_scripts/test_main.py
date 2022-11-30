@@ -997,62 +997,70 @@ def build_test_setup(pargs, instr, setup_name, flg_reduce, flg_after, flg_ql):
     for test_descr in all_tests:
         # Depending on the test there can be different data structures for "setups"
         # Some of those will have arguments for the test's __init__ based on a key
-        if setup.instr in test_descr['setups']:
-            if isinstance(test_descr['setups'][setup.instr], list):
-                # A dict of lists, mapping instruments to a list of supported setups
-                key = None # No arguments in this format
-                if setup.name not in test_descr['setups'][setup.instr]:
-                    # This test type isn't applicable to the setup
-                    continue
-            else:
-                # A dict mapping to arguments that apply to all setups for this instrument
-                key = setup.instr
 
-        elif setup.key in test_descr['setups']:
-            # Either a dict or list of setups
-            key = setup.key
-        else:
+        # Check instruments
+        if setup.instr not in test_descr['setups'].keys():
+            continue
+#            if isinstance(test_descr['setups'][setup.instr], list):
+#                # A dict of lists, mapping instruments to a list of supported setups
+#                key = None # No arguments in this format
+#                if setup.name not in test_descr['setups'][setup.instr]:
+#                    # This test type isn't applicable to the setup
+#                    continue
+#            else:
+#                # A dict mapping to arguments that apply to all setups for this instrument
+#                key = setup.instr
+#
+#        elif setup.key in test_descr['setups']:
+#            # Either a dict or list of setups
+#            key = setup.key
+#        else:
+#            continue
+
+        # Check setup
+        if setup_name not in test_descr['setups'][setup.instr].keys():
             continue
 
         # Read arguments for the test from the setups, but only for test
         # types that support it
-        if isinstance(test_descr['setups'], dict) and key is not None:
-            kwargs = test_descr['setups'][key]
-        else:
-            kwargs = dict()
+#        if isinstance(test_descr['setups'], dict) and key is not None:
+#            kwargs = test_descr['setups'][key]
+#        else:
+#            kwargs = dict()
 
-        # Create the test, this will also run any prep_only steps in the
-        # __init__ method
-        try:
-            #test = test_descr['factory'](setup, pargs, **kwargs)
-            test = test_descr['factory'](setup, pargs, test_descr['setups'])#pargs, **kwargs)
-        except FileNotFoundError as e:
-            # If the test prep work found a missing file, just record it in the
-            # list of missing files. This allows all missing files for the
-            # test suite to be reported at once
-            setup.missing_files.append(str(e))
-            continue
+        for kwargs in test_descr['setups'][setup.instr][setup_name]:
+            # Create the test, this will also run any prep_only steps in the
+            # __init__ method
+            try:
+                #test = test_descr['factory'](setup, pargs, **kwargs)
+                test = test_descr['factory'](setup, pargs, **kwargs)
+            except FileNotFoundError as e:
+                # If the test prep work found a missing file, just record it in the
+                # list of missing files. This allows all missing files for the
+                # test suite to be reported at once
+                setup.missing_files.append(str(e))
+                continue
 
-        # Check for any missing files
-        missing_files = test.check_for_missing_files()
-        if len(missing_files) > 0:
-            setup.missing_files += missing_files
-            continue
+            # Check for any missing files
+            missing_files = test.check_for_missing_files()
+            if len(missing_files) > 0:
+                setup.missing_files += missing_files
+                continue
 
-        # Skip the test if it wasn't selected by the command line
-        if pargs.prep_only and test_descr['type'] != TestPhase.PREP:
-            continue
+            # Skip the test if it wasn't selected by the command line
+            if pargs.prep_only and test_descr['type'] != TestPhase.PREP:
+                continue
 
-        if not flg_reduce and test_descr['type'] == TestPhase.REDUCE:
-            continue
+            if not flg_reduce and test_descr['type'] == TestPhase.REDUCE:
+                continue
 
-        if not flg_after and test_descr['type'] == TestPhase.AFTERBURN:
-            continue
+            if not flg_after and test_descr['type'] == TestPhase.AFTERBURN:
+                continue
 
-        if not flg_ql and test_descr['type'] == TestPhase.QL:
-            continue
+            if not flg_ql and test_descr['type'] == TestPhase.QL:
+                continue
 
-        setup.tests.append(test)
+            setup.tests.append(test)
 
     return setup
 
