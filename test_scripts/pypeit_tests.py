@@ -509,15 +509,16 @@ class PypeItQuickLookTest(PypeItTest):
                 command_line += [option]
             elif self.options[option] in ['USE_MASTERS_DIR', 
                                           'USE_CALIB_DIR']:
-                idir = os.path.join(self.redux_dir,
-                    self.setup.instr, self.setup.name)
+                idir = self.setup.rdxdir
+                #idir = os.path.join(self.redux_dir,
+                #    self.setup.instr, self.setup.name)
                 # Masters?
                 if self.options[option] == 'USE_MASTERS_DIR':
-                    # Crazy hack for pypeit_setup 
-                    if self.setup.instr in ['shane_kast_blue'] and \
-                        self.setup.name in ['600_4310_d55']:
-                            idir = os.path.join(idir,
-                                f'{self.setup.instr}_A')
+                    ## Crazy hack for pypeit_setup 
+                    #if self.setup.instr in ['shane_kast_blue'] and \
+                    #    self.setup.name in ['600_4310_d55']:
+                    #        idir = os.path.join(idir,
+                    #            f'{self.setup.instr}_A')
                     idir = os.path.join(idir, 'Masters')
                 # Finally
                 command_line += [option, idir]
@@ -552,6 +553,9 @@ class PypeItQuickLookTest(PypeItTest):
                 self.error_msgs.append(traceback.format_exc())
                 self.passed = False
                 return False
+
+        # TODO
+        #  Generate the Masters as needed if USE_MASTERS_DIR or USE_CALIB_DIR is set
 
         # Run the quick look test via the parent's run method, setting the environment
         # to use the newly generated masters

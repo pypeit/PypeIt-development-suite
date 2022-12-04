@@ -995,44 +995,18 @@ def build_test_setup(pargs, instr, setup_name, flg_reduce, flg_after, flg_ql):
     # Go through each test type and add it to this setup if it's applicable and
     # selected by the command line arguments
     for test_descr in all_tests:
-        # Depending on the test there can be different data structures for "setups"
-        # Some of those will have arguments for the test's __init__ based on a key
 
         # Check instruments
-        if setup.instr not in test_descr['setups'].keys():
+        if setup.instr not in test_descr['setups']:
             continue
-#            if isinstance(test_descr['setups'][setup.instr], list):
-#                # A dict of lists, mapping instruments to a list of supported setups
-#                key = None # No arguments in this format
-#                if setup.name not in test_descr['setups'][setup.instr]:
-#                    # This test type isn't applicable to the setup
-#                    continue
-#            else:
-#                # A dict mapping to arguments that apply to all setups for this instrument
-#                key = setup.instr
-#
-#        elif setup.key in test_descr['setups']:
-#            # Either a dict or list of setups
-#            key = setup.key
-#        else:
-#            continue
-
         # Check setup
-        if setup_name not in test_descr['setups'][setup.instr].keys():
+        if setup_name not in test_descr['setups'][setup.instr]:
             continue
-
-        # Read arguments for the test from the setups, but only for test
-        # types that support it
-#        if isinstance(test_descr['setups'], dict) and key is not None:
-#            kwargs = test_descr['setups'][key]
-#        else:
-#            kwargs = dict()
 
         for kwargs in test_descr['setups'][setup.instr][setup_name]:
             # Create the test, this will also run any prep_only steps in the
             # __init__ method
             try:
-                #test = test_descr['factory'](setup, pargs, **kwargs)
                 test = test_descr['factory'](setup, pargs, **kwargs)
             except FileNotFoundError as e:
                 # If the test prep work found a missing file, just record it in the

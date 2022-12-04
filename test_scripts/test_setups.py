@@ -156,11 +156,6 @@ for instr in all_setups:
     for setup in all_setups[instr]:
         _reduce_setups[instr][setup] = [{}]
 
-#all_setups = copy.deepcopy(reduce_setups)
-#all_setups['keck_deimos'].append('QL')
-
-# If you add a test here and it is in QL
-#   you will need may modify the QuickLookTest class 
 _pypeit_setup = {
     'shane_kast_blue': {
         '600_4310_d55': [{}]}}
@@ -290,6 +285,13 @@ _quick_look = {
                 '--boxcar_radius': 2.},
             ],
       },
+    'shane_kast_red': {
+        '600_7500_d57': [
+            {'files': ['r122.fits'],
+              '--masters_dir': 'USE_MASTERS_DIR',
+            }, 
+        ]
+    },
     'keck_lris_red': {
         'long_600_7500_d560': [
             {'test_name': 'det', # Run with maskID
