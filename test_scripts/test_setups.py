@@ -316,13 +316,18 @@ _quick_look = {
             ]
         },
     'keck_mosfire': {
+        'J_multi': [
+            {'files': ['m191014_0170.fits'],
+              '--masters_dir': 'USE_MASTERS_DIR',
+            },
+        ],
         'Y_long': # Testing on pypeit_ql_jfh_multislit
             [{'files': ['m191120_0043.fits', 'm191120_0044.fits', 'm191120_0045.fits', 'm191120_0046.fits'],
               '--spec_samp_fact': 2.0, 
               '--spat_samp_fact': 2.0, 
               '--flux': None, 
               '--bkg_redux': None}],
-        },
+    },
     'keck_lris_red_mark4': {
         'long_600_10000_d680': # Testing on pypeit_ql_jfh_multislit
             [{'files': ['r220127_00123.fits', 'r220127_00124.fits'],

@@ -477,7 +477,7 @@ class PypeItQuickLookTest(PypeItTest):
 
     def build_command_line(self):
 
-        if self.setup.instr == 'keck_mosfire':
+        if self.setup.instr == 'keck_mosfire' and self.setup.name == 'Y_long':
             command_line = ['pypeit_ql_jfh_multislit', 'keck_mosfire']
             if self.pargs.quiet:
                 command_line += ['--no_gui', '--writefits']
@@ -498,7 +498,9 @@ class PypeItQuickLookTest(PypeItTest):
                 'pypeit_ql', self.setup.instr,
                 '--redux_path', redux_path]
 
-        if self.setup.instr in ['keck_mosfire', 'keck_lris_red_mark4']:  # TESTING USING JFH QL
+        if self.setup.instr == 'keck_mosfire' and self.setup.name == 'Y_long': # JFH QL
+            command_line += [self.setup.rawdir] + self.files
+        elif self.setup.instr == 'keck_lris_red_mark4':  # TESTING USING JFH QL
             command_line += [self.setup.rawdir] + self.files
         else:
             command_line += ['--full_rawpath', self.setup.rawdir, 
