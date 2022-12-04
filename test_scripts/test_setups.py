@@ -316,7 +316,7 @@ _quick_look = {
             ]
         },
     'keck_mosfire': {
-        'J_multi': [
+        'J_multi': [ 
             {'files': ['m191014_0170.fits'],
               '--masters_dir': 'USE_MASTERS_DIR',
             },
