@@ -39,7 +39,7 @@ def test_load_lris():
 
 def test_load_nires():
     ifile = os.path.join(os.getenv('PYPEIT_DEV'), 'RAW_DATA', 'keck_nires', 'NIRES',
-                         's180604_0004.fits.gz')
+                         's190519_0059.fits')
     try:
         # First amplifier
         data_img = grab_img('keck_nires', ifile)
