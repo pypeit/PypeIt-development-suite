@@ -78,14 +78,9 @@ def main():
     my_args += ' aws --endpoint http://rook-ceph-rgw-nautiluss3.rook s3 cp s3://pypeit/telluric/atm_grids/TelFit_MaunaKea_3100_26100_R20000.fits TelFit_MaunaKea_3100_26100_R20000.fits --force;'
     my_args += ' aws --endpoint http://rook-ceph-rgw-nautiluss3.rook s3 cp s3://pypeit/telluric/atm_grids/TelFit_LasCampanas_3100_26100_R20000.fits TelFit_LasCampanas_3100_26100_R20000.fits --force;'
     # Dev suite
-    my_args += ' cd /;'
-    my_args += ' cd PypeIt-development-suite;'
-    my_args += ' git fetch;'
     my_args += ' cd /tmp;'
-    my_args += ' git clone https://github.com/pypeit/PypeIt-development-suite.git;'
+    my_args += f' git clone --branch {pargs.dev_branch}  --depth 1 https://github.com/pypeit/PypeIt-development-suite.git;'
     my_args += ' cd PypeIt-development-suite;'
-    my_args += f' git checkout {pargs.dev_branch};'
-    my_args += ' git pull --ff-only;'
     my_args += ' source source_headless_test.sh;'
     # Pixel flat
     my_args += ' mkdir CALIBS;'

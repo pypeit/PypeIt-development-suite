@@ -24,7 +24,7 @@ spec:
         - -c
         env:
         - name: PYPEIT_DEV
-          value: /PypeIt-development-suite
+          value: /tmp/PypeIt-development-suite
         - name: ENDPOINT_URL
           value: http://rook-ceph-rgw-nautiluss3.rook
         - name: S3_ENDPOINT
