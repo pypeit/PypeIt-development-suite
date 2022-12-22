@@ -15,6 +15,8 @@ import traceback
 import glob
 from abc import ABC, abstractmethod
 
+import psutil
+
 from astropy.table import Table
 import numpy as np
 
@@ -66,6 +68,9 @@ class PypeItTest(ABC):
         self.end_time = None
         """ :obj:`datetime.datetime`: The date and time the test finished."""
 
+        self.max_mem = None
+        """ :obj:`int`: The maximum memory used by the test."""
+
 
     def __str__(self):
         """Return a summary of the test and the status.
@@ -113,7 +118,31 @@ class PypeItTest(ABC):
                         
                     child = subprocess.Popen(self.command_line, stdout=f, stderr=f, env=self.env, cwd=self.setup.rdxdir)
                     self.pid = child.pid
-                    child.wait()
+                    returncode = None
+                    process = psutil.Process(self.pid)
+                    
+                    if self.max_mem is None:
+                        # Don't overwrite previous max_mem if run() is called multiple times.
+                        self.max_mem = 0
+
+                    while returncode is None:
+                        # Try to get memory usage information for the child,
+                        # ignore errors if we can't
+                        try:
+                            mem = process.memory_full_info().uss
+                            if self.max_mem < mem:
+                                self.max_mem = mem
+                        except psutil.NoSuchProcess:
+                            pass
+                        except psutil.AccessDenied:
+                            pass
+                        # Wait 2 seconds for the child before checking the memory again
+                        try:
+                            returncode = child.wait(2)
+                        except subprocess.TimeoutExpired:
+                            # Normal, means the child didn't finish within the 2 second timeout
+                            pass
+
                     self.end_time = datetime.datetime.now()
                     self.passed = (child.returncode == 0)
                 finally:
