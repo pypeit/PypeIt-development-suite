@@ -86,9 +86,9 @@ def main():
     my_args += ' cd PypeIt-development-suite;'
     my_args += ' source source_headless_test.sh;'
     # Pixel flat
-    my_args += ' rclone --config nautilus/rclone.conf copy gdrive:CALIBS/ CALIBS/;'
+    my_args += ' echo Copying CALIBS from Google Drive...; rclone --config nautilus/rclone.conf copy gdrive:CALIBS/ CALIBS/;'
     # Raw Data
-    my_args += ' rclone --config nautilus/rclone.conf copy gdrive:RAW_DATA/ RAW_DATA/;'
+    my_args += ' echo Copying RAW_DATA from Google Drive...; rclone --config nautilus/rclone.conf copy gdrive:RAW_DATA/ RAW_DATA/;'
     # Run the test and copy results back to s3
     my_args += f' ./pypeit_test -t {pargs.ncpu} {" ".join(arguments)} -r pypeit.report -o /tmp/REDUX_OUT --csv performance.csv;'
     my_args += f' aws --endpoint $ENDPOINT_URL s3 cp pypeit.report s3://pypeit/Reports/{pargs.name}.report;'
