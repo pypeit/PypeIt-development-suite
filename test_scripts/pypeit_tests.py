@@ -203,7 +203,7 @@ class PypeItReduceTest(PypeItTest):
 
         self.ignore_masters = ignore_masters if ignore_masters is not None else pargs.do_not_reuse_masters
 
-        description = f"pypeit {'standards ' if std else ''}{'(ignore masters)' if self.ignore_masters else ''}"
+        description = f"pypeit{' standards' if std else ''}{' (ignore masters)' if self.ignore_masters else ''}"
         super().__init__(setup, pargs, description, "test")
 
         self.std = std

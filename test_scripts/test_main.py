@@ -414,7 +414,7 @@ class TestReport(object):
 
     def performance_results(self, output):
         """Display performance statistics on PypeIt tests."""
-        print("Test,Duration(s),Memory Usage (bytes),Duration (D:H:M:S), Memory Usage (MiB)", file=output)
+        print("Setup,Test Type,Start Time,End Time,Duration(s),Memory Usage (bytes),Duration (D:H:M:S), Memory Usage (MiB)", file=output)
         for setup in self.test_setups:
             for test in setup.tests:
                 if test.start_time is not None and test.end_time is not None:
@@ -431,7 +431,7 @@ class TestReport(object):
                     mem_usage = test.max_mem
                     mem_usage_megs = test.max_mem / (2**20)
 
-                print(f'{test},{duration_secs},{mem_usage},{duration},{mem_usage_megs}', file=output)
+                print(f'{test.setup},{test.description},{test.start_time},{test.end_time},{duration_secs},{mem_usage},{duration},{mem_usage_megs}', file=output)
 
 
     def print_tail(self, file, num_lines, output=sys.stdout, flush=False):
