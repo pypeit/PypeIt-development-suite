@@ -358,10 +358,10 @@ for ii, islit in enumerate(gdslits):
                     continue
 
                 # Instantiate
-                sciImg = PypeItImage(image=science, ivar=sciivar, bpm=np.logical_not(gpm).astype(int),
-                                     base_var=base_var, img_scale=count_scale,
+                sciImg = PypeItImage(image=science, ivar=sciivar, base_var=base_var,
+                                     img_scale=count_scale,
                                      rn2img=np.full_like(science, det_container_list[idet].ronoise[0]**2),
-                                     detector=det_container_list[idet])
+                                     detector=det_container_list[idet], bpm=np.logical_not(gpm))
 
                 if diff_redux:
                     # Process the background image using the same calibrations as the science
@@ -376,10 +376,11 @@ for ii, islit in enumerate(gdslits):
                         continue
 
                     # Instantiate
-                    bkgImg = PypeItImage(image=bkg, ivar=bkgivar, bpm=np.logical_not(bkg_gpm).astype(int),
-                                         base_var=bkg_base_var, img_scale=bkg_count_scale,
+                    bkgImg = PypeItImage(image=bkg, ivar=bkgivar, base_var=bkg_base_var,
+                                         img_scale=bkg_count_scale,
                                          rn2img=np.full_like(bkg, det_container_list[idet].ronoise[0]**2),
-                                         detector=det_container_list[idet])
+                                         detector=det_container_list[idet],
+                                         bpm=np.logical_not(bkg_gpm))
 
                     # Perform the difference imaging, propagate the error and masking
                     sciImg = sciImg.sub(bkgImg, par['scienceframe']['process'])

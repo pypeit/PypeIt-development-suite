@@ -147,15 +147,15 @@ class PypeItSetupTest(PypeItTest):
         if super().run():
             # Check for the pypeit file after running the test
             rdxdir = os.path.join(self.setup.rdxdir, self.setup.instr.lower() + '_A')
-            pyp_file_glob = os.path.join(rdxdir, '*_A.pypeit')
-            pyp_file = glob.glob(pyp_file_glob)
-            if len(pyp_file) != 1:
-                self.error_msgs.append(f"Could not find expected pypeit file {pyp_file_glob}")
+            pyp_file = os.path.join(
+                rdxdir, f'{self.setup.instr}_A.pypeit')
+            if not os.path.isfile(pyp_file):
+                self.error_msgs.append(f"Could not find expected pypeit file {pyp_file}")
                 self.passed = False
             else:
                 # If the pypeit file was created, put it's location and the new output
                 # directory into the setup object for subsequent tests to use
-                pyp_file = os.path.split(pyp_file[0])[1]
+                pyp_file = os.path.split(pyp_file)[1]
 
                 self.setup.pyp_file = pyp_file
                 self.setup.rdxdir = rdxdir
@@ -465,51 +465,65 @@ class PypeItQuickLookTest(PypeItTest):
        The specific test script run depends on the instrument type.
     """
 
-    def __init__(self, setup, pargs, files,  **options):
+    def __init__(self, setup, pargs, files:list,  test_name:str=None, **options):
         super().__init__(setup, pargs, "pypeit_ql", "test_ql")
         self.files = files
         self.options = options
         self.redux_dir = os.path.abspath(pargs.outputdir)
         self.pargs = pargs
+        self.test_name = test_name
         # Place the masters into REDUX_DIR/QL_MASTERS directory.
         self.output_dir = os.path.join(self.redux_dir, 'QL_MASTERS')
 
     def build_command_line(self):
 
-        if self.setup.instr == 'keck_nires':
-            command_line = ['pypeit_ql_keck_nires']
-        elif self.setup.instr == 'keck_mosfire':
-            command_line = ['pypeit_ql_multislit', 'keck_mosfire']
+        if self.setup.instr == 'keck_mosfire' and self.setup.name == 'Y_long':
+            command_line = ['pypeit_ql_jfh_multislit', 'keck_mosfire']
             if self.pargs.quiet:
                 command_line += ['--no_gui', '--writefits']
         elif self.setup.instr == 'keck_lris_red_mark4':
-            command_line = ['pypeit_ql_multislit', 'keck_lris_red_mark4']
+            command_line = ['pypeit_ql_jfh_multislit', 'keck_lris_red_mark4']
             if self.pargs.quiet:
                 command_line += ['--no_gui', '--writefits']
-        elif self.setup.instr == 'keck_deimos':
-            # Two commands!
-            if self.command == 'calib':
-                command_line = ['pypeit_ql_keck_deimos', 
-                            f"{os.path.join(os.getenv('PYPEIT_DEV'), 'RAW_DATA', 'keck_deimos', 'QL')}", 
-                            "--root=DE.", "-d=3", 
-                            f"--redux_path={os.path.join(os.getenv('PYPEIT_DEV'), 'REDUX_OUT', 'keck_deimos', 'QL')}",
-                            "--calibs_only"]
-            elif self.command == 'science':
-                command_line = ['pypeit_ql_keck_deimos', 
-                            f"{os.path.join(os.getenv('PYPEIT_DEV'), 'RAW_DATA', 'keck_deimos', 'QL')}", 
-                            '--science=DE.20130409.20629.fits',  '--slit_spat=3:763',
-                            f"--redux_path={os.path.join(os.getenv('PYPEIT_DEV'), 'REDUX_OUT', 'keck_deimos', 'QL')}"]
-            else:
-                raise ValueError("Bad command")
         else:
-            command_line = ['pypeit_ql_mos', self.setup.instr]
+            # Redux folder
+            redux_path = os.path.join(self.redux_dir,
+                    self.setup.instr, self.setup.name)
+            last_folder = 'QL'
+            if self.test_name is not None:
+                last_folder += '_' + self.test_name
+            redux_path = os.path.join(redux_path, last_folder)
+                    
+            command_line = [
+                'pypeit_ql', self.setup.instr,
+                '--redux_path', redux_path]
 
-        if self.setup.instr != 'keck_deimos':
+        if self.setup.instr == 'keck_mosfire' and self.setup.name == 'Y_long': # JFH QL
             command_line += [self.setup.rawdir] + self.files
-
+        elif self.setup.instr == 'keck_lris_red_mark4':  # TESTING USING JFH QL
+            command_line += [self.setup.rawdir] + self.files
+        else:
+            command_line += ['--full_rawpath', self.setup.rawdir, 
+                             '--rawfiles'] + self.files
+        # Aditional options
         for option in self.options:
             if self.options[option] is None:
                 command_line += [option]
+            elif self.options[option] in ['USE_MASTERS_DIR', 
+                                          'USE_CALIB_DIR']:
+                idir = self.setup.rdxdir
+                #idir = os.path.join(self.redux_dir,
+                #    self.setup.instr, self.setup.name)
+                # Masters?
+                if self.options[option] == 'USE_MASTERS_DIR':
+                    ## Crazy hack for pypeit_setup 
+                    #if self.setup.instr in ['shane_kast_blue'] and \
+                    #    self.setup.name in ['600_4310_d55']:
+                    #        idir = os.path.join(idir,
+                    #            f'{self.setup.instr}_A')
+                    idir = os.path.join(idir, 'Masters')
+                # Finally
+                command_line += [option, idir]
             else:
                 command_line += [option, str(self.options[option])]
 
@@ -542,18 +556,14 @@ class PypeItQuickLookTest(PypeItTest):
                 self.passed = False
                 return False
 
+        # TODO
+        #  Generate the Masters as needed if USE_MASTERS_DIR or USE_CALIB_DIR is set
+
         # Run the quick look test via the parent's run method, setting the environment
         # to use the newly generated masters
         self.env = os.environ.copy()
         self.env['QL_MASTERS'] = self.output_dir
-        if self.setup.instr == 'keck_deimos':
-            # Need to run 2 commands!
-            self.command = 'calib'
-            run0 = super().run()
-            self.command = 'science'
-            return super().run()
-        else:
-            return super().run()
+        return super().run()
 
 
 def pypeit_file_name(instr, setup, std=False):

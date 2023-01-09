@@ -7,6 +7,8 @@ spectrograph = gemini_gmos_north_e2v
 [calibrations]
     [[tilts]]
         tracethresh = 10.
+[flexure]
+   spec_method = skip
 
 # Setup
 setup read
