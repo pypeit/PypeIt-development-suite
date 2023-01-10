@@ -213,7 +213,7 @@ def test_collate_1d(tmp_path, monkeypatch, redux_out):
         print("ignore_flux = False", file=f)
         print("tolerance = 4.0", file=f)
         print("match_using = 'pixel'", file=f)
-        print("exclude_slit_trace_bm = BADREDUCE", file=f)
+        print("exclude_slit_trace_bm = BADSKYSUB,BADEXTRACT", file=f)
         print("exclude_serendip = False", file=f)
         print("wv_rms_thresh = 0.1", file=f)
         print("refframe = 'observed'", file=f)
@@ -271,7 +271,7 @@ def test_collate_1d(tmp_path, monkeypatch, redux_out):
     assert params['collate1d']['flux'] == False
     assert params['collate1d']['tolerance'] == 4.0
     assert params['collate1d']['match_using'] == 'pixel'
-    assert params['collate1d']['exclude_slit_trace_bm'] == 'BADREDUCE'
+    assert params['collate1d']['exclude_slit_trace_bm'] == 'BADSKYSUB,BADEXTRACT'
     assert params['collate1d']['exclude_serendip'] is False
     assert params['collate1d']['wv_rms_thresh'] == 0.1
     assert params['coadd1d']['ex_value'] == 'BOX'
@@ -340,7 +340,7 @@ def test_collate_1d(tmp_path, monkeypatch, redux_out):
                                                                '--spec1d_files', expanded_spec1d,
                                                                '--spec1d_outdir', str(tmp_path),
                                                                '--refframe', 'heliocentric',
-                                                               '--exclude_slit_bm', 'BADREDUCE'])
+                                                               '--exclude_slit_bm', 'BADSKYSUB,BADEXTRACT'])
         assert scripts.collate_1d.Collate1D.main(parsed_args) == 0
         assert os.path.exists(par_file)
         assert os.path.exists(os.path.join(str(tmp_path), os.path.basename(expanded_spec1d)))
