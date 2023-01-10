@@ -655,7 +655,7 @@ def echelle_composite_arcspec(arxiv_file, outfile, show_individual_solns=False, 
             wave_grid_in = np.repeat(this_wave_composite[:, np.newaxis], nsolns_this_order, axis=1)
             ivar_arc_iord = utils.inverse(np.abs(arc_interp_iord) + 10.0)
 
-            wave_grid_mid, wave_grid_stack, arcspec_stack, _, arcspec_gpm, outmask = coadd.combspec(
+            wave_grid_mid, wave_grid_stack, arcspec_stack, _, arcspec_gpm, = coadd.combspec(
                 wave_grid_in, arc_interp_iord, ivar_arc_iord, gpm_arc_iord, sn_smooth_npix,
                 wave_method='user_input', wave_grid_input=this_wave_composite,
                 ref_percentile=70.0, maxiter_scale=5, sigrej_scale=3.0, scale_method='median',
@@ -698,17 +698,19 @@ xidl_arxiv_file = os.path.join(os.getenv('PYPEIT_DEV'), 'dev_algorithms', 'hires
 # Create the astropy table form of the xidl save file arxiv
 if not os.path.isfile(xidl_arxiv_file):
     ingest_xidl_archive(xidl_arxiv_file)
+
 # Perform fits to the coefficients vs ech angle
 # TODO see if pca works better here
 wvcalib_angle_fit_file = os.path.join(os.getenv('PYPEIT_DEV'), 'dev_algorithms', 'hires_wvcalib', 'wvcalib_angle_fits.fits')
-fit_wvcalib_vs_angles(xidl_arxiv_file, wvcalib_angle_fit_file, func='legendre',
+if not os.path.isfile(wvcalib_angle_fit_file):
+    fit_wvcalib_vs_angles(xidl_arxiv_file, wvcalib_angle_fit_file, func='legendre',
                       ech_nmax = 3, ech_coeff_fit_order_min=1, ech_coeff_fit_order_max=2,
                       xd_reddest_fit_polyorder=2, sigrej=3.0, maxrej=1, debug=False)
 
 # Compute a composite arc from the solution arxiv
-sys.exit(-1)
 composite_arcfile = os.path.join(os.getenv('PYPEIT_DEV'), 'dev_algorithms', 'hires_wvcalib', 'HIRES_composite_arc.fits')
-echelle_composite_arcspec(xidl_arxiv_file, composite_arcfile)
+if not os.path.isfile(composite_arcfile):
+    echelle_composite_arcspec(xidl_arxiv_file, composite_arcfile)
 
 
 
