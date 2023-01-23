@@ -27,8 +27,8 @@ def parser(options=None):
     parser.add_argument('outfile', type=str, default=None, help='Name of the YAML outfile')
     parser.add_argument('-p', '--pypeit_branch', type=str, default='develop', help='Name of the PypeIt branch to test')
     parser.add_argument('-d', '--dev_branch', type=str, default='develop', help='Name of the PypeIt Dev-Suite branch to use')
-    parser.add_argument('--ncpu', type=int, default=6, help='Number of CPUs request')
-    parser.add_argument('--ram', type=int, default=50, help='Amount of RAM to request (Gi)')
+    parser.add_argument('--ncpu', type=int, default=8, help='Number of CPUs request')
+    parser.add_argument('--ram', type=int, default=100, help='Amount of RAM to request (Gi)')
     parser.add_argument('--coverage', default=False, action="store_true", help="Collect code coverage data.")
     parser.add_argument('--priority_list', default=False, action="store_true", help="Copy the test_priority_list to S3 after testing.")
     parser.add_argument('additional_args', type=str, nargs='*', default=["all"], help="Additional arguments to pypeit_test. Defaults to 'all'.")
@@ -60,7 +60,7 @@ def main():
     # Limits
     limits = data['spec']['template']['spec']['containers'][0]['resources']['limits']
     limits['cpu'] = str(pargs.ncpu + 1)
-    limits['memory'] = f'{2*pargs.ram}Gi'
+    limits['memory'] = f'{pargs.ram + 10}Gi'
 
     ###### Args #####
     arguments = pargs.additional_args

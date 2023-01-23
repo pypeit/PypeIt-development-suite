@@ -18,7 +18,6 @@ import traceback
 import datetime
 from pathlib import Path
 import textwrap
-import psutil
 
 import numpy as np
 import pypeit 
@@ -381,10 +380,6 @@ class TestReport(object):
 
     def summarize_setup_tests(self, output=sys.stdout):
         """Display a summary of the PypeIt setup tests"""
-
-        memory_info = psutil.Process().memory_full_info()
-        print("Current memory usage:", file=output)
-        print(f"vms: {memory_info.vms} shared: {memory_info.shared} lib: {memory_info.lib} dirty {memory_info.dirty} rss {memory_info.rss} uss {memory_info.uss} pss: {memory_info.pss} swap: {memory_info.swap}", file=output)
 
         masters_text = '(Masters ignored)' if self.pargs.do_not_reuse_masters else ''
         if self.num_tests == self.num_passed:
