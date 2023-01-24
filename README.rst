@@ -269,12 +269,14 @@ Performance Statistics
 The dev suite collects performance information about how fast each test
 runs and how much memory it uses. This can be output to a CSV file using
 the ``-csv`` option.
+
 .. code-block:: console
 
     $ cd $PYPEIT_DEV
     $ ./pypeit_test all --csv performance.csv
 
 The output contains the duration of each test and its memory usage. For example (spaces added for clarity):
+
 .. code-block:: console
 
     Setup,                       Test Type,        Start Time,                 End Time,                   Duration(s), Memory Usage (bytes), Duration (D:H:M:S), Memory Usage (MiB)
