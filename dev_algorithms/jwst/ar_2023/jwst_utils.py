@@ -1,22 +1,23 @@
 
 import numpy as np
+from matplotlib import pyplot as plt
+
 from astropy.io import fits
+from astropy.wcs import WCS
 from astropy.stats import sigma_clipped_stats
+from gwcs import wcstools
+
+from jwst import datamodels
+DO_NOT_USE = datamodels.dqflags.pixel['DO_NOT_USE']
+
+#import grismconf
+
 from pypeit.display import display
 from pypeit.core import fitting
-from gwcs import wcstools
-from matplotlib import pyplot as plt
-from jwst import datamodels
 from pypeit.utils import inverse
-DO_NOT_USE = datamodels.dqflags.pixel['DO_NOT_USE']
 from pypeit import msgs
 from pypeit.core import flat
 from pypeit.core import procimg
-from astropy.io import fits
-from astropy.wcs import WCS
-import grismconf
-
-
 
 from IPython import embed
 
@@ -36,7 +37,15 @@ def get_cuts(image):
     cut_max = mean + 4.0 * sigma
     return (cut_min, cut_max)
 
+def notmasked_edges(gpm, axis=None):
+    bpm = np.logical_not(gpm)
+    idx = np.ma.MaskedArray(np.indices(gpm.shape), mask=np.asarray([bpm] * gpm.ndim))
+    return [tuple([idx[i].min(axis).compressed() for i in range(gpm.ndim)]),
+            tuple([idx[i].max(axis).compressed() for i in range(gpm.ndim)]), ]
+
 def fit_slit(thismask, left_or_right, polyorder=2, function='legendre', debug=False):
+
+    # TODO: use notmasked_edges()
 
     slit_width = np.sum(thismask, axis=1)
     med_slit_width = np.median(slit_width[slit_width > 0])
@@ -235,23 +244,14 @@ def jwst_nircam_subimgs(configfile, RA, DEC, rate_file, senscorrect=False, h5nam
 
 
 def jwst_get_slits(finitemask, polyorder=5, function='legendre', debug=False):
-
+    # TODO: Order is too high
     slit_left = fit_slit(finitemask, 'left', polyorder=polyorder, function=function, debug=debug)
     slit_righ = fit_slit(finitemask, 'righ', polyorder=polyorder, function=function, debug=debug)
     return slit_left, slit_righ
 
 
-def jwst_proc(msa_data, t_eff, slit_slice, finitemask, pathloss, barshadow,
-              kludge_err=1.0, ronoise=5.17, saturation=65000, noise_floor=0.01):
-
-
-    #slit_slice, slit_left, slit_righ, slit_left_orig, slit_righ_orig, spec_vals_orig, src_trace_ra, src_trace_dec, dq, \
-    #ra, dec, waveimg, tilts, flatfield, pathloss, barshadow, photom_conversion, final = jwst_extract_subimgs(
-    #    final_slit, intflat_slit)
-
-    # Now deal with the image processing
-    #if not np.any(finitemask):
-    #    return (None,)*21
+def jwst_proc(msa_data, t_eff, slit_slice, finitemask, flatfield, pathloss, barshadow,
+              photom_conversion, kludge_err=1.0, ronoise=5.17, saturation=65000, noise_floor=0.01):
 
     # Read in the output after msa_flagging. Extract the sub-images, rotate to PypeIt format.
     rate = np.array(msa_data.data.T[slit_slice], dtype=float)
@@ -265,19 +265,30 @@ def jwst_proc(msa_data, t_eff, slit_slice, finitemask, pathloss, barshadow,
     raw_counts = rate*t_eff
     raw_var_poisson = kludge_err**2*rate_var_poisson*t_eff**2
     raw_var_rnoise = kludge_err**2*rate_var_rnoise*t_eff**2
-    # Is this correct? I'm not sure I should be using their poisson variance for the noise floor
-    raw_var = procimg.variance_model(raw_var_rnoise, counts = raw_var_poisson, noise_floor=noise_floor)
-    # TODO This  is a hack until I can understand how to get rid of the hot pixels in the JWST variance arrays using DQ flags.
-    # I don't know what the value of this parameter currently set to 20 should be?? Look into this via a github issue.
+
+    # TODO: Is this correct?  I'm not sure I should be using their poisson variance for
+    # the noise floor
+    raw_var = procimg.variance_model(raw_var_rnoise, counts=raw_var_poisson,
+                                     noise_floor=noise_floor)
+
+    # TODO: This is a hack until I can understand how to get rid of the hot
+    # pixels in the JWST variance arrays using DQ flags.
+
+    # I don't know what the value of this parameter currently set to 20 should
+    # be?? Look into this via a github issue.
     #raw_gpm = (raw_var_rnoise < 20.0*ronoise**2) & (raw_var_poisson < saturation)
-    raw_gpm = (raw_var_rnoise < saturation) & (raw_var_poisson < saturation)
-    #raw_var_poisson + raw_var_rnoise # TODO Leaving out problematic flat field term from pipeline
+
+    # TODO: Not sure why we were imposing these limits on the noise arrays...
+#    raw_gpm = (raw_var_rnoise < saturation) & (raw_var_poisson < saturation)
+
+    raw_gpm = np.logical_not(dq & DO_NOT_USE)
 
     # This is the conversion between final2d and e2d, i.e. final2d = jwst_scale*e2d
     # total_flat = flatfield*pathloss*barshadow
     #flux_to_counts = t_eff / photom_conversion  # This converts s2d outputs of flux to counts.
     #jwst_scale = photom_conversion/flatfield/pathloss/barshadow
-    total_flat = pathloss*barshadow
+    total_flat = flatfield*pathloss*barshadow/photom_conversion
+    #total_flat = pathloss*barshadow
     total_flat_square = np.square(total_flat)
 
     count_scale = inverse(total_flat)  # This is the quantity that goes into PypeIt for var modeling
@@ -286,8 +297,9 @@ def jwst_proc(msa_data, t_eff, slit_slice, finitemask, pathloss, barshadow,
     base_var, _ = flat.flatfield(raw_var_rnoise, total_flat_square)
     var, _ = flat.flatfield(raw_var, total_flat_square)
     sciivar = inverse(var)
-    dq_gpm = np.logical_not(dq & DO_NOT_USE)
-    gpm = finitemask & dq_gpm & np.logical_not(flat_bpm) & (sciivar > 0.0) & raw_gpm
+#    dq_gpm = np.logical_not(dq & DO_NOT_USE)
+#    gpm = finitemask & dq_gpm & np.logical_not(flat_bpm) & (sciivar > 0.0) & raw_gpm
+    gpm = finitemask & np.logical_not(flat_bpm) & (sciivar > 0.0) & raw_gpm
 
     nanmask = np.logical_not(finitemask)
     count_scale[nanmask] = 0.0
@@ -297,8 +309,8 @@ def jwst_proc(msa_data, t_eff, slit_slice, finitemask, pathloss, barshadow,
     var[nanmask] = 0.0
     sciivar[nanmask] = 0.0
 
-
     return science, sciivar, gpm, base_var, count_scale
+
 
 def jwst_extract_subimgs(final_slit, intflat_slit):
 
@@ -306,35 +318,40 @@ def jwst_extract_subimgs(final_slit, intflat_slit):
     slit_name = final_slit.name
     waveimg = np.array(final_slit.wavelength.T, dtype=float)
     slit_wcs = final_slit.meta.wcs
+    # TODO: Use slit_wcs.get_transform('detector', 'world') instead?
+    #  See: https://github.com/spacetelescope/jwebbinar_prep/blob/webbinar7/mos_session/jwebbinar7_nirspecmos.ipynb
     x, y = wcstools.grid_from_bounding_box(slit_wcs.bounding_box, step=(1, 1))
-    calra, caldec, calwave = slit_wcs(x, y)
-    ra = calra.T
-    dec = caldec.T
+    ra, dec, waveimg_from_wcs = map(lambda c : c.T, slit_wcs(x, y))
 
-    # get the source RA and Dec coordinates from the metadata (also located in the header of the fits SCI extension)
+    # get the source RA and Dec coordinates from the metadata (also located in
+    # the header of the fits SCI extension)
     nspec, nspat = ra.shape
-    src_ra, src_dec= final_slit.meta.target.ra, final_slit.meta.target.dec
+    # NOTE: meta.target coordinates are the same for all slits
+#    src_ra, src_dec = final_slit.meta.target.ra, final_slit.meta.target.dec
+    src_ra, src_dec = final_slit.source_ra, final_slit.source_dec
+    # TODO: These source coordinates do not appear to be robust...  E.g., in my
+    # example, the source coordinates are *never* in the slit according to the
+    # WCS.
 
-    cal_spat = np.arange(nspat)  # spatial position
-    src_trace_ra = np.zeros(nspec)  # Array to hold the source_RA as a function of spectral position
-    src_trace_dec = np.zeros(nspec)  # Array to hold the source_DEC as a function of spectral position
+    cal_spat = np.arange(nspat).astype(float)  # spatial position
+    src_trace_ra = np.zeros(nspec, dtype=float)  # Array to hold the source_RA as a function of spectral position
+    src_trace_dec = np.zeros(nspec, dtype=float)  # Array to hold the source_DEC as a function of spectral position
     for ispec in range(nspec):
-        ra_vs_spat = calra[:, ispec]  #
+        ra_vs_spat = ra[ispec]  #
         # Interpolate y-pixel as a functio of RA onto the source RA
         src_trace_ra[ispec] = np.interp(src_ra, ra_vs_spat[np.isfinite(ra_vs_spat)],
                                                 cal_spat[np.isfinite(ra_vs_spat)])
-        dec_vs_spat = caldec[:, ispec]
-        src_trace_dec[ispec] = np.interp(src_dec, dec_vs_spat[np.isfinite(dec_vs_spat)], cal_spat[np.isfinite(dec_vs_spat)])
+        dec_vs_spat = dec[ispec]
+        src_trace_dec[ispec] = np.interp(src_dec, dec_vs_spat[np.isfinite(dec_vs_spat)],
+                                         cal_spat[np.isfinite(dec_vs_spat)])
 
-
-    waveimg_from_wcs = calwave.T
-    # Sometimes this fails at the 1e-4 level and disagreess about nans???
+    # TODO: Sometimes this fails at the 1e-4 level and disagreess about nans???
     #assert np.allclose(waveimg, waveimg_from_wcs, rtol=1e-3, atol=1e-3, equal_nan=True)
 
-
-    flatfield = np.array(intflat_slit.data.T, dtype=float) #if intflat_slit is not None else np.ones_like(pathloss)
-    pathloss = np.array(final_slit.pathloss_uniform.T, dtype=float) if final_slit.source_type == 'EXTENDED' else \
-        np.array(final_slit.pathloss_point.T, dtype=float)
+    flatfield = np.array(intflat_slit.data.T, dtype=float)
+    pathloss = np.array(final_slit.pathloss_uniform.T, dtype=float) \
+                    if final_slit.source_type == 'EXTENDED' else \
+                        np.array(final_slit.pathloss_point.T, dtype=float)
     if pathloss.shape == (0,0):
         msgs.warn('No pathloss for slit {0}'.format(slit_name) + ', setting to 1.0')
         pathloss = np.ones_like(flatfield)
@@ -347,12 +364,12 @@ def jwst_extract_subimgs(final_slit, intflat_slit):
     photom_conversion = final_slit.meta.photometry.conversion_megajanskys
     final = np.array(final_slit.data.T, dtype=float)
 
-
     # Generate some tilts and a spatial image
     finitemask = np.isfinite(waveimg)
     # Get slit bounadries
-    slit_left, slit_righ = jwst_get_slits(finitemask)
+    slit_left, slit_righ = jwst_get_slits(finitemask, polyorder=3) #, debug=True)
 
+    # Convert from micron to angstroms
     waveimg = 1e4*waveimg
     waveimg[np.logical_not(finitemask)] = 0.0
     wave_min, wave_max = np.min(waveimg[finitemask]), np.max(waveimg[finitemask])
@@ -361,12 +378,10 @@ def jwst_extract_subimgs(final_slit, intflat_slit):
     tilts[finitemask] = (waveimg[finitemask] - wave_min) / (wave_max - wave_min)
 
     # TODO Fix this spat_pix to make it increasing with pixel. For now don't use it
-    # This currnetly depends on poisition angle which I need to hack to fix
+    # This currently depends on position angle which I need to hack to fix
     # ra_min, ra_max = np.min(ra_sub[finitemask_sub]),  np.max(ra_sub[finitemask_sub])
     # spat_pix_sub = np.zeros_like(ra_sub)
     # spat_pix_sub[finitemask_sub] = spat_lo + (ra[finitemask_sub] - ra_min) / (ra_max - ra_min) * (nspat_sub - 1)
-
-
 
     ########################
     # The image segment being used for each slit
@@ -389,9 +404,9 @@ def jwst_extract_subimgs(final_slit, intflat_slit):
     slit_righ_orig = spat_lo + slit_righ
     spec_vals_orig = spec_lo + np.arange(spec_hi - spec_lo)
 
-
-    return slit_slice, slit_left, slit_righ, slit_left_orig, slit_righ_orig, spec_vals_orig, src_trace_ra, src_trace_dec, dq, \
-           ra, dec, finitemask, waveimg, tilts, flatfield, pathloss, barshadow, photom_conversion, final
+    return slit_slice, slit_left, slit_righ, slit_left_orig, slit_righ_orig, spec_vals_orig, \
+            src_trace_ra, src_trace_dec, dq, ra, dec, finitemask, waveimg, tilts, flatfield, \
+            pathloss, barshadow, photom_conversion, final
 
 
 def jwst_show_msa(sci_rate, final2d, clear=True):
