@@ -8,8 +8,9 @@ And it appears here
 
 Add s3 access:
 
+
 1. Setup policy: 
-aws --endpoint-url https://s3.nautilus.optiputer.net s3api put-bucket-policy --bucket pypeit --policy file://s3_pypeit_policy.json 
+aws --endpoint-url https://s3-west.nrp-nautilus.io s3api put-bucket-policy --bucket pypeit --policy file://s3_pypeit_policy.json 
 
 1. Grab the policy file: 
 aws s3api  get-bucket-acl --bucket pypeit --endpoint https://s3-west.nrp-nautilus.io
