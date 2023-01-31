@@ -27,8 +27,11 @@ def parser(options=None):
     parser.add_argument('outfile', type=str, default=None, help='Name of the YAML outfile')
     parser.add_argument('-p', '--pypeit_branch', type=str, default='develop', help='Name of the PypeIt branch to test')
     parser.add_argument('-d', '--dev_branch', type=str, default='develop', help='Name of the PypeIt Dev-Suite branch to use')
-    parser.add_argument('--ncpu', type=int, default=6, help='Number of CPUs request')
-    parser.add_argument('--ram', type=int, default=50, help='Amount of RAM to request (Gi)')
+    parser.add_argument('--ncpu', type=int, default=8, help='Number of CPUs request')
+    parser.add_argument('--ram', type=int, default=100, help='Amount of RAM to request (Gi)')
+    parser.add_argument('--coverage', default=False, action="store_true", help="Collect code coverage data.")
+    parser.add_argument('--priority_list', default=False, action="store_true", help="Copy the test_priority_list to S3 after testing.")
+    parser.add_argument('additional_args', type=str, nargs='*', default=["all"], help="Additional arguments to pypeit_test. Defaults to 'all'.")
     #parser.add_argument('-d', '--dryrun', default=False, action='store_true',
     #                    help='Only list the steps')
 
@@ -40,7 +43,9 @@ def main():
     pargs = parser()
 
     # Load the default
-    def_yaml_file = os.path.join(os.getenv('PYPEIT_DEV'), 'nautilus', 'kube_dev_suite.yaml')
+    def_yaml_file = os.path.join(os.getenv('PYPEIT_DEV'), 
+                                 'nautilus', 
+                                 'kube_dev_suite.yaml')
     with open(def_yaml_file, 'r') as stream:
         data = yaml.safe_load(stream)
 
@@ -55,31 +60,43 @@ def main():
     # Limits
     limits = data['spec']['template']['spec']['containers'][0]['resources']['limits']
     limits['cpu'] = str(pargs.ncpu + 1)
-    limits['memory'] = f'{2*pargs.ram}Gi'
+    limits['memory'] = f'{pargs.ram + 10}Gi'
 
-    # Args
-    my_args = 'cd PypeIt;'
+    ###### Args #####
+    arguments = pargs.additional_args
+    if pargs.coverage:
+        arguments += ["--coverage", "coverage.report"]
+
+    # Install rclone
+    my_args = 'apt-get -y update; apt-get -y install rclone;'
+    # Get PypeIt git up to date
+    my_args += ' cd PypeIt;'
     my_args += ' git fetch;'
     my_args += f' git checkout {pargs.pypeit_branch};' 
     my_args += ' git pull --ff-only;'
+    my_args += ' pip install -e ".[dev]";'
     # Telluric
     my_args += ' cd pypeit/data/telluric/atm_grids;'
-    my_args += ' aws --endpoint http://rook-ceph-rgw-nautiluss3.rook s3 cp s3://pypeit/telluric/atm_grids/TelFit_MaunaKea_3100_26100_R20000.fits TelFit_MaunaKea_3100_26100_R20000.fits --force;'
-    my_args += ' aws --endpoint http://rook-ceph-rgw-nautiluss3.rook s3 cp s3://pypeit/telluric/atm_grids/TelFit_LasCampanas_3100_26100_R20000.fits TelFit_LasCampanas_3100_26100_R20000.fits --force;'
+    my_args += ' aws --endpoint $ENDPOINT_URL s3 cp s3://pypeit/telluric/atm_grids/TelFit_MaunaKea_3100_26100_R20000.fits /tmp/telluric/TelFit_MaunaKea_3100_26100_R20000.fits --no-progress;'
+    my_args += ' aws --endpoint $ENDPOINT_URL s3 cp s3://pypeit/telluric/atm_grids/TelFit_LasCampanas_3100_26100_R20000.fits /tmp/telluric/TelFit_LasCampanas_3100_26100_R20000.fits --no-progress;'
+    my_args += ' ln -s /tmp/telluric/* .;'
     # Dev suite
-    my_args += ' cd /;'
+    my_args += ' cd /tmp;'
+    my_args += f' git clone --branch {pargs.dev_branch}  --depth 1 https://github.com/pypeit/PypeIt-development-suite.git;'
     my_args += ' cd PypeIt-development-suite;'
-    my_args += ' git fetch;'
-    my_args += f' git checkout {pargs.dev_branch};'
-    my_args += ' git pull --ff-only;'
+    my_args += ' source source_headless_test.sh;'
     # Pixel flat
-    my_args += ' mkdir CALIBS;'
-    my_args += ' aws --endpoint http://rook-ceph-rgw-nautiluss3.rook s3 cp s3://pypeit/CALIBS CALIBS/ --recursive --force;'
+    my_args += ' echo Copying CALIBS from Google Drive...; rclone --config nautilus/rclone.conf copy gdrive:CALIBS/ CALIBS/;'
     # Raw Data
-    my_args += ' mkdir RAW_DATA;'
-    my_args += ' aws --endpoint http://rook-ceph-rgw-nautiluss3.rook s3 cp s3://pypeit/RAW_DATA RAW_DATA/ --recursive --force;'
-    my_args += f' ./pypeit_test -q -t {pargs.ncpu} develop -r pypeit.report -o /tmp/REDUX_OUT;'
-    my_args += f' aws --endpoint http://rook-ceph-rgw-nautiluss3.rook s3 cp pypeit.report s3://pypeit/Reports/{pargs.name}.report;'
+    my_args += ' echo Copying RAW_DATA from Google Drive...; rclone --config nautilus/rclone.conf copy gdrive:RAW_DATA/ RAW_DATA/;'
+    # Run the test and copy results back to s3
+    my_args += f' ./pypeit_test -t {pargs.ncpu} {" ".join(arguments)} -r pypeit.report -o /tmp/REDUX_OUT --csv performance.csv;'
+    my_args += f' aws --endpoint $ENDPOINT_URL s3 cp pypeit.report s3://pypeit/Reports/{pargs.name}.report;'
+    my_args += f' aws --endpoint $ENDPOINT_URL s3 cp performance.csv s3://pypeit/Reports/{pargs.name}_performance.csv;'
+    if pargs.coverage:
+        my_args += f' aws --endpoint $ENDPOINT_URL s3 cp coverage.report s3://pypeit/Reports/{pargs.name}.coverage.report;'
+    if pargs.priority_list:
+        my_args += f' aws --endpoint $ENDPOINT_URL s3 cp test_priority_list s3://pypeit/Reports/{pargs.name}.test_priority_list;'
 
     data['spec']['template']['spec']['containers'][0]['args'][0] = my_args
 
@@ -90,8 +107,8 @@ def main():
     print("\n\n=======================================")
     print("Helpful Hints:")
     print("=======================================")
-    print("\n1) Launch the job with: \n\n kubectl -n pypeit create -f YOUR_YAML_FILE \n")
-    print("2) Monitor by going here: \n\n https://grafana.nautilus.optiputer.net/d/6581e46e4e5c7ba40a07646395ef7b23/kubernetes-compute-resources-pod?orgId=1&refresh=10s&var-datasource=default&var-cluster=&var-namespace=ai-os&var-pod=xavier-ssl-modis-2012-train-k2r8j \n")
+    print(f"\n1) Launch the job with: \n\n kubectl -n pypeit create -f {pargs.outfile} \n")
+    print(   "2) Monitor by going here: \n\n https://grafana.nrp-nautilus.io/d/85a562078cdf77779eaa1add43ccec1e/kubernetes-compute-resources-namespace-pods?orgId=1&refresh=10s&var-datasource=default&var-cluster=&var-namespace=pypeit \n")
 
 if __name__ == '__main__':
     # Giddy up

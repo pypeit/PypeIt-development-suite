@@ -1,0 +1,26 @@
+# Auto-generated PypeIt file using PypeIt version: 1.9.0
+# 2022-05-05
+
+# User-defined execution parameters
+[rdx]
+  spectrograph = ldt_deveny
+
+# Setup
+setup read
+    Setup A:
+        dispname: DV9 (1200/5000)
+         cenwave: 4495.0
+         filter1: CLEAR
+         binning: 1,1
+setup end
+
+# Read in the data
+data read
+ path RAWDIR
+|            filename |       frametype |                 ra |                dec |        target |        dispname | decker | binning |                mjd | airmass | exptime | cenwave | filter1 | dispangle | slitwid | lampstat01 |
+|  20211114.0045.fits |        arc,tilt |  68.09841666666665 | 17.751472222222223 |    Cd Hg Lamp | DV9 (1200/5000) |   None |     1,1 |  59532.18842210648 |    1.71 |    30.0 |  4495.0 |   CLEAR |     35.21 |     2.5 |     Cd, Hg |
+|  20211114.0001.fits |            bias | 290.31374999999997 |  34.75936111111111 |          Bias | DV9 (1200/5000) |   None |     1,1 |  59531.98357164352 |     1.0 |     0.0 |  4000.0 |   CLEAR |      33.2 |     1.0 |        off |
+| 20211114.0032b.fits |    lampoffflats | 290.31374999999997 |  34.75936111111111 | Dome Flat OFf | DV9 (1200/5000) |   None |     1,1 |  59532.01837893519 |    1.47 |    60.0 |  4495.0 |   CLEAR |     35.21 |     1.0 |        off |
+| 20211114.0031b.fits | pixelflat,trace | 290.31374999999997 |  34.75936111111111 |     Dome Flat | DV9 (1200/5000) |   None |     1,1 |  59532.01681527778 |    1.47 |    60.0 |  4495.0 |   CLEAR |     35.21 |     1.0 |        off |
+|  20211114.0042.fits |         science |            68.0985 | 17.751472222222223 |          HZ 9 | DV9 (1200/5000) |   None |     1,1 | 59532.162812152776 |    2.12 |   600.0 |  4495.0 |   CLEAR |     35.21 |     2.5 |        off |
+data end

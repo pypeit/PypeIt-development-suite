@@ -1,0 +1,43 @@
+# Auto-generated PypeIt file using PypeIt version: 1.8.2.dev190+g2be71becc
+# 2022-05-16
+
+# User-defined execution parameters
+[rdx]
+spectrograph = vlt_xshooter_uvb
+
+# Setup
+setup read
+    Setup A:
+        arm: UVB
+setup end
+
+# Read in the data
+data read
+ path /data/Projects/PypeIt-codes/PypeIt-development-suite/RAW_DATA/vlt_xshooter/UVB_1x1
+|                              filename |                 frametype |         ra |       dec |      target | dispname |   decker | binning |             mjd | airmass | exptime | arm |    dither |
+#|                 XSHOO-UVB_arc.fits.gz |                  arc,tilt | 238.919015 | -29.14106 |   LAMP,WAVE |  default |   1.0x11 |     2,2 | 58637.306252848 |   1.445 |    30.0 | UVB |      None |
+| XSHOO.2015-04-17T13_17_26.551.fits.gz |                  arc,tilt |       None |      None |   LAMP,WAVE |  default |   0.5x11 |     1,1 | 57129.553779518 |    None |    45.0 | UVB |      None |
+#| XSHOO.2010-04-28T14:37:18.504.fits.gz |                  arc,tilt |       None |      None |   LAMP,WAVE |  default |   1.6x11 |     1,1 |  55314.60924194 |    None |    40.0 | UVB |      None |
+| XSHOO.2010-04-28T10:22:31.905.fits.gz |                      bias |       None |      None |        BIAS |  default | 1.0x12.6 |     1,1 |  55314.43231372 |    None |     0.0 | UVB |      None |
+| XSHOO.2010-04-28T10:25:15.469.fits.gz |                      bias |       None |      None |        BIAS |  default | 1.0x12.6 |     1,1 |  55314.43420682 |    None |     0.0 | UVB |      None |
+| XSHOO.2010-04-28T10:27:59.033.fits.gz |                      bias |       None |      None |        BIAS |  default | 1.0x12.6 |     1,1 |  55314.43609992 |    None |     0.0 | UVB |      None |
+#| XSHOO.2010-04-28T13:00:01.355.fits.gz | pixelflat,illumflat,trace |       None |      None |  LAMP,DFLAT |  default |   5.0x11 |     1,1 |  55314.54168235 |    None |    0.56 | UVB |      None |
+#| XSHOO.2010-04-28T13:01:16.031.fits.gz | pixelflat,illumflat,trace |       None |      None |  LAMP,DFLAT |  default |   5.0x11 |     1,1 |  55314.54254666 |    None |    0.56 | UVB |      None |
+#| XSHOO.2010-04-28T13:02:30.378.fits.gz | pixelflat,illumflat,trace |       None |      None |  LAMP,DFLAT |  default |   5.0x11 |     1,1 |  55314.54340715 |    None |    0.56 | UVB |      None |
+#| XSHOO.2010-04-28T13:06:36.809.fits.gz | pixelflat,illumflat,trace |       None |      None |  LAMP,QFLAT |  default |   5.0x11 |     1,1 |  55314.54625936 |    None |    1.48 | UVB |      None |
+#| XSHOO.2010-04-28T13:07:52.315.fits.gz | pixelflat,illumflat,trace |       None |      None |  LAMP,QFLAT |  default |   5.0x11 |     1,1 |  55314.54713327 |    None |    1.48 | UVB |      None |
+#| XSHOO.2010-04-28T13:09:07.991.fits.gz | pixelflat,illumflat,trace |       None |      None |  LAMP,QFLAT |  default |   5.0x11 |     1,1 |  55314.54800916 |    None |    1.48 | UVB |      None |
+#| XSHOO.2010-04-28T13:36:31.280.fits.gz | pixelflat,illumflat,trace |       None |      None |  LAMP,DFLAT |  default |   1.6x11 |     1,1 |   55314.5670287 |    None |    1.75 | UVB |      None |
+#| XSHOO.2010-04-28T13:37:47.286.fits.gz | pixelflat,illumflat,trace |       None |      None |  LAMP,DFLAT |  default |   1.6x11 |     1,1 |   55314.5679084 |    None |    1.75 | UVB |      None |
+#| XSHOO.2010-04-28T13:39:03.222.fits.gz | pixelflat,illumflat,trace |       None |      None |  LAMP,DFLAT |  default |   1.6x11 |     1,1 |  55314.56878729 |    None |    1.75 | UVB |      None |
+| XSHOO.2010-04-28T13:43:14.163.fits.gz | pixelflat,illumflat,trace |       None |      None |  LAMP,QFLAT |  default |   1.6x11 |     1,1 |   55314.5716917 |    None |   4.625 | UVB |      None |
+| XSHOO.2010-04-28T13:44:32.540.fits.gz | pixelflat,illumflat,trace |       None |      None |  LAMP,QFLAT |  default |   1.6x11 |     1,1 |  55314.57259884 |    None |   4.625 | UVB |      None |
+| XSHOO.2010-04-28T13:45:51.386.fits.gz | pixelflat,illumflat,trace |       None |      None |  LAMP,QFLAT |  default |   1.6x11 |     1,1 |  55314.57351141 |    None |   4.625 | UVB |      None |
+#| XSHOO.2010-04-28T05:47:25.757.fits.gz |                   science | 194.267492 |  22.03786 |     STD,SKY |  default |   5.0x11 |     1,1 |  55314.24127033 |   1.965 |   600.0 | UVB |      None |
+| XSHOO.2010-04-28T06:08:49.572.fits.gz |                   science | 238.927974 |  11.18967 | PG-1553+113 |  default |   1.6x11 |     1,1 |  55314.25612931 |   1.232 |   680.0 | UVB |  1.856868 |
+| XSHOO.2010-04-28T06:21:25.165.fits.gz |                   science | 238.927974 |  11.18967 | PG-1553+113 |  default |   1.6x11 |     1,1 |   55314.2648746 |   1.233 |   680.0 | UVB |  1.856868 |
+#| XSHOO.2010-04-28T06:35:29.655.fits.gz |                   science | 238.928072 |  11.19093 | PG-1553+113 |  default |   1.6x11 |     1,1 |  55314.27464879 |   1.238 |   680.0 | UVB | -2.703331 |
+#| XSHOO.2010-04-28T06:48:05.298.fits.gz |                   science | 238.928072 |  11.19093 | PG-1553+113 |  default |   1.6x11 |     1,1 |  55314.28339465 |   1.248 |   680.0 | UVB | -2.703331 |
+| XSHOO.2010-04-28T05:34:32.723.fits.gz |                  standard | 194.259999 |  22.03091 |    STD,FLUX |  default |   5.0x11 |     1,1 |  55314.23232318 |   1.863 |   600.0 | UVB |      None |
+data end
+

@@ -8,17 +8,29 @@ Classes and utility functions for running individual pypeit tests.
 
 
 import os.path
+import shutil
 import subprocess
 import datetime
 import traceback
 import glob
 from abc import ABC, abstractmethod
 
+import psutil
+
+from astropy.table import Table
+import numpy as np
+
+from pypeit import inputfiles
+
+from IPython import embed
+
+_COVERAGE_ARGS = ["--source", "pypeit", "--omit", "*PypeIt/pypeit/tests/*,*PypeIt/pypeit/deprecated/*", "--parallel-mode"] 
+
 class PypeItTest(ABC):
     """Abstract base class for classes that run pypeit tests and hold the results from those tests."""
 
 
-    def __init__(self, setup, description, log_suffix):
+    def __init__(self, setup, pargs, description, log_suffix):
         """
         Constructor
 
@@ -31,7 +43,7 @@ class PypeItTest(ABC):
         self.setup = setup
         self.description = description
         self.log_suffix = log_suffix
-
+        self.coverage = pargs.coverage is not None
         self.env = os.environ
         """ :obj:`Mapping`: OS Environment to run the test under."""
 
@@ -55,6 +67,9 @@ class PypeItTest(ABC):
 
         self.end_time = None
         """ :obj:`datetime.datetime`: The date and time the test finished."""
+
+        self.max_mem = None
+        """ :obj:`int`: The maximum memory used by the test."""
 
 
     def __str__(self):
@@ -82,20 +97,62 @@ class PypeItTest(ABC):
         try:
             # Open a log for the test
             child = None
-            self.logfile = self.get_logfile()
-            with open(self.logfile, "w") as f:
-                try:
-                    self.command_line = self.build_command_line()
+            self.logfile = self.get_logfile()            
+            self.command_line = self.build_command_line()
+
+            with open(self.logfile, "a") as f:
+                if self.coverage:
+                    # Coverage will need the full path to the script
+                    full_path_to_command = shutil.which(self.command_line[0])
+                    if full_path_to_command is not None:
+                        self.command_line[0] = full_path_to_command
+                    else:
+                        raise RuntimeError(f"Could not find full path for {self.command_line[0]}")
+
+                    self.command_line = ["coverage", "run"] + _COVERAGE_ARGS + self.command_line
+                if self.start_time is None:
+                    # If a subclass sets the start time or calls run multiple times,
+                    # (see deimos QL) use the first value as the start rather than overwriting it.
                     self.start_time = datetime.datetime.now()
-                    child = subprocess.Popen(self.command_line, stdout=f, stderr=f, env=self.env, cwd=self.setup.rdxdir)
-                    self.pid = child.pid
-                    child.wait()
-                    self.end_time = datetime.datetime.now()
-                    self.passed = (child.returncode == 0)
-                finally:
-                    # Kill the child if the parent script exits due to a SIGTERM or SIGINT (Ctrl+C)
-                    if child is not None:
-                        child.terminate()
+                    
+                with subprocess.Popen(self.command_line, stdout=f, stderr=f, env=self.env, cwd=self.setup.rdxdir) as child:
+                    try:
+                        self.pid = child.pid
+                        returncode = None
+                        process = psutil.Process(self.pid)
+                        
+                        if self.max_mem is None:
+                            # Don't overwrite previous max_mem if run() is called multiple times.
+                            self.max_mem = 0
+
+                        while returncode is None:
+                            # Try to get memory usage information for the child,
+                            # ignore errors if we can't
+                            try:
+                                mem = process.memory_full_info().uss
+                                if self.max_mem < mem:
+                                    self.max_mem = mem
+                            except psutil.NoSuchProcess:
+                                pass
+                            except psutil.AccessDenied:
+                                pass
+                            # Wait 2 seconds for the child before checking the memory again
+                            try:
+                                returncode = child.wait(2)
+                            except subprocess.TimeoutExpired:
+                                # Normal, means the child didn't finish within the 2 second timeout
+                                pass
+
+                        self.end_time = datetime.datetime.now()
+                        self.passed = (child.returncode == 0)
+                    finally:
+                        # If an exception (possibly a CTRL+C) escapes the while loop around the child.wait(),
+                        # the child process may still be running. 
+                        # If it is running, we make sure to terminate the child here, as the Popen context
+                        # will wait for the child to finish
+                        if child.poll() is None:
+                            child.terminate()
+
 
         except Exception:
             # An exception occurred while running the test
@@ -115,7 +172,7 @@ class PypeItTest(ABC):
 class PypeItSetupTest(PypeItTest):
     """Test subclass that runs pypeit_setup"""
     def __init__(self, setup, pargs):
-        super().__init__(setup, "pypeit_setup", "setup")
+        super().__init__(setup, pargs, "pypeit_setup", "setup")
         setup.generate_pyp_file = True
 
     def run(self):
@@ -123,15 +180,15 @@ class PypeItSetupTest(PypeItTest):
         if super().run():
             # Check for the pypeit file after running the test
             rdxdir = os.path.join(self.setup.rdxdir, self.setup.instr.lower() + '_A')
-            pyp_file_glob = os.path.join(rdxdir, '*_A.pypeit')
-            pyp_file = glob.glob(pyp_file_glob)
-            if len(pyp_file) != 1:
-                self.error_msgs.append(f"Could not find expected pypeit file {pyp_file_glob}")
+            pyp_file = os.path.join(
+                rdxdir, f'{self.setup.instr}_A.pypeit')
+            if not os.path.isfile(pyp_file):
+                self.error_msgs.append(f"Could not find expected pypeit file {pyp_file}")
                 self.passed = False
             else:
                 # If the pypeit file was created, put it's location and the new output
                 # directory into the setup object for subsequent tests to use
-                pyp_file = os.path.split(pyp_file[0])[1]
+                pyp_file = os.path.split(pyp_file)[1]
 
                 self.setup.pyp_file = pyp_file
                 self.setup.rdxdir = rdxdir
@@ -146,12 +203,12 @@ class PypeItSetupTest(PypeItTest):
 class PypeItReduceTest(PypeItTest):
     """Test subclass that runs run_pypeit"""
 
-    def __init__(self, setup, pargs, masters=None, std=False):
+    def __init__(self, setup, pargs, ignore_masters=None, std=False):
 
-        self.masters = masters if masters is not None else pargs.masters
+        self.ignore_masters = ignore_masters if ignore_masters is not None else pargs.do_not_reuse_masters
 
-        description = f"pypeit {'standards ' if std else ''}(with{'out' if not self.masters else ''} masters)"
-        super().__init__(setup, description, "test")
+        description = f"pypeit{' standards' if std else ''}{' (ignore masters)' if self.ignore_masters else ''}"
+        super().__init__(setup, pargs, description, "test")
 
         self.std = std
         # If the pypeit file isn't being created by pypeit_setup, copy it and update it's path
@@ -174,7 +231,7 @@ class PypeItReduceTest(PypeItTest):
             self.pyp_file = self.setup.pyp_file
 
         command_line = ['run_pypeit', self.pyp_file, '-o']
-        if self.masters:
+        if self.ignore_masters:
             command_line += ['-m']
 
         return command_line
@@ -188,7 +245,7 @@ class PypeItReduceTest(PypeItTest):
 class PypeItSensFuncTest(PypeItTest):
     """Test subclass that runs pypeit_sensfunc"""
     def __init__(self, setup, pargs, std_file, sens_file=None):
-        super().__init__(setup, "pypeit_sensfunc", "test_sens")
+        super().__init__(setup, pargs, "pypeit_sensfunc", "test_sens")
         self.std_file = std_file
         self.sens_file = sens_file
 
@@ -228,7 +285,7 @@ class PypeItSensFuncTest(PypeItTest):
 class PypeItFluxSetupTest(PypeItTest):
     """Test subclass that runs pypeit_flux_setup"""
     def __init__(self, setup, pargs):
-        super().__init__(setup, "pypeit_flux_setup", "test_flux_setup")
+        super().__init__(setup, pargs, "pypeit_flux_setup", "test_flux_setup")
 
     def build_command_line(self):
         return ['pypeit_flux_setup', os.path.join(self.setup.rdxdir, 'Science')]
@@ -237,7 +294,7 @@ class PypeItFluxSetupTest(PypeItTest):
 class PypeItFluxTest(PypeItTest):
     """Test subclass that runs pypeit_flux_calib"""
     def __init__(self, setup, pargs):
-        super().__init__(setup, "pypeit_flux", "test_flux")
+        super().__init__(setup, pargs, "pypeit_flux", "test_flux")
 
         self.flux_file = os.path.join(self.setup.dev_path, 'fluxing_files',
                                       '{0}_{1}.flux'.format(self.setup.instr.lower(), self.setup.name.lower()))
@@ -254,7 +311,7 @@ class PypeItFluxTest(PypeItTest):
 class PypeItFlexureTest(PypeItTest):
     """Test subclass that runs pypeit_deimos_flexure"""
     def __init__(self, setup, pargs):
-        super().__init__(setup, "pypeit_multislit_flexure", "test_flexure")
+        super().__init__(setup, pargs, "pypeit_multislit_flexure", "test_flexure")
 
         self.flexure_file = os.path.join(self.setup.dev_path, 'flexure_files',
                                       '{0}_{1}.flex'.format(self.setup.instr.lower(), self.setup.name.lower()))
@@ -271,13 +328,89 @@ class PypeItCoadd1DTest(PypeItTest):
     """Test subclass that runs pypeit_coadd_1dspec"""
 
     def __init__(self, setup, pargs):
-        super().__init__(setup, "pypeit_coadd_1dspec", "test_1dcoadd")
+        super().__init__(setup, pargs, "pypeit_coadd_1dspec", "test_1dcoadd")
 
         self.coadd_file = os.path.join(self.setup.dev_path, 'coadd1d_files',
                                        '{0}_{1}.coadd1d'.format(self.setup.instr.lower(), self.setup.name.lower()))
 
     def build_command_line(self):
-        return ['pypeit_coadd_1dspec', self.coadd_file]
+
+        # Double check the object ids in the coadd file to see if they are slightly off.
+        # Correct them if they are
+
+        file_to_obj = dict()          # Mapping of files to actual objects within them
+        orig_coadd1d_lines = []       # original coadd1d lines
+        corrected_filenames = []  # corrected coadd1d files 
+        corrected_objid = []  # corrected objids
+
+
+        # Read the dev-suite coadd file, and also gather the list of files
+        orig_coadd1dFile = inputfiles.Coadd1DFile.from_file(self.coadd_file)
+        cfg_lines = orig_coadd1dFile.cfg_lines
+
+        unique_files = set()
+        for row in orig_coadd1dFile.data:
+            (filename, object) = row['filename'], row['obj_id'] 
+            orig_coadd1d_lines.append((filename, object))
+            unique_files.add(filename)
+        
+        # Build a mapping of files to objects using the spec1d txt info file
+        for unique_file in unique_files:
+            txt_filename = os.path.join(self.setup.rdxdir, os.path.splitext(unique_file)[0] + ".txt")
+            txt_info = Table.read(txt_filename, format='ascii.fixed_width')
+            file_to_obj[unique_file] = txt_info['name']
+
+        # Go through each original coadd1d line and correct the object names
+        # if needed
+        for (filename, object) in orig_coadd1d_lines:
+            if object in file_to_obj[filename]:
+                # No correction needed
+                corrected_filenames.append(filename)
+                corrected_objid.append(object)
+            else:
+                # Find the spatial position within object name, which
+                # can start with either SPAT or OBJ
+                object_parts = object.split('-')
+                if object_parts[0].startswith("SPAT"):
+                    object_prefix_len = 4
+                    object_spat_pos = float(object_parts[0][4:])
+                elif object_parts[0].startswith("OBJ"):
+                    object_prefix_len = 3
+                    object_spat_pos = float(object_parts[0][3:])
+                else:
+                    # Unrecognized format, don't try to correct
+                    with open(self.logfile, "a") as f:
+                        print(f"WARNING: Could not correct coadd1d file, unrecognized object id format: {object}", file=f)
+                    corrected_filenames.append(filename)
+                    corrected_objid.append(object)
+                    continue
+                
+                # Build an array of distances between the actual objects
+                # and the original object, and find the closest one
+                distances = np.fabs(np.array([float(x.split('-')[0][object_prefix_len:]) for x in file_to_obj[filename]]) - object_spat_pos)
+                sorted_dist = np.argsort(distances)
+                if distances[sorted_dist][0] <=2:
+                    # If the closest one is within two pixels, choose it
+                    closest_obj = file_to_obj[filename][sorted_dist][0]
+                    corrected_filenames.append(filename)
+                    corrected_objid.append(closest_obj)
+                else:
+                    with open(self.logfile, "a") as f:
+                        print(f"WARNING: Could not correct coadd1d file, closest object '{file_to_obj[filename][sorted_dist][0]}' is more than 2 pixels away from: {object}", file=f)
+                    corrected_filenames.append(filename)
+                    corrected_objid.append(object)
+
+        
+        # Generate the new coadd1d file
+        final_coadd_file = get_unique_file(os.path.join(self.setup.rdxdir, f"{self.setup.instr.lower()}_{self.setup.name.lower()}_merged.coadd1d"))
+        data_block = Table()
+        data_block['filename'] = corrected_filenames
+        data_block['obj_id'] = corrected_objid
+        new_coadd1dFile = inputfiles.Coadd1DFile(config=cfg_lines,
+                                             data_table=data_block)
+        new_coadd1dFile.write(final_coadd_file) 
+
+        return ['pypeit_coadd_1dspec', final_coadd_file]
 
     def check_for_missing_files(self):
         if not os.path.exists(self.coadd_file):
@@ -288,7 +421,7 @@ class PypeItCoadd1DTest(PypeItTest):
 class PypeItCoadd2DTest(PypeItTest):
     """Test subclass that runs pypeit_coadd_2dspec"""
     def __init__(self, setup, pargs, coadd_file=None, obj=None):
-        super().__init__(setup, "pypeit_coadd_2dspec", "test_2dcoadd")
+        super().__init__(setup, pargs, "pypeit_coadd_2dspec", "test_2dcoadd")
         self.obj = obj
 
         if coadd_file:
@@ -315,7 +448,7 @@ class PypeItTelluricTest(PypeItTest):
     """Test subclass that runs pypeit_tellfit"""
 
     def __init__(self, setup, pargs, coadd_file, tell_file):
-        super().__init__(setup, "pypeit_tellfit", 'test_tellfit')
+        super().__init__(setup, pargs, "pypeit_tellfit", 'test_tellfit')
         self.coadd_file = coadd_file
 
         self.tell_file = os.path.join(self.setup.dev_path, 'tellfit_files',
@@ -327,64 +460,113 @@ class PypeItTelluricTest(PypeItTest):
         command_line += ['-t', f'{self.tell_file}']
         return command_line
 
+class PypeItCollate1DTest(PypeItTest):
+    """Test subclass that runs pypeit_collate_1d"""
+    def __init__(self, setup, pargs, files, **options):
+        super().__init__(setup, pargs, "pypeit_collate", "test_collate")
+        self.files = files
+        self.options = options
+
+        # Cleanup some files so tests are repeatable (collate normally appends to these files)
+        report_file = os.path.join(setup.rdxdir, "collate_report.dat")
+        warnings_file = os.path.join(setup.rdxdir, "collate_warnings.txt")
+        if os.path.exists(report_file):
+            os.remove(report_file)
+        if os.path.exists(warnings_file):
+            os.remove(warnings_file)
+
+
+    def build_command_line(self):
+
+        expanded_files = []
+        for file_pattern in self.files:
+            expanded_files += glob.glob(os.path.join(self.setup.rdxdir, file_pattern))
+            
+        command_line = ['pypeit_collate_1d', '--spec1d_outdir', self.setup.rdxdir, '--spec1d_files'] + expanded_files
+
+        for option in self.options:
+            if self.options[option] is None:
+                command_line += [option]
+            else:
+                command_line += [option, str(self.options[option])]
+
+        return command_line
+
+
 class PypeItQuickLookTest(PypeItTest):
     """Test subclass that runs quick look tests.
        The specific test script run depends on the instrument type.
     """
 
-    def __init__(self, setup, pargs, files,  **options):
-        super().__init__(setup, "pypeit_ql", "test_ql")
+    def __init__(self, setup, pargs, files:list,  test_name:str=None, **options):
+        super().__init__(setup, pargs, "pypeit_ql", "test_ql")
         self.files = files
         self.options = options
         self.redux_dir = os.path.abspath(pargs.outputdir)
         self.pargs = pargs
+        self.test_name = test_name
         # Place the masters into REDUX_DIR/QL_MASTERS directory.
         self.output_dir = os.path.join(self.redux_dir, 'QL_MASTERS')
 
-        # This is a hack to keep the code from looking for a .pypeit file
-        # for keck_deimos quicklook
-        if self.setup.instr == 'keck_deimos':
-            self.setup.generate_pyp_file = True
-            self.command = 0
-
     def build_command_line(self):
 
-        if self.setup.instr == 'keck_nires':
-            command_line = ['pypeit_ql_keck_nires']
-        elif self.setup.instr == 'keck_mosfire':
-            command_line = ['pypeit_ql_keck_mosfire']
+        if self.setup.instr == 'keck_mosfire' and self.setup.name == 'Y_long':
+            command_line = ['pypeit_ql_jfh_multislit', 'keck_mosfire']
             if self.pargs.quiet:
                 command_line += ['--no_gui', '--writefits']
-        elif self.setup.instr == 'keck_deimos':
-            # Two commands!
-            if self.command == 'calib':
-                command_line = ['pypeit_ql_keck_deimos', 
-                            f"{os.path.join(os.getenv('PYPEIT_DEV'), 'RAW_DATA', 'keck_deimos', 'QL')}", 
-                            "--root=DE.", "-d=3", 
-                            f"--redux_path={os.path.join(os.getenv('PYPEIT_DEV'), 'REDUX_OUT', 'keck_deimos', 'QL')}",
-                            "--calibs_only"]
-            elif self.command == 'science':
-                command_line = ['pypeit_ql_keck_deimos', 
-                            f"{os.path.join(os.getenv('PYPEIT_DEV'), 'RAW_DATA', 'keck_deimos', 'QL')}", 
-                            '--science=DE.20130409.20629.fits',  '--slit_spat=3:763',
-                            f"--redux_path={os.path.join(os.getenv('PYPEIT_DEV'), 'REDUX_OUT', 'keck_deimos', 'QL')}"]
-            else:
-                raise ValueError("Bad command")
+        elif self.setup.instr == 'keck_lris_red_mark4':
+            command_line = ['pypeit_ql_jfh_multislit', 'keck_lris_red_mark4']
+            if self.pargs.quiet:
+                command_line += ['--no_gui', '--writefits']
         else:
-            command_line = ['pypeit_ql_mos', self.setup.instr]
+            # Redux folder
+            redux_path = os.path.join(self.redux_dir,
+                    self.setup.instr, self.setup.name)
+            last_folder = 'QL'
+            if self.test_name is not None:
+                last_folder += '_' + self.test_name
+            redux_path = os.path.join(redux_path, last_folder)
+                    
+            command_line = [
+                'pypeit_ql', self.setup.instr,
+                '--redux_path', redux_path]
 
-        if self.setup.instr != 'keck_deimos':
+        if self.setup.instr == 'keck_mosfire' and self.setup.name == 'Y_long': # JFH QL
             command_line += [self.setup.rawdir] + self.files
-
+        elif self.setup.instr == 'keck_lris_red_mark4':  # TESTING USING JFH QL
+            command_line += [self.setup.rawdir] + self.files
+        else:
+            command_line += ['--full_rawpath', self.setup.rawdir, 
+                             '--rawfiles'] + self.files
+        # Aditional options
         for option in self.options:
-            command_line += [option, str(self.options[option])]
+            if self.options[option] is None:
+                command_line += [option]
+            elif self.options[option] in ['USE_MASTERS_DIR', 
+                                          'USE_CALIB_DIR']:
+                idir = self.setup.rdxdir
+                #idir = os.path.join(self.redux_dir,
+                #    self.setup.instr, self.setup.name)
+                # Masters?
+                if self.options[option] == 'USE_MASTERS_DIR':
+                    ## Crazy hack for pypeit_setup 
+                    #if self.setup.instr in ['shane_kast_blue'] and \
+                    #    self.setup.name in ['600_4310_d55']:
+                    #        idir = os.path.join(idir,
+                    #            f'{self.setup.instr}_A')
+                    idir = os.path.join(idir, 'Masters')
+                # Finally
+                command_line += [option, idir]
+            else:
+                command_line += [option, str(self.options[option])]
 
         return command_line
 
     def run(self):
         """Generate any required quick look masters before running the quick look test"""
 
-        if self.setup.instr == 'keck_nires' or (self.setup.instr == 'keck_mosfire' and self.setup.name == 'Y_long'):
+        if self.setup.instr == 'keck_nires' or (self.setup.instr == 'keck_mosfire' and self.setup.name == 'Y_long') or \
+                (self.setup.instr == 'keck_lris_red_mark4' and self.setup.name == 'long_600_10000_d680'):
             try:
 
                 # Build the masters with the output going to a log file
@@ -407,18 +589,15 @@ class PypeItQuickLookTest(PypeItTest):
                 self.passed = False
                 return False
 
+        # TODO
+        #  Generate the Masters as needed if USE_MASTERS_DIR or USE_CALIB_DIR is set
+
         # Run the quick look test via the parent's run method, setting the environment
         # to use the newly generated masters
         self.env = os.environ.copy()
         self.env['QL_MASTERS'] = self.output_dir
-        if self.setup.instr == 'keck_deimos':
-            # Need to run 2 commands!
-            self.command = 'calib'
-            run0 = super().run()
-            self.command = 'science'
-            return super().run()
-        else:
-            return super().run()
+        return super().run()
+
 
 def pypeit_file_name(instr, setup, std=False):
     base = '{0}_{1}'.format(instr.lower(), setup.lower())

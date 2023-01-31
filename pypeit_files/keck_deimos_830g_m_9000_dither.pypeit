@@ -4,13 +4,13 @@
 # User-defined execution parameters
 [rdx]
   spectrograph = keck_deimos
-  detnum = 1
+  detnum = (4,8)
 [calibrations]
     [[slitedges]]
          maskdesign_sigrej = 2.
 [reduce]
    [[findobj]]
-         sig_thresh = 5
+         snr_thresh = 5
    [[slitmask]]
 	obj_toler = 0.5
 	use_alignbox = True
@@ -34,7 +34,7 @@ data read
 | DE.20141022.12107.fits | pixelflat,illumflat,trace |  57.99999999999999 |                45.0 | DOME PHLAT |     830G |  GS14B |     1,1 | 56952.140048 | 1.41291034 |     8.0 | 8999.99609375 | SINGLE:B |   OG550 | 2014-10-22 | 03:21:47.96 |      36 |
 | DE.20141022.12185.fits | pixelflat,illumflat,trace |  57.99999999999999 |                45.0 | DOME PHLAT |     830G |  GS14B |     1,1 | 56952.140954 | 1.41291034 |     8.0 | 8999.99609375 | SINGLE:B |   OG550 | 2014-10-22 | 03:23:05.11 |      37 |
 | DE.20141022.12263.fits | pixelflat,illumflat,trace |  57.99999999999999 |                45.0 | DOME PHLAT |     830G |  GS14B |     1,1 |  56952.14184 | 1.41291034 |     8.0 | 8999.99609375 | SINGLE:B |   OG550 | 2014-10-22 | 03:24:23.36 |      38 |
-#| DE.20141021.34721.fits |                   science | 53.170916666666656 | -27.798250000000003 |     GOODSS |     830G |  GS14B |     1,1 | 56951.401779 |  1.8823348 |   900.0 | 8999.99609375 | SINGLE:B |   OG550 | 2014-10-21 | 09:38:41.38 |      78 |
+| DE.20141021.34721.fits |                   science | 53.170916666666656 | -27.798250000000003 |     GOODSS |     830G |  GS14B |     1,1 | 56951.401779 |  1.8823348 |   900.0 | 8999.99609375 | SINGLE:B |   OG550 | 2014-10-21 | 09:38:41.38 |      78 |
 | DE.20141021.35719.fits |                   science |  53.17112499999999 | -27.798444444444446 |     GOODSS |     830G |  GS14B |     1,1 | 56951.413357 | 1.77480311 |   900.0 | 8999.99609375 | SINGLE:B |   OG550 | 2014-10-21 | 09:55:19.98 |      79 |
 data end
 

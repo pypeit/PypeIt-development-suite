@@ -1,70 +1,42 @@
-# Auto-generated PypeIt file
-# Wed 15 Apr 2020 17:07:36
-# edited by TPG 04/15/2020 using notes from S. Laos and https://pypeit.readthedocs.io/en/latest/pypeit_file.html
-# use the conda pypeitDRP python environment anf pypeit v 1.0.1
-# User-defined execution parameters, as recommended by pypeit team for MOSFIRE (from https://pypeit.readthedocs.io/en/latest/pypeit_par.html#keck-mosfire-keck-mosfire)
+# Auto-generated PypeIt file using PypeIt version: 1.8.2.dev362+g3d613ebba
+# 2022-05-20
 
+# User-defined execution parameters
 [rdx]
-    spectrograph = keck_mosfire
-# Don't flat field longslit data because there are too many artifacts from the bars???
-[scienceframe]
-  [[process]]
-    use_pixelflat=False
-    use_illumflat=False
-[calibrations]
- [[standardframe]]
-  [[[process]]]
-     use_pixelflat=False
-     use_illumflat=False
- [[flatfield]]
-    tweak_slits = False
- [[wavelengths]]
-    rms_threshold = 0.25
+spectrograph = keck_mosfire
 
-##########################################################
+[reduce]
+ [[extraction]]
+    return_negative = True
+
+
+# Setup
 setup read
-Setup A
---:
-  binning: 1,1
-  dichroic: none
-  disperser:
-    angle: none
-    name: spectroscopy
-  slit:
-    decker: LONGSLIT-46x1.5
-    slitlen: none
-    slitwid: none
+    Setup A:
+          decker: LONGSLIT-46x1.5
+        dispname: K-spectroscopy
+         filter1: K
 setup end
 
 # Read in the data
 data read
- path /Users/joe/python/PypeIt-development-suite/RAW_DATA/keck_mosfire/K_long/
- 
-#---------------------------------------------------------
-|          filename |       frametype |          ra |         dec |        target |     dispname |          decker | binning |            mjd |    airmass |   exptime | filter1 | calib | comb_id | bkg_id |
-# Science objects - test for Joseph 4/20/2020
-| m191013_0010.fits |tilt,arc,science | 51.65635485 | 30.22257963 |    Per-emb 25 | spectroscopy | LONGSLIT-46x1.5 |     1,1 | 58769.44539882 | 1.10482936 | 119.29278 |       K |    10 |    1010 |   1011 |
-| m191013_0011.fits |tilt,arc,science | 51.65642176 | 30.21702439 |    Per-emb 25 | spectroscopy | LONGSLIT-46x1.5 |     1,1 | 58769.44716965 | 1.10016548 | 119.29278 |       K |    11 |    1011 |   1010 |
-#
-# Telluric standard next
-#
-| m191013_0042.fits |        standard | 57.63367891 | 29.70977818 | HIP 17971 A0V | spectroscopy | LONGSLIT-46x1.5 |     1,1 | 58769.49821097 | 1.03490751 |   2.90958 |       K |    10 |    1042 |   1043 |
-| m191013_0043.fits |        standard | 57.63374548 | 29.70422294 | HIP 17971 A0V | spectroscopy | LONGSLIT-46x1.5 |     1,1 | 58769.49844709 | 1.03459486 |   2.90958 |       K |    11 |    1043 |   1042 |
-#
-# Dome flat, lights on
-#
-| m191013_0143.fits | trace	      |       230.0 |        45.0 |     DOME FLAT | spectroscopy | LONGSLIT-46x1.5 |     1,1 | 58769.65279882 | 1.41291034 |   4.36437 |       K |   all |      -1 |     -1 |
-| m191013_0144.fits | trace 	      |       230.0 |        45.0 |     DOME FLAT | spectroscopy | LONGSLIT-46x1.5 |     1,1 | 58769.65295229 | 1.41291034 |   4.36437 |       K |   all |      -1 |     -1 |
-| m191013_0145.fits | trace 	      |       230.0 |        45.0 |     DOME FLAT | spectroscopy | LONGSLIT-46x1.5 |     1,1 | 58769.65311167 | 1.41291034 |   4.36437 |       K |   all |      -1 |     -1 |
-| m191013_0146.fits | trace 	      |       230.0 |        45.0 |     DOME FLAT | spectroscopy | LONGSLIT-46x1.5 |     1,1 | 58769.65325924 | 1.41291034 |   4.36437 |       K |   all |      -1 |     -1 |
-| m191013_0147.fits | trace 	      |       230.0 |        45.0 |     DOME FLAT | spectroscopy | LONGSLIT-46x1.5 |     1,1 | 58769.65340681 | 1.41291034 |   4.36437 |       K |   all |      -1 |     -1 |
-#
-# Dome flat, lights off
-#
-#| m191013_0156.fits |            bias |       230.0 |        45.0 |     DOME FLAT | spectroscopy | LONGSLIT-46x1.5 |     1,1 | 58769.65501827 | 1.41291034 |   4.36437 |       K |   all |      -1 |     -1 |
-#| m191013_0157.fits |            bias |       230.0 |        45.0 |     DOME FLAT | spectroscopy | LONGSLIT-46x1.5 |     1,1 | 58769.65518354 | 1.41291034 |   4.36437 |       K |   all |      -1 |     -1 |
-#| m191013_0158.fits |            bias |       230.0 |        45.0 |     DOME FLAT | spectroscopy | LONGSLIT-46x1.5 |     1,1 | 58769.65533111 | 1.41291034 |   4.36437 |       K |   all |      -1 |     -1 |
-#| m191013_0159.fits |            bias |       230.0 |        45.0 |     DOME FLAT | spectroscopy | LONGSLIT-46x1.5 |     1,1 | 58769.65547868 | 1.41291034 |   4.36437 |       K |   all |      -1 |     -1 |
-#| m191013_0160.fits |            bias |       230.0 |        45.0 |     DOME FLAT | spectroscopy | LONGSLIT-46x1.5 |     1,1 | 58769.65563806 | 1.41291034 |   4.36437 |       K |   all |      -1 |     -1 |
-##########################################################
+ path /Users/dpelliccia/Pypeit/PypeIt-development-suite/RAW_DATA/keck_mosfire/K_long
+|          filename |                 frametype |          ra |         dec |        target |       dispname |          decker | binning |            mjd |    airmass |   exptime | filter1 | lampstat01 |  dithpat | dithpos | dithoff | frameno | calib | comb_id | bkg_id |
+| m191013_0010.fits |          arc,science,tilt | 51.65635485 | 30.22257963 |    Per-emb 25 | K-spectroscopy | LONGSLIT-46x1.5 |     1,1 | 58769.44539882 | 1.10482936 | 119.29278 |       K |        off | Mask Nod |       A |    10.0 |      10 |    10 |    1010 |   1011 |
+| m191013_0011.fits |          arc,science,tilt | 51.65642176 | 30.21702439 |    Per-emb 25 | K-spectroscopy | LONGSLIT-46x1.5 |     1,1 | 58769.44716965 | 1.10016548 | 119.29278 |       K |        off | Mask Nod |       B |   -10.0 |      11 |    11 |    1011 |   1010 |
+
+| m191013_0042.fits |         arc,standard,tilt | 57.63367891 | 29.70977818 | HIP 17971 A0V | K-spectroscopy | LONGSLIT-46x1.5 |     1,1 | 58769.49821097 | 1.03490751 |   2.90958 |       K |        off | Mask Nod |       A |    10.0 |      42 |    42 |    1042 |   1043 |
+| m191013_0043.fits |         arc,standard,tilt | 57.63374548 | 29.70422294 | HIP 17971 A0V | K-spectroscopy | LONGSLIT-46x1.5 |     1,1 | 58769.49844709 | 1.03459486 |   2.90958 |       K |        off | Mask Nod |       B |   -10.0 |      43 |    43 |    1043 |   1042 |
+
+| m191013_0143.fits | pixelflat,illumflat,trace |       230.0 |        45.0 |     DOME FLAT | K-spectroscopy | LONGSLIT-46x1.5 |     1,1 | 58769.65279882 | 1.41291034 |   4.36437 |       K |         on | Mask Nod |       B |   -15.0 |     143 | 10,11 |      -1 |     -1 |
+| m191013_0144.fits | pixelflat,illumflat,trace |       230.0 |        45.0 |     DOME FLAT | K-spectroscopy | LONGSLIT-46x1.5 |     1,1 | 58769.65295229 | 1.41291034 |   4.36437 |       K |         on | Mask Nod |       B |   -15.0 |     144 | 10,11 |      -1 |     -1 |
+| m191013_0145.fits | pixelflat,illumflat,trace |       230.0 |        45.0 |     DOME FLAT | K-spectroscopy | LONGSLIT-46x1.5 |     1,1 | 58769.65311167 | 1.41291034 |   4.36437 |       K |         on | Mask Nod |       B |   -15.0 |     145 | 10,11 |      -1 |     -1 |
+| m191013_0146.fits | pixelflat,illumflat,trace |       230.0 |        45.0 |     DOME FLAT | K-spectroscopy | LONGSLIT-46x1.5 |     1,1 | 58769.65325924 | 1.41291034 |   4.36437 |       K |         on | Mask Nod |       B |   -15.0 |     146 | 42,43 |      -1 |     -1 |
+| m191013_0147.fits | pixelflat,illumflat,trace |       230.0 |        45.0 |     DOME FLAT | K-spectroscopy | LONGSLIT-46x1.5 |     1,1 | 58769.65340681 | 1.41291034 |   4.36437 |       K |         on | Mask Nod |       B |   -15.0 |     147 | 42,43 |      -1 |     -1 |
+
+| m191013_0156.fits |              lampoffflats |       230.0 |        45.0 |     DOME FLAT | K-spectroscopy | LONGSLIT-46x1.5 |     1,1 | 58769.65501827 | 1.41291034 |   4.36437 |       K |        off | Mask Nod |       B |   -15.0 |     156 | 10,11 |      -1 |     -1 |
+| m191013_0157.fits |              lampoffflats |       230.0 |        45.0 |     DOME FLAT | K-spectroscopy | LONGSLIT-46x1.5 |     1,1 | 58769.65518354 | 1.41291034 |   4.36437 |       K |        off | Mask Nod |       B |   -15.0 |     157 | 10,11 |      -1 |     -1 |
+| m191013_0158.fits |              lampoffflats |       230.0 |        45.0 |     DOME FLAT | K-spectroscopy | LONGSLIT-46x1.5 |     1,1 | 58769.65533111 | 1.41291034 |   4.36437 |       K |        off | Mask Nod |       B |   -15.0 |     158 | 10,11 |      -1 |     -1 |
+| m191013_0159.fits |              lampoffflats |       230.0 |        45.0 |     DOME FLAT | K-spectroscopy | LONGSLIT-46x1.5 |     1,1 | 58769.65547868 | 1.41291034 |   4.36437 |       K |        off | Mask Nod |       B |   -15.0 |     159 | 42,43 |      -1 |     -1 |
+| m191013_0160.fits |              lampoffflats |       230.0 |        45.0 |     DOME FLAT | K-spectroscopy | LONGSLIT-46x1.5 |     1,1 | 58769.65563806 | 1.41291034 |   4.36437 |       K |        off | Mask Nod |       B |   -15.0 |     160 | 42,43 |      -1 |     -1 |
 data end

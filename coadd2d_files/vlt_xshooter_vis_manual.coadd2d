@@ -10,11 +10,12 @@
 
 [coadd2d]
   use_slits4wvgrid = True
-  offsets = 0.,0.,0.,0.,0.,0.
+  offsets = 0.,0.
   weights = uniform
   manual = 1:22.4:608.1:3.
 
 spec2d read
+filename 
 Science/spec2d_XSHOO.2019-08-21T07:55:35.020-FRB190711_XShooter_VIS_20190821T075535.019.fits
 Science/spec2d_XSHOO.2019-08-21T08:04:15.565-FRB190711_XShooter_VIS_20190821T080415.565.fits
 spec2d end

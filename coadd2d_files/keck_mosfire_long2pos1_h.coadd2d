@@ -1,0 +1,17 @@
+# Auto-generated PypeIt file using PypeIt version: 1.8.2.dev54+gec6efc982
+# 2022-04-11
+
+# User-defined execution parameters
+[rdx]
+spectrograph = keck_mosfire
+
+[coadd2d]
+  offsets = maskdef_offsets
+  weights = 1.,1.
+
+spec2d read
+filename
+Science/spec2d_MF.20180718.22100-HIP61138_MOSFIRE_20180718T060820.621.fits
+Science/spec2d_MF.20180718.22154-HIP61138_MOSFIRE_20180718T060914.170.fits
+spec2d end
+

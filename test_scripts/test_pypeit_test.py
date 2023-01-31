@@ -28,6 +28,7 @@ import pytest
 import subprocess
 import sys
 import os
+from io import BytesIO
 import random
 from test_scripts import test_main
 from test_scripts.pypeit_tests import PypeItReduceTest
@@ -49,6 +50,8 @@ class MockPopen(object):
         self.pid = random.randint(1,99999)
         self.returncode = 0
         self.failure_case = failure_case
+        self.poll_times = 0
+        self.stdout = BytesIO(b"Sample pytest output\npassed 1 warnings 1 failed 1\n")
 
     def wait(self):
         t = random.randint(1, 3)
@@ -57,8 +60,25 @@ class MockPopen(object):
             self.returncode = 1
         return 0
 
+    def poll(self, *args, **kwargs):
+        if self.poll_times == 0:
+            self.poll_times +=1
+            return None
+        else:
+            if self.failure_case:
+                return 1
+            else:
+                return 0
+
     def terminate(self):
         pass
+
+    # Mock contextmanager methods
+    def __enter__(self):
+        return self
+
+    def __exit__(self, *args, **kwargs):
+        return False
 
 class MockCompletedProcess(object):
     """
@@ -145,12 +165,12 @@ def test_main_with_missing_file_failures(monkeypatch, tmp_path):
 
         # Test failure to generate pypeit file
         monkeypatch.setattr(sys, "argv", ['pypeit_test', '-o', str(tmp_path), '-t', '1',
-                                          '-i', 'shane_kast_blue', '-s', '600_4310_d55', 'shane_kast_blue'])
+                                          '-i', 'shane_kast_blue', '-s', '600_4310_d55', 'reduce'])
         assert test_main.main() == 1
 
         # Test missing input for sensfunc
         monkeypatch.setattr(sys, "argv", ['pypeit_test', '-o', str(tmp_path), '-t', '1',
-                                          '-i', 'gemini_gnirs', '-s', '32_SB_SXD', 'gemini_gnirs'])
+                                          '-i', 'gemini_gnirs', '-s', '32_SB_SXD', 'reduce'])
         assert test_main.main() == 1
 
         # Test not being able to find unique input for sensfunc
@@ -159,7 +179,7 @@ def test_main_with_missing_file_failures(monkeypatch, tmp_path):
         create_dummy_files(tmp_path, missing_files)
 
         monkeypatch.setattr(sys, "argv", ['pypeit_test', '-o', str(tmp_path), '-t', '1',
-                                          '-i', 'gemini_gnirs', '-s', '32_SB_SXD', 'gemini_gnirs'])
+                                          '-i', 'gemini_gnirs', '-s', '32_SB_SXD', 'reduce'])
         os.chdir(tmp_path)
         assert test_main.main() == 1
 
@@ -183,7 +203,7 @@ def test_main_with_build_command_failure(monkeypatch, tmp_path):
 
         monkeypatch.setattr(PypeItReduceTest, "build_command_line", mock_build_command_line)
         monkeypatch.setattr(sys, "argv", ['pypeit_test', '-o', str(tmp_path), '-t', '4', '-v',
-                                          '-i', 'gemini_gnirs', 'develop'])
+                                          '-i', 'gemini_gnirs', 'reduce'])
 
         assert test_main.main() == 2
 
@@ -201,7 +221,7 @@ def test_main_with_test_failure(monkeypatch, tmp_path):
         monkeypatch.setattr(subprocess, "Popen", mock_failure_popen)
         monkeypatch.setattr(subprocess, "run", mock_run)
 
-        monkeypatch.setattr(sys, "argv", ['pypeit_test', '-o', str(tmp_path), '-t', '4', '-v', 'shane_kast_blue'])
+        monkeypatch.setattr(sys, "argv", ['pypeit_test', '-o', str(tmp_path), '-t', '4', '-v', 'reduce', '-i', 'shane_kast_blue'])
         assert test_main.main() == 3
 
 
@@ -225,12 +245,17 @@ def test_main_develop_without_failures(monkeypatch, tmp_path):
     with monkeypatch.context() as m:
         monkeypatch.setattr(subprocess, "Popen", mock_popen)
         monkeypatch.setattr(subprocess, "run", mock_run)
-        monkeypatch.setattr(sys, "argv", ['pypeit_test', '-o', str(tmp_path), '-t', '4', 'develop'])
+        monkeypatch.setattr(sys, "argv", ['pypeit_test', '-o', str(tmp_path), '-t', '4', 'all'])
 
         missing_files = ['gemini_gmos/GS_HAM_R400_860/Science/spec1d_S20181219S0316-GD71_GMOS-S_1864May27T230832.356.fits',
+                         'gemini_gmos/GS_HAM_R400_860/Science/spec1d_S20180903S0137-J0252-0503_GMOS-S_18640527T160719.968.txt',
+                         'gemini_gmos/GS_HAM_R400_700/Science/spec1d_S20181005S0029-LTT7379_GMOS-S_18640527T181202.909.fits',
+                         'gemini_gmos/GS_HAM_R400_700/Science/spec1d_S20181005S0079-FRB180924_GMOS-S_18640527T181229.483.txt',
                          'gemini_gnirs/32_SB_SXD/Science/spec1d_cN20170331S0206-HIP62745_GNIRS_2017Mar31T083351.681.fits',
+                         'gemini_gnirs/32_SB_SXD/Science/spec1d_cN20170331S0217-pisco_GNIRS_20170331T085933.097.txt',
                          'shane_kast_blue/600_4310_d55/shane_kast_blue_A/shane_kast_blue_A.pypeit',
                          'shane_kast_blue/600_4310_d55/shane_kast_blue_A/Science/spec1d_b24-Feige66_KASTb_2015May20T041246.960.fits',
+                         'shane_kast_blue/600_4310_d55/shane_kast_blue_A/Science/spec1d_b28-J1217p3905_KASTb_20150520T051801.470.txt',
                          'keck_deimos/900ZD_LVM_5500/Science/spec1d_DE.20110729.54545-Feige110_DEIMOS_2011Jul29T150856.803.fits',
                          'keck_mosfire/Y_long/Science/spec1d_m191118_0064-GD71_MOSFIRE_2019Nov18T104704.507.fits']
 
@@ -263,7 +288,7 @@ def test_main_debug_with_verbose_and_report(monkeypatch, tmp_path):
         # This will include a failure and skipped tests as well as passed tests
         report_path = tmp_path / 'test_output.txt'
         monkeypatch.setattr(sys, "argv", ['pypeit_test', '-o', str(tmp_path), '-t', '4', '--debug',
-                                          '-v', '-r', str(report_path), 'develop'])
+                                          '-v', '-r', str(report_path), 'reduce', 'after', 'ql'])
         assert test_main.main() == 1
         # Verify the report exists and contains data
         stat_result = report_path.stat()
@@ -282,6 +307,7 @@ def test_main_debug_priority_list(monkeypatch, tmp_path, capsys):
                   'keck_lris_blue_orig/long_600_4000_d500',
                   'keck_lris_blue/multi_600_4000_d560',
                   'shane_kast_blue/452_3306_d57',
+                  'mmt_bluechannel/300l',
                   'keck_lris_blue/long_600_4000_d560',
                   'keck_lris_blue/long_400_3400_d560'
                   ]
@@ -312,7 +338,7 @@ def test_main_debug_priority_list(monkeypatch, tmp_path, capsys):
             create_dummy_files(tmp_path, missing_files)
 
             monkeypatch.setattr(sys, "argv", ['pypeit_test', '-o', str(tmp_path), '--debug',
-                                              '-v', 'develop'])
+                                              '-v', 'reduce', 'after', 'ql'])
             assert test_main.main() == 0
 
             # Use captured stdout to make sure test setups were run in the order in test_order
@@ -355,7 +381,7 @@ def test_main_with_quiet(monkeypatch, tmp_path, capsys):
 
         # This will include a failure and skipped tests as well as passed tests
         monkeypatch.setattr(sys, "argv", ['pypeit_test', '-o', str(tmp_path), '-t', '4', '--debug',
-                                          '-q', 'develop'])
+                                          '-q', 'all'])
         assert test_main.main() == 1
 
         # Verify quiet mode rally is quiet
@@ -367,21 +393,6 @@ def test_main_with_quiet(monkeypatch, tmp_path, capsys):
         default_report_path = tmp_path / 'pypeit_test_results.txt'
         stat_result = default_report_path.stat()
         assert stat_result.st_size > 0
-
-def test_main_with_all(monkeypatch, tmp_path):
-    """
-    Test test_main.main() with the "all" argument.
-    """
-    with monkeypatch.context() as m:
-        monkeypatch.setattr(subprocess, "Popen", mock_popen)
-        monkeypatch.setattr(subprocess, "run", mock_run)
-
-
-        # This will fail due to missing files
-        monkeypatch.setattr(sys, "argv", ['pypeit_test', '-o', str(tmp_path), '-t', '4', 'all'])
-
-        with pytest.raises(ValueError):
-            test_main.main()
 
 def test_main_in_steps(monkeypatch, tmp_path):
     """
@@ -397,7 +408,7 @@ def test_main_in_steps(monkeypatch, tmp_path):
         create_dummy_files(tmp_path, missing_files)
 
         monkeypatch.setattr(sys, "argv", ['pypeit_test', '-o', str(tmp_path), '-t', '4',
-                                          '-i', 'shane_kast_blue', '--prep_only', 'develop'])
+                                          '-i', 'shane_kast_blue', '--prep_only', 'reduce'])
         assert test_main.main() == 0
         assert (tmp_path / "shane_kast_blue" / "452_3306_d57" / "shane_kast_blue_452_3306_d57.pypeit").exists()
 
@@ -422,7 +433,7 @@ def test_quick_look_build_masters_failure(monkeypatch, tmp_path):
     with monkeypatch.context() as m:
         monkeypatch.setattr(subprocess, "Popen", mock_popen)
         monkeypatch.setattr(subprocess, "run", mock_failed_run)
-        monkeypatch.setattr(sys, "argv", ['pypeit_test', '-o', str(tmp_path), '-i', 'keck_nires', 'ql'])
+        monkeypatch.setattr(sys, "argv", ['pypeit_test', '-o', str(tmp_path), '-i', 'keck_nires', 'reduce', 'ql'])
 
         assert test_main.main() == 1
 
@@ -430,7 +441,7 @@ def test_quick_look_build_masters_failure(monkeypatch, tmp_path):
     with monkeypatch.context() as m:
         monkeypatch.setattr(subprocess, "Popen", mock_popen)
         monkeypatch.setattr(subprocess, "run", mock_raises_run)
-        monkeypatch.setattr(sys, "argv", ['pypeit_test', '-o', str(tmp_path), '-i', 'keck_nires', 'ql'])
+        monkeypatch.setattr(sys, "argv", ['pypeit_test', '-o', str(tmp_path), '-i', 'keck_nires', 'reduce', 'ql'])
 
         assert test_main.main() == 1
 
@@ -444,7 +455,7 @@ def test_quick_look_masters_env(monkeypatch, tmp_path):
         monkeypatch.setattr(subprocess, "Popen", mock_popen)
         monkeypatch.setattr(subprocess, "run", mock_run)
         monkeypatch.delenv('NIRES_MASTERS', raising=False)
-        monkeypatch.setattr(sys, "argv", ['pypeit_test', '-o', str(tmp_path), '-i', 'keck_nires', 'ql'])
+        monkeypatch.setattr(sys, "argv", ['pypeit_test', '-o', str(tmp_path), '-i', 'keck_nires', 'reduce', 'ql'])
 
         assert test_main.main() == 0
 
@@ -453,6 +464,6 @@ def test_quick_look_masters_env(monkeypatch, tmp_path):
         monkeypatch.setattr(subprocess, "Popen", mock_popen)
         monkeypatch.setattr(subprocess, "run", mock_run)
         monkeypatch.setenv('NIRES_MASTERS', str(tmp_path))
-        monkeypatch.setattr(sys, "argv", ['pypeit_test', '-o', str(tmp_path), '-i', 'keck_nires', 'ql'])
+        monkeypatch.setattr(sys, "argv", ['pypeit_test', '-o', str(tmp_path), '-i', 'keck_nires', 'reduce', 'ql'])
 
         assert test_main.main() == 0

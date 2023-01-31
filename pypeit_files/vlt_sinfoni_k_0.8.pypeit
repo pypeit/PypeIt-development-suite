@@ -1,19 +1,9 @@
 # User-defined execution parameters
 [rdx]
 spectrograph = vlt_sinfoni
-[calibrations]
-  [[pixelflatframe]]
-     [[[process]]]
-     	use_darkimage = True
-  [[illumflatframe]]
-     [[[process]]]
-     	use_darkimage = True
-  [[traceframe]]
-     [[[process]]]
-     	use_darkimage = True
 [reduce]
     [[findobj]]
-        sig_thresh=5.0
+        snr_thresh=5.0
 
 # Setup
 setup read
@@ -23,21 +13,21 @@ setup end
 # Read in the data
 data read
  path ../Raw/
-|                           filename |            frametype |         ra |       dec |              target | dispname | decker | binning |            mjd | airmass | exptime | filter1 | calib | comb_id | bkg_id |
-| SINFO.2017-04-30T11:44:40.997.fits |      	       dark |       None |      None |           FLAT,LAMP |        K |  0.025 |     1,1 | 57873.48936339 |    None |     5.3 |       K |   all |      -1 |     -1 |
+|                           filename |                frametype |         ra |       dec |              target | dispname | decker | binning |            mjd | airmass | exptime | filter1 | calib | comb_id | bkg_id |
+| SINFO.2017-04-30T11:44:40.997.fits |             lampoffflats |       None |      None |           FLAT,LAMP |        K |  0.025 |     1,1 | 57873.48936339 |    None |     5.3 |       K |   all |      -1 |     -1 |
 | SINFO.2017-04-30T11:45:14.638.fits |illumflat,pixelflat,trace |       None |      None |           FLAT,LAMP |        K |  0.025 |     1,1 | 57873.48975275 |    None |     5.3 |       K |   all |      -1 |     -1 |
 | SINFO.2017-04-30T11:45:41.616.fits |illumflat,pixelflat,trace |       None |      None |           FLAT,LAMP |        K |  0.025 |     1,1 |   57873.490065 |    None |     5.3 |       K |   all |      -1 |     -1 |
-| SINFO.2017-04-30T11:46:54.274.fits |      	       dark |       None |      None |           FLAT,LAMP |        K |  0.025 |     1,1 | 57873.49090595 |    None |     5.3 |       K |   all |      -1 |     -1 |
-| SINFO.2017-04-30T11:48:03.369.fits |      	       dark |       None |      None |           FLAT,LAMP |        K |  0.025 |     1,1 | 57873.49170566 |    None |     5.3 |       K |   all |      -1 |     -1 |
+| SINFO.2017-04-30T11:46:54.274.fits |             lampoffflats |       None |      None |           FLAT,LAMP |        K |  0.025 |     1,1 | 57873.49090595 |    None |     5.3 |       K |   all |      -1 |     -1 |
+| SINFO.2017-04-30T11:48:03.369.fits |             lampoffflats |       None |      None |           FLAT,LAMP |        K |  0.025 |     1,1 | 57873.49170566 |    None |     5.3 |       K |   all |      -1 |     -1 |
 | SINFO.2017-04-30T11:48:32.174.fits |illumflat,pixelflat,trace |       None |      None |           FLAT,LAMP |        K |  0.025 |     1,1 | 57873.49203905 |    None |     5.3 |       K |   all |      -1 |     -1 |
 | SINFO.2017-04-30T11:48:57.382.fits |illumflat,pixelflat,trace |       None |      None |           FLAT,LAMP |        K |  0.025 |     1,1 | 57873.49233081 |    None |     5.3 |       K |   all |      -1 |     -1 |
-| SINFO.2017-04-30T11:50:09.157.fits |      	       dark |       None |      None |           FLAT,LAMP |        K |  0.025 |     1,1 | 57873.49316154 |    None |     5.3 |       K |   all |      -1 |     -1 |
-| SINFO.2017-04-30T11:51:18.259.fits |      	       dark |       None |      None |           FLAT,LAMP |        K |  0.025 |     1,1 | 57873.49396133 |    None |     5.3 |       K |   all |      -1 |     -1 |
+| SINFO.2017-04-30T11:50:09.157.fits |             lampoffflats |       None |      None |           FLAT,LAMP |        K |  0.025 |     1,1 | 57873.49316154 |    None |     5.3 |       K |   all |      -1 |     -1 |
+| SINFO.2017-04-30T11:51:18.259.fits |             lampoffflats |       None |      None |           FLAT,LAMP |        K |  0.025 |     1,1 | 57873.49396133 |    None |     5.3 |       K |   all |      -1 |     -1 |
 | SINFO.2017-04-30T11:51:46.116.fits |illumflat,pixelflat,trace |       None |      None |           FLAT,LAMP |        K |  0.025 |     1,1 | 57873.49428375 |    None |     5.3 |       K |   all |      -1 |     -1 | # dither HIERARCH ESO SEQ CUMOFFSETY in the header
-| SINFO.2017-04-30T02:25:41.679.fits |              science | 184.681436 |  15.60423 |     SDSS-J1218+1536 |        K |  0.025 |     1,1 | 57873.10117684 |   1.307 |   120.0 |       K |     1 |       1 |    100 |     # -8.8
-| SINFO.2017-04-30T02:28:10.374.fits |         arc,tilt,sky | 184.683089 |  15.60331 |     SDSS-J1218+1536 |        K |  0.025 |     1,1 | 57873.10289785 |   1.307 |   120.0 |       K |     1 |     100 |     -1 |     # 256
-| SINFO.2017-04-30T02:30:52.310.fits |              science | 184.681546 |  15.60417 |     SDSS-J1218+1536 |        K |  0.025 |     1,1 | 57873.10477211 |   1.307 |   120.0 |       K |     1 |       2 |    100 |     #  8.8
-| SINFO.2017-04-30T02:33:17.695.fits |              science | 184.681546 |  15.60417 |     SDSS-J1218+1536 |        K |  0.025 |     1,1 |  57873.1064548 |   1.307 |   120.0 |       K |     1 |       3 |    200 |     #  5.2
+| SINFO.2017-04-30T02:25:41.679.fits |                  science | 184.681436 |  15.60423 |     SDSS-J1218+1536 |        K |  0.025 |     1,1 | 57873.10117684 |   1.307 |   120.0 |       K |     1 |       1 |    100 |     # -8.8
+| SINFO.2017-04-30T02:28:10.374.fits |             arc,tilt,sky | 184.683089 |  15.60331 |     SDSS-J1218+1536 |        K |  0.025 |     1,1 | 57873.10289785 |   1.307 |   120.0 |       K |     1 |     100 |     -1 |     # 256
+| SINFO.2017-04-30T02:30:52.310.fits |                  science | 184.681546 |  15.60417 |     SDSS-J1218+1536 |        K |  0.025 |     1,1 | 57873.10477211 |   1.307 |   120.0 |       K |     1 |       2 |    100 |     #  8.8
+| SINFO.2017-04-30T02:33:17.695.fits |                  science | 184.681546 |  15.60417 |     SDSS-J1218+1536 |        K |  0.025 |     1,1 |  57873.1064548 |   1.307 |   120.0 |       K |     1 |       3 |    200 |     #  5.2
 data end
 
 
