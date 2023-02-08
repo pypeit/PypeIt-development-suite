@@ -15,6 +15,8 @@ import traceback
 import glob
 from abc import ABC, abstractmethod
 
+import psutil
+
 from astropy.table import Table
 import numpy as np
 
@@ -66,6 +68,9 @@ class PypeItTest(ABC):
         self.end_time = None
         """ :obj:`datetime.datetime`: The date and time the test finished."""
 
+        self.max_mem = None
+        """ :obj:`int`: The maximum memory used by the test."""
+
 
     def __str__(self):
         """Return a summary of the test and the status.
@@ -96,30 +101,58 @@ class PypeItTest(ABC):
             self.command_line = self.build_command_line()
 
             with open(self.logfile, "a") as f:
-                try:
-                    if self.coverage:
-                        # Coverage will need the full path to the script
-                        full_path_to_command = shutil.which(self.command_line[0])
-                        if full_path_to_command is not None:
-                            self.command_line[0] = full_path_to_command
-                        else:
-                            raise RuntimeError(f"Could not find full path for {self.command_line[0]}")
+                if self.coverage:
+                    # Coverage will need the full path to the script
+                    full_path_to_command = shutil.which(self.command_line[0])
+                    if full_path_to_command is not None:
+                        self.command_line[0] = full_path_to_command
+                    else:
+                        raise RuntimeError(f"Could not find full path for {self.command_line[0]}")
 
-                        self.command_line = ["coverage", "run"] + _COVERAGE_ARGS + self.command_line
-                    if self.start_time is None:
-                        # If a subclass sets the start time or calls run multiple times,
-                        # (see deimos QL) use the first value as the start rather than overwriting it.
-                        self.start_time = datetime.datetime.now()
+                    self.command_line = ["coverage", "run"] + _COVERAGE_ARGS + self.command_line
+                if self.start_time is None:
+                    # If a subclass sets the start time or calls run multiple times,
+                    # (see deimos QL) use the first value as the start rather than overwriting it.
+                    self.start_time = datetime.datetime.now()
+                    
+                with subprocess.Popen(self.command_line, stdout=f, stderr=f, env=self.env, cwd=self.setup.rdxdir) as child:
+                    try:
+                        self.pid = child.pid
+                        returncode = None
+                        process = psutil.Process(self.pid)
                         
-                    child = subprocess.Popen(self.command_line, stdout=f, stderr=f, env=self.env, cwd=self.setup.rdxdir)
-                    self.pid = child.pid
-                    child.wait()
-                    self.end_time = datetime.datetime.now()
-                    self.passed = (child.returncode == 0)
-                finally:
-                    # Kill the child if the parent script exits due to a SIGTERM or SIGINT (Ctrl+C)
-                    if child is not None:
-                        child.terminate()
+                        if self.max_mem is None:
+                            # Don't overwrite previous max_mem if run() is called multiple times.
+                            self.max_mem = 0
+
+                        while returncode is None:
+                            # Try to get memory usage information for the child,
+                            # ignore errors if we can't
+                            try:
+                                mem = process.memory_full_info().uss
+                                if self.max_mem < mem:
+                                    self.max_mem = mem
+                            except psutil.NoSuchProcess:
+                                pass
+                            except psutil.AccessDenied:
+                                pass
+                            # Wait 2 seconds for the child before checking the memory again
+                            try:
+                                returncode = child.wait(2)
+                            except subprocess.TimeoutExpired:
+                                # Normal, means the child didn't finish within the 2 second timeout
+                                pass
+
+                        self.end_time = datetime.datetime.now()
+                        self.passed = (child.returncode == 0)
+                    finally:
+                        # If an exception (possibly a CTRL+C) escapes the while loop around the child.wait(),
+                        # the child process may still be running. 
+                        # If it is running, we make sure to terminate the child here, as the Popen context
+                        # will wait for the child to finish
+                        if child.poll() is None:
+                            child.terminate()
+
 
         except Exception:
             # An exception occurred while running the test
@@ -147,15 +180,15 @@ class PypeItSetupTest(PypeItTest):
         if super().run():
             # Check for the pypeit file after running the test
             rdxdir = os.path.join(self.setup.rdxdir, self.setup.instr.lower() + '_A')
-            pyp_file_glob = os.path.join(rdxdir, '*_A.pypeit')
-            pyp_file = glob.glob(pyp_file_glob)
-            if len(pyp_file) != 1:
-                self.error_msgs.append(f"Could not find expected pypeit file {pyp_file_glob}")
+            pyp_file = os.path.join(
+                rdxdir, f'{self.setup.instr}_A.pypeit')
+            if not os.path.isfile(pyp_file):
+                self.error_msgs.append(f"Could not find expected pypeit file {pyp_file}")
                 self.passed = False
             else:
                 # If the pypeit file was created, put it's location and the new output
                 # directory into the setup object for subsequent tests to use
-                pyp_file = os.path.split(pyp_file[0])[1]
+                pyp_file = os.path.split(pyp_file)[1]
 
                 self.setup.pyp_file = pyp_file
                 self.setup.rdxdir = rdxdir
@@ -174,7 +207,7 @@ class PypeItReduceTest(PypeItTest):
 
         self.ignore_masters = ignore_masters if ignore_masters is not None else pargs.do_not_reuse_masters
 
-        description = f"pypeit {'standards ' if std else ''}{'(ignore masters)' if self.ignore_masters else ''}"
+        description = f"pypeit{' standards' if std else ''}{' (ignore masters)' if self.ignore_masters else ''}"
         super().__init__(setup, pargs, description, "test")
 
         self.std = std
@@ -465,51 +498,65 @@ class PypeItQuickLookTest(PypeItTest):
        The specific test script run depends on the instrument type.
     """
 
-    def __init__(self, setup, pargs, files,  **options):
+    def __init__(self, setup, pargs, files:list,  test_name:str=None, **options):
         super().__init__(setup, pargs, "pypeit_ql", "test_ql")
         self.files = files
         self.options = options
         self.redux_dir = os.path.abspath(pargs.outputdir)
         self.pargs = pargs
+        self.test_name = test_name
         # Place the masters into REDUX_DIR/QL_MASTERS directory.
         self.output_dir = os.path.join(self.redux_dir, 'QL_MASTERS')
 
     def build_command_line(self):
 
-        if self.setup.instr == 'keck_nires':
-            command_line = ['pypeit_ql_keck_nires']
-        elif self.setup.instr == 'keck_mosfire':
-            command_line = ['pypeit_ql_multislit', 'keck_mosfire']
+        if self.setup.instr == 'keck_mosfire' and self.setup.name == 'Y_long':
+            command_line = ['pypeit_ql_jfh_multislit', 'keck_mosfire']
             if self.pargs.quiet:
                 command_line += ['--no_gui', '--writefits']
         elif self.setup.instr == 'keck_lris_red_mark4':
-            command_line = ['pypeit_ql_multislit', 'keck_lris_red_mark4']
+            command_line = ['pypeit_ql_jfh_multislit', 'keck_lris_red_mark4']
             if self.pargs.quiet:
                 command_line += ['--no_gui', '--writefits']
-        elif self.setup.instr == 'keck_deimos':
-            # Two commands!
-            if self.command == 'calib':
-                command_line = ['pypeit_ql_keck_deimos', 
-                            f"{os.path.join(os.getenv('PYPEIT_DEV'), 'RAW_DATA', 'keck_deimos', 'QL')}", 
-                            "--root=DE.", "-d=3", 
-                            f"--redux_path={os.path.join(os.getenv('PYPEIT_DEV'), 'REDUX_OUT', 'keck_deimos', 'QL')}",
-                            "--calibs_only"]
-            elif self.command == 'science':
-                command_line = ['pypeit_ql_keck_deimos', 
-                            f"{os.path.join(os.getenv('PYPEIT_DEV'), 'RAW_DATA', 'keck_deimos', 'QL')}", 
-                            '--science=DE.20130409.20629.fits',  '--slit_spat=3:763',
-                            f"--redux_path={os.path.join(os.getenv('PYPEIT_DEV'), 'REDUX_OUT', 'keck_deimos', 'QL')}"]
-            else:
-                raise ValueError("Bad command")
         else:
-            command_line = ['pypeit_ql_mos', self.setup.instr]
+            # Redux folder
+            redux_path = os.path.join(self.redux_dir,
+                    self.setup.instr, self.setup.name)
+            last_folder = 'QL'
+            if self.test_name is not None:
+                last_folder += '_' + self.test_name
+            redux_path = os.path.join(redux_path, last_folder)
+                    
+            command_line = [
+                'pypeit_ql', self.setup.instr,
+                '--redux_path', redux_path]
 
-        if self.setup.instr != 'keck_deimos':
+        if self.setup.instr == 'keck_mosfire' and self.setup.name == 'Y_long': # JFH QL
             command_line += [self.setup.rawdir] + self.files
-
+        elif self.setup.instr == 'keck_lris_red_mark4':  # TESTING USING JFH QL
+            command_line += [self.setup.rawdir] + self.files
+        else:
+            command_line += ['--full_rawpath', self.setup.rawdir, 
+                             '--rawfiles'] + self.files
+        # Aditional options
         for option in self.options:
             if self.options[option] is None:
                 command_line += [option]
+            elif self.options[option] in ['USE_MASTERS_DIR', 
+                                          'USE_CALIB_DIR']:
+                idir = self.setup.rdxdir
+                #idir = os.path.join(self.redux_dir,
+                #    self.setup.instr, self.setup.name)
+                # Masters?
+                if self.options[option] == 'USE_MASTERS_DIR':
+                    ## Crazy hack for pypeit_setup 
+                    #if self.setup.instr in ['shane_kast_blue'] and \
+                    #    self.setup.name in ['600_4310_d55']:
+                    #        idir = os.path.join(idir,
+                    #            f'{self.setup.instr}_A')
+                    idir = os.path.join(idir, 'Masters')
+                # Finally
+                command_line += [option, idir]
             else:
                 command_line += [option, str(self.options[option])]
 
@@ -542,18 +589,14 @@ class PypeItQuickLookTest(PypeItTest):
                 self.passed = False
                 return False
 
+        # TODO
+        #  Generate the Masters as needed if USE_MASTERS_DIR or USE_CALIB_DIR is set
+
         # Run the quick look test via the parent's run method, setting the environment
         # to use the newly generated masters
         self.env = os.environ.copy()
         self.env['QL_MASTERS'] = self.output_dir
-        if self.setup.instr == 'keck_deimos':
-            # Need to run 2 commands!
-            self.command = 'calib'
-            run0 = super().run()
-            self.command = 'science'
-            return super().run()
-        else:
-            return super().run()
+        return super().run()
 
 
 def pypeit_file_name(instr, setup, std=False):

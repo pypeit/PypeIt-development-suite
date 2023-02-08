@@ -1,0 +1,3 @@
+
+
+jwst_download.py -v --configfile jwst_query_config_nirspec.cfg --lookbacktime 200
