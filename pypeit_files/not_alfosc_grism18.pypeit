@@ -1,0 +1,30 @@
+# Auto-generated PypeIt input file using PypeIt version: 1.12.1.dev8+gccd30166d
+# UTC 2023-02-08T03:34:55.694
+
+# User-defined execution parameters
+[rdx]
+    spectrograph = not_alfosc
+
+# Setup
+setup read
+Setup A:
+  binning: 1,1
+  decker: Slit_0.75
+  dispname: Grism_18
+setup end
+
+# Data block 
+data read
+ path /Users/djones/Downloads/grism18/raw
+       filename |                 frametype |                 ra |           dec |                  target | dispname |    decker | binning |                mjd |          airmass | exptime
+ALEf260266.fits |                  arc,tilt | 308.13124999949997 | 41.2355555545 |        He alfosc-calibs | Grism_18 | Slit_0.75 |     1,1 |  59392.24898202546 | 1.00001035381172 |    15.0
+ALEf260267.fits |                  arc,tilt | 308.13124999949997 | 41.2355555545 |      ThAr alfosc-calibs | Grism_18 | Slit_0.75 |     1,1 |  59392.25000637731 | 1.00001035502366 |   120.0
+ALEf260377.fits |                      bias | 308.13124999949997 | 41.2355555545 |      alfosc-calibs bias |  Grism_4 |  Slit_1.3 |     1,1 | 59392.275700798615 | 1.00001035623567 |   0.002
+ALEf260378.fits |                      bias | 308.13124999949997 | 41.2355555545 |      alfosc-calibs bias |  Grism_4 |  Slit_1.3 |     1,1 |  59392.27589164352 | 1.00001035502366 |   0.002
+ALEf260379.fits |                      bias | 308.13124999949997 | 41.2355555545 |      alfosc-calibs bias |  Grism_4 |  Slit_1.3 |     1,1 |  59392.27608135417 | 1.00001035502366 |   0.002
+ALEf260261.fits | pixelflat,illumflat,trace | 308.13124999949997 | 41.2355555545 | Halogen 1 alfosc-calibs | Grism_18 | Slit_0.75 |     1,1 |  59392.23968972222 | 1.00001035502366 |   160.0
+ALEf260262.fits | pixelflat,illumflat,trace | 308.13124999949997 | 41.2355555545 | Halogen 2 alfosc-calibs | Grism_18 | Slit_0.75 |     1,1 |  59392.24169325231 | 1.00001035259985 |   160.0
+ALEf260263.fits | pixelflat,illumflat,trace | 308.13124999949997 | 41.2355555545 | Halogen 3 alfosc-calibs | Grism_18 | Slit_0.75 |     1,1 |  59392.24369679398 | 1.00001034896468 |   160.0
+ALEf260165.fits |                   science |         307.394625 | 40.3438888879 |       J20293472+4020381 | Grism_18 | Slit_0.75 |     1,1 |  59392.11780028935 | 1.02895737616654 |   600.0
+data end
+

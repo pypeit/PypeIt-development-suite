@@ -33,10 +33,10 @@ To add a new type of test:
    PypeItTest subclass that runs the test, and the test phase (prep, reduce, afterburn, quicklook).
 
 Attributes:
-    reduce_setups:           The test setups that support reduction. A dict of instruments to the supported test 
-                             setups for the instrument. 
+    reduce_setups:           The test setups that support reduction. A dict of instruments to the supported test
+                             setups for the instrument.
                              Each setup should have data in $PYPEIT_DEV/RAW_DATA/instrument/setup
-    all_setups:              All of test setups that comprise the "reduce", "afterburn", and "ql" tests in the dev 
+    all_setups:              All of test setups that comprise the "reduce", "afterburn", and "ql" tests in the dev
                              suite. Effectively all of the test that are not run by pytest.
     all_tests:               A list of the test types supported by the dev suite and which test setups they are run
                              on.  The test types are listed in the order they run in so that tests can depend on the
@@ -132,7 +132,7 @@ reduce_setups  = {'bok_bc': ['300','600'],
                   'mmt_mmirs': ['HK_zJ', 'J_zJ', 'K_K'],
                   'mmt_bluechannel': ['300l'],
                   'ntt_efosc2': ['gr5', 'gr6'],
-                  'not_alfosc': ['grism4', 'grism19'],
+                  'not_alfosc': ['grism3', 'grism4', 'grism5', 'grism7', 'grism10', 'grism11', 'grism17', 'grism18', 'grism19', 'grism20'],
                   'p200_dbsp_blue': ['600_4000_d55', '600_4000_d68', '1200_5000_d68'],
                   'p200_dbsp_red': ['316_7500_d55', '600_10000_d55', '1200_7100_d68'],
                   'p200_tspec': ['TSPEC'],
@@ -238,10 +238,10 @@ _quick_look = {'shane_kast_blue/600_4310_d55':
 
 # The order of these tests in all_tests determine the order they run
 # in for the setup. So that tests that depend on previous tests must
-# be in the right order. e.g. PypeItSetupTest must come before 
+# be in the right order. e.g. PypeItSetupTest must come before
 # PypeItReduceTest and PypeItSensFuncTest must come before
 # PypeItFluxTest.
-# 
+#
 all_tests = [{'factory': pypeit_tests.PypeItSetupTest,
               'type':    TestPhase.PREP,
               'setups':  _pypeit_setup},
