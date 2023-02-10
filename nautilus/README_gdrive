@@ -1,0 +1,23 @@
+Accessing Google Drive from Nautilus requires a service account. To create one:
+
+1 Go to the Google Cloud console https://console.cloud.google.com/
+2 Login or select the account you want to use (a ucolick.org account in the case of the
+  current service account)
+3 Under "Select a Project" select New Project. (If you don't see Select a Project, the list may be named
+  with a project name you've already signed in with)
+4 In "New Project" Give the project a name and select an organization. For example, the current project is named
+  "PypeIt Devsuite" under ucolick.org. Click create.
+5 Once you've created the project, select it from the "Select a Project" list.
+6 Click on IAM and Admin
+7 Select "Service Account" on the left hand side. 
+8 Click Create Service Account
+9 Give the account a name. And description. Click "Create and Continue" Select No to the other options.
+10 Select the account's e-mail address. Select "Keys"
+11 Select "Add Key" and "Create New Key"
+12 Select Json and Create. It will download a new key file.  If you lose this file, you will have to create a new key.
+13 Now using kubectl, set that key as "credentials" under the "devsuite-rawdata" secret.
+    kubectl create secret generic devsuite-rawdata --from-file=credentials=<path to secret>
+14 Now share the devsuite RAW_DATA and CALIBS directory with the e-mail address associated with the service account. It will be
+   something like: devsuite@pypeit-devsuite.iam.gserviceaccount.com
+
+See rclone.conf for how to get rclone to use this account.
