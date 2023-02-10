@@ -144,6 +144,7 @@ all_setups  = {
     'shane_kast_blue': ['452_3306_d57', '600_4310_d55', '830_3460_d46'],
     'shane_kast_red': ['300_7500_Ne', '600_7500_d55_ret', '600_7500_d57', '600_5000_d46', '1200_5000_d57'],
     'soar_goodman_red': ['M1','M2'],
+    'soar_goodman_blue': ['M1'],
     'tng_dolores': ['LRB'],
     'vlt_fors2': ['300I', '600Z'],
     'vlt_sinfoni': ['K_0.8'],
