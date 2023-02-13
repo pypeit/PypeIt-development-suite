@@ -15,6 +15,8 @@ import traceback
 import glob
 from abc import ABC, abstractmethod
 
+import psutil
+
 from astropy.table import Table
 import numpy as np
 
@@ -66,6 +68,9 @@ class PypeItTest(ABC):
         self.end_time = None
         """ :obj:`datetime.datetime`: The date and time the test finished."""
 
+        self.max_mem = None
+        """ :obj:`int`: The maximum memory used by the test."""
+
 
     def __str__(self):
         """Return a summary of the test and the status.
@@ -96,30 +101,58 @@ class PypeItTest(ABC):
             self.command_line = self.build_command_line()
 
             with open(self.logfile, "a") as f:
-                try:
-                    if self.coverage:
-                        # Coverage will need the full path to the script
-                        full_path_to_command = shutil.which(self.command_line[0])
-                        if full_path_to_command is not None:
-                            self.command_line[0] = full_path_to_command
-                        else:
-                            raise RuntimeError(f"Could not find full path for {self.command_line[0]}")
+                if self.coverage:
+                    # Coverage will need the full path to the script
+                    full_path_to_command = shutil.which(self.command_line[0])
+                    if full_path_to_command is not None:
+                        self.command_line[0] = full_path_to_command
+                    else:
+                        raise RuntimeError(f"Could not find full path for {self.command_line[0]}")
 
-                        self.command_line = ["coverage", "run"] + _COVERAGE_ARGS + self.command_line
-                    if self.start_time is None:
-                        # If a subclass sets the start time or calls run multiple times,
-                        # (see deimos QL) use the first value as the start rather than overwriting it.
-                        self.start_time = datetime.datetime.now()
+                    self.command_line = ["coverage", "run"] + _COVERAGE_ARGS + self.command_line
+                if self.start_time is None:
+                    # If a subclass sets the start time or calls run multiple times,
+                    # (see deimos QL) use the first value as the start rather than overwriting it.
+                    self.start_time = datetime.datetime.now()
+                    
+                with subprocess.Popen(self.command_line, stdout=f, stderr=f, env=self.env, cwd=self.setup.rdxdir) as child:
+                    try:
+                        self.pid = child.pid
+                        returncode = None
+                        process = psutil.Process(self.pid)
                         
-                    child = subprocess.Popen(self.command_line, stdout=f, stderr=f, env=self.env, cwd=self.setup.rdxdir)
-                    self.pid = child.pid
-                    child.wait()
-                    self.end_time = datetime.datetime.now()
-                    self.passed = (child.returncode == 0)
-                finally:
-                    # Kill the child if the parent script exits due to a SIGTERM or SIGINT (Ctrl+C)
-                    if child is not None:
-                        child.terminate()
+                        if self.max_mem is None:
+                            # Don't overwrite previous max_mem if run() is called multiple times.
+                            self.max_mem = 0
+
+                        while returncode is None:
+                            # Try to get memory usage information for the child,
+                            # ignore errors if we can't
+                            try:
+                                mem = process.memory_full_info().uss
+                                if self.max_mem < mem:
+                                    self.max_mem = mem
+                            except psutil.NoSuchProcess:
+                                pass
+                            except psutil.AccessDenied:
+                                pass
+                            # Wait 2 seconds for the child before checking the memory again
+                            try:
+                                returncode = child.wait(2)
+                            except subprocess.TimeoutExpired:
+                                # Normal, means the child didn't finish within the 2 second timeout
+                                pass
+
+                        self.end_time = datetime.datetime.now()
+                        self.passed = (child.returncode == 0)
+                    finally:
+                        # If an exception (possibly a CTRL+C) escapes the while loop around the child.wait(),
+                        # the child process may still be running. 
+                        # If it is running, we make sure to terminate the child here, as the Popen context
+                        # will wait for the child to finish
+                        if child.poll() is None:
+                            child.terminate()
+
 
         except Exception:
             # An exception occurred while running the test
@@ -174,7 +207,7 @@ class PypeItReduceTest(PypeItTest):
 
         self.ignore_masters = ignore_masters if ignore_masters is not None else pargs.do_not_reuse_masters
 
-        description = f"pypeit {'standards ' if std else ''}{'(ignore masters)' if self.ignore_masters else ''}"
+        description = f"pypeit{' standards' if std else ''}{' (ignore masters)' if self.ignore_masters else ''}"
         super().__init__(setup, pargs, description, "test")
 
         self.std = std
