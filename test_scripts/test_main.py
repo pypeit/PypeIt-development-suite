@@ -412,6 +412,28 @@ class TestReport(object):
             print("\x1B[" + "1;32m" + f"--- PYTEST {test_descr.upper()} PASSED " + "\x1B[" + "0m"
                   + results +  "\x1B[" + "1;32m" + "---" + "\x1B[" + "0m" + "\r", file=output)
 
+    def performance_results(self, output):
+        """Display performance statistics on PypeIt tests."""
+        print("Setup,Test Type,Start Time,End Time,Duration(s),Memory Usage (bytes),Duration (D:H:M:S), Memory Usage (MiB)", file=output)
+        for setup in self.test_setups:
+            for test in setup.tests:
+                if test.start_time is not None and test.end_time is not None:
+                    duration = test.end_time - test.start_time
+                    duration_secs = duration.total_seconds()
+                else:
+                    duration = ""
+                    duration_secs = ""
+
+                if test.max_mem is None:
+                    mem_usage = ""
+                    mem_usage_megs = ""
+                else:
+                    mem_usage = test.max_mem
+                    mem_usage_megs = test.max_mem / (2**20)
+
+                print(f'{test.setup},{test.description},{test.start_time},{test.end_time},{duration_secs},{mem_usage},{duration},{mem_usage_megs}', file=output)
+
+
     def print_tail(self, file, num_lines, output=sys.stdout, flush=False):
         """Print the last num_lines of a file."""
         result = subprocess.run(['tail', f'-{num_lines}', file], stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
@@ -458,6 +480,7 @@ class TestReport(object):
         print(f'Start time: {test.start_time.ctime() if test.start_time is not None else "n/a"}', file=output, flush=flush)
         print(f'End time:   {test.end_time.ctime() if test.end_time is not None else "n/a"}', file=output, flush=flush)
         print(f'Duration:   {duration}', file=output, flush=flush)
+        print(f'Mem Usage:  {test.max_mem}', file=output, flush=flush)
         print(f"Command:    {' '.join(test.command_line) if test.command_line is not None else ''}", file=output, flush=flush)
         print('', file=output, flush=flush)
         print('Error Messages:', file=output, flush=flush)
@@ -634,6 +657,8 @@ def parser(options=None):
                         help='Collect code coverage information. and write it to the given file.')
     parser.add_argument('-r', '--report', default=None, type=str,
                         help='Write a detailed test report to REPORT.')
+    parser.add_argument('-c', '--csv', default=None, type=str,
+                        help='Write performance numbers to a CSV file.')
     parser.add_argument('-w', '--show_warnings', default=False, action='store_true',
                         help='Show warnings when running unit tests and vet tests.')
     return parser.parse_args() if options is None else parser.parse_args(options)
@@ -939,6 +964,10 @@ def main():
     # ---------------------------------------------------------------------------
     # Finish up the report on the test results
     test_report.testing_completed()
+
+    if pargs.csv is not None:
+        with open(pargs.csv, "w") as f:
+            test_report.performance_results(f)
 
     if not pargs.quiet:
         if pargs.verbose:

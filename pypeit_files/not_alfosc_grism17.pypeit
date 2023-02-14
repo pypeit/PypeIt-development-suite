@@ -1,0 +1,30 @@
+# Auto-generated PypeIt input file using PypeIt version: 1.11.1.dev427+g549c27eb9.d20230210
+# UTC 2023-02-10T10:38:52.222
+
+# User-defined execution parameters
+[rdx]
+    spectrograph = not_alfosc_vert
+
+# Setup
+setup read
+Setup A:
+  binning: 1,1
+  decker: Vert_0.9
+  dispname: Grism_17
+setup end
+
+# Data block 
+data read
+ path /Users/djones/Downloads/grism17/raw
+       filename |                 frametype |            ra |           dec |                  target | dispname |   decker | binning |                mjd |          airmass | exptime
+ALEk120290.fits |                  arc,tilt | 140.314166667 | 28.9123888882 |        Ne alfosc-calibs | Grism_17 | Vert_0.9 |     1,1 |  59531.27402172454 | 1.00000467684458 |     2.0
+ALEk120291.fits |                  arc,tilt | 140.314166667 | 28.9123888882 |      ThAr alfosc-calibs | Grism_17 | Vert_0.9 |     1,1 |  59531.27493407408 | 1.00000467765911 |   120.0
+ALEk120335.fits |                      bias | 140.314166667 | 28.9123888882 |      alfosc-calibs bias |  Grism_7 | Slit_1.0 |     1,1 | 59531.287901435186 | 1.00000467765911 |   0.002
+ALEk120336.fits |                      bias | 140.314166667 | 28.9123888882 |      alfosc-calibs bias |  Grism_7 | Slit_1.0 |     1,1 |  59531.28805491898 | 1.00000467847372 |   0.002
+ALEk120337.fits |                      bias | 140.314166667 | 28.9123888882 |      alfosc-calibs bias |  Grism_7 | Slit_1.0 |     1,1 | 59531.288208530095 | 1.00000467765911 |   0.002
+ALEk120285.fits | pixelflat,illumflat,trace | 140.314166667 | 28.9123888882 | Halogen 1 alfosc-calibs | Grism_17 | Vert_0.9 |     1,1 | 59531.266394895836 | 1.00000467603011 | 133.333
+ALEk120286.fits | pixelflat,illumflat,trace | 140.314166667 | 28.9123888882 | Halogen 2 alfosc-calibs | Grism_17 | Vert_0.9 |     1,1 | 59531.268056168985 | 1.00000467603011 | 133.333
+ALEk120287.fits | pixelflat,illumflat,trace | 140.314166667 | 28.9123888882 | Halogen 3 alfosc-calibs | Grism_17 | Vert_0.9 |     1,1 |  59531.26971821759 | 1.00000467684458 | 133.333
+ALEk120193.fits |                   science | 287.418458334 | 49.5014166654 |             kic11551430 | Grism_17 | Vert_0.9 |     1,1 |  59530.89591673611 | 1.73994841893314 |   300.0
+data end
+
