@@ -271,7 +271,7 @@ def test_collate_1d(tmp_path, monkeypatch, redux_out):
     assert params['collate1d']['flux'] == False
     assert params['collate1d']['tolerance'] == 4.0
     assert params['collate1d']['match_using'] == 'pixel'
-    assert params['collate1d']['exclude_slit_trace_bm'] == 'BADSKYSUB,BADEXTRACT'
+    assert params['collate1d']['exclude_slit_trace_bm'] == ['BADSKYSUB','BADEXTRACT']
     assert params['collate1d']['exclude_serendip'] is False
     assert params['collate1d']['wv_rms_thresh'] == 0.1
     assert params['coadd1d']['ex_value'] == 'BOX'
