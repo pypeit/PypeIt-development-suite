@@ -1,0 +1,25 @@
+# Auto-generated PypeIt input file using PypeIt version: 1.11.1.dev372+ge2989ae29
+# UTC 2023-02-23T13:42:15.494
+
+# User-defined execution parameters
+[rdx]
+    spectrograph = soar_goodman_red
+
+# Setup
+setup read
+Setup A:
+  binning: 2,2
+  decker: 1.0_LONG_SLIT
+  dispangle: 12.0004
+  dispname: 600_SYZY_OLD
+setup end
+
+# Data block 
+data read
+ path /Users/rcooke/Desktop/tempdir/Raw
+                       filename |                 frametype |                 ra |                dec | target |     dispname |        decker | binning |               mjd | airmass | exptime | dispangle
+0437_T1_14-08-2021_comp.fits.fz |                  arc,tilt |  2.203383333333333 |         15.8583325 |     T1 | 600_SYZY_OLD | 1.0_LONG_SLIT |     2,2 | 59440.35829319445 |    1.55 |     0.5 |   12.0004
+     0436_T1_14-08-2021.fits.fz | pixelflat,illumflat,trace |  2.203470833333333 |  15.85823861111111 |     T1 | 600_SYZY_OLD | 1.0_LONG_SLIT |     2,2 | 59440.35777199074 |    1.55 |     2.0 |   12.0004
+     0438_T1_14-08-2021.fits.fz |                   science | 2.2055833333333332 | 15.857474166666666 |     T1 | 600_SYZY_OLD | 1.0_LONG_SLIT |     2,2 | 59440.36146028935 |    1.57 |  1000.0 |   12.0004
+data end
+
