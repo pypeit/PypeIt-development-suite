@@ -4,6 +4,10 @@ This script takes the reduced output file from Greg Writh's IDL scripts, convert
 PypeIt spec1d files, creates sensitivity functions from those spec1ds, and then stitches 
 those sensitivity functions into combined fucntions intended to be used as archived
 sensitivity files for DEIMOS.
+
+The input files used can be found in the PypeIt-development-suite Google drive under
+DEIMOS_Dev/Throughput/throughput_gdw/data_products/extract and
+DEIMOS_Dev/new_standard_star_DEIMOS_600ZD_1200G
 """
 import argparse
 import copy
@@ -264,18 +268,19 @@ def main(args):
     """ Executes sensitivity function computation.
     """
 
-    source_map = {"1200G": ['extract/1200G/2005aug27_d0827_0046.fits',
-                            'extract/1200G/2005aug27_d0827_0047.fits',
-                            'extract/1200G/2005aug27_d0827_0048.fits'],
+    source_map = {"1200G": ['extract/1200G/2023jan17_d0117_0102.fits',
+                            'extract/1200G/2023jan17_d0117_0103.fits',
+                            'extract/1200G/2023jan17_d0117_0104.fits',
+                            'extract/1200G/2023jan17_d0117_0105.fits'],
                   "1200B": ['extract/1200B/2017oct03_d1003_0055.fits',
                             'extract/1200B/2017oct03_d1003_0056.fits',
                             'extract/1200B/2017oct03_d1003_0057.fits'],
                   "900ZD": ['extract/900ZD/2010oct06_d1006_0138.fits',
                             'extract/900ZD/2010oct06_d1006_0139.fits',
                             'extract/900ZD/2010oct06_d1006_0140.fits'],
-                  "600ZD": ['extract/600ZD/2010sep24_d0924_0008.fits',
-                            'extract/600ZD/2010sep24_d0924_0009.fits',
-                            'extract/600ZD/2010sep24_d0924_0010.fits'],
+                  "600ZD": ['extract/600ZD/2023jan17_d0117_0098.fits',
+                            'extract/600ZD/2023jan17_d0117_0099.fits',
+                            'extract/600ZD/2023jan17_d0117_0101.fits'],
                   "830G":  ['extract/830G/2010oct06_d1006_0135.fits',
                             'extract/830G/2010oct06_d1006_0136.fits',
                             'extract/830G/2010oct06_d1006_0137.fits']}

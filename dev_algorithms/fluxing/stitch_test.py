@@ -1,3 +1,21 @@
+# Meant to be used in ipython when developing stitched sensfuncs.  
+# To use:
+# 1 Copy stitch sensfunc funtion from sensfunc_archive/stitchdeimos.py
+# 2 Edit the files_XXXX arrays to contain the correct files.
+# 3 Change the stitch function for the new stitched sensfunc. Change it to return None
+#   as the fith return value.
+# 4 Paste this file into ipython
+# 5 To stitch and graph:
+#    sflist = prep(files_600ZD, 'sens/extract')
+#    targetsf, polyfit_areas, fit_info = stitch(sflist, "600ZD")
+#    graph(targetsf, polyfit_areas=polyfit_areas, fit_info=fit_info, sflist=sflist
+# 6 When determining how to do a polynomial fit, pass in None as use_polyfit_min/use_polyfit_max to
+#   stitch_with_polyfit. Then change the stitch function to return None
+#   for "polyfit_areas", and fit_info from stitch_with_polyfit as the fith return value. Use this graph
+#   to tweak the polyfit and determine what range to overwrite with the fit. 
+# 7 Once the polynomial fit is working, pass the desired range to fit using use_polyfit_min/use_polyfit_max, 
+#   return polyfit_areas as the fourth return value, and None as the fit_info (fifth return value)
+
 from math import comb
 import sys
 import os
@@ -9,12 +27,61 @@ from pypeit.sensfunc import SensFunc
 from pypeit import utils
 from matplotlib import pyplot as plot
 import copy
+from pypeit.core.wavecal import wvutils
 
-from stitchdeimos import stitch_with_polyfit, stitch_sensfunc
+def stitch_with_polyfit(wave_1, zp_fit_1, gpm_1,
+                        wave_2, zp_fit_2, gpm_2,
+                        fitting_wave, fitting_zp_fit, order,
+                        use_polyfit_min, use_polyfit_max):
 
-files_1200G = ['1200G/sens_2005aug27_d0827_0046.fits',
-               '1200G/sens_2005aug27_d0827_0047.fits',
-               '1200G/sens_2005aug27_d0827_0048.fits']
+    fitc = np.polynomial.polynomial.polyfit(fitting_wave, fitting_zp_fit, order)
+    fit_info = [np.min(fitting_wave), np.max(fitting_wave), fitc]
+
+    if use_polyfit_max is None or use_polyfit_min is None:
+        # Stitch without polyfit, but still return the fit_info
+        # This is used to generate a plot from which the min/max can be chosen
+        combined_wave = np.concatenate((wave_1, wave_2))
+
+        combined_zp_fit = np.concatenate((zp_fit_1, zp_fit_2))
+    
+        combined_zp_fit_gpm = np.concatenate((gpm_1, gpm_2))
+
+    else:
+        use_polyfit_1_mask = wave_1 > use_polyfit_min
+        use_polyfit_2_mask = wave_2 < use_polyfit_max
+
+        wave_grid_min = wave_1[use_polyfit_1_mask][0]
+        wave_grid_max = wave_2[use_polyfit_2_mask][-1]
+
+        joining_wave = wvutils.get_wave_grid(fitting_wave,
+                                            wave_method='linear',
+                                            wave_grid_min=wave_grid_min,
+                                            wave_grid_max=wave_grid_max,
+                                            spec_samp_fact=1.0)[0]
+
+        joining_zp_fit = np.polynomial.polynomial.polyval(joining_wave, fitc)
+
+        joining_gpm = np.ones_like(joining_wave, dtype=bool)
+
+        combined_wave = np.concatenate((wave_1[np.logical_not(use_polyfit_1_mask)],
+                                    joining_wave,
+                                    wave_2[np.logical_not(use_polyfit_2_mask)]))
+
+        combined_zp_fit = np.concatenate((zp_fit_1[np.logical_not(use_polyfit_1_mask)],
+                                        joining_zp_fit,
+                                        zp_fit_2[np.logical_not(use_polyfit_2_mask)]))
+    
+        combined_zp_fit_gpm = np.concatenate((gpm_1[np.logical_not(use_polyfit_1_mask)],
+                                            joining_gpm,
+                                            gpm_2[np.logical_not(use_polyfit_2_mask)]))
+
+    return combined_wave, combined_zp_fit, combined_zp_fit_gpm, fit_info
+
+
+files_1200G = ['1200G/sens_2023jan17_d0117_0102.fits',
+               '1200G/sens_2023jan17_d0117_0103.fits',
+               '1200G/sens_2023jan17_d0117_0104.fits',
+               '1200G/sens_2023jan17_d0117_0105.fits']
 
 files_1200B = ['1200B/sens_2017oct03_d1003_0055.fits',
                '1200B/sens_2017oct03_d1003_0056.fits',
@@ -24,16 +91,17 @@ files_900ZD = ['900ZD/sens_2010oct06_d1006_0138.fits',
                '900ZD/sens_2010oct06_d1006_0139.fits',
                '900ZD/sens_2010oct06_d1006_0140.fits']
 
-files_600ZD = ['600ZD/sens_2010sep24_d0924_0008.fits',
-               '600ZD/sens_2010sep24_d0924_0009.fits',
-               '600ZD/sens_2010sep24_d0924_0010.fits']
+files_600ZD = ['600ZD/sens_2023jan17_d0117_0098.fits',
+               '600ZD/sens_2023jan17_d0117_0099.fits',
+               '600ZD/sens_2023jan17_d0117_0101.fits']
+
 
 files_830G =  ['830G/sens_2010oct06_d1006_0135.fits',
                '830G/sens_2010oct06_d1006_0136.fits',
                '830G/sens_2010oct06_d1006_0137.fits']
 
 def prep(files, fileroot=''):
-    """ Executes sensitivity function computation.
+    """ Builds a list of sensfunc objects from files..
     """
     filelist = [os.path.join(fileroot, file) for file in files]
     sflist = []
@@ -42,17 +110,11 @@ def prep(files, fileroot=''):
         sf.sensfile = file
         sflist.append(sf)
 
-
-    sflist.sort(key=lambda x: x.sens['WAVE_MIN'][0])
-
-    if len(sflist)!=3:
-        print("Failed. Currently require exaclty 3 sensfunc files.")
-        sys.exit(1)
     return sflist
 
 def stitch(sflist, grating):
 
-    (combined_wave, combined_zp_fit, combined_zp_fit_gpm, polyfit_areas) = stitch_sensfunc(grating, sflist)
+    (combined_wave, combined_zp_fit, combined_zp_fit_gpm, polyfit_areas, fit_info) = stitch_sensfunc(grating, sflist)
 
 
     newsens = SensFunc.empty_sensfunc_table(1, len(combined_wave))
@@ -67,7 +129,7 @@ def stitch(sflist, grating):
     targetsf.zeropoint = np.empty((combined_zp_fit.size,1))
     targetsf.zeropoint[:,0] = combined_zp_fit
 
-    return targetsf, polyfit_areas
+    return targetsf, polyfit_areas, fit_info
 
 def fit(sf, invar, order, bound, weights=None):
     combined_wave = sf.sens['SENS_WAVE'][0]
@@ -132,7 +194,7 @@ def setup_axes(axis,xmin, ymin, xmax, ymax, title):
     axis.set_ylabel('Zeropoint Fit (AB mag)')
     axis.set_title('PypeIt Zeropoint Fit for ' + title)
 
-def graph(sf, polyfit_areas, sflist = None, label = "stitch test"):
+def graph(sf, polyfit_areas, sflist = None, fit_info=None, label = "stitch test"):
 
     fig, axis = build_figure()
 
@@ -145,6 +207,9 @@ def graph(sf, polyfit_areas, sflist = None, label = "stitch test"):
         num_plots += 1
         
     if polyfit_areas is not None:
+        num_plots +=1
+
+    if fit_info is not None:
         num_plots +=1
 
     if sflist is not None:
@@ -176,6 +241,16 @@ def graph(sf, polyfit_areas, sflist = None, label = "stitch test"):
         (xmin[i], xmax[i], ymin[i], ymax[i]) = create_plot(axis, "blue", f'Polynomial fit', x, y, marker='.', linestyle='none')
         i+=1
 
+    # Plot the whole polynomial fit in cyan
+    if fit_info is not None:
+        xmask = np.logical_and(sf.sens['SENS_WAVE'][0] >= fit_info[0], sf.sens['SENS_WAVE'][0] <= fit_info[1])
+        x = sf.sens['SENS_WAVE'][0][xmask]
+        fitted_y = np.polynomial.polynomial.polyval(x, fit_info[2])# fit.eval(x)
+        (xmin[i], xmax[i], ymin[i], ymax[i]) = create_plot(axis, "cyan", f'entire polyfit', x, fitted_y, marker='.', linestyle='none')
+        i+=1
+
+
+
     # Plot the original sensfuncs in light gray in the background
     if sflist is not None:
         for bksf in sflist:
@@ -186,7 +261,7 @@ def graph(sf, polyfit_areas, sflist = None, label = "stitch test"):
                 if i == 3:
                     label = "Original sensfuncs"
                 else:
-                    label = None
+                    label = ""
                 (xmin[i], xmax[i], ymin[i], ymax[i]) = create_plot(axis, (.5, .5, .5), label, x,y, linewidth = 1, linestyle='solid')#linestyle='dashed')
                 i+=1
 
@@ -274,3 +349,18 @@ def old_graph(sf, fit_info, polyfit_, sflist=None, grating="1200G"):#, sens_gpm)
 
 
     plot.show()
+
+def stitch_sensfunc(grating, sflist):
+    if grating == '1200G':
+        return stitch_1200G_sensfunc(sflist)
+    elif grating == '1200B':
+        return stitch_1200B_sensfunc(sflist)
+    elif grating == '600ZD':
+        return stitch_600ZD_sensfunc(sflist)
+    elif grating == '900ZD':
+        return stitch_900ZD_sensfunc(sflist)
+    elif grating == '830G':
+        return stitch_830G_sensfunc(sflist)
+    else:
+        raise ValueError(f"{grating} not Implemented (yet)")
+

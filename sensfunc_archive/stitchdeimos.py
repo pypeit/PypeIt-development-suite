@@ -69,9 +69,10 @@ def stitch_1200G_sensfunc(sflist):
     """
     Stitch together sensfunc files generated from throughput data from Gret Wriths scripts. Specifically
     The following files were used:
-        sens_from_gdw_data/extract/1200G/sens_2005aug27_d0827_0046.fits
-        sens_from_gdw_data/extract/1200G/sens_2005aug27_d0827_0047.fits
-        sens_from_gdw_data/extract/1200G/sens_2005aug27_d0827_0048.fits
+        sens_from_gdw_data/extract/1200G/sens_2023jan17_d0117_0102.fits
+        sens_from_gdw_data/extract/1200G/sens_2023jan17_d0117_0103.fits
+        sens_from_gdw_data/extract/1200G/sens_2023jan17_d0117_0104.fits
+        sens_from_gdw_data/extract/1200G/sens_2023jan17_d0117_0105.fits
 
     """
 
@@ -89,7 +90,7 @@ def stitch_1200G_sensfunc(sflist):
     # match det 3
 
     combined_wave = np.concatenate((sflist[0].sens['SENS_WAVE'][0][file1_det3_nzpm], sflist[0].sens['SENS_WAVE'][1][file1_det7_nzpm]))
-    combined_zp_fit = np.concatenate((sflist[0].sens['SENS_ZEROPOINT_FIT'][0][file1_det3_nzpm], sflist[0].sens['SENS_ZEROPOINT_FIT'][1][file1_det7_nzpm]+0.0354))
+    combined_zp_fit = np.concatenate((sflist[0].sens['SENS_ZEROPOINT_FIT'][0][file1_det3_nzpm], sflist[0].sens['SENS_ZEROPOINT_FIT'][1][file1_det7_nzpm]+0.05109))#672843121553))
     combined_zp_fit_gpm = np.concatenate((sflist[0].sens['SENS_ZEROPOINT_FIT_GPM'][0][file1_det3_nzpm], sflist[0].sens['SENS_ZEROPOINT_FIT_GPM'][1][file1_det7_nzpm]))
 
     # Sanity check the second sensfunc file by masking any 0 values and ensuring there are no NaNs or +/- inf values
@@ -104,42 +105,61 @@ def stitch_1200G_sensfunc(sflist):
     # For detector 3 in the second file, take everything that doesn't overlap detector 7 in the first
     non_overlap = sflist[1].sens['SENS_WAVE'][0][file2_det3_nzpm] > np.max(sflist[0].sens['SENS_WAVE'][1][file1_det7_nzpm])
     combined_wave = np.concatenate((combined_wave, sflist[1].sens['SENS_WAVE'][0][file2_det3_nzpm][non_overlap]))
-    combined_zp_fit = np.concatenate((combined_zp_fit, sflist[1].sens['SENS_ZEROPOINT_FIT'][0][file2_det3_nzpm][non_overlap]+0.0983))
+    combined_zp_fit = np.concatenate((combined_zp_fit, sflist[1].sens['SENS_ZEROPOINT_FIT'][0][file2_det3_nzpm][non_overlap]+0.17722))
     combined_zp_fit_gpm = np.concatenate((combined_zp_fit_gpm, sflist[1].sens['SENS_ZEROPOINT_FIT_GPM'][0][file2_det3_nzpm][non_overlap]))
 
-    # For detecter 7 in the second file, nudge it down to match the  previous sensfunc
-    file2_det7_offset = -0.0232
-    combined_wave = np.concatenate((combined_wave, sflist[1].sens['SENS_WAVE'][1][file2_det7_nzpm]))
-    combined_zp_fit = np.concatenate((combined_zp_fit, sflist[1].sens['SENS_ZEROPOINT_FIT'][1][file2_det7_nzpm]+file2_det7_offset))
-    combined_zp_fit_gpm = np.concatenate((combined_zp_fit_gpm, sflist[1].sens['SENS_ZEROPOINT_FIT_GPM'][1][file2_det7_nzpm]))
+    # For detecter 7 in the second file, nudge it up to match the  previous sensfunc,
+    # and truncate to avoid weirdness around the detector boundary
+    file2_det7_offset = 0.03067
+    file2_det7_truncate = 8200.0
+    file2_det7_trunc_mask = sflist[1].sens['SENS_WAVE'][1][file2_det7_nzpm] < file2_det7_truncate
+    combined_wave = np.concatenate((combined_wave, sflist[1].sens['SENS_WAVE'][1][file2_det7_nzpm][file2_det7_trunc_mask]))
+    combined_zp_fit = np.concatenate((combined_zp_fit, sflist[1].sens['SENS_ZEROPOINT_FIT'][1][file2_det7_nzpm][file2_det7_trunc_mask]+file2_det7_offset))
+    combined_zp_fit_gpm = np.concatenate((combined_zp_fit_gpm, sflist[1].sens['SENS_ZEROPOINT_FIT_GPM'][1][file2_det7_nzpm][file2_det7_trunc_mask]))
 
-    # Sanity check the third sensfunc file detector 7 by masking any 0 values and ensuring there are no NaNs or +/- inf values
-    file3_det7_nzpm = (sflist[2].sens['SENS_ZEROPOINT_FIT'][1] != 0) & (sflist[2].sens['SENS_WAVE'][1] != 0)
 
-    assert np.isfinite(sflist[2].sens['SENS_WAVE'][1][file3_det7_nzpm]).all()
-    assert np.isfinite(sflist[2].sens['SENS_ZEROPOINT_FIT'][1][file3_det7_nzpm]).all()
+    # Sanity check the fourth sensfunc file 
+    file4_det3_nzpm = (sflist[3].sens['SENS_ZEROPOINT_FIT'][0] != 0) & (sflist[3].sens['SENS_WAVE'][0] != 0)
+    file4_det7_nzpm = (sflist[3].sens['SENS_ZEROPOINT_FIT'][1] != 0) & (sflist[3].sens['SENS_WAVE'][1] != 0)
 
-    # Combine the non overlapping part of file 3 det 7's sensfunc. 
-    # This uses polynomial fitting to smooth the discontinuity between the two sensfuncs.
-    # File 3 det 7's sensfunc is also nudged up a bit to match the previous sensfunc
-    # better
-    non_overlap = sflist[2].sens['SENS_WAVE'][1][file3_det7_nzpm] > np.max(combined_wave)
-    file3_det7_offset = 0.0899
-    fitting_wave = np.concatenate((sflist[1].sens['SENS_WAVE'][1][file2_det7_nzpm], sflist[2].sens['SENS_WAVE'][1][file3_det7_nzpm][non_overlap]))
-    fitting_zp_fit =  np.concatenate((sflist[1].sens['SENS_ZEROPOINT_FIT'][1][file2_det7_nzpm]+file2_det7_offset, sflist[2].sens['SENS_ZEROPOINT_FIT'][1][file3_det7_nzpm][non_overlap]+file3_det7_offset))
+    assert np.isfinite(sflist[3].sens['SENS_WAVE'][0][file4_det3_nzpm]).all()
+    assert np.isfinite(sflist[3].sens['SENS_ZEROPOINT_FIT'][0][file4_det3_nzpm]).all()
+
+    assert np.isfinite(sflist[3].sens['SENS_WAVE'][1][file4_det7_nzpm]).all()
+    assert np.isfinite(sflist[3].sens['SENS_ZEROPOINT_FIT'][1][file4_det7_nzpm]).all()
+
+    # Append the sensfunc from file 4 detector 3, avoiding overlap with the previous sensfunc.
+    # We also nudge it to match the previous sensfunc
+    non_overlap = sflist[3].sens['SENS_WAVE'][0][file4_det3_nzpm] >= file2_det7_truncate
+    file4_det3_offset = 0.43974 
+
+    combined_wave = np.concatenate((combined_wave, sflist[3].sens['SENS_WAVE'][0][file4_det3_nzpm][non_overlap]))
+    combined_zp_fit = np.concatenate((combined_zp_fit, sflist[3].sens['SENS_ZEROPOINT_FIT'][0][file4_det3_nzpm][non_overlap]+file4_det3_offset))
+    combined_zp_fit_gpm = np.concatenate((combined_zp_fit_gpm, sflist[3].sens['SENS_ZEROPOINT_FIT_GPM'][0][file4_det3_nzpm][non_overlap]))
+
+    # Finally we append the fourth sensfunc file's detector 7. We nudge it up to match the previous sensfunc
+    # and do a polynomial fit across the detector boundary
+    file4_det7_offset = 0.25814 
 
     # The region to overwite with the polyfit values
-    polyfit1_write_min = 8074.5
-    polyfit1_write_max = 8709.5
+    polyfit1_write_min = 8817.7
+    polyfit1_write_max = 9275.8
 
+    # The function the polynomial fit is run against. This has the detector boundary removed.
+    file4_det3_fitting_mask = (sflist[3].sens['SENS_WAVE'][0][file4_det3_nzpm] > 8400.) & (sflist[3].sens['SENS_WAVE'][0][file4_det3_nzpm] < 8855.)
+    file4_det7_fitting_mask = (sflist[3].sens['SENS_WAVE'][1][file4_det7_nzpm] > 9250.) & (sflist[3].sens['SENS_WAVE'][1][file4_det7_nzpm] < 10235.)
+    fitting_wave = np.concatenate((sflist[3].sens['SENS_WAVE'][0][file4_det3_nzpm][file4_det3_fitting_mask], sflist[3].sens['SENS_WAVE'][1][file4_det7_nzpm][file4_det7_fitting_mask]))
+    fitting_zp_fit =  np.concatenate((sflist[3].sens['SENS_ZEROPOINT_FIT'][0][file4_det3_nzpm][file4_det3_fitting_mask]+file4_det3_offset, sflist[3].sens['SENS_ZEROPOINT_FIT'][1][file4_det7_nzpm][file4_det7_fitting_mask]+file4_det7_offset))
+
+    # Combine the sensfuncs using a polynomial fit
     (combined_wave, combined_zp_fit, 
      combined_zp_fit_gpm, fit_info) = stitch_with_polyfit(
                                         combined_wave,
                                         combined_zp_fit,
                                         combined_zp_fit_gpm,
-                                        sflist[2].sens['SENS_WAVE'][1][file3_det7_nzpm][non_overlap],
-                                        sflist[2].sens['SENS_ZEROPOINT_FIT'][1][file3_det7_nzpm][non_overlap] + file3_det7_offset,
-                                        sflist[2].sens['SENS_ZEROPOINT_FIT_GPM'][1][file3_det7_nzpm][non_overlap],
+                                        sflist[3].sens['SENS_WAVE'][1][file4_det7_nzpm],
+                                        sflist[3].sens['SENS_ZEROPOINT_FIT'][1][file4_det7_nzpm] + file4_det7_offset,
+                                        sflist[3].sens['SENS_ZEROPOINT_FIT_GPM'][1][file4_det7_nzpm],
                                         fitting_wave, fitting_zp_fit, 30, polyfit1_write_min, polyfit1_write_max)
 
     # Create a mask for the areas that were filled in with a polynomial fit. This is used for 
@@ -396,9 +416,9 @@ def stitch_600ZD_sensfunc(sflist):
     """
     Stitch together sensfunc files generated from throughput data from Gret Wriths scripts. Specifically
     The following files were used:
-    sens_from_gdw_data/extract/600ZD/sens_2010sep24_d0924_0008.fits
-    sens_from_gdw_data/extract/600ZD/sens_2010sep24_d0924_0009.fits
-    sens_from_gdw_data/extract/600ZD/sens_2010sep24_d0924_0010.fits
+        sens_from_gdw_data/extract/600ZD/sens_2023jan17_d0117_0098.fits
+        sens_from_gdw_data/extract/600ZD/sens_2023jan17_d0117_0099.fits
+        sens_from_gdw_data/extract/600ZD/sens_2023jan17_d0117_0101.fits
 
     """
 
@@ -417,14 +437,14 @@ def stitch_600ZD_sensfunc(sflist):
     # The polynomial fit will be done on a subset of the sensfuncs to improve the fit and eliminate
     # odd behavior near the detector boundary. These numbers were chosen by examining plots of the
     # individual sensfuncs
-    file1_det3_fitting_mask = (sflist[0].sens['SENS_WAVE'][0][file1_det3_nzpm] > 5000.) & (sflist[0].sens['SENS_WAVE'][0][file1_det3_nzpm] < 5712.)
-    
-    fitting_wave = np.concatenate((sflist[0].sens['SENS_WAVE'][0][file1_det3_nzpm][file1_det3_fitting_mask], sflist[0].sens['SENS_WAVE'][1][file1_det7_nzpm]))
-    fitting_zp_fit = np.concatenate((sflist[0].sens['SENS_ZEROPOINT_FIT'][0][file1_det3_nzpm][file1_det3_fitting_mask], sflist[0].sens['SENS_ZEROPOINT_FIT'][1][file1_det7_nzpm]))
+    file1_det3_fitting_mask = (sflist[0].sens['SENS_WAVE'][0][file1_det3_nzpm] > 5500.) & (sflist[0].sens['SENS_WAVE'][0][file1_det3_nzpm] < 5850.)
+    file1_det7_fitting_mask = (sflist[0].sens['SENS_WAVE'][1][file1_det7_nzpm] > 6100.) & (sflist[0].sens['SENS_WAVE'][1][file1_det7_nzpm] < 6400.)
+    fitting_wave = np.concatenate((sflist[0].sens['SENS_WAVE'][0][file1_det3_nzpm][file1_det3_fitting_mask], sflist[0].sens['SENS_WAVE'][1][file1_det7_nzpm][file1_det7_fitting_mask]))
+    fitting_zp_fit = np.concatenate((sflist[0].sens['SENS_ZEROPOINT_FIT'][0][file1_det3_nzpm][file1_det3_fitting_mask], sflist[0].sens['SENS_ZEROPOINT_FIT'][1][file1_det7_nzpm][file1_det7_fitting_mask]))
 
     # The region to overwrite with the polyfit values
-    polyfit1_write_min = 5379.55
-    polyfit1_write_max = 6336.25
+    polyfit1_write_min = 5809.78
+    polyfit1_write_max = 6128.6
 
     (combined_wave, combined_zp_fit, 
      combined_zp_fit_gpm, fit_info) = stitch_with_polyfit(
@@ -445,10 +465,10 @@ def stitch_600ZD_sensfunc(sflist):
     assert np.isfinite(sflist[1].sens['SENS_WAVE'][1][file2_det7_nzpm]).all()
     assert np.isfinite(sflist[1].sens['SENS_ZEROPOINT_FIT'][1][file2_det7_nzpm]).all()
 
-    combined_wave_idx = combined_wave < 7558.1
-    file2_det_7_wave_idx = sflist[1].sens['SENS_WAVE'][1][file2_det7_nzpm] > 7558.1
+    combined_wave_idx = combined_wave < 7599.5
+    file2_det_7_wave_idx = sflist[1].sens['SENS_WAVE'][1][file2_det7_nzpm] > 7599.5
     combined_wave = np.concatenate((combined_wave[combined_wave_idx], sflist[1].sens['SENS_WAVE'][1][file2_det7_nzpm][file2_det_7_wave_idx]))
-    combined_zp_fit = np.concatenate((combined_zp_fit[combined_wave_idx], sflist[1].sens['SENS_ZEROPOINT_FIT'][1][file2_det7_nzpm][file2_det_7_wave_idx] + 0.0156))
+    combined_zp_fit = np.concatenate((combined_zp_fit[combined_wave_idx], sflist[1].sens['SENS_ZEROPOINT_FIT'][1][file2_det7_nzpm][file2_det_7_wave_idx] + 0.01047))
     combined_zp_fit_gpm = np.concatenate((combined_zp_fit_gpm[combined_wave_idx], sflist[1].sens['SENS_ZEROPOINT_FIT_GPM'][1][file2_det7_nzpm][file2_det_7_wave_idx]))
 
 
@@ -461,7 +481,7 @@ def stitch_600ZD_sensfunc(sflist):
     file3_det_7_wave_idx = sflist[2].sens['SENS_WAVE'][1][file3_det7_nzpm] > np.max(combined_wave)
 
     combined_wave = np.concatenate((combined_wave, sflist[2].sens['SENS_WAVE'][1][file3_det7_nzpm][file3_det_7_wave_idx]))
-    combined_zp_fit = np.concatenate((combined_zp_fit, sflist[2].sens['SENS_ZEROPOINT_FIT'][1][file3_det7_nzpm][file3_det_7_wave_idx]+0.0663))
+    combined_zp_fit = np.concatenate((combined_zp_fit, sflist[2].sens['SENS_ZEROPOINT_FIT'][1][file3_det7_nzpm][file3_det_7_wave_idx]+0.0500))
     combined_zp_fit_gpm = np.concatenate((combined_zp_fit_gpm, sflist[2].sens['SENS_ZEROPOINT_FIT_GPM'][1][file3_det7_nzpm][file3_det_7_wave_idx]))
 
     # Create a mask for the areas that were filled in with a polynomial fit. This is used for 

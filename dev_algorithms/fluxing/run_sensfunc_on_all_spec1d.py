@@ -40,5 +40,5 @@ if __name__ == '__main__':
         options = [f"{spec1d_file}", "-s", sens_file, "--outfile", str(dest_file)]
         jobs.append(options)
 
-    with Pool(processes=6) as p:
+    with Pool(processes=8) as p:
         p.map(run_sensfunc, jobs)
