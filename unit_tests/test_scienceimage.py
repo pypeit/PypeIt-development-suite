@@ -35,15 +35,13 @@ def shane_kast_blue_sci_files():
 def nires_sci_files():
     return [os.path.join(os.getenv('PYPEIT_DEV'), 'RAW_DATA', 
                          'keck_nires', 'NIRES', ifile)
-            for ifile in ['s180604_0089.fits.gz', 
-                          's180604_0092.fits.gz']]
+            for ifile in ['s190519_0060.fits']]
 
 @pytest.fixture
 def nires_bg_files():
     return [os.path.join(os.getenv('PYPEIT_DEV'), 'RAW_DATA', 
                          'keck_nires', 'NIRES', ifile)
-            for ifile in ['s180604_0090.fits.gz', 
-                          's180604_0091.fits.gz']]
+            for ifile in ['s190519_0059.fits']]
 
 
 def test_proc_diff(nires_sci_files, nires_bg_files):
@@ -68,7 +66,7 @@ def test_proc_diff(nires_sci_files, nires_bg_files):
                                            nires_bg_files, bias=None, bpm=bpm,
                                            flatimages=flatImages)
     # Difference
-    sciImg = sciImg.sub(bgImg, nires_par['scienceframe']['process'])
+    sciImg = sciImg.sub(bgImg)
     # Test
     assert isinstance(sciImg, pypeitimage.PypeItImage)
 

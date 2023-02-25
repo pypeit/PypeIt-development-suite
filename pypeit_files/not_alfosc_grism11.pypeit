@@ -1,0 +1,30 @@
+# Auto-generated PypeIt input file using PypeIt version: 1.11.1.dev428+ge7133d912
+# UTC 2023-02-10T11:57:37.399
+
+# User-defined execution parameters
+[rdx]
+    spectrograph = not_alfosc
+
+# Setup
+setup read
+Setup A:
+  binning: 2,2
+  decker: Slit_1.8
+  dispname: Grism_11
+setup end
+
+# Data block 
+data read
+ path /Users/djones/Downloads/grism11/raw
+       filename |                 frametype |            ra |           dec |                  target | dispname |   decker | binning |                mjd |         airmass | exptime
+ALBg180212.fits |                  arc,tilt |  13.792541667 | -10.911722222 |        He alfosc-calibs | Grism_11 | Slit_1.8 |     2,2 | 58318.251227719906 | 1.0000007780346 |    0.75
+ALBg180213.fits |                  arc,tilt |  13.792541667 | -10.911722222 |        Ne alfosc-calibs | Grism_11 | Slit_1.8 |     2,2 |  58318.25141298611 | 1.0000007780346 |    0.75
+ALBg180314.fits |                      bias |  13.792541667 | -10.911722222 |      alfosc-calibs bias | Grism_11 | Slit_1.8 |     2,2 |  58318.26916203704 | 1.0000007786992 |   0.002
+ALBg180315.fits |                      bias |  13.792541667 | -10.911722222 |      alfosc-calibs bias | Grism_11 | Slit_1.8 |     2,2 |  58318.26928774305 | 1.0000007786992 |   0.002
+ALBg180316.fits |                      bias |  13.792541667 | -10.911722222 |      alfosc-calibs bias | Grism_11 | Slit_1.8 |     2,2 | 58318.269413344904 | 1.0000007786992 |   0.002
+ALBg180207.fits | pixelflat,illumflat,trace |  13.792541667 | -10.911722222 | Halogen 1 alfosc-calibs | Grism_11 | Slit_1.8 |     2,2 |  58318.25059923611 | 1.0000007780346 |   1.388
+ALBg180208.fits | pixelflat,illumflat,trace |  13.792541667 | -10.911722222 | Halogen 2 alfosc-calibs | Grism_11 | Slit_1.8 |     2,2 |   58318.2507040625 | 1.0000007783669 |   1.388
+ALBg180209.fits | pixelflat,illumflat,trace |  13.792541667 | -10.911722222 | Halogen 3 alfosc-calibs | Grism_11 | Slit_1.8 |     2,2 |  58318.25080961805 | 1.0000007780346 |   1.388
+ALBg180169.fits |                   science | 305.566583334 | 26.9887499993 |                  398188 | Grism_11 | Slit_1.8 |     2,2 | 58318.144996539355 | 1.0772968630529 |   300.0
+data end
+
