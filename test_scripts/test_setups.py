@@ -32,10 +32,10 @@ To add a new type of test:
    PypeItTest subclass that runs the test, and the test phase (prep, reduce, afterburn, quicklook).
 
 Attributes:
-    _reduce_setups:          The test setups that support reduction. A dict of instruments to the supported test 
-                             setups for the instrument. 
+    _reduce_setups:          The test setups that support reduction. A dict of instruments to the supported test
+                             setups for the instrument.
                              Each setup should have data in $PYPEIT_DEV/RAW_DATA/instrument/setup
-    all_setups:              All of test setups that comprise the "reduce", "afterburn", and "ql" tests in the dev 
+    all_setups:              All of test setups that comprise the "reduce", "afterburn", and "ql" tests in the dev
                              suite. Effectively all of the test that are not run by pytest.
     all_tests:               A list of the test types supported by the dev suite and which test setups they are run
                              on.  The test types are listed in the order they run in so that tests can depend on the
@@ -99,7 +99,7 @@ class TestPhase(Enum):
 
 
 
-# This dict specifies all the instruments and setups that are supported by the dev suite.  
+# This dict specifies all the instruments and setups that are supported by the dev suite.
 #  The keys are the instruments and the values are a list of the supported setups.
 all_setups  = {
     'bok_bc': ['300','600'],
@@ -109,9 +109,10 @@ all_setups  = {
                     'GS_HAM_MULTI_R400_700', 'GN_E2V_MULTI_R400_600'],
     'gemini_flamingos2': ['HK_HK', 'JH_JH'],
     'gtc_osiris': ['R1000B', 'R1000BMOS', 'R1000RMOS', 'R2500R', 'R2500V'],
+    'gtc_osiris_plus': ['R1000R', 'R300B'],
     'keck_deimos': ['600ZD_M_6500', '600ZD_tilted', '1200G_M_7750', '830G_LVM_8400', '830G_M_8100_26',
-                    '830G_M_8500', '830G_L_8100', '1200B_M_5200', '1200G_M_5500', 
-                    '900ZD_M_6000', '1200B_LVM_5200', '900ZD_LVM_5500', 
+                    '830G_M_8500', '830G_L_8100', '1200B_M_5200', '1200G_M_5500',
+                    '900ZD_M_6000', '1200B_LVM_5200', '900ZD_LVM_5500',
                     '830G_M_9000_dither'],
     'keck_kcwi': ['bh2_4200', 'bl'],
     'keck_nires': ['NIRES', 'ERIS'],
@@ -136,13 +137,14 @@ all_setups  = {
     'mmt_mmirs': ['HK_zJ', 'J_zJ', 'K_K'],
     'mmt_bluechannel': ['300l'],
     'ntt_efosc2': ['gr5', 'gr6'],
-    'not_alfosc': ['grism4', 'grism19'],
+    'not_alfosc': ['grism3', 'grism4', 'grism5', 'grism7', 'grism10', 'grism11', 'grism17', 'grism18', 'grism19', 'grism20'],
     'p200_dbsp_blue': ['600_4000_d55', '600_4000_d68', '1200_5000_d68'],
     'p200_dbsp_red': ['316_7500_d55', '600_10000_d55', '1200_7100_d68'],
     'p200_tspec': ['TSPEC'],
     'shane_kast_blue': ['452_3306_d57', '600_4310_d55', '830_3460_d46'],
     'shane_kast_red': ['300_7500_Ne', '600_7500_d55_ret', '600_7500_d57', '600_5000_d46', '1200_5000_d57'],
-    'soar_goodman_red': ['M1','M2'],
+    'soar_goodman_red': ['M1', 'M2', '600red'],
+    'soar_goodman_blue': ['M1'],
     'tng_dolores': ['LRB'],
     'vlt_fors2': ['300I', '600Z'],
     'vlt_sinfoni': ['K_0.8'],
@@ -171,18 +173,18 @@ _sensfunc = {
     'shane_kast_blue': {
         '600_4310_d55': [dict(std_file='spec1d_*Feige66*.fits')]},
     'gemini_gnirs': {
-        '32_SB_SXD': [dict(std_file='spec1d_*S0206-HIP62745*.fits', 
+        '32_SB_SXD': [dict(std_file='spec1d_*S0206-HIP62745*.fits',
                            sens_file='gemini_gnirs_32_sb_sxd.sens')]},
     'gemini_gmos': {
-        'GS_HAM_R400_860': [dict(std_file='spec1d_**GD71*.fits')], 
-        'GS_HAM_R400_700': [dict(std_file='spec1d_**LTT7379*.fits', 
+        'GS_HAM_R400_860': [dict(std_file='spec1d_**GD71*.fits')],
+        'GS_HAM_R400_700': [dict(std_file='spec1d_**LTT7379*.fits',
                              sens_file='gemini_gmos_gs_ham_r400_700.sens')]},
     'gemini_gmos': {
-        'GS_HAM_R400_860': [dict(std_file='spec1d_**GD71*.fits')], 
-        'GS_HAM_R400_700': [dict(std_file='spec1d_**LTT7379*.fits', 
+        'GS_HAM_R400_860': [dict(std_file='spec1d_**GD71*.fits')],
+        'GS_HAM_R400_700': [dict(std_file='spec1d_**LTT7379*.fits',
                                  sens_file='gemini_gmos_gs_ham_r400_700.sens')]},
     'keck_deimos': {
-        '900ZD_LVM_5500': [dict(std_file='spec1d_*Feige110*.fits', 
+        '900ZD_LVM_5500': [dict(std_file='spec1d_*Feige110*.fits',
                    sens_file='keck_deimos_900zd_lvm_5500.sens')]},
     'keck_mosfire': {
         'Y_long': [dict(std_file='spec1d_*0064-GD71*.fits')]},
@@ -203,14 +205,14 @@ _flux_setup = {
 
 _flux = {
     'shane_kast_blue': {
-        '600_4310_d55': [{}]}, 
+        '600_4310_d55': [{}]},
     'gemini_gnirs': {
         '32_SB_SXD': [{}]},
     'gemini_gmos': {
-        'GS_HAM_R400_860': [{}], 
+        'GS_HAM_R400_860': [{}],
         'GS_HAM_R400_700': [{}]},
     'keck_deimos': {
-        '900ZD_LVM_5500': [{}], 
+        '900ZD_LVM_5500': [{}],
         '600ZD_M_6500': [{}]},
     }
 
@@ -247,7 +249,7 @@ _telluric = {
     'gemini_gnirs': {
         '32_SB_SXD': [dict(coadd_file='pisco_coadd.fits', tell_file=True)]},
     'gemini_gmos': {
-        'GS_HAM_R400_700': [dict(coadd_file='FRB180924_opt.fits', 
+        'GS_HAM_R400_700': [dict(coadd_file='FRB180924_opt.fits',
                                  tell_file=True)]},
     }
 
@@ -263,24 +265,24 @@ _collate1d = {
 _quick_look = {
     'shane_kast_blue': {
         '600_4310_d55':  [
-            dict(test_name='std', files=['b1.fits.gz', 'b10.fits.gz', 
+            dict(test_name='std', files=['b1.fits.gz', 'b10.fits.gz',
                                     'b27.fits.gz']),
-            {'test_name': 'masters', 
+            {'test_name': 'masters',
               'files': ['b1.fits.gz', 'b10.fits.gz', 'b27.fits.gz'],
               '--masters_dir': 'USE_MASTERS_DIR',
             },
-            {'test_name': 'calibs', 
+            {'test_name': 'calibs',
               'files': ['b1.fits.gz', 'b10.fits.gz', 'b27.fits.gz'],
               '--calib_dir': 'USE_CALIB_DIR'},
             {'test_name': 'multi', # Process two frames individually
-                'files': ['b1.fits.gz', 'b10.fits.gz', 
+                'files': ['b1.fits.gz', 'b10.fits.gz',
                    'b27.fits.gz', 'b28.fits.gz']},
             {'test_name': 'nostack', # Process two frames individually
-                'files': ['b1.fits.gz', 'b10.fits.gz', 
+                'files': ['b1.fits.gz', 'b10.fits.gz',
                    'b27.fits.gz', 'b28.fits.gz'],
                 '--no_stack': None},
             {'test_name': 'boxcar', # Process two frames individually
-                'files': ['b1.fits.gz', 'b10.fits.gz', 
+                'files': ['b1.fits.gz', 'b10.fits.gz',
                    'b27.fits.gz'],
                 '--boxcar_radius': 2.},
             ],
@@ -289,7 +291,7 @@ _quick_look = {
         '600_7500_d57': [
             {'files': ['r122.fits'],
               '--masters_dir': 'USE_MASTERS_DIR',
-            }, 
+            },
         ]
     },
     'keck_lris_red': {
@@ -298,7 +300,7 @@ _quick_look = {
                 'files': ['LR.20160216.40478.fits.gz'],
               '--det': 2,
               '--masters_dir': 'USE_MASTERS_DIR',
-            }, 
+            },
         ],
     },
     'keck_deimos': {
@@ -307,31 +309,31 @@ _quick_look = {
                 'files': ['d1010_0056.fits.gz'],
               '--maskID': 958454,
               '--masters_dir': 'USE_MASTERS_DIR',
-            }, 
+            },
             {'test_name': 'slitspatnum', # Run with slitspatnum
                 'files': ['d1010_0056.fits.gz'],
               '--slitspatnum': 'MSC02:452',
               '--masters_dir': 'USE_MASTERS_DIR',
-            }, 
+            },
             ]
         },
     'keck_mosfire': {
-        'J_multi': [ 
+        'J_multi': [
             {'files': ['m191014_0170.fits'],
               '--masters_dir': 'USE_MASTERS_DIR',
             },
         ],
         'Y_long': # Testing on pypeit_ql_jfh_multislit
             [{'files': ['m191120_0043.fits', 'm191120_0044.fits', 'm191120_0045.fits', 'm191120_0046.fits'],
-              '--spec_samp_fact': 2.0, 
-              '--spat_samp_fact': 2.0, 
-              '--flux': None, 
+              '--spec_samp_fact': 2.0,
+              '--spat_samp_fact': 2.0,
+              '--flux': None,
               '--bkg_redux': None}],
     },
     'keck_lris_red_mark4': {
         'long_600_10000_d680': # Testing on pypeit_ql_jfh_multislit
             [{'files': ['r220127_00123.fits', 'r220127_00124.fits'],
-              '--spec_samp_fact': 2.0, '--spat_samp_fact': 2.0, 
+              '--spec_samp_fact': 2.0, '--spat_samp_fact': 2.0,
               '--flux': None}],
         }
     }
@@ -341,10 +343,10 @@ _quick_look = {
 
 # The order of these tests in all_tests determine the order they run
 # in for the setup. So that tests that depend on previous tests must
-# be in the right order. e.g. PypeItSetupTest must come before 
+# be in the right order. e.g. PypeItSetupTest must come before
 # PypeItReduceTest and PypeItSensFuncTest must come before
 # PypeItFluxTest.
-# 
+#
 all_tests = [{'factory': pypeit_tests.PypeItSetupTest,
               'type':    TestPhase.PREP,
               'setups':  _pypeit_setup},
