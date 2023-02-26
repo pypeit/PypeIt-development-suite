@@ -239,3 +239,18 @@ def test_lris_slitmask(redux_out):
     assert len(specObjs.MASKDEF_ID) > 0
     assert 'gal21' in specObjs.MASKDEF_OBJNAME
     assert 'gal49' in specObjs.MASKDEF_OBJNAME # This was "manually" extracted
+
+def test_gmos_slitmask(redux_out):
+    # Check that the LRIS slitmask was read in and used!
+    file_path = os.path.join(redux_out,
+                             'gemini_gmos', 
+                             'GS_HAM_B600_MOS',
+                             'Science', 
+                             'spec1d_LB.20200129.48812-frb19071_LRISb_20200129T133332.890.fits')
+    # Load                                
+    specObjs = specobjs.SpecObjs.from_fitsfile(file_path)
+
+    # Test
+    assert len(specObjs.MASKDEF_ID) > 0
+    assert 'gal21' in specObjs.MASKDEF_OBJNAME
+    assert 'gal49' in specObjs.MASKDEF_OBJNAME # This was "manually" extracted
