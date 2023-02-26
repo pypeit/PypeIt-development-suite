@@ -6,7 +6,7 @@
     spectrograph = gemini_gmos_south_ham
 [calibrations]
   [[slitedges]]
-      maskdesign_filename = ../raw/GS2022BQ137-05_ODF.fits,../raw/S20221128S0038.fits
+      maskdesign_filename = GS2022BQ137-05_ODF.fits,S20221128S0038.fits
       use_maskdesign = True
 [reduce]
   [[slitmask]]
