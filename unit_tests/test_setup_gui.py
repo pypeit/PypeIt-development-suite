@@ -15,6 +15,7 @@ from pypeit.tests.tstutils import data_path
 from pypeit.spectrographs.util import load_spectrograph
 from pypeit.metadata import PypeItMetaData
 from pypeit.inputfiles import PypeItFile
+from pypeit import msgs
 
 # Override pytest-qt's QApplication arguments
 @pytest.fixture(scope="session")
@@ -98,6 +99,7 @@ def test_metadata_proxy(qtbot, qtmodeltester):
     
 
 def test_pypeit_params_proxy(qtmodeltester):
+
     # Mock setup object
     mock_setup = get_mock_setup()
     proxy = model.PypeItParamsProxy(mock_setup)
@@ -127,6 +129,7 @@ def verify_config_name(name):
     return name == 'B'
 
 def test_pypeit_file_model(qtbot, tmp_path):
+
     # Get a mock pypeit setup
     metadata = get_test_metadata()
     # This will set "setup" to B for every file except b1.fits.gz
@@ -162,88 +165,88 @@ def raise_cancel_exception(*args):
 
 def test_pypeit_setup_model(qtbot, tmp_path):
 
-    proxy = model.PypeItSetupModel()
+    setup_model = model.PypeItSetupModel()
     logname = str(tmp_path / "setup_gui_model_test.log")
-    proxy.setup_logging(logname, 2)
+    setup_model.setup_logging(logname, 2)
 
-    assert proxy.state == model.ModelState.NEW
+    assert setup_model.state == model.ModelState.NEW
 
     # Copy only those fits files we want to run on
     shutil.copy2(data_path("b1.fits.gz"), tmp_path)
     shutil.copy2(data_path("b27.fits.gz"), tmp_path)
 
     # Test a failed setup run with the wrong spectrograph
-    with qtbot.waitSignal(proxy.operation_complete, raising=True, check_params_cb=verify_failed_setup, timeout=10000):
-        proxy.set_spectrograph("keck_deimos")
-        proxy.add_raw_data_directory(str(tmp_path))
-        assert proxy.scan_raw_data_directories() == 2
-        proxy.run_setup()
+    with qtbot.waitSignal(setup_model.operation_complete, raising=True, check_params_cb=verify_failed_setup, timeout=10000):
+        setup_model.set_spectrograph("keck_deimos")
+        setup_model.add_raw_data_directory(str(tmp_path))
+        assert setup_model.scan_raw_data_directories() == 2
+        setup_model.run_setup()
 
     # The controller normally does this reset after an error
-    proxy.reset()
+    setup_model.reset()
 
     # Test a canceled setup run 
-    with qtbot.waitSignal(proxy.operation_complete, raising=True, check_params_cb=verify_canceled_setup, timeout=10000):
-        proxy.set_spectrograph("shane_kast_blue")
-        proxy.add_raw_data_directory(str(tmp_path))
-        assert proxy.scan_raw_data_directories() == 2
+    with qtbot.waitSignal(setup_model.operation_complete, raising=True, check_params_cb=verify_canceled_setup, timeout=10000):
+        setup_model.set_spectrograph("shane_kast_blue")
+        setup_model.add_raw_data_directory(str(tmp_path))
+        assert setup_model.scan_raw_data_directories() == 2
         # Use the proxy's internal log watcher to trigger the canceled exception
-        proxy._log_watcher.watch("test_cancel", re.compile("Adding metadata for .*$"), raise_cancel_exception)
-        proxy.run_setup()
-        proxy._log_watcher.unwatch("test_cancel")
+        setup_model.log_buffer.watch("test_cancel", re.compile("Adding metadata for .*$"), raise_cancel_exception)
+        setup_model.run_setup()
+        setup_model.log_buffer.unwatch("test_cancel")
 
     # The controller normally does this reset after an error
-    proxy.reset()
+    setup_model.reset()
 
     # Run setup on those files
-    signal_list = [(proxy.spectrograph_changed, "set_spec"), 
-                   (proxy.raw_data_dirs_changed, "reset_raw_data"), 
-                   (proxy.operation_progress, "op_progress_file1"),
-                   (proxy.operation_progress, "op_progress_file2"),
-                   (proxy.configs_added, "configs_added"),
-                   (proxy.operation_complete, "op_complete"),]
+    signal_list = [(setup_model.spectrograph_changed, "set_spec"), 
+                   (setup_model.raw_data_dirs_changed, "reset_raw_data"), 
+                   (setup_model.operation_progress, "op_progress_file1"),
+                   (setup_model.operation_progress, "op_progress_file2"),
+                   (setup_model.configs_added, "configs_added"),
+                   (setup_model.operation_complete, "op_complete"),]
 
     with qtbot.waitSignals(signal_list, raising=True, order='strict', timeout=10000):
-        proxy.set_spectrograph("shane_kast_blue")
-        proxy.add_raw_data_directory(str(tmp_path))
-        assert proxy.scan_raw_data_directories() == 2
-        proxy.run_setup()
-        assert proxy.state == model.ModelState.CHANGED
-        assert proxy._pypeit_setup is not None
+        setup_model.set_spectrograph("shane_kast_blue")
+        setup_model.add_raw_data_directory(str(tmp_path))
+        assert setup_model.scan_raw_data_directories() == 2
+        setup_model.run_setup()
+        assert setup_model.state == model.ModelState.CHANGED
+        assert setup_model._pypeit_setup is not None
 
     # Save the setup
-    pypeit_file_model = proxy.pypeit_files["A"]
+    pypeit_file_model = setup_model.pypeit_files["A"]
     pypeit_file_model.save_location = str(tmp_path)
     pypeit_file_model.save()
     dest_file = tmp_path / "shane_kast_blue_A" / "shane_kast_blue_A.pypeit"
     assert dest_file.exists()
-    assert proxy.state == model.ModelState.UNCHANGED
+    assert setup_model.state == model.ModelState.UNCHANGED
 
     # Reset the proxy
-    signal_list = [(proxy.raw_data_dirs_changed, "reset_raw_data"), 
-                   (proxy.spectrograph_changed, "reset_spec"), 
-                   (proxy.configs_deleted, "configs_deleted"),]
+    signal_list = [(setup_model.raw_data_dirs_changed, "reset_raw_data"), 
+                   (setup_model.spectrograph_changed, "reset_spec"), 
+                   (setup_model.configs_deleted, "configs_deleted"),]
     with qtbot.waitSignals(signal_list, raising=True, order='strict', timeout=1000):
-        proxy.reset()
-    assert proxy.state == model.ModelState.NEW
-    assert proxy.spectrograph == None
-    assert len(proxy.raw_data_directories) == 0
-    assert len(proxy.pypeit_files.values()) == 0
+        setup_model.reset()
+    assert setup_model.state == model.ModelState.NEW
+    assert setup_model.spectrograph == None
+    assert len(setup_model.raw_data_directories) == 0
+    assert len(setup_model.pypeit_files.values()) == 0
 
     # Now open the previously created file
-    signal_list = [(proxy.raw_data_dirs_changed, "set_raw_data"), 
-                   (proxy.spectrograph_changed, "set_spec"),
-                   (proxy.configs_added,        "configs_added")]
+    signal_list = [(setup_model.raw_data_dirs_changed, "set_raw_data"), 
+                   (setup_model.spectrograph_changed, "set_spec"),
+                   (setup_model.configs_added,        "configs_added")]
 
     with qtbot.waitSignals(signal_list, raising=True, order='strict', timeout=1000):
-        proxy.open_pypeit_file(str(dest_file))
+        setup_model.open_pypeit_file(str(dest_file))
 
-    assert proxy.state == model.ModelState.UNCHANGED
+    assert setup_model.state == model.ModelState.UNCHANGED
 
-    assert proxy.spectrograph == "shane_kast_blue"
-    assert str(tmp_path) in proxy.raw_data_directories
-    assert "A" in proxy.pypeit_files
-    assert "b1.fits.gz" in proxy.pypeit_files["A"].metadata_model._metadata.table['filename']
+    assert setup_model.spectrograph == "shane_kast_blue"
+    assert str(tmp_path) in setup_model.raw_data_directories
+    assert "A" in setup_model.pypeit_files
+    assert "b1.fits.gz" in setup_model.pypeit_files["A"].metadata_model._metadata.table['filename']
 
 
     # Test a failed save
@@ -256,16 +259,16 @@ def test_pypeit_setup_model(qtbot, tmp_path):
 
 
     # Reset the proxy
-    signal_list = [(proxy.raw_data_dirs_changed, "reset_raw_data"), 
-                   (proxy.spectrograph_changed, "reset_spec"), 
-                   (proxy.configs_deleted, "configs_deleted"),]
+    signal_list = [(setup_model.raw_data_dirs_changed, "reset_raw_data"), 
+                   (setup_model.spectrograph_changed, "reset_spec"), 
+                   (setup_model.configs_deleted, "configs_deleted"),]
     with qtbot.waitSignals(signal_list, raising=True, order='strict', timeout=1000):
-        proxy.reset()
+        setup_model.reset()
 
-    assert proxy.state == model.ModelState.NEW
+    assert setup_model.state == model.ModelState.NEW
 
 
-def setup_offscreen_gui(tmp_path, monkeypatch, qtbot):
+def setup_offscreen_gui(tmp_path, monkeypatch, qtbot, verbosity=2, logfile="test_log.log"):
     """Helper function to setup the gui to run in offscreen mode"""
     # Change to tmp_path so that log goes there
     monkeypatch.chdir(tmp_path)
@@ -277,8 +280,8 @@ def setup_offscreen_gui(tmp_path, monkeypatch, qtbot):
     QSettings.setPath(QSettings.Format.IniFormat, QSettings.Scope.SystemScope, str(tmp_path / "config_system.ini"))
     
     # Start the gui with with the "offscreen" platform for headless testing.
-    Args = namedtuple("Args", ['verbosity'])
-    args = Args(verbosity=2)
+    Args = namedtuple("Args", ['verbosity','logfile'])
+    args = Args(verbosity=verbosity,logfile=logfile)
     c = controller.SetupGUIController(args)
     main_window = c.view
 
@@ -746,4 +749,63 @@ def test_clear(qtbot, tmp_path, monkeypatch):
     assert main_window.setup_view.widget(0).state == model.ModelState.UNCHANGED
     assert main_window.setup_view.widget(0).tab_name == "ObsLog"
     assert main_window.setup_view.count() == 1
+
+def test_log_window(qtbot, tmp_path, monkeypatch):
+    c, main_window = setup_offscreen_gui(tmp_path, monkeypatch, qtbot, verbosity=1, logfile=None)
+
+    # Open the log window
+    qtbot.mouseClick(main_window.logButton, Qt.MouseButton.LeftButton)
+
+    # Use the run_setup helper to run setup on J_muilti, which will create two tabs
+    run_setup("keck_mosfire", "J_multi", main_window, qtbot)
+
+    logWindow = main_window._logWindow
+    assert logWindow is not None
+
+    # Log our own message for testing    
+    info_msg ="Info message should appear in verbosity=1" 
+    wip_msg = "WIP message should not appear in verbosity=1"
+
+    with qtbot.waitSignal(logWindow.logViewer.textChanged, raising=True, timeout=1000):
+        msgs.work(wip_msg)
+        msgs.info(info_msg)
+
+    log_text = logWindow.logViewer.toPlainText()
+    assert info_msg in log_text
+    assert wip_msg not in log_text
+
+    # save the log
+    log_file = tmp_path / "test_log_window.log"
+
+    with monkeypatch.context() as m:
+        m.setattr("pypeit.setup_gui.view.FileDialog", MockFileDialog)
+        MockFileDialog.call_count = 0
+        MockFileDialog.mock_response = view.DialogResponses.ACCEPT
+        MockFileDialog.mock_location = str(log_file)
+
+        # Wait for the "log saved" message
+        with qtbot.waitSignal(logWindow.logViewer.textChanged, raising=True, timeout=10000):
+            qtbot.mouseClick(main_window._logWindow.saveButton, Qt.MouseButton.LeftButton)
+
+    # Assert the save file dialog was called once and only once
+    assert MockFileDialog.call_count == 1
+
+    assert log_file.is_file()
+    # Look for our log message in the file
+    found_info_msg = False
+    found_wip_msg = False
+    with open(log_file, "r") as f:
+        for line in f:
+            if info_msg in line:
+                found_info_msg = True
+            if wip_msg in line:
+                found_wip_msg = True
+    assert found_info_msg is True
+    assert found_wip_msg is False
+
+    # Close the log window
+    with qtbot.waitSignal(logWindow.closed, raising=True, timeout=1000):
+        qtbot.mouseClick(main_window._logWindow.closeButton, Qt.MouseButton.LeftButton)
+
+    assert main_window._logWindow is None
 
