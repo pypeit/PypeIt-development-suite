@@ -6,10 +6,6 @@
 spectrograph = mmt_binospec
 detnum = 1
 
-# wavecalib is bad. Flexure fails.
-[flexure]
-   spec_method = skip 
-
 # Setup
 setup read
  Setup A:

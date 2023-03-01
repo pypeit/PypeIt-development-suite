@@ -1,0 +1,34 @@
+# Auto-generated PypeIt input file using PypeIt version: 1.12.1.dev8+gccd30166d
+# UTC 2023-02-08T03:31:53.986
+
+# User-defined execution parameters
+[rdx]
+    spectrograph = not_alfosc
+
+[reduce]
+  [[findobj]]
+    maxnumber_sci=1
+
+# Setup
+setup read
+Setup A:
+  binning: 1,1
+  decker: Slit_1.0
+  dispname: Grism_5
+setup end
+
+# Data block
+data read
+ path /Users/djones/Downloads/grism5/raw
+       filename |                 frametype |             ra |           dec |                  target | dispname |   decker | binning |                mjd |          airmass | exptime
+ALEf040254.fits |                   science |      283.43625 | 60.0178611096 |                HD175863 |  Grism_5 | Slit_1.0 |     1,1 |  59370.04778806713 | 1.25740640733393 |     2.0
+ALEf040362.fits |                  arc,tilt | 340.7387500005 | 44.7216944433 |        He alfosc-calibs |  Grism_5 | Slit_1.0 |     1,1 |  59370.26422230324 | 1.00000707128502 |     3.0
+ALEf040363.fits |                  arc,tilt | 340.7387500005 | 44.7216944433 |        Ne alfosc-calibs |  Grism_5 | Slit_1.0 |     1,1 | 59370.264491041664 | 1.00000707228659 |     3.0
+ALEf040364.fits |                  arc,tilt | 340.7387500005 | 44.7216944433 |      ThAr alfosc-calibs |  Grism_5 | Slit_1.0 |     1,1 |  59370.26492210648 | 1.00000707128502 |    30.0
+ALEf040526.fits |                      bias | 340.7387500005 | 44.7216944433 |      alfosc-calibs bias | Grism_10 | Slit_1.8 |     1,1 | 59370.300389386575 | 1.00000707228659 |   0.002
+ALEf040527.fits |                      bias | 340.7387500005 | 44.7216944433 |      alfosc-calibs bias | Grism_10 | Slit_1.8 |     1,1 | 59370.300578518516 | 1.00000707428994 |   0.002
+ALEf040528.fits |                      bias | 340.7387500005 | 44.7216944433 |      alfosc-calibs bias | Grism_10 | Slit_1.8 |     1,1 |  59370.30076784722 | 1.00000707428994 |   0.002
+ALEf040357.fits | pixelflat,illumflat,trace | 340.7387500005 | 44.7216944433 | Halogen 1 alfosc-calibs |  Grism_5 | Slit_1.0 |     1,1 | 59370.262822916666 | 1.00000707128502 |    10.0
+ALEf040358.fits | pixelflat,illumflat,trace | 340.7387500005 | 44.7216944433 | Halogen 2 alfosc-calibs |  Grism_5 | Slit_1.0 |     1,1 |  59370.26308982639 | 1.00000707228659 |    10.0
+ALEf040359.fits | pixelflat,illumflat,trace | 340.7387500005 | 44.7216944433 | Halogen 3 alfosc-calibs |  Grism_5 | Slit_1.0 |     1,1 |  59370.26335753472 | 1.00000707328823 |    10.0
+data end

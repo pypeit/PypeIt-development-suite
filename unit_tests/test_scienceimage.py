@@ -66,7 +66,7 @@ def test_proc_diff(nires_sci_files, nires_bg_files):
                                            nires_bg_files, bias=None, bpm=bpm,
                                            flatimages=flatImages)
     # Difference
-    sciImg = sciImg.sub(bgImg, nires_par['scienceframe']['process'])
+    sciImg = sciImg.sub(bgImg)
     # Test
     assert isinstance(sciImg, pypeitimage.PypeItImage)
 

@@ -2,7 +2,7 @@
 Module to run tests on PypeItPar classes
 """
 import os
-import numpy
+import numpy as np
 
 import pytest
 from IPython import embed
@@ -239,3 +239,20 @@ def test_lris_slitmask(redux_out):
     assert len(specObjs.MASKDEF_ID) > 0
     assert 'gal21' in specObjs.MASKDEF_OBJNAME
     assert 'gal49' in specObjs.MASKDEF_OBJNAME # This was "manually" extracted
+
+def test_gmos_slitmask(redux_out):
+    # Check we have sensible RA, Dec
+    file_path = os.path.join(redux_out,
+                             'gemini_gmos', 
+                             'GS_HAM_B600_MOS',
+                             'Science', 
+                             'spec1d_S20221128S0038-FRB190711_GMOS-S_18640531T214523.954.fits')
+    # Load                                
+    specObjs = specobjs.SpecObjs.from_fitsfile(file_path)
+
+    # Test
+    assert len(specObjs.MASKDEF_ID) > 0
+    assert '10050' in specObjs.MASKDEF_OBJNAME
+
+    idx = specObjs.MASKDEF_OBJNAME == '10050'
+    assert np.isclose(specObjs.RA[idx][0], 329.2278)
