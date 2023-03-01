@@ -1,0 +1,24 @@
+# Auto-generated PypeIt input file using PypeIt version: 1.11.1.dev448+g808467667
+# UTC 2023-02-25T01:20:01.835
+
+# User-defined execution parameters
+[rdx]
+    spectrograph = mmt_bluechannel
+
+# Setup
+setup read
+Setup A:
+  dispangle: 3.019
+  dispname: 832GPM
+  filter1: Clear/CuSO4
+setup end
+
+# Data block 
+data read
+ path .
+  filename |       frametype |                 ra |                dec |              target | dispname |   decker | binning |                mjd | airmass | exptime | dispangle |     filter1 | cenwave |   lampstat01
+a0032.fits |        arc,tilt |  353.4679958333333 | 31.536355555555556 | 832_4500_henearthar |   832GPM |  1.0x180 |     1,2 |   59188.0841087963 |     1.0 |   300.0 |     3.019 | Clear/CuSO4 |  4499.0 | HeAr/Ne/ThAr
+a0105.fits | pixelflat,trace | 45.078466666666664 |         31.5730875 |       832_4500_flat |   832GPM |  1.0x180 |     1,2 | 59188.227268518516 |     1.0 |    30.0 |     3.019 | Clear/CuSO4 |  4499.0 |           BC
+a0120.fits |         science |  48.54590416666666 | 31.578566388888888 |       832_4500_comb |   832GPM | 0.75x180 |     1,2 |  59188.23688657407 |     1.0 |    30.0 |     3.019 | Clear/CuSO4 |  4499.0 |           BC
+data end
+

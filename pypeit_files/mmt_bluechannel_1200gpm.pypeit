@@ -1,0 +1,24 @@
+# Auto-generated PypeIt input file using PypeIt version: 1.11.1.dev448+g808467667
+# UTC 2023-02-25T01:22:57.488
+
+# User-defined execution parameters
+[rdx]
+    spectrograph = mmt_bluechannel
+
+# Setup
+setup read
+Setup A:
+  dispangle: 2.509
+  dispname: 1200GPM
+  filter1: Clear/Clear
+setup end
+
+# Data block 
+data read
+ path .
+  filename |       frametype |                 ra |                dec |           target | dispname |   decker | binning |                mjd | airmass | exptime | dispangle |     filter1 | cenwave | lampstat01
+a0014.fits |        arc,tilt |  329.9133916666666 | 31.530390277777776 | 1200_4200_henear |  1200GPM |  1.0x180 |     1,2 |  59188.01876157407 |     1.0 |   300.0 |     2.509 | Clear/Clear |  4200.0 |    HeAr/Ne
+a0154.fits |         science | 55.378079166666666 |  31.59018361111111 |   1200_4200_comb |  1200GPM | 0.75x180 |     1,2 |  59188.25582175926 |     1.0 |     5.0 |     2.509 | Clear/Clear |  4200.0 |         BC
+a0156.fits | pixelflat,trace | 56.235583333333324 |  31.59171444444444 |   1200_4200_flat |  1200GPM |  1.0x180 |     1,2 | 59188.258206018516 |     1.0 |    60.0 |     2.509 | Clear/Clear |  4200.0 |         BC
+data end
+
