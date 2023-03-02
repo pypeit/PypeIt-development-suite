@@ -1,0 +1,41 @@
+# Auto-generated PypeIt input file using PypeIt version: 1.11.1.dev357+gaa9a42e92.d20221207
+# UTC 2023-01-03T21:40:43.897
+
+# User-defined execution parameters
+[rdx]
+    spectrograph = gemini_gmos_south_ham
+[calibrations]
+  [[slitedges]]
+      maskdesign_filename = GS2022BQ137-05_ODF.fits,S20221128S0038.fits
+      use_maskdesign = True
+[reduce]
+  [[slitmask]]
+      extract_missing_objs = True
+      assign_obj = True
+
+# Setup
+setup read
+Setup A:
+  datasec: '"[1:256,1:2112]"'
+  decker: GS2022BQ137-05
+  dichroic: open1-6
+  dispangle: 610.0
+  dispname: B600+_G5323
+setup end
+
+# Data block 
+data read
+ path ../raw
+           filename |                 frametype |               ra |        dec |    target |    dispname |         decker | binning |              mjd |          airmass | exptime | dichroic | dispangle |        datasec
+S20221128S0037.fits |                  arc,tilt | 329.419458333333 |    -80.358 |      CuAr | B600+_G5323 | GS2022BQ137-05 |     2,2 | 2022.90652456303 | 1.78401428726568 |    40.0 |  open1-6 |     610.0 | [1:256,1:2112]
+S20221128S0158.fits |                      bias |          -9999.0 |    -9999.0 |      Bias | B600+_G5323 | GS2022BQ137-05 |     2,2 |  2022.9072716641 | 1.00000036617259 |     0.0 |  open1-6 |     610.0 | [1:256,1:2112]
+S20221128S0159.fits |                      bias |          -9999.0 |    -9999.0 |      Bias | B600+_G5323 | GS2022BQ137-05 |     2,2 | 2022.90727252813 | 1.00000036617259 |     0.0 |  open1-6 |     610.0 | [1:256,1:2112]
+S20221128S0160.fits |                      bias |          -9999.0 |    -9999.0 |      Bias | B600+_G5323 | GS2022BQ137-05 |     2,2 |  2022.9072733911 | 1.00000036617259 |     0.0 |  open1-6 |     610.0 | [1:256,1:2112]
+S20221128S0161.fits |                      bias |          -9999.0 |    -9999.0 |      Bias | B600+_G5323 | GS2022BQ137-05 |     2,2 |  2022.9072742546 | 1.00000036617259 |     0.0 |  open1-6 |     610.0 | [1:256,1:2112]
+S20221128S0162.fits |                      bias |          -9999.0 |    -9999.0 |      Bias | B600+_G5323 | GS2022BQ137-05 |     2,2 | 2022.90727516194 | 1.00000036617259 |     0.0 |  open1-6 |     610.0 | [1:256,1:2112]
+S20221128S0036.fits | pixelflat,illumflat,trace | 329.419458333333 |    -80.358 |  GCALflat | B600+_G5323 | GS2022BQ137-05 |     2,2 | 2022.90652356169 | 1.78248639155521 |     3.0 |  open1-6 |     610.0 | [1:256,1:2112]
+#S20221125S0055.fits |                   science | 356.587283333333 | -37.548325 |  Twilight | B600+_G5323 | GS2022BQ137-05 |     2,2 | 2022.89798564478 | 1.01367035229038 |    35.0 |  open1-6 |     610.0 | [1:256,1:2112]
+S20221128S0038.fits |                   science | 329.419458333333 |    -80.358 | FRB190711 | B600+_G5323 | GS2022BQ137-05 |     2,2 |  2022.9065272412 | 1.80009314162216 |   900.0 |  open1-6 |     610.0 | [1:256,1:2112]
+S20221128S0039.fits |                   science | 329.419458333333 |    -80.358 | FRB190711 | B600+_G5323 | GS2022BQ137-05 |     2,2 | 2022.90655664405 | 1.83036723841856 |   900.0 |  open1-6 |     610.0 | [1:256,1:2112]
+data end
+
