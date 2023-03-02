@@ -21,14 +21,10 @@ from pypeit.pypmsgs import PypeItError
 
 
 def test_parse_calibs(redux_out):
-    pypeit_file = os.path.join(redux_out, 'keck_nires', 'nires', 'keck_nires_nires.pypeit')
+    pypeit_file = os.path.join(redux_out, 'keck_nires', 'NIRES', 'keck_nires_nires.pypeit')
     # Just list
     pargs = scripts.parse_calib_id.ParseCalibID.parse_args([pypeit_file])
     scripts.parse_calib_id.ParseCalibID.main(pargs)
-
-from pathlib import Path
-test_parse_calibs(str(Path('../REDUX_OUT').resolve()))
-
 
 
 def test_show_1dspec(redux_out):
