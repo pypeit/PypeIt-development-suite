@@ -1,71 +1,62 @@
 import os
 import numpy as np
-from pypeit import spec2dobj
 
-from pypeit.core import flexure
 from pypeit.spectrographs.util import load_spectrograph
-
-from pypeit.tests.tstutils import data_path
+from pypeit.wavecalib import WaveCalib
 
 import pytest
 
-def test_spat_flexure(redux_out):
-    # Check that spatial flexure shift was set!
-    file_path = os.path.join(redux_out,
-                             'keck_lris_red', 
-                             'multi_600_5000_d560',
-                             'Science', 
-                             'spec2d_LR.20181206.40617-nR2n25061_LRISr_20181206T111657.418.fits')
-    # Load                                
-    spec2dObj = spec2dobj.Spec2DObj.from_file(file_path, 'DET01')
-    assert spec2dObj.sci_spat_flexure is not None
-    assert spec2dObj.sci_spat_flexure > 0.
+def test_shane_kast_red(redux_out):
 
+    for setup, setupID, index, rms in zip(
+        ['300_7500_Ne', '600_7500_d57', '1200_5000_d57'],
+        ['B_1', 'A_1', 'A_1'],
+        [1, 0, 0],
+        [0.05, 0.05, 0.055],
+        ):
+        # Check that spatial flexure shift was set!
+        file_path = os.path.join(redux_out,
+                             'shane_kast_red', 
+                             setup,
+                             'Masters', 
+                             f'MasterWaveCalib_{setupID}_DET01.fits')
+        # Load                                
+        waveCalib = WaveCalib.from_file(file_path)
+        assert waveCalib.wv_fits[index].rms < rms, f'RMS of shane_kast_red {setup} is too high!'
 
-def test_flex_multi(redux_out):
+def test_not_alfosc(redux_out):
 
-    # Set output file
-    outfile = data_path('tst_multi_flex.fits')
-    if os.path.isfile(outfile):
-        # Remove it if it already exists
-        os.remove(outfile)
+    for setup, rms in zip(
+        ['grism3', 'grism4', 'grism5'],
+        [0.3, 0.3, 0.15],
+        ):
+        setupID = 'A_1'
+        index = 0
+        # Check that spatial flexure shift was set!
+        file_path = os.path.join(redux_out,
+                             'not_alfosc', 
+                             setup,
+                             'Masters', 
+                             f'MasterWaveCalib_{setupID}_DET01.fits')
+        # Load                                
+        waveCalib = WaveCalib.from_file(file_path)
+        assert waveCalib.wv_fits[index].rms < rms, f'RMS of not_alfosc {setup} is too high!'
 
-    spec1d_file = os.path.join(redux_out,
-                             'keck_deimos',
-                             '830G_M_8500', 
-                             'Science', 
-                             'spec1d_DE.20100913.22358-CFHQS1_DEIMOS_20100913T061231.334.fits')
+def test_deimos(redux_out):
 
-    msFlex = flexure.MultiSlitFlexure(s1dfile=spec1d_file) 
-    # Parameters
-    keck_deimos = load_spectrograph('keck_deimos')
-    par = keck_deimos.default_pypeit_par()
-    # Init                    
-    msFlex.init(keck_deimos, par['flexure'])
-    # INITIAL SKY LINE STUFF
-    msFlex.measure_sky_lines()
-    # FIT SURFACES
-    msFlex.fit_mask_surfaces()
-    # Apply
-    msFlex.update_fit()
-    # QA
-    #mask = header['TARGET'].strip()
-    #fnames = header['FILENAME'].split('.')
-    #root = mask+'_'+fnames[2]
-    #mdFlex.qa_plots('./', root)
-
-    # Write
-    msFlex.to_file(outfile, overwrite=True)
-
-    # Read
-    msFlex2 = flexure.MultiSlitFlexure.from_file(outfile)
-    # Check
-    assert np.array_equal(msFlex2.fit_b, msFlex.fit_b), 'Bad read'
-
-    # Try to overwrite
-    msFlex2.to_file(outfile, overwrite=True)
-
-    # Clean up
-    if os.path.isfile(outfile):
-        os.remove(outfile)
-
+    for setup, index, rms, mosaic in zip(
+        ['1200B_LVM_5200', '600ZD_M_6500', '900ZD_LVM_5500'],
+        [3, 1, 1],
+        [0.15, 0.35, 0.1],
+        ['MSC03', 'MSC03', 'MSC03']
+        ):
+        setupID = 'A_1'
+        # Check that spatial flexure shift was set!
+        file_path = os.path.join(redux_out,
+                             'keck_deimos', 
+                             setup,
+                             'Masters', 
+                             f'MasterWaveCalib_{setupID}_{mosaic}.fits')
+        # Load                                
+        waveCalib = WaveCalib.from_file(file_path)
+        assert waveCalib.wv_fits[index].rms < rms, f'RMS of keck_deimos {setup} is too high!'
