@@ -16,29 +16,29 @@ def test_shane_kast_red(redux_out):
         ):
         # Check that spatial flexure shift was set!
         file_path = os.path.join(redux_out,
-                             'shane_kast_red', 
+                             'shane_kast_red',
                              setup,
-                             'Masters', 
+                             'Masters',
                              f'MasterWaveCalib_{setupID}_DET01.fits')
-        # Load                                
+        # Load
         waveCalib = WaveCalib.from_file(file_path)
         assert waveCalib.wv_fits[index].rms < rms, f'RMS of shane_kast_red {setup} is too high!'
 
 def test_not_alfosc(redux_out):
 
     for setup, rms in zip(
-        ['grism3', 'grism4', 'grism5'],
-        [0.3, 0.3, 0.15],
+        ['grism3', 'grism4_nobin', 'grism5', 'grism7', 'grism10', 'grism11', 'grism17', 'grism18', 'grism19', 'grism20'],
+        [0.45, 0.19, 0.15, 0.11, 0.16, 0.17, 0.15, 0.13, 0.05, 0.05],
         ):
         setupID = 'A_1'
         index = 0
         # Check that spatial flexure shift was set!
         file_path = os.path.join(redux_out,
-                             'not_alfosc', 
+                             'not_alfosc',
                              setup,
-                             'Masters', 
+                             'Masters',
                              f'MasterWaveCalib_{setupID}_DET01.fits')
-        # Load                                
+        # Load
         waveCalib = WaveCalib.from_file(file_path)
         assert waveCalib.wv_fits[index].rms < rms, f'RMS of not_alfosc {setup} is too high!'
 
@@ -53,10 +53,10 @@ def test_deimos(redux_out):
         setupID = 'A_1'
         # Check that spatial flexure shift was set!
         file_path = os.path.join(redux_out,
-                             'keck_deimos', 
+                             'keck_deimos',
                              setup,
-                             'Masters', 
+                             'Masters',
                              f'MasterWaveCalib_{setupID}_{mosaic}.fits')
-        # Load                                
+        # Load
         waveCalib = WaveCalib.from_file(file_path)
         assert waveCalib.wv_fits[index].rms < rms, f'RMS of keck_deimos {setup} is too high!'

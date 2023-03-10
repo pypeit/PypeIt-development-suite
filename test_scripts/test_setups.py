@@ -138,7 +138,7 @@ all_setups  = {
     'mmt_mmirs': ['HK_zJ', 'J_zJ', 'K_K'],
     'mmt_bluechannel': ['300l'],
     'ntt_efosc2': ['gr5', 'gr6'],
-    'not_alfosc': ['grism3', 'grism4', 'grism5', 'grism7', 'grism10', 'grism11', 'grism17', 'grism18', 'grism19', 'grism20'],
+    'not_alfosc': ['grism3', 'grism4', 'grism5', 'grism7', 'grism10', 'grism11', 'grism17', 'grism18', 'grism19', 'grism20', 'grism4_nobin'],
     'p200_dbsp_blue': ['600_4000_d55', '600_4000_d68', '1200_5000_d68'],
     'p200_dbsp_red': ['316_7500_d55', '600_10000_d55', '1200_7100_d68'],
     'p200_tspec': ['TSPEC'],
