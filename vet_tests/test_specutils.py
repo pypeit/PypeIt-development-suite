@@ -7,10 +7,18 @@ import numpy as np
 
 import pytest
 
-from pypeit.specutils import pypeit_loaders
+try:
+    from pypeit.specutils import pypeit_loaders
+except ModuleNotFoundError:
+    pypeit_loaders = None
 from pypeit.specutils import Spectrum1D, SpectrumList
 
+specutils_required = pytest.mark.skipif(Spectrum1D is None or SpectrumList is None 
+                                            or pypeit_loaders is None,
+                                        reason='specutils not installed')
 
+
+@specutils_required
 def test_identify_as_pypeit_file(redux_out):
     rdx = Path(redux_out).resolve()
 
@@ -68,6 +76,7 @@ def test_identify_as_pypeit_file(redux_out):
                 'Did not identify telluric-corrected coadd file as a pypeit file'
 
 
+@specutils_required
 def test_identify_as_spec1d_file(redux_out):
     rdx = Path(redux_out).resolve()
 
@@ -93,6 +102,7 @@ def test_identify_as_spec1d_file(redux_out):
                 'Did not identify coadd spec1d file as a pypeit file'
 
 
+@specutils_required
 def test_identify_as_onespec_file(redux_out):
     rdx = Path(redux_out).resolve()
 
@@ -117,6 +127,7 @@ def test_identify_as_onespec_file(redux_out):
 
 
 # TODO: Break some of these out into separate tests?
+@specutils_required
 def test_load_spec1d(redux_out):
     rdx = Path(redux_out).resolve()
 
@@ -154,6 +165,7 @@ def test_load_spec1d(redux_out):
     assert len(spec) == 6, 'Expected 1 spectrum per order'
 
 
+@specutils_required
 def test_load_onespec(redux_out):
     rdx = Path(redux_out).resolve()
 
