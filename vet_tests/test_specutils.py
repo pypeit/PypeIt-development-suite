@@ -3,13 +3,13 @@ from pathlib import Path
 
 from IPython import embed
 
+import numpy as np
+
 import pytest
 
 from pypeit.specutils import pypeit_loaders
 from pypeit.specutils import Spectrum1D, SpectrumList
 
-import os
-redux_out = Path(os.getenv('PYPEIT_DEV')).resolve() / 'REDUX_OUT'
 
 def test_identify_as_pypeit_file(redux_out):
     rdx = Path(redux_out).resolve()
@@ -116,6 +116,7 @@ def test_identify_as_onespec_file(redux_out):
                 'Did not identify telluric-corrected coadd file as a pypeit file'
 
 
+# TODO: Break some of these out into separate tests?
 def test_load_spec1d(redux_out):
     rdx = Path(redux_out).resolve()
 
@@ -123,8 +124,35 @@ def test_load_spec1d(redux_out):
     test_file = rdx / 'shane_kast_blue' / '600_4310_d55' / 'shane_kast_blue_A' \
                     / 'Science' / 'spec1d_b27-J1217p3905_KASTb_20150520T045733.560.fits'
     assert test_file.exists(), 'Output file does not exist or the name changed'
+
+    # Test failure using a Spectrum1D read
+    with pytest.raises(OSError):
+        spec = Spectrum1D.read(str(test_file))
+
+    # Correctly use SpectrumList to read the file
     spec = SpectrumList.read(str(test_file))
-    #spec_list = SpectrumList.read(str(test_file))
+    assert len(spec) == 1, 'Should only be one spectrum'
+    assert spec[0].meta['extract'] == 'OPT', 'Optimal extraction should have been performed'
+
+    # Whether or not the spectrum has been flux-calibrated depends on which
+    # tests were executed.  If the default read is fluxed, try reading the unfluxed version
+    if spec[0].meta['fluxed']:
+        unfluxed_spec = SpectrumList.read(str(test_file), fluxed=False)
+        assert not unfluxed_spec[0].meta['fluxed'], 'Attempt to read unfluxed data failed'
+        assert not np.array_equal(spec[0].flux.data, unfluxed_spec[0].flux.data), \
+                'Fluxed spectrum should be different from unfluxed spectrum'
+
+    # Try reading the unfluxed, box-extracted spectrum
+    unfluxed_box_spec = SpectrumList.read(str(test_file), extract='BOX', fluxed=False)
+    assert unfluxed_box_spec[0].meta['extract'] == 'BOX', 'Should have read boxcar extraction'
+
+    # Try reading a file with multiple spectra
+    test_file = rdx / 'gemini_gnirs' / '32_SB_SXD' / 'Science' \
+                    / 'spec1d_cN20170331S0206-HIP62745_GNIRS_20170331T083351.681.fits'
+    assert test_file.exists(), 'Output file does not exist or the name changed'
+    spec = SpectrumList.read(str(test_file))
+    assert len(spec) == 6, 'Expected 1 spectrum per order'
+
 
 def test_load_onespec(redux_out):
     rdx = Path(redux_out).resolve()
@@ -133,12 +161,32 @@ def test_load_onespec(redux_out):
     test_file = rdx / 'shane_kast_blue' / '600_4310_d55' / 'shane_kast_blue_A' \
                     / 'J1217p3905_coadd.fits'
     assert test_file.exists(), 'Output file does not exist or the name changed'
-    spec1 = Spectrum1D.read(str(test_file))
 
-    spec2 = Spectrum1D.read(str(test_file), grid=True)
+    # Try reading it as a list.  BEWARE: This works without bespoke pypeit code,
+    # so there must be something within specutils that enables this.
+    spec = SpectrumList.read(str(test_file))
+    assert len(spec) == 1, 'Should have only read one spectrum'
 
-    embed()
-    exit()
+    # Try reading as a single Spectrum1D
+    spec = Spectrum1D.read(str(test_file))
+    assert not spec.meta['grid'], 'Default read should use the contribution-weighted wavelengths'
 
-test_load_onespec(redux_out)
+    # Try reading the grid wavelength vector
+    grid_spec = Spectrum1D.read(str(test_file), grid=True)
+    assert grid_spec.meta['grid'], 'Did not set grid flag correctly.'
+    assert not np.array_equal(spec.spectral_axis.data, grid_spec.spectral_axis.data), \
+            'Wavelength vector did not change between grid and contribution-weighted read'
+
+    # coadd1d file
+    test_file = rdx / 'gemini_gnirs' / '32_SB_SXD' / 'pisco_coadd.fits'
+    assert test_file.exists(), 'Output file does not exist or the name changed'
+    spec = Spectrum1D.read(str(test_file))
+    assert spec.meta['extract'] == 'OPT', 'Expected optimal extraction'
+
+    # telluric-corrected coadd1d file
+    test_file = rdx / 'gemini_gnirs' / '32_SB_SXD' / 'pisco_coadd_tellcorr.fits'
+    assert test_file.exists(), 'Output file does not exist or the name changed'
+    spec = Spectrum1D.read(str(test_file))
+    assert spec.meta['extract'] == 'OPT', 'Expected optimal extraction'
+
 
