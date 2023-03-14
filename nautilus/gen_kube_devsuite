@@ -74,7 +74,7 @@ def main():
     my_args += ' git fetch;'
     my_args += f' git checkout {pargs.pypeit_branch};' 
     my_args += ' git pull --ff-only;'
-    my_args += ' pip install -e ".[dev,bottleneck,specutils]";'
+    my_args += ' pip install -e ".[dev,specutils]";'
     # Telluric
     my_args += ' cd pypeit/data/telluric/atm_grids;'
     my_args += ' aws --endpoint $ENDPOINT_URL s3 cp s3://pypeit/telluric/atm_grids/TelFit_MaunaKea_3100_26100_R20000.fits /tmp/telluric/TelFit_MaunaKea_3100_26100_R20000.fits --no-progress;'
