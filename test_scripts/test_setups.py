@@ -106,7 +106,8 @@ all_setups  = {
     'gemini_gnirs': ['32_SB_SXD', '10_LB_SXD'],
     'gemini_gmos': ['GS_HAM_R400_700', 'GS_HAM_R400_860',
                     'GN_HAM_R400_885', 'GN_HAM_NS_B600_620',
-                    'GS_HAM_MULTI_R400_700', 'GN_E2V_MULTI_R400_600',
+                    # TODO: Temporarily removing these until we sort out where the data went
+                    #'GS_HAM_MULTI_R400_700', 'GN_E2V_MULTI_R400_600',
                     'GS_HAM_B600_MOS'],
     'gemini_flamingos2': ['HK_HK', 'JH_JH'],
     'gtc_osiris': ['R1000B', 'R1000BMOS', 'R1000RMOS', 'R2500R', 'R2500V'],
@@ -136,7 +137,9 @@ all_setups  = {
     'magellan_fire': ['FIRE_Echelle', 'FIRE_Long'],
     'mdm_osmos': ['MDM4K'],
     'mmt_binospec': ['Longslit_G600', 'Multislit_G270', 'Longslit_G1000'],
-    'mmt_mmirs': ['HK_zJ', 'J_zJ', 'K_K'],
+     # TODO: Temporarily removing this until we sort out where the data went
+#    'mmt_mmirs': ['HK_zJ', 'J_zJ', 'K_K'],
+    'mmt_mmirs': ['J_zJ', 'K_K'],
     'mmt_bluechannel': ['300l', '500GPM', '800GPM', '832GPM_1st', '832GPM_2nd', '1200GPM'],
     'ntt_efosc2': ['gr5', 'gr6'],
     'not_alfosc': ['grism3', 'grism4', 'grism5', 'grism7', 'grism10', 'grism11', 'grism17', 'grism18', 'grism19', 'grism20', 'grism4_nobin'],
