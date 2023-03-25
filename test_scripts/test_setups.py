@@ -117,7 +117,7 @@ all_setups  = {
                     '830G_M_9000_dither'],
     'keck_hires': ['RED_C1_ECH_-0.82_XD_1.62'],
     'keck_kcwi': ['bh2_4200', 'bl'],
-    'keck_nires': ['NIRES', 'ERIS'],
+    'keck_nires': ['NIRES', 'ERIS', 'SDSS_J0233+0052'],
     'keck_nirspec': ['LOW_NIRSPEC-1'],
     'keck_mosfire': ['Y_long', 'J_multi', 'K_long', 'Y_multi', 'long2pos1_H', 'longslit_3x0.7_H', 'mask1_K_with_continuum', 'mask1_J_with_continuum', 'J2_long'],
     'keck_lris_blue': ['multi_600_4000_d560', 'long_400_3400_d560', 'long_600_4000_d560',
