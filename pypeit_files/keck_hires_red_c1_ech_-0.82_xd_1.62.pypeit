@@ -1,0 +1,30 @@
+# Auto-generated PypeIt file using PypeIt version: 1.8.2.dev142+g7e49e8a5c
+# 2022-04-26
+
+# User-defined execution parameters
+[rdx]
+spectrograph = keck_hires
+detnum = (1,2,3)
+# Setup
+setup read
+    Setup A:
+         filter1: og530
+        echangle: -0.81898832
+         xdangle: 1.62399995
+setup end
+
+# Read in the data
+data read
+ path /Users/joe/python/PypeIt-development-suite/RAW_DATA/keck_hires/RED_C1_ECH_-0.82_XD_1.62
+|               filename | frametype |                 ra |                dec |     target | dispname | decker | binning |          mjd | airmass | exptime | filter1 |    echangle |    xdangle | frameno |
+| HI.20151214.04343.fits |     trace |                0.0 |                0.0 |       flat |      RED |     C1 |     1,2 |  57370.05029 |    1.41 |     1.0 |   og530 | -0.81898832 | 1.62399995 |     106 |
+| HI.20151214.04396.fits |     trace |                0.0 |                0.0 |       flat |      RED |     C1 |     1,2 | 57370.050902 |    1.41 |     1.0 |   og530 | -0.81898832 | 1.62399995 |     107 |
+| HI.20151214.04450.fits |     trace |                0.0 |                0.0 |       flat |      RED |     C1 |     1,2 | 57370.051529 |    1.41 |     1.0 |   og530 | -0.81898832 | 1.62399995 |     108 |
+| HI.20151214.04504.fits |     trace |                0.0 |                0.0 |       flat |      RED |     C1 |     1,2 | 57370.052148 |    1.41 |     1.0 |   og530 | -0.81898832 | 1.62399995 |     109 |
+| HI.20151214.04556.fits |     trace |                0.0 |                0.0 |       flat |      RED |     C1 |     1,2 | 57370.052765 |    1.41 |     1.0 |   og530 | -0.81898832 | 1.62399995 |     110 |
+| HI.20151214.04691.fits |  arc,tilt |                0.0 |                0.0 |      ThAr1 |      RED |     C1 |     1,2 | 57370.054317 |    1.41 |     1.0 |   og530 | -0.81898832 | 1.62399995 |     112 |
+| HI.20151214.16715.fits |  standard |  349.9937499999999 | -5.165194444444444 |  Feige 110 |      RED |     C1 |     1,2 | 57370.193482 |    1.11 |   300.0 |   og530 | -0.81898832 | 1.62349999 |     143 |
+| HI.20151214.17593.fits |   science | 15.054124999999999 |  28.03988888888889 | J0100+2802 |      RED |     C1 |     1,2 | 57370.203638 |    1.04 |  2400.0 |   og530 | -0.81898832 | 1.62349999 |     144 |
+| HI.20151214.20581.fits |   science | 15.054958333333332 | 28.040805555555558 | J0100+2802 |      RED |     C1 |     1,2 | 57370.238226 |    1.01 |  2400.0 |   og530 | -0.81898832 | 1.62349999 |     146 |
+data end
+
