@@ -13,7 +13,7 @@ setup end
 
 # Data block 
 data read
- path /Users/dpelliccia/PypeIt/PypeIt-development-suite/RAW_DATA/keck_nires/ERIS
+ path /Users/dpelliccia/PypeIt/PypeIt-development-suite/RAW_DATA/keck_nires/ABBA_nostandard
               filename |         frametype |               ra |               dec |       target | dispname |    decker | binning |              mjd |          airmass | exptime | dithpat | dithpos | dithoff | frameno | calib | comb_id | bkg_id
 NR.20201128.22795.fits |  arc,science,tilt | 25.8722004481703 | -1.77957177216147 | eris_28 0620 |     spec | 0.55 slit |     1,1 |  59181.263841269 | 1.13659692763023 |   300.0 |    ABBA |       1 |     5.0 |      49 |     1 |       1 |      2
 NR.20201128.23132.fits |  arc,science,tilt | 25.8702924043135 | -1.77752676502195 | eris_28 0620 |     spec | 0.55 slit |     1,1 | 59181.2677371023 | 1.12734707860924 |   300.0 |    ABBA |       2 |    -5.0 |      50 |     1 |       2 |      1

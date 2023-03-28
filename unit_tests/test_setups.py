@@ -393,70 +393,43 @@ def test_setup_keck_nires():
     # Clean-up
     shutil.rmtree(setup_dir)
 
+
 def test_setup_keck_nires_comb():
 
     root = os.path.join(os.environ['PYPEIT_DEV'], 'RAW_DATA', 'keck_nires')
-    files = glob.glob(os.path.join(root, 'ERIS', '*fits*'))
+    datasets = ['ABpat_wstandard', 'ABC_nostandard', 'ABBA_nostandard']
+    for dset in datasets:
+        files = glob.glob(os.path.join(root, dset, '*fits*'))
+        correct_pypeit_file = os.path.join(os.environ['PYPEIT_DEV'], 'pypeit_files', f'keck_nires_{dset.lower()}.pypeit')
 
-    output_path = os.path.join(os.getcwd(), 'output')
-    if os.path.isdir(output_path):
-        shutil.rmtree(output_path)
-    os.makedirs(output_path)
+        # run setup on raw files
+        ps = pypeitsetup.PypeItSetup(files, spectrograph_name='keck_nires')
+        ps.run(setup_only=True, write_bkg_pairs=True)
 
-    ps = pypeitsetup.PypeItSetup(files, spectrograph_name='keck_nires')
-    ps.run(setup_only=True, sort_dir=output_path, write_bkg_pairs=True)
-    # Write the automatically generated pypeit data
-    pypeit_files = ps.fitstbl.write_pypeit(output_path, cfg_lines=ps.user_cfg,
-                                           write_bkg_pairs=True)
+        # Test that the automatically generated configuration, calibration group, combination group
+        # and background group for science frames are correct, i.e., are the same as in the pre-generated pypeit file.
 
-    assert len(pypeit_files) == 1, 'Should have created one pypeit file'
+        # check that only one setup is generated
+        assert np.all(ps.fitstbl['setup'] == 'A'), 'Should have created one setup'
 
-    # Test the pypeit files for the correct configuration,
-    # calibration group and combination group results
-    # expected values
-    setup = 'A'
-    calib_ids = ['1', '1', '1', '1', '2', '2', '2', '2', '2', '2', '2', '2', '2', '2', '2', '2',
-                 '3', '3', '3', '3', 'all', 'all', 'all', 'all', 'all', 'all']
-    comb_ids = [ 1,  2,  2,  1,  9, 10, 10,  9, 13, 14, 14, 13, 17, 18, 18, 17,  5,
-        6,  7,  8]
-    bkg_ids = [ 2,  1,  1,  2, 10,  9,  9, 10, 14, 13, 13, 14, 18, 17, 17, 18, -1,
-       -1, -1, -1]
+        # Read the correct pypeit file
+        pypeitFile = inputfiles.PypeItFile.from_file(correct_pypeit_file)
 
-    # TODO: All of this front-end stuff, pulled from pypeit.py, should # be put into a function.
-
-    # Read the pypeit file
-    pypeitFile = inputfiles.PypeItFile.from_file(pypeit_files[0])
-    # Spectrograph
-    cfg = ConfigObj(pypeitFile.cfg_lines)
-    spectrograph = load_spectrograph(cfg['rdx']['spectrograph'])
-    # Configuration-specific parameters
-    for idx, row in enumerate(pypeitFile.data):
-        if 'science' in row['frametype'] or 'standard' in row['frametype']:
-            # assume there is always a science/standard for this test
-            config_specific_file = pypeitFile.filenames[idx]
-    spectrograph_cfg_lines = spectrograph.config_specific_par(config_specific_file).to_config()
-    #  PypeIt parameters
-    par = PypeItPar.from_cfg_lines(cfg_lines=spectrograph_cfg_lines,
-                                   merge_with=pypeitFile.cfg_lines)
-    #  Metadata
-    fitstbl = PypeItMetaData(spectrograph, par,
-                             files=pypeitFile.filenames,
-                             usrdata=pypeitFile.data,
-                             strict=True)
-    fitstbl.finalize_usr_build(pypeitFile.frametypes, pypeitFile.setup_name)
-
-    # Check setup
-    assert np.all(fitstbl['setup'] == setup), 'Setup is wrong'
-    # Check calibration group
-    assert np.all(fitstbl['calib'].data.astype(str) == calib_ids), 'Calibration group is wrong'
-    # Check combination and background group for only science/standard
-    sci_std_idx = np.array(['science' in _tab or 'standard' in _tab for _tab in fitstbl['frametype']]) & \
-                  (fitstbl['setup'] == setup)
-    assert np.all(fitstbl['comb_id'][sci_std_idx] == comb_ids), 'Combination group is wrong'
-    assert np.all(fitstbl['bkg_id'][sci_std_idx] == bkg_ids), 'Background group is wrong'
-
-    # Clean-up
-    shutil.rmtree(output_path)
+        auto_science = ps.fitstbl['frametype'] == 'arc,science,tilt'
+        correct_science = pypeitFile.data['frametype'] == 'arc,science,tilt'
+        science_filenames = pypeitFile.data[correct_science]['filename'].data
+        for i in range(science_filenames.size):
+            where_this = ps.fitstbl['filename'] == science_filenames[i]
+            # Check this file exists
+            assert np.any(where_this), 'Science file does not exist in the correct pypeit file'
+            # Check calibration group
+            assert ps.fitstbl['calib'][where_this].data[0] == int(pypeitFile.data[correct_science]['calib'][i]), \
+                'Calibration group is wrong'
+            # Check combination and background group
+            assert ps.fitstbl['comb_id'][where_this].data[0] == int(pypeitFile.data[correct_science]['comb_id'][i]), \
+                'Combination group is wrong'
+            assert ps.fitstbl['bkg_id'][where_this].data[0] == int(pypeitFile.data[correct_science]['bkg_id'][i]), \
+                'Background group is wrong'
 
 
 def test_setup_keck_nirspec():

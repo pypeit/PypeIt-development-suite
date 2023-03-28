@@ -13,7 +13,7 @@ setup end
 
 # Data block 
 data read
- path /Users/dpelliccia/Pypeit/PypeIt-development-suite/RAW_DATA/keck_nires/SDSS_J0233+0052
+ path /Users/dpelliccia/Pypeit/PypeIt-development-suite/RAW_DATA/keck_nires/ABC_nostandard
               filename |        frametype |               ra |               dec |          target | dispname |    decker | binning |              mjd |          airmass | exptime | dithpat | dithpos | dithoff | frameno | calib | comb_id | bkg_id
 NR.20181126.38930.fits | arc,science,tilt | 38.4971910716895 | 0.877609079296864 | SDSS_J0233+0052 |     spec | 0.55 slit |     1,1 | 58448.4505845266 | 1.26123836252881 |   640.0 |     ABC |       A |     0.0 |      31 |     1 |       1 |      2
 NR.20181126.39604.fits | arc,science,tilt | 38.4971688649636 | 0.876220366576989 | SDSS_J0233+0052 |     spec | 0.55 slit |     1,1 | 58448.4583820961 | 1.30430463629346 |   640.0 |     ABC |       B |     5.0 |      32 |     1 |       2 |      3
