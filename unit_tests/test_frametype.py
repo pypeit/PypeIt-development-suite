@@ -40,7 +40,7 @@ def test_deimos():
             continue
 
         # Run pypeit_setup
-        ps = PypeItSetup.from_file_root(setup, 'keck_deimos', output_path=output_path)
+        ps = PypeItSetup.from_file_root(setup, 'keck_deimos')
         ps.run(setup_only=True)
         # Write the automatically generated pypeit data
         pypeit_files = ps.fitstbl.write_pypeit(output_path, cfg_lines=ps.user_cfg)
@@ -96,7 +96,7 @@ def test_mosfire():
             continue
 
         # Run pypeit_setup
-        ps = PypeItSetup.from_file_root(setup, 'keck_mosfire', output_path=output_path)
+        ps = PypeItSetup.from_file_root(setup, 'keck_mosfire')
         ps.run(setup_only=True)
         # Write the automatically generated pypeit data
         pypeit_files = ps.fitstbl.write_pypeit(output_path, cfg_lines=ps.user_cfg)
@@ -150,7 +150,7 @@ def test_nires():
             continue
 
         # Run pypeit_setup
-        ps = PypeItSetup.from_file_root(str(setup), 'keck_nires', output_path=output_path)
+        ps = PypeItSetup.from_file_root(str(setup), 'keck_nires')
         ps.run(setup_only=True)
 
         # Write the automatically generated pypeit data

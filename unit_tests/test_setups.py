@@ -1,6 +1,7 @@
 """
 Module to run tests on scripts
 """
+from pathlib import Path
 import os
 import glob
 import shutil
@@ -9,185 +10,109 @@ from IPython import embed
 
 import numpy as np
 
-import pytest
 from configobj import ConfigObj
 
-from pypeit.pypmsgs import PypeItError
 from pypeit.metadata import PypeItMetaData
 from pypeit.par import PypeItPar
 from pypeit.scripts.setup import Setup
 from pypeit.scripts.chk_for_calibs import ChkForCalibs
 from pypeit.spectrographs.util import load_spectrograph
-from pypeit.tests.tstutils import data_path
-from pypeit import pypeit
 from pypeit import pypeitsetup
 from pypeit import inputfiles
 
 
 def expected_file_extensions():
-    return ['sorted']
+    return ['.sorted', '.obslog', '.pypeit', '.calib']
+
+
+def files_are_expected(path):
+    files = sorted(list(path.glob('*')))
+    expected = expected_file_extensions()
+    assert np.all([f.suffix in expected for f in files]), \
+            'File produced that does not have an expected extension'
+
+
+def generic_setup_test(spec, setup, cfg=None, prefix=None, extension=None):
+    # Define the path with the raw data
+    # TODO: Make the path structure of these instruments the same as the rest!!
+    if 'vlt_xshooter' in spec:
+        spec_dir = 'vlt_xshooter'
+    elif 'keck_nirspec' in spec:
+        spec_dir = 'keck_nirspec'
+    else:
+        spec_dir = spec
+    data_root = Path(os.environ['PYPEIT_DEV']).resolve() / 'RAW_DATA' / spec_dir / setup
+    assert data_root.exists(), 'TEST ERROR: Raw data path does not exist'
+    if prefix is not None:
+        data_root /= prefix
+
+    # Define the output directory and remove it if it already exist
+    setup_path = Path().resolve() / (f'{spec}_A' if cfg else 'setup_files')
+    if setup_path.exists():
+        shutil.rmtree(setup_path)
+
+    args = ['-r', str(data_root), '-s', spec]
+    if extension is not None:
+        args += ['--extension', extension]
+    if cfg is not None:
+        args += ['-c', cfg]
+    pargs = Setup.parse_args(args)
+    Setup.main(pargs)
+
+    assert setup_path.exists(), 'No setup_files directory created'
+    files_are_expected(setup_path)
+
+    # Clean-up
+    shutil.rmtree(setup_path)
 
 
 def test_setup_keck_lris_red_mark4():
-    droot = os.path.join(os.environ['PYPEIT_DEV'], 'RAW_DATA/keck_lris_red_mark4/long_400_8500_d560')
-    droot += '/'
-    pargs = Setup.parse_args(['-r', droot, '-s', 'keck_lris_red_mark4'])
-    Setup.main(pargs)
-
-    cwd = os.getcwd()
-    setup_dir = os.path.join(cwd, 'setup_files')
-    assert os.path.isdir(setup_dir), 'No setup_files directory created'
-
-    files = glob.glob(os.path.join(setup_dir, 'keck_lris_red_mark4*'))
-    ext = [f.split('.')[-1] for f in files]
-    expected = expected_file_extensions()
-    assert np.all([e in ext for e in expected]), \
-            'Did not find all setup file extensions: {0}'.format(expected)
-
-    # Clean-up
-    shutil.rmtree(setup_dir)
+    spec = 'keck_lris_red_mark4'
+    setup = 'long_400_8500_d560'
+    generic_setup_test(spec, setup)
 
 
 def test_setup_keck_lris_red():
-    droot = os.path.join(os.environ['PYPEIT_DEV'], 'RAW_DATA/keck_lris_red/multi_400_8500_d560')
-    droot += '/'
-    pargs = Setup.parse_args(['-r', droot, '-s', 'keck_lris_red'])
-    Setup.main(pargs)
-
-    cwd = os.getcwd()
-    setup_dir = os.path.join(cwd, 'setup_files')
-    assert os.path.isdir(setup_dir), 'No setup_files directory created'
-
-    files = glob.glob(os.path.join(setup_dir, 'keck_lris_red*'))
-    ext = [f.split('.')[-1] for f in files]
-    expected = expected_file_extensions()
-    assert np.all([e in ext for e in expected]), \
-        'Did not find all setup file extensions: {0}'.format(expected)
-
-    # Clean-up
-    shutil.rmtree(setup_dir)
+    spec = 'keck_lris_red'
+    setup = 'multi_400_8500_d560'
+    generic_setup_test(spec, setup)
 
 
 def test_setup_keck_lris_red_orig():
-    droot = os.path.join(os.environ['PYPEIT_DEV'], 'RAW_DATA/keck_lris_red_orig/long_300_5000')
-    droot += '/'
-    pargs = Setup.parse_args(['-r', droot, '-s', 'keck_lris_red_orig'])
-    Setup.main(pargs)
-
-    cwd = os.getcwd()
-    setup_dir = os.path.join(cwd, 'setup_files')
-    assert os.path.isdir(setup_dir), 'No setup_files directory created'
-
-    files = glob.glob(os.path.join(setup_dir, 'keck_lris_red_orig*'))
-    ext = [f.split('.')[-1] for f in files]
-    expected = expected_file_extensions()
-    assert np.all([e in ext for e in expected]), \
-            'Did not find all setup file extensions: {0}'.format(expected)
-
-    # Clean-up
-    shutil.rmtree(setup_dir)
+    spec = 'keck_lris_red_orig'
+    setup = 'long_300_5000'
+    generic_setup_test(spec, setup)
 
 
 def test_setup_keck_lris_blue():
-    droot = os.path.join(os.environ['PYPEIT_DEV'], 'RAW_DATA/keck_lris_blue/multi_600_4000_d560')
-    droot += '/'
-    pargs = Setup.parse_args(['-r', droot, '-s', 'keck_lris_blue'])
-    Setup.main(pargs)
-
-    cwd = os.getcwd()
-    setup_dir = os.path.join(cwd, 'setup_files')
-    assert os.path.isdir(setup_dir), 'No setup_files directory created'
-
-    files = glob.glob(os.path.join(setup_dir, 'keck_lris_blue*'))
-    ext = [f.split('.')[-1] for f in files]
-    expected = expected_file_extensions()
-    assert np.all([e in ext for e in expected]), \
-        'Did not find all setup file extensions: {0}'.format(expected)
-
-    # Clean-up
-    shutil.rmtree(setup_dir)
+    spec = 'keck_lris_blue'
+    setup = 'multi_600_4000_d560'
+    generic_setup_test(spec, setup)
 
 
 def test_setup_keck_lris_blue_orig():
-    droot = os.path.join(os.environ['PYPEIT_DEV'], 'RAW_DATA/keck_lris_blue_orig/long_600_4000_d500')
-    droot += '/'
-    pargs = Setup.parse_args(['-r', droot, '-s', 'keck_lris_blue_orig'])
-    Setup.main(pargs)
-
-    cwd = os.getcwd()
-    setup_dir = os.path.join(cwd, 'setup_files')
-    assert os.path.isdir(setup_dir), 'No setup_files directory created'
-
-    files = glob.glob(os.path.join(setup_dir, 'keck_lris_blue_orig*'))
-    ext = [f.split('.')[-1] for f in files]
-    expected = expected_file_extensions()
-    assert np.all([e in ext for e in expected]), \
-            'Did not find all setup file extensions: {0}'.format(expected)
-
-    # Clean-up
-    shutil.rmtree(setup_dir)
+    spec = 'keck_lris_blue_orig'
+    setup = 'long_600_4000_d500'
+    generic_setup_test(spec, setup)
 
 
 def test_setup_shane_kast_blue():
-    droot = os.path.join(os.environ['PYPEIT_DEV'], 'RAW_DATA/shane_kast_blue/600_4310_d55')
-    droot += '/'
-    pargs = Setup.parse_args(['-r', droot, '-s', 'shane_kast_blue'])
-    Setup.main(pargs)
-
-    cwd = os.getcwd()
-    setup_dir = os.path.join(cwd, 'setup_files')
-    assert os.path.isdir(setup_dir), 'No setup_files directory created'
-
-    files = glob.glob(os.path.join(setup_dir, 'shane_kast_blue*'))
-    ext = [f.split('.')[-1] for f in files]
-    expected = expected_file_extensions()
-    assert np.all([e in ext for e in expected]), \
-            'Did not find all setup file extensions: {0}'.format(expected)
-
-    # Clean-up
-    shutil.rmtree(setup_dir)
+    spec = 'shane_kast_blue'
+    setup = '600_4310_d55'
+    generic_setup_test(spec, setup)
+    generic_setup_test(spec, setup, cfg='all')
 
 
 def test_setup_shane_kast_red():
-    droot = os.path.join(os.environ['PYPEIT_DEV'], 'RAW_DATA/shane_kast_red/600_7500_d55_ret')
-    droot += '/'
-    pargs = Setup.parse_args(['-r', droot, '-s', 'shane_kast_red'])
-    Setup.main(pargs)
+    spec = 'shane_kast_red'
+    setup = '600_7500_d55_ret'
+    generic_setup_test(spec, setup)
 
-    cwd = os.getcwd()
-    setup_dir = os.path.join(cwd, 'setup_files')
-    assert os.path.isdir(setup_dir), 'No setup_files directory created'
-
-    files = glob.glob(os.path.join(setup_dir, 'shane_kast_red*'))
-    ext = [f.split('.')[-1] for f in files]
-    expected = expected_file_extensions()
-    assert np.all([e in ext for e in expected]), \
-            'Did not find all setup file extensions: {0}'.format(expected)
-
-    # Clean-up
-    shutil.rmtree(setup_dir)
-
-# TODO: We need a test data set for shane_kast_red_ret
 
 def test_setup_keck_deimos():
-
-    droot = os.path.join(os.environ['PYPEIT_DEV'], 'RAW_DATA/keck_deimos/830G_M_8600')
-    droot += '/'
-    pargs = Setup.parse_args(['-r', droot, '-s', 'keck_deimos'])
-    Setup.main(pargs)
-
-    cwd = os.getcwd()
-    setup_dir = os.path.join(cwd, 'setup_files')
-    assert os.path.isdir(setup_dir), 'No setup_files directory created'
-
-    files = glob.glob(os.path.join(setup_dir, 'keck_deimos*'))
-    ext = [f.split('.')[-1] for f in files]
-    expected = expected_file_extensions()
-    assert np.all([e in ext for e in expected]), \
-            'Did not find all setup file extensions: {0}'.format(expected)
-
-    # Clean-up
-    shutil.rmtree(setup_dir)
+    spec = 'keck_deimos'
+    setup = '830G_M_8600'
+    generic_setup_test(spec, setup)
 
 
 def test_setup_keck_deimos_multiconfig():
@@ -202,7 +127,8 @@ def test_setup_keck_deimos_multiconfig():
     os.makedirs(output_path)
 
     ps = pypeitsetup.PypeItSetup(files, spectrograph_name='keck_deimos')
-    ps.run(setup_only=True, sort_dir=output_path)
+    ps.run(setup_only=True)
+
     # Write the automatically generated pypeit data
     pypeit_files = ps.fitstbl.write_pypeit(output_path, cfg_lines=ps.user_cfg,
                                            write_bkg_pairs=True)
@@ -218,7 +144,6 @@ def test_setup_keck_deimos_multiconfig():
 
         # Read the pypeit file
         pypeitFile = inputfiles.PypeItFile.from_file(f)
-        #cfg_lines, data_files, frametype, usrdata, setups, _ = parse_pypeit_file(f, runtime=True)
         # Spectrograph
         cfg = ConfigObj(pypeitFile.cfg_lines)
         spectrograph = load_spectrograph(cfg['rdx']['spectrograph'])
@@ -282,24 +207,9 @@ def test_setup_keck_deimos_multiconfig_clean():
 
 
 def test_setup_keck_mosfire():
-
-    droot = os.path.join(os.environ['PYPEIT_DEV'], 'RAW_DATA/keck_mosfire/J_multi')
-    droot += '/'
-    pargs = Setup.parse_args(['-r', droot, '-s', 'keck_mosfire'])
-    Setup.main(pargs)
-
-    cwd = os.getcwd()
-    setup_dir = os.path.join(cwd, 'setup_files')
-    assert os.path.isdir(setup_dir), 'No setup_files directory created'
-
-    files = glob.glob(os.path.join(setup_dir, 'keck_mosfire*'))
-    ext = [f.split('.')[-1] for f in files]
-    expected = expected_file_extensions()
-    assert np.all([e in ext for e in expected]), \
-            'Did not find all setup file extensions: {0}'.format(expected)
-
-    # Clean-up
-    shutil.rmtree(setup_dir)
+    spec = 'keck_mosfire'
+    setup = 'J_multi'
+    generic_setup_test(spec, setup)
 
 
 def test_setup_keck_mosfire_multiconfig():
@@ -316,7 +226,7 @@ def test_setup_keck_mosfire_multiconfig():
     os.makedirs(output_path)
 
     ps = pypeitsetup.PypeItSetup(files, spectrograph_name='keck_mosfire')
-    ps.run(setup_only=True, sort_dir=output_path, write_bkg_pairs=True)
+    ps.run(setup_only=True) 
     # Write the automatically generated pypeit data
     pypeit_files = ps.fitstbl.write_pypeit(output_path, cfg_lines=ps.user_cfg,
                                            write_bkg_pairs=True)
@@ -365,8 +275,8 @@ def test_setup_keck_mosfire_multiconfig():
         # Check calibration group
         assert np.all(fitstbl['calib'].astype(str) == c), 'Calibration group is wrong'
         # Check combination and background group for only science/standard
-        sci_std_idx = np.array(['science' in _tab or 'standard' in _tab for _tab in fitstbl['frametype']]) & \
-                      (fitstbl['setup'] == s)
+        sci_std_idx = np.array(['science' in _tab or 'standard' in _tab
+                                    for _tab in fitstbl['frametype']]) & (fitstbl['setup'] == s)
         assert np.all(fitstbl['comb_id'][sci_std_idx] == comb), 'Combination group is wrong'
         assert np.all(fitstbl['bkg_id'][sci_std_idx] == bkg), 'Background group is wrong'
 
@@ -375,23 +285,10 @@ def test_setup_keck_mosfire_multiconfig():
 
 
 def test_setup_keck_nires():
-    droot = os.path.join(os.environ['PYPEIT_DEV'], 'RAW_DATA/keck_nires/NIRES/')
-    droot += '/'
-    pargs = Setup.parse_args(['-r', droot, '-s', 'keck_nires'])
-    Setup.main(pargs)
+    spec = 'keck_nires'
+    setup = 'NIRES'
+    generic_setup_test(spec, setup)
 
-    cwd = os.getcwd()
-    setup_dir = os.path.join(cwd, 'setup_files')
-    assert os.path.isdir(setup_dir), 'No setup_files directory created'
-
-    files = glob.glob(os.path.join(setup_dir, 'keck_nires*'))
-    ext = [f.split('.')[-1] for f in files]
-    expected = expected_file_extensions()
-    assert np.all([e in ext for e in expected]), \
-            'Did not find all setup file extensions: {0}'.format(expected)
-
-    # Clean-up
-    shutil.rmtree(setup_dir)
 
 def test_setup_keck_nires_comb():
 
@@ -404,7 +301,7 @@ def test_setup_keck_nires_comb():
     os.makedirs(output_path)
 
     ps = pypeitsetup.PypeItSetup(files, spectrograph_name='keck_nires')
-    ps.run(setup_only=True, sort_dir=output_path, write_bkg_pairs=True)
+    ps.run(setup_only=True)
     # Write the automatically generated pypeit data
     pypeit_files = ps.fitstbl.write_pypeit(output_path, cfg_lines=ps.user_cfg,
                                            write_bkg_pairs=True)
@@ -460,193 +357,68 @@ def test_setup_keck_nires_comb():
 
 
 def test_setup_keck_nirspec():
-    droot = os.path.join(os.environ['PYPEIT_DEV'], 'RAW_DATA/keck_nirspec/LOW_NIRSPEC-1')
-    droot += '/'
-    pargs = Setup.parse_args(['-r', droot, '-s', 'keck_nirspec_low'])
-    Setup.main(pargs)
-
-    cwd = os.getcwd()
-    setup_dir = os.path.join(cwd, 'setup_files')
-    assert os.path.isdir(setup_dir), 'No setup_files directory created'
-
-    files = glob.glob(os.path.join(setup_dir, 'keck_nirspec*'))
-    ext = [f.split('.')[-1] for f in files]
-    expected = expected_file_extensions()
-    assert np.all([e in ext for e in expected]), \
-            'Did not find all setup file extensions: {0}'.format(expected)
-
-    # Clean-up
-    shutil.rmtree(setup_dir)
+    spec = 'keck_nirspec_low'
+    setup = 'LOW_NIRSPEC-1'
+    generic_setup_test(spec, setup)
 
 
 def test_setup_magellan_mage():
-    droot = os.path.join(os.environ['PYPEIT_DEV'], 'RAW_DATA/magellan_mage/1x1')
-    droot += '/'
-    pargs = Setup.parse_args(['-r', droot, '-s', 'magellan_mage'])
-    Setup.main(pargs)
-
-    cwd = os.getcwd()
-    setup_dir = os.path.join(cwd, 'setup_files')
-    assert os.path.isdir(setup_dir), 'No setup_files directory created'
-
-    files = glob.glob(os.path.join(setup_dir, 'magellan_mage*'))
-    ext = [f.split('.')[-1] for f in files]
-    expected = expected_file_extensions()
-    assert np.all([e in ext for e in expected]), \
-            'Did not find all setup file extensions: {0}'.format(expected)
-
-    # Clean-up
-    shutil.rmtree(setup_dir)
+    spec = 'magellan_mage'
+    setup = '1x1'
+    generic_setup_test(spec, setup)
 
 
 def test_setup_wht_isis_blue():
-    droot = os.path.join(os.environ['PYPEIT_DEV'], 'RAW_DATA/wht_isis_blue/long_R300B_d5300')
-    droot += '/'
-    pargs = Setup.parse_args(['-r', droot, '-s', 'wht_isis_blue', '--extension', '.fit'])
-    Setup.main(pargs)
-
-    cwd = os.getcwd()
-    setup_dir = os.path.join(cwd, 'setup_files')
-    assert os.path.isdir(setup_dir), 'No setup_files directory created'
-
-    files = glob.glob(os.path.join(setup_dir, 'wht_isis_blue*'))
-    ext = [f.split('.')[-1] for f in files]
-    expected = expected_file_extensions()
-    assert np.all([e in ext for e in expected]), \
-            'Did not find all setup file extensions: {0}'.format(expected)
-
-    # Clean-up
-    shutil.rmtree(setup_dir)
+    spec = 'wht_isis_blue'
+    setup = 'long_R300B_d5300'
+    generic_setup_test(spec, setup, extension='.fit')
 
 
 def test_setup_vlt_xshooter_uvb():
-    droot = os.path.join(os.environ['PYPEIT_DEV'], 'RAW_DATA/vlt_xshooter/UVB_1x1')
-    droot += '/XSHO'
-    pargs = Setup.parse_args(['-r', droot, '-s', 'vlt_xshooter_uvb'])
-    Setup.main(pargs)
-
-    cwd = os.getcwd()
-    setup_dir = os.path.join(cwd, 'setup_files')
-    assert os.path.isdir(setup_dir), 'No setup_files directory created'
-
-    files = glob.glob(os.path.join(setup_dir, 'vlt_xshooter_uvb*'))
-    ext = [f.split('.')[-1] for f in files]
-    expected = expected_file_extensions()
-    assert np.all([e in ext for e in expected]), \
-            'Did not find all setup file extensions: {0}'.format(expected)
-
-    # Clean-up
-    shutil.rmtree(setup_dir)
+    spec = 'vlt_xshooter_uvb'
+    setup = 'UVB_1x1'
+    prefix = 'XSHO'
+    generic_setup_test(spec, setup, prefix=prefix)
 
 
 def test_setup_vlt_xshooter_vis():
-    droot = os.path.join(os.environ['PYPEIT_DEV'], 'RAW_DATA/vlt_xshooter/VIS_1x1')
-    droot += '/XSHO'
-    pargs = Setup.parse_args(['-r', droot, '-s', 'vlt_xshooter_vis'])
-    Setup.main(pargs)
-
-    cwd = os.getcwd()
-    setup_dir = os.path.join(cwd, 'setup_files')
-    assert os.path.isdir(setup_dir), 'No setup_files directory created'
-
-    files = glob.glob(os.path.join(setup_dir, 'vlt_xshooter_vis*'))
-    ext = [f.split('.')[-1] for f in files]
-    expected = expected_file_extensions()
-    assert np.all([e in ext for e in expected]), \
-            'Did not find all setup file extensions: {0}'.format(expected)
-
-    # Clean-up
-    shutil.rmtree(setup_dir)
+    spec = 'vlt_xshooter_vis'
+    setup = 'VIS_1x1'
+    prefix = 'XSHO'
+    generic_setup_test(spec, setup, prefix=prefix)
 
 
 def test_setup_vlt_xshooter_nir():
-    droot = os.path.join(os.environ['PYPEIT_DEV'], 'RAW_DATA/vlt_xshooter/NIR')
-    droot += '/XSHO'
-    pargs = Setup.parse_args(['-r', droot, '-s', 'vlt_xshooter_nir'])
-    Setup.main(pargs)
-
-    cwd = os.getcwd()
-    setup_dir = os.path.join(cwd, 'setup_files')
-    assert os.path.isdir(setup_dir), 'No setup_files directory created'
-
-    files = glob.glob(os.path.join(setup_dir, 'vlt_xshooter_nir*'))
-    ext = [f.split('.')[-1] for f in files]
-    expected = expected_file_extensions()
-    assert np.all([e in ext for e in expected]), \
-            'Did not find all setup file extensions: {0}'.format(expected)
-
-    # Clean-up
-    shutil.rmtree(setup_dir)
+    spec = 'vlt_xshooter_nir'
+    setup = 'NIR'
+    prefix = 'XSHO'
+    generic_setup_test(spec, setup, prefix=prefix)
 
 
 def test_setup_gemini_gnirs():
-    droot = os.path.join(os.environ['PYPEIT_DEV'], 'RAW_DATA/gemini_gnirs/32_SB_SXD/')
-    droot += '/cN'
-    pargs = Setup.parse_args(['-r', droot, '-s', 'gemini_gnirs'])
-    Setup.main(pargs)
-
-    cwd = os.getcwd()
-    setup_dir = os.path.join(cwd, 'setup_files')
-    assert os.path.isdir(setup_dir), 'No setup_files directory created'
-
-    files = glob.glob(os.path.join(setup_dir, 'gemini_gnirs*'))
-    ext = [f.split('.')[-1] for f in files]
-    expected = expected_file_extensions()
-    assert np.all([e in ext for e in expected]), \
-            'Did not find all setup file extensions: {0}'.format(expected)
-
-    # Clean-up
-    shutil.rmtree(setup_dir)
+    spec = 'gemini_gnirs'
+    setup = '32_SB_SXD'
+    prefix = 'cN'
+    generic_setup_test(spec, setup, prefix=prefix)
 
 
 def test_setup_not_alfosc():
-    droot = os.path.join(os.environ['PYPEIT_DEV'], 'RAW_DATA/not_alfosc/grism4')
-    droot += '/ALD'
-    pargs = Setup.parse_args(['-r', droot, '-s', 'not_alfosc'])
-    Setup.main(pargs)
+    spec = 'not_alfosc'
+    setup = 'grism4'
+    prefix = 'ALD'
+    generic_setup_test(spec, setup, prefix=prefix)
+    generic_setup_test(spec, setup, cfg='A', prefix=prefix)
 
-    cwd = os.getcwd()
-    setup_dir = os.path.join(cwd, 'setup_files')
-    assert os.path.isdir(setup_dir), 'No setup_files directory created'
-
-    files = glob.glob(os.path.join(setup_dir, 'not_alfosc*'))
-    ext = [f.split('.')[-1] for f in files]
-    expected = expected_file_extensions()
-    assert np.all([e in ext for e in expected]), \
-        'Did not find all setup file extensions: {0}'.format(expected)
-
-    # Build a PypeIt file
-    pargs = Setup.parse_args(['-r', droot, '-s', 'not_alfosc', '-c', 'A', '-d', data_path('')])
-    Setup.main(pargs)
-    pypeit_file = data_path('not_alfosc_A/not_alfosc_A.pypeit')
-    # TODO: Why is this using pypeit.PypeIt and not pypeitsetup.PypeItSetup?
-    pypeIt = pypeit.PypeIt(pypeit_file, calib_only=True)
-
-    # Clean-up
-    shutil.rmtree(setup_dir)
-    shutil.rmtree(data_path('not_alfosc_A'))
 
 def test_setup_vlt_fors2():
-    droot = os.path.join(os.environ['PYPEIT_DEV'], 'RAW_DATA/vlt_fors2/300I/')
-    droot += '/FORS2'
-    pargs = Setup.parse_args(['-r', droot, '-s', 'vlt_fors2'])
-    Setup.main(pargs)
-
-    cwd = os.getcwd()
-    setup_dir = os.path.join(cwd, 'setup_files')
-    assert os.path.isdir(setup_dir), 'No setup_files directory created'
-
-    files = glob.glob(os.path.join(setup_dir, 'vlt_fors2*'))
-    ext = [f.split('.')[-1] for f in files]
-    expected = expected_file_extensions()
-    assert np.all([e in ext for e in expected]), \
-        'Did not find all setup file extensions: {0}'.format(expected)
-
-    # Clean-up
-    shutil.rmtree(setup_dir)
+    spec = 'vlt_fors2'
+    setup = '300I'
+    prefix = 'FORS2'
+    generic_setup_test(spec, setup, prefix=prefix)
 
     # Now chk calib
-    pargs = ChkForCalibs.parse_args([droot, '-s', 'vlt_fors2'])
+    data_root = Path(os.environ['PYPEIT_DEV']).resolve() / 'RAW_DATA' / spec / setup / prefix
+    pargs = ChkForCalibs.parse_args([str(data_root), '-s', 'vlt_fors2'])
     answers, ps = ChkForCalibs.main(pargs)
     assert answers['pass'][0], 'A must pass!'
 

@@ -1,3 +1,4 @@
+from pathlib import Path
 import os
 import glob
 import yaml
@@ -13,6 +14,7 @@ from pypeit.tests.tstutils import data_path
 from pypeit.metadata import PypeItMetaData
 from pypeit.spectrographs.util import load_spectrograph
 from pypeit import inputfiles
+from pypeit.calibrations import Calibrations
 
 
 def test_lris_red_multi_400():
@@ -53,17 +55,19 @@ def test_lris_red_multi_calib():
     ps.get_frame_types(flag_unknown=True)
     cfgs = ps.fitstbl.unique_configurations()
     ps.fitstbl.set_configurations(cfgs)
-    ps.fitstbl.set_calibration_groups() #global_frames=['bias', 'dark'])
+    ps.fitstbl.set_calibration_groups()
 
-    cfile = data_path('test.calib') 
-    ps.fitstbl.write_calib(cfile)
-    with open(cfile, 'r') as f:
+    calib_file = data_path('test.calib')
+    caldir = Path(data_path('')).resolve() / ps.par['calibrations']['calib_dir']
+    Calibrations.association_summary(calib_file, ps.fitstbl, ps.spectrograph, caldir,
+                                     overwrite=True)
+    with open(calib_file, 'r') as f:
         calib = yaml.load(f, Loader=yaml.FullLoader)
 
-    assert np.array_equal(list(calib['A'].keys()), ['--', 1]), \
+    assert np.array_equal(list(calib['A'].keys()), ['--', 0]), \
             'Calibrations dictionary read incorrectly.'
 
-    os.remove(cfile)
+    os.remove(calib_file)
 
 
 def test_lris_red_multi_run():
@@ -84,11 +88,6 @@ def test_lris_red_multi_run():
             'Should have identified r170320_2017.fits.gz as an arc'
     assert 'r170816_0057.fits' in ps.fitstbl['filename'][ps.fitstbl.find_frames('science')], \
             'Should have identified r170816_0057.fits as a science frame'
-
-    # Clean-up
-    #os.remove('keck_lris_red.lst')
-    #os.remove('keck_lris_red.setups')
-    os.remove('keck_lris_red.sorted')
 
 
 def test_lris_blue_pypeit_overwrite():
