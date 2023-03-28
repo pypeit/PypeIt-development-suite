@@ -21,7 +21,7 @@ from pypeit.pypmsgs import PypeItError
 
 
 def test_parse_calibs(redux_out):
-    pypeit_file = os.path.join(redux_out, 'keck_nires', 'NIRES', 'keck_nires_nires.pypeit')
+    pypeit_file = os.path.join(redux_out, 'keck_nires', 'ABBA_wstandard', 'keck_nires_abba_wstandard.pypeit')
     pargs = scripts.parse_calib_id.ParseCalibID.parse_args([pypeit_file])
     scripts.parse_calib_id.ParseCalibID.main(pargs)
 

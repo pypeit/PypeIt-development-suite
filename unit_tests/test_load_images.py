@@ -38,7 +38,7 @@ def test_load_lris():
         pytest.fail('LRIS test data section failed.')
 
 def test_load_nires():
-    ifile = os.path.join(os.getenv('PYPEIT_DEV'), 'RAW_DATA', 'keck_nires', 'NIRES',
+    ifile = os.path.join(os.getenv('PYPEIT_DEV'), 'RAW_DATA', 'keck_nires', 'ABBA_wstandard',
                          's190519_0059.fits')
     try:
         # First amplifier

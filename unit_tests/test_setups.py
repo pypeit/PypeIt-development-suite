@@ -375,7 +375,7 @@ def test_setup_keck_mosfire_multiconfig():
 
 
 def test_setup_keck_nires():
-    droot = os.path.join(os.environ['PYPEIT_DEV'], 'RAW_DATA/keck_nires/NIRES/')
+    droot = os.path.join(os.environ['PYPEIT_DEV'], 'RAW_DATA/keck_nires/ABBA_wstandard/')
     droot += '/'
     pargs = Setup.parse_args(['-r', droot, '-s', 'keck_nires'])
     Setup.main(pargs)
