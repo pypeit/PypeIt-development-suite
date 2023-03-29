@@ -1,0 +1,30 @@
+# Auto-generated PypeIt input file using PypeIt version: 1.12.2.dev65+g9d8aa0c57
+# UTC 2023-03-10T08:38:25.149
+
+# User-defined execution parameters
+[rdx]
+    spectrograph = not_alfosc
+
+# Setup
+setup read
+Setup A:
+  binning: 1,1
+  decker: Slit_1.0
+  dispname: Grism_4
+setup end
+
+# Data block
+data read
+ path /Users/djones/Documents/GitHub/PypeIt-development-suite/RAW_DATA/not_alfosc/grism4_nobin
+       filename |                 frametype |             ra |           dec |                  target | dispname |   decker | binning |                mjd |         airmass | exptime
+ALDa130096.fits |                      standard |  88.1149999995 | 15.8871666663 |                    GD71 |  Grism_4 | Slit_1.0 |     1,1 | 58861.923689386575 | 1.0907678690733 |   300.0
+ALDa130258.fits |                  arc,tilt | 141.5371249995 | 24.0606944439 |        He alfosc-calibs |  Grism_4 | Slit_1.0 |     1,1 | 58862.313918078704 | 1.0000081932276 |     6.0
+ALDa130259.fits |                  arc,tilt | 141.5371249995 | 24.0606944439 |        Ne alfosc-calibs |  Grism_4 | Slit_1.0 |     1,1 |  58862.31420929398 | 1.0000081932276 |     3.0
+ALDa130260.fits |                  arc,tilt | 141.5371249995 | 24.0606944439 |      ThAr alfosc-calibs |  Grism_4 | Slit_1.0 |     1,1 | 58862.314726666664 | 1.0000081921496 |    45.0
+ALDa130336.fits |                      bias | 141.5371249995 | 24.0606944439 |      alfosc-calibs bias |  Grism_4 | Slit_1.3 |     1,1 | 58862.329647743056 | 1.0000081943057 |   0.002
+ALDa130337.fits |                      bias | 141.5371249995 | 24.0606944439 |      alfosc-calibs bias |  Grism_4 | Slit_1.3 |     1,1 |  58862.32983778935 | 1.0000081932276 |   0.002
+ALDa130338.fits |                      bias | 141.5371249995 | 24.0606944439 |      alfosc-calibs bias |  Grism_4 | Slit_1.3 |     1,1 | 58862.330027372685 | 1.0000081943057 |   0.002
+ALDa130253.fits | pixelflat,illumflat,trace | 141.5371249995 | 24.0606944439 | Halogen 1 alfosc-calibs |  Grism_4 | Slit_1.0 |     1,1 |  58862.31246271991 | 1.0000081921496 |    10.0
+ALDa130254.fits | pixelflat,illumflat,trace | 141.5371249995 | 24.0606944439 | Halogen 2 alfosc-calibs |  Grism_4 | Slit_1.0 |     1,1 |  58862.31273174768 | 1.0000081899937 |    10.0
+ALDa130255.fits | pixelflat,illumflat,trace | 141.5371249995 | 24.0606944439 | Halogen 3 alfosc-calibs |  Grism_4 | Slit_1.0 |     1,1 |  58862.31302623843 | 1.0000081932276 |    10.0
+data end

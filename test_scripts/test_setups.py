@@ -115,8 +115,9 @@ all_setups  = {
                     '830G_M_8500', '830G_L_8100', '1200B_M_5200', '1200G_M_5500',
                     '900ZD_M_6000', '1200B_LVM_5200', '900ZD_LVM_5500',
                     '830G_M_9000_dither'],
+    'keck_hires': ['RED_C1_ECH_-0.82_XD_1.62'],
     'keck_kcwi': ['bh2_4200', 'bl'],
-    'keck_nires': ['NIRES', 'ERIS'],
+    'keck_nires': ['ABBA_wstandard', 'ABBA_nostandard', 'ABC_nostandard', 'ABpat_wstandard'],
     'keck_nirspec': ['LOW_NIRSPEC-1'],
     'keck_mosfire': ['Y_long', 'J_multi', 'K_long', 'Y_multi', 'long2pos1_H', 'longslit_3x0.7_H', 'mask1_K_with_continuum', 'mask1_J_with_continuum', 'J2_long'],
     'keck_lris_blue': ['multi_600_4000_d560', 'long_400_3400_d560', 'long_600_4000_d560',
@@ -134,11 +135,11 @@ all_setups  = {
     'magellan_mage': ['1x1'],
     'magellan_fire': ['FIRE_Echelle', 'FIRE_Long'],
     'mdm_osmos': ['MDM4K'],
-    'mmt_binospec': ['Longslit_G600', 'Multislit_G270'],
+    'mmt_binospec': ['Longslit_G600', 'Multislit_G270', 'Longslit_G1000'],
     'mmt_mmirs': ['HK_zJ', 'J_zJ', 'K_K'],
-    'mmt_bluechannel': ['300l'],
+    'mmt_bluechannel': ['300l', '500GPM', '800GPM', '832GPM_1st', '832GPM_2nd', '1200GPM'],
     'ntt_efosc2': ['gr5', 'gr6'],
-    'not_alfosc': ['grism3', 'grism4', 'grism5', 'grism7', 'grism10', 'grism11', 'grism17', 'grism18', 'grism19', 'grism20'],
+    'not_alfosc': ['grism3', 'grism4', 'grism5', 'grism7', 'grism10', 'grism11', 'grism17', 'grism18', 'grism19', 'grism20', 'grism4_nobin'],
     'p200_dbsp_blue': ['600_4000_d55', '600_4000_d68', '1200_5000_d68'],
     'p200_dbsp_red': ['316_7500_d55', '600_10000_d55', '1200_7100_d68'],
     'p200_tspec': ['TSPEC'],
@@ -244,6 +245,8 @@ _coadd2d = {
         '830G_M_9000_dither': [dict(coadd_file=True)]},
     'keck_mosfire': {
         'long2pos1_H': [dict(coadd_file=True)]},
+    'keck_nires': {
+        'ABBA_wstandard': [dict(coadd_file=True)]}
     }
 
 _telluric = {
