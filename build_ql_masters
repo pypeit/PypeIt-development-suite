@@ -76,7 +76,7 @@ def main():
             nires_dest_dir = os.path.join(ql_masters, 'NIRES_MASTERS')
             os.makedirs(nires_dest_dir, exist_ok=True)
 
-            keck_nires_path = os.path.join(redux_dir, 'keck_nires', 'NIRES', 'Masters')
+            keck_nires_path = os.path.join(redux_dir, 'keck_nires', 'ABBA_wstandard', 'Masters')
             source_filters = [os.path.join(keck_nires_path, '*2_DET01*'),
                             os.path.join(keck_nires_path, 'MasterFlat_A_7_DET01.fits'), 
                             os.path.join(keck_nires_path, 'MasterSlits_A_7_DET01.fits.gz')]
@@ -88,7 +88,7 @@ def main():
 
             if len(found_files) == 0:
                 print ("Could not find all NIRES masters, attempting to generate them...")
-                run_devsuite('keck_nires', 'NIRES', redux_dir)
+                run_devsuite('keck_nires', 'ABBA_wstandard', redux_dir)
 
                 found_files = find_source_files(source_filters)
                 if len(found_files) == 0:
