@@ -166,7 +166,7 @@ _pypeit_setup = {
 
 _additional_reduce = {
     'keck_lris_red': {
-        'long_600_7500_d560': [dict(ignore_masters=True)]},
+        'long_600_7500_d560': [dict(ignore_calibs=True)]},
     'gemini_gmos': {
         'GS_HAM_R400_860': [dict(std=True)]},
     }
@@ -269,13 +269,13 @@ _quick_look = {
         '600_4310_d55':  [
             dict(test_name='std', files=['b1.fits.gz', 'b10.fits.gz',
                                     'b27.fits.gz']),
-            {'test_name': 'masters',
+            {'test_name': 'calibs',
               'files': ['b1.fits.gz', 'b10.fits.gz', 'b27.fits.gz'],
-              '--masters_dir': 'USE_MASTERS_DIR',
+              '--calib_dir': 'USE_CALIB_DIR',
             },
             {'test_name': 'calibs',
               'files': ['b1.fits.gz', 'b10.fits.gz', 'b27.fits.gz'],
-              '--calib_dir': 'USE_CALIB_DIR'},
+              '--calib_dir': 'USE_ARCHIVE_CALIB_DIR'},
             {'test_name': 'multi', # Process two frames individually
                 'files': ['b1.fits.gz', 'b10.fits.gz',
                    'b27.fits.gz', 'b28.fits.gz']},
@@ -292,7 +292,7 @@ _quick_look = {
     'shane_kast_red': {
         '600_7500_d57': [
             {'files': ['r122.fits'],
-              '--masters_dir': 'USE_MASTERS_DIR',
+              '--calib_dir': 'USE_CALIB_DIR',
             },
         ]
     },
@@ -301,7 +301,7 @@ _quick_look = {
             {'test_name': 'det', # Run with maskID
                 'files': ['LR.20160216.40478.fits.gz'],
               '--det': 2,
-              '--masters_dir': 'USE_MASTERS_DIR',
+              '--calib_dir': 'USE_CALIB_DIR',
             },
         ],
     },
@@ -310,19 +310,19 @@ _quick_look = {
             {'test_name': 'maskID', # Run with maskID
                 'files': ['d1010_0056.fits.gz'],
               '--maskID': 958454,
-              '--masters_dir': 'USE_MASTERS_DIR',
+              '--calib_dir': 'USE_CALIB_DIR',
             },
             {'test_name': 'slitspatnum', # Run with slitspatnum
                 'files': ['d1010_0056.fits.gz'],
               '--slitspatnum': 'MSC02:452',
-              '--masters_dir': 'USE_MASTERS_DIR',
+              '--calib_dir': 'USE_CALIB_DIR',
             },
             ]
         },
     'keck_mosfire': {
         'J_multi': [
             {'files': ['m191014_0170.fits'],
-              '--masters_dir': 'USE_MASTERS_DIR',
+              '--calib_dir': 'USE_CALIB_DIR',
             },
         ],
         'Y_long': # Testing on pypeit_ql_jfh_multislit
