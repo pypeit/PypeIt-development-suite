@@ -293,18 +293,27 @@ def test_setup_keck_nires():
 
 def test_setup_keck_nires_comb():
 
-    root = os.path.join(os.environ['PYPEIT_DEV'], 'RAW_DATA', 'keck_nires')
+    dev_root = Path(os.environ['PYPEIT_DEV']).resolve()
+    data_root = dev_root / 'RAW_DATA' / 'keck_nires'
+
+    output_path = Path().resolve() / 'output'
+    if output_path.exists():
+        shutil.rmtree(output_path)
+    output_path.mkdir()
+
     datasets = ['ABpat_wstandard', 'ABC_nostandard', 'ABBA_nostandard']
     for dset in datasets:
-        files = glob.glob(os.path.join(root, dset, '*fits*'))
-        correct_pypeit_file = os.path.join(os.environ['PYPEIT_DEV'], 'pypeit_files', f'keck_nires_{dset.lower()}.pypeit')
+        files = sorted(list((data_root / dset).glob('*fits*')))
+        correct_pypeit_file = dev_root / 'pypeit_files' / f'keck_nires_{dset.lower()}.pypeit'
 
         # run setup on raw files
         ps = pypeitsetup.PypeItSetup(files, spectrograph_name='keck_nires')
         ps.run(setup_only=True)
         # Write the automatically generated pypeit data
         pypeit_files = ps.fitstbl.write_pypeit(output_path, cfg_lines=ps.user_cfg,
-                                            write_bkg_pairs=True)
+                                               write_bkg_pairs=True)
+
+
         # Test that the automatically generated configuration, calibration group, combination group
         # and background group for science frames are correct, i.e., are the same as in the pre-generated pypeit file.
 
@@ -322,7 +331,7 @@ def test_setup_keck_nires_comb():
             # Check this file exists
             assert np.any(where_this), 'Science file does not exist in the correct pypeit file'
             # Check calibration group
-            assert ps.fitstbl['calib'][where_this].data[0] == int(pypeitFile.data[correct_science]['calib'][i]), \
+            assert ps.fitstbl['calib'][where_this].data[0] == pypeitFile.data[correct_science]['calib'][i], \
                 'Calibration group is wrong'
             # Check combination and background group
             assert ps.fitstbl['comb_id'][where_this].data[0] == int(pypeitFile.data[correct_science]['comb_id'][i]), \

@@ -4,6 +4,8 @@ RawImage class
 """
 import os
 
+from IPython import embed
+
 import pytest
 
 from pypeit.images.rawimage import RawImage
@@ -149,7 +151,7 @@ def test_load_goodman():
     try:
         data_img = grab_img('soar_goodman_red', ifile)
     except:
-        pytest.fail('Bok BC test data section failed: {0}'.format(ifile))
+        pytest.fail('Soar Goodman Red test data section failed: {0}'.format(ifile))
 
 def test_load_deveny():
     ifile = os.path.join(os.environ['PYPEIT_DEV'], 'RAW_DATA','ldt_deveny','DV2',
