@@ -1,0 +1,35 @@
+# Auto-generated PypeIt input file using PypeIt version: 1.12.2.dev153+gff226d120.d20230325
+# UTC 2023-03-28T02:54:02.934
+
+# User-defined execution parameters
+[rdx]
+    spectrograph = keck_nires
+[reduce]
+    [[findobj]]
+        snr_thresh = 5
+        maxnumber_std = 1
+
+# Setup
+setup read
+Setup A:
+  dispname: spec
+setup end
+
+# Data block 
+data read
+ path /Users/dpelliccia/PypeIt/PypeIt-development-suite/RAW_DATA/keck_nires/ABpat_wstandard
+              filename |        frametype |                ra |               dec |     target | dispname |    decker | binning |              mjd |          airmass | exptime | dithpat | dithpos | dithoff | frameno | calib | comb_id | bkg_id
+NR.20191211.26257.fits | arc,science,tilt | 0.485763934368761 | -14.5372023685063 | PGIRN19bid |     spec | 0.55 slit |     1,1 | 58828.3039070774 | 1.46621930872166 |   300.0 |   ABpat |       A |     3.0 |      51 |     1 |       1 |      2
+NR.20191211.26611.fits | arc,science,tilt | 0.486891626703377 | -14.5359429172952 | PGIRN19bid |     spec | 0.55 slit |     1,1 | 58828.3080036052 | 1.49462018357245 |   300.0 |   ABpat |       B |    -3.0 |      52 |     1 |       2 |      1
+NR.20191211.07688.fits |     lampoffflats |              58.0 |              45.0 |    unknown |     spec | 0.55 slit |     1,1 | 58828.0889869385 | 1.41291034446565 |   100.0 |    none |    None |     0.0 |      16 |   all |      -1 |     -1
+NR.20191211.07920.fits |     lampoffflats |              58.0 |              45.0 |    unknown |     spec | 0.55 slit |     1,1 | 58828.0916727024 | 1.41291034446565 |   100.0 |    none |    None |     0.0 |      18 |   all |      -1 |     -1
+NR.20191211.08152.fits |     lampoffflats |              58.0 |              45.0 |    unknown |     spec | 0.55 slit |     1,1 | 58828.0943584663 | 1.41291034446565 |   100.0 |    none |    None |     0.0 |      20 |   all |      -1 |     -1
+NR.20191211.07572.fits |  pixelflat,trace |              58.0 |              45.0 |    unknown |     spec | 0.55 slit |     1,1 | 58828.0876411052 | 1.41291034446565 |   100.0 |    none |    None |     0.0 |      15 |   all |      -1 |     -1
+NR.20191211.07804.fits |  pixelflat,trace |              58.0 |              45.0 |    unknown |     spec | 0.55 slit |     1,1 | 58828.0903268691 | 1.41291034446565 |   100.0 |    none |    None |     0.0 |      17 |   all |      -1 |     -1
+NR.20191211.08036.fits |  pixelflat,trace |              58.0 |              45.0 |    unknown |     spec | 0.55 slit |     1,1 |  58828.093012633 | 1.41291034446565 |   100.0 |    none |    None |     0.0 |      19 |   all |      -1 |     -1
+NR.20191211.27199.fits |         standard |  355.388500427259 |   10.214912303816 | HIP 116886 |     spec | 0.55 slit |     1,1 |  58828.314809508 |  1.3324146050109 |    10.0 |    ABBA |       A |     5.0 |      53 |     1 |       3 |      4
+NR.20191211.27227.fits |         standard |  355.390691333962 |  10.2166635786191 | HIP 116886 |     spec | 0.55 slit |     1,1 |  58828.315128258 | 1.33448159880961 |    10.0 |    ABBA |       B |    -5.0 |      54 |     1 |       4 |      3
+NR.20191211.27252.fits |         standard |  355.390691333962 |  10.2166635786191 | HIP 116886 |     spec | 0.55 slit |     1,1 | 58828.3154233969 | 1.33657191220456 |    10.0 |    ABBA |       B |    -5.0 |      55 |     1 |       4 |      3
+NR.20191211.27280.fits |         standard |  355.388500427263 |  10.2149123038109 | HIP 116886 |     spec | 0.55 slit |     1,1 | 58828.3157480496 |   1.338932667107 |    10.0 |    ABBA |       A |     5.0 |      56 |     1 |       3 |      4
+data end
+
