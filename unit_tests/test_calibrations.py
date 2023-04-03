@@ -142,7 +142,7 @@ def test_reuse(multi_caliBrate, fitstbl):
     par = spectrograph.default_pypeit_par()
     multi_caliBrate_reuse = calibrations.MultiSlitCalibrations(fitstbl, par['calibrations'],
                                                                spectrograph, str(calib_dir))
-    multi_caliBrate_reuse.reuse = True
+    multi_caliBrate_reuse.reuse_calibs = True
     reset_calib(multi_caliBrate_reuse)
 
     # Read the calibrations
@@ -160,4 +160,5 @@ def test_reuse(multi_caliBrate, fitstbl):
 
     # Clean-up
     shutil.rmtree(multi_caliBrate_reuse.calib_dir)
+
 
