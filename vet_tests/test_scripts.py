@@ -20,12 +20,6 @@ from pypeit import coadd1d
 from pypeit.pypmsgs import PypeItError
 
 
-def test_parse_calibs(redux_out):
-    pypeit_file = os.path.join(redux_out, 'keck_nires', 'ABBA_wstandard', 'keck_nires_abba_wstandard.pypeit')
-    pargs = scripts.parse_calib_id.ParseCalibID.parse_args([pypeit_file])
-    scripts.parse_calib_id.ParseCalibID.main(pargs)
-
-
 def test_show_1dspec(redux_out):
     spec_file = os.path.join(redux_out,
                              'shane_kast_blue', '600_4310_d55',
@@ -61,8 +55,8 @@ def test_chk_edges(redux_out):
     mstrace_root = os.path.join(redux_out,
                                 'keck_lris_red', 
                                 'multi_400_8500_d560', 
-                                'Masters', 
-                                'MasterEdges_A_1_DET01.fits.gz')
+                                'Calibrations',
+                                'Edges_A_0_DET01.fits.gz')
     # Ginga needs to be open in RC mode
     display.connect_to_ginga(raise_err=True, allow_new=True)
     #
@@ -101,8 +95,8 @@ def test_chk_flat(redux_out):
                              'shane_kast_blue', '600_4310_d55',
                              'shane_kast_blue_A') 
     mstrace_root = os.path.join(droot,
-                                'Masters',
-                                'MasterFlat_A_1_DET01.fits')
+                                'Calibrations',
+                                'Flat_A_0_DET01.fits')
     # Ginga needs to be open in RC mode
     display.connect_to_ginga(raise_err=True, allow_new=True)
     #
@@ -115,21 +109,19 @@ def test_chk_wavecalib(redux_out):
                              'shane_kast_blue', '600_4310_d55',
                              'shane_kast_blue_A') 
     ms_root = os.path.join(droot,
-                           'Masters',
-                           'MasterWaveCalib_A_1_DET01.fits')
+                           'Calibrations',
+                           'WaveCalib_A_0_DET01.fits')
     #
     pargs = scripts.chk_wavecalib.ChkWaveCalib.parse_args([ms_root])
     scripts.chk_wavecalib.ChkWaveCalib.main(pargs)
 
 
 def test_identify(redux_out):
-    droot = os.path.join(redux_out,
-                             'shane_kast_blue', '600_4310_d55',
-                             'shane_kast_blue_A') 
-    arc_file = os.path.join(droot, 'Masters',
-                             'MasterArc_A_1_DET01.fits')
-    slits_file = os.path.join(droot, 'Masters',
-                            'MasterSlits_A_1_DET01.fits.gz')
+    droot = os.path.join(redux_out, 'shane_kast_blue', '600_4310_d55', 'shane_kast_blue_A') 
+    arc_file = os.path.join(droot, 'Calibrations',
+                            'Arc_A_0_DET01.fits')
+    slits_file = os.path.join(droot, 'Calibrations',
+                              'Slits_A_0_DET01.fits.gz')
     # Just list
     pargs = scripts.identify.Identify.parse_args([arc_file, slits_file, '--test'])
     arcfitter = scripts.identify.Identify.main(pargs)
@@ -381,8 +373,8 @@ def test_parse_slits(redux_out):
     kastb_dir = os.path.join(redux_out,
                              'shane_kast_blue', '600_4310_d55',
                              'shane_kast_blue_A')
-    slits_file = os.path.join(kastb_dir, 'Masters',
-                              'MasterSlits_A_1_DET01.fits.gz')
+    slits_file = os.path.join(kastb_dir, 'Calibrations',
+                              'Slits_A_0_DET01.fits.gz')
     spec2d_file = os.path.join(kastb_dir, 'Science',
                               'spec2d_b27-J1217p3905_KASTb_20150520T045733.560.fits')
 

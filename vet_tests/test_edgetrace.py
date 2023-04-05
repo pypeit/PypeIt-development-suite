@@ -22,8 +22,8 @@ def test_addrm_slit(redux_out):
     trace_file = os.path.join(redux_out,
                               'keck_lris_red', 
                               'multi_400_8500_d560', 
-                              'Masters', 
-                              'MasterEdges_A_1_DET01.fits.gz')
+                              'Calibrations',
+                              'Edges_A_0_DET01.fits.gz')
     assert os.path.isfile(trace_file), 'Trace file does not exist!'
 
     # Instantiate
@@ -53,8 +53,8 @@ def test_sobel_enhance(redux_out):
     trace_file = os.path.join(redux_out, 
                               'keck_lris_blue', 
                               'long_600_4000_d560',
-                              'Masters', 
-                              'MasterEdges_A_1_DET01.fits.gz')
+                              'Calibrations',
+                              'Edges_A_0_DET01.fits.gz')
     assert os.path.isfile(trace_file), 'Trace file does not exist!'
 
     # Instantiate
