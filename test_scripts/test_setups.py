@@ -322,16 +322,16 @@ _quick_look = {
     'shane_kast_red': {
         '600_7500_d57': [
             {'files': ['r122.fits'],
-              '--calib_dir': 'USE_CALIB_DIR',
+              '--setup_calib_dir': 'USE_CALIB_DIR',
             },
         ]
     },
     'keck_lris_red': {
         'long_600_7500_d560': [
-            {'test_name': 'det', # Run with maskID
+            {'test_name': 'det',
                 'files': ['LR.20160216.40478.fits.gz'],
               '--det': 2,
-              '--calib_dir': 'USE_CALIB_DIR',
+              '--setup_calib_dir': 'USE_CALIB_DIR',
             },
         ],
     },
@@ -340,19 +340,19 @@ _quick_look = {
             {'test_name': 'maskID', # Run with maskID
                 'files': ['d1010_0056.fits.gz'],
               '--maskID': 958454,
-              '--calib_dir': 'USE_CALIB_DIR',
+              '--setup_calib_dir': 'USE_CALIB_DIR',
             },
             {'test_name': 'slitspatnum', # Run with slitspatnum
                 'files': ['d1010_0056.fits.gz'],
               '--slitspatnum': 'MSC02:452',
-              '--calib_dir': 'USE_CALIB_DIR',
+              '--setup_calib_dir': 'USE_CALIB_DIR',
             },
             ]
         },
     'keck_mosfire': {
         'J_multi': [
             {'files': ['m191014_0170.fits'],
-              '--calib_dir': 'USE_CALIB_DIR',
+              '--setup_calib_dir': 'USE_CALIB_DIR',
             },
         ],
         'Y_long': # Testing on pypeit_ql_jfh_multislit
