@@ -536,26 +536,24 @@ class PypeItQuickLookTest(PypeItTest):
         elif self.setup.instr == 'keck_lris_red_mark4':  # TESTING USING JFH QL
             command_line += [self.setup.rawdir] + self.files
         else:
-            command_line += ['--full_rawpath', self.setup.rawdir, 
-                             '--rawfiles'] + self.files
+            command_line += ['--raw_path', self.setup.rawdir, 
+                             '--raw_files'] + self.files
         # Aditional options
         for option in self.options:
             if self.options[option] is None:
                 command_line += [option]
             elif self.options[option] in ['USE_CALIB_DIR', 
                                           'USE_ARCHIVE_CALIB_DIR']:
-                idir = self.setup.rdxdir
-                #idir = os.path.join(self.redux_dir,
-                #    self.setup.instr, self.setup.name)
-                # calibrations?
                 if self.options[option] == 'USE_CALIB_DIR':
-                    ## Crazy hack for pypeit_setup 
-                    #if self.setup.instr in ['shane_kast_blue'] and \
-                    #    self.setup.name in ['600_4310_d55']:
-                    #        idir = os.path.join(idir,
-                    #            f'{self.setup.instr}_A')
-                    idir = os.path.join(idir, 'Calibrations')
-                # Finally
+                    # Point the QL script directly to the directory with the
+                    # calibrations reduced during the main "reduce" execution of
+                    # PypeIt.
+                    idir = os.path.join(self.setup.rdxdir, 'Calibrations')
+                else:
+                    # Point the QL script to the top-level directory that can
+                    # potentially have multiple setups.  This forces the code to
+                    # match to the correct setup.
+                    idir = os.path.dirname(self.setup.rdxdir)
                 command_line += [option, idir]
             else:
                 command_line += [option, str(self.options[option])]
