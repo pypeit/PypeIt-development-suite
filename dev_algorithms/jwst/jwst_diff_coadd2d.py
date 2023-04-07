@@ -58,7 +58,7 @@ from pypeit import coadd2d
 from pypeit.images.pypeitimage import PypeItImage
 from pypeit.scripts.show_2dspec import show_trace
 
-# This is the main up to date routine. Ignore the others.
+# JFH: This is the main up to date routine. Ignore the others.
 
 
 DO_NOT_USE = datamodels.dqflags.pixel['DO_NOT_USE']
@@ -214,7 +214,7 @@ for sci1, sci2 in zip(scifiles_1, scifiles_2):
     basenames_2.append(os.path.basename(sci2).replace('_rate.fits', ''))
 
 # Run the spec2 pipeline
-runflag = True
+runflag = False
 if runflag:
     for sci in scifiles_all:
         Spec2Pipeline.call(sci, save_results=True, output_dir=output_dir, steps=param_dict)
@@ -225,35 +225,35 @@ if runflag:
 
 # Output file names
 intflat_output_files_1 = []
-#e2d_output_files_1 = []
+e2d_output_files_1 = []
 cal_output_files_1 = []
-msa_output_files_1 = []
 
 intflat_output_files_2 = []
-#e2d_output_files_2 = []
+e2d_output_files_2 = []
 cal_output_files_2 = []
-msa_output_files_2 = []
 
 for base1, base2 in zip(basenames_1, basenames_2):
-    #e2d_output_files_1.append(os.path.join(output_dir, base1 + '_extract_2d.fits'))
+    if mode == 'MSA':
+        e2d_output_files_1.append(os.path.join(output_dir, base1 + '_msa_flagging.fits'))
+        e2d_output_files_2.append(os.path.join(output_dir, base2 + '_msa_flagging.fits'))
+    else:
+        e2d_output_files_1.append(os.path.join(output_dir, base1 + '_extract_2d.fits'))
+        e2d_output_files_2.append(os.path.join(output_dir, base2 + '_extract_2d.fits'))
+
     intflat_output_files_1.append(os.path.join(output_dir, base1 + '_interpolatedflat.fits'))
     cal_output_files_1.append(os.path.join(output_dir, base1 + '_cal.fits'))
-    msa_output_files_1.append(os.path.join(output_dir, base1 + '_msa_flagging.fits'))
-
-    #e2d_output_files_2.append(os.path.join(output_dir, base2 + '_extract_2d.fits'))
     intflat_output_files_2.append(os.path.join(output_dir, base2 + '_interpolatedflat.fits'))
     cal_output_files_2.append(os.path.join(output_dir, base2 + '_cal.fits'))
-    msa_output_files_2.append(os.path.join(output_dir, base2 + '_msa_flagging.fits'))
+
+
 
 # Read in calwebb outputs for everytihng
 
 # Read in multi exposure calwebb outputs
-msa_multi_list_1 = []
-#e2d_multi_list_1 = []
+e2d_multi_list_1 = []
 intflat_multi_list_1 = []
 final_multi_list_1 = []
-msa_multi_list_2 = []
-#e2d_multi_list_2 = []
+e2d_multi_list_2 = []
 intflat_multi_list_2 = []
 final_multi_list_2 = []
 nslits_1 = np.zeros(nexp, dtype=int)
@@ -264,11 +264,12 @@ t_eff = np.zeros(nexp, dtype=float)
 for iexp in range(nexp):
     # Open some JWST data models
     #e2d_multi_list_1.append(datamodels.open(e2d_output_files_1[iexp]))
-    msa_multi_list_1.append(datamodels.open(msa_output_files_1[iexp]))
+
+    e2d_multi_list_1.append(datamodels.open(e2d_output_files_1[iexp]))
     intflat_multi_list_1.append(datamodels.open(intflat_output_files_1[iexp]))
     final_multi_list_1.append(datamodels.open(cal_output_files_1[iexp]))
 
-    msa_multi_list_2.append(datamodels.open(msa_output_files_2[iexp]))
+    e2d_multi_list_2.append(datamodels.open(e2d_output_files_2[iexp]))
     intflat_multi_list_2.append(datamodels.open(intflat_output_files_2[iexp]))
     final_multi_list_2.append(datamodels.open(cal_output_files_2[iexp]))
 
@@ -331,8 +332,8 @@ gdslits = slit_names_uni[::-1] if islit is None else [islit]
 bad_slits = []
 
 # First index is detector, second index is exposure
-#e2d_multi_list = [e2d_multi_list_1, e2d_multi_list_2]
-msa_multi_list = [msa_multi_list_1, msa_multi_list_2]
+e2d_multi_list = [e2d_multi_list_1, e2d_multi_list_2]
+#msa_multi_list = [msa_multi_list_1, msa_multi_list_2]
 intflat_multi_list = [intflat_multi_list_1, intflat_multi_list_2]
 final_multi_list = [final_multi_list_1, final_multi_list_2]
 slit_names_list = [slit_names_1, slit_names_2]
@@ -366,7 +367,7 @@ for ii, islit in enumerate(gdslits):
 
                 # Process the science image for this exposure
                 science, sciivar, gpm, base_var, count_scale = jwst_proc(
-                    msa_multi_list[idet][iexp], t_eff[iexp], slit_slice, finitemask, pathloss, barshadow,
+                    e2d_multi_list[idet][iexp], t_eff[iexp], slit_slice, finitemask, pathloss, barshadow,
                     noise_floor=par['scienceframe']['process']['noise_floor'],
                     kludge_err=kludge_err, ronoise=det_container_list[idet].ronoise)
 
@@ -384,7 +385,7 @@ for ii, islit in enumerate(gdslits):
                 if diff_redux:
                     # Process the background image using the same calibrations as the science
                     bkg, bkgivar, bkg_gpm, bkg_base_var, bkg_count_scale = jwst_proc(
-                        msa_multi_list[idet][ibkg], t_eff[ibkg], slit_slice, finitemask, pathloss, barshadow,
+                        e2d_multi_list[idet][ibkg], t_eff[ibkg], slit_slice, finitemask, pathloss, barshadow,
                         noise_floor=par['scienceframe']['process']['noise_floor'],
                         kludge_err=kludge_err, ronoise=det_container_list[idet].ronoise)
 
@@ -433,10 +434,10 @@ for ii, islit in enumerate(gdslits):
                 offsets_pixels.append(offsets_pixels_list[idet][iexp])
 
                 if show and (iexp == 0):
-                    sci_rate = datamodels.open(msa_multi_list[idet][iexp])
+                    sci_rate = datamodels.open(e2d_multi_list[idet][iexp])
                     sci_data = np.array(sci_rate.data.T, dtype=float)
 
-                    bkg_rate = datamodels.open(msa_multi_list[idet][ibkg])
+                    bkg_rate = datamodels.open(e2d_multi_list[idet][ibkg])
                     bkg_data = np.array(bkg_rate.data.T, dtype=float)
 
                     viewer_raw, ch_raw = display.show_image(sci_data, cuts=get_cuts(sci_data),
