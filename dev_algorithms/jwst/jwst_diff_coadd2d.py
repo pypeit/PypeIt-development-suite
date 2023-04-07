@@ -325,8 +325,8 @@ slit_names_uni = np.unique(np.hstack([slit_names_1, slit_names_2]))
 
 # Loop over slits
 # islit = '10'
-# islit = 'S200A1'
-islit = '83'
+islit = 'S200A1'
+#islit = '83'
 #islit = None
 gdslits = slit_names_uni[::-1] if islit is None else [islit]
 bad_slits = []
