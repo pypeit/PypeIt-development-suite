@@ -58,6 +58,8 @@ from pypeit import coadd2d
 from pypeit.images.pypeitimage import PypeItImage
 from pypeit.scripts.show_2dspec import show_trace
 
+# This is the main up to date routine. Ignore the others.
+
 DO_NOT_USE = datamodels.dqflags.pixel['DO_NOT_USE']
 
 # detname = 'nrs1'
