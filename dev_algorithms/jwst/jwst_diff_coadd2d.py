@@ -60,12 +60,14 @@ from pypeit.scripts.show_2dspec import show_trace
 
 # This is the main up to date routine. Ignore the others.
 
+
 DO_NOT_USE = datamodels.dqflags.pixel['DO_NOT_USE']
 
 # detname = 'nrs1'
 # detector = 1 if 'nrs1' in detname else 2
 
-disperser = 'G395M_Maseda'
+disperser = 'J0313_G235M'
+#disperser = 'G395M_Maseda'
 #disperser = 'G395M'
 #disperser = 'PRISM_01117'
 # disperser = 'G235M'
@@ -73,11 +75,12 @@ disperser = 'G395M_Maseda'
 # detectors = ['nrs1', 'nrs2']
 # disperser='PRISM_01117'
 # disperser='PRISM_FS'
-mode = 'MSA'
-# mode ='FS'
+#mode = 'MSA'
+mode ='FS'
 detectors = ['nrs1', 'nrs2']
 exp_list = []
-diff_redux = True
+
+diff_redux = False
 # If diff_redux is False, the code will model the sky and the object profile and perform optimal extraction.
 # If diff_redux is True, the code will difference image and simply boxcar extract (optimal not implemented yet)
 for detname in detectors:
@@ -99,7 +102,7 @@ for detname in detectors:
         # scifile  = os.path.join(rawpath_level2, 'jw01133003001_0310x_00003_' + detname + '_rate.fits')
         # bkgfile1 = os.path.join(rawpath_level2, 'jw01133003001_0310x_00001_' + detname + '_rate.fits')
         # bkgfile2 = os.path.join(rawpath_level2, 'jw01133003001_0310x_00002_' + detname + '_rate.fits')
-    if 'PRISM_FS' == disperser:
+    elif 'PRISM_FS' == disperser:
         ## Prorgram for Slit Loss Characterization for MSA shutters
         # PRISM data
         rawpath_level2 = '/Users/joe/jwst_redux/Raw/NIRSPEC_FS/2072/level_12'
@@ -111,6 +114,19 @@ for detname in detectors:
         scifile1 = os.path.join(rawpath_level2, 'jw02072002001_05101_00001_' + detname + '_rate.fits')
         scifile2 = os.path.join(rawpath_level2, 'jw02072002001_05101_00002_' + detname + '_rate.fits')
         scifile3 = os.path.join(rawpath_level2, 'jw02072002001_05101_00003_' + detname + '_rate.fits')
+
+    elif 'J0313_G235M' == disperser:
+        ## Prorgram for Slit Loss Characterization for MSA shutters
+        # PRISM data
+        rawpath_level2 = '/Users/joe/jwst_redux/Raw/NIRSPEC_FS/1764/level_12/01764/'
+        output_dir = '/Users/joe/jwst_redux/redux/NIRSPEC_FS/J0313_G235M/calwebb/output'
+        pypeit_output_dir = '/Users/joe/jwst_redux/redux/NIRSPEC_FS/J0313_G235M/calwebb/pypeit'
+
+        # NIRSPEC 3-point dither
+        # dither center
+        scifile1 = os.path.join(rawpath_level2, 'jw01764014001_03102_00001_' + detname + '_rate.fits')
+        scifile2 = os.path.join(rawpath_level2, 'jw01764014001_03102_00002_' + detname + '_rate.fits')
+        scifile3 = os.path.join(rawpath_level2, 'jw01764014001_03102_00003_' + detname + '_rate.fits')
 
     elif 'PRISM_01117' in disperser:
         # PRISM data
@@ -198,7 +214,7 @@ for sci1, sci2 in zip(scifiles_1, scifiles_2):
     basenames_2.append(os.path.basename(sci2).replace('_rate.fits', ''))
 
 # Run the spec2 pipeline
-runflag = False
+runflag = True
 if runflag:
     for sci in scifiles_all:
         Spec2Pipeline.call(sci, save_results=True, output_dir=output_dir, steps=param_dict)
