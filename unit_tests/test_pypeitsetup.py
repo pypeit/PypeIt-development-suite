@@ -24,6 +24,7 @@ def get_files():
     assert len(files) > 0
     return files
 
+
 def get_lrisr_files():
     # Check for files
     file_root = os.path.join(os.getenv('PYPEIT_DEV'), 
@@ -34,12 +35,10 @@ def get_lrisr_files():
     return files
 
 
-
 def test_init():
     # Init
     files = get_files()
-    setupc = pypeitsetup.PypeItSetup(files, spectrograph_name='shane_kast_blue', path=data_path(''))
-    assert len(setupc.steps) == 0
+    setupc = pypeitsetup.PypeItSetup(files, spectrograph_name='shane_kast_blue')
     assert setupc.nfiles == 0
 
 
@@ -49,27 +48,18 @@ def test_build_fitstbl():
     files = glob.glob(file_root+'*')
     assert len(files) > 0
     # Init
-    setupc = pypeitsetup.PypeItSetup(files, spectrograph_name='shane_kast_blue', path=data_path(''))
+    setupc = pypeitsetup.PypeItSetup(files, spectrograph_name='shane_kast_blue')
     #
     fitstbl = setupc.build_fitstbl(files)
     assert isinstance(fitstbl, Table)
     assert setupc.nfiles == 26
-
-#    # NOTE: These write_ and load_ methods have been deprecated
-#    # I/O
-#    setupc.write_metadata(ofile=data_path('fitstbl.fits'))
-#    tmp = setupc.load_metadata(data_path('fitstbl.fits'))
-#    assert len(tmp) == 26
-#
-#    # Cleanup
-#    os.remove(data_path('fitstbl.fits'))
 
 
 def test_image_type():
     # Check for files
     files = get_files()
     # Init
-    setupc = pypeitsetup.PypeItSetup(files, spectrograph_name='shane_kast_blue', path=data_path(''))
+    setupc = pypeitsetup.PypeItSetup(files, spectrograph_name='shane_kast_blue')
     fitstbl = setupc.build_fitstbl(files)
     # Type
     setupc.get_frame_types(flag_unknown=True)
@@ -79,6 +69,7 @@ def test_image_type():
 
     assert np.sum(setupc.fitstbl.find_frames('pixelflat')
                     & setupc.fitstbl.find_frames('trace')) == 12
+
 
 def test_type():
     # Check for files
@@ -92,68 +83,41 @@ def test_type():
                  '[scienceframe]',
                  'exprng = 60,None']
     setupc = pypeitsetup.PypeItSetup(files, spectrograph_name='shane_kast_blue',
-                                     cfg_lines=cfg_lines, path=data_path(''))
+                                     cfg_lines=cfg_lines)
     setupc.build_fitstbl(files)
     setupc.get_frame_types(flag_unknown=True)
     assert np.sum(setupc.fitstbl.find_frames('science')) == 2
+
 
 def test_run():
     # Check for files
     files = get_files()
     # Init
-    setupc = pypeitsetup.PypeItSetup(files, spectrograph_name='shane_kast_blue', path=data_path(''))
+    setupc = pypeitsetup.PypeItSetup(files, spectrograph_name='shane_kast_blue')
     # Run
-    par, spectrograph, fitstbl = setupc.run(sort_dir=data_path(''))
+    par, spectrograph, fitstbl = setupc.run()
     # Test
     assert isinstance(par, pypeitpar.PypeItPar)
     assert isinstance(fitstbl, PypeItMetaData)
-    #assert isinstance(setup_dict, dict)
 
-    # Cleanup
-    os.remove(data_path('shane_kast_blue.calib'))
-
-def test_run_calcheck():
-    # Check for files
-    files = get_files()
-    # Init
-    setupc = pypeitsetup.PypeItSetup(files, spectrograph_name='shane_kast_blue', path=data_path(''))
-    # Run
-    par, spectrograph, fitstbl = setupc.run(calibration_check=True, sort_dir=data_path(''))
-    # Test
-    assert isinstance(par, pypeitpar.PypeItPar)
-
-    # Cleanup
-    os.remove(data_path('shane_kast_blue.calib'))
 
 def test_run_setup():
     files = get_files()
     # Init
-    setupc = pypeitsetup.PypeItSetup(files, spectrograph_name='shane_kast_blue', path=data_path(''))
+    setupc = pypeitsetup.PypeItSetup(files, spectrograph_name='shane_kast_blue')
     # Run
-    par, spectrograph, fitstbl = setupc.run(setup_only=True, sort_dir=data_path(''))
-    # Test
-    assert par is None
-
-    # Cleanup
-    os.remove(data_path('shane_kast_blue.sorted'))
+    par, spectrograph, fitstbl = setupc.run(setup_only=True)
 
 
 def test_run_on_bad_headers():
     files = get_lrisr_files()
     # Init
-    setupc = pypeitsetup.PypeItSetup(files, 
-                                     spectrograph_name='keck_lris_red', 
-                                     path=data_path(''))
+    setupc = pypeitsetup.PypeItSetup(files, spectrograph_name='keck_lris_red')
     # Run
-    par, spectrograph, fitstbl = setupc.run(setup_only=True, 
-                                            sort_dir=data_path(''))
+    par, spectrograph, fitstbl = setupc.run(setup_only=True)
     # Test
     idx = np.where(setupc.fitstbl['filename'] == 'LR.20160216.05709.fits.gz')[0]
-    assert par is None
     assert setupc.fitstbl['ra'][idx][0] is None
     assert len(setupc.fitstbl) == 23
 
-
-    # Cleanup
-    os.remove(data_path('keck_lris_red.sorted'))
 

@@ -3,11 +3,8 @@ Module to run calibrations only test with run_pypeit
 """
 import os
 import shutil
-from IPython.terminal.embed import embed
+from IPython import embed
 
-import pytest
-
-from pypeit.scripts.parse_calib_id import ParseCalibID
 from pypeit.scripts.setup import Setup
 from pypeit.scripts.run_pypeit import RunPypeIt
 
@@ -17,7 +14,7 @@ def test_run_pypeit_calib_only():
     rawdir = os.path.join(os.environ['PYPEIT_DEV'], 'RAW_DATA', 'shane_kast_blue', '600_4310_d55')
     assert os.path.isdir(rawdir), 'Incorrect raw directory'
 
-    master_key = 'A_1_DET01'
+    calib_key = 'A_0_DET01'
 
     # File list
     all_files = {
@@ -25,22 +22,22 @@ def test_run_pypeit_calib_only():
         'flats': ['b11.fits.gz', 'b12.fits.gz', 'b13.fits.gz'],
         'bias': ['b21.fits.gz', 'b22.fits.gz', 'b23.fits.gz'],
     }
-    all_masters = [f'MasterArc_{master_key}.fits',
-                   f'MasterTiltimg_{master_key}.fits',
-                   f'MasterBias_{master_key}.fits',
-                   f'MasterTilts_{master_key}.fits',
-                   f'MasterEdges_{master_key}.fits.gz',
-                   f'MasterFlat_{master_key}.fits',
-                   f'MasterWaveCalib_{master_key}.fits']
+    all_calibs = [f'Arc_{calib_key}.fits',
+                   f'Tiltimg_{calib_key}.fits',
+                   f'Bias_{calib_key}.fits',
+                   f'Tilts_{calib_key}.fits',
+                   f'Edges_{calib_key}.fits.gz',
+                   f'Flat_{calib_key}.fits',
+                   f'WaveCalib_{calib_key}.fits']
 
     # Just get a few files
-    for ss, sub_files, masters in zip(range(3),
+    for ss, sub_files, calibs in zip(range(3),
             [['arcs', 'flats', 'bias'],
              ['arcs', 'bias'],
              ['flats', 'bias']],
-            [all_masters,
-             [f'MasterArc_{master_key}.fits', f'MasterTiltimg_{master_key}.fits'],
-             [f'MasterEdges_{master_key}.fits.gz']]):
+            [all_calibs,
+             [f'Arc_{calib_key}.fits', f'Tiltimg_{calib_key}.fits'],
+             [f'Edges_{calib_key}.fits.gz']]):
         # Grab the subset
         files = []
         for sub_file in sub_files:
@@ -74,17 +71,9 @@ def test_run_pypeit_calib_only():
         RunPypeIt.main(pargs)
 
         # Test!
-        for master_file in masters:
-            assert os.path.isfile(os.path.join(configdir, 'Masters', master_file)
-                                  ), 'Master File {:s} missing!'.format(master_file)
-
-        # Now test parse_calib_id
-        if ss == 0:
-            pargs2 = ParseCalibID.parse_args([pyp_file])
-            calib_dict = ParseCalibID.main(pargs2)
-            assert isinstance(calib_dict, dict)
-            assert len(calib_dict) > 0
-            assert calib_dict['1'][master_key]['arc']['raw_files'][0] == 'b1.fits.gz'
+        for calib_file in calibs:
+            assert os.path.isfile(os.path.join(configdir, 'Calibrations', calib_file)), \
+                         f'Calibration file {calib_file} missing!'
 
         # Clean-up
         shutil.rmtree(outdir)

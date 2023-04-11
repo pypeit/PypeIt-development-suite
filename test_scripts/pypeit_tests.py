@@ -75,7 +75,7 @@ class PypeItTest(ABC):
     def __str__(self):
         """Return a summary of the test and the status.
 
-           Example: 'shane_kast_red/600_7500_d57 pypeit (without masters)'
+           Example: 'shane_kast_red/600_7500_d57 pypeit (without calibrations)'
         """
         return f"{self.setup} {self.description}"
 
@@ -203,11 +203,11 @@ class PypeItSetupTest(PypeItTest):
 class PypeItReduceTest(PypeItTest):
     """Test subclass that runs run_pypeit"""
 
-    def __init__(self, setup, pargs, ignore_masters=None, std=False):
+    def __init__(self, setup, pargs, ignore_calibs=None, std=False):
 
-        self.ignore_masters = ignore_masters if ignore_masters is not None else pargs.do_not_reuse_masters
+        self.ignore_calibs = ignore_calibs if ignore_calibs is not None else pargs.do_not_reuse_calibs
 
-        description = f"pypeit{' standards' if std else ''}{' (ignore masters)' if self.ignore_masters else ''}"
+        description = f"pypeit{' standards' if std else ''}{' (ignore calibrations)' if self.ignore_calibs else ''}"
         super().__init__(setup, pargs, description, "test")
 
         self.std = std
@@ -231,7 +231,7 @@ class PypeItReduceTest(PypeItTest):
             self.pyp_file = self.setup.pyp_file
 
         command_line = ['run_pypeit', self.pyp_file, '-o']
-        if self.ignore_masters:
+        if self.ignore_calibs:
             command_line += ['-m']
 
         return command_line
@@ -505,8 +505,8 @@ class PypeItQuickLookTest(PypeItTest):
         self.redux_dir = os.path.abspath(pargs.outputdir)
         self.pargs = pargs
         self.test_name = test_name
-        # Place the masters into REDUX_DIR/QL_MASTERS directory.
-        self.output_dir = os.path.join(self.redux_dir, 'QL_MASTERS')
+        # Place the calibrations into REDUX_DIR/QL_CALIB directory.
+        self.output_dir = os.path.join(self.redux_dir, 'QL_CALIB')
 
     def build_command_line(self):
 
@@ -536,26 +536,24 @@ class PypeItQuickLookTest(PypeItTest):
         elif self.setup.instr == 'keck_lris_red_mark4':  # TESTING USING JFH QL
             command_line += [self.setup.rawdir] + self.files
         else:
-            command_line += ['--full_rawpath', self.setup.rawdir, 
-                             '--rawfiles'] + self.files
+            command_line += ['--raw_path', self.setup.rawdir, 
+                             '--raw_files'] + self.files
         # Aditional options
         for option in self.options:
             if self.options[option] is None:
                 command_line += [option]
-            elif self.options[option] in ['USE_MASTERS_DIR', 
-                                          'USE_CALIB_DIR']:
-                idir = self.setup.rdxdir
-                #idir = os.path.join(self.redux_dir,
-                #    self.setup.instr, self.setup.name)
-                # Masters?
-                if self.options[option] == 'USE_MASTERS_DIR':
-                    ## Crazy hack for pypeit_setup 
-                    #if self.setup.instr in ['shane_kast_blue'] and \
-                    #    self.setup.name in ['600_4310_d55']:
-                    #        idir = os.path.join(idir,
-                    #            f'{self.setup.instr}_A')
-                    idir = os.path.join(idir, 'Masters')
-                # Finally
+            elif self.options[option] in ['USE_CALIB_DIR', 
+                                          'USE_ARCHIVE_CALIB_DIR']:
+                if self.options[option] == 'USE_CALIB_DIR':
+                    # Point the QL script directly to the directory with the
+                    # calibrations reduced during the main "reduce" execution of
+                    # PypeIt.
+                    idir = os.path.join(self.setup.rdxdir, 'Calibrations')
+                else:
+                    # Point the QL script to the top-level directory that can
+                    # potentially have multiple setups.  This forces the code to
+                    # match to the correct setup.
+                    idir = os.path.dirname(self.setup.rdxdir)
                 command_line += [option, idir]
             else:
                 command_line += [option, str(self.options[option])]
@@ -563,39 +561,39 @@ class PypeItQuickLookTest(PypeItTest):
         return command_line
 
     def run(self):
-        """Generate any required quick look masters before running the quick look test"""
+        """Generate any required quick-look calibration before running the quick look test"""
 
         if self.setup.instr == 'keck_nires' or (self.setup.instr == 'keck_mosfire' and self.setup.name == 'Y_long') or \
                 (self.setup.instr == 'keck_lris_red_mark4' and self.setup.name == 'long_600_10000_d680'):
             try:
 
-                # Build the masters with the output going to a log file
-                logfile = get_unique_file(os.path.join(self.setup.rdxdir, "build_ql_masters_output.log"))
+                # Build the calibrations with the output going to a log file
+                logfile = get_unique_file(os.path.join(self.setup.rdxdir, "build_ql_calib_output.log"))
                 with open(logfile, "w") as log:
-                    result = subprocess.run([os.path.join(self.setup.dev_path, 'build_ql_masters'),
+                    result = subprocess.run([os.path.join(self.setup.dev_path, 'build_ql_calibs'),
                                              self.setup.instr, "-s", self.setup.name, '--output_dir', self.output_dir, '--redux_dir', self.redux_dir, '--force_copy'],
                                             stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
 
                     print(result.stdout if isinstance(result.stdout, str) else result.stdout.decode(errors='replace'), file=log)
 
                 if result.returncode != 0:
-                    self.error_msgs.append("Failed to generate QL masters.")
+                    self.error_msgs.append("Failed to generate QL calibrations.")
                     self.passed = False
                     return False
             except Exception:
                 # Prevent any exceptions from escaping the "run" method
-                self.error_msgs.append("Exception building QL masters:")
+                self.error_msgs.append("Exception building QL calibrations:")
                 self.error_msgs.append(traceback.format_exc())
                 self.passed = False
                 return False
 
         # TODO
-        #  Generate the Masters as needed if USE_MASTERS_DIR or USE_CALIB_DIR is set
+        #  Generate the calibrations as needed if USE_CALIB_DIR or USE_ARCHIVE_CALIB_DIR is set
 
         # Run the quick look test via the parent's run method, setting the environment
-        # to use the newly generated masters
+        # to use the newly generated calibrations
         self.env = os.environ.copy()
-        self.env['QL_MASTERS'] = self.output_dir
+        self.env['QL_CALIB'] = self.output_dir
         return super().run()
 
 

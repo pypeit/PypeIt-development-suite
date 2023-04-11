@@ -166,7 +166,7 @@ _pypeit_setup = {
 
 _additional_reduce = {
     'keck_lris_red': {
-        'long_600_7500_d560': [dict(ignore_masters=True)]},
+        'long_600_7500_d560': [dict(ignore_calibs=True)]},
     'gemini_gmos': {
         'GS_HAM_R400_860': [dict(std=True)]},
     }
@@ -269,41 +269,69 @@ _collate1d = {
 _quick_look = {
     'shane_kast_blue': {
         '600_4310_d55':  [
-            dict(test_name='std', files=['b1.fits.gz', 'b10.fits.gz',
-                                    'b27.fits.gz']),
-            {'test_name': 'masters',
-              'files': ['b1.fits.gz', 'b10.fits.gz', 'b27.fits.gz'],
-              '--masters_dir': 'USE_MASTERS_DIR',
+            # (1) Basic execution with no pre-existing directories.
+            #   - All output is to QL_std/
+            #   - Calibrations are generated and placed in
+            #     QL_std/shane_kast_blue_A/Calibrations
+            #   - Science results are in QL_std/b27/Science
+            #   - The QL_std/b27/Calibrations directory is a symlink to
+            #     QL_std/shane_kast_blue_A/Calibrations
+            {'test_name': 'std',
+             'files' : ['b1.fits.gz', 'b10.fits.gz', 'b27.fits.gz'],
             },
-            {'test_name': 'calibs',
-              'files': ['b1.fits.gz', 'b10.fits.gz', 'b27.fits.gz'],
-              '--calib_dir': 'USE_CALIB_DIR'},
-            {'test_name': 'multi', # Process two frames individually
-                'files': ['b1.fits.gz', 'b10.fits.gz',
-                   'b27.fits.gz', 'b28.fits.gz']},
-            {'test_name': 'nostack', # Process two frames individually
-                'files': ['b1.fits.gz', 'b10.fits.gz',
-                   'b27.fits.gz', 'b28.fits.gz'],
-                '--no_stack': None},
-            {'test_name': 'boxcar', # Process two frames individually
-                'files': ['b1.fits.gz', 'b10.fits.gz',
-                   'b27.fits.gz'],
-                '--boxcar_radius': 2.},
+            # (2) Use the pre-existing calibrations generated during the
+            # "reduce" run for this setup.  The QL script is pointed directly to
+            # the directory with the calibrations to use.
+            #   - All output is to QL_cooked/
+            #   - Calibrations are *not* generated
+            #   - Science results are in QL_cooked/b27/Science
+            #   - The QL_cooked/b27/Calibrations directory is a symlink to
+            #     shane_kast_blue_A/Calibrations
+            {'test_name': 'cooked',
+             'files': ['b1.fits.gz', 'b10.fits.gz', 'b27.fits.gz'],
+             '--setup_calib_dir': 'USE_CALIB_DIR',
+            },
+            # (3) Same as test 2, except that the QL script is pointed to the
+            # top-level directory that could potentially house calibrations for
+            # multiple setups.  The script has to match the setup used for the
+            # science frames to the correct calibrations (although only one
+            # setup exists).
+            {'test_name': 'match',
+             'files': ['b1.fits.gz', 'b10.fits.gz', 'b27.fits.gz'],
+             '--parent_calib_dir': 'USE_ARCHIVE_CALIB_DIR',
+            },
+            # (4) Same as test 2, but process two stacked science frames
+            {'test_name': 'multi',
+             'files': ['b1.fits.gz', 'b10.fits.gz', 'b27.fits.gz', 'b28.fits.gz'],
+             '--setup_calib_dir': 'USE_CALIB_DIR',
+            },
+            # (5) Same as test 2, but process two science frames individually
+            {'test_name': 'nostack',
+             'files': ['b1.fits.gz', 'b10.fits.gz', 'b27.fits.gz', 'b28.fits.gz'],
+             '--setup_calib_dir': 'USE_CALIB_DIR',
+             '--no_stack': None,
+            },
+            # (6) Same as test 2, but change the boxcar extaction width
+            {'test_name': 'boxcar',
+             'files': ['b1.fits.gz', 'b10.fits.gz', 'b27.fits.gz'],
+             '--setup_calib_dir': 'USE_CALIB_DIR',
+             '--boxcar_radius': 2.,
+            },
             ],
       },
     'shane_kast_red': {
         '600_7500_d57': [
             {'files': ['r122.fits'],
-              '--masters_dir': 'USE_MASTERS_DIR',
+              '--setup_calib_dir': 'USE_CALIB_DIR',
             },
         ]
     },
     'keck_lris_red': {
         'long_600_7500_d560': [
-            {'test_name': 'det', # Run with maskID
+            {'test_name': 'det',
                 'files': ['LR.20160216.40478.fits.gz'],
               '--det': 2,
-              '--masters_dir': 'USE_MASTERS_DIR',
+              '--setup_calib_dir': 'USE_CALIB_DIR',
             },
         ],
     },
@@ -312,19 +340,19 @@ _quick_look = {
             {'test_name': 'maskID', # Run with maskID
                 'files': ['d1010_0056.fits.gz'],
               '--maskID': 958454,
-              '--masters_dir': 'USE_MASTERS_DIR',
+              '--setup_calib_dir': 'USE_CALIB_DIR',
             },
             {'test_name': 'slitspatnum', # Run with slitspatnum
                 'files': ['d1010_0056.fits.gz'],
               '--slitspatnum': 'MSC02:452',
-              '--masters_dir': 'USE_MASTERS_DIR',
+              '--setup_calib_dir': 'USE_CALIB_DIR',
             },
             ]
         },
     'keck_mosfire': {
         'J_multi': [
             {'files': ['m191014_0170.fits'],
-              '--masters_dir': 'USE_MASTERS_DIR',
+              '--setup_calib_dir': 'USE_CALIB_DIR',
             },
         ],
         'Y_long': # Testing on pypeit_ql_jfh_multislit
