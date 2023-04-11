@@ -66,8 +66,8 @@ DO_NOT_USE = datamodels.dqflags.pixel['DO_NOT_USE']
 # detname = 'nrs1'
 # detector = 1 if 'nrs1' in detname else 2
 
-disperser = 'J0313_G235M'
-#disperser = 'G395M_Maseda'
+#disperser = 'J0313_G235M'
+disperser = 'G395M_Maseda'
 #disperser = 'G395M'
 #disperser = 'PRISM_01117'
 # disperser = 'G235M'
@@ -75,12 +75,16 @@ disperser = 'J0313_G235M'
 # detectors = ['nrs1', 'nrs2']
 # disperser='PRISM_01117'
 # disperser='PRISM_FS'
-#mode = 'MSA'
-mode ='FS'
+
 detectors = ['nrs1', 'nrs2']
 exp_list = []
 
-diff_redux = False
+diff_redux = True
+runflag = False
+mode = 'MSA'
+#mode ='FS'
+
+
 # If diff_redux is False, the code will model the sky and the object profile and perform optimal extraction.
 # If diff_redux is True, the code will difference image and simply boxcar extract (optimal not implemented yet)
 for detname in detectors:
@@ -214,7 +218,6 @@ for sci1, sci2 in zip(scifiles_1, scifiles_2):
     basenames_2.append(os.path.basename(sci2).replace('_rate.fits', ''))
 
 # Run the spec2 pipeline
-runflag = False
 if runflag:
     for sci in scifiles_all:
         Spec2Pipeline.call(sci, save_results=True, output_dir=output_dir, steps=param_dict)
@@ -324,8 +327,8 @@ slit_names_2 = [slit.name for slit in final_multi_list_2[0].slits]
 slit_names_uni = np.unique(np.hstack([slit_names_1, slit_names_2]))
 
 # Loop over slits
-# islit = '10'
-islit = 'S200A1'
+islit = '10'
+#islit = 'S200A1'
 #islit = '83'
 #islit = None
 gdslits = slit_names_uni[::-1] if islit is None else [islit]
