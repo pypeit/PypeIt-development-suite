@@ -1,11 +1,13 @@
 """ Tests Reading of PypeIt Input files """
-
+from pathlib import Path
 import os
+import shutil
 import glob
 
-import pytest
+from IPython import embed
 
 from pypeit import inputfiles
+from pypeit.scripts.setup import Setup
 
 
 def test_read_fluxing_files():
@@ -56,3 +58,48 @@ def test_read_pypeit_files():
     # Loop
     for ifile in pypeit_files:
         pypeitFile = inputfiles.PypeItFile.from_file(ifile)
+
+
+def test_get_spectrograph():
+    pypeit_file = Path(os.getenv('PYPEIT_DEV')) / 'pypeit_files' \
+                    / 'shane_kast_blue_452_3306_d57.pypeit'
+    assert pypeit_file.exists(), 'Missing test pypeit file'
+
+    pypeitFile = inputfiles.PypeItFile.from_file(pypeit_file)
+    spec = pypeitFile.get_spectrograph()
+    assert spec.name == 'shane_kast_blue', 'Wrong spectrograph'
+
+
+def test_get_pypeitpar():
+
+    spec = 'shane_kast_blue'
+    setup = '600_4310_d55'
+
+    # Define the path with the raw data
+    data_root = Path(os.environ['PYPEIT_DEV']).resolve() / 'RAW_DATA' / spec / setup
+    assert data_root.exists(), 'TEST ERROR: Raw data path does not exist'
+
+    # Define the output directory and remove it if it already exist
+    setup_path = Path().resolve() / f'{spec}_A'
+    if setup_path.exists():
+        shutil.rmtree(setup_path)
+
+    args = ['-r', str(data_root), '-s', spec, '-c', 'all']
+    pargs = Setup.parse_args(args)
+    Setup.main(pargs)
+
+    assert setup_path.exists(), 'No setup_files directory created'
+    pypeit_file = setup_path / f'{spec}_A.pypeit'
+    assert pypeit_file.exists(), 'PypeIt file not written'
+
+    pypeitFile = inputfiles.PypeItFile.from_file(pypeit_file)
+    spectrograph, par, file = pypeitFile.get_pypeitpar()
+
+    assert spectrograph.name == spec, 'Wrong spectrograph'
+    assert par['rdx']['spectrograph'] == spec, 'Wrong spectrgraph'
+    assert par['rdx']['scidir'] == 'Science', 'Wrong default science directory'
+    assert Path(file).name == 'b27.fits.gz', 'File name changed'
+
+    # Clean-up
+    shutil.rmtree(setup_path)
+

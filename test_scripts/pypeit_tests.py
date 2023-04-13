@@ -552,29 +552,45 @@ class PypeItQuickLookTest(PypeItTest):
                 else:
                     # Point the QL script to the top-level directory that can
                     # potentially have multiple setups.  This forces the code to
-                    # match to the correct setup.
-                    idir = os.path.dirname(self.setup.rdxdir)
+                    # match to the correct setup.  For some instruments, this
+                    # points to the QL_CALIB directory, for others this just
+                    # points one directory up from the USE_CALIB_DIR result.
+                    idir = self.output_dir if self.instr_uses_build_calib() \
+                                else os.path.dirname(self.setup.rdxdir)
                 command_line += [option, idir]
             else:
                 command_line += [option, str(self.options[option])]
 
         return command_line
 
+    def instr_uses_build_calib(self):
+        """
+        Check if instrument uses pre-build calibrations.
+        """
+        return self.setup.instr == 'keck_nires' \
+                or (self.setup.instr == 'keck_mosfire' and self.setup.name == 'Y_long') \
+                or (self.setup.instr == 'keck_lris_red_mark4' 
+                        and self.setup.name == 'long_600_10000_d680')
+
     def run(self):
-        """Generate any required quick-look calibration before running the quick look test"""
+        """
+        Generate any required quick-look calibration before running the quick look test.
+        """
+        # TODO: Do we need a way to point at an "archive" QL_CALIB directory for
+        # calibs that don't (or rarely) change?
 
-        if self.setup.instr == 'keck_nires' or (self.setup.instr == 'keck_mosfire' and self.setup.name == 'Y_long') or \
-                (self.setup.instr == 'keck_lris_red_mark4' and self.setup.name == 'long_600_10000_d680'):
+        if self.instr_uses_build_calib():
+            logfile = get_unique_file(os.path.join(self.setup.rdxdir, "build_ql_calib_output.log"))
             try:
-
                 # Build the calibrations with the output going to a log file
-                logfile = get_unique_file(os.path.join(self.setup.rdxdir, "build_ql_calib_output.log"))
                 with open(logfile, "w") as log:
                     result = subprocess.run([os.path.join(self.setup.dev_path, 'build_ql_calibs'),
-                                             self.setup.instr, "-s", self.setup.name, '--output_dir', self.output_dir, '--redux_dir', self.redux_dir, '--force_copy'],
+                                             self.setup.instr, '-s', self.setup.name,
+                                             '--output_dir', self.output_dir,
+                                             '--redux_dir', self.redux_dir, '--force_copy'],
                                             stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
-
-                    print(result.stdout if isinstance(result.stdout, str) else result.stdout.decode(errors='replace'), file=log)
+                    print(result.stdout if isinstance(result.stdout, str)
+                            else result.stdout.decode(errors='replace'), file=log)
 
                 if result.returncode != 0:
                     self.error_msgs.append("Failed to generate QL calibrations.")
@@ -586,9 +602,6 @@ class PypeItQuickLookTest(PypeItTest):
                 self.error_msgs.append(traceback.format_exc())
                 self.passed = False
                 return False
-
-        # TODO
-        #  Generate the calibrations as needed if USE_CALIB_DIR or USE_ARCHIVE_CALIB_DIR is set
 
         # Run the quick look test via the parent's run method, setting the environment
         # to use the newly generated calibrations
