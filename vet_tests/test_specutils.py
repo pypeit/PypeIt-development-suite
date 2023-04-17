@@ -18,7 +18,7 @@ specutils_required = pytest.mark.skipif(Spectrum1D is None or SpectrumList is No
                                         reason='specutils not installed')
 
 
-@specutils_required
+#@specutils_required
 def test_identify_as_pypeit_file(redux_out):
     rdx = Path(redux_out).resolve()
 
@@ -75,6 +75,9 @@ def test_identify_as_pypeit_file(redux_out):
     assert pypeit_loaders._identify_pypeit(test_file), \
                 'Did not identify telluric-corrected coadd file as a pypeit file'
 
+import os
+redux_out = os.path.join(os.getenv('PYPEIT_DEV'), "REDUX_OUT")
+test_identify_as_pypeit_file(redux_out)
 
 @specutils_required
 def test_identify_as_spec1d_file(redux_out):

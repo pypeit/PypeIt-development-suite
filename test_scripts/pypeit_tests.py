@@ -420,21 +420,21 @@ class PypeItCoadd1DTest(PypeItTest):
 
 class PypeItCoadd2DTest(PypeItTest):
     """Test subclass that runs pypeit_coadd_2dspec"""
-    def __init__(self, setup, pargs, coadd_file=None, obj=None):
+    def __init__(self, setup, pargs, coadd_file=None): #, obj=None):
         super().__init__(setup, pargs, "pypeit_coadd_2dspec", "test_2dcoadd")
-        self.obj = obj
+        #self.obj = obj
 
         if coadd_file:
             self.coadd_file = template_coadd2d_file(setup.dev_path, setup.instr, setup.name)
         else:
             self.coadd_file = None
 
-        if self.coadd_file is None and self.obj is None:
-            raise ValueError('Must provide coadd2d file or object name.')
+        if self.coadd_file is None: # and self.obj is None:
+            raise ValueError('Must provide coadd2d file') # or object name.')
 
     def build_command_line(self):
-        command_line = ['pypeit_coadd_2dspec']
-        command_line += ['--obj', self.obj] if self.coadd_file is None else ['--file', self.coadd_file]
+        command_line = ['pypeit_coadd_2dspec', self.coadd_file]
+#        command_line += ['--obj', self.obj] if self.coadd_file is None else ['--file', self.coadd_file]
         return command_line
 
     def check_for_missing_files(self):
