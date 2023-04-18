@@ -98,7 +98,7 @@ def main():
         source_files += found_files
         dest_files += [nires_dest_dir / f.name for f in found_files]
         source_files += [list(keck_nires_path.parent.glob('*.pypeit'))[0]]
-        dest_files += [nires_dest_dir / 'keck_nires_A.pypeit']
+        dest_files += [nires_dest_dir.parent / 'keck_nires_A.pypeit']
 
     if pargs.instrument == 'all' or pargs.instrument == 'keck_mosfire':
 
