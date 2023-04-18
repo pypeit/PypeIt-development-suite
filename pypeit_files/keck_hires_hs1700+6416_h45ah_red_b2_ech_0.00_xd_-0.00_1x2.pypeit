@@ -1,0 +1,36 @@
+# Auto-generated PypeIt file using PypeIt version: 1.8.2.dev142+g7e49e8a5c
+# 2022-04-26
+
+# User-defined execution parameters
+[rdx]
+spectrograph = keck_hires
+detnum = (1,2,3)
+# Setup
+setup read
+    Setup A:
+         filter1: kv380
+        echangle: 0.0
+         xdangle: -0.001
+setup end
+
+# Read in the data
+data read
+ path /home/molly/projects/koa_data/HS1700+6416_H45aH_RED_B2_ECH_0.00_XD_-0.00_1x2
+|                  filename |        frametype |                 ra |                dec |         target | dispname | decker | binning |          mjd | airmass | exptime | filter1 | echangle | xdangle | frameno |
+| HI.20050702.20430.fits.gz |         standard | 190.46666666666667 |  17.52472222222222 |       Feige 67 |      RED |     C1 |     1,2 | 53553.236486 |    1.05 |   300.0 |   kv380 |      0.0 |  -0.001 |     120 |
+| HI.20050702.20856.fits.gz |         arc,tilt | 190.46666666666667 |  17.52472222222222 |           ThAr |      RED |     C1 |     1,2 | 53553.241411 |    1.07 |     1.0 |   kv380 |      0.0 |  -0.001 |     121 |
+| HI.20050702.20991.fits.gz |         standard | 190.46654166666664 | 17.525277777777777 |       Feige 67 |      RED |     C1 |     1,2 | 53553.242969 |    1.07 |   300.0 |   kv380 |      0.0 |  -0.001 |     123 |
+| HI.20050702.26449.fits.gz | science,standard |  255.1694583333333 |  64.27341666666666 |    HS1700+6416 |      RED |     B2 |     1,2 | 53553.306144 |    1.45 |  2400.0 |   kv380 |      0.0 |  -0.001 |     128 |
+| HI.20050702.28900.fits.gz | science,standard | 255.16941666666665 |  64.27336111111111 |    HS1700+6416 |      RED |     B2 |     1,2 | 53553.334515 |    1.41 |  2400.0 |   kv380 |      0.0 |  -0.001 |     129 |
+| HI.20050702.31351.fits.gz | science,standard | 255.16941666666665 |  64.27336111111111 |    HS1700+6416 |      RED |     B2 |     1,2 | 53553.362878 |     1.4 |  2400.0 |   kv380 |      0.0 |  -0.001 |     130 |
+| HI.20050702.33804.fits.gz | science,standard | 255.16941666666665 |  64.27336111111111 |    HS1700+6416 |      RED |     B2 |     1,2 | 53553.391269 |    1.41 |  2400.0 |   kv380 |      0.0 |  -0.001 |     131 |
+| HI.20050702.36268.fits.gz |         arc,tilt | 255.16941666666665 |  64.27336111111111 |           ThAr |      RED |     B2 |     1,2 | 53553.419809 |    1.45 |     1.0 |   kv380 |      0.0 |  -0.001 |     132 |
+| HI.20050702.54288.fits.gz |  pixelflat,trace | 343.99999999999994 |                0.0 |           Flat |      RED |     B2 |     1,2 | 53553.628364 |   13.37 |     1.0 |   kv380 |      0.0 | -0.0005 |     162 |
+| HI.20050702.54341.fits.gz |  pixelflat,trace | 343.99999999999994 |                0.0 |           Flat |      RED |     B2 |     1,2 | 53553.628968 |   13.37 |     1.0 |   kv380 |      0.0 | -0.0005 |     163 |
+| HI.20050702.54393.fits.gz |  pixelflat,trace | 343.99999999999994 |                0.0 |           Flat |      RED |     B2 |     1,2 | 53553.629569 |   13.37 |     1.0 |   kv380 |      0.0 | -0.0005 |     164 |
+| HI.20050702.54445.fits.gz |  pixelflat,trace | 343.99999999999994 |                0.0 |           Flat |      RED |     B2 |     1,2 | 53553.630177 |   13.37 |     1.0 |   kv380 |      0.0 | -0.0005 |     165 |
+| HI.20050702.54497.fits.gz |  pixelflat,trace | 343.99999999999994 |                0.0 |           Flat |      RED |     B2 |     1,2 | 53553.630783 |   13.37 |     1.0 |   kv380 |      0.0 | -0.0005 |     166 |
+
+
+data end
+
