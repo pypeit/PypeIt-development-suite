@@ -37,7 +37,7 @@ from jwst import datamodels
 DO_NOT_USE = datamodels.dqflags.pixel['DO_NOT_USE']
 
 # PypeIt imports
-from jwst_utils import compute_diff, get_cuts, jwst_show_spec2, jwst_show_msa, jwst_proc, jwst_extract_subimgs
+from jwst_utils import compute_diff, get_cuts, jwst_show_spec2, jwst_show_msa, jwst_proc, jwst_extract_subimgs, jwst_get_slits
 from pypeit.metadata import PypeItMetaData
 from pypeit.display import display
 from pypeit import specobjs
@@ -47,6 +47,9 @@ from pypeit.core import findobj_skymask
 from pypeit.core import skysub, coadd
 from pypeit.core import procimg
 from pypeit.core import flat
+from pypeit.core.mosaic import build_image_mosaic_transform
+from pypeit.images.mosaic import Mosaic
+
 
 from pypeit.spectrographs.util import load_spectrograph
 from pypeit.images import pypeitimage
@@ -364,6 +367,7 @@ kludge_err = 1.5
 
 # Is this correct?
 bkg_indices = [1, 2, 1]
+detector_gap = 180 # 18" divided by 0.1" pixels from the JWST website
 
 # TODO Are the tilts working correctly for the mosaics? I'm not so sure??
 
@@ -373,13 +377,20 @@ for ii, islit in enumerate(gdslits):
     offsets_pixels = []
     if show:
         display.clear_all()
-    # Loop over detectors, and exposures
-    for idet in range(len(detectors)):
-        for iexp in range(nexp):
+
+    # We use only the first exposure for calibrations and apply them to all exposures
+    slit_left_list, slit_righ_list, slit_left_orig_list, slit_righ_orig_list, slit_slice_list, waveimg_list, tilts_list, rn2_img_list = \
+        [], [], [], [], [], [], [], []
+    # Loop over exposures
+    for iexp in range(nexp):
+        sciimg_list, sciivar_list, gpm_list, base_var_list, count_scale_list, det_list = [], [], [], [], [], []
+        if diff_redux:
+            bkg_list, bkgivar_list, bkg_gpm_list, bkg_base_var_list, bkg_count_scale_list = [], [], [], [], []
+        # Loop over detectors
+        for idet in range(len(detectors)):
             indx = np.where(np.array(slit_names_list[idet]) == islit)[0]
             if len(indx) > 0:
                 jj = indx[0]
-                ibkg = bkg_indices[iexp]
                 # Grab the calibration subimages for the first exposure, use for all subsequent exposures since
                 # sometimes (because of a bug) the sizes of these calibraition (and science) sub-images can change.
                 if iexp == 0:
@@ -387,282 +398,160 @@ for ii, islit in enumerate(gdslits):
                     src_trace_ra, src_trace_dec, dq_sub, ra, dec, finitemask, waveimg, tilts, flatfield, pathloss, barshadow, \
                     photom_conversion, calwebb = jwst_extract_subimgs(
                         final_multi_list[idet][iexp].slits[jj], intflat_multi_list[idet][iexp].slits[jj])
+                    # TODO add this to the jwst_extract_subimg routine?
+                    rn2_img_list.append(np.full_like(waveimg.shape, det_container_list[idet].ronoise ** 2))
+                    slit_left_list.append(slit_left)
+                    slit_righ_list.append(slit_righ)
+                    slit_left_orig_list.append(slit_left_orig)
+                    slit_righ_orig_list.append(slit_righ_orig)
+                    slit_slice_list.append(slit_slice)
+                    waveimg_list.append(waveimg)
+                    tilts_list.append(tilts)
+
 
                 # Process the science image for this exposure
-                science, sciivar, gpm, base_var, count_scale = jwst_proc(
+                sciimg, sciivar, gpm, base_var, count_scale = jwst_proc(
                     msa_multi_list[idet][iexp], t_eff[iexp], slit_slice, finitemask, pathloss, barshadow,
                     noise_floor=par['scienceframe']['process']['noise_floor'],
                     kludge_err=kludge_err, ronoise=det_container_list[idet].ronoise)
 
-                # If there are not good pixels continue
+                # If there are no good science pixels, continue
                 if not np.any(gpm):
                     bad_slits.append(islit)
                     continue
 
-                # Instantiate
-                sciImg = PypeItImage(image=science, ivar=sciivar, base_var=base_var,
-                                     img_scale=count_scale,
-                                     rn2img=np.full_like(science, det_container_list[idet].ronoise[0]**2),
-                                     detector=det_container_list[idet], bpm=np.logical_not(gpm))
-
+                # If imaging differencing is requested process the background image
                 if diff_redux:
+                    ibkg = bkg_indices[iexp]
                     # Process the background image using the same calibrations as the science
                     bkg, bkgivar, bkg_gpm, bkg_base_var, bkg_count_scale = jwst_proc(
                         msa_multi_list[idet][ibkg], t_eff[ibkg], slit_slice, finitemask, pathloss, barshadow,
                         noise_floor=par['scienceframe']['process']['noise_floor'],
                         kludge_err=kludge_err, ronoise=det_container_list[idet].ronoise)
 
-                    # If there are not good pixels continue
+                    # If there are not good bkg pixels, continue
                     if not np.any(bkg_gpm):
                         bad_slits.append(islit)
                         continue
-
-                    # Instantiate
-                    bkgImg = PypeItImage(image=bkg, ivar=bkgivar, base_var=bkg_base_var,
-                                         img_scale=bkg_count_scale,
-                                         rn2img=np.full_like(bkg, det_container_list[idet].ronoise[0]**2),
-                                         detector=det_container_list[idet],
-                                         bpm=np.logical_not(bkg_gpm))
-
-                    # Perform the difference imaging, propagate the error and masking
-                    sciImg = sciImg.sub(bkgImg)
-
-                nspec, nspat = waveimg.shape
-                slits = slittrace.SlitTraceSet(slit_left, slit_righ, pypeline, detname=det_container_list[idet].name,
-                                               nspat=nspat,
-                                               PYP_SPEC=spectrograph.name)
-                slits.maskdef_id = np.array([ii])
+                    else:
+                        bkg_list.append(bkg)
+                        bkgivar_list.append(bkgivar)
+                        bkg_gpm_list.append(bkg_gpm)
+                        bkg_base_var_list.append(bkg_base_var)
+                        bkg_count_scale_list.append(bkg_count_scale)
 
 
-                # Construct the Spec2DObj with the positive image
-                spec2DObj = spec2dobj.Spec2DObj(sciimg=sciImg.image,
-                                                ivarraw=sciImg.ivar,
-                                                skymodel=np.zeros_like(sciImg.image),
-                                                objmodel=np.zeros_like(sciImg.image),
-                                                ivarmodel=sciImg.ivar,
-                                                scaleimg=None,
-                                                waveimg=waveimg,
-                                                bpmmask=sciImg.fullmask,
-                                                detector=sciImg.detector,
-                                                sci_spat_flexure=None,
-                                                sci_spec_flexure=None,
-                                                vel_corr=None,
-                                                vel_type=None,
-                                                tilts=tilts,
-                                                slits=slits,
-                                                wavesol=None,
-                                                maskdef_designtab=None)
+                sciimg_list.append(sciimg)
+                sciivar_list.append(sciivar)
+                gpm_list.append(gpm)
+                base_var_list.append(base_var)
+                count_scale_list.append(count_scale)
+                det_list.append(idet)
 
-                spec2d_list.append(spec2DObj)
-                offsets_pixels.append(offsets_pixels_list[idet][iexp])
+        ndet = len(sciimg_list)
+        if len(waveimg_list) != ndet:
+            msgs.error('Number of science images does not match number of calibration images')
 
-                if show and (iexp == 0):
-                    sci_rate = datamodels.open(msa_multi_list[idet][iexp])
-                    sci_data = np.array(sci_rate.data.T, dtype=float)
-
-                    bkg_rate = datamodels.open(msa_multi_list[idet][ibkg])
-                    bkg_data = np.array(bkg_rate.data.T, dtype=float)
-
-                    viewer_raw, ch_raw = display.show_image(sci_data, cuts=get_cuts(sci_data),
-                                                            chname='raw_rate_iexp_{:d}_{:s}'.format(iexp, detectors[idet]))
-                    viewer_sci, ch_sci = display.show_image(sci_data-bkg_data, cuts=get_cuts(sci_data-bkg_data),
-                                                            chname='diff_rate_iexp_{:d}_{:s}'.format(iexp, detectors[idet]))
-                    display.show_slits(viewer_sci, ch_sci, slit_left_orig, slit_righ_orig, spec_vals=spec_vals_orig,
-                                       pstep=1, slit_ids=np.array([islit]))
-                    display.show_slits(viewer_raw, ch_raw, slit_left_orig, slit_righ_orig, spec_vals=spec_vals_orig,
-                                       pstep=1, slit_ids=np.array([islit]))
-                    # Show individual calibrations
-                    if idet == 0:
-                        viewer_data, ch_data = display.show_image(calwebb, waveimg=waveimg, cuts=get_cuts(calwebb),
-                                                                  chname='calwebb_{:s}'.format(detectors[idet]))
-                        display.show_trace(viewer_data, ch_data, src_trace_ra, 'trace-RA_{:s}'.format(detectors[idet]), color='#f0e442', pstep=1)
-                        display.show_trace(viewer_data, ch_data, src_trace_dec, 'trace-DEC_{:s}'.format(detectors[idet]), color='#f0e442', pstep=1)
-                        viewer_pypeit, ch_pypeit = display.show_image(sciImg.image, waveimg=waveimg, cuts=get_cuts(sciImg.image),
-                                                                      chname='pypeit_{:s}'.format(detectors[idet]))
-                        display.show_slits(viewer_pypeit, ch_pypeit, slit_left, slit_righ, pstep=1, slit_ids=np.array([islit]))
-                        viewer_wave, ch_wave = display.show_image(waveimg, chname='wave_{:s}'.format(detectors[idet]))
-                        viewer_tilts, ch_tilts = display.show_image(tilts, waveimg=waveimg, chname='tilts_{:s}'.format(detectors[idet]))
-                        viewer_flat, ch_flat = display.show_image(flatfield, waveimg=waveimg, chname='flat_{:s}'.format(detectors[idet]))
-                        viewer_path, ch_path = display.show_image(pathloss, waveimg=waveimg, chname='pathloss_{:s}'.format(detectors[idet]))
-                        viewer_bar, ch_bar = display.show_image(barshadow, waveimg=waveimg, chname='barshadow_{:s}'.format(detectors[idet]),
-                                                                cuts=(0.0, 1.0))
-
-
+        # TODO I would like to create an image indicating which detector contributed to which pixels
+        if ndet == 1:
+            sciimg_tot, sciivar_tot, gpm_tot, base_var_tot, count_scale_tot = \
+            sciimg_list[0], sciivar_list[0], gpm_list[0], base_var_list[0], count_scale_list[0]
+            det_or_mosaic = det_container_list[det_list[0]]
+            if iexp==0:
+                waveimg_tot, tilts_tot, rn2_img_tot, slit_left_tot, slit_right_tot = \
+                waveimg_list[0], tilts_list[0], rn2_img_list[0], slit_left_list[0], slit_righ_list[0]
+            if diff_redux:
+                bkg_tot, bkgivar_tot, bkg_gpm_tot, bkg_base_var_tot, bkg_count_scale_tot = \
+                bkg_list[0], bkgivar_list[0], bkg_gpm_list[0], bkg_base_var_list[0], bkg_count_scale_list[0]
+        else:
+            # Spatial offset is relative to NRS1
+            spat_offset = (slit_slice_list[0][1].start - slit_slice_list[1][1].start)
+            spec_lo1, spec_hi1 = 0, sciimg_list[0].shape[0]
+            spec_lo2, spec_hi2 = sciimg_list[0].shape[0] + detector_gap, \
+            sciimg_list[0].shape[0] + detector_gap + sciimg_list[1].shape[0]
+            shape = (sciimg_list[0].shape[0] + sciimg_list[1].shape[0] + detector_gap,
+                     np.max([sciimg_list[0].shape[1], sciimg_list[1].shape[1]]) + spat_offset)
+            if spat_offset < 0:
+                spat_lo1, spat_hi1 = -spat_offset, sciimg_list[0].shape[1] - spat_offset
+                spat_lo2, spat_hi2 = 0, sciimg_list[1].shape[1]
             else:
-                continue
+                spat_lo1, spat_hi1 = 0, sciimg_list[0].shape[1]
+                spat_lo2, spat_hi2 = spat_offset, spat_offset + sciimg_list[1].shape[1]
 
-    if len(spec2d_list) > 0:
-        basename = '{:s}_{:s}'.format(out_filename, 'slit' + islit)
+            nrs1_slice = np.s_[spec_lo1: spec_hi1, spat_lo1: spat_hi1]
+            nrs2_slice = np.s_[spec_lo2: spec_hi2, spat_lo2: spat_hi2]
 
-        # TODO implement an option to extract everything onto the same wavelength grid optimized to match the
-        # coverage of JWST. For example for the prism things are quite nonlinear
+            if iexp == 0:
+                waveimg_tot = np.full(shape, np.nan)
+                tilts_tot = np.zeros(shape)
+                waveimg_tot[nrs1_slice] = waveimg_list[0]
+                waveimg_tot[nrs2_slice] = waveimg_list[1]
+                finitemask_tot = np.isfinite(waveimg_tot)
+                wave_min, wave_max = np.min(waveimg_tot[finitemask_tot]), np.max(waveimg_tot[finitemask_tot])
+                tilts_tot[finitemask_tot] = (waveimg_tot[finitemask_tot] - wave_min) / (wave_max - wave_min)
+                slit_left_tot, slit_righ_tot = jwst_get_slits(finitemask_tot)
+                waveimg_tot[np.logical_not(finitemask_tot)] = 0.0
 
-        # TODO Not sure what to do with the detector container here
-        # Instantiate Coadd2d
-        coAdd = coadd2d.CoAdd2D.get_instance(spec2d_list, spectrograph, par, det=det_container_list[0].det,
-                                             offsets=offsets_pixels, weights='uniform',
-                                             spec_samp_fact=spec_samp_fact,
-                                             spat_samp_fact=spat_samp_fact,
-                                             bkg_redux=False, debug=show)
+                rn2_img_tot = np.zeros(shape)
+                rn2_img_tot[nrs1_slice] = np.full_like(sciimg_list[0], det_container_list[0].ronoise**2)
+                rn2_img_tot[nrs2_slice] = np.full_like(sciimg_list[1], det_container_list[1].ronoise**2)
 
-        coadd_dict_list = coAdd.coadd(only_slits=None, interp_dspat=True)
+                viewer_wave, ch_wave = display.show_image(waveimg_tot, chname='waveimg_tot')
+                display.show_slits(viewer_wave, ch_wave, slit_left_tot, slit_righ_tot, pstep=1, slit_ids=np.array([islit]))
 
-        # Create the pseudo images
-        pseudo_dict = coAdd.create_pseudo_image(coadd_dict_list)
+            sciimg_tot = np.zeros(shape)
+            sciivar_tot = np.zeros(shape)
+            gpm_tot = np.zeros(shape, dtype=bool)
+            base_var_tot = np.zeros(shape)
+            count_scale_tot = np.zeros(shape)
 
-        sciimg_coadd, sciivar_coadd, skymodel_coadd, objmodel_coadd, ivarmodel_coadd, \
-        outmask_coadd, sobjs_coadd, detector_coadd, slits_coadd, tilts_coadd, waveimg_coadd = coAdd.reduce(
-            pseudo_dict, show=True, clear_ginga=False, show_peaks=show,
-            basename=basename)
+            sciimg_tot[nrs1_slice] = sciimg_list[0]
+            sciimg_tot[nrs2_slice] = sciimg_list[1]
+            sciivar_tot[nrs1_slice] = sciivar_list[0]
+            sciivar_tot[nrs2_slice] = sciivar_list[1]
+            gpm_tot[nrs1_slice] = gpm_list[0]
+            gpm_tot[nrs2_slice] = gpm_list[1]
+            base_var_tot[nrs1_slice] = base_var_list[0]
+            base_var_tot[nrs2_slice] = base_var_list[1]
+            count_scale_tot[nrs1_slice] = count_scale_list[0]
+            count_scale_tot[nrs2_slice] = count_scale_list[1]
 
-        # Tack on detector (similarly to pypeit.extract_one)
-        for sobj in sobjs_coadd:
-            sobj.DETECTOR = det_container_list[0]
+            det_or_mosaic = Mosaic(1, np.array(det_container_list), shape, None, None, None, None)
 
-        # TODO not currently using counts_scale and base_var. Need to rework coadd2d to operate on sciimgs
+            if diff_redux:
+                bkg_tot = np.zeros(shape)
+                bkgivar_tot = np.zeros(shape)
+                bkg_gpm_tot = np.zeros(shape, dtype=bool)
+                bkg_base_var_tot = np.zeros(shape)
+                bkg_count_scale_tot = np.zeros(shape)
 
-        # Construct the Spec2DObj with the positive image
-        spec2DObj_coadd = spec2dobj.Spec2DObj(sciimg=sciimg_coadd,
-                                              ivarraw=sciivar_coadd,
-                                              skymodel=skymodel_coadd,
-                                              objmodel=objmodel_coadd,
-                                              ivarmodel=ivarmodel_coadd,
-                                              scaleimg=None,
-                                              waveimg=waveimg_coadd,
-                                              bpmmask=outmask_coadd,
-                                              detector=det_container_list[0],
-                                              sci_spat_flexure=None,
-                                              sci_spec_flexure=None,
-                                              vel_corr=None,
-                                              vel_type=None,
-                                              tilts=tilts_coadd,
-                                              slits=slits_coadd,
-                                              wavesol=None,
-                                              maskdef_designtab=None)
+                bkg_tot[nrs1_slice] = bkg_list[0]
+                bkg_tot[nrs2_slice] = bkg_list[1]
+                bkgivar_tot[nrs1_slice] = bkgivar_list[0]
+                bkgivar_tot[nrs2_slice] = bkgivar_list[1]
+                bkg_gpm_tot[nrs1_slice] = bkg_gpm_list[0]
+                bkg_gpm_tot[nrs2_slice] = bkg_gpm_list[1]
+                bkg_base_var_tot[nrs1_slice] = bkg_base_var_list[0]
+                bkg_base_var_tot[nrs2_slice] = bkg_base_var_list[1]
+                bkg_count_scale_tot[nrs1_slice] = bkg_count_scale_list[0]
+                bkg_count_scale_tot[nrs2_slice] = bkg_count_scale_list[1]
 
-        # QA
-        if show:
-            # Plot the 2d
-            nobj = len(sobjs_coadd)
-            left, right, mask = spec2DObj_coadd.slits.select_edges()
-            slid_IDs = spec2DObj_coadd.slits.slitord_id
-            image = spec2DObj_coadd.sciimg  # Processed science image
-            mean, med, sigma = sigma_clipped_stats(image[spec2DObj_coadd.bpmmask == 0], sigma_lower=5.0, sigma_upper=5.0)
-            cut_min = mean - 4.0 * sigma
-            cut_max = mean + 4.0 * sigma
-            chname_sci = 'slit-science-' + islit
-            # Clear all channels at the beginning
-            viewer, ch_sci = display.show_image(image, chname=chname_sci,
-                                                waveimg=spec2DObj_coadd.waveimg,
-                                                clear=False,
-                                                cuts=(cut_min, cut_max))
-
-            if nobj > 0:
-                show_trace(sobjs_coadd, 'DET01', viewer, ch_sci)
-            display.show_slits(viewer, ch_sci, left, right, slit_ids=slid_IDs)
-
-            image = np.sqrt(inverse(spec2DObj_coadd.ivarmodel))  # Processed science image
-            mean, med, sigma = sigma_clipped_stats(image[spec2DObj_coadd.bpmmask == 0], sigma_lower=5.0, sigma_upper=5.0)
-            cut_min = mean - 1.0 * sigma
-            cut_max = mean + 4.0 * sigma
-            chname_sig = 'slit-sigma-' + islit
-            # Clear all channels at the beginning
-            viewer, ch_sig = display.show_image(image, chname=chname_sig,
-                                                waveimg=spec2DObj_coadd.waveimg,
-                                                clear=False,
-                                                cuts=(cut_min, cut_max))
-
-            if nobj > 0:
-                show_trace(sobjs_coadd, 'DET01', viewer, ch_sig)
-            display.show_slits(viewer, ch_sig, left, right, slit_ids=slid_IDs)
-
-            channel_names = [chname_sci, chname_sig]
-
-            # After displaying all the images sync up the images with WCS_MATCH
-            shell = viewer.shell()
-            shell.start_global_plugin('WCSMatch')
-            shell.call_global_plugin_method('WCSMatch', 'set_reference_channel', [channel_names[-1]],
-                                            {})
-            if not diff_redux:
-                slitmask_coadd = slits_coadd.slit_img(initial=False, flexure=None, exclude_flag=None)
-                slitord_id = slits_coadd.slitord_id[0]
-                thismask = slitmask_coadd == slitord_id
-
-                gpm_extract = spec2DObj_coadd.bpmmask == 0
-                # Make a plot of the residuals for a random slit
-                chi = (spec2DObj_coadd.sciimg - spec2DObj_coadd.objmodel - spec2DObj_coadd.skymodel) * np.sqrt(
-                    spec2DObj_coadd.ivarmodel) * gpm_extract
-
-                maskchi = thismask & gpm_extract
-
-                n_bins = 50
-                sig_range = 7.0
-                binsize = 2.0 * sig_range / n_bins
-                bins_histo = -sig_range + np.arange(n_bins) * binsize + binsize / 2.0
-
-                xvals = np.arange(-10.0, 10, 0.02)
-                gauss = scipy.stats.norm(loc=0.0, scale=1.0)
-                gauss_corr = scipy.stats.norm(loc=0.0, scale=1.0)
-
-                sigma_corr, maskchi = coadd.renormalize_errors(chi, maskchi, max_corr=20.0, title='jwst_sigma_corr',
-                                                               debug=True)
+        # Instantiate
+        sciImg = PypeItImage(image=sciimg_tot, ivar=sciivar_tot, base_var=base_var_tot,
+                             img_scale=count_scale_tot,
+                             rn2img=rn2_img_tot,
+                             detector=det_or_mosaic, bpm=np.logical_not(gpm_tot))
 
 
-            if nobj > 0:
-                # Plot boxcar
-                wv_gpm_box = sobjs_coadd[0].BOX_WAVE > 1.0
-                plt.plot(sobjs_coadd[0].BOX_WAVE[wv_gpm_box], sobjs_coadd[0].BOX_COUNTS[wv_gpm_box]*sobjs_coadd[0].BOX_MASK[wv_gpm_box],
-                color='green', drawstyle='steps-mid', label='Boxcar Counts')
-                plt.plot(sobjs_coadd[0].BOX_WAVE[wv_gpm_box], sobjs_coadd[0].BOX_COUNTS_SIG[wv_gpm_box]*sobjs_coadd[0].BOX_MASK[wv_gpm_box],
-                color='cyan', drawstyle='steps-mid', label='Boxcar Counts Error')
-                # plot optimal
-                wv_gpm_opt = sobjs_coadd[0].OPT_WAVE > 1.0
-                plt.plot(sobjs_coadd[0].OPT_WAVE[wv_gpm_opt], sobjs_coadd[0].OPT_COUNTS[wv_gpm_opt]*sobjs_coadd[0].OPT_MASK[wv_gpm_opt],
-                color='black', drawstyle='steps-mid', label='Optimal Counts')
-                plt.plot(sobjs_coadd[0].OPT_WAVE[wv_gpm_opt], sobjs_coadd[0].OPT_COUNTS_SIG[wv_gpm_opt]*sobjs_coadd[0].OPT_MASK[wv_gpm_opt],
-                color='red', drawstyle='steps-mid', label='Optimal Counts Error')
-                plt.legend()
-                plt.show()
+        if diff_redux:
+            bkgImg = PypeItImage(image=bkg_tot, ivar=bkgivar_tot, base_var=bkg_base_var_tot,
+                                 img_scale=bkg_count_scale_tot,
+                                 rn2img=rn2_img_tot,
+                                 detector=det_or_mosaic, bpm=np.logical_not(bkg_gpm_tot))
 
+            # Perform the difference imaging, propagate the error and masking
+            sciImg = sciImg.sub(bkgImg)
 
-
-
-        # container for specobjs and Spec2d
-        all_specobjs = specobjs.SpecObjs()
-
-        all_spec2d = spec2dobj.AllSpec2DObj()
-        # set some meta
-        all_spec2d['meta']['bkg_redux'] = False
-        all_spec2d['meta']['find_negative'] = False
-
-        # fill the specobjs container
-        all_specobjs.add_sobj(sobjs_coadd)
-        all_spec2d[det_container_list[0].name] = spec2DObj_coadd
-
-        # THE FOLLOWING MIMICS THE CODE IN pypeit.save_exposure()
-        scipath = os.path.join(pypeit_output_dir, 'Science')
-        if not os.path.isdir(scipath):
-            msgs.info('Creating directory for Science output: {0}'.format(scipath))
-
-        # Write out specobjs
-        # Build header for spec2d
-        head2d = fits.getheader(scifiles_1[0])
-        subheader = spectrograph.subheader_for_spec(fitstbl_1[0], head2d, allow_missing=False)
-        if all_specobjs.nobj > 0:
-            outfile1d = os.path.join(scipath, 'spec1d_{:s}.fits'.format(basename))
-            all_specobjs.write_to_fits(subheader, outfile1d)
-
-            # Info
-            outfiletxt = os.path.join(scipath, 'spec1d_{:s}.txt'.format(basename))
-            all_specobjs.write_info(outfiletxt, spectrograph.pypeline)
-
-        # Build header for spec2d
-        outfile2d = os.path.join(scipath, 'spec2d_{:s}.fits'.format(basename))
-        # TODO For the moment hack so that we can write this out
-        pri_hdr = all_spec2d.build_primary_hdr(head2d, spectrograph, subheader=subheader,
-                                               redux_path=None, calib_dir=None)
-        # Write spec2d
-        all_spec2d.write_to_fits(outfile2d, pri_hdr=pri_hdr, overwrite=True)
 
 
 

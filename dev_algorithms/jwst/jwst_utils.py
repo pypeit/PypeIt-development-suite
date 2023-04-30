@@ -354,7 +354,7 @@ def jwst_extract_subimgs(final_slit, intflat_slit):
     slit_left, slit_righ = jwst_get_slits(finitemask)
 
     waveimg = 1e4*waveimg
-    waveimg[np.logical_not(finitemask)] = 0.0
+    #waveimg[np.logical_not(finitemask)] = 0.0
     wave_min, wave_max = np.min(waveimg[finitemask]), np.max(waveimg[finitemask])
 
     tilts = np.zeros_like(waveimg)
