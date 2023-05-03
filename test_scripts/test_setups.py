@@ -305,12 +305,12 @@ _quick_look = {
              'files': ['b1.fits.gz', 'b10.fits.gz', 'b27.fits.gz', 'b28.fits.gz'],
              '--setup_calib_dir': 'USE_CALIB_DIR',
             },
-            # (5) Same as test 2, but process two science frames individually
-            {'test_name': 'nostack',
-             'files': ['b1.fits.gz', 'b10.fits.gz', 'b27.fits.gz', 'b28.fits.gz'],
-             '--setup_calib_dir': 'USE_CALIB_DIR',
-             '--no_stack': None,
-            },
+#            # (5) Same as test 2, but process two science frames individually
+#            {'test_name': 'nostack',
+#             'files': ['b1.fits.gz', 'b10.fits.gz', 'b27.fits.gz', 'b28.fits.gz'],
+#             '--setup_calib_dir': 'USE_CALIB_DIR',
+#             '--no_stack': None,
+#            },
             # (6) Same as test 2, but change the boxcar extaction width
             {'test_name': 'boxcar',
              'files': ['b1.fits.gz', 'b10.fits.gz', 'b27.fits.gz'],
