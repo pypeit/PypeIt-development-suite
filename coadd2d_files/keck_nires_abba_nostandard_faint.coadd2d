@@ -1,0 +1,30 @@
+# Auto-generated Coadd2D input file using PypeIt version: 1.12.3.dev324+gac7b154bd
+# UTC 2023-04-21T05:22:36.809
+
+# User-defined execution parameters
+[rdx]
+    spectrograph = keck_nires
+
+[coadd2d]
+  offsets = header
+  weights = uniform
+[reduce]
+  [[findobj]]
+    snr_thresh = 2.5
+    ech_find_nabove_min_snr = 1
+    ech_find_min_snr = -0.2
+
+# Data block 
+spec2d read
+ path Science
+                                                 filename
+spec2d_s181127_0020-offset_NIRES_20181127T043946.042.fits
+spec2d_s181127_0021-offset_NIRES_20181127T044521.622.fits
+spec2d_s181127_0024-offset_NIRES_20181127T050217.542.fits
+spec2d_s181127_0025-offset_NIRES_20181127T050751.082.fits
+spec2d_s181127_0028-offset_NIRES_20181127T052442.922.fits
+spec2d_s181127_0029-offset_NIRES_20181127T053017.482.fits
+spec2d_s181127_0032-offset_NIRES_20181127T054708.302.fits
+spec2d_s181127_0033-offset_NIRES_20181127T055242.352.fits
+spec2d end
+

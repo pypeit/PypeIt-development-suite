@@ -4,6 +4,9 @@
 # User-defined execution parameters
 [rdx]
     spectrograph = not_alfosc
+[reduce]
+    [[findobj]]
+        snr_thresh = 200.
 
 # Setup
 setup read
