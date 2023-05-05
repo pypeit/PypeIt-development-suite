@@ -38,6 +38,7 @@ DO_NOT_USE = datamodels.dqflags.pixel['DO_NOT_USE']
 
 # PypeIt imports
 from jwst_utils import compute_diff, get_cuts, jwst_show_spec2, jwst_show_msa, jwst_proc, jwst_extract_subimgs, jwst_get_slits
+from jwst_utils import NIRSpecSlitCalibrations, jwst_mosaic, jwst_reduce
 from pypeit.metadata import PypeItMetaData
 from pypeit.display import display
 from pypeit import specobjs
@@ -47,7 +48,7 @@ from pypeit.core import findobj_skymask
 from pypeit.core import skysub, coadd
 from pypeit.core import procimg
 from pypeit.core import flat
-from pypeit.core.mosaic import build_image_mosaic_transform
+
 from pypeit.images.mosaic import Mosaic
 
 
@@ -70,8 +71,8 @@ DO_NOT_USE = datamodels.dqflags.pixel['DO_NOT_USE']
 # detname = 'nrs1'
 # detector = 1 if 'nrs1' in detname else 2
 
-#disperser = 'J0313_G235M'
-disperser = 'G395M_Maseda'
+disperser = 'J0313_G235M'
+#disperser = 'G395M_Maseda'
 #disperser = 'G395M'
 #disperser = 'PRISM_01117'
 # disperser = 'G235M'
@@ -83,13 +84,13 @@ disperser = 'G395M_Maseda'
 detectors = ['nrs1', 'nrs2']
 exp_list = []
 
-diff_redux = True
+diff_redux = False
 runflag = False
-mode = 'MSA'
-#mode ='FS'
-#islit = 'S200A1'
+#mode = 'MSA'
+mode ='FS'
+islit = 'S200A1'
 #islit = 'S200A2'
-islit = '37'
+#islit = '37'
 
 
 # If diff_redux is False, the code will model the sky and the object profile and perform optimal extraction.
@@ -259,11 +260,15 @@ if mode =='MSA':
 elif mode == 'FS':
     param_dict['assign_wcs'] = {'save_results': True}
 
+basenames = []
 basenames_1 = []
 basenames_2 = []
 for sci1, sci2 in zip(scifiles_1, scifiles_2):
-    basenames_1.append(os.path.basename(sci1).replace('_rate.fits', ''))
-    basenames_2.append(os.path.basename(sci2).replace('_rate.fits', ''))
+    b1 = os.path.basename(sci1).replace('_rate.fits', '')
+    b2 = os.path.basename(sci2).replace('_rate.fits', '')
+    basenames_1.append(b1)
+    basenames_2.append(b2)
+    basenames.append(b1.replace('_nrs1', ''))
 
 # Run the spec2 pipeline
 if runflag:
@@ -328,21 +333,9 @@ for iexp in range(nexp):
 
 
 
-# TODO Fix this, currently does not work if target names have - or _
-filename_first = os.path.basename(scifiles_1[0])
-filename_last = os.path.basename(scifiles_1[-1])
-split_first = filename_first.split('_')
-split_last = filename_last.split('_')
-prefix_first = ''
-for ii in range(len(split_first) - 3):
-    prefix_first += split_first[ii] + "_"
-diff_str = 'diff_' if diff_redux else ''
-out_filename = diff_str + prefix_first + split_first[-3] + "-" + split_last[-3]
+
 
 show = True
-
-spec_samp_fact = 1.0
-spat_samp_fact = 1.0
 
 # Use the first exposure to se the slit names
 slit_names_1 = [slit.name for slit in final_multi_list_1[0].slits]
@@ -367,191 +360,100 @@ kludge_err = 1.5
 
 # Is this correct?
 bkg_indices = [1, 2, 1]
-detector_gap = 180 # 18" divided by 0.1" pixels from the JWST website
+#detector_gap = 180 # 18" divided by 0.1" pixels from the JWST website
 
-# TODO Are the tilts working correctly for the mosaics? I'm not so sure??
 
-# Loop over all slits, create a list of spec2d objects and run 2d coadd
-for ii, islit in enumerate(gdslits):
-    spec2d_list = []
-    offsets_pixels = []
-    if show:
-        display.clear_all()
+iexp_ref = 0
+if not os.path.isdir(scipath):
+    msgs.info('Creating directory for Science output: {0}'.format(scipath))
 
-    # We use only the first exposure for calibrations and apply them to all exposures
-    slit_left_list, slit_righ_list, slit_left_orig_list, slit_righ_orig_list, slit_slice_list, waveimg_list, tilts_list, rn2_img_list = \
-        [], [], [], [], [], [], [], []
-    # Loop over exposures
-    for iexp in range(nexp):
-        sciimg_list, sciivar_list, gpm_list, base_var_list, count_scale_list, det_list = [], [], [], [], [], []
+# TODO Fix this, currently does not work if target names have - or _
+diff_str = 'diff_' if diff_redux else ''
+out_filenames = [diff_str + base for base in basenames]
+
+
+
+# Loop over all exposures, loop over all slits, extract and save them as if each slit were a separate PypeIt detector
+
+for iexp in range(nexp):
+    for ii, islit in enumerate(gdslits):
+        # Container for all the Spec2DObj, different spec2dobj and specobjs for each slit
+        all_spec2d = spec2dobj.AllSpec2DObj()
+        all_spec2d['meta']['bkg_redux'] = diff_redux
+        all_spec2d['meta']['find_negative'] = diff_redux
+        # Container for the specobjs
+        all_specobjs = specobjs.SpecObjs()
+
+        # TODO this step is being executed repeatedly for each new exposure?
+        # Generate the calibrations from the reference exposure
+        CalibrationsNRS1 = NIRSpecSlitCalibrations(
+            det_container_list[0], final_multi_list[0][iexp_ref], intflat_multi_list[0][iexp_ref], islit)
+        CalibrationsNRS2 = NIRSpecSlitCalibrations(
+        det_container_list[1], final_multi_list[1][iexp_ref], intflat_multi_list[1][iexp_ref], islit)
+
+        # Create the image mosaic
+        sciImg, slits, waveimg, tilts = jwst_mosaic(
+            msa_multi_list[0][iexp], msa_multi_list[1][iexp], CalibrationsNRS1, CalibrationsNRS2, kludge_err=kludge_err,
+            noise_floor=par['scienceframe']['process']['noise_floor'])
+
+        # If this is a diff_redux, perform background subtraction
         if diff_redux:
-            bkg_list, bkgivar_list, bkg_gpm_list, bkg_base_var_list, bkg_count_scale_list = [], [], [], [], []
-        # Loop over detectors
-        for idet in range(len(detectors)):
-            indx = np.where(np.array(slit_names_list[idet]) == islit)[0]
-            if len(indx) > 0:
-                jj = indx[0]
-                # Grab the calibration subimages for the first exposure, use for all subsequent exposures since
-                # sometimes (because of a bug) the sizes of these calibraition (and science) sub-images can change.
-                if iexp == 0:
-                    slit_slice, slit_left, slit_righ, slit_left_orig, slit_righ_orig, spec_vals_orig, \
-                    src_trace_ra, src_trace_dec, dq_sub, ra, dec, finitemask, waveimg, tilts, flatfield, pathloss, barshadow, \
-                    photom_conversion, calwebb = jwst_extract_subimgs(
-                        final_multi_list[idet][iexp].slits[jj], intflat_multi_list[idet][iexp].slits[jj])
-                    # TODO add this to the jwst_extract_subimg routine?
-                    rn2_img_list.append(np.full_like(waveimg.shape, det_container_list[idet].ronoise ** 2))
-                    slit_left_list.append(slit_left)
-                    slit_righ_list.append(slit_righ)
-                    slit_left_orig_list.append(slit_left_orig)
-                    slit_righ_orig_list.append(slit_righ_orig)
-                    slit_slice_list.append(slit_slice)
-                    waveimg_list.append(waveimg)
-                    tilts_list.append(tilts)
-
-
-                # Process the science image for this exposure
-                sciimg, sciivar, gpm, base_var, count_scale = jwst_proc(
-                    msa_multi_list[idet][iexp], t_eff[iexp], slit_slice, finitemask, pathloss, barshadow,
-                    noise_floor=par['scienceframe']['process']['noise_floor'],
-                    kludge_err=kludge_err, ronoise=det_container_list[idet].ronoise)
-
-                # If there are no good science pixels, continue
-                if not np.any(gpm):
-                    bad_slits.append(islit)
-                    continue
-
-                # If imaging differencing is requested process the background image
-                if diff_redux:
-                    ibkg = bkg_indices[iexp]
-                    # Process the background image using the same calibrations as the science
-                    bkg, bkgivar, bkg_gpm, bkg_base_var, bkg_count_scale = jwst_proc(
-                        msa_multi_list[idet][ibkg], t_eff[ibkg], slit_slice, finitemask, pathloss, barshadow,
-                        noise_floor=par['scienceframe']['process']['noise_floor'],
-                        kludge_err=kludge_err, ronoise=det_container_list[idet].ronoise)
-
-                    # If there are not good bkg pixels, continue
-                    if not np.any(bkg_gpm):
-                        bad_slits.append(islit)
-                        continue
-                    else:
-                        bkg_list.append(bkg)
-                        bkgivar_list.append(bkgivar)
-                        bkg_gpm_list.append(bkg_gpm)
-                        bkg_base_var_list.append(bkg_base_var)
-                        bkg_count_scale_list.append(bkg_count_scale)
-
-
-                sciimg_list.append(sciimg)
-                sciivar_list.append(sciivar)
-                gpm_list.append(gpm)
-                base_var_list.append(base_var)
-                count_scale_list.append(count_scale)
-                det_list.append(idet)
-
-        ndet = len(sciimg_list)
-        if len(waveimg_list) != ndet:
-            msgs.error('Number of science images does not match number of calibration images')
-
-        # TODO I would like to create an image indicating which detector contributed to which pixels
-        if ndet == 1:
-            sciimg_tot, sciivar_tot, gpm_tot, base_var_tot, count_scale_tot = \
-            sciimg_list[0], sciivar_list[0], gpm_list[0], base_var_list[0], count_scale_list[0]
-            det_or_mosaic = det_container_list[det_list[0]]
-            if iexp==0:
-                waveimg_tot, tilts_tot, rn2_img_tot, slit_left_tot, slit_right_tot = \
-                waveimg_list[0], tilts_list[0], rn2_img_list[0], slit_left_list[0], slit_righ_list[0]
-            if diff_redux:
-                bkg_tot, bkgivar_tot, bkg_gpm_tot, bkg_base_var_tot, bkg_count_scale_tot = \
-                bkg_list[0], bkgivar_list[0], bkg_gpm_list[0], bkg_base_var_list[0], bkg_count_scale_list[0]
-        else:
-            # Spatial offset is relative to NRS1
-            spat_offset = (slit_slice_list[0][1].start - slit_slice_list[1][1].start)
-            spec_lo1, spec_hi1 = 0, sciimg_list[0].shape[0]
-            spec_lo2, spec_hi2 = sciimg_list[0].shape[0] + detector_gap, \
-            sciimg_list[0].shape[0] + detector_gap + sciimg_list[1].shape[0]
-            shape = (sciimg_list[0].shape[0] + sciimg_list[1].shape[0] + detector_gap,
-                     np.max([sciimg_list[0].shape[1], sciimg_list[1].shape[1]]) + spat_offset)
-            if spat_offset < 0:
-                spat_lo1, spat_hi1 = -spat_offset, sciimg_list[0].shape[1] - spat_offset
-                spat_lo2, spat_hi2 = 0, sciimg_list[1].shape[1]
-            else:
-                spat_lo1, spat_hi1 = 0, sciimg_list[0].shape[1]
-                spat_lo2, spat_hi2 = spat_offset, spat_offset + sciimg_list[1].shape[1]
-
-            nrs1_slice = np.s_[spec_lo1: spec_hi1, spat_lo1: spat_hi1]
-            nrs2_slice = np.s_[spec_lo2: spec_hi2, spat_lo2: spat_hi2]
-
-            if iexp == 0:
-                waveimg_tot = np.full(shape, np.nan)
-                tilts_tot = np.zeros(shape)
-                waveimg_tot[nrs1_slice] = waveimg_list[0]
-                waveimg_tot[nrs2_slice] = waveimg_list[1]
-                finitemask_tot = np.isfinite(waveimg_tot)
-                wave_min, wave_max = np.min(waveimg_tot[finitemask_tot]), np.max(waveimg_tot[finitemask_tot])
-                tilts_tot[finitemask_tot] = (waveimg_tot[finitemask_tot] - wave_min) / (wave_max - wave_min)
-                slit_left_tot, slit_righ_tot = jwst_get_slits(finitemask_tot)
-                waveimg_tot[np.logical_not(finitemask_tot)] = 0.0
-
-                rn2_img_tot = np.zeros(shape)
-                rn2_img_tot[nrs1_slice] = np.full_like(sciimg_list[0], det_container_list[0].ronoise**2)
-                rn2_img_tot[nrs2_slice] = np.full_like(sciimg_list[1], det_container_list[1].ronoise**2)
-
-                viewer_wave, ch_wave = display.show_image(waveimg_tot, chname='waveimg_tot')
-                display.show_slits(viewer_wave, ch_wave, slit_left_tot, slit_righ_tot, pstep=1, slit_ids=np.array([islit]))
-
-            sciimg_tot = np.zeros(shape)
-            sciivar_tot = np.zeros(shape)
-            gpm_tot = np.zeros(shape, dtype=bool)
-            base_var_tot = np.zeros(shape)
-            count_scale_tot = np.zeros(shape)
-
-            sciimg_tot[nrs1_slice] = sciimg_list[0]
-            sciimg_tot[nrs2_slice] = sciimg_list[1]
-            sciivar_tot[nrs1_slice] = sciivar_list[0]
-            sciivar_tot[nrs2_slice] = sciivar_list[1]
-            gpm_tot[nrs1_slice] = gpm_list[0]
-            gpm_tot[nrs2_slice] = gpm_list[1]
-            base_var_tot[nrs1_slice] = base_var_list[0]
-            base_var_tot[nrs2_slice] = base_var_list[1]
-            count_scale_tot[nrs1_slice] = count_scale_list[0]
-            count_scale_tot[nrs2_slice] = count_scale_list[1]
-
-            det_or_mosaic = Mosaic(1, np.array(det_container_list), shape, None, None, None, None)
-
-            if diff_redux:
-                bkg_tot = np.zeros(shape)
-                bkgivar_tot = np.zeros(shape)
-                bkg_gpm_tot = np.zeros(shape, dtype=bool)
-                bkg_base_var_tot = np.zeros(shape)
-                bkg_count_scale_tot = np.zeros(shape)
-
-                bkg_tot[nrs1_slice] = bkg_list[0]
-                bkg_tot[nrs2_slice] = bkg_list[1]
-                bkgivar_tot[nrs1_slice] = bkgivar_list[0]
-                bkgivar_tot[nrs2_slice] = bkgivar_list[1]
-                bkg_gpm_tot[nrs1_slice] = bkg_gpm_list[0]
-                bkg_gpm_tot[nrs2_slice] = bkg_gpm_list[1]
-                bkg_base_var_tot[nrs1_slice] = bkg_base_var_list[0]
-                bkg_base_var_tot[nrs2_slice] = bkg_base_var_list[1]
-                bkg_count_scale_tot[nrs1_slice] = bkg_count_scale_list[0]
-                bkg_count_scale_tot[nrs2_slice] = bkg_count_scale_list[1]
-
-        # Instantiate
-        sciImg = PypeItImage(image=sciimg_tot, ivar=sciivar_tot, base_var=base_var_tot,
-                             img_scale=count_scale_tot,
-                             rn2img=rn2_img_tot,
-                             detector=det_or_mosaic, bpm=np.logical_not(gpm_tot))
-
-
-        if diff_redux:
-            bkgImg = PypeItImage(image=bkg_tot, ivar=bkgivar_tot, base_var=bkg_base_var_tot,
-                                 img_scale=bkg_count_scale_tot,
-                                 rn2img=rn2_img_tot,
-                                 detector=det_or_mosaic, bpm=np.logical_not(bkg_gpm_tot))
-
-            # Perform the difference imaging, propagate the error and masking
+            ibkg = bkg_indices[iexp]
+            bkgImg, _, _, _ = jwst_mosaic(
+                msa_multi_list[0][ibkg], msa_multi_list[1][ibkg], CalibrationsNRS1, CalibrationsNRS2,
+                kludge_err=kludge_err,
+                noise_floor=par['scienceframe']['process']['noise_floor'])
             sciImg = sciImg.sub(bkgImg)
 
 
+        # Run the reduction
+        all_spec2d[sciImg.detector.name], tmp_sobjs = jwst_reduce(sciImg, slits, waveimg, tilts, spectrograph, par,
+                                                     show=show, find_negative=diff_redux, bkg_redux=diff_redux,
+                                                     clear_ginga=True, show_peaks=show, show_skysub_fit=show,
+                                                     basename=basenames[iexp])
+        # Hold em
+        if tmp_sobjs.nobj > 0:
+            all_specobjs.add_sobj(tmp_sobjs)
 
+            if show:
+                # Plot boxcar
+                wv_gpm_box = tmp_sobjs[0].BOX_WAVE > 1.0
+                plt.plot(tmp_sobjs[0].BOX_WAVE[wv_gpm_box],tmp_sobjs[0].BOX_COUNTS[wv_gpm_box] * tmp_sobjs[0].BOX_MASK[wv_gpm_box],
+                color='green', drawstyle='steps-mid', label='Boxcar Counts')
+                plt.plot(tmp_sobjs[0].BOX_WAVE[wv_gpm_box], tmp_sobjs[0].BOX_COUNTS_SIG[wv_gpm_box] * tmp_sobjs[0].BOX_MASK[wv_gpm_box],
+                     color='cyan', drawstyle='steps-mid', label='Boxcar Counts Error')
+
+                # plot optimal
+                if tmp_sobjs[0].OPT_WAVE is not None:
+                    wv_gpm_opt = tmp_sobjs[0].OPT_WAVE > 1.0
+                    plt.plot(tmp_sobjs[0].OPT_WAVE[wv_gpm_opt], tmp_sobjs[0].OPT_COUNTS[wv_gpm_opt] * tmp_sobjs[0].OPT_MASK[wv_gpm_opt],
+                             color='black', drawstyle='steps-mid', label='Optimal Counts')
+                    plt.plot(tmp_sobjs[0].OPT_WAVE[wv_gpm_opt], tmp_sobjs[0].OPT_COUNTS_SIG[wv_gpm_opt] * tmp_sobjs[0].OPT_MASK[wv_gpm_opt],
+                             color='red', drawstyle='steps-mid', label='Optimal Counts Error')
+
+                plt.legend()
+                plt.show()
+
+        # THE FOLLOWING MIMICS THE CODE IN pypeit.save_exposure()
+        basename = '{:s}_{:s}'.format(out_filenames[iexp], 'slit' + islit)
+
+        # Write out specobjs
+        # Build header for spec2d
+        head2d = fits.getheader(scifiles_1[iexp])
+        subheader = spectrograph.subheader_for_spec(fitstbl_1[iexp], head2d, allow_missing=False)
+        if all_specobjs.nobj > 0:
+            outfile1d = os.path.join(scipath, 'spec1d_{:s}.fits'.format(basename))
+            all_specobjs.write_to_fits(subheader, outfile1d)
+
+        # Info
+        outfiletxt = os.path.join(scipath, 'spec1d_{:s}.txt'.format(basename))
+        all_specobjs.write_info(outfiletxt, spectrograph.pypeline)
+
+        # Build header for spec2d
+        outfile2d = os.path.join(scipath, 'spec2d_{:s}.fits'.format(basename))
+        # TODO For the moment hack so that we can write this out
+        pri_hdr = all_spec2d.build_primary_hdr(head2d, spectrograph, subheader=subheader,
+                                               redux_path=None, calib_dir=None)
+        # Write spec2d
+        all_spec2d.write_to_fits(outfile2d, pri_hdr=pri_hdr, overwrite=True)
 
