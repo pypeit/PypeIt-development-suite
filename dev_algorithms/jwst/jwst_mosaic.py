@@ -88,7 +88,7 @@ diff_redux = False
 runflag = False
 #mode = 'MSA'
 mode ='FS'
-islit = 'S200A1'
+islit = 'S200A2'
 #islit = 'S200A2'
 #islit = '37'
 
@@ -387,9 +387,9 @@ for iexp in range(nexp):
         # TODO this step is being executed repeatedly for each new exposure?
         # Generate the calibrations from the reference exposure
         CalibrationsNRS1 = NIRSpecSlitCalibrations(
-            det_container_list[0], final_multi_list[0][iexp_ref], intflat_multi_list[0][iexp_ref], islit)
+            det_container_list[0], final_multi_list[0][iexp], intflat_multi_list[0][iexp], islit)
         CalibrationsNRS2 = NIRSpecSlitCalibrations(
-        det_container_list[1], final_multi_list[1][iexp_ref], intflat_multi_list[1][iexp_ref], islit)
+        det_container_list[1], final_multi_list[1][iexp], intflat_multi_list[1][iexp], islit)
 
         # Create the image mosaic
         sciImg, slits, waveimg, tilts = jwst_mosaic(
