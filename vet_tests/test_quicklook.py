@@ -3,20 +3,21 @@ Module to run tests on scripts
 """
 import os
 import glob
+from IPython import embed
 import numpy as np
-import pytest
 
 from pypeit.pypmsgs import PypeItError
 from pypeit.inputfiles import PypeItFile
 from pypeit import specobjs
 
+
 def test_shane_kast_ql(redux_out):
     instr = 'shane_kast_blue' 
     outroot = os.path.join(redux_out, instr, '600_4310_d55')
 
-    for test in ['std', 'masters', 'calibs', 'multi', 'nostack', 'boxcar']:
+    for test in ['std', 'cooked', 'match', 'multi', 'nostack', 'boxcar']:
         outdir = os.path.join(outroot, f'QL_{test}')
-        if test in ['std', 'masters', 'calibs', 'boxcar']:
+        if test in ['std', 'cooked', 'match', 'boxcar']:
             rdxfolder = 'b27'
         else:
             rdxfolder = 'b27-b28'
@@ -44,6 +45,7 @@ def test_shane_kast_ql(redux_out):
             assert np.isclose(sobjs.BOX_RADIUS[0], 4.651162790697675)
         else:
             assert not np.isclose(sobjs.BOX_RADIUS[0], 4.651162790697675)
+
 
 def test_keck_deimos_ql(redux_out):
 

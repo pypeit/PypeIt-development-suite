@@ -3,18 +3,17 @@ Module to run tests on PypeItSetup class
 Requires files in Development suite and an Environmental variable
 """
 import os
-
-import pytest
 import glob
+
+from IPython import embed
+
 import numpy as np
 
 from astropy.table import Table
 
-
 from pypeit import pypeitsetup
 from pypeit.par import pypeitpar
 from pypeit.metadata import PypeItMetaData
-from pypeit.tests.tstutils import data_path
 
 
 def get_files():
@@ -99,6 +98,9 @@ def test_run():
     # Test
     assert isinstance(par, pypeitpar.PypeItPar)
     assert isinstance(fitstbl, PypeItMetaData)
+    assert all(fitstbl['setup'] == 'A'), 'All files should be in the same setup'
+    assert all(fitstbl['calib'] == '0'), 'All files should be in the same calibration group'
+    assert all(fitstbl['bkg_id'] == -1), 'Background frames should be undefined'
 
 
 def test_run_setup():

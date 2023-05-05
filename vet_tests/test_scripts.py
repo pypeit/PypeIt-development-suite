@@ -153,6 +153,7 @@ def test_identify(redux_out):
     wvarxiv_fn = arcfitter.store_solution(final_fit, 1, rmstol=0.1, force_save=True, wvcalib=waveCalib)
 
     # Test we can read it
+    # NOTE: Calibration key and directory are undefined!
     tmp = wavecalib.WaveCalib.from_file('wvcalib.fits')
 
     # Clean up -- If these fail then the store solution failed
@@ -367,7 +368,6 @@ def test_collate_1d(tmp_path, monkeypatch, redux_out):
                                                                '--spec1d_files', expanded_alt_spec1d])
         assert scripts.collate_1d.Collate1D.main(parsed_args) == 0
         
-# pypeit_parse_calib_id is tested in test_runpypeit
 
 def test_parse_slits(redux_out):
     kastb_dir = os.path.join(redux_out,
@@ -385,7 +385,6 @@ def test_parse_slits(redux_out):
     # Spec2d
     pargs = parse_slits.ParseSlits.parse_args([spec2d_file])
     parse_slits.ParseSlits.main(pargs)
-    
 
 
 # TODO: Include tests for coadd2d, sensfunc
