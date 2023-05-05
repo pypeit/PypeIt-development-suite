@@ -510,34 +510,21 @@ class PypeItQuickLookTest(PypeItTest):
 
     def build_command_line(self):
 
-        if self.setup.instr == 'keck_mosfire' and self.setup.name == 'Y_long':
-            command_line = ['pypeit_ql_jfh_multislit', 'keck_mosfire']
-            if self.pargs.quiet:
-                command_line += ['--no_gui', '--writefits']
-        elif self.setup.instr == 'keck_lris_red_mark4':
-            command_line = ['pypeit_ql_jfh_multislit', 'keck_lris_red_mark4']
-            if self.pargs.quiet:
-                command_line += ['--no_gui', '--writefits']
-        else:
-            # Redux folder
-            redux_path = os.path.join(self.redux_dir,
-                    self.setup.instr, self.setup.name)
-            last_folder = 'QL'
-            if self.test_name is not None:
-                last_folder += '_' + self.test_name
-            redux_path = os.path.join(redux_path, last_folder)
+        # Redux folder
+        redux_path = os.path.join(self.redux_dir,
+                self.setup.instr, self.setup.name)
+        last_folder = 'QL'
+        if self.test_name is not None:
+            last_folder += '_' + self.test_name
+        redux_path = os.path.join(redux_path, last_folder)
                     
-            command_line = [
-                'pypeit_ql', self.setup.instr,
-                '--redux_path', redux_path]
+        command_line = [
+            'pypeit_ql', self.setup.instr,
+            '--skip_display',
+            '--redux_path', redux_path,
+            '--raw_path', self.setup.rawdir, 
+            '--raw_files'] + self.files
 
-        if self.setup.instr == 'keck_mosfire' and self.setup.name == 'Y_long': # JFH QL
-            command_line += [self.setup.rawdir] + self.files
-        elif self.setup.instr == 'keck_lris_red_mark4':  # TESTING USING JFH QL
-            command_line += [self.setup.rawdir] + self.files
-        else:
-            command_line += ['--raw_path', self.setup.rawdir, 
-                             '--raw_files'] + self.files
         # Aditional options
         for option in self.options:
             if self.options[option] is None:

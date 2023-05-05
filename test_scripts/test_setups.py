@@ -353,7 +353,7 @@ _quick_look = {
         'J_multi': [
             {'files': ['m191014_0170.fits'],
               '--setup_calib_dir': 'USE_CALIB_DIR',
-            },
+            }
         ],
 #        'Y_long': # Testing on pypeit_ql_jfh_multislit
 #            [{'files': ['m191120_0043.fits', 'm191120_0044.fits', 'm191120_0045.fits', 'm191120_0046.fits'],
@@ -361,6 +361,13 @@ _quick_look = {
 #              '--spat_samp_fact': 2.0,
 #              '--flux': None,
 #              '--bkg_redux': None}],
+        'Y_long': [
+            {'files': ['m191120_0043.fits', 'm191120_0044.fits', 'm191120_0045.fits', 'm191120_0046.fits'],
+              '--calib_group': 1,
+              '--coadd': None, '--spec_samp_fact': 2.0, '--spat_samp_fact': 2.0,
+              '--setup_calib_dir': 'USE_CALIB_DIR',
+            }
+        ]
     },
 #    'keck_lris_red_mark4': {
 #        'long_600_10000_d680': # Testing on pypeit_ql_jfh_multislit
@@ -368,6 +375,14 @@ _quick_look = {
 #              '--spec_samp_fact': 2.0, '--spat_samp_fact': 2.0,
 #              '--flux': None}],
 #        },
+    'keck_lris_red_mark4': {
+        'long_600_10000_d680': [
+            {'files': ['r220127_00123.fits', 'r220127_00124.fits'],
+              '--coadd': None, '--spec_samp_fact': 2.0, '--spat_samp_fact': 2.0,
+              '--setup_calib_dir': 'USE_CALIB_DIR',
+            }
+        ],
+    },
     'keck_nires': {
         'ABpat_wstandard': [
             # (1) Generate the calibrations from scratch and just reduce a
@@ -380,14 +395,14 @@ _quick_look = {
             # (2) Use existing calibrations and just reduce a single frame
             {'test_name': 'cooked',
              'files': ['NR.20191211.26257.fits'],
-              '--setup_calib_dir': 'USE_CALIB_DIR',
+             '--setup_calib_dir': 'USE_CALIB_DIR',
             },
             # (3) Use exising calibrations and reduce both a standard and a
             # single science frame
             {'test_name': 'std',
              'files': ['NR.20191211.26257.fits',    # science (arc,tilt)
                        'NR.20191211.27199.fits'],   # standard
-              '--setup_calib_dir': 'USE_CALIB_DIR',
+             '--setup_calib_dir': 'USE_CALIB_DIR',
             },
             # (4) Use exising calibrations and reduce both a standard and an
             # AB dither sequence
@@ -395,15 +410,15 @@ _quick_look = {
              'files': ['NR.20191211.26257.fits',    # science: A
                        'NR.20191211.26611.fits',    # science: B
                        'NR.20191211.27199.fits'],   # standard
-              '--snr_thresh': 5,
-              '--setup_calib_dir': 'USE_CALIB_DIR',
+             '--snr_thresh': 5,
+             '--setup_calib_dir': 'USE_CALIB_DIR',
             },
             # (5) Use existing global calibrations
             {'test_name': 'ABarc',
              'files': ['NR.20191211.26257.fits',    # science: A
                        'NR.20191211.26611.fits'],   # science: B
-              '--snr_thresh': 5,
-              '--parent_calib_dir': 'USE_ARCHIVE_CALIB_DIR',
+             '--snr_thresh': 5,
+             '--parent_calib_dir': 'USE_ARCHIVE_CALIB_DIR',
             },
         ]
     },
