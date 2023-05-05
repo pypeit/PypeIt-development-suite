@@ -1,0 +1,38 @@
+# Auto-generated PypeIt input file using PypeIt version: 1.12.3.dev235+g648f92808
+# UTC 2023-04-29T02:23:10.148
+
+# User-defined execution parameters
+[rdx]
+    spectrograph = keck_nires
+
+# Setup
+setup read
+Setup A:
+  dispname: spec
+setup end
+
+# Data block 
+data read
+ path ../tarxmm
+            filename |        frametype |               ra |               dec |     target | dispname |    decker | binning |              mjd |          airmass | exptime | dithpat | dithpos | dithoff | frameno | calib | comb_id | bkg_id
+s181127_0020.fits.gz | arc,science,tilt | 34.3875563413044 | -5.48291184220703 |     offset |     spec | 0.55 slit |     1,1 | 58449.1942828953 | 1.92370631791987 |   300.0 |    ABBA |       A |     2.5 |      20 |     1 |       5 |      6
+s181127_0021.fits.gz | arc,science,tilt | 34.3863014149296 | -5.48230482326644 |     offset |     spec | 0.55 slit |     1,1 |  58449.198166923 | 1.85836977469815 |   300.0 |    ABBA |       B |    -2.5 |      21 |     1 |       6 |      5
+s181127_0022.fits.gz | arc,science,tilt | 34.3863014149296 | -5.48230482326644 |     offset |     spec | 0.55 slit |     1,1 | 58449.2020155341 | 1.79882319823798 |   300.0 |    ABBA |       B |    -2.5 |      22 |     1 |       6 |      5
+s181127_0023.fits.gz | arc,science,tilt | 34.3875563412864 | -5.48291184224398 |     offset |     spec | 0.55 slit |     1,1 | 58449.2058936591 | 1.74373863780769 |   300.0 |    ABBA |       A |     2.5 |      23 |     1 |       5 |      6
+s181127_0024.fits.gz | arc,science,tilt | 34.3875563107025 | -5.48291185077228 |     offset |     spec | 0.55 slit |     1,1 | 58449.2099252564 | 1.69103204552924 |   300.0 |    ABBA |       A |     2.5 |      24 |     1 |       9 |     10
+s181127_0025.fits.gz | arc,science,tilt | 34.3863013843663 | -5.48230483175258 |     offset |     spec | 0.55 slit |     1,1 |  58449.213785673 | 1.64427656384543 |   300.0 |    ABBA |       B |    -2.5 |      25 |     1 |      10 |      9
+s181127_0026.fits.gz | arc,science,tilt | 34.3863013843663 | -5.48230483175258 |     offset |     spec | 0.55 slit |     1,1 | 58449.2176401869 | 1.60117186112173 |   300.0 |    ABBA |       B |    -2.5 |      26 |     1 |      10 |      9
+s181127_0027.fits.gz | arc,science,tilt | 34.3875563106798 | -5.48291185081881 |     offset |     spec | 0.55 slit |     1,1 | 58449.2215124091 | 1.56112692613275 |   300.0 |    ABBA |       A |     2.5 |      27 |     1 |       9 |     10
+s181127_0028.fits.gz | arc,science,tilt | 34.3875562820772 | -5.48291185081928 |     offset |     spec | 0.55 slit |     1,1 | 58449.2254967842 | 1.52281402762182 |   300.0 |    ABBA |       A |     2.5 |      28 |     1 |      13 |     14
+s181127_0029.fits.gz | arc,science,tilt | 34.3863013557899 | -5.48230483169958 |     offset |     spec | 0.55 slit |     1,1 | 58449.2293690064 | 1.48821039516095 |   300.0 |    ABBA |       B |    -2.5 |      29 |     1 |      14 |     13
+s181127_0030.fits.gz | arc,science,tilt | 34.3863013557899 | -5.48230483169958 |     offset |     spec | 0.55 slit |     1,1 | 58449.2332176175 | 1.45629756501047 |   300.0 |    ABBA |       B |    -2.5 |      30 |     1 |      14 |     13
+s181127_0031.fits.gz | arc,science,tilt | 34.3875562820482 | -5.48291185087883 |     offset |     spec | 0.55 slit |     1,1 | 58449.2370957425 | 1.42625686663984 |   300.0 |    ABBA |       A |     2.5 |      31 |     1 |      13 |     14
+s181127_0032.fits.gz | arc,science,tilt |  34.387556253306 | -5.48291185087944 |     offset |     spec | 0.55 slit |     1,1 | 58449.2410683119 | 1.39775428484139 |   300.0 |    ABBA |       A |     2.5 |      32 |     1 |      17 |     18
+s181127_0033.fits.gz | arc,science,tilt | 34.3863013270811 | -5.48230483163178 |     offset |     spec | 0.55 slit |     1,1 | 58449.2449346314 | 1.37177864014099 |   300.0 |    ABBA |       B |    -2.5 |      33 |     1 |      18 |     17
+s181127_0034.fits.gz | arc,science,tilt | 34.3863013270811 | -5.48230483163178 |     offset |     spec | 0.55 slit |     1,1 | 58449.2487832425 | 1.34777648253068 |   300.0 |    ABBA |       B |    -2.5 |      34 |     1 |      18 |     17
+s181127_0035.fits.gz | arc,science,tilt | 34.3875562532687 | -5.48291185095585 |     offset |     spec | 0.55 slit |     1,1 | 58449.2526495619 | 1.32528459069497 |   300.0 |    ABBA |       A |     2.5 |      35 |     1 |      17 |     18
+s181127_0001.fits.gz |  pixelflat,trace |          58.0296 |           44.9972 | DOME PHLAT |     spec | 0.55 slit |     1,1 | 58449.1286558119 |  1.4129791420892 |   100.0 |    NONE |    None |     0.0 |       1 |   all |      -1 |     -1
+s181127_0002.fits.gz |  pixelflat,trace |          58.0296 |           44.9972 | DOME PHLAT |     spec | 0.55 slit |     1,1 | 58449.1300193536 |  1.4129791420892 |   100.0 |    NONE |    None |     0.0 |       2 |   all |      -1 |     -1
+s181127_0003.fits.gz |  pixelflat,trace |          58.0296 |           44.9972 | DOME PHLAT |     spec | 0.55 slit |     1,1 | 58449.1313828953 |  1.4129791420892 |   100.0 |    NONE |    None |     0.0 |       3 |   all |      -1 |     -1
+data end
+
