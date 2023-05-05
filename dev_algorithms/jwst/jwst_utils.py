@@ -250,8 +250,8 @@ def jwst_get_slits(finitemask, polyorder=5, function='legendre', debug=False):
     return slit_left, slit_righ
 
 
-def jwst_proc(msa_data, t_eff, slit_slice, finitemask, pathloss, barshadow, ronoise,
-              kludge_err=1.0, saturation=65000, noise_floor=0.01):
+def jwst_proc(msa_data, slit_slice, finitemask, flatfield, pathloss, barshadow, photom_conversion, ronoise,
+              kludge_err=1.0, saturation=65000, noise_floor=0.01, use_flat=True):
 
 
     #slit_slice, slit_left, slit_righ, slit_left_orig, slit_righ_orig, spec_vals_orig, src_trace_ra, src_trace_dec, dq, \
@@ -269,6 +269,7 @@ def jwst_proc(msa_data, t_eff, slit_slice, finitemask, pathloss, barshadow, rono
     # This is currently buggy as it includes flat field error
     # rate_var_tot = np.square(np.array(e2d_slit.err.T, dtype=float))
     dq = np.array(msa_data.dq.T[slit_slice], dtype=int)
+    t_eff = msa_data.meta.exposure.effective_exposure_time
 
     # Now perform the image processing
     raw_counts = rate*t_eff
@@ -286,7 +287,13 @@ def jwst_proc(msa_data, t_eff, slit_slice, finitemask, pathloss, barshadow, rono
     # total_flat = flatfield*pathloss*barshadow
     #flux_to_counts = t_eff / photom_conversion  # This converts s2d outputs of flux to counts.
     #jwst_scale = photom_conversion/flatfield/pathloss/barshadow
-    total_flat = pathloss*barshadow
+
+    # This is what Kyle is using in his code
+    if use_flat:
+        total_flat = flatfield*pathloss*barshadow/photom_conversion
+    else:
+        total_flat = pathloss*barshadow
+
     total_flat_square = np.square(total_flat)
 
     count_scale = inverse(total_flat)  # This is the quantity that goes into PypeIt for var modeling
@@ -371,20 +378,44 @@ class NIRSpecSlitCalibrations(datamodel.DataContainer):
                 self.barshadow, self.photom_conversion, self.calwebb_proc = jwst_extract_subimgs(
                 ms_model.slits[self.slit_indx], ms_model_flat.slits[self.slit_indx])
 
+    def show(self):
+        # Connect to an open ginga window, or open a new one
+        display.connect_to_ginga(raise_err=True, allow_new=True)
+        ch_list = []
+        image_list = [self.waveimg, self.tilts, self.flatfield, self.pathloss, self.barshadow, self.calwebb_proc]
+        waveimg_list = [None] + [self.waveimg] * 5
+        chname_list = ['wave_{:s}'.format(self.det_name), 'tilts_{:s}'.format(self.det_name), 'flat_{:s}'.format(self.det_name),
+                       'pathloss_{:s}'.format(self.det_name), 'barshadow_{:s}'.format(self.det_name), 'calwebb_{:s}'.format(self.det_name)]
+        cuts_list = [None] * 6
+        cuts_list[-2]= (0.0, 1.0)
+        for image, waveimg, chname, cuts in zip(image_list, waveimg_list, chname_list, cuts_list):
+            viewer, ch_tmp = display.show_image(image, waveimg=waveimg, chname=chname, cuts=cuts)
+            ch_list.append(ch_tmp)
+        display.show_slits(viewer, ch_list[0], self.slit_left, self.slit_righ, pstep=1, slit_ids=np.array([self.slit_name]))
+        display.show_trace(viewer, ch_list[-1], self.src_trace_ra, 'trace-RA_{:s}'.format(self.det_name),color='#f0e442', pstep=1)
+        display.show_trace(viewer, ch_list[-1], self.src_trace_dec, 'trace-DEC_{:s}'.format(self.det_name), color='#f0e442', pstep=1)
+
+        # After displaying all the images sync up the images with WCS_MATCH
+        shell = viewer.shell()
+        shell.start_global_plugin('WCSMatch')
+        shell.call_global_plugin_method('WCSMatch', 'set_reference_channel', [ch_list[0]], {})
+
+        return viewer, ch_list
 
 
-def jwst_mosaic(image_model_nrs1, image_model_nrs2, CalibrationsNRS1, CalibrationsNRS2, kludge_err=1.0,
-                noise_floor=0.01):
 
-    t_eff = image_model_nrs1.meta.exposure.effective_exposure_time
+def jwst_mosaic(image_model_tuple, Calibrations_tuple, kludge_err=1.0,
+                noise_floor=0.01, show=False, bkg_image_model_tuple=(None,None)):
+
     dets = [1,2]
-    sciimg_list, sciivar_list, gpm_list, base_var_list, count_scale_list, rn2_img_list= [], [], [], [], [], []
-    waveimg_list, tilts_list, slit_slice_list, slit_left_list, slit_righ_list, det_list = [], [], [], [], [], []
-    for det, image_model, Calib in zip(dets, [image_model_nrs1, image_model_nrs2], [CalibrationsNRS1, CalibrationsNRS2]):
+    sciimg_list, sciivar_list, gpm_list, base_var_list, count_scale_list, rn2_img_list = [], [], [], [], [], []
+    waveimg_list, tilts_list, slit_slice_list, slit_left_list, slit_righ_list, det_list, calib_list = [], [], [], [], [], [], []
+    for det, image_model, bkg_image_model, Calib in zip(dets, image_model_tuple, bkg_image_model_tuple, Calibrations_tuple):
+
         if Calib.on_detector:
             sciimg, sciivar, gpm, base_var, count_scale, rn2_img = jwst_proc(
-                image_model, t_eff, Calib.slit_slice, Calib.finitemask, Calib.pathloss, Calib.barshadow,
-                Calib.detector.ronoise, noise_floor=noise_floor, kludge_err=kludge_err)
+                image_model, Calib.slit_slice, Calib.finitemask, Calib.flatfield, Calib.pathloss, Calib.barshadow,
+                Calib.photom_conversion, Calib.detector.ronoise, noise_floor=noise_floor, kludge_err=kludge_err)
             sciimg_list.append(sciimg)
             sciivar_list.append(sciivar)
             gpm_list.append(gpm)
@@ -397,9 +428,37 @@ def jwst_mosaic(image_model_nrs1, image_model_nrs2, CalibrationsNRS1, Calibratio
             slit_left_list.append(Calib.slit_left)
             slit_righ_list.append(Calib.slit_righ)
             det_list.append(Calib.detector)
+            calib_list.append(Calib)
+            if show:
+                display.connect_to_ginga(raise_err=True, allow_new=True)
+                # Show the raw rate image
+                rate_image = np.array(image_model.data.T)
+                viewer, ch_raw = display.show_image(rate_image, cuts=get_cuts(rate_image),
+                                                        chname='raw_rate_{:s}'.format(Calib.det_name))
+                display.show_slits(viewer, ch_raw, Calib.slit_left_orig, Calib.slit_righ_orig,
+                                   spec_vals=Calib.spec_vals_orig, pstep=1, slit_ids=np.array([Calib.slit_name]))
+                # If bkg_image models were provided, show the difference image
+                if bkg_image_model is not None:
+                    bkg_rate_image = np.array(bkg_image_model.data.T)
+                    viewer, ch_bkg = display.show_image(rate_image - bkg_rate_image,
+                                                            cuts=get_cuts(rate_image - bkg_rate_image),
+                                                            chname='diff_rate_{:s}'.format(Calib.det_name))
+                    display.show_slits(viewer, ch_bkg, Calib.slit_left_orig, Calib.slit_righ_orig,
+                                       spec_vals=Calib.spec_vals_orig, pstep=1, slit_ids=np.array([Calib.slit_name]))
 
+                # Show the calibrations
+                viewer, ch_list = Calib.show()
+                # Show the pypeit processed image
+                viewer_pypeit, ch_pypeit = display.show_image(sciimg, waveimg=Calib.waveimg, cuts=get_cuts(sciimg),
+                                                              chname='pypeit_{:s}'.format(Calib.det_name))
+                display.show_slits(viewer_pypeit, ch_pypeit, Calib.slit_left, Calib.slit_righ, pstep=1,
+                                   slit_ids=np.array([Calib.slit_name]))
+                # Sync up the images that have the same shape, namely calibration image and pypeit processed image
+                shell = viewer.shell()
+                shell.start_global_plugin('WCSMatch')
+                shell.call_global_plugin_method('WCSMatch', 'set_reference_channel', [ch_list[-1]], {})
 
-    ndet = len(det_list)
+    ndet = len(calib_list)
 
     # TODO I would like to create an image indicating which detector contributed to which pixels
     if ndet == 1:
@@ -413,11 +472,12 @@ def jwst_mosaic(image_model_nrs1, image_model_nrs2, CalibrationsNRS1, Calibratio
         shape = sciimg_tot.shape
     elif ndet == 2:
         # Spatial offset is relative to NRS1
+        detector_gap = int(calib_list[0].detector.xgap)
         spat_offset = (slit_slice_list[0][1].start - slit_slice_list[1][1].start)
         spec_lo1, spec_hi1 = 0, sciimg_list[0].shape[0]
-        spec_lo2, spec_hi2 = sciimg_list[0].shape[0] + int(CalibrationsNRS1.detector.xgap), \
-                             sciimg_list[0].shape[0] + int(CalibrationsNRS1.detector.xgap) + sciimg_list[1].shape[0]
-        shape = (sciimg_list[0].shape[0] + sciimg_list[1].shape[0] + int(CalibrationsNRS1.detector.xgap),
+        spec_lo2, spec_hi2 = sciimg_list[0].shape[0] + detector_gap, \
+                             sciimg_list[0].shape[0] + detector_gap + sciimg_list[1].shape[0]
+        shape = (sciimg_list[0].shape[0] + sciimg_list[1].shape[0] + detector_gap,
                  np.max([sciimg_list[0].shape[1], sciimg_list[1].shape[1]]) + spat_offset)
         if spat_offset < 0:
             spat_lo1, spat_hi1 = -spat_offset, sciimg_list[0].shape[1] - spat_offset
@@ -472,7 +532,9 @@ def jwst_mosaic(image_model_nrs1, image_model_nrs2, CalibrationsNRS1, Calibratio
     slits = slittrace.SlitTraceSet(slit_left_tot, slit_righ_tot, 'MultiSlit', detname=det_or_mosaic.name,
                                    nspat=int(shape[1]),PYP_SPEC='jwst_nirspec')
 
-    return sciImg, slits, waveimg_tot, tilts_tot
+
+
+    return sciImg, slits, waveimg_tot, tilts_tot, ndet
 
 
 def jwst_reduce(sciImg, slits, waveimg, tilts, spectrograph, par, show=False, find_negative=False, bkg_redux=False,
@@ -513,9 +575,16 @@ def jwst_reduce(sciImg, slits, waveimg, tilts, spectrograph, par, show=False, fi
                                                     clear_ginga=clear_ginga, show=show)
     global_sky0, sobjs_obj = objFind.run(show_peaks=show or show_peaks, show_skysub_fit=show_skysub_fit)
 
-    # TODO add this as optional to objFind.run()
-    skymask = objFind.create_skymask(sobjs_obj)
-    final_global_sky = objFind.global_skysub(previous_sky=global_sky0, skymask=skymask, show=show)
+    # TODO add this as optional to objFind.run()?
+
+    # For JWST bkg_redux we don't perform any global skysubtraction whatsoever. We could in principle check
+    # bkg_redux here, but that is equiavlent since skip_skysub is set to True in the bkg_redux case.
+    if par['reduce']['findobj']['skip_skysub']:
+        final_global_sky=global_sky0
+    else:
+        skymask = objFind.create_skymask(sobjs_obj)
+        final_global_sky = objFind.global_skysub(previous_sky=global_sky0, skymask=skymask, show=show)
+
 
     # Initiate Extract object
     exTract = extraction.Extract.get_instance(sciImg, slits, sobjs_obj, spectrograph, par,

@@ -84,17 +84,17 @@ disperser = 'J0313_G235M'
 detectors = ['nrs1', 'nrs2']
 exp_list = []
 
-diff_redux = False
+bkg_redux = False
 runflag = False
 #mode = 'MSA'
 mode ='FS'
-islit = 'S200A2'
+islit = 'S200A1'
 #islit = 'S200A2'
 #islit = '37'
 
 
-# If diff_redux is False, the code will model the sky and the object profile and perform optimal extraction.
-# If diff_redux is True, the code will difference image and simply boxcar extract (optimal not implemented yet)
+# If bkg_redux is False, the code will model the sky and the object profile and perform optimal extraction.
+# If bkg_redux is True, the code will difference image and simply boxcar extract (optimal not implemented yet)
 for detname in detectors:
     # TODO add the kendrew FS SN data to this.
     if 'PRISM_01133' == disperser:
@@ -233,7 +233,7 @@ if not os.path.isdir(png_dir):
     os.makedirs(png_dir)
 
 # Set some parameters for difference imaging
-if diff_redux:
+if bkg_redux:
     par['reduce']['findobj']['skip_skysub'] = True # Do not sky-subtract when object finding
     par['reduce']['extraction']['skip_optimal'] = True # Skip local_skysubtraction and profile fitting
 
@@ -310,36 +310,35 @@ final_multi_list_1 = []
 msa_multi_list_2 = []
 intflat_multi_list_2 = []
 final_multi_list_2 = []
-nslits_1 = np.zeros(nexp, dtype=int)
-nslits_2 = np.zeros(nexp, dtype=int)
-t_eff = np.zeros(nexp, dtype=float)
+#nslits_1 = np.zeros(nexp, dtype=int)
+#nslits_2 = np.zeros(nexp, dtype=int)
+#t_eff = np.zeros(nexp, dtype=float)
 
-# TODO Figure out why this is so damn slow! I suspect it is calwebb
+ndetectors = 2
+# Create arrays to hold JWST spec2, but only load the files when they're needed
+msa_data = np.empty((ndetectors, nexp), dtype=object)
+flat_data = np.empty((ndetectors, nexp), dtype=object)
+cal_data = np.empty((ndetectors, nexp), dtype=object)
+
+
+# TODO Figure out why this is so damn slow! I suspect it is calwebb1
 for iexp in range(nexp):
     # Open some JWST data models
     #e2d_multi_list_1.append(datamodels.open(e2d_output_files_1[iexp]))
+    msa_data[0, iexp] = datamodels.open(msa_output_files_1[iexp])
+    flat_data[0, iexp] = datamodels.open(intflat_output_files_1[iexp])
+    cal_data[0, iexp] = datamodels.open(cal_output_files_1[iexp])
 
-    msa_multi_list_1.append(datamodels.open(msa_output_files_1[iexp]))
-    intflat_multi_list_1.append(datamodels.open(intflat_output_files_1[iexp]))
-    final_multi_list_1.append(datamodels.open(cal_output_files_1[iexp]))
-
-    msa_multi_list_2.append(datamodels.open(msa_output_files_2[iexp]))
-    intflat_multi_list_2.append(datamodels.open(intflat_output_files_2[iexp]))
-    final_multi_list_2.append(datamodels.open(cal_output_files_2[iexp]))
-
-    t_eff[iexp] = final_multi_list_1[iexp].meta.exposure.effective_exposure_time
-    nslits_1[iexp] = len(final_multi_list_1[iexp].slits)
-    nslits_2[iexp] = len(final_multi_list_2[iexp].slits)
-
-
-
+    msa_data[1, iexp] = datamodels.open(msa_output_files_2[iexp])
+    flat_data[1, iexp] = datamodels.open(intflat_output_files_2[iexp])
+    cal_data[1, iexp] = datamodels.open(cal_output_files_2[iexp])
 
 
 show = True
 
 # Use the first exposure to se the slit names
-slit_names_1 = [slit.name for slit in final_multi_list_1[0].slits]
-slit_names_2 = [slit.name for slit in final_multi_list_2[0].slits]
+slit_names_1 = [slit.name for slit in cal_data[0,0].slits]
+slit_names_2 = [slit.name for slit in cal_data[0,1].slits]
 slit_names_uni = np.unique(np.hstack([slit_names_1, slit_names_2]))
 
 # Loop over slits
@@ -351,11 +350,11 @@ gdslits = slit_names_uni[::-1] if islit is None else [islit]
 bad_slits = []
 
 # First index is detector, second index is exposure
-msa_multi_list = [msa_multi_list_1, msa_multi_list_2]
 #msa_multi_list = [msa_multi_list_1, msa_multi_list_2]
-intflat_multi_list = [intflat_multi_list_1, intflat_multi_list_2]
-final_multi_list = [final_multi_list_1, final_multi_list_2]
-slit_names_list = [slit_names_1, slit_names_2]
+#msa_multi_list = [msa_multi_list_1, msa_multi_list_2]
+#intflat_multi_list = [intflat_multi_list_1, intflat_multi_list_2]
+#final_multi_list = [final_multi_list_1, final_multi_list_2]
+#slit_names_list = [slit_names_1, slit_names_2]
 kludge_err = 1.5
 
 # Is this correct?
@@ -368,8 +367,9 @@ if not os.path.isdir(scipath):
     msgs.info('Creating directory for Science output: {0}'.format(scipath))
 
 # TODO Fix this, currently does not work if target names have - or _
-diff_str = 'diff_' if diff_redux else ''
-out_filenames = [diff_str + base for base in basenames]
+out_filenames = basenames
+#diff_str = 'diff_' if bkg_redux else ''
+#out_filenames = [diff_str + base for base in basenames]
 
 
 
@@ -379,37 +379,42 @@ for iexp in range(nexp):
     for ii, islit in enumerate(gdslits):
         # Container for all the Spec2DObj, different spec2dobj and specobjs for each slit
         all_spec2d = spec2dobj.AllSpec2DObj()
-        all_spec2d['meta']['bkg_redux'] = diff_redux
-        all_spec2d['meta']['find_negative'] = diff_redux
+        all_spec2d['meta']['bkg_redux'] = bkg_redux
+        all_spec2d['meta']['find_negative'] = bkg_redux
         # Container for the specobjs
         all_specobjs = specobjs.SpecObjs()
 
         # TODO this step is being executed repeatedly for each new exposure?
         # Generate the calibrations from the reference exposure
+        # TODO This step is only performed with a reference exposure because calwebb has an annoying property that
+        # it does not always extract the same subimage spectral pixels for the different dithers in the dither pattern.
+        # This seems to be a bug in calwebb, since it is unclear why the subimage calibrations should change.
+        # This is problem for 2d coadding, since then the offsets in the detector frame will be not allow one to register
+        # the frames. It is possible to fix this by using the RA/DEC images provided by calwebb to determine the
+        # actual locations on the sky, which would be preferable. However, this does not appear to be working correctly
+        # in calwebb. So for now, we just use the first exposure as the reference exposure for the calibrations.
         CalibrationsNRS1 = NIRSpecSlitCalibrations(
-            det_container_list[0], final_multi_list[0][iexp], intflat_multi_list[0][iexp], islit)
+            det_container_list[0], cal_data[0, iexp_ref], flat_data[0, iexp_ref], islit)
         CalibrationsNRS2 = NIRSpecSlitCalibrations(
-        det_container_list[1], final_multi_list[1][iexp], intflat_multi_list[1][iexp], islit)
+            det_container_list[1], cal_data[1, iexp_ref], flat_data[1, iexp_ref], islit)
 
+        ibkg = bkg_indices[iexp]
         # Create the image mosaic
-        sciImg, slits, waveimg, tilts = jwst_mosaic(
-            msa_multi_list[0][iexp], msa_multi_list[1][iexp], CalibrationsNRS1, CalibrationsNRS2, kludge_err=kludge_err,
-            noise_floor=par['scienceframe']['process']['noise_floor'])
+        sciImg, slits, waveimg, tilts, ndet = jwst_mosaic(msa_data[:, iexp], [CalibrationsNRS1, CalibrationsNRS2], kludge_err=kludge_err,
+            noise_floor=par['scienceframe']['process']['noise_floor'], bkg_image_model_tuple=msa_data[:, ibkg],
+            show=show & (iexp == iexp_ref))
 
-        # If this is a diff_redux, perform background subtraction
-        if diff_redux:
-            ibkg = bkg_indices[iexp]
-            bkgImg, _, _, _ = jwst_mosaic(
-                msa_multi_list[0][ibkg], msa_multi_list[1][ibkg], CalibrationsNRS1, CalibrationsNRS2,
-                kludge_err=kludge_err,
-                noise_floor=par['scienceframe']['process']['noise_floor'])
+        # If this is a bkg_redux, perform background subtraction
+        if bkg_redux:
+            bkgImg, _, _, _, _= jwst_mosaic(msa_data[:, ibkg], [CalibrationsNRS1, CalibrationsNRS2], kludge_err=kludge_err,
+                                          noise_floor=par['scienceframe']['process']['noise_floor'])
             sciImg = sciImg.sub(bkgImg)
 
 
         # Run the reduction
         all_spec2d[sciImg.detector.name], tmp_sobjs = jwst_reduce(sciImg, slits, waveimg, tilts, spectrograph, par,
-                                                     show=show, find_negative=diff_redux, bkg_redux=diff_redux,
-                                                     clear_ginga=True, show_peaks=show, show_skysub_fit=show,
+                                                     show=show, find_negative=bkg_redux, bkg_redux=bkg_redux,
+                                                     clear_ginga=False, show_peaks=show, show_skysub_fit=True,
                                                      basename=basenames[iexp])
         # Hold em
         if tmp_sobjs.nobj > 0:
