@@ -554,10 +554,16 @@ class PypeItQuickLookTest(PypeItTest):
         """
         Check if instrument uses pre-build calibrations.
         """
-        return self.setup.instr == 'keck_nires' \
-                or (self.setup.instr == 'keck_mosfire' and self.setup.name == 'Y_long') \
-                or (self.setup.instr == 'keck_lris_red_mark4' 
-                        and self.setup.name == 'long_600_10000_d680')
+        # NOTE: This is required if any of the QL tests set the
+        # '--parent_calib_dir' to 'USE_ARCHIVE_CALIB_DIR'.  The *only*
+        # instrument that currently does this is Keck/NIRES.  The other QL test
+        # all use the calibrations directory from the main `reduce` run as the
+        # reference calibrations; i.e., the set '--setup_calib_dir' to
+        # 'USE_CALIB_DIR'.  See test_scripts/test_setups.py.
+        return self.setup.instr == 'keck_nires' # \
+#                or (self.setup.instr == 'keck_mosfire' and self.setup.name == 'Y_long') \
+#                or (self.setup.instr == 'keck_lris_red_mark4' 
+#                        and self.setup.name == 'long_600_10000_d680')
 
     def run(self):
         """
