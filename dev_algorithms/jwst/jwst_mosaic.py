@@ -71,12 +71,13 @@ DO_NOT_USE = datamodels.dqflags.pixel['DO_NOT_USE']
 # detname = 'nrs1'
 # detector = 1 if 'nrs1' in detname else 2
 
-disperser = 'J0313_G235M'
+#disperser = 'J0313_G235M'
 #disperser = 'G395M_Maseda'
 #disperser = 'G395M'
 #disperser = 'PRISM_01117'
 # disperser = 'G235M'
 #disperser='PRISM_01133'
+disperser = 'PRISM_02756'
 # detectors = ['nrs1', 'nrs2']
 # disperser='PRISM_01117'
 # disperser='PRISM_FS'
@@ -84,11 +85,11 @@ disperser = 'J0313_G235M'
 detectors = ['nrs1', 'nrs2']
 exp_list = []
 
-bkg_redux = False
-runflag = False
-#mode = 'MSA'
-mode ='FS'
-islit = 'S200A1'
+bkg_redux = True
+runflag = True
+mode = 'MSA'
+#mode ='FS'
+#islit = 'S200A1'
 #islit = 'S200A2'
 #islit = '37'
 
@@ -97,6 +98,25 @@ islit = 'S200A1'
 # If bkg_redux is True, the code will difference image and simply boxcar extract (optimal not implemented yet)
 for detname in detectors:
     # TODO add the kendrew FS SN data to this.
+    if 'PRISM_02756' == disperser:
+        ## Prorgram for Slit Loss Characterization for MSA shutters
+        # PRISM data
+        rawpath_level2 = '/Users/joe/jwst_redux/Raw/NIRSPEC_MSA/NIRSPEC_2756/level_12/02756/'
+        redux_dir = '/Users/joe/jwst_redux/redux/NIRSPEC_MSA/NIRSPEC_PRISM/02756_CLEAR_PRISM/calwebb'
+        output_dir = os.path.join(redux_dir, 'output')
+        pypeit_output_dir = os.path.join(redux_dir, 'pypeit')
+
+        # NIRSPEC 3-point dither
+        # dither center
+        scifile1 = os.path.join(rawpath_level2, 'jw02756001001_03101_00001_' + detname + '_rate.fits')
+        scifile2 = os.path.join(rawpath_level2, 'jw02756001001_03101_00002_' + detname + '_rate.fits')
+        scifile3 = os.path.join(rawpath_level2, 'jw02756001001_03101_00003_' + detname + '_rate.fits')
+
+        # dither offset
+        # scifile  = os.path.join(rawpath_level2, 'jw01133003001_0310x_00003_' + detname + '_rate.fits')
+        # bkgfile1 = os.path.join(rawpath_level2, 'jw01133003001_0310x_00001_' + detname + '_rate.fits')
+        # bkgfile2 = os.path.join(rawpath_level2, 'jw01133003001_0310x_00002_' + detname + '_rate.fits')
+
     if 'PRISM_01133' == disperser:
         ## Prorgram for Slit Loss Characterization for MSA shutters
         # PRISM data
@@ -195,10 +215,11 @@ for detname in detectors:
         scifile3 = os.path.join(rawpath_level2, 'jw02736007001_03101_00004_' + detname + '_rate.fits')
     exp_list.append([scifile1, scifile2, scifile3])
 
-if 'MSA' in mode:
-    offsets_pixels_list = [[0, 5.0, -5.0], [0, 5.0, -5.0]]
-elif 'FS' in mode:
-    offsets_pixels_list = [[0, 8.0, 18.0], [0, 8.0, 18.0]]
+#if 'MSA' in mode:
+#    offsets_pixels_list = [[0, 5.0, -5.0], [0, 5.0, -5.0]]
+#elif 'FS' in mode:
+#    offsets_pixels_list = [[0, 8.0, 18.0], [0, 8.0, 18.0]]
+
 
 scifiles_1 = exp_list[0]
 scifiles_2 = exp_list[1] if len(exp_list) > 1 else []
@@ -319,6 +340,23 @@ ndetectors = 2
 msa_data = np.empty((ndetectors, nexp), dtype=object)
 flat_data = np.empty((ndetectors, nexp), dtype=object)
 cal_data = np.empty((ndetectors, nexp), dtype=object)
+
+dither_offsets = np.zeros((ndetectors,nexp), dtype=float)
+# TODO: This probably isn't correct.  I.e., need to know offsets and slit
+# position angle.
+for iexp in range(nexp):
+    with fits.open(scifiles_1[iexp]) as hdu:
+        dither_offsets[0,iexp] = hdu[0].header['YOFFSET']
+for idet in range(1,ndetectors):
+    dither_offsets[idet] = dither_offsets[0]
+dither_offsets_pixels = dither_offsets.copy()
+for idet in range(ndetectors):
+    dither_offsets_pixels[idet] /= det_container_list[idet].platescale
+# NOTE: Sign convention requires this calculation of the offset
+dither_offsets_pixels = dither_offsets_pixels[:,0,None] - dither_offsets_pixels
+print(dither_offsets_pixels)
+
+
 
 
 # TODO Figure out why this is so damn slow! I suspect it is calwebb1
