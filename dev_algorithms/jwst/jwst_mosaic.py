@@ -85,11 +85,11 @@ disperser = 'J0313_G235M'
 detectors = ['nrs1', 'nrs2']
 exp_list = []
 
-bkg_redux = False
-runflag = False
-#mode = 'MSA'
-mode ='FS'
-islit = 'S200A1'
+bkg_redux = True
+runflag = True
+mode = 'MSA'
+#mode ='FS'
+#islit = 'S200A1'
 #islit = 'S200A2'
 #islit = '37'
 #source = ['2756_10025']
