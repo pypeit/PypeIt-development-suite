@@ -560,8 +560,8 @@ class PypeItQuickLookTest(PypeItTest):
         # all use the calibrations directory from the main `reduce` run as the
         # reference calibrations; i.e., the set '--setup_calib_dir' to
         # 'USE_CALIB_DIR'.  See test_scripts/test_setups.py.
-        return self.setup.instr == 'keck_nires' # \
-#                or (self.setup.instr == 'keck_mosfire' and self.setup.name == 'Y_long') \
+        return self.setup.instr == 'keck_nires' \
+                or (self.setup.instr == 'keck_mosfire' and self.setup.name == 'Y_long') # \
 #                or (self.setup.instr == 'keck_lris_red_mark4' 
 #                        and self.setup.name == 'long_600_10000_d680')
 

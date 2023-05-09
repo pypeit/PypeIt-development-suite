@@ -396,7 +396,7 @@ def test_setup_coadd2d(redux_out):
 
     # Run the setup
     scripts.setup_coadd2d.SetupCoAdd2D.main(
-            scripts.setup_coadd2d.SetupCoAdd2D.parse_args([str(pypeit_file)]))
+            scripts.setup_coadd2d.SetupCoAdd2D.parse_args(['-f', str(pypeit_file)]))
 
     # Check the number of files
     coadd_files = sorted(_redux_out.glob('gemini_gnirs_32_sb_sxd*.coadd2d'))
@@ -417,7 +417,7 @@ def test_setup_coadd2d(redux_out):
     # Run the setup, but change the offsets and weights
     scripts.setup_coadd2d.SetupCoAdd2D.main(
             scripts.setup_coadd2d.SetupCoAdd2D.parse_args(
-                    [str(pypeit_file), '--offsets', 'maskdef_offsets', '--weights', 'uniform']))
+                    ['-f', str(pypeit_file), '--offsets', 'maskdef_offsets', '--weights', 'uniform']))
 
     # Check the number of files
     coadd_files = sorted(_redux_out.glob('gemini_gnirs_32_sb_sxd*.coadd2d'))
@@ -430,7 +430,6 @@ def test_setup_coadd2d(redux_out):
     # Clean-up
     for f in coadd_files:
         f.unlink()
-
 
 # TODO: Include tests for coadd2d, sensfunc
 

@@ -50,6 +50,7 @@ def test_dither_parse():
     # Fake putting one ABBA sequence at a different offset
     last_dither = ps.fitstbl.find_frames('science', index=True)[-4:]
     ps.fitstbl['dithoff'].data[last_dither] = [3.0, -3.0, -3.0, 3.0]
+
     # Regroup
     ql.quicklook_regroup(ps.fitstbl) 
 
@@ -62,5 +63,9 @@ def test_dither_parse():
             'No background frames were taken for the standard.'
     assert all(ps.fitstbl['comb_id'].data[is_std] == 4), \
             'All standards should be combined.'
+
+    # TODO:
+    #   - Test if all dithers are unique?
+    #   - Test for incomplete sequences?
 
 

@@ -17,9 +17,11 @@
 # Setup
 setup read
     Setup A:
-          decker: LONGSLIT-46x1
-        dispname: Y-spectroscopy
-         filter1: Y
+        decker_secondary: LONGSLIT
+                dispname: Y-spectroscopy
+                 filter1: Y
+              slitlength: 46.0
+                 slitwid: 1.0
 setup end
 
 # Read in the data

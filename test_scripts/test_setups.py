@@ -307,20 +307,14 @@ _quick_look = {
              'files': ['b1.fits.gz', 'b10.fits.gz', 'b27.fits.gz', 'b28.fits.gz'],
              '--setup_calib_dir': 'USE_CALIB_DIR',
             },
-#            # (5) Same as test 2, but process two science frames individually
-#            {'test_name': 'nostack',
-#             'files': ['b1.fits.gz', 'b10.fits.gz', 'b27.fits.gz', 'b28.fits.gz'],
-#             '--setup_calib_dir': 'USE_CALIB_DIR',
-#             '--no_stack': None,
-#            },
-            # (6) Same as test 2, but change the boxcar extaction width
+            # (5) Same as test 2, but change the boxcar extaction width
             {'test_name': 'boxcar',
              'files': ['b1.fits.gz', 'b10.fits.gz', 'b27.fits.gz'],
              '--setup_calib_dir': 'USE_CALIB_DIR',
              '--boxcar_radius': 2.,
             },
-            ],
-      },
+        ],
+    },
     'shane_kast_red': {
         '600_7500_d57': [
             {'files': ['r122.fits'],
@@ -357,26 +351,24 @@ _quick_look = {
               '--setup_calib_dir': 'USE_CALIB_DIR',
             }
         ],
-#        'Y_long': # Testing on pypeit_ql_jfh_multislit
-#            [{'files': ['m191120_0043.fits', 'm191120_0044.fits', 'm191120_0045.fits', 'm191120_0046.fits'],
-#              '--spec_samp_fact': 2.0,
-#              '--spat_samp_fact': 2.0,
-#              '--flux': None,
-#              '--bkg_redux': None}],
         'Y_long': [
-            {'files': ['m191120_0043.fits', 'm191120_0044.fits', 'm191120_0045.fits', 'm191120_0046.fits'],
-              '--calib_group': 1,
-              '--coadd': None, '--spec_samp_fact': 2.0, '--spat_samp_fact': 2.0,
-              '--setup_calib_dir': 'USE_CALIB_DIR',
-            }
+            # (1) Run without using archived calibrations
+            # NOTE: This takes ~8min, so not really quick...
+#            {'test_name': 'raw',
+#             'files': ['m191119_0027.fits', 'm191119_0037.fits', 'm191120_0043.fits',
+#                       'm191120_0044.fits', 'm191120_0045.fits', 'm191120_0046.fits'],
+#             '--coadd': None, '--spec_samp_fact': 2.0, '--spat_samp_fact': 2.0,
+#            },
+            # (2) Run with archived calibrations
+            # NOTE: Takes ~2min
+            {'test_name': 'arc',
+             'files': ['m191120_0043.fits', 'm191120_0044.fits',
+                       'm191120_0045.fits', 'm191120_0046.fits'],
+             '--parent_calib_dir': 'USE_ARCHIVE_CALIB_DIR',
+             '--coadd': None, '--spec_samp_fact': 2.0, '--spat_samp_fact': 2.0,
+            },
         ]
     },
-#    'keck_lris_red_mark4': {
-#        'long_600_10000_d680': # Testing on pypeit_ql_jfh_multislit
-#            [{'files': ['r220127_00123.fits', 'r220127_00124.fits'],
-#              '--spec_samp_fact': 2.0, '--spat_samp_fact': 2.0,
-#              '--flux': None}],
-#        },
     'keck_lris_red_mark4': {
         'long_600_10000_d680': [
             {'files': ['r220127_00123.fits', 'r220127_00124.fits'],

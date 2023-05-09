@@ -103,48 +103,41 @@ def main():
         source_files += [list(keck_nires_path.parent.glob('*.pypeit'))[0]]
         dest_files += [nires_dest_dir.parent / 'keck_nires_A.pypeit']
 
+    if pargs.instrument == 'all' or pargs.instrument == 'keck_mosfire':
+
+        if pargs.setup == 'all' or pargs.setup == "Y_long":
+            spec = spec_util.load_spectrograph("keck_mosfire")
+
+            mosfire_dest_dir = ql_calib / 'keck_mosfire_A' / 'Calibrations'
+            mosfire_dest_dir.mkdir(parents=True, exist_ok=True)
+
+            keck_mosfire_path = redux_dir / 'keck_mosfire' / pargs.setup / 'Calibrations'
+
+            files = ['Arc_A_2_DET01.fits',
+                     'Flat_A_all_DET01.fits',
+                     'Slits_A_all_DET01.fits.gz',
+                     'Tilts_A_2_DET01.fits', 
+                     'WaveCalib_A_2_DET01.fits']
+            found_files = [keck_mosfire_path / f for f in files 
+                                if Path(keck_mosfire_path / f).exists()]
+
+            if len(found_files) != len(files) or pargs.force_build:
+                print('Could not find all MOSFIRE calibrations, attempting to generate them.')
+                run_devsuite('keck_mosfire', 'Y_long', redux_dir)
+
+                found_files = [keck_mosfire_path / f for f in files 
+                                if Path(keck_mosfire_path / f).exists()]
+                if len(found_files) != len(files):
+                    raise ValueError('Could not generate MOSFIRE calibrations.')
+
+            source_files += found_files
+            dest_files += [mosfire_dest_dir / f.name for f in found_files]
+            source_files += [list(keck_mosfire_path.parent.glob('*.pypeit'))[0]]
+            dest_files += [mosfire_dest_dir.parent / 'keck_mosfire_A.pypeit']
+
 # TODO: Removing these for now, after deprecation of ql_multislit.py.  May
 # recover much of this code, if we add a parent archive directory for these
 # instruments.
-#    if pargs.instrument == 'all' or pargs.instrument == 'keck_mosfire':
-#
-#        if pargs.setup == 'all' or pargs.setup == "Y_long":
-#            spec = spec_util.load_spectrograph("keck_mosfire")
-#            dev_suite_output = os.path.join(redux_dir, 'keck_mosfire', 'Y_long')
-#            files = ['Calibrations/Slits_A_15_DET01.fits.gz',
-#                     'Calibrations/Tilts_A_4_DET01.fits', 
-#                     'Calibrations/WaveCalib_A_4_DET01.fits',
-#                     'Science/spec1d_m191118_0064-GD71_MOSFIRE_20191118T104704.507.fits',
-#                     'sens_m191118_0064-GD71_MOSFIRE_20191118T104704.507.fits' ]
-#
-#            source_filters = [os.path.join(dev_suite_output, x) for x in files]
-#            
-#            found_files = [] if pargs.force_build else find_source_files(source_filters)
-#
-#            if len(found_files) == 0:
-#                print("Could not find all MOSFIRE calibrations, attempting to generate them.")
-#                run_devsuite("keck_mosfire", 'Y_long', redux_dir)
-#
-#                found_files = find_source_files(source_filters)
-#                if len(found_files) == 0:
-#                    print("Failed to generate MOSFIRE calibrations.")
-#                    # TODO: Why not use 'return'?
-#                    sys.exit(1)
-#
-#            source_files += found_files
-#
-#            # Create the destination directory, using a spec2d to get the QL
-#            # calib_dir as it will have the header information from the RAW
-#            # science file
-#            spec2d = utils.find_single_file(os.path.join(dev_suite_output, "Science", "spec2d*"))
-#            # TODO: Beware!  get_ql_calib_dir is not defined for all
-#            # spectrographs
-#            dest_dir = os.path.join(ql_calib, spec.get_ql_calib_dir(spec2d))
-#            os.makedirs(dest_dir, exist_ok=True)
-#
-#            for file in found_files:
-#                dest_files.append(os.path.join(dest_dir, os.path.basename(file)))
-#    
 #    if pargs.instrument == 'all' or pargs.instrument == 'keck_lris_red_mark4':
 #        if pargs.setup == 'all' or pargs.setup == "long_600_10000_d680":
 #
