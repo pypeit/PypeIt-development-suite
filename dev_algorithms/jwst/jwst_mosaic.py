@@ -8,8 +8,8 @@ from astropy.stats import sigma_clipped_stats
 from IPython import embed
 
 # set environment variables
-os.environ['CRDS_PATH'] = '/Users/joe/crds_cache/jwst_pub'
-os.environ['CRDS_SERVER_URL'] = 'https://jwst-crds-pub.stsci.edu'
+os.environ['CRDS_PATH'] = '/Users/suksientie/crds_cache/' #'/Users/joe/crds_cache/jwst_pub'
+os.environ['CRDS_SERVER_URL'] = 'https://jwst-crds.stsci.edu' #'https://jwst-crds-pub.stsci.edu'
 from matplotlib import pyplot as plt
 from astropy.io import fits
 from gwcs import wcstools
@@ -71,13 +71,13 @@ DO_NOT_USE = datamodels.dqflags.pixel['DO_NOT_USE']
 # detname = 'nrs1'
 # detector = 1 if 'nrs1' in detname else 2
 
-#disperser = 'J0313_G235M'
+disperser = 'J0313_G235M'
 #disperser = 'G395M_Maseda'
 #disperser = 'G395M'
 #disperser = 'PRISM_01117'
 # disperser = 'G235M'
 #disperser='PRISM_01133'
-disperser = 'PRISM_02756'
+#disperser = 'PRISM_02756'
 # detectors = ['nrs1', 'nrs2']
 # disperser='PRISM_01117'
 # disperser='PRISM_FS'
@@ -85,12 +85,12 @@ disperser = 'PRISM_02756'
 detectors = ['nrs1', 'nrs2']
 exp_list = []
 
-bkg_redux = True
-runflag = True
-mode = 'MSA'
-#mode ='FS'
-#islit = 'S200A1'
-#islit = 'S200A2'
+bkg_redux = False #True
+runflag = False
+#mode = 'MSA'
+mode ='FS'
+islit = 'S200A1'
+islit = 'S200A2'
 #islit = '37'
 
 
@@ -150,9 +150,9 @@ for detname in detectors:
     elif 'J0313_G235M' == disperser:
         ## Prorgram for Slit Loss Characterization for MSA shutters
         # PRISM data
-        rawpath_level2 = '/Users/joe/jwst_redux/Raw/NIRSPEC_FS/1764/level_12/01764/'
-        output_dir = '/Users/joe/jwst_redux/redux/NIRSPEC_FS/J0313_G235M/calwebb/output'
-        pypeit_output_dir = '/Users/joe/jwst_redux/redux/NIRSPEC_FS/J0313_G235M/calwebb/pypeit'
+        rawpath_level2 = '/Users/suksientie/Research/jwst_data_redux/01764/' #'/Users/joe/jwst_redux/Raw/NIRSPEC_FS/1764/level_12/01764/'
+        output_dir = '/Users/suksientie/Research/jwst_data_redux/01764/output/' #'/Users/joe/jwst_redux/redux/NIRSPEC_FS/J0313_G235M/calwebb/output'
+        pypeit_output_dir = '/Users/suksientie/Research/jwst_data_redux/01764/pypeit_output/' #'/Users/joe/jwst_redux/redux/NIRSPEC_FS/J0313_G235M/calwebb/pypeit'
 
         # NIRSPEC 3-point dither
         # dither center
@@ -372,7 +372,7 @@ for iexp in range(nexp):
     cal_data[1, iexp] = datamodels.open(cal_output_files_2[iexp])
 
 
-show = True
+show = False #True
 
 # Use the first exposure to se the slit names
 slit_names_1 = [slit.name for slit in cal_data[0,0].slits]
