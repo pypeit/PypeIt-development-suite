@@ -71,13 +71,13 @@ DO_NOT_USE = datamodels.dqflags.pixel['DO_NOT_USE']
 # detname = 'nrs1'
 # detector = 1 if 'nrs1' in detname else 2
 
-#disperser = 'J0313_G235M'
+disperser = 'J0313_G235M'
 #disperser = 'G395M_Maseda'
 #disperser = 'G395M'
 #disperser = 'PRISM_01117'
 # disperser = 'G235M'
 #disperser='PRISM_01133'
-disperser = 'PRISM_02756'
+#disperser = 'PRISM_02756'
 # detectors = ['nrs1', 'nrs2']
 # disperser='PRISM_01117'
 # disperser='PRISM_FS'
@@ -85,13 +85,14 @@ disperser = 'PRISM_02756'
 detectors = ['nrs1', 'nrs2']
 exp_list = []
 
-bkg_redux = True
-runflag = True
-mode = 'MSA'
-#mode ='FS'
-#islit = 'S200A1'
+bkg_redux = False
+runflag = False
+#mode = 'MSA'
+mode ='FS'
+islit = 'S200A1'
 #islit = 'S200A2'
 #islit = '37'
+#source = ['2756_10025']
 
 
 # If bkg_redux is False, the code will model the sky and the object profile and perform optimal extraction.
@@ -259,13 +260,11 @@ if bkg_redux:
     par['reduce']['extraction']['skip_optimal'] = True # Skip local_skysubtraction and profile fitting
 
 
-
-
 # TODO Should we flat field. The flat field and flat field error are wonky and probably nonsense
 param_dict = {
     'extract_2d': {'save_results': True},
     'bkg_subtract': {'skip': True},
-    'imprint_subtract': {'save_results': True},
+    'imprint_subtract': {'save_results': True}, # TODO Check up on whether imprint subtraction is being done by us???
     'master_background_mos': {'skip': True},
     'srctype': {'source_type': 'EXTENDED'},
     #    'flat_field': {'skip': True},
@@ -358,7 +357,6 @@ print(dither_offsets_pixels)
 
 
 
-
 # TODO Figure out why this is so damn slow! I suspect it is calwebb1
 for iexp in range(nexp):
     # Open some JWST data models
@@ -379,13 +377,21 @@ slit_names_1 = [slit.name for slit in cal_data[0,0].slits]
 slit_names_2 = [slit.name for slit in cal_data[0,1].slits]
 slit_names_uni = np.unique(np.hstack([slit_names_1, slit_names_2]))
 
+#source_names_1 = [slit.source_name for slit in cal_data[0,0].slits]
+#source_names_2 = [slit.source_name for slit in cal_data[0,1].slits]
+#source_names_uni = np.unique(np.hstack([source_names_1, source_names_2]))
+
 # Loop over slits
 #islit = '10'
 #islit = 'S200A1'
 #islit = '83'
 #islit = None
+#islit = '63'
 gdslits = slit_names_uni[::-1] if islit is None else [islit]
-bad_slits = []
+#bad_slits = []
+#gdsources = source_names_uni[::-1] if source is None else [source]
+
+
 
 # First index is detector, second index is exposure
 #msa_multi_list = [msa_multi_list_1, msa_multi_list_2]
