@@ -95,7 +95,7 @@ def get_one_calib_obj(calfile, flatfile):
         # all_spec2d = spec2dobj.AllSpec2DObj()
         # all_spec2d['meta']['bkg_redux'] = bkg_redux
         # all_spec2d['meta']['find_negative'] = bkg_redux
-        # Container for the specobjs
+        # Container for the specobj
         # all_specobjs = specobjs.SpecObjs()
 
         # TODO this step is being executed repeatedly for each new exposure?
@@ -112,7 +112,7 @@ def get_one_calib_obj(calfile, flatfile):
 
         nrs_calib.append(CalibrationsNRS_i)
 
-    return nrs_calib
+    return nrs_calib, gdslits
 
 def get_calib_obj(nrs1_calfile, nrs2_calfile, nrs1_flatfile, nrs2_flatfile):
     spectrograph = load_spectrograph('jwst_nirspec')

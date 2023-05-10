@@ -7,8 +7,9 @@ import scipy
 import numpy as np
 from scipy import ndimage
 from scipy.stats import norm
-
 import matplotlib.pyplot as plt
+from pypeit import msgs
+import pypeit.utils as utils
 
 import multiprocessing
 
@@ -261,7 +262,7 @@ def get_objmask_bkg(data, bpm=None, error=None, brightstar_nsigma=2, npixels=4, 
 
         # Do the detection using Image Segmentation
         # The return is a Segmentation image
-        # msgs.info('Making bright star mask with iter={:}'.format(niter+1))
+        msgs.info('Making bright star mask with iter={:}'.format(niter+1))
         segm = detect_sources(convolved_data, threshold, npixels=npixels)
 
         # grow mask for bright stars
@@ -327,7 +328,7 @@ def get_rowamp_model(data_masked, namp, minimum_pixels=10, rej_nsigma=3, maxiter
             ampEnds = [512, 1024, 1536, 2048]
             ampWidth = 512
         else:
-            #msgs.error('Only NIRCam is supported at this moment.')
+            msgs.error('Only NIRCam is supported at this moment.')
             print('Only NIRCam is supported at this moment.')
 
         ## loop through amps
@@ -380,7 +381,7 @@ def get_rowamp_model(data_masked, namp, minimum_pixels=10, rej_nsigma=3, maxiter
         ## put the results in the model image
         fastread_model[:, :] = tiled_med
     else:
-        #msgs.error('{:} amplifiers is not implemented yet.'.format(namp))
+        msgs.error('{:} amplifiers is not implemented yet.'.format(namp))
         print('{:} amplifiers is not implemented yet.'.format(namp))
 
     ## put the results in the model image
