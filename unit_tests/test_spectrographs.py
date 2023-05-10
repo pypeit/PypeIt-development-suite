@@ -5,9 +5,6 @@ import os
 
 from IPython import embed
 
-import pytest
-
-from pypeit.pypmsgs import PypeItError
 from pypeit import spectrographs
 
 

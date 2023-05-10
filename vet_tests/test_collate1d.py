@@ -2,6 +2,8 @@ import pytest
 import os.path
 import glob
 
+from IPython import embed
+
 import numpy as np
 from astropy.table import Table
 
