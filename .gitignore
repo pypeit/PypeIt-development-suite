@@ -13,3 +13,5 @@ Telluric
 DEIMOS_QL_TST
 QL_MASTERS/
 .idea/
+nautilus/yaml_files/*.yaml
+dev_algorithms/jwst/ar_2023/*.fits

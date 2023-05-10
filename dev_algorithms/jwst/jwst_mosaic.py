@@ -8,8 +8,8 @@ from astropy.stats import sigma_clipped_stats
 from IPython import embed
 
 # set environment variables
-os.environ['CRDS_PATH'] = '/Users/suksientie/crds_cache/' #'/Users/joe/crds_cache/jwst_pub'
-os.environ['CRDS_SERVER_URL'] = 'https://jwst-crds.stsci.edu' #'https://jwst-crds-pub.stsci.edu'
+os.environ['CRDS_PATH'] = '/Users/joe/crds_cache/jwst_pub'
+os.environ['CRDS_SERVER_URL'] = 'https://jwst-crds-pub.stsci.edu'
 from matplotlib import pyplot as plt
 from astropy.io import fits
 from gwcs import wcstools
@@ -71,13 +71,13 @@ DO_NOT_USE = datamodels.dqflags.pixel['DO_NOT_USE']
 # detname = 'nrs1'
 # detector = 1 if 'nrs1' in detname else 2
 
-disperser = 'J0313_G235M'
+#disperser = 'J0313_G235M'
 #disperser = 'G395M_Maseda'
 #disperser = 'G395M'
 #disperser = 'PRISM_01117'
 # disperser = 'G235M'
 #disperser='PRISM_01133'
-#disperser = 'PRISM_02756'
+disperser = 'PRISM_02756'
 # detectors = ['nrs1', 'nrs2']
 # disperser='PRISM_01117'
 # disperser='PRISM_FS'
@@ -85,13 +85,14 @@ disperser = 'J0313_G235M'
 detectors = ['nrs1', 'nrs2']
 exp_list = []
 
-bkg_redux = False #True
+bkg_redux = True
 runflag = False
-#mode = 'MSA'
-mode ='FS'
+mode = 'MSA'
+#mode ='FS'
 islit = 'S200A1'
-islit = 'S200A2'
-#islit = '37'
+#islit = 'S200A2'
+islit = '37'
+#source = ['2756_10025']
 
 
 # If bkg_redux is False, the code will model the sky and the object profile and perform optimal extraction.
@@ -150,9 +151,9 @@ for detname in detectors:
     elif 'J0313_G235M' == disperser:
         ## Prorgram for Slit Loss Characterization for MSA shutters
         # PRISM data
-        rawpath_level2 = '/Users/suksientie/Research/jwst_data_redux/01764/' #'/Users/joe/jwst_redux/Raw/NIRSPEC_FS/1764/level_12/01764/'
-        output_dir = '/Users/suksientie/Research/jwst_data_redux/01764/output/' #'/Users/joe/jwst_redux/redux/NIRSPEC_FS/J0313_G235M/calwebb/output'
-        pypeit_output_dir = '/Users/suksientie/Research/jwst_data_redux/01764/pypeit_output/' #'/Users/joe/jwst_redux/redux/NIRSPEC_FS/J0313_G235M/calwebb/pypeit'
+        rawpath_level2 = '/Users/joe/jwst_redux/Raw/NIRSPEC_FS/1764/level_12/01764/'
+        output_dir = '/Users/joe/jwst_redux/redux/NIRSPEC_FS/J0313_G235M/calwebb/output'
+        pypeit_output_dir = '/Users/joe/jwst_redux/redux/NIRSPEC_FS/J0313_G235M/calwebb/pypeit'
 
         # NIRSPEC 3-point dither
         # dither center
@@ -259,13 +260,11 @@ if bkg_redux:
     par['reduce']['extraction']['skip_optimal'] = True # Skip local_skysubtraction and profile fitting
 
 
-
-
 # TODO Should we flat field. The flat field and flat field error are wonky and probably nonsense
 param_dict = {
     'extract_2d': {'save_results': True},
     'bkg_subtract': {'skip': True},
-    'imprint_subtract': {'save_results': True},
+    'imprint_subtract': {'save_results': True}, # TODO Check up on whether imprint subtraction is being done by us???
     'master_background_mos': {'skip': True},
     'srctype': {'source_type': 'EXTENDED'},
     #    'flat_field': {'skip': True},
@@ -358,7 +357,6 @@ print(dither_offsets_pixels)
 
 
 
-
 # TODO Figure out why this is so damn slow! I suspect it is calwebb1
 for iexp in range(nexp):
     # Open some JWST data models
@@ -372,20 +370,28 @@ for iexp in range(nexp):
     cal_data[1, iexp] = datamodels.open(cal_output_files_2[iexp])
 
 
-show = False #True
+show = True
 
 # Use the first exposure to se the slit names
 slit_names_1 = [slit.name for slit in cal_data[0,0].slits]
 slit_names_2 = [slit.name for slit in cal_data[0,1].slits]
 slit_names_uni = np.unique(np.hstack([slit_names_1, slit_names_2]))
 
+#source_names_1 = [slit.source_name for slit in cal_data[0,0].slits]
+#source_names_2 = [slit.source_name for slit in cal_data[0,1].slits]
+#source_names_uni = np.unique(np.hstack([source_names_1, source_names_2]))
+
 # Loop over slits
 #islit = '10'
 #islit = 'S200A1'
 #islit = '83'
 #islit = None
+#islit = '63'
 gdslits = slit_names_uni[::-1] if islit is None else [islit]
-bad_slits = []
+#bad_slits = []
+#gdsources = source_names_uni[::-1] if source is None else [source]
+
+
 
 # First index is detector, second index is exposure
 #msa_multi_list = [msa_multi_list_1, msa_multi_list_2]

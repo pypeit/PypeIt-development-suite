@@ -525,16 +525,17 @@ def jwst_mosaic(image_model_tuple, Calibrations_tuple, kludge_err=1.0,
 
 
     # Instantiate
-    sciImg = PypeItImage(image=sciimg_tot, ivar=sciivar_tot, base_var=base_var_tot,
-                         img_scale=count_scale_tot,
-                         rn2img=rn2_img_tot,
+    sciImg = PypeItImage(image=zero_not_finite(sciimg_tot), ivar=zero_not_finite(sciivar_tot),
+                         base_var=zero_not_finite(base_var_tot),
+                         img_scale=zero_not_finite(count_scale_tot),
+                         rn2img=zero_not_finite(rn2_img_tot),
                          detector=det_or_mosaic, bpm=np.logical_not(gpm_tot))
     slits = slittrace.SlitTraceSet(slit_left_tot, slit_righ_tot, 'MultiSlit', detname=det_or_mosaic.name,
                                    nspat=int(shape[1]),PYP_SPEC='jwst_nirspec')
 
 
 
-    return sciImg, slits, waveimg_tot, tilts_tot, ndet
+    return sciImg, slits, zero_not_finite(waveimg_tot), zero_not_finite(tilts_tot), ndet
 
 
 def jwst_reduce(sciImg, slits, waveimg, tilts, spectrograph, par, show=False, find_negative=False, bkg_redux=False,
