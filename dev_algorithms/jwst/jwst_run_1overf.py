@@ -51,9 +51,9 @@ def get_objmask(ratefile, calfile, flatfile, slitname=None, show=False):
 
     return objmask
 
-def run_unfold(ratefile, bpm=None, namp=4, skip_col=False, show=False):
+def run_unfold(ratefile, bpm=None, namp=4, evenOdd=True, skip_col=False, show=False):
     data = fits.open(ratefile)['SCI'].data.T
-    outimg, modelimg = unfold.fnoise_sub(data, bpm=bpm, namp=namp, sub_bkg=False, mask_brightstar=False, skip_col=skip_col)
+    outimg, modelimg = unfold.fnoise_sub(data, bpm=bpm, namp=namp, sub_bkg=False, mask_brightstar=False, evenOdd=evenOdd, skip_col=skip_col, show=show)
 
     if show:
         display.connect_to_ginga(raise_err=True, allow_new=True)
