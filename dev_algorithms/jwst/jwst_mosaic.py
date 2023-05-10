@@ -71,13 +71,13 @@ DO_NOT_USE = datamodels.dqflags.pixel['DO_NOT_USE']
 # detname = 'nrs1'
 # detector = 1 if 'nrs1' in detname else 2
 
-disperser = 'J0313_G235M'
+#disperser = 'J0313_G235M'
 #disperser = 'G395M_Maseda'
 #disperser = 'G395M'
 #disperser = 'PRISM_01117'
 # disperser = 'G235M'
 #disperser='PRISM_01133'
-#disperser = 'PRISM_02756'
+disperser = 'PRISM_02756'
 # detectors = ['nrs1', 'nrs2']
 # disperser='PRISM_01117'
 # disperser='PRISM_FS'
@@ -86,12 +86,12 @@ detectors = ['nrs1', 'nrs2']
 exp_list = []
 
 bkg_redux = True
-runflag = True
+runflag = False
 mode = 'MSA'
 #mode ='FS'
-#islit = 'S200A1'
+islit = 'S200A1'
 #islit = 'S200A2'
-#islit = '37'
+islit = '37'
 #source = ['2756_10025']
 
 
