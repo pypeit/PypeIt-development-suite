@@ -63,6 +63,57 @@ from pypeit import coadd2d
 from pypeit.images.pypeitimage import PypeItImage
 from pypeit.scripts.show_2dspec import show_trace
 
+def get_one_calib_obj(calfile, flatfile):
+
+    spectrograph = load_spectrograph('jwst_nirspec')
+    par = spectrograph.default_pypeit_par()
+
+    if 'nrs1' in os.path.basename(calfile):
+        det_container_list = [spectrograph.get_detector_par(1)]
+    elif 'nrs2' in os.path.basename(calfile):
+        det_container_list = [spectrograph.get_detector_par(2)]
+
+    ndetectors = 1
+    nexp = 1
+    cal_data = np.empty((ndetectors, nexp), dtype=object)
+    flat_data = np.empty((ndetectors, nexp), dtype=object)
+
+    cal_data[0, 0] = datamodels.open(calfile)
+    flat_data[0, 0] = datamodels.open(flatfile)
+
+    slit_names_1 = [slit.name for slit in cal_data[0, 0].slits]
+    slit_names_uni = slit_names_1 #np.unique(np.hstack([slit_names_1, slit_names_2]))
+
+    islit = None
+    gdslits = slit_names_uni[::-1] if islit is None else [islit]
+    iexp_ref = 0
+
+    nrs_calib = []
+
+    for ii, islit in enumerate(gdslits):
+        # Container for all the Spec2DObj, different spec2dobj and specobjs for each slit
+        # all_spec2d = spec2dobj.AllSpec2DObj()
+        # all_spec2d['meta']['bkg_redux'] = bkg_redux
+        # all_spec2d['meta']['find_negative'] = bkg_redux
+        # Container for the specobjs
+        # all_specobjs = specobjs.SpecObjs()
+
+        # TODO this step is being executed repeatedly for each new exposure?
+        # Generate the calibrations from the reference exposure
+        # TODO This step is only performed with a reference exposure because calwebb has an annoying property that
+        # it does not always extract the same subimage spectral pixels for the different dithers in the dither pattern.
+        # This seems to be a bug in calwebb, since it is unclear why the subimage calibrations should change.
+        # This is problem for 2d coadding, since then the offsets in the detector frame will be not allow one to register
+        # the frames. It is possible to fix this by using the RA/DEC images provided by calwebb to determine the
+        # actual locations on the sky, which would be preferable. However, this does not appear to be working correctly
+        # in calwebb. So for now, we just use the first exposure as the reference exposure for the calibrations.
+        CalibrationsNRS_i = NIRSpecSlitCalibrations(
+            det_container_list[0], cal_data[0, iexp_ref], flat_data[0, iexp_ref], islit)
+
+        nrs_calib.append(CalibrationsNRS_i)
+
+    return nrs_calib
+
 def get_calib_obj(nrs1_calfile, nrs2_calfile, nrs1_flatfile, nrs2_flatfile):
     spectrograph = load_spectrograph('jwst_nirspec')
     par = spectrograph.default_pypeit_par()
@@ -114,3 +165,5 @@ def get_calib_obj(nrs1_calfile, nrs2_calfile, nrs1_flatfile, nrs2_flatfile):
         nrs2_calib.append(CalibrationsNRS2)
 
     return nrs1_calib, nrs1_calib
+
+
