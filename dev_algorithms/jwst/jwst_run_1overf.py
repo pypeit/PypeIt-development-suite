@@ -57,7 +57,7 @@ def run_unfold(ratefile, bpm=None, namp=4, evenOdd=True, skip_col=False, show=Fa
 
     if show:
         display.connect_to_ginga(raise_err=True, allow_new=True)
-        display.show_image(data, chname='data')
+        display.show_image(data, chname='raw data')
         display.show_image(outimg, chname='outimg')
         display.show_image(modelimg, chname='modelimg')
 

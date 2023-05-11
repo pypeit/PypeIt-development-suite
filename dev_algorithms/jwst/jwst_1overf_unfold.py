@@ -186,7 +186,7 @@ def fnoise_sub(data, bpm=None, error=None, namp=4, minimum_pixels=10, rej_nsigma
     # I set namp = 1 for the column stripe the readout is along row but not column.
     if not skip_col:
         modelimg_col = get_rowamp_model(data_masked.T - modelimg.T, 1, minimum_pixels=minimum_pixels,
-                                        rej_nsigma=rej_nsigma, maxiters=maxiters, evenOdd=evenOdd, inst=inst, show=show)
+                                        rej_nsigma=rej_nsigma, maxiters=maxiters, evenOdd=evenOdd, inst=inst, show=show, skipcol_show=show)
         outimg -= modelimg_col.T
         modelimg += modelimg_col.T
 
@@ -311,7 +311,7 @@ def get_objmask_bkg(data, bpm=None, error=None, brightstar_nsigma=2, npixels=4, 
     return objmask, background_array, this_error
 
 
-def get_rowamp_model(data_masked, namp, minimum_pixels=10, rej_nsigma=3, maxiters=5, evenOdd=True, inst='NIRCam', show=False):
+def get_rowamp_model(data_masked, namp, minimum_pixels=10, rej_nsigma=3, maxiters=5, evenOdd=True, inst='NIRCam', show=False, skipcol_show=False):
     """
     Get a 1/f noise model
     """
@@ -321,6 +321,10 @@ def get_rowamp_model(data_masked, namp, minimum_pixels=10, rej_nsigma=3, maxiter
 
     if show:
         display.connect_to_ginga(raise_err=True, allow_new=True)
+        if skipcol_show:
+            suffix = '(col)'
+        else:
+            suffix = ''
 
     if namp == 4:
         ## mask to keep track of which rows have enough pixels to use
@@ -344,11 +348,11 @@ def get_rowamp_model(data_masked, namp, minimum_pixels=10, rej_nsigma=3, maxiter
                 slowread_model[:, ampStarts[amp]:ampEnds[amp]] = even_odd_model
 
                 if show:
-                    display.show_image(this_amp_tmp, chname='Amp %d' % amp)
-                    display.show_image(even_odd_model, chname='model %d' % amp)
+                    display.show_image(this_amp_tmp, chname='data-amp%d%s' % (amp, suffix))
+                    display.show_image(even_odd_model, chname='model %d%s' % (amp, suffix))
 
                     plt.figure()
-                    plt.title('Amp %d' % amp)
+                    plt.title('Amp %d%s' % (amp, suffix))
                     plt.plot(np.nanmedian(this_amp_tmp.data, axis=0), label='amp data')
                     plt.plot(np.nanmedian(even_odd_model, axis=0), label='model', alpha=0.5)
                     plt.ylabel('median over axis=0')
@@ -361,12 +365,9 @@ def get_rowamp_model(data_masked, namp, minimum_pixels=10, rej_nsigma=3, maxiter
                 thisAmp = this_amp_tmp - slowread_model[:, ampStarts[amp]:ampEnds[amp]]
 
                 if show:
-                    #import pdb
-                    #pdb.set_trace()
-                    display.show_image(this_amp_tmp, chname='Amp %d' % amp)
-                    #display.show_image(this_median, chname='model %d' % amp)
+                    display.show_image(this_amp_tmp, chname='data-amp%d%s' % (amp, suffix))
                     plt.figure()
-                    plt.title('Amp %d' % amp)
+                    plt.title('Amp %d%s' % (amp, suffix))
                     plt.plot(np.nanmedian(this_amp_tmp.data, axis=0))
                     plt.axhline(np.nanmedian(this_median), color='red')
 
@@ -378,6 +379,8 @@ def get_rowamp_model(data_masked, namp, minimum_pixels=10, rej_nsigma=3, maxiter
             fastread_model[:, ampStarts[amp]:ampEnds[amp]] = np.tile(medVals, [ampWidth, 1]).T
             ## check if the mask leaves too few pixels in some of the rows in this amplifier
             amp_badrow_mask[bad_rows, ampStarts[amp]:ampEnds[amp]] = True
+            if show:
+                display.show_image(np.tile(medVals, [ampWidth, 1]).T, chname='fastread model %d%s' % (amp, suffix))
 
         ## Let's replace the bad rows with that row in other amplifiers
         replace_rows = (np.sum(amp_badrow_mask, axis=1) > 0) & (
@@ -406,9 +409,16 @@ def get_rowamp_model(data_masked, namp, minimum_pixels=10, rej_nsigma=3, maxiter
         tiled_med = np.tile(medVals, [data_masked.data.shape[1], 1]).T
         ## put the results in the model image
         fastread_model[:, :] = tiled_med
+
         if show:
-            display.show_image(slowread_model, chname='slowread model')
-            display.show_image(fastread_model, chname='fastread model')
+            if show:
+                display.show_image(data_masked, chname='data%s' % (suffix))
+
+            if np.ndim(slowread_model) == 2:
+                display.show_image(slowread_model, chname='slowread model%s' % suffix)
+            else:
+                msgs.info('slowread model is a float with value {:}'.format(slowread_model))
+            display.show_image(fastread_model, chname='fastread model%s' % suffix)
     else:
         msgs.error('{:} amplifiers is not implemented yet.'.format(namp))
         print('{:} amplifiers is not implemented yet.'.format(namp))
