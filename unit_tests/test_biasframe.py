@@ -61,7 +61,7 @@ def test_io(kast_blue_bias_files):
     bias_img.to_file(overwrite=True)
     assert ofile.exists(), 'Error writing Bias file'
 
-    # Load master frame
+    # Load processed calibration frame
     _bias_img = buildimage.BiasImage.from_file(str(ofile))
     assert np.array_equal(bias_img.image, _bias_img.image), 'Image changed'
     assert np.array_equal(bias_img.ivar, _bias_img.ivar), 'Inverse-variance changed'
