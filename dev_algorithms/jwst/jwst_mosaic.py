@@ -89,11 +89,12 @@ bkg_redux = True
 runflag = False
 mode = 'MSA'
 #mode ='FS'
-islit = 'S200A1'
+#slit = 'S200A1'
 #islit = 'S200A2'
-islit = '37'
-#source = ['2756_10025']
-
+#islit = '37'
+#reduce_sources = ['2756_10025']
+reduce_sources = ['2756_202']
+reduce_slits = None
 
 # If bkg_redux is False, the code will model the sky and the object profile and perform optimal extraction.
 # If bkg_redux is True, the code will difference image and simply boxcar extract (optimal not implemented yet)
@@ -158,11 +159,11 @@ for detname in detectors:
         # NIRSPEC 3-point dither
         # dither center
 
-        if islit == 'S200A1':
+        if reduce_slits[0] == 'S200A1':
             scifile1 = os.path.join(rawpath_level2, 'jw01764014001_03102_00001_' + detname + '_rate.fits')
             scifile2 = os.path.join(rawpath_level2, 'jw01764014001_03102_00002_' + detname + '_rate.fits')
             scifile3 = os.path.join(rawpath_level2, 'jw01764014001_03102_00003_' + detname + '_rate.fits')
-        elif islit == 'S200A2':
+        elif reduce_slits[0] == 'S200A2':
             scifile1 = os.path.join(rawpath_level2, 'jw01764014001_03104_00001_' + detname + '_rate.fits')
             scifile2 = os.path.join(rawpath_level2, 'jw01764014001_03104_00002_' + detname + '_rate.fits')
             scifile3 = os.path.join(rawpath_level2, 'jw01764014001_03104_00003_' + detname + '_rate.fits')
@@ -372,14 +373,23 @@ for iexp in range(nexp):
 
 show = True
 
-# Use the first exposure to se the slit names
-slit_names_1 = [slit.name for slit in cal_data[0,0].slits]
-slit_names_2 = [slit.name for slit in cal_data[0,1].slits]
-slit_names_uni = np.unique(np.hstack([slit_names_1, slit_names_2]))
+# Create a set of aligned slit and source names for both detectors
 
-#source_names_1 = [slit.source_name for slit in cal_data[0,0].slits]
-#source_names_2 = [slit.source_name for slit in cal_data[0,1].slits]
-#source_names_uni = np.unique(np.hstack([source_names_1, source_names_2]))
+
+# Use the first exposure to se the slit names
+# (ndet, nslit)
+slit_names_1 = [slit.name for slit in cal_data[0,0].slits]
+slit_names_2 = [slit.name for slit in cal_data[1,0].slits]
+slit_names_tot = np.hstack([slit_names_1, slit_names_2])
+source_names_1 = [slit.source_name for slit in cal_data[0,0].slits]
+source_names_2 = [slit.source_name for slit in cal_data[1,0].slits]
+source_names_tot = np.hstack([source_names_1, source_names_2])
+
+# Find the unique slit names and the unique sources aligned with those slits
+slit_names_uni, uni_indx = np.unique(slit_names_tot, return_index=True)
+source_names_uni = source_names_tot[uni_indx]
+slit_sources_uni = [(slit, source) for slit, source in zip(slit_names_uni, source_names_uni)]
+
 
 # Loop over slits
 #islit = '10'
@@ -387,7 +397,7 @@ slit_names_uni = np.unique(np.hstack([slit_names_1, slit_names_2]))
 #islit = '83'
 #islit = None
 #islit = '63'
-gdslits = slit_names_uni[::-1] if islit is None else [islit]
+
 #bad_slits = []
 #gdsources = source_names_uni[::-1] if source is None else [source]
 
@@ -416,11 +426,16 @@ out_filenames = basenames
 #out_filenames = [diff_str + base for base in basenames]
 
 
+if reduce_slits is not None:
+    gd_slits_sources = [(slt, src) for slt, src in slit_sources_uni for slit in reduce_slits if slt == slit]
+elif reduce_sources is not None:
+    gd_slits_sources = [(slt, src) for slt, src in slit_sources_uni for source in reduce_sources if src == source]
+else:
+    gd_slits_sources = slit_sources_uni
 
-# Loop over all exposures, loop over all slits, extract and save them as if each slit were a separate PypeIt detector
-
+# Loop over all exposures, loop over all slits, create a mosaic and save them to individual PypeIt spec2d files.
 for iexp in range(nexp):
-    for ii, islit in enumerate(gdslits):
+    for ii, (islit, isource) in enumerate(gd_slits_sources):
         # Container for all the Spec2DObj, different spec2dobj and specobjs for each slit
         all_spec2d = spec2dobj.AllSpec2DObj()
         all_spec2d['meta']['bkg_redux'] = bkg_redux
@@ -484,12 +499,16 @@ for iexp in range(nexp):
                 plt.show()
 
         # THE FOLLOWING MIMICS THE CODE IN pypeit.save_exposure()
-        basename = '{:s}_{:s}'.format(out_filenames[iexp], 'slit' + islit)
+        basename = '{:s}_{:s}'.format(out_filenames[iexp], 'source_' + isource)
+
+        # TODO Populate the header with metadata relevant to this source?
 
         # Write out specobjs
         # Build header for spec2d
         head2d = fits.getheader(scifiles_1[iexp])
         subheader = spectrograph.subheader_for_spec(fitstbl_1[iexp], head2d, allow_missing=False)
+        # Overload the target name with the source name
+        subheader['target'] = isource
         if all_specobjs.nobj > 0:
             outfile1d = os.path.join(scipath, 'spec1d_{:s}.fits'.format(basename))
             all_specobjs.write_to_fits(subheader, outfile1d)

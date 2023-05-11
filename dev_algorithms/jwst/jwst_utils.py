@@ -326,6 +326,7 @@ class NIRSpecSlitCalibrations(datamodel.DataContainer):
     """Datamodel version."""
 
     datamodel = {'slit_name': dict(otype=str, descr='Name of slit'),
+                 'source_name': dict(otype=str, descr='Name of source'),
                  'on_detector': dict(otype=bool, descr='True if the slit is on the detector, otherwise False'),
                  'det_name': dict(otype=str, descr='Name of NIRSpec detector, i.e. either NRS1 or NRS2'),
                  'detector': dict(otype=DetectorContainer,
@@ -369,6 +370,7 @@ class NIRSpecSlitCalibrations(datamodel.DataContainer):
         _indx = np.where((slit_names == slit_name) & (intflat_slit_names == slit_name))[0]
         self.on_detector = _indx.size != 0
         self.slit_indx = int(_indx[0]) if self.on_detector else -1
+        self.source_name = ms_model.slits[self.slit_indx].source_name
 
         # Assign calibrations
         if self.on_detector:
@@ -478,7 +480,7 @@ def jwst_mosaic(image_model_tuple, Calibrations_tuple, kludge_err=1.0,
         spec_lo2, spec_hi2 = sciimg_list[0].shape[0] + detector_gap, \
                              sciimg_list[0].shape[0] + detector_gap + sciimg_list[1].shape[0]
         shape = (sciimg_list[0].shape[0] + sciimg_list[1].shape[0] + detector_gap,
-                 np.max([sciimg_list[0].shape[1], sciimg_list[1].shape[1]]) + spat_offset)
+                 np.max([sciimg_list[0].shape[1], sciimg_list[1].shape[1]]) + np.abs(spat_offset))
         if spat_offset < 0:
             spat_lo1, spat_hi1 = -spat_offset, sciimg_list[0].shape[1] - spat_offset
             spat_lo2, spat_hi2 = 0, sciimg_list[1].shape[1]
@@ -495,7 +497,6 @@ def jwst_mosaic(image_model_tuple, Calibrations_tuple, kludge_err=1.0,
         base_var_tot = np.zeros(shape)
         count_scale_tot = np.zeros(shape)
         rn2_img_tot = np.zeros(shape)
-
         sciimg_tot[nrs1_slice] = sciimg_list[0]
         sciimg_tot[nrs2_slice] = sciimg_list[1]
         sciivar_tot[nrs1_slice] = sciivar_list[0]
