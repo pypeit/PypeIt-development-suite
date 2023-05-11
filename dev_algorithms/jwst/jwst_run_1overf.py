@@ -3,6 +3,7 @@ import numpy as np
 import jwst_1overf_brammer as b
 import jwst_1overf_unfold as unfold
 from pypeit.display import display
+import jwst_mosaic_slits as jms
 
 def run_brammer(ratefile, fix_rows=False, in_place=False, writeout=False, savefig=False):
 
@@ -29,9 +30,36 @@ def run_brammer(ratefile, fix_rows=False, in_place=False, writeout=False, savefi
 
     return im['SCI'].data, mod
 
-def run_unfold(ratefile):
-    data = fits.open(ratefile)['SCI'].data
-    outimg, modelimg = unfold.fnoise_sub(data)
+def get_objmask(ratefile, calfile, flatfile, slitname=None, show=False):
+    nrs_calib, gdslits = jms.get_one_calib_obj(calfile, flatfile)
+    data_t = fits.open(ratefile)['SCI'].data.T
+    objmask = np.zeros(np.shape(data_t)).astype(bool)
+
+    if slitname is not None:
+        i = np.argwhere(np.array(gdslits) == slitname).squeeze()
+        objmask[nrs_calib[i].slit_slice] = True
+
+    else:
+        for i in range(len(nrs_calib)):
+            objmask[nrs_calib[i].slit_slice] = True
+
+    if show:
+        display.connect_to_ginga(raise_err=True, allow_new=True)
+        display.show_image(data_t, chname='data')
+        for i in range(len(nrs_calib)):
+            display.show_image(data_t[nrs_calib[i].slit_slice], chname='%s' % gdslits[i])
+
+    return objmask
+
+def run_unfold(ratefile, bpm=None, namp=4, evenOdd=True, skip_col=False, show=False):
+    data = fits.open(ratefile)['SCI'].data.T
+    outimg, modelimg = unfold.fnoise_sub(data, bpm=bpm, namp=namp, sub_bkg=False, mask_brightstar=False, evenOdd=evenOdd, skip_col=skip_col, show=show)
+
+    if show:
+        display.connect_to_ginga(raise_err=True, allow_new=True)
+        display.show_image(data, chname='raw data')
+        display.show_image(outimg, chname='outimg')
+        display.show_image(modelimg, chname='modelimg')
 
     return outimg, modelimg
 
@@ -61,3 +89,5 @@ def run_display_b_unfold(ratefile):
     display.show_image(unfold_mod[1250:1980, 570:1450], chname='unfold model (sub)', cuts=allim_cuts)
 
     return out
+
+# objmask = im[nrs1_calib[0].slit_slice]

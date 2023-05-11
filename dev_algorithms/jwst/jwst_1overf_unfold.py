@@ -7,9 +7,10 @@ import scipy
 import numpy as np
 from scipy import ndimage
 from scipy.stats import norm
-
 import matplotlib.pyplot as plt
-
+from pypeit import msgs
+import pypeit.utils as utils
+from pypeit.display import display
 import multiprocessing
 
 import astropy
@@ -35,7 +36,7 @@ warnings.simplefilter('ignore', category=AstropyWarning)
 def fnoise_sub(data, bpm=None, error=None, namp=4, minimum_pixels=10, rej_nsigma=3, maxiters=5,
                brightstar_nsigma=2, npixels=4, fwhm=3, back_type='sextractor', back_rms_type='biweight',
                back_size=(51, 51), back_filter_size=(3, 3), back_rej_nsigma=3, back_maxiters=5,
-               sub_bkg=True, mask_brightstar=True, evenOdd=True, skip_col=False, skip_row=False, inst='NIRCam'):
+               sub_bkg=True, mask_brightstar=True, evenOdd=True, skip_col=False, skip_row=False, inst='NIRCam', show=False):
     """
     Subtract amplifier noise (i.e., the so called 1/f noise caused by readout) row-by-row
     This function was modified by Feige Wang and Jinyi Yang based on rowamp_sub.py in tshirt package (https://github.com/eas342/tshirt)
@@ -172,9 +173,10 @@ def fnoise_sub(data, bpm=None, error=None, namp=4, minimum_pixels=10, rej_nsigma
         ## do the subtraction
         outimg = data - modelimg
     else:
+
         ## Get the model image
         modelimg = get_rowamp_model(data_masked, namp, minimum_pixels=minimum_pixels,
-                                    rej_nsigma=rej_nsigma, maxiters=maxiters, evenOdd=evenOdd, inst=inst)
+                                    rej_nsigma=rej_nsigma, maxiters=maxiters, evenOdd=evenOdd, inst=inst, show=show)
 
         modelimg[np.isnan(modelimg)] = 0.
         ## do the subtraction
@@ -184,7 +186,7 @@ def fnoise_sub(data, bpm=None, error=None, namp=4, minimum_pixels=10, rej_nsigma
     # I set namp = 1 for the column stripe the readout is along row but not column.
     if not skip_col:
         modelimg_col = get_rowamp_model(data_masked.T - modelimg.T, 1, minimum_pixels=minimum_pixels,
-                                        rej_nsigma=rej_nsigma, maxiters=maxiters, evenOdd=evenOdd, inst=inst)
+                                        rej_nsigma=rej_nsigma, maxiters=maxiters, evenOdd=evenOdd, inst=inst, show=show, skipcol_show=show)
         outimg -= modelimg_col.T
         modelimg += modelimg_col.T
 
@@ -261,7 +263,7 @@ def get_objmask_bkg(data, bpm=None, error=None, brightstar_nsigma=2, npixels=4, 
 
         # Do the detection using Image Segmentation
         # The return is a Segmentation image
-        # msgs.info('Making bright star mask with iter={:}'.format(niter+1))
+        msgs.info('Making bright star mask with iter={:}'.format(niter+1))
         segm = detect_sources(convolved_data, threshold, npixels=npixels)
 
         # grow mask for bright stars
@@ -309,13 +311,20 @@ def get_objmask_bkg(data, bpm=None, error=None, brightstar_nsigma=2, npixels=4, 
     return objmask, background_array, this_error
 
 
-def get_rowamp_model(data_masked, namp, minimum_pixels=10, rej_nsigma=3, maxiters=5, evenOdd=True, inst='NIRCam'):
+def get_rowamp_model(data_masked, namp, minimum_pixels=10, rej_nsigma=3, maxiters=5, evenOdd=True, inst='NIRCam', show=False, skipcol_show=False):
     """
     Get a 1/f noise model
     """
 
     slowread_model = np.zeros_like(data_masked.data)
     fastread_model = np.zeros_like(data_masked.data)
+
+    if show:
+        display.connect_to_ginga(raise_err=True, allow_new=True)
+        if skipcol_show:
+            suffix = '(col)'
+        else:
+            suffix = ''
 
     if namp == 4:
         ## mask to keep track of which rows have enough pixels to use
@@ -327,8 +336,9 @@ def get_rowamp_model(data_masked, namp, minimum_pixels=10, rej_nsigma=3, maxiter
             ampEnds = [512, 1024, 1536, 2048]
             ampWidth = 512
         else:
-            #msgs.error('Only NIRCam is supported at this moment.')
+            msgs.error('Only NIRCam is supported at this moment.')
             print('Only NIRCam is supported at this moment.')
+
 
         ## loop through amps
         for amp in np.arange(4):
@@ -336,12 +346,30 @@ def get_rowamp_model(data_masked, namp, minimum_pixels=10, rej_nsigma=3, maxiter
             if evenOdd == True:
                 thisAmp, even_odd_model = do_even_odd(this_amp_tmp, rej_nsigma=rej_nsigma, maxiters=maxiters)
                 slowread_model[:, ampStarts[amp]:ampEnds[amp]] = even_odd_model
+
+                if show:
+                    display.show_image(this_amp_tmp, chname='data-amp%d%s' % (amp, suffix))
+                    display.show_image(even_odd_model, chname='model %d%s' % (amp, suffix))
+
+                    plt.figure()
+                    plt.title('Amp %d%s' % (amp, suffix))
+                    plt.plot(np.nanmedian(this_amp_tmp.data, axis=0), label='amp data')
+                    plt.plot(np.nanmedian(even_odd_model, axis=0), label='model', alpha=0.5)
+                    plt.ylabel('median over axis=0')
+                    plt.tight_layout()
             else:
                 ## even if not doing an even/odd correction, still do an overall median
                 _, this_median, _ = sigma_clipped_stats(this_amp_tmp, sigma=rej_nsigma, maxiters=maxiters,
                                                         cenfunc='median', stdfunc='std')
                 slowread_model[:, ampStarts[amp]:ampEnds[amp]] = np.nanmedian(this_median)
                 thisAmp = this_amp_tmp - slowread_model[:, ampStarts[amp]:ampEnds[amp]]
+
+                if show:
+                    display.show_image(this_amp_tmp, chname='data-amp%d%s' % (amp, suffix))
+                    plt.figure()
+                    plt.title('Amp %d%s' % (amp, suffix))
+                    plt.plot(np.nanmedian(this_amp_tmp.data, axis=0))
+                    plt.axhline(np.nanmedian(this_median), color='red')
 
             bad_rows = np.sum(np.isfinite(thisAmp.filled()), axis=1) <= minimum_pixels
             _, medVals, _ = sigma_clipped_stats(thisAmp, axis=1, sigma=rej_nsigma, maxiters=maxiters, cenfunc='median',
@@ -351,6 +379,8 @@ def get_rowamp_model(data_masked, namp, minimum_pixels=10, rej_nsigma=3, maxiter
             fastread_model[:, ampStarts[amp]:ampEnds[amp]] = np.tile(medVals, [ampWidth, 1]).T
             ## check if the mask leaves too few pixels in some of the rows in this amplifier
             amp_badrow_mask[bad_rows, ampStarts[amp]:ampEnds[amp]] = True
+            if show:
+                display.show_image(np.tile(medVals, [ampWidth, 1]).T, chname='fastread model %d%s' % (amp, suffix))
 
         ## Let's replace the bad rows with that row in other amplifiers
         replace_rows = (np.sum(amp_badrow_mask, axis=1) > 0) & (
@@ -379,12 +409,26 @@ def get_rowamp_model(data_masked, namp, minimum_pixels=10, rej_nsigma=3, maxiter
         tiled_med = np.tile(medVals, [data_masked.data.shape[1], 1]).T
         ## put the results in the model image
         fastread_model[:, :] = tiled_med
+
+        if show:
+            if show:
+                display.show_image(data_masked, chname='data%s' % (suffix))
+
+            if np.ndim(slowread_model) == 2:
+                display.show_image(slowread_model, chname='slowread model%s' % suffix)
+            else:
+                msgs.info('slowread model is a float with value {:}'.format(slowread_model))
+            display.show_image(fastread_model, chname='fastread model%s' % suffix)
     else:
-        #msgs.error('{:} amplifiers is not implemented yet.'.format(namp))
+        msgs.error('{:} amplifiers is not implemented yet.'.format(namp))
         print('{:} amplifiers is not implemented yet.'.format(namp))
 
     ## put the results in the model image
+
     modelimg = slowread_model + fastread_model
+
+    if show:
+        plt.show()
 
     return modelimg
 
