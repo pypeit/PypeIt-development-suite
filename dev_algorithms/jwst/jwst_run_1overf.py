@@ -5,7 +5,40 @@ import jwst_1overf_unfold as unfold
 from pypeit.display import display
 import jwst_mosaic_slits as jms
 
-def run_brammer(ratefile, fix_rows=False, in_place=False, writeout=False, savefig=False):
+def run_brammer(ratefile, bpm=None, fix_rows=False, in_place=False, writeout=False, make_plot=False):
+
+    im = fits.open(ratefile)
+    im_data = im['SCI'].data.T
+
+    fig, mod, data = b.exposure_oneoverf_correction(ratefile, rot_pypeit_fmt=True, bpm=bpm, in_place=in_place, deg_pix=256, make_plot=make_plot) # default
+    mod[~np.isfinite(mod)] = 0
+
+    if fix_rows:
+        axis = 1
+        fig, fix_row_mod, data = b.exposure_oneoverf_correction(ratefile, rot_pypeit_fmt=True, bpm=bpm, axis=axis, in_place=in_place, deg_pix=2048, make_plot=make_plot)
+
+        fix_row_mod[~np.isfinite(fix_row_mod)] = 0
+        total_model = mod + fix_row_mod
+
+    else:
+        total_model = mod
+
+    corr_data = im_data - total_model
+
+    if writeout:
+        rate1overffile = ratefile.replace('_rate.fits', '_rate_1overf.fits')
+        im_data -= total_model
+        im.writeto(rate1overffile, overwrite=True)
+
+    if make_plot:
+        display.connect_to_ginga(raise_err=True, allow_new=True)
+        display.show_image(im_data, chname='raw data')
+        display.show_image(corr_data, chname='outimg')
+        display.show_image(total_model, chname='total model')
+
+    return corr_data, total_model
+
+def old_run_brammer(ratefile, fix_rows=False, in_place=False, writeout=False, savefig=False):
 
     im = fits.open(ratefile)
     axis=0 # default
@@ -63,14 +96,19 @@ def run_unfold(ratefile, bpm=None, namp=4, evenOdd=True, skip_col=False, show=Fa
 
     return outimg, modelimg
 
-def run_display_b_unfold(ratefile):
+def run_display_b_unfold(ratefile, calfile, flatfile, show=False):
+
+    objmask_all = get_objmask(ratefile, calfile, flatfile, show=False)
+
     # run and compare the results of brammer and unfold_jwst's corrections
-    data = fits.open(ratefile)['SCI'].data
+    data = fits.open(ratefile)['SCI'].data.T
     err = fits.open(ratefile)['ERR'].data
 
-    b_corrdata, b_mod = run_brammer(ratefile)
-    unfold_corrdata, unfold_mod = run_unfold(ratefile)
+    b_corrdata, b_mod = run_brammer(ratefile, bpm=objmask_all, fix_rows=True, make_plot=show)
+    unfold_corrdata, unfold_mod = run_unfold(ratefile, bpm=objmask_all, namp=4, evenOdd=True, skip_col=False, show=show)
     out = b_corrdata, b_mod, unfold_corrdata, unfold_mod, data
+
+    return out
 
     allim_cuts = [-0.1, 0.1]
     display.connect_to_ginga(raise_err=True, allow_new=True)
@@ -80,6 +118,7 @@ def run_display_b_unfold(ratefile):
     display.show_image(b_mod, chname='brammer model', cuts=allim_cuts)
     display.show_image(unfold_mod, chname='unfold model', cuts=allim_cuts)
 
+    """
     # looking at regions far from the slit
     allim_cuts = [-0.1, 0.1]
     display.show_image(data[1250:1980, 570:1450], chname='data (sub)', cuts=allim_cuts)
@@ -87,7 +126,6 @@ def run_display_b_unfold(ratefile):
     display.show_image(unfold_corrdata[1250:1980, 570:1450], chname='unfold corr (sub)', cuts=allim_cuts)
     display.show_image(b_mod[1250:1980, 570:1450], chname='brammer model (sub)', cuts=allim_cuts)
     display.show_image(unfold_mod[1250:1980, 570:1450], chname='unfold model (sub)', cuts=allim_cuts)
-
+    """
     return out
 
-# objmask = im[nrs1_calib[0].slit_slice]
