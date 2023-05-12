@@ -30,10 +30,10 @@ instant_dict = dict(coeffs=np.ones((6,4,1)),
 
 
 def test_instantiate_from_master(redux_out):
-    master_file = os.path.join(redux_out, kastb_dir, 'Masters',
-                               'MasterTilts_A_1_DET01.fits')
-    slit_master_file = os.path.join(redux_out, kastb_dir, 'Masters',
-                               'MasterSlits_A_1_DET01.fits.gz')
+    master_file = os.path.join(redux_out, kastb_dir, 'Calibrations',
+                               'Tilts_A_0_DET01.fits')
+    slit_master_file = os.path.join(redux_out, kastb_dir, 'Calibrations',
+                                    'Slits_A_0_DET01.fits.gz')
     slits = slittrace.SlitTraceSet.from_file(slit_master_file)
     waveTilts = wavetilts.WaveTilts.from_file(master_file)
     tilts = waveTilts.fit2tiltimg(slits.slit_img())
@@ -43,12 +43,12 @@ def test_instantiate_from_master(redux_out):
 # Test rebuild tilts with a flexure offset
 def test_flexure(redux_out):
     flexure = 1.
-    master_file = os.path.join(redux_out, kastb_dir, 'Masters',
-                               'MasterTilts_A_1_DET01.fits')
+    master_file = os.path.join(redux_out, kastb_dir, 'Calibrations',
+                               'Tilts_A_0_DET01.fits')
     waveTilts = wavetilts.WaveTilts.from_file(master_file)
     # Need slitmask
-    slit_file = os.path.join(redux_out, kastb_dir, 'Masters',
-                             'MasterSlits_A_1_DET01.fits.gz')
+    slit_file = os.path.join(redux_out, kastb_dir, 'Calibrations',
+                             'Slits_A_0_DET01.fits.gz')
     slits = slittrace.SlitTraceSet.from_file(slit_file)
     slitmask = slits.slit_img(flexure=flexure)
     # Do it
@@ -58,11 +58,11 @@ def test_flexure(redux_out):
 def test_run(redux_out):
     # Masters
     spectrograph = load_spectrograph('shane_kast_blue')
-    master_file = os.path.join(redux_out, kastb_dir, 'Masters',
-                               'MasterTiltimg_A_1_DET01.fits')
+    master_file = os.path.join(redux_out, kastb_dir, 'Calibrations',
+                               'Tiltimg_A_0_DET01.fits')
     mstilt = buildimage.TiltImage.from_file(master_file)
-    trace_file = os.path.join(redux_out, kastb_dir, 'Masters',
-                               'MasterEdges_A_1_DET01.fits.gz')
+    trace_file = os.path.join(redux_out, kastb_dir, 'Calibrations',
+                              'Edges_A_0_DET01.fits.gz')
     edges = edgetrace.EdgeTraceSet.from_file(trace_file)
     # Instantiate
     #spectrograph.detector[0]['saturation'] = 60000.

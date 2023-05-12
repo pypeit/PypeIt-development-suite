@@ -12,6 +12,7 @@
 [reduce]
   [[findobj]]
      find_trim_edge = 10,10
+     snr_thresh = 80.
 
 
 # Setup

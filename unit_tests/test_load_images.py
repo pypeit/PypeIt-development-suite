@@ -4,6 +4,8 @@ RawImage class
 """
 import os
 
+from IPython import embed
+
 import pytest
 
 from pypeit.images.rawimage import RawImage
@@ -38,8 +40,8 @@ def test_load_lris():
         pytest.fail('LRIS test data section failed.')
 
 def test_load_nires():
-    ifile = os.path.join(os.getenv('PYPEIT_DEV'), 'RAW_DATA', 'keck_nires', 'NIRES',
-                         's180604_0004.fits.gz')
+    ifile = os.path.join(os.getenv('PYPEIT_DEV'), 'RAW_DATA', 'keck_nires', 'ABBA_wstandard',
+                         's190519_0059.fits')
     try:
         # First amplifier
         data_img = grab_img('keck_nires', ifile)
@@ -149,7 +151,7 @@ def test_load_goodman():
     try:
         data_img = grab_img('soar_goodman_red', ifile)
     except:
-        pytest.fail('Bok BC test data section failed: {0}'.format(ifile))
+        pytest.fail('Soar Goodman Red test data section failed: {0}'.format(ifile))
 
 def test_load_deveny():
     ifile = os.path.join(os.environ['PYPEIT_DEV'], 'RAW_DATA','ldt_deveny','DV2',

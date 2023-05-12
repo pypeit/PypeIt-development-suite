@@ -1,33 +1,39 @@
-# Auto-generated PypeIt file
-# 2021-10-25
+# Auto-generated PypeIt input file using PypeIt version: 1.10.1.dev218+gefe7d7ef6
+# UTC 2022-10-14T22:04:15.975
 
 # User-defined execution parameters
 [rdx]
-spectrograph = keck_mosfire
+    spectrograph = keck_mosfire
+[reduce]
+   [[slitmask]]
+      use_dither_offset = False
+      bright_maskdef_id = 4
 
 # Setup
 setup read
-    Setup A:
-          decker: ic348_TK_M03A
-        dispname: K-spectroscopy
-         filter1: K
+Setup A:
+  decker_secondary: ic348_TK_M03A
+  dispname: K-spectroscopy
+  filter1: K
+  slitlength: null
+  slitwid: null
 setup end
 
-# Read in the data
+# Data block
 data read
- path /Users/dpelliccia/PypeIt/PypeIt-development-suite/RAW_DATA/keck_mosfire/mask1_K_with_continuum
-|          filename |                 frametype |          ra |         dec |        target |       dispname |        decker | binning |            mjd |    airmass |  exptime | filter1 | lampstat01 | dithpat | dithpos | dithoff | frameno | calib | comb_id | bkg_id |
-#| m121128_0119.fits |                  arc,tilt |         7.8 |        45.0 |       unknown | K-spectroscopy | ic348_TK_M03A |     1,1 | 56259.14680212 | 1.41291034 |  1.45479 |       K |        off |    none |    none |     0.0 |     119 |   all |      -1 |     -1 |
-#| m121128_0120.fits |                  arc,tilt |         7.8 |        45.0 |       unknown | K-spectroscopy | ic348_TK_M03A |     1,1 | 56259.14700351 | 1.41291034 |  1.45479 |       K |        off |    none |    none |     0.0 |     120 |   all |      -1 |     -1 |
-| m121128_0112.fits | pixelflat,illumflat,trace |         7.8 |        45.0 |       unknown | K-spectroscopy | ic348_TK_M03A |     1,1 | 56259.14425684 | 1.41291034 |  14.5479 |       K |         on |    none |    none |     0.0 |     112 |   all |      -1 |     -1 |
-| m121128_0113.fits | pixelflat,illumflat,trace |         7.8 |        45.0 |       unknown | K-spectroscopy | ic348_TK_M03A |     1,1 | 56259.14450569 | 1.41291034 |  14.5479 |       K |         on |    none |    none |     0.0 |     113 |   all |      -1 |     -1 |
-| m121128_0114.fits | pixelflat,illumflat,trace |         7.8 |        45.0 |       unknown | K-spectroscopy | ic348_TK_M03A |     1,1 | 56259.14479678 | 1.41291034 |  14.5479 |       K |         on |    none |    none |     0.0 |     114 |   all |      -1 |     -1 |
-| m121128_0105.fits |              lampoffflats |         7.8 |        45.0 |       unknown | K-spectroscopy | ic348_TK_M03A |     1,1 | 56259.14200914 | 1.41291034 |  14.5479 |       K |        off |    none |    none |     0.0 |     105 |   all |      -1 |     -1 |
-| m121128_0106.fits |              lampoffflats |         7.8 |        45.0 |       unknown | K-spectroscopy | ic348_TK_M03A |     1,1 | 56259.14231181 | 1.41291034 |  14.5479 |       K |        off |    none |    none |     0.0 |     106 |   all |      -1 |     -1 |
-| m121128_0107.fits |              lampoffflats |         7.8 |        45.0 |       unknown | K-spectroscopy | ic348_TK_M03A |     1,1 | 56259.14262084 | 1.41291034 |  14.5479 |       K |        off |    none |    none |     0.0 |     107 |   all |      -1 |     -1 |
-| m121128_0214.fits |          arc,science,tilt | 56.27484011 | 32.19165488 | ic348_TK_M03A | K-spectroscopy | ic348_TK_M03A |     1,1 |  56259.2716455 | 1.37254788 | 98.92572 |       K |        off |   Stare |       A |     1.5 |     214 |     1 |      10 |     11 |
-| m121128_0215.fits |          arc,science,tilt | 56.27402153 | 32.19170348 | ic348_TK_M03A | K-spectroscopy | ic348_TK_M03A |     1,1 | 56259.27318428 | 1.36213505 | 98.92572 |       K |        off |   Stare |       B |    -1.5 |     215 |     0 |      11 |     10 |
-| m121128_0216.fits |          arc,science,tilt | 56.27402153 | 32.19170348 | ic348_TK_M03A | K-spectroscopy | ic348_TK_M03A |     1,1 | 56259.27469644 | 1.35216515 | 98.92572 |       K |        off |   Stare |       B |    -1.5 |     216 |     0 |      11 |     10 |
-| m121128_0217.fits |          arc,science,tilt | 56.27484011 | 32.19165488 | ic348_TK_M03A | K-spectroscopy | ic348_TK_M03A |     1,1 | 56259.27624622 | 1.34220549 | 98.92572 |       K |        off |   Stare |       A |     1.5 |     217 |     1 |      10 |     11 |
+ path mask1_K_with_continuum
+         filename |                 frametype |          ra |         dec |        target |       dispname |        decker | binning |            mjd |    airmass |  exptime | filter1 | lampstat01 | dithpat | dithpos | dithoff | frameno | calib | comb_id | bkg_id
+m121128_0214.fits |          arc,science,tilt | 56.27484011 | 32.19165488 | ic348_TK_M03A | K-spectroscopy | ic348_TK_M03A |     1,1 |  56259.2716455 | 1.37254788 | 98.92572 |       K |        off |   Stare |       A |     1.5 |     214 |     0 |       1 |      2
+m121128_0215.fits |          arc,science,tilt | 56.27402153 | 32.19170348 | ic348_TK_M03A | K-spectroscopy | ic348_TK_M03A |     1,1 | 56259.27318428 | 1.36213505 | 98.92572 |       K |        off |   Stare |       B |    -1.5 |     215 |     0 |       2 |      1
+m121128_0216.fits |          arc,science,tilt | 56.27402153 | 32.19170348 | ic348_TK_M03A | K-spectroscopy | ic348_TK_M03A |     1,1 | 56259.27469644 | 1.35216515 | 98.92572 |       K |        off |   Stare |       B |    -1.5 |     216 |     0 |       2 |      1
+m121128_0217.fits |          arc,science,tilt | 56.27484011 | 32.19165488 | ic348_TK_M03A | K-spectroscopy | ic348_TK_M03A |     1,1 | 56259.27624622 | 1.34220549 | 98.92572 |       K |        off |   Stare |       A |     1.5 |     217 |     0 |       1 |      2
+# m121128_0119.fits |                  arc,tilt |         7.8 |        45.0 |       unknown | K-spectroscopy | ic348_TK_M03A |     1,1 | 56259.14680212 | 1.41291034 |  1.45479 |       K |         Ar |    none |    none |     0.0 |     119 |     0 |      -1 |     -1
+# m121128_0120.fits |                  arc,tilt |         7.8 |        45.0 |       unknown | K-spectroscopy | ic348_TK_M03A |     1,1 | 56259.14700351 | 1.41291034 |  1.45479 |       K |         Ne |    none |    none |     0.0 |     120 |     0 |      -1 |     -1
+m121128_0105.fits |              lampoffflats |         7.8 |        45.0 |       unknown | K-spectroscopy | ic348_TK_M03A |     1,1 | 56259.14200914 | 1.41291034 |  14.5479 |       K |        off |    none |    none |     0.0 |     105 |     0 |      -1 |     -1
+m121128_0106.fits |              lampoffflats |         7.8 |        45.0 |       unknown | K-spectroscopy | ic348_TK_M03A |     1,1 | 56259.14231181 | 1.41291034 |  14.5479 |       K |        off |    none |    none |     0.0 |     106 |     0 |      -1 |     -1
+m121128_0107.fits |              lampoffflats |         7.8 |        45.0 |       unknown | K-spectroscopy | ic348_TK_M03A |     1,1 | 56259.14262084 | 1.41291034 |  14.5479 |       K |        off |    none |    none |     0.0 |     107 |     0 |      -1 |     -1
+m121128_0112.fits | pixelflat,illumflat,trace |         7.8 |        45.0 |       unknown | K-spectroscopy | ic348_TK_M03A |     1,1 | 56259.14425684 | 1.41291034 |  14.5479 |       K |         on |    none |    none |     0.0 |     112 |     0 |      -1 |     -1
+m121128_0113.fits | pixelflat,illumflat,trace |         7.8 |        45.0 |       unknown | K-spectroscopy | ic348_TK_M03A |     1,1 | 56259.14450569 | 1.41291034 |  14.5479 |       K |         on |    none |    none |     0.0 |     113 |     0 |      -1 |     -1
+m121128_0114.fits | pixelflat,illumflat,trace |         7.8 |        45.0 |       unknown | K-spectroscopy | ic348_TK_M03A |     1,1 | 56259.14479678 | 1.41291034 |  14.5479 |       K |         on |    none |    none |     0.0 |     114 |     0 |      -1 |     -1
 data end
 

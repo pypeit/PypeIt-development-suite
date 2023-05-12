@@ -4,6 +4,9 @@
 # User-defined execution parameters
 [rdx]
 spectrograph = mmt_mmirs
+[reduce]
+    [[findobj]]
+        snr_thresh = 50.
 
 # Setup
 setup read

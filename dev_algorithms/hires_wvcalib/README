@@ -1,0 +1,5 @@
+The following files generated here are now in the main Repo
+with different names:
+
+wvcalib_angle_fits.fits -> keck_hires_angle_fits.fits
+HIRES_composite_arc.fits ->  keck_hires_composite_arc.fits

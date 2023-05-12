@@ -381,16 +381,16 @@ class TestReport(object):
     def summarize_setup_tests(self, output=sys.stdout):
         """Display a summary of the PypeIt setup tests"""
 
-        masters_text = '(Masters ignored)' if self.pargs.do_not_reuse_masters else ''
+        calib_text = '(Existing calibrations ignored)' if self.pargs.do_not_reuse_calibs else ''
         if self.num_tests == self.num_passed:
             print("\x1B[" + "1;32m" +
                   "--- PYPEIT DEVELOPMENT SUITE PASSED {0}/{1} TESTS {2} ---".format(
-                      self.num_passed, self.num_tests, masters_text)
+                      self.num_passed, self.num_tests, calib_text)
                   + "\x1B[" + "0m" + "\r", file=output)
         else:
             print("\x1B[" + "1;31m" +
                   "--- PYPEIT DEVELOPMENT SUITE FAILED {0}/{1} TESTS {2} ---".format(
-                      self.num_failed, self.num_tests, masters_text)
+                      self.num_failed, self.num_tests, calib_text)
                   + "\x1B[" + "0m" + "\r", file=output)
             print('Failed tests:', file=output)
             for t in self.failed_tests:
@@ -411,6 +411,28 @@ class TestReport(object):
         else:
             print("\x1B[" + "1;32m" + f"--- PYTEST {test_descr.upper()} PASSED " + "\x1B[" + "0m"
                   + results +  "\x1B[" + "1;32m" + "---" + "\x1B[" + "0m" + "\r", file=output)
+
+    def performance_results(self, output):
+        """Display performance statistics on PypeIt tests."""
+        print("Setup,Test Type,Start Time,End Time,Duration(s),Memory Usage (bytes),Duration (D:H:M:S), Memory Usage (MiB)", file=output)
+        for setup in self.test_setups:
+            for test in setup.tests:
+                if test.start_time is not None and test.end_time is not None:
+                    duration = test.end_time - test.start_time
+                    duration_secs = duration.total_seconds()
+                else:
+                    duration = ""
+                    duration_secs = ""
+
+                if test.max_mem is None:
+                    mem_usage = ""
+                    mem_usage_megs = ""
+                else:
+                    mem_usage = test.max_mem
+                    mem_usage_megs = test.max_mem / (2**20)
+
+                print(f'{test.setup},{test.description},{test.start_time},{test.end_time},{duration_secs},{mem_usage},{duration},{mem_usage_megs}', file=output)
+
 
     def print_tail(self, file, num_lines, output=sys.stdout, flush=False):
         """Print the last num_lines of a file."""
@@ -458,6 +480,7 @@ class TestReport(object):
         print(f'Start time: {test.start_time.ctime() if test.start_time is not None else "n/a"}', file=output, flush=flush)
         print(f'End time:   {test.end_time.ctime() if test.end_time is not None else "n/a"}', file=output, flush=flush)
         print(f'Duration:   {duration}', file=output, flush=flush)
+        print(f'Mem Usage:  {test.max_mem}', file=output, flush=flush)
         print(f"Command:    {' '.join(test.command_line) if test.command_line is not None else ''}", file=output, flush=flush)
         print('', file=output, flush=flush)
         print('Error Messages:', file=output, flush=flush)
@@ -620,8 +643,8 @@ def parser(options=None):
                         help='Debug using only blue setups')
     parser.add_argument('-p', '--prep_only', default=False, action='store_true',
                         help='Only prepare to execute run_pypeit, but do not actually run it.')
-    parser.add_argument('-m', '--do_not_reuse_masters', default=False, action='store_true',
-                        help='run pypeit without using any existing masters')
+    parser.add_argument('-m', '--do_not_reuse_calibs', default=False, action='store_true',
+                        help='run pypeit without using any existing processed calibration frames')
     parser.add_argument('-t', '--threads', default=1, type=int,
                         help='Run THREADS number of parallel tests.')
     parser.add_argument('-q', '--quiet', default=False, action='store_true',
@@ -634,6 +657,8 @@ def parser(options=None):
                         help='Collect code coverage information. and write it to the given file.')
     parser.add_argument('-r', '--report', default=None, type=str,
                         help='Write a detailed test report to REPORT.')
+    parser.add_argument('-c', '--csv', default=None, type=str,
+                        help='Write performance numbers to a CSV file.')
     parser.add_argument('-w', '--show_warnings', default=False, action='store_true',
                         help='Show warnings when running unit tests and vet tests.')
     return parser.parse_args() if options is None else parser.parse_args(options)
@@ -940,6 +965,10 @@ def main():
     # Finish up the report on the test results
     test_report.testing_completed()
 
+    if pargs.csv is not None:
+        with open(pargs.csv, "w") as f:
+            test_report.performance_results(f)
+
     if not pargs.quiet:
         if pargs.verbose:
             test_report.detailed_report()
@@ -995,63 +1024,46 @@ def build_test_setup(pargs, instr, setup_name, flg_reduce, flg_after, flg_ql):
     # Go through each test type and add it to this setup if it's applicable and
     # selected by the command line arguments
     for test_descr in all_tests:
-        # Depending on the test there can be different data structures for "setups"
-        # Some of those will have arguments for the test's __init__ based on a key
-        if setup.instr in test_descr['setups']:
-            if isinstance(test_descr['setups'][setup.instr], list):
-                # A dict of lists, mapping instruments to a list of supported setups
-                key = None # No arguments in this format
-                if setup.name not in test_descr['setups'][setup.instr]:
-                    # This test type isn't applicable to the setup
-                    continue
-            else:
-                # A dict mapping to arguments that apply to all setups for this instrument
-                key = setup.instr
 
-        elif setup.key in test_descr['setups']:
-            # Either a dict or list of setups
-            key = setup.key
-        else:
+        # Check instruments
+        if setup.instr not in test_descr['setups']:
+            continue
+        # Check setup
+        if setup_name not in test_descr['setups'][setup.instr]:
             continue
 
-        # Read arguments for the test from the setups, but only for test
-        # types that support it
-        if isinstance(test_descr['setups'], dict) and key is not None:
-            kwargs = test_descr['setups'][key]
-        else:
-            kwargs = dict()
+        for kwargs in test_descr['setups'][setup.instr][setup_name]:
+            # Create the test, this will also run any prep_only steps in the
+            # __init__ method
+            try:
+                test = test_descr['factory'](setup, pargs, **kwargs)
+            except FileNotFoundError as e:
+                # If the test prep work found a missing file, just record it in the
+                # list of missing files. This allows all missing files for the
+                # test suite to be reported at once
+                setup.missing_files.append(str(e))
+                continue
 
-        # Create the test, this will also run any prep_only steps in the
-        # __init__ method
-        try:
-            test = test_descr['factory'](setup, pargs, **kwargs)
-        except FileNotFoundError as e:
-            # If the test prep work found a missing file, just record it in the
-            # list of missing files. This allows all missing files for the
-            # test suite to be reported at once
-            setup.missing_files.append(str(e))
-            continue
+            # Check for any missing files
+            missing_files = test.check_for_missing_files()
+            if len(missing_files) > 0:
+                setup.missing_files += missing_files
+                continue
 
-        # Check for any missing files
-        missing_files = test.check_for_missing_files()
-        if len(missing_files) > 0:
-            setup.missing_files += missing_files
-            continue
+            # Skip the test if it wasn't selected by the command line
+            if pargs.prep_only and test_descr['type'] != TestPhase.PREP:
+                continue
 
-        # Skip the test if it wasn't selected by the command line
-        if pargs.prep_only and test_descr['type'] != TestPhase.PREP:
-            continue
+            if not flg_reduce and test_descr['type'] == TestPhase.REDUCE:
+                continue
 
-        if not flg_reduce and test_descr['type'] == TestPhase.REDUCE:
-            continue
+            if not flg_after and test_descr['type'] == TestPhase.AFTERBURN:
+                continue
 
-        if not flg_after and test_descr['type'] == TestPhase.AFTERBURN:
-            continue
+            if not flg_ql and test_descr['type'] == TestPhase.QL:
+                continue
 
-        if not flg_ql and test_descr['type'] == TestPhase.QL:
-            continue
-
-        setup.tests.append(test)
+            setup.tests.append(test)
 
     return setup
 

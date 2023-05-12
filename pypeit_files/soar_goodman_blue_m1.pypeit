@@ -1,0 +1,27 @@
+# Auto-generated PypeIt input file using PypeIt version: 1.11.1.dev372+ge2989ae29
+# UTC 2023-02-10T13:48:24.309
+
+# User-defined execution parameters
+[rdx]
+    spectrograph = soar_goodman_blue
+
+# Setup
+setup read
+Setup A:
+  binning: 2,2
+  decker: 1.0_LONG_SLIT
+  dispangle: 5.8008
+  dispname: 400_SYZY
+setup end
+
+# Data block 
+data read
+ path /Users/rcooke/Work/Goodman/lco_data-20230210-9/Raw
+                                     filename |                 frametype |                 ra |                 dec |           target | dispname |        decker | binning |                mjd | airmass | exptime | dispangle
+0140_BB034315_m660205_10-02-2023_comp.fits.fz |                  arc,tilt |  55.77708333333332 |  -66.08448972222222 | BB034315_m660205 | 400_SYZY | 1.0_LONG_SLIT |     2,2 | 59985.132497199076 |    1.61 |     0.3 |    5.7994
+                psg_200227_193550_fri.fits.fz | pixelflat,illumflat,trace |  76.60229999999999 | -17.666751944444446 |                  | 400_SYZY | 1.0_LONG_SLIT |     2,2 |  58906.81655229167 |    1.66 |     6.5 |    5.8008
+                psg_200227_193831_fri.fits.fz | pixelflat,illumflat,trace |           77.27945 | -17.665494166666665 |                  | 400_SYZY | 1.0_LONG_SLIT |     2,2 | 58906.818420891206 |    1.66 |     6.5 |    5.8009
+                psg_200227_193952_fri.fits.fz | pixelflat,illumflat,trace |  77.61802083333333 | -17.664864166666664 |                  | 400_SYZY | 1.0_LONG_SLIT |     2,2 |  58906.81935607639 |    1.66 |     6.5 |    5.8009
+     0141_BB034315_m660205_10-02-2023.fits.fz |                   science |  55.82261666666666 |  -66.03962583333333 | BB034315_m660205 | 400_SYZY | 1.0_LONG_SLIT |     2,2 | 59985.138289699076 |    1.64 |   300.0 |    5.7995
+data end
+

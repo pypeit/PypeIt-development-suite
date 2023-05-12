@@ -2,7 +2,7 @@
 Module to run tests on PypeItPar classes
 """
 import os
-import numpy
+import numpy as np
 
 import pytest
 from IPython import embed
@@ -11,9 +11,11 @@ from astropy.io import fits
 
 from pypeit.images import buildimage
 from pypeit import edgetrace, slittrace, specobjs
+from pypeit.spectrographs import slitmask
 from pypeit.spectrographs.keck_deimos import KeckDEIMOSSpectrograph
 from pypeit.spectrographs.util import load_spectrograph
 from pypeit.tests.tstutils import data_path
+from pypeit.utils import index_of_x_eq_y
 
 
 # Load flats files
@@ -239,3 +241,64 @@ def test_lris_slitmask(redux_out):
     assert len(specObjs.MASKDEF_ID) > 0
     assert 'gal21' in specObjs.MASKDEF_OBJNAME
     assert 'gal49' in specObjs.MASKDEF_OBJNAME # This was "manually" extracted
+
+def test_gmos_slitmask(redux_out):
+    # Check we have sensible RA, Dec
+    file_path = os.path.join(redux_out,
+                             'gemini_gmos', 
+                             'GS_HAM_B600_MOS',
+                             'Science', 
+                             'spec1d_S20221128S0038-FRB190711_GMOS-S_18640531T214523.954.fits')
+    # Load                                
+    specObjs = specobjs.SpecObjs.from_fitsfile(file_path)
+
+    # Test
+    assert len(specObjs.MASKDEF_ID) > 0
+    assert '10050' in specObjs.MASKDEF_OBJNAME
+
+    idx = specObjs.MASKDEF_OBJNAME == '10050'
+    assert np.isclose(specObjs.RA[idx][0], 329.2278)
+
+
+def test_deimos_flipped_slitpa(redux_out):
+
+    # This dataset has mask PA = -90 degrees and the slit PAs are some -90 and some 90 degrees.
+    # The slits with PA=90 are more than 90degrees from the mask PA, so they need to be flipped.
+
+    # read raw file
+    raw_file = os.path.join(os.environ['PYPEIT_DEV'], 'RAW_DATA', 'keck_deimos', '600ZD_M_6500', 'd1010_0019.fits.gz')
+
+    hdu = fits.open(raw_file)
+
+    # get recorded mask PA
+    maskpa = hdu['MaskDesign'].data['PA_PNT'][-1]
+
+    # some indexing to get the right slit PAs
+    indx = index_of_x_eq_y(hdu['DesiSlits'].data['dSlitId'], hdu['BluSlits'].data['dSlitId'], strict=True)
+    # get recorded slit PA
+    orig_slitpas = hdu['DesiSlits'].data['slitLPA'][indx]
+    # confirm that there are slits with PA > 90 degrees from mask PA
+    assert np.any(np.abs(orig_slitpas - maskpa) > 90), "there are not slits with PA > 90 degrees from mask PA"
+
+    # get pypeit generated slitmask
+    smask = slitmask.load_keck_deimoslris(raw_file, 'keck_deimos')
+
+    # check that the slit PAs have been flipped
+    new_slitpas = smask.onsky.T[-1]
+    assert np.all(np.abs(new_slitpas - maskpa) <= 90), "the slit PAs have not been correctly flipped"
+
+    # Since maskpa = -90 degrees, and all the slits have the same orientation,
+    # if all the slits PAs have been correctly flipped, the RAs of the
+    # extracted objects should be in a decreasing order
+
+    # read in reduced spec1d
+    specobjs_file = os.path.join(redux_out, 'keck_deimos', '600ZD_M_6500', 'Science',
+                                 'spec1d_d1010_0056-HIT2015-mask03_DEIMOS_20151010T045816.550.fits')
+    sobjs = specobjs.SpecObjs.from_fitsfile(specobjs_file)
+
+    # remove edge case (the rounding of the decimals for this object conflicts with another object)
+    noedge_case = sobjs.MASKDEF_OBJNAME != 'T1pr1_6712'
+
+    # check that sobjs.RA is in decreasing order
+    assert np.all(sobjs.RA[noedge_case] == np.sort(sobjs.RA[noedge_case])[::-1]),\
+        "the extracted objects have not RA values in decressing order as expected"

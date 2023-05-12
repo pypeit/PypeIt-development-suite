@@ -24,12 +24,12 @@ spec:
         - -c
         env:
         - name: PYPEIT_DEV
-          value: /PypeIt-development-suite
+          value: /tmp/PypeIt-development-suite
         - name: ENDPOINT_URL
           value: http://rook-ceph-rgw-nautiluss3.rook
         - name: S3_ENDPOINT
           value: rook-ceph-rgw-nautiluss3.rook
-        image: localhost:30081/profxj/pypeit:latest
+        image: localhost:30081/profxj/pypeit_v1:latest
         imagePullPolicy: Always
         name: container
         resources:
@@ -49,6 +49,9 @@ spec:
           name: ephemeral
         - mountPath: /dev/shm
           name: dshm
+        - mountPath: /root/.config/service_account.json
+          name: devsuite-rawdata
+          subPath: credentials
       nodeSelector:
         nautilus.io/disktype: nvme
       restartPolicy: Never
@@ -56,6 +59,9 @@ spec:
       - name: prp-s3-credentials
         secret:
           secretName: prp-s3-credentials
+      - name: devsuite-rawdata
+        secret:
+          secretName: devsuite-rawdata
       - emptyDir:
           medium: Memory
         name: dshm

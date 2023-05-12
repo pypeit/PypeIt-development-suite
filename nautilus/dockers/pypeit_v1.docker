@@ -1,0 +1,68 @@
+# https://www.techrepublic.com/article/how-to-create-a-docker-image-and-push-it-to-docker-hub/
+# https://medium.com/faun/how-to-build-a-docker-container-from-scratch-docker-basics-a-must-know-395cba82897b
+#docker build -t pypeit_v1 -f ../dockers/pypeit_v1.docker .
+#docker tag pypeit_v1:latest profxj/pypeit_v1:latest
+#docker push profxj/pypeit_v1:latest
+#docker run --name testing_v1 -i -t pypeit_v1
+# Testing: docker exec -it <container> /bin/bash
+
+# install timm version 0.3.2
+# change file in /opt/conda/lib/python3.9/site-packages/timm/models/layers/helpers.py
+# PyTorch 1.8.1+
+# torchvision 0.8.1+
+
+FROM continuumio/miniconda3
+
+ENV DEBIAN_FRONTEND="noninteractive" TZ="US"
+
+RUN  apt-get update 
+
+# Code and storage
+RUN  apt-get install -y git awscli
+
+# Download and install Anaconda.
+RUN apt-get update && apt-get install curl -y
+
+# QT
+RUN apt-get install build-essential -y
+RUN apt-get install -y qtcreator 
+#RUN apt-get install qt5-default
+
+# Miniconda
+ENV PATH="/root/miniconda3/bin:${PATH}"
+ARG PATH="/root/miniconda3/bin:${PATH}"
+#RUN wget https://repo.anaconda.com/miniconda/Miniconda3-py38_4.9.2-Linux-x86_64.sh \
+#    && mkdir /root/.conda \
+#    && bash Miniconda3-py38_4.9.2-Linux-x86_64.sh -b \
+#    && rm -f Miniconda3-py38_4.9.2-Linux-x86_64.sh 
+
+RUN pip install --upgrade pip \
+    && pip install scikit-image \
+    && pip install h5py 
+   
+
+# Other apt
+#RUN  apt-get update && \
+#     apt-get install -y vim
+
+# Storage
+RUN  pip install smart-open[s3]
+
+# Some basics
+RUN  pip install ipython
+
+# Some bigger packages
+RUN  pip install scikit-learn
+RUN  pip install pandas
+RUN  pip install astropy==5.1.1
+RUN  pip install scipy==1.9.3
+RUN  pip install numpy==1.23.4
+RUN  pip install matplotlib==3.5.2
+RUN  pip install pyarrow  
+RUN  pip install astropy-healpix
+
+# PypeIt time
+RUN git clone https://github.com/pypeit/PypeIt.git
+
+# Other bits and dependencies
+RUN cd PypeIt; pip install -e ".[dev,pyqt5,specutils]"
