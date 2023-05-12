@@ -1,43 +1,34 @@
-# Auto-generated PypeIt file using PypeIt version: 1.8.2.dev238+g7ebf9226e
-# 2022-05-05
+# Auto-generated PypeIt input file using PypeIt version: 1.12.3.dev393+g03a1f4bde.d20230509
+# UTC 2023-05-09T23:17:02.554
 
 # User-defined execution parameters
 [rdx]
-  spectrograph = ldt_deveny
+    spectrograph = ldt_deveny
 
 # Setup
 setup read
-    Setup A:
-        dispname: DV6 (600/4900)
-         cenwave: 4900.0
-         filter1: CLEAR
-         binning: 1,2
+Setup A:
+  binning: 1,2
+  cenwave: 4900.0
+  dispname: DV6 (600/4900)
+  filter1: CLEAR
 setup end
 
-# Read in the data
+# Data block 
 data read
  path RAWDIR
-|           filename |       frametype |                 ra |                dec |       target |       dispname | decker | binning |                mjd | airmass | exptime | cenwave | filter1 | dispangle | slitwid | lampstat01 |
-| 20220221.0056.fits |        arc,tilt |           44.64875 |           34.64625 | Arcs  HgCdAr | DV6 (600/4900) |   None |     1,2 |  59631.10292754629 |    1.47 |     5.0 |  4900.0 |   CLEAR |     27.04 |     1.2 | Cd, Ar, Hg |
-| 20220221.0057.fits |        arc,tilt |           44.64875 |           34.64625 | Arcs  HgCdAr | DV6 (600/4900) |   None |     1,2 |    59631.103034375 |    1.47 |     5.0 |  4900.0 |   CLEAR |     27.04 |     1.2 | Cd, Ar, Hg |
-| 20220221.0058.fits |        arc,tilt |           44.64875 |           34.64625 | Arcs  HgCdAr | DV6 (600/4900) |   None |     1,2 | 59631.103141203705 |    1.47 |     5.0 |  4900.0 |   CLEAR |     27.04 |     1.2 | Cd, Ar, Hg |
-| 20220221.0059.fits |        arc,tilt |           44.64875 |           34.64625 | Arcs  HgCdAr | DV6 (600/4900) |   None |     1,2 |  59631.10324803241 |    1.47 |     5.0 |  4900.0 |   CLEAR |     27.04 |     1.2 | Cd, Ar, Hg |
-| 20220221.0060.fits |        arc,tilt |           44.64875 |           34.64625 | Arcs  HgCdAr | DV6 (600/4900) |   None |     1,2 |  59631.10335486111 |    1.47 |     5.0 |  4900.0 |   CLEAR |     27.04 |     1.2 | Cd, Ar, Hg |
-| 20220221.0001.fits |            bias |           44.64875 |           34.64625 |         Bias | DV6 (600/4900) |   None |     1,2 |  59631.04411122685 |    1.47 |     0.0 |  4900.0 |   CLEAR |     27.04 |     1.2 |        off |
-| 20220221.0002.fits |            bias |           44.64875 |           34.64625 |         Bias | DV6 (600/4900) |   None |     1,2 |  59631.04416261574 |    1.47 |     0.0 |  4900.0 |   CLEAR |     27.04 |     1.2 |        off |
-| 20220221.0003.fits |            bias |           44.64875 |           34.64625 |         Bias | DV6 (600/4900) |   None |     1,2 |  59631.04421157407 |    1.47 |     0.0 |  4900.0 |   CLEAR |     27.04 |     1.2 |        off |
-| 20220221.0004.fits |            bias |           44.64875 |           34.64625 |         Bias | DV6 (600/4900) |   None |     1,2 | 59631.044260532406 |    1.47 |     0.0 |  4900.0 |   CLEAR |     27.04 |     1.2 |        off |
-| 20220221.0005.fits |            bias |           44.64875 |           34.64625 |         Bias | DV6 (600/4900) |   None |     1,2 |  59631.04430949074 |    1.47 |     0.0 |  4900.0 |   CLEAR |     27.04 |     1.2 |        off |
-| 20220221.0039.fits | pixelflat,trace |           44.64875 |           34.64625 |   Dome Flats | DV6 (600/4900) |   None |     1,2 | 59631.095700694445 |    1.47 |    20.0 |  4900.0 |   CLEAR |     27.04 |     1.2 |        off |
-| 20220221.0040.fits | pixelflat,trace |           44.64875 |           34.64625 |   Dome Flats | DV6 (600/4900) |   None |     1,2 |  59631.09598113426 |    1.47 |    20.0 |  4900.0 |   CLEAR |     27.04 |     1.2 |        off |
-| 20220221.0041.fits | pixelflat,trace |           44.64875 |           34.64625 |   Dome Flats | DV6 (600/4900) |   None |     1,2 |  59631.09626157407 |    1.47 |    20.0 |  4900.0 |   CLEAR |     27.04 |     1.2 |        off |
-| 20220221.0042.fits | pixelflat,trace |           44.64875 |           34.64625 |   Dome Flats | DV6 (600/4900) |   None |     1,2 |  59631.09654201389 |    1.47 |    20.0 |  4900.0 |   CLEAR |     27.04 |     1.2 |        off |
-| 20220221.0043.fits | pixelflat,trace |           44.64875 |           34.64625 |   Dome Flats | DV6 (600/4900) |   None |     1,2 | 59631.096822569445 |    1.47 |    20.0 |  4900.0 |   CLEAR |     27.04 |     1.2 |        off |
-| 20220221.0066.fits |science,standard |  76.38129166666666 |  52.83163888888889 |     G191-B2B | DV6 (600/4900) |   None |     1,2 |  59631.13234027778 |    1.06 |   600.0 |  4900.0 |   CLEAR |     27.04 |     1.2 |        off |
-| 20220221.0077.fits |         science | 103.66041666666666 | -4.530305555555556 |     B03_88_A | DV6 (600/4900) |   None |     1,2 | 59631.226239351854 |    1.35 |   600.0 |  4900.0 |   CLEAR |     27.04 |     1.2 |        off |
-| 20220221.0078.fits |         science | 103.57929166666666 | -4.529805555555556 |     B03_88_I | DV6 (600/4900) |   None |     1,2 |  59631.23873946759 |     1.4 |   600.0 |  4900.0 |   CLEAR |     27.04 |     1.2 |        off |
-| 20220221.0079.fits |         science |           103.6685 | -4.527222222222222 |     B03_88_K | DV6 (600/4900) |   None |     1,2 |  59631.24716643518 |    1.43 |   600.0 |  4900.0 |   CLEAR |     27.04 |     1.2 |        off |
-| 20220221.0080.fits |         science | 103.61741666666666 | -4.546194444444445 |     B03_88_N | DV6 (600/4900) |   None |     1,2 | 59631.254424652776 |    1.46 |   600.0 |  4900.0 |   CLEAR |     27.04 |     1.2 |        off |
-| 20220221.0081.fits |         science | 103.62691666666666 | -4.498861111111111 |     B03_88_S | DV6 (600/4900) |   None |     1,2 |  59631.26370833333 |    1.51 |   600.0 |  4900.0 |   CLEAR |     27.04 |     1.2 |        off |
+          filename |       frametype |                 ra |                dec |       target |       dispname | decker | binning |                mjd | airmass | exptime | cenwave | filter1 | dispangle | slitwid | lampstat01 | calib
+20220221.0056.fits |        arc,tilt |           44.64875 |           34.64625 | Arcs  HgCdAr | DV6 (600/4900) |   None |     1,2 |  59631.10292754629 |    1.47 |     5.0 |  4900.0 |   CLEAR |     27.04 |     1.2 | Cd, Ar, Hg |     0
+20220221.0057.fits |        arc,tilt |           44.64875 |           34.64625 | Arcs  HgCdAr | DV6 (600/4900) |   None |     1,2 |    59631.103034375 |    1.47 |     5.0 |  4900.0 |   CLEAR |     27.04 |     1.2 | Cd, Ar, Hg |     0
+20220221.0058.fits |        arc,tilt |           44.64875 |           34.64625 | Arcs  HgCdAr | DV6 (600/4900) |   None |     1,2 | 59631.103141203705 |    1.47 |     5.0 |  4900.0 |   CLEAR |     27.04 |     1.2 | Cd, Ar, Hg |     0
+20220221.0001.fits |            bias |           44.64875 |           34.64625 |         Bias | DV6 (600/4900) |   None |     1,2 |  59631.04411122685 |    1.47 |     0.0 |  4900.0 |   CLEAR |     27.04 |     1.2 |        off |     0
+20220221.0002.fits |            bias |           44.64875 |           34.64625 |         Bias | DV6 (600/4900) |   None |     1,2 |  59631.04416261574 |    1.47 |     0.0 |  4900.0 |   CLEAR |     27.04 |     1.2 |        off |     0
+20220221.0003.fits |            bias |           44.64875 |           34.64625 |         Bias | DV6 (600/4900) |   None |     1,2 |  59631.04421157407 |    1.47 |     0.0 |  4900.0 |   CLEAR |     27.04 |     1.2 |        off |     0
+20220221.0039.fits | pixelflat,trace |           44.64875 |           34.64625 |   Dome Flats | DV6 (600/4900) |   None |     1,2 | 59631.095700694445 |    1.47 |    20.0 |  4900.0 |   CLEAR |     27.04 |     1.2 |        off |     0
+20220221.0040.fits | pixelflat,trace |           44.64875 |           34.64625 |   Dome Flats | DV6 (600/4900) |   None |     1,2 |  59631.09598113426 |    1.47 |    20.0 |  4900.0 |   CLEAR |     27.04 |     1.2 |        off |     0
+20220221.0041.fits | pixelflat,trace |           44.64875 |           34.64625 |   Dome Flats | DV6 (600/4900) |   None |     1,2 |  59631.09626157407 |    1.47 |    20.0 |  4900.0 |   CLEAR |     27.04 |     1.2 |        off |     0
+20220221.0066.fits |         science |  76.38129166666666 |  52.83163888888889 |     G191-B2B | DV6 (600/4900) |   None |     1,2 |  59631.13234027778 |    1.06 |   600.0 |  4900.0 |   CLEAR |     27.04 |     1.2 |        off |     0
+20220221.0077.fits |         science | 103.66041666666666 | -4.530305555555556 |     B03_88_A | DV6 (600/4900) |   None |     1,2 | 59631.226239351854 |    1.35 |   600.0 |  4900.0 |   CLEAR |     27.04 |     1.2 |        off |     0
+20220221.0080.fits |         science | 103.61741666666666 | -4.546194444444445 |     B03_88_N | DV6 (600/4900) |   None |     1,2 | 59631.254424652776 |    1.46 |   600.0 |  4900.0 |   CLEAR |     27.04 |     1.2 |        off |     0
 data end
 
