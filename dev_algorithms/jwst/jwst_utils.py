@@ -288,11 +288,19 @@ def jwst_proc(msa_data, slit_slice, finitemask, flatfield, pathloss, barshadow, 
     #flux_to_counts = t_eff / photom_conversion  # This converts s2d outputs of flux to counts.
     #jwst_scale = photom_conversion/flatfield/pathloss/barshadow
 
-    # This is what Kyle is using in his code
+    # The factor of t_eff in the flat is simply going to divide out the factor of t_eff multiplied into the data above
     if use_flat:
-        total_flat = flatfield*pathloss*barshadow/photom_conversion
+        # TODO The flats take on very high values, which I think is a bad choice. The bad locations seem to have a value
+        #  of 1.0, but there ought to be a better way to create this mask. I set these bad values to np.nan so that
+        # they will be flagged in the flat_bpm step below
+        flatfield_bpm = flatfield == 1.0
+        flatfield_with_nan = flatfield.copy()
+        flatfield_with_nan[flatfield_bpm] = np.nan
+        total_flat = t_eff*barshadow*pathloss*flatfield_with_nan/photom_conversion
+        # This is what Kyle is using in his code
     else:
-        total_flat = pathloss*barshadow
+        total_flat = t_eff*barshadow*pathloss
+
 
     total_flat_square = np.square(total_flat)
 
@@ -314,6 +322,7 @@ def jwst_proc(msa_data, slit_slice, finitemask, flatfield, pathloss, barshadow, 
     base_var[nanmask] = 0.0
     var[nanmask] = 0.0
     sciivar[nanmask] = 0.0
+    # JFH The rn2_img is not currently used and could be omitted. At present it is in the wrong units
     rn2_img = np.zeros_like(science)
     rn2_img[finitemask] = ronoise**2
 
@@ -329,6 +338,7 @@ class NIRSpecSlitCalibrations(datamodel.DataContainer):
                  'source_name': dict(otype=str, descr='Name of source'),
                  'on_detector': dict(otype=bool, descr='True if the slit is on the detector, otherwise False'),
                  'det_name': dict(otype=str, descr='Name of NIRSpec detector, i.e. either NRS1 or NRS2'),
+                 't_eff': dict(otype=float, descr='Effective exposure time'),
                  'detector': dict(otype=DetectorContainer,
                                   descr='The detector (see :class:`~pypeit.images.detector_container.DetectorContainer`) '
                                         'parameters'),
@@ -363,6 +373,7 @@ class NIRSpecSlitCalibrations(datamodel.DataContainer):
         super().__init__()
         self.slit_name = slit_name
         self.det_name = ms_model.meta.instrument.detector
+        self.t_eff = ms_model.meta.exposure.effective_exposure_time
         self.detector = detector
         # Is this slit on nrs1?
         slit_names = np.array([slit.name for slit in ms_model.slits])
@@ -923,6 +934,7 @@ def jwst_populate_calibs(nspec, nspat, e2d_multi, final_multi, intflat_multi):
     return reduce_gpm, ra, dec, waveimg, tilts, flatfield, pathloss, barshadow, photom_conversion, calwebb_final, subimg_count, \
            slit_left, slit_righ, spec_min, spec_max, meta_list
 
+#def jwst_mJy_to_flam
 
 def jwst_proc_old(e2d_slit, final_slit, intflat_slit=None, kludge_err=1.0):
 
