@@ -99,10 +99,10 @@ mode = 'MSA'
 #islit = '37'
 #reduce_sources = ['2756_10025']
 #reduce_sources = ['2756_202']
-#reduce_sources = ['2073_4562']
+reduce_sources = ['2073_4562']
 #reduce_sources = ['2073_8731']
 #reduce_slits = None
-reduce_sources = None
+#reduce_sources = None
 reduce_slits = None
 #reduce_slits = ['S200A1']
 
@@ -121,13 +121,13 @@ for detname in detectors:
 
         # NIRSPEC 3-point dither
         # dither center
-        #scifile1 = os.path.join(rawpath_level2, 'jw02073008001_03101_00001_' + detname + '_rate.fits')
-        #scifile2 = os.path.join(rawpath_level2, 'jw02073008001_03101_00002_' + detname + '_rate.fits')
-        #scifile3 = os.path.join(rawpath_level2, 'jw02073008001_03101_00003_' + detname + '_rate.fits')
+        scifile1 = os.path.join(rawpath_level2, 'jw02073008001_03101_00001_' + detname + '_rate.fits')
+        scifile2 = os.path.join(rawpath_level2, 'jw02073008001_03101_00002_' + detname + '_rate.fits')
+        scifile3 = os.path.join(rawpath_level2, 'jw02073008001_03101_00003_' + detname + '_rate.fits')
 
-        scifile1 = os.path.join(rawpath_level2, 'jw02073006001_03101_00001_' + detname + '_rate.fits')
-        scifile2 = os.path.join(rawpath_level2, 'jw02073006001_03101_00002_' + detname + '_rate.fits')
-        scifile3 = os.path.join(rawpath_level2, 'jw02073006001_03101_00003_' + detname + '_rate.fits')
+        #scifile1 = os.path.join(rawpath_level2, 'jw02073006001_03101_00001_' + detname + '_rate.fits')
+        #scifile2 = os.path.join(rawpath_level2, 'jw02073006001_03101_00002_' + detname + '_rate.fits')
+        #scifile3 = os.path.join(rawpath_level2, 'jw02073006001_03101_00003_' + detname + '_rate.fits')
 
 
     elif 'PRISM_02756' == disperser:
@@ -516,7 +516,7 @@ else:
 kludge_err = 1.5
 # Is this correct?
 bkg_indices = [1, 2, 1]
-show = False
+show = True
 
 
 # Loop over all slits. For each exposure create a mosaic and save them to individual PypeIt spec2d files.
