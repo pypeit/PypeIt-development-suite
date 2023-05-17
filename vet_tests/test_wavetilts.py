@@ -61,15 +61,15 @@ def test_run(redux_out):
     master_file = os.path.join(redux_out, kastb_dir, 'Calibrations',
                                'Tiltimg_A_0_DET01.fits')
     mstilt = buildimage.TiltImage.from_file(master_file)
-    trace_file = os.path.join(redux_out, kastb_dir, 'Calibrations',
-                              'Edges_A_0_DET01.fits.gz')
-    edges = edgetrace.EdgeTraceSet.from_file(trace_file)
+    # Slits
+    slit_file = os.path.join(redux_out, kastb_dir, 'Calibrations',
+                             'Slits_A_0_DET01.fits.gz')
     # Instantiate
     #spectrograph.detector[0]['saturation'] = 60000.
     #spectrograph.detector[0]['nonlinear'] = 0.9
     par = pypeitpar.WaveTiltsPar()
     wavepar = pypeitpar.WavelengthSolutionPar()
-    slits = edges.get_slits()
+    slits = slittrace.SlitTraceSet.from_file(slit_file)
     buildwaveTilts = wavetilts.BuildWaveTilts(mstilt, slits, spectrograph, par, wavepar, det=1)
     # Run
     waveTilts = buildwaveTilts.run(doqa=False)
