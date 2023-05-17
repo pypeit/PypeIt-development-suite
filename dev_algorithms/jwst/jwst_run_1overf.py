@@ -9,13 +9,15 @@ import jwst_mosaic_slits as jms
 def run_brammer(ratefile, bpm=None, fix_rows=False, in_place=False, writeout=False, make_plot=False):
 
     im = fits.open(ratefile)
-    im_data = im['SCI'].data.T
+    im_data = im['SCI'].data.T # rotated to Pypeit format
 
-    fig, mod, data = b.exposure_oneoverf_correction(ratefile, rot_pypeit_fmt=True, bpm=bpm, in_place=in_place, deg_pix=256, make_plot=make_plot) # default
+    # axis=1 if rotated to Pypeit format
+    fig, mod, data = b.exposure_oneoverf_correction(ratefile, rot_pypeit_fmt=True, axis=1, bpm=bpm, in_place=in_place, deg_pix=256, make_plot=make_plot) # default
     mod[~np.isfinite(mod)] = 0
 
     if fix_rows:
-        axis = 1
+        #axis = 1
+        axis = 0 # rotated to Pypeit format
         fig, fix_row_mod, data = b.exposure_oneoverf_correction(ratefile, rot_pypeit_fmt=True, bpm=bpm, axis=axis, in_place=in_place, deg_pix=2048, make_plot=make_plot)
 
         fix_row_mod[~np.isfinite(fix_row_mod)] = 0
