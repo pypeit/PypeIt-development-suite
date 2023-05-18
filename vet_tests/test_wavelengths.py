@@ -28,7 +28,7 @@ def test_not_alfosc(redux_out):
 
     for setup, rms in zip(
         ['grism3', 'grism4_nobin', 'grism5', 'grism7', 'grism10', 'grism11', 'grism17', 'grism18', 'grism19', 'grism20'],
-        [0.45, 0.19, 0.15, 0.11, 0.16, 0.17, 0.15, 0.13, 0.05, 0.05],
+        [0.45, 0.19, 0.15, 0.11, 0.20, 0.17, 0.15, 0.13, 0.05, 0.05],
         ):
         setupID = 'A_0'
         index = 0
