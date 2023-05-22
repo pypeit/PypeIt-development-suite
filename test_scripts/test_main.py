@@ -739,6 +739,7 @@ def main():
 
     flg_pypeit_tests = False
     flg_unit = False
+    flg_calibs = False
     flg_reduce = False
     flg_after = False
     flg_ql = False
@@ -763,6 +764,8 @@ def main():
             flg_pypeit_tests = True
         elif test == "unit":
             flg_unit = True
+        elif test == "calibs":
+            flg_calibs = True
         elif test == "reduce":
             flg_reduce = True
         elif test == "after" or test=="afterburn":
@@ -825,8 +828,10 @@ def main():
                 print('Running unit tests in pypeit/tests')
             if flg_unit:
                 print('Running dev suite unit tests')
+            if flg_calibs:
+                print('Running calibration tests')
             if flg_reduce:
-                print('Running reduce tests.')
+                print('Running reduce tests')
             if flg_after:
                 print('Running afterburner tests')
             if flg_ql is True:
@@ -852,7 +857,7 @@ def main():
         run_pytest(pargs, "Unit Tests", os.path.join(dev_path, "unit_tests"), test_report)
 
 
-    if flg_reduce or flg_after or flg_ql:
+    if flg_calibs or flg_reduce or flg_after or flg_ql:
         # ---------------------------------------------------------------------------
         # Build the TestSetup and PypeItTest objects for testing
 
@@ -891,7 +896,7 @@ def main():
             # Build test setups, check for missing files, and run any prep work
             for setup_name in setup_names:
 
-                setup = build_test_setup(pargs, instr, setup_name, flg_reduce, flg_after,
+                setup = build_test_setup(pargs, instr, setup_name, flg_calibs, flg_reduce, flg_after,
                                         flg_ql)
                 missing_files += setup.missing_files
 
@@ -978,27 +983,30 @@ def main():
     return test_report.num_failed
 
 
-def build_test_setup(pargs, instr, setup_name, flg_reduce, flg_after, flg_ql):
+def build_test_setup(pargs, instr, setup_name, flg_calibs, flg_reduce, flg_after, flg_ql):
     """
     Builds a TestSetup object including the tests that it will run
 
     Args:
-        pargs (:obj:`argparse.Namespace`): 
+        pargs (:obj:`argparse.Namespace`):
             The arguments to pypeit_test, as returned by argparse.
         
-        instr (str): 
+        instr (str):
             The instrument the setup is for.
 
-        setup_name (str): 
+        setup_name (str):
             The name of the test setup.
 
-        flg_reduce (bool): 
+        flg_calibs (bool):
+            Whether or not calibration-only tests are being run.
+
+        flg_reduce (bool):
             Whether or not reduce tests are being run.
 
-        flg_after (bool): 
+        flg_after (bool):
             Whether or not afterburner tests are being run.
 
-        flg_ql (bool): 
+        flg_ql (bool):
             Whether or not quick look tests are being run.
 
     Returns:
@@ -1052,6 +1060,9 @@ def build_test_setup(pargs, instr, setup_name, flg_reduce, flg_after, flg_ql):
 
             # Skip the test if it wasn't selected by the command line
             if pargs.prep_only and test_descr['type'] != TestPhase.PREP:
+                continue
+
+            if not flg_calibs and test_descr['type'] == TestPhase.CALIBS:
                 continue
 
             if not flg_reduce and test_descr['type'] == TestPhase.REDUCE:

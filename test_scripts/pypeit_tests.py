@@ -200,6 +200,48 @@ class PypeItSetupTest(PypeItTest):
                 self.setup.instr, '-c all', '-o', '--output_path', self.setup.rdxdir]
 
 
+class PypeItCalibsTest(PypeItTest):
+    """Test subclass that runs run_pypeit -c"""
+
+    def __init__(self, setup, pargs, ignore_calibs=None, std=False):
+
+        self.ignore_calibs = ignore_calibs if ignore_calibs is not None else pargs.do_not_reuse_calibs
+
+        description = f"pypeit_calibs{' standards' if std else ''}{' (ignore calibrations)' if self.ignore_calibs else ''}"
+        super().__init__(setup, pargs, description, "test")
+
+        self.std = std
+        # If the pypeit file isn't being created by pypeit_setup, copy it and update it's path
+        if not self.setup.generate_pyp_file:
+            self.pyp_file = template_pypeit_file(self.setup.dev_path,
+                                                 self.setup.instr,
+                                                 self.setup.name,
+                                                 self.std)
+
+            self.pyp_file = fix_pypeit_file_directory(self.pyp_file,
+                                                      self.setup.dev_path,
+                                                      self.setup.rawdir,
+                                                      self.setup.instr,
+                                                      self.setup.name,
+                                                      self.setup.rdxdir,
+                                                      self.std)
+
+    def build_command_line(self):
+        if self.setup.generate_pyp_file:
+            self.pyp_file = self.setup.pyp_file
+
+        command_line = ['run_pypeit', self.pyp_file, '-c']
+        if self.ignore_calibs:
+            command_line += ['-m']
+
+        return command_line
+
+    def check_for_missing_files(self):
+        if not self.setup.generate_pyp_file and not os.path.isfile(self.pyp_file):
+            return [self.pyp_file]
+        else:
+            return []
+
 class PypeItReduceTest(PypeItTest):
     """Test subclass that runs run_pypeit"""
 

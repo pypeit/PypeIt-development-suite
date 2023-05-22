@@ -87,12 +87,14 @@ class TestPhase(Enum):
     Values:
 
     PREP
+    CALIBS
     REDUCE
     AFTERBURN
     QL
     UNIT
     """
     PREP      = auto()
+    CALIBS    = auto()
     REDUCE    = auto()
     AFTERBURN = auto()
     QL        = auto()
@@ -435,6 +437,9 @@ _quick_look = {
 all_tests = [{'factory': pypeit_tests.PypeItSetupTest,
               'type':    TestPhase.PREP,
               'setups':  _pypeit_setup},
+             {'factory': pypeit_tests.PypeItCalibsTest,
+              'type':    TestPhase.CALIBS,
+              'setups':  _reduce_setups},
              {'factory': pypeit_tests.PypeItReduceTest,
               'type':    TestPhase.REDUCE,
               'setups':  _reduce_setups},
