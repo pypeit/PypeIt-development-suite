@@ -115,7 +115,7 @@ all_setups  = {
                     '830G_M_8500', '830G_L_8100', '1200B_M_5200', '1200G_M_5500',
                     '900ZD_M_6000', '1200B_LVM_5200', '900ZD_LVM_5500',
                     '830G_M_9000_dither'],
-    'keck_hires': ['RED_C1_ECH_-0.82_XD_1.62'],
+#    'keck_hires': ['RED_C1_ECH_-0.82_XD_1.62'],
     'keck_kcwi': ['bh2_4200', 'bl'],
     'keck_nires': ['ABBA_wstandard', 'ABBA_nostandard', 'ABC_nostandard', 'ABpat_wstandard', 'ABBA_nostandard_faint'],
     'keck_nirspec': ['LOW_NIRSPEC-1'],
