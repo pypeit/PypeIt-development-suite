@@ -75,7 +75,7 @@ class PypeItTest(ABC):
     def __str__(self):
         """Return a summary of the test and the status.
 
-           Example: 'shane_kast_red/600_7500_d57 pypeit (without masters)'
+           Example: 'shane_kast_red/600_7500_d57 pypeit (without calibrations)'
         """
         return f"{self.setup} {self.description}"
 
@@ -203,11 +203,11 @@ class PypeItSetupTest(PypeItTest):
 class PypeItReduceTest(PypeItTest):
     """Test subclass that runs run_pypeit"""
 
-    def __init__(self, setup, pargs, ignore_masters=None, std=False):
+    def __init__(self, setup, pargs, ignore_calibs=None, std=False):
 
-        self.ignore_masters = ignore_masters if ignore_masters is not None else pargs.do_not_reuse_masters
+        self.ignore_calibs = ignore_calibs if ignore_calibs is not None else pargs.do_not_reuse_calibs
 
-        description = f"pypeit{' standards' if std else ''}{' (ignore masters)' if self.ignore_masters else ''}"
+        description = f"pypeit{' standards' if std else ''}{' (ignore calibrations)' if self.ignore_calibs else ''}"
         super().__init__(setup, pargs, description, "test")
 
         self.std = std
@@ -231,7 +231,7 @@ class PypeItReduceTest(PypeItTest):
             self.pyp_file = self.setup.pyp_file
 
         command_line = ['run_pypeit', self.pyp_file, '-o']
-        if self.ignore_masters:
+        if self.ignore_calibs:
             command_line += ['-m']
 
         return command_line
@@ -420,21 +420,21 @@ class PypeItCoadd1DTest(PypeItTest):
 
 class PypeItCoadd2DTest(PypeItTest):
     """Test subclass that runs pypeit_coadd_2dspec"""
-    def __init__(self, setup, pargs, coadd_file=None, obj=None):
+    def __init__(self, setup, pargs, coadd_file=None): #, obj=None):
         super().__init__(setup, pargs, "pypeit_coadd_2dspec", "test_2dcoadd")
-        self.obj = obj
+        #self.obj = obj
 
         if coadd_file:
             self.coadd_file = template_coadd2d_file(setup.dev_path, setup.instr, setup.name)
         else:
             self.coadd_file = None
 
-        if self.coadd_file is None and self.obj is None:
-            raise ValueError('Must provide coadd2d file or object name.')
+        if self.coadd_file is None: # and self.obj is None:
+            raise ValueError('Must provide coadd2d file') # or object name.')
 
     def build_command_line(self):
-        command_line = ['pypeit_coadd_2dspec']
-        command_line += ['--obj', self.obj] if self.coadd_file is None else ['--file', self.coadd_file]
+        command_line = ['pypeit_coadd_2dspec', self.coadd_file]
+#        command_line += ['--obj', self.obj] if self.coadd_file is None else ['--file', self.coadd_file]
         return command_line
 
     def check_for_missing_files(self):
@@ -505,97 +505,101 @@ class PypeItQuickLookTest(PypeItTest):
         self.redux_dir = os.path.abspath(pargs.outputdir)
         self.pargs = pargs
         self.test_name = test_name
-        # Place the masters into REDUX_DIR/QL_MASTERS directory.
-        self.output_dir = os.path.join(self.redux_dir, 'QL_MASTERS')
+        # Place the calibrations into REDUX_DIR/QL_CALIB directory.
+        self.output_dir = os.path.join(self.redux_dir, 'QL_CALIB')
 
     def build_command_line(self):
 
-        if self.setup.instr == 'keck_mosfire' and self.setup.name == 'Y_long':
-            command_line = ['pypeit_ql_jfh_multislit', 'keck_mosfire']
-            if self.pargs.quiet:
-                command_line += ['--no_gui', '--writefits']
-        elif self.setup.instr == 'keck_lris_red_mark4':
-            command_line = ['pypeit_ql_jfh_multislit', 'keck_lris_red_mark4']
-            if self.pargs.quiet:
-                command_line += ['--no_gui', '--writefits']
-        else:
-            # Redux folder
-            redux_path = os.path.join(self.redux_dir,
-                    self.setup.instr, self.setup.name)
-            last_folder = 'QL'
-            if self.test_name is not None:
-                last_folder += '_' + self.test_name
-            redux_path = os.path.join(redux_path, last_folder)
+        # Redux folder
+        redux_path = os.path.join(self.redux_dir,
+                self.setup.instr, self.setup.name)
+        last_folder = 'QL'
+        if self.test_name is not None:
+            last_folder += '_' + self.test_name
+        redux_path = os.path.join(redux_path, last_folder)
                     
-            command_line = [
-                'pypeit_ql', self.setup.instr,
-                '--redux_path', redux_path]
+        command_line = [
+            'pypeit_ql', self.setup.instr,
+            '--skip_display',
+            '--redux_path', redux_path,
+            '--raw_path', self.setup.rawdir, 
+            '--raw_files'] + self.files
 
-        if self.setup.instr == 'keck_mosfire' and self.setup.name == 'Y_long': # JFH QL
-            command_line += [self.setup.rawdir] + self.files
-        elif self.setup.instr == 'keck_lris_red_mark4':  # TESTING USING JFH QL
-            command_line += [self.setup.rawdir] + self.files
-        else:
-            command_line += ['--full_rawpath', self.setup.rawdir, 
-                             '--rawfiles'] + self.files
         # Aditional options
         for option in self.options:
             if self.options[option] is None:
                 command_line += [option]
-            elif self.options[option] in ['USE_MASTERS_DIR', 
-                                          'USE_CALIB_DIR']:
-                idir = self.setup.rdxdir
-                #idir = os.path.join(self.redux_dir,
-                #    self.setup.instr, self.setup.name)
-                # Masters?
-                if self.options[option] == 'USE_MASTERS_DIR':
-                    ## Crazy hack for pypeit_setup 
-                    #if self.setup.instr in ['shane_kast_blue'] and \
-                    #    self.setup.name in ['600_4310_d55']:
-                    #        idir = os.path.join(idir,
-                    #            f'{self.setup.instr}_A')
-                    idir = os.path.join(idir, 'Masters')
-                # Finally
+            elif self.options[option] in ['USE_CALIB_DIR', 
+                                          'USE_ARCHIVE_CALIB_DIR']:
+                if self.options[option] == 'USE_CALIB_DIR':
+                    # Point the QL script directly to the directory with the
+                    # calibrations reduced during the main "reduce" execution of
+                    # PypeIt.
+                    idir = os.path.join(self.setup.rdxdir, 'Calibrations')
+                else:
+                    # Point the QL script to the top-level directory that can
+                    # potentially have multiple setups.  This forces the code to
+                    # match to the correct setup.  For some instruments, this
+                    # points to the QL_CALIB directory, for others this just
+                    # points one directory up from the USE_CALIB_DIR result.
+                    idir = self.output_dir if self.instr_uses_build_calib() \
+                                else os.path.dirname(self.setup.rdxdir)
                 command_line += [option, idir]
             else:
                 command_line += [option, str(self.options[option])]
 
         return command_line
 
+    def instr_uses_build_calib(self):
+        """
+        Check if instrument uses pre-build calibrations.
+        """
+        # NOTE: This is required if any of the QL tests set the
+        # '--parent_calib_dir' to 'USE_ARCHIVE_CALIB_DIR'.  The *only*
+        # instrument that currently does this is Keck/NIRES.  The other QL test
+        # all use the calibrations directory from the main `reduce` run as the
+        # reference calibrations; i.e., the set '--setup_calib_dir' to
+        # 'USE_CALIB_DIR'.  See test_scripts/test_setups.py.
+        return self.setup.instr == 'keck_nires' \
+                or (self.setup.instr == 'keck_mosfire' and self.setup.name == 'Y_long') # \
+#                or (self.setup.instr == 'keck_lris_red_mark4' 
+#                        and self.setup.name == 'long_600_10000_d680')
+
     def run(self):
-        """Generate any required quick look masters before running the quick look test"""
+        """
+        Generate any required quick-look calibration before running the quick look test.
+        """
+        # TODO: Do we need a way to point at an "archive" QL_CALIB directory for
+        # calibs that don't (or rarely) change?
 
-        if self.setup.instr == 'keck_nires' or (self.setup.instr == 'keck_mosfire' and self.setup.name == 'Y_long') or \
-                (self.setup.instr == 'keck_lris_red_mark4' and self.setup.name == 'long_600_10000_d680'):
+        if self.instr_uses_build_calib():
+            logfile = get_unique_file(os.path.join(self.setup.rdxdir, "build_ql_calib_output.log"))
             try:
-
-                # Build the masters with the output going to a log file
-                logfile = get_unique_file(os.path.join(self.setup.rdxdir, "build_ql_masters_output.log"))
+                # Build the calibrations with the output going to a log file
                 with open(logfile, "w") as log:
-                    result = subprocess.run([os.path.join(self.setup.dev_path, 'build_ql_masters'),
-                                             self.setup.instr, "-s", self.setup.name, '--output_dir', self.output_dir, '--redux_dir', self.redux_dir, '--force_copy'],
+                    result = subprocess.run([os.path.join(self.setup.dev_path, 'build_ql_calibs'),
+                                             self.setup.instr, '-s', self.setup.name,
+                                             '--output_dir', self.output_dir,
+                                             '--redux_dir', self.redux_dir, '--force_copy'],
                                             stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
-
-                    print(result.stdout if isinstance(result.stdout, str) else result.stdout.decode(errors='replace'), file=log)
+                    print(result.stdout if isinstance(result.stdout, str)
+                            else result.stdout.decode(errors='replace'), file=log)
 
                 if result.returncode != 0:
-                    self.error_msgs.append("Failed to generate QL masters.")
+                    self.error_msgs.append("Failed to generate QL calibrations.")
                     self.passed = False
                     return False
             except Exception:
                 # Prevent any exceptions from escaping the "run" method
-                self.error_msgs.append("Exception building QL masters:")
+                self.error_msgs.append("Exception building QL calibrations:")
                 self.error_msgs.append(traceback.format_exc())
                 self.passed = False
                 return False
 
-        # TODO
-        #  Generate the Masters as needed if USE_MASTERS_DIR or USE_CALIB_DIR is set
-
         # Run the quick look test via the parent's run method, setting the environment
-        # to use the newly generated masters
+        # to use the newly generated calibrations
         self.env = os.environ.copy()
-        self.env['QL_MASTERS'] = self.output_dir
+        self.env['QL_CALIB'] = self.output_dir
         return super().run()
 
 

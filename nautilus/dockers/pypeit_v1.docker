@@ -65,4 +65,4 @@ RUN  pip install astropy-healpix
 RUN git clone https://github.com/pypeit/PypeIt.git
 
 # Other bits and dependencies
-RUN cd PypeIt; pip install -e ".[dev,pyqt5]"
+RUN cd PypeIt; pip install -e ".[dev,pyqt5,specutils]"

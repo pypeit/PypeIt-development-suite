@@ -59,9 +59,6 @@ def main():
     praw = ['rclone', command, raw_path, 'RAW_DATA', '-v']
     pnires1, pnires2, ptell, ptell2 = None, None, None, None
     if calib_path is not None:
-        # NIRES
-        #pnires1 = ['rclone', command, calib_path+'/nires_masters.tar.gz', '.', '-v']
-        #pnires2 = ['tar', '-zxvf', './nires_masters.tar.gz']
         # Tellurics
         ptell = ['rclone', command, calib_path+'/Telluric', 'Telluric', '-v']
         tell_path = os.path.join(resource_filename('pypeit', 'data'), 'telluric')

@@ -1,0 +1,18 @@
+# User-defined execution parameters
+[rdx]
+spectrograph = keck_nires
+[reduce]
+    [[findobj]]
+        snr_thresh = 200
+[coadd2d]
+   offsets = auto
+   weights = auto
+   user_obj = 1
+
+# Read in the data
+spec2d read
+filename
+Science/spec2d_s190519_0059-GD153_NIRES_20190519T083811.995.fits
+Science/spec2d_s190519_0060-GD153_NIRES_20190519T084209.145.fits
+spec2d end
+

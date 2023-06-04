@@ -1,0 +1,32 @@
+# Auto-generated PypeIt input file using PypeIt version: 1.12.3.dev180+g27b766ced
+# UTC 2023-05-09T18:53:00.725
+
+# User-defined execution parameters
+[rdx]
+    spectrograph = ldt_deveny
+
+# Setup
+setup read
+Setup E:
+  binning: 1,1
+  cenwave: 8000.0
+  dispname: DV4 (400/8500)
+  filter1: OG570
+setup end
+
+# Data block 
+data read
+ path RAWDIR
+          filename |       frametype |                 ra |               dec |    target |       dispname | decker | binning |                mjd | airmass | exptime | cenwave | filter1 | dispangle | slitwid | lampstat01 | calib
+20230430.0185.fits |        arc,tilt |         174.272125 |          29.79775 | NeAr Arcs | DV4 (400/8500) |   None |     1,1 |  60064.25425300926 |    1.47 |     5.0 |  8000.0 |   OG570 |     27.89 |     1.2 |     Ar, Ne |     0
+20230430.0186.fits |        arc,tilt |         174.272125 |          29.79775 | NeAr Arcs | DV4 (400/8500) |   None |     1,1 |   60064.2544068287 |    1.47 |     5.0 |  8000.0 |   OG570 |     27.89 |     1.2 |     Ar, Ne |     0
+20230430.0187.fits |        arc,tilt |         174.272125 |          29.79775 | NeAr Arcs | DV4 (400/8500) |   None |     1,1 |  60064.25456076389 |    1.47 |     5.0 |  8000.0 |   OG570 |     27.89 |     1.2 |     Ar, Ne |     0
+20230430.0001.fits |            bias | 119.50762499999999 | 34.79008333333333 |      Bias | DV1 (150/5000) |   None |     1,1 |  60064.07537326389 |     1.0 |     0.0 |  7220.0 |   CLEAR |      21.0 |     1.0 |        off |     0
+20230430.0002.fits |            bias | 119.50762499999999 | 34.79008333333333 |      Bias | DV1 (150/5000) |   None |     1,1 |  60064.07547152778 |     1.0 |     0.0 |  7220.0 |   CLEAR |      21.0 |     1.0 |        off |     0
+20230430.0003.fits |            bias | 119.50762499999999 | 34.79008333333333 |      Bias | DV1 (150/5000) |   None |     1,1 |  60064.07556736111 |     1.0 |     0.0 |  7220.0 |   CLEAR |      21.0 |     1.0 |        off |     0
+20230430.0195.fits | pixelflat,trace |         174.272125 |          29.79775 | Dome Flat | DV4 (400/8500) |   None |     1,1 |  60064.25766400463 |    1.47 |    20.0 |  8000.0 |   OG570 |     27.89 |     1.2 |        off |     0
+20230430.0196.fits | pixelflat,trace |         174.272125 |          29.79775 | Dome Flat | DV4 (400/8500) |   None |     1,1 |  60064.25799131944 |    1.47 |    20.0 |  8000.0 |   OG570 |     27.89 |     1.2 |        off |     0
+20230430.0197.fits | pixelflat,trace |         174.272125 |          29.79775 | Dome Flat | DV4 (400/8500) |   None |     1,1 |  60064.25831886574 |    1.47 |    20.0 |  8000.0 |   OG570 |     27.89 |     1.2 |        off |     0
+20230430.0205.fits |         science | 159.90304166666667 | 43.10022222222222 |  Feige 34 | DV4 (400/8500) |   None |     1,1 |  60064.26348136574 |    1.19 |    45.0 |  8000.0 |   OG570 |     27.89 |     1.2 |        off |     0
+data end
+
