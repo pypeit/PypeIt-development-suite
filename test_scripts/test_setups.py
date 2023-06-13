@@ -111,7 +111,7 @@ all_setups  = {
     'gemini_flamingos2': ['HK_HK', 'JH_JH'],
     'gtc_osiris': ['R1000B', 'R1000BMOS', 'R1000RMOS', 'R2500R', 'R2500V'],
     'gtc_osiris_plus': ['R1000R', 'R300B'],
-    'keck_esi': ['1x1'],
+    'keck_esi': ['Ech_1x1', 'Ech_2x1'],
     'keck_deimos': ['600ZD_M_6500', '600ZD_tilted', '1200G_M_7750', '830G_LVM_8400', '830G_M_8100_26',
                     '830G_M_8500', '830G_L_8100', '1200B_M_5200', '1200G_M_5500',
                     '900ZD_M_6000', '1200B_LVM_5200', '900ZD_LVM_5500',
