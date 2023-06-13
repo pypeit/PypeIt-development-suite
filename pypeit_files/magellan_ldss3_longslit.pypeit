@@ -1,0 +1,27 @@
+# Auto-generated PypeIt input file using PypeIt version: 1.11.1.dev357+gaa9a42e92.d20221207
+# UTC 2023-06-13T23:42:40.144
+
+# User-defined execution parameters
+[rdx]
+    spectrograph = magellan_ldss3
+
+# Setup
+setup read
+Setup A:
+  dispname: VPH-Red
+setup end
+
+# Data block 
+data read
+ path /scratch/PypeIt-development-suite/RAW_DATA/magellan_ldss3/longslit
+      filename |                 frametype |                 ra |                 dec |     target | dispname |            decker | binning |           mjd | airmass | exptime | calib
+ccd0232c1.fits |          arc,science,tilt | 7.3549999999999995 | -29.752027777777776 | J0029-2947 |  VPH-Red | longslit_1.50_red |     1x1 | 2458747.65061 |   1.071 |  1800.0 |     0
+ccd0033c1.fits | pixelflat,illumflat,trace | 201.85249999999996 |  -28.91766666666667 |       flat |  VPH-Red | longslit_1.50_red |     1x1 | 2458747.25966 |     1.0 |     6.0 |     0
+ccd0034c1.fits | pixelflat,illumflat,trace | 202.24999999999997 | -28.917944444444444 |       flat |  VPH-Red | longslit_1.50_red |     1x1 | 2458747.26076 |     1.0 |     6.0 |     0
+ccd0035c1.fits | pixelflat,illumflat,trace |  202.4158333333333 | -28.918055555555558 |       flat |  VPH-Red | longslit_1.50_red |     1x1 | 2458747.26123 |     1.0 |     6.0 |     0
+ccd0036c1.fits | pixelflat,illumflat,trace | 202.58208333333332 | -28.918166666666668 |       flat |  VPH-Red | longslit_1.50_red |     1x1 | 2458747.26169 |     1.0 |     6.0 |     0
+ccd0037c1.fits | pixelflat,illumflat,trace | 202.74916666666664 | -28.918277777777778 |       flat |  VPH-Red | longslit_1.50_red |     1x1 | 2458747.26215 |     1.0 |     6.0 |     0
+ccd0038c1.fits | pixelflat,illumflat,trace | 202.91541666666666 |  -28.91838888888889 |       flat |  VPH-Red | longslit_1.50_red |     1x1 | 2458747.26262 |     1.0 |     6.0 |     0
+ccd0178c1.fits |                  standard | 302.74541666666664 | -30.253555555555554 |    LTT7987 |  VPH-Red | longslit_1.50_red |     1x1 |  2458747.5038 |   1.018 |    60.0 |     0
+data end
+
