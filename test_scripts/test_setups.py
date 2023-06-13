@@ -134,7 +134,7 @@ all_setups  = {
     'ldt_deveny': ['DV1', 'DV2', 'DV3', 'DV4', 'DV5', 'DV6', 'DV7', 'DV8', 'DV9'],
     'magellan_mage': ['1x1'],
     'magellan_fire': ['FIRE_Echelle', 'FIRE_Long'],
-    'mdm_osmos': ['MDM4K'],
+    'mdm_osmos': ['MDM4K', 'R4K'],
     'mmt_binospec': ['Longslit_G600', 'Multislit_G270', 'Longslit_G1000'],
     'mmt_mmirs': ['HK_zJ', 'J_zJ', 'K_K'],
     'mmt_bluechannel': ['300l', '500GPM', '800GPM', '832GPM_1st', '832GPM_2nd', '1200GPM'],
