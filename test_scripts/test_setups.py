@@ -116,7 +116,7 @@ all_setups  = {
                     '830G_M_8500', '830G_L_8100', '1200B_M_5200', '1200G_M_5500',
                     '900ZD_M_6000', '1200B_LVM_5200', '900ZD_LVM_5500',
                     '830G_M_9000_dither'],
-    'keck_hires': ['RED_C1_ECH_-0.82_XD_1.62'],
+#    'keck_hires': ['RED_C1_ECH_-0.82_XD_1.62'],
     'keck_kcwi': ['bh2_4200', 'bl'],
     'keck_nires': ['ABBA_wstandard', 'ABBA_nostandard', 'ABC_nostandard', 'ABpat_wstandard', 'ABBA_nostandard_faint'],
     'keck_nirspec': ['LOW_NIRSPEC-1'],
@@ -132,7 +132,7 @@ all_setups  = {
     'keck_lris_red_mark4': ['long_400_8500_d560', 'long_600_10000_d680'],
     'lbt_luci': ['LUCI-I', 'LUCI-II'],
     'lbt_mods': ['MODS1R_Longslit', 'MODS2R_Longslit'],
-    'ldt_deveny': ['DV1', 'DV2', 'DV5', 'DV6', 'DV8', 'DV9'],
+    'ldt_deveny': ['DV1', 'DV2', 'DV3', 'DV4', 'DV5', 'DV6', 'DV7', 'DV8', 'DV9'],
     'magellan_mage': ['1x1'],
     'magellan_fire': ['FIRE_Echelle', 'FIRE_Long'],
     'mdm_osmos': ['MDM4K'],
@@ -194,6 +194,10 @@ _sensfunc = {
     'keck_lris_red_mark4': {
         'long_600_10000_d680': [dict(std_file='spec1d_*00127-GD153*.fits')]
         },
+    'ldt_deveny': {
+        'DV2': [dict(std_file='spec1d_**BD+33d2642**.fits')],
+        'DV6': [dict(std_file='spec1d**G191-B2B**.fits')]
+        },
     }
 
 
@@ -217,6 +221,9 @@ _flux = {
     'keck_deimos': {
         '900ZD_LVM_5500': [{}],
         '600ZD_M_6500': [{}]},
+    'ldt_deveny': {
+        'DV2': [{}],
+        'DV6': [{}]}
     }
 
 _flexure ={

@@ -155,7 +155,7 @@ def test_load_goodman():
 
 def test_load_deveny():
     ifile = os.path.join(os.environ['PYPEIT_DEV'], 'RAW_DATA','ldt_deveny','DV2',
-                         '20210522.0001.fits')
+                         '20230423.0004.fits')
     try:
         data_img = grab_img('ldt_deveny', ifile)
     except:

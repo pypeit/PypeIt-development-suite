@@ -1,0 +1,42 @@
+# Auto-generated PypeIt input file using PypeIt version: 1.12.3.dev393+g03a1f4bde.d20230509
+# UTC 2023-05-11T21:07:06.002
+
+# User-defined execution parameters
+[rdx]
+    spectrograph = ldt_deveny
+[calibrations]
+    [[wavelengths]]
+        method = holy-grail
+	lamps = NeI
+[reduce]
+    [[findobj]]
+        snr_thresh = 15
+
+# Setup
+setup read
+Setup A:
+  binning: 1,1
+  cenwave: 7000.0
+  dispname: DV7 (600/6750)
+  filter1: GG495
+setup end
+
+# Data block 
+data read
+ path RAWDIR
+          filename |       frametype |                 ra |                dec |    target |       dispname | decker | binning |                mjd | airmass | exptime | cenwave | filter1 | dispangle | slitwid |     lampstat01 | calib
+20210419.0011.fits |        arc,tilt | 100.32579166666665 |  34.73005555555556 | all lamps | DV7 (600/6750) |   None |     1,1 |  59323.04126689815 |     1.0 |    10.0 |  7000.0 |   GG495 |     31.19 |     1.2 | Cd, Ar, Ne, Hg |     0
+20210419.0012.fits |        arc,tilt | 100.32579166666665 |  34.73005555555556 |   ne lamp | DV7 (600/6750) |   None |     1,1 | 59323.041842708335 |     1.0 |    10.0 |  7000.0 |   GG495 |     31.19 |     1.2 |             Ne |     0
+20210419.0055.fits |        arc,tilt | 161.19112499999997 | 24.170722222222224 |   ne lamp | DV7 (600/6750) |   None |     1,1 |  59323.12864386574 |    1.06 |    10.0 |  7000.0 |   GG495 |     31.19 |     1.2 |             Ne |     1
+20210419.0113.fits |        arc,tilt |  255.3914583333333 |  63.39041666666667 |    galaxy | DV7 (600/6750) |   None |     1,1 |  59323.49234618055 |    1.16 |    10.0 |  7000.0 |   GG495 |     31.19 |     1.2 |             Ne |     2
+20210419.0114.fits |        arc,tilt |  255.3914583333333 |  63.39041666666667 |    galaxy | DV7 (600/6750) |   None |     1,1 |  59323.49255775463 |    1.16 |    10.0 |  7000.0 |   GG495 |     31.19 |     1.2 |             Ne |     2
+20210419.0013.fits |            bias | 100.32579166666665 |  34.73005555555556 |      bias | DV7 (600/6750) |   None |     1,1 | 59323.043178472224 |     1.0 |     0.0 |  7000.0 |   GG495 |     31.19 |     1.2 |            off |   all
+20210419.0014.fits |            bias | 100.32579166666665 |  34.73005555555556 |      bias | DV7 (600/6750) |   None |     1,1 | 59323.043274421296 |     1.0 |     0.0 |  7000.0 |   GG495 |     31.19 |     1.2 |            off |   all
+20210419.0015.fits |            bias | 100.32579166666665 |  34.73005555555556 |      bias | DV7 (600/6750) |   None |     1,1 |  59323.04337025463 |     1.0 |     0.0 |  7000.0 |   GG495 |     31.19 |     1.2 |            off |   all
+20210419.0034.fits | pixelflat,trace | 100.32579166666665 |  34.73005555555556 |      flat | DV7 (600/6750) |   None |     1,1 |  59323.04947893519 |    1.47 |    60.0 |  7000.0 |   GG495 |     31.19 |     1.2 |            off |   all
+20210419.0035.fits | pixelflat,trace | 100.32579166666665 |  34.73005555555556 |      flat | DV7 (600/6750) |   None |     1,1 |  59323.05026921296 |    1.47 |    60.0 |  7000.0 |   GG495 |     31.19 |     1.2 |            off |   all
+20210419.0036.fits | pixelflat,trace | 100.32579166666665 |  34.73005555555556 |      flat | DV7 (600/6750) |   None |     1,1 |    59323.051059375 |    1.47 |    60.0 |  7000.0 |   GG495 |     31.19 |     1.2 |            off |   all
+20210419.0056.fits |         science | 177.83679166666664 | 27.634638888888887 |    galaxy | DV7 (600/6750) |   None |     1,1 |  59323.13163333333 |    1.16 |   400.0 |  7000.0 |   GG495 |     31.19 |     1.2 |            off |     1
+20210419.0111.fits |         science |  255.3914583333333 |  63.39041666666667 |    galaxy | DV7 (600/6750) |   None |     1,1 | 59323.479756712964 |    1.15 |   500.0 |  7000.0 |   GG495 |     31.19 |     1.2 |            off |     2
+data end
+
