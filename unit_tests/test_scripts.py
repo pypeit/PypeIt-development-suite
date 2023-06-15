@@ -85,43 +85,6 @@ def test_view_fits_mosaic():
     scripts.view_fits.ViewFits.main(pargs)
 
 
-# TODO -- REMOVE if this test is being run in the DEV SUITE afterburn.
-#   Am pretty sure it is..
-def test_coadd1d_1(monkeypatch):
-    """
-    Test basic coadd using shane_kast_blue
-    """
-    dp = data_path('')
-    # Change to the parent directory of the data path, so we can test that
-    # coadding without a coadd output file specified places the output next
-    # to the spec1ds. Using monkeypatch means the current working directory
-    # will be restored after the test.
-    monkeypatch.chdir(Path(dp).parent)
-
-    # NOTE: flux_value is False
-    parfile = 'files/coadd1d.par'
-    if os.path.isfile(parfile):
-        os.remove(parfile)
-    coadd_ofile = data_path('coadd1d_J1217p3905_KASTb_20150520_20150520.fits')
-    if os.path.isfile(coadd_ofile):
-        os.remove(coadd_ofile)
-
-    coadd_ifile = data_path('shane_kast_blue.coadd1d')
-    scripts.coadd_1dspec.CoAdd1DSpec.main(
-            scripts.coadd_1dspec.CoAdd1DSpec.parse_args([coadd_ifile, "--par_outfile", parfile]))
-    hdu = io.fits_open(coadd_ofile)
-    assert hdu[1].header['EXT_MODE'] == 'OPT'
-    assert hdu[1].header['FLUXED'] is False
-    # Test that the output file is kosher and contains the right quantities
-    spec = onespec.OneSpec.from_file(coadd_ofile)
-    assert spec.wave.shape == spec.wave_grid_mid.shape
-
-    # Clean up
-    hdu.close()
-    os.remove(parfile)
-    os.remove(coadd_ofile)
-
-
 def test_obslog():
     # Define the output directories (HARDCODED!!)
     setupdir = os.path.join(os.getcwd(), 'setup_files')
