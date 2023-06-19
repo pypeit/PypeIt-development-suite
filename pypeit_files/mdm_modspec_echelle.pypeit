@@ -1,0 +1,34 @@
+# Auto-generated PypeIt input file using PypeIt version: 1.9.1.dev358+g600ee5034
+# UTC 2022-08-11T15:59:00.149
+
+# User-defined execution parameters
+[rdx]
+    spectrograph = mdm_modspec_echelle
+
+# Setup
+setup read
+Setup A:
+  binning: 1,1
+  decker: none
+  dispname: 1200/5100
+setup end
+
+# Data block 
+data read
+ path /Volumes/Genesis/mdm_modspec/Echelle
+             filename |       frametype |                 ra |                dec |        target |  dispname | decker | binning |                mjd |  airmass | exptime
+     MDM_Ar_Arc_1.fit |        arc,tilt | 134.19445833333333 | 31.930583333333335 |         Argon | 1200/5100 |   none |     1,1 | 57914.962720000185 | 1.000001 |   180.0
+     MDM_Ar_Arc_2.fit |        arc,tilt | 135.97083333333333 | 31.932583333333334 |         Argon | 1200/5100 |   none |     1,1 | 57914.967629999854 | 1.000001 |   180.0
+     MDM_Ar_Arc_3.fit |        arc,tilt |         138.635125 | 31.935444444444446 |         Argon | 1200/5100 |   none |     1,1 |  57914.97501000017 | 1.000001 |   180.0
+       MDM_Ne_Arc.fit |        arc,tilt | 117.00470833333331 |  31.90833333333333 |          Neon | 1200/5100 |   none |     1,1 |  57914.91512000002 | 1.000001 |     2.0
+       MDM_Xe_Arc.fit |        arc,tilt | 117.55137499999998 |  31.90911111111111 |         Xenon | 1200/5100 |   none |     1,1 |  57914.91663999995 | 1.000001 |   300.0
+  MDM_Zero_Bias_1.fit |            bias |  157.7112083333333 | 31.951277777777776 |          Zero | 1200/5100 |   none |     1,1 |  57915.02780999988 | 1.000001 |     0.0
+  MDM_Zero_Bias_2.fit |            bias | 159.34145833333332 | 31.952194444444444 |          Zero | 1200/5100 |   none |     1,1 |  57915.03232000023 | 1.000001 |     0.0
+  MDM_Zero_Bias_3.fit |            bias | 160.97166666666666 | 31.953027777777777 |          Zero | 1200/5100 |   none |     1,1 | 57915.036830000114 | 1.000001 |     0.0
+MDM_Twilight_Flat.fit | illumflat,trace | 190.58066666666662 |  32.38433333333333 | Twilight Flat | 1200/5100 |   none |     1,1 |  57915.12405999983 | 1.000411 |   300.0
+  MDM_Dome_Flat_1.fit |       pixelflat | 141.49374999999998 |  31.93836111111111 | Internal Flat | 1200/5100 |   none |     1,1 | 57914.982919999864 | 1.000001 |   180.0
+  MDM_Dome_Flat_2.fit |       pixelflat | 147.71416666666667 | 31.944027777777777 | Internal Flat | 1200/5100 |   none |     1,1 | 57915.000140000135 | 1.000001 |   180.0
+  MDM_Dome_Flat_3.fit |       pixelflat | 153.93270833333332 |           31.94875 | Internal Flat | 1200/5100 |   none |     1,1 | 57915.017349999864 | 1.000001 |   180.0
+ MDM_Science_Test.fit |         science | 293.46416666666664 | 46.361111111111114 |    KIC9653110 | 1200/5100 |   none |     1,1 | 57915.215749999974 | 1.651161 |   450.0
+data end
+

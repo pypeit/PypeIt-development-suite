@@ -170,6 +170,14 @@ def test_load_fire():
     except:
         pytest.fail('Magellan/FIRE test data section failed: {0}'.format(ifile))
 
+def test_load_modspec():
+    ifile = os.path.join(os.environ['PYPEIT_DEV'], 'RAW_DATA','mdm_modspec',
+                         'Echelle', 'MDM_Dome_Flat_1.fit')
+    try:
+        data_img = grab_img('mdm_modspec', ifile)
+    except:
+        pytest.fail('MDM Modspec test data section failed: {0}'.format(ifile))
+
 '''
 @dev_suite_required
 def test_load_hires():
