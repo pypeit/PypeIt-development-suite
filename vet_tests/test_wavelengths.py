@@ -60,3 +60,21 @@ def test_deimos(redux_out):
         # Load
         waveCalib = WaveCalib.from_file(file_path)
         assert waveCalib.wv_fits[index].rms < rms, f'RMS of keck_deimos {setup} is too high!'
+
+def test_mdm_modspec(redux_out):
+
+    for setup, rms in zip(
+        ['Echelle'],
+        [0.05],
+        ):
+        setupID = 'A_0'
+        index = 0
+        # Check that spatial flexure shift was set!
+        file_path = os.path.join(redux_out,
+                             'mdm_modspec',
+                             setup,
+                             'Calibrations',
+                             f'WaveCalib_{setupID}_DET01.fits')
+        # Load
+        waveCalib = WaveCalib.from_file(file_path)
+        assert waveCalib.wv_fits[index].rms < rms, f'RMS of keck_deimos {setup} is too high!'
