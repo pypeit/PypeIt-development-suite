@@ -6,6 +6,34 @@ import jwst_1overf_unfold as unfold
 from pypeit.display import display
 import jwst_mosaic_slits as jms
 
+# NSClean specific
+import sys
+sys.path.append('/Users/suksientie/Codes/nsclean')
+import nsclean as nc
+
+def run_nsclean(ratefile, bpm, nrs='NRS1', show=False):
+
+    gpm = np.invert(bpm.astype(bool))
+    cleaner = nc.NSClean(nrs, gpm.T)  # needs to rotate to jwst detector space
+
+    # Download FITS file
+    hdul = fits.open(ratefile)
+    H0 = hdul[0].header
+    H1 = hdul[1].header
+    D1 = np.array(hdul[1].data)
+    nan_mask = np.isnan(D1)
+    D1[nan_mask] = -100.0  # needs to remove nan values, other result will be all nan
+    hdul.close()
+
+    # Clean it
+    D1 = cleaner.clean(D1, buff=True)  # corrected data
+
+    if show:
+        display.connect_to_ginga(raise_err=True, allow_new=True)
+        display.show_image(D1.T, chname='ns clean corrected')
+
+    return D1
+
 def run_brammer(ratefile, bpm=None, fix_rows=False, in_place=False, writeout=False, make_plot=False):
 
     im = fits.open(ratefile)
@@ -161,9 +189,12 @@ if __name__ == "__main__":
             scifile2 = os.path.join(rawpath_level2, 'jw02073008001_03101_00002_' + detname + '_rate.fits')
             scifile3 = os.path.join(rawpath_level2, 'jw02073008001_03101_00003_' + detname + '_rate.fits')
         elif 'J0313' == target:
-            rawpath_level2 = '/Users/joe/jwst_redux/Raw/NIRSPEC_FS/1764/level_12/01764/'
-            output_dir = '/Users/joe/jwst_redux/redux/NIRSPEC_FS/J0313/calwebb/output'
-            pypeit_output_dir = '/Users/joe/jwst_redux/redux/NIRSPEC_FS/J0313/calwebb/pypeit'
+            #rawpath_level2 = '/Users/joe/jwst_redux/Raw/NIRSPEC_FS/1764/level_12/01764/'
+            #output_dir = '/Users/joe/jwst_redux/redux/NIRSPEC_FS/J0313/calwebb/output'
+            #pypeit_output_dir = '/Users/joe/jwst_redux/redux/NIRSPEC_FS/J0313/calwebb/pypeit'
+            rawpath_level2 = '/Users/suksientie/Research/jwst_data_redux/01764/'
+            output_dir = '/Users/suksientie/Research/jwst_data_redux/01764/output/'
+            pypeit_output_dir = '/Users/suksientie/Research/jwst_data_redux/01764/pypeit_output/'
             if disperser == '235H':
                 # NIRSPEC 3-point dither dither center
                 if reduce_slits[0] == 'S200A1':
@@ -270,12 +301,22 @@ if __name__ == "__main__":
         intflat_output_files_2.append(os.path.join(output_dir, base2 + '_interpolatedflat.fits'))
         cal_output_files_2.append(os.path.join(output_dir, base2 + '_cal.fits'))
 
-
-
     # Testing 1/f
-    bpm_obj = get_objmask(scifiles_2[0], cal_output_files_2[0], intflat_output_files_2[0], slitname=None, show=True)
-    run_brammer(scifiles_2[0], bpm=bpm_obj, fix_rows=False, in_place=False, writeout=False, make_plot=True)
-    run_unfold(scifiles_2[0], bpm=bpm_obj, namp=4, evenOdd=True, skip_col=False, show=True)
+    qa_plot = False
+    bpm_obj = get_objmask(scifiles_2[0], cal_output_files_2[0], intflat_output_files_2[0], slitname=None, show=qa_plot)
+    b_corrdata, b_mod = run_brammer(scifiles_2[0], bpm=bpm_obj, fix_rows=False, in_place=False, writeout=False, make_plot=qa_plot)
+    unfold_corrdata, unfold_mod = run_unfold(scifiles_2[0], bpm=bpm_obj, namp=4, evenOdd=True, skip_col=False, show=qa_plot)
+    ns_corrdata = run_nsclean(scifiles_2[0], bpm_obj, nrs='NRS2', show=qa_plot)
+
+    im = fits.open(scifiles_2[0])
+    raw_data = im['SCI'].data.T  # rotated to Pypeit format
+
+    allim_cuts = [-0.1, 0.1]
+    display.connect_to_ginga(raise_err=True, allow_new=True)
+    display.show_image(raw_data, chname='raw data', cuts=allim_cuts)
+    display.show_image(ns_corrdata.T, chname='ns corrected data', cuts=allim_cuts)
+    display.show_image(b_corrdata, chname='brammer corrected data', cuts=allim_cuts)
+    display.show_image(unfold_corrdata, chname='unfold corrected data', cuts=allim_cuts)
 
     # Read in multi exposure calwebb outputs
     msa_multi_list_1 = []
