@@ -101,7 +101,7 @@ def test_load_gnirs():
     ifile = os.path.join(os.environ['PYPEIT_DEV'], 'RAW_DATA','gemini_gnirs','32_SB_SXD',
                          'cN20170331S0206.fits')
     try:
-        data_img = grab_img('gemini_gnirs', ifile)
+        data_img = grab_img('gemini_gnirs_echelle', ifile)
     except:
         pytest.fail('Gemini GNIRS test data section failed: {0}'.format(ifile))
 
