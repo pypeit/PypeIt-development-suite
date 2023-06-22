@@ -115,16 +115,16 @@ all_setups  = {
                     '830G_M_8500', '830G_L_8100', '1200B_M_5200', '1200G_M_5500',
                     '900ZD_M_6000', '1200B_LVM_5200', '900ZD_LVM_5500',
                     '830G_M_9000_dither'],
-    'keck_hires': ['J0100+2802_RED_C1_ECH_-0.82_XD_1.62_1x2',
-                   'J0100+2802_RED_C1_ECH_-0.91_XD_1.46_1x2',
-                   #'J0100+2802_RED_C1_ECH_0.88_XD_1.46_1x2',
-                   'J0100+2802_RED_C2_ECH_0.74_XD_1.39_1x3',
-                   'HS1700+6416_H45aH_RED_B2_ECH_0.00_XD_-0.00_1x2',
-                   'J0306+1853_U074_RED_C2_ECH_0.72_XD_1.42_1x3', 
-                   'J0306+1853_U074_RED_C2_ECH_-0.86_XD_1.31_1x3',
-                   'J1723+2243_W241_RED_C5_ECH_0.08_XD_0.90_2x2',
-                   'J1723+2243_W241_RED_C5_ECH_-0.15_XD_0.90_2x2',
-                   ],
+#    'keck_hires': ['J0100+2802_RED_C1_ECH_-0.82_XD_1.62_1x2',
+#                   'J0100+2802_RED_C1_ECH_-0.91_XD_1.46_1x2',
+#                   #'J0100+2802_RED_C1_ECH_0.88_XD_1.46_1x2',
+#                   'J0100+2802_RED_C2_ECH_0.74_XD_1.39_1x3',
+#                   'HS1700+6416_H45aH_RED_B2_ECH_0.00_XD_-0.00_1x2',
+#                   'J0306+1853_U074_RED_C2_ECH_0.72_XD_1.42_1x3',
+#                   'J0306+1853_U074_RED_C2_ECH_-0.86_XD_1.31_1x3',
+#                   'J1723+2243_W241_RED_C5_ECH_0.08_XD_0.90_2x2',
+#                   'J1723+2243_W241_RED_C5_ECH_-0.15_XD_0.90_2x2',
+#                   ],
     'keck_kcwi': ['bh2_4200', 'bl'],
     'keck_nires': ['ABBA_wstandard', 'ABBA_nostandard', 'ABC_nostandard', 'ABpat_wstandard', 'ABBA_nostandard_faint'],
     'keck_nirspec': ['LOW_NIRSPEC-1'],
@@ -180,6 +180,9 @@ _additional_reduce = {
         'GS_HAM_R400_860': [dict(std=True)]},
     }
 
+# TODO -- Add shane_kast to CI as a pypeit_sensfunc spec1d* call. For all sensfunc tests,
+# run them via a .sens file. Clean up unused .sens files in the sensfunc_files directory. Populate
+# this list with further tests.
 _sensfunc = {
     'shane_kast_blue': {
         '600_4310_d55': [dict(std_file='spec1d_*Feige66*.fits')]},
