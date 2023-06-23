@@ -351,6 +351,11 @@ def test_setup_magellan_mage():
     setup = '1x1'
     generic_setup_test(spec, setup)
 
+def test_setup_magellan_fire():
+    spec = 'magellan_fire'
+    setup = 'FIRE'
+    generic_setup_test(spec, setup)
+
 
 def test_setup_wht_isis_blue():
     spec = 'wht_isis_blue'
