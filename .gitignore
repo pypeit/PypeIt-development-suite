@@ -14,4 +14,11 @@ DEIMOS_QL_TST
 QL_MASTERS/
 .idea/
 nautilus/yaml_files/*.yaml
+nautilus/*.yaml
+nautilus/Reports/*.report
 dev_algorithms/jwst/ar_2023/*.fits
+
+# Annyoing bits and pieces
+*.obslog
+
+unit_tests/*.sorted
