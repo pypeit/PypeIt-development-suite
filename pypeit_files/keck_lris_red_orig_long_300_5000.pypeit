@@ -9,26 +9,23 @@
 
 # Setup
 setup read
- Setup A:
-   --:
-     binning: 1,1
-     dichroic: '500'
-     disperser:
-       angle: 23.08013535
-       name: 300/5000
-     slit:
-       decker: long_1.0
-       slitlen: none
-       slitwid: none
+Setup A:
+  amp: '2'
+  binning: 1,1
+  cenwave: 7791.92480469
+  decker: long_1.0
+  dichroic: '500'
+  dispangle: 23.08013535
+  dispname: 300/5000
 setup end
 
-# Read in the data
+# Data block 
 data read
- path ../raw
-|               filename |       frametype |                 ra |                dec |      target | dispname |   decker | binning |          mjd |    airmass | exptime | dichroic |   dispangle |
-| LR.20061029.13867.fits | pixelflat,trace,illumflat | 247.29999999999998 |               45.0 | cass module | 300/5000 | long_1.0 |     1,1 | 54037.160502 | 1.41291034 |     5.0 |      500 | 23.08013535 |
-| LR.20061029.52010.fits |         science |  82.47291666666666 | -5.328166666666666 |  J0529-0519 | 300/5000 | long_1.0 |     1,1 | 54037.601974 | 1.15316552 |   600.0 |      500 | 23.08013535 |
-| LR.20061029.56186.fits |        standard |  88.10345833333334 | 15.885277777777777 |        GD71 | 300/5000 | long_1.0 |     1,1 | 54037.650304 | 1.12354542 |   180.0 |      500 | 23.08013535 |
-| LR.20061029.56818.fits |        arc,tilt |  88.10374999999999 | 15.883472222222222 |        GD71 | 300/5000 | long_1.0 |     1,1 |  54037.65762 | 1.15009392 |     1.0 |      500 | 23.08013535 |
+ path RAW_DATA/keck_lris_red_orig/long_300_5000
+              filename |                 frametype |                 ra |                dec |      target | dispname |   decker | binning |          mjd |    airmass | exptime | dichroic |   dispangle |       cenwave | amp |  hatch | lampstat01 |    dateobs | frameno | calib
+LR.20061029.56818.fits |                  arc,tilt |  88.10374999999999 | 15.883472222222222 |        GD71 | 300/5000 | long_1.0 |     1,1 |  54037.65762 | 1.15009392 |     1.0 |      500 | 23.08013535 | 7791.92480469 |   2 | closed |        NeI | 2006-10-29 |    3031 |     0
+LR.20061029.13867.fits | pixelflat,illumflat,trace | 247.29999999999998 |               45.0 | cass module | 300/5000 | long_1.0 |     1,1 | 54037.160502 | 1.41291034 |     5.0 |      500 | 23.08013535 | 7791.92480469 |   2 | closed |    Halogen | 2006-10-29 |    1013 |     0
+LR.20061029.52010.fits |                   science |  82.47291666666666 | -5.328166666666666 |  J0529-0519 | 300/5000 | long_1.0 |     1,1 | 54037.601974 | 1.15316552 |   600.0 |      500 | 23.08013535 | 7791.92480469 |   2 |   open |        off | 2006-10-29 |    3026 |     0
+LR.20061029.56186.fits |                  standard |  88.10345833333334 | 15.885277777777777 |        GD71 | 300/5000 | long_1.0 |     1,1 | 54037.650304 | 1.12354542 |   180.0 |      500 | 23.08013535 | 7791.92480469 |   2 |   open |        off | 2006-10-29 |    3029 |     0
 data end
 

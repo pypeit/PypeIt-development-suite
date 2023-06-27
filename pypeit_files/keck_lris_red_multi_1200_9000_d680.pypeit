@@ -18,21 +18,33 @@ setup read
  '02': {binning: '1,1', det: 2, namp: 2}
 setup end
 
-# Read in the data
+# Setup
+setup read
+Setup A:
+  amp: '4'
+  binning: 1,1
+  cenwave: 8609.26074219
+  decker: E570.fil
+  dichroic: '680'
+  dispangle: 47.82505798
+  dispname: 1200/9000
+setup end
+
+# Data block 
 data read
- path /home/xavier/local/Python/PypeIt-development-suite/RAW_DATA/keck_lris_red/multi_1200_9000_d680/
-|          filename |                date | frametype       |  target | exptime | binning | dichroic | dispname |   decker |
-| r170816_0009.fits | 2017-08-16T02:56:14 | arc,tilt            | unknown |       3 |     1,1 |      680 | 1200/9000 | E570.fil |
-| r170816_0018.fits | 2017-08-16T03:19:28 | illumflat,pixelflat,trace | unknown |      10 |     1,1 |      680 | 1200/9000 | E570.fil |
-| r170816_0019.fits | 2017-08-16T03:22:01 | illumflat,pixelflat,trace | unknown |      10 |     1,1 |      680 | 1200/9000 | E570.fil |
-| r170816_0020.fits | 2017-08-16T03:24:18 | illumflat,pixelflat,trace | unknown |      10 |     1,1 |      680 | 1200/9000 | E570.fil |
-| r170816_0021.fits | 2017-08-16T03:26:35 | illumflat,pixelflat,trace | unknown |      10 |     1,1 |      680 | 1200/9000 | E570.fil |
-| r170816_0022.fits | 2017-08-16T03:28:52 | illumflat,pixelflat,trace | unknown |      10 |     1,1 |      680 | 1200/9000 | E570.fil |
-| r170816_0045.fits | 2017-08-16T04:28:57 |      bias | unknown |       0 |     1,1 |      680 | 1200/9000 | long_1.5 |
-| r170816_0046.fits | 2017-08-16T04:31:05 |      bias | unknown |       0 |     1,1 |      680 | 1200/9000 | long_1.5 |
-| r170816_0047.fits | 2017-08-16T04:33:14 |      bias | unknown |       0 |     1,1 |      680 | 1200/9000 | long_1.5 |
-| r170816_0048.fits | 2017-08-16T04:35:21 |      bias | unknown |       0 |     1,1 |      680 | 1200/9000 | long_1.5 |
-| r170816_0057.fits | 2017-08-16T07:32:00 |   science |    E570 |     900 |     1,1 |      680 | 1200/9000 | E570.fil |
-#| r170816_0058.fits | 2017-08-16T07:49:10 |   science |    E570 |     900 |     1,1 |      680 | 1200/9000 | E570.fil |
-#| r170816_0059.fits | 2017-08-16T08:06:20 |   science |    E570 |     900 |     1,1 |      680 | 1200/9000 | E570.fil |
+ path RAW_DATA/keck_lris_red/multi_1200_9000_d680
+         filename |                 frametype |                 ra |                dec |  target |  dispname |   decker | binning |          mjd |    airmass | exptime | dichroic |   dispangle |       cenwave | amp |  hatch | lampstat01 |    dateobs | frameno | calib
+r170816_0009.fits |                  arc,tilt | 229.99999999999997 |               45.0 | unknown | 1200/9000 | E570.fil |     1,1 | 57981.122341 | 1.41309236 |     3.0 |      680 | 47.82505798 | 8609.26074219 |   4 | closed |        HgI | 2017-08-16 |       9 |     0
+r170816_0045.fits |                      bias | 229.99999999999997 |               45.0 | unknown | 1200/9000 | long_1.5 |     1,1 | 57981.186772 | 1.41309237 |     0.0 |      680 | 48.42325211 | 8740.19921875 |   4 | closed |        off | 2017-08-16 |      45 |     0
+r170816_0046.fits |                      bias | 229.99999999999997 |               45.0 | unknown | 1200/9000 | long_1.5 |     1,1 | 57981.188259 | 1.41309237 |     0.0 |      680 | 48.42325211 | 8740.19921875 |   4 | closed |        off | 2017-08-16 |      46 |     0
+r170816_0047.fits |                      bias | 229.99999999999997 |               45.0 | unknown | 1200/9000 | long_1.5 |     1,1 | 57981.189748 | 1.41309237 |     0.0 |      680 | 48.42325211 | 8740.19921875 |   4 | closed |        off | 2017-08-16 |      47 |     0
+r170816_0048.fits |                      bias | 229.99999999999997 |               45.0 | unknown | 1200/9000 | long_1.5 |     1,1 | 57981.191223 | 1.41309237 |     0.0 |      680 | 48.42325211 | 8740.19921875 |   4 | closed |        off | 2017-08-16 |      48 |     0
+r170816_0018.fits | pixelflat,illumflat,trace | 229.99999999999997 |               45.0 | unknown | 1200/9000 | E570.fil |     1,1 | 57981.138398 | 1.41309236 |    10.0 |      680 | 47.82505798 | 8609.26074219 |   4 | closed |    Halogen | 2017-08-16 |      18 |     0
+r170816_0019.fits | pixelflat,illumflat,trace | 229.99999999999997 |               45.0 | unknown | 1200/9000 | E570.fil |     1,1 | 57981.140168 | 1.41309236 |    10.0 |      680 | 47.82505798 | 8609.26074219 |   4 | closed |    Halogen | 2017-08-16 |      19 |     0
+r170816_0020.fits | pixelflat,illumflat,trace | 229.99999999999997 |               45.0 | unknown | 1200/9000 | E570.fil |     1,1 | 57981.141755 | 1.41309236 |    10.0 |      680 | 47.82505798 | 8609.26074219 |   4 | closed |    Halogen | 2017-08-16 |      20 |     0
+r170816_0021.fits | pixelflat,illumflat,trace | 229.99999999999997 |               45.0 | unknown | 1200/9000 | E570.fil |     1,1 |  57981.14334 | 1.41309236 |    10.0 |      680 | 47.82505798 | 8609.26074219 |   4 | closed |    Halogen | 2017-08-16 |      21 |     0
+r170816_0022.fits | pixelflat,illumflat,trace | 229.99999999999997 |               45.0 | unknown | 1200/9000 | E570.fil |     1,1 | 57981.144926 | 1.41309236 |    10.0 |      680 | 47.82505798 | 8609.26074219 |   4 | closed |    Halogen | 2017-08-16 |      22 |     0
+r170816_0057.fits |                   science | 244.73729166666666 | 54.703138888888894 |    E570 | 1200/9000 | E570.fil |     1,1 | 57981.303472 | 1.37169309 |   900.0 |      680 | 47.82392883 | 8609.01269531 |   4 |   open |        off | 2017-08-16 |      57 |     0
+#r170816_0058.fits |                   science | 244.73729166666666 | 54.703138888888894 |    E570 | 1200/9000 | E570.fil |     1,1 | 57981.315391 | 1.41849061 |   900.0 |      680 | 47.82392883 | 8609.01269531 |   4 |   open |        off | 2017-08-16 |      58 |     0
+#r170816_0059.fits |                   science | 244.73729166666666 | 54.703138888888894 |    E570 | 1200/9000 | E570.fil |     1,1 | 57981.327304 | 1.47372997 |   900.0 |      680 | 47.82392883 | 8609.01269531 |   4 |   open |        off | 2017-08-16 |      59 |     0
 data end

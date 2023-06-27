@@ -7,31 +7,27 @@
 [baseprocess]
   use_biasimage = False
   use_illumflat = False
+
+
 # Setup
 setup read
- Setup A:
-   --:
-     binning: 1,1
-     dichroic: '500'
-     disperser:
-       angle: 20.89954948
-       name: 600/4000
-     slit:
-       decker: long_1.5
-       slitlen: none
-       slitwid: none
+Setup A:
+  binning: 1,1
+  decker: long_1.5
+  dichroic: '500'
+  dispname: 600/4000
 setup end
 
-# Read in the data
+# Data block 
 data read
- path ../rawdir
-|               filename |       frametype |                 ra |                 dec |      target | dispname |   decker | binning |          mjd |     airmass | exptime | dichroic |
-| LB.20080105.16624.fits |        standard |  332.8813333333333 |  18.092333333333332 |   BD17 4708 | 600/4000 | long_1.5 |     1,1 | 54470.192407 |  1.35408264 |    10.0 |      500 |
-| LB.20080105.60285.fits | pixelflat,trace | 247.35829166666664 |                 0.0 | cass module | 600/4000 | long_1.5 |     1,1 | 54470.697747 | 13.37481353 |   180.0 |      500 |
-| LB.20080105.60810.fits |        arc,tilt | 247.35829166666664 |                 0.0 | cass module | 600/4000 | long_1.5 |     1,1 | 54470.703828 | 13.37481353 |     1.0 |      500 |
-| LB.20080105.60882.fits |        arc,tilt | 247.35829166666664 |                 0.0 | cass module | 600/4000 | long_1.5 |     1,1 | 54470.704663 | 13.37481353 |     1.0 |      500 |
-| LB.20080105.60948.fits |        arc,tilt | 247.35829166666664 |                 0.0 | cass module | 600/4000 | long_1.5 |     1,1 | 54470.705427 | 13.37481353 |     1.0 |      500 |
-| LB.20080105.07660.fits |            bias | 229.99999999999997 |                45.0 |             | 600/4000 | long_1.0 |     1,1 | 54470.088668 |  1.41309502 |     0.0 |      500 |
-| LB.20080105.39276.fits |         science |  98.74516666666665 | -23.584916666666665 |  J0634-2335 | 600/4000 | long_1.5 |     1,1 | 54470.454586 |  1.42406733 |   600.0 |      500 |
+ path RAW_DATA/keck_lris_blue_orig/long_600_4000_d500
+              filename |                 frametype |                 ra |                 dec |      target | dispname |   decker | binning |          mjd |     airmass | exptime | dichroic |  hatch | lampstat01 |    dateobs | frameno | calib
+LB.20080105.60810.fits |                  arc,tilt | 247.35829166666664 |                 0.0 | cass module | 600/4000 | long_1.5 |     1,1 | 54470.703828 | 13.37481353 |     1.0 |      500 | closed |        HgI | 2008-01-05 |    1171 |     0
+LB.20080105.60882.fits |                  arc,tilt | 247.35829166666664 |                 0.0 | cass module | 600/4000 | long_1.5 |     1,1 | 54470.704663 | 13.37481353 |     1.0 |      500 | closed |        HgI | 2008-01-05 |    1172 |     0
+LB.20080105.60948.fits |                  arc,tilt | 247.35829166666664 |                 0.0 | cass module | 600/4000 | long_1.5 |     1,1 | 54470.705427 | 13.37481353 |     1.0 |      500 | closed |        HgI | 2008-01-05 |    1173 |     0
+LB.20080105.07660.fits |                      bias | 229.99999999999997 |                45.0 |             | 600/4000 | long_1.0 |     1,1 | 54470.088668 |  1.41309502 |     0.0 |      500 | closed |        off | 2008-01-05 |    1009 |     0
+LB.20080105.60285.fits |           pixelflat,trace | 247.35829166666664 |                 0.0 | cass module | 600/4000 | long_1.5 |     1,1 | 54470.697747 | 13.37481353 |   180.0 |      500 | closed |    Halogen | 2008-01-05 |    1165 |     0
+LB.20080105.39276.fits |                   science |  98.74516666666665 | -23.584916666666665 |  J0634-2335 | 600/4000 | long_1.5 |     1,1 | 54470.454586 |  1.42406733 |   600.0 |      500 |   open |        off | 2008-01-05 |    1131 |     0
+LB.20080105.16624.fits |                  standard |  332.8813333333333 |  18.092333333333332 |   BD17 4708 | 600/4000 | long_1.5 |     1,1 | 54470.192407 |  1.35408264 |    10.0 |      500 |   open |        off | 2008-01-05 |    1101 |     0
 data end
 
