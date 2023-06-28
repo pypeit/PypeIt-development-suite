@@ -12,7 +12,8 @@ sys.path.append('/Users/suksientie/Codes/nsclean')
 import nsclean as nc
 
 def run_nsclean(ratefile, bpm, nrs='NRS1', show=False):
-
+    # paper: https://arxiv.org/abs/2306.03250
+    # source code: https://webb.nasa.gov/content/forScientists/publications.html
     gpm = np.invert(bpm.astype(bool))
     cleaner = nc.NSClean(nrs, gpm.T)  # needs to rotate to jwst detector space
 
