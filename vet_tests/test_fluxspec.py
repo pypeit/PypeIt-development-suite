@@ -44,7 +44,7 @@ def test_gen_sensfunc(kast_blue_files):
     par = spectrograph.default_pypeit_par()
     std_file, sci_file = kast_blue_files
     # Instantiate
-    sensFunc = sensfunc.UVISSensFunc(std_file, sens_file)
+    sensFunc = sensfunc.UVISSensFunc(std_file, sens_file, par['sensfunc'])
     # Test the standard loaded
     assert sensFunc.meta_spec['BINNING'] == '1,1'
     assert sensFunc.meta_spec['TARGET'] == 'Feige 66'
@@ -72,13 +72,13 @@ def test_from_sens_func(kast_blue_files):
     std_file, sci_file = kast_blue_files
 
     # Build the sensitivity function
-    sensFunc = sensfunc.UVISSensFunc(std_file, sens_file)
+    sensFunc = sensfunc.UVISSensFunc(std_file, sens_file, par['sensfunc'])
     sensFunc.run()
     sensFunc.to_file(sens_file)
 
     # Instantiate and run
     outfile = data_path(os.path.basename(sci_file))
-    fluxCalibrate = fluxcalibrate.MultiSlitFC([sci_file], [sens_file], par=par['fluxcalib'],
+    fluxCalibrate = fluxcalibrate.FluxCalibrate([sci_file], [sens_file], par=par['fluxcalib'],
                                               outfiles=[outfile])
     # Test
     sobjs = specobjs.SpecObjs.from_fitsfile(outfile)
