@@ -350,9 +350,11 @@ class PypeItCoadd1DTest(PypeItTest):
 
         unique_files = set()
         for row in orig_coadd1dFile.data:
-            (filename, object) = row['filename'], row['obj_id'] 
-            orig_coadd1d_lines.append((filename, object))
-            unique_files.add(filename)
+            values = [row[key] for key in orig_coadd1dFile.data.keys()]
+            orig_coadd1d_lines.append(tuple(values))
+            #(filename, object) = row['filename'], row['obj_id']
+            # orig_coadd1d_lines.append((filename, object))
+            unique_files.add(row['filename'])
         
         # Build a mapping of files to objects using the spec1d txt info file
         for unique_file in unique_files:
@@ -362,7 +364,8 @@ class PypeItCoadd1DTest(PypeItTest):
 
         # Go through each original coadd1d line and correct the object names
         # if needed
-        for (filename, object) in orig_coadd1d_lines:
+        for line in orig_coadd1d_lines:
+            filename, object = line[0], line[1]
             if object in file_to_obj[filename]:
                 # No correction needed
                 corrected_filenames.append(filename)
@@ -403,11 +406,11 @@ class PypeItCoadd1DTest(PypeItTest):
         
         # Generate the new coadd1d file
         final_coadd_file = get_unique_file(os.path.join(self.setup.rdxdir, f"{self.setup.instr.lower()}_{self.setup.name.lower()}_merged.coadd1d"))
-        data_block = Table()
+        #data_block = Table()
+        data_block = orig_coadd1dFile.data.copy()
         data_block['filename'] = corrected_filenames
         data_block['obj_id'] = corrected_objid
-        new_coadd1dFile = inputfiles.Coadd1DFile(config=cfg_lines,
-                                             data_table=data_block)
+        new_coadd1dFile = inputfiles.Coadd1DFile(config=cfg_lines, data_table=data_block)
         new_coadd1dFile.write(final_coadd_file) 
 
         return ['pypeit_coadd_1dspec', final_coadd_file]
