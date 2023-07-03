@@ -77,4 +77,4 @@ def test_mdm_modspec(redux_out):
                              f'WaveCalib_{setupID}_DET01.fits')
         # Load
         waveCalib = WaveCalib.from_file(file_path)
-        assert waveCalib.wv_fits[index].rms < rms, f'RMS of keck_deimos {setup} is too high!'
+        assert waveCalib.wv_fits[index].rms < rms, f'RMS of mdm_modspec {setup} is too high!'
