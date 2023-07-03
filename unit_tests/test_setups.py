@@ -351,6 +351,11 @@ def test_setup_magellan_mage():
     setup = '1x1'
     generic_setup_test(spec, setup)
 
+def test_setup_magellan_fire():
+    spec = 'magellan_fire'
+    setup = 'FIRE'
+    generic_setup_test(spec, setup)
+
 
 def test_setup_wht_isis_blue():
     spec = 'wht_isis_blue'
@@ -405,6 +410,7 @@ def test_setup_vlt_fors2():
     pargs = ChkForCalibs.parse_args([str(data_root), '-s', 'vlt_fors2'])
     answers, ps = ChkForCalibs.main(pargs)
     assert answers['pass'][0], 'A must pass!'
+
 
 # TODO: Add other instruments!
 

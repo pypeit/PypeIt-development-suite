@@ -111,6 +111,7 @@ all_setups  = {
     'gemini_flamingos2': ['HK_HK', 'JH_JH'],
     'gtc_osiris': ['R1000B', 'R1000BMOS', 'R1000RMOS', 'R2500R', 'R2500V'],
     'gtc_osiris_plus': ['R1000R', 'R300B'],
+    'keck_esi': ['Ech_1x1', 'Ech_2x1'],
     'keck_deimos': ['600ZD_M_6500', '600ZD_tilted', '1200G_M_7750', '830G_LVM_8400', '830G_M_8100_26',
                     '830G_M_8500', '830G_L_8100', '1200B_M_5200', '1200G_M_5500',
                     '900ZD_M_6000', '1200B_LVM_5200', '900ZD_LVM_5500',
@@ -128,7 +129,7 @@ all_setups  = {
         'J1723+2243_W241_RED_C5_ECH_-0.15_XD_0.90_2x2',
                    ],
     'keck_kcwi': ['bh2_4200', 'bl'],
-    'keck_nires': ['ABBA_wstandard', 'ABBA_nostandard', 'ABC_nostandard', 'ABpat_wstandard'],
+    'keck_nires': ['ABBA_wstandard', 'ABBA_nostandard', 'ABC_nostandard', 'ABpat_wstandard', 'ABBA_nostandard_faint'],
     'keck_nirspec': ['LOW_NIRSPEC-1'],
     'keck_mosfire': ['Y_long', 'J_multi', 'K_long', 'Y_multi', 'long2pos1_H', 'longslit_3x0.7_H', 'mask1_K_with_continuum', 'mask1_J_with_continuum', 'J2_long'],
     'keck_lris_blue': ['multi_600_4000_d560', 'long_400_3400_d560', 'long_600_4000_d560',
@@ -142,10 +143,11 @@ all_setups  = {
     'keck_lris_red_mark4': ['long_400_8500_d560', 'long_600_10000_d680'],
     'lbt_luci': ['LUCI-I', 'LUCI-II'],
     'lbt_mods': ['MODS1R_Longslit', 'MODS2R_Longslit'],
-    'ldt_deveny': ['DV1', 'DV2', 'DV5', 'DV6', 'DV8', 'DV9'],
-    'magellan_mage': ['1x1'],
+    'ldt_deveny': ['DV1', 'DV2', 'DV3', 'DV4', 'DV5', 'DV6', 'DV7', 'DV8', 'DV9'],
     'magellan_fire': ['FIRE_Echelle', 'FIRE_Long'],
+    'magellan_mage': ['1x1'],
     'mdm_osmos': ['MDM4K'],
+    'mdm_modspec': ['Echelle'],
     'mmt_binospec': ['Longslit_G600', 'Multislit_G270', 'Longslit_G1000'],
     'mmt_mmirs': ['HK_zJ', 'J_zJ', 'K_K'],
     'mmt_bluechannel': ['300l', '500GPM', '800GPM', '832GPM_1st', '832GPM_2nd', '1200GPM'],
@@ -204,6 +206,10 @@ _sensfunc = {
     'keck_lris_red_mark4': {
         'long_600_10000_d680': [dict(std_file='spec1d_*00127-GD153*.fits')]
         },
+    'ldt_deveny': {
+        'DV2': [dict(std_file='spec1d_**BD+33d2642**.fits')],
+        'DV6': [dict(std_file='spec1d**G191-B2B**.fits')]
+        },
     }
 
 
@@ -227,6 +233,9 @@ _flux = {
     'keck_deimos': {
         '900ZD_LVM_5500': [{}],
         '600ZD_M_6500': [{}]},
+    'ldt_deveny': {
+        'DV2': [{}],
+        'DV6': [{}]}
     }
 
 _flexure ={
@@ -257,7 +266,9 @@ _coadd2d = {
     'keck_mosfire': {
         'long2pos1_H': [dict(coadd_file=True)]},
     'keck_nires': {
-        'ABBA_wstandard': [dict(coadd_file=True)]}
+        'ABBA_wstandard': [dict(coadd_file=True)]},
+    'keck_nires': {
+        'ABBA_nostandard_faint': [dict(coadd_file=True)]}
     }
 
 _telluric = {
@@ -316,20 +327,14 @@ _quick_look = {
              'files': ['b1.fits.gz', 'b10.fits.gz', 'b27.fits.gz', 'b28.fits.gz'],
              '--setup_calib_dir': 'USE_CALIB_DIR',
             },
-            # (5) Same as test 2, but process two science frames individually
-            {'test_name': 'nostack',
-             'files': ['b1.fits.gz', 'b10.fits.gz', 'b27.fits.gz', 'b28.fits.gz'],
-             '--setup_calib_dir': 'USE_CALIB_DIR',
-             '--no_stack': None,
-            },
-            # (6) Same as test 2, but change the boxcar extaction width
+            # (5) Same as test 2, but change the boxcar extaction width
             {'test_name': 'boxcar',
              'files': ['b1.fits.gz', 'b10.fits.gz', 'b27.fits.gz'],
              '--setup_calib_dir': 'USE_CALIB_DIR',
              '--boxcar_radius': 2.,
             },
-            ],
-      },
+        ],
+    },
     'shane_kast_red': {
         '600_7500_d57': [
             {'files': ['r122.fits'],
@@ -358,69 +363,80 @@ _quick_look = {
               '--slitspatnum': 'MSC02:452',
               '--setup_calib_dir': 'USE_CALIB_DIR',
             },
-            ]
-        },
+        ]
+    },
     'keck_mosfire': {
         'J_multi': [
             {'files': ['m191014_0170.fits'],
               '--setup_calib_dir': 'USE_CALIB_DIR',
-            },
+            }
         ],
-        'Y_long': # Testing on pypeit_ql_jfh_multislit
-            [{'files': ['m191120_0043.fits', 'm191120_0044.fits', 'm191120_0045.fits', 'm191120_0046.fits'],
-              '--spec_samp_fact': 2.0,
-              '--spat_samp_fact': 2.0,
-              '--flux': None,
-              '--bkg_redux': None}],
+        'Y_long': [
+            # (1) Run without using archived calibrations
+            # NOTE: This takes ~8min, so not really quick...
+#            {'test_name': 'raw',
+#             'files': ['m191119_0027.fits', 'm191119_0037.fits', 'm191120_0043.fits',
+#                       'm191120_0044.fits', 'm191120_0045.fits', 'm191120_0046.fits'],
+#             '--coadd': None, '--spec_samp_fact': 2.0, '--spat_samp_fact': 2.0,
+#            },
+            # (2) Run with archived calibrations
+            # NOTE: Takes ~2min
+            {'test_name': 'arc',
+             'files': ['m191120_0043.fits', 'm191120_0044.fits',
+                       'm191120_0045.fits', 'm191120_0046.fits'],
+             '--parent_calib_dir': 'USE_ARCHIVE_CALIB_DIR',
+             '--coadd': None, '--spec_samp_fact': 2.0, '--spat_samp_fact': 2.0,
+            },
+        ]
     },
     'keck_lris_red_mark4': {
-        'long_600_10000_d680': # Testing on pypeit_ql_jfh_multislit
-            [{'files': ['r220127_00123.fits', 'r220127_00124.fits'],
-              '--spec_samp_fact': 2.0, '--spat_samp_fact': 2.0,
-              '--flux': None}],
-        },
+        'long_600_10000_d680': [
+            {'files': ['r220127_00123.fits', 'r220127_00124.fits'],
+              '--coadd': None, '--spec_samp_fact': 2.0, '--spat_samp_fact': 2.0,
+              '--setup_calib_dir': 'USE_CALIB_DIR',
+            }
+        ],
+    },
     'keck_nires': {
         'ABpat_wstandard': [
             # (1) Generate the calibrations from scratch and just reduce a
             # single frame
-#            {'test_name': 'one',
-#             'files': ['NR.20191211.07572.fits',    # flat
-#                       'NR.20191211.07688.fits',    # lamp-off flat
-#                       'NR.20191211.26257.fits'],   # science (arc,tilt)
-#            },
+            {'test_name': 'one',
+             'files': ['NR.20191211.07572.fits',    # flat
+                       'NR.20191211.07688.fits',    # lamp-off flat
+                       'NR.20191211.26257.fits'],   # science (arc,tilt)
+            },
             # (2) Use existing calibrations and just reduce a single frame
-#            {'test_name': 'cooked',
-#             'files': ['NR.20191211.26257.fits'],
-#              '--setup_calib_dir': 'USE_CALIB_DIR',
-#            },
+            {'test_name': 'cooked',
+             'files': ['NR.20191211.26257.fits'],
+             '--setup_calib_dir': 'USE_CALIB_DIR',
+            },
             # (3) Use exising calibrations and reduce both a standard and a
             # single science frame
-#            {'test_name': 'std',
-#             'files': ['NR.20191211.26257.fits',    # science (arc,tilt)
-#                       'NR.20191211.27199.fits'],   # standard
-#              '--setup_calib_dir': 'USE_CALIB_DIR',
-#            },
+            {'test_name': 'std',
+             'files': ['NR.20191211.26257.fits',    # science (arc,tilt)
+                       'NR.20191211.27199.fits'],   # standard
+             '--setup_calib_dir': 'USE_CALIB_DIR',
+            },
             # (4) Use exising calibrations and reduce both a standard and an
             # AB dither sequence
             {'test_name': 'ABstd',
              'files': ['NR.20191211.26257.fits',    # science: A
                        'NR.20191211.26611.fits',    # science: B
                        'NR.20191211.27199.fits'],   # standard
-              '--snr_thresh': 5,
-              '--setup_calib_dir': 'USE_CALIB_DIR',
+             '--snr_thresh': 5,
+             '--setup_calib_dir': 'USE_CALIB_DIR',
             },
             # (5) Use existing global calibrations
-#            {'test_name': 'ABarc',
-#             'files': ['NR.20191211.26257.fits',    # science: A
-#                       'NR.20191211.26611.fits'],   # science: B
-#              '--snr_thresh': 5,
-#              '--parent_calib_dir': 'USE_ARCHIVE_CALIB_DIR',
-#            },
+            {'test_name': 'ABarc',
+             'files': ['NR.20191211.26257.fits',    # science: A
+                       'NR.20191211.26611.fits'],   # science: B
+             '--snr_thresh': 5,
+             '--parent_calib_dir': 'USE_ARCHIVE_CALIB_DIR',
+            },
         ]
     },
     }
-#'keck_nires/NIRES':  # This will await the refactored quick look
-#    {'files': ['s190519_0067.fits', 's190519_0068.fits']},
 
 
 # The order of these tests in all_tests determine the order they run

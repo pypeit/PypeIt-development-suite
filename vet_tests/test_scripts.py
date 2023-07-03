@@ -1,6 +1,7 @@
 """
 Module to run tests on scripts
 """
+from pathlib import Path
 import os
 import numpy as np
 import pytest
@@ -10,12 +11,12 @@ from IPython import embed
 matplotlib.use('agg')  # For Travis
 
 
-from pypeit.scripts import parse_slits
 from pypeit import scripts
 from pypeit.tests.tstutils import data_path
 from pypeit.display import display
 from pypeit import wavecalib
 from pypeit import coadd1d
+from pypeit import inputfiles
 
 from pypeit.pypmsgs import PypeItError
 
@@ -153,6 +154,7 @@ def test_identify(redux_out):
     wvarxiv_fn = arcfitter.store_solution(final_fit, 1, rmstol=0.1, force_save=True, wvcalib=waveCalib)
 
     # Test we can read it
+    # NOTE: Calibration key and directory are undefined!
     tmp = wavecalib.WaveCalib.from_file('wvcalib.fits')
 
     # Clean up -- If these fail then the store solution failed
@@ -367,7 +369,6 @@ def test_collate_1d(tmp_path, monkeypatch, redux_out):
                                                                '--spec1d_files', expanded_alt_spec1d])
         assert scripts.collate_1d.Collate1D.main(parsed_args) == 0
         
-# pypeit_parse_calib_id is tested in test_runpypeit
 
 def test_parse_slits(redux_out):
     kastb_dir = os.path.join(redux_out,
@@ -379,14 +380,56 @@ def test_parse_slits(redux_out):
                               'spec2d_b27-J1217p3905_KASTb_20150520T045733.560.fits')
 
     # Slits
-    pargs = parse_slits.ParseSlits.parse_args([slits_file])
-    parse_slits.ParseSlits.main(pargs)
+    pargs = scripts.parse_slits.ParseSlits.parse_args([slits_file])
+    scripts.parse_slits.ParseSlits.main(pargs)
 
     # Spec2d
-    pargs = parse_slits.ParseSlits.parse_args([spec2d_file])
-    parse_slits.ParseSlits.main(pargs)
-    
+    pargs = scripts.parse_slits.ParseSlits.parse_args([spec2d_file])
+    scripts.parse_slits.ParseSlits.main(pargs)
 
+
+def test_setup_coadd2d(redux_out):
+
+    # Set the pypeit file
+    _redux_out = Path(redux_out).resolve() / 'gemini_gnirs' / '32_SB_SXD'
+    pypeit_file = _redux_out / 'gemini_gnirs_32_sb_sxd.pypeit'
+
+    # Run the setup
+    scripts.setup_coadd2d.SetupCoAdd2D.main(
+            scripts.setup_coadd2d.SetupCoAdd2D.parse_args(['-f', str(pypeit_file)]))
+
+    # Check the number of files
+    coadd_files = sorted(_redux_out.glob('gemini_gnirs_32_sb_sxd*.coadd2d'))
+    assert len(coadd_files) == 2, 'Wrong number of coadd2d files'
+    # Check the object names
+    assert sorted([c.name.split('.')[0].split('_')[-1] for c in coadd_files]) \
+                == ['HIP62745', 'pisco'], 'Object names changed'
+    # Try to read one of the files
+    coadd = inputfiles.Coadd2DFile.from_file(str(coadd_files[0]))
+    # Check the spec2d files to be coadded
+    assert len(coadd.filenames) == 2, 'Missing spec2d files'
+    # Check the offsets
+    assert coadd.config['coadd2d']['offsets'] == 'auto', 'Offsets changed'
+    # Clean-up
+    for f in coadd_files:
+        f.unlink()
+
+    # Run the setup, but change the offsets and weights
+    scripts.setup_coadd2d.SetupCoAdd2D.main(
+            scripts.setup_coadd2d.SetupCoAdd2D.parse_args(
+                    ['-f', str(pypeit_file), '--offsets', 'maskdef_offsets', '--weights', 'uniform']))
+
+    # Check the number of files
+    coadd_files = sorted(_redux_out.glob('gemini_gnirs_32_sb_sxd*.coadd2d'))
+    # Try to read one of the files
+    coadd = inputfiles.Coadd2DFile.from_file(str(coadd_files[0]))
+
+    # Check the offsets
+    assert coadd.config['coadd2d']['offsets'] == 'maskdef_offsets', 'Offsets do not match input'
+    assert coadd.config['coadd2d']['weights'] == 'uniform', 'Weights do not match input'
+    # Clean-up
+    for f in coadd_files:
+        f.unlink()
 
 # TODO: Include tests for coadd2d, sensfunc
 

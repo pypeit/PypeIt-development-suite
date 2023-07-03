@@ -420,21 +420,21 @@ class PypeItCoadd1DTest(PypeItTest):
 
 class PypeItCoadd2DTest(PypeItTest):
     """Test subclass that runs pypeit_coadd_2dspec"""
-    def __init__(self, setup, pargs, coadd_file=None, obj=None):
+    def __init__(self, setup, pargs, coadd_file=None): #, obj=None):
         super().__init__(setup, pargs, "pypeit_coadd_2dspec", "test_2dcoadd")
-        self.obj = obj
+        #self.obj = obj
 
         if coadd_file:
             self.coadd_file = template_coadd2d_file(setup.dev_path, setup.instr, setup.name)
         else:
             self.coadd_file = None
 
-        if self.coadd_file is None and self.obj is None:
-            raise ValueError('Must provide coadd2d file or object name.')
+        if self.coadd_file is None: # and self.obj is None:
+            raise ValueError('Must provide coadd2d file') # or object name.')
 
     def build_command_line(self):
-        command_line = ['pypeit_coadd_2dspec']
-        command_line += ['--obj', self.obj] if self.coadd_file is None else ['--file', self.coadd_file]
+        command_line = ['pypeit_coadd_2dspec', self.coadd_file]
+#        command_line += ['--obj', self.obj] if self.coadd_file is None else ['--file', self.coadd_file]
         return command_line
 
     def check_for_missing_files(self):
@@ -510,34 +510,21 @@ class PypeItQuickLookTest(PypeItTest):
 
     def build_command_line(self):
 
-        if self.setup.instr == 'keck_mosfire' and self.setup.name == 'Y_long':
-            command_line = ['pypeit_ql_jfh_multislit', 'keck_mosfire']
-            if self.pargs.quiet:
-                command_line += ['--no_gui', '--writefits']
-        elif self.setup.instr == 'keck_lris_red_mark4':
-            command_line = ['pypeit_ql_jfh_multislit', 'keck_lris_red_mark4']
-            if self.pargs.quiet:
-                command_line += ['--no_gui', '--writefits']
-        else:
-            # Redux folder
-            redux_path = os.path.join(self.redux_dir,
-                    self.setup.instr, self.setup.name)
-            last_folder = 'QL'
-            if self.test_name is not None:
-                last_folder += '_' + self.test_name
-            redux_path = os.path.join(redux_path, last_folder)
+        # Redux folder
+        redux_path = os.path.join(self.redux_dir,
+                self.setup.instr, self.setup.name)
+        last_folder = 'QL'
+        if self.test_name is not None:
+            last_folder += '_' + self.test_name
+        redux_path = os.path.join(redux_path, last_folder)
                     
-            command_line = [
-                'pypeit_ql', self.setup.instr,
-                '--redux_path', redux_path]
+        command_line = [
+            'pypeit_ql', self.setup.instr,
+            '--skip_display',
+            '--redux_path', redux_path,
+            '--raw_path', self.setup.rawdir, 
+            '--raw_files'] + self.files
 
-        if self.setup.instr == 'keck_mosfire' and self.setup.name == 'Y_long': # JFH QL
-            command_line += [self.setup.rawdir] + self.files
-        elif self.setup.instr == 'keck_lris_red_mark4':  # TESTING USING JFH QL
-            command_line += [self.setup.rawdir] + self.files
-        else:
-            command_line += ['--raw_path', self.setup.rawdir, 
-                             '--raw_files'] + self.files
         # Aditional options
         for option in self.options:
             if self.options[option] is None:
@@ -567,10 +554,16 @@ class PypeItQuickLookTest(PypeItTest):
         """
         Check if instrument uses pre-build calibrations.
         """
+        # NOTE: This is required if any of the QL tests set the
+        # '--parent_calib_dir' to 'USE_ARCHIVE_CALIB_DIR'.  The *only*
+        # instrument that currently does this is Keck/NIRES.  The other QL test
+        # all use the calibrations directory from the main `reduce` run as the
+        # reference calibrations; i.e., the set '--setup_calib_dir' to
+        # 'USE_CALIB_DIR'.  See test_scripts/test_setups.py.
         return self.setup.instr == 'keck_nires' \
-                or (self.setup.instr == 'keck_mosfire' and self.setup.name == 'Y_long') \
-                or (self.setup.instr == 'keck_lris_red_mark4' 
-                        and self.setup.name == 'long_600_10000_d680')
+                or (self.setup.instr == 'keck_mosfire' and self.setup.name == 'Y_long') # \
+#                or (self.setup.instr == 'keck_lris_red_mark4' 
+#                        and self.setup.name == 'long_600_10000_d680')
 
     def run(self):
         """
