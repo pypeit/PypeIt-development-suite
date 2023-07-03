@@ -84,7 +84,7 @@ disperser = 'PRISM_02073'
 # disperser='PRISM_01117'
 # disperser='PRISM_FS'
 
-#target = 'J0313'
+target = 'J1007'
 #disperser = '395H'
 
 detectors = ['nrs1', 'nrs2']
@@ -345,8 +345,8 @@ param_dict = {
     'bkg_subtract': {'skip': True},
     'imprint_subtract': {'save_results': True}, # TODO Check up on whether imprint subtraction is being done by us???
     'master_background_mos': {'skip': True},
-    'srctype': {'source_type': 'EXTENDED'},
-    # 'srctype': {'source_type': 'POINT'},
+    #'srctype': {'source_type': 'EXTENDED'},
+    'srctype': {'source_type': 'POINT'},
     # 'flat_field': {'skip': True},
     'resample_spec': {'skip': True},
     'extract_1d': {'skip': True},
