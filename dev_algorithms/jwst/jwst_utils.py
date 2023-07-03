@@ -605,7 +605,7 @@ def jwst_reduce(sciImg, slits, waveimg, tilts, spectrograph, par, show=False, fi
                                               waveimg=waveimg, bkg_redux=bkg_redux,
                                               basename=basename, show=show)
 
-    skymodel, objmodel, ivarmodel, outmask, sobjs, _, _ = exTract.run()
+    skymodel, objmodel, ivarmodel, outmask, sobjs, _, _, slits_out = exTract.run()
 
     # TODO -- Do this upstream
     # Tack on detector and wavelength RMS
@@ -623,7 +623,7 @@ def jwst_reduce(sciImg, slits, waveimg, tilts, spectrograph, par, show=False, fi
                                     tilts=tilts,
                                     bpmmask=outmask,
                                     detector=sciImg.detector,
-                                    slits=slits,
+                                    slits=slits_out,
                                     wavesol=None,
                                     maskdef_designtab=None,
                                     sci_spat_flexure=sciImg.spat_flexure,
@@ -680,6 +680,7 @@ def jwst_extract_subimgs(final_slit, intflat_slit):
         msgs.warn('No pathloss for slit {0}'.format(slit_name) + ', setting to 1.0')
         pathloss = np.ones_like(flatfield)
 
+
     barshadow = np.array(final_slit.barshadow.T, dtype=float)
     if barshadow.shape == (0,0):
         msgs.warn('No barshadow for slit {0}'.format(slit_name) + ', setting to 1.0')
@@ -687,7 +688,6 @@ def jwst_extract_subimgs(final_slit, intflat_slit):
 
     photom_conversion = final_slit.meta.photometry.conversion_megajanskys
     final = np.array(final_slit.data.T, dtype=float)
-
 
     # Generate some tilts and a spatial image
     finitemask = np.isfinite(waveimg)
