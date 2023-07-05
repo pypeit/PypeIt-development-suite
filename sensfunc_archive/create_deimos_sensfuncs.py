@@ -13,14 +13,12 @@ import argparse
 import copy
 import os
 import datetime
-
+from pathlib import Path
 import numpy as np
 from astropy.io import fits
 from astropy.table import Table
 
 from pypeit.sensfunc import SensFunc
-from pypeit.core import fitting
-from pypeit.core.wavecal import wvutils
 from pypeit.spectrographs.util import load_spectrograph
 from pypeit.spectrographs.keck_deimos import load_wmko_std_spectrum
 import pypeit.io
@@ -30,7 +28,7 @@ from matplotlib import pyplot as plot
 from matplotlib.backends.backend_pdf import PdfPages
 from stitchdeimos import stitch_sensfunc
 
-def write_stitched_sensfunc(sflist, args, grating, combined_wave, combined_zp_fit,combined_zp_fit_gpm):
+def write_stitched_sensfunc(sflist, args, grating, combined_sf):
     """Write stitched sensfunc data in combined_wave, combined_zp_fit, and combined_zp_fit_gpm to
        a SensFunc file"""
     newsf = copy.deepcopy(sflist[0])
@@ -39,12 +37,12 @@ def write_stitched_sensfunc(sflist, args, grating, combined_wave, combined_zp_fi
     newsf.wave_splice = None
     newsf.zeropoint_splice = None
 
-    newsens = SensFunc.empty_sensfunc_table(1, len(combined_wave))
-    newsens['SENS_WAVE'] = combined_wave
-    newsens['SENS_ZEROPOINT_FIT'] = combined_zp_fit
-    newsens['SENS_ZEROPOINT_FIT_GPM'] = combined_zp_fit_gpm
-    newsens['WAVE_MIN'] = np.min(combined_wave)
-    newsens['WAVE_MAX'] = np.max(combined_wave)
+    newsens = SensFunc.empty_sensfunc_table(1, len(combined_sf['SENS_WAVE']))
+    newsens['SENS_WAVE'] = combined_sf['SENS_WAVE']
+    newsens['SENS_ZEROPOINT_FIT'] = combined_sf['SENS_ZEROPOINT_FIT']
+    newsens['SENS_ZEROPOINT_FIT_GPM'] = combined_sf['SENS_ZEROPOINT_FIT_GPM']
+    newsens['WAVE_MIN'] = np.min(combined_sf['SENS_WAVE'])
+    newsens['WAVE_MAX'] = np.max(combined_sf['SENS_WAVE'])
 
     newsf.sens = newsens
 
@@ -55,24 +53,24 @@ def write_stitched_sensfunc(sflist, args, grating, combined_wave, combined_zp_fi
     newsf.std_dec = None
     newsf.airmass = None
     newsf.telluric = None
-    newsf.wave = np.empty((combined_wave.size,1))
-    newsf.wave[:,0] = combined_wave
-    newsf.zeropoint = np.empty((combined_zp_fit.size,1))
-    newsf.zeropoint[:,0] = combined_zp_fit
+    newsf.wave = np.empty((combined_sf['SENS_WAVE'].size,1))
+    newsf.wave[:,0] = combined_sf['SENS_WAVE']
+    newsf.zeropoint = np.empty((combined_sf['SENS_ZEROPOINT_FIT'].size,1))
+    newsf.zeropoint[:,0] = combined_sf['SENS_ZEROPOINT_FIT']
 
     newsf.spectrograph = load_spectrograph("keck_deimos")    
     newsf.throughput = newsf.compute_throughput()[0]
 
-    file_name = os.path.join(args.dest_path, f"keck_deimos_{grating}_sensfunc.fits")
+    file_name = args.dest_path / f"keck_deimos_{grating}_sensfunc.fits"
 
-    hdr = pypeit.io.initialize_header(primary=True)
+    hdr = pypeit.io.initialize_header()
     hdr['HISTORY'] = "This DEIMOS sensfunc was stitched together from the following source files."
     # Trim off spec1d_ from base of each spec1d file
-    hdr['HISTORY'] = os.path.basename(sflist[0].spec1df)[7:]
-    hdr['HISTORY'] = os.path.basename(sflist[1].spec1df)[7:]
-    hdr['HISTORY'] = os.path.basename(sflist[2].spec1df)[7:]
+    hdr['HISTORY'] = os.path.basename(sflist[0].spec1df)[7:].split("-")[0] + ".fits"
+    hdr['HISTORY'] = os.path.basename(sflist[1].spec1df)[7:].split("-")[0] + ".fits"
+    hdr['HISTORY'] = os.path.basename(sflist[2].spec1df)[7:].split("-")[0] + ".fits"
     
-    newsf.to_file(file_name, primary_hdr = hdr, overwrite=True)
+    newsf.to_file(str(file_name), primary_hdr = hdr, overwrite=True)
     return (newsf, file_name)
 
 def build_figure():
@@ -108,6 +106,7 @@ def setup_axes(axis,xmin, ymin, xmax, ymax, title):
 def plot_stitch_results(sf, polyfit_areas, sflist, filename, showQA):
     """Create a QA plot for stitched that shows the original sensfuncs in the background,
        and shows the bad pixels and polyfit sections in distinct colors. """
+    plot.close("all")
     fig, axis = build_figure()
 
     sens_gpm = sf.sens['SENS_ZEROPOINT_FIT_GPM'][0]
@@ -122,7 +121,9 @@ def plot_stitch_results(sf, polyfit_areas, sflist, filename, showQA):
         num_plots +=1
 
     if sflist is not None:
-        num_plots += (2*len(sflist))
+        num_det = len(sflist[0].sens)
+        num_plots += len(sflist)*num_det
+
     xmin = np.zeros(num_plots)
     ymin = np.zeros(num_plots)
     xmax = np.zeros(num_plots)
@@ -152,7 +153,7 @@ def plot_stitch_results(sf, polyfit_areas, sflist, filename, showQA):
 
     # Plot the original sensfuncs in light gray in the background
     for bksf in sflist:
-        for det in [0, 1]:
+        for det in range(num_det):
             gpm = bksf.sens['SENS_ZEROPOINT_FIT_GPM'][det]
             x = bksf.sens['SENS_WAVE'][det][gpm]
             y = bksf.sens['SENS_ZEROPOINT_FIT'][det][gpm]
@@ -164,13 +165,13 @@ def plot_stitch_results(sf, polyfit_areas, sflist, filename, showQA):
             i+=1
 
 
-    setup_axes(axis, np.min(xmin), np.min(ymin), np.max(xmax),np.max(ymax), filename)
+    setup_axes(axis, np.min(xmin), np.min(ymin), np.max(xmax),np.max(ymax), str(filename))
 
 
     if showQA:
         plot.show()
 
-    pdf_filename = os.path.splitext(filename)[0] + ".pdf"
+    pdf_filename = filename.parent / (filename.stem + ".pdf")
     with PdfPages(pdf_filename) as pdf:
         pdf.savefig(fig)
 
@@ -179,7 +180,7 @@ def get_basename(source_file, source_meta):
     obsdate = datetime.datetime.strptime(source_meta['DATE'][0], "%d%b%Y")
 
     # Strip off path and .fits extension from the source name
-    source_basename = os.path.splitext(os.path.basename(source_file))[0]
+    source_basename = source_file.stem
 
     # Build a new base name of the format "source-std_instrument_date"
     # For example: 2005aug27_d0827_0046-Feige110_DEIMOS_20050827
@@ -196,14 +197,25 @@ def create_spec1d_files(args, source_files):
     spec1d_files = []
 
     for source_file in source_files:
-        meta = get_source_meta(source_file)
+        meta = get_source_meta(args.source_path / source_file)
         spec1d_name = f"spec1d_{get_basename(source_file, meta)}.fits"
-        dest_file = os.path.join(args.dest_path, spec1d_name)
-        load_wmko_std_spectrum(source_file, str(dest_file), True)
+        dest_file = args.dest_path / spec1d_name
+        load_wmko_std_spectrum(args.source_path / source_file, str(dest_file), True)
         source_meta.append(meta)
         spec1d_files.append(dest_file)
 
     return source_meta, spec1d_files
+
+def load_sens_files(args, source_files):
+    sflist = []
+    for file in source_files:
+        meta = get_source_meta(args.source_path / file)
+        sens_file = args.dest_path / ("sens_" + get_basename(file, meta) + ".fits")
+        if not sens_file.exists():
+            raise ValueError(f"Could not find sens file {sens_file} to re-use.")
+        sflist.append(SensFunc.from_file(sens_file))
+
+    return sflist
 
 def create_sens_files(args, spec1d_files):
     """Generate sensitivity functions from the spec1d files created from the IDL reduced source"""
@@ -223,26 +235,26 @@ def create_sens_files(args, spec1d_files):
 
 
     for spec1d_file in spec1d_files:
-        dest_file = os.path.join(args.dest_path, "sens_" + os.path.basename(spec1d_file)[7:])
+        dest_file = args.dest_path / spec1d_file.name.replace("spec1d_", "sens_", 1)
 
         # Instantiate the relevant class for the requested algorithm
-        sensobj = SensFunc.get_instance(spec1d_file, dest_file, par['sensfunc'])
+        sensobj = SensFunc.get_instance(str(spec1d_file), str(dest_file), par['sensfunc'])
 
         # Generate the sensfunc
         sensobj.run()
 
         # Write it out to a file
-        sensobj.to_file(dest_file, overwrite=True)
+        sensobj.to_file(str(dest_file), overwrite=True)
 
-        sflist.append(sensobj)
+        sflist.append(SensFunc.from_file((dest_file)))
 
     return sflist 
 
 def create_stitched_sensfuncs(args, grating, sflist):
     # Create a stitched sensfunc from multiple SensFuncs
-    (combined_wave,  combined_zp_fit, combined_zp_fit_gpm, polyfit_areas) = stitch_sensfunc(grating, sflist)
+    (combined_sf, polyfit_areas, fit_info) = stitch_sensfunc(grating, sflist)
 
-    (newsf, newfile) = write_stitched_sensfunc(sflist, args, grating, combined_wave, combined_zp_fit, combined_zp_fit_gpm)
+    (newsf, newfile) = write_stitched_sensfunc(sflist, args, grating, combined_sf)
 
     plot_stitch_results(newsf, polyfit_areas, sflist, newfile, args.showQA)
 
@@ -253,10 +265,10 @@ def create_stitched_sensfuncs(args, grating, sflist):
 def parse_args(options=None, return_parser=False):
     parser = argparse.ArgumentParser(description='Combine DEIMOS sensitivity functions to create a general purpose one.')
     parser.add_argument("grating", type=str, choices=['1200G', '1200B', '600ZD', '830G', '900ZD', 'all'])
-    parser.add_argument("source_path", type=str, help="Path of the throughput fits files generated by Greg Writh's IDL script")
-    parser.add_argument("dest_path", type=str, help = "Path to place generated spec1ds, sensfunc files, and the final stitched sensfunc.")
+    parser.add_argument("source_path", type=Path, help="Path of the throughput fits files generated by Greg Writh's IDL script")
+    parser.add_argument("dest_path", type=Path, help = "Path to place generated spec1ds, sensfunc files, and the final stitched sensfunc.")
     parser.add_argument("--showQA", action="store_true", default=False, help="Show the the QA plots before saving the QA pdf.")
-            
+    parser.add_argument("--reuse", action="store_true", default=False, help="Reuse existing sensfunc and spec1d files.")            
 
     if return_parser:
         return parser
@@ -270,7 +282,6 @@ def main(args):
 
     source_map = {"1200G": ['extract/1200G/2023jan17_d0117_0102.fits',
                             'extract/1200G/2023jan17_d0117_0103.fits',
-                            'extract/1200G/2023jan17_d0117_0104.fits',
                             'extract/1200G/2023jan17_d0117_0105.fits'],
                   "1200B": ['extract/1200B/2017oct03_d1003_0055.fits',
                             'extract/1200B/2017oct03_d1003_0056.fits',
@@ -281,9 +292,17 @@ def main(args):
                   "600ZD": ['extract/600ZD/2023jan17_d0117_0098.fits',
                             'extract/600ZD/2023jan17_d0117_0099.fits',
                             'extract/600ZD/2023jan17_d0117_0101.fits'],
-                  "830G":  ['extract/830G/2010oct06_d1006_0135.fits',
-                            'extract/830G/2010oct06_d1006_0136.fits',
-                            'extract/830G/2010oct06_d1006_0137.fits']}
+                  #"830G":  ['extract/830G/2010oct06_d1006_0135.fits',
+                  #          'extract/830G/2010oct06_d1006_0136.fits',
+                  #          'extract/830G/2010oct06_d1006_0137.fits',
+                  #          'extract/830G/2023may13_d0513_0034.fits']}
+                  "830G":  ['extract/830G/2023may13_d0513_0031.fits',
+                            'extract/830G/2023may13_d0513_0032.fits',
+                            'extract/830G/2023may13_d0513_0033.fits',
+                            'extract/830G/2023may13_d0513_0034.fits']}
+                  #"830G":  ['extract/830G/2010oct06_d1006_0135.fits',
+                  #          'extract/830G/2010oct06_d1006_0136.fits',
+                  #          'extract/830G/2010oct06_d1006_0137.fits']}
 
     if args.grating == "all":
         grating_list = source_map.keys()
@@ -291,11 +310,13 @@ def main(args):
         grating_list = [args.grating]
 
     for grating in grating_list:
-        source_files = [os.path.join(args.source_path, x) for x in source_map[grating]]
+        source_files = [Path(f) for f in source_map[grating]]
 
-        source_meta, spec1d_files = create_spec1d_files(args, source_files)
-
-        sflist = create_sens_files(args, spec1d_files)
+        if args.reuse:
+            sflist = load_sens_files(args, source_files)
+        else:
+            source_meta, spec1d_files = create_spec1d_files(args, source_files)
+            sflist = create_sens_files(args, spec1d_files)
 
         create_stitched_sensfuncs(args, grating, sflist)
 

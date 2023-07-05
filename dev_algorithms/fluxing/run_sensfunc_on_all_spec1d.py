@@ -24,18 +24,14 @@ def run_sensfunc(options):
 
 if __name__ == '__main__':
 
-    file_list = sys.argv[1]
-    src_dir = Path(sys.argv[2])
+    src_dir = Path(sys.argv[1])
+    src_pattern = sys.argv[2]
     dest_dir = Path(sys.argv[3])
     sens_file = sys.argv[4]
     jobs = []
 
-    with open(file_list, "r") as f:
-        files = [Path(x.strip()) for x in f.readlines()]
-
-    for file in files:
-        spec1d_file = src_dir / file.parent / ("spec1d_" + file.name)
-        dest_file = dest_dir / file.parent / ("sens_" + file.name)
+    for spec1d_file in src_dir.glob(src_pattern):
+        dest_file = dest_dir / spec1d_file.name.replace("spec1d", "sens", 1)
         dest_file.parent.mkdir(parents=True, exist_ok=True)
         options = [f"{spec1d_file}", "-s", sens_file, "--outfile", str(dest_file)]
         jobs.append(options)
