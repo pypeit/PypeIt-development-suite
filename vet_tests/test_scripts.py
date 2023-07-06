@@ -431,6 +431,31 @@ def test_setup_coadd2d(redux_out):
     for f in coadd_files:
         f.unlink()
 
+    # Run the setup without the pypeit file and using the spec2d files
+    # move to the redux_out directory
+    cdir = os.getcwd()
+    os.chdir(_redux_out)
+    # get Science directory
+    sci_dir = _redux_out / 'Science'
+    # Run the setup
+    scripts.setup_coadd2d.SetupCoAdd2D.main(
+            scripts.setup_coadd2d.SetupCoAdd2D.parse_args(['-d', str(sci_dir), '--spat_toler', '10']))
+
+    # Check the number of files
+    coadd_files = sorted(Path().glob('gemini_gnirs_*.coadd2d'))
+    assert len(coadd_files) == 2, 'Wrong number of coadd2d files'
+    # Try to read one of the files
+    coadd = inputfiles.Coadd2DFile.from_file(str(coadd_files[0]))
+
+    # Check the offsets
+    assert coadd.config['coadd2d']['spat_toler'] == '10', 'Wrong value for spat_tol'
+    # Clean-up
+    for f in coadd_files:
+        f.unlink()
+
+    # Go back
+    os.chdir(cdir)
+
 # TODO: Include tests for coadd2d, sensfunc
 
 
