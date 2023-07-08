@@ -182,34 +182,36 @@ _additional_reduce = {
         'GS_HAM_R400_860': [dict(std=True)]},
     }
 
-# TODO -- Add shane_kast to CI as a pypeit_sensfunc spec1d* call. For all sensfunc tests,
-# run them via a .sens file. Clean up unused .sens files in the sensfunc_files directory. Populate
-# this list with further tests.
 _sensfunc = {
     'shane_kast_blue': {
-        '600_4310_d55': [dict(std_file='spec1d_*Feige66*.fits')]},
+        '600_4310_d55': [dict(std_file='spec1d_*Feige66*.fits',
+                              sens_file="shane_kast_blue_600_4310_d55.sens")]},
+    'shane_kast_red': {
+        '600_7500_d55_ret': [dict(std_file='spec1d_*G191b2b*.fits',
+                                  sens_file="shane_kast_red_600_7500_d55_ret.sens")]},
     'gemini_gnirs': {
         '32_SB_SXD': [dict(std_file='spec1d_*S0206-HIP62745*.fits',
                            sens_file='gemini_gnirs_32_sb_sxd.sens')]},
     'gemini_gmos': {
-        'GS_HAM_R400_860': [dict(std_file='spec1d_**GD71*.fits')],
-        'GS_HAM_R400_700': [dict(std_file='spec1d_**LTT7379*.fits',
-                             sens_file='gemini_gmos_gs_ham_r400_700.sens')]},
-    'gemini_gmos': {
-        'GS_HAM_R400_860': [dict(std_file='spec1d_**GD71*.fits')],
+        'GS_HAM_R400_860': [dict(std_file='spec1d_**GD71*.fits',
+                                 sens_file='gemini_gmos_gs_ham_r400_860.sens')],
         'GS_HAM_R400_700': [dict(std_file='spec1d_**LTT7379*.fits',
                                  sens_file='gemini_gmos_gs_ham_r400_700.sens')]},
     'keck_deimos': {
         '900ZD_LVM_5500': [dict(std_file='spec1d_*Feige110*.fits',
-                   sens_file='keck_deimos_900zd_lvm_5500.sens')]},
+                                sens_file='keck_deimos_900zd_lvm_5500.sens')]},
     'keck_mosfire': {
-        'Y_long': [dict(std_file='spec1d_*0064-GD71*.fits')]},
+        'Y_long': [dict(std_file='spec1d_*0064-GD71*.fits',
+                        sens_file='keck_mosfire_Y_long.sens')]},
     'keck_lris_red_mark4': {
-        'long_600_10000_d680': [dict(std_file='spec1d_*00127-GD153*.fits')]
+        'long_600_10000_d680': [dict(std_file='spec1d_*00127-GD153*.fits',
+                                     sens_file='keck_lris_red_mark4_long_600_10000_d680.sens')]
         },
     'ldt_deveny': {
-        'DV2': [dict(std_file='spec1d_**BD+33d2642**.fits')],
-        'DV6': [dict(std_file='spec1d**G191-B2B**.fits')]
+        'DV2': [dict(std_file='spec1d_**BD+33d2642**.fits',
+                     sens_file='ldt_deveny_dv2.sens')],
+        'DV6': [dict(std_file='spec1d**G191-B2B**.fits',
+                     sens_file='ldt_deveny_dv6.sens')]
         },
     }
 
@@ -226,6 +228,8 @@ _flux_setup = {
 _flux = {
     'shane_kast_blue': {
         '600_4310_d55': [{}]},
+    'shane_kast_red': {
+        '600_7500_d55_ret': [{}]},
     'gemini_gnirs': {
         '32_SB_SXD': [{}]},
     'gemini_gmos': {

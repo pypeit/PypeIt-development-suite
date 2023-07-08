@@ -1,4 +1,3 @@
 [sensfunc]
-    multi_spec_det = 3,7
     algorithm = IR
     flatfile= Calibrations/Flat_A_0_DET01.fits
