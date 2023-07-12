@@ -1,0 +1,50 @@
+pro thruput
+
+
+
+  if keyword_set( PSFILE ) then x_psopen, psfile, /maxs
+  clr = getcolor(/load)
+  !p.multi=[0,1,1]
+
+  ;; Overall
+  plot, [0.], [0.], color=clr.black, $
+    background=clr.white, charsize=2.2,$
+    xmargin=[7,1], ymargin=[4,1], xtitle='[M/H]', $
+    ytitle='Number', /nodata, xthick=5, ythick=5, xstyle=1, ystyle=1, $
+    yr=[0., 12.], xr=[-3., 0.2]
+
+  ;; DLA (high z)
+  highz = where(dla.zabs GT 1.5, complement=lowz)
+  plothist, dla[highz].mtl, bin=0.05, /overplot, color=clr.blue, $
+            fcolor=clr.blue, /halfbin
+  ;; DLA (low z)
+;  plothist, dla[lowz].mtl, bin=0.2, /overplot, color=clr.black, linesty=2, $
+;            /halfbin
+;  plothist, dla.mtl, bin=0.05, /overplot, color=clr.blue, linesty=2, $
+;            /halfbin
+  
+  ;; GRB (good)
+  gd_grb = where(grb.sigNHI[0] LT 0.5 and grb.sigmtl LT 0.5, $
+                 complement=lim_grb, $
+                ncomplement=nlim)
+  plothist, grb[gd_grb].mtl, bin=0.1, /overplot, color=clr.black, $
+            /halfbin, /fill
+  
+  seed = -1244
+  for jj=0L,nlim-1 do begin
+      ii = lim_grb[jj]
+      if grb[ii].sigNHI[0] GE 0.5 then pclr = clr.green else pclr=clr.red
+      plotsym, 7, 3.5,thick=6   ;, ssize
+;
+      oplot, [grb[ii].mtl], [10.+randomu(seed)], color=pclr, psym=8
+  endfor
+
+
+  ;; Label
+;  xyouts
+
+  if keyword_set( PSFILE ) then x_psclose
+  !p.multi=[0,1,1]
+
+  return
+end
