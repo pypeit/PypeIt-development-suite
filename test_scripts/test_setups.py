@@ -21,7 +21,7 @@ To add a new test for an existing setup:
 3) If the test type requires arguments, they will be passed to the PypeItTest subclasses constructor as keyword
    arguments. Put the arguments into a dict using the keyword argument as a key. For example:
 
-   telluric_tests = {'gemini_gnirs/32_SB_SXD':
+   telluric_tests = {'gemini_gnirs_echelle/32_SB_SXD':
                          {'coadd_file': 'pisco_coadd.fits', 'redshift': 7.52, 'objmodel': 'qso'},
 
 To add a new type of test:
