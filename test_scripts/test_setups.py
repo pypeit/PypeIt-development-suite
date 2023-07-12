@@ -349,7 +349,7 @@ _quick_look = {
             },
             {'test_name': 'slitspatnum', # Run with slitspatnum
                 'files': ['d1010_0056.fits.gz'],
-              '--slitspatnum': 'MSC02:452',
+              '--slitspatnum': 'MSC02:368,MSC02:452',
               '--setup_calib_dir': 'USE_CALIB_DIR',
             },
         ]
