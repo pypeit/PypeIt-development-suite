@@ -394,6 +394,10 @@ def test_setup_coadd2d(redux_out):
     _redux_out = Path(redux_out).resolve() / 'gemini_gnirs' / '32_SB_SXD'
     pypeit_file = _redux_out / 'gemini_gnirs_32_sb_sxd.pypeit'
 
+    # move to the redux_out directory
+    cdir = os.getcwd()
+    os.chdir(_redux_out)
+
     # Run the setup
     scripts.setup_coadd2d.SetupCoAdd2D.main(
             scripts.setup_coadd2d.SetupCoAdd2D.parse_args(['-f', str(pypeit_file)]))
@@ -432,9 +436,6 @@ def test_setup_coadd2d(redux_out):
         f.unlink()
 
     # Run the setup without the pypeit file and using the spec2d files
-    # move to the redux_out directory
-    cdir = os.getcwd()
-    os.chdir(_redux_out)
     # get Science directory
     sci_dir = _redux_out / 'Science'
     # Run the setup
