@@ -391,15 +391,15 @@ def test_parse_slits(redux_out):
 def test_setup_coadd2d(redux_out):
 
     # Set the pypeit file
-    _redux_out = Path(redux_out).resolve() / 'gemini_gnirs' / '32_SB_SXD'
-    pypeit_file = _redux_out / 'gemini_gnirs_32_sb_sxd.pypeit'
+    _redux_out = Path(redux_out).resolve() / 'gemini_gnirs_echelle' / '32_SB_SXD'
+    pypeit_file = _redux_out / 'gemini_gnirs_echelle_32_sb_sxd.pypeit'
 
     # Run the setup
     scripts.setup_coadd2d.SetupCoAdd2D.main(
             scripts.setup_coadd2d.SetupCoAdd2D.parse_args(['-f', str(pypeit_file)]))
 
     # Check the number of files
-    coadd_files = sorted(_redux_out.glob('gemini_gnirs_32_sb_sxd*.coadd2d'))
+    coadd_files = sorted(_redux_out.glob('gemini_gnirs_echelle_32_sb_sxd*.coadd2d'))
     assert len(coadd_files) == 2, 'Wrong number of coadd2d files'
     # Check the object names
     assert sorted([c.name.split('.')[0].split('_')[-1] for c in coadd_files]) \
@@ -420,7 +420,7 @@ def test_setup_coadd2d(redux_out):
                     ['-f', str(pypeit_file), '--offsets', 'maskdef_offsets', '--weights', 'uniform']))
 
     # Check the number of files
-    coadd_files = sorted(_redux_out.glob('gemini_gnirs_32_sb_sxd*.coadd2d'))
+    coadd_files = sorted(_redux_out.glob('gemini_gnirs_echelle_32_sb_sxd*.coadd2d'))
     # Try to read one of the files
     coadd = inputfiles.Coadd2DFile.from_file(str(coadd_files[0]))
 
