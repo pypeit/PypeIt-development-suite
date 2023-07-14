@@ -454,6 +454,47 @@ def test_setup_coadd2d(redux_out):
     for f in coadd_files:
         f.unlink()
 
+    # test another dataset and the only_slits and exclude_slits parameters
+
+    # Set the pypeit file
+    _redux_out = Path(redux_out).resolve() / 'keck_mosfire' / 'mask1_K_with_continuum'
+    pypeit_file = _redux_out / 'keck_mosfire_mask1_k_with_continuum.pypeit'
+
+    # move to the redux_out directory
+    os.chdir(_redux_out)
+
+    # Run the setup
+    scripts.setup_coadd2d.SetupCoAdd2D.main(
+            scripts.setup_coadd2d.SetupCoAdd2D.parse_args(['-f', str(pypeit_file), '--only_slits', 'DET01:306', '--exclude_slits', 'DET01:766,DET01:877']))
+
+    # Check the number of files
+    coadd_files = sorted(_redux_out.glob('keck_mosfire_mask1_k_with_continuum*.coadd2d'))
+    assert len(coadd_files) == 1, 'There should be only one coadd2d file'
+    # Try to read the file
+    coadd = inputfiles.Coadd2DFile.from_file(str(coadd_files[0]))
+    # get par
+    _, par, _ = coadd.get_pypeitpar()
+    # Check only_slits
+    assert par['coadd2d']['only_slits'] == ['DET01:306'], 'Wrong value for only_slits'
+    assert par['coadd2d']['exclude_slits'] == None, 'exclude_slits should be None'
+
+    # re-run with only --exclude_slits
+        # Run the setup
+    scripts.setup_coadd2d.SetupCoAdd2D.main(
+            scripts.setup_coadd2d.SetupCoAdd2D.parse_args(['-f', str(pypeit_file), '--exclude_slits', 'DET01:766,DET01:877']))
+
+    # Check the number of files
+    coadd_files = sorted(_redux_out.glob('keck_mosfire_mask1_k_with_continuum*.coadd2d'))
+    coadd = inputfiles.Coadd2DFile.from_file(str(coadd_files[0]))
+    # get par
+    _, par, _ = coadd.get_pypeitpar()
+    # Check exclude_slits
+    assert par['coadd2d']['exclude_slits'] == ['DET01:766,DET01:877'], 'Wrong value for exclude_slits'
+
+    # Clean-up
+    for f in coadd_files:
+        f.unlink()
+
     # Go back
     os.chdir(cdir)
 
