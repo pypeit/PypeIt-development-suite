@@ -21,7 +21,7 @@ To add a new test for an existing setup:
 3) If the test type requires arguments, they will be passed to the PypeItTest subclasses constructor as keyword
    arguments. Put the arguments into a dict using the keyword argument as a key. For example:
 
-   telluric_tests = {'gemini_gnirs/32_SB_SXD':
+   telluric_tests = {'gemini_gnirs_echelle/32_SB_SXD':
                          {'coadd_file': 'pisco_coadd.fits', 'redshift': 7.52, 'objmodel': 'qso'},
 
 To add a new type of test:
@@ -103,7 +103,8 @@ class TestPhase(Enum):
 #  The keys are the instruments and the values are a list of the supported setups.
 all_setups  = {
     'bok_bc': ['300','600'],
-    'gemini_gnirs': ['32_SB_SXD', '10_LB_SXD'],
+    'gemini_gnirs_echelle': ['32_SB_SXD', '10_LB_SXD'],
+    'gemini_gnirs_ifu': ['LR_IFU_32mm'],
     'gemini_gmos': ['GS_HAM_R400_700', 'GS_HAM_R400_860',
                     'GN_HAM_R400_885', 'GN_HAM_NS_B600_620',
                     'GS_HAM_MULTI_R400_700', 'GN_E2V_MULTI_R400_600',
@@ -184,14 +185,13 @@ _additional_reduce = {
 
 _sensfunc = {
     'shane_kast_blue': {
-        '600_4310_d55': [dict(std_file='spec1d_*Feige66*.fits',
-                              sens_file="shane_kast_blue_600_4310_d55.sens")]},
+        '600_4310_d55': [dict(std_file='spec1d_*Feige66*.fits')]},
     'shane_kast_red': {
         '600_7500_d55_ret': [dict(std_file='spec1d_*G191b2b*.fits',
                                   sens_file="shane_kast_red_600_7500_d55_ret.sens")]},
-    'gemini_gnirs': {
+    'gemini_gnirs_echelle': {
         '32_SB_SXD': [dict(std_file='spec1d_*S0206-HIP62745*.fits',
-                           sens_file='gemini_gnirs_32_sb_sxd.sens')]},
+                           sens_file='gemini_gnirs_echelle_32_sb_sxd.sens')]},
     'gemini_gmos': {
         'GS_HAM_R400_860': [dict(std_file='spec1d_**GD71*.fits',
                                  sens_file='gemini_gmos_gs_ham_r400_860.sens')],
@@ -219,7 +219,7 @@ _sensfunc = {
 _flux_setup = {
     'shane_kast_blue': {
         '600_4310_d55': [{}]},
-    'gemini_gnirs': {
+    'gemini_gnirs_echelle': {
         '32_SB_SXD': [{}]},
     'gemini_gmos': {
         'GS_HAM_R400_860': [{}]},
@@ -230,7 +230,7 @@ _flux = {
         '600_4310_d55': [{}]},
     'shane_kast_red': {
         '600_7500_d55_ret': [{}]},
-    'gemini_gnirs': {
+    'gemini_gnirs_echelle': {
         '32_SB_SXD': [{}]},
     'gemini_gmos': {
         'GS_HAM_R400_860': [{}],
@@ -251,7 +251,7 @@ _flexure ={
 _coadd1d = {
     'shane_kast_blue': {
         '600_4310_d55': [{}]},
-    'gemini_gnirs': {
+    'gemini_gnirs_echelle': {
         '32_SB_SXD': [{}]},
     'gemini_gmos': {
         'GS_HAM_R400_860': [{}]},
@@ -260,7 +260,7 @@ _coadd1d = {
     }
 
 _coadd2d = {
-    'gemini_gnirs': {
+    'gemini_gnirs_echelle': {
         '32_SB_SXD': [dict(coadd_file=True)]},
     'keck_lris_blue': {
         'multi_600_4000_d560': [dict(coadd_file=True)]},
@@ -277,7 +277,7 @@ _coadd2d = {
     }
 
 _telluric = {
-    'gemini_gnirs': {
+    'gemini_gnirs_echelle': {
         '32_SB_SXD': [dict(coadd_file='pisco_coadd.fits', tell_file=True)]},
     'gemini_gmos': {
         'GS_HAM_R400_700': [dict(coadd_file='FRB180924_opt.fits',
