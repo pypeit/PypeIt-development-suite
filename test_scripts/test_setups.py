@@ -128,7 +128,7 @@ all_setups  = {
                       'multi_400_8500_d560', 'long_600_10000_d680',
                       'long_400_8500_longread'],  # Longslit read-out mode
     'keck_lris_red_orig': ['long_300_5000'],
-    'keck_lris_red_mark4': ['long_400_8500_d560', 'long_600_10000_d680'],
+    'keck_lris_red_mark4': ['long_400_8500_d560', 'long_600_10000_d680', 'multi_600_10000_slitmask'],
     'lbt_luci': ['LUCI-I', 'LUCI-II'],
     'lbt_mods': ['MODS1R_Longslit', 'MODS2R_Longslit'],
     'ldt_deveny': ['DV1', 'DV2', 'DV3', 'DV4', 'DV5', 'DV6', 'DV7', 'DV8', 'DV9'],
