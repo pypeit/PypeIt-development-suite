@@ -623,10 +623,20 @@ def template_coadd2d_file(dev_path, instr, setup):
     return os.path.join(dev_path, 'coadd2d_files', coadd2d_file_name(instr, setup))
 
 
-def fix_pypeit_file_directory(pyp_file, dev_path, raw_data, instr, setup, rdxdir, std=False):
+def fix_pypeit_file_directory(pyp_file:str, dev_path:str, raw_data:str, 
+                              instr:str, setup:str, rdxdir:str, std=False,
+                              outfile:str=None):
     """
     Use template pypeit file to write the pypeit file relevant to the
     exising directory structure.
+
+    Args:
+        pyp_file (str): Path to the pypeit file to be corrected.
+        dev_path (str): Path to the development directory.
+        raw_data (str): Full path to the raw data for this PypeIt file
+        instr (str): Instrument name.
+        setup (str): Setup name.
+        rdxdir (str): Path to the reduction directory.
 
     Returns:
         str: The path to the corrected pypeit file.
@@ -640,8 +650,8 @@ def fix_pypeit_file_directory(pyp_file, dev_path, raw_data, instr, setup, rdxdir
     # Replace the default path with the local one
     for kk, iline in enumerate(lines):
         if 'data read' in iline:
-            old_path = lines[kk+1].strip().split(' ')[1] if 'path' in lines[kk+1] \
-                            else lines[kk+1].strip()
+            #old_path = lines[kk+1].strip().split(' ')[1] if 'path' in lines[kk+1] \
+            #                else lines[kk+1].strip()
             subdir = ''
             newdpth = ' path ' if 'path' in lines[kk+1] else ' '
             newdpth += os.path.join(raw_data, subdir)
@@ -652,10 +662,11 @@ def fix_pypeit_file_directory(pyp_file, dev_path, raw_data, instr, setup, rdxdir
             lines[kk+1] = '        pixelflat_file = {0}'.format(newcpth)
 
     # Write the pypeit file
-    pyp_file = os.path.join(rdxdir, pypeit_file_name(instr, setup, std=std))
-    with open(pyp_file, 'w') as ofile:
+    if outfile is None:
+        outfile = os.path.join(rdxdir, pypeit_file_name(instr, setup, std=std))
+    with open(outfile, 'w') as ofile:
         ofile.writelines(lines)
-    return pyp_file
+    return outfile
 
 def get_unique_file(file):
     """Ensures a file name is unique on the file system, modifying it if neccessary.

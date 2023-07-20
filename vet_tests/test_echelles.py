@@ -6,7 +6,7 @@ import numpy as np
 
 from pypeit import spec2dobj
 
-# THIS MIGHT NOT WORK
+# 
 sys.path.append(os.path.join(
     os.path.abspath(
         os.environ["PYPEIT_DEV"]),"test_scripts"))
