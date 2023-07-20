@@ -227,7 +227,7 @@ def test_deimosslitmask():
     assert spec.slitmask.nslits == 106, 'Incorrect number of slits read!'
 
 
-def test_lris_slitmask(redux_out):
+def test_lris_blue_slitmask(redux_out):
     # Check that the LRIS slitmask was read in and used!
     file_path = os.path.join(redux_out,
                              'keck_lris_blue', 
@@ -241,6 +241,22 @@ def test_lris_slitmask(redux_out):
     assert len(specObjs.MASKDEF_ID) > 0
     assert 'gal21' in specObjs.MASKDEF_OBJNAME
     assert 'gal49' in specObjs.MASKDEF_OBJNAME # This was "manually" extracted
+
+def test_lris_red_mark4_slitmask(redux_out):
+    # Check that the LRIS slitmask was read in and used!
+    file_path = os.path.join(redux_out,
+                             'keck_lris_red_mark4', 
+                             'multi_600_10000_slitmask',
+                             'Science', 
+                             'spec1d_r230417_01033-frb22022_LRISr_20230417T082242.672.fits')
+    # Load                                
+    specObjs = specobjs.SpecObjs.from_fitsfile(file_path)
+
+    # Test
+    assert len(specObjs.MASKDEF_ID) > 0
+    assert 'gal172' in specObjs.MASKDEF_OBJNAME # Left-most slit
+    assert 'gal124' in specObjs.MASKDEF_OBJNAME # Right-most slit
+    assert 'FRBCoord' in specObjs.MASKDEF_OBJNAME # Forced extraction for faint source.
 
 def test_gmos_slitmask(redux_out):
     # Check we have sensible RA, Dec
