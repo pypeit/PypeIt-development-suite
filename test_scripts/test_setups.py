@@ -102,6 +102,8 @@ class TestPhase(Enum):
 # Grab em
 all_setups = setups._all
 
+# TODO -- delete this before merging
+'''
 # This dict specifies all the instruments and setups that are supported by the dev suite.
 #  The keys are the instruments and the values are a list of the supported setups.
 all_setups  = {
@@ -167,6 +169,7 @@ all_setups  = {
     'vlt_sinfoni': ['K_0.8'],
     'vlt_xshooter': ['VIS_1x1', 'VIS_2x1', 'VIS_2x2', 'VIS_manual', 'NIR', 'UVB_1x1', 'UVB_1x1_Feige110', 'VIS_1x1_Feige110', 'NIR_Feige110'],
 }
+'''
 
 # Tests for full reductions
 _reduce_setups = {}
