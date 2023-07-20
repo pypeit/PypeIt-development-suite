@@ -38,6 +38,7 @@ DO_NOT_USE = datamodels.dqflags.pixel['DO_NOT_USE']
 
 # PypeIt imports
 from jwst_utils import compute_diff, get_cuts, jwst_show_spec2, jwst_show_msa, jwst_proc, jwst_extract_subimgs
+from pypeit.metadata import PypeItMetaData
 from pypeit.display import display
 from pypeit import specobjs
 from pypeit import slittrace
@@ -58,11 +59,15 @@ from pypeit import coadd2d
 from pypeit.images.pypeitimage import PypeItImage
 from pypeit.scripts.show_2dspec import show_trace
 
+# JFH: This is the main up to date routine. Ignore the others.
+
+
 DO_NOT_USE = datamodels.dqflags.pixel['DO_NOT_USE']
 
 # detname = 'nrs1'
 # detector = 1 if 'nrs1' in detname else 2
 
+#disperser = 'J0313_G235M'
 disperser = 'G395M_Maseda'
 #disperser = 'G395M'
 #disperser = 'PRISM_01117'
@@ -71,11 +76,19 @@ disperser = 'G395M_Maseda'
 # detectors = ['nrs1', 'nrs2']
 # disperser='PRISM_01117'
 # disperser='PRISM_FS'
-mode = 'MSA'
-# mode ='FS'
+
 detectors = ['nrs1', 'nrs2']
 exp_list = []
+
 diff_redux = True
+runflag = False
+mode = 'MSA'
+#mode ='FS'
+#islit = 'S200A1'
+#islit = 'S200A2'
+islit = '37'
+
+
 # If diff_redux is False, the code will model the sky and the object profile and perform optimal extraction.
 # If diff_redux is True, the code will difference image and simply boxcar extract (optimal not implemented yet)
 for detname in detectors:
@@ -97,7 +110,7 @@ for detname in detectors:
         # scifile  = os.path.join(rawpath_level2, 'jw01133003001_0310x_00003_' + detname + '_rate.fits')
         # bkgfile1 = os.path.join(rawpath_level2, 'jw01133003001_0310x_00001_' + detname + '_rate.fits')
         # bkgfile2 = os.path.join(rawpath_level2, 'jw01133003001_0310x_00002_' + detname + '_rate.fits')
-    if 'PRISM_FS' == disperser:
+    elif 'PRISM_FS' == disperser:
         ## Prorgram for Slit Loss Characterization for MSA shutters
         # PRISM data
         rawpath_level2 = '/Users/joe/jwst_redux/Raw/NIRSPEC_FS/2072/level_12'
@@ -109,6 +122,26 @@ for detname in detectors:
         scifile1 = os.path.join(rawpath_level2, 'jw02072002001_05101_00001_' + detname + '_rate.fits')
         scifile2 = os.path.join(rawpath_level2, 'jw02072002001_05101_00002_' + detname + '_rate.fits')
         scifile3 = os.path.join(rawpath_level2, 'jw02072002001_05101_00003_' + detname + '_rate.fits')
+
+    elif 'J0313_G235M' == disperser:
+        ## Prorgram for Slit Loss Characterization for MSA shutters
+        # PRISM data
+        rawpath_level2 = '/Users/joe/jwst_redux/Raw/NIRSPEC_FS/1764/level_12/01764/'
+        output_dir = '/Users/joe/jwst_redux/redux/NIRSPEC_FS/J0313_G235M/calwebb/output'
+        pypeit_output_dir = '/Users/joe/jwst_redux/redux/NIRSPEC_FS/J0313_G235M/calwebb/pypeit'
+
+        # NIRSPEC 3-point dither
+        # dither center
+
+        if islit == 'S200A1':
+            scifile1 = os.path.join(rawpath_level2, 'jw01764014001_03102_00001_' + detname + '_rate.fits')
+            scifile2 = os.path.join(rawpath_level2, 'jw01764014001_03102_00002_' + detname + '_rate.fits')
+            scifile3 = os.path.join(rawpath_level2, 'jw01764014001_03102_00003_' + detname + '_rate.fits')
+        elif islit == 'S200A2':
+            scifile1 = os.path.join(rawpath_level2, 'jw01764014001_03104_00001_' + detname + '_rate.fits')
+            scifile2 = os.path.join(rawpath_level2, 'jw01764014001_03104_00002_' + detname + '_rate.fits')
+            scifile3 = os.path.join(rawpath_level2, 'jw01764014001_03104_00003_' + detname + '_rate.fits')
+
 
     elif 'PRISM_01117' in disperser:
         # PRISM data
@@ -175,95 +208,14 @@ if not os.path.isdir(scipath):
     msgs.info('Creating directory for Science output: {0}'.format(scipath))
     os.makedirs(scipath)
 
-# TODO Should we flat field. The flat field and flat field error are wonky and probably nonsense
-param_dict = {
-    'extract_2d': {'save_results': True},
-    'bkg_subtract': {'skip': True},
-    'imprint_subtract': {'save_results': True},
-    'msa_flagging': {'save_results': True},
-    'master_background_mos': {'skip': True},
-    'srctype': {'source_type': 'EXTENDED'},
-    #    'flat_field': {'skip': True},
-    'resample_spec': {'skip': True},
-    'extract_1d': {'skip': True},
-    'flat_field': {'save_interpolated_flat': True},  # Flats appear to be just nonsense. So skip for now.
-}
-
-basenames_1 = []
-basenames_2 = []
-for sci1, sci2 in zip(scifiles_1, scifiles_2):
-    basenames_1.append(os.path.basename(sci1).replace('_rate.fits', ''))
-    basenames_2.append(os.path.basename(sci2).replace('_rate.fits', ''))
-
-# Run the spec2 pipeline
-runflag = False
-if runflag:
-    for sci in scifiles_all:
-        Spec2Pipeline.call(sci, save_results=True, output_dir=output_dir, steps=param_dict)
-        #spec2 = Spec2Pipeline(steps=param_dict)
-        #spec2.save_results = True
-        #spec2.output_dir = output_dir
-        #result = spec2(sci)
-
-# Output file names
-intflat_output_files_1 = []
-#e2d_output_files_1 = []
-cal_output_files_1 = []
-msa_output_files_1 = []
-
-intflat_output_files_2 = []
-#e2d_output_files_2 = []
-cal_output_files_2 = []
-msa_output_files_2 = []
-
-for base1, base2 in zip(basenames_1, basenames_2):
-    #e2d_output_files_1.append(os.path.join(output_dir, base1 + '_extract_2d.fits'))
-    intflat_output_files_1.append(os.path.join(output_dir, base1 + '_interpolatedflat.fits'))
-    cal_output_files_1.append(os.path.join(output_dir, base1 + '_cal.fits'))
-    msa_output_files_1.append(os.path.join(output_dir, base1 + '_msa_flagging.fits'))
-
-    #e2d_output_files_2.append(os.path.join(output_dir, base2 + '_extract_2d.fits'))
-    intflat_output_files_2.append(os.path.join(output_dir, base2 + '_interpolatedflat.fits'))
-    cal_output_files_2.append(os.path.join(output_dir, base2 + '_cal.fits'))
-    msa_output_files_2.append(os.path.join(output_dir, base2 + '_msa_flagging.fits'))
-
-# Read in calwebb outputs for everytihng
-
-# Read in multi exposure calwebb outputs
-msa_multi_list_1 = []
-#e2d_multi_list_1 = []
-intflat_multi_list_1 = []
-final_multi_list_1 = []
-msa_multi_list_2 = []
-#e2d_multi_list_2 = []
-intflat_multi_list_2 = []
-final_multi_list_2 = []
-nslits_1 = np.zeros(nexp, dtype=int)
-nslits_2 = np.zeros(nexp, dtype=int)
-t_eff = np.zeros(nexp, dtype=float)
-
-# TODO Figure out why this is so damn slow! I suspect it is calwebb
-for iexp in range(nexp):
-    # Open some JWST data models
-    #e2d_multi_list_1.append(datamodels.open(e2d_output_files_1[iexp]))
-    msa_multi_list_1.append(datamodels.open(msa_output_files_1[iexp]))
-    intflat_multi_list_1.append(datamodels.open(intflat_output_files_1[iexp]))
-    final_multi_list_1.append(datamodels.open(cal_output_files_1[iexp]))
-
-    msa_multi_list_2.append(datamodels.open(msa_output_files_2[iexp]))
-    intflat_multi_list_2.append(datamodels.open(intflat_output_files_2[iexp]))
-    final_multi_list_2.append(datamodels.open(cal_output_files_2[iexp]))
-
-    t_eff[iexp] = final_multi_list_1[iexp].meta.exposure.effective_exposure_time
-    nslits_1[iexp] = len(final_multi_list_1[iexp].slits)
-    nslits_2[iexp] = len(final_multi_list_2[iexp].slits)
-
-
 
 # Some pypeit things
 spectrograph = load_spectrograph('jwst_nirspec')
 par = spectrograph.default_pypeit_par()
 det_container_list = [spectrograph.get_detector_par(1), spectrograph.get_detector_par(2)]
+fitstbl_1 = PypeItMetaData(spectrograph, par=par,files=scifiles_1, strict=True)
+fitstbl_2 = PypeItMetaData(spectrograph, par=par,files=scifiles_2, strict=True)
+fitstbls = [fitstbl_1, fitstbl_2]
 
 pypeline = 'MultiSlit'
 par['rdx']['redux_path'] = pypeit_output_dir
@@ -280,6 +232,96 @@ if not os.path.isdir(png_dir):
 if diff_redux:
     par['reduce']['findobj']['skip_skysub'] = True # Do not sky-subtract when object finding
     par['reduce']['extraction']['skip_optimal'] = True # Skip local_skysubtraction and profile fitting
+
+
+
+
+# TODO Should we flat field. The flat field and flat field error are wonky and probably nonsense
+param_dict = {
+    'extract_2d': {'save_results': True},
+    'bkg_subtract': {'skip': True},
+    'imprint_subtract': {'save_results': True},
+    'master_background_mos': {'skip': True},
+    'srctype': {'source_type': 'EXTENDED'},
+    #    'flat_field': {'skip': True},
+    'resample_spec': {'skip': True},
+    'extract_1d': {'skip': True},
+    'flat_field': {'save_interpolated_flat': True},  # Flats appear to be just nonsense. So skip for now.
+}
+
+# For MSA data, we need to run the MSA flagging step and this generates the full 2d frames we operate on, for
+# FS data, the MSA flagging is not performed and so the last step is the assign_wcs step
+if mode =='MSA':
+    param_dict['msa_flagging'] = {'save_results': True}
+elif mode == 'FS':
+    param_dict['assign_wcs'] = {'save_results': True}
+
+basenames_1 = []
+basenames_2 = []
+for sci1, sci2 in zip(scifiles_1, scifiles_2):
+    basenames_1.append(os.path.basename(sci1).replace('_rate.fits', ''))
+    basenames_2.append(os.path.basename(sci2).replace('_rate.fits', ''))
+
+# Run the spec2 pipeline
+if runflag:
+    for sci in scifiles_all:
+        Spec2Pipeline.call(sci, save_results=True, output_dir=output_dir, steps=param_dict)
+        #spec2 = Spec2Pipeline(steps=param_dict)
+        #spec2.save_results = True
+        #spec2.output_dir = output_dir
+        #result = spec2(sci)
+
+# Output file names
+intflat_output_files_1 = []
+msa_output_files_1 = []
+cal_output_files_1 = []
+
+intflat_output_files_2 = []
+msa_output_files_2 = []
+cal_output_files_2 = []
+
+for base1, base2 in zip(basenames_1, basenames_2):
+    if mode == 'MSA':
+        msa_output_files_1.append(os.path.join(output_dir, base1 + '_msa_flagging.fits'))
+        msa_output_files_2.append(os.path.join(output_dir, base2 + '_msa_flagging.fits'))
+    else:
+        msa_output_files_1.append(os.path.join(output_dir, base1 + '_assign_wcs.fits'))
+        msa_output_files_2.append(os.path.join(output_dir, base2 + '_assign_wcs.fits'))
+
+    intflat_output_files_1.append(os.path.join(output_dir, base1 + '_interpolatedflat.fits'))
+    cal_output_files_1.append(os.path.join(output_dir, base1 + '_cal.fits'))
+    intflat_output_files_2.append(os.path.join(output_dir, base2 + '_interpolatedflat.fits'))
+    cal_output_files_2.append(os.path.join(output_dir, base2 + '_cal.fits'))
+
+# Read in calwebb outputs for everytihng
+
+# Read in multi exposure calwebb outputs
+msa_multi_list_1 = []
+intflat_multi_list_1 = []
+final_multi_list_1 = []
+msa_multi_list_2 = []
+intflat_multi_list_2 = []
+final_multi_list_2 = []
+nslits_1 = np.zeros(nexp, dtype=int)
+nslits_2 = np.zeros(nexp, dtype=int)
+t_eff = np.zeros(nexp, dtype=float)
+
+# TODO Figure out why this is so damn slow! I suspect it is calwebb
+for iexp in range(nexp):
+    # Open some JWST data models
+    #e2d_multi_list_1.append(datamodels.open(e2d_output_files_1[iexp]))
+
+    msa_multi_list_1.append(datamodels.open(msa_output_files_1[iexp]))
+    intflat_multi_list_1.append(datamodels.open(intflat_output_files_1[iexp]))
+    final_multi_list_1.append(datamodels.open(cal_output_files_1[iexp]))
+
+    msa_multi_list_2.append(datamodels.open(msa_output_files_2[iexp]))
+    intflat_multi_list_2.append(datamodels.open(intflat_output_files_2[iexp]))
+    final_multi_list_2.append(datamodels.open(cal_output_files_2[iexp]))
+
+    t_eff[iexp] = final_multi_list_1[iexp].meta.exposure.effective_exposure_time
+    nslits_1[iexp] = len(final_multi_list_1[iexp].slits)
+    nslits_2[iexp] = len(final_multi_list_2[iexp].slits)
 
 
 
@@ -305,16 +347,16 @@ slit_names_2 = [slit.name for slit in final_multi_list_2[0].slits]
 slit_names_uni = np.unique(np.hstack([slit_names_1, slit_names_2]))
 
 # Loop over slits
-# islit = '10'
-# islit = 'S200A1'
-islit = '83'
+#islit = '10'
+#islit = 'S200A1'
+#islit = '83'
 #islit = None
 gdslits = slit_names_uni[::-1] if islit is None else [islit]
 bad_slits = []
 
 # First index is detector, second index is exposure
-#e2d_multi_list = [e2d_multi_list_1, e2d_multi_list_2]
 msa_multi_list = [msa_multi_list_1, msa_multi_list_2]
+#msa_multi_list = [msa_multi_list_1, msa_multi_list_2]
 intflat_multi_list = [intflat_multi_list_1, intflat_multi_list_2]
 final_multi_list = [final_multi_list_1, final_multi_list_2]
 slit_names_list = [slit_names_1, slit_names_2]
@@ -383,7 +425,7 @@ for ii, islit in enumerate(gdslits):
                                          bpm=np.logical_not(bkg_gpm))
 
                     # Perform the difference imaging, propagate the error and masking
-                    sciImg = sciImg.sub(bkgImg, par['scienceframe']['process'])
+                    sciImg = sciImg.sub(bkgImg)
 
                 nspec, nspat = waveimg.shape
                 slits = slittrace.SlitTraceSet(slit_left, slit_righ, pypeline, detname=det_container_list[idet].name,
@@ -400,7 +442,7 @@ for ii, islit in enumerate(gdslits):
                                                 ivarmodel=sciImg.ivar,
                                                 scaleimg=None,
                                                 waveimg=waveimg,
-                                                bpmmask=sciImg.select_flag().astype(int),
+                                                bpmmask=sciImg.fullmask,
                                                 detector=sciImg.detector,
                                                 sci_spat_flexure=None,
                                                 sci_spec_flexure=None,
@@ -567,11 +609,18 @@ for ii, islit in enumerate(gdslits):
 
 
             if nobj > 0:
-                wv_gpm = sobjs_coadd[0].BOX_WAVE > 1.0
-                plt.plot(sobjs_coadd[0].BOX_WAVE[wv_gpm], sobjs_coadd[0].BOX_COUNTS[wv_gpm]*sobjs_coadd[0].BOX_MASK[wv_gpm],
-                color='black', drawstyle='steps-mid', label='Counts')
-                plt.plot(sobjs_coadd[0].BOX_WAVE[wv_gpm], sobjs_coadd[0].BOX_COUNTS_SIG[wv_gpm]*sobjs_coadd[0].BOX_MASK[wv_gpm],
-                color='red', drawstyle='steps-mid', label='Counts Error')
+                # Plot boxcar
+                wv_gpm_box = sobjs_coadd[0].BOX_WAVE > 1.0
+                plt.plot(sobjs_coadd[0].BOX_WAVE[wv_gpm_box], sobjs_coadd[0].BOX_COUNTS[wv_gpm_box]*sobjs_coadd[0].BOX_MASK[wv_gpm_box],
+                color='green', drawstyle='steps-mid', label='Boxcar Counts')
+                plt.plot(sobjs_coadd[0].BOX_WAVE[wv_gpm_box], sobjs_coadd[0].BOX_COUNTS_SIG[wv_gpm_box]*sobjs_coadd[0].BOX_MASK[wv_gpm_box],
+                color='cyan', drawstyle='steps-mid', label='Boxcar Counts Error')
+                # plot optimal
+                wv_gpm_opt = sobjs_coadd[0].OPT_WAVE > 1.0
+                plt.plot(sobjs_coadd[0].OPT_WAVE[wv_gpm_opt], sobjs_coadd[0].OPT_COUNTS[wv_gpm_opt]*sobjs_coadd[0].OPT_MASK[wv_gpm_opt],
+                color='black', drawstyle='steps-mid', label='Optimal Counts')
+                plt.plot(sobjs_coadd[0].OPT_WAVE[wv_gpm_opt], sobjs_coadd[0].OPT_COUNTS_SIG[wv_gpm_opt]*sobjs_coadd[0].OPT_MASK[wv_gpm_opt],
+                color='red', drawstyle='steps-mid', label='Optimal Counts Error')
                 plt.legend()
                 plt.show()
 
@@ -597,8 +646,8 @@ for ii, islit in enumerate(gdslits):
 
         # Write out specobjs
         # Build header for spec2d
-        head2d = fits.getheader(cal_output_files_1[0])
-        subheader = spectrograph.subheader_for_spec(head2d, head2d, allow_missing=True)
+        head2d = fits.getheader(scifiles_1[0])
+        subheader = spectrograph.subheader_for_spec(fitstbl_1[0], head2d, allow_missing=False)
         if all_specobjs.nobj > 0:
             outfile1d = os.path.join(scipath, 'spec1d_{:s}.fits'.format(basename))
             all_specobjs.write_to_fits(subheader, outfile1d)
@@ -611,7 +660,7 @@ for ii, islit in enumerate(gdslits):
         outfile2d = os.path.join(scipath, 'spec2d_{:s}.fits'.format(basename))
         # TODO For the moment hack so that we can write this out
         pri_hdr = all_spec2d.build_primary_hdr(head2d, spectrograph, subheader=subheader,
-                                               redux_path=None, master_key_dict=None, master_dir=None)
+                                               redux_path=None, calib_dir=None)
         # Write spec2d
         all_spec2d.write_to_fits(outfile2d, pri_hdr=pri_hdr, overwrite=True)
 

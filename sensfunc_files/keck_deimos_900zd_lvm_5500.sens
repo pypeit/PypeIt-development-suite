@@ -1,2 +1,3 @@
 [sensfunc]
-    algorithm = UVIS
+    algorithm = IR
+    flatfile = Calibrations/Flat_A_0_MSC03.fits

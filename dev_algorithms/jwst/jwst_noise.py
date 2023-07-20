@@ -5,8 +5,12 @@ import scipy
 from matplotlib import pyplot as plt
 from astropy.stats import sigma_clipped_stats
 
+from jwst.pipeline import Spec2Pipeline
 from jwst import datamodels
 DO_NOT_USE = datamodels.dqflags.pixel['DO_NOT_USE']
+
+
+
 
 
 
