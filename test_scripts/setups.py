@@ -1,9 +1,11 @@
 
+
 # This dict specifies all the instruments and setups that are supported by the dev suite.
 #  The keys are the instruments and the values are a list of the supported setups.
 _all = {
-    'bok_bc': ['300','600'],
-    'gemini_gnirs': ['32_SB_SXD', '10_LB_SXD'],
+        'bok_bc': ['300','600'],
+    'gemini_gnirs_echelle': ['32_SB_SXD', '10_LB_SXD'],
+    'gemini_gnirs_ifu': ['LR_IFU_32mm'],
     'gemini_gmos': ['GS_HAM_R400_700', 'GS_HAM_R400_860',
                     'GN_HAM_R400_885', 'GN_HAM_NS_B600_620',
                     'GS_HAM_MULTI_R400_700', 'GN_E2V_MULTI_R400_600',
@@ -64,5 +66,5 @@ _all = {
     'tng_dolores': ['LRB'],
     'vlt_fors2': ['300I', '600Z'],
     'vlt_sinfoni': ['K_0.8'],
-    'vlt_xshooter': ['VIS_1x1', 'VIS_2x1', 'VIS_2x2', 'VIS_manual', 'NIR', 'UVB_1x1'],
+    'vlt_xshooter': ['VIS_1x1', 'VIS_2x1', 'VIS_2x2', 'VIS_manual', 'NIR', 'UVB_1x1', 'UVB_1x1_Feige110', 'VIS_1x1_Feige110', 'NIR_Feige110'],
 }
