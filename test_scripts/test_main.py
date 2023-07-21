@@ -519,7 +519,8 @@ def clear_coverage_data(redux_out):
     for file in path.rglob(".coverage*"):
         file.unlink(missing_ok = True)
 
-def run_pytest(pargs, test_descr, test_dir, test_report, redux_out=None):
+def run_pytest(pargs, test_descr, test_dir, test_report, 
+               redux_out=None):
     """Run pytest on a directory of test files.
     
     Args:
