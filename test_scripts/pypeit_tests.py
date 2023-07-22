@@ -288,7 +288,7 @@ class PypeItFluxSetupTest(PypeItTest):
         super().__init__(setup, pargs, "pypeit_flux_setup", "test_flux_setup")
 
     def build_command_line(self):
-        return ['pypeit_flux_setup', os.path.join(self.setup.rdxdir, 'Science')]
+        return ['pypeit_flux_setup', self.setup.rdxdir, os.path.join(self.setup.rdxdir, 'Science')]
 
 
 class PypeItFluxTest(PypeItTest):
