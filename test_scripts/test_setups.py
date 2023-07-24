@@ -213,6 +213,13 @@ _sensfunc = {
         'DV6': [dict(std_file='spec1d**G191-B2B**.fits',
                      sens_file='ldt_deveny_dv6.sens')]
         },
+    'vlt_xshooter': {'UVB_1x1_Feige110': [dict(std_file='spec1d_*2018-06-23T10:03:53.765*.fits',
+                                               sens_file='vlt_xshooter_uvb_1x1_feige110.sens')],
+                     'VIS_1x1_Feige110': [dict(std_file='spec1d_*2018-06-23T10:03:58.946*.fits',
+                                               sens_file='vlt_xshooter_vis_1x1_feige110.sens')],
+                     'NIR_Feige110':     [dict(std_file='spec1d_*2018-06-23T10:04:01.793*.fits',
+                                               sens_file='vlt_xshooter_nir_feige110.sens')],
+        },
     }
 
 
