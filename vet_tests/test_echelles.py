@@ -7,8 +7,7 @@ import numpy as np
 from pypeit import spec2dobj
 
 # 
-sys.path.append(os.path.join(
-    os.path.abspath(
+sys.path.append(os.path.join( os.path.abspath(
         os.environ["PYPEIT_DEV"]),"test_scripts"))
 import setups
 
