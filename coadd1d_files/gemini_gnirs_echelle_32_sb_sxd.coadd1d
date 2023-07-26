@@ -1,5 +1,6 @@
 [coadd1d]
    coaddfile = 'pisco_coadd.fits'
+   wave_method = velocity  # creates a uniformly space grid in log10(lambda)
 
 # User-defined fluxing parameters
 coadd1d read
