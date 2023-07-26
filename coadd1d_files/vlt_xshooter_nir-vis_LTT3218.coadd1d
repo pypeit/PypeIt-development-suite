@@ -5,9 +5,6 @@
 [coadd1d]
   coaddfile = LTT3218_coadd_fluxed_with_Feige110.fits  # Please set your output file name
   wave_method = velocity  # creates a uniformly space grid in log10(lambda)
-# This file includes all extracted objects. You need to figure out which object you want to 
-# coadd before running pypeit_coadd_1dspec!!!
-# For Echelle spectrographs, please double check the sensfunc file and setup id
 
 # Data block 
 coadd1d read

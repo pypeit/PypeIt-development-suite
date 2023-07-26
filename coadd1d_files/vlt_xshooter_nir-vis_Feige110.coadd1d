@@ -5,9 +5,7 @@
 [coadd1d]
   coaddfile = Feige110_coadd_fluxed_with_LTT3218.fits  # Please set your output file name
   wave_method = velocity  # creates a uniformly space grid in log10(lambda)
-# This file includes all extracted objects. You need to figure out which object you want to 
-# coadd before running pypeit_coadd_1dspec!!!
-# For Echelle spectrographs, please double check the sensfunc file and setup id
+
 
 # Data block 
 coadd1d read
@@ -16,6 +14,5 @@ coadd1d read
 spec1d_XSHOO.2018-06-23T10:09:01.304-STD,FLUX_XShooter_NIR_20180623T100901.304.fits | OBJ0731-DET01 | ../sens_XSHOO.2018-01-29T01:37:13.970-STD,FLUX_XShooter_NIR_20180129T013713.970.fits |      NIR
 spec1d_XSHOO.2018-06-23T10:04:01.793-STD,FLUX_XShooter_NIR_20180623T100401.793.fits | OBJ0260-DET01 | ../sens_XSHOO.2018-01-29T01:37:13.970-STD,FLUX_XShooter_NIR_20180129T013713.970.fits |      NIR
 spec1d_XSHOO.2018-06-23T10:03:58.946-STD,FLUX_XShooter_VIS_20180623T100358.946.fits | OBJ0712-DET01 | ../sens_XSHOO.2018-01-29T01:37:11.182-STD,FLUX_XShooter_VIS_20180129T013711.182.fits |      VIS
-spec1d_XSHOO.2018-06-23T10:08:58.092-STD,FLUX_XShooter_VIS_20180623T100858.092.fits | OBJ0243-DET01 | ../sens_XSHOO.2018-01-29T01:37:11.182-STD,FLUX_XShooter_VIS_20180129T013711.182.fits |      VIS
 coadd1d end
 
