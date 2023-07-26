@@ -7,7 +7,7 @@
 
 # Setup
 setup read
-Setup C:
+Setup A:
   arm: UVB
 setup end
 
@@ -15,13 +15,13 @@ setup end
 data read
  path /Users/silviaonorato/Projects/highz_qso_redux/highz_qso_redux/PypeIt_data/RAW_DATA/vlt_xshooter/J0038-1527
                                filename |                 frametype |         ra |       dec |                 target | dispname |   decker | binning |             mjd | airmass | exptime | arm | dither | calib
-     XSHOO.2018-01-29T01:37:05.972.fits |                  standard | 130.377861 |  -32.9361 |               STD,FLUX |  default |   5.0x11 |     1,1 | 58147.067430226 |   1.364 |   140.0 | UVB |    2.5 |     2
-     XSHOO.2018-01-29T01:42:56.472.fits |                  standard | 130.379514 | -32.93605 |               STD,FLUX |  default |   5.0x11 |     1,1 | 58147.071486953 |   1.337 |   140.0 | UVB |   -2.5 |     2
-     XSHOO.2018-01-29T09:30:40.463.fits |                      bias |       None |      None |                   BIAS |  default | 1.0x12.6 |     1,1 | 58147.396301659 |    None |     0.0 | UVB |   None |     2
-     XSHOO.2018-01-29T09:33:28.009.fits |                      bias |       None |      None |                   BIAS |  default | 1.0x12.6 |     1,1 | 58147.398240837 |    None |     0.0 | UVB |   None |     2
-     XSHOO.2018-01-29T09:36:18.114.fits |                      bias |       None |      None |                   BIAS |  default | 1.0x12.6 |     1,1 | 58147.400209646 |    None |     0.0 | UVB |   None |     2
-     XSHOO.2018-01-29T12:30:58.786.fits | pixelflat,illumflat,trace |       None |      None |             LAMP,QFLAT |  default |   5.0x11 |     1,1 | 58147.521513728 |    None |    1.48 | UVB |   None |     2
-     XSHOO.2018-01-29T12:32:16.133.fits | pixelflat,illumflat,trace |       None |      None |             LAMP,QFLAT |  default |   5.0x11 |     1,1 | 58147.522408946 |    None |    1.48 | UVB |   None |     2
-     XSHOO.2018-01-29T12:33:35.370.fits | pixelflat,illumflat,trace |       None |      None |             LAMP,QFLAT |  default |   5.0x11 |     1,1 | 58147.523326042 |    None |    1.48 | UVB |   None |     2
-     XSHOO.2018-01-28T23:14:22.007.fits |                  arc,tilt |       None |      None |              LAMP,WAVE |  default |   1.0x11 |     1,1 |  58146.96831027 |    None |    30.0 | UVB |   None |     2
+     XSHOO.2018-01-29T01:37:05.972.fits |                  standard | 130.377861 |  -32.9361 |               STD,FLUX |  default |   5.0x11 |     1,1 | 58147.067430226 |   1.364 |   140.0 | UVB |    2.5 |     0
+#    XSHOO.2018-01-29T01:42:56.472.fits |                  standard | 130.379514 | -32.93605 |               STD,FLUX |  default |   5.0x11 |     1,1 | 58147.071486953 |   1.337 |   140.0 | UVB |   -2.5 |     0
+     XSHOO.2018-01-29T09:30:40.463.fits |                      bias |       None |      None |                   BIAS |  default | 1.0x12.6 |     1,1 | 58147.396301659 |    None |     0.0 | UVB |   None |     0
+     XSHOO.2018-01-29T09:33:28.009.fits |                      bias |       None |      None |                   BIAS |  default | 1.0x12.6 |     1,1 | 58147.398240837 |    None |     0.0 | UVB |   None |     0
+     XSHOO.2018-01-29T09:36:18.114.fits |                      bias |       None |      None |                   BIAS |  default | 1.0x12.6 |     1,1 | 58147.400209646 |    None |     0.0 | UVB |   None |     0
+     XSHOO.2018-01-29T12:30:58.786.fits | pixelflat,illumflat,trace |       None |      None |             LAMP,QFLAT |  default |   5.0x11 |     1,1 | 58147.521513728 |    None |    1.48 | UVB |   None |     0
+     XSHOO.2018-01-29T12:32:16.133.fits | pixelflat,illumflat,trace |       None |      None |             LAMP,QFLAT |  default |   5.0x11 |     1,1 | 58147.522408946 |    None |    1.48 | UVB |   None |     0
+     XSHOO.2018-01-29T12:33:35.370.fits | pixelflat,illumflat,trace |       None |      None |             LAMP,QFLAT |  default |   5.0x11 |     1,1 | 58147.523326042 |    None |    1.48 | UVB |   None |     0
+     XSHOO.2018-01-28T23:14:22.007.fits |                  arc,tilt |       None |      None |              LAMP,WAVE |  default |   1.0x11 |     1,1 |  58146.96831027 |    None |    30.0 | UVB |   None |     0
 data end
