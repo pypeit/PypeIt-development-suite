@@ -16,7 +16,7 @@ from matplotlib import pyplot as plt
 from pypeit.utils import fast_running_median
 
 
-spectrograph = load_spectrograph('keck_hires')
+spectrograph = load_spectrograph('vlt_xshooter_vis')
 par = spectrograph.default_pypeit_par()
 # redux_path = '/Users/joe/python/PypeIt-development-suite/REDUX_OUT/keck_hires/J0100+2802_RED_C1_ECH_-0.91_XD_1.46_1x2/'
 redux_path = '/Users/silviaonorato/Projects/highz_qso_redux/highz_qso_redux/PypeIt_data/REDUX_OUT/vlt_xshooter/test_dev_suite/'
