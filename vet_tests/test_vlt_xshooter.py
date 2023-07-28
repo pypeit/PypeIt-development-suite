@@ -1,6 +1,5 @@
 import os
 from pathlib import Path
-from fnmatch import fnmatch
 from configobj import ConfigObj
 
 import numpy as np
@@ -137,3 +136,81 @@ def test_flux_setup_vlt_xshooter(redux_out, monkeypatch):
         # Now test the coadding
         coadd(updated_coadd1d_filename, coadd_output_file)
 
+def test_feige110_ltt3218(redux_out, monkeypatch):
+
+    redux_out_path = Path(redux_out)
+    with monkeypatch.context() as m:
+        monkeypatch.chdir(redux_out_path / 'vlt_xshooter')
+
+        # Make sure spec1ds were created correctly
+        feige110_spec1d_patterns = ['NIR_Feige110/Science/spec1d_*01.793*.fits',
+                                    'NIR_Feige110/Science/spec1d_*01.304*.fits',
+                                    'VIS_1x1_Feige110/Science/spec1d_*58.946*.fits',
+                                    ]
+
+        ltt3218_spec1d_patterns =  ['NIR_LTT3218/Science/spec1d_*13.970*.fits',
+                                    'NIR_LTT3218/Science/spec1d_*04.807*.fits',
+                                    'VIS_1x1_LTT3218/Science/spec1d_*11.182*.fits']
+
+        
+        feige_spec1d_files = [] # Gather the actual spec1d filenames for later
+        for path_pattern in feige110_spec1d_patterns:
+             p = Path(path_pattern)
+             pattern = p.name
+             files = list(p.parent.glob(pattern))
+             assert len(files) == 1, f"Missing spec1d file matching {path_pattern}"
+             feige_spec1d_files += files
+
+        ltt3218_spec1d_files = [] # Gather the actual spec1d filenames for later
+        for path_pattern in ltt3218_spec1d_patterns:
+             p = Path(path_pattern)
+             pattern = p.name
+             files = list(p.parent.glob(pattern))
+             assert len(files) == 1, f"Missing spec1d file matching {path_pattern}"
+             ltt3218_spec1d_files += files
+        
+        # Validate sensfiles were created correctly
+        feige110_setup_paths = [Path('VIS_1x1_Feige110'),
+                                Path('NIR_Feige110')]
+        ltt3218_setup_paths =  [Path('VIS_1x1_LTT3218'),
+                                Path('NIR_LTT3218'),
+                               ]
+                       
+        for path in feige110_setup_paths + ltt3218_setup_paths:
+             files = list(path.glob("sens_*.fits"))
+             assert len(files) == 1, f"No sens file found in {path}"
+
+
+        # Generate fluxing files to flux each std star with the other
+
+        # Run flux setup for fluxing feige110 with ltt3218
+        flux_setup_feige110_with_ltt3218_output = "vlt_xshooter_feige110_with_ltt3218"
+        flux_feige110_with_ltt3218_file, feige110_coadd1d_file, telluric_file = run_flux_setup([p / 'Science' for p in feige110_setup_paths] + ltt3218_setup_paths, flux_setup_feige110_with_ltt3218_output)
+
+        # Run flux setup for fluxing ltt3218 with feige110
+        flux_setup_ltt3218_with_feige110_output = "vlt_xshooter_ltt3218_with_feige110"
+        flux_ltt3218_with_feige110_file, ltt3218_coadd1d_file, telluric_file = run_flux_setup([p / 'Science' for p in ltt3218_setup_paths] + feige110_setup_paths, flux_setup_ltt3218_with_feige110_output)
+
+        # Now test the fluxing
+        flux_and_validate(flux_setup_feige110_with_ltt3218_output + ".flux", feige_spec1d_files)
+        flux_and_validate(flux_setup_ltt3218_with_feige110_output + ".flux", ltt3218_spec1d_files)
+
+        # Now update the coadd1d files. We'll use the files from flux_setup updated with the parameters
+        # from the $PYPEIT_DEV/coadd1d_files
+        updated_feige110_filename = f'updated_{flux_setup_feige110_with_ltt3218_output}.coadd1d'
+        feige110_premade_coadd1d_file = Path(os.environ["PYPEIT_DEV"], "coadd1d_files", 'vlt_xshooter_nir-vis_Feige110.coadd1d')
+        coadd1d_file = Coadd1DFile.from_file(str(feige110_premade_coadd1d_file))
+        feige110_coadd1d_file.config = coadd1d_file.config
+        feige110_output = coadd1d_file.config['coadd1d']['coaddfile']
+        feige110_coadd1d_file.write(str(updated_feige110_filename))
+
+        updated_ltt3218_filename = f"updated_{flux_setup_ltt3218_with_feige110_output}.coadd1d"
+        ltt3218_premade_coadd1d_file = Path(os.environ["PYPEIT_DEV"], "coadd1d_files", 'vlt_xshooter_nir-vis_LTT3218.coadd1d')
+        coadd1d_file = Coadd1DFile.from_file(str(ltt3218_premade_coadd1d_file))
+        ltt3218_coadd1d_file.config = coadd1d_file.config
+        ltt3218_output = coadd1d_file.config['coadd1d']['coaddfile']
+        ltt3218_coadd1d_file.write(str(updated_ltt3218_filename))
+
+        # Now test the coadding
+        coadd(updated_feige110_filename, feige110_output)
+        coadd(updated_ltt3218_filename, ltt3218_output)

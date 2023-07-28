@@ -219,6 +219,10 @@ _sensfunc = {
                                                sens_file='vlt_xshooter_vis_1x1_feige110.sens')],
                      'NIR_Feige110':     [dict(std_file='spec1d_*2018-06-23T10:04:01.793*.fits',
                                                sens_file='vlt_xshooter_nir_feige110.sens')],
+                     'VIS_1x1_LTT3218':  [dict(std_file='spec1d_*2018-01-29T01:37:11.182*.fits',
+                                               sens_file='vlt_xshooter_vis_ltt3218.sens')],
+                     'NIR_LTT3218':      [dict(std_file='spec1d_*2018-01-29T01:43:04.807*.fits',
+                                               sens_file='vlt_xshooter_nir_ltt3218.sens')],
         },
     }
 
