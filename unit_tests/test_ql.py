@@ -3,6 +3,7 @@ Module to run QL function tests
 """
 from pathlib import Path
 import os
+import shutil
 
 from IPython import embed
 
@@ -67,5 +68,25 @@ def test_dither_parse():
     # TODO:
     #   - Test if all dithers are unique?
     #   - Test for incomplete sequences?
+
+
+def test_run_ql():
+    """
+    Test a basic execution of QL that only requires raw files.  This could also
+    go in test_scripts.py ...
+    """
+    rawpath = Path(os.environ['PYPEIT_DEV']).resolve() \
+                    / 'RAW_DATA' / 'shane_kast_blue' / '600_4310_d55'
+    rdxpath = Path().resolve() / 'test_ql'
+
+    if rdxpath.is_dir():
+        shutil.rmtree(rdxpath)
+
+    ql.QL.main(ql.QL.parse_args(['shane_kast_blue', '--skip_display', '--redux_path', str(rdxpath),
+                                 '--raw_path', str(rawpath), '--raw_files', 'b1.fits.gz',
+                                 'b10.fits.gz', 'b27.fits.gz']))
+
+    shutil.rmtree(rdxpath)
+
 
 

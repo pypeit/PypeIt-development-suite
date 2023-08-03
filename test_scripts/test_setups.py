@@ -167,7 +167,7 @@ all_setups  = {
     'tng_dolores': ['LRB'],
     'vlt_fors2': ['300I', '600Z'],
     'vlt_sinfoni': ['K_0.8'],
-    'vlt_xshooter': ['VIS_1x1', 'VIS_2x1', 'VIS_2x2', 'VIS_manual', 'NIR', 'UVB_1x1', 'UVB_1x1_Feige110', 'VIS_1x1_Feige110', 'NIR_Feige110'],
+    'vlt_xshooter': ['VIS_1x1', 'VIS_2x1', 'VIS_2x2', 'VIS_manual', 'NIR', 'UVB_1x1', 'UVB_1x1_Feige110', 'VIS_1x1_Feige110', 'NIR_Feige110', 'VIS_1x1_LTT3218', 'NIR_LTT3218'],
 }
 '''
 
@@ -225,6 +225,10 @@ _sensfunc = {
                                                sens_file='vlt_xshooter_vis_1x1_feige110.sens')],
                      'NIR_Feige110':     [dict(std_file='spec1d_*2018-06-23T10:04:01.793*.fits',
                                                sens_file='vlt_xshooter_nir_feige110.sens')],
+                     'VIS_1x1_LTT3218':  [dict(std_file='spec1d_*2018-01-29T01:37:11.182*.fits',
+                                               sens_file='vlt_xshooter_vis_ltt3218.sens')],
+                     'NIR_LTT3218':      [dict(std_file='spec1d_*2018-01-29T01:43:04.807*.fits',
+                                               sens_file='vlt_xshooter_nir_ltt3218.sens')],
         },
     }
 
