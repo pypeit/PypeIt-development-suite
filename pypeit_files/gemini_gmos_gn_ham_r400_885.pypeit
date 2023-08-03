@@ -4,6 +4,7 @@
 # User-defined execution parameters
 [rdx]
     spectrograph = gemini_gmos_north_ham
+    #slitspatnum = MSC01:1079 
 [calibrations]
     [[wavelengths]]
         lamps=['OH_GMOS']
@@ -14,39 +15,35 @@
         # Allow the tracing to skip over the chip gap
         follow_span = 50
         # Remove false detection at left edge
-        edge_thresh = 100.
+        edge_thresh = 200.
 [reduce]
     [[findobj]]
-        snr_thresh = 5
+        snr_thresh = 5.0
+	find_min_max = 1870, None
         maxnumber_sci = 2
-        find_trim_edge = 250,250
+#        find_trim_edge = 250,250
 
 # Setup
 setup read
- Setup A:
-   --:
-     binning: 2,2
-     dichroic: GG455_G0305
-     disperser:
-       angle: 630.0
-       name: R150+_G5308
-     slit:
-       decker: 1.0arcsec
-       slitlen: none
-       slitwid: none
+Setup A:
+  datasec: '"[1:256,1:2112]"'
+  decker: 1.0arcsec
+  dichroic: RG610_G0307
+  dispangle: 900.0
+  dispname: R400+_G5305
 setup end
+
 
 # Read in the data
 data read
- path /Users/feige/Software/python3/PypeIt-development-suite/RAW_DATA/gemini_gmos/GN_HAM_R400_885
-|            filename |                 frametype |          ra |          dec |     target |    dispname |    decker | binning |              mjd | airmass | exptime |    dichroic | dispangle |        datasec |                manual_extract |
-| N20190205S0240.fits |                      bias |        75.0 |        89.97 |       Bias | R150+_G5308 | 1.0arcsec |     2,2 | 2019.09705217233 |     1.0 |     0.0 | GG455_G0305 |     630.0 | [1:256,1:2112] |None                           |
-| N20190205S0241.fits |                      bias |        75.0 |        89.97 |       Bias | R150+_G5308 | 1.0arcsec |     2,2 | 2019.09705321751 |     1.0 |     0.0 | GG455_G0305 |     630.0 | [1:256,1:2112] |None                           |
-| N20190205S0242.fits |                      bias |        75.0 |        89.97 |       Bias | R150+_G5308 | 1.0arcsec |     2,2 | 2019.09705426322 |     1.0 |     0.0 | GG455_G0305 |     630.0 | [1:256,1:2112] |None                           |
-| N20190205S0034.fits | pixelflat,illumflat,trace | 49.92364167 | -10.14608333 |   GCALflat | R400+_G5305 | 1.0arcsec |     2,2 | 2019.09581673829 |    1.22 |     1.0 | RG610_G0307 |     900.0 | [1:256,1:2112] |None                           |
-| N20190205S0039.fits | pixelflat,illumflat,trace | 49.92364167 | -10.14608333 |   GCALflat | R400+_G5305 | 1.0arcsec |     2,2 | 2019.09597553522 |   1.521 |     1.0 | RG610_G0307 |     900.0 | [1:256,1:2112] |None                           |
-| N20190205S0044.fits | pixelflat,illumflat,trace | 49.92364167 | -10.14608333 |   GCALflat | R400+_G5305 | 1.0arcsec |     2,2 | 2019.09608777654 |   2.063 |     1.0 | RG610_G0307 |     900.0 | [1:256,1:2112] |None                           |
-| N20190205S0035.fits |          arc,tilt,science | 49.92364167 | -10.14608333 | J0319-1008 | R400+_G5305 | 1.0arcsec |     2,2 | 2019.09581830685 |   1.243 |  1200.0 | RG610_G0307 |     900.0 | [1:256,1:2112] |1:550:1165:3.33,3:550:1165:3.33|
-| N20190205S0036.fits |          arc,tilt,science | 49.92364167 | -10.14608333 | J0319-1008 | R400+_G5305 | 1.0arcsec |     2,2 | 2019.09585759374 |   1.297 |  1200.0 | RG610_G0307 |     900.0 | [1:256,1:2112] |1:550:1072:3.79,3:550:1072:3.79|
+ path /Users/joe/python/PypeIt-development-suite/RAW_DATA/gemini_gmos/GN_HAM_R400_885/
+           filename |                 frametype |          ra |          dec |                       target |    dispname |    decker | binning |              mjd | airmass | exptime |    dichroic | dispangle |        datasec | calib
+N20190205S0240.fits |                      bias |        75.0 |        89.97 |                         Bias | R150+_G5308 | 1.0arcsec |     2,2 | 2019.09705217233 |     1.0 |     0.0 | GG455_G0305 |     630.0 | [1:256,1:2112] |   all
+N20190205S0241.fits |                      bias |        75.0 |        89.97 |                         Bias | R150+_G5308 | 1.0arcsec |     2,2 | 2019.09705321751 |     1.0 |     0.0 | GG455_G0305 |     630.0 | [1:256,1:2112] |   all
+N20190205S0242.fits |                      bias |        75.0 |        89.97 |                         Bias | R150+_G5308 | 1.0arcsec |     2,2 | 2019.09705426322 |     1.0 |     0.0 | GG455_G0305 |     630.0 | [1:256,1:2112] |   all
+N20190205S0034.fits | pixelflat,illumflat,trace | 49.92364167 | -10.14608333 |                     GCALflat | R400+_G5305 | 1.0arcsec |     2,2 | 2019.09581673829 |    1.22 |     1.0 | RG610_G0307 |     900.0 | [1:256,1:2112] |   all
+N20190205S0039.fits | pixelflat,illumflat,trace | 49.92364167 | -10.14608333 |                     GCALflat | R400+_G5305 | 1.0arcsec |     2,2 | 2019.09597553522 |   1.521 |     1.0 | RG610_G0307 |     900.0 | [1:256,1:2112] |   all
+N20190205S0044.fits | pixelflat,illumflat,trace | 49.92364167 | -10.14608333 |                     GCALflat | R400+_G5305 | 1.0arcsec |     2,2 | 2019.09608777654 |   2.063 |     1.0 | RG610_G0307 |     900.0 | [1:256,1:2112] |   all
+N20190205S0035.fits |          arc,tilt,science | 49.92364167 | -10.14608333 | J0319-1008  Invisible Target | R400+_G5305 | 1.0arcsec |     2,2 | 2019.09581830685 |   1.243 |  1200.0 | RG610_G0307 |     900.0 | [1:256,1:2112] |     1
+N20190205S0036.fits |          arc,tilt,science | 49.92364167 | -10.14608333 | J0319-1008  Invisible Target | R400+_G5305 | 1.0arcsec |     2,2 | 2019.09585759374 |   1.297 |  1200.0 | RG610_G0307 |     900.0 | [1:256,1:2112] |     2
 data end
-

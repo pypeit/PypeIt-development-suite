@@ -1,0 +1,33 @@
+# Auto-generated PypeIt input file using PypeIt version: 1.12.3.dev264+gbcbe348d2
+# UTC 2023-04-21T00:18:08.307
+
+# User-defined execution parameters
+[rdx]
+    spectrograph = keck_hires
+
+# Setup
+setup read
+Setup A:
+  echangle: 0.88004565
+  filter1: og530
+  xdangle: 1.46300006
+setup end
+
+# Data block 
+data read
+ path /Users/joe/google_drive/PypeIt-development-suite/RAW_DATA/keck_hires/J0100+2802_RED_C1_ECH_0.88_XD_1.46_1x2
+              filename |        frametype |                 ra |                dec |     target | dispname | decker | binning |          mjd | airmass | exptime | filter1 |   echangle |    xdangle | frameno |
+HI.20151102.09017.fits |         arc,tilt | 229.99999999999997 |               45.0 |      ThAr2 |      RED |     C1 |     1,2 | 57328.104391 |    1.41 |     1.0 |   og530 | 0.88004565 | 1.46300006 |      27 |
+HI.20151102.08540.fits |  pixelflat,trace | 229.99999999999997 |               45.0 |       flat |      RED |     C1 |     1,2 | 57328.098865 |    1.41 |     6.0 |   og530 | 0.88004565 | 1.46300006 |      19 |
+HI.20151102.08598.fits |  pixelflat,trace | 229.99999999999997 |               45.0 |       flat |      RED |     C1 |     1,2 | 57328.099533 |    1.41 |     6.0 |   og530 | 0.88004565 | 1.46300006 |      20 |
+HI.20151102.08656.fits |  pixelflat,trace | 229.99999999999997 |               45.0 |       flat |      RED |     C1 |     1,2 | 57328.100201 |    1.41 |     6.0 |   og530 | 0.88004565 | 1.46300006 |      21 |
+HI.20151102.08713.fits |  pixelflat,trace | 229.99999999999997 |               45.0 |       flat |      RED |     C1 |     1,2 |  57328.10087 |    1.41 |     6.0 |   og530 | 0.88004565 | 1.46300006 |      22 |
+HI.20151102.08771.fits |  pixelflat,trace | 229.99999999999997 |               45.0 |       flat |      RED |     C1 |     1,2 | 57328.101535 |    1.41 |     6.0 |   og530 | 0.88004565 | 1.46300006 |      23 |
+HI.20151102.08828.fits |  pixelflat,trace | 229.99999999999997 |               45.0 |       flat |      RED |     C1 |     1,2 | 57328.102194 |    1.41 |     6.0 |   og530 | 0.88004565 | 1.46300006 |      24 |
+HI.20151102.15234.fits |         standard | 327.79612499999996 |  28.86438888888889 | BD+28d4211 |      RED |     C1 |     1,2 | 57328.176345 |    1.06 |   480.0 |   og530 | 0.88008791 | 1.46300006 |      55 |
+HI.20151102.21149.fits |          science | 15.053916666666664 | 28.041083333333336 | J0100+2802 |      RED |     C1 |     1,2 | 57328.244805 |    1.28 |  3600.0 |   og530 | 0.88008791 | 1.46300006 |      58 |
+HI.20151102.24809.fits |          science | 15.053916666666664 | 28.041083333333336 | J0100+2802 |      RED |     C1 |     1,2 | 57328.287169 |     1.1 |  3600.0 |   og530 | 0.88008791 | 1.46300006 |      59 |
+HI.20151102.37180.fits |          science | 15.053291666666665 |  28.04136111111111 | J0100+2802 |      RED |     C1 |     1,2 | 57328.430346 |     1.1 |  3600.0 |   og530 | 0.88000339 | 1.46300006 |      62 |
+HI.20151102.55379.fits |         standard |  76.37758333333332 |  52.83166666666667 |   G191-B2B |      RED |     C1 |     1,2 | 57328.640978 |    1.42 |   600.0 |   og530 | 0.88000339 | 1.46300006 |      68 | 
+data end
+

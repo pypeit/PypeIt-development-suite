@@ -1,0 +1,3 @@
+[sensfunc]
+    algorithm = IR
+    flatfile = Calibrations/Flat_B_0_DET01.fits
