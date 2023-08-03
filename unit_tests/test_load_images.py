@@ -98,8 +98,8 @@ def test_load_vlt_xshooter_nir():
         pytest.fail('VLT XSHOOTER NIR test data section failed: {0}'.format(ifile))
 
 def test_load_gnirs():
-    ifile = os.path.join(os.environ['PYPEIT_DEV'], 'RAW_DATA','gemini_gnirs_echelle','32_SB_SXD',
-                         'cN20170331S0206.fits')
+    ifile = os.path.join(os.environ['PYPEIT_DEV'], 'RAW_DATA', 'gemini_gnirs_echelle',
+                         '32_SB_SXD', 'cN20170331S0206.fits')
     try:
         data_img = grab_img('gemini_gnirs_echelle', ifile)
     except:
