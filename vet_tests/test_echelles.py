@@ -53,7 +53,7 @@ def test_keck_nires_orders(redux_out):
 
 def test_gemini_gnirs_orders(redux_out):
     """ Confirm that all of the orders processed fine for each setup"""
-    instr = 'gemini_gnirs'
+    instr = 'gemini_gnirs_echelle'
 
     chk_orders(instr, redux_out)
 
