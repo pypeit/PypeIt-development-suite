@@ -1,3 +1,4 @@
+""" Test setups """
 
 
 # This dict specifies all the instruments and setups that are supported by the dev suite.
@@ -19,9 +20,8 @@ _all = {
                     '900ZD_M_6000', '1200B_LVM_5200', '900ZD_LVM_5500',
                     '830G_M_9000_dither'],
     'keck_hires': [
-        # TODO -- Turn the following back on when the missing order is fixed
-        #'HS1700+6416_H45aH_RED_B2_ECH_0.00_XD_-0.00_1x2',
-        #'J0100+2802_H204Hr_RED_C1_ECH_0.75_XD_1.69_1x2',
+        'HS1700+6416_H45aH_RED_B2_ECH_0.00_XD_-0.00_1x2',
+        'J0100+2802_H204Hr_RED_C1_ECH_0.75_XD_1.69_1x2',
         'J0100+2802_H204Hr_RED_C1_ECH_-0.82_XD_1.62_1x2',
         'J0100+2802_H237Hr_RED_C1_ECH_0.88_XD_1.46_1x2',
         'J0100+2802_H237Hr_RED_C1_ECH_-0.91_XD_1.46_1x2',
@@ -66,5 +66,5 @@ _all = {
     'tng_dolores': ['LRB'],
     'vlt_fors2': ['300I', '600Z'],
     'vlt_sinfoni': ['K_0.8'],
-    'vlt_xshooter': ['VIS_1x1', 'VIS_2x1', 'VIS_2x2', 'VIS_manual', 'NIR', 'UVB_1x1', 'UVB_1x1_Feige110', 'VIS_1x1_Feige110', 'NIR_Feige110'],
+    'vlt_xshooter': ['VIS_1x1', 'VIS_2x1', 'VIS_2x2', 'VIS_manual', 'NIR', 'UVB_1x1', 'UVB_1x1_Feige110', 'VIS_1x1_Feige110', 'NIR_Feige110', 'VIS_1x1_LTT3218', 'NIR_LTT3218'],
 }
