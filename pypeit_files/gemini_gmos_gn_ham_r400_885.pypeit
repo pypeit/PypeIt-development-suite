@@ -9,7 +9,7 @@
     [[wavelengths]]
         lamps=['OH_GMOS']
         method = 'holy-grail'
-        rms_threshold = 1.,0.3,0.4
+        rms_threshold = 0.4
         sigdetect = 5.,5.,6.
     [[slitedges]]
         # Allow the tracing to skip over the chip gap
