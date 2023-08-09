@@ -4,13 +4,13 @@
 # User-defined execution parameters
 [rdx]
     spectrograph = gemini_gmos_north_ham
-    #slitspatnum = MSC01:1079 
+    slitspatnum = MSC01:1079 
 [calibrations]
     [[wavelengths]]
         lamps=['OH_GMOS']
         method = 'holy-grail'
-        rms_threshold = 1.,0.3,0.4,0.5
-        sigdetect = 5.,5.,6.,6.
+        rms_threshold = 1.,0.3,0.4
+        sigdetect = 5.,5.,6.
     [[slitedges]]
         # Allow the tracing to skip over the chip gap
         follow_span = 50
