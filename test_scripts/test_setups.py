@@ -78,7 +78,7 @@ Attributes:
 """
 
 from . import pypeit_tests
-from . import setups
+from .setups import all_setups 
 from enum import Enum, IntEnum, auto
 import copy
 
@@ -98,9 +98,6 @@ class TestPhase(Enum):
     AFTERBURN = auto()
     QL        = auto()
 
-
-# Grab em
-all_setups = setups._all
 
 # Tests for full reductions
 _reduce_setups = {}

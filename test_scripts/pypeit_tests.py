@@ -637,6 +637,9 @@ def fix_pypeit_file_directory(pyp_file:str, dev_path:str, raw_data:str,
         instr (str): Instrument name.
         setup (str): Setup name.
         rdxdir (str): Path to the reduction directory.
+        std (bool, optional): Is this a standard star file?
+        outfile (str, optional): Name of the output PypeIt file.  
+          If None, it is auto-generated from the inputs
 
     Returns:
         str: The path to the corrected pypeit file.

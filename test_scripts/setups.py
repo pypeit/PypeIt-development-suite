@@ -3,7 +3,7 @@
 
 # This dict specifies all the instruments and setups that are supported by the dev suite.
 #  The keys are the instruments and the values are a list of the supported setups.
-_all = {
+all_setups = {
         'bok_bc': ['300','600'],
     'gemini_gnirs_echelle': ['32_SB_SXD', '10_LB_SXD'],
     'gemini_gnirs_ifu': ['LR_IFU_32mm'],
