@@ -104,6 +104,11 @@ def test_redoslits_kastr(redux_out):
     slit_file = os.path.join(rdx_dir,
                              'Calibrations',
                              'Slits_A_0_DET01.fits.gz')
+    # Copy the original
+    orig_slit_file = slit_file.replace('.fits.gz', '_orig.fits.gz')
+    shutil.copyfile(slit_file, orig_slit_file)
+
+    # Modify
     slits = SlitTraceSet.from_file(slit_file)
     slits.mask[0] = slits.bitmask.turn_on(slits.mask[0], 'BADWVCALIB')
     slits.to_file(slit_file, overwrite=True)
@@ -134,5 +139,8 @@ def test_redoslits_kastr(redux_out):
     # Check
     slits2 = SlitTraceSet.from_file(slit_file)
     assert slits2.mask[0] == 0, 'Slit was not fixed!'
+
+    # Copy back
+    shutil.copyfile(orig_slit_file, slit_file)
 
     os.chdir(sv_cd)
