@@ -5,16 +5,15 @@ import glob
 import numpy as np
 
 from pypeit import spec2dobj
+from pypeit.io import load_object 
 
-# 
-sys.path.append(os.path.join( os.path.abspath(
-        os.environ["PYPEIT_DEV"]),"test_scripts"))
-import setups
+
+all_setups = load_object('../test_scripts/setups', obj='all_setups')
 
 import pytest
 
 def chk_orders(instr, redux_out, det='DET01', max_bad:int=0):
-    for setup in setups._all[instr]:
+    for setup in all_setups[instr]:
         # Grab a spec2d file
         file_path = os.path.join(redux_out,
             instr, setup, 'Science',
