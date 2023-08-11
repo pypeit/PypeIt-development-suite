@@ -110,7 +110,7 @@ def test_redoslits_kastr(redux_out):
     # Copy the pypeit file
     root_redoslit_file = 'shane_kast_red_redoslit_600_5000_d46.pypeit'
     pyp_file = os.path.join(os.path.abspath(
-        os.environ["PYPEIT_DEV"]),"pypeit_files", root_redoslit_file)
+        os.environ["PYPEIT_DEV"]), "vet_tests", "files", root_redoslit_file)
 
     new_pyp_file = os.path.join(redux_out,
                              'shane_kast_red',
