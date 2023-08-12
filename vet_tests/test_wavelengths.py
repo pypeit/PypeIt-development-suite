@@ -6,9 +6,13 @@ from pypeit.spectrographs.util import load_spectrograph
 from pypeit.wavecalib import WaveCalib
 from pypeit.slittrace import SlitTraceSet
 from pypeit.scripts.run_pypeit import RunPypeIt
-from pypeit.io import load_object
 
 import pytest
+
+sys.path.append(os.path.join(
+    os.path.abspath(
+        os.environ["PYPEIT_DEV"]),"test_scripts"))
+import pypeit_tests
 
 
 def test_shane_kast_red(redux_out):
@@ -91,7 +95,7 @@ def test_redoslits_kastr(redux_out):
         redux_out (str): path to REDUX_OUT
     """
     # Load up the method we need below
-    fix_pypeit_file_directory = load_object(
+    fix_pypeit_file_directory = pypeit_tests.load_object(
         '../test_scripts/pypeit_tests', 
         obj='fix_pypeit_file_directory')
 

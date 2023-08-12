@@ -5,10 +5,11 @@ import glob
 import numpy as np
 
 from pypeit import spec2dobj
-from pypeit.io import load_object 
 
-
-all_setups = load_object('../test_scripts/setups', obj='all_setups')
+sys.path.append(os.path.join(
+    os.path.abspath(
+        os.environ["PYPEIT_DEV"]),"test_scripts"))
+from setups import all_setups
 
 import pytest
 
