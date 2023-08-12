@@ -385,7 +385,7 @@ def test_setup_vlt_xshooter_nir():
 
 
 def test_setup_gemini_gnirs():
-    spec = 'gemini_gnirs'
+    spec = 'gemini_gnirs_echelle'
     setup = '32_SB_SXD'
     prefix = 'cN'
     generic_setup_test(spec, setup, prefix=prefix)

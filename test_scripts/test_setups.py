@@ -21,7 +21,7 @@ To add a new test for an existing setup:
 3) If the test type requires arguments, they will be passed to the PypeItTest subclasses constructor as keyword
    arguments. Put the arguments into a dict using the keyword argument as a key. For example:
 
-   telluric_tests = {'gemini_gnirs/32_SB_SXD':
+   telluric_tests = {'gemini_gnirs_echelle/32_SB_SXD':
                          {'coadd_file': 'pisco_coadd.fits', 'redshift': 7.52, 'objmodel': 'qso'},
 
 To add a new type of test:
@@ -103,7 +103,8 @@ class TestPhase(Enum):
 #  The keys are the instruments and the values are a list of the supported setups.
 all_setups  = {
     'bok_bc': ['300','600'],
-    'gemini_gnirs': ['32_SB_SXD', '10_LB_SXD'],
+    'gemini_gnirs_echelle': ['32_SB_SXD', '10_LB_SXD'],
+    'gemini_gnirs_ifu': ['LR_IFU_32mm'],
     'gemini_gmos': ['GS_HAM_R400_700', 'GS_HAM_R400_860',
                     'GN_HAM_R400_885', 'GN_HAM_NS_B600_620',
                     'GS_HAM_MULTI_R400_700', 'GN_E2V_MULTI_R400_600',
@@ -116,7 +117,16 @@ all_setups  = {
                     '830G_M_8500', '830G_L_8100', '1200B_M_5200', '1200G_M_5500',
                     '900ZD_M_6000', '1200B_LVM_5200', '900ZD_LVM_5500',
                     '830G_M_9000_dither'],
-#    'keck_hires': ['RED_C1_ECH_-0.82_XD_1.62'],
+#    'keck_hires': ['J0100+2802_RED_C1_ECH_-0.82_XD_1.62_1x2',
+#                   'J0100+2802_RED_C1_ECH_-0.91_XD_1.46_1x2',
+#                   #'J0100+2802_RED_C1_ECH_0.88_XD_1.46_1x2',
+#                   'J0100+2802_RED_C2_ECH_0.74_XD_1.39_1x3',
+#                   'HS1700+6416_H45aH_RED_B2_ECH_0.00_XD_-0.00_1x2',
+#                   'J0306+1853_U074_RED_C2_ECH_0.72_XD_1.42_1x3',
+#                   'J0306+1853_U074_RED_C2_ECH_-0.86_XD_1.31_1x3',
+#                   'J1723+2243_W241_RED_C5_ECH_0.08_XD_0.90_2x2',
+#                   'J1723+2243_W241_RED_C5_ECH_-0.15_XD_0.90_2x2',
+#                   ],
     'keck_kcwi': ['bh2_4200', 'bl'],
     'keck_nires': ['ABBA_wstandard', 'ABBA_nostandard', 'ABC_nostandard', 'ABpat_wstandard', 'ABBA_nostandard_faint'],
     'keck_nirspec': ['LOW_NIRSPEC-1'],
@@ -129,13 +139,14 @@ all_setups  = {
                       'multi_400_8500_d560', 'long_600_10000_d680',
                       'long_400_8500_longread'],  # Longslit read-out mode
     'keck_lris_red_orig': ['long_300_5000'],
-    'keck_lris_red_mark4': ['long_400_8500_d560', 'long_600_10000_d680'],
+    'keck_lris_red_mark4': ['long_400_8500_d560', 'long_600_10000_d680', 'multi_600_10000_slitmask'],
     'lbt_luci': ['LUCI-I', 'LUCI-II'],
     'lbt_mods': ['MODS1R_Longslit', 'MODS2R_Longslit'],
     'ldt_deveny': ['DV1', 'DV2', 'DV3', 'DV4', 'DV5', 'DV6', 'DV7', 'DV8', 'DV9'],
-    'magellan_mage': ['1x1'],
     'magellan_fire': ['FIRE_Echelle', 'FIRE_Long'],
+    'magellan_mage': ['1x1'],
     'mdm_osmos': ['MDM4K'],
+    'mdm_modspec': ['Echelle'],
     'mmt_binospec': ['Longslit_G600', 'Multislit_G270', 'Longslit_G1000'],
     'mmt_mmirs': ['HK_zJ', 'J_zJ', 'K_K'],
     'mmt_bluechannel': ['300l', '500GPM', '800GPM', '832GPM_1st', '832GPM_2nd', '1200GPM'],
@@ -151,7 +162,7 @@ all_setups  = {
     'tng_dolores': ['LRB'],
     'vlt_fors2': ['300I', '600Z'],
     'vlt_sinfoni': ['K_0.8'],
-    'vlt_xshooter': ['VIS_1x1', 'VIS_2x1', 'VIS_2x2', 'VIS_manual', 'NIR', 'UVB_1x1'],
+    'vlt_xshooter': ['VIS_1x1', 'VIS_2x1', 'VIS_2x2', 'VIS_manual', 'NIR', 'UVB_1x1', 'UVB_1x1_Feige110', 'VIS_1x1_Feige110', 'NIR_Feige110', 'VIS_1x1_LTT3218', 'NIR_LTT3218'],
 }
 
 # Tests for full reductions
@@ -175,28 +186,43 @@ _additional_reduce = {
 _sensfunc = {
     'shane_kast_blue': {
         '600_4310_d55': [dict(std_file='spec1d_*Feige66*.fits')]},
-    'gemini_gnirs': {
+    'shane_kast_red': {
+        '600_7500_d55_ret': [dict(std_file='spec1d_*G191b2b*.fits',
+                                  sens_file="shane_kast_red_600_7500_d55_ret.sens")]},
+    'gemini_gnirs_echelle': {
         '32_SB_SXD': [dict(std_file='spec1d_*S0206-HIP62745*.fits',
-                           sens_file='gemini_gnirs_32_sb_sxd.sens')]},
+                           sens_file='gemini_gnirs_echelle_32_sb_sxd.sens')]},
     'gemini_gmos': {
-        'GS_HAM_R400_860': [dict(std_file='spec1d_**GD71*.fits')],
-        'GS_HAM_R400_700': [dict(std_file='spec1d_**LTT7379*.fits',
-                             sens_file='gemini_gmos_gs_ham_r400_700.sens')]},
-    'gemini_gmos': {
-        'GS_HAM_R400_860': [dict(std_file='spec1d_**GD71*.fits')],
+        'GS_HAM_R400_860': [dict(std_file='spec1d_**GD71*.fits',
+                                 sens_file='gemini_gmos_gs_ham_r400_860.sens')],
         'GS_HAM_R400_700': [dict(std_file='spec1d_**LTT7379*.fits',
                                  sens_file='gemini_gmos_gs_ham_r400_700.sens')]},
     'keck_deimos': {
         '900ZD_LVM_5500': [dict(std_file='spec1d_*Feige110*.fits',
-                   sens_file='keck_deimos_900zd_lvm_5500.sens')]},
+                                sens_file='keck_deimos_900zd_lvm_5500.sens')]},
     'keck_mosfire': {
-        'Y_long': [dict(std_file='spec1d_*0064-GD71*.fits')]},
+        'Y_long': [dict(std_file='spec1d_*0064-GD71*.fits',
+                        sens_file='keck_mosfire_Y_long.sens')]},
     'keck_lris_red_mark4': {
-        'long_600_10000_d680': [dict(std_file='spec1d_*00127-GD153*.fits')]
+        'long_600_10000_d680': [dict(std_file='spec1d_*00127-GD153*.fits',
+                                     sens_file='keck_lris_red_mark4_long_600_10000_d680.sens')]
         },
     'ldt_deveny': {
-        'DV2': [dict(std_file='spec1d_**BD+33d2642**.fits')],
-        'DV6': [dict(std_file='spec1d**G191-B2B**.fits')]
+        'DV2': [dict(std_file='spec1d_**BD+33d2642**.fits',
+                     sens_file='ldt_deveny_dv2.sens')],
+        'DV6': [dict(std_file='spec1d**G191-B2B**.fits',
+                     sens_file='ldt_deveny_dv6.sens')]
+        },
+    'vlt_xshooter': {'UVB_1x1_Feige110': [dict(std_file='spec1d_*2018-06-23T10:03:53.765*.fits',
+                                               sens_file='vlt_xshooter_uvb_1x1_feige110.sens')],
+                     'VIS_1x1_Feige110': [dict(std_file='spec1d_*2018-06-23T10:03:58.946*.fits',
+                                               sens_file='vlt_xshooter_vis_1x1_feige110.sens')],
+                     'NIR_Feige110':     [dict(std_file='spec1d_*2018-06-23T10:04:01.793*.fits',
+                                               sens_file='vlt_xshooter_nir_feige110.sens')],
+                     'VIS_1x1_LTT3218':  [dict(std_file='spec1d_*2018-01-29T01:37:11.182*.fits',
+                                               sens_file='vlt_xshooter_vis_ltt3218.sens')],
+                     'NIR_LTT3218':      [dict(std_file='spec1d_*2018-01-29T01:43:04.807*.fits',
+                                               sens_file='vlt_xshooter_nir_ltt3218.sens')],
         },
     }
 
@@ -204,7 +230,7 @@ _sensfunc = {
 _flux_setup = {
     'shane_kast_blue': {
         '600_4310_d55': [{}]},
-    'gemini_gnirs': {
+    'gemini_gnirs_echelle': {
         '32_SB_SXD': [{}]},
     'gemini_gmos': {
         'GS_HAM_R400_860': [{}]},
@@ -213,7 +239,9 @@ _flux_setup = {
 _flux = {
     'shane_kast_blue': {
         '600_4310_d55': [{}]},
-    'gemini_gnirs': {
+    'shane_kast_red': {
+        '600_7500_d55_ret': [{}]},
+    'gemini_gnirs_echelle': {
         '32_SB_SXD': [{}]},
     'gemini_gmos': {
         'GS_HAM_R400_860': [{}],
@@ -234,7 +262,7 @@ _flexure ={
 _coadd1d = {
     'shane_kast_blue': {
         '600_4310_d55': [{}]},
-    'gemini_gnirs': {
+    'gemini_gnirs_echelle': {
         '32_SB_SXD': [{}]},
     'gemini_gmos': {
         'GS_HAM_R400_860': [{}]},
@@ -243,7 +271,7 @@ _coadd1d = {
     }
 
 _coadd2d = {
-    'gemini_gnirs': {
+    'gemini_gnirs_echelle': {
         '32_SB_SXD': [dict(coadd_file=True)]},
     'keck_lris_blue': {
         'multi_600_4000_d560': [dict(coadd_file=True)]},
@@ -260,7 +288,7 @@ _coadd2d = {
     }
 
 _telluric = {
-    'gemini_gnirs': {
+    'gemini_gnirs_echelle': {
         '32_SB_SXD': [dict(coadd_file='pisco_coadd.fits', tell_file=True)]},
     'gemini_gmos': {
         'GS_HAM_R400_700': [dict(coadd_file='FRB180924_opt.fits',
@@ -348,7 +376,7 @@ _quick_look = {
             },
             {'test_name': 'slitspatnum', # Run with slitspatnum
                 'files': ['d1010_0056.fits.gz'],
-              '--slitspatnum': 'MSC02:452',
+              '--slitspatnum': 'MSC02:368,MSC02:452',
               '--setup_calib_dir': 'USE_CALIB_DIR',
             },
         ]
