@@ -33,11 +33,10 @@ setup end
 # Data block 
 data read
  path /RAW_DATA/keck_lris_red/long_600_10000_d680
-         filename |                 frametype |                 ra |      dec |        target |  dispname |   decker | binning |          mjd |     airmass | exptime | dichroic |   dispangle |       cenwave | amp |  hatch | lampstat01 |    dateobs | frameno | calib
-r161027_0071.fits |                  arc,tilt | 247.35829166666664 |      0.0 | LRIS (N wrap) | 600/10000 | long_1.0 |     1,1 |  57688.64415 | 13.37481353 |     1.0 |      680 |  31.1117382 | 8947.16699219 |   4 | closed |        HgI | 2016-10-27 |      71 |     0
-# SATURATED r161027_0070.fits | pixelflat,illumflat,trace | 247.35829166666664 |      0.0 | LRIS (N wrap) | 600/10000 | long_1.0 |     1,1 |  57688.63962 | 13.37481353 |     8.0 |      680 |  31.1117382 | 8947.16699219 |   4 | closed |    Halogen | 2016-10-27 |      70 |     0
-r161027_0074.fits | pixelflat,illumflat,trace | 247.35829166666664 |      0.0 | LRIS (N wrap) | 600/10000 | long_1.0 |     1,1 | 57688.648723 | 13.37481353 |     4.0 |      680 |  31.1117382 | 8947.16699219 |   4 | closed |    Halogen | 2016-10-27 |      74 |     0
-r161027_0075.fits | pixelflat,illumflat,trace | 247.35829166666664 |      0.0 | LRIS (N wrap) | 600/10000 | long_1.0 |     1,1 | 57688.650265 | 13.37481353 |     4.0 |      680 |  31.1117382 | 8947.16699219 |   4 | closed |    Halogen | 2016-10-27 |      75 |     0
-r161027_0045.fits |                   science | 10.513083333333332 | 41.07325 |     B067-G129 | 600/10000 | long_1.0 |     1,1 | 57688.206547 |  1.60498367 |   900.0 |      680 | 31.11060905 | 8946.59277344 |   4 |   open |        off | 2016-10-27 |      45 |     0
+         filename |                 frametype |                 ra |      dec |        target |  dispname |   decker | binning |          mjd |     airmass | exptime | dichroic | amp |   dispangle |       cenwave |  hatch |                  lampstat01 |    dateobs | frameno | calib
+r161027_0071.fits |                  arc,tilt | 247.35829166666664 |      0.0 | LRIS (N wrap) | 600/10000 | long_1.0 |     1,1 |  57688.64415 | 13.37481353 |     1.0 |      680 |   4 |  31.1117382 | 8947.16699219 | closed | HgI NeI ArI CdI ZnI KrI XeI | 2016-10-27 |      71 |     0
+# SATURATED r161027_0070.fits | pixelflat,illumflat,trace | 247.35829166666664 |      0.0 | LRIS (N wrap) | 600/10000 | long_1.0 |     1,1 |  57688.63962 | 13.37481353 |     8.0 |      680 |   4 |  31.1117382 | 8947.16699219 | closed |                     Halogen | 2016-10-27 |      70 |     0
+r161027_0074.fits | pixelflat,illumflat,trace | 247.35829166666664 |      0.0 | LRIS (N wrap) | 600/10000 | long_1.0 |     1,1 | 57688.648723 | 13.37481353 |     4.0 |      680 |   4 |  31.1117382 | 8947.16699219 | closed |                     Halogen | 2016-10-27 |      74 |     0
+r161027_0075.fits | pixelflat,illumflat,trace | 247.35829166666664 |      0.0 | LRIS (N wrap) | 600/10000 | long_1.0 |     1,1 | 57688.650265 | 13.37481353 |     4.0 |      680 |   4 |  31.1117382 | 8947.16699219 | closed |                     Halogen | 2016-10-27 |      75 |     0
+r161027_0045.fits |                   science | 10.513083333333332 | 41.07325 |     B067-G129 | 600/10000 | long_1.0 |     1,1 | 57688.206547 |  1.60498367 |   900.0 |      680 |   4 | 31.11060905 | 8946.59277344 |   open |                         off | 2016-10-27 |      45 |     0
 data end
-
