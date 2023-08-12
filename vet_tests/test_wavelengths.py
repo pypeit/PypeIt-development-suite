@@ -94,10 +94,6 @@ def test_redoslits_kastr(redux_out):
     Args:
         redux_out (str): path to REDUX_OUT
     """
-    # Load up the method we need below
-    fix_pypeit_file_directory = pypeit_tests.load_object(
-        '../test_scripts/pypeit_tests', 
-        obj='fix_pypeit_file_directory')
 
     setup = '600_5000_d46'
 
@@ -130,7 +126,7 @@ def test_redoslits_kastr(redux_out):
             os.environ["PYPEIT_DEV"]),"RAW_DATA",
             'shane_kast_red', setup)
 
-    fix_pypeit_file_directory(
+    pypeit_tests.fix_pypeit_file_directory(
         pyp_file, None, raw_data_path,
         None, None, None, outfile=new_pyp_file)
         
