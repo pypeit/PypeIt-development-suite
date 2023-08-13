@@ -1,10 +1,19 @@
-import os
+import os, sys
+import shutil
 import numpy as np
 
 from pypeit.spectrographs.util import load_spectrograph
 from pypeit.wavecalib import WaveCalib
+from pypeit.slittrace import SlitTraceSet
+from pypeit.scripts.run_pypeit import RunPypeIt
 
 import pytest
+
+sys.path.append(os.path.join(
+    os.path.abspath(
+        os.environ["PYPEIT_DEV"]),"test_scripts"))
+import pypeit_tests
+
 
 def test_shane_kast_red(redux_out):
 
@@ -78,3 +87,60 @@ def test_mdm_modspec(redux_out):
         # Load
         waveCalib = WaveCalib.from_file(file_path)
         assert waveCalib.wv_fits[index].rms < rms, f'RMS of mdm_modspec {setup} is too high!'
+
+def test_redoslits_kastr(redux_out):
+    """ Test the redo_slits option using shane_kast_red
+
+    Args:
+        redux_out (str): path to REDUX_OUT
+    """
+
+    setup = '600_5000_d46'
+
+    rdx_dir = os.path.join(redux_out,
+                             'shane_kast_red',
+                             setup)
+    # Artificially make the slit bad
+    slit_file = os.path.join(rdx_dir,
+                             'Calibrations',
+                             'Slits_A_0_DET01.fits.gz')
+    # Copy the original
+    orig_slit_file = slit_file.replace('.fits.gz', '_orig.fits.gz')
+    shutil.copyfile(slit_file, orig_slit_file)
+
+    # Modify
+    slits = SlitTraceSet.from_file(slit_file)
+    slits.mask[0] = slits.bitmask.turn_on(slits.mask[0], 'BADWVCALIB')
+    slits.to_file(slit_file, overwrite=True)
+
+    # Copy the pypeit file
+    root_redoslit_file = 'shane_kast_red_redoslit_600_5000_d46.pypeit'
+    pyp_file = os.path.join(os.path.abspath(
+        os.environ["PYPEIT_DEV"]), "vet_tests", "files", root_redoslit_file)
+
+    new_pyp_file = os.path.join(redux_out,
+                             'shane_kast_red',
+                             setup, root_redoslit_file)
+                             
+    raw_data_path =   os.path.join(os.path.abspath(
+            os.environ["PYPEIT_DEV"]),"RAW_DATA",
+            'shane_kast_red', setup)
+
+    pypeit_tests.fix_pypeit_file_directory(
+        pyp_file, None, raw_data_path,
+        None, None, None, outfile=new_pyp_file)
+        
+    # Run 
+    sv_cd = os.getcwd()
+    os.chdir(rdx_dir)
+    pargs = RunPypeIt.parse_args([str(new_pyp_file), '-o'])
+    RunPypeIt.main(pargs)
+
+    # Check
+    slits2 = SlitTraceSet.from_file(slit_file)
+    assert slits2.mask[0] == 0, 'Slit was not fixed!'
+
+    # Copy back
+    shutil.copyfile(orig_slit_file, slit_file)
+
+    os.chdir(sv_cd)
