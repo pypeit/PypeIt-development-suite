@@ -4,6 +4,10 @@
 # User-defined execution parameters
 [rdx]
     spectrograph = vlt_xshooter_vis
+[calibrations]
+  [[wavelengths]]
+     fwhm_fromlines = False
+     rms_threshold = 1.5
 
 # Setup
 setup read
