@@ -235,7 +235,8 @@ _collate1d = {
                    [{'files': ['Science/spec1d_*DE.20100913.22358*.fits'],
                     '--refframe': 'heliocentric',
                     '--wv_rms_thresh': 0.1,
-                    '--flux': None}]}
+                    '--flux': None,
+                    '--chk_version': None}]}
         }
 
 _quick_look = {
