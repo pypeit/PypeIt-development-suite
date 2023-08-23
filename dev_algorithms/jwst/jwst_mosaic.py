@@ -126,11 +126,16 @@ for detname in detectors:
         output_dir = os.path.join(redux_dir, 'output')
         pypeit_output_dir = os.path.join(redux_dir, 'pypeit')
 
+        #J0252
+        scifile1 = os.path.join(rawpath_level2, 'jw02073007001_03101_00001_' + detname + '_rate.fits')
+        scifile2 = os.path.join(rawpath_level2, 'jw02073007001_03101_00002_' + detname + '_rate.fits')
+        scifile3 = os.path.join(rawpath_level2, 'jw02073007001_03101_00003_' + detname + '_rate.fits')
+
+        # J1007
         # NIRSPEC 3-point dither
-        # dither center
-        scifile1 = os.path.join(rawpath_level2, 'jw02073008001_03101_00001_' + detname + '_rate.fits')
-        scifile2 = os.path.join(rawpath_level2, 'jw02073008001_03101_00002_' + detname + '_rate.fits')
-        scifile3 = os.path.join(rawpath_level2, 'jw02073008001_03101_00003_' + detname + '_rate.fits')
+        #scifile1 = os.path.join(rawpath_level2, 'jw02073008001_03101_00001_' + detname + '_rate.fits')
+        #scifile2 = os.path.join(rawpath_level2, 'jw02073008001_03101_00002_' + detname + '_rate.fits')
+        #scifile3 = os.path.join(rawpath_level2, 'jw02073008001_03101_00003_' + detname + '_rate.fits')
 
         #scifile1 = os.path.join(rawpath_level2, 'jw02073006001_03101_00001_' + detname + '_rate.fits')
         #scifile2 = os.path.join(rawpath_level2, 'jw02073006001_03101_00002_' + detname + '_rate.fits')
