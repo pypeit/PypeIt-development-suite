@@ -85,32 +85,33 @@ disperser = 'PRISM_02073'
 # disperser='PRISM_FS'
 
 # Targets
-target = 'J0313'
+target = 'J0252'
+#target = 'J0313'
 #target = 'J1007'
 # Dispersers
 #disperser = '140H'
 #disperser = '235H'
-disperser = '395H'
+#disperser = '395H'
 
 detectors = ['nrs1', 'nrs2']
 exp_list = []
 
-bkg_redux = False
-runflag = True
-#mode = 'MSA'
-mode ='FS'
+bkg_redux = True
+runflag = False
+mode = 'MSA'
+#mode ='FS'
 #slit = 'S200A1'
 #islit = 'S200A2'
 
 #islit = '37'
 #reduce_sources = ['2756_10025']
 #reduce_sources = ['2756_202']
-reduce_sources = ['2073_4562']
+#reduce_sources = ['2073_4562']
 #reduce_sources = ['2073_8731']
-#reduce_slits = None
-#reduce_sources = None
-#reduce_slits = None
-reduce_slits = ['S200A1']
+reduce_sources = None
+#reduce_sources = ['2073_10049']
+reduce_slits = None
+#reduce_slits = ['S200A1']
 show = False
 
 
@@ -122,25 +123,25 @@ for detname in detectors:
         ## Prorgram for Slit Loss Characterization for MSA shutters
         # PRISM data
         rawpath_level2 = '/Users/joe/jwst_redux/Raw/NIRSPEC_MSA/NIRSPEC_2073/level_12/02073/'
-        redux_dir = '/Users/joe/jwst_redux/redux/NIRSPEC_MSA/NIRSPEC_PRISM/02073_CLEAR_PRISM/calwebb'
+        redux_dir = os.path.join('/Users/joe/jwst_redux/redux/NIRSPEC_MSA/NIRSPEC_PRISM/02073_CLEAR_PRISM', target)
         output_dir = os.path.join(redux_dir, 'output')
         pypeit_output_dir = os.path.join(redux_dir, 'pypeit')
 
         #J0252
-        scifile1 = os.path.join(rawpath_level2, 'jw02073007001_03101_00001_' + detname + '_rate.fits')
-        scifile2 = os.path.join(rawpath_level2, 'jw02073007001_03101_00002_' + detname + '_rate.fits')
-        scifile3 = os.path.join(rawpath_level2, 'jw02073007001_03101_00003_' + detname + '_rate.fits')
+        if target == 'J0252':
+            scifile1 = os.path.join(rawpath_level2, 'jw02073007001_03101_00001_' + detname + '_rate.fits')
+            scifile2 = os.path.join(rawpath_level2, 'jw02073007001_03101_00002_' + detname + '_rate.fits')
+            scifile3 = os.path.join(rawpath_level2, 'jw02073007001_03101_00003_' + detname + '_rate.fits')
+        elif target == 'J1007':
+            # J1007
+            # NIRSPEC 3-point dither
+            scifile1 = os.path.join(rawpath_level2, 'jw02073008001_03101_00001_' + detname + '_rate.fits')
+            scifile2 = os.path.join(rawpath_level2, 'jw02073008001_03101_00002_' + detname + '_rate.fits')
+            scifile3 = os.path.join(rawpath_level2, 'jw02073008001_03101_00003_' + detname + '_rate.fits')
 
-        # J1007
-        # NIRSPEC 3-point dither
-        #scifile1 = os.path.join(rawpath_level2, 'jw02073008001_03101_00001_' + detname + '_rate.fits')
-        #scifile2 = os.path.join(rawpath_level2, 'jw02073008001_03101_00002_' + detname + '_rate.fits')
-        #scifile3 = os.path.join(rawpath_level2, 'jw02073008001_03101_00003_' + detname + '_rate.fits')
-
-        #scifile1 = os.path.join(rawpath_level2, 'jw02073006001_03101_00001_' + detname + '_rate.fits')
-        #scifile2 = os.path.join(rawpath_level2, 'jw02073006001_03101_00002_' + detname + '_rate.fits')
-        #scifile3 = os.path.join(rawpath_level2, 'jw02073006001_03101_00003_' + detname + '_rate.fits')
-
+            #scifile1 = os.path.join(rawpath_level2, 'jw02073006001_03101_00001_' + detname + '_rate.fits')
+            #scifile2 = os.path.join(rawpath_level2, 'jw02073006001_03101_00002_' + detname + '_rate.fits')
+            #scifile3 = os.path.join(rawpath_level2, 'jw02073006001_03101_00003_' + detname + '_rate.fits')
 
     elif 'PRISM_02756' == disperser:
         ## Prorgram for Slit Loss Characterization for MSA shutters
@@ -452,7 +453,7 @@ for idet in range(ndetectors):
 dither_offsets_pixels = dither_offsets_pixels[:,0,None] - dither_offsets_pixels
 print(dither_offsets_pixels)
 
-
+print('Reading in calwebb outputs. This may take a while...')
 
 # TODO Figure out why this is so damn slow! I suspect it is calwebb1
 for iexp in range(nexp):

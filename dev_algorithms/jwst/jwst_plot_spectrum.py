@@ -9,10 +9,15 @@ from matplotlib import pyplot as plt
 
 
 #coaddfile = '/Users/joe/jwst_redux/redux/NIRSPEC_FS/J1007/calwebb/pypeit/J1007_1dcoadd.fits'
-coaddfile = '/Users/joe/jwst_redux/redux/NIRSPEC_FS/J0313/calwebb/pypeit/J0313_1dcoadd.fits'
-outfile = os.path.join(os.path.dirname(coaddfile), os.path.basename(coaddfile).replace('.fits', '_Flam.fits'))
-hdu = fits.open(coaddfile)
-spec_table = Table(hdu[1].data)
+#coaddfile = '/Users/joe/jwst_redux/redux/NIRSPEC_FS/J0313/calwebb/pypeit/J0313_1dcoadd.fits'
+#outfile = os.path.join(os.path.dirname(coaddfile), os.path.basename(coaddfile).replace('.fits', '_Flam.fits'))
+#hdu = fits.open(coaddfile)
+#spec_table = Table(hdu[1].data)
+coaddfile = '/Users/joe/jwst_redux/redux/NIRSPEC_MSA/NIRSPEC_PRISM/02073_CLEAR_PRISM/J0252/pypeit/' \
+            'Science_coadd/spec1d_jw02073007001_03101_00001_nrs1_rate-jw02073007001_03101_00003_nrs1_rate-2073_8713.fits'
+
+spec_table = Table.read(coaddfile, format='fits')
+
 
 angle_unit = u.steradian if 'J1007' in coaddfile else 1.0
 flux_MJy = spec_table['flux']*u.MJy/angle_unit
