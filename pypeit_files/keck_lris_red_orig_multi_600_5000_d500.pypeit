@@ -1,0 +1,30 @@
+# Auto-generated PypeIt input file using PypeIt version: 1.13.1.dev659+g13e756d71
+# UTC 2023-08-26T03:29:19.205
+
+# User-defined execution parameters
+[rdx]
+    spectrograph = keck_lris_red_orig
+[baseprocess]
+    use_biasimage = False
+
+# Setup
+setup read
+Setup A:
+  amp: '2'
+  binning: 1,1
+  cenwave: 6348.43798828
+  decker: ssa22_12.steidel
+  dichroic: '500'
+  dispangle: 25.87923241
+  dispname: 600/5000
+setup end
+
+# Data block 
+data read
+ path PypeIt-development-suite/RAW_DATA/keck_lris_red_orig/multi_600_5000_d500
+              filename |                 frametype |                 ra |                 dec |   target | dispname |           decker | binning |               mjd |    airmass | exptime | dichroic | amp |   dispangle |       cenwave |  hatch |          lampstat01 |    dateobs | frameno | calib
+LR.20010720.52886.fits |                  arc,tilt | 334.36229166666664 | 0.25233333333333335 | ssa22_l2 | 600/5000 | ssa22_12.steidel |     1,1 |  52110.6121087963 | 1.21349808 |     1.0 |      500 |   2 | 25.87923241 | 6348.43798828 | closed | HgI NeI ArI CdI ZnI | 2001-07-20 |     247 |     0
+LR.20010720.52673.fits | pixelflat,illumflat,trace | 334.36229166666664 | 0.25233333333333335 | ssa22_l2 | 600/5000 | ssa22_12.steidel |     1,1 | 52110.60965162037 | 1.20335216 |    10.0 |      500 |   2 | 25.87923241 | 6348.43798828 | closed |             Halogen | 2001-07-20 |     246 |     0
+LR.20010720.48060.fits |                   science | 334.36220833333334 | 0.25230555555555556 | ssa22_l2 | 600/5000 | ssa22_12.steidel |     1,1 | 52110.55625150463 | 1.07443916 |  1800.0 |      500 |   2 | 25.87923241 | 6348.43798828 |   open |                 off | 2001-07-20 |     244 |     0
+data end
+

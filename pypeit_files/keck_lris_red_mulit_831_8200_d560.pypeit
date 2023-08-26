@@ -1,0 +1,30 @@
+# Auto-generated PypeIt input file using PypeIt version: 1.13.1.dev659+g13e756d71
+# UTC 2023-08-26T01:57:55.429
+
+# User-defined execution parameters
+[rdx]
+    spectrograph = keck_lris_red
+[baseprocess]
+    use_biasimage = False
+
+# Setup
+setup read
+Setup A:
+  amp: '4'
+  binning: 1,1
+  cenwave: 7884.12451172
+  decker: PB_1.fiB
+  dichroic: '560'
+  dispangle: 34.33069992
+  dispname: 831/8200
+setup end
+
+# Data block 
+data read
+ path PypeIt-development-suite/RAW_DATA/keck_lris_red/mulit_831_8200_d560
+              filename |                 frametype |                 ra |                dec |    target | dispname |   decker | binning |          mjd |     airmass | exptime | dichroic | amp |   dispangle |       cenwave |  hatch |                  lampstat01 |    dateobs | frameno | calib
+LR.20160905.13548.fits |                  arc,tilt |              340.0 |                0.0 |   unknown | 831/8200 | PB_1.fiB |     1,1 | 57636.156816 | 13.37481353 |     1.0 |      560 |   4 | 34.33069992 | 7884.12451172 | closed | HgI NeI ArI CdI ZnI KrI XeI | 2016-09-05 |     186 |     0
+LR.20160905.57296.fits | pixelflat,illumflat,trace | 229.99999999999997 |               45.0 | DOME FLAT | 831/8200 | PB_1.fiB |     1,1 | 57636.663154 |  1.41290614 |    10.0 |      560 |   4 | 34.32844162 | 7883.31445312 |   open |                          on | 2016-09-05 |     258 |     0
+LR.20160905.28862.fits |                   science |  9.184333333333333 | 44.192055555555555 |  PB_1.fiB | 831/8200 | PB_1.fiB |     1,1 | 57636.334053 |  1.72742375 |  1200.0 |      560 |   4 | 34.33295822 | 7884.93457031 |   open |                         off | 2016-09-05 |     225 |     0
+data end
+

@@ -1,0 +1,30 @@
+# Auto-generated PypeIt input file using PypeIt version: 1.13.1.dev659+g13e756d71
+# UTC 2023-08-26T01:47:28.722
+
+# User-defined execution parameters
+[rdx]
+    spectrograph = keck_lris_red
+[baseprocess]
+    use_biasimage = False
+
+# Setup
+setup read
+Setup A:
+  amp: '4'
+  binning: 1,1
+  cenwave: 6369.53759766
+  decker: long_1.0
+  dichroic: '560'
+  dispangle: 40.43002319
+  dispname: 1200/7500
+setup end
+
+# Data block 
+data read
+ path PypeIt-development-suite/RAW_DATA/keck_lris_red/long_1200_7500_d560
+              filename |                 frametype |                 ra |               dec |        target |  dispname |   decker | binning |          mjd |     airmass | exptime | dichroic | amp |   dispangle |       cenwave |  hatch |                  lampstat01 |    dateobs | frameno | calib
+LR.20170428.56399.fits |                  arc,tilt | 247.35829166666664 |               0.0 | LRIS (N wrap) | 1200/7500 | long_1.0 |     1,1 | 57871.652775 | 13.37481353 |     1.0 |      560 |   4 | 40.42889404 | 6369.26464844 | closed | HgI NeI ArI CdI ZnI KrI XeI | 2017-04-28 |     250 |     0
+LR.20170428.56533.fits | pixelflat,illumflat,trace | 247.35829166666664 |               0.0 | LRIS (N wrap) | 1200/7500 | long_1.0 |     1,1 | 57871.654327 | 13.37481353 |     5.0 |      560 |   4 | 40.42889404 | 6369.26464844 | closed |                     Halogen | 2017-04-28 |     251 |     0
+LR.20170428.27730.fits |                   science | 164.98074999999997 | 42.86058333333334 | camerons_lens | 1200/7500 | long_1.0 |     1,1 |  57871.32095 |  1.10233143 |   600.0 |      560 |   4 | 40.43002319 | 6369.53759766 |   open |                         off | 2017-04-28 |     212 |     0
+data end
+
