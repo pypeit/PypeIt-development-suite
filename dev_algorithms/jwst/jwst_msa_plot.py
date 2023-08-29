@@ -14,16 +14,16 @@ from matplotlib import pyplot as plt
 #hdu = fits.open(coaddfile)
 #spec_table = Table(hdu[1].data)
 coaddfile = '/Users/joe/jwst_redux/redux/NIRSPEC_MSA/NIRSPEC_PRISM/02073_CLEAR_PRISM/J0252/pypeit/' \
-            'Science_coadd/spec1d_jw02073007001_03101_00001_nrs1_rate-jw02073007001_03101_00003_nrs1_rate-2073_8612.fits'
-outfile = '/Users/joe/jwst_redux/redux/NIRSPEC_MSA/NIRSPEC_PRISM/02073_CLEAR_PRISM/J0252/pypeit/J0252_8612_1dcoadd_Flam.fits'
+            'Science_coadd/spec1d_jw02073007001_03101_00001_nrs1_rate-jw02073007001_03101_00003_nrs1_rate-2073_8713.fits'
+outfile = '/Users/joe/jwst_redux/redux/NIRSPEC_MSA/NIRSPEC_PRISM/02073_CLEAR_PRISM/J0252/pypeit/J0252_8713_1dcoadd_Flam.fits'
 
 spec_table = Table.read(coaddfile, format='fits')
 
 angle_unit = u.steradian
-flux_MJy = spec_table['BOX_COUNTS']*u.MJy/angle_unit
-wave = spec_table['BOX_WAVE']*u.angstrom
-sigma_MJy = np.sqrt(inverse(spec_table['BOX_COUNTS_IVAR']))*u.MJy/angle_unit
-gpm = spec_table['BOX_MASK'].astype(bool)
+flux_MJy = spec_table['OPT_COUNTS']*u.MJy/angle_unit
+wave = spec_table['OPT_WAVE']*u.angstrom
+sigma_MJy = np.sqrt(inverse(spec_table['OPT_COUNTS_IVAR']))*u.MJy/angle_unit
+gpm = spec_table['OPT_MASK'].astype(bool)
 
 # Convert to F_lambda
 # F_lambda = F_nu * c / lambda^2

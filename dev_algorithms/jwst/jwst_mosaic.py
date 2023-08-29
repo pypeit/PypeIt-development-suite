@@ -97,7 +97,7 @@ detectors = ['nrs1', 'nrs2']
 exp_list = []
 
 bkg_redux = True
-runflag = False
+runflag = True
 mode = 'MSA'
 #mode ='FS'
 #slit = 'S200A1'
@@ -325,7 +325,9 @@ scipath = os.path.join(pypeit_output_dir, 'Science')
 if not os.path.isdir(scipath):
     msgs.info('Creating directory for Science output: {0}'.format(scipath))
     os.makedirs(scipath)
-
+if not os.path.isdir(output_dir):
+    msgs.info('Creating directory for calwebb output: {0}'.format(output_dir))
+    os.makedirs(output_dir)
 
 # Some pypeit things
 spectrograph = load_spectrograph('jwst_nirspec')
@@ -358,8 +360,8 @@ param_dict = {
     'bkg_subtract': {'skip': True},
     'imprint_subtract': {'save_results': True}, # TODO Check up on whether imprint subtraction is being done by us???
     'master_background_mos': {'skip': True},
-    #'srctype': {'source_type': 'EXTENDED'},
-    'srctype': {'source_type': 'POINT'},
+    # Default to setting the source type to extended for MSA data and point for FS data. This impacts flux calibration.
+    'srctype': {'source_type': 'POINT'} if 'FS' in mode else {'source_type': 'EXTENDED'},
     # 'flat_field': {'skip': True},
     'resample_spec': {'skip': True},
     'extract_1d': {'skip': True},
