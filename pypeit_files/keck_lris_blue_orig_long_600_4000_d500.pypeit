@@ -7,6 +7,10 @@
 [baseprocess]
   use_biasimage = False
   use_illumflat = False
+[calibrations]
+    [[wavelengths]]
+        fwhm_fromlines = False
+        fwhm = 8.
 
 
 # Setup
