@@ -4,6 +4,7 @@
 # User-defined execution parameters
 [rdx]
     spectrograph = keck_lris_red
+    detnum = 1
 [baseprocess]
     use_biasimage = False
 

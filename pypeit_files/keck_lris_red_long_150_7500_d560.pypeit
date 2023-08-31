@@ -4,11 +4,13 @@
 # User-defined execution parameters
 [rdx]
     spectrograph = keck_lris_red
+    detnum = 2
 [baseprocess]
     use_biasimage = False
 [calibrations]
    [[slitedges]]
       edge_thresh = 5.
+      fit_min_spec_length = 0.4
 
 # Setup
 setup read
