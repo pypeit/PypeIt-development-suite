@@ -6,6 +6,10 @@
     spectrograph = keck_lris_red_orig
 [baseprocess]
     use_biasimage = False
+[calibrations]
+   [[slitedges]]
+      edge_thresh = 3.
+      fit_min_spec_length = 0.3
 
 # Setup
 setup read

@@ -72,16 +72,136 @@ def test_setup_keck_lris_red_mark4():
     generic_setup_test(spec, setup)
 
 
+def test_setup_keck_lris_red_mark4_multiconfig():
+    # Dev suite directory
+    dev_root = Path(os.getenv('PYPEIT_DEV')).resolve()
+    assert dev_root.exists(), f'PypeIt development suite directory does not exist: {dev_root}'
+    # Raw data directory
+    raw_dir = dev_root / 'RAW_DATA' / 'keck_lris_red_mark4'
+    assert raw_dir.exists(), f'Raw data directory does not exist: {raw_dir}'
+
+    # Get the fits files
+    datasets = ['long_400_8500_d560']
+    files = np.concatenate([sorted(raw_dir.glob(f'{s}/*fits*')) for s in datasets]).tolist()
+
+    # Set the output path and remove if it already exists
+    output_path = Path('.').resolve() / 'output'
+    if output_path.exists():
+        shutil.rmtree(output_path)
+
+    # Run pypeit_setup
+    ps = pypeitsetup.PypeItSetup(files, spectrograph_name='keck_lris_red_mark4')
+    ps.run(setup_only=True)
+
+    # Write the automatically generated pypeit data
+    pypeit_files = ps.fitstbl.write_pypeit(output_path, cfg_lines=ps.user_cfg)
+
+    assert len(pypeit_files) == 2, 'Should have created two pypeit files'
+
+    # Test the pypeit files for the correct configuration and
+    # calibration group results
+    for f, s, c in zip(pypeit_files, ['A', 'B'], ['0', '1']):
+        # Read the pypeit file
+        pypeitFile = inputfiles.PypeItFile.from_file(f)
+        # Check setup name
+        assert pypeitFile.setup_name == s, 'Setup is wrong'
+        # check calibration group
+        assert np.all(pypeitFile.data['calib'].astype(str) == c), 'Calibration group is wrong'
+    # Clean-up
+    shutil.rmtree(output_path)
+
+
 def test_setup_keck_lris_red():
     spec = 'keck_lris_red'
     setup = 'multi_400_8500_d560'
     generic_setup_test(spec, setup)
 
 
+def test_setup_keck_lris_red_multiconfig():
+    # Dev suite directory
+    dev_root = Path(os.getenv('PYPEIT_DEV')).resolve()
+    assert dev_root.exists(), f'PypeIt development suite directory does not exist: {dev_root}'
+    # Raw data directory
+    raw_dir = dev_root / 'RAW_DATA' / 'keck_lris_red'
+    assert raw_dir.exists(), f'Raw data directory does not exist: {raw_dir}'
+
+    # Get the fits files
+    datasets = ['long_150_7500_d560', 'long_1200_7500_d560']
+    files = np.concatenate([sorted(raw_dir.glob(f'{s}/*fits*')) for s in datasets]).tolist()
+
+    # Set the output path and remove if it already exists
+    output_path = Path('.').resolve() / 'output'
+    if output_path.exists():
+        shutil.rmtree(output_path)
+
+    # Run pypeit_setup
+    ps = pypeitsetup.PypeItSetup(files, spectrograph_name='keck_lris_red')
+    ps.run(setup_only=True)
+
+    # Write the automatically generated pypeit data
+    pypeit_files = ps.fitstbl.write_pypeit(output_path, cfg_lines=ps.user_cfg)
+
+    assert len(pypeit_files) == 2, 'Should have created two pypeit files'
+
+    # Test the pypeit files for the correct configuration and
+    # calibration group results
+    for d, f, s, c in zip(datasets, pypeit_files, ['A', 'B'], ['0', '1']):
+        # Read the pypeit file
+        pypeitFile = inputfiles.PypeItFile.from_file(f)
+        # Check setup name
+        assert pypeitFile.setup_name == s, 'Setup is wrong'
+        # check calibration group
+        assert np.all(pypeitFile.data['calib'].astype(str) == c), 'Calibration group is wrong'
+        # check that this is the right dataset
+        assert Path(pypeitFile.file_paths[0]).name == d, 'Wrong dataset'
+    # Clean-up
+    shutil.rmtree(output_path)
+
 def test_setup_keck_lris_red_orig():
     spec = 'keck_lris_red_orig'
     setup = 'long_300_5000'
     generic_setup_test(spec, setup)
+
+
+def test_setup_keck_lris_red_orig_multiconfig():
+    # Dev suite directory
+    dev_root = Path(os.getenv('PYPEIT_DEV')).resolve()
+    assert dev_root.exists(), f'PypeIt development suite directory does not exist: {dev_root}'
+    # Raw data directory
+    raw_dir = dev_root / 'RAW_DATA' / 'keck_lris_red_orig'
+    assert raw_dir.exists(), f'Raw data directory does not exist: {raw_dir}'
+
+    # Get the fits files
+    datasets = ['long_900_5500_d560', 'long_831_8200_d460']
+    files = np.concatenate([sorted(raw_dir.glob(f'{s}/*fits*')) for s in datasets]).tolist()
+
+    # Set the output path and remove if it already exists
+    output_path = Path('.').resolve() / 'output'
+    if output_path.exists():
+        shutil.rmtree(output_path)
+
+    # Run pypeit_setup
+    ps = pypeitsetup.PypeItSetup(files, spectrograph_name='keck_lris_red_orig')
+    ps.run(setup_only=True)
+
+    # Write the automatically generated pypeit data
+    pypeit_files = ps.fitstbl.write_pypeit(output_path, cfg_lines=ps.user_cfg)
+
+    assert len(pypeit_files) == 2, 'Should have created two pypeit files'
+
+    # Test the pypeit files for the correct configuration and
+    # calibration group results
+    for d, f, s, c in zip(datasets, pypeit_files, ['A', 'B'], ['0', '1']):
+        # Read the pypeit file
+        pypeitFile = inputfiles.PypeItFile.from_file(f)
+        # Check setup name
+        assert pypeitFile.setup_name == s, 'Setup is wrong'
+        # check calibration group
+        assert np.all(pypeitFile.data['calib'].astype(str) == c), 'Calibration group is wrong'
+        # check that this is the right dataset
+        assert Path(pypeitFile.file_paths[0]).name == d, 'Wrong dataset'
+    # Clean-up
+    shutil.rmtree(output_path)
 
 
 def test_setup_keck_lris_blue():
@@ -90,10 +210,92 @@ def test_setup_keck_lris_blue():
     generic_setup_test(spec, setup)
 
 
+def test_setup_keck_lris_blue_multiconfig():
+    # Dev suite directory
+    dev_root = Path(os.getenv('PYPEIT_DEV')).resolve()
+    assert dev_root.exists(), f'PypeIt development suite directory does not exist: {dev_root}'
+    # Raw data directory
+    raw_dir = dev_root / 'RAW_DATA' / 'keck_lris_blue'
+    assert raw_dir.exists(), f'Raw data directory does not exist: {raw_dir}'
+
+    # Get the fits files
+    datasets = ['multi_300_5000_d680', 'multi_600_4000_slitmask']
+    files = np.concatenate([sorted(raw_dir.glob(f'{s}/*fits*')) for s in datasets]).tolist()
+
+    # Set the output path and remove if it already exists
+    output_path = Path('.').resolve() / 'output'
+    if output_path.exists():
+        shutil.rmtree(output_path)
+
+    # Run pypeit_setup
+    ps = pypeitsetup.PypeItSetup(files, spectrograph_name='keck_lris_blue')
+    ps.run(setup_only=True)
+
+    # Write the automatically generated pypeit data
+    pypeit_files = ps.fitstbl.write_pypeit(output_path, cfg_lines=ps.user_cfg)
+
+    assert len(pypeit_files) == 2, 'Should have created two pypeit files'
+
+    # Test the pypeit files for the correct configuration and
+    # calibration group results
+    for d, f, s, c in zip(datasets, pypeit_files, ['A', 'B'], ['0', '1']):
+        # Read the pypeit file
+        pypeitFile = inputfiles.PypeItFile.from_file(f)
+        # Check setup name
+        assert pypeitFile.setup_name == s, 'Setup is wrong'
+        # check calibration group
+        assert np.all(pypeitFile.data['calib'].astype(str) == c), 'Calibration group is wrong'
+        # check that this is the right dataset
+        assert Path(pypeitFile.file_paths[0]).name == d, 'Wrong dataset'
+    # Clean-up
+    shutil.rmtree(output_path)
+
+
 def test_setup_keck_lris_blue_orig():
     spec = 'keck_lris_blue_orig'
     setup = 'long_600_4000_d500'
     generic_setup_test(spec, setup)
+
+
+def test_setup_keck_lris_blue_orig_multiconfig():
+    # Dev suite directory
+    dev_root = Path(os.getenv('PYPEIT_DEV')).resolve()
+    assert dev_root.exists(), f'PypeIt development suite directory does not exist: {dev_root}'
+    # Raw data directory
+    raw_dir = dev_root / 'RAW_DATA' / 'keck_lris_blue_orig'
+    assert raw_dir.exists(), f'Raw data directory does not exist: {raw_dir}'
+
+    # Get the fits files
+    datasets = ['long_600_4000_d500', 'multi_1200_3400_d460']
+    files = np.concatenate([sorted(raw_dir.glob(f'{s}/*fits*')) for s in datasets]).tolist()
+
+    # Set the output path and remove if it already exists
+    output_path = Path('.').resolve() / 'output'
+    if output_path.exists():
+        shutil.rmtree(output_path)
+
+    # Run pypeit_setup
+    ps = pypeitsetup.PypeItSetup(files, spectrograph_name='keck_lris_blue_orig')
+    ps.run(setup_only=True)
+
+    # Write the automatically generated pypeit data
+    pypeit_files = ps.fitstbl.write_pypeit(output_path, cfg_lines=ps.user_cfg)
+
+    assert len(pypeit_files) == 2, 'Should have created two pypeit files'
+
+    # Test the pypeit files for the correct configuration and
+    # calibration group results
+    for d, f, s, c in zip(datasets, pypeit_files, ['A', 'B'], ['0', '1']):
+        # Read the pypeit file
+        pypeitFile = inputfiles.PypeItFile.from_file(f)
+        # Check setup name
+        assert pypeitFile.setup_name == s, 'Setup is wrong'
+        # check calibration group
+        assert np.all(pypeitFile.data['calib'].astype(str) == c), 'Calibration group is wrong'
+        # check that this is the right dataset
+        assert Path(pypeitFile.file_paths[0]).name == d, 'Wrong dataset'
+    # Clean-up
+    shutil.rmtree(output_path)
 
 
 def test_setup_shane_kast_blue():
