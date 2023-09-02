@@ -32,6 +32,7 @@ all_setups = {
         'J1723+2243_W241_RED_C5_ECH_-0.15_XD_0.90_2x2',
                    ],
     'keck_kcwi': ['bh2_4200', 'bl'],
+    'keck_kcrm': ['rm1', 'rh3'],
     'keck_nires': ['ABBA_wstandard', 'ABBA_nostandard', 'ABC_nostandard', 'ABpat_wstandard', 'ABBA_nostandard_faint'],
     'keck_nirspec': ['LOW_NIRSPEC-1'],
     'keck_mosfire': ['Y_long', 'J_multi', 'K_long', 'Y_multi', 'long2pos1_H', 'longslit_3x0.7_H', 'mask1_K_with_continuum', 'mask1_J_with_continuum', 'J2_long'],
