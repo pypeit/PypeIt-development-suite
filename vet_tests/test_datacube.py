@@ -22,7 +22,7 @@ def test_coadd_datacube(redux_out):
     """ Test the coaddition of spec2D files into datacubes """
     droot = os.path.join(redux_out,
                          'keck_kcwi', 
-                         'bh2_4200', 
+                         'small_bh2_4200',
                          'Science')
     files = ['spec2d_KB.20191219.56886-BB1245p4238_KCWI_20191219T154806.538.fits',
              'spec2d_KB.20191219.57662-BB1245p4238_KCWI_20191219T160102.755.fits']
