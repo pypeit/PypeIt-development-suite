@@ -3,7 +3,12 @@
 
 # User-defined execution parameters
 [rdx]
-spectrograph = lbt_mods1r
+  spectrograph = lbt_mods1r
+  slitspatnum = DET01:1557
+[reduce]
+ [[findobj]]
+  snr_thresh=5.0
+  find_min_max=6000,6800
 
 # Setup
 setup read
@@ -22,7 +27,7 @@ setup end
 
 # Read in the data
 data read
- path /Users/feige/Software/python3/PypeIt-development-suite/RAW_DATA/lbt_mods/MODS1R_Longslit
+ path /Users/joe/python/PypeIt-development-suite/RAW_DATA/lbt_mods/MODS1R_Longslit/
 |                     filename |                 frametype |                 ra |                dec |                              target | dispname |     decker | binning |          mjd | airmass | exptime |
 | mods1r.20180112.0057.fits.gz |                  arc,tilt |         180.323125 | 21.590408333333333 |                             Ne Lamp |    G670L | LS5x60x0.6 |     1,1 | 58130.577872 |     1.0 |     1.1 |
 | mods1r.20180112.0058.fits.gz |                  arc,tilt |         180.323125 | 21.590408333333333 |                         Xe+Kr Lamps |    G670L | LS5x60x0.6 |     1,1 | 58130.579073 |     1.0 |     1.0 |
