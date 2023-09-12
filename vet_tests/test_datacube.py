@@ -7,7 +7,7 @@ import pytest
 
 from astropy.table import Table
 
-from pypeit.core.datacube import coadd_cube
+from pypeit.coadd3d import CoAdd3D
 from pypeit.spectrographs.util import load_spectrograph
 from pypeit import inputfiles
 from astropy.io import ascii
@@ -44,7 +44,9 @@ def test_coadd_datacube(redux_out):
     parset = spec.default_pypeit_par()
     parset['reduce']['cube']['output_filename'] = output_filename
     parset['reduce']['cube']['combine'] = True    
-    coadd_cube(coadd3dfile.filenames, coadd3dfile.options, parset=parset, overwrite=True)
+    # Instantiate CoAdd3d, and then coadd the frames
+    coadd = CoAdd3D.get_instance(coadd3dfile.filenames, coadd3dfile.options, spectrograph=spec, par=parset, overwrite=True)
+    coadd.coadd()
     # Now test the fluxing - make a shorter set of files to speed it up
     files = ['spec2d_KB.20191219.56886-BB1245p4238_KCWI_20191219T154806.538.fits']
     tbl = Table()
@@ -60,7 +62,11 @@ def test_coadd_datacube(redux_out):
     parset['reduce']['cube']['output_filename'] = output_fileflux
     parset['reduce']['cube']['combine'] = False
     parset['reduce']['cube']['standard_cube'] = output_filename
-    coadd_cube(coadd3dfile.filenames, coadd3dfile.options, parset=parset, overwrite=True)
+
+    # Instantiate CoAdd3d, and then coadd the frames
+    coadd = CoAdd3D.get_instance(coadd3dfile.filenames, coadd3dfile.options, spectrograph=spec, par=parset, overwrite=True)
+    coadd.coadd()
+
     # Check the files exist
     assert(os.path.exists(output_filename))
     assert(os.path.exists(output_fileflux))
