@@ -9,28 +9,24 @@
 
 # Setup
 setup read
- Setup wod1
---:
+Setup A:
+  binning: 2,2
+  decker: WOD1.fil
   dichroic: '680'
-  disperser: {angle: 49.12641144, name: 600/4000}
-  slit: {decker: WOD1.fil, slitlen: none, slitwid: none}
- '01': {binning: '2,2', det: 1, namp: 2}
- '02': {binning: '2,2', det: 2, namp: 2}
+  dispname: 600/4000
 setup end
 
-
-# Read in the data
+# Data block 
 data read
- path /Users/joe/python/PypeIt-development-suite/RAW_DATA/keck_lris_blue/multi_600_4000_d680/
-|          filename | frametype	      |          ra |         dec |    target | dispname |   decker | binning |          mjd |    airmass | exptime | dichroic |
-| b190103_0017.fits |    arc,tilt     | 15:20:00.00 | +45:00:00.0 | DOME FLAT | 600/4000 | WOD1.fil |     2,2 | 58486.136329 | 1.41291034 |     2.0 |      680 |
-| b190103_0019.fits | pixelflat,trace | 15:20:00.00 | +45:00:00.0 | DOME FLAT | 600/4000 | WOD1.fil |     2,2 | 58486.146263 | 1.41291034 |    60.0 |      680 |
-| b190103_0020.fits | pixelflat,trace | 15:20:00.00 | +45:00:00.0 | DOME FLAT | 600/4000 | WOD1.fil |     2,2 |  58486.14791 | 1.41291034 |    60.0 |      680 |
-| b190103_0021.fits | pixelflat,trace | 15:20:00.00 | +45:00:00.0 | DOME FLAT | 600/4000 | WOD1.fil |     2,2 | 58486.149103 | 1.41291034 |    60.0 |      680 |
-| b190103_0022.fits | pixelflat,trace | 15:20:00.00 | +45:00:00.0 | DOME FLAT | 600/4000 | WOD1.fil |     2,2 | 58486.150336 | 1.41291034 |    60.0 |      680 |
-| b190103_0023.fits | pixelflat,trace | 15:20:00.00 | +45:00:00.0 | DOME FLAT | 600/4000 | WOD1.fil |     2,2 | 58486.151458 | 1.41291034 |    60.0 |      680 |
-| b190103_0051.fits |   science       | 10:02:24.29 | +02:02:15.5 |      WOD1 | 600/4000 | WOD1.fil |     2,2 | 58486.449513 | 1.39800405 |  1800.0 |      680 |
-| b190103_0084.fits |      bias       | 12:41:51.76 | +17:31:10.4 | feige67   | 400/3400 | long_1.5 |     2,2 | 58486.722532 | 1.04196705 |    15.0 |      680 |
+ path RAW_DATA/keck_lris_blue/multi_600_4000_d680
+         filename |                 frametype |                 ra |                dec |    target | dispname |   decker | binning |          mjd |    airmass | exptime | dichroic | amp |  hatch |                       lampstat01 |    dateobs | frameno | calib
+b190103_0017.fits |                  arc,tilt | 229.99999999999997 |               45.0 | DOME FLAT | 600/4000 | WOD1.fil |     2,2 | 58486.136329 | 1.41291034 |     2.0 |      680 |   4 | closed | HgI NeI ArI CdI ZnI KrI XeI FeAr | 2019-01-03 |      17 |     0
+b190103_0019.fits | pixelflat,illumflat,trace | 229.99999999999997 |               45.0 | DOME FLAT | 600/4000 | WOD1.fil |     2,2 | 58486.146263 | 1.41291034 |    60.0 |      680 |   4 | closed |                               2H | 2019-01-03 |      19 |     0
+b190103_0020.fits | pixelflat,illumflat,trace | 229.99999999999997 |               45.0 | DOME FLAT | 600/4000 | WOD1.fil |     2,2 |  58486.14791 | 1.41291034 |    60.0 |      680 |   4 | closed |                               2H | 2019-01-03 |      20 |     0
+b190103_0021.fits | pixelflat,illumflat,trace | 229.99999999999997 |               45.0 | DOME FLAT | 600/4000 | WOD1.fil |     2,2 | 58486.149103 | 1.41291034 |    60.0 |      680 |   4 | closed |                               2H | 2019-01-03 |      21 |     0
+b190103_0022.fits | pixelflat,illumflat,trace | 229.99999999999997 |               45.0 | DOME FLAT | 600/4000 | WOD1.fil |     2,2 | 58486.150336 | 1.41291034 |    60.0 |      680 |   4 | closed |                               2H | 2019-01-03 |      22 |     0
+b190103_0023.fits | pixelflat,illumflat,trace | 229.99999999999997 |               45.0 | DOME FLAT | 600/4000 | WOD1.fil |     2,2 | 58486.151458 | 1.41291034 |    60.0 |      680 |   4 | closed |                               2H | 2019-01-03 |      23 |     0
+b190103_0051.fits |                   science | 150.60120833333332 | 2.0376388888888886 |      WOD1 | 600/4000 | WOD1.fil |     2,2 | 58486.449513 | 1.39800405 |  1800.0 |      680 |   4 |   open |                              off | 2019-01-03 |      51 |     0
+b190103_0084.fits |                      bias | 190.46566666666664 | 17.519555555555556 |   feige67 | 400/3400 | long_1.5 |     2,2 | 58486.722532 | 1.04196705 |    15.0 |      560 |   4 | closed |                              off | 2019-01-03 |      84 |     0
 data end
-
 

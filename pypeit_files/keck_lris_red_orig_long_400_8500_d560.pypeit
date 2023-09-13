@@ -1,0 +1,31 @@
+# Auto-generated PypeIt input file using PypeIt version: 1.13.1.dev659+g13e756d71
+# UTC 2023-08-26T03:10:46.815
+
+# User-defined execution parameters
+[rdx]
+    spectrograph = keck_lris_red_orig
+[baseprocess]
+    use_biasimage = False
+
+# Setup
+setup read
+Setup A:
+  amp: '2'
+  binning: 1,1
+  cenwave: 8724.39160156
+  decker: long_1.0
+  dichroic: '560'
+  dispangle: 24.33295631
+  dispname: 400/8500
+setup end
+
+# Data block 
+data read
+ path PypeIt-development-suite/RAW_DATA/keck_lris_red_orig/long_400_8500_d560
+              filename |                 frametype |                ra |                 dec |   target | dispname |   decker | binning |          mjd |    airmass | exptime | dichroic | amp |   dispangle |       cenwave |  hatch |          lampstat01 |    dateobs | frameno | calib
+LR.20051030.56990.fits |                  arc,tilt | 155.9972083333333 |              -3.202 | SN2005bf | 400/8500 | long_1.0 |     1,1 | 53673.659612 |  1.3320598 |     1.0 |      560 |   2 | 24.33295631 | 8724.39160156 | closed | HgI NeI ArI CdI ZnI | 2005-10-30 |     102 |     0
+LR.20051030.56855.fits | pixelflat,illumflat,trace | 155.9972083333333 |              -3.202 | SN2005bf | 400/8500 | long_1.0 |     1,1 |  53673.65805 | 1.34155926 |     4.0 |      560 |   2 | 24.33295631 | 8724.39160156 | closed |             Halogen | 2005-10-30 |     101 |     0
+#LR.20051030.55073.fits |                   science | 155.9959583333333 | -3.2013611111111113 | SN2005bf | 400/8500 | long_1.0 |     1,1 | 53673.637421 | 1.49593263 |   900.0 |      560 |   2 | 24.33295631 | 8724.39160156 |   open |                 off | 2005-10-30 |      98 |     0
+LR.20051030.56068.fits |                   science | 155.9972083333333 |              -3.202 | SN2005bf | 400/8500 | long_1.0 |     1,1 | 53673.648941 | 1.40265464 |   600.0 |      560 |   2 | 24.33295631 | 8724.39160156 |   open |                 off | 2005-10-30 |      99 |     0
+data end
+
