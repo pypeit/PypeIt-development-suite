@@ -29,7 +29,7 @@ spec:
           value: http://rook-ceph-rgw-nautiluss3.rook
         - name: S3_ENDPOINT
           value: rook-ceph-rgw-nautiluss3.rook
-        image: localhost:30081/profxj/pypeit_v1:latest
+        image: docker.io/profxj/pypeit_v1@sha256:a2f91f18fb33119a7f08d804dd3259118e0e934612c3868df58f434e3d980740
         imagePullPolicy: Always
         name: container
         resources:

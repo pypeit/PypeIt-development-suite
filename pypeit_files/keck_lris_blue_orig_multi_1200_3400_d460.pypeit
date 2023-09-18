@@ -1,0 +1,31 @@
+# Auto-generated PypeIt input file using PypeIt version: 1.13.1.dev659+g13e756d71
+# UTC 2023-08-25T23:03:49.930
+
+# User-defined execution parameters
+[rdx]
+    spectrograph = keck_lris_blue_orig
+    detnum = 1
+[baseprocess]
+    use_biasimage = False
+
+# Setup
+setup read
+Setup A:
+  amp: '4'
+  binning: 2,2
+  decker: 0938+531
+  dichroic: '460'
+  dispname: 1200/3400
+setup end
+
+# Data block 
+data read
+ path PypeIt-development-suite/RAW_DATA/keck_lris_blue_orig/multi_1200_3400_d460
+         filename |                 frametype |                 ra |                dec |         target |  dispname |   decker | binning |          mjd |    airmass | exptime | dichroic | amp |  hatch |          lampstat01 |    dateobs | frameno | calib
+lblue0028.fits.gz |                  arc,tilt | 229.99999999999997 |               45.0 |                | 1200/3400 | 0938+531 |     2,2 | 54594.116596 | 1.41309236 |     1.0 |      460 |   4 | closed | HgI NeI ArI CdI ZnI | 2008-05-08 |      28 |     0
+lblue0059.fits.gz | pixelflat,illumflat,trace | 123.28974999999997 | 10.246833333333333 |  MASK_0813+101 | 1200/3400 | 0938+531 |     2,2 |  54594.21979 | 1.12593252 |    12.0 |      460 |   4 |   open |                  on | 2008-05-08 |      59 |     0
+lblue0060.fits.gz | pixelflat,illumflat,trace | 123.28974999999997 | 10.246833333333333 |  MASK_0813+101 | 1200/3400 | 0938+531 |     2,2 | 54594.220342 |  1.1277709 |    12.0 |      460 |   4 |   open |                  on | 2008-05-08 |      60 |     0
+lblue0084.fits.gz |                   science | 144.54445833333332 |  53.31444444444444 | MASK_0938+5317 | 1200/3400 | 0938+531 |     2,2 | 54594.292839 | 1.33299188 |   900.0 |      460 |   4 |   open |                 off | 2008-05-08 |      84 |     0
+lblue0085.fits.gz |                   science | 144.54445833333332 |  53.31444444444444 | MASK_0938+5317 | 1200/3400 | 0938+531 |     2,2 | 54594.303826 | 1.37226431 |   900.0 |      460 |   4 |   open |                 off | 2008-05-08 |      85 |     0
+data end
+

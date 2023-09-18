@@ -189,7 +189,7 @@ def test_collate_1d(tmp_path, monkeypatch, redux_out):
                               'Science')
 
     # Build up arguments for testing command line parsing
-    args = ['--dry_run', '--ignore_flux', '--flux', '--outdir', '/outdir2', '--match', 'ra/dec', '--exclude_slit_bm', 'BOXSLIT', '--exclude_serendip', '--wv_rms_thresh', '0.2', '--refframe', 'heliocentric']
+    args = ['--dry_run', '--chk_version', '--ignore_flux', '--flux', '--outdir', '/outdir2', '--match', 'ra/dec', '--exclude_slit_bm', 'BOXSLIT', '--exclude_serendip', '--wv_rms_thresh', '0.2', '--refframe', 'heliocentric']
     spec1d_file = os.path.join(kastb_dir, 'spec1d_b27*fits')
     spec1d_args = ['--spec1d_files', spec1d_file]
     tol_args = ['--tolerance', '0.03d']
@@ -209,6 +209,7 @@ def test_collate_1d(tmp_path, monkeypatch, redux_out):
         print("[collate1d]", file=f)
         print("dry_run = False", file=f)
         print("flux = False", file=f)
+        print("chk_version = False", file=f)
         print("outdir = /outdir", file=f)
         print("ignore_flux = False", file=f)
         print("tolerance = 4.0", file=f)
@@ -251,6 +252,7 @@ def test_collate_1d(tmp_path, monkeypatch, redux_out):
     parsed_args = scripts.collate_1d.Collate1D.parse_args(args + tol_args + spec1d_args)
     params, spectrograph, expanded_spec1d_files = scripts.collate_1d.build_parameters(parsed_args)
     assert params['collate1d']['dry_run'] is True
+    assert params['collate1d']['chk_version'] is True
     assert params['collate1d']['outdir'] == '/outdir2'
     assert params['collate1d']['match_using'] == 'ra/dec'
     assert params['collate1d']['tolerance'] == '0.03d'
@@ -266,6 +268,7 @@ def test_collate_1d(tmp_path, monkeypatch, redux_out):
     parsed_args = scripts.collate_1d.Collate1D.parse_args([config_file_full])
     params, spectrograph, expanded_spec1d_files = scripts.collate_1d.build_parameters(parsed_args)
     assert params['collate1d']['dry_run'] is False
+    assert params['collate1d']['chk_version'] is False
     assert params['collate1d']['outdir'] == '/outdir'
     assert params['collate1d']['ignore_flux'] == False
     assert params['collate1d']['flux'] == False
@@ -391,15 +394,19 @@ def test_parse_slits(redux_out):
 def test_setup_coadd2d(redux_out):
 
     # Set the pypeit file
-    _redux_out = Path(redux_out).resolve() / 'gemini_gnirs' / '32_SB_SXD'
-    pypeit_file = _redux_out / 'gemini_gnirs_32_sb_sxd.pypeit'
+    _redux_out = Path(redux_out).resolve() / 'gemini_gnirs_echelle' / '32_SB_SXD'
+    pypeit_file = _redux_out / 'gemini_gnirs_echelle_32_sb_sxd.pypeit'
+
+    # move to the redux_out directory
+    cdir = os.getcwd()
+    os.chdir(_redux_out)
 
     # Run the setup
     scripts.setup_coadd2d.SetupCoAdd2D.main(
             scripts.setup_coadd2d.SetupCoAdd2D.parse_args(['-f', str(pypeit_file)]))
 
     # Check the number of files
-    coadd_files = sorted(_redux_out.glob('gemini_gnirs_32_sb_sxd*.coadd2d'))
+    coadd_files = sorted(_redux_out.glob('gemini_gnirs_echelle_32_sb_sxd*.coadd2d'))
     assert len(coadd_files) == 2, 'Wrong number of coadd2d files'
     # Check the object names
     assert sorted([c.name.split('.')[0].split('_')[-1] for c in coadd_files]) \
@@ -420,7 +427,7 @@ def test_setup_coadd2d(redux_out):
                     ['-f', str(pypeit_file), '--offsets', 'maskdef_offsets', '--weights', 'uniform']))
 
     # Check the number of files
-    coadd_files = sorted(_redux_out.glob('gemini_gnirs_32_sb_sxd*.coadd2d'))
+    coadd_files = sorted(_redux_out.glob('gemini_gnirs_echelle_32_sb_sxd*.coadd2d'))
     # Try to read one of the files
     coadd = inputfiles.Coadd2DFile.from_file(str(coadd_files[0]))
 
@@ -430,6 +437,69 @@ def test_setup_coadd2d(redux_out):
     # Clean-up
     for f in coadd_files:
         f.unlink()
+
+    # Run the setup without the pypeit file and using the spec2d files
+    # get Science directory
+    sci_dir = _redux_out / 'Science'
+    # Run the setup
+    scripts.setup_coadd2d.SetupCoAdd2D.main(
+            scripts.setup_coadd2d.SetupCoAdd2D.parse_args(['-d', str(sci_dir), '--spat_toler', '10']))
+
+    # Check the number of files
+    coadd_files = sorted(Path().glob('gemini_gnirs_*.coadd2d'))
+    assert len(coadd_files) == 2, 'Wrong number of coadd2d files'
+    # Try to read one of the files
+    coadd = inputfiles.Coadd2DFile.from_file(str(coadd_files[0]))
+
+    # Check the offsets
+    assert coadd.config['coadd2d']['spat_toler'] == '10', 'Wrong value for spat_tol'
+    # Clean-up
+    for f in coadd_files:
+        f.unlink()
+
+    # test another dataset and the only_slits and exclude_slits parameters
+
+    # Set the pypeit file
+    _redux_out = Path(redux_out).resolve() / 'keck_mosfire' / 'mask1_K_with_continuum'
+    pypeit_file = _redux_out / 'keck_mosfire_mask1_k_with_continuum.pypeit'
+
+    # move to the redux_out directory
+    os.chdir(_redux_out)
+
+    # Run the setup
+    scripts.setup_coadd2d.SetupCoAdd2D.main(
+            scripts.setup_coadd2d.SetupCoAdd2D.parse_args(['-f', str(pypeit_file), '--only_slits', 'DET01:306', '--exclude_slits', 'DET01:766,DET01:877']))
+
+    # Check the number of files
+    coadd_files = sorted(_redux_out.glob('keck_mosfire_mask1_k_with_continuum*.coadd2d'))
+    assert len(coadd_files) == 1, 'There should be only one coadd2d file'
+    # Try to read the file
+    coadd = inputfiles.Coadd2DFile.from_file(str(coadd_files[0]))
+    # get par
+    _, par, _ = coadd.get_pypeitpar()
+    # Check only_slits
+    assert par['coadd2d']['only_slits'] == ['DET01:306'], 'Wrong value for only_slits'
+    assert par['coadd2d']['exclude_slits'] == None, 'exclude_slits should be None'
+
+    # re-run with only --exclude_slits
+        # Run the setup
+    scripts.setup_coadd2d.SetupCoAdd2D.main(
+            scripts.setup_coadd2d.SetupCoAdd2D.parse_args(['-f', str(pypeit_file), '--exclude_slits', 'DET01:766,DET01:877']))
+
+    # Check the number of files
+    coadd_files = sorted(_redux_out.glob('keck_mosfire_mask1_k_with_continuum*.coadd2d'))
+    coadd = inputfiles.Coadd2DFile.from_file(str(coadd_files[0]))
+    # get par
+    _, par, _ = coadd.get_pypeitpar()
+    # Check exclude_slits
+    assert par['coadd2d']['exclude_slits'] == ['DET01:766,DET01:877'], 'Wrong value for exclude_slits'
+
+    # Clean-up
+    for f in coadd_files:
+        f.unlink()
+
+    # Go back
+    os.chdir(cdir)
 
 # TODO: Include tests for coadd2d, sensfunc
 

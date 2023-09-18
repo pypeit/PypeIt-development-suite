@@ -35,7 +35,7 @@ def fitstbl():
     fitstbl['framebit'][0] = fitstbl.type_bitmask.turn_off(fitstbl['framebit'][0], flag='bias')
     fitstbl['filename'][1] = 'b1.fits.gz'
     for ii in range(2,5):
-        fitstbl['filename'][ii] = 'b{0}.fits.gz'.format(ii)
+        fitstbl['filename'][ii] = 'b{0}.fits.gz'.format(ii+1)
     fitstbl['filename'][5] = 'b27.fits.gz'
 
     return fitstbl
