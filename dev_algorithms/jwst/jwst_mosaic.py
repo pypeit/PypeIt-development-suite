@@ -87,6 +87,8 @@ disperser = 'PRISM_02073'
 # Targets
 target ='J0411'
 #target = 'J0313'
+#target = 'J0252'
+#target = 'J0313'
 #target = 'J1007'
 # Dispersers
 disperser = '140H'
@@ -96,10 +98,10 @@ disperser = '140H'
 detectors = ['nrs1', 'nrs2']
 exp_list = []
 
-bkg_redux = False
+bkg_redux = True
 runflag = True
-#mode = 'MSA'
-mode ='FS'
+mode = 'MSA'
+#mode ='FS'
 #slit = 'S200A1'
 
 
@@ -112,7 +114,7 @@ mode ='FS'
 reduce_sources = None
 #reduce_slits = None
 reduce_slits = ['S200A1']
-show = True
+show = False
 
 
 # If bkg_redux is False, the code will model the sky and the object profile and perform optimal extraction.
@@ -123,20 +125,25 @@ for detname in detectors:
         ## Prorgram for Slit Loss Characterization for MSA shutters
         # PRISM data
         rawpath_level2 = '/Users/joe/jwst_redux/Raw/NIRSPEC_MSA/NIRSPEC_2073/level_12/02073/'
-        redux_dir = '/Users/joe/jwst_redux/redux/NIRSPEC_MSA/NIRSPEC_PRISM/02073_CLEAR_PRISM/calwebb'
+        redux_dir = os.path.join('/Users/joe/jwst_redux/redux/NIRSPEC_MSA/NIRSPEC_PRISM/02073_CLEAR_PRISM', target)
         output_dir = os.path.join(redux_dir, 'output')
         pypeit_output_dir = os.path.join(redux_dir, 'pypeit')
 
-        # NIRSPEC 3-point dither
-        # dither center
-        scifile1 = os.path.join(rawpath_level2, 'jw02073008001_03101_00001_' + detname + '_rate.fits')
-        scifile2 = os.path.join(rawpath_level2, 'jw02073008001_03101_00002_' + detname + '_rate.fits')
-        scifile3 = os.path.join(rawpath_level2, 'jw02073008001_03101_00003_' + detname + '_rate.fits')
+        #J0252
+        if target == 'J0252':
+            scifile1 = os.path.join(rawpath_level2, 'jw02073007001_03101_00001_' + detname + '_rate.fits')
+            scifile2 = os.path.join(rawpath_level2, 'jw02073007001_03101_00002_' + detname + '_rate.fits')
+            scifile3 = os.path.join(rawpath_level2, 'jw02073007001_03101_00003_' + detname + '_rate.fits')
+        elif target == 'J1007':
+            # J1007
+            # NIRSPEC 3-point dither
+            scifile1 = os.path.join(rawpath_level2, 'jw02073008001_03101_00001_' + detname + '_rate.fits')
+            scifile2 = os.path.join(rawpath_level2, 'jw02073008001_03101_00002_' + detname + '_rate.fits')
+            scifile3 = os.path.join(rawpath_level2, 'jw02073008001_03101_00003_' + detname + '_rate.fits')
 
-        #scifile1 = os.path.join(rawpath_level2, 'jw02073006001_03101_00001_' + detname + '_rate.fits')
-        #scifile2 = os.path.join(rawpath_level2, 'jw02073006001_03101_00002_' + detname + '_rate.fits')
-        #scifile3 = os.path.join(rawpath_level2, 'jw02073006001_03101_00003_' + detname + '_rate.fits')
-
+            #scifile1 = os.path.join(rawpath_level2, 'jw02073006001_03101_00001_' + detname + '_rate.fits')
+            #scifile2 = os.path.join(rawpath_level2, 'jw02073006001_03101_00002_' + detname + '_rate.fits')
+            #scifile3 = os.path.join(rawpath_level2, 'jw02073006001_03101_00003_' + detname + '_rate.fits')
 
     elif 'PRISM_02756' == disperser:
         ## Prorgram for Slit Loss Characterization for MSA shutters
@@ -345,7 +352,9 @@ scipath = os.path.join(pypeit_output_dir, 'Science')
 if not os.path.isdir(scipath):
     msgs.info('Creating directory for Science output: {0}'.format(scipath))
     os.makedirs(scipath)
-
+if not os.path.isdir(output_dir):
+    msgs.info('Creating directory for calwebb output: {0}'.format(output_dir))
+    os.makedirs(output_dir)
 
 # Some pypeit things
 spectrograph = load_spectrograph('jwst_nirspec')
@@ -378,8 +387,8 @@ param_dict = {
     'bkg_subtract': {'skip': True},
     'imprint_subtract': {'save_results': True}, # TODO Check up on whether imprint subtraction is being done by us???
     'master_background_mos': {'skip': True},
-    #'srctype': {'source_type': 'EXTENDED'},
-    'srctype': {'source_type': 'POINT'},
+    # Default to setting the source type to extended for MSA data and point for FS data. This impacts flux calibration.
+    'srctype': {'source_type': 'POINT'} if 'FS' in mode else {'source_type': 'EXTENDED'},
     # 'flat_field': {'skip': True},
     'resample_spec': {'skip': True},
     'extract_1d': {'skip': True},
@@ -473,7 +482,7 @@ for idet in range(ndetectors):
 dither_offsets_pixels = dither_offsets_pixels[:,0,None] - dither_offsets_pixels
 print(dither_offsets_pixels)
 
-
+print('Reading in calwebb outputs. This may take a while...')
 
 # TODO Figure out why this is so damn slow! I suspect it is calwebb1
 for iexp in range(nexp):
