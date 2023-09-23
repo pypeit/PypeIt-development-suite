@@ -9,7 +9,7 @@ from IPython import embed
 
 # set environment variables
 os.environ['CRDS_PATH'] = '/Users/joe/crds_cache/jwst_pub'
-os.environ['CRDS_SERVER_URL'] = 'https://jwst-crds-pub.stsci.edu'
+os.environ['CRDS_SERVER_URL'] = 'https://jwst-crds.stsci.edu/'
 from matplotlib import pyplot as plt
 from astropy.io import fits
 from astropy import stats
@@ -85,12 +85,13 @@ disperser = 'PRISM_02073'
 # disperser='PRISM_FS'
 
 # Targets
-target = 'J0313'
+target ='J0411'
+#target = 'J0313'
 #target = 'J1007'
 # Dispersers
-#disperser = '140H'
+disperser = '140H'
 #disperser = '235H'
-disperser = '395H'
+#disperser = '395H'
 
 detectors = ['nrs1', 'nrs2']
 exp_list = []
@@ -100,18 +101,18 @@ runflag = True
 #mode = 'MSA'
 mode ='FS'
 #slit = 'S200A1'
-#islit = 'S200A2'
+
 
 #islit = '37'
 #reduce_sources = ['2756_10025']
 #reduce_sources = ['2756_202']
-reduce_sources = ['2073_4562']
+#reduce_sources = ['2073_4562']
 #reduce_sources = ['2073_8731']
 #reduce_slits = None
-#reduce_sources = None
+reduce_sources = None
 #reduce_slits = None
 reduce_slits = ['S200A1']
-show = False
+show = True
 
 
 # If bkg_redux is False, the code will model the sky and the object profile and perform optimal extraction.
@@ -185,6 +186,31 @@ for detname in detectors:
         scifile1 = os.path.join(rawpath_level2, 'jw02072002001_05101_00001_' + detname + '_rate.fits')
         scifile2 = os.path.join(rawpath_level2, 'jw02072002001_05101_00002_' + detname + '_rate.fits')
         scifile3 = os.path.join(rawpath_level2, 'jw02072002001_05101_00003_' + detname + '_rate.fits')
+    elif 'J0411' == target:
+        rawpath_level2 = '/Users/joe/jwst_redux/Raw/NIRSPEC_FS/1222/level_12/01222/'
+        output_dir = '/Users/joe/jwst_redux/redux/NIRSPEC_FS/J0411/calwebb/output'
+        pypeit_output_dir = '/Users/joe/jwst_redux/redux/NIRSPEC_FS/J0411/calwebb/pypeit'
+        if disperser == '235H':
+            # NIRSPEC 3-point dither dither center
+            if reduce_slits[0] == 'S200A1':
+                scifile1 = os.path.join(rawpath_level2, 'jw01222002001_03108_00001_' + detname + '_rate.fits')
+                scifile2 = os.path.join(rawpath_level2, 'jw01222002001_03108_00002_' + detname + '_rate.fits')
+                scifile3 = os.path.join(rawpath_level2, 'jw01222002001_03108_00003_' + detname + '_rate.fits')
+            elif reduce_slits[0] == 'S200A2':
+                scifile1 = os.path.join(rawpath_level2, 'jw01222002001_03106_00001_' + detname + '_rate.fits')
+                scifile2 = os.path.join(rawpath_level2, 'jw01222002001_03106_00002_' + detname + '_rate.fits')
+                scifile3 = os.path.join(rawpath_level2, 'jw01222002001_03106_00003_' + detname + '_rate.fits')
+        elif disperser == '140H':
+            # NIRSPEC 3-point dither dither center
+            if reduce_slits[0] == 'S200A1':
+                scifile1 = os.path.join(rawpath_level2, 'jw01222002001_03102_00001_' + detname + '_rate.fits')
+                scifile2 = os.path.join(rawpath_level2, 'jw01222002001_03102_00002_' + detname + '_rate.fits')
+                scifile3 = os.path.join(rawpath_level2, 'jw01222002001_03102_00003_' + detname + '_rate.fits')
+            elif reduce_slits[0] == 'S200A2':
+                scifile1 = os.path.join(rawpath_level2, 'jw01222002001_03104_00001_' + detname + '_rate.fits')
+                scifile2 = os.path.join(rawpath_level2, 'jw01222002001_03104_00002_' + detname + '_rate.fits')
+                scifile3 = os.path.join(rawpath_level2, 'jw01222002001_03104_00003_' + detname + '_rate.fits')
+
     elif 'J0313' == target:
         rawpath_level2 = '/Users/joe/jwst_redux/Raw/NIRSPEC_FS/1764/level_12/01764/'
         output_dir = '/Users/joe/jwst_redux/redux/NIRSPEC_FS/J0313/calwebb/output'
