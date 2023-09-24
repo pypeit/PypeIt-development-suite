@@ -80,7 +80,7 @@ DO_NOT_USE = datamodels.dqflags.pixel['DO_NOT_USE']
 # disperser = 'G235M'
 #disperser='PRISM_01133'
 #disperser = 'PRISM_02756'
-disperser = 'PRISM_02073'
+#disperser = 'PRISM_02073'
 # disperser='PRISM_01117'
 # disperser='PRISM_FS'
 
@@ -98,10 +98,10 @@ disperser = '140H'
 detectors = ['nrs1', 'nrs2']
 exp_list = []
 
-bkg_redux = True
-runflag = True
-mode = 'MSA'
-#mode ='FS'
+bkg_redux = False
+runflag = False
+#mode = 'MSA'
+mode ='FS'
 #slit = 'S200A1'
 
 
@@ -576,6 +576,7 @@ for ii, (islit, isource) in enumerate(gd_slits_sources):
     # in calwebb. So for now, we just use the first exposure as the reference exposure for the calibrations.
     CalibrationsNRS1 = NIRSpecSlitCalibrations(det_container_list[0], cal_data[0, iexp_ref], flat_data[0, iexp_ref], islit)
     CalibrationsNRS2 = NIRSpecSlitCalibrations(det_container_list[1], cal_data[1, iexp_ref], flat_data[1, iexp_ref], islit)
+    embed()
     for iexp in range(nexp):
         # Container for all the Spec2DObj, different spec2dobj and specobjs for each slit
         all_spec2d = spec2dobj.AllSpec2DObj()
