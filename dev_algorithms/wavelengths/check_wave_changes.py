@@ -8,11 +8,12 @@ import argparse
 from IPython import embed
 
 
-def load_all_wave_info(redux):
+def load_all_wave_info(redux, input_spec=None):
 	"""
 	Load all wavecalib files and return a table with all the diagnostic info
 	Args:
 		redux (str): path to the redux folder
+		input_spec (str): name of the spectrograph to be analyzed
 
 	Returns:
 		`astropy.table.Table`_: table with all the diagnostic info for all
@@ -20,7 +21,7 @@ def load_all_wave_info(redux):
 
 	"""
 	redux_path = Path(redux).resolve()
-	spectrographs = sorted(redux_path.glob('*'))
+	spectrographs = sorted(redux_path.glob('*')) if input_spec is None else sorted(redux_path.glob(f'{input_spec}'))
 	wtable = Table()
 	# loop over spectrographs
 	for s in spectrographs:
@@ -57,23 +58,23 @@ def get_values_for_histo(wtable):
 	"""
 
 	# RMS
-	rms_diff = wtable['RMS_2'] - wtable['RMS_1']
+	rms_diff = wtable['RMS_2'].data.data - wtable['RMS_1'].data.data
 	rms_bins = 50 if np.all(rms_diff == 0) else np.arange(rms_diff.min(), rms_diff.max(), 0.05)
 	rms_xlabels = r'$\Delta$ RMS pixel (new - old)'
 	# Nline
-	nlin_diff = wtable['Nlin_2'] - wtable['Nlin_1']
+	nlin_diff = wtable['Nlin_2'].data.data - wtable['Nlin_1'].data.data
 	nlin_bins = 50 if np.all(nlin_diff == 0) else np.arange(nlin_diff.min(), nlin_diff.max(), 5)
 	nlin_xlabels = r'$\Delta$ N lines (new - old)'
 	# dWave
-	dwave_diff = wtable['dWave_2'] - wtable['dWave_1']
+	dwave_diff = wtable['dWave_2'].data.data - wtable['dWave_1'].data.data
 	dwave_bins = 50 if np.all(dwave_diff == 0) else np.arange(dwave_diff.min(), dwave_diff.max(), 0.05)
 	dwave_xlabels = r'$\Delta$ dWave Ang (new - old)'
 	# Wave_cen
-	wavecen_diff = wtable['Wave_cen_2'] - wtable['Wave_cen_1']
+	wavecen_diff = wtable['Wave_cen_2'].data.data - wtable['Wave_cen_1'].data.data
 	wavecen_bins = 50 if np.all(wavecen_diff == 0) else np.arange(wavecen_diff.min(), wavecen_diff.max(), 1.)
 	wavecen_xlabels = r'$\Delta$ Wave_cen Ang (new - old)'
 	# measured_fwhm
-	fwhm_diff = wtable['mesured_fwhm_2'] - wtable['mesured_fwhm_1']
+	fwhm_diff = wtable['mesured_fwhm_2'].data.data - wtable['mesured_fwhm_1'].data.data
 	fwhm_bins = 50 if np.all(fwhm_diff == 0) else np.arange(fwhm_diff.min(), fwhm_diff.max(), 0.5)
 	fwhm_xlabels = r'$\Delta$ measured_fwhm pix (new - old)'
 
@@ -113,8 +114,10 @@ def get_values_for_plt(wtable):
 	fwhm_ylabels = r'NEW measured_fwhm pix'
 
 	# put everything in lists
-	old_values = [wtable['RMS_1'], wtable['Nlin_1'], wtable['dWave_1'], wtable['Wave_cen_1'], wtable['mesured_fwhm_1']]
-	new_values = [wtable['RMS_2'], wtable['Nlin_2'], wtable['dWave_2'], wtable['Wave_cen_2'], wtable['mesured_fwhm_2']]
+	old_values = [wtable['RMS_1'].data.data, wtable['Nlin_1'].data.data, wtable['dWave_1'].data.data,
+				  wtable['Wave_cen_1'].data.data, wtable['mesured_fwhm_1'].data.data]
+	new_values = [wtable['RMS_2'].data.data, wtable['Nlin_2'].data.data, wtable['dWave_2'].data.data,
+				  wtable['Wave_cen_2'].data.data, wtable['mesured_fwhm_2'].data.data]
 	xlabels = [rms_xlabels, nlin_xlabels, dwave_xlabels, wavecen_xlabels, fwhm_xlabels]
 	ylabels = [rms_ylabels, nlin_ylabels, dwave_ylabels, wavecen_ylabels, fwhm_ylabels]
 
@@ -125,6 +128,7 @@ def get_parser():
 	parser = argparse.ArgumentParser(description='Compare wavelength calibration diagnostics between two PypeIt runs')
 	parser.add_argument('old_redux', type=str, help='Path to the old redux folder')
 	parser.add_argument('new_redux', type=str, help='Path to the new redux folder')
+	parser.add_argument('--spec', default=None, type=str, help='Name of the spectrograph to be compared')
 	parser.add_argument('--print_tab', default=False, help='Print combined table in the terminal', action='store_true')
 	parser.add_argument('--embed', default=False, action='store_true')
 	return parser.parse_args()
@@ -141,8 +145,8 @@ def main(args):
 
 	"""
 
-	wtable_old = load_all_wave_info(args.old_redux)
-	wtable_new = load_all_wave_info(args.new_redux)
+	wtable_old = load_all_wave_info(args.old_redux, input_spec=args.spec)
+	wtable_new = load_all_wave_info(args.new_redux, input_spec=args.spec)
 
 	combined_wtable = join(wtable_old, wtable_new, join_type='left', keys=['file', 'SpatID'])
 	if args.print_tab:
@@ -165,12 +169,14 @@ def main(args):
 		ax = plt.subplot(gs[ii // ncols, ii % ncols])
 		ax.minorticks_on()
 		ax.tick_params(axis='both', which='both', direction='in', top=True, right=True)
-		y, x, _ = ax.hist(values_histo[ii], bins=bins_histo[ii], histtype='stepfilled', align='left')
-		ax.axvline(0, color='k', linestyle='--', lw=1.5)
-		ax.set_xlabel(xlabels_histo[ii])
-		ax.set_ylabel('N')
-		ax.set_ylim(0, y.max() * 0.9)
-		# ax.set_xlim(values_histo[ii].min(), values_histo[ii].max())
+		try:
+			y, x, _ = ax.hist(values_histo[ii], bins=bins_histo[ii], histtype='stepfilled', align='left')
+			ax.axvline(0, color='k', linestyle='--', lw=1.5)
+			ax.set_xlabel(xlabels_histo[ii])
+			ax.set_ylabel('N')
+			ax.set_ylim(0, y.max() * 0.9)
+		except:
+			continue
 
 	fig.tight_layout(pad=1, h_pad=0.0, w_pad=1)
 
