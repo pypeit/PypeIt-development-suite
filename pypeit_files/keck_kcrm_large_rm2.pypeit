@@ -20,7 +20,7 @@ setup end
 
 # Data block 
 data read
- path /Users/joe/python/PypeIt-development-suite/RAW_DATA/keck_kcrm/large_rm2
+ path //Users/joe/kcrm_redux/commissioning/Raw/J2232/
              filename |       frametype |                 ra |               dec |     target | dispname | decker | binning |          mjd | airmass |       exptime |   dispangle |   idname | calpos | calib
   kr230619_00163.fits |           align |  63.99999999999999 |              45.0 | DOME FLATS |      RM2 |  Large |     2,2 | 60114.670076 |    1.41 |      3.100128 | 124.4694901 | CONTBARS | Mirror |  all
   kr230619_00164.fits |           align |  63.99999999999999 |              45.0 | DOME FLATS |      RM2 |  Large |     2,2 | 60114.670395 |    1.41 |      3.100128 | 124.4694901 | CONTBARS | Mirror |  all

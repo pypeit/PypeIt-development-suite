@@ -99,7 +99,7 @@ detectors = ['nrs1', 'nrs2']
 exp_list = []
 
 bkg_redux = False
-runflag = False
+runflag = True
 #mode = 'MSA'
 mode ='FS'
 #slit = 'S200A1'
