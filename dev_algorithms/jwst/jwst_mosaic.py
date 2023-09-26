@@ -91,7 +91,7 @@ target ='J0411'
 #target = 'J0313'
 #target = 'J1007'
 # Dispersers
-disperser = '140H'
+disperser = '140H_bogus_F100LP'
 #disperser = '235H'
 #disperser = '395H'
 
@@ -217,6 +217,19 @@ for detname in detectors:
                 scifile1 = os.path.join(rawpath_level2, 'jw01222002001_03104_00001_' + detname + '_rate.fits')
                 scifile2 = os.path.join(rawpath_level2, 'jw01222002001_03104_00002_' + detname + '_rate.fits')
                 scifile3 = os.path.join(rawpath_level2, 'jw01222002001_03104_00003_' + detname + '_rate.fits')
+        elif disperser == '140H_bogus_F100LP':
+            rawpath_level2 = '/Users/joe/jwst_redux/Raw/NIRSPEC_FS/1222/level_12/01222_bogus_F100LP/'
+            # NIRSPEC 3-point dither dither center
+            if reduce_slits[0] == 'S200A1':
+                scifile1 = os.path.join(rawpath_level2, 'bogus_jw01222002001_03102_00001_' + detname + '_rate.fits')
+                scifile2 = os.path.join(rawpath_level2, 'bogus_jw01222002001_03102_00002_' + detname + '_rate.fits')
+                scifile3 = os.path.join(rawpath_level2, 'bogus_jw01222002001_03102_00003_' + detname + '_rate.fits')
+            elif reduce_slits[0] == 'S200A2':
+                scifile1 = os.path.join(rawpath_level2, 'bogus_jw01222002001_03104_00001_' + detname + '_rate.fits')
+                scifile2 = os.path.join(rawpath_level2, 'bogus_jw01222002001_03104_00002_' + detname + '_rate.fits')
+                scifile3 = os.path.join(rawpath_level2, 'bogus_jw01222002001_03104_00003_' + detname + '_rate.fits')
+
+
 
     elif 'J0313' == target:
         rawpath_level2 = '/Users/joe/jwst_redux/Raw/NIRSPEC_FS/1764/level_12/01764/'
@@ -576,7 +589,6 @@ for ii, (islit, isource) in enumerate(gd_slits_sources):
     # in calwebb. So for now, we just use the first exposure as the reference exposure for the calibrations.
     CalibrationsNRS1 = NIRSpecSlitCalibrations(det_container_list[0], cal_data[0, iexp_ref], flat_data[0, iexp_ref], islit)
     CalibrationsNRS2 = NIRSpecSlitCalibrations(det_container_list[1], cal_data[1, iexp_ref], flat_data[1, iexp_ref], islit)
-    embed()
     for iexp in range(nexp):
         # Container for all the Spec2DObj, different spec2dobj and specobjs for each slit
         all_spec2d = spec2dobj.AllSpec2DObj()
