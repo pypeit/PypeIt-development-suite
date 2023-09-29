@@ -8,7 +8,7 @@ from astropy.stats import sigma_clipped_stats
 from IPython import embed
 
 # set environment variables
-os.environ['CRDS_PATH'] = '/Users/joe/crds_cache/jwst_pub'
+os.environ['CRDS_PATH'] = '/Users/joe/crds_cache/'
 os.environ['CRDS_SERVER_URL'] = 'https://jwst-crds.stsci.edu/'
 from matplotlib import pyplot as plt
 from astropy.io import fits
@@ -91,7 +91,8 @@ target ='J0411'
 #target = 'J0313'
 #target = 'J1007'
 # Dispersers
-disperser = '140H_bogus_F100LP'
+#disperser = '140H_bogus_F100LP'
+disperser = '140H'
 #disperser = '235H'
 #disperser = '395H'
 
@@ -99,10 +100,10 @@ detectors = ['nrs1', 'nrs2']
 exp_list = []
 
 bkg_redux = False
-runflag = True
+runflag = False
 #mode = 'MSA'
 mode ='FS'
-#slit = 'S200A1'
+#slit = 'S200A2'
 
 
 #islit = '37'
@@ -218,16 +219,16 @@ for detname in detectors:
                 scifile2 = os.path.join(rawpath_level2, 'jw01222002001_03104_00002_' + detname + '_rate.fits')
                 scifile3 = os.path.join(rawpath_level2, 'jw01222002001_03104_00003_' + detname + '_rate.fits')
         elif disperser == '140H_bogus_F100LP':
-            rawpath_level2 = '/Users/joe/jwst_redux/Raw/NIRSPEC_FS/1222/level_12/01222_bogus_F100LP/'
             # NIRSPEC 3-point dither dither center
+            bogus_prefix = 'bogus_'
             if reduce_slits[0] == 'S200A1':
-                scifile1 = os.path.join(rawpath_level2, 'bogus_jw01222002001_03102_00001_' + detname + '_rate.fits')
-                scifile2 = os.path.join(rawpath_level2, 'bogus_jw01222002001_03102_00002_' + detname + '_rate.fits')
-                scifile3 = os.path.join(rawpath_level2, 'bogus_jw01222002001_03102_00003_' + detname + '_rate.fits')
+                scifile1 = os.path.join(rawpath_level2, bogus_prefix + 'jw01222002001_03102_00001_' + detname + '_rate.fits')
+                scifile2 = os.path.join(rawpath_level2, bogus_prefix + 'jw01222002001_03102_00002_' + detname + '_rate.fits')
+                scifile3 = os.path.join(rawpath_level2, bogus_prefix + 'jw01222002001_03102_00003_' + detname + '_rate.fits')
             elif reduce_slits[0] == 'S200A2':
-                scifile1 = os.path.join(rawpath_level2, 'bogus_jw01222002001_03104_00001_' + detname + '_rate.fits')
-                scifile2 = os.path.join(rawpath_level2, 'bogus_jw01222002001_03104_00002_' + detname + '_rate.fits')
-                scifile3 = os.path.join(rawpath_level2, 'bogus_jw01222002001_03104_00003_' + detname + '_rate.fits')
+                scifile1 = os.path.join(rawpath_level2, bogus_prefix + 'jw01222002001_03104_00001_' + detname + '_rate.fits')
+                scifile2 = os.path.join(rawpath_level2, bogus_prefix + 'jw01222002001_03104_00002_' + detname + '_rate.fits')
+                scifile3 = os.path.join(rawpath_level2, bogus_prefix + 'jw01222002001_03104_00003_' + detname + '_rate.fits')
 
 
 
@@ -428,7 +429,7 @@ for sci1, sci2 in zip(scifiles_1, scifiles_2):
     b2 = os.path.basename(sci2).replace('_rate.fits', '')
     basenames_1.append(b1)
     basenames_2.append(b2)
-    basenames.append(b1.replace('_nrs1', ''))
+    basenames.append(b2.replace('_nrs2', ''))
 
 # Run the spec2 pipeline
 if runflag:
@@ -438,6 +439,7 @@ if runflag:
         #spec2.save_results = True
         #spec2.output_dir = output_dir
         #result = spec2(sci)
+
 
 # Output file names
 intflat_output_files_1 = []
@@ -552,7 +554,7 @@ slit_sources_uni = [(slit, source) for slit, source in zip(slit_names_uni, sourc
 #detector_gap = 180 # 18" divided by 0.1" pixels from the JWST website
 
 # TODO Fix this, currently does not work if target names have - or _
-out_filenames = basenames
+#out_filenames = basenames
 iexp_ref = 0
 if not os.path.isdir(scipath):
     msgs.info('Creating directory for Science output: {0}'.format(scipath))
@@ -587,8 +589,10 @@ for ii, (islit, isource) in enumerate(gd_slits_sources):
     # the frames. It is possible to fix this by using the RA/DEC images provided by calwebb to determine the
     # actual locations on the sky, which would be preferable. However, this does not appear to be working correctly
     # in calwebb. So for now, we just use the first exposure as the reference exposure for the calibrations.
-    CalibrationsNRS1 = NIRSpecSlitCalibrations(det_container_list[0], cal_data[0, iexp_ref], flat_data[0, iexp_ref], islit)
-    CalibrationsNRS2 = NIRSpecSlitCalibrations(det_container_list[1], cal_data[1, iexp_ref], flat_data[1, iexp_ref], islit)
+    CalibrationsNRS1 = NIRSpecSlitCalibrations(det_container_list[0], cal_data[0, iexp_ref], flat_data[0, iexp_ref],
+                                               islit, f070_f100_rescale='bogus' in disperser)
+    CalibrationsNRS2 = NIRSpecSlitCalibrations(det_container_list[1], cal_data[1, iexp_ref], flat_data[1, iexp_ref],
+                                               islit, f070_f100_rescale='bogus' in disperser)
     for iexp in range(nexp):
         # Container for all the Spec2DObj, different spec2dobj and specobjs for each slit
         all_spec2d = spec2dobj.AllSpec2DObj()
@@ -652,7 +656,7 @@ for ii, (islit, isource) in enumerate(gd_slits_sources):
 
         # THE FOLLOWING MIMICS THE CODE IN pypeit.save_exposure()
         base_suffix = 'source_{:s}'.format(isource) if isource is not None else 'slit_{:s}'.format(islit)
-        basename = '{:s}_{:s}'.format(out_filenames[iexp], base_suffix)
+        basename = '{:s}_{:s}'.format(basenames[iexp], base_suffix)
 
         # TODO Populate the header with metadata relevant to this source?
 

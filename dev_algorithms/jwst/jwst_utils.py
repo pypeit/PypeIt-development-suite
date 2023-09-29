@@ -1,8 +1,13 @@
 
 import copy
 import numpy as np
+from scipy import interpolate
 from astropy.io import fits
 from astropy.stats import sigma_clipped_stats
+from astropy.table import Table
+from astropy.io import fits
+from astropy.wcs import WCS
+
 from pypeit.display import display
 from pypeit.core import fitting
 from gwcs import wcstools
@@ -20,8 +25,6 @@ from pypeit.images.mosaic import Mosaic
 from pypeit import slittrace, spec2dobj
 from pypeit import find_objects, extraction
 
-from astropy.io import fits
-from astropy.wcs import WCS
 import grismconf
 
 
@@ -362,12 +365,16 @@ class NIRSpecSlitCalibrations(datamodel.DataContainer):
                  'barshadow': dict(otype=np.ndarray, atype=float, descr='Barshadow image for nrs1'),
                  'photom_conversion': dict(otype=float, descr='Photom conversion in MJy for nrs1'),
                  'calwebb_proc': dict(otype=np.ndarray, atype=float, descr='Calwebb processed image for nrs1'),
+                 'f070_f100_rescale': dict(otype=bool, descr='True if this is actually F070LP data that has been '
+                                                             'reduced with the header cards swithced to '
+                                                             'F100LP to get calwebb to reduce'
+                                                             'the nrs2 data.')
                  }
 
     """DataContainer datamodel."""
 
     internals = ['_indx', 'slit_names', 'intflat_slit_names',]
-    def __init__(self, detector, ms_model, ms_model_flat, slit_name):
+    def __init__(self, detector, ms_model, ms_model_flat, slit_name, f070_f100_rescale=False):
 
         # Instantiate as an empty DataContainer
         super().__init__()
@@ -382,6 +389,7 @@ class NIRSpecSlitCalibrations(datamodel.DataContainer):
         self.on_detector = _indx.size != 0
         self.slit_indx = int(_indx[0]) if self.on_detector else -1
         self.source_name = ms_model.slits[self.slit_indx].source_name
+        self.f070_f100_rescale = f070_f100_rescale
 
         # Assign calibrations
         if self.on_detector:
@@ -389,7 +397,7 @@ class NIRSpecSlitCalibrations(datamodel.DataContainer):
                 self.src_trace_ra, self.src_trace_dec, self.dq_sub, self.ra, self.dec, \
                 self.finitemask, self.waveimg, self.tilts, self.flatfield, self.pathloss, \
                 self.barshadow, self.photom_conversion, self.calwebb_proc = jwst_extract_subimgs(
-                ms_model.slits[self.slit_indx], ms_model_flat.slits[self.slit_indx])
+                ms_model.slits[self.slit_indx], ms_model_flat.slits[self.slit_indx], f070_f100_rescale=f070_f100_rescale)
 
     def show(self):
         # Connect to an open ginga window, or open a new one
@@ -498,6 +506,7 @@ def jwst_mosaic(image_model_tuple, Calibrations_tuple, kludge_err=1.0,
         else:
             spat_lo1, spat_hi1 = 0, sciimg_list[0].shape[1]
             spat_lo2, spat_hi2 = spat_offset, spat_offset + sciimg_list[1].shape[1]
+
 
         nrs1_slice = np.s_[spec_lo1: spec_hi1, spat_lo1: spat_hi1]
         nrs2_slice = np.s_[spec_lo2: spec_hi2, spat_lo2: spat_hi2]
@@ -641,7 +650,7 @@ def jwst_reduce(sciImg, slits, waveimg, tilts, spectrograph, par, show=False, fi
 
 
 
-def jwst_extract_subimgs(final_slit, intflat_slit):
+def jwst_extract_subimgs(final_slit, intflat_slit, f070_f100_rescale=False):
 
     # The various multiplicative calibrations we need.
     slit_name = final_slit.name
@@ -679,6 +688,22 @@ def jwst_extract_subimgs(final_slit, intflat_slit):
     if pathloss.shape == (0,0):
         msgs.warn('No pathloss for slit {0}'.format(slit_name) + ', setting to 1.0')
         pathloss = np.ones_like(flatfield)
+
+    if f070_f100_rescale:
+        msgs.info('Rescaling data taken with F070LP with bogus file headers set to F100LP by transmission ratio F070LP/F100LP')
+        # I'm multiplying this correction into the pathloss at present. Since both pathloss and flatfield act as a sort
+        # of flux calibration I could also multiply into the flat. But since the pathloss is already near unity, it seems
+        # more transparent to multiply this factor here, since this correction is also order unity.
+        # TODO put this file in pypeit/data
+        rescale_table = fits.getdata('/Users/joe/python/PypeIt-development-suite/dev_algorithms/jwst/filters/'
+                                     'nirspec/F070overF100_trans_ratio.fits')
+        wave_rescale = rescale_table['wavelength'] # Units are microns
+        trans_rescale = rescale_table['F070overF100_trans_ratio']
+        # Interpolate onto the wavelength image and multiply into the pathloss
+        trans_rescale_image = interpolate.interp1d(wave_rescale, trans_rescale, kind='cubic', bounds_error=True,
+                                                   fill_value=np.nan)(waveimg)
+        pathloss *= trans_rescale_image
+
 
 
     barshadow = np.array(final_slit.barshadow.T, dtype=float)
