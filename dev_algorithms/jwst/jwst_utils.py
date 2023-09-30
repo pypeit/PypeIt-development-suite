@@ -492,21 +492,39 @@ def jwst_mosaic(image_model_tuple, Calibrations_tuple, kludge_err=1.0,
         det_or_mosaic = det_list[0]
         shape = sciimg_tot.shape
     elif ndet == 2:
-        # Spatial offset is relative to NRS1
+        # A positive spat_offset means nrs2 starts at a larger pixel than nrs1
         detector_gap = int(calib_list[0].detector.xgap)
-        spat_offset = (slit_slice_list[0][1].start - slit_slice_list[1][1].start)
+        spat_offset = (slit_slice_list[1][1].start - slit_slice_list[0][1].start)
         spec_lo1, spec_hi1 = 0, sciimg_list[0].shape[0]
         spec_lo2, spec_hi2 = sciimg_list[0].shape[0] + detector_gap, \
                              sciimg_list[0].shape[0] + detector_gap + sciimg_list[1].shape[0]
         shape = (sciimg_list[0].shape[0] + sciimg_list[1].shape[0] + detector_gap,
                  np.max([sciimg_list[0].shape[1], sciimg_list[1].shape[1]]) + np.abs(spat_offset))
-        if spat_offset < 0:
-            spat_lo1, spat_hi1 = -spat_offset, sciimg_list[0].shape[1] - spat_offset
-            spat_lo2, spat_hi2 = 0, sciimg_list[1].shape[1]
-        else:
-            spat_lo1, spat_hi1 = 0, sciimg_list[0].shape[1]
-            spat_lo2, spat_hi2 = spat_offset, spat_offset + sciimg_list[1].shape[1]
 
+        if spat_offset >= 0:
+            # Detector nrs2 starts at a larger spat value than detector nrs1
+            spat_lo1, spat_hi1 = 0, sciimg_list[0].shape[1]  # nrs1 not shifted spatially
+            spat_lo2, spat_hi2 = spat_offset, spat_offset + sciimg_list[1].shape[1] # nrs2 shifted spatiallly
+        else:
+            # Detector nrs1 starts at larger spat value than detector nrs1
+            spat_lo1, spat_hi1 = np.abs(spat_offset), sciimg_list[0].shape[1] + np.abs(spat_offset)
+            spat_lo2, spat_hi2 = 0, sciimg_list[1].shape[1]
+
+        # Old code
+        # Spatial offset is relative to NRS1
+        #detector_gap = int(calib_list[0].detector.xgap)
+        #spat_offset = (slit_slice_list[0][1].start - slit_slice_list[1][1].start)
+        #spec_lo1, spec_hi1 = 0, sciimg_list[0].shape[0]
+        #spec_lo2, spec_hi2 = sciimg_list[0].shape[0] + detector_gap, \
+        #                     sciimg_list[0].shape[0] + detector_gap + sciimg_list[1].shape[0]
+        #shape = (sciimg_list[0].shape[0] + sciimg_list[1].shape[0] + detector_gap,
+        #         np.max([sciimg_list[0].shape[1], sciimg_list[1].shape[1]]) + np.abs(spat_offset))
+        #if spat_offset < 0:
+        #    spat_lo1, spat_hi1 = -spat_offset, sciimg_list[0].shape[1] - spat_offset
+        #    spat_lo2, spat_hi2 = 0, sciimg_list[1].shape[1]
+        #else:
+        #    spat_lo1, spat_hi1 = 0, sciimg_list[0].shape[1]
+        #    spat_lo2, spat_hi2 = spat_offset, spat_offset + sciimg_list[1].shape[1]
 
         nrs1_slice = np.s_[spec_lo1: spec_hi1, spat_lo1: spat_hi1]
         nrs2_slice = np.s_[spec_lo2: spec_hi2, spat_lo2: spat_hi2]

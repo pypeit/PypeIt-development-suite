@@ -92,8 +92,8 @@ target ='J0411'
 #target = 'J1007'
 # Dispersers
 #disperser = '140H_bogus_F100LP'
-disperser = '140H'
-#disperser = '235H'
+#disperser = '140H'
+disperser = '235H'
 #disperser = '395H'
 
 detectors = ['nrs1', 'nrs2']
@@ -114,7 +114,7 @@ mode ='FS'
 #reduce_slits = None
 reduce_sources = None
 #reduce_slits = None
-reduce_slits = ['S200A1']
+reduce_slits = ['S200A2']
 show = False
 
 
