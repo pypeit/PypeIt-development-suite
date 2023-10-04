@@ -73,49 +73,43 @@ DO_NOT_USE = datamodels.dqflags.pixel['DO_NOT_USE']
 # detname = 'nrs1'
 # detector = 1 if 'nrs1' in detname else 2
 
-#disperser = 'J0313_G235M'
-#disperser = 'G395M_Maseda'
-#disperser = 'G395M'
-#disperser = 'PRISM_01117'
-# disperser = 'G235M'
-#disperser='PRISM_01133'
-#disperser = 'PRISM_02756'
-#disperser = 'PRISM_02073'
-# disperser='PRISM_01117'
-# disperser='PRISM_FS'
+
+disperser = 'PRISM_02073'
+
 
 # Targets
-target ='J0411'
+#target = 'J0411'
 #target = 'J0313'
-#target = 'J0252'
+target = 'J0252'
 #target = 'J0313'
 #target = 'J1007'
 # Dispersers
 #disperser = '140H_bogus_F100LP'
 #disperser = '140H'
-disperser = '235H'
+#disperser = '235H'
 #disperser = '395H'
+disperser = 'PRISM_02073'
+
 
 detectors = ['nrs1', 'nrs2']
 exp_list = []
 
-bkg_redux = False
+bkg_redux = True #False
 runflag = False
-#mode = 'MSA'
-mode ='FS'
-#slit = 'S200A2'
+mode = 'MSA'
+#mode ='FS'
+
+show = True
 
 
-#islit = '37'
-#reduce_sources = ['2756_10025']
-#reduce_sources = ['2756_202']
-#reduce_sources = ['2073_4562']
-#reduce_sources = ['2073_8731']
-#reduce_slits = None
-reduce_sources = None
-#reduce_slits = None
-reduce_slits = ['S200A2']
-show = False
+# MSA demo
+reduce_slits = None
+reduce_sources = ['2073_8713']
+# FS demo
+#reduce_slits = ['S200A1']
+#reduce_sources = None
+
+
 
 
 # If bkg_redux is False, the code will model the sky and the object profile and perform optimal extraction.
