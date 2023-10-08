@@ -8,19 +8,24 @@
    [[flatfield]]
       pixelflat_file = /Users/joe/python/PypeIt-development-suite/CALIBS/PYPEIT_LRISb_pixflat_B400_2x2_15apr2015.fits.gz
 
+
 # Setup
 setup read
- Setup A
+Setup A:
+  binning: 2,2
+  decker: long_1.0
+  dichroic: '560'
+  dispname: 400/3400
 setup end
 
-# Data
+# Data block 
 data read
- path /Users/joe/python/PypeIt-development-suite/RAW_DATA/keck_lris_blue/long_400_3400_d560/
-|                  filename |                date |       frametype |       target | exptime | binning | dichroic | dispname |   decker |
-| LB.20160109.14149.fits.gz | 2016-01-09T03:55:53 |        arc,tilt |         test |       1 |     2,2 |      560 | 400/3400 | long_1.0 |
-| LB.20160109.57204.fits.gz | 2016-01-09T16:03:27 |         science | CIV1233-0031 |     600 |     2,2 |      560 | 400/3400 | long_1.0 |
-| LB.20160109.58013.fits.gz | 2016-01-09T16:07:21 |        standard |     Feige 34 |      25 |     2,2 |      560 | 400/3400 | long_1.0 |
-| LB.20160109.59923.fits.gz | 2016-01-09T16:38:53 | illumflat,trace |          sky |       6 |     2,2 |      560 | 400/3400 | long_1.0 |
-| LB.20160109.59975.fits.gz | 2016-01-09T16:39:45 | illumflat,trace |          sky |       6 |     2,2 |      560 | 400/3400 | long_1.0 |
-| LB.20160109.60019.fits.gz | 2016-01-09T16:40:26 | illumflat,trace |          sky |       4 |     2,2 |      560 | 400/3400 | long_1.0 |
+ path RAW_DATA/keck_lris_blue/long_400_3400_d560
+                 filename |        frametype |                 ra |                 dec |       target | dispname |   decker | binning |          mjd |     airmass | exptime | dichroic | amp |  hatch |                       lampstat01 |    dateobs | frameno | calib
+LB.20160109.14149.fits.gz |         arc,tilt | 229.99999999999997 |                 0.0 |         test | 400/3400 | long_1.0 |     2,2 | 57396.163765 | 13.37481353 |     1.0 |      560 |   4 | closed | HgI NeI ArI CdI ZnI KrI XeI FeAr | 2016-01-09 |    1040 |     0
+LB.20160109.57204.fits.gz |          science | 188.28395833333332 | -0.5331944444444445 | CIV1233-0031 | 400/3400 | long_1.0 |     2,2 | 57396.662084 |  1.06825556 |   600.0 |      560 |   4 |   open |                              off | 2016-01-09 |    1100 |     0
+LB.20160109.58013.fits.gz |         standard | 159.90387499999997 |   43.10205555555556 |     Feige 34 | 400/3400 | long_1.0 |     2,2 | 57396.671449 |  1.25596923 |    25.0 |      560 |   4 |   open |                              off | 2016-01-09 |    1101 |     0
+LB.20160109.59923.fits.gz |  illumflat,trace | 245.42629166666669 |  14.376111111111111 |          sky | 400/3400 | long_1.0 |     2,2 | 57396.693564 |  1.32395295 |     6.0 |      560 |   4 |   open |                              off | 2016-01-09 |    1121 |     0
+LB.20160109.59975.fits.gz |  illumflat,trace | 245.37474999999998 |   14.32611111111111 |          sky | 400/3400 | long_1.0 |     2,2 | 57396.694166 |  1.31916346 |     6.0 |      560 |   4 |   open |                              off | 2016-01-09 |    1122 |     0
+LB.20160109.60019.fits.gz |  illumflat,trace | 245.32324999999997 |  14.276111111111112 |          sky | 400/3400 | long_1.0 |     2,2 |  57396.69467 |  1.31507821 |     4.0 |      560 |   4 |   open |                              off | 2016-01-09 |    1123 |     0
 data end

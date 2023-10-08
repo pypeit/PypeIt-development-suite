@@ -1,6 +1,7 @@
 import os, sys
 import shutil
 import numpy as np
+from pathlib import Path
 
 from pypeit.spectrographs.util import load_spectrograph
 from pypeit.wavecalib import WaveCalib
@@ -8,6 +9,7 @@ from pypeit.slittrace import SlitTraceSet
 from pypeit.scripts.run_pypeit import RunPypeIt
 
 import pytest
+from IPython import embed
 
 sys.path.append(os.path.join(
     os.path.abspath(
@@ -37,7 +39,7 @@ def test_not_alfosc(redux_out):
 
     for setup, rms in zip(
         ['grism3', 'grism4_nobin', 'grism5', 'grism7', 'grism10', 'grism11', 'grism17', 'grism18', 'grism19', 'grism20'],
-        [0.45, 0.19, 0.15, 0.11, 0.20, 0.17, 0.15, 0.13, 0.05, 0.05],
+        [0.45, 0.19, 0.15, 0.11, 0.20, 0.17, 0.15, 0.14, 0.05, 0.05],
         ):
         setupID = 'A_0'
         index = 0
@@ -144,3 +146,103 @@ def test_redoslits_kastr(redux_out):
     shutil.copyfile(orig_slit_file, slit_file)
 
     os.chdir(sv_cd)
+
+
+def test_keck_lris_blue(redux_out):
+
+    _redux_out = Path(redux_out).resolve()
+
+    for setup, det, rms in zip(['multi_300_5000_d680', 'long_400_3400_d560', 'long_600_4000_d560'],
+                               [1, 1, 1],
+                               [0.32, 0.21, 0.08]):
+
+        # get WaveCalib file
+        this_calib = _redux_out / 'keck_lris_blue' / setup / 'Calibrations'
+        file_path = list(this_calib.glob(f'WaveCalib_*_DET0{det}.fits'))[0]
+        # Load
+        waveCalib = WaveCalib.from_file(file_path)
+        # get all the rms values
+        rms_vals = np.array([ww.rms for ww in waveCalib.wv_fits if ww.rms is not None])
+        # check the wavelength solution rms
+        assert np.all(rms_vals <= rms), f'wave RMS for setup {setup} is too high!'
+
+
+def test_keck_lris_blue_orig(redux_out):
+
+    _redux_out = Path(redux_out).resolve()
+
+    for setup, det, rms in zip(['long_600_4000_d500', 'multi_1200_3400_d460'],
+                               [1, 1],
+                               [0.25, 0.1]):
+
+        # get WaveCalib file
+        this_calib = _redux_out / 'keck_lris_blue_orig' / setup / 'Calibrations'
+        file_path = list(this_calib.glob(f'WaveCalib_*_DET0{det}.fits'))[0]
+        # Load
+        waveCalib = WaveCalib.from_file(file_path)
+        # get all the rms values
+        rms_vals = np.array([ww.rms for ww in waveCalib.wv_fits if ww.rms is not None])
+        # check the wavelength solution rms
+        assert np.all(rms_vals <= rms), f'wave RMS for setup {setup} is too high!'
+
+
+def test_keck_lris_red(redux_out):
+
+    _redux_out = Path(redux_out).resolve()
+
+    for setup, det, rms in zip(['long_150_7500_d560', 'long_300_5000_d560', 'long_400_8500_longread',
+                                'multi_600_5000_d560', 'long_600_7500_d560', 'long_600_10000_d680',
+                                'mulit_831_8200_d560', 'multi_900_5500_d560', 'long_1200_7500_d560',
+                                'multi_1200_9000_d680'],
+                               [2, 2, 2, 1, 1, 1, 2, 1, 1, 2],
+                               [0.4, 0.1, 0.1, 0.23, 0.05, 0.1, 0.15, 0.1, 0.03, 0.07]):
+
+        # get WaveCalib file
+        this_calib = _redux_out / 'keck_lris_red' / setup / 'Calibrations'
+        file_path = list(this_calib.glob(f'WaveCalib_*_DET0{det}.fits'))[0]
+        # Load
+        waveCalib = WaveCalib.from_file(file_path)
+        # get all the rms values
+        rms_vals = np.array([ww.rms for ww in waveCalib.wv_fits if ww.rms is not None])
+        # check the wavelength solution rms
+        assert np.all(rms_vals <= rms), f'wave RMS for setup {setup} is too high!'
+
+
+def test_keck_lris_red_orig(redux_out):
+
+    _redux_out = Path(redux_out).resolve()
+
+    for setup, rms in zip(['long_150_7500_d500', 'long_300_5000', 'long_400_8500_d560', 'multi_600_5000_d500',
+                           'long_600_7500_d680', 'long_600_10000_d460', 'long_831_8200_d460',
+                           'long_900_5500_d560', 'long_1200_7500_d560'],
+                          [0.05, 0.05, 0.08, 0.13, 0.18, 0.05, 0.05, 0.05, 0.08]):
+
+        # get WaveCalib file
+        this_calib = _redux_out / 'keck_lris_red_orig' / setup / 'Calibrations'
+        file_path = list(this_calib.glob(f'WaveCalib_*.fits'))[0]
+        # Load
+        waveCalib = WaveCalib.from_file(file_path)
+        # get all the rms values
+        rms_vals = np.array([ww.rms for ww in waveCalib.wv_fits if ww.rms is not None])
+        # check the wavelength solution rms
+        assert np.all(rms_vals <= rms), f'wave RMS for setup {setup} is too high!'
+
+
+def test_keck_lris_red_mark4(redux_out):
+
+    _redux_out = Path(redux_out).resolve()
+
+    for setup, rms in zip(['long_400_8500_d560', 'long_600_10000_d680'],
+                          [0.07, 0.08]):
+
+        # get WaveCalib file
+        this_calib = _redux_out / 'keck_lris_red_mark4' / setup / 'Calibrations'
+        file_path = list(this_calib.glob(f'WaveCalib_*.fits'))[0]
+        # Load
+        waveCalib = WaveCalib.from_file(file_path)
+        # get all the rms values
+        rms_vals = np.array([ww.rms for ww in waveCalib.wv_fits if ww.rms is not None])
+        # check the wavelength solution rms
+        assert np.all(rms_vals <= rms), f'wave RMS for setup {setup} is too high!'
+
+

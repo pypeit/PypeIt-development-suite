@@ -1,0 +1,41 @@
+# Auto-generated PypeIt input file using PypeIt version: 1.13.1.dev659+g13e756d71
+# UTC 2023-08-26T03:06:30.921
+
+# User-defined execution parameters
+[rdx]
+    spectrograph = keck_lris_red
+    detnum = 2
+[baseprocess]
+    use_biasimage = False
+[calibrations]
+   [[slitedges]]
+      edge_thresh = 5.
+      fit_min_spec_length = 0.4
+[reduce]
+    [[findobj]]
+        snr_thresh = 15.
+    [[skysub]]
+         no_local_sky = True
+
+# Setup
+setup read
+Setup A:
+  amp: '4'
+  binning: 1,1
+  cenwave: 7501.50195312
+  decker: long_1.0
+  dichroic: '560'
+  dispangle: 19.51580048
+  dispname: 150/7500
+setup end
+
+# Data block 
+data read
+ path PypeIt-development-suite/RAW_DATA/keck_lris_red/long_150_7500_d560
+              filename |                 frametype |                 ra |                 dec |        target | dispname |   decker | binning |          mjd |     airmass | exptime | dichroic | amp |   dispangle |       cenwave |  hatch | lampstat01 |    dateobs | frameno | calib
+LR.20100914.09421.fits |                  arc,tilt | 229.99999999999997 |                 0.0 |       unknown | 150/7500 | long_1.0 |     1,1 | 55453.109043 | 13.37481353 |     3.0 |      560 |   4 | 19.51467323 | 7499.10302734 | closed |    NeI ArI | 2010-09-14 |    2029 |     0
+LR.20100914.10640.fits |                  arc,tilt | 229.99999999999997 |                 0.0 |       unknown | 150/7500 | long_1.0 |     1,1 | 55453.123151 | 13.37481353 |     1.0 |      560 |   4 | 19.51467323 | 7499.10302734 | closed |    HgI CdI | 2010-09-14 |    2039 |     0
+LR.20100914.11598.fits | pixelflat,illumflat,trace | 229.99999999999997 |                 0.0 |       unknown | 150/7500 | long_1.0 |     1,1 | 55453.134238 | 13.37481353 |     1.0 |      560 |   4 | 19.51467323 | 7499.10302734 | closed |    Halogen | 2010-09-14 |    2047 |     0
+LR.20100913.53200.fits |                   science |  54.42520833333332 | -1.8803333333333334 | 2005RO43_1315 | 150/7500 | long_1.0 |     1,1 | 55452.615745 |  1.07881312 |  1200.0 |      560 |   4 | 19.51580048 | 7501.50195312 |   open |        off | 2010-09-13 |    1115 |     0
+data end
+
