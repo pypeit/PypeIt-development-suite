@@ -31,7 +31,10 @@ def parser(options=None):
     parser.add_argument('--ram', type=int, default=100, help='Amount of RAM to request (Gi)')
     parser.add_argument('--coverage', default=False, action="store_true", help="Collect code coverage data.")
     parser.add_argument('--priority_list', default=False, action="store_true", help="Copy the test_priority_list to S3 after testing.")
-    parser.add_argument('additional_args', type=str, nargs='*', default=["all"], help="Additional arguments to pypeit_test. Defaults to 'all'.")
+    parser.add_argument('additional_args', type=str, nargs='*', default=["all"], help="Additional arguments to pypeit_test. Defaults to 'all'. "
+                                                                                      "For example, if you would like to run all tests, but only reduce "
+                                                                                      "the data for one instrument, you could append the following string: "
+                                                                                      "'all --instruments shane_kast_blue' to the end of your command (including the quotes).")
     #parser.add_argument('-d', '--dryrun', default=False, action='store_true',
     #                    help='Only list the steps')
 
