@@ -51,7 +51,7 @@ def test_build_fitstbl():
     #
     fitstbl = setupc.build_fitstbl(files)
     assert isinstance(fitstbl, Table)
-    assert setupc.nfiles == 26
+    assert setupc.nfiles == 25
 
 
 def test_image_type():
@@ -67,7 +67,7 @@ def test_image_type():
     assert np.sum(setupc.fitstbl.find_frames('None')) == 0
 
     assert np.sum(setupc.fitstbl.find_frames('pixelflat')
-                    & setupc.fitstbl.find_frames('trace')) == 12
+                    & setupc.fitstbl.find_frames('trace')) == 11
 
 
 def test_type():

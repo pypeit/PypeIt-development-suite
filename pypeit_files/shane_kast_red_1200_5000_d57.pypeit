@@ -6,6 +6,9 @@
 spectrograph = shane_kast_red
 [baseprocess]
   use_biasimage = False
+[calibrations]
+    [[wavelengths]]
+        fwhm_fromlines = False
 
 # Setup
 setup read

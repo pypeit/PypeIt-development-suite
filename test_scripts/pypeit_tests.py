@@ -288,7 +288,7 @@ class PypeItFluxSetupTest(PypeItTest):
         super().__init__(setup, pargs, "pypeit_flux_setup", "test_flux_setup")
 
     def build_command_line(self):
-        return ['pypeit_flux_setup', os.path.join(self.setup.rdxdir, 'Science')]
+        return ['pypeit_flux_setup', self.setup.rdxdir, os.path.join(self.setup.rdxdir, 'Science')]
 
 
 class PypeItFluxTest(PypeItTest):
@@ -350,9 +350,11 @@ class PypeItCoadd1DTest(PypeItTest):
 
         unique_files = set()
         for row in orig_coadd1dFile.data:
-            (filename, object) = row['filename'], row['obj_id'] 
-            orig_coadd1d_lines.append((filename, object))
-            unique_files.add(filename)
+            values = [row[key] for key in orig_coadd1dFile.data.keys()]
+            orig_coadd1d_lines.append(tuple(values))
+            #(filename, object) = row['filename'], row['obj_id']
+            # orig_coadd1d_lines.append((filename, object))
+            unique_files.add(row['filename'])
         
         # Build a mapping of files to objects using the spec1d txt info file
         for unique_file in unique_files:
@@ -362,7 +364,8 @@ class PypeItCoadd1DTest(PypeItTest):
 
         # Go through each original coadd1d line and correct the object names
         # if needed
-        for (filename, object) in orig_coadd1d_lines:
+        for line in orig_coadd1d_lines:
+            filename, object = line[0], line[1]
             if object in file_to_obj[filename]:
                 # No correction needed
                 corrected_filenames.append(filename)
@@ -403,11 +406,11 @@ class PypeItCoadd1DTest(PypeItTest):
         
         # Generate the new coadd1d file
         final_coadd_file = get_unique_file(os.path.join(self.setup.rdxdir, f"{self.setup.instr.lower()}_{self.setup.name.lower()}_merged.coadd1d"))
-        data_block = Table()
+        #data_block = Table()
+        data_block = orig_coadd1dFile.data.copy()
         data_block['filename'] = corrected_filenames
         data_block['obj_id'] = corrected_objid
-        new_coadd1dFile = inputfiles.Coadd1DFile(config=cfg_lines,
-                                             data_table=data_block)
+        new_coadd1dFile = inputfiles.Coadd1DFile(config=cfg_lines, data_table=data_block)
         new_coadd1dFile.write(final_coadd_file) 
 
         return ['pypeit_coadd_1dspec', final_coadd_file]
@@ -620,10 +623,23 @@ def template_coadd2d_file(dev_path, instr, setup):
     return os.path.join(dev_path, 'coadd2d_files', coadd2d_file_name(instr, setup))
 
 
-def fix_pypeit_file_directory(pyp_file, dev_path, raw_data, instr, setup, rdxdir, std=False):
+def fix_pypeit_file_directory(pyp_file:str, dev_path:str, raw_data:str, 
+                              instr:str, setup:str, rdxdir:str, std=False,
+                              outfile:str=None):
     """
     Use template pypeit file to write the pypeit file relevant to the
     exising directory structure.
+
+    Args:
+        pyp_file (str): Path to the pypeit file to be corrected.
+        dev_path (str): Path to the development directory.
+        raw_data (str): Full path to the raw data for this PypeIt file
+        instr (str): Instrument name.
+        setup (str): Setup name.
+        rdxdir (str): Path to the reduction directory.
+        std (bool, optional): Is this a standard star file?
+        outfile (str, optional): Name of the output PypeIt file.  
+          If None, it is auto-generated from the inputs
 
     Returns:
         str: The path to the corrected pypeit file.
@@ -637,8 +653,8 @@ def fix_pypeit_file_directory(pyp_file, dev_path, raw_data, instr, setup, rdxdir
     # Replace the default path with the local one
     for kk, iline in enumerate(lines):
         if 'data read' in iline:
-            old_path = lines[kk+1].strip().split(' ')[1] if 'path' in lines[kk+1] \
-                            else lines[kk+1].strip()
+            #old_path = lines[kk+1].strip().split(' ')[1] if 'path' in lines[kk+1] \
+            #                else lines[kk+1].strip()
             subdir = ''
             newdpth = ' path ' if 'path' in lines[kk+1] else ' '
             newdpth += os.path.join(raw_data, subdir)
@@ -649,10 +665,11 @@ def fix_pypeit_file_directory(pyp_file, dev_path, raw_data, instr, setup, rdxdir
             lines[kk+1] = '        pixelflat_file = {0}'.format(newcpth)
 
     # Write the pypeit file
-    pyp_file = os.path.join(rdxdir, pypeit_file_name(instr, setup, std=std))
-    with open(pyp_file, 'w') as ofile:
+    if outfile is None:
+        outfile = os.path.join(rdxdir, pypeit_file_name(instr, setup, std=std))
+    with open(outfile, 'w') as ofile:
         ofile.writelines(lines)
-    return pyp_file
+    return outfile
 
 def get_unique_file(file):
     """Ensures a file name is unique on the file system, modifying it if neccessary.
