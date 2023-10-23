@@ -66,7 +66,7 @@ all_setups = {
     'soar_goodman_red': ['M1', 'M2', '600red'],
     'soar_goodman_blue': ['M1'],
     'tng_dolores': ['LRB'],
-    'vlt_fors2': ['300I', '600Z'],
+    'vlt_fors2': ['300I', '600Z', '300I_MOS'],
     'vlt_sinfoni': ['K_0.8'],
     'vlt_xshooter': ['VIS_1x1', 'VIS_2x1', 'VIS_2x2', 'VIS_manual', 'NIR', 'UVB_1x1', 'UVB_1x1_Feige110', 'VIS_1x1_Feige110', 'NIR_Feige110', 'VIS_1x1_LTT3218', 'NIR_LTT3218'],
 }
