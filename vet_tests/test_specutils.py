@@ -13,6 +13,8 @@ except ModuleNotFoundError:
     pypeit_loaders = None
 from pypeit.specutils import Spectrum1D, SpectrumList
 
+from pypeit.pypmsgs import PypeItError
+
 specutils_required = pytest.mark.skipif(Spectrum1D is None or SpectrumList is None 
                                             or pypeit_loaders is None,
                                         reason='specutils not installed')
@@ -137,7 +139,7 @@ def test_load_spec1d(redux_out):
     assert test_file.exists(), 'Output file does not exist or the name changed'
 
     # Test failure using a Spectrum1D read
-    with pytest.raises(OSError):
+    with pytest.raises(PypeItError):
         spec = Spectrum1D.read(str(test_file))
 
     # Correctly use SpectrumList to read the file
