@@ -1,0 +1,30 @@
+# Auto-generated PypeIt input file using PypeIt version: 1.11.1.dev357+gaa9a42e92.d20221207
+# UTC 2023-06-03T17:22:47.225
+
+# User-defined execution parameters
+[rdx]
+    spectrograph = mdm_osmos_r4k
+[baseprocess]
+    use_biasimage = False
+    use_illumflat = False
+
+# Setup
+setup read
+Setup A:
+  binning: 1,1
+  decker: 3.0 center
+  dispname: Red Grism
+setup end
+
+# Data block 
+data read
+ path /scratch/PypeIt-development-suite/RAW_DATA/mdm_osmos/R4K
+          filename |        frametype |                 ra |                dec |  target |  dispname |     decker | binning |          mjd | airmass | exptime | calib
+cscu.0021.cut.fits |         arc,tilt |  341.5666666666666 | 31.942222222222224 |  NeHgNe | Red Grism | 3.0 center |     1,1 | 58103.023159 |     1.0 |     1.0 |     0
+#    cscu.0021.fits |         arc,tilt |  341.5666666666666 | 31.942222222222224 |  NeHgNe | Red Grism | 3.0 center |     1,1 | 58103.023159 |     1.0 |     1.0 |     0
+cscu.0002.cut.fits |  pixelflat,trace | 324.81249999999994 | 31.941388888888888 |    flat | Red Grism | 3.0 center |     1,1 | 58102.976746 |     1.0 |    15.0 |     0
+#    cscu.0002.fits |  pixelflat,trace | 324.81249999999994 | 31.941388888888888 |    flat | Red Grism | 3.0 center |     1,1 | 58102.976746 |     1.0 |    15.0 |     0
+    cscu.0057.fits |          science | 130.45416666666665 | 19.656388888888888 |   JS457 | Red Grism | 3.0 center |     1,1 | 58103.246134 |    2.13 |   720.0 |     0
+    cscu.0050.fits | standard | 101.29999999999998 | 2.1366666666666667 | Hilt600 | Red Grism | 3.0 center |     1,1 | 58103.226897 |    1.65 |   120.0 |     0
+data end
+
