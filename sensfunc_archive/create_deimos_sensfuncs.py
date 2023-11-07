@@ -37,7 +37,7 @@ def write_stitched_sensfunc(sflist, args, grating, combined_sf):
     newsf.wave_splice = None
     newsf.zeropoint_splice = None
 
-    newsens = SensFunc.empty_sensfunc_table(1, len(combined_sf['SENS_WAVE']))
+    newsens = SensFunc.empty_sensfunc_table(1, len(combined_sf['SENS_WAVE']), len(sflist[0].sens[0]['SENS_WAVE']))
     newsens['SENS_WAVE'] = combined_sf['SENS_WAVE']
     newsens['SENS_ZEROPOINT_FIT'] = combined_sf['SENS_ZEROPOINT_FIT']
     newsens['SENS_ZEROPOINT_FIT_GPM'] = combined_sf['SENS_ZEROPOINT_FIT_GPM']
@@ -229,6 +229,11 @@ def create_sens_files(args, spec1d_files):
     par['sensfunc']['extrap_blu'] = 0.
     par['sensfunc']['extrap_red'] = 0.
 
+    # SensFunc.run() will try to flux using the new sensfunc
+    # for QA purposes. Because we didn't want to extrapolate in the
+    # genreated sensfuncs we need to add this to prevent failures in this fluxing
+    par['fluxcalib']['extrap_sens'] = True
+
     par_outfile = os.path.join(args.dest_path, "sensfunc.par")
     print(f'Writing the sensfunc parameters to {par_outfile}')
     par['sensfunc'].to_config(par_outfile, section_name='sensfunc', include_descr=False)
@@ -238,7 +243,7 @@ def create_sens_files(args, spec1d_files):
         dest_file = args.dest_path / spec1d_file.name.replace("spec1d_", "sens_", 1)
 
         # Instantiate the relevant class for the requested algorithm
-        sensobj = SensFunc.get_instance(str(spec1d_file), str(dest_file), par['sensfunc'])
+        sensobj = SensFunc.get_instance(str(spec1d_file), str(dest_file), par['sensfunc'],par_fluxcalib=par['fluxcalib'] )
 
         # Generate the sensfunc
         sensobj.run()
@@ -292,18 +297,10 @@ def main(args):
                   "600ZD": ['extract/600ZD/2023jan17_d0117_0098.fits',
                             'extract/600ZD/2023jan17_d0117_0099.fits',
                             'extract/600ZD/2023jan17_d0117_0101.fits'],
-                  #"830G":  ['extract/830G/2010oct06_d1006_0135.fits',
-                  #          'extract/830G/2010oct06_d1006_0136.fits',
-                  #          'extract/830G/2010oct06_d1006_0137.fits',
-                  #          'extract/830G/2023may13_d0513_0034.fits']}
                   "830G":  ['extract/830G/2023may13_d0513_0031.fits',
                             'extract/830G/2023may13_d0513_0032.fits',
                             'extract/830G/2023may13_d0513_0033.fits',
                             'extract/830G/2023may13_d0513_0034.fits']}
-                  #"830G":  ['extract/830G/2010oct06_d1006_0135.fits',
-                  #          'extract/830G/2010oct06_d1006_0136.fits',
-                  #          'extract/830G/2010oct06_d1006_0137.fits']}
-
     if args.grating == "all":
         grating_list = source_map.keys()
     else:
