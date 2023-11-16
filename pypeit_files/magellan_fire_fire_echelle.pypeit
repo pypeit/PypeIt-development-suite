@@ -4,9 +4,6 @@
 # User-defined execution parameters
 [rdx]
 spectrograph = magellan_fire
-[calibrations]
-    [[wavelengths]]
-        fwhm_fromlines = False
 [reduce]
  [[findobj]]
    maxnumber_sci = 1

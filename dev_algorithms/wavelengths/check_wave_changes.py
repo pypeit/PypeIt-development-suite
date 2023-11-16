@@ -1,4 +1,4 @@
-from pypeit import wavecalib
+from pypeit import wavecalib, msgs
 from pathlib import Path
 import matplotlib.pyplot as plt
 from matplotlib import gridspec
@@ -38,7 +38,7 @@ def load_all_wave_info(redux, input_spec=None):
 				try:
 					waveCalib = wavecalib.WaveCalib.from_file(wfile, chk_version=False)
 				except:
-					print(f'file {wfile} could not be loaded')
+					msgs.warn(f'file {wfile} could not be loaded')
 
 				tab = waveCalib.wave_diagnostics()
 				tab['file'] = f'{s.name}/{d.name}/Calibrations/{w.name}'
@@ -145,6 +145,12 @@ def main(args):
 
 	"""
 
+	# check that the two redux folders exist
+	if not Path(args.old_redux).exists():
+		msgs.error(f'Folder "{args.old_redux}" does not exist')
+	if not Path(args.new_redux).exists():
+		msgs.error(f'Folder "{args.new_redux}" does not exist')
+
 	wtable_old = load_all_wave_info(args.old_redux, input_spec=args.spec)
 	wtable_new = load_all_wave_info(args.new_redux, input_spec=args.spec)
 
@@ -153,7 +159,7 @@ def main(args):
 		combined_wtable.pprint_all()
 
 	masked_rows = combined_wtable.mask['RMS_2'] == True
-	print(f'\n      **{np.sum(masked_rows)} slits are not present in the new run**')
+	msgs.info(f'\n      **{np.sum(masked_rows)} slits are not present in the new run**')
 	notmasked_combined_wtable = combined_wtable[np.logical_not(masked_rows)]
 
 	# values for the histograms
