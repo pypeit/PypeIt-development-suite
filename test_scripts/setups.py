@@ -51,7 +51,7 @@ all_setups = {
     'ldt_deveny': ['DV1', 'DV2', 'DV3', 'DV4', 'DV5', 'DV6', 'DV7', 'DV8', 'DV9'],
     'magellan_fire': ['FIRE_Echelle', 'FIRE_Long'],
     'magellan_mage': ['1x1'],
-    'mdm_osmos': ['MDM4K'],
+    'mdm_osmos': ['MDM4K', 'R4K'],
     'mdm_modspec': ['Echelle'],
     'mmt_binospec': ['Longslit_G600', 'Multislit_G270', 'Longslit_G1000'],
     'mmt_mmirs': ['HK_zJ', 'J_zJ', 'K_K'],
@@ -66,7 +66,7 @@ all_setups = {
     'soar_goodman_red': ['M1', 'M2', '600red'],
     'soar_goodman_blue': ['M1'],
     'tng_dolores': ['LRB'],
-    'vlt_fors2': ['300I', '600Z'],
+    'vlt_fors2': ['300I', '600Z', '300I_MOS'],
     'vlt_sinfoni': ['K_0.8'],
     'vlt_xshooter': ['VIS_1x1', 'VIS_2x1', 'VIS_2x2', 'VIS_manual', 'NIR', 'UVB_1x1', 'UVB_1x1_Feige110', 'VIS_1x1_Feige110', 'NIR_Feige110', 'VIS_1x1_LTT3218', 'NIR_LTT3218'],
 }
