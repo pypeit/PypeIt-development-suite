@@ -13,9 +13,6 @@ detnum = (1,2,3)
    order_width_poly = 1
    order_gap_poly = 3
    order_spat_range = 80., 3100.
-# [[wavelengths]]
-#   sigdetect = 53*[10] + [2]
-#   cc_shift_range = (-40.,40.)
 
 # Setup
 setup read

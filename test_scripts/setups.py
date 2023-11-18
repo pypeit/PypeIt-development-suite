@@ -30,6 +30,7 @@ all_setups = {
         'J0306+1853_U074_RED_C2_ECH_-0.86_XD_1.31_1x3',
         'J1723+2243_W241_RED_C5_ECH_0.08_XD_0.90_2x2',
         'J1723+2243_W241_RED_C5_ECH_-0.15_XD_0.90_2x2',
+        'Q1009+2956_G10H_BLUE_C5_ECH_-0.00_XD_1.02_1x3',
                    ],
     'keck_kcwi': ['small_bh2_4200', 'medium_bl'],
     'keck_kcrm': ['medium_rm1', 'medium_rh3'],
