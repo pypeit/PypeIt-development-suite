@@ -94,7 +94,7 @@ disperser = 'PRISM_02073'
 detectors = ['nrs1', 'nrs2']
 exp_list = []
 
-bkg_redux = True #False
+bkg_redux = True #False #False
 runflag = False
 mode = 'MSA'
 #mode ='FS'
