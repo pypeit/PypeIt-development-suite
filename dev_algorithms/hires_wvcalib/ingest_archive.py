@@ -710,6 +710,7 @@ xidl_arxiv_file = os.path.join(os.getenv('PYPEIT_DEV'), 'dev_algorithms', 'hires
 if not os.path.isfile(xidl_arxiv_file):
     ingest_xidl_archive(xidl_arxiv_file)
 
+sys.exit(-1)
 # Perform fits to the coefficients vs ech angle
 # TODO see if pca works better here
 debug=True
@@ -721,8 +722,8 @@ if not os.path.isfile(wvcalib_angle_fit_file):
 
 # Compute a composite arc from the solution arxiv
 composite_arcfile = os.path.join(os.getenv('PYPEIT_DEV'), 'dev_algorithms', 'hires_wvcalib', 'HIRES_composite_arc.fits')
-#if not os.path.isfile(composite_arcfile):
-echelle_composite_arcspec(xidl_arxiv_file, composite_arcfile, show_orders=debug)
+if not os.path.isfile(composite_arcfile):
+    echelle_composite_arcspec(xidl_arxiv_file, composite_arcfile, show_orders=debug)
 
 sys.exit(-1)
 
