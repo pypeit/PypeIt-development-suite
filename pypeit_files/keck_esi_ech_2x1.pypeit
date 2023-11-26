@@ -22,9 +22,9 @@ e221025_0008.fits.gz |                      bias |  63.99999999999999 |         
 e221025_0009.fits.gz |                      bias |  63.99999999999999 |             0.081 |    unknown | Echellette | 0.30_arcsec |     1,2 | 59877.12013462 | 13.37481353 |     0.0 |     0
 e221025_0010.fits.gz |                      bias |  63.99999999999999 |             0.081 |    unknown | Echellette | 0.30_arcsec |     1,2 | 59877.12074261 | 13.37481353 |     0.0 |     0
 e221025_0011.fits.gz |                      bias |  63.99999999999999 |             0.081 |    unknown | Echellette | 0.30_arcsec |     1,2 |  59877.1213683 | 13.37481353 |     0.0 |     0
-e221025_0015.fits.gz | pixelflat,illumflat,trace |  63.99999999999999 |             0.081 |    unknown | Echellette | 0.50_arcsec |     1,2 | 59877.14545754 | 13.37481353 |   150.0 |     0
-e221025_0016.fits.gz | pixelflat,illumflat,trace |  63.99999999999999 |             0.081 |    unknown | Echellette | 0.50_arcsec |     1,2 | 59877.14780094 | 13.37481353 |   150.0 |     0
-e221025_0017.fits.gz | pixelflat,illumflat,trace |  63.99999999999999 |             0.081 |    unknown | Echellette | 0.50_arcsec |     1,2 | 59877.15016796 | 13.37481353 |   150.0 |     0
+e221025_0015.fits.gz | scattlight,pixelflat,illumflat,trace |  63.99999999999999 |             0.081 |    unknown | Echellette | 0.50_arcsec |     1,2 | 59877.14545754 | 13.37481353 |   150.0 |     0
+e221025_0016.fits.gz | scattlight,pixelflat,illumflat,trace |  63.99999999999999 |             0.081 |    unknown | Echellette | 0.50_arcsec |     1,2 | 59877.14780094 | 13.37481353 |   150.0 |     0
+e221025_0017.fits.gz | scattlight,pixelflat,illumflat,trace |  63.99999999999999 |             0.081 |    unknown | Echellette | 0.50_arcsec |     1,2 | 59877.15016796 | 13.37481353 |   150.0 |     0
 #e221025_0020.fits.gz |                  standard |  329.4120833333333 | 43.21761111111111 | HIP_108400 | Echellette | 0.50_arcsec |     1,2 | 59877.19462768 |   1.1481189 |     5.0 |     0
 e221025_0079.fits.gz |                  science | 126.82599999999996 | 35.81644444444444 |  HIP_41454 | Echellette | 0.50_arcsec |     1,2 | 59877.65401136 |   1.0611031 |    10.0 |     0
 #e221025_0081.fits.gz |                  standard | 127.03662499999997 | 47.30138888888889 |  HIP_41526 | Echellette | 0.50_arcsec |     1,2 | 59877.65644921 |  1.14408958 |     5.0 |     0
