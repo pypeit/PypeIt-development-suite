@@ -9,13 +9,14 @@ import numpy as np
 #import optax
 import itertools
 #from tqdm.auto import trange
-from astropy.table import Table
+from astropy.table import Table, vstack
 from astropy.io import fits
 from pkg_resources import resource_filename
 from matplotlib import pyplot as plt
 from pypeit.spectrographs.util import load_spectrograph
 from pypeit.core.wavecal import templates
 from pypeit.core.wavecal import wvutils
+from pypeit.core import arc
 from pypeit.core.fitting import robust_fit
 from pypeit.core import coadd
 from pypeit.core import fitting
@@ -23,6 +24,7 @@ from pypeit.core.wavecal import autoid, waveio, wv_fitting
 from pypeit.core.wavecal.wvutils import  get_xcorr_arc, xcorr_shift
 from pypeit import utils
 from pypeit import msgs
+from pypeit import wavecalib
 from astropy import table
 from scipy import interpolate
 from IPython import embed
@@ -255,35 +257,23 @@ def get_variable_dlam_wavegrid(lam_min, lam_max, wave_grid_fit, dwave_fit):
 
     return np.array(lam_out, dtype=float)
 
-def ingest_xidl_archive(outfile, n_final=4, func='legendre'):
+
+def empty_design_table(nrows, norders, n_final=4):
     """
-    Read the XIDL archive file and write a pypeit format archive file.
+    Construct an empty arxiv table.
 
     Args:
-    -----
-    outfile: str
-        Name of the output file
+        nrows (:obj:`int`):
+            Number of rows in the table.
+        norders (:obj:`int`):
+            Number of orders in the table.
+        n_final (:obj:`int`, optional):
+            Number of final coefficients in the wavelength solution.
+
+    Returns:
+        `astropy.table.Table`_: Instance of the empty arxiv table.
     """
-
-    # Read template file
-    templ_table_file = os.path.join(resource_filename('pypeit', 'data'), 'arc_lines',
-        'hires', 'hires_templ.dat')
-    tbl = Table.read(templ_table_file, format='ascii')
-    nrows = len(tbl)
-
-    order_min = tbl['IOrder'].min()
-    order_max = tbl['EOrder'].max() #This is 1 shy of 118
-
-    order_vec = np.arange(order_min, order_max + 1, 1)
-    norders = order_vec.size
-
-    # xmin, xmax for wavelength vs pixel fits
-    fmin, fmax = 0.0, 1.0
-    params=Table([[order_min],[order_max],[norders],[n_final],[func],[fmin],[fmax]]
-                ,names=('order_min','order_max','norders','n_final','func','xmin','xmax'))
-
-
-    table_xidl = Table([np.zeros(nrows, dtype="<U30"),
+    return Table([np.zeros(nrows, dtype="<U30"),
                         np.zeros(nrows, dtype=int),
                         np.zeros(nrows, dtype=int),
                         np.zeros(nrows, dtype=int),
@@ -310,6 +300,36 @@ def ingest_xidl_archive(outfile, n_final=4, func='legendre'):
                                'order', 'populated', 'populated_and_good', 'ech_angle', 'xd_angle',
                                'xdisp', 'det', 'binspec','lambda_cen', 'coeff'))
 
+
+def ingest_xidl_archive(outfile, n_final=4, func='legendre'):
+    """
+    Read the XIDL archive file and write a pypeit format archive file.
+
+    Args:
+    -----
+    outfile: str
+        Name of the output file
+    """
+
+    # Read template file
+    templ_table_file = os.path.join(resource_filename('pypeit', 'data'), 'arc_lines',
+        'hires', 'hires_templ_xidl.dat')
+    tbl = Table.read(templ_table_file, format='ascii')
+    nrows = len(tbl)
+
+    order_min = tbl['IOrder'].min()
+    order_max = tbl['EOrder'].max() #This is 1 shy of 118
+
+    order_vec = np.arange(order_min, order_max + 1, 1)
+    norders = order_vec.size
+
+    # xmin, xmax for wavelength vs pixel fits
+    fmin, fmax = 0.0, 1.0
+    params=Table([[order_min],[order_max],[norders],[n_final],[func],[fmin],[fmax]]
+                ,names=('order_min','order_max','norders','n_final','func','xmin','xmax'))
+
+    table_xidl = empty_design_table(nrows, norders, n_final=n_final)
+
     for irow in np.arange(nrows):
         this_order_vec_raw, this_wave, this_arc = templates.xidl_esihires(
             os.path.join(os.getenv('HIRES_CALIBS'), 'ARCS', tbl[irow]['Name']), specbin=tbl[irow]['Rbin'])
@@ -334,10 +354,10 @@ def ingest_xidl_archive(outfile, n_final=4, func='legendre'):
         table_xidl['filename'][irow] = tbl[irow]['Name']
         table_xidl['nsolns'][irow] = nsolns
         table_xidl['nsolns_good'][irow] = nsolns_good
-        table_xidl['bluest_order'][irow] = this_order_vec[-1]
-        table_xidl['bluest_good_order'][irow] = this_order_vec_raw[-1]
-        table_xidl['reddest_order'][irow] = this_order_vec[0]
-        table_xidl['reddest_good_order'][irow] = this_order_vec_raw[0]
+        table_xidl['bluest_order'][irow] = this_order_vec_raw[-1]
+        table_xidl['bluest_good_order'][irow] = this_order_vec[-1]
+        table_xidl['reddest_order'][irow] = this_order_vec_raw[0]
+        table_xidl['reddest_good_order'][irow] = this_order_vec[0]
         table_xidl['xdisp_file'][irow] = tbl[irow]['XDISP']
         table_xidl['ech_angle_file'][irow] = tbl[irow]['ECH']
         table_xidl['xd_angle_file'][irow] = tbl[irow]['XDAng']
@@ -355,13 +375,13 @@ def ingest_xidl_archive(outfile, n_final=4, func='legendre'):
         table_xidl['wave'][irow, indx, :] = this_wave
         table_xidl['arcspec'][irow, indx, :] = this_arc
         # Fit the wavelengths
-        this_coeff_array = np.zeros((nsolns, n_final + 1))
+        this_coeff_array = np.zeros((nsolns_good, n_final + 1))
         for ii, iwave in enumerate(this_wave[igood, :]):
             pypeitFit = fitting.robust_fit(xvec, iwave, n_final, function=func, maxiter=10,
                                            lower=1e10, upper=1e10, maxrej=0, sticky=True,
                                            minx=fmin, maxx=fmax, weights=None)
             this_coeff_array[ii, :] = pypeitFit.fitc
-        table_xidl['coeff'][irow, indx, :] = this_coeff_array
+        table_xidl['coeff'][irow, indx_good, :] = this_coeff_array
 
     # Write out to multi-extension fits
     print(f'Writing HIRES xidl wv_calib archive to file: {outfile}')
@@ -374,6 +394,152 @@ def ingest_xidl_archive(outfile, n_final=4, func='legendre'):
     hdulist.writeto(outfile, overwrite=True)
 
     return
+
+
+def append_pypeit_archive(outfile, xidl_arxiv_file):
+    """
+    Append the pypeit format archived templates to the XIDL format archive table
+    Args:
+        outfile (str):
+            Name of the output file
+        xidl_arxiv_file (str):
+            File containing the XIDL templates archive
+
+    """
+
+    # Load the XIDL format archive file
+    xidl_params = Table.read(xidl_arxiv_file, hdu=1)[0]
+    xidl_tab = Table.read(xidl_arxiv_file, hdu=2)
+
+    # load the list of pypeit templates
+    ptempl_table_file = os.path.join(resource_filename('pypeit', 'data'), 'arc_lines',
+        'hires', 'hires_templ_pypeit.dat')
+    ptbl = Table.read(ptempl_table_file, format='ascii')
+    p_nrows = len(ptbl)
+
+    # recomputing the final order min, max, order_vec, norders
+    order_min = min(ptbl['IOrder'].min(), xidl_params['order_min'])
+    order_max = max(ptbl['EOrder'].max(), xidl_params['order_max'])
+
+    order_vec = np.arange(order_min, order_max + 1, 1)
+    norders = order_vec.size
+
+    # updata parms
+    xidl_params['order_min'] = order_min
+    xidl_params['order_max'] = order_max
+    xidl_params['norders'] = norders
+
+    # create new final table
+    tot_nrows = len(xidl_tab) + p_nrows
+    final_table = empty_design_table(tot_nrows, norders, n_final=xidl_params['n_final'])
+    final_table['wave'] = np.zeros((tot_nrows, norders, xidl_params['nspec']))
+    final_table['arcspec'] = np.zeros((tot_nrows, norders, xidl_params['nspec']))
+
+    # copy the xidl table to the final table (we need to do this, instead of just merging 2 tables,
+    # because the number of the orders increased with the pypeit templates)
+    for xirow in np.arange(len(xidl_tab)):
+        # get the right index
+        this_xorder_vec_raw = xidl_tab['order'][xirow][xidl_tab['populated'][xirow]]
+        this_xorder_vec = xidl_tab['order'][xirow][xidl_tab['populated_and_good'][xirow]]
+        this_xindx = this_xorder_vec_raw - order_min
+        this_xindx_good = this_xorder_vec - order_min
+        # fill the table
+        final_table['filename'][xirow] = xidl_tab['filename'][xirow]
+        final_table['nsolns'][xirow] = xidl_tab['nsolns'][xirow]
+        final_table['nsolns_good'][xirow] = xidl_tab['nsolns_good'][xirow]
+        final_table['bluest_order'][xirow] = xidl_tab['bluest_order'][xirow]
+        final_table['bluest_good_order'][xirow] = xidl_tab['bluest_good_order'][xirow]
+        final_table['reddest_order'][xirow] = xidl_tab['reddest_order'][xirow]
+        final_table['reddest_good_order'][xirow] = xidl_tab['reddest_good_order'][xirow]
+        final_table['xdisp_file'][xirow] = xidl_tab['xdisp_file'][xirow]
+        final_table['ech_angle_file'][xirow] = xidl_tab['ech_angle_file'][xirow]
+        final_table['xd_angle_file'][xirow] = xidl_tab['xd_angle_file'][xirow]
+        final_table['det_file'][xirow] = xidl_tab['det_file'][xirow]
+        # Arrays (nfile, norders)
+        final_table['order'][xirow, this_xindx] = this_xorder_vec_raw
+        final_table['populated'][xirow, this_xindx] = True
+        final_table['populated_and_good'][xirow, this_xindx_good] = True
+        final_table['ech_angle'][xirow, this_xindx] = xidl_tab['ech_angle'][xirow][xidl_tab['populated'][xirow]]
+        final_table['xd_angle'][xirow, this_xindx] = xidl_tab['xd_angle'][xirow][xidl_tab['populated'][xirow]]
+        final_table['xdisp'][xirow, this_xindx] = xidl_tab['xdisp'][xirow][xidl_tab['populated'][xirow]]
+        final_table['det'][xirow, this_xindx] = xidl_tab['det'][xirow][xidl_tab['populated'][xirow]]
+        final_table['binspec'][xirow, this_xindx] = xidl_tab['binspec'][xirow][xidl_tab['populated'][xirow]]
+        final_table['lambda_cen'][xirow, this_xindx] = xidl_tab['lambda_cen'][xirow][xidl_tab['populated'][xirow]]
+        final_table['wave'][xirow, this_xindx, :] = xidl_tab['wave'][xirow][xidl_tab['populated'][xirow]]
+        final_table['arcspec'][xirow, this_xindx, :] = xidl_tab['arcspec'][xirow][xidl_tab['populated'][xirow]]
+        final_table['coeff'][xirow, this_xindx_good, :] = xidl_tab['coeff'][xirow][xidl_tab['populated_and_good'][xirow]]
+
+    # Now deal with the pypeit format
+    # load the pypeit templates (they are WaveCalib files)
+    for irow in np.arange(p_nrows):
+        ifinal_row = irow + len(xidl_tab)
+        templ_file = os.path.join(os.getenv('PYPEIT_DEV'), 'dev_algorithms', 'hires_wvcalib',
+                                  'templates_from_pypeit', ptbl[irow]['Name'])
+        waveCalib = wavecalib.WaveCalib.from_file(templ_file, chk_version=False)
+        # this is the order vector available for this wavecalib file
+        this_order_vec_raw = np.arange(ptbl[irow]['IOrder'], ptbl[irow]['EOrder'] + 1, 1)
+        # select the orders that we want to use
+        if ptbl[irow]['Spatids'] == 'all':
+            igood = np.ones(waveCalib.spat_ids.size, dtype=bool)
+            if this_order_vec_raw.size != waveCalib.spat_ids.size:
+                msgs.error('the number of order determined using IOrder and EOrder does not match the number of '
+                           'orders in the WaveCalib file')
+        elif isinstance(ptbl[irow]['Spatids'], (list, tuple, np.integer)):
+            spat_ids = np.atleast_1d(ptbl[irow]['Spatids'])
+            igood = np.isin(waveCalib.spat_ids, spat_ids)
+        else:
+            msgs.error('Unrecognized format for Spatids')
+        this_order_vec = this_order_vec_raw[igood]
+        this_arc = np.array([arc.resize_spec(ww, xidl_params['nspec']) for ww in waveCalib.arc_spectra.T])
+        this_wave = np.array([arc.resize_spec(wvfit.wave_soln, xidl_params['nspec']) for wvfit in waveCalib.wv_fits])
+        nsolns = this_order_vec_raw.size
+        nsolns_good = np.sum(igood)
+        indx = this_order_vec_raw - order_min
+        indx_good = this_order_vec - order_min
+        # Information for the file is stored for convenience, although this is redundant with the arrays below
+        final_table['filename'][ifinal_row] = ptbl[irow]['Name']
+        final_table['nsolns'][ifinal_row] = nsolns
+        final_table['nsolns_good'][ifinal_row] = nsolns_good
+        final_table['bluest_order'][ifinal_row] = this_order_vec_raw[-1]
+        final_table['bluest_good_order'][ifinal_row] = this_order_vec[-1]
+        final_table['reddest_order'][ifinal_row] = this_order_vec_raw[0]
+        final_table['reddest_good_order'][ifinal_row] = this_order_vec[0]
+        final_table['xdisp_file'][ifinal_row] = ptbl[irow]['XDISP']
+        final_table['ech_angle_file'][ifinal_row] = ptbl[irow]['ECH']
+        final_table['xd_angle_file'][ifinal_row] = ptbl[irow]['XDAng']
+        final_table['det_file'][ifinal_row] = ptbl[irow]['Chip']
+        # Arrays (nfile, norders)
+        final_table['order'][ifinal_row, indx] = this_order_vec_raw
+        final_table['populated'][ifinal_row, indx] = True
+        final_table['populated_and_good'][ifinal_row, indx_good] = True
+        final_table['ech_angle'][ifinal_row, indx] = ptbl[irow]['ECH']
+        final_table['xd_angle'][ifinal_row, indx] = ptbl[irow]['XDAng']
+        final_table['xdisp'][ifinal_row, indx] = ptbl[irow]['XDISP']
+        final_table['det'][ifinal_row, indx] = ptbl[irow]['Chip']
+        final_table['binspec'][ifinal_row, indx] = ptbl[irow]['Rbin']
+        final_table['lambda_cen'][ifinal_row, indx] = np.median(this_wave, axis=1)
+        final_table['wave'][ifinal_row, indx, :] = this_wave
+        final_table['arcspec'][ifinal_row, indx, :] = this_arc
+        # Fit the wavelengths
+        xnspecmin1 = float(xidl_params['nspec'] - 1)
+        xvec = np.arange(xidl_params['nspec']) / xnspecmin1
+        this_coeff_array = np.zeros((nsolns_good, xidl_params['n_final'] + 1))
+        for ii, iwave in enumerate(this_wave[igood, :]):
+            pypeitFit = fitting.robust_fit(xvec, iwave, xidl_params['n_final'], function=xidl_params['func'], maxiter=10,
+                                           lower=1e10, upper=1e10, maxrej=0, sticky=True,
+                                           minx=xidl_params['xmin'], maxx=xidl_params['xmax'], weights=None)
+            this_coeff_array[ii, :] = pypeitFit.fitc
+        final_table['coeff'][ifinal_row, indx_good, :] = this_coeff_array
+
+    # Write out to multi-extension fits
+    print(f'Writing HIRES xidl+pypeit wv_calib archive to file: {outfile}')
+    hdu_param = fits.BinTableHDU(xidl_params.table.as_array())
+    hdu_table = fits.BinTableHDU(final_table.as_array())
+
+    hdulist = fits.HDUList()
+    hdulist.append(hdu_param)
+    hdulist.append(hdu_table)
+    hdulist.writeto(outfile, overwrite=True)
 
 
 def fit_wvcalib_vs_angles(arxiv_file, outfile, func='legendre',
@@ -477,7 +643,8 @@ def fit_coeffs_vs_ech_angle(arxiv_params, arxiv, func='legendre', nmax = 3, coef
         msgs.error(f'nmax={nmax} cannot be greater than n_final+1={n_final+1}. Reduce nmax')
     # This vector holds the polynomial order used to fit each coefficient
     coeff_fit_order_vec = np.full(n_final+1, coeff_fit_order_min)
-    coeff_fit_order_vec[0:nmax] = coeff_fit_order_max
+    # DP: the fits look better if we remove the following line
+    # coeff_fit_order_vec[0:nmax] = coeff_fit_order_max
     ## TODO This needs to be modified to be lower order for cases where there are very few fits in the arxiv. Right now
     # we fit the first 0:nmax coeffs always with a coeff_fit_order_max orderp polynomial.
 
@@ -604,8 +771,8 @@ def echelle_composite_arcspec(arxiv_file, outfile, show_individual_solns=False, 
                 this_dwave[ii, :] = wvutils.get_delta_wave(this_wave[ii, :], this_gpm[ii, :])
 
             wave_grid_min[iord], wave_grid_max[iord] = this_wave.min(), this_wave.max()
-            dwave_pix[iord] = np.median(this_dwave.min(axis=1))
-            dloglam_pix[iord] = np.median((this_dwave/this_wave/np.log(10.0)).min(axis=1))
+            dwave_pix[iord] = np.median(this_dwave.min(axis=1, where=this_dwave!=0, initial=10))
+            dloglam_pix[iord] = np.median((this_dwave/this_wave/np.log(10.0)).min(axis=1, where=this_dwave!=0, initial=10))
         else:
             msgs.error(f'No arc solutions contribute to order={iord}. There must be a bug')
 
@@ -709,21 +876,25 @@ xidl_arxiv_file = os.path.join(os.getenv('PYPEIT_DEV'), 'dev_algorithms', 'hires
 # Create the astropy table form of the xidl save file arxiv
 if not os.path.isfile(xidl_arxiv_file):
     ingest_xidl_archive(xidl_arxiv_file)
+# append the pypeit templates to the xidl archive
+arxiv_file = os.path.join(os.getenv('PYPEIT_DEV'), 'dev_algorithms', 'hires_wvcalib', 'hires_wvcalib.fits')
+if not os.path.isfile(arxiv_file):
+    append_pypeit_archive(arxiv_file, xidl_arxiv_file)
 
-sys.exit(-1)
+# sys.exit(-1)
 # Perform fits to the coefficients vs ech angle
 # TODO see if pca works better here
-debug=True
+debug=False
 wvcalib_angle_fit_file = os.path.join(os.getenv('PYPEIT_DEV'), 'dev_algorithms', 'hires_wvcalib', 'wvcalib_angle_fits.fits')
 if not os.path.isfile(wvcalib_angle_fit_file):
-    fit_wvcalib_vs_angles(xidl_arxiv_file, wvcalib_angle_fit_file, func='legendre',
+    fit_wvcalib_vs_angles(arxiv_file, wvcalib_angle_fit_file, func='legendre',
                       ech_nmax = 3, ech_coeff_fit_order_min=1, ech_coeff_fit_order_max=2,
                       xd_reddest_fit_polyorder=2, sigrej=3.0, maxrej=1, debug=debug)
 
 # Compute a composite arc from the solution arxiv
 composite_arcfile = os.path.join(os.getenv('PYPEIT_DEV'), 'dev_algorithms', 'hires_wvcalib', 'HIRES_composite_arc.fits')
 if not os.path.isfile(composite_arcfile):
-    echelle_composite_arcspec(xidl_arxiv_file, composite_arcfile, show_orders=debug)
+    echelle_composite_arcspec(arxiv_file, composite_arcfile, show_orders=debug)
 
 sys.exit(-1)
 
@@ -746,7 +917,7 @@ colors = itertools.cycle(color_tuple)
 # # Read template file
 # templ_table_file = os.path.join(
 #     resource_filename('pypeit', 'data'), 'arc_lines',
-#     'hires', 'hires_templ.dat')
+#     'hires', 'hires_templ_xidl.dat')
 # tbl = Table.read(templ_table_file, format='ascii')
 # nrows = len(tbl)
 #
