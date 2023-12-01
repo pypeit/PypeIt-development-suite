@@ -154,7 +154,7 @@ def main(args):
 	wtable_old = load_all_wave_info(args.old_redux, input_spec=args.spec)
 	wtable_new = load_all_wave_info(args.new_redux, input_spec=args.spec)
 
-	combined_wtable = join(wtable_old, wtable_new, join_type='left', keys=['file', 'SpatID'])
+	combined_wtable = join(wtable_old, wtable_new, join_type='left', keys=['file', 'SpatOrderID'])
 	if args.print_tab:
 		combined_wtable.pprint_all()
 
