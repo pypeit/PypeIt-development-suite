@@ -5,18 +5,14 @@ Requires files in Development suite
 import os
 
 import pytest
-import glob
 import numpy as np
 
 from pypeit.spectrographs.util import load_spectrograph
 from pypeit.images import buildimage
 from pypeit.images import pypeitimage
 from pypeit import flatfield
+from pypeit.tests.tstutils import data_path
 
-
-def data_path(filename):
-    data_dir = os.path.join(os.path.dirname(__file__), 'files')
-    return os.path.join(data_dir, filename)
 
 kast_blue = load_spectrograph('shane_kast_blue')
 kast_par = kast_blue.default_pypeit_par()
@@ -34,13 +30,14 @@ def shane_kast_blue_sci_files():
 @pytest.fixture
 def nires_sci_files():
     return [os.path.join(os.getenv('PYPEIT_DEV'), 'RAW_DATA', 
-                         'keck_nires', 'NIRES', ifile)
+                         'keck_nires', 'ABBA_wstandard', ifile)
             for ifile in ['s190519_0060.fits']]
+
 
 @pytest.fixture
 def nires_bg_files():
     return [os.path.join(os.getenv('PYPEIT_DEV'), 'RAW_DATA', 
-                         'keck_nires', 'NIRES', ifile)
+                         'keck_nires', 'ABBA_wstandard', ifile)
             for ifile in ['s190519_0059.fits']]
 
 

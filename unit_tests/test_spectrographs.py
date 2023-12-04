@@ -5,9 +5,6 @@ import os
 
 from IPython import embed
 
-import pytest
-
-from pypeit.pypmsgs import PypeItError
 from pypeit import spectrographs
 
 
@@ -35,7 +32,7 @@ def test_gemini_flamingos():
 
 def test_gemini_gnirs():
     s = spectrographs.gemini_gnirs.GeminiGNIRSSpectrograph()
-    example_file = os.path.join(os.environ['PYPEIT_DEV'], 'RAW_DATA', 'gemini_gnirs',
+    example_file = os.path.join(os.environ['PYPEIT_DEV'], 'RAW_DATA', 'gemini_gnirs_echelle',
                                 '32_SB_SXD', 'cN20170331S0246.fits')
     assert os.path.isfile(example_file), 'Could not find example file for Gemini GNIRS read.'
     det = 1

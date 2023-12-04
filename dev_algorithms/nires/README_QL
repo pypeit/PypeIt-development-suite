@@ -1,0 +1,13 @@
+# A-B
+
+- Using the NIRES raw files, minus the standard star frames
+- pypeit_ql keck_nires --full_rawpath /data/Projects/PypeIt-codes/PypeIt-development-suite/REDUX_OUT/keck_nires/QL/raw --bkg_redux
+
+# AA-BB
+
+- Using the ERIS raw files, science only
+  - NR.20201128.22795.fits  NR.20201128.23132.fits  NR.20201128.23467.fits  NR.20201128.23803.fits
+- Pointing at the "Masters" files made from the above run via NIRES_MASTERS
+- pypeit_ql keck_nires --full_rawpath /data/Projects/PypeIt-codes/PypeIt-development-suite/REDUX_OUT/keck_nires/QL/raw_eris --bkg_redux 
+
+  -- Stalled out on dither pattern reconciliation

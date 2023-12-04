@@ -28,22 +28,13 @@ def build_figure():
     axis = fig.add_axes([0.1, 0.1, 0.8, 0.8])
     return fig, axis
 
-def create_zp_plot(axis, orig_file_metadata, det, sf):
+def create_zp_plot(axis, label, det_num, sf):
 
-    dispangle = orig_file_metadata['CENTRAL_WAVE'][0]
-    filter = orig_file_metadata['BLOCKING'][0]
-    airmass = orig_file_metadata['AIRMASS'][0]
-    orig_path = Path(orig_file_metadata['FILENAME'][0])
-    converted_filename = str(orig_path.parent.name + "_" + orig_path.stem)
-    std_name = orig_file_metadata['STD_NAME'][0]
 
-    i = 0 if det == 3 else 1
-
-    wave = sf.sens[i]['SENS_WAVE']
-    zp = sf.sens[i]['SENS_ZEROPOINT_FIT']
-    gpm = sf.sens[i]['SENS_ZEROPOINT_FIT_GPM']
+    wave = sf.sens[det_num]['SENS_WAVE']
+    zp = sf.sens[det_num]['SENS_ZEROPOINT_FIT']
+    gpm = sf.sens[det_num]['SENS_ZEROPOINT_FIT_GPM']
     
-    label = f'{converted_filename} {std_name} det {det}, dispangle {dispangle:.3f} filter {filter} airmass {airmass:.3f}'
     return create_plot(axis, None, label, wave[gpm], zp[gpm])
 
 def create_plot(axis, color, label, x, y, linewidth=2.5, linestyle='solid'):
@@ -51,8 +42,9 @@ def create_plot(axis, color, label, x, y, linewidth=2.5, linestyle='solid'):
     axis.plot(x, y, color=color, linewidth=linewidth, linestyle=linestyle, label=label)
     xmin = (0.98*x.min())
     xmax = (1.02*x.max())
-    ymin = 14.0
-    ymax = (1.05*y.max())
+    #ymin = 14.0
+    ymin = (0.98*y.min())
+    ymax = min((1.05*y.max()),21.5)
 
     return xmin, xmax, ymin, ymax
 
@@ -64,18 +56,18 @@ def setup_axes(axis,xmin, ymin, xmax, ymax, title):
     axis.legend()
     axis.set_xlabel('Wavelength (Angstroms)')
     axis.set_ylabel('Zeropoint Fit (AB mag)')
-    axis.set_title('PypeIt Zeropoint Fit for' + title)
+    axis.set_title(title)
 
     
 def parse_args(options=None, return_parser=False):
     parser = argparse.ArgumentParser(description='Graph a sensitivity function')
-    parser.add_argument("orig_root_dir", type=str,
-                        help="Original path of fits files processed by Greg Wirths scripts")        
-    parser.add_argument("sens_root_dir", type=str,
-                        help="Path of sensfunc fits files.")        
-    parser.add_argument("pdfFile", type=str)
-    parser.add_argument("filelist", type=str, nargs="+",
-                        help="List of files to parse.")
+    parser.add_argument("--title", type=str,
+                        help="Optional Title for the plot", default=None)
+    parser.add_argument("--labels", default=[], type=str, nargs="+")
+    parser.add_argument("--no-labels", default=False, action="store_true")
+    parser.add_argument("pdfFile", type=str, help="Name of PDF file to save.")
+    parser.add_argument("filelist", type=Path, nargs="+",
+                        help="List of sens funcs to plot.")
 
             
 
@@ -88,44 +80,39 @@ def parse_args(options=None, return_parser=False):
 def main(args):
     """ Executes sensitivity function computation.
     """
-    orig_root_dir = Path(args.orig_root_dir)
-    sens_root_dir = Path(args.sens_root_dir)
-     
+    if args.title is None:
+        title = 'PypeIt Zeropoint Fit for' + args.filelist[0].stem.replace("_", " ")
+    else:
+        title = args.title
+
+    sflist =  [SensFunc.from_file(str(file)) for file in args.filelist]
+    num_plots = sum([len(sf.sens) for sf in sflist])
     with PdfPages(args.pdfFile) as pdf:
-        for file in args.filelist:
-            title = str(Path(file).stem).replace("_", " ")
-            with open(file, "r") as f:
-                fits_files = [Path(x.strip()) for x in f.readlines() if x.strip() != '']
 
-            fig, axis = build_figure()
-            xmin = np.zeros(len(fits_files)*2)
-            ymin = np.zeros(len(fits_files)*2)
-            xmax = np.zeros(len(fits_files)*2)
-            ymax = np.zeros(len(fits_files)*2)
+        xmin = np.zeros(num_plots)
+        ymin = np.zeros(num_plots)
+        xmax = np.zeros(num_plots)
+        ymax = np.zeros(num_plots)
+        fig, axis = build_figure()
+        i = 0  
+        for n, sf in enumerate(sflist):
 
-            i = 0  
-            for fits_file in fits_files:
-                hdul = fits_open(orig_root_dir / fits_file)
-                orig_file_metadata = Table(hdul[1].data)
-                sens_file = sens_root_dir / fits_file.parent / (f"sens_" + fits_file.name)
-                print('Reading sensitivity function from file: {:}'.format(sens_file))
-                sf = SensFunc.from_file(sens_file)
-
-                for det in [3, 7]:
-                    (xmin[i], xmax[i], ymin[i], ymax[i]) = create_zp_plot(axis, orig_file_metadata, det, sf)
-                    i += 1
-
-                #(xmin[i], xmax[i], ymin[i], ymax[i]) = create_plot(axis, None, f'{sens_file} zeropoint', sf.wave, sf.zeropoint)
-                #i += 1
+            for det_num in range(len(sf.sens)):
+                if args.no_labels:
+                    label = None
+                elif i >= len(args.labels):
+                    label = f"{args.filelist[n]} det {i}"
+                else:
+                    label = args.labels[i]                    
+                (xmin[i], xmax[i], ymin[i], ymax[i]) = create_zp_plot(axis, label, det_num, sf)
+                i += 1
 
 
-            title = f' keck_deimos {title}'
+        setup_axes(axis, np.min(xmin), np.min(ymin), np.max(xmax),np.max(ymax), title)
 
-            setup_axes(axis, np.min(xmin), np.min(ymin), np.max(xmax),np.max(ymax), title)
+        pdf.savefig(fig)
 
-            pdf.savefig(fig)
-
-            plot.show()
+        plot.show()
 
 def entry_point():
     main(parse_args())

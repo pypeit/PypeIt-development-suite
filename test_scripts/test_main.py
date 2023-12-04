@@ -381,16 +381,16 @@ class TestReport(object):
     def summarize_setup_tests(self, output=sys.stdout):
         """Display a summary of the PypeIt setup tests"""
 
-        masters_text = '(Masters ignored)' if self.pargs.do_not_reuse_masters else ''
+        calib_text = '(Existing calibrations ignored)' if self.pargs.do_not_reuse_calibs else ''
         if self.num_tests == self.num_passed:
             print("\x1B[" + "1;32m" +
                   "--- PYPEIT DEVELOPMENT SUITE PASSED {0}/{1} TESTS {2} ---".format(
-                      self.num_passed, self.num_tests, masters_text)
+                      self.num_passed, self.num_tests, calib_text)
                   + "\x1B[" + "0m" + "\r", file=output)
         else:
             print("\x1B[" + "1;31m" +
                   "--- PYPEIT DEVELOPMENT SUITE FAILED {0}/{1} TESTS {2} ---".format(
-                      self.num_failed, self.num_tests, masters_text)
+                      self.num_failed, self.num_tests, calib_text)
                   + "\x1B[" + "0m" + "\r", file=output)
             print('Failed tests:', file=output)
             for t in self.failed_tests:
@@ -519,7 +519,8 @@ def clear_coverage_data(redux_out):
     for file in path.rglob(".coverage*"):
         file.unlink(missing_ok = True)
 
-def run_pytest(pargs, test_descr, test_dir, test_report, redux_out=None):
+def run_pytest(pargs, test_descr, test_dir, test_report, 
+               redux_out=None):
     """Run pytest on a directory of test files.
     
     Args:
@@ -643,8 +644,8 @@ def parser(options=None):
                         help='Debug using only blue setups')
     parser.add_argument('-p', '--prep_only', default=False, action='store_true',
                         help='Only prepare to execute run_pypeit, but do not actually run it.')
-    parser.add_argument('-m', '--do_not_reuse_masters', default=False, action='store_true',
-                        help='run pypeit without using any existing masters')
+    parser.add_argument('-m', '--do_not_reuse_calibs', default=False, action='store_true',
+                        help='run pypeit without using any existing processed calibration frames')
     parser.add_argument('-t', '--threads', default=1, type=int,
                         help='Run THREADS number of parallel tests.')
     parser.add_argument('-q', '--quiet', default=False, action='store_true',

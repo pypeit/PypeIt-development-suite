@@ -1,0 +1,31 @@
+# Auto-generated PypeIt input file using PypeIt version: 1.8.2.dev1+g0cb9c4cb4
+# UTC 2022-08-12T15:22:10.262
+
+# User-defined execution parameters
+[rdx]
+    spectrograph = vlt_xshooter_nir
+[calibrations]
+    [[wavelengths]]
+        fwhm_fromlines = False
+
+# Setup
+setup read
+Setup C:
+  arm: NIR
+setup end
+
+# Data block 
+data read
+ path /Users/silviaonorato/Projects/highz_qso_redux/highz_qso_redux/PypeIt_data/RAW_DATA/vlt_xshooter/test_dev_suite/std_star_NIR_2018_LTT3218
+                               filename |       frametype |         ra |       dec |                 target | dispname |   decker | binning |            mjd | airmass | exptime | arm | dither | comb_id | bkg_id | calib
+     XSHOO.2018-01-29T00:38:03.901.fits |        tilt,arc |   9.651224 |  -15.4561 |             J0038m1527 |  default |   0.9x11 |     1,1 | 58147.02643404 |   1.714 |  1200.0 | NIR |    2.5 |      -1 |     -1 |     0
+     XSHOO.2018-01-29T00:58:49.114.fits |        tilt,arc |   9.649866 | -15.45564 |             J0038m1527 |  default |   0.9x11 |     1,1 | 58147.04084623 |   1.943 |  1200.0 | NIR |   -2.5 |      -1 |     -1 |     0
+     XSHOO.2018-01-29T01:37:13.970.fits |        standard | 130.377861 |  -32.9361 |               STD,FLUX |  default |   5.0x11 |     1,1 |  58147.0675228 |   1.363 |   240.0 | NIR |    2.5 |       2 |      3 |     0
+     XSHOO.2018-01-29T01:43:04.807.fits |        standard | 130.379514 | -32.93605 |               STD,FLUX |  default |   5.0x11 |     1,1 | 58147.07158341 |   1.337 |   240.0 | NIR |   -2.5 |       3 |      2 |     0
+     XSHOO.2018-01-29T12:08:51.428.fits | pixelflat,trace |       None |      None |              LAMP,FLAT |  default |   0.9x11 |     1,1 | 58147.50615079 |    None |    8.32 | NIR |   None |      -1 |     -1 |     0
+     XSHOO.2018-01-29T12:09:09.575.fits |    lampoffflats |       None |      None |              LAMP,FLAT |  default |   0.9x11 |     1,1 | 58147.50636082 |    None |    8.32 | NIR |   None |      -1 |     -1 |     0
+     XSHOO.2018-01-29T12:09:24.255.fits | pixelflat,trace |       None |      None |              LAMP,FLAT |  default |   0.9x11 |     1,1 | 58147.50653073 |    None |    8.32 | NIR |   None |      -1 |     -1 |     0
+     XSHOO.2018-01-29T12:09:42.400.fits |    lampoffflats |       None |      None |              LAMP,FLAT |  default |   0.9x11 |     1,1 | 58147.50674074 |    None |    8.32 | NIR |   None |      -1 |     -1 |     0
+     XSHOO.2018-01-29T12:09:59.166.fits | pixelflat,trace |       None |      None |              LAMP,FLAT |  default |   0.9x11 |     1,1 | 58147.50693479 |    None |    8.32 | NIR |   None |      -1 |     -1 |     0
+     XSHOO.2018-01-29T12:10:16.620.fits |    lampoffflats |       None |      None |              LAMP,FLAT |  default |   0.9x11 |     1,1 | 58147.50713681 |    None |    8.32 | NIR |   None |      -1 |     -1 |     0
+data end

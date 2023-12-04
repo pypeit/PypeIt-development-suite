@@ -1,6 +1,6 @@
 from pathlib import Path
 import sys
-
+import datetime
 from astropy.table import Table, vstack
 from astropy.io import fits
 import numpy as np
@@ -26,19 +26,24 @@ def masking_med_s2n(specobj):
 root_dir = Path(sys.argv[1])
 dest_dir = Path(sys.argv[2])
 pad = True if (len(sys.argv) >= 4 and sys.argv[3].lower() == "pad") else False
+split_detectors = False if (len(sys.argv)>=4 and sys.argv[3].lower() == "nosplit") else True
 combined_table = None
 
 for fits_file in [x.relative_to(root_dir) for x in root_dir.rglob("*.fits")]:
-    dest_file = dest_dir / fits_file.parent / f'spec1d_{fits_file.name}'
     try:
-
-        dest_file.parent.mkdir(parents=True, exist_ok=True)
-        sobjs = load_wmko_std_spectrum(str(root_dir / fits_file), str(dest_file), pad)
-
         hdul = fits.open(str(root_dir / fits_file))
         t = Table(hdul[1].data)
         t2 = Table(hdul[2].data)        
-        t.add_column([masking_med_s2n(sobjs[1])], index=0, name = "Det 7 s2n")
+        std_name = t['STD_NAME'][0].replace(' ', '')
+        instr = t['INSTRUMENT'][0]
+        obsdate = datetime.datetime.strptime(t['DATE'][0], "%d%b%Y").strftime('%Y%m%d')
+        dest_file = dest_dir / fits_file.parent / f'spec1d_{fits_file.stem}-{std_name}_{instr}_{obsdate}.fits'
+
+        dest_file.parent.mkdir(parents=True, exist_ok=True)
+        sobjs = load_wmko_std_spectrum(str(root_dir / fits_file), str(dest_file), pad, split_detectors)
+
+        if split_detectors:
+            t.add_column([masking_med_s2n(sobjs[1])], index=0, name = "Det 7 s2n")
         t.add_column([masking_med_s2n(sobjs[0])], index=0, name = "Det 3 s2n")
         t.add_column([len(t2['COUNTS'])], index=0, name = "# counts")
         t.add_column([len(t2['COUNTS'][t2['COUNTS']<0])], index=0, name = "# counts < 0")

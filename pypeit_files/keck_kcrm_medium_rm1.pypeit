@@ -1,0 +1,55 @@
+# Auto-generated PypeIt input file using PypeIt version: 1.13.1.dev300+g2758a63bb.d20230705
+# UTC 2023-08-04T05:22:17.511
+
+# User-defined execution parameters
+[rdx]
+    spectrograph = keck_kcrm
+[calibrations]
+    [[tiltframe]]
+        [[[process]]]
+            combine = median  # This is a good choice if you want to use the science frames to determine the tilts
+
+# Setup
+setup read
+Setup A:
+  binning: 2,2
+  decker: Medium
+  dispangle: 123.9403839
+  dispname: RM1
+setup end
+
+# Data block 
+data read
+ path /Users/rcooke/Desktop/KCRM/J1626/Raw
+           filename |       frametype |                 ra |               dec |     target | dispname | decker | binning |          mjd | airmass |       exptime |   dispangle |   idname | calpos | calib
+kr230620_00060.fits |           align |  63.99999999999999 |              45.0 |    unknown |      RM1 | Medium |     2,2 | 60115.139465 |    1.41 |   8.700133888 | 123.9403839 | CONTBARS | Mirror |     0
+kr230620_00061.fits |           align |  63.99999999999999 |              45.0 |    unknown |      RM1 | Medium |     2,2 | 60115.139843 |    1.41 |   8.700133632 | 123.9403839 | CONTBARS | Mirror |     0
+kr230620_00062.fits |           align |  63.99999999999999 |              45.0 |    unknown |      RM1 | Medium |     2,2 | 60115.140221 |    1.41 |   8.700133888 | 123.9403839 | CONTBARS | Mirror |     0
+# These are the FeAr frames
+kr230620_00063.fits |             arc |  63.99999999999999 |              45.0 |    unknown |      RM1 | Medium |     2,2 | 60115.141047 |    1.41 |   9.000133888 | 123.9403839 |  ARCLAMP | Mirror |     0
+kr230620_00064.fits |             arc |  63.99999999999999 |              45.0 |    unknown |      RM1 | Medium |     2,2 | 60115.141437 |    1.41 |   9.000134144 | 123.9403839 |  ARCLAMP | Mirror |     0
+kr230620_00065.fits |             arc |  63.99999999999999 |              45.0 |    unknown |      RM1 | Medium |     2,2 | 60115.141826 |    1.41 |   9.000134144 | 123.9403839 |  ARCLAMP | Mirror |     0
+# These are the ThAr frames
+kr230620_00066.fits |            tilt |  63.99999999999999 |              45.0 |    unknown |      RM1 | Medium |     2,2 | 60115.142428 |    1.41 |   9.000134144 | 123.9403839 |  ARCLAMP | Mirror |     0
+kr230620_00067.fits |            tilt |  63.99999999999999 |              45.0 |    unknown |      RM1 | Medium |     2,2 | 60115.142818 |    1.41 |   9.000134144 | 123.9403839 |  ARCLAMP | Mirror |     0
+kr230620_00068.fits |            tilt |  63.99999999999999 |              45.0 |    unknown |      RM1 | Medium |     2,2 | 60115.143196 |    1.41 |   9.000134144 | 123.9403839 |  ARCLAMP | Mirror |     0
+kr230620_00015.fits |            bias |  63.99999999999999 |              45.0 |    unknown |       RL | Medium |     2,2 | 60115.087886 |    1.41 |   0.000124928 | 140.1203003 |     BIAS | Mirror |     0
+kr230620_00016.fits |            bias |  63.99999999999999 |              45.0 |    unknown |       RL | Medium |     2,2 | 60115.088394 |    1.41 |   0.000125184 | 140.1203003 |     BIAS | Mirror |     0
+kr230620_00017.fits |            bias |  63.99999999999999 |              45.0 |    unknown |       RL | Medium |     2,2 | 60115.088901 |    1.41 |   0.000125184 | 140.1203003 |     BIAS | Mirror |     0
+kr230620_00018.fits |            bias |  63.99999999999999 |              45.0 |    unknown |       RL | Medium |     2,2 | 60115.089409 |    1.41 |   0.000124928 | 140.1203003 |     BIAS | Mirror |     0
+kr230620_00019.fits |            bias |  63.99999999999999 |              45.0 |    unknown |       RL | Medium |     2,2 | 60115.089917 |    1.41 |   0.000125184 | 140.1203003 |     BIAS | Mirror |     0
+kr230620_00020.fits |            bias |  63.99999999999999 |              45.0 |    unknown |       RL | Medium |     2,2 | 60115.090424 |    1.41 |   0.000125184 | 140.1203003 |     BIAS | Mirror |     0
+kr230620_00021.fits |            bias |  63.99999999999999 |              45.0 |    unknown |       RL | Medium |     2,2 | 60115.090932 |    1.41 |   0.000124928 | 140.1203003 |     BIAS | Mirror |     0
+kr230620_00075.fits | illumflat,trace |  63.99999999999999 |              45.0 |    unknown |      RM1 | Medium |     2,2 |   60115.1495 |    1.41 |  60.100185088 | 123.9403839 | DOMEFLAT |    Sky |     0
+kr230620_00076.fits | illumflat,trace |  63.99999999999999 |              45.0 |    unknown |      RM1 | Medium |     2,2 | 60115.150704 |    1.41 |  60.100185344 | 123.9403839 | DOMEFLAT |    Sky |     0
+kr230620_00077.fits | illumflat,trace |  63.99999999999999 |              45.0 |    unknown |      RM1 | Medium |     2,2 | 60115.151909 |    1.41 |  60.100185088 | 123.9403839 | DOMEFLAT |    Sky |     0
+kr230620_00069.fits |       pixelflat |  63.99999999999999 |              45.0 |    unknown |      RM1 | Medium |     2,2 | 60115.143869 |    1.41 |   8.700133632 | 123.9403839 | FLATLAMP | Mirror |     0
+kr230620_00070.fits |       pixelflat |  63.99999999999999 |              45.0 |    unknown |      RM1 | Medium |     2,2 | 60115.144471 |    1.41 |   8.700133888 | 123.9403839 | FLATLAMP | Mirror |     0
+kr230620_00071.fits |       pixelflat |  63.99999999999999 |              45.0 |    unknown |      RM1 | Medium |     2,2 | 60115.145085 |    1.41 |   8.700133632 | 123.9403839 | FLATLAMP | Mirror |     0
+kr230620_00072.fits |       pixelflat |  63.99999999999999 |              45.0 |    unknown |      RM1 | Medium |     2,2 | 60115.145687 |    1.41 |   8.700133888 | 123.9403839 | FLATLAMP | Mirror |     0
+kr230620_00073.fits |       pixelflat |  63.99999999999999 |              45.0 |    unknown |      RM1 | Medium |     2,2 | 60115.146289 |    1.41 |   8.700133632 | 123.9403839 | FLATLAMP | Mirror |     0
+kr230620_00074.fits |       pixelflat |  63.99999999999999 |              45.0 |    unknown |      RM1 | Medium |     2,2 | 60115.146903 |    1.41 |   8.700133888 | 123.9403839 | FLATLAMP | Mirror |     0
+kr230620_00176.fits |         science | 246.61041666666665 | 27.85902777777778 | J1626 2751 |      RM1 | Medium |     2,2 | 60115.476252 |    1.22 |  600.10013568 | 123.9403839 |   OBJECT |    Sky |     0
+kr230620_00181.fits |         science | 246.61166666666665 | 27.85902777777778 | J1626 2751 |      RM1 | Medium |     2,2 | 60115.504373 |    1.39 | 600.100135424 | 123.9403839 |   OBJECT |    Sky |     0
+data end
+

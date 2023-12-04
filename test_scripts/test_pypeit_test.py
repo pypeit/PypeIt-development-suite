@@ -424,9 +424,9 @@ def test_main_in_steps(monkeypatch, tmp_path):
                                           '-i', 'shane_kast_blue', '-s', '600_4310_d55', 'ql'])
         assert test_main.main() == 0
 
-def test_quick_look_build_masters_failure(monkeypatch, tmp_path):
+def test_quick_look_build_calib_failure(monkeypatch, tmp_path):
     """
-    Test test_main.main() ql tests that fail building masters.
+    Test test_main.main() ql tests that fail building calibrations.
     """
 
     # Failure from the build script returning non-zero
@@ -445,25 +445,25 @@ def test_quick_look_build_masters_failure(monkeypatch, tmp_path):
 
         assert test_main.main() == 1
 
-def test_quick_look_masters_env(monkeypatch, tmp_path):
+def test_quick_look_calib_env(monkeypatch, tmp_path):
     """
-    Test test_main.main() ql tests with and without a NIRES_MASTERS environment variable.
+    Test test_main.main() ql tests with and without a NIRES_CALIB environment variable.
     """
 
-    # Generate masters without the environment variable set
+    # Generate calibrations without the environment variable set
     with monkeypatch.context() as m:
         monkeypatch.setattr(subprocess, "Popen", mock_popen)
         monkeypatch.setattr(subprocess, "run", mock_run)
-        monkeypatch.delenv('NIRES_MASTERS', raising=False)
+        monkeypatch.delenv('NIRES_CALIB', raising=False)
         monkeypatch.setattr(sys, "argv", ['pypeit_test', '-o', str(tmp_path), '-i', 'keck_nires', 'reduce', 'ql'])
 
         assert test_main.main() == 0
 
-    # Generate masters with the environment variable set
+    # Generate calibrations with the environment variable set
     with monkeypatch.context() as m:
         monkeypatch.setattr(subprocess, "Popen", mock_popen)
         monkeypatch.setattr(subprocess, "run", mock_run)
-        monkeypatch.setenv('NIRES_MASTERS', str(tmp_path))
+        monkeypatch.setenv('NIRES_CALIB', str(tmp_path))
         monkeypatch.setattr(sys, "argv", ['pypeit_test', '-o', str(tmp_path), '-i', 'keck_nires', 'reduce', 'ql'])
 
         assert test_main.main() == 0
