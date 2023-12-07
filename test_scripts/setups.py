@@ -20,7 +20,7 @@ all_setups = {
                     '900ZD_M_6000', '1200B_LVM_5200', '900ZD_LVM_5500',
                     '830G_M_9000_dither'],
     'keck_hires': [
-        #'HS1700+6416_H45aH_RED_B2_ECH_0.00_XD_-0.00_1x2',  # This one has bad HDUs
+        'HS1700+6416_H45aH_RED_B2_ECH_0.00_XD_-0.00_1x2',  # This one has bad HDUs
         #'J0100+2802_H204Hr_RED_C1_ECH_0.75_XD_1.69_1x2',
         'J0100+2802_H204Hr_RED_C1_ECH_-0.82_XD_1.62_1x2',
         'J0100+2802_H237Hr_RED_C1_ECH_0.88_XD_1.46_1x2',
@@ -56,7 +56,7 @@ all_setups = {
     'mmt_binospec': ['Longslit_G600', 'Multislit_G270', 'Longslit_G1000'],
     'mmt_mmirs': ['HK_zJ', 'J_zJ', 'K_K'],
     'mmt_bluechannel': ['300l', '500GPM', '800GPM', '832GPM_1st', '832GPM_2nd', '1200GPM'],
-    'ntt_efosc2': ['gr5', 'gr6'],
+    'ntt_efosc2': ['gr4', 'gr5', 'gr6'],
     'not_alfosc': ['grism3', 'grism4', 'grism5', 'grism7', 'grism10', 'grism11', 'grism17', 'grism18', 'grism19', 'grism20', 'grism4_nobin'],
     'p200_dbsp_blue': ['600_4000_d55', '600_4000_d68', '1200_5000_d68'],
     'p200_dbsp_red': ['316_7500_d55', '600_10000_d55', '1200_7100_d68'],
