@@ -87,8 +87,8 @@ target = 'J0020'
 #target = 'J1007'
 # Dispersers
 #disperser = '140H_bogus_F100LP'
-#disperser = '140H'
-disperser = '235H'
+disperser = '140H'
+#disperser = '235H'
 #disperser = '395H'
 #disperser = 'PRISM_02073'
 
@@ -97,12 +97,12 @@ detectors = ['nrs1', 'nrs2']
 exp_list = []
 
 bkg_redux = False #False #False
-run_stage1 = True
+run_stage1 = False
 run_stage2 = True
 #mode = 'MSA'
 mode ='FS'
 
-show = True
+show = False
 
 # MSA demo
 #reduce_slits = None
@@ -227,8 +227,8 @@ for detname in detectors:
                 uncalfile3 = os.path.join(rawpath_level2, bogus_prefix + 'jw01222002001_03104_00003_' + detname + '_uncal.fits')
     elif 'J0020' == target:
         rawpath_level2 = '/Users/joe/jwst_redux/Raw/NIRSPEC_FS/1222/level_12/01222/'
-        output_dir = '/Users/joe/jwst_redux/redux/NIRSPEC_FS/J0411/calwebb/output'
-        pypeit_output_dir = '/Users/joe/jwst_redux/redux/NIRSPEC_FS/J0411/calwebb/pypeit'
+        output_dir = '/Users/joe/jwst_redux/redux/NIRSPEC_FS/J0020/calwebb/output'
+        pypeit_output_dir = '/Users/joe/jwst_redux/redux/NIRSPEC_FS/J0020/calwebb/pypeit'
         if disperser == '235H':
             # NIRSPEC 3-point dither dither center
             if reduce_slits[0] == 'S200A1':
