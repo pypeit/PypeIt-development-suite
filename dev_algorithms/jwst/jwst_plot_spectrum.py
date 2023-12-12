@@ -8,7 +8,8 @@ from astropy import constants as const
 from matplotlib import pyplot as plt
 
 
-coaddfile = '/Users/joe/jwst_redux/redux/NIRSPEC_FS/J0411/calwebb/pypeit/J0411_1dcoadd.fits'
+coaddfile = '/Users/joe/jwst_redux/redux/NIRSPEC_FS/J0020/calwebb/pypeit/J0020_1dcoadd.fits'
+#coaddfile = '/Users/joe/jwst_redux/redux/NIRSPEC_FS/J0411/calwebb/pypeit/J0411_1dcoadd.fits'
 #coaddfile = '/Users/joe/jwst_redux/redux/NIRSPEC_FS/J1007/calwebb/pypeit/J1007_1dcoadd.fits'
 #coaddfile = '/Users/joe/jwst_redux/redux/NIRSPEC_FS/J0313/calwebb/pypeit/J0313_1dcoadd.fits'
 outfile = os.path.join(os.path.dirname(coaddfile), os.path.basename(coaddfile).replace('.fits', '_Flam.fits'))
