@@ -86,8 +86,8 @@ target = 'J0020'
 #target = 'J0313'
 #target = 'J1007'
 # Dispersers
-#disperser = '140H_bogus_F100LP'
-disperser = '140H'
+disperser = '140H_bogus_F100LP'
+#disperser = '140H'
 #disperser = '235H'
 #disperser = '395H'
 #disperser = 'PRISM_02073'
@@ -108,7 +108,7 @@ show = False
 #reduce_slits = None
 #reduce_sources = ['2073_8713']
 # FS demo
-reduce_slits = ['S200A1']
+reduce_slits = ['S200A2']
 reduce_sources = None
 
 
