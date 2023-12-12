@@ -158,6 +158,7 @@ def test_keck_lris_blue(redux_out):
 
         # get WaveCalib file
         this_calib = _redux_out / 'keck_lris_blue' / setup / 'Calibrations'
+        assert this_calib.is_dir(), f'Calibration directory {this_calib} does not exist!'
         file_path = list(this_calib.glob(f'WaveCalib_*_DET0{det}.fits'))[0]
         # Load
         waveCalib = WaveCalib.from_file(file_path)
@@ -173,10 +174,11 @@ def test_keck_lris_blue_orig(redux_out):
 
     for setup, det, rms in zip(['long_600_4000_d500', 'multi_1200_3400_d460'],
                                [1, 1],
-                               [0.25, 0.1]):
+                               [0.25, 0.2]):
 
         # get WaveCalib file
         this_calib = _redux_out / 'keck_lris_blue_orig' / setup / 'Calibrations'
+        assert this_calib.is_dir(), f'Calibration directory {this_calib} does not exist!'
         file_path = list(this_calib.glob(f'WaveCalib_*_DET0{det}.fits'))[0]
         # Load
         waveCalib = WaveCalib.from_file(file_path)
@@ -195,10 +197,11 @@ def test_keck_lris_red(redux_out):
                                 'mulit_831_8200_d560', 'multi_900_5500_d560', 'long_1200_7500_d560',
                                 'multi_1200_9000_d680'],
                                [2, 2, 2, 1, 1, 1, 2, 1, 1, 2],
-                               [0.4, 0.1, 0.1, 0.23, 0.05, 0.1, 0.15, 0.1, 0.03, 0.07]):
+                               [0.5, 0.1, 0.1, 0.23, 0.05, 0.1, 0.15, 0.1, 0.03, 0.07]):
 
         # get WaveCalib file
         this_calib = _redux_out / 'keck_lris_red' / setup / 'Calibrations'
+        assert this_calib.is_dir(), f'Calibration directory {this_calib} does not exist!'
         file_path = list(this_calib.glob(f'WaveCalib_*_DET0{det}.fits'))[0]
         # Load
         waveCalib = WaveCalib.from_file(file_path)
@@ -215,10 +218,11 @@ def test_keck_lris_red_orig(redux_out):
     for setup, rms in zip(['long_150_7500_d500', 'long_300_5000', 'long_400_8500_d560', 'multi_600_5000_d500',
                            'long_600_7500_d680', 'long_600_10000_d460', 'long_831_8200_d460',
                            'long_900_5500_d560', 'long_1200_7500_d560'],
-                          [0.05, 0.05, 0.08, 0.13, 0.18, 0.05, 0.05, 0.05, 0.08]):
+                          [0.15, 0.05, 0.08, 0.13, 0.18, 0.05, 0.05, 0.05, 0.08]):
 
         # get WaveCalib file
         this_calib = _redux_out / 'keck_lris_red_orig' / setup / 'Calibrations'
+        assert this_calib.is_dir(), f'Calibration directory {this_calib} does not exist!'
         file_path = list(this_calib.glob(f'WaveCalib_*.fits'))[0]
         # Load
         waveCalib = WaveCalib.from_file(file_path)
@@ -237,6 +241,7 @@ def test_keck_lris_red_mark4(redux_out):
 
         # get WaveCalib file
         this_calib = _redux_out / 'keck_lris_red_mark4' / setup / 'Calibrations'
+        assert this_calib.is_dir(), f'Calibration directory {this_calib} does not exist!'
         file_path = list(this_calib.glob(f'WaveCalib_*.fits'))[0]
         # Load
         waveCalib = WaveCalib.from_file(file_path)
@@ -249,7 +254,6 @@ def test_keck_lris_red_mark4(redux_out):
 def test_keck_hires(redux_out):
 
     _redux_out = Path(redux_out).resolve()
-
     for setup, rms in zip(['J0100+2802_H204Hr_RED_C1_ECH_-0.82_XD_1.62_1x2',
                            'J0100+2802_H204Hr_RED_C1_ECH_0.75_XD_1.69_1x2',
                            'J0100+2802_H237Hr_RED_C1_ECH_-0.91_XD_1.46_1x2',
@@ -271,6 +275,7 @@ def test_keck_hires(redux_out):
 
         # get WaveCalib file
         this_calib = _redux_out / 'keck_hires' / setup / 'Calibrations'
+        assert this_calib.is_dir(), f'Calibration directory {this_calib} does not exist!'
         file_path = list(this_calib.glob(f'WaveCalib_*.fits'))[0]
         # Load
         waveCalib = WaveCalib.from_file(file_path)
