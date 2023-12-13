@@ -5,7 +5,7 @@
 [rdx]
 spectrograph = keck_hires
 detnum = (1,2,3)
-# Remove the following eventually
+
 [calibrations]
  [[slitedges]]
    edge_thresh = 20.
