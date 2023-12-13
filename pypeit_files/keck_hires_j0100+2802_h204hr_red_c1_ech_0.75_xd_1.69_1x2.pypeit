@@ -1,0 +1,32 @@
+# Auto-generated PypeIt input file using PypeIt version: 1.14.1.dev229+g750af01f9.d20231025
+# UTC 2023-10-25T22:12:24.320
+
+# User-defined execution parameters
+[rdx]
+    spectrograph = keck_hires
+
+# Setup
+setup read
+Setup A:
+  binning: 1,2
+  echangle: 0.74511915
+  filter1: og530
+  xdangle: 1.68900001
+setup end
+
+# Data block 
+data read
+ path PypeIt-development-suite/RAW_DATA/keck_hires/J0100+2802_H204Hr_RED_C1_ECH_0.75_XD_1.69_1x2
+              filename |        frametype |                 ra |                dec |         target | dispname | decker | binning |          mjd | airmass | exptime | filter1 |   echangle |    xdangle | frameno | calib
+HI.20151214.05735.fits |         arc,tilt |                0.0 |                0.0 |          ThAr1 |      RED |     C1 |     1,2 | 57370.066401 |    1.41 |     1.0 |   og530 | 0.74511915 | 1.68900001 |     124 |     0
+HI.20151214.05388.fits |  pixelflat,trace |                0.0 |                0.0 |           flat |      RED |     C1 |     1,2 | 57370.062377 |    1.41 |     1.0 |   og530 | 0.74511915 | 1.68900001 |     118 |     0
+HI.20151214.05441.fits |  pixelflat,trace |                0.0 |                0.0 |           flat |      RED |     C1 |     1,2 | 57370.062996 |    1.41 |     1.0 |   og530 | 0.74511915 | 1.68900001 |     119 |     0
+HI.20151214.05494.fits |  pixelflat,trace |                0.0 |                0.0 |           flat |      RED |     C1 |     1,2 | 57370.063614 |    1.41 |     1.0 |   og530 | 0.74511915 | 1.68900001 |     120 |     0
+HI.20151214.05547.fits |  pixelflat,trace |                0.0 |                0.0 |           flat |      RED |     C1 |     1,2 | 57370.064224 |    1.41 |     1.0 |   og530 | 0.74511915 | 1.68900001 |     121 |     0
+HI.20151214.05602.fits |  pixelflat,trace |                0.0 |                0.0 |           flat |      RED |     C1 |     1,2 | 57370.064851 |    1.41 |     1.0 |   og530 | 0.74511915 | 1.68900001 |     122 |     0
+HI.20151214.16343.fits |         standard |  349.9937499999999 | -5.165194444444444 |      Feige 110 |      RED |     C1 |     1,2 | 57370.189172 |    1.11 |   300.0 |   og530 | 0.74507684 | 1.68949997 |     142 |     0
+HI.20151214.23651.fits |          science | 15.054374999999999 | 28.038555555555558 |     J0100+2802 |      RED |     C1 |     1,2 | 57370.273754 |    1.02 |  2400.0 |   og530 | 0.74507684 | 1.68900001 |     147 |     0
+HI.20151214.26105.fits |          science | 15.054583333333333 |  28.03852777777778 |     J0100+2802 |      RED |     C1 |     1,2 | 57370.302166 |    1.07 |  2400.0 |   og530 | 0.74507684 | 1.68900001 |     148 |     0
+HI.20151215.31541.fits |          science | 15.054083333333333 | 28.040750000000003 | SDSSJ0100+2802 |      RED |     C1 |     1,2 | 57371.365081 |    1.33 |  2400.0 |   og530 | 0.74507684 | 1.68900001 |     247 |     0
+data end
+
