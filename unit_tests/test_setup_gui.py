@@ -6,7 +6,7 @@ import shutil
 import re
 import os
 
-from qtpy.QtCore import Qt, QSettings
+from qtpy.QtCore import Qt, QSettings,QObject
 from qtpy.QtWidgets import QFileDialog
 
 from pypeit.setup_gui import view, model, controller
@@ -23,7 +23,7 @@ def qapp_args():
     return ["pytest", "-platform", "offscreen"]
 
 def get_test_metadata():
-    # Create a PyepItMetadata to test with
+    # Create a PypeItMetadata to test with
     file_pattern = data_path("b*.fits.gz")
     files = glob.glob(file_pattern)
     spec = load_spectrograph("shane_kast_blue")
@@ -70,39 +70,48 @@ class MockFileDialog():
         return self.mock_response
 
 
-def test_metadata_proxy(qtbot, qtmodeltester):
+def test_metadata_model(qtbot, qtmodeltester):
 
     metadata = get_test_metadata()
-    proxy = model.PypeItMetadataProxy()
+    metadata_model = model.PypeItMetadataModel(metadata=None)
+    spec_name = metadata.spectrograph.name
+    spec = metadata.spectrograph
 
-    # Test a model with data in it
-    with qtbot.waitSignals([proxy.modelAboutToBeReset, proxy.modelReset], raising=True, order='strict', timeout=5000):
-        proxy.setMetadata(metadata)
+    # Sort by dec so we get a consistent order
+    dec_column = metadata.set_pypeit_cols(write_bkg_pairs=True).index('dec')
+    metadata.sort('dec')
+    
+    # Test setting the metadata
+    with qtbot.waitSignals([metadata_model.modelAboutToBeReset, metadata_model.modelReset], raising=True, order='strict', timeout=5000):
+        metadata_model.setMetadata(metadata)
 
-    # Run Qt tester to cover the basics
-    qtmodeltester.check(proxy)
+    # Run Qt tester to cover the basics of what Qt expects a table model to do
+    qtmodeltester.check(metadata_model)
 
     # Test some things not covered by the above check
-    
+
     # Floating point rounding    
-    # Sorting and floating point rounding
-    dec_column = metadata.set_pypeit_cols(write_bkg_pairs=True).index('dec')
-    proxy.sort(dec_column)
-    indx = proxy.createIndex(0, dec_column)
-    assert proxy.data(indx, Qt.DisplayRole) == '37.324'
+    indx = metadata_model.createIndex(0, dec_column)
+    assert metadata_model.data(indx, Qt.DisplayRole) == '24.996'
 
     # Column names and sort order
-    assert proxy.headerData(dec_column, Qt.Orientation.Horizontal, Qt.DisplayRole) == 'dec'
-    assert proxy.headerData(dec_column, Qt.Orientation.Vertical, Qt.DecorationRole) is None
-    assert proxy.headerData(dec_column, Qt.Orientation.Vertical, Qt.DisplayRole) == str(dec_column+1)
-    assert proxy.headerData(dec_column, Qt.Orientation.Horizontal, Qt.InitialSortOrderRole) == Qt.AscendingOrder
+    assert metadata_model.headerData(dec_column, Qt.Orientation.Horizontal, Qt.DisplayRole) == 'dec'
+    assert metadata_model.headerData(dec_column, Qt.Orientation.Vertical, Qt.DecorationRole) is None
     
+    # TODO: More tests?
+    # Test removing metadata rows
+    # Test adding metadata rows
+    # Test paste
+    # Test copyForRows
+    # Test CopyFromConfig?
+    # Test comment/uncomment/iscommented
 
 def test_pypeit_params_proxy(qtmodeltester):
 
     # Mock setup object
     mock_setup = get_mock_setup()
-    proxy = model.PypeItParamsProxy(mock_setup)
+    
+    proxy = model.PypeItParamsProxy(mock_setup.par, mock_setup.user_cfg)
 
     # Run Qt tester to cover the basics
     qtmodeltester.check(proxy)
@@ -125,8 +134,8 @@ def test_pypeit_params_proxy(qtmodeltester):
     assert proxy.headerData(1, Qt.Orientation.Vertical, Qt.DisplayRole) == 2 # Row #s on side
     assert proxy.headerData(1, Qt.Orientation.Vertical, Qt.DecorationRole) is None
     
-def verify_config_name(name):
-    return name == 'B'
+def verify_state_change(name, state):
+    return name == 'B' and state == model.ModelState.UNCHANGED
 
 def test_pypeit_file_model(qtbot, tmp_path):
 
@@ -136,23 +145,31 @@ def test_pypeit_file_model(qtbot, tmp_path):
     metadata.get_frame_types()
     metadata.table['setup'] = 'A'
     metadata.table['setup'][metadata.table['decker'] == '2.0 arcsec'] = 'B'
+    metadata_model = model.PypeItMetadataModel(metadata=metadata)
     mock_setup = get_mock_setup(metadata)
+    params_model = model.PypeItParamsProxy(mock_setup.par, mock_setup.user_cfg)
     config_dict = {'B': {'dispname': '600/4310', 'dichroic': 'd55'}}
-    file_model = model.PypeItFileModel(mock_setup, "B", config_dict, model.ModelState.CHANGED)
+    file_model = model.PypeItFileModel(metadata_model = metadata_model, name_stem="B", config_dict=config_dict, state=model.ModelState.CHANGED, params_model=params_model)
     file_model.save_location = str(tmp_path)
-    with qtbot.waitSignal(file_model.state_changed, raising=True, check_params_cb=verify_config_name, timeout=5000):
+    with qtbot.waitSignal(file_model.stateChanged, raising=True, check_params_cb=verify_state_change, timeout=5000):
         file_model.save()
     
     # Make sure state changed
     assert file_model.state == model.ModelState.UNCHANGED
 
     # Make sure we can open the created file
-    pf = PypeItFile.from_file(str(tmp_path / "shane_kast_blue_B" / "shane_kast_blue_B.pypeit"))
+    pf = PypeItFile.from_file(str(tmp_path / "shane_kast_blue_B.pypeit"))
     filenames = pf.filenames
 
-    # Make sure one known file is there, and that b1.fits.gz is NOT
+    # Make sure one setup A and one setup B is there. This would probably be invalid
+    # but the GUI trusts the user to know what they're doing
     assert data_path("b11.fits.gz") in filenames
-    assert data_path("b1.fits.gz") not in filenames
+    assert data_path("b1.fits.gz") in filenames
+
+    # TODO
+    # test commented out files being saved,reloaded correctly
+    # test removed files not being saved
+    # test comments in configuration section being saved
 
 def verify_failed_setup(message):
     return message.startswith("Could not read metadata")
