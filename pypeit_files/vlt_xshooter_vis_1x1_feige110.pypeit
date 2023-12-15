@@ -7,7 +7,7 @@
 [calibrations]
   [[wavelengths]]
      fwhm_fromlines = False
-     rms_threshold = 1.5
+     rms_thresh_frac_fwhm = 0.15
 
 # Setup
 setup read

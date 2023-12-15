@@ -4,6 +4,9 @@
 # User-defined execution parameters
 [rdx]
     spectrograph = keck_hires
+[calibrations]
+   [[wavelengths]]
+	cc_thresh = 0.7
 
 # Setup
 setup read

@@ -11,6 +11,11 @@
    [[slitedges]]
       edge_thresh = 5.
       fit_min_spec_length = 0.4
+[reduce]
+    [[findobj]]
+        snr_thresh = 15.
+    [[skysub]]
+         no_local_sky = True
 
 # Setup
 setup read
