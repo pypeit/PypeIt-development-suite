@@ -1,0 +1,30 @@
+# Auto-generated PypeIt input file using PypeIt version: 1.14.0
+# UTC 2023-12-15T20:53:40.179
+
+# User-defined execution parameters
+[rdx]
+    spectrograph = keck_esi
+
+# Setup
+setup read
+Setup A: {}
+setup end
+
+# Data block 
+data read
+ path /hqdrpdata/DRP_TESTING/mbrodheim/ESI_tests/Echellette/75arc_1x2_tests
+                 filename |                 frametype |                 ra |                 dec |          target |   dispname |      decker | binning |            mjd |    airmass | exptime | calib
+ES.20210605.10386.fits.gz |                  arc,tilt |  57.99999999999999 |                45.0 |         unknown | Echellette | 0.75_arcsec |     1,2 | 59370.12024416 | 1.41291034 |   300.0 |     0
+ES.20210605.10762.fits.gz |                  arc,tilt |  57.99999999999999 |                45.0 |         unknown | Echellette | 0.75_arcsec |     1,2 | 59370.12460041 | 1.41291034 |   300.0 |     0
+ES.20210605.11137.fits.gz |                  arc,tilt |  57.99999999999999 |                45.0 |         unknown | Echellette | 0.75_arcsec |     1,2 | 59370.12892715 | 1.41291034 |   300.0 |     0
+ES.20210605.14028.fits.gz |                      bias |  57.99999999999999 |                45.0 |         unknown | Echellette | 0.75_arcsec |     1,2 | 59370.16241361 | 1.41291034 |     0.0 |     0
+ES.20210605.14100.fits.gz |                      bias |  57.99999999999999 |                45.0 |         unknown | Echellette | 0.75_arcsec |     1,2 | 59370.16321048 | 1.41291034 |     0.0 |     0
+ES.20210605.14170.fits.gz |                      bias |  57.99999999999999 |                45.0 |         unknown | Echellette | 0.75_arcsec |     1,2 | 59370.16401916 | 1.41291034 |     0.0 |     0
+ES.20210605.13124.fits.gz | pixelflat,illumflat,trace |  57.99999999999999 |                45.0 |         unknown | Echellette | 0.75_arcsec |     1,2 | 59370.15191847 | 1.41291034 |   100.0 |     0
+ES.20210605.13296.fits.gz | pixelflat,illumflat,trace |  57.99999999999999 |                45.0 |         unknown | Echellette | 0.75_arcsec |     1,2 | 59370.15392541 | 1.41291034 |   100.0 |     0
+ES.20210605.13466.fits.gz | pixelflat,illumflat,trace |  57.99999999999999 |                45.0 |         unknown | Echellette | 0.75_arcsec |     1,2 | 59370.15587333 | 1.41291034 |   100.0 |     0
+ES.20210605.25584.fits.gz |                   science | 159.92308333333332 | -3.4266944444444443 | ZTFJ1039-0325 ( | Echellette | 0.75_arcsec |     1,2 | 59370.29612923 | 1.55000066 |   190.0 |     0
+ES.20210605.26123.fits.gz |                   science | 249.43154166666662 |   49.29405555555555 |   ZTFJ1637+4917 | Echellette | 0.75_arcsec |     1,2 | 59370.30236847 | 1.40466202 |   465.0 |     0
+ES.20210605.35078.fits.gz |                  standard |  238.0004583333333 |   32.94697222222222 |       BD+332642 | Echellette | 0.75_arcsec |     1,2 | 59370.40604486 | 1.03190699 |    60.0 |     0
+data end
+
