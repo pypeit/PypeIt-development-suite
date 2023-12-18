@@ -23,9 +23,9 @@ def test_telluric_init():
                                        'ubound_norm', 'tell_norm_thresh'),
                   'debug_init': False}
 
-
     t = telluric.Telluric(wave, flux, ivar, gpm, tell_test_grid, obj_params,
-                          telluric.init_qso_model, telluric.eval_qso_model)
+                          telluric.init_qso_model, telluric.eval_qso_model,
+                          teltype='pca', tell_npca=obj_params['npca'])
 
     assert t.model['WAVE'].shape == (1,4400), 'bad wavelength array shape'
     assert t.model['TELL_THETA'].shape == (1,7), 'bad or changed telluric parameter shape'
@@ -57,7 +57,8 @@ def test_telluric_io():
                   'debug_init': False}
 
     t = telluric.Telluric(wave, flux, ivar, gpm, tell_test_grid, obj_params,
-                          telluric.init_qso_model, telluric.eval_qso_model)
+                          telluric.init_qso_model, telluric.eval_qso_model,
+                          teltype='pca', tell_npca=obj_params['npca'])
     t.to_file(test_file)
     _t = telluric.Telluric.from_file(test_file)
 
