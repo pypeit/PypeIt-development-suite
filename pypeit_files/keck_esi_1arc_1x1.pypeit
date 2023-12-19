@@ -1,0 +1,28 @@
+# Auto-generated PypeIt input file using PypeIt version: 1.14.0
+# UTC 2023-12-15T20:51:37.487
+
+# User-defined execution parameters
+[rdx]
+    spectrograph = keck_esi
+
+# Setup
+setup read
+Setup A: {}
+setup end
+
+# Data block 
+data read
+ path /hqdrpdata/DRP_TESTING/mbrodheim/ESI_tests/Echellette/1arc_1x1_tests
+              filename |                 frametype |                 ra |                dec |   target |   dispname |      decker | binning |            mjd |    airmass | exptime | calib
+ES.20210404.08164.fits |                  arc,tilt |  57.99999999999999 |               45.0 |  unknown | Echellette | 1.00_arcsec |     1,1 | 59308.09450944 | 1.41291034 |   450.0 |     0
+ES.20210404.08674.fits |                  arc,tilt |  57.99999999999999 |               45.0 |  unknown | Echellette | 1.00_arcsec |     1,1 | 59308.10041812 | 1.41291034 |   450.0 |     0
+ES.20210404.09186.fits |                  arc,tilt |  57.99999999999999 |               45.0 |  unknown | Echellette | 1.00_arcsec |     1,1 |  59308.1063327 | 1.41291034 |   450.0 |     0
+ES.20210404.12930.fits |                      bias |  57.99999999999999 |               45.0 |  unknown | Echellette | 1.00_arcsec |     1,1 |  59308.1496709 | 1.41291034 |     0.0 |     0
+ES.20210404.10723.fits | scattlight,pixelflat,illumflat,trace |  57.99999999999999 |               45.0 |  unknown | Echellette | 1.00_arcsec |     1,1 | 59308.12414138 | 1.41291034 |   150.0 |     0
+ES.20210404.10927.fits | scattlight,pixelflat,illumflat,trace |  57.99999999999999 |               45.0 |  unknown | Echellette | 1.00_arcsec |     1,1 | 59308.12649069 | 1.41291034 |   150.0 |     0
+ES.20210404.11130.fits | scattlight,pixelflat,illumflat,trace |  57.99999999999999 |               45.0 |  unknown | Echellette | 1.00_arcsec |     1,1 | 59308.12882819 | 1.41291034 |   150.0 |     0
+ES.20210404.24564.fits |                   science | 157.61304166666665 | -6.685472222222223 | DCLS1030 | Echellette | 1.00_arcsec |     1,1 | 59308.28433097 | 1.17807839 |   600.0 |     0
+ES.20210404.25219.fits |                   science | 157.61304166666665 | -6.685472222222223 | DCLS1030 | Echellette | 1.00_arcsec |     1,1 | 59308.29191604 |  1.1605984 |   600.0 |     0
+ES.20210404.25875.fits |                   science | 157.61304166666665 | -6.685472222222223 | DCLS1030 | Echellette | 1.00_arcsec |     1,1 | 59308.29950111 | 1.14623422 |   600.0 |     0
+data end
+

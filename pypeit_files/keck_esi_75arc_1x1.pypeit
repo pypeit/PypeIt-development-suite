@@ -1,0 +1,32 @@
+# Auto-generated PypeIt input file using PypeIt version: 1.14.0
+# UTC 2023-12-15T20:55:43.497
+
+# User-defined execution parameters
+[rdx]
+    spectrograph = keck_esi
+
+# Setup
+setup read
+Setup A: {}
+setup end
+
+# Data block 
+data read
+ path /hqdrpdata/DRP_TESTING/mbrodheim/ESI_tests/Echellette/75arc_1x1_tests
+              filename |                 frametype |                 ra |                dec |       target |   dispname |      decker | binning |            mjd |    airmass | exptime | calib
+ES.20210503.08815.fits |                  arc,tilt |  57.99999999999999 |               45.0 |      unknown | Echellette | 0.75_arcsec |     1,1 | 59337.10203513 | 1.41291034 |    10.0 |     0
+ES.20210503.08879.fits |                  arc,tilt |  57.99999999999999 |               45.0 |      unknown | Echellette | 0.75_arcsec |     1,1 | 59337.10279069 | 1.41291034 |    10.0 |     0
+ES.20210503.08945.fits |                  arc,tilt |  57.99999999999999 |               45.0 |      unknown | Echellette | 0.75_arcsec |     1,1 | 59337.10356986 | 1.41291034 |   600.0 |     0
+ES.20210503.12802.fits |                      bias |  57.99999999999999 |               45.0 |      unknown | Echellette | 0.75_arcsec |     1,1 | 59337.14819486 | 1.41291034 |     0.0 |     0
+ES.20210503.12856.fits |                      bias |  57.99999999999999 |               45.0 |      unknown | Echellette | 0.75_arcsec |     1,1 | 59337.14881465 | 1.41291034 |     0.0 |     0
+ES.20210503.12911.fits |                      bias |  57.99999999999999 |               45.0 |      unknown | Echellette | 0.75_arcsec |     1,1 | 59337.14946395 | 1.41291034 |     0.0 |     0
+ES.20210503.10260.fits | scattlight,pixelflat,illumflat,trace |  57.99999999999999 |               45.0 |      unknown | Echellette | 0.75_arcsec |     1,1 | 59337.11877541 | 1.41291034 |   200.0 |     0
+ES.20210503.10513.fits | scattlight,pixelflat,illumflat,trace |  57.99999999999999 |               45.0 |      unknown | Echellette | 0.75_arcsec |     1,1 | 59337.12169729 | 1.41291034 |   200.0 |     0
+ES.20210503.10767.fits | scattlight,pixelflat,illumflat,trace |  57.99999999999999 |               45.0 |      unknown | Echellette | 0.75_arcsec |     1,1 | 59337.12464277 | 1.41291034 |   200.0 |     0
+ES.20210503.19917.fits |                   science | 199.09104166666665 | 29.099277777777775 |        HZ 43 | Echellette | 0.75_arcsec |     1,1 | 59337.23055041 | 1.45213988 |   300.0 |     0
+ES.20210503.40417.fits |                   science |  225.1533333333333 |  28.26711111111111 | J1500_offset | Echellette | 0.75_arcsec |     1,1 | 59337.46781257 | 1.02151789 |  1800.0 |     0
+ES.20210503.46524.fits |                   science | 252.67612499999993 |  16.28911111111111 | J1650_offset | Echellette | 0.75_arcsec |     1,1 | 59337.53849243 | 1.00896134 |  1800.0 |     0
+ES.20210503.20407.fits |                  standard |  159.9024583333333 |  43.10288888888889 |     Feige 34 | Echellette | 0.75_arcsec |     1,1 | 59337.23619937 | 1.09843277 |    60.0 |     0
+ES.20210503.52905.fits |                  standard |          296.10875 | 26.221527777777776 |   BD+25 3941 | Echellette | 0.75_arcsec |     1,1 | 59337.61236569 | 1.01865309 |    30.0 |     0
+data end
+

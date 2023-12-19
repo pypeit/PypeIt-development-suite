@@ -1,0 +1,31 @@
+# Auto-generated PypeIt input file using PypeIt version: 1.14.0
+# UTC 2023-12-15T21:04:14.717
+
+# User-defined execution parameters
+[rdx]
+    spectrograph = keck_esi
+
+# Setup
+setup read
+Setup A: {}
+setup end
+
+# Data block 
+data read
+ path /hqdrpdata/DRP_TESTING/mbrodheim/ESI_tests/Echellette/50arc_1x1_tests
+                 filename |                 frametype |                 ra |                 dec |       target |   dispname |      decker | binning |            mjd |     airmass | exptime | calib
+ES.20210605.44513.fits.gz |                  arc,tilt | 265.30404166666665 | -30.542194444444448 |       WR 98a | Echellette | 0.50_arcsec |     1,1 | 59370.51521083 |  1.67547169 |    10.0 |     0
+ES.20210605.44686.fits.gz |                  arc,tilt | 270.51708333333335 |  -23.62811111111111 |       WR 104 | Echellette | 0.50_arcsec |     1,1 | 59370.51722368 |  1.42721613 |    10.0 |     0
+ES.20210605.49408.fits.gz |                  arc,tilt | 292.06770833333326 |   19.55538888888889 |       WR 125 | Echellette | 0.50_arcsec |     1,1 | 59370.57187159 |  1.02083914 |    10.0 |     0
+ES.20210605.56337.fits.gz |                      bias |  67.37958333333333 |               0.065 | HORIZON STOW | Echellette | 0.50_arcsec |     1,1 | 59370.65209034 | 13.37481353 |     1.0 |     0
+ES.20210605.56397.fits.gz |                      bias |  67.37958333333333 |               0.065 | HORIZON STOW | Echellette | 0.50_arcsec |     1,1 | 59370.65279277 | 13.37481353 |     1.0 |     0
+ES.20210605.56456.fits.gz |                      bias |  67.37958333333333 |               0.065 | HORIZON STOW | Echellette | 0.50_arcsec |     1,1 | 59370.65345979 | 13.37481353 |     1.0 |     0
+ES.20210605.54940.fits.gz | scattlight,pixelflat,illumflat,trace |  67.37958333333333 |               0.065 | HORIZON STOW | Echellette | 0.50_arcsec |     1,1 | 59370.63590493 | 13.37481353 |    30.0 |     0
+ES.20210605.55025.fits.gz | scattlight,pixelflat,illumflat,trace |  67.37958333333333 |               0.065 | HORIZON STOW | Echellette | 0.50_arcsec |     1,1 |  59370.6369025 | 13.37481353 |    30.0 |     0
+ES.20210605.55110.fits.gz | scattlight,pixelflat,illumflat,trace |  67.37958333333333 |               0.065 | HORIZON STOW | Echellette | 0.50_arcsec |     1,1 | 59370.63785875 | 13.37481353 |    30.0 |     0
+ES.20210605.42843.fits.gz |                   science | 265.30404166666665 | -30.542194444444448 |       WR 98a | Echellette | 0.50_arcsec |     1,1 | 59370.49589104 |   1.6072114 |  1450.0 |     0
+ES.20210605.44946.fits.gz |                   science |  270.5174583333333 | -23.628944444444446 |       WR 104 | Echellette | 0.50_arcsec |     1,1 |  59370.5202459 |  1.43557814 |   300.0 |     0
+ES.20210605.49525.fits.gz |                   science |  292.0675416666666 |  19.555500000000002 |       WR 125 | Echellette | 0.50_arcsec |     1,1 | 59370.57324694 |  1.02252051 |   300.0 |     0
+ES.20210605.53285.fits.gz |                  standard | 303.63404166666663 |   36.65988888888889 |       WR 137 | Echellette | 0.50_arcsec |     1,1 | 59370.61673861 |   1.0821189 |    20.0 |     0
+data end
+
