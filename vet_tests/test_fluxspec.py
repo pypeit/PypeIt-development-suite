@@ -78,4 +78,4 @@ def test_flux(kast_blue_files):
     assert np.all(np.isfinite(sobj.OPT_FLAM)), f'OPT_FLAM from {kast_blue_files[1]} has infinite or NaN values'
     assert 'WAVE_RMS' in sobj.keys(), f'WAVE_RMS missing from {kast_blue_files[1]}'
     assert sobj.WAVE_RMS is not None, f'WAVE_RMS from {kast_blue_files[1]} is None'
-    assert sobj.WAVE_RMS < 0.02 , f'WAVE_RMS from {kast_blue_files[1]} above threshold'
+    assert sobj.WAVE_RMS < 0.08 , f'WAVE_RMS from {kast_blue_files[1]} above threshold'

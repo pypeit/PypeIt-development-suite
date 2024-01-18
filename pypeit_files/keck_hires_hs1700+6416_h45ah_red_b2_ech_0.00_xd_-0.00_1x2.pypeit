@@ -5,10 +5,14 @@
 [rdx]
 spectrograph = keck_hires
 detnum = (1,2,3)
-# Remove the following eventually
+
 [calibrations]
  [[slitedges]]
    edge_thresh = 20.
+   add_missed_orders = True
+   order_width_poly = 1
+   order_gap_poly = 3
+   order_spat_range = 80., 3100.
 
 # Setup
 setup read

@@ -20,8 +20,8 @@ all_setups = {
                     '900ZD_M_6000', '1200B_LVM_5200', '900ZD_LVM_5500',
                     '830G_M_9000_dither'],
     'keck_hires': [
-        #'HS1700+6416_H45aH_RED_B2_ECH_0.00_XD_-0.00_1x2',  # This one has bad HDUs
-        #'J0100+2802_H204Hr_RED_C1_ECH_0.75_XD_1.69_1x2',
+        'HS1700+6416_H45aH_RED_B2_ECH_0.00_XD_-0.00_1x2',  # This one has bad HDUs
+        'J0100+2802_H204Hr_RED_C1_ECH_0.75_XD_1.69_1x2',
         'J0100+2802_H204Hr_RED_C1_ECH_-0.82_XD_1.62_1x2',
         'J0100+2802_H237Hr_RED_C1_ECH_0.88_XD_1.46_1x2',
         'J0100+2802_H237Hr_RED_C1_ECH_-0.91_XD_1.46_1x2',
@@ -30,6 +30,7 @@ all_setups = {
         'J0306+1853_U074_RED_C2_ECH_-0.86_XD_1.31_1x3',
         'J1723+2243_W241_RED_C5_ECH_0.08_XD_0.90_2x2',
         'J1723+2243_W241_RED_C5_ECH_-0.15_XD_0.90_2x2',
+        'Q1009+2956_G10H_BLUE_C5_ECH_-0.00_XD_1.02_1x3',
                    ],
     'keck_kcwi': ['small_bh2_4200', 'medium_bl'],
     'keck_kcrm': ['medium_rm1', 'medium_rh3'],
@@ -51,12 +52,12 @@ all_setups = {
     'ldt_deveny': ['DV1', 'DV2', 'DV3', 'DV4', 'DV5', 'DV6', 'DV7', 'DV8', 'DV9'],
     'magellan_fire': ['FIRE_Echelle', 'FIRE_Long'],
     'magellan_mage': ['1x1'],
-    'mdm_osmos': ['MDM4K'],
+    'mdm_osmos': ['MDM4K', 'R4K'],
     'mdm_modspec': ['Echelle'],
     'mmt_binospec': ['Longslit_G600', 'Multislit_G270', 'Longslit_G1000'],
     'mmt_mmirs': ['HK_zJ', 'J_zJ', 'K_K'],
     'mmt_bluechannel': ['300l', '500GPM', '800GPM', '832GPM_1st', '832GPM_2nd', '1200GPM'],
-    'ntt_efosc2': ['gr5', 'gr6'],
+    'ntt_efosc2': ['gr4', 'gr5', 'gr6'],
     'not_alfosc': ['grism3', 'grism4', 'grism5', 'grism7', 'grism10', 'grism11', 'grism17', 'grism18', 'grism19', 'grism20', 'grism4_nobin'],
     'p200_dbsp_blue': ['600_4000_d55', '600_4000_d68', '1200_5000_d68'],
     'p200_dbsp_red': ['316_7500_d55', '600_10000_d55', '1200_7100_d68'],
@@ -66,7 +67,7 @@ all_setups = {
     'soar_goodman_red': ['M1', 'M2', '600red'],
     'soar_goodman_blue': ['M1'],
     'tng_dolores': ['LRB'],
-    'vlt_fors2': ['300I', '600Z'],
+    'vlt_fors2': ['300I', '600Z', '300I_MOS'],
     'vlt_sinfoni': ['K_0.8'],
     'vlt_xshooter': ['VIS_1x1', 'VIS_2x1', 'VIS_2x2', 'VIS_manual', 'NIR', 'UVB_1x1', 'UVB_1x1_Feige110', 'VIS_1x1_Feige110', 'NIR_Feige110', 'VIS_1x1_LTT3218', 'NIR_LTT3218'],
 }
