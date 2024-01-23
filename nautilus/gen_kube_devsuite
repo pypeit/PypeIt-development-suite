@@ -12,8 +12,6 @@ import shutil
 import os
 import io, yaml
 
-from pkg_resources import resource_filename
-
 from IPython import embed
 
 
@@ -72,15 +70,16 @@ def main():
     if pargs.coverage:
         arguments += ["--coverage", "coverage.report"]
 
-    # Install rclone
+    # Install apt packages and setup PypeIt git repository
     if pargs.container =='pypeit':
-       # Most packages already installed by the default container
+       # Most of the required packages are already installed by the default container,
+       # only rclone is needed
        my_args = 'apt-get -y update; apt-get -y install rclone;'
-       # Get PypeIt git up to date
+       # Get the existing PypeIt git repository up to date
        my_args += ' cd PypeIt;'
        my_args += ' git fetch;'
     else:
-        # Do a complete clone of PypeIt to a generic python container
+        # Install all required packages and do a complete clone of PypeIt to a generic python container
         my_args = 'apt-get -y update; apt-get -y install git awscli build-essential qtbase5-dev rclone;'
         my_args += ' pip install psutil;'
         my_args += ' cd /tmp;'
