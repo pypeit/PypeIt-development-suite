@@ -8,8 +8,6 @@ spectrograph = gtc_osiris
 [calibrations]
     [[slitedges]]
         minimum_slit_length = 4.
-    [[wavelengths]]
-        fwhm_fromlines = False
 
 # Setup
 setup read

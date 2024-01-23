@@ -401,7 +401,7 @@ def test_setup_keck_deimos_multiconfig_clean():
 
     # Artificially set the amplifier and mode of two frames to be
     # invalid
-    ps.fitstbl['amp'][0] = 'SINGLE:A'
+    ps.fitstbl['amp'][0] = 'DUAL:A+B'
     ps.fitstbl['mode'][1] = 'Direct'
     ps.fitstbl.clean_configurations()
     # Those two frames should have been removed
