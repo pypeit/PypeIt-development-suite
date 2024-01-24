@@ -1,17 +1,17 @@
 import pytest
 
-import glob
 from collections import namedtuple
 import shutil
 import re
 import os
+from pathlib import Path
 
 from qtpy.QtCore import Qt, QSettings,QObject
 from qtpy.QtWidgets import QFileDialog
 
 from pypeit.setup_gui import view, model, controller
 from pypeit.setup_gui.view import FileDialog
-from pypeit.tests.tstutils import data_path
+from pypeit.setup_gui import dialog_helpers
 from pypeit.spectrographs.util import load_spectrograph
 from pypeit.metadata import PypeItMetaData
 from pypeit.inputfiles import PypeItFile
@@ -22,10 +22,13 @@ from pypeit import msgs
 def qapp_args():
     return ["pytest", "-platform", "offscreen"]
 
-def get_test_metadata():
+@pytest.fixture
+def raw_data_path():
+    return Path(os.environ['PYPEIT_DEV'], 'RAW_DATA')
+
+def get_test_metadata(raw_data_path):
     # Create a PypeItMetadata to test with
-    file_pattern = data_path("b*.fits.gz")
-    files = glob.glob(file_pattern)
+    files = list((raw_data_path / "shane_kast_blue" / "600_4310_d55").glob("*.fits.gz"))
     spec = load_spectrograph("shane_kast_blue")
     par = spec.default_pypeit_par()
     return PypeItMetaData(spec, par, files)
@@ -70,9 +73,9 @@ class MockFileDialog():
         return self.mock_response
 
 
-def test_metadata_model(qtbot, qtmodeltester):
+def test_metadata_model(raw_data_path, qtbot, qtmodeltester):
 
-    metadata = get_test_metadata()
+    metadata = get_test_metadata(raw_data_path)
     metadata_model = model.PypeItMetadataModel(metadata=None)
     spec_name = metadata.spectrograph.name
     spec = metadata.spectrograph
@@ -137,10 +140,10 @@ def test_pypeit_params_proxy(qtmodeltester):
 def verify_state_change(name, state):
     return name == 'B' and state == model.ModelState.UNCHANGED
 
-def test_pypeit_file_model(qtbot, tmp_path):
+def test_pypeit_file_model(qtbot, raw_data_path, tmp_path):
 
     # Get a mock pypeit setup
-    metadata = get_test_metadata()
+    metadata = get_test_metadata(raw_data_path)
     # This will set "setup" to B for every file except b1.fits.gz
     metadata.get_frame_types()
     metadata.table['setup'] = 'A'
@@ -163,13 +166,84 @@ def test_pypeit_file_model(qtbot, tmp_path):
 
     # Make sure one setup A and one setup B is there. This would probably be invalid
     # but the GUI trusts the user to know what they're doing
-    assert data_path("b11.fits.gz") in filenames
-    assert data_path("b1.fits.gz") in filenames
+    shane_kast_blue_path = (raw_data_path / "shane_kast_blue" / "600_4310_d55").resolve()
+    assert str(shane_kast_blue_path / "b11.fits.gz") in filenames
+    assert str(shane_kast_blue_path / "b1.fits.gz") in filenames
 
     # TODO
     # test commented out files being saved,reloaded correctly
     # test removed files not being saved
     # test comments in configuration section being saved
+
+ 
+def test_pypeit_obslog_model(qtbot, raw_data_path, tmp_path):
+    obslog_model = model.PypeItObsLogModel()
+    assert obslog_model.state == model.ModelState.NEW
+
+    # Copy only those fits files we want to run on
+    shane_kast_blue_path = (raw_data_path / "shane_kast_blue" / "600_4310_d55").resolve()
+    shutil.copy2(shane_kast_blue_path / "b1.fits.gz", tmp_path)
+    shutil.copy2(shane_kast_blue_path / "b27.fits.gz", tmp_path)
+
+    # Test setting the spectrograph, scanning the raw data directories, and then
+    # setting metadata. THe same that would happen when running setup
+    with qtbot.waitSignal(obslog_model.spectrograph_changed, raising=True, timeout=5000):
+        obslog_model.set_spectrograph("shane_kast_blue")
+    assert obslog_model.spec_name == "shane_kast_blue"
+    assert obslog_model.spectrograph.name == "shane_kast_blue"
+    with qtbot.waitSignals([(obslog_model.paths_model.rowsInserted, "add_row"),
+                            (obslog_model.paths_model.dataChanged, "data_changed")],
+                            raising=True, order='strict', timeout=5000): 
+        obslog_model.add_raw_data_directory(str(tmp_path))
+
+    raw_data_dirs = obslog_model.raw_data_directories
+    assert len(raw_data_dirs) == 1
+    assert raw_data_dirs[0] == str(tmp_path)
+    
+    raw_data_files = obslog_model.scan_raw_data_directories()
+    assert len(raw_data_files) == 2
+    assert str(tmp_path/"b1.fits.gz") in raw_data_files
+    assert str(tmp_path/"b27.fits.gz") in raw_data_files
+
+    # Reset and test with a path that has a pattern
+    with qtbot.waitSignals([(obslog_model.paths_model.modelReset, "paths_reset"),
+                            (obslog_model.spectrograph_changed, "spec_changed")],
+                            raising=True, timeout=5000):
+        obslog_model.reset()
+
+    # Make sure the reset worked
+    assert obslog_model.state == model.ModelState.NEW
+    assert len(obslog_model.raw_data_directories) == 0
+    assert obslog_model.spec_name is None
+    assert obslog_model.spectrograph is None
+
+    obslog_model.set_spectrograph("shane_kast_blue")
+    obslog_model.add_raw_data_directory(str(tmp_path /"b1*"))
+
+    raw_data_dirs = obslog_model.raw_data_directories
+    assert len(raw_data_dirs) == 1
+    assert raw_data_dirs[0] == str(tmp_path / "b1*")
+
+    # The scan should now find only one file
+    raw_data_files = obslog_model.scan_raw_data_directories()
+    assert len(raw_data_files) == 1
+    assert str(tmp_path/"b1.fits.gz") in raw_data_files
+
+    # Test setting the metadata
+    metadata = get_test_metadata(raw_data_path)
+
+    with qtbot.waitSignals([(obslog_model.paths_model.modelReset, "paths_reset"),
+                            (obslog_model.spectrograph_changed, "spec_changed")],
+                            raising=True, timeout=5000):
+        obslog_model.setMetadata(metadata)
+
+    raw_data_dirs = obslog_model.raw_data_directories
+    assert len(raw_data_dirs) == 1
+    assert raw_data_dirs[0] == str(shane_kast_blue_path)
+    
+    assert obslog_model.spec_name == "shane_kast_blue"
+    assert obslog_model.spectrograph.name == "shane_kast_blue"
+    assert obslog_model.state == model.ModelState.UNCHANGED
 
 def verify_failed_setup(message):
     return message.startswith("Could not read metadata")
@@ -300,12 +374,12 @@ def setup_offscreen_gui(tmp_path, monkeypatch, qtbot, verbosity=2, logfile="test
     Args = namedtuple("Args", ['verbosity','logfile'])
     args = Args(verbosity=verbosity,logfile=logfile)
     c = controller.SetupGUIController(args)
-    main_window = c.view
+    main_window = c.main_window
 
     # Patch display error so we don't get hung on it's modal dialog box
     def mock_display_error(message):
         raise ValueError(message)
-    monkeypatch.setattr(main_window, "display_error", mock_display_error)
+    monkeypatch.setattr(dialog_helpers, "display_error", mock_display_error)
     qtbot.addWidget(main_window)
     main_window.show()
     return c, main_window
@@ -333,53 +407,60 @@ def run_setup(spectrograph, test_setup, main_window, qtbot):
     with qtbot.waitSignal(main_window.model.operation_complete, raising=True, timeout=10000):
         qtbot.mouseClick(main_window.setupButton, Qt.MouseButton.LeftButton)
 
-def test_run_setup(qtbot, tmp_path, monkeypatch):
+def test_run_setup(qtbot, raw_data_path, tmp_path, monkeypatch):
     """Test the basic process of setting a spectrograph, a raw data directory, and
     running setup."""
     c, main_window = setup_offscreen_gui(tmp_path, monkeypatch, qtbot)    
-    pypeit_setup_model = c.model
+    gui_model = c.model
 
     # Validate initial state
-    obs_log_tab = main_window.setup_view._obs_log_tab
+    obs_log_tab = main_window._obs_log_tab
     assert obs_log_tab.spectrograph.currentIndex() == -1
     assert obs_log_tab.spectrograph.isEnabled()
 
-    assert len(obs_log_tab.raw_data_paths.locations) == 0
-    assert not obs_log_tab.raw_data_paths.isEnabled()
+    assert obs_log_tab._paths_viewer.model().rowCount() == 0
+    assert obs_log_tab.paths_editor.history().rowCount() == 0
+    assert not obs_log_tab.paths_editor.isEnabled()
 
 
     assert main_window.openButton.isEnabled()
+    assert not main_window.logButton.isEnabled()
     assert not main_window.clearButton.isEnabled()
     assert not main_window.setupButton.isEnabled()
     assert not main_window.saveTabButton.isEnabled()
     assert not main_window.saveAllButton.isEnabled()
 
-    assert main_window.setup_view.state == model.ModelState.NEW
-    assert main_window.setup_view.currentWidget().state == model.ModelState.UNCHANGED
-    assert main_window.setup_view.currentWidget().tab_name == "ObsLog"
+    assert obs_log_tab.state == model.ModelState.NEW
+    assert main_window._current_tab is obs_log_tab
+    assert main_window.tab_widget.currentWidget().name == "ObsLog"
+    assert obs_log_tab.closeable is False
+    assert gui_model.state == model.ModelState.NEW
 
     # Select the "keck_mosfire" spectrograph 
-    with qtbot.waitSignal(pypeit_setup_model.spectrograph_changed, timeout=1000):
+    with qtbot.waitSignal(gui_model.obslog_model.spectrograph_changed, timeout=1000):
         qtbot.keyClicks(obs_log_tab.spectrograph, "keck_mosfire")
         qtbot.keyClick(obs_log_tab.spectrograph, Qt.Key.Key_Enter)
 
-    assert pypeit_setup_model.spectrograph == "keck_mosfire"
+    assert gui_model.obslog_model.spectrograph.name == "keck_mosfire"
 
-    assert len(obs_log_tab.raw_data_paths.locations) == 0
-    assert obs_log_tab.raw_data_paths.isEnabled()
+    # The paths editor should now be enabled
+    assert obs_log_tab._paths_viewer.model().rowCount() == 0
+    assert obs_log_tab.paths_editor.history().rowCount() == 0
+    assert obs_log_tab.paths_editor.isEnabled()
 
     # set raw data
-    raw_dir = os.path.join(os.getenv('PYPEIT_DEV'), 
-                           'RAW_DATA', 'keck_mosfire')
-    j_multi = os.path.join(raw_dir, "J_multi")
-    with qtbot.waitSignal(pypeit_setup_model.raw_data_dirs_changed, raising=True, timeout=1000):
-        obs_log_tab.raw_data_paths._location.setCurrentText(j_multi)
-        qtbot.keyClick(obs_log_tab.raw_data_paths._location, Qt.Key_Enter)
+    raw_dir = raw_data_path / 'keck_mosfire'
+    j_multi = raw_dir / "J_multi"
+    with qtbot.waitSignals([(gui_model.obslog_model.paths_model.rowsInserted, "path inserted"),
+                            (gui_model.obslog_model.paths_model.dataChanged, "path data set")], 
+                            order = 'strict', raising=True, timeout=1000):
+        obs_log_tab.paths_editor._path.setCurrentText(str(j_multi))
+        qtbot.keyClick(obs_log_tab.paths_editor._path, Qt.Key_Enter)
 
     
-    assert len(obs_log_tab.raw_data_paths.locations) == 1
-    assert j_multi in obs_log_tab.raw_data_paths.locations
-    assert obs_log_tab.raw_data_paths.isEnabled()
+    assert obs_log_tab._paths_viewer.model().rowCount() == 1
+    assert obs_log_tab._paths_viewer.model().stringList()[0] == str(j_multi)
+    assert obs_log_tab.paths_editor.isEnabled()
     assert obs_log_tab.spectrograph.isEnabled()
     assert main_window.openButton.isEnabled()
     assert not main_window.clearButton.isEnabled()
@@ -387,35 +468,48 @@ def test_run_setup(qtbot, tmp_path, monkeypatch):
     assert not main_window.saveTabButton.isEnabled()
     assert not main_window.saveAllButton.isEnabled()
 
-    assert main_window.setup_view.state == model.ModelState.NEW
-    assert main_window.setup_view.currentWidget().state == model.ModelState.UNCHANGED
-    assert main_window.setup_view.currentWidget().tab_name == "ObsLog"
+    assert gui_model.state == model.ModelState.NEW
+    assert obs_log_tab.state == model.ModelState.NEW
+    assert main_window._current_tab is obs_log_tab
+    assert main_window.tab_widget.currentWidget().name == "ObsLog"
 
     # Click the Run Setup button
-    with qtbot.waitSignal(pypeit_setup_model.operation_complete, raising=True, timeout=10000):
+    # TODO I have to figure out how to listen to various progress signals, files added etc
+    signal_list = [(setup_model.operation_progress, "op_progress_file1"),
+                (setup_model.operation_progress, "op_progress_file2"),
+                (setup_model.configs_added, "configs_added"),
+                (setup_model.operation_complete, "op_complete"),]
+
+    with qtbot.waitSignal(gui_model.operation_complete, raising=True, timeout=10000):
         qtbot.mouseClick(main_window.setupButton, Qt.MouseButton.LeftButton)
 
     assert main_window.saveAllButton.isEnabled()
     assert not main_window.saveTabButton.isEnabled()
     assert main_window.clearButton.isEnabled()
 
-    assert main_window.setup_view.state == model.ModelState.CHANGED
-    assert main_window.setup_view.currentWidget().state == model.ModelState.UNCHANGED
-    assert main_window.setup_view.currentWidget().tab_name == "ObsLog"
+    assert gui_model.state == model.ModelState.CHANGED
+    assert obs_log_tab.state == model.ModelState.UNCHANGED
+    assert main_window._current_tab is obs_log_tab
+    assert main_window.tab_widget.currentWidget().name == "ObsLog"
     assert not obs_log_tab.spectrograph.isEnabled()
 
-    tab_a = main_window.setup_view.widget(1) 
-    tab_b = main_window.setup_view.widget(2) 
+    tab_a = main_window.tab_widget.widget(1) 
+    tab_b = main_window.tab_widget.widget(2) 
     assert tab_a.name == "A"
-    assert tab_a.tab_name == "*A"
+    assert main_window.tab_widget.tabText(1) == "*A"
     assert tab_a.state == model.ModelState.CHANGED
+    assert tab_a.closeable is True
     assert tab_a.file_metadata_table.model().rowCount() == 69
     assert tab_b.name == "B"
-    assert tab_b.tab_name == "*B"
+    assert main_window.tab_widget.tabText(2) == "*B"
     assert tab_b.state == model.ModelState.CHANGED
+    assert tab_b.closeable is True
     assert tab_b.file_metadata_table.model().rowCount() == 4
 
     # Verify history
+    assert obs_log_tab.paths_editor.history().rowCount() == 1
+    assert obs_log_tab.paths_editor.history().stringList()[0] == str(j_multi)
+
     settings = QSettings()
     settings.beginGroup("RawDataDirectory")
     history = settings.value('History')
