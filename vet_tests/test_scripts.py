@@ -211,7 +211,6 @@ def test_collate_1d(tmp_path, monkeypatch, redux_out):
         print("[collate1d]", file=f)
         print("dry_run = False", file=f)
         print("flux = False", file=f)
-#        print("chk_version = False", file=f)
         print("outdir = /outdir", file=f)
         print("ignore_flux = False", file=f)
         print("tolerance = 4.0", file=f)
@@ -254,7 +253,6 @@ def test_collate_1d(tmp_path, monkeypatch, redux_out):
     parsed_args = scripts.collate_1d.Collate1D.parse_args(args + tol_args + spec1d_args)
     params, spectrograph, expanded_spec1d_files = scripts.collate_1d.build_parameters(parsed_args)
     assert params['collate1d']['dry_run'] is True
-#    assert params['collate1d']['chk_version'] is True
     assert params['rdx']['chk_version'] is True
     assert params['collate1d']['outdir'] == '/outdir2'
     assert params['collate1d']['match_using'] == 'ra/dec'
@@ -271,7 +269,6 @@ def test_collate_1d(tmp_path, monkeypatch, redux_out):
     parsed_args = scripts.collate_1d.Collate1D.parse_args([config_file_full])
     params, spectrograph, expanded_spec1d_files = scripts.collate_1d.build_parameters(parsed_args)
     assert params['collate1d']['dry_run'] is False
-#    assert params['collate1d']['chk_version'] is False
     assert params['rdx']['chk_version'] is False
     assert params['collate1d']['outdir'] == '/outdir'
     assert params['collate1d']['ignore_flux'] == False
