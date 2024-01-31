@@ -16,7 +16,7 @@ aws --endpoint-url https://s3-west.nrp-nautilus.io s3api put-bucket-policy --buc
 aws s3api  get-bucket-acl --bucket pypeit --endpoint https://s3-west.nrp-nautilus.io
 
 1. Add Grantee, keeping all previous: 
-aws s3api put-bucket-acl --profile default --bucket pypeit --grant-full-control id=profx,id=jreichwe,id=dpellicc,id=bradpholden,id=mgeha,id=rcooke,id=westfall,id=tbowerslowelledu --endpoint https://s3-west.nrp-nautilus.io
+aws s3api put-bucket-acl --profile default --bucket pypeit --grant-full-control id=profx,id=jreichwe,id=dpellicc,id=bradpholden,id=mgeha,id=rcooke,id=westfall,id=tbowerslowelledu,id=cgelino,id=jcg,id=caltox --endpoint https://s3-west.nrp-nautilus.io
 
    Note:  the id may not exactly match that on Matrix.  e.g. katmar instead of katmar4141
 
