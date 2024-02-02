@@ -12,9 +12,8 @@ import shutil
 import os
 import io, yaml
 
-from pkg_resources import resource_filename
-
 from IPython import embed
+
 
 def parser(options=None):
     import argparse
@@ -30,6 +29,7 @@ def parser(options=None):
     parser.add_argument('--ncpu', type=int, default=8, help='Number of CPUs request')
     parser.add_argument('--ram', type=int, default=100, help='Amount of RAM to request (Gi)')
     parser.add_argument('--coverage', default=False, action="store_true", help="Collect code coverage data.")
+    parser.add_argument('--container', type=str, default='pypeit', help="What docker container to use. 'pypeit' for the latest pypeit conatiner. 'python3.9', 'python3.10', etc for a specific python version. Or the full path to a different image.")
     parser.add_argument('--priority_list', default=False, action="store_true", help="Copy the test_priority_list to S3 after testing.")
     parser.add_argument('additional_args', type=str, nargs='*', default=["all"], help="Additional arguments to pypeit_test. Defaults to 'all'. "
                                                                                       "For example, if you would like to run all tests, but only reduce "
@@ -70,11 +70,21 @@ def main():
     if pargs.coverage:
         arguments += ["--coverage", "coverage.report"]
 
-    # Install rclone
-    my_args = 'apt-get -y update; apt-get -y install rclone;'
-    # Get PypeIt git up to date
-    my_args += ' cd PypeIt;'
-    my_args += ' git fetch;'
+    # Install apt packages and setup PypeIt git repository
+    if pargs.container =='pypeit':
+       # Most of the required packages are already installed by the default container,
+       # only rclone is needed
+       my_args = 'apt-get -y update; apt-get -y install rclone;'
+       # Get the existing PypeIt git repository up to date
+       my_args += ' cd PypeIt;'
+       my_args += ' git fetch;'
+    else:
+        # Install all required packages and do a complete clone of PypeIt to a generic python container
+        my_args = 'apt-get -y update; apt-get -y install git awscli build-essential qtbase5-dev rclone;'
+        my_args += ' pip install psutil;'
+        my_args += ' cd /tmp;'
+        my_args += ' git clone https://github.com/pypeit/PypeIt.git; cd PypeIt;'
+
     my_args += f' git checkout {pargs.pypeit_branch};' 
     my_args += ' git pull --ff-only;'
     my_args += ' pip install -e ".[dev,specutils]";'
@@ -102,6 +112,13 @@ def main():
         my_args += f' aws --endpoint $ENDPOINT_URL s3 cp test_priority_list s3://pypeit/Reports/{pargs.name}.test_priority_list;'
 
     data['spec']['template']['spec']['containers'][0]['args'][0] = my_args
+
+    if pargs.container != 'pypeit':
+        if pargs.container.startswith("python"):
+            python_version = pargs.container[6:]
+            data['spec']['template']['spec']['containers'][0]['image'] = f"docker.io/library/python:{python_version}"
+        else:
+            data['spec']['template']['spec']['containers'][0]['image'] = pargs.container
 
     with io.open(pargs.outfile, 'w', encoding='utf8') as outfile:
         yaml.dump(data, outfile, default_flow_style=False, allow_unicode=True)
