@@ -18,7 +18,7 @@ import traceback
 import datetime
 from pathlib import Path
 import textwrap
-
+import shutil
 import numpy as np
 import pypeit 
 # Stop logging from pypeit.par.utils when reading/writing coadd1d files
@@ -166,6 +166,9 @@ def green_text(text):
     """Utiltiy method to wrap text in the escape sequences to make it appear green in a terminal"""
     return f'\x1B[1;32m{text}\x1B[0m'
 
+def yellow_text(text):
+    """Utiltiy method to wrap text in the escape sequences to make it appear yellow in a terminal"""
+    return f'\x1B[1;33m{text}\x1B[0m'
 
 class TestReport(object):
     """Class for reporting on the status and results of testing.
@@ -212,7 +215,7 @@ class TestReport(object):
         self.testing_complete = False
         self.start_time = datetime.datetime.now()
 
-        self.pytest_results=dict()
+        self.section_results=dict()
 
         if pargs.report is not None and os.path.exists(pargs.report):
             # Remove any old report files if we've been asked to overwrite it
@@ -313,13 +316,13 @@ class TestReport(object):
             with open(self.pargs.report, "a") as report_file:
                 self.summary_report(report_file)
 
-    def pytest_started(self, test_descr):
-        """Called when a set of pytest tests have started.
+    def test_section_started(self, test_descr):
+        """Called when a new test section has started. This is used
+        for non-setup based tests such as pytest tests or generating docs.
         
         Args:
-            test_descr (str): A short description of the pytest test suite that
-                              will be displayed in the test report and uniquely
-                              identify the test suite. For example:
+            test_descr (str): A short description of the test section that
+                              will be displayed in the test report For example:
                               "Unit Tests".
         """
 
@@ -331,30 +334,25 @@ class TestReport(object):
                 print(f"{test_descr} Results:", file=report_file)
                 print ("-------------------------", file=report_file)                
 
-    def pytest_line(self, test_descr, line):
-        """Called for each line ouptut from a pytest run. Each line is echoed to
-        stdout and, if requested, a report file.
-        
+    def test_line(self, line, detailed=False):
+        """Called to output a line to the test results.
         Args:
-            test_descr (str): A short description of the pytest test suite that
-                              will be displayed in the test report and uniquely
-                              identify the test suite. For example:
-                              "Unit Tests".
 
-            line (str):       A line from the stdout of pytest.
+            line (str):      A line to output to stdout (if not in quiet mode),
+                             and the test report.
+            detailed (bool): True if the line is only intended for a detailed
+                             test report.
         
         """
-        if not self.pargs.quiet:
+        if not self.pargs.quiet and (not detailed or self.pargs.verbose):
             print(line, flush=True)
 
         if self.pargs.report is not None:
             with open(self.pargs.report, "a") as report_file:
                 print(line, file=report_file)
         
-        # Save any summary lines found for reporting later.
-        if "warnings" in line or "passed" in line or "failed" in line:
-            self.pytest_results[test_descr] = line.replace("=", "")
-
+    def add_test_section_summary(self, test_descr, passed, summary_line):
+        self.section_results[test_descr] = (passed, summary_line)
 
     def detailed_report(self, output=sys.stdout):
         """Display a detailed report on testing to the given output stream"""
@@ -399,18 +397,22 @@ class TestReport(object):
             for t in self.skipped_tests:
                 print('    {0}'.format(t), file=output)
 
-    def summarize_pytest_results(self, test_descr, output=sys.stdout):
+    def summarize_section_results(self, test_descr, output=sys.stdout):
         """Display a summary of a pytest run."""
-        if test_descr not in self.pytest_results:
+        if test_descr not in self.section_results:
             # The tests weren't run, so no results
             return
-        results = self.pytest_results[test_descr]
-        if "failed" in results:
-            print("\x1B[" + "1;31m" + f"--- PYTEST {test_descr.upper()} FAILED " + "\x1B[" + "0m"
-                  + results +  "\x1B[" + "1;32m" + "---" + "\x1B[" + "0m" + "\r", file=output)
+        status, results = self.section_results[test_descr]
+        if not status:
+            print(red_text(f"--- {test_descr.upper()} FAILED ") +
+                  results +  
+                  red_text("---"),
+                  file=output)
         else:
-            print("\x1B[" + "1;32m" + f"--- PYTEST {test_descr.upper()} PASSED " + "\x1B[" + "0m"
-                  + results +  "\x1B[" + "1;32m" + "---" + "\x1B[" + "0m" + "\r", file=output)
+            print(green_text(f"--- {test_descr.upper()} PASSED ") +
+                  results +
+                  green_text("---"),
+                  file=output)
 
     def performance_results(self, output):
         """Display performance statistics on PypeIt tests."""
@@ -444,9 +446,8 @@ class TestReport(object):
         """Display a summary report on the results of testing to the given output stream"""
 
         print ("\nTest Summary\n--------------------------------------------------------", file=output)
-        self.summarize_pytest_results("PypeIt Unit Tests", output)
-        self.summarize_pytest_results("Unit Tests", output)
-        self.summarize_pytest_results("Vet Tests", output)
+        for key in self.section_results:
+            self.summarize_section_results(key, output)
         self.summarize_setup_tests(output)
 
         if self.pargs.coverage is not None:
@@ -544,7 +545,7 @@ def run_pytest(pargs, test_descr, test_dir, test_report,
     """
     abs_test_dir = os.path.abspath(test_dir)
 
-    test_report.pytest_started(test_descr)
+    test_report.test_section_started(test_descr)
 
     # Tests not written to run in parallel yet
     #args = ["pytest", "-v", "--color=yes", "-n", str(pargs.threads)]
@@ -567,7 +568,97 @@ def run_pytest(pargs, test_descr, test_dir, test_report,
     # We change the current directory so that the coverage output goes to the outputdir
     with subprocess.Popen(args,stderr=subprocess.STDOUT, stdout=subprocess.PIPE,cwd=pargs.outputdir) as p:
         while(p.poll() is None):
-            test_report.pytest_line(test_descr, p.stdout.readline().decode().strip())
+            # Scan the output for status
+            line = p.stdout.readline().decode().strip()
+            test_report.test_line(line)
+            if "warnings" in line or "passed" in line or "failed" in line:
+                # The output will look like
+                # ========== 47 passed, 29 warnings in 648.20s (0:10:48) =========
+                # Strip out the = signs
+                results =  line.replace("=", "")
+
+    test_report.add_test_section_summary(test_descr, "failed" not in results, results)
+
+    
+def is_git_installed():
+    """Detrmines if git is installed"""
+    git_path = shutil.which("git")
+    return git_path is not None
+
+def is_path_in_git(path):
+    """Determines if a given path is in a git repository"""
+    try:
+        result = subprocess.run(["git", "rev-parse", "--is-inside-work-tree"], stdout=subprocess.DEVNULL, cwd=path)
+    except Exception:
+        print(f"Failed to determine if {path} is in git.\n" + traceback.format_exc())
+        return False
+    return result.returncode == 0
+
+def run_update_docs(pargs, test_report):
+    """Run the PypeIT update_docs script and verify it succeeds.
+    
+    Args:
+        pargs (:obj:`argparse.Namespace`): The arguments to pypeit_test, as returned by argparse.
+
+        test_report (:obj:`TestReport`): 
+            The test report object for this test run. Output from the pytest run
+            will be passed to this object.
+
+    """
+    test_descr = "PypeIt Update Docs"
+    test_report.test_section_started(test_descr)
+
+    pypeit_dir = pypeit.__path__[0]
+    passed = False
+    # Default failure message if we can't find a status in the scripts output
+    status = red_text("Unknown Failure")
+
+
+    if is_git_installed() is False:
+        test_report.test_line("Skipping Update Docs because git is not installed")
+        status = yellow_text("Skipped because git not installed")
+        passed = True
+    elif is_path_in_git(pypeit_dir) is False:
+        test_report.test_line("Skipping Update Docs because PypeIt is not being run from git")
+        status = yellow_text("Skipped because PypeIt not in git")
+        passed = True
+    else:
+        pypeit_parent_dir = os.path.dirname(pypeit_dir)
+        update_docs_script = os.path.join(pypeit_parent_dir,"update_docs")
+        try:          
+            # Provide some status to stdout
+            test_report.test_line(f"Running {update_docs_script} ...")
+
+            # Run update_docs, sending the output to the test report.
+            # We change the current directory so that update_docs can find the "doc" directory
+            with subprocess.Popen([update_docs_script],stderr=subprocess.STDOUT, stdout=subprocess.PIPE,cwd=pypeit_parent_dir) as p:
+                while(p.poll() is None):
+                    line = p.stdout.readline().decode().strip()
+                    test_report.test_line(line,detailed=True)
+
+                    # Look for the status output from update_docs
+                    # If we can't find a failed or successful response, leave the default error message.
+                    if "Sphinx build" in line:
+                        if "FAILED" in line:
+                            passed=False
+                            status = line
+                        elif "successful" in line:
+                            passed=True
+                            status = line
+
+        except Exception as e:
+            # Failed to execute the script. Get the exception message to the report
+            exception_msg = f"Failed to execute {update_docs_script}.\n" + traceback.format_exc()
+            for message_line in exception_msg.split("\n"):
+                test_report.test_line(message_line)
+
+            status = red_text("Failed to execute update_docs")
+            passed=False
+
+    test_report.add_test_section_summary(test_descr, passed, status)
+
+
+
 
 def generate_coverage_report(pargs):
 
@@ -633,7 +724,7 @@ def parser(options=None):
 
     parser.add_argument('tests', type=str, nargs='+', default=None,
                         help='Which test types to run. Options are:  '
-                             'pypeit_tests, unit, reduce, afterburn, ql, vet, or all. Use list to show all supported instruments and setups.')
+                             'pypeit_tests, unit, reduce, afterburn, ql, vet, docs, or all. Use list to show all supported instruments and setups.')
     parser.add_argument('-o', '--outputdir', type=str, default='REDUX_OUT',
                         help='Output folder.')
     parser.add_argument('-i', '--instruments', type=str, nargs='+', 
@@ -744,7 +835,7 @@ def main():
     flg_after = False
     flg_ql = False
     flg_vet = False
-
+    flg_docs = False
     write_priorities = False
 
     for test in pargs.tests:
@@ -755,7 +846,7 @@ def main():
             flg_after = True
             flg_ql = True
             flg_vet = True
-
+            flg_docs = True
             # Write the test priority file if all tests are being run
             if pargs.instruments is None and pargs.setups is None and pargs.debug == False:
                 write_priorities = True
@@ -772,6 +863,8 @@ def main():
             flg_ql = True
         elif test == "vet":
             flg_vet = True
+        elif test == "docs":
+            flg_docs=True
         else:
             print("\x1B[" + "1;31m" + "\nERROR - " + "\x1B[" + "0m" +
                   "Invalid test selected: {}\n\n".format(test) +
@@ -834,6 +927,8 @@ def main():
                 print('Running quick look tests')
             if flg_vet is True:
                 print('Running vet tests')
+            if flg_docs is True:
+                print('Running update_docs test')
 
     # Clean up prior coverage results that could be left over from an
     # interrupted dev suite run
@@ -850,7 +945,7 @@ def main():
 
     dev_path = os.getenv('PYPEIT_DEV')
     if flg_unit is True and not pargs.prep_only:
-        run_pytest(pargs, "Unit Tests", os.path.join(dev_path, "unit_tests"), test_report)
+        run_pytest(pargs, "PypeIt Development Suite Unit Tests", os.path.join(dev_path, "unit_tests"), test_report)
 
 
     if flg_reduce or flg_after or flg_ql:
@@ -947,8 +1042,11 @@ def main():
 
     # Run the vet tests
     if flg_vet is True:
-        run_pytest(pargs, "Vet Tests", os.path.join(dev_path, "vet_tests"), test_report, redux_out=pargs.outputdir)
+        run_pytest(pargs, "PypeIt Development Suite Vet Tests", os.path.join(dev_path, "vet_tests"), test_report, redux_out=pargs.outputdir)
 
+    # Run the update_docs test
+    if flg_docs is True:
+        run_update_docs(pargs, test_report)
 
     # ---------------------------------------------------------------------------
     # Build test priority list for next time, but only if all tests succeeded
