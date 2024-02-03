@@ -2,12 +2,12 @@ import pytest
 
 from collections import namedtuple
 import shutil
-import re
 import os
 from pathlib import Path
 
-from qtpy.QtCore import Qt, QSettings,QObject
-from qtpy.QtWidgets import QFileDialog
+from qtpy.QtCore import Qt, QSettings
+
+import numpy as np
 
 from pypeit.setup_gui import dialog_helpers
 from pypeit.setup_gui import view, model, controller
@@ -49,7 +49,7 @@ def get_mock_setup(metadata=None):
                 "[[findobj]]", 
                 "snr_thresh = 5.0",
                 "[calibrations]", # Double nested entries in config
-                "bpm_usebias = true",
+                "bpm_usebias = True",
                 "[[biasframe]]",
                 "frametype = bias",
                 "[[[process]]]",
@@ -106,13 +106,86 @@ def test_metadata_model(raw_data_path, qtbot, qtmodeltester):
     assert metadata_model.headerData(dec_column, Qt.Orientation.Horizontal, Qt.DisplayRole) == 'dec'
     assert metadata_model.headerData(dec_column, Qt.Orientation.Vertical, Qt.DecorationRole) is None
     
-    # TODO: More tests?
+
     # Test removing metadata rows
-    # Test adding metadata rows
+    rows_to_remove = np.where(np.isin(metadata_model.metadata['filename'], ['b22.fits.gz', 'b23.fits.gz', 'b24.fits.gz']))[0]
+    orig_count = metadata_model.rowCount()
+    with qtbot.waitSignals([metadata_model.rowsAboutToBeRemoved, metadata_model.rowsRemoved]*len(rows_to_remove), raising=True, order='strict', timeout=5000):
+        metadata_model.removeMetadataRows(rows_to_remove)
+    assert orig_count - len(rows_to_remove) == metadata_model.rowCount()
+    assert not np.any(np.isin(metadata_model.metadata['filename'], ['b22.fits.gz', 'b23.fits.gz', 'b24.fits.gz']))
+
+    # TODO: More tests?
     # Test paste
     # Test copyForRows
     # Test CopyFromConfig?
-    # Test comment/uncomment/iscommented
+
+def test_commenting_out_files(raw_data_path, tmp_path, qtbot):
+
+    metadata = get_test_metadata(raw_data_path)
+    metadata.get_frame_types() # Needed so the metadata can be saved later
+    metadata_model = model.PypeItMetadataModel(metadata=metadata)
+
+    # Test commenting out 3 known files, and make sure the appropriate signal is sent
+    files_to_comment = ['b22.fits.gz', 'b23.fits.gz', 'b24.fits.gz']
+    rows_to_comment = [np.where(metadata['filename'] == file)[0][0] for file in files_to_comment]
+    with qtbot.waitSignal(metadata_model.dataChanged, raising=True, timeout=1000):
+        metadata_model.commentMetadataRows(rows_to_comment)
+
+    filename_col = metadata_model.colnames.index('filename')
+    for row, file in zip(rows_to_comment, files_to_comment):
+        # Make sure file is commented out
+        assert metadata_model.metadata[row]['filename'] == "# " + file
+
+        # Make sure the comment character does not appear in the GUI
+        indx =  metadata_model.createIndex(row, filename_col)
+        assert metadata_model.data(indx, Qt.DisplayRole) == file
+
+        # Make sure the model reports it as commented out
+        assert metadata_model.isCommentedOut(indx) is True
+
+    # Try commenting out the files again, to make sure double comments aren't added
+    metadata_model.commentMetadataRows(rows_to_comment)
+    for row in rows_to_comment:
+        assert metadata_model.metadata[row]['filename'].count("#") == 1
+
+    # Now save and re-open the file to test that these are saved correctly
+    mock_setup = get_mock_setup(metadata)
+    params_model = model.PypeItParamsProxy(mock_setup.par, mock_setup.user_cfg)
+    config_dict = {'A': {'dispname': '600/4310', 'dichroic': 'd55'}}
+    file_model = model.PypeItFileModel(metadata_model = metadata_model, name_stem="A", config_dict=config_dict, state=model.ModelState.CHANGED, params_model=params_model)
+    file_model.save_location = str(tmp_path)
+    file_model.save()
+    assert file_model.state == model.ModelState.UNCHANGED
+    pypeit_file_path = tmp_path / "shane_kast_blue_A.pypeit"
+    assert pypeit_file_path.exists()
+
+    gui_model = model.PypeItSetupGUIModel()
+    with qtbot.waitSignals([gui_model.filesAdded, gui_model.stateChanged], order='strict', raising=True, timeout=5000):
+        gui_model.open_pypeit_file(pypeit_file_path)
+
+    opened_file_model = gui_model.pypeit_files['A']
+    opened_metadata_model = opened_file_model.metadata_model
+
+    # Make sure files are still commented out, without assuming the same order
+    # while gathering the row numbers for later use
+    commented_files = ["# " + file for file in files_to_comment]
+
+    # We concatenate because the np.where will return an empty result if the file isn't there
+    commented_rows = np.concatenate([np.where(opened_metadata_model.metadata['filename'] == file)[0] for file in commented_files])
+    assert len(commented_rows) == len(commented_files)
+
+    # Test uncommenting out the files
+    with qtbot.waitSignal(opened_metadata_model.dataChanged, raising=True, timeout=1000):
+        opened_metadata_model.uncommentMetadataRows(commented_rows)
+    
+    for row,file in zip(commented_rows,files_to_comment):
+        assert opened_metadata_model.metadata[row]['filename'] == file
+
+        # Make sure model reports it as uncommented
+        indx =  metadata_model.createIndex(row, filename_col)
+        assert opened_metadata_model.isCommentedOut(indx) is False
+
 
 def test_pypeit_params_proxy(qtmodeltester):
 
@@ -176,7 +249,6 @@ def test_pypeit_file_model(qtbot, raw_data_path, tmp_path):
     assert str(shane_kast_blue_path / "b1.fits.gz") in filenames
 
     # TODO
-    # test commented out files being saved,reloaded correctly
     # test removed files not being saved
     # test comments in configuration section being saved
 
