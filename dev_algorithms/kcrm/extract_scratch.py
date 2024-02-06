@@ -1,7 +1,9 @@
 import numpy as np
 from matplotlib import pyplot as plt
+from astropy import units
 from astropy.visualization import ZScaleInterval, ImageNormalize
 from pypeit.coadd3d import DataCube
+from pypeit.core.datacube import make_whitelight_fromcube
 from pypeit import msgs
 
 filename = '/Users/joe/kcwi_type2/dec2023/red/WISEW4J1152+310_KCRM_cube.fits'
@@ -12,61 +14,21 @@ ivar_cube = cube.ivar  # Inverse variance cube
 wcs = cube.wcs
 nspec = flux_cube.shape[0]
 wave = cube.wcs.spectral.all_pix2world(np.arange(nspec), 0)[0] * 1.0E10
+nwave = flux_cube.shape[0]
 
+wave_min = 9000.0
+wave_max = 9750.0
+# Extract some information from the HDU list
+#flxcube = stdcube['FLUX'].data.T.copy()
+#varcube = stdcube['SIG'].data.T.copy()**2
+#bpmcube = stdcube['BPM'].data.T.copy()
+#numwave = flxcube.shape[2]
 
-wave_cen = 8.008*1215.67
-wave_min = wave_cen*(1.0 - 500.0/3.0e5)
-wave_max = wave_cen*(1.0 + 500.0/3.0e5)
-wave_mask = (wave >= wave_min) & (wave <= wave_max)
-wave_slice = np.argmin(np.abs(wave-wave_cen))
-sub_image = np.median(flux_cube[wave_mask,:,:], axis=0)
-norm = ImageNormalize(sub_image, interval=ZScaleInterval())
-fig = plt.figure(figsize=(20,20))
-fig.add_subplot(111, projection=wcs, slices=('x', 'y', wave_slice))
-plt.imshow(sub_image, origin='lower', cmap=plt.cm.viridis, norm=norm)
-plt.xlabel('RA')
-plt.ylabel('Dec')
-plt.show()
+# Setup the WCS
+#stdwcs = wcs.WCS(stdcube['FLUX'].header)
 
-
-
-
-def extract_standard_spec(stdcube, subpixel=20):
-    """
-    Extract a spectrum of a standard star from a datacube
-
-    Parameters
-    ----------
-    std_cube : `astropy.io.fits.HDUList`_
-        An HDU list of fits files
-    subpixel : int
-        Number of pixels to subpixelate spectrum when creating mask
-
-    Returns
-    -------
-    wave : `numpy.ndarray`_
-        Wavelength of the star.
-    Nlam_star : `numpy.ndarray`_
-        counts/second/Angstrom
-    Nlam_ivar_star : `numpy.ndarray`_
-        inverse variance of Nlam_star
-    gpm_star : `numpy.ndarray`_
-        good pixel mask for Nlam_star
-    """
-    # Extract some information from the HDU list
-    flxcube = stdcube['FLUX'].data.T.copy()
-    varcube = stdcube['SIG'].data.T.copy()**2
-    bpmcube = stdcube['BPM'].data.T.copy()
-    numwave = flxcube.shape[2]
-
-    # Setup the WCS
-    stdwcs = wcs.WCS(stdcube['FLUX'].header)
-
-    wcs_scale = (1.0 * stdwcs.spectral.wcs.cunit[0]).to(units.Angstrom).value  # Ensures the WCS is in Angstroms
-    wave = wcs_scale * stdwcs.spectral.wcs_pix2world(np.arange(numwave), 0)[0]
-
-    # Generate a whitelight image, and fit a 2D Gaussian to estimate centroid and width
-    wl_img = make_whitelight_fromcube(flxcube)
+# Generate a whitelight image, and fit a 2D Gaussian to estimate centroid and width
+wl_img = make_whitelight_fromcube(flux_cube)
     popt, pcov = fitGaussian2D(wl_img, norm=True)
     wid = max(popt[3], popt[4])
 
