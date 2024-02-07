@@ -20,7 +20,7 @@ setup end
 
 # Data block 
 data read
- path /Users/rcooke/Desktop/KCRM/J1626/Raw
+ path /Users/joe/python/PypeIt-development-suite/RAW_DATA/keck_kcrm/medium_rm1/
            filename |       frametype |                 ra |               dec |     target | dispname | decker | binning |          mjd | airmass |       exptime |   dispangle |   idname | calpos | calib
 kr230620_00060.fits |           align |  63.99999999999999 |              45.0 |    unknown |      RM1 | Medium |     2,2 | 60115.139465 |    1.41 |   8.700133888 | 123.9403839 | CONTBARS | Mirror |     0
 kr230620_00061.fits |           align |  63.99999999999999 |              45.0 |    unknown |      RM1 | Medium |     2,2 | 60115.139843 |    1.41 |   8.700133632 | 123.9403839 | CONTBARS | Mirror |     0

@@ -8,8 +8,8 @@ from astropy.stats import sigma_clipped_stats
 from IPython import embed
 
 # set environment variables
-os.environ['CRDS_PATH'] = '/Users/joe/crds_cache/jwst_pub'
-os.environ['CRDS_SERVER_URL'] = 'https://jwst-crds-pub.stsci.edu'
+os.environ['CRDS_PATH'] = '/Users/joe/crds_cache/'
+os.environ['CRDS_SERVER_URL'] = 'https://jwst-crds.stsci.edu/'
 from matplotlib import pyplot as plt
 from astropy.io import fits
 from astropy import stats
@@ -17,6 +17,7 @@ from gwcs import wcstools
 
 ## JWST imports
 # The calwebb_spec and spec3 pipelines
+from jwst.pipeline import Detector1Pipeline
 from jwst.pipeline import Spec2Pipeline
 from jwst.pipeline import Spec3Pipeline
 # individual steps
@@ -73,45 +74,44 @@ DO_NOT_USE = datamodels.dqflags.pixel['DO_NOT_USE']
 # detname = 'nrs1'
 # detector = 1 if 'nrs1' in detname else 2
 
-#disperser = 'J0313_G235M'
-#disperser = 'G395M_Maseda'
-#disperser = 'G395M'
-#disperser = 'PRISM_01117'
-# disperser = 'G235M'
-#disperser='PRISM_01133'
-#disperser = 'PRISM_02756'
+
 disperser = 'PRISM_02073'
-# disperser='PRISM_01117'
-# disperser='PRISM_FS'
+
 
 # Targets
-target = 'J0313'
+target = 'J0020'
+#target = 'J0411'
+#target = 'J0313'
+#target = 'J0252'
+#target = 'J0313'
 #target = 'J1007'
 # Dispersers
+disperser = '140H_bogus_F100LP'
 #disperser = '140H'
 #disperser = '235H'
-disperser = '395H'
+#disperser = '395H'
+#disperser = 'PRISM_02073'
+
 
 detectors = ['nrs1', 'nrs2']
 exp_list = []
 
-bkg_redux = False
-runflag = True
+bkg_redux = False #False #False
+run_stage1 = False
+run_stage2 = True
 #mode = 'MSA'
 mode ='FS'
-#slit = 'S200A1'
-#islit = 'S200A2'
 
-#islit = '37'
-#reduce_sources = ['2756_10025']
-#reduce_sources = ['2756_202']
-reduce_sources = ['2073_4562']
-#reduce_sources = ['2073_8731']
-#reduce_slits = None
-#reduce_sources = None
-#reduce_slits = None
-reduce_slits = ['S200A1']
 show = False
+
+# MSA demo
+#reduce_slits = None
+#reduce_sources = ['2073_8713']
+# FS demo
+reduce_slits = ['S200A2']
+reduce_sources = None
+
+
 
 
 # If bkg_redux is False, the code will model the sky and the object profile and perform optimal extraction.
@@ -122,20 +122,25 @@ for detname in detectors:
         ## Prorgram for Slit Loss Characterization for MSA shutters
         # PRISM data
         rawpath_level2 = '/Users/joe/jwst_redux/Raw/NIRSPEC_MSA/NIRSPEC_2073/level_12/02073/'
-        redux_dir = '/Users/joe/jwst_redux/redux/NIRSPEC_MSA/NIRSPEC_PRISM/02073_CLEAR_PRISM/calwebb'
+        redux_dir = os.path.join('/Users/joe/jwst_redux/redux/NIRSPEC_MSA/NIRSPEC_PRISM/02073_CLEAR_PRISM', target)
         output_dir = os.path.join(redux_dir, 'output')
         pypeit_output_dir = os.path.join(redux_dir, 'pypeit')
 
-        # NIRSPEC 3-point dither
-        # dither center
-        scifile1 = os.path.join(rawpath_level2, 'jw02073008001_03101_00001_' + detname + '_rate.fits')
-        scifile2 = os.path.join(rawpath_level2, 'jw02073008001_03101_00002_' + detname + '_rate.fits')
-        scifile3 = os.path.join(rawpath_level2, 'jw02073008001_03101_00003_' + detname + '_rate.fits')
+        #J0252
+        if target == 'J0252':
+            uncalfile1 = os.path.join(rawpath_level2, 'jw02073007001_03101_00001_' + detname + '_uncal.fits')
+            uncalfile2 = os.path.join(rawpath_level2, 'jw02073007001_03101_00002_' + detname + '_uncal.fits')
+            uncalfile3 = os.path.join(rawpath_level2, 'jw02073007001_03101_00003_' + detname + '_uncal.fits')
+        elif target == 'J1007':
+            # J1007
+            # NIRSPEC 3-point dither
+            uncalfile1 = os.path.join(rawpath_level2, 'jw02073008001_03101_00001_' + detname + '_uncal.fits')
+            uncalfile2 = os.path.join(rawpath_level2, 'jw02073008001_03101_00002_' + detname + '_uncal.fits')
+            uncalfile3 = os.path.join(rawpath_level2, 'jw02073008001_03101_00003_' + detname + '_uncal.fits')
 
-        #scifile1 = os.path.join(rawpath_level2, 'jw02073006001_03101_00001_' + detname + '_rate.fits')
-        #scifile2 = os.path.join(rawpath_level2, 'jw02073006001_03101_00002_' + detname + '_rate.fits')
-        #scifile3 = os.path.join(rawpath_level2, 'jw02073006001_03101_00003_' + detname + '_rate.fits')
-
+            #uncalfile1 = os.path.join(rawpath_level2, 'jw02073006001_03101_00001_' + detname + '_uncal.fits')
+            #uncalfile2 = os.path.join(rawpath_level2, 'jw02073006001_03101_00002_' + detname + '_uncal.fits')
+            #uncalfile3 = os.path.join(rawpath_level2, 'jw02073006001_03101_00003_' + detname + '_uncal.fits')
 
     elif 'PRISM_02756' == disperser:
         ## Prorgram for Slit Loss Characterization for MSA shutters
@@ -147,14 +152,14 @@ for detname in detectors:
 
         # NIRSPEC 3-point dither
         # dither center
-        scifile1 = os.path.join(rawpath_level2, 'jw02756001001_03101_00001_' + detname + '_rate.fits')
-        scifile2 = os.path.join(rawpath_level2, 'jw02756001001_03101_00002_' + detname + '_rate.fits')
-        scifile3 = os.path.join(rawpath_level2, 'jw02756001001_03101_00003_' + detname + '_rate.fits')
+        uncalfile1 = os.path.join(rawpath_level2, 'jw02756001001_03101_00001_' + detname + '_uncal.fits')
+        uncalfile2 = os.path.join(rawpath_level2, 'jw02756001001_03101_00002_' + detname + '_uncal.fits')
+        uncalfile3 = os.path.join(rawpath_level2, 'jw02756001001_03101_00003_' + detname + '_uncal.fits')
 
         # dither offset
-        # scifile  = os.path.join(rawpath_level2, 'jw01133003001_0310x_00003_' + detname + '_rate.fits')
-        # bkgfile1 = os.path.join(rawpath_level2, 'jw01133003001_0310x_00001_' + detname + '_rate.fits')
-        # bkgfile2 = os.path.join(rawpath_level2, 'jw01133003001_0310x_00002_' + detname + '_rate.fits')
+        # uncalfile  = os.path.join(rawpath_level2, 'jw01133003001_0310x_00003_' + detname + '_uncal.fits')
+        # bkgfile1 = os.path.join(rawpath_level2, 'jw01133003001_0310x_00001_' + detname + '_uncal.fits')
+        # bkgfile2 = os.path.join(rawpath_level2, 'jw01133003001_0310x_00002_' + detname + '_uncal.fits')
 
     elif 'PRISM_01133' == disperser:
         ## Prorgram for Slit Loss Characterization for MSA shutters
@@ -165,14 +170,14 @@ for detname in detectors:
 
         # NIRSPEC 3-point dither
         # dither center
-        scifile1 = os.path.join(rawpath_level2, 'jw01133003001_0310x_00001_' + detname + '_rate.fits')
-        scifile2 = os.path.join(rawpath_level2, 'jw01133003001_0310x_00002_' + detname + '_rate.fits')
-        scifile3 = os.path.join(rawpath_level2, 'jw01133003001_0310x_00003_' + detname + '_rate.fits')
+        uncalfile1 = os.path.join(rawpath_level2, 'jw01133003001_0310x_00001_' + detname + '_uncal.fits')
+        uncalfile2 = os.path.join(rawpath_level2, 'jw01133003001_0310x_00002_' + detname + '_uncal.fits')
+        uncalfile3 = os.path.join(rawpath_level2, 'jw01133003001_0310x_00003_' + detname + '_uncal.fits')
 
         # dither offset
-        # scifile  = os.path.join(rawpath_level2, 'jw01133003001_0310x_00003_' + detname + '_rate.fits')
-        # bkgfile1 = os.path.join(rawpath_level2, 'jw01133003001_0310x_00001_' + detname + '_rate.fits')
-        # bkgfile2 = os.path.join(rawpath_level2, 'jw01133003001_0310x_00002_' + detname + '_rate.fits')
+        # uncalfile  = os.path.join(rawpath_level2, 'jw01133003001_0310x_00003_' + detname + '_uncal.fits')
+        # bkgfile1 = os.path.join(rawpath_level2, 'jw01133003001_0310x_00001_' + detname + '_uncal.fits')
+        # bkgfile2 = os.path.join(rawpath_level2, 'jw01133003001_0310x_00002_' + detname + '_uncal.fits')
     elif 'PRISM_FS' == disperser:
         ## Prorgram for Slit Loss Characterization for MSA shutters
         # PRISM data
@@ -182,9 +187,82 @@ for detname in detectors:
 
         # NIRSPEC 3-point dither
         # dither center
-        scifile1 = os.path.join(rawpath_level2, 'jw02072002001_05101_00001_' + detname + '_rate.fits')
-        scifile2 = os.path.join(rawpath_level2, 'jw02072002001_05101_00002_' + detname + '_rate.fits')
-        scifile3 = os.path.join(rawpath_level2, 'jw02072002001_05101_00003_' + detname + '_rate.fits')
+        uncalfile1 = os.path.join(rawpath_level2, 'jw02072002001_05101_00001_' + detname + '_uncal.fits')
+        uncalfile2 = os.path.join(rawpath_level2, 'jw02072002001_05101_00002_' + detname + '_uncal.fits')
+        uncalfile3 = os.path.join(rawpath_level2, 'jw02072002001_05101_00003_' + detname + '_uncal.fits')
+    elif 'J0411' == target:
+        rawpath_level2 = '/Users/joe/jwst_redux/Raw/NIRSPEC_FS/1222/level_12/01222/'
+        output_dir = '/Users/joe/jwst_redux/redux/NIRSPEC_FS/J0411/calwebb/output'
+        pypeit_output_dir = '/Users/joe/jwst_redux/redux/NIRSPEC_FS/J0411/calwebb/pypeit'
+        if disperser == '235H':
+            # NIRSPEC 3-point dither dither center
+            if reduce_slits[0] == 'S200A1':
+                uncalfile1 = os.path.join(rawpath_level2, 'jw01222002001_03108_00001_' + detname + '_uncal.fits')
+                uncalfile2 = os.path.join(rawpath_level2, 'jw01222002001_03108_00002_' + detname + '_uncal.fits')
+                uncalfile3 = os.path.join(rawpath_level2, 'jw01222002001_03108_00003_' + detname + '_uncal.fits')
+            elif reduce_slits[0] == 'S200A2':
+                uncalfile1 = os.path.join(rawpath_level2, 'jw01222002001_03106_00001_' + detname + '_uncal.fits')
+                uncalfile2 = os.path.join(rawpath_level2, 'jw01222002001_03106_00002_' + detname + '_uncal.fits')
+                uncalfile3 = os.path.join(rawpath_level2, 'jw01222002001_03106_00003_' + detname + '_uncal.fits')
+        elif disperser == '140H':
+            # NIRSPEC 3-point dither dither center
+            if reduce_slits[0] == 'S200A1':
+                uncalfile1 = os.path.join(rawpath_level2, 'jw01222002001_03102_00001_' + detname + '_uncal.fits')
+                uncalfile2 = os.path.join(rawpath_level2, 'jw01222002001_03102_00002_' + detname + '_uncal.fits')
+                uncalfile3 = os.path.join(rawpath_level2, 'jw01222002001_03102_00003_' + detname + '_uncal.fits')
+            elif reduce_slits[0] == 'S200A2':
+                uncalfile1 = os.path.join(rawpath_level2, 'jw01222002001_03104_00001_' + detname + '_uncal.fits')
+                uncalfile2 = os.path.join(rawpath_level2, 'jw01222002001_03104_00002_' + detname + '_uncal.fits')
+                uncalfile3 = os.path.join(rawpath_level2, 'jw01222002001_03104_00003_' + detname + '_uncal.fits')
+        elif disperser == '140H_bogus_F100LP':
+            # NIRSPEC 3-point dither dither center
+            bogus_prefix = 'bogus_'
+            if reduce_slits[0] == 'S200A1':
+                uncalfile1 = os.path.join(rawpath_level2, bogus_prefix + 'jw01222002001_03102_00001_' + detname + '_uncal.fits')
+                uncalfile2 = os.path.join(rawpath_level2, bogus_prefix + 'jw01222002001_03102_00002_' + detname + '_uncal.fits')
+                uncalfile3 = os.path.join(rawpath_level2, bogus_prefix + 'jw01222002001_03102_00003_' + detname + '_uncal.fits')
+            elif reduce_slits[0] == 'S200A2':
+                uncalfile1 = os.path.join(rawpath_level2, bogus_prefix + 'jw01222002001_03104_00001_' + detname + '_uncal.fits')
+                uncalfile2 = os.path.join(rawpath_level2, bogus_prefix + 'jw01222002001_03104_00002_' + detname + '_uncal.fits')
+                uncalfile3 = os.path.join(rawpath_level2, bogus_prefix + 'jw01222002001_03104_00003_' + detname + '_uncal.fits')
+    elif 'J0020' == target:
+        rawpath_level2 = '/Users/joe/jwst_redux/Raw/NIRSPEC_FS/1222/level_12/01222/'
+        output_dir = '/Users/joe/jwst_redux/redux/NIRSPEC_FS/J0020/calwebb/output'
+        pypeit_output_dir = '/Users/joe/jwst_redux/redux/NIRSPEC_FS/J0020/calwebb/pypeit'
+        if disperser == '235H':
+            # NIRSPEC 3-point dither dither center
+            if reduce_slits[0] == 'S200A1':
+                uncalfile1 = os.path.join(rawpath_level2, 'jw01222012001_03108_00001_' + detname + '_uncal.fits')
+                uncalfile2 = os.path.join(rawpath_level2, 'jw01222012001_03108_00002_' + detname + '_uncal.fits')
+                uncalfile3 = os.path.join(rawpath_level2, 'jw01222012001_03108_00003_' + detname + '_uncal.fits')
+            elif reduce_slits[0] == 'S200A2':
+                uncalfile1 = os.path.join(rawpath_level2, 'jw01222012001_03106_00001_' + detname + '_uncal.fits')
+                uncalfile2 = os.path.join(rawpath_level2, 'jw01222012001_03106_00002_' + detname + '_uncal.fits')
+                uncalfile3 = os.path.join(rawpath_level2, 'jw01222012001_03106_00003_' + detname + '_uncal.fits')
+        elif disperser == '140H':
+            # NIRSPEC 3-point dither dither center
+            if reduce_slits[0] == 'S200A1':
+                uncalfile1 = os.path.join(rawpath_level2, 'jw01222012001_03102_00001_' + detname + '_uncal.fits')
+                uncalfile2 = os.path.join(rawpath_level2, 'jw01222012001_03102_00002_' + detname + '_uncal.fits')
+                uncalfile3 = os.path.join(rawpath_level2, 'jw01222012001_03102_00003_' + detname + '_uncal.fits')
+            elif reduce_slits[0] == 'S200A2':
+                uncalfile1 = os.path.join(rawpath_level2, 'jw01222012001_03104_00001_' + detname + '_uncal.fits')
+                uncalfile2 = os.path.join(rawpath_level2, 'jw01222012001_03104_00002_' + detname + '_uncal.fits')
+                uncalfile3 = os.path.join(rawpath_level2, 'jw01222012001_03104_00003_' + detname + '_uncal.fits')
+        elif disperser == '140H_bogus_F100LP':
+            # NIRSPEC 3-point dither dither center
+            bogus_prefix = 'bogus_'
+            if reduce_slits[0] == 'S200A1':
+                uncalfile1 = os.path.join(rawpath_level2, bogus_prefix + 'jw01222012001_03102_00001_' + detname + '_uncal.fits')
+                uncalfile2 = os.path.join(rawpath_level2, bogus_prefix + 'jw01222012001_03102_00002_' + detname + '_uncal.fits')
+                uncalfile3 = os.path.join(rawpath_level2, bogus_prefix + 'jw01222012001_03102_00003_' + detname + '_uncal.fits')
+            elif reduce_slits[0] == 'S200A2':
+                uncalfile1 = os.path.join(rawpath_level2, bogus_prefix + 'jw01222012001_03104_00001_' + detname + '_uncal.fits')
+                uncalfile2 = os.path.join(rawpath_level2, bogus_prefix + 'jw01222012001_03104_00002_' + detname + '_uncal.fits')
+                uncalfile3 = os.path.join(rawpath_level2, bogus_prefix + 'jw01222012001_03104_00003_' + detname + '_uncal.fits')
+
+
+
     elif 'J0313' == target:
         rawpath_level2 = '/Users/joe/jwst_redux/Raw/NIRSPEC_FS/1764/level_12/01764/'
         output_dir = '/Users/joe/jwst_redux/redux/NIRSPEC_FS/J0313/calwebb/output'
@@ -192,33 +270,33 @@ for detname in detectors:
         if disperser == '235H':
             # NIRSPEC 3-point dither dither center
             if reduce_slits[0] == 'S200A1':
-                scifile1 = os.path.join(rawpath_level2, 'jw01764014001_03102_00001_' + detname + '_rate.fits')
-                scifile2 = os.path.join(rawpath_level2, 'jw01764014001_03102_00002_' + detname + '_rate.fits')
-                scifile3 = os.path.join(rawpath_level2, 'jw01764014001_03102_00003_' + detname + '_rate.fits')
+                uncalfile1 = os.path.join(rawpath_level2, 'jw01764014001_03102_00001_' + detname + '_uncal.fits')
+                uncalfile2 = os.path.join(rawpath_level2, 'jw01764014001_03102_00002_' + detname + '_uncal.fits')
+                uncalfile3 = os.path.join(rawpath_level2, 'jw01764014001_03102_00003_' + detname + '_uncal.fits')
             elif reduce_slits[0] == 'S200A2':
-                scifile1 = os.path.join(rawpath_level2, 'jw01764014001_03104_00001_' + detname + '_rate.fits')
-                scifile2 = os.path.join(rawpath_level2, 'jw01764014001_03104_00002_' + detname + '_rate.fits')
-                scifile3 = os.path.join(rawpath_level2, 'jw01764014001_03104_00003_' + detname + '_rate.fits')
+                uncalfile1 = os.path.join(rawpath_level2, 'jw01764014001_03104_00001_' + detname + '_uncal.fits')
+                uncalfile2 = os.path.join(rawpath_level2, 'jw01764014001_03104_00002_' + detname + '_uncal.fits')
+                uncalfile3 = os.path.join(rawpath_level2, 'jw01764014001_03104_00003_' + detname + '_uncal.fits')
         elif disperser == '395H':
             # NIRSPEC 3-point dither dither center
             if reduce_slits[0] == 'S200A2':
-                scifile1 = os.path.join(rawpath_level2, 'jw01764014001_03106_00001_' + detname + '_rate.fits')
-                scifile2 = os.path.join(rawpath_level2, 'jw01764014001_03106_00002_' + detname + '_rate.fits')
-                scifile3 = os.path.join(rawpath_level2, 'jw01764014001_03106_00003_' + detname + '_rate.fits')
+                uncalfile1 = os.path.join(rawpath_level2, 'jw01764014001_03106_00001_' + detname + '_uncal.fits')
+                uncalfile2 = os.path.join(rawpath_level2, 'jw01764014001_03106_00002_' + detname + '_uncal.fits')
+                uncalfile3 = os.path.join(rawpath_level2, 'jw01764014001_03106_00003_' + detname + '_uncal.fits')
             elif reduce_slits[0] == 'S200A1':
-                scifile1 = os.path.join(rawpath_level2, 'jw01764014001_03108_00001_' + detname + '_rate.fits')
-                scifile2 = os.path.join(rawpath_level2, 'jw01764014001_03108_00002_' + detname + '_rate.fits')
-                scifile3 = os.path.join(rawpath_level2, 'jw01764014001_03108_00003_' + detname + '_rate.fits')
+                uncalfile1 = os.path.join(rawpath_level2, 'jw01764014001_03108_00001_' + detname + '_uncal.fits')
+                uncalfile2 = os.path.join(rawpath_level2, 'jw01764014001_03108_00002_' + detname + '_uncal.fits')
+                uncalfile3 = os.path.join(rawpath_level2, 'jw01764014001_03108_00003_' + detname + '_uncal.fits')
         elif disperser == '140H':
             # NIRSPEC 3-point dither dither center
             if reduce_slits[0] == 'S200A1':
-                scifile1 = os.path.join(rawpath_level2, 'jw01764014001_0310a_00001_' + detname + '_rate.fits')
-                scifile2 = os.path.join(rawpath_level2, 'jw01764014001_0310a_00002_' + detname + '_rate.fits')
-                scifile3 = os.path.join(rawpath_level2, 'jw01764014001_0310a_00003_' + detname + '_rate.fits')
+                uncalfile1 = os.path.join(rawpath_level2, 'jw01764014001_0310a_00001_' + detname + '_uncal.fits')
+                uncalfile2 = os.path.join(rawpath_level2, 'jw01764014001_0310a_00002_' + detname + '_uncal.fits')
+                uncalfile3 = os.path.join(rawpath_level2, 'jw01764014001_0310a_00003_' + detname + '_uncal.fits')
             elif reduce_slits[0] == 'S200A2':
-                scifile1 = os.path.join(rawpath_level2, 'jw01764014001_0310c_00001_' + detname + '_rate.fits')
-                scifile2 = os.path.join(rawpath_level2, 'jw01764014001_0310c_00002_' + detname + '_rate.fits')
-                scifile3 = os.path.join(rawpath_level2, 'jw01764014001_0310c_00003_' + detname + '_rate.fits')
+                uncalfile1 = os.path.join(rawpath_level2, 'jw01764014001_0310c_00001_' + detname + '_uncal.fits')
+                uncalfile2 = os.path.join(rawpath_level2, 'jw01764014001_0310c_00002_' + detname + '_uncal.fits')
+                uncalfile3 = os.path.join(rawpath_level2, 'jw01764014001_0310c_00003_' + detname + '_uncal.fits')
     elif 'J1007' == target:
         rawpath_level2 = '/Users/joe/jwst_redux/Raw/NIRSPEC_FS/1764/level_12/01764/'
         output_dir = '/Users/joe/jwst_redux/redux/NIRSPEC_FS/J1007/calwebb/output'
@@ -226,33 +304,33 @@ for detname in detectors:
         if disperser == '235H':
             # NIRSPEC 3-point dither dither center
             if reduce_slits[0] == 'S200A1':
-                scifile1 = os.path.join(rawpath_level2, 'jw01764006001_04102_00001_' + detname + '_rate.fits')
-                scifile2 = os.path.join(rawpath_level2, 'jw01764006001_04102_00002_' + detname + '_rate.fits')
-                scifile3 = os.path.join(rawpath_level2, 'jw01764006001_04102_00003_' + detname + '_rate.fits')
+                uncalfile1 = os.path.join(rawpath_level2, 'jw01764006001_04102_00001_' + detname + '_uncal.fits')
+                uncalfile2 = os.path.join(rawpath_level2, 'jw01764006001_04102_00002_' + detname + '_uncal.fits')
+                uncalfile3 = os.path.join(rawpath_level2, 'jw01764006001_04102_00003_' + detname + '_uncal.fits')
             elif reduce_slits[0] == 'S200A2':
-                scifile1 = os.path.join(rawpath_level2, 'jw01764006001_04104_00001_' + detname + '_rate.fits')
-                scifile2 = os.path.join(rawpath_level2, 'jw01764006001_04104_00002_' + detname + '_rate.fits')
-                scifile3 = os.path.join(rawpath_level2, 'jw01764006001_04104_00003_' + detname + '_rate.fits')
+                uncalfile1 = os.path.join(rawpath_level2, 'jw01764006001_04104_00001_' + detname + '_uncal.fits')
+                uncalfile2 = os.path.join(rawpath_level2, 'jw01764006001_04104_00002_' + detname + '_uncal.fits')
+                uncalfile3 = os.path.join(rawpath_level2, 'jw01764006001_04104_00003_' + detname + '_uncal.fits')
         elif disperser == '395H':
             # NIRSPEC 3-point dither dither center
             if reduce_slits[0] == 'S200A2':
-                scifile1 = os.path.join(rawpath_level2, 'jw01764006001_04106_00001_' + detname + '_rate.fits')
-                scifile2 = os.path.join(rawpath_level2, 'jw01764006001_04106_00002_' + detname + '_rate.fits')
-                scifile3 = os.path.join(rawpath_level2, 'jw01764006001_04106_00003_' + detname + '_rate.fits')
+                uncalfile1 = os.path.join(rawpath_level2, 'jw01764006001_04106_00001_' + detname + '_uncal.fits')
+                uncalfile2 = os.path.join(rawpath_level2, 'jw01764006001_04106_00002_' + detname + '_uncal.fits')
+                uncalfile3 = os.path.join(rawpath_level2, 'jw01764006001_04106_00003_' + detname + '_uncal.fits')
             elif reduce_slits[0] == 'S200A1':
-                scifile1 = os.path.join(rawpath_level2, 'jw01764006001_04108_00001_' + detname + '_rate.fits')
-                scifile2 = os.path.join(rawpath_level2, 'jw01764006001_04108_00002_' + detname + '_rate.fits')
-                scifile3 = os.path.join(rawpath_level2, 'jw01764006001_04108_00003_' + detname + '_rate.fits')
+                uncalfile1 = os.path.join(rawpath_level2, 'jw01764006001_04108_00001_' + detname + '_uncal.fits')
+                uncalfile2 = os.path.join(rawpath_level2, 'jw01764006001_04108_00002_' + detname + '_uncal.fits')
+                uncalfile3 = os.path.join(rawpath_level2, 'jw01764006001_04108_00003_' + detname + '_uncal.fits')
         elif disperser == '140H':
             # NIRSPEC 3-point dither dither center
             if reduce_slits[0] == 'S200A1':
-                scifile1 = os.path.join(rawpath_level2, 'jw01764006001_0410a_00001_' + detname + '_rate.fits')
-                scifile2 = os.path.join(rawpath_level2, 'jw01764006001_0410a_00002_' + detname + '_rate.fits')
-                scifile3 = os.path.join(rawpath_level2, 'jw01764006001_0410a_00003_' + detname + '_rate.fits')
+                uncalfile1 = os.path.join(rawpath_level2, 'jw01764006001_0410a_00001_' + detname + '_uncal.fits')
+                uncalfile2 = os.path.join(rawpath_level2, 'jw01764006001_0410a_00002_' + detname + '_uncal.fits')
+                uncalfile3 = os.path.join(rawpath_level2, 'jw01764006001_0410a_00003_' + detname + '_uncal.fits')
             elif reduce_slits[0] == 'S200A2':
-                scifile1 = os.path.join(rawpath_level2, 'jw01764006001_0410c_00001_' + detname + '_rate.fits')
-                scifile2 = os.path.join(rawpath_level2, 'jw01764006001_0410c_00002_' + detname + '_rate.fits')
-                scifile3 = os.path.join(rawpath_level2, 'jw01764006001_0410c_00003_' + detname + '_rate.fits')
+                uncalfile1 = os.path.join(rawpath_level2, 'jw01764006001_0410c_00001_' + detname + '_uncal.fits')
+                uncalfile2 = os.path.join(rawpath_level2, 'jw01764006001_0410c_00002_' + detname + '_uncal.fits')
+                uncalfile3 = os.path.join(rawpath_level2, 'jw01764006001_0410c_00003_' + detname + '_uncal.fits')
 
     elif 'PRISM_01117' in disperser:
         # PRISM data
@@ -262,9 +340,9 @@ for detname in detectors:
 
         # NIRSPEC 3-point dither
         # dither center
-        scifile1 = os.path.join(rawpath_level2, 'jw01117007001_03101_00002_' + detname + '_rate.fits')
-        scifile2 = os.path.join(rawpath_level2, 'jw01117007001_03101_00003_' + detname + '_rate.fits')
-        scifile3 = os.path.join(rawpath_level2, 'jw01117007001_03101_00004_' + detname + '_rate.fits')
+        uncalfile1 = os.path.join(rawpath_level2, 'jw01117007001_03101_00002_' + detname + '_uncal.fits')
+        uncalfile2 = os.path.join(rawpath_level2, 'jw01117007001_03101_00003_' + detname + '_uncal.fits')
+        uncalfile3 = os.path.join(rawpath_level2, 'jw01117007001_03101_00004_' + detname + '_uncal.fits')
 
     elif 'G395M' == disperser:
         # Use islit = 37 for nrs1
@@ -274,9 +352,9 @@ for detname in detectors:
         pypeit_output_dir = '/Users/joe/jwst_redux/redux/NIRSPEC_MSA/NIRSPEC_ERO/02736_ERO_SMACS0723_G395M/calwebb/pypeit'
 
         # NIRSPEC 3-point dither
-        scifile1 = os.path.join(rawpath_level2, 'jw02736007001_03103_00001_' + detname + '_rate.fits')
-        scifile2 = os.path.join(rawpath_level2, 'jw02736007001_03103_00002_' + detname + '_rate.fits')
-        scifile3 = os.path.join(rawpath_level2, 'jw02736007001_03103_00003_' + detname + '_rate.fits')
+        uncalfile1 = os.path.join(rawpath_level2, 'jw02736007001_03103_00001_' + detname + '_uncal.fits')
+        uncalfile2 = os.path.join(rawpath_level2, 'jw02736007001_03103_00002_' + detname + '_uncal.fits')
+        uncalfile3 = os.path.join(rawpath_level2, 'jw02736007001_03103_00003_' + detname + '_uncal.fits')
     elif 'G395M_Maseda' == disperser:
         # Use islit = 37 for nrs1
         # G395M data
@@ -285,9 +363,9 @@ for detname in detectors:
         pypeit_output_dir = '/Users/joe/jwst_redux/redux/NIRSPEC_MSA/Maseda/395M/calwebb/pypeit'
 
         # NIRSPEC 3-point dither
-        scifile1 = os.path.join(rawpath_level2, 'jw01671001001_03101_00002_' + detname + '_rate.fits')
-        scifile2 = os.path.join(rawpath_level2, 'jw01671001001_03101_00003_' + detname + '_rate.fits')
-        scifile3 = os.path.join(rawpath_level2, 'jw01671001001_03101_00004_' + detname + '_rate.fits')
+        uncalfile1 = os.path.join(rawpath_level2, 'jw01671001001_03101_00002_' + detname + '_uncal.fits')
+        uncalfile2 = os.path.join(rawpath_level2, 'jw01671001001_03101_00003_' + detname + '_uncal.fits')
+        uncalfile3 = os.path.join(rawpath_level2, 'jw01671001001_03101_00004_' + detname + '_uncal.fits')
 
     elif 'G235M' == disperser:
         # Use islit = 38 for nrs1
@@ -297,10 +375,10 @@ for detname in detectors:
         pypeit_output_dir = '/Users/joe/jwst_redux/redux/NIRSPEC_ERO/02736_ERO_SMACS0723_G235M/calwebb/pypeit/'
 
         # NIRSPEC 3-point dither
-        scifile1 = os.path.join(rawpath_level2, 'jw02736007001_03101_00002_' + detname + '_rate.fits')
-        scifile2 = os.path.join(rawpath_level2, 'jw02736007001_03101_00003_' + detname + '_rate.fits')
-        scifile3 = os.path.join(rawpath_level2, 'jw02736007001_03101_00004_' + detname + '_rate.fits')
-    exp_list.append([scifile1, scifile2, scifile3])
+        uncalfile1 = os.path.join(rawpath_level2, 'jw02736007001_03101_00002_' + detname + '_uncal.fits')
+        uncalfile2 = os.path.join(rawpath_level2, 'jw02736007001_03101_00003_' + detname + '_uncal.fits')
+        uncalfile3 = os.path.join(rawpath_level2, 'jw02736007001_03101_00004_' + detname + '_uncal.fits')
+    exp_list.append([uncalfile1, uncalfile2, uncalfile3])
 
 #if 'MSA' in mode:
 #    offsets_pixels_list = [[0, 5.0, -5.0], [0, 5.0, -5.0]]
@@ -308,17 +386,76 @@ for detname in detectors:
 #    offsets_pixels_list = [[0, 8.0, 18.0], [0, 8.0, 18.0]]
 
 
-scifiles_1 = exp_list[0]
-scifiles_2 = exp_list[1] if len(exp_list) > 1 else []
-scifiles = [scifiles_1, scifiles_2]
-scifiles_all = scifiles_1 + scifiles_2
-nexp = len(scifiles_1)
 # Make the new Science dir
 # TODO: This needs to be defined by the user
 scipath = os.path.join(pypeit_output_dir, 'Science')
 if not os.path.isdir(scipath):
     msgs.info('Creating directory for Science output: {0}'.format(scipath))
     os.makedirs(scipath)
+if not os.path.isdir(output_dir):
+    msgs.info('Creating directory for calwebb output: {0}'.format(output_dir))
+    os.makedirs(output_dir)
+
+uncalfiles_1 = exp_list[0]
+uncalfiles_2 = exp_list[1] if len(exp_list) > 1 else []
+uncalfiles = [uncalfiles_1, uncalfiles_2]
+uncalfiles_all = uncalfiles_1 + uncalfiles_2
+nexp = len(uncalfiles_1)
+
+
+basenames, basenames_1, basenames_2, scifiles_1, scifiles_2 = [], [], [], [], []
+for sci1, sci2 in zip(uncalfiles_1, uncalfiles_2):
+    b1 = os.path.basename(sci1).replace('_uncal.fits', '')
+    b2 = os.path.basename(sci2).replace('_uncal.fits', '')
+    basenames_1.append(b1)
+    basenames_2.append(b2)
+    basenames.append(b2.replace('_nrs2', ''))
+    scifiles_1.append(os.path.join(output_dir, b1 + '_rate.fits'))
+    scifiles_2.append(os.path.join(output_dir, b2 + '_rate.fits'))
+
+scifiles = [scifiles_1, scifiles_2]
+scifiles_all = scifiles_1 + scifiles_2
+
+# Run the stage1 pipeline
+if run_stage1:
+    for uncal in uncalfiles_all:
+        Detector1Pipeline.call(uncal, save_results=True, output_dir=output_dir)
+
+
+# TODO Should we flat field. The flat field and flat field error are wonky and probably nonsense
+param_dict_spec2 = {
+    'extract_2d': {'save_results': True},
+    'bkg_subtract': {'skip': True},
+    'imprint_subtract': {'save_results': True}, # TODO Check up on whether imprint subtraction is being done by us???
+    'master_background_mos': {'skip': True},
+    # Default to setting the source type to extended for MSA data and point for FS data. This impacts flux calibration.
+    'srctype': {'source_type': 'POINT'} if 'FS' in mode else {'source_type': 'EXTENDED'},
+    # 'flat_field': {'skip': True},
+    'resample_spec': {'skip': True},
+    'extract_1d': {'skip': True},
+    'flat_field': {'save_interpolated_flat': True},  # Flats appear to be just nonsense. So skip for now.
+}
+
+# TODO I'm rather unclear on what to do with the src_type since I'm not following what the JWST ipeline is doing there very
+# well. I think they are trying to model slit losses for point sources but not for extended sources. Changing src_type
+# changes the output units from MJy/sr to MJy. It seems more intuititive that to have the 2d images fluxed in SB
+# units. Right now I'm leaning towards use srctype='EXTENDED' for MSA but srctype='POINT' for FS.
+
+# For MSA data, we need to run the MSA flagging step and this generates the full 2d frames we operate on, for
+# FS data, the MSA flagging is not performed and so the last step is the assign_wcs step
+if mode =='MSA':
+    param_dict_spec2['msa_flagging'] = {'save_results': True}
+elif mode == 'FS':
+    param_dict_spec2['assign_wcs'] = {'save_results': True}
+
+# Run the spec2 pipeline
+if run_stage2:
+    for sci in scifiles_all:
+        Spec2Pipeline.call(sci, save_results=True, output_dir=output_dir, steps=param_dict_spec2)
+        #spec2 = Spec2Pipeline(steps=param_dict)
+        #spec2.save_results = True
+        #spec2.output_dir = output_dir
+        #result = spec2(sci)
 
 
 # Some pypeit things
@@ -346,50 +483,7 @@ if bkg_redux:
     par['reduce']['extraction']['skip_optimal'] = True # Skip local_skysubtraction and profile fitting
 
 
-# TODO Should we flat field. The flat field and flat field error are wonky and probably nonsense
-param_dict = {
-    'extract_2d': {'save_results': True},
-    'bkg_subtract': {'skip': True},
-    'imprint_subtract': {'save_results': True}, # TODO Check up on whether imprint subtraction is being done by us???
-    'master_background_mos': {'skip': True},
-    #'srctype': {'source_type': 'EXTENDED'},
-    'srctype': {'source_type': 'POINT'},
-    # 'flat_field': {'skip': True},
-    'resample_spec': {'skip': True},
-    'extract_1d': {'skip': True},
-    'flat_field': {'save_interpolated_flat': True},  # Flats appear to be just nonsense. So skip for now.
-}
 
-# TODO I'm rather unclear on what to do with the src_type since I'm not following what the JWST ipeline is doing there very
-# well. I think they are trying to model slit losses for point sources but not for extended sources. Changing src_type
-# changes the output units from MJy/sr to MJy. It seems more intuititive that to have the 2d images fluxed in SB
-# units. Right now I'm leaning towards use srctype='EXTENDED' for MSA but srctype='POINT' for FS.
-
-# For MSA data, we need to run the MSA flagging step and this generates the full 2d frames we operate on, for
-# FS data, the MSA flagging is not performed and so the last step is the assign_wcs step
-if mode =='MSA':
-    param_dict['msa_flagging'] = {'save_results': True}
-elif mode == 'FS':
-    param_dict['assign_wcs'] = {'save_results': True}
-
-basenames = []
-basenames_1 = []
-basenames_2 = []
-for sci1, sci2 in zip(scifiles_1, scifiles_2):
-    b1 = os.path.basename(sci1).replace('_rate.fits', '')
-    b2 = os.path.basename(sci2).replace('_rate.fits', '')
-    basenames_1.append(b1)
-    basenames_2.append(b2)
-    basenames.append(b1.replace('_nrs1', ''))
-
-# Run the spec2 pipeline
-if runflag:
-    for sci in scifiles_all:
-        Spec2Pipeline.call(sci, save_results=True, output_dir=output_dir, steps=param_dict)
-        #spec2 = Spec2Pipeline(steps=param_dict)
-        #spec2.save_results = True
-        #spec2.output_dir = output_dir
-        #result = spec2(sci)
 
 # Output file names
 intflat_output_files_1 = []
@@ -447,7 +541,7 @@ for idet in range(ndetectors):
 dither_offsets_pixels = dither_offsets_pixels[:,0,None] - dither_offsets_pixels
 print(dither_offsets_pixels)
 
-
+print('Reading in calwebb outputs. This may take a while...')
 
 # TODO Figure out why this is so damn slow! I suspect it is calwebb1
 for iexp in range(nexp):
@@ -504,7 +598,7 @@ slit_sources_uni = [(slit, source) for slit, source in zip(slit_names_uni, sourc
 #detector_gap = 180 # 18" divided by 0.1" pixels from the JWST website
 
 # TODO Fix this, currently does not work if target names have - or _
-out_filenames = basenames
+#out_filenames = basenames
 iexp_ref = 0
 if not os.path.isdir(scipath):
     msgs.info('Creating directory for Science output: {0}'.format(scipath))
@@ -539,8 +633,10 @@ for ii, (islit, isource) in enumerate(gd_slits_sources):
     # the frames. It is possible to fix this by using the RA/DEC images provided by calwebb to determine the
     # actual locations on the sky, which would be preferable. However, this does not appear to be working correctly
     # in calwebb. So for now, we just use the first exposure as the reference exposure for the calibrations.
-    CalibrationsNRS1 = NIRSpecSlitCalibrations(det_container_list[0], cal_data[0, iexp_ref], flat_data[0, iexp_ref], islit)
-    CalibrationsNRS2 = NIRSpecSlitCalibrations(det_container_list[1], cal_data[1, iexp_ref], flat_data[1, iexp_ref], islit)
+    CalibrationsNRS1 = NIRSpecSlitCalibrations(det_container_list[0], cal_data[0, iexp_ref], flat_data[0, iexp_ref],
+                                               islit, f070_f100_rescale='bogus' in disperser)
+    CalibrationsNRS2 = NIRSpecSlitCalibrations(det_container_list[1], cal_data[1, iexp_ref], flat_data[1, iexp_ref],
+                                               islit, f070_f100_rescale='bogus' in disperser)
     for iexp in range(nexp):
         # Container for all the Spec2DObj, different spec2dobj and specobjs for each slit
         all_spec2d = spec2dobj.AllSpec2DObj()
@@ -604,7 +700,7 @@ for ii, (islit, isource) in enumerate(gd_slits_sources):
 
         # THE FOLLOWING MIMICS THE CODE IN pypeit.save_exposure()
         base_suffix = 'source_{:s}'.format(isource) if isource is not None else 'slit_{:s}'.format(islit)
-        basename = '{:s}_{:s}'.format(out_filenames[iexp], base_suffix)
+        basename = '{:s}_{:s}'.format(basenames[iexp], base_suffix)
 
         # TODO Populate the header with metadata relevant to this source?
 

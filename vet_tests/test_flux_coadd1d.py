@@ -127,7 +127,8 @@ def test_flux_setup_vlt_xshooter(redux_out, monkeypatch):
 
         # Set a specific output file, and be forgiving of PypeIt version
         coadd_output_file = "J0100p2802_XShooter_VIS_NIR_coadd.fits"
-        coadd1d_file.config = ConfigObj({'coadd1d': {'coaddfile': coadd_output_file, 'chk_version': False}})
+        coadd1d_file.config = ConfigObj({'rdx': {'chk_version': False},
+                                         'coadd1d': {'coaddfile': coadd_output_file}})
         coadd1d_file.write(updated_coadd1d_filename)
 
         # Now test the fluxing
