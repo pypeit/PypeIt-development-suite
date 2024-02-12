@@ -6,7 +6,6 @@ import numpy as np
 
 from pypeit.core import telluric
 from pypeit.tests.tstutils import telluric_required, tell_test_grid
-from pypeit import data
 
 @telluric_required
 def test_telluric_init():

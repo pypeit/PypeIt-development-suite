@@ -17,13 +17,13 @@ from pypeit.spectrographs.util import load_spectrograph
 from pypeit import wavecalib
 from IPython import embed
 
-from pypeit.tests.tstutils import dummy_fitstbl, data_path
+from pypeit.tests.tstutils import dummy_fitstbl, data_output_path
 
 
 @pytest.fixture
 def fitstbl():
     if os.getenv('PYPEIT_DEV') is None:
-        fitstbl = dummy_fitstbl(directory=data_path(''))
+        fitstbl = dummy_fitstbl(directory=data_output_path(''))
         fitstbl['framebit'][0] = fitstbl.type_bitmask.turn_off(fitstbl['framebit'][0], flag='bias')
         fitstbl['filename'][1] = 'b1.fits.gz'
         fitstbl['filename'][5] = 'b27.fits.gz'
@@ -60,7 +60,7 @@ def multi_caliBrate(fitstbl):
     calib_par['slitedges']['sync_predict'] = 'nearest'
 
     multi_caliBrate = calibrations.MultiSlitCalibrations(fitstbl, calib_par, spectrograph,
-                                                         data_path('Calibrations'))
+                                                         data_output_path('Calibrations'))
     return reset_calib(multi_caliBrate)
 
 

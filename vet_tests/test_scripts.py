@@ -12,7 +12,7 @@ matplotlib.use('agg')  # For Travis
 
 
 from pypeit import scripts
-from pypeit.tests.tstutils import data_path
+from pypeit.tests.tstutils import data_input_path
 from pypeit.display import display
 from pypeit import wavecalib
 from pypeit import coadd1d
@@ -72,7 +72,6 @@ def test_view_fits_list(redux_out):
                              'shane_kast_blue', '600_4310_d55',
                              'shane_kast_blue_A', 'Science',
                              'spec1d_b27-J1217p3905_KASTb_20150520T045733.560.fits')
-    #spec_file = data_path('spec1d_b27-J1217p3905_KASTb_2015May20T045733.560.fits')
     pargs = scripts.view_fits.ViewFits.parse_args(['shane_kast_blue', spec_file, '--list'])
     scripts.view_fits.ViewFits.main(pargs)
 
@@ -85,7 +84,6 @@ def test_view_fits_proc_fail(redux_out):
                              'shane_kast_blue_A') 
     spec_file = os.path.join(droot, 'Science',
                              'spec2d_b27-J1217p3905_KASTb_20150520T045733.560.fits')
-    #spec_file = data_path('spec1d_b27-J1217p3905_KASTb_2015May20T045733.560.fits')
     pargs = scripts.view_fits.ViewFits.parse_args(['shane_kast_blue', spec_file, '--proc'])
     with pytest.raises(PypeItError):
         scripts.view_fits.ViewFits.main(pargs)
@@ -128,7 +126,7 @@ def test_identify(redux_out):
     arcfitter = scripts.identify.Identify.main(pargs)
 
     # Load line list
-    arcfitter.load_IDs(fname=data_path('waveid_tests.ascii'))
+    arcfitter.load_IDs(fname=data_input_path('waveid_tests.ascii'))
     assert arcfitter._detns.size == 31, 'Bad load'
 
     # Fit
