@@ -110,6 +110,7 @@ reduce        Runs the reduction tests that call run_pypeit directly.
 afterburn     Runs the PypeIt tests that directly call PypeIt post-reduction  tools (e.g. flux calibration, coadding, etc).
 ql            Runs the Quick Look tests.
 vet           Runs the pytest tests that verify the results from earlier PypeIt tests.
+docs          Runs the ``update_docs`` script to verify that PypeIt docs can be generated without errors or warnings.
 all           Runs all of the above, in the order listed above.
 list          This does not run any tests, instead it lists all of the supported instruments and setups. (See below).
 ============= ==============================================================================================================
@@ -442,9 +443,9 @@ Additional Options
 
     $ $PYPEIT_DEV/pypeit_test -h
     usage: pypeit_test [-h] [-o OUTPUTDIR] [-i INSTRUMENTS [INSTRUMENTS ...]]
-                   [-s SETUPS [SETUPS ...]] [--debug] [-p] [-m] [-t THREADS]
-                   [-q] [-v] [--coverage COVERAGE] [-r REPORT] [-c CSV] [-w]
-                   tests [tests ...]
+                       [-s SETUPS [SETUPS ...]] [--debug] [-p] [-m] [-t THREADS]
+                       [-q] [-v] [--coverage COVERAGE] [-r REPORT] [-c CSV] [-w]
+                       tests [tests ...]
 
     Run pypeit tests on a set of instruments. Typical call for testing pypeit when
     developing new code is `./pypeit_test all`. Execution requires you to have a
@@ -456,43 +457,43 @@ Additional Options
     'afterburn''. Use 'list' to view all supported setups.
 
     positional arguments:
-    tests                 Which test types to run. Options are: pypeit_tests,
-                            unit, reduce, afterburn, ql, vet, or all. Use list to
-                            show all supported instruments and setups.
+    tests               Which test types to run. Options are: pypeit_tests,
+                        unit, reduce, afterburn, ql, vet, docs, or all. Use
+                        list to show all supported instruments and setups.
 
-    optional arguments:
+    options:
     -h, --help            show this help message and exit
     -o OUTPUTDIR, --outputdir OUTPUTDIR
-                            Output folder. (default: REDUX_OUT)
+                          Output folder. (default: REDUX_OUT)
     -i INSTRUMENTS [INSTRUMENTS ...], --instruments INSTRUMENTS [INSTRUMENTS ...]
-                            One or more instruments to run tests for. Use
-                            "pypeit_test list" to see all supported instruments.
-                            (default: None)
+                          One or more instruments to run tests for. Use
+                          "pypeit_test list" to see all supported instruments.
+                          (default: None)
     -s SETUPS [SETUPS ...], --setups SETUPS [SETUPS ...]
-                            One or more setups to run tests for. Use "pypeit_test
-                            list" to see all supported setups. (default: None)
+                          One or more setups to run tests for. Use "pypeit_test
+                          list" to see all supported setups. (default: None)
     --debug               Debug using only blue setups (default: False)
     -p, --prep_only       Only prepare to execute run_pypeit, but do not
-                            actually run it. (default: False)
+                          actually run it. (default: False)
     -m, --do_not_reuse_calibs
-                            run pypeit without using any existing calibrations
-                            (default: False)
+                          run pypeit without using any existing processed
+                          calibration frames (default: False)
     -t THREADS, --threads THREADS
-                            Run THREADS number of parallel tests. (default: 1)
+                          Run THREADS number of parallel tests. (default: 1)
     -q, --quiet           Supress all output to stdout. If -r is not a given, a
-                            report file will be written to
-                            <outputdir>/pypeit_test_results.txt (default: False)
+                          report file will be written to
+                          <outputdir>/pypeit_test_results.txt (default: False)
     -v, --verbose         Output additional detailed information while running
-                            the tests and output a detailed report at the end of
-                            testing. This has no effect if -q is given (default:
-                            False)
+                          the tests and output a detailed report at the end of
+                          testing. This has no effect if -q is given (default:
+                          False)
     --coverage COVERAGE   Collect code coverage information. and write it to the
-                            given file. (default: None)
+                          given file. (default: None)
     -r REPORT, --report REPORT
-                            Write a detailed test report to REPORT. (default:
-                            None)
+                          Write a detailed test report to REPORT. (default:
+                          None)
     -c CSV, --csv CSV     Write performance numbers to a CSV file. (default:
-                            None)
+                          None)
     -w, --show_warnings   Show warnings when running unit tests and vet tests.
-                            (default: False)
+                          (default: False)
 
