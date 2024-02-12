@@ -616,11 +616,11 @@ def run_update_docs(pargs, test_report):
 
     if is_git_installed() is False:
         test_report.test_line("Skipping Update Docs because git is not installed")
-        status = yellow_text("Skipped because git not installed")
+        status = yellow_text("SKIPPED: git not installed")
         passed = True
     elif is_path_in_git(pypeit_dir) is False:
         test_report.test_line("Skipping Update Docs because PypeIt is not being run from git")
-        status = yellow_text("Skipped because PypeIt not in git")
+        status = yellow_text("SKIPPED: PypeIt not in git")
         passed = True
     else:
         pypeit_parent_dir = os.path.dirname(pypeit_dir)
