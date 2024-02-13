@@ -1,3 +1,4 @@
 [sensfunc]
     algorithm = IR
+    flatfile = Calibrations/Flat_A_0_MSC01.fits 
 
