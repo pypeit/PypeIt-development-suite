@@ -3,4 +3,4 @@
     mask_hydrogen_lines = False
     mask_helium_lines = False
     [[UVIS]]
-        nresln = 20
+        nresln = 10

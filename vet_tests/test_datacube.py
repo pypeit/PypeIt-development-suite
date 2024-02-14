@@ -51,11 +51,17 @@ def test_coadd_datacube(redux_out):
     spec = load_spectrograph("keck_kcwi")
     parset = spec.default_pypeit_par()
     parset['reduce']['cube']['output_filename'] = output_filename
+    parset['reduce']['cube']['align'] = True
     parset['reduce']['cube']['combine'] = True
+    parset['reduce']['cube']['weight_method'] = 'relative'
+
     # Speed up the computation by reducing the number of subpixels
     parset['reduce']['cube']['spat_subpixel'] = 3
     parset['reduce']['cube']['spec_subpixel'] = 1
     parset['reduce']['cube']['slice_subpixel'] = 3
+    parset['reduce']['cube']['wave_min'] = 3922.758514
+    parset['reduce']['cube']['wave_max'] = 4469.062985
+    parset['reduce']['cube']['wave_delta'] = 0.115005
 
     # Extract the options
     ra_offsets = coadd3dfile.options['ra_offset']
@@ -102,7 +108,8 @@ def test_coadd_datacube(redux_out):
     scale_corr = coadd3dfile.options['scale_corr']
 
     # Instantiate CoAdd3d, and then coadd the frames
-    coadd = CoAdd3D.get_instance(coadd3dfile.filenames, parset, skysub_frame=skysub_frame, scale_corr=scale_corr,
+    coadd = CoAdd3D.get_instance(coadd3dfile.filenames, parset, skysub_frame=skysub_frame, grating_corr=grating_corr,
+                                 scale_corr=scale_corr, sensfile=sensfuncfile,
                                  ra_offsets=ra_offsets, dec_offsets=dec_offsets, spectrograph=spec, overwrite=True)
     coadd.run()
 
@@ -126,19 +133,21 @@ def test_coadd_datacube(redux_out):
     wave_std, flux_std = std_dict['wave'].value, std_dict['flux'].value
     # Interpolate the standard star spectrum to the same wavelength grid as the spec1d
     flux_std_interp = np.interp(spec1d[0].OPT_WAVE, wave_std, flux_std)
-    np.save("wave_spec", spec1d[0].OPT_WAVE)
-    np.save("flux_spec", spec1d[0].OPT_FLAM)
-    np.save("flue_spec", spec1d[0].OPT_FLAM_SIG)
-    np.save("flux_std", flux_std)
-    np.save("wave_std", wave_std)
     # Compare the extracted spectrum to the standard star spectrum, and make sure that the residuals are small
     resid = (spec1d[0].OPT_FLAM-flux_std_interp)*utils.inverse(spec1d[0].OPT_FLAM_SIG)
     med, std = np.median(resid), 1.4826*np.median(np.abs(np.median(resid) - resid))
     assert(np.abs(med) < 0.1*std)
     ######################################
     # Remove all of the created files
+    # First remove the non-fluxed files
     os.remove(output_filename)
     os.remove(output1d_filename)
+    # Remove the sensitivity function files and the associated QA files
     os.remove(outfile_sens)
+    os.remove('sensfunc.par')
+    os.remove(outfile_sens.replace('.fits', '_QA.pdf'))
+    os.remove(outfile_sens.replace('.fits', '_throughput.pdf'))
+    os.remove(outfile_sens.replace('.fits', '_fluxed_std.pdf'))
+    # Remove the fluxed files
     os.remove(output_fileflux)
     os.remove(output1d_fileflux)
