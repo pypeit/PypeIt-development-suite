@@ -1,0 +1,6 @@
+[sensfunc]
+    algorithm = UVIS
+    mask_hydrogen_lines = False
+    mask_helium_lines = False
+    [[UVIS]]
+        nresln = 20
