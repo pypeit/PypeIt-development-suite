@@ -5,14 +5,16 @@ import os
 
 import pytest
 
+import numpy as np
 from astropy.table import Table
+from astropy.io import ascii
 
 from pypeit.coadd3d import CoAdd3D, DataCube
 from pypeit.scripts.extract_datacube import ExtractDataCube
 from pypeit.scripts.sensfunc import SensFunc
 from pypeit.spectrographs.util import load_spectrograph
-from pypeit import inputfiles
-from astropy.io import ascii
+from pypeit import inputfiles, specobjs, utils
+from pypeit.core import flux_calib
 
 from IPython import embed
 
@@ -60,9 +62,12 @@ def test_coadd_datacube(redux_out):
     dec_offsets = coadd3dfile.options['dec_offset']
     skysub_frame = coadd3dfile.options['skysub_frame']
     scale_corr = coadd3dfile.options['scale_corr']
+    grating_corr = coadd3dfile.options['grating_corr']
+    sensfuncfile = coadd3dfile.options['sensfile']
 
     # Instantiate CoAdd3d, and then coadd the frames
-    coadd = CoAdd3D.get_instance(coadd3dfile.filenames, parset, skysub_frame=skysub_frame, scale_corr=scale_corr,
+    coadd = CoAdd3D.get_instance(coadd3dfile.filenames, parset, skysub_frame=skysub_frame, grating_corr=grating_corr,
+                                 scale_corr=scale_corr, sensfile=sensfuncfile,
                                  ra_offsets=ra_offsets, dec_offsets=dec_offsets, spectrograph=spec, overwrite=True)
     coadd.run()
     # Check the file exists
@@ -71,7 +76,7 @@ def test_coadd_datacube(redux_out):
     # Test the extraction of a 1D spectrum from the datacube
     # Prepare the output filename
     output1d_filename = output_filename.replace('.fits', '_spec1d.fits')
-    pargs = ExtractDataCube.parse_args(["-o", output1d_filename, output_filename])
+    pargs = ExtractDataCube.parse_args(["-o", "-s", output1d_filename, output_filename])
     ExtractDataCube.main(pargs)
     # Check the files exist
     assert(os.path.exists(output1d_filename))
@@ -80,7 +85,7 @@ def test_coadd_datacube(redux_out):
     # Prepare the output filename
     outfile_sens = output1d_filename.replace('.fits', '_sens.fits')
     input_senspar = os.path.join(dev_path, 'sensfunc_files', 'keck_kcwi_small_bh2_4200.sens')
-    pargs = SensFunc.parse_args(["--algorithm", "UVIS", "-o", outfile_sens, "-s", input_senspar, output1d_filename])
+    pargs = SensFunc.parse_args(["-o", outfile_sens, "-s", input_senspar, output1d_filename])
     SensFunc.main(pargs)
     # Check the files exist
     assert(os.path.exists(outfile_sens))
@@ -103,9 +108,37 @@ def test_coadd_datacube(redux_out):
 
     # Check the files exist
     assert(os.path.exists(output_fileflux))
-
+    ######################################
+    # Finally, test the extraction of a 1D fluxed spectrum from the datacube
+    # Prepare the output filename
+    output1d_fileflux = output_fileflux.replace('.fits', '_spec1d.fits')
+    pargs = ExtractDataCube.parse_args(["-o", "-s", output1d_fileflux, output_fileflux])
+    ExtractDataCube.main(pargs)
+    # Check the files exist
+    assert(os.path.exists(output1d_fileflux))
+    ######################################
+    # Load in the extracted spec1d file, and compare it to the expected values
+    spec1d = specobjs.SpecObjs.from_fitsfile(output1d_fileflux)
+    # Generate a spectrum of the standard star that was used to generate the sensitivity function
+    # Load in the standard star spectrum
+    ra, dec = 191.39844, 42.64016
+    std_dict = flux_calib.find_standard_file(ra, dec)
+    wave_std, flux_std = std_dict['wave'].value, std_dict['flux'].value
+    # Interpolate the standard star spectrum to the same wavelength grid as the spec1d
+    flux_std_interp = np.interp(spec1d[0].OPT_WAVE, wave_std, flux_std)
+    np.save("wave_spec", spec1d[0].OPT_WAVE)
+    np.save("flux_spec", spec1d[0].OPT_FLAM)
+    np.save("flue_spec", spec1d[0].OPT_FLAM_SIG)
+    np.save("flux_std", flux_std)
+    np.save("wave_std", wave_std)
+    # Compare the extracted spectrum to the standard star spectrum, and make sure that the residuals are small
+    resid = (spec1d[0].OPT_FLAM-flux_std_interp)*utils.inverse(spec1d[0].OPT_FLAM_SIG)
+    med, std = np.median(resid), 1.4826*np.median(np.abs(np.median(resid) - resid))
+    assert(np.abs(med) < 0.1*std)
+    ######################################
     # Remove all of the created files
     os.remove(output_filename)
     os.remove(output1d_filename)
     os.remove(outfile_sens)
     os.remove(output_fileflux)
+    os.remove(output1d_fileflux)
