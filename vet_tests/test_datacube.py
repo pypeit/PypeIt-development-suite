@@ -31,7 +31,6 @@ def test_coadd_datacube(redux_out):
                          'keck_kcwi', 
                          'small_bh2_4200',
                          'Science')
-    droot = "/Users/rcooke/Work/Research/BBN/Yp/HIIregions/IZw18_KCWI/keck_kcwi_BH2_N1/Science"
     files = ['spec2d_KB.20191219.56886-BB1245p4238_KCWI_20191219T154806.538.fits',
              'spec2d_KB.20191219.57662-BB1245p4238_KCWI_20191219T160102.755.fits']
     config = ['[rdx]',
@@ -131,12 +130,22 @@ def test_coadd_datacube(redux_out):
     ra, dec = 191.39844, 42.64016
     std_dict = flux_calib.find_standard_file(ra, dec)
     wave_std, flux_std = std_dict['wave'].value, std_dict['flux'].value
+    # Test the optimal extraction
     # Interpolate the standard star spectrum to the same wavelength grid as the spec1d
     flux_std_interp = np.interp(spec1d[0].OPT_WAVE, wave_std, flux_std)
     # Compare the extracted spectrum to the standard star spectrum, and make sure that the residuals are small
     resid = (spec1d[0].OPT_FLAM-flux_std_interp)*utils.inverse(spec1d[0].OPT_FLAM_SIG)
     med, std = np.median(resid), 1.4826*np.median(np.abs(np.median(resid) - resid))
     assert(np.abs(med) < 0.1*std)
+    # Test the boxcar extraction
+    # Interpolate the standard star spectrum to the same wavelength grid as the spec1d
+    flux_std_interp = np.interp(spec1d[0].BOX_WAVE, wave_std, flux_std)
+    # Compare the extracted spectrum to the standard star spectrum, and make sure that the residuals are small
+    resid = (spec1d[0].BOX_FLAM-flux_std_interp)*utils.inverse(spec1d[0].BOX_FLAM_SIG)
+    med, std = np.median(resid), 1.4826*np.median(np.abs(np.median(resid) - resid))
+    # The sensitivity function is based on the optimal extraction, so the optimal should be spot on.
+    # The boxcar will be worse, so allow a larger tolerance
+    assert(np.abs(med) < 0.5*std)
     ######################################
     # Remove all of the created files
     # First remove the non-fluxed files
