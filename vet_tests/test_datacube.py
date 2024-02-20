@@ -219,7 +219,7 @@ def test_residuals(redux_out):
     assert(os.path.exists(output_filename))
     ######################################
     # Check the residuals are OK for method=subpixel
-    cube = coadd3d.DataCube.from_file(output_filename)
+    cube = DataCube.from_file(output_filename)
     ww = np.where(cube['bpm'] == 0)
     resid = cube['flux'] * utils.inverse(cube['sig'])
     # Calculate the statistics
@@ -235,7 +235,7 @@ def test_residuals(redux_out):
     # Now check the NGP algorithm
     output_fileNGP = "DOMEFLAT_BH2_NGP.fits"
     parset['reduce']['cube']['output_filename'] = output_fileNGP
-    parset['reduce']['cube']['method'] = 'NGP'
+    parset['reduce']['cube']['method'] = 'ngp'
     parset['reduce']['cube']['spat_subpixel'] = 1
     parset['reduce']['cube']['spec_subpixel'] = 1
     parset['reduce']['cube']['slice_subpixel'] = 1
