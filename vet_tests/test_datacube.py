@@ -28,7 +28,7 @@ def test_coadd_datacube(redux_out):
     dev_path = os.getenv('PYPEIT_DEV')
     # Define the input files
     droot = os.path.join(redux_out,
-                         'keck_kcwi', 
+                         'keck_kcwi',
                          'small_bh2_4200',
                          'Science')
     files = ['spec2d_KB.20191219.56886-BB1245p4238_KCWI_20191219T154806.538.fits',
@@ -160,3 +160,114 @@ def test_coadd_datacube(redux_out):
     # Remove the fluxed files
     os.remove(output_fileflux)
     os.remove(output1d_fileflux)
+
+
+def test_residuals(redux_out):
+    """ Test the residuals of a spec2D DOMEFLAT file
+    """
+    # Define the input files
+    droot = os.path.join(redux_out,
+                         'keck_kcwi',
+                         'small_bh2_4200',
+                         'Science')
+    # Set a temporary directory where some test data are located
+    droot = '/Users/rcooke/Work/Research/BBN/Yp/HIIregions/IZw18_KCWI/keck_kcwi_BH2_N1/Science'
+    files = ['spec2d_KB.20191220.62342-DOMEPHLAT_KCWI_20191220T171902.438.fits']
+    config = ['[rdx]',
+              '  spectrograph = keck_kcwi']
+
+    output_filename = "DOMEFLAT_BH2_333.fits"
+    # Fake data table
+    tbl = Table()
+    tbl['filename'] = files
+
+    # Generate a mock coadd3dfile
+    coadd3dfile = inputfiles.Coadd3DFile(config=config,
+                                         file_paths=[droot],
+                                         data_table=tbl,
+                                         setup=None)
+    # Grab the spectrograph and parset
+    spec = load_spectrograph("keck_kcwi")
+    parset = spec.default_pypeit_par()
+    parset['reduce']['cube']['output_filename'] = output_filename
+    parset['reduce']['cube']['correct_dar'] = False
+    parset['reduce']['cube']['combine'] = False
+    parset['reduce']['cube']['align'] = False
+    parset['reduce']['cube']['weight_method'] = 'relative'
+    parset['reduce']['cube']['method'] = 'subpixel'
+    parset['reduce']['cube']['spat_subpixel'] = 3
+    parset['reduce']['cube']['spec_subpixel'] = 3
+    parset['reduce']['cube']['slice_subpixel'] = 3
+    parset['reduce']['cube']['wave_min'] = 3922.758514
+    parset['reduce']['cube']['wave_max'] = 4469.062985
+    parset['reduce']['cube']['wave_delta'] = 0.115005
+
+    # Extract the options
+    ra_offsets = coadd3dfile.options['ra_offset']
+    dec_offsets = coadd3dfile.options['dec_offset']
+    skysub_frame = coadd3dfile.options['skysub_frame']
+    scale_corr = coadd3dfile.options['scale_corr']
+    grating_corr = coadd3dfile.options['grating_corr']
+    sensfuncfile = coadd3dfile.options['sensfile']
+
+    # Instantiate CoAdd3d, and then coadd the frames
+    coadd = CoAdd3D.get_instance(coadd3dfile.filenames, parset, skysub_frame=skysub_frame, grating_corr=grating_corr,
+                                 scale_corr=scale_corr, sensfile=sensfuncfile,
+                                 ra_offsets=ra_offsets, dec_offsets=dec_offsets, spectrograph=spec, overwrite=True)
+    coadd.run()
+    # Check the file exists
+    assert(os.path.exists(output_filename))
+    ######################################
+    # Check the residuals are OK for method=subpixel
+    cube = coadd3d.DataCube.from_file(output_filename)
+    ww = np.where(cube['bpm'] == 0)
+    resid = cube['flux'] * utils.inverse(cube['sig'])
+    # Calculate the statistics
+    avg, med = np.mean(resid[ww]), np.median(resid[ww])
+    std, mad = np.std(resid[ww]), 1.4826 * np.median(np.abs(np.median(resid[ww]) - resid[ww]))
+    # Check the statistics
+    assert(np.abs(avg) < 0.1, 'residuals (average) is not close to zero for method=subpixel(333)')
+    assert(np.abs(med) < 0.1, 'residuals (median) is not close to zero for method=subpixel(333)')
+    assert(np.abs(std-1) < 0.1, 'residuals (std) is not close to 1 for method=subpixel(333)')
+    assert(np.abs(mad-1) < 0.1, 'residuals (1.4826 * mad) is not close to 1 for method=subpixel(333)')
+
+    ######################################
+    # Now check the NGP algorithm
+    output_fileNGP = "DOMEFLAT_BH2_NGP.fits"
+    parset['reduce']['cube']['output_filename'] = output_fileNGP
+    parset['reduce']['cube']['method'] = 'NGP'
+    parset['reduce']['cube']['spat_subpixel'] = 1
+    parset['reduce']['cube']['spec_subpixel'] = 1
+    parset['reduce']['cube']['slice_subpixel'] = 1
+
+    # Extract the options
+    ra_offsets = coadd3dfile.options['ra_offset']
+    dec_offsets = coadd3dfile.options['dec_offset']
+    skysub_frame = coadd3dfile.options['skysub_frame']
+    scale_corr = coadd3dfile.options['scale_corr']
+
+    # Instantiate CoAdd3d, and then coadd the frames
+    coadd = CoAdd3D.get_instance(coadd3dfile.filenames, parset, skysub_frame=skysub_frame, grating_corr=grating_corr,
+                                 scale_corr=scale_corr, sensfile=sensfuncfile,
+                                 ra_offsets=ra_offsets, dec_offsets=dec_offsets, spectrograph=spec, overwrite=True)
+    coadd.run()
+
+    # Check the files exist
+    assert(os.path.exists(output_fileNGP))
+    ######################################
+    # Check the residuals are OK for method=NGP
+    cube = DataCube.from_file(output_fileNGP)
+    ww = np.where(cube['bpm'] == 0)
+    resid = cube['flux'] * utils.inverse(cube['sig'])
+    # Calculate the statistics
+    avg, med = np.mean(resid[ww]), np.median(resid[ww])
+    std, mad = np.std(resid[ww]), 1.4826 * np.median(np.abs(np.median(resid[ww]) - resid[ww]))
+    # Check the statistics
+    assert(np.abs(avg) < 0.1, 'residuals (average) is not close to zero for method=NGP')
+    assert(np.abs(med) < 0.1, 'residuals (median) is not close to zero for method=NGP')
+    assert(np.abs(std-1) < 0.1, 'residuals (std) is not close to 1 for method=NGP')
+    assert(np.abs(mad-1) < 0.1, 'residuals (1.4826 * mad) is not close to 1 for method=NGP')
+    ######################################
+    # Remove all of the created files
+    os.remove(output_filename)
+    os.remove(output_fileNGP)
