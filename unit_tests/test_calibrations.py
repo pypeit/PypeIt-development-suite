@@ -23,8 +23,8 @@ def fitstbl():
     root = Path(os.getenv('PYPEIT_DEV'), 'RAW_DATA/shane_kast_blue/600_4310_d55').resolve()
     files = [ 
         root / 'b1.fits.gz',    # arc
-        root / 'b3.fits.gz',    # trace
-        root / 'b14.fits.gz',   # bias
+        root / 'b11.fits.gz',   # trace
+        root / 'b21.fits.gz',   # bias
         root / 'b24.fits.gz',   # standard
         root / 'b27.fits.gz'    # science
     ]
