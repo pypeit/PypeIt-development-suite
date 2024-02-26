@@ -399,13 +399,18 @@ def test_setup_keck_deimos_multiconfig_clean():
     ps.fitstbl.clean_configurations()
     assert len(ps.fitstbl) == 25, 'Incorrect number of table rows.'
 
-    # Artificially set the amplifier and mode of two frames to be
-    # invalid
+    # Artificially set the amplifier to A; pypeit can now reduce DEIMOS SINGLE:A
+    # data
     ps.fitstbl['amp'][0] = 'SINGLE:A'
+    ps.fitstbl.clean_configurations()
+    assert len(ps.fitstbl) == 25, 'Should not remove SINGLE:A data'
+
+    # Artificially set a frame to imaging mode, which *cannot* be reduced by
+    # run_pypeit
     ps.fitstbl['mode'][1] = 'Direct'
     ps.fitstbl.clean_configurations()
     # Those two frames should have been removed
-    assert len(ps.fitstbl) == 23, 'Incorrect number of table rows.'
+    assert len(ps.fitstbl) == 24, 'Should remove imaging mode frame'
 
 
 def test_setup_keck_mosfire():
