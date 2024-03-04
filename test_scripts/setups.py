@@ -21,7 +21,7 @@ all_setups = {
                     '830G_M_9000_dither'],
     'keck_hires': [
         'HS1700+6416_H45aH_RED_B2_ECH_0.00_XD_-0.00_1x2',  # This one has bad HDUs
-        #'J0100+2802_H204Hr_RED_C1_ECH_0.75_XD_1.69_1x2',
+        'J0100+2802_H204Hr_RED_C1_ECH_0.75_XD_1.69_1x2',
         'J0100+2802_H204Hr_RED_C1_ECH_-0.82_XD_1.62_1x2',
         'J0100+2802_H237Hr_RED_C1_ECH_0.88_XD_1.46_1x2',
         'J0100+2802_H237Hr_RED_C1_ECH_-0.91_XD_1.46_1x2',
@@ -30,6 +30,7 @@ all_setups = {
         'J0306+1853_U074_RED_C2_ECH_-0.86_XD_1.31_1x3',
         'J1723+2243_W241_RED_C5_ECH_0.08_XD_0.90_2x2',
         'J1723+2243_W241_RED_C5_ECH_-0.15_XD_0.90_2x2',
+        'Q1009+2956_G10H_BLUE_C5_ECH_-0.00_XD_1.02_1x3',
                    ],
     'keck_kcwi': ['small_bh2_4200', 'medium_bl'],
     'keck_kcrm': ['medium_rm1', 'medium_rh3'],
