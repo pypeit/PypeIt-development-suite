@@ -7,9 +7,10 @@ from IPython import embed
 import numpy as np
 from astropy.io import fits
 
+from pypeit import dataPaths
 from pypeit.spectrographs.util import load_spectrograph
 from pypeit.images.rawimage import RawImage
-from pypeit.tests.tstutils import data_output_path, data_input_path
+from pypeit.tests.tstutils import data_output_path
 from pypeit.core import mosaic
 from pypeit.images.mosaic import Mosaic
 
@@ -103,7 +104,8 @@ def test_gemini_gmos():
     result leading to significant differences.  We're using exactly the same
     transformations, so I don't understand why this should happen.
     """
-    dragons_file = data_input_path('GN_HAM_R400_885_N20190205S0035_dragons_mosaic.fits')
+    dragons_file = dataPaths.tests.get_file_path(
+                        'GN_HAM_R400_885_N20190205S0035_dragons_mosaic.fits')
     file = os.path.join(os.environ['PYPEIT_DEV'], 'RAW_DATA', 'gemini_gmos', 'GN_HAM_R400_885',
                         'N20190205S0035.fits')
 

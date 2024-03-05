@@ -10,9 +10,8 @@ import matplotlib
 from IPython import embed
 matplotlib.use('agg')  # For Travis
 
-
+from pypeit import dataPaths
 from pypeit import scripts
-from pypeit.tests.tstutils import data_input_path
 from pypeit.display import display
 from pypeit import wavecalib
 from pypeit import coadd1d
@@ -126,7 +125,7 @@ def test_identify(redux_out):
     arcfitter = scripts.identify.Identify.main(pargs)
 
     # Load line list
-    arcfitter.load_IDs(fname=data_input_path('waveid_tests.ascii'))
+    arcfitter.load_IDs(fname=str(dataPaths.tests.get_file_path('waveid_tests.ascii')))
     assert arcfitter._detns.size == 31, 'Bad load'
 
     # Fit

@@ -10,8 +10,9 @@ from IPython import embed
 
 import numpy as np
 
+from pypeit import dataPaths
 from pypeit import sensfunc
-from pypeit.tests.tstutils import data_input_path, data_output_path
+from pypeit.tests.tstutils import data_output_path
 from pypeit.spectrographs.util import load_spectrograph
 from pypeit.spectrographs import keck_deimos
 
@@ -24,7 +25,7 @@ def test_wmko_flux_std():
         os.remove(outfile)
 
     # Do it
-    wmko_file = data_input_path('2017may28_d0528_0088.fits')
+    wmko_file = str(dataPaths.tests.get_file_path('2017may28_d0528_0088.fits'))
     spectrograph = load_spectrograph('keck_deimos')
 
     # Load + write
