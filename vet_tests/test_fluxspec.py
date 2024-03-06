@@ -60,7 +60,7 @@ def test_sensfunc(kast_blue_files, request):
         assert col in sensFunc.sens.keys(), f'Missing column "{col}".'
 
     # Validate the SensFunc attributes
-    assert os.path.basename(sensFunc.std_cal) == 'feige66_002.fits'
+    assert os.path.basename(sensFunc.std_cal) == 'feige66_002.fits.gz'
     assert len(sensFunc.wave) > 0
     assert len(sensFunc.zeropoint) > 0
     assert np.all(np.isfinite(sensFunc.wave))
