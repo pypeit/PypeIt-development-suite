@@ -74,7 +74,7 @@ def get_values_for_histo(wtable):
 	wavecen_bins = 50 if np.all(wavecen_diff == 0) else np.arange(wavecen_diff.min(), wavecen_diff.max(), 1.)
 	wavecen_xlabels = r'$\Delta$ Wave_cen Ang (new - old)'
 	# measured_fwhm
-	fwhm_diff = wtable['mesured_fwhm_2'].data.data - wtable['mesured_fwhm_1'].data.data
+	fwhm_diff = wtable['measured_fwhm_2'].data.data - wtable['measured_fwhm_1'].data.data
 	fwhm_bins = 50 if np.all(fwhm_diff == 0) else np.arange(fwhm_diff.min(), fwhm_diff.max(), 0.5)
 	fwhm_xlabels = r'$\Delta$ measured_fwhm pix (new - old)'
 
@@ -115,9 +115,9 @@ def get_values_for_plt(wtable):
 
 	# put everything in lists
 	old_values = [wtable['RMS_1'].data.data, wtable['Nlin_1'].data.data, wtable['dWave_1'].data.data,
-				  wtable['Wave_cen_1'].data.data, wtable['mesured_fwhm_1'].data.data]
+				  wtable['Wave_cen_1'].data.data, wtable['measured_fwhm_1'].data.data]
 	new_values = [wtable['RMS_2'].data.data, wtable['Nlin_2'].data.data, wtable['dWave_2'].data.data,
-				  wtable['Wave_cen_2'].data.data, wtable['mesured_fwhm_2'].data.data]
+				  wtable['Wave_cen_2'].data.data, wtable['measured_fwhm_2'].data.data]
 	xlabels = [rms_xlabels, nlin_xlabels, dwave_xlabels, wavecen_xlabels, fwhm_xlabels]
 	ylabels = [rms_ylabels, nlin_ylabels, dwave_ylabels, wavecen_ylabels, fwhm_ylabels]
 
@@ -205,6 +205,7 @@ def main(args):
 	plt.show()
 
 	if args.embed:
+		print('the name of the table is combined_wtable')
 		embed()
 
 	return combined_wtable

@@ -49,7 +49,7 @@ def test_load_nires():
         pytest.fail('NIRES test data section failed.')
 
 def test_load_nirspec():
-    ifile = os.path.join(os.getenv('PYPEIT_DEV'), 'RAW_DATA', 'keck_nirspec', 'LOW_NIRSPEC-1',
+    ifile = os.path.join(os.getenv('PYPEIT_DEV'), 'RAW_DATA', 'keck_nirspec_low', 'LOW_NIRSPEC-1',
                          'NS.20160414.02604.fits.gz')
     try:
         # First amplifier
