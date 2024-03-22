@@ -34,7 +34,8 @@ def parser(options=None):
     parser.add_argument('additional_args', type=str, nargs='*', default=["all"], help="Additional arguments to pypeit_test. Defaults to 'all'. "
                                                                                       "For example, if you would like to run all tests, but only reduce "
                                                                                       "the data for one instrument, you could append the following string: "
-                                                                                      "'all --instruments shane_kast_blue' to the end of your command (including the quotes).")
+                                                                                      "'all --instruments shane_kast_blue shane_kast_red' to the end of "
+                                                                                      "your command (including the quotes).")
     #parser.add_argument('-d', '--dryrun', default=False, action='store_true',
     #                    help='Only list the steps')
 
