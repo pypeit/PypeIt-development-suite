@@ -14,7 +14,7 @@ from pypeit import edgetrace, slittrace, specobjs
 from pypeit.spectrographs import slitmask
 from pypeit.spectrographs.keck_deimos import KeckDEIMOSSpectrograph
 from pypeit.spectrographs.util import load_spectrograph
-from pypeit.tests.tstutils import data_path
+from pypeit.tests.tstutils import data_output_path
 from pypeit.utils import index_of_x_eq_y
 
 
@@ -141,8 +141,8 @@ def test_assign_maskinfo_add_missing(redux_out):
                 'Wrong object (7) location on the MOSFIRE slit'
 
         # Write sobjs
-        sobjs.write_to_fits({}, data_path('tst_sobjs.fits'))
-        os.remove(data_path('tst_sobjs.fits'))
+        sobjs.write_to_fits({}, data_output_path('tst_sobjs.fits'))
+        os.remove(data_output_path('tst_sobjs.fits'))
 
 
 

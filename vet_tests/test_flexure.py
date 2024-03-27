@@ -5,7 +5,7 @@ from pypeit import spec2dobj
 from pypeit.core import flexure
 from pypeit.spectrographs.util import load_spectrograph
 
-from pypeit.tests.tstutils import data_path
+from pypeit.tests.tstutils import data_output_path
 
 import pytest
 
@@ -25,7 +25,7 @@ def test_spat_flexure(redux_out):
 def test_flex_multi(redux_out):
 
     # Set output file
-    outfile = data_path('tst_multi_flex.fits')
+    outfile = data_output_path('tst_multi_flex.fits')
     if os.path.isfile(outfile):
         # Remove it if it already exists
         os.remove(outfile)

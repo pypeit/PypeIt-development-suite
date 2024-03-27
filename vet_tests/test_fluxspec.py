@@ -12,7 +12,7 @@ import numpy as np
 
 from pypeit import fluxcalibrate
 from pypeit import sensfunc
-from pypeit.tests.tstutils import data_path
+from pypeit.tests.tstutils import data_output_path
 from pypeit.spectrographs.util import load_spectrograph
 from pypeit import specobjs
 
@@ -35,7 +35,7 @@ def kast_blue_files(request):
 
 def test_sensfunc(kast_blue_files, request):
 
-    sens_file = data_path('sensfunc.fits')
+    sens_file = data_output_path('sensfunc.fits')
     redux_out = request.config.getoption("--redux_out")
     kast_blue_out = os.path.join(redux_out, 'shane_kast_blue', '600_4310_d55', 'shane_kast_blue_A')
 
@@ -60,7 +60,7 @@ def test_sensfunc(kast_blue_files, request):
         assert col in sensFunc.sens.keys(), f'Missing column "{col}".'
 
     # Validate the SensFunc attributes
-    assert os.path.basename(sensFunc.std_cal) == 'feige66_002.fits'
+    assert os.path.basename(sensFunc.std_cal) == 'feige66_002.fits.gz'
     assert len(sensFunc.wave) > 0
     assert len(sensFunc.zeropoint) > 0
     assert np.all(np.isfinite(sensFunc.wave))

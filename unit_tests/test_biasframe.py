@@ -16,7 +16,7 @@ from pypeit.images import buildimage
 from pypeit.images import pypeitimage
 from pypeit.calibframe import CalibFrame
 from pypeit.images.mosaic import Mosaic
-from pypeit.tests.tstutils import data_path
+from pypeit.tests.tstutils import data_output_path
 from pypeit.spectrographs.util import load_spectrograph
 
 
@@ -26,7 +26,7 @@ frame_par = shane_kast_blue.default_pypeit_par()['calibrations']['biasframe']
 setup = 'A'
 calib_id = '1'
 det = 1
-calib_dir = data_path('')
+calib_dir = data_output_path('')
 
 
 @pytest.fixture

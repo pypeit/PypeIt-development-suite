@@ -11,7 +11,6 @@ from pypeit.spectrographs.util import load_spectrograph
 from pypeit.images import buildimage
 from pypeit.images import pypeitimage
 from pypeit import flatfield
-from pypeit.tests.tstutils import data_path
 
 
 kast_blue = load_spectrograph('shane_kast_blue')
