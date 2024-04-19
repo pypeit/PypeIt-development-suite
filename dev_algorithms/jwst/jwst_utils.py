@@ -644,7 +644,7 @@ def jwst_reduce(sciImg, slits, waveimg, tilts, spectrograph, par, show=False, fi
                                               waveimg=waveimg, bkg_redux=bkg_redux,
                                               basename=basename, show=show)
 
-    skymodel, objmodel, ivarmodel, outmask, sobjs, _, _, slits_out = exTract.run()
+    skymodel, bkg_redux_skymodel, objmodel, ivarmodel, outmask, sobjs, _, _, slits_out = exTract.run()
 
     # TODO -- Do this upstream
     # Tack on detector and wavelength RMS
