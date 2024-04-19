@@ -19,6 +19,7 @@ from pypeit import msgs
 from pypeit import datamodel
 from pypeit.core import flat
 from pypeit.core import procimg
+from pypeit.core import combine
 from pypeit.images.detector_container import DetectorContainer
 from pypeit.images.pypeitimage import PypeItImage
 from pypeit.images.mosaic import Mosaic
@@ -256,42 +257,27 @@ def jwst_get_slits(finitemask, polyorder=5, function='legendre', debug=False):
 def jwst_proc(msa_data, slit_slice, finitemask, flatfield, pathloss, barshadow, photom_conversion, ronoise,
               kludge_err=1.0, saturation=65000, noise_floor=0.01, use_flat=True):
 
-
-    #slit_slice, slit_left, slit_righ, slit_left_orig, slit_righ_orig, spec_vals_orig, src_trace_ra, src_trace_dec, dq, \
-    #ra, dec, waveimg, tilts, flatfield, pathloss, barshadow, photom_conversion, final = jwst_extract_subimgs(
-    #    final_slit, intflat_slit)
-
-    # Now deal with the image processing
-    #if not np.any(finitemask):
-    #    return (None,)*21
-
-    # Read in the output after msa_flagging. Extract the sub-images, rotate to PypeIt format.
-    rate = np.array(msa_data.data.T[slit_slice], dtype=float)
-    rate_var_rnoise = np.array(msa_data.var_rnoise.T[slit_slice], dtype=float)
-    rate_var_poisson = np.array(msa_data.var_poisson.T[slit_slice], dtype=float)
+    msa_data = np.atleast_1d(msa_data) # ensure we still have a list in the case of a single image
+    
+    rate = np.array([np.array(msa_data[ii].data.T[slit_slice],dtype=float) for ii in range(len(msa_data))])
+    rate_var_rnoise = np.array([np.array(msa_data[ii].var_rnoise.T[slit_slice], dtype=float) for ii in range(len(msa_data))])
+    rate_var_poisson = np.array([np.array(msa_data[ii].var_poisson.T[slit_slice], dtype=float) for ii in range(len(msa_data))])
     # This is currently buggy as it includes flat field error
     # rate_var_tot = np.square(np.array(e2d_slit.err.T, dtype=float))
-    dq = np.array(msa_data.dq.T[slit_slice], dtype=int)
-    t_eff = msa_data.meta.exposure.effective_exposure_time
-
-    # Now perform the image processing
-    raw_counts = rate*t_eff
-    raw_var_poisson = kludge_err**2*rate_var_poisson*t_eff**2
-    raw_var_rnoise = kludge_err**2*rate_var_rnoise*t_eff**2
+    dq = np.array([np.array(msa_data[ii].dq.T[slit_slice], dtype=int) for ii in range(len(msa_data))])
+    t_eff = np.array([msa_data[ii].meta.exposure.effective_exposure_time for ii in range(len(msa_data))])
+        # Now perform the image processing
+    raw_counts = np.array([rate[ii]*t_eff[ii] for ii in range(len(msa_data))])
+    raw_var_poisson = np.array([kludge_err**2*rate_var_poisson[ii]*t_eff[ii]**2 for ii in range(len(msa_data))])
+    raw_var_rnoise = np.array([kludge_err**2*rate_var_rnoise[ii]*t_eff[ii]**2 for ii in range(len(msa_data))])
     # Is this correct? I'm not sure I should be using their poisson variance for the noise floor
-    raw_var = procimg.variance_model(raw_var_rnoise, counts = raw_var_poisson, noise_floor=noise_floor)
-    # TODO This  is a hack until I can understand how to get rid of the hot pixels in the JWST variance arrays using DQ flags.
-    # I don't know what the value of this parameter currently set to 20 should be?? Look into this via a github issue.
-    #raw_gpm = (raw_var_rnoise < 20.0*ronoise**2) & (raw_var_poisson < saturation)
-    raw_gpm = (raw_var_rnoise < saturation) & (raw_var_poisson < saturation)
-    #raw_var_poisson + raw_var_rnoise # TODO Leaving out problematic flat field term from pipeline
-
-    # This is the conversion between final2d and e2d, i.e. final2d = jwst_scale*e2d
-    # total_flat = flatfield*pathloss*barshadow
-    #flux_to_counts = t_eff / photom_conversion  # This converts s2d outputs of flux to counts.
-    #jwst_scale = photom_conversion/flatfield/pathloss/barshadow
-
-    # The factor of t_eff in the flat is simply going to divide out the factor of t_eff multiplied into the data above
+    raw_var = []
+    raw_gpm = []
+    for ii in range(len(msa_data)):
+        raw_var.append(procimg.variance_model(raw_var_rnoise[ii], counts = raw_var_poisson[ii], noise_floor=noise_floor))
+        raw_gpm.append((raw_var_rnoise[ii] < saturation) & (raw_var_poisson[ii] < saturation))
+    raw_var = np.array(raw_var)
+    raw_gpm = np.array(raw_gpm)
     if use_flat:
         # TODO The flats take on very high values, which I think is a bad choice. The bad locations seem to have a value
         #  of 1.0, but there ought to be a better way to create this mask. I set these bad values to np.nan so that
@@ -299,39 +285,46 @@ def jwst_proc(msa_data, slit_slice, finitemask, flatfield, pathloss, barshadow, 
         flatfield_bpm = flatfield == 1.0
         flatfield_with_nan = flatfield.copy()
         flatfield_with_nan[flatfield_bpm] = np.nan
-        total_flat = t_eff*barshadow*pathloss*flatfield_with_nan/photom_conversion
+        total_flat = t_eff[0]*barshadow*pathloss*flatfield_with_nan/photom_conversion
         # This is what Kyle is using in his code
     else:
-        total_flat = t_eff*barshadow*pathloss
-
-
+        total_flat = t_eff[0]*barshadow*pathloss
+        
     total_flat_square = np.square(total_flat)
 
-    count_scale = inverse(total_flat)  # This is the quantity that goes into PypeIt for var modeling
-    science, flat_bpm = flat.flatfield(raw_counts, total_flat)
-    var_poisson, _ = flat.flatfield(raw_var_poisson, total_flat_square)
-    base_var, _ = flat.flatfield(raw_var_rnoise, total_flat_square)
-    var, _ = flat.flatfield(raw_var, total_flat_square)
-    sciivar = inverse(var)
-    dq_gpm = np.logical_not(dq & DO_NOT_USE)
-    gpm = finitemask & dq_gpm & np.logical_not(flat_bpm) & (sciivar > 0.0) & raw_gpm & np.isfinite(science) & np.isfinite(sciivar)
+    science = len(msa_data)*[None]
+    sciivar = len(msa_data)*[None]
+    gpm = len(msa_data)*[None]
+    base_var = len(msa_data)*[None]
+    count_scale = len(msa_data)*[None]
+    rn2_img = len(msa_data)*[None]
+    for ii in range(len(msa_data)):
+        count_scale[ii] = inverse(total_flat)  # This is the quantity that goes into PypeIt for var modeling
+        science[ii], flat_bpm = flat.flatfield(raw_counts[ii], total_flat)
+        var_poisson, _ = flat.flatfield(raw_var_poisson[ii], total_flat_square)
+        base_var[ii], _ = flat.flatfield(raw_var_rnoise[ii], total_flat_square)
+        var, _ = flat.flatfield(raw_var[ii], total_flat_square)
+        sciivar[ii] = inverse(var)
+        dq_gpm = np.logical_not(dq[ii] & DO_NOT_USE)
+        gpm[ii] = finitemask & dq_gpm & np.logical_not(flat_bpm) & (sciivar[ii] > 0.0) & raw_gpm[ii] & np.isfinite(science[ii]) & np.isfinite(sciivar[ii])
 
-    # This finitemask is based on where the waveimg is defined. Note however, the JWST images have nans in other
-    # places which is exposure specific.
-    nanmask = np.logical_not(finitemask)
-    count_scale[nanmask] = 0.0
-    science[nanmask] = 0.0
-    var_poisson[nanmask] = 0.0
-    base_var[nanmask] = 0.0
-    var[nanmask] = 0.0
-    sciivar[nanmask] = 0.0
-    # JFH The rn2_img is not currently used and could be omitted. At present it is in the wrong units
-    rn2_img = np.zeros_like(science)
-    rn2_img[finitemask] = ronoise**2
+        # This finitemask is based on where the waveimg is defined. Note however, the JWST images have nans in other
+        # places which is exposure specific.
+        nanmask = np.logical_not(finitemask)
+        count_scale[ii][nanmask] = 0.0
+        science[ii][nanmask] = 0.0
+        var_poisson[nanmask] = 0.0
+        base_var[ii][nanmask] = 0.0
+        var[nanmask] = 0.0
+        sciivar[ii][nanmask] = 0.0
+        # JFH The rn2_img is not currently used and could be omitted. At present it is in the wrong units
+        rn2_img[ii] = np.zeros_like(science[ii])
+        rn2_img[ii][finitemask] = ronoise**2
 
     # Make sure that we zero out any nan pixels since this causes problems in PypeIt
-    return zero_not_finite(science), zero_not_finite(sciivar), gpm, zero_not_finite(base_var), \
-        zero_not_finite(count_scale), rn2_img
+    return zero_not_finite(np.array(science)), zero_not_finite(np.array(sciivar)), np.array(gpm), zero_not_finite(np.array(base_var)), \
+        zero_not_finite(np.array(count_scale)), np.array(rn2_img)
+
 
 class NIRSpecSlitCalibrations(datamodel.DataContainer):
     version = '1.0.0'
@@ -460,7 +453,11 @@ def jwst_mosaic(image_model_tuple, Calibrations_tuple, kludge_err=1.0,
                                    spec_vals=Calib.spec_vals_orig, pstep=1, slit_ids=np.array([Calib.slit_name]))
                 # If bkg_image models were provided, show the difference image
                 if bkg_image_model is not None:
-                    bkg_rate_image = np.array(bkg_image_model.data.T)
+                    if len(bkg_image_model) > 1: # if we have multiple backgrounds, average them together
+                        bkg_rate_images = np.array([bkg_image_model[ii].data.T for ii in range(len(bkg_image_model))])
+                        bkg_rate_image = np.mean(bkg_rate_images,axis=0)
+                    else:
+                        bkg_rate_image = np.array(bkg_image_model.data.T)
                     viewer, ch_bkg = display.show_image(rate_image - bkg_rate_image,
                                                             cuts=get_cuts(rate_image - bkg_rate_image),
                                                             chname='diff_rate_{:s}'.format(Calib.det_name))
@@ -483,13 +480,28 @@ def jwst_mosaic(image_model_tuple, Calibrations_tuple, kludge_err=1.0,
 
     # TODO I would like to create an image indicating which detector contributed to which pixels
     if ndet == 1:
-        # Assign the data frames
-        sciimg_tot, sciivar_tot, gpm_tot, base_var_tot, count_scale_tot = \
-            sciimg_list[0], sciivar_list[0], gpm_list[0], base_var_list[0], count_scale_list[0]
-        # Assign the calibraitons
+        # Assign the calibrations
         waveimg_tot, tilts_tot, rn2_img_tot = waveimg_list[0], tilts_list[0], rn2_img_list[0]
         slit_left_tot, slit_righ_tot = slit_left_list[0], slit_righ_list[0]
         det_or_mosaic = det_list[0]
+
+        # Assign the data frames
+        sciimg_tot, sciivar_tot, gpm_tot, base_var_tot, count_scale_tot = \
+            sciimg_list[0], sciivar_list[0], gpm_list[0], base_var_list[0], count_scale_list[0]
+        if image_model_tuple.ndim == 1:
+            sciimg_tot = sciimg_tot[0]
+            sciivar_tot = sciivar_tot[0]
+            gpm_tot = gpm_tot[0]
+        else: # Combine images if there are more than one (probably for a background image)
+            sciimg_temp,sciivar_temp,gpm_temp,nused = combine.weighted_combine(np.ones(len(image_model_tuple)),[sciimg_tot],[sciivar_tot],gpm_tot)
+            sciimg_tot = np.copy(sciimg_temp[0])
+            sciivar_tot = np.copy(sciivar_temp[0])
+            gpm_tot = np.copy(gpm_temp)
+        # FBD: Don't know if these images need to be combined -- always grab the first one.
+        rn2_img_tot = rn2_img_tot[0]
+        base_var_tot = base_var_tot[0]
+        count_scale_tot = count_scale_tot[0]
+
         shape = sciimg_tot.shape
     elif ndet == 2:
         # A positive spat_offset means nrs2 starts at a larger pixel than nrs1
