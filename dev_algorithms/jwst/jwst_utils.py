@@ -654,6 +654,7 @@ def jwst_reduce(sciImg, slits, waveimg, tilts, spectrograph, par, show=False, fi
     # Construct the Spec2DObj
     spec2DObj = spec2dobj.Spec2DObj(sciimg=sciImg.image,
                                     ivarraw=sciImg.ivar,
+                                    bkg_redux_skymodel=bkg_redux_skymodel,
                                     skymodel=skymodel,
                                     objmodel=objmodel,
                                     ivarmodel=ivarmodel,
