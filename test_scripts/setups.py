@@ -38,7 +38,7 @@ all_setups = {
     'keck_nirspec': ['LOW_NIRSPEC-1'],
     'keck_mosfire': ['Y_long', 'J_multi', 'K_long', 'Y_multi', 'long2pos1_H', 'longslit_3x0.7_H', 'mask1_K_with_continuum', 'mask1_J_with_continuum', 'J2_long'],
     'keck_lris_blue': ['multi_600_4000_d560', 'long_400_3400_d560', 'long_600_4000_d560',
-                       'multi_300_5000_d680', 'multi_600_4000_slitmask'],
+                       'multi_300_5000_d680', 'multi_600_4000_slitmask', 'long_600_4000_d560_slitless'],
     'keck_lris_blue_orig': ['long_600_4000_d500', 'multi_1200_3400_d460'],
     'keck_lris_red': ['long_150_7500_d560', 'long_300_5000_d560', 'multi_400_8500_d560', 'long_400_8500_longread',
                       'multi_600_5000_d560', 'long_600_7500_d560', 'long_600_10000_d680', 'mulit_831_8200_d560',
