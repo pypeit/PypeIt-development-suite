@@ -474,7 +474,117 @@ def test_vet_assigned_ftypes():
 
     raw_files = list(raw_dir.glob('*'))
     assert len(raw_files) > 0, f'No raw files found in {raw_dir}'
-    # embed()
-    # ps = PypeItSetup.from_file_root(str(raw_dir), 'keck_lris_blue')
-    # ps.run(setup_only=True)
 
+    ps = PypeItSetup.from_file_root(str(raw_dir), 'keck_lris_blue')
+    ps.run(setup_only=True)
+
+    # CHECK N.1
+    # check that if standard and science frames are both assigned to a frame, vet_assigned_ftypes
+    # will keep the right frame type
+    # find standard star
+    std_indx = np.where(ps.fitstbl['target'] == 'GD71')[0]
+    # check that the standard star is assigned the correct frame type (standard and not science)
+    assert ps.fitstbl.type_bitmask.flagged(ps.fitstbl['framebit'][std_indx], flag='standard') and \
+        not ps.fitstbl.type_bitmask.flagged(ps.fitstbl['framebit'][std_indx], flag='science'), \
+        'Standard star not assigned the correct frame type.'
+
+    # modify the standard star frame bits to add a science frame type
+    ps.fitstbl['framebit'][std_indx] = ps.fitstbl.type_bitmask.turn_on(ps.fitstbl['framebit'][std_indx], flag='science')
+
+    assert ps.fitstbl.type_bitmask.flagged(ps.fitstbl['framebit'][std_indx], flag='standard') and \
+        ps.fitstbl.type_bitmask.flagged(ps.fitstbl['framebit'][std_indx], flag='science'), \
+        'Science framebit not modified correctly.'
+
+    # run the vet_assigned_ftypes method
+    ps.spectrograph.vet_assigned_ftypes(ps.fitstbl['framebit'], ps.fitstbl)
+
+    # recheck that the standard star is assigned the correct frame type (standard and not science)
+    assert ps.fitstbl.type_bitmask.flagged(ps.fitstbl['framebit'][std_indx], flag='standard') and \
+        not ps.fitstbl.type_bitmask.flagged(ps.fitstbl['framebit'][std_indx], flag='science'), \
+        'Standard star not assigned the correct frame type.'
+
+    # CHECK N.2
+    # let's do the opposite now, add a standard frame type to a science frame and check that the frame type is corrected
+    # find science frame
+    sci_indx = np.where(ps.fitstbl['target'] == 'DLA_J1054_off')[0]
+    # check that the science frame is assigned the correct frame type (science and not standard)
+    assert ps.fitstbl.type_bitmask.flagged(ps.fitstbl['framebit'][sci_indx], flag='science') and \
+        not ps.fitstbl.type_bitmask.flagged(ps.fitstbl['framebit'][sci_indx], flag='standard'), \
+        'Science frame not assigned the correct frame type.'
+
+    # modify the science frame bits to add a standard frame type
+    ps.fitstbl['framebit'][sci_indx] = ps.fitstbl.type_bitmask.turn_on(ps.fitstbl['framebit'][sci_indx], flag='standard')
+
+    assert ps.fitstbl.type_bitmask.flagged(ps.fitstbl['framebit'][sci_indx], flag='science') and \
+        ps.fitstbl.type_bitmask.flagged(ps.fitstbl['framebit'][sci_indx], flag='standard'), \
+        'Science framebit not modified correctly.'
+
+    # run the vet_assigned_ftypes method
+    ps.spectrograph.vet_assigned_ftypes(ps.fitstbl['framebit'], ps.fitstbl)
+
+    # recheck that the science frame is assigned the correct frame type (science and not standard)
+    assert ps.fitstbl.type_bitmask.flagged(ps.fitstbl['framebit'][sci_indx], flag='science') and \
+        not ps.fitstbl.type_bitmask.flagged(ps.fitstbl['framebit'][sci_indx], flag='standard'), \
+        'Science frame not assigned the correct frame type.'
+
+    # CHECK N.3
+    # check if this dataset has both a pixelflat and slitless_pixflat frame assigned, the vet_assigned_ftypes
+    # will keep the slitless frame type (currently specific for LRIS)
+
+    # do we have slitless_pixflat frames?
+    slitless_frames = ps.fitstbl.find_frames('slitless_pixflat')
+    assert np.any(slitless_frames), 'No slitless_pixflat frames found.'
+
+    # add the pixelflat frame type to a illumflat frame
+    ill_indx = np.where(ps.fitstbl.find_frames('illumflat'))[0]
+    ps.fitstbl['framebit'][ill_indx] = ps.fitstbl.type_bitmask.turn_on(ps.fitstbl['framebit'][ill_indx], flag='pixelflat')
+
+    # check
+    assert np.all(ps.fitstbl.type_bitmask.flagged(ps.fitstbl['framebit'][ill_indx], flag='pixelflat')), \
+        'Pixelflat framebit not added correctly.'
+
+    # run the vet_assigned_ftypes method
+    ps.spectrograph.vet_assigned_ftypes(ps.fitstbl['framebit'], ps.fitstbl)
+
+    # recheck that the pixelflat frame type is removed from the illumflat frame
+    assert not np.all(ps.fitstbl.type_bitmask.flagged(ps.fitstbl['framebit'][ill_indx], flag='pixelflat')), \
+        'Pixelflat framebit not removed correctly.'
+
+    # CHECK N.4
+    # what happen if ra and/or dec are None in the case of both standard and science type assigned to a frame?
+
+    # find standard star
+    std = np.where(ps.fitstbl.find_frames('standard'))[0]
+    # check that ra and dec are not None
+    assert np.all(ps.fitstbl['ra'][std] != None) and np.all(ps.fitstbl['dec'][std] != None), \
+        'RA and/or DEC are None for standard star.'
+
+    # modify the standard star frame bits to add a science frame type
+    ps.fitstbl['framebit'][std] = ps.fitstbl.type_bitmask.turn_on(ps.fitstbl['framebit'][std], flag='science')
+
+    # set ra and dec to None
+    ps.fitstbl['ra'][std] = None
+    ps.fitstbl['dec'][std] = None
+
+    # run the vet_assigned_ftypes method
+    ps.spectrograph.vet_assigned_ftypes(ps.fitstbl['framebit'], ps.fitstbl)
+
+    # if ra and dec are None, PypeIt cannot determine if the frame is a standard, so it assumes it is a science frame
+    assert np.all(ps.fitstbl.type_bitmask.flagged(ps.fitstbl['framebit'][std], flag='science')), \
+        'Frames with None ra and dec are not assigned the correct frame type.'
+
+    # CHECK N.5
+    # what happen if ra and dec are not part of ps.fitstbl.keys()?
+    # restore the standard star frame bits
+    ps.fitstbl['framebit'][std] = ps.fitstbl.type_bitmask.turn_on(ps.fitstbl['framebit'][std], flag='standard')
+
+    # remove ra and dec from the table
+    ps.fitstbl.table.remove_columns(['ra', 'dec'])
+
+    # run the vet_assigned_ftypes method
+    ps.spectrograph.vet_assigned_ftypes(ps.fitstbl['framebit'], ps.fitstbl)
+
+    # if ra and dec are not part of the table, PypeIt cannot determine if the frame is a standard,
+    # so it assumes it is a science frame
+    assert np.all(ps.fitstbl.type_bitmask.flagged(ps.fitstbl['framebit'][std], flag='science')), \
+        'Frames without ra and dec are not assigned the correct frame type.'
