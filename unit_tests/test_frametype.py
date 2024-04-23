@@ -464,3 +464,17 @@ def test_lris_blue_orig():
         shutil.rmtree(output_path)
 
 
+def test_vet_assigned_ftypes():
+
+    dev_root = Path(os.getenv('PYPEIT_DEV')).resolve()
+    assert dev_root.exists(), f'PypeIt development suite directory does not exist: {dev_root}'
+
+    raw_dir = dev_root / 'RAW_DATA' / 'keck_lris_blue' / 'long_600_4000_d560_slitless'
+    assert raw_dir.exists(), f'Raw data directory does not exist: {raw_dir}'
+
+    raw_files = list(raw_dir.glob('*'))
+    assert len(raw_files) > 0, f'No raw files found in {raw_dir}'
+    # embed()
+    # ps = PypeItSetup.from_file_root(str(raw_dir), 'keck_lris_blue')
+    # ps.run(setup_only=True)
+
