@@ -19,7 +19,7 @@ setup end
 data read
  path PypeIt-development-suite/RAW_DATA/keck_hires/Q1009+2956_G10H_BLUE_C5_ECH_-0.00_XD_1.02_1x3
               filename |        frametype |                 ra |                dec |                   target | dispname | decker | binning |          mjd | airmass | exptime | filter1 |    echangle |    xdangle | frameno | calib
-HI.20051206.12355.fits |  pixelflat,trace | 343.99999999999994 |                0.0 | xchg 1.0235 flat quartz1 |       UV |     C5 |     1,3 | 53710.143014 |   13.37 |     6.0 |   clear | -0.00016913 |      1.023 |       9 |     0
+HI.20051206.12355.fits |  illumflat,pixelflat,trace | 343.99999999999994 |                0.0 | xchg 1.0235 flat quartz1 |       UV |     C5 |     1,3 | 53710.143014 |   13.37 |     6.0 |   clear | -0.00016913 |      1.023 |       9 |     0
 HI.20051206.32577.fits |         arc,tilt | 343.99999999999994 |                0.0 |        thar2 echan1.0235 |       UV |     C5 |     1,3 | 53710.377073 |   13.37 |     2.0 |   clear | -0.00016913 |      1.023 |      17 |     0
 HI.20051206.43390.fits |          science | 152.26833333333332 | 29.942083333333333 |    0105+1619 echan1.0235 |       UV |     C5 |     1,3 | 53710.502223 |     1.5 |  6415.0 |   clear | -0.00016913 | 1.02100003 |      21 |     0
 #HI.20051206.50025.fits |          science | 152.26604166666667 | 29.942138888888888 |    0105+1619 echan1.0235 |       UV |     C5 |     1,3 | 53710.579007 |     1.1 |  6200.0 |   clear | -0.00016913 | 1.01900005 |      22 |     0
