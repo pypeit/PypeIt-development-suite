@@ -4,7 +4,7 @@ from collections import namedtuple
 import shutil
 import os
 from pathlib import Path
-
+import re
 from qtpy.QtCore import Qt, QSettings
 
 import numpy as np
@@ -322,18 +322,9 @@ def test_pypeit_obslog_model(qtbot, raw_data_path, tmp_path):
     assert obslog_model.spectrograph.name == "shane_kast_blue"
     assert obslog_model.state == model.ModelState.UNCHANGED
 
-def verify_failed_setup(message):
-    return message.startswith("Could not read metadata")
 
-def verify_canceled_setup(message):
-    return message == "CANCEL"
+def test_pypeit_setup_gui_model(qtbot, tmp_path):
 
-def raise_cancel_exception(*args):
-    raise model.OpCanceledError()
-
-def test_pypeit_setup_model(qtbot, tmp_path):
-    # TODO do I need this still
-    pass
     """
     setup_model = model.PypeItSetupModel()
     logname = str(tmp_path / "setup_gui_model_test.log")
@@ -456,8 +447,10 @@ def setup_offscreen_gui(tmp_path, monkeypatch, qtbot, verbosity=2, logfile="test
     main_window = c.main_window
 
     # Patch display error so we don't get hung on it's modal dialog box
-    def mock_display_error(message):
-        raise ValueError(message)
+    def mock_display_error(parent, message):
+        pass
+    # We have to patch it on controller, even though it lives in dialog_helpers, because otherwise
+    # controller will only see its own imported version and no patched one
     monkeypatch.setattr(controller, "display_error", mock_display_error)
 
     # qtbot will close the window for us, but we have to take care of the
@@ -594,6 +587,69 @@ def test_run_setup(qtbot, raw_data_path, tmp_path, monkeypatch):
     history = settings.value('History')
     assert history == [str(j_multi)]
 
+def test_run_setup_failure(qtbot, raw_data_path, tmp_path, monkeypatch):
+    c, main_window = setup_offscreen_gui(tmp_path, monkeypatch, qtbot)    
+    setup_gui_model = c.model
+    obs_log_tab = main_window._obs_log_tab
+
+    # Select the spectrograph
+    with qtbot.waitSignal(setup_gui_model.obslog_model.spectrograph_changed, timeout=1000):
+        qtbot.keyClicks(obs_log_tab.spectrograph, "shane_kast_blue")
+        qtbot.keyClick(obs_log_tab.spectrograph, Qt.Key.Key_Enter)
+
+    # set raw data
+    raw_dir = raw_data_path / 'keck_mosfire'
+    j_multi = (raw_dir / "J_multi").resolve()
+    with qtbot.waitSignals([(setup_gui_model.obslog_model.paths_model.rowsInserted, "path inserted"),
+                            (setup_gui_model.obslog_model.paths_model.dataChanged, "path data set")], 
+                            order = 'strict', raising=True, timeout=1000):
+        obs_log_tab.paths_editor._path.setCurrentText(str(j_multi))
+        qtbot.keyClick(obs_log_tab.paths_editor._path, Qt.Key_Enter)
+
+    # Click the Run Setup button and wait for the background operation to complete, verifying it was canceled
+
+    with qtbot.waitSignal(setup_gui_model.stateChanged, raising=True, timeout=10000):
+        qtbot.mouseClick(main_window.setupButton, Qt.MouseButton.LeftButton)
+
+    # Verify all of the files are commented out
+    assert np.all([filename.startswith("#") for filename in setup_gui_model.obslog_model.metadata_model.metadata['filename']])
+
+def test_run_setup_cancel(qtbot, raw_data_path, tmp_path, monkeypatch):
+    c, main_window = setup_offscreen_gui(tmp_path, monkeypatch, qtbot)    
+    setup_gui_model = c.model
+    obs_log_tab = main_window._obs_log_tab
+
+    # Select the wrong spectrograph for the test spectrograph 
+    with qtbot.waitSignal(setup_gui_model.obslog_model.spectrograph_changed, timeout=1000):
+        qtbot.keyClicks(obs_log_tab.spectrograph, "keck_mosfire")
+        qtbot.keyClick(obs_log_tab.spectrograph, Qt.Key.Key_Enter)
+
+    # set raw data
+    raw_dir = raw_data_path / 'keck_mosfire'
+    j_multi = (raw_dir / "J_multi").resolve()
+    with qtbot.waitSignals([(setup_gui_model.obslog_model.paths_model.rowsInserted, "path inserted"),
+                            (setup_gui_model.obslog_model.paths_model.dataChanged, "path data set")], 
+                            order = 'strict', raising=True, timeout=1000):
+        obs_log_tab.paths_editor._path.setCurrentText(str(j_multi))
+        qtbot.keyClick(obs_log_tab.paths_editor._path, Qt.Key_Enter)
+
+
+    # Helpers to verify and cause a cancel
+    def verify_canceled_setup(canceled, exc_info):
+        return canceled is True and (exc_info is None or all([value is None for value in exc_info]))
+
+    def raise_cancel_exception(*args):
+        raise controller.OpCanceledError()
+
+    # Click the Run Setup button and trigger a cancel exception
+
+    with qtbot.waitSignal(c.operation_thread.completed, check_params_cb=verify_canceled_setup, raising=True, timeout=10000):
+        # Use the GUI's internal log watcher to trigger the canceled exception
+        setup_gui_model.log_buffer.watch("test_cancel", re.compile("Adding metadata for .*$"), raise_cancel_exception)
+        qtbot.mouseClick(main_window.setupButton, Qt.MouseButton.LeftButton)
+    assert setup_gui_model.state == model.ModelState.NEW
+ 
+    setup_gui_model.log_buffer.unwatch("test_cancel")
 
 def test_multi_paths(qtbot, raw_data_path, tmp_path, monkeypatch):
     """Test re-running setup on setting multiple paths"""
