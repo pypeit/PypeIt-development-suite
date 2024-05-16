@@ -3,18 +3,12 @@
 
 from astropy.io import fits
 from astropy.table import Table
-import os
-from pathlib import Path
 import numpy as np
+
+from pypeit import data
 from IPython import embed
 
-
-
-
-calspec_folder = '/Users/dpelliccia/PypeIt/PypeIt/pypeit/data/standards/calspec'
-cpath = Path(calspec_folder).resolve()
-
-
+cpath = data.Paths.standards / 'calspec'
 
 files = np.sort(sorted(cpath.glob('*.fits.gz')))
 exclude = ['README', 'calspec_info.txt', 'hz44_stis_plus_50000k_ext.fits.gz', 'bd_33d2642_004.fits.gz']
@@ -26,7 +20,6 @@ opt_dwave_range = []
 
 ir_wave_range = []
 ir_dwave_range = []
-
 
 targname = []
 
@@ -63,4 +56,7 @@ print_tab.pprint_all()
 print('')
 # print_tab.write('new_calspec_files_info_nomod_NEW.csv', format='ascii.csv')
 
-embed()
+# embed()
+
+
+
