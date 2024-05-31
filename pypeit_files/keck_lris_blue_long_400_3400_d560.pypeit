@@ -6,7 +6,7 @@
     use_biasimage=False
 [calibrations]
    [[flatfield]]
-      pixelflat_file = /Users/joe/python/PypeIt-development-suite/CALIBS/PYPEIT_LRISb_pixflat_B400_2x2_15apr2015.fits.gz
+      pixelflat_file = PYPEIT_LRISb_pixflat_B400_2x2_15apr2015_specflip.fits.gz
 
 
 # Setup
