@@ -27,6 +27,7 @@ from jwst_utils import NIRSpecSlitCalibrations, jwst_mosaic, jwst_reduce
 from jwst_targets import jwst_targets
 from pypeit.metadata import PypeItMetaData
 from pypeit.display import display
+from pypeit.images import combineimage
 from pypeit import specobjs
 from pypeit.utils import inverse, fast_running_median, nan_mad_std
 
@@ -62,12 +63,12 @@ DO_NOT_USE = datamodels.dqflags.pixel['DO_NOT_USE']
 # Define the information to get the exp_list
 target = 'J1342'
 disperser = '140H'
-slits ='S200A1'
+slits ='S200A1' # 'S200A2'
 exp_list, redux_dir = jwst_targets(target, disperser, slits=slits)
 
 # Redux parameters 
-#mode = 'MSA'
-mode = 'FS'
+mode = 'MSA'
+#mode = 'FS'
 bkg_redux = True #False #False #False
 run_stage1 = False
 run_stage2 = False
@@ -142,11 +143,13 @@ param_dict_spec2 = {
 # units. Right now I'm leaning towards use srctype='EXTENDED' for MSA but srctype='POINT' for FS.
 
 # For MSA data, we need to run the MSA flagging step and this generates the full 2d frames we operate on, for
-# FS data, the MSA flagging is not performed and so the last step is the assign_wcs step
-if mode =='MSA':
-    param_dict_spec2['msa_flagging'] = {'save_results': True}
-elif mode == 'FS':
-    param_dict_spec2['assign_wcs'] = {'save_results': True}
+# FS data, the MSA flagging is not performed and so the last step is the assign_wcs step. 
+# This is no longer needed now that nslcean is after both. 
+#if mode =='MSA':
+#    param_dict_spec2['msa_flagging'] = {'save_results': True}
+#elif mode == 'FS':
+#    param_dict_spec2['assign_wcs'] = {'save_results': True}
+param_dict_spec2['nsclean'] = {'save_results': True, 'skip': False}
 
 # Run the spec2 pipeline
 if run_stage2:
@@ -195,12 +198,15 @@ msa_output_files_2 = []
 cal_output_files_2 = []
 
 for base1, base2 in zip(basenames_1, basenames_2):
-    if mode == 'MSA':
-        msa_output_files_1.append(os.path.join(output_dir, base1 + '_msa_flagging.fits'))
-        msa_output_files_2.append(os.path.join(output_dir, base2 + '_msa_flagging.fits'))
-    else:
-        msa_output_files_1.append(os.path.join(output_dir, base1 + '_assign_wcs.fits'))
-        msa_output_files_2.append(os.path.join(output_dir, base2 + '_assign_wcs.fits'))
+    # This block no longer needed now that nsclean step is always after both. 
+    #if mode == 'MSA':
+    #    msa_output_files_1.append(os.path.join(output_dir, base1 + '_msa_flagging.fits'))
+    #    msa_output_files_2.append(os.path.join(output_dir, base2 + '_msa_flagging.fits'))
+    #else:
+    #    msa_output_files_1.append(os.path.join(output_dir, base1 + '_assign_wcs.fits'))
+    #    msa_output_files_2.append(os.path.join(output_dir, base2 + '_assign_wcs.fits'))
+    msa_output_files_1.append(os.path.join(output_dir, base1 + '_nsclean.fits'))
+    msa_output_files_2.append(os.path.join(output_dir, base2 + '_nsclean.fits'))
 
     intflat_output_files_1.append(os.path.join(output_dir, base1 + '_interpolatedflat.fits'))
     cal_output_files_1.append(os.path.join(output_dir, base1 + '_cal.fits'))
@@ -254,7 +260,6 @@ for iexp in range(nexp):
     msa_data[1, iexp] = datamodels.open(msa_output_files_2[iexp])
     flat_data[1, iexp] = datamodels.open(intflat_output_files_2[iexp])
     cal_data[1, iexp] = datamodels.open(cal_output_files_2[iexp])
-
 
 
 # Create a set of aligned slit and source names for both detectors
@@ -314,7 +319,6 @@ elif reduce_sources is not None:
 else:
     gd_slits_sources = slit_sources_uni
 
-
 # Loop over all slits. For each exposure create a mosaic and save them to individual PypeIt spec2d files.
 for ii, (islit, isource) in enumerate(gd_slits_sources):
 
@@ -344,15 +348,22 @@ for ii, (islit, isource) in enumerate(gd_slits_sources):
         ibkg = bkg_indices[iexp]
         # Create the image mosaic
         sciImg, slits, waveimg, tilts, ndet = jwst_mosaic(msa_data[:, iexp], [CalibrationsNRS1, CalibrationsNRS2], kludge_err=kludge_err,
-            noise_floor=par['scienceframe']['process']['noise_floor'], bkg_image_model_tuple=tuple(msa_data[:, ibkg]),
-            show=show & (iexp == iexp_ref))
+            noise_floor=par['scienceframe']['process']['noise_floor'])
+        
+        #    show=show & (iexp == iexp_ref))
 
         # If this is a bkg_redux, perform background subtraction
         if bkg_redux:
-            bkgImg, _, _, _, _= jwst_mosaic(msa_data[:, ibkg], [CalibrationsNRS1, CalibrationsNRS2], kludge_err=kludge_err,
+            bkgImg_list = []
+            for msa_data_i in msa_data[:,ibkg]: 
+                bkgImg_i, _, _, _, _= jwst_mosaic(msa_data_i, [CalibrationsNRS1, CalibrationsNRS2], kludge_err=kludge_err,
                                           noise_floor=par['scienceframe']['process']['noise_floor'])
-            sciImg = sciImg.sub(bkgImg)
+                bkgImg_list.append(bkgImg_i)
 
+            # TODO the parset label here may change in Pypeit to bkgframe
+            combineImage = combineimage.CombineImage(bkgImg_list, spectrograph, par['scienceframe']['process'])
+            bkgImg = combineImage.run(ignore_saturation=True)
+            sciImg = sciImg.sub(bkgImg)
 
         # Run the reduction
         all_spec2d[sciImg.detector.name], tmp_sobjs = jwst_reduce(sciImg, slits, waveimg, tilts, spectrograph, par,
