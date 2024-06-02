@@ -26,7 +26,7 @@ from pypeit.images.mosaic import Mosaic
 from pypeit import slittrace, spec2dobj
 from pypeit import find_objects, extraction
 
-import grismconf
+#import grismconf
 
 
 
@@ -417,9 +417,62 @@ class NIRSpecSlitCalibrations(datamodel.DataContainer):
         return viewer, ch_list
 
 
+def jwst_show_image():
+    
+    display.connect_to_ginga(raise_err=True, allow_new=True)
+    # Show the raw rate image
+    rate_image = np.array(image_model.data.T)
+    viewer, ch_raw = display.show_image(rate_image, cuts=get_cuts(rate_image), chname='raw_rate_{:s}'.format(Calib.det_name))
+    display.show_slits(viewer, ch_raw, Calib.slit_left_orig, Calib.slit_righ_orig, spec_vals=Calib.spec_vals_orig, pstep=1, 
+                       slit_ids=np.array([Calib.slit_name]))
+    # If bkg_image models were provided, show the difference image
+    if bkg_image_model is not None:
+        if len(bkg_image_model) > 1: # if we have multiple backgrounds, average them together
+            bkg_rate_images = np.array([bkg_image_model[ii].data.T for ii in range(len(bkg_image_model))]), 
+            bkg_rate_image = np.mean(bkg_rate_images,axis=0)
+        else:
+            bkg_rate_image = np.array(bkg_image_model.data.T)
+        viewer, ch_bkg = display.show_image(rate_image - bkg_rate_image, cuts=get_cuts(rate_image - bkg_rate_image), 
+                                            chname='diff_rate_{:s}'.format(Calib.det_name))
+        display.show_slits(viewer, ch_bkg, Calib.slit_left_orig, Calib.slit_righ_orig, 
+                           spec_vals=Calib.spec_vals_orig, pstep=1, slit_ids=np.array([Calib.slit_name]))
+
+        # Show the calibrations
+        viewer, ch_list = Calib.show()
+        # Show the pypeit processed image
+        viewer_pypeit, ch_pypeit = display.show_image(sciimg, waveimg=Calib.waveimg, cuts=get_cuts(sciimg),
+                                                      chname='pypeit_{:s}'.format(Calib.det_name))
+        display.show_slits(viewer_pypeit, ch_pypeit, Calib.slit_left, Calib.slit_righ, pstep=1,
+                                   slit_ids=np.array([Calib.slit_name]))
+        # Sync up the images that have the same shape, namely calibration image and pypeit processed image
+        shell = viewer.shell()
+        shell.start_global_plugin('WCSMatch')
+        shell.call_global_plugin_method('WCSMatch', 'set_reference_channel', [ch_list[-1]], {})
+
 
 def jwst_mosaic(image_model_tuple, Calibrations_tuple, kludge_err=1.0,
                 noise_floor=0.01, show=False, bkg_image_model_tuple=(None,None)):
+    """
+    Create a JWST NIRSpec mosaic image from the provided image models and calibrations.
+    
+    Parameters
+    ----------
+    image_model_tuple : tuple
+        Tuple of image datamodels for the NIRSpec images to be mosaiced.
+    Calibrations_tuple : tuple
+        Tuple of NIRSpecSlitCalibrations objects for the NIRSpec images to be mosaiced.
+    kludge_err : float, optional
+        Error kludge factor for the variance arrays to fix the incorrect noise. Default is 1.0.
+    noise_floor : float, optional
+        Noise floor for the variance arrays. Default is 0.01.
+    show : bool, optional
+        Show the images. Default is False.
+    bkg_image_model_tuple : tuple, optional
+        Tuple of image datamodels for the NIRSpec background images to be mosaiced. These are subtracted
+        from the 
+        Default is (None,None).
+    
+    """
 
     dets = [1,2]
     sciimg_list, sciivar_list, gpm_list, base_var_list, count_scale_list, rn2_img_list = [], [], [], [], [], []
