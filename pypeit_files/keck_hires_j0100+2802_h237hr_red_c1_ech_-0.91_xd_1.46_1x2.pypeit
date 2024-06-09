@@ -4,6 +4,8 @@
 # User-defined execution parameters
 [rdx]
     spectrograph = keck_hires
+[baseprocess]
+    use_illumflat = False
 [calibrations]
    [[wavelengths]]
 	cc_thresh = 0.7

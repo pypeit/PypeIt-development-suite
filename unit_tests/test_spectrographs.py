@@ -157,8 +157,8 @@ def test_kecknires():
 
 
 def test_kecknirspec():
-    s = spectrographs.keck_nirspec.KeckNIRSPECSpectrograph()
-    example_file = os.path.join(os.environ['PYPEIT_DEV'], 'RAW_DATA', 'keck_nirspec',
+    s = spectrographs.keck_nirspec.KeckNIRSPECLowSpectrograph()
+    example_file = os.path.join(os.environ['PYPEIT_DEV'], 'RAW_DATA', 'keck_nirspec_low',
                                 'LOW_NIRSPEC-1', 'NS.20160414.02637.fits.gz')
     assert os.path.isfile(example_file), 'Could not find example file for Keck NIRSPEC read.'
     #data, _ = s.load_raw_frame(example_file)

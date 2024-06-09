@@ -37,8 +37,6 @@ def generic_setup_test(spec, setup, cfg=None, prefix=None, extension=None):
     # TODO: Make the path structure of these instruments the same as the rest!!
     if 'vlt_xshooter' in spec:
         spec_dir = 'vlt_xshooter'
-    elif 'keck_nirspec' in spec:
-        spec_dir = 'keck_nirspec'
     else:
         spec_dir = spec
     data_root = Path(os.environ['PYPEIT_DEV']).resolve() / 'RAW_DATA' / spec_dir / setup
