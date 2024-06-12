@@ -17,6 +17,8 @@ from pypeit.display import display
 from pypeit import wavecalib
 from pypeit import coadd1d
 from pypeit import inputfiles
+from linetools.utils import jsonify
+import json
 
 from pypeit.pypmsgs import PypeItError
 
@@ -125,7 +127,7 @@ def test_identify(redux_out):
                               'Slits_A_0_DET01.fits.gz')
     # Just list
     pargs = scripts.identify.Identify.parse_args([arc_file, slits_file, '--test'])
-    arcfitter = scripts.identify.Identify.main(pargs)
+    arcfitter, msarc = scripts.identify.Identify.main(pargs)
 
     # Load line list
     arcfitter.load_IDs(fname=data_path('waveid_tests.ascii'))
@@ -147,14 +149,18 @@ def test_identify(redux_out):
     waveCalib = wavecalib.WaveCalib(nslits=1, wv_fits=np.atleast_1d(arcfitter._fitdict['WaveFit']),
                               arc_spectra=np.atleast_2d(arcfitter.specdata).T,
                               spat_ids=np.atleast_1d(int(arcfitter._spatid)),
-                              PYP_SPEC='shane_kast_blue',
-                              )
+                              PYP_SPEC='shane_kast_blue')
+    # need to add strpar to waveCalib
+    sv_par = arcfitter.par.data.copy()
+    j_par = jsonify(sv_par)
+    waveCalib.strpar = json.dumps(j_par)
+    # copy internals
+    waveCalib.copy_calib_internals(msarc)
 
     # If you touch the following line, you probably need to update the call in scripts/identify.py
     wvarxiv_fn = arcfitter.store_solution(final_fit, 1, rmstol=0.1, force_save=True, wvcalib=waveCalib)
 
     # Test we can read it
-    # NOTE: Calibration key and directory are undefined!
     tmp = wavecalib.WaveCalib.from_file('wvcalib.fits')
 
     # Clean up -- If these fail then the store solution failed
