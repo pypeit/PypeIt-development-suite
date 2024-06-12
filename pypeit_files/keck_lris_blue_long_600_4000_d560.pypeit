@@ -4,7 +4,7 @@
     sortroot = lris_blue_long_600_4000_d560
 [calibrations]
     [[flatfield]]
-        pixelflat_file = /home/xavier/local/Python/PypeIt-development-suite/CALIBS/PYPEIT_LRISb_pixflat_B600_2x2_17sep2009.fits.gz
+        pixelflat_file = PYPEIT_LRISb_pixflat_B600_2x2_17sep2009_specflip.fits.gz
 
 # Setup
 setup read

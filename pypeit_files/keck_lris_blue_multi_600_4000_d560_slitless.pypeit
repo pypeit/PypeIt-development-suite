@@ -1,0 +1,35 @@
+# Auto-generated PypeIt input file using PypeIt version: 1.15.1.dev62+g88b471fa0
+# UTC 2024-04-27T01:36:27.479+00:00
+
+# User-defined execution parameters
+[rdx]
+    spectrograph = keck_lris_blue
+[baseprocess]
+    use_biasimage=False
+
+# Setup
+setup read
+Setup A:
+  amp: '4'
+  binning: 2,2
+  decker: '200906_1'
+  dichroic: '560'
+  dispname: 600/4000
+setup end
+
+# Data block 
+data read
+ path RAW_DATA/keck_lris_blue/multi_600_4000_d560_slitless
+              filename |        frametype |                 ra |                 dec |     target | dispname |   decker | binning |          mjd |     airmass | exptime | dichroic | amp |  hatch |                  lampstat01 |    dateobs | frameno | calib
+LB.20201013.09907.fits |         arc,tilt | 229.99999999999997 | 0.03869444444444445 |    unknown | 600/4000 | 200906_1 |     2,2 | 59135.114674 | 13.37481353 |     1.0 |      560 |   4 | closed | HgI NeI ArI CdI ZnI KrI XeI | 2020-10-13 |    1015 |     0
+LB.20201013.16081.fits |  illumflat,trace | 261.74999999999994 |               34.05 | Blank17 34 | 600/4000 | 200906_1 |     2,2 | 59135.186133 |   1.1726836 |    10.0 |      560 |   4 |   open |                         off | 2020-10-13 |    1026 |     0
+LB.20201013.16130.fits |  illumflat,trace | 261.74999999999994 |               34.05 | Blank17 34 | 600/4000 | 200906_1 |     2,2 | 59135.186694 |  1.17468137 |    10.0 |      560 |   4 |   open |                         off | 2020-10-13 |    1027 |     0
+LB.20201013.44525.fits |          science |  53.48420833333332 | -14.100972222222222 |   200906_1 | 600/4000 | 200906_1 |     2,2 | 59135.515337 |  1.20366419 |  1200.0 |      560 |   4 |   open |                         off | 2020-10-13 |    1069 |     0
+LB.20201013.16510.fits | slitless_pixflat | 261.74999999999994 |               34.05 | Blank17 34 | 600/4000 |   direct |     2,2 | 59135.191098 |   1.1909883 |     1.0 |      560 |   4 |   open |                         off | 2020-10-13 |    1032 |     0
+LB.20201013.16619.fits | slitless_pixflat | 261.74999999999994 |               34.05 | Blank17 34 | 600/4000 |   direct |     2,2 | 59135.192361 |  1.19591159 |     3.0 |      560 |   4 |   open |                         off | 2020-10-13 |    1033 |     0
+LB.20201013.16742.fits | slitless_pixflat |  261.8103333333333 |                34.1 | Blank17 34 | 600/4000 |   direct |     2,2 | 59135.193783 |  1.20107417 |     6.0 |      560 |   4 |   open |                         off | 2020-10-13 |    1034 |     0
+LB.20201013.16814.fits | slitless_pixflat | 261.87070833333325 |               34.15 | Blank17 34 | 600/4000 |   direct |     2,2 |  59135.19461 |  1.20389341 |     8.0 |      560 |   4 |   open |                         off | 2020-10-13 |    1035 |     0
+LB.20201013.16894.fits | slitless_pixflat | 261.93104166666666 |                34.2 | Blank17 34 | 600/4000 |   direct |     2,2 | 59135.195542 |  1.20729251 |     8.0 |      560 |   4 |   open |                         off | 2020-10-13 |    1036 |     0
+LB.20201013.16977.fits | slitless_pixflat |         261.991375 |               34.25 | Blank17 34 | 600/4000 |   direct |     2,2 | 59135.196499 |  1.21071211 |    11.0 |      560 |   4 |   open |                         off | 2020-10-13 |    1037 |     0
+data end
+

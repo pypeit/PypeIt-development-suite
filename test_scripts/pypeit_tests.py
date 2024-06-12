@@ -660,9 +660,10 @@ def fix_pypeit_file_directory(pyp_file:str, dev_path:str, raw_data:str,
             newdpth += os.path.join(raw_data, subdir)
             newdpth += '\n'
             lines[kk+1] = newdpth
-        elif 'flatfield' in iline and 'pixelflat_file' in lines[kk+1]:
-            newcpth = os.path.join(dev_path, 'CALIBS', os.path.split(lines[kk+1])[1])
-            lines[kk+1] = '        pixelflat_file = {0}'.format(newcpth)
+        # no need for the code below, as now pixelflat_file does not include the full path
+        # elif 'flatfield' in iline and 'pixelflat_file' in lines[kk+1]:
+        #     newcpth = os.path.join(dev_path, 'CALIBS', os.path.split(lines[kk+1])[1])
+        #     lines[kk+1] = '        pixelflat_file = {0}'.format(newcpth)
 
     # Write the pypeit file
     if outfile is None:

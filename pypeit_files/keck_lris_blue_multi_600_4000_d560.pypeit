@@ -8,7 +8,7 @@
   detnum = 2
 [calibrations]
 [[flatfield]]
-pixelflat_file = /Users/joe/python/PypeIt-development-suite/CALIBS/PYPEIT_LRISb_pixflat_B600_2x2_17sep2009.fits.gz
+pixelflat_file = PYPEIT_LRISb_pixflat_B600_2x2_17sep2009_specflip.fits.gz
 
 
 # Setup
