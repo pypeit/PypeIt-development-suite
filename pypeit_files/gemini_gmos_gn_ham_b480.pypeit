@@ -1,0 +1,28 @@
+# Auto-generated PypeIt input file using PypeIt version: 1.15.1.dev176+g86c3adc15
+# UTC 2024-05-13T19:04:15.002+00:00
+
+# User-defined execution parameters
+[rdx]
+    spectrograph = gemini_gmos_north_ham
+
+# Setup
+setup read
+Setup A:
+  datasec: '"[1:256,1:2112]"'
+  decker: 1.0arcsec
+  dichroic: GG455_G0305
+  dispangle: 650.0
+  dispname: B480+_G5309
+setup end
+
+# Data block 
+data read
+ path /home/xavier/Projects/PypeIt_stuff/PypeIt-development-suite/REDUX_OUT/gemini_gmos/GN_HAM_B480
+               filename |                 frametype |               ra |              dec |       target |    dispname |    decker | binning |               mjd |          airmass | exptime |    dichroic | dispangle |        datasec | calib
+N20240502S0138.fits.bz2 |                  arc,tilt |          -9999.0 |          -9999.0 |         CuAr | B480+_G5309 | 1.0arcsec |     2,2 | 60432.68477489072 | 1.00000000001576 |    24.0 | GG455_G0305 |     650.0 | [1:256,1:2112] |     0
+N20231210S0138.fits.bz2 |                      bias |          -9999.0 |          -9999.0 |         Bias | B480+_G5309 | 1.0arcsec |     2,2 | 60288.70179996639 | 1.00000000025518 |     0.0 |     open1-6 |     530.0 | [1:256,1:2112] |     0
+N20240509S0148.fits.bz2 |                      bias |          -9999.0 |          -9999.0 |         Bias | B480+_G5309 | 1.0arcsec |     2,2 | 60439.68371297013 | 1.00000000003237 |     0.0 |     open1-6 |     530.0 | [1:256,1:2112] |     0
+N20240502S0070.fits.bz2 | pixelflat,illumflat,trace | 270.783916666667 | 63.9763888888889 |     GCALflat | B480+_G5309 | 1.0arcsec |     2,2 | 60432.57798630984 | 1.39211824597454 |     2.0 | GG455_G0305 |     650.0 | [1:256,1:2112] |     0
+N20240502S0068.fits.bz2 |                   science | 270.783916666667 | 63.9763888888889 | FRB20231025B | B480+_G5309 | 1.0arcsec |     2,2 | 60432.55617323292 | 1.39244498920781 |   900.0 | GG455_G0305 |     650.0 | [1:256,1:2112] |     0
+data end
+
