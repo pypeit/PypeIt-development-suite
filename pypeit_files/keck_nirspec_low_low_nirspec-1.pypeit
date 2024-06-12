@@ -18,7 +18,7 @@ setup end
 
 # Read in the data
 data read
- path /Users/joe/python/PypeIt-development-suite/RAW_DATA/keck_nirspec/LOW_NIRSPEC-1/
+ path /Users/joe/python/PypeIt-development-suite/RAW_DATA/keck_nirspec_low/LOW_NIRSPEC-1/
 |                  filename | frametype      |        ra |      dec |         target | dispname |   decker | binning |         mjd | airmass | exptime | calib | comb_id | bkg_id |
 | NS.20160414.02861.fits.gz |bias            |       0.0 |      0.0 |                |      low | 42x0.760 |     1,1 | 57492.03312 | 1.41291 |     1.0 |   all |      -1 |     -1 |
 | NS.20160414.02899.fits.gz |bias            |      0.0  |      0.0 |                |       low| 42x0.760 |     1,1 | 57492.03355 | 1.41291 |     1.0 |   all |      -1 |     -1 |
