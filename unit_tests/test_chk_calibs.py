@@ -13,10 +13,10 @@ import matplotlib
 matplotlib.use('agg')  # For Travis
 
 from pypeit.scripts.chk_for_calibs import ChkForCalibs
-from pypeit.tests.tstutils import data_path
+from pypeit.tests.tstutils import data_output_path
 
 def test_chk_calibs_not():
-    os.chdir(data_path(''))
+    os.chdir(data_output_path(''))
     droot = os.path.join(os.environ['PYPEIT_DEV'], 'RAW_DATA/not_alfosc/grism4')
     droot += '/ALD'
 
@@ -27,7 +27,7 @@ def test_chk_calibs_not():
 
 
 def test_chk_calibs_deimos():
-    os.chdir(data_path(''))
+    os.chdir(data_output_path(''))
     # 830G
     droot = os.path.join(os.environ['PYPEIT_DEV'], 'RAW_DATA/keck_deimos/830G_M_8600/')
     pargs = ChkForCalibs.parse_args([droot, '-s', 'keck_deimos'])
