@@ -4,6 +4,9 @@
 # User-defined execution parameters
 [rdx]
     spectrograph = keck_hires
+[calibrations]
+   [[slitedges]]
+      edge_thresh = 50
 
 # Setup
 setup read
