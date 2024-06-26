@@ -4,63 +4,53 @@ Requires files in Development suite and an Environmental variable
 """
 from pathlib import Path
 import os
-
-import pytest
-import glob
 import shutil
 
-import numpy as np
-
-from pypeit import calibrations
-from pypeit.par import pypeitpar
-from pypeit.spectrographs.util import load_spectrograph
-from pypeit import wavecalib
 from IPython import embed
 
-from pypeit.tests.tstutils import dummy_fitstbl, data_path
+import pytest
 
+from pypeit import calibrations
+from pypeit.spectrographs.util import load_spectrograph
+from pypeit import wavecalib
+from pypeit import pypeitsetup
+
+from pypeit.tests.tstutils import dummy_fitstbl, data_output_path
 
 @pytest.fixture
 def fitstbl():
-    if os.getenv('PYPEIT_DEV') is None:
-        fitstbl = dummy_fitstbl(directory=data_path(''))
-        fitstbl['framebit'][0] = fitstbl.type_bitmask.turn_off(fitstbl['framebit'][0], flag='bias')
-        fitstbl['filename'][1] = 'b1.fits.gz'
-        fitstbl['filename'][5] = 'b27.fits.gz'
-        return fitstbl
+    # Check for files
+    root = Path(os.getenv('PYPEIT_DEV'), 'RAW_DATA/shane_kast_blue/600_4310_d55').resolve()
+    files = [ 
+        root / 'b1.fits.gz',    # arc
+        root / 'b11.fits.gz',   # trace
+        root / 'b21.fits.gz',   # bias
+        root / 'b24.fits.gz',   # standard
+        root / 'b27.fits.gz'    # science
+    ]
 
-    fitstbl = dummy_fitstbl(directory=os.path.join(os.getenv('PYPEIT_DEV'), 'RAW_DATA',
-                                                   'shane_kast_blue', '600_4310_d55'))
-    # Set the Bias to known
-    fitstbl['framebit'][0] = fitstbl.type_bitmask.turn_off(fitstbl['framebit'][0], flag='bias')
-    fitstbl['filename'][1] = 'b1.fits.gz'
-    for ii in range(2,5):
-        fitstbl['filename'][ii] = 'b{0}.fits.gz'.format(ii+1)
-    fitstbl['filename'][5] = 'b27.fits.gz'
-
-    return fitstbl
+    setupc = pypeitsetup.PypeItSetup(files, spectrograph_name='shane_kast_blue')
+    setupc.build_fitstbl(files)
+    setupc.fitstbl.finalize_usr_build(None, 'A')
+    return setupc.fitstbl
 
 
 @pytest.fixture
 def multi_caliBrate(fitstbl):
     # Grab a science file for configuration specific parameters
-    for idx, row in enumerate(fitstbl):
-        if 'science' in row['frametype']:
-            sci_file = os.path.join(row['directory'], row['filename'])
-            break
+    indx = fitstbl.find_frames('science', index=True)[0]
+    sci_file = fitstbl.frame_paths(indx)
     # Par
     spectrograph = load_spectrograph('shane_kast_blue')
     par = spectrograph.config_specific_par(sci_file)
-    turn_off = dict(use_biasimage=False)
-    par.reset_all_processimages_par(**turn_off)
+    par.reset_all_processimages_par(use_biasimage=False)
     #
     calib_par = par['calibrations']
     calib_par['bpm_usebias'] = False
-    #calib_par['biasframe']['useframe'] = 'none' # Only use overscan
     calib_par['slitedges']['sync_predict'] = 'nearest'
 
     multi_caliBrate = calibrations.MultiSlitCalibrations(fitstbl, calib_par, spectrograph,
-                                                         data_path('Calibrations'))
+                                                         data_output_path('Calibrations'))
     return reset_calib(multi_caliBrate)
 
 
@@ -78,9 +68,14 @@ def reset_calib(calib):
 
 
 def test_it_all(multi_caliBrate):
+
+    # Remove any pre-existing directory
+    calib_dir = Path(multi_caliBrate.calib_dir).resolve()
+    if calib_dir.exists():
+        shutil.rmtree(calib_dir)
+
     # Setup
     multi_caliBrate.shape = (2048,350)
-    #multi_caliBrate.get_pixlocn()
     multi_caliBrate.get_bpm()
     multi_caliBrate.get_arc()
     multi_caliBrate.get_tiltimg()
@@ -99,7 +94,6 @@ def test_it_all(multi_caliBrate):
     waveTilts = multi_caliBrate.get_tilts()
     assert waveTilts.nslit == 1
 
-    multi_caliBrate.get_flats()
     flatImages = multi_caliBrate.get_flats()
     assert flatImages.pixelflat_norm.shape == (2048,350)
     assert flatImages.fit2illumflat(slits).shape == (2048,350)
@@ -112,6 +106,11 @@ def test_it_all(multi_caliBrate):
     mswave = wv_calib.build_waveimg(tilts, slits)
     assert mswave.shape == (2048,350)
 
+    # Clean-up
+    if calib_dir.exists():
+        shutil.rmtree(calib_dir)
+
+
 def test_reuse(multi_caliBrate, fitstbl):
     """
     Test that Calibrations appropriately reuses existing calibrations frames.
@@ -121,23 +120,20 @@ def test_reuse(multi_caliBrate, fitstbl):
     if calib_dir.exists():
         shutil.rmtree(calib_dir)
 
-    calib_dir.mkdir(parents=True)
-
     # Perform the calibrations and check that the data are correctly
     # stored in memory
     multi_caliBrate.shape = (2048,350)
     multi_caliBrate.get_bpm()
 
 #   Make them all
-    msarc = multi_caliBrate.get_arc()
-    msarc = multi_caliBrate.get_tiltimg()
+    multi_caliBrate.get_arc()
+    multi_caliBrate.get_tiltimg()
     multi_caliBrate.get_slits()
     multi_caliBrate.get_wv_calib()
     multi_caliBrate.get_tilts()
     multi_caliBrate.get_flats()
 
     # Reset
-    #reset_calib(multi_caliBrate_reuse)
     spectrograph = load_spectrograph('shane_kast_blue')
     par = spectrograph.default_pypeit_par()
     multi_caliBrate_reuse = calibrations.MultiSlitCalibrations(fitstbl, par['calibrations'],
@@ -149,9 +145,9 @@ def test_reuse(multi_caliBrate, fitstbl):
     #   - These don't source a calibration file
     multi_caliBrate_reuse.shape = (2048,350)
     multi_caliBrate_reuse.get_bpm()
-    _msarc = multi_caliBrate_reuse.get_arc()
+    multi_caliBrate_reuse.get_arc()
     assert multi_caliBrate_reuse.msarc is not None, 'Should find cached data.'
-    _msarc = multi_caliBrate_reuse.get_tiltimg()
+    multi_caliBrate_reuse.get_tiltimg()
     assert multi_caliBrate_reuse.mstilt is not None, 'Should find cached data.'
     multi_caliBrate_reuse.get_slits()
     multi_caliBrate_reuse.get_wv_calib()
@@ -159,6 +155,6 @@ def test_reuse(multi_caliBrate, fitstbl):
     multi_caliBrate_reuse.get_flats()
 
     # Clean-up
-    shutil.rmtree(multi_caliBrate_reuse.calib_dir)
-
+    if calib_dir.exists():
+        shutil.rmtree(calib_dir)
 
