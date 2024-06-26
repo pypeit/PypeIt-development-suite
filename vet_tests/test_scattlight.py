@@ -33,14 +33,14 @@ def scattlight_resid(droot, par, tol=0.1):
     slits = edgetrace.EdgeTraceSet.from_file(os.path.join(droot, 'Edges_A_0_DET01.fits.gz')).get_slits()
 
     # Get the central trace of each slit
-    left, right, _ = slits.select_edges(initial=True, flexure=None)
+    left, right, _ = slits.select_edges(flexure=None)
     centrace = 0.5 * (left + right)
 
     # Find all pixels off the slit
     spatbin = slits.binspat
     pad = par['scienceframe']['process']['scattlight']['finecorr_pad'] // spatbin
     mask_regions = par['scienceframe']['process']['scattlight']['finecorr_mask']
-    offslitmask = slits.slit_img(pad=pad, initial=True, flexure=None) == -1
+    offslitmask = slits.slit_img(pad=pad, flexure=None) == -1
     # Mask the user-specified inter-slit regions
     offslitmask = core_scattlight.mask_slit_regions(offslitmask, centrace, mask_regions=mask_regions)
 
