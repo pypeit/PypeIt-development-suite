@@ -25,6 +25,7 @@ DO_NOT_USE = datamodels.dqflags.pixel['DO_NOT_USE']
 # PypeIt imports
 from jwst_utils import NIRSpecSlitCalibrations, jwst_mosaic, jwst_reduce
 from jwst_targets import jwst_targets
+from jwst_calwebb_detector1 import run_calwebb_detector1
 from pypeit.metadata import PypeItMetaData
 from pypeit.display import display
 from pypeit.images import combineimage
@@ -34,6 +35,7 @@ from pypeit.utils import inverse, fast_running_median, nan_mad_std
 from pypeit.spectrographs.util import load_spectrograph
 from pypeit import msgs
 from pypeit import spec2dobj
+
 
 # JFH: This is the main up to date routine. Ignore the others.
 
@@ -61,22 +63,28 @@ DO_NOT_USE = datamodels.dqflags.pixel['DO_NOT_USE']
 
 
 # Define the information to get the exp_list
-target = 'J1342'
-disperser = '140H'
+#target = 'J1342'
+progid = '3526'
+#target = 'J0410-0139'
+target = 'J1007+2115'
+disperser = '235H' #'235H_bogus_FS' #'140H_bogus_FS_F100LP'
 slits ='S200A1' # 'S200A2'
-exp_list, redux_dir = jwst_targets(target, disperser, slits=slits)
+exp_list, redux_dir = jwst_targets(progid, disperser, target, slits=slits)
 
 # Redux parameters 
-mode = 'MSA'
-#mode = 'FS'
-bkg_redux = True #False #False #False
-run_stage1 = False
-run_stage2 = False
-show=True
-reduce_slits =None
+#mode = 'MSA'
+mode = 'FS'
+# This only impacts the srctype
+bkg_redux = False #False #False #False #False
+#run_stage1 = True
+#run_stage2 = True
+overwrite_stage1 = False 
+overwrite_stage2 = False 
+show=False
+reduce_slits = [slits] # None
 reduce_sources = None
 
-kludge_err = 1.5
+kludge_err = 1.5 # More recent reductions suggest this number ought to be more like 1.2
 # Is this correct?
 bkg_indices = [(1,2), (0,2), (0,1)]
 
@@ -117,10 +125,16 @@ for sci1, sci2 in zip(uncalfiles_1, uncalfiles_2):
 scifiles = [scifiles_1, scifiles_2]
 scifiles_all = scifiles_1 + scifiles_2
 
+#parameter_dict_det1 = {"jump": {"maximum_cores": 'quarter'},}
+
+#run_calwebb_detector1(uncalfiles_all, output_dir, cores2use='quarter', overwrite=False)
 # Run the stage1 pipeline
-if run_stage1:
-    for uncal in uncalfiles_all:
-        Detector1Pipeline.call(uncal, save_results=True, output_dir=output_dir)
+for uncal in uncalfiles_all:
+    ratefile = os.path.join(output_dir,  os.path.basename(uncal).replace('_uncal', '_rate'))
+    if os.path.isfile(ratefile) and not overwrite_stage1:
+        msgs.info('Using existing rate file: {0}'.format(ratefile))
+        continue
+    Detector1Pipeline.call(uncal, save_results=True, output_dir=output_dir) #, steps=parameter_dict_det1)
 
 
 # TODO Should we flat field. The flat field and flat field error are wonky and probably nonsense
@@ -135,6 +149,7 @@ param_dict_spec2 = {
     'resample_spec': {'skip': True},
     'extract_1d': {'skip': True},
     'flat_field': {'save_interpolated_flat': True},  # Flats appear to be just nonsense. So skip for now.
+    'nsclean': {'skip': False, 'save_results': True},
 }
 
 # TODO I'm rather unclear on what to do with the src_type since I'm not following what the JWST ipeline is doing there very
@@ -149,16 +164,15 @@ param_dict_spec2 = {
 #    param_dict_spec2['msa_flagging'] = {'save_results': True}
 #elif mode == 'FS':
 #    param_dict_spec2['assign_wcs'] = {'save_results': True}
-param_dict_spec2['nsclean'] = {'save_results': True, 'skip': False}
-
+#param_dict_spec2['nsclean'] = {'save_results': True, 'skip': False}
 # Run the spec2 pipeline
-if run_stage2:
-    for sci in scifiles_all:
-        Spec2Pipeline.call(sci, save_results=True, output_dir=output_dir, steps=param_dict_spec2)
-        #spec2 = Spec2Pipeline(steps=param_dict)
-        #spec2.save_results = True
-        #spec2.output_dir = output_dir
-        #result = spec2(sci)
+
+for sci in scifiles_all:
+    nscleanfile = os.path.join(output_dir, sci.replace('_rate', '_nsclean'))
+    if os.path.isfile(nscleanfile) and not overwrite_stage2:
+        msgs.info('Using existing nsclean file: {0}'.format(nscleanfile))
+        continue
+    Spec2Pipeline.call(sci, save_results=True, output_dir=output_dir, steps=param_dict_spec2)
 
 
 # Some pypeit things
@@ -198,13 +212,6 @@ msa_output_files_2 = []
 cal_output_files_2 = []
 
 for base1, base2 in zip(basenames_1, basenames_2):
-    # This block no longer needed now that nsclean step is always after both. 
-    #if mode == 'MSA':
-    #    msa_output_files_1.append(os.path.join(output_dir, base1 + '_msa_flagging.fits'))
-    #    msa_output_files_2.append(os.path.join(output_dir, base2 + '_msa_flagging.fits'))
-    #else:
-    #    msa_output_files_1.append(os.path.join(output_dir, base1 + '_assign_wcs.fits'))
-    #    msa_output_files_2.append(os.path.join(output_dir, base2 + '_assign_wcs.fits'))
     msa_output_files_1.append(os.path.join(output_dir, base1 + '_nsclean.fits'))
     msa_output_files_2.append(os.path.join(output_dir, base2 + '_nsclean.fits'))
 
@@ -212,6 +219,8 @@ for base1, base2 in zip(basenames_1, basenames_2):
     cal_output_files_1.append(os.path.join(output_dir, base1 + '_cal.fits'))
     intflat_output_files_2.append(os.path.join(output_dir, base2 + '_interpolatedflat.fits'))
     cal_output_files_2.append(os.path.join(output_dir, base2 + '_cal.fits'))
+
+
 
 # Read in calwebb outputs for everytihng
 
@@ -334,9 +343,9 @@ for ii, (islit, isource) in enumerate(gd_slits_sources):
     # actual locations on the sky, which would be preferable. However, this does not appear to be working correctly
     # in calwebb. So for now, we just use the first exposure as the reference exposure for the calibrations.
     CalibrationsNRS1 = NIRSpecSlitCalibrations(det_container_list[0], cal_data[0, iexp_ref], flat_data[0, iexp_ref],
-                                               islit, f070_f100_rescale='bogus' in disperser)
+                                               islit, f070_f100_rescale='bogus_FS_F100LP' in disperser)
     CalibrationsNRS2 = NIRSpecSlitCalibrations(det_container_list[1], cal_data[1, iexp_ref], flat_data[1, iexp_ref],
-                                               islit, f070_f100_rescale='bogus' in disperser)
+                                               islit, f070_f100_rescale='bogus_FS_F100LP' in disperser)
     for iexp in range(nexp):
         # Container for all the Spec2DObj, different spec2dobj and specobjs for each slit
         all_spec2d = spec2dobj.AllSpec2DObj()
@@ -345,15 +354,15 @@ for ii, (islit, isource) in enumerate(gd_slits_sources):
         # Container for the specobjs
         all_specobjs = specobjs.SpecObjs()
 
-        ibkg = bkg_indices[iexp]
         # Create the image mosaic
         sciImg, slits, waveimg, tilts, ndet = jwst_mosaic(msa_data[:, iexp], [CalibrationsNRS1, CalibrationsNRS2], kludge_err=kludge_err,
-            noise_floor=par['scienceframe']['process']['noise_floor'])
+            noise_floor=par['scienceframe']['process']['noise_floor'], show=show)
         
         #    show=show & (iexp == iexp_ref))
 
         # If this is a bkg_redux, perform background subtraction
         if bkg_redux:
+            ibkg = bkg_indices[iexp]
             bkgImg_list = []
             for msa_data_i in msa_data[:,ibkg]: 
                 bkgImg_i, _, _, _, _= jwst_mosaic(msa_data_i, [CalibrationsNRS1, CalibrationsNRS2], kludge_err=kludge_err,
