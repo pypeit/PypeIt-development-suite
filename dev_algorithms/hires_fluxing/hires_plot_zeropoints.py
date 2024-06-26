@@ -23,9 +23,11 @@ plt.rc('axes', linewidth=1.5)
 
 
 # REDUX/keck_hires path
-hires_redux = Path(os.getenv('PYPEIT_DEV') + '/REDUX_OUT/keck_hires/')
+# hires_redux = Path(os.getenv('PYPEIT_DEV') + '/REDUX_OUT/keck_hires/')
+hires_redux = Path('/Users/dpelliccia/Desktop/adap2020/')
 # grab all the sens*.fits files
-sens_files = list(hires_redux.glob('*/sens*.fits'))
+# sens_files = list(hires_redux.glob('*/sens*.fits'))
+sens_files = list(hires_redux.glob('*/*/*/*/*/sens*.fits'))
 
 # list of sens objects
 sensobjs_list = []
@@ -38,8 +40,9 @@ for sfile in sens_files:
     sensobjs_list.append(_sens)
     wmins.append(_sens.sens['WAVE_MIN'].data.min())
     wmaxs.append(_sens.sens['WAVE_MAX'].data.max())
-    datasets.append('_'.join(sfile.parent.name.split('_')[1:]))
-
+    # datasets.append('_'.join(sfile.parent.name.split('_')[1:]))
+    datasets.append(sfile.parent.parent.parent.parent.parent.name)
+    
 plot_wmin = np.min(wmins) #- 50.
 plot_wmax = np.max(wmaxs) #+ 50.
 wv_break = (plot_wmax - plot_wmin)/6.
