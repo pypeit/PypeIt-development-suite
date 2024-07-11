@@ -84,7 +84,7 @@ def main():
         my_args += ' pip install ${whl_file}[dev];'
     else:
         # Install directly from git
-        my_args += ' pip install -e ".[dev,specutils]";'
+        my_args += ' pip install -e ".[dev]";'
 
         # Telluric
         # These are not installed when running from a wheel so that the cache code to download
