@@ -53,6 +53,9 @@ def main():
     elif pargs.developer == 'jfh':
         raw_path = '/mnt/quasar/joe/google_drive/PypeIt-development-suite/RAW_DATA'
         calib_path = None
+    if pargs.developer == 'jxp2':
+        raw_path = 'GDrive:Astronomy/UCO/PypeIt/PypeIt-development-suite/RAW_DATA'
+        calib_path = 'GDrive:Astronomy/UCO/PypeIt/Calibrations'
 
 
     # Do it
