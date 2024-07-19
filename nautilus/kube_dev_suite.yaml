@@ -35,11 +35,11 @@ spec:
         resources:
           limits:
             cpu: '7'
-            ephemeral-storage: 300Gi
+            ephemeral-storage: 350Gi
             memory: 100Gi
           requests:
             cpu: '6'
-            ephemeral-storage: 250Gi
+            ephemeral-storage: 300Gi
             memory: 50Gi
         volumeMounts:
         - mountPath: /root/.aws/credentials
