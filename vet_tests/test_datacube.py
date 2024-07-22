@@ -170,8 +170,6 @@ def test_residuals(redux_out):
                          'keck_kcwi',
                          'small_bh2_4200',
                          'Science')
-    # Set a temporary directory where some test data are located
-    droot = '/Users/rcooke/Work/Research/BBN/Yp/HIIregions/IZw18_KCWI/keck_kcwi_BH2_N1/Science'
     files = ['spec2d_KB.20191220.62342-DOMEPHLAT_KCWI_20191220T171902.438.fits']
     config = ['[rdx]',
               '  spectrograph = keck_kcwi']
