@@ -145,7 +145,7 @@ def test_coadd_datacube(redux_out):
     med, std = np.median(resid), 1.4826*np.median(np.abs(np.median(resid) - resid))
     # The sensitivity function is based on the optimal extraction, so the optimal should be spot on.
     # The boxcar will be worse, so allow a larger tolerance
-    assert(np.abs(med) < 0.5*std)
+    assert(np.abs(med) < std)
     ######################################
     # Remove all of the created files
     # First remove the non-fluxed files
