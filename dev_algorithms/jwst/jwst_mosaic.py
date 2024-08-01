@@ -65,10 +65,13 @@ DO_NOT_USE = datamodels.dqflags.pixel['DO_NOT_USE']
 # Define the information to get the exp_list
 #target = 'J1342'
 progid = '3526'
+#progid = '1764'
 #target = 'J0410-0139'
-target = 'J1007+2115'
-disperser = '235H' #'235H_bogus_FS' #'140H_bogus_FS_F100LP'
-slits ='S200A1' # 'S200A2'
+#target = 'J1007+2115'
+target = 'J0038-1527'
+
+disperser = '235H' #'235H' #'235H_bogus_FS' #'140H_bogus_FS_F100LP'
+slits = 'S200A2' #'S200A1' #'S200A2' #'S200A1' # 'S200A2'
 exp_list, redux_dir = jwst_targets(progid, disperser, target, slits=slits)
 
 # Redux parameters 
@@ -322,9 +325,13 @@ if not os.path.isdir(scipath):
 
 
 if reduce_slits is not None:
-    gd_slits_sources = [(slt, src) for slt, src in slit_sources_uni for slit in reduce_slits if slt == slit]
+    gd_slits_sources = [(slt, src) 
+                        for slt, src in slit_sources_uni 
+                        for slit in reduce_slits if slt.strip() == slit.strip()]
 elif reduce_sources is not None:
-    gd_slits_sources = [(slt, src) for slt, src in slit_sources_uni for source in reduce_sources if src == source]
+    gd_slits_sources = [(slt, src) 
+                        for slt, src in slit_sources_uni 
+                        for source in reduce_sources if src == source.strip()]
 else:
     gd_slits_sources = slit_sources_uni
 
