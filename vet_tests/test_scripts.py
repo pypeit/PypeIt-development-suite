@@ -16,7 +16,7 @@ from pypeit.display import display
 from pypeit import wavecalib
 from pypeit import coadd1d
 from pypeit import inputfiles
-from linetools.utils import jsonify
+from pypeit.utils import jsonify
 import json
 
 from pypeit.pypmsgs import PypeItError
