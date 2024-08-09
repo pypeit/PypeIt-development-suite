@@ -11,6 +11,7 @@ from pypeit.scripts import sensfunc
 from IPython import embed
 
 skip_existing = True  # skip computing the sensitivity function if the output file already exists
+boxcar = True  # use a boxcar extraction for the sensitivity function computation
 
 
 # list of reduced stars to collect zeropoints from
@@ -88,19 +89,26 @@ for star in star_list:
             try:
                 # compute the sensitivity function
                 parser = sensfunc.SensFunc.get_parser()
-                args = parser.parse_args([str(spec1d), '-f', str(flatfile), '-o', str(out_sensfile),
-                                          '--par_outfile', str(par_outfile)])
+                if boxcar:
+                    msgs.info('Using BOXCAR extraction for the sensitivity function computation.')
+                    args = parser.parse_args([str(spec1d), '-f', str(flatfile), '-o', str(out_sensfile),
+                                              '--par_outfile', str(par_outfile), '--extr', 'BOX'])
+                else:
+                    args = parser.parse_args([str(spec1d), '-f', str(flatfile), '-o', str(out_sensfile),
+                                              '--par_outfile', str(par_outfile)])
+
                 sensfunc.SensFunc.main(args)
                 msgs.info(f'Sensitivity function for {workrun_dir.name} computed.')
             except Exception as e:
                 msgs.warn(f'Error computing sensitivity function for {workrun_dir.name}.\n{e}')
+                skipped.append(str(run.parent.parent.parent))
+                reasons.append('Error computing sensitivity function')
             if not out_sensfile.is_file():
                 msgs.warn(f'Sensitivity function file {out_sensfile} not created. '
                           f'Deleting the folder {workrun_dir.name}.')
                 shutil.rmtree(workrun_dir)
 
-            skipped.append(str(run.parent.parent.parent))
-            reasons.append('Error computing sensitivity function')
+
 
 # print the list of skipped sensitivity functions
 msgs.info('Skipped sensitivity functions:')
