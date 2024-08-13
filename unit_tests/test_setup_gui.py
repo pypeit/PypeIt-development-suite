@@ -230,9 +230,12 @@ def test_pypeit_file_model(qtbot, raw_data_path, tmp_path):
     mock_setup = get_mock_setup(metadata)
     params_model = model.PypeItParamsProxy(mock_setup.par, mock_setup.user_cfg)
     config_dict = {'B': {'dispname': '600/4310', 'dichroic': 'd55'}}
-    file_model = model.PypeItFileModel(metadata_model = metadata_model, name_stem="B", config_dict=config_dict, state=model.ModelState.CHANGED, params_model=params_model)
+    file_model = model.PypeItFileModel(metadata_model = metadata_model, name_stem="B",
+                                       config_dict=config_dict, state=model.ModelState.CHANGED,
+                                       params_model=params_model)
     file_model.save_location = str(tmp_path)
-    with qtbot.waitSignal(file_model.stateChanged, raising=True, check_params_cb=verify_state_change, timeout=5000):
+    with qtbot.waitSignal(file_model.stateChanged, raising=True,
+                          check_params_cb=verify_state_change, timeout=5000):
         file_model.save()
     
     # Make sure state changed
@@ -244,7 +247,7 @@ def test_pypeit_file_model(qtbot, raw_data_path, tmp_path):
 
     # Make sure one setup A and one setup B is there. This would probably be invalid
     # but the GUI trusts the user to know what they're doing
-    shane_kast_blue_path = (raw_data_path / "shane_kast_blue" / "600_4310_d55").resolve()
+    shane_kast_blue_path = (raw_data_path / "shane_kast_blue" / "600_4310_d55").absolute()
     assert str(shane_kast_blue_path / "b11.fits.gz") in filenames
     assert str(shane_kast_blue_path / "b1.fits.gz") in filenames
 
@@ -258,7 +261,7 @@ def test_pypeit_obslog_model(qtbot, raw_data_path, tmp_path):
     assert obslog_model.state == model.ModelState.NEW
 
     # Copy only those fits files we want to run on
-    shane_kast_blue_path = (raw_data_path / "shane_kast_blue" / "600_4310_d55").resolve()
+    shane_kast_blue_path = (raw_data_path / "shane_kast_blue" / "600_4310_d55").absolute()
     shutil.copy2(shane_kast_blue_path / "b1.fits.gz", tmp_path)
     shutil.copy2(shane_kast_blue_path / "b27.fits.gz", tmp_path)
 
@@ -527,7 +530,7 @@ def test_run_setup(qtbot, raw_data_path, tmp_path, monkeypatch):
 
     # set raw data
     raw_dir = raw_data_path / 'keck_mosfire'
-    j_multi = (raw_dir / "J_multi").resolve()
+    j_multi = (raw_dir / "J_multi").absolute()
     with qtbot.waitSignals([(setup_gui_model.obslog_model.paths_model.rowsInserted, "path inserted"),
                             (setup_gui_model.obslog_model.paths_model.dataChanged, "path data set")], 
                             order = 'strict', raising=True, timeout=1000):
@@ -599,7 +602,7 @@ def test_run_setup_failure(qtbot, raw_data_path, tmp_path, monkeypatch):
 
     # set raw data
     raw_dir = raw_data_path / 'keck_mosfire'
-    j_multi = (raw_dir / "J_multi").resolve()
+    j_multi = (raw_dir / "J_multi").absolute()
     with qtbot.waitSignals([(setup_gui_model.obslog_model.paths_model.rowsInserted, "path inserted"),
                             (setup_gui_model.obslog_model.paths_model.dataChanged, "path data set")], 
                             order = 'strict', raising=True, timeout=1000):
@@ -626,7 +629,7 @@ def test_run_setup_cancel(qtbot, raw_data_path, tmp_path, monkeypatch):
 
     # set raw data
     raw_dir = raw_data_path / 'keck_mosfire'
-    j_multi = (raw_dir / "J_multi").resolve()
+    j_multi = (raw_dir / "J_multi").absolute()
     with qtbot.waitSignals([(setup_gui_model.obslog_model.paths_model.rowsInserted, "path inserted"),
                             (setup_gui_model.obslog_model.paths_model.dataChanged, "path data set")], 
                             order = 'strict', raising=True, timeout=1000):
@@ -660,11 +663,11 @@ def test_multi_paths(qtbot, raw_data_path, tmp_path, monkeypatch):
     raw_dir = raw_data_path / 'keck_mosfire'
 
     # run_setup helper to run setup on one keck_mosfire setup
-    y_long = str((raw_dir / "Y_long").resolve())
+    y_long = str((raw_dir / "Y_long").absolute())
     run_setup("keck_mosfire", y_long, main_window, qtbot)
 
     # add a second raw data path
-    j_multi = str((raw_dir / "J_multi").resolve())
+    j_multi = str((raw_dir / "J_multi").absolute())
 
     with qtbot.waitSignals([(setup_gui_model.obslog_model.paths_model.rowsInserted, "path inserted"),
                             (setup_gui_model.obslog_model.paths_model.dataChanged, "path data set")], 
@@ -733,7 +736,7 @@ def test_save_and_open(qtbot, raw_data_path, tmp_path, monkeypatch):
     c, main_window = setup_offscreen_gui(tmp_path, monkeypatch, qtbot)    
 
     # Use the run_setup helper to run setup on J_muilti, which will create two tabs
-    run_setup("keck_mosfire", (raw_data_path / "keck_mosfire" / "J_multi").resolve(), main_window, qtbot)
+    run_setup("keck_mosfire", (raw_data_path / "keck_mosfire" / "J_multi").absolute(), main_window, qtbot)
 
     tab_widget = main_window.tab_widget
 
@@ -820,7 +823,7 @@ def test_save_all(qtbot, raw_data_path, tmp_path, monkeypatch):
     c, main_window = setup_offscreen_gui(tmp_path, monkeypatch, qtbot)    
 
     # Use the run_setup helper to run setup on J_muilti, which will create two tabs
-    run_setup("keck_mosfire", (raw_data_path / "keck_mosfire" / "J_multi").resolve(), main_window, qtbot)
+    run_setup("keck_mosfire", (raw_data_path / "keck_mosfire" / "J_multi").absolute(), main_window, qtbot)
 
     assert main_window.saveAllButton.isEnabled()
 
@@ -957,7 +960,7 @@ def test_clear(qtbot, raw_data_path, tmp_path, monkeypatch):
     c, main_window = setup_offscreen_gui(tmp_path, monkeypatch, qtbot)    
 
     # Use the run_setup helper to run setup on J_muilti, which will create two tabs
-    run_setup("keck_mosfire", (raw_data_path / "keck_mosfire" / "J_multi").resolve(), main_window, qtbot)
+    run_setup("keck_mosfire", (raw_data_path / "keck_mosfire" / "J_multi").absolute(), main_window, qtbot)
 
     setup_gui_model = c.model
     obs_log_tab = main_window._obs_log_tab
