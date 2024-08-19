@@ -15,14 +15,9 @@ matplotlib.use('agg')  # For Travis
 from astropy.io import fits
 
 from pypeit import scripts
-from pypeit.tests.tstutils import data_path
 from pypeit import edgetrace
-from pypeit import io
-from pypeit import fluxcalibrate
-from pypeit import onespec
 
 from pypeit.pypeitsetup import PypeItSetup
-from pypeit.pypmsgs import PypeItError
 
 
 def test_trace_add_rm():

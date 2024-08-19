@@ -10,13 +10,14 @@ import matplotlib
 from IPython import embed
 matplotlib.use('agg')  # For Travis
 
-
+from pypeit import dataPaths
 from pypeit import scripts
-from pypeit.tests.tstutils import data_path
 from pypeit.display import display
 from pypeit import wavecalib
 from pypeit import coadd1d
 from pypeit import inputfiles
+from pypeit.utils import jsonify
+import json
 
 from pypeit.pypmsgs import PypeItError
 
@@ -72,7 +73,6 @@ def test_view_fits_list(redux_out):
                              'shane_kast_blue', '600_4310_d55',
                              'shane_kast_blue_A', 'Science',
                              'spec1d_b27-J1217p3905_KASTb_20150520T045733.560.fits')
-    #spec_file = data_path('spec1d_b27-J1217p3905_KASTb_2015May20T045733.560.fits')
     pargs = scripts.view_fits.ViewFits.parse_args(['shane_kast_blue', spec_file, '--list'])
     scripts.view_fits.ViewFits.main(pargs)
 
@@ -85,7 +85,6 @@ def test_view_fits_proc_fail(redux_out):
                              'shane_kast_blue_A') 
     spec_file = os.path.join(droot, 'Science',
                              'spec2d_b27-J1217p3905_KASTb_20150520T045733.560.fits')
-    #spec_file = data_path('spec1d_b27-J1217p3905_KASTb_2015May20T045733.560.fits')
     pargs = scripts.view_fits.ViewFits.parse_args(['shane_kast_blue', spec_file, '--proc'])
     with pytest.raises(PypeItError):
         scripts.view_fits.ViewFits.main(pargs)
@@ -125,10 +124,10 @@ def test_identify(redux_out):
                               'Slits_A_0_DET01.fits.gz')
     # Just list
     pargs = scripts.identify.Identify.parse_args([arc_file, slits_file, '--test'])
-    arcfitter = scripts.identify.Identify.main(pargs)
+    arcfitter, msarc = scripts.identify.Identify.main(pargs)
 
     # Load line list
-    arcfitter.load_IDs(fname=data_path('waveid_tests.ascii'))
+    arcfitter.load_IDs(fname=str(dataPaths.tests.get_file_path('waveid_tests.ascii')))
     assert arcfitter._detns.size == 31, 'Bad load'
 
     # Fit
@@ -147,14 +146,18 @@ def test_identify(redux_out):
     waveCalib = wavecalib.WaveCalib(nslits=1, wv_fits=np.atleast_1d(arcfitter._fitdict['WaveFit']),
                               arc_spectra=np.atleast_2d(arcfitter.specdata).T,
                               spat_ids=np.atleast_1d(int(arcfitter._spatid)),
-                              PYP_SPEC='shane_kast_blue',
-                              )
+                              PYP_SPEC='shane_kast_blue')
+    # need to add strpar to waveCalib
+    sv_par = arcfitter.par.data.copy()
+    j_par = jsonify(sv_par)
+    waveCalib.strpar = json.dumps(j_par)
+    # copy internals
+    waveCalib.copy_calib_internals(msarc)
 
     # If you touch the following line, you probably need to update the call in scripts/identify.py
     wvarxiv_fn = arcfitter.store_solution(final_fit, 1, rmstol=0.1, force_save=True, wvcalib=waveCalib)
 
     # Test we can read it
-    # NOTE: Calibration key and directory are undefined!
     tmp = wavecalib.WaveCalib.from_file('wvcalib.fits')
 
     # Clean up -- If these fail then the store solution failed
