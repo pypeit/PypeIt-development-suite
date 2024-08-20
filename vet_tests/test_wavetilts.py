@@ -42,7 +42,8 @@ def test_instantiate_from_master(redux_out):
 
 # Test rebuild tilts with a flexure offset
 def test_flexure(redux_out):
-    spat_flexure = np.ones((2, 1), dtype=float)  # A flexure of 1 pixel
+    nslits = 1
+    spat_flexure = np.ones((nslits, 2), dtype=float)  # A flexure of 1 pixel
     master_file = os.path.join(redux_out, kastb_dir, 'Calibrations',
                                'Tilts_A_0_DET01.fits')
     waveTilts = wavetilts.WaveTilts.from_file(master_file)
