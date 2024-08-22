@@ -11,7 +11,7 @@ from pypeit.scripts import sensfunc
 from IPython import embed
 
 skip_existing = True  # skip computing the sensitivity function if the output file already exists
-boxcar = True  # use a boxcar extraction for the sensitivity function computation
+boxcar = False  # use a boxcar extraction for the sensitivity function computation
 
 
 # list of reduced stars to collect zeropoints from
@@ -78,7 +78,8 @@ for star in star_list:
             # check if the path to the pypeit_sensfunc run on the working directory exists otherwise create it
             if not workrun_dir.is_dir():
                 workrun_dir.mkdir()
-            elif skip_existing:
+            elif len(list(workrun_dir.glob('sens*.fits'))) > 0 and skip_existing:
+                msgs.info(f'Sensitivity function for {workrun_dir.name} already exists. Skipping.')
                 continue
 
             # set the path to the sensitivity function file
