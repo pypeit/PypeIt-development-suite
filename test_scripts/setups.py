@@ -5,7 +5,7 @@
 #  The keys are the instruments and the values are a list of the supported setups.
 all_setups = {
         'aat_uhrf': ['3875'],
-        'bok_bc': ['300','600'],
+        'bok_bc': ['300'], #,'600'],
     'gemini_gnirs_echelle': ['32_SB_SXD', '10_LB_SXD'],
     'gemini_gnirs_ifu': ['LR_IFU_32mm'],
     'gemini_gmos': ['GS_HAM_R400_700', 'GS_HAM_R400_860',
