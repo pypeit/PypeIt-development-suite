@@ -29,6 +29,7 @@ def parser(options=None):
     parser.add_argument('-w', '--from_wheel', default=False, action='store_true', help='If set build a PypeIt wheel and install PypeIt from that. The default behavior is to install PypeIt directly from git.')
     parser.add_argument('--ncpu', type=int, default=8, help='Number of CPUs request')
     parser.add_argument('--ram', type=int, default=100, help='Amount of RAM to request (Gi)')
+    parser.add_argument('--storage', type=int, default=400, help="Amount of storage to request (Gi). A buffer of 50 Gi is added for the limit.")
     parser.add_argument('--coverage', default=False, action="store_true", help="Collect code coverage data.")
     parser.add_argument('--container', type=str, default='python3.12', help="What docker container to use. 'pypeit' for the latest pypeit conatiner. 'python3.9', 'python3.10', etc for a specific python version. Or the full path to a different image.")
     parser.add_argument('--priority_list', default=False, action="store_true", help="Copy the test_priority_list to S3 after testing.")
@@ -61,11 +62,13 @@ def main():
     requests = data['spec']['template']['spec']['containers'][0]['resources']['requests']
     requests['cpu'] = str(pargs.ncpu)
     requests['memory'] = f'{pargs.ram}Gi'
+    requests['ephemeral-storage'] = f'{pargs.storage}Gi'
 
     # Limits
     limits = data['spec']['template']['spec']['containers'][0]['resources']['limits']
     limits['cpu'] = str(pargs.ncpu + 1)
     limits['memory'] = f'{pargs.ram + 10}Gi'
+    limits['ephemeral-storage'] = f'{pargs.storage+50}Gi'
 
     ###### Args #####
     arguments = pargs.additional_args
