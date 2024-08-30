@@ -431,7 +431,7 @@ def test_setup_keck_mosfire_multiconfig():
     pypeit_files = ps.fitstbl.write_pypeit(output_path, cfg_lines=ps.user_cfg,
                                            write_bkg_pairs=True)
 
-    assert len(pypeit_files) == 4, 'Should have created two pypeit files'
+    assert len(pypeit_files) == 4, 'Should have created four pypeit files'
 
     # Test the pypeit files for the correct configuration,
     # calibration group and combination group results
@@ -479,6 +479,61 @@ def test_setup_keck_mosfire_multiconfig():
                                     for _tab in fitstbl['frametype']]) & (fitstbl['setup'] == s)
         assert np.all(fitstbl['comb_id'][sci_std_idx] == comb), 'Combination group is wrong'
         assert np.all(fitstbl['bkg_id'][sci_std_idx] == bkg), 'Background group is wrong'
+
+    # Clean-up
+    shutil.rmtree(output_path)
+
+
+def test_setup_keck_hires_multiconfig():
+
+    root = os.path.join(os.environ['PYPEIT_DEV'], 'RAW_DATA', 'keck_hires')
+    files = glob.glob(os.path.join(root, 'J0306+1853_U074_RED_C2_ECH_0.72_XD_1.42_1x3', '*fits*'))
+    files += glob.glob(os.path.join(root, 'J1218+2951_U116Hr_RED_C5_ECH_-0.22_XD_0.21_1x2', '*fits*'))
+
+    output_path = os.path.join(os.getcwd(), 'output')
+    if os.path.isdir(output_path):
+        shutil.rmtree(output_path)
+    os.makedirs(output_path)
+
+    ps = pypeitsetup.PypeItSetup(files, spectrograph_name='keck_hires')
+    ps.run(setup_only=True)
+
+    # Write the automatically generated pypeit data
+    pypeit_files = ps.fitstbl.write_pypeit(output_path, cfg_lines=ps.user_cfg,
+                                           write_bkg_pairs=True)
+
+    assert len(pypeit_files) == 2, 'Should have created two pypeit files'
+
+    # Test the pypeit files for the correct configuration and
+    # calibration group results
+    for f, s, c in zip(pypeit_files, ['A', 'B'], ['0', '1']):
+
+        # TODO: All of this front-end stuff, pulled from pypeit.py, should
+        # be put into a function.
+
+        # Read the pypeit file
+        pypeitFile = inputfiles.PypeItFile.from_file(f)
+        # Spectrograph
+        cfg = ConfigObj(pypeitFile.cfg_lines)
+        spectrograph = load_spectrograph(cfg['rdx']['spectrograph'])
+        # Configuration-specific parameters
+        for idx, row in enumerate(pypeitFile.data):
+            if 'science' in row['frametype'] or 'standard' in row['frametype']:
+                break
+        spectrograph_cfg_lines = spectrograph.config_specific_par(
+            pypeitFile.filenames[idx]).to_config()
+        #  PypeIt parameters
+        par = PypeItPar.from_cfg_lines(cfg_lines=spectrograph_cfg_lines,
+                                       merge_with=pypeitFile.cfg_lines)
+        #  Metadata
+        fitstbl = PypeItMetaData(spectrograph, par,
+                                 files=pypeitFile.filenames,
+                                 usrdata=pypeitFile.data,
+                                 strict=True)
+        fitstbl.finalize_usr_build(pypeitFile.frametypes, pypeitFile.setup_name)
+
+        assert np.all(fitstbl['setup'] == s), 'Setup is wrong'
+        assert np.all(fitstbl['calib'].astype(str) == c), 'Calibration group is wrong'
 
     # Clean-up
     shutil.rmtree(output_path)
