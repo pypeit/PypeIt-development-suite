@@ -615,7 +615,7 @@ def test_setup_magellan_fire():
 def test_setup_wht_isis_blue():
     spec = 'wht_isis_blue'
     setup = 'long_R300B_d5300'
-    generic_setup_test(spec, setup, extension='.fit')
+    generic_setup_test(spec, setup)
 
 
 def test_setup_vlt_xshooter_uvb():
