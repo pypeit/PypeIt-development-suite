@@ -1,4 +1,4 @@
 [sensfunc]
   polyorder = 10
   algorithm = IR
-  flatfile = Calibrations/Flat_A_1+2_MSC01.fits
+  use_blaze = True
