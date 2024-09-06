@@ -1,4 +1,4 @@
 [sensfunc]
   polyorder = 10
   algorithm = IR
-  use_blaze = True
+  use_flat = True
