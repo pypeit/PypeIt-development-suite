@@ -4,7 +4,8 @@
 # This dict specifies all the instruments and setups that are supported by the dev suite.
 #  The keys are the instruments and the values are a list of the supported setups.
 all_setups = {
-        'bok_bc': ['300','600'],
+        'aat_uhrf': ['3875'],
+        'bok_bc': ['300'], #,'600'],
     'gemini_gnirs_echelle': ['32_SB_SXD', '10_LB_SXD'],
     'gemini_gnirs_ifu': ['LR_IFU_32mm'],
     'gemini_gmos': ['GS_HAM_R400_700', 'GS_HAM_R400_860',
@@ -30,6 +31,7 @@ all_setups = {
         'J0306+1853_U074_RED_C2_ECH_-0.86_XD_1.31_1x3',
         'J1723+2243_W241_RED_C5_ECH_0.08_XD_0.90_2x2',
         'J1723+2243_W241_RED_C5_ECH_-0.15_XD_0.90_2x2',
+        'J1218+2951_U116Hr_RED_C5_ECH_-0.22_XD_0.21_1x2',
         'Q1009+2956_G10H_BLUE_C5_ECH_-0.00_XD_1.02_1x3',
                    ],
     'keck_kcwi': ['small_bh2_4200', 'medium_bl'],
@@ -39,7 +41,8 @@ all_setups = {
     'keck_nirspec_high': ['Jband'],
     'keck_mosfire': ['Y_long', 'J_multi', 'K_long', 'Y_multi', 'long2pos1_H', 'longslit_3x0.7_H', 'mask1_K_with_continuum', 'mask1_J_with_continuum', 'J2_long'],
     'keck_lris_blue': ['multi_600_4000_d560', 'long_400_3400_d560', 'long_600_4000_d560',
-                       'multi_300_5000_d680', 'multi_600_4000_slitmask'],
+                       'multi_300_5000_d680', 'multi_600_4000_slitmask', 'long_600_4000_d560_slitless',
+                       'multi_600_4000_d560_slitless'],
     'keck_lris_blue_orig': ['long_600_4000_d500', 'multi_1200_3400_d460'],
     'keck_lris_red': ['long_150_7500_d560', 'long_300_5000_d560', 'multi_400_8500_d560', 'long_400_8500_longread',
                       'multi_600_5000_d560', 'long_600_7500_d560', 'long_600_10000_d680', 'mulit_831_8200_d560',
