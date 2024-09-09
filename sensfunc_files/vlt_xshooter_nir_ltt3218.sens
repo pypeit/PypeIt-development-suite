@@ -1,3 +1,3 @@
 [sensfunc]
     algorithm = IR
-    flatfile = Calibrations/Flat_C_0_DET01.fits
+    use_flat = True

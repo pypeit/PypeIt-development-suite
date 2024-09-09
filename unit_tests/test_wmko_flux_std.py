@@ -17,7 +17,6 @@ from pypeit.spectrographs.util import load_spectrograph
 from pypeit.spectrographs import keck_deimos
 
 
-
 def test_wmko_flux_std():
 
     outfile = data_output_path('tmp_sens.fits')
