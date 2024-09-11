@@ -34,7 +34,7 @@ all_setups = {
         'J1218+2951_U116Hr_RED_C5_ECH_-0.22_XD_0.21_1x2',
         'Q1009+2956_G10H_BLUE_C5_ECH_-0.00_XD_1.02_1x3',
                    ],
-    'keck_kcwi': ['small_bh2_4200', 'medium_bl'],
+    'keck_kcwi': ['small_bh2_4200', 'medium_bl', 'medium_bh3'],
     'keck_kcrm': ['medium_rm1', 'medium_rh3'],
     'keck_nires': ['ABBA_wstandard', 'ABBA_nostandard', 'ABC_nostandard', 'ABpat_wstandard', 'ABBA_nostandard_faint'],
     'keck_nirspec_low': ['LOW_NIRSPEC-1'],
