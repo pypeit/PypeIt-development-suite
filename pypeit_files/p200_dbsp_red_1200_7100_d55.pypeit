@@ -1,0 +1,29 @@
+# Auto-generated PypeIt input file using PypeIt version: 1.16.1.dev87+g76daddb44.d20240618
+# UTC 2024-09-02T22:17:11.365+00:00
+
+# User-defined execution parameters
+[rdx]
+    spectrograph = p200_dbsp_red
+
+# Setup
+setup read
+Setup A:
+  binning: 1,2
+  dichroic: D55
+  dispangle: 42.35
+  dispname: 1200/7100
+setup end
+
+# Data block 
+data read
+ path /Users/milan/Downloads/P200_DBSP_red_1200_7100_D55/working_dir/raw
+         filename |                 frametype |                 ra |                dec |   target |  dispname | decker | binning |                mjd | airmass | exptime | dispangle | dichroic | slitwid | calib
+  red1034.fits.gz |                  arc,tilt |          246.28525 | 33.358111111111114 |     none | 1200/7100 |    2.0 |     1,2 | 56154.109336747686 |     1.0 |     4.0 |     42.35 |      D55 |     2.0 |     0
+  red1000.fits.gz |                      bias | 171.75641666666664 |  33.40311111111111 |          | 1200/7100 |    0.5 |     1,2 |  56153.90299591435 |     1.0 |     0.0 |     42.35 |      D55 |     0.5 |     0
+  red1001.fits.gz |                      bias | 171.80741666666663 |  33.40311111111111 |          | 1200/7100 |    0.5 |     1,2 |  56153.90313690972 |     1.0 |     0.0 |     42.35 |      D55 |     0.5 |     0
+  red1002.fits.gz |                      bias | 171.85841666666664 |  33.40311111111111 |          | 1200/7100 |    0.5 |     1,2 |  56153.90327797454 |     1.0 |     0.0 |     42.35 |      D55 |     0.5 |     0
+  red1023.fits.gz | pixelflat,illumflat,trace | 212.91849999999997 |  33.39013888888889 |    flats | 1200/7100 |    2.0 |     1,2 |  56154.01694267361 |     1.0 |    70.0 |     42.35 |      D55 |     2.0 |     0
+  red1024.fits.gz | pixelflat,illumflat,trace | 213.26212499999997 |  33.38988888888889 |    flats | 1200/7100 |    2.0 |     1,2 | 56154.017893819444 |     1.0 |    70.0 |     42.35 |      D55 |     2.0 |     0
+  red1084.fits.gz |                  standard |         327.792625 |  28.86538888888889 | std star | 1200/7100 |    2.0 |     1,2 |  56154.29458618056 |   1.027 |   120.0 |     42.35 |      D55 |     2.0 |     0
+data end
+
