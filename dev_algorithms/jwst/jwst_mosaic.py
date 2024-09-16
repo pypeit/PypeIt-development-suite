@@ -61,17 +61,22 @@ DO_NOT_USE = datamodels.dqflags.pixel['DO_NOT_USE']
 #disperser = '395H'
 #disperser = 'PRISM_02073'
 
-
-# Define the information to get the exp_list
-#target = 'J1342'
-progid = '3526'
 #progid = '1764'
 #target = 'J0410-0139'
-#target = 'J1007+2115'
-target = 'J0038-1527'
 
-disperser = '235H' #'235H' #'235H_bogus_FS' #'140H_bogus_FS_F100LP'
-slits = 'S200A2' #'S200A1' #'S200A2' #'S200A1' # 'S200A2'
+# Define the information to get the exp_list
+progid = '3526'
+# Slit S200A1
+#target, slits, disperser = 'J1007+2115', 'S200A1', '235H'
+target, slits, disperser = 'J0313-1806', 'S200A1', '235H'
+# Slit S200A2
+#target, slits, disperser = 'J0038-0653', 'S200A2', '235H'
+#target, slits, disperser= 'J0038-1527', 'S200A2', '235H'
+#target, slits, disperser = 'J0252-0503', 'S200A2', '235H'
+#target, disperser, slits = 'J0410-0139', 'S200A2', '235H'
+
+#slits = 'S200A2' #'S200A1' #'S200A2' #'S200A1' # 'S200A2'
+#disperser = '235H' #'235H' #'235H_bogus_FS' #'140H_bogus_FS_F100LP'
 exp_list, redux_dir = jwst_targets(progid, disperser, target, slits=slits)
 
 # Redux parameters 
@@ -82,7 +87,7 @@ bkg_redux = False #False #False #False #False
 #run_stage1 = True
 #run_stage2 = True
 overwrite_stage1 = False 
-overwrite_stage2 = False 
+overwrite_stage2 = True 
 show=False
 reduce_slits = [slits] # None
 reduce_sources = None
@@ -90,9 +95,6 @@ reduce_sources = None
 kludge_err = 1.5 # More recent reductions suggest this number ought to be more like 1.2
 # Is this correct?
 bkg_indices = [(1,2), (0,2), (0,1)]
-
-
-
 
 # Define the path
 output_dir = os.path.join(redux_dir, 'output')
