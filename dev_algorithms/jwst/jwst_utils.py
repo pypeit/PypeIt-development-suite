@@ -19,13 +19,14 @@ from pypeit import msgs
 from pypeit import datamodel
 from pypeit.core import flat
 from pypeit.core import procimg
+from pypeit.core import combine
 from pypeit.images.detector_container import DetectorContainer
 from pypeit.images.pypeitimage import PypeItImage
 from pypeit.images.mosaic import Mosaic
 from pypeit import slittrace, spec2dobj
 from pypeit import find_objects, extraction
 
-import grismconf
+#import grismconf
 
 
 
@@ -255,6 +256,9 @@ def jwst_get_slits(finitemask, polyorder=5, function='legendre', debug=False):
 
 def jwst_proc(msa_data, slit_slice, finitemask, flatfield, pathloss, barshadow, photom_conversion, ronoise,
               kludge_err=1.0, saturation=65000, noise_floor=0.01, use_flat=True):
+    """
+    Routine to extract the iamge contents from a jwst.datamodels.MultiSlitModel object into a format that can be used by PypeIt.
+    """
 
 
     #slit_slice, slit_left, slit_righ, slit_left_orig, slit_righ_orig, spec_vals_orig, src_trace_ra, src_trace_dec, dq, \
@@ -333,10 +337,14 @@ def jwst_proc(msa_data, slit_slice, finitemask, flatfield, pathloss, barshadow, 
     return zero_not_finite(science), zero_not_finite(sciivar), gpm, zero_not_finite(base_var), \
         zero_not_finite(count_scale), rn2_img
 
+
+
+
 class NIRSpecSlitCalibrations(datamodel.DataContainer):
     version = '1.0.0'
     """Datamodel version."""
-
+    
+    # TODO I don't think the descriptions shoudl be nrs1 specific, i.e. they apply to both detectos I believe. 
     datamodel = {'slit_name': dict(otype=str, descr='Name of slit'),
                  'source_name': dict(otype=str, descr='Name of source'),
                  'on_detector': dict(otype=bool, descr='True if the slit is on the detector, otherwise False'),
@@ -424,14 +432,30 @@ class NIRSpecSlitCalibrations(datamodel.DataContainer):
         return viewer, ch_list
 
 
-
 def jwst_mosaic(image_model_tuple, Calibrations_tuple, kludge_err=1.0,
-                noise_floor=0.01, show=False, bkg_image_model_tuple=(None,None)):
+                noise_floor=0.01, show=False):
+    """
+    Create a JWST NIRSpec mosaic image from the provided image models and calibrations.
+    
+    Parameters
+    ----------
+    image_model_tuple : tuple
+        Tuple of image datamodels for the NIRSpec images to be mosaiced.
+    Calibrations_tuple : tuple
+        Tuple of NIRSpecSlitCalibrations objects for the NIRSpec images to be mosaiced.
+    kludge_err : float, optional
+        Error kludge factor for the variance arrays to fix the incorrect noise. Default is 1.0.
+    noise_floor : float, optional
+        Noise floor for the variance arrays. Default is 0.01.
+    show : bool, optional
+        Show the raw rate images with their associated slits in Ginga. Default is False.
+
+    """
 
     dets = [1,2]
     sciimg_list, sciivar_list, gpm_list, base_var_list, count_scale_list, rn2_img_list = [], [], [], [], [], []
     waveimg_list, tilts_list, slit_slice_list, slit_left_list, slit_righ_list, det_list, calib_list = [], [], [], [], [], [], []
-    for det, image_model, bkg_image_model, Calib in zip(dets, image_model_tuple, bkg_image_model_tuple, Calibrations_tuple):
+    for det, image_model, Calib in zip(dets, image_model_tuple, Calibrations_tuple):
 
         if Calib.on_detector:
             sciimg, sciivar, gpm, base_var, count_scale, rn2_img = jwst_proc(
@@ -455,29 +479,29 @@ def jwst_mosaic(image_model_tuple, Calibrations_tuple, kludge_err=1.0,
                 # Show the raw rate image
                 rate_image = np.array(image_model.data.T)
                 viewer, ch_raw = display.show_image(rate_image, cuts=get_cuts(rate_image),
-                                                        chname='raw_rate_{:s}'.format(Calib.det_name))
+                                                    chname='raw_rate_{:s}'.format(Calib.det_name))
                 display.show_slits(viewer, ch_raw, Calib.slit_left_orig, Calib.slit_righ_orig,
                                    spec_vals=Calib.spec_vals_orig, pstep=1, slit_ids=np.array([Calib.slit_name]))
-                # If bkg_image models were provided, show the difference image
-                if bkg_image_model is not None:
-                    bkg_rate_image = np.array(bkg_image_model.data.T)
-                    viewer, ch_bkg = display.show_image(rate_image - bkg_rate_image,
-                                                            cuts=get_cuts(rate_image - bkg_rate_image),
-                                                            chname='diff_rate_{:s}'.format(Calib.det_name))
-                    display.show_slits(viewer, ch_bkg, Calib.slit_left_orig, Calib.slit_righ_orig,
-                                       spec_vals=Calib.spec_vals_orig, pstep=1, slit_ids=np.array([Calib.slit_name]))
-
-                # Show the calibrations
+                 # Show the calibrations
                 viewer, ch_list = Calib.show()
-                # Show the pypeit processed image
-                viewer_pypeit, ch_pypeit = display.show_image(sciimg, waveimg=Calib.waveimg, cuts=get_cuts(sciimg),
-                                                              chname='pypeit_{:s}'.format(Calib.det_name))
-                display.show_slits(viewer_pypeit, ch_pypeit, Calib.slit_left, Calib.slit_righ, pstep=1,
-                                   slit_ids=np.array([Calib.slit_name]))
-                # Sync up the images that have the same shape, namely calibration image and pypeit processed image
-                shell = viewer.shell()
-                shell.start_global_plugin('WCSMatch')
-                shell.call_global_plugin_method('WCSMatch', 'set_reference_channel', [ch_list[-1]], {})
+            #    # If bkg_image models were provided, show the difference image
+            #    if bkg_image_model is not None:
+            #        bkg_rate_image = np.array(bkg_image_model.data.T)
+            #        viewer, ch_bkg = display.show_image(rate_image - bkg_rate_image,
+            #                                                cuts=get_cuts(rate_image - bkg_rate_image),
+            #                                                chname='diff_rate_{:s}'.format(Calib.det_name))
+            #        display.show_slits(viewer, ch_bkg, Calib.slit_left_orig, Calib.slit_righ_orig,
+            #                           spec_vals=Calib.spec_vals_orig, pstep=1, slit_ids=np.array([Calib.slit_name]))
+
+            #    # Show the pypeit processed image
+            #    viewer_pypeit, ch_pypeit = display.show_image(sciimg, waveimg=Calib.waveimg, cuts=get_cuts(sciimg),
+            #                                                  chname='pypeit_{:s}'.format(Calib.det_name))
+            #    display.show_slits(viewer_pypeit, ch_pypeit, Calib.slit_left, Calib.slit_righ, pstep=1,
+            #                       slit_ids=np.array([Calib.slit_name]))
+            #    # Sync up the images that have the same shape, namely calibration image and pypeit processed image
+            #    shell = viewer.shell()
+            #    shell.start_global_plugin('WCSMatch')
+            #    shell.call_global_plugin_method('WCSMatch', 'set_reference_channel', [ch_list[-1]], {})
 
     ndet = len(calib_list)
 
@@ -632,7 +656,7 @@ def jwst_reduce(sciImg, slits, waveimg, tilts, spectrograph, par, show=False, fi
                                               waveimg=waveimg, bkg_redux=bkg_redux,
                                               basename=basename, show=show)
 
-    skymodel, objmodel, ivarmodel, outmask, sobjs, _, _, slits_out = exTract.run()
+    skymodel, bkg_redux_skymodel, objmodel, ivarmodel, outmask, sobjs, _, _, slits_out = exTract.run()
 
     # TODO -- Do this upstream
     # Tack on detector and wavelength RMS
@@ -642,6 +666,7 @@ def jwst_reduce(sciImg, slits, waveimg, tilts, spectrograph, par, show=False, fi
     # Construct the Spec2DObj
     spec2DObj = spec2dobj.Spec2DObj(sciimg=sciImg.image,
                                     ivarraw=sciImg.ivar,
+                                    bkg_redux_skymodel=bkg_redux_skymodel,
                                     skymodel=skymodel,
                                     objmodel=objmodel,
                                     ivarmodel=ivarmodel,
@@ -1166,3 +1191,267 @@ def jwst_extract_subimgs_old(e2d_slit, final_slit, intflat_slit):
            rate, rate_var_rnoise, rate_var_poisson, rate_var_tot, dq, \
            ra, dec, waveimg, tilts, flatfield, pathloss, barshadow, photom_conversion, final
 
+
+
+def jwst_proc_fbd(msa_data, slit_slice, finitemask, flatfield, pathloss, barshadow, photom_conversion, ronoise,
+              kludge_err=1.0, saturation=65000, noise_floor=0.01, use_flat=True):
+
+    msa_data = np.atleast_1d(msa_data) # ensure we still have a list in the case of a single image
+    
+    rate = np.array([np.array(msa_data[ii].data.T[slit_slice],dtype=float) for ii in range(len(msa_data))])
+    rate_var_rnoise = np.array([np.array(msa_data[ii].var_rnoise.T[slit_slice], dtype=float) for ii in range(len(msa_data))])
+    rate_var_poisson = np.array([np.array(msa_data[ii].var_poisson.T[slit_slice], dtype=float) for ii in range(len(msa_data))])
+    # This is currently buggy as it includes flat field error
+    # rate_var_tot = np.square(np.array(e2d_slit.err.T, dtype=float))
+    dq = np.array([np.array(msa_data[ii].dq.T[slit_slice], dtype=int) for ii in range(len(msa_data))])
+    t_eff = np.array([msa_data[ii].meta.exposure.effective_exposure_time for ii in range(len(msa_data))])
+        # Now perform the image processing
+    raw_counts = np.array([rate[ii]*t_eff[ii] for ii in range(len(msa_data))])
+    raw_var_poisson = np.array([kludge_err**2*rate_var_poisson[ii]*t_eff[ii]**2 for ii in range(len(msa_data))])
+    raw_var_rnoise = np.array([kludge_err**2*rate_var_rnoise[ii]*t_eff[ii]**2 for ii in range(len(msa_data))])
+    # Is this correct? I'm not sure I should be using their poisson variance for the noise floor
+    raw_var = []
+    raw_gpm = []
+    for ii in range(len(msa_data)):
+        raw_var.append(procimg.variance_model(raw_var_rnoise[ii], counts = raw_var_poisson[ii], noise_floor=noise_floor))
+        raw_gpm.append((raw_var_rnoise[ii] < saturation) & (raw_var_poisson[ii] < saturation))
+    raw_var = np.array(raw_var)
+    raw_gpm = np.array(raw_gpm)
+    if use_flat:
+        # TODO The flats take on very high values, which I think is a bad choice. The bad locations seem to have a value
+        #  of 1.0, but there ought to be a better way to create this mask. I set these bad values to np.nan so that
+        # they will be flagged in the flat_bpm step below
+        flatfield_bpm = flatfield == 1.0
+        flatfield_with_nan = flatfield.copy()
+        flatfield_with_nan[flatfield_bpm] = np.nan
+        total_flat = t_eff[0]*barshadow*pathloss*flatfield_with_nan/photom_conversion
+        # This is what Kyle is using in his code
+    else:
+        total_flat = t_eff[0]*barshadow*pathloss
+        
+    total_flat_square = np.square(total_flat)
+
+    science = len(msa_data)*[None]
+    sciivar = len(msa_data)*[None]
+    gpm = len(msa_data)*[None]
+    base_var = len(msa_data)*[None]
+    count_scale = len(msa_data)*[None]
+    rn2_img = len(msa_data)*[None]
+    for ii in range(len(msa_data)):
+        count_scale[ii] = inverse(total_flat)  # This is the quantity that goes into PypeIt for var modeling
+        science[ii], flat_bpm = flat.flatfield(raw_counts[ii], total_flat)
+        var_poisson, _ = flat.flatfield(raw_var_poisson[ii], total_flat_square)
+        base_var[ii], _ = flat.flatfield(raw_var_rnoise[ii], total_flat_square)
+        var, _ = flat.flatfield(raw_var[ii], total_flat_square)
+        sciivar[ii] = inverse(var)
+        dq_gpm = np.logical_not(dq[ii] & DO_NOT_USE)
+        gpm[ii] = finitemask & dq_gpm & np.logical_not(flat_bpm) & (sciivar[ii] > 0.0) & raw_gpm[ii] & np.isfinite(science[ii]) & np.isfinite(sciivar[ii])
+
+        # This finitemask is based on where the waveimg is defined. Note however, the JWST images have nans in other
+        # places which is exposure specific.
+        nanmask = np.logical_not(finitemask)
+        count_scale[ii][nanmask] = 0.0
+        science[ii][nanmask] = 0.0
+        var_poisson[nanmask] = 0.0
+        base_var[ii][nanmask] = 0.0
+        var[nanmask] = 0.0
+        sciivar[ii][nanmask] = 0.0
+        # JFH The rn2_img is not currently used and could be omitted. At present it is in the wrong units
+        rn2_img[ii] = np.zeros_like(science[ii])
+        rn2_img[ii][finitemask] = ronoise**2
+
+    # Make sure that we zero out any nan pixels since this causes problems in PypeIt
+    return zero_not_finite(np.array(science)), zero_not_finite(np.array(sciivar)), np.array(gpm), zero_not_finite(np.array(base_var)), \
+        zero_not_finite(np.array(count_scale)), np.array(rn2_img)
+        
+        
+
+def jwst_mosaic_fbd(image_model_tuple, Calibrations_tuple, kludge_err=1.0,
+                noise_floor=0.01, show=False, bkg_image_model_tuple=(None,None)):
+    """
+    Create a JWST NIRSpec mosaic image from the provided image models and calibrations.
+    
+    Parameters
+    ----------
+    image_model_tuple : tuple
+        Tuple of image datamodels for the NIRSpec images to be mosaiced.
+    Calibrations_tuple : tuple
+        Tuple of NIRSpecSlitCalibrations objects for the NIRSpec images to be mosaiced.
+    kludge_err : float, optional
+        Error kludge factor for the variance arrays to fix the incorrect noise. Default is 1.0.
+    noise_floor : float, optional
+        Noise floor for the variance arrays. Default is 0.01.
+    show : bool, optional
+        Show the images. Default is False.
+    bkg_image_model_tuple : tuple, optional
+        Tuple of image datamodels for the NIRSpec background images to be mosaiced. These are subtracted
+        from the 
+        Default is (None,None).
+    
+    """
+
+    dets = [1,2]
+    sciimg_list, sciivar_list, gpm_list, base_var_list, count_scale_list, rn2_img_list = [], [], [], [], [], []
+    waveimg_list, tilts_list, slit_slice_list, slit_left_list, slit_righ_list, det_list, calib_list = [], [], [], [], [], [], []
+    for det, image_model, bkg_image_model, Calib in zip(dets, image_model_tuple, bkg_image_model_tuple, Calibrations_tuple):
+
+        if Calib.on_detector:
+            sciimg, sciivar, gpm, base_var, count_scale, rn2_img = jwst_proc(
+                image_model, Calib.slit_slice, Calib.finitemask, Calib.flatfield, Calib.pathloss, Calib.barshadow,
+                Calib.photom_conversion, Calib.detector.ronoise, noise_floor=noise_floor, kludge_err=kludge_err)
+            sciimg_list.append(sciimg)
+            sciivar_list.append(sciivar)
+            gpm_list.append(gpm)
+            base_var_list.append(base_var)
+            count_scale_list.append(count_scale)
+            rn2_img_list.append(rn2_img)
+            waveimg_list.append(Calib.waveimg)
+            tilts_list.append(Calib.tilts)
+            slit_slice_list.append(Calib.slit_slice)
+            slit_left_list.append(Calib.slit_left)
+            slit_righ_list.append(Calib.slit_righ)
+            det_list.append(Calib.detector)
+            calib_list.append(Calib)
+            if show:
+                display.connect_to_ginga(raise_err=True, allow_new=True)
+                # Show the raw rate image
+                rate_image = np.array(image_model.data.T)
+                viewer, ch_raw = display.show_image(rate_image, cuts=get_cuts(rate_image),
+                                                        chname='raw_rate_{:s}'.format(Calib.det_name))
+                display.show_slits(viewer, ch_raw, Calib.slit_left_orig, Calib.slit_righ_orig,
+                                   spec_vals=Calib.spec_vals_orig, pstep=1, slit_ids=np.array([Calib.slit_name]))
+                # If bkg_image models were provided, show the difference image
+                if bkg_image_model is not None:
+                    if len(bkg_image_model) > 1: # if we have multiple backgrounds, average them together
+                        bkg_rate_images = np.array([bkg_image_model[ii].data.T for ii in range(len(bkg_image_model))])
+                        bkg_rate_image = np.mean(bkg_rate_images,axis=0)
+                    else:
+                        bkg_rate_image = np.array(bkg_image_model.data.T)
+                    viewer, ch_bkg = display.show_image(rate_image - bkg_rate_image,
+                                                            cuts=get_cuts(rate_image - bkg_rate_image),
+                                                            chname='diff_rate_{:s}'.format(Calib.det_name))
+                    display.show_slits(viewer, ch_bkg, Calib.slit_left_orig, Calib.slit_righ_orig,
+                                       spec_vals=Calib.spec_vals_orig, pstep=1, slit_ids=np.array([Calib.slit_name]))
+
+                # Show the calibrations
+                viewer, ch_list = Calib.show()
+                # Show the pypeit processed image
+                viewer_pypeit, ch_pypeit = display.show_image(sciimg, waveimg=Calib.waveimg, cuts=get_cuts(sciimg),
+                                                              chname='pypeit_{:s}'.format(Calib.det_name))
+                display.show_slits(viewer_pypeit, ch_pypeit, Calib.slit_left, Calib.slit_righ, pstep=1,
+                                   slit_ids=np.array([Calib.slit_name]))
+                # Sync up the images that have the same shape, namely calibration image and pypeit processed image
+                shell = viewer.shell()
+                shell.start_global_plugin('WCSMatch')
+                shell.call_global_plugin_method('WCSMatch', 'set_reference_channel', [ch_list[-1]], {})
+
+    ndet = len(calib_list)
+
+    # TODO I would like to create an image indicating which detector contributed to which pixels
+    if ndet == 1:
+        # Assign the calibrations
+        waveimg_tot, tilts_tot, rn2_img_tot = waveimg_list[0], tilts_list[0], rn2_img_list[0]
+        slit_left_tot, slit_righ_tot = slit_left_list[0], slit_righ_list[0]
+        det_or_mosaic = det_list[0]
+
+        # Assign the data frames
+        sciimg_tot, sciivar_tot, gpm_tot, base_var_tot, count_scale_tot = \
+            sciimg_list[0], sciivar_list[0], gpm_list[0], base_var_list[0], count_scale_list[0]
+        if image_model_tuple.ndim == 1:
+            sciimg_tot = sciimg_tot[0]
+            sciivar_tot = sciivar_tot[0]
+            gpm_tot = gpm_tot[0]
+        else: # Combine images if there are more than one (probably for a background image)
+            sciimg_temp,sciivar_temp,gpm_temp,nused = combine.weighted_combine(np.ones(len(image_model_tuple)),[sciimg_tot],[sciivar_tot],gpm_tot)
+            sciimg_tot = np.copy(sciimg_temp[0])
+            sciivar_tot = np.copy(sciivar_temp[0])
+            gpm_tot = np.copy(gpm_temp)
+        # FBD: Don't know if these images need to be combined -- always grab the first one.
+        rn2_img_tot = rn2_img_tot[0]
+        base_var_tot = base_var_tot[0]
+        count_scale_tot = count_scale_tot[0]
+
+        shape = sciimg_tot.shape
+    elif ndet == 2:
+        # A positive spat_offset means nrs2 starts at a larger pixel than nrs1
+        detector_gap = int(calib_list[0].detector.xgap)
+        spat_offset = (slit_slice_list[1][1].start - slit_slice_list[0][1].start)
+        spec_lo1, spec_hi1 = 0, sciimg_list[0].shape[0]
+        spec_lo2, spec_hi2 = sciimg_list[0].shape[0] + detector_gap, \
+                             sciimg_list[0].shape[0] + detector_gap + sciimg_list[1].shape[0]
+        shape = (sciimg_list[0].shape[0] + sciimg_list[1].shape[0] + detector_gap,
+                 np.max([sciimg_list[0].shape[1], sciimg_list[1].shape[1]]) + np.abs(spat_offset))
+
+        if spat_offset >= 0:
+            # Detector nrs2 starts at a larger spat value than detector nrs1
+            spat_lo1, spat_hi1 = 0, sciimg_list[0].shape[1]  # nrs1 not shifted spatially
+            spat_lo2, spat_hi2 = spat_offset, spat_offset + sciimg_list[1].shape[1] # nrs2 shifted spatiallly
+        else:
+            # Detector nrs1 starts at larger spat value than detector nrs1
+            spat_lo1, spat_hi1 = np.abs(spat_offset), sciimg_list[0].shape[1] + np.abs(spat_offset)
+            spat_lo2, spat_hi2 = 0, sciimg_list[1].shape[1]
+
+        # Old code
+        # Spatial offset is relative to NRS1
+        #detector_gap = int(calib_list[0].detector.xgap)
+        #spat_offset = (slit_slice_list[0][1].start - slit_slice_list[1][1].start)
+        #spec_lo1, spec_hi1 = 0, sciimg_list[0].shape[0]
+        #spec_lo2, spec_hi2 = sciimg_list[0].shape[0] + detector_gap, \
+        #                     sciimg_list[0].shape[0] + detector_gap + sciimg_list[1].shape[0]
+        #shape = (sciimg_list[0].shape[0] + sciimg_list[1].shape[0] + detector_gap,
+        #         np.max([sciimg_list[0].shape[1], sciimg_list[1].shape[1]]) + np.abs(spat_offset))
+        #if spat_offset < 0:
+        #    spat_lo1, spat_hi1 = -spat_offset, sciimg_list[0].shape[1] - spat_offset
+        #    spat_lo2, spat_hi2 = 0, sciimg_list[1].shape[1]
+        #else:
+        #    spat_lo1, spat_hi1 = 0, sciimg_list[0].shape[1]
+        #    spat_lo2, spat_hi2 = spat_offset, spat_offset + sciimg_list[1].shape[1]
+
+        nrs1_slice = np.s_[spec_lo1: spec_hi1, spat_lo1: spat_hi1]
+        nrs2_slice = np.s_[spec_lo2: spec_hi2, spat_lo2: spat_hi2]
+
+        sciimg_tot = np.zeros(shape)
+        sciivar_tot = np.zeros(shape)
+        gpm_tot = np.zeros(shape, dtype=bool)
+        base_var_tot = np.zeros(shape)
+        count_scale_tot = np.zeros(shape)
+        rn2_img_tot = np.zeros(shape)
+        sciimg_tot[nrs1_slice] = sciimg_list[0]
+        sciimg_tot[nrs2_slice] = sciimg_list[1]
+        sciivar_tot[nrs1_slice] = sciivar_list[0]
+        sciivar_tot[nrs2_slice] = sciivar_list[1]
+        gpm_tot[nrs1_slice] = gpm_list[0]
+        gpm_tot[nrs2_slice] = gpm_list[1]
+        base_var_tot[nrs1_slice] = base_var_list[0]
+        base_var_tot[nrs2_slice] = base_var_list[1]
+        count_scale_tot[nrs1_slice] = count_scale_list[0]
+        count_scale_tot[nrs2_slice] = count_scale_list[1]
+        rn2_img_tot[nrs1_slice] = rn2_img_list[0]
+        rn2_img_tot[nrs2_slice] = rn2_img_list[1]
+
+        waveimg_tot = np.full(shape, np.nan)
+        waveimg_tot[nrs1_slice] = waveimg_list[0]
+        waveimg_tot[nrs2_slice] = waveimg_list[1]
+        finitemask_tot = np.isfinite(waveimg_tot)
+        wave_min, wave_max = np.min(waveimg_tot[finitemask_tot]), np.max(waveimg_tot[finitemask_tot])
+        tilts_tot = np.zeros(shape)
+        tilts_tot[finitemask_tot] = (waveimg_tot[finitemask_tot] - wave_min) / (wave_max - wave_min)
+        slit_left_tot, slit_righ_tot = jwst_get_slits(finitemask_tot)
+        waveimg_tot[np.logical_not(finitemask_tot)] = 0.0
+
+        det_or_mosaic = Mosaic(1, np.array(det_list), shape, None, None, None, None)
+    else:
+        msgs.error('Invalid number of detectors. There is a problem with this slit')
+
+
+    # Instantiate
+    sciImg = PypeItImage(image=zero_not_finite(sciimg_tot), ivar=zero_not_finite(sciivar_tot),
+                         base_var=zero_not_finite(base_var_tot),
+                         img_scale=zero_not_finite(count_scale_tot),
+                         rn2img=zero_not_finite(rn2_img_tot),
+                         detector=det_or_mosaic, bpm=np.logical_not(gpm_tot))
+    slits = slittrace.SlitTraceSet(slit_left_tot, slit_righ_tot, 'MultiSlit', detname=det_or_mosaic.name,
+                                   nspat=int(shape[1]),PYP_SPEC='jwst_nirspec')
+
+
+    return sciImg, slits, zero_not_finite(waveimg_tot), zero_not_finite(tilts_tot), ndet
