@@ -9,6 +9,7 @@ from IPython import embed
 # set environment variables
 os.environ['CRDS_PATH'] = '/Users/dpelliccia/crds_cache/jwst_ops'
 os.environ['CRDS_SERVER_URL'] = 'https://jwst-crds.stsci.edu/'
+# os.environ['CRDS_CONTEXT'] = 'jwst_1256.pmap'
 from matplotlib import pyplot as plt
 from astropy.io import fits
 from astropy import stats
@@ -37,6 +38,7 @@ from pypeit import spec2dobj
 
 
 # JFH: This is the main up to date routine. Ignore the others.
+# DP: This is a version of jwst_mosaic.py edited by Debora on Sept 2024
 
 
 DO_NOT_USE = datamodels.dqflags.pixel['DO_NOT_USE']
@@ -77,10 +79,17 @@ DO_NOT_USE = datamodels.dqflags.pixel['DO_NOT_USE']
 #slits = 'S200A2' #'S200A1' #'S200A2' #'S200A1' # 'S200A2'
 #disperser = '235H' #'235H' #'235H_bogus_FS' #'140H_bogus_FS_F100LP'
 
-#YD8
-progid = '2756'
-disperser = 'PRISM'
-target, slits = 'YD8', '28'
+# CEERS_1019
+progid = '1345'
+disperser = 'G395M'
+target, slits = 'CEERS_1019', None
+src_name = '1345_1019'
+
+# #YD8
+# progid = '2756'
+# disperser = 'PRISM'
+# target, slits = 'YD8', '28'
+# src_name = '2756_10025'
 exp_list, redux_dir, msa_list = jwst_targets(progid, disperser, target, slits=slits)
 
 # Redux parameters 
@@ -91,14 +100,14 @@ bkg_redux = True #False #False #False #False
 #run_stage1 = True
 #run_stage2 = True
 overwrite_stage1 = False 
-overwrite_stage2 = True
+overwrite_stage2 = False
 show=False
-reduce_slits = [slits] # None
-reduce_sources = None
+reduce_slits = None #[slits] # None
+reduce_sources = [src_name]
 
-kludge_err = 1.5 # More recent reductions suggest this number ought to be more like 1.2
+kludge_err = 1.8 # More recent reductions suggest this number ought to be more like 1.2
 # Is this correct?
-bkg_indices = [(1,2), (0,2), (0,1), (4,5), (3,5), (3,4)]
+bkg_indices = [(1,2), (0,2), (0,1)]
 
 # Define the path
 output_dir = os.path.join(redux_dir, 'output2')
@@ -141,6 +150,9 @@ scifiles = [scifiles_1, scifiles_2]
 scifiles_all = scifiles_1 + scifiles_2
 
 #parameter_dict_det1 = {"jump": {"maximum_cores": 'quarter'},}
+parameter_dict_det1 = {'clean_flicker_noise': {'skip': False, 'mask_science_regions': True,
+                                                          'save_results': True, 'save_mask': True}}
+# parameter_dict_det1 = {'clean_flicker_noise': {'skip': True}}
 
 #run_calwebb_detector1(uncalfiles_all, output_dir, cores2use='quarter', overwrite=False)
 # Run the stage1 pipeline
@@ -149,13 +161,13 @@ for uncal in uncalfiles_all:
     if os.path.isfile(ratefile) and not overwrite_stage1:
         msgs.info('Using existing rate file: {0}'.format(ratefile))
         continue
-    Detector1Pipeline.call(uncal, save_results=True, output_dir=output_dir) #, steps=parameter_dict_det1)
+    Detector1Pipeline.call(uncal, save_results=True, output_dir=output_dir, steps=parameter_dict_det1)
 
 
 # TODO Should we flat field. The flat field and flat field error are wonky and probably nonsense
 param_dict_spec2 = {
     'extract_2d': {'save_results': True},
-    'bkg_subtract': {'skip': True},
+    'bkg_subtract': {'skip': False, 'save_results': True},
     'imprint_subtract': {'save_results': True}, # TODO Check up on whether imprint subtraction is being done by us???
     'master_background_mos': {'skip': True},
     # Default to setting the source type to extended for MSA data and point for FS data. This impacts flux calibration.
@@ -164,7 +176,7 @@ param_dict_spec2 = {
     'resample_spec': {'skip': True},
     'extract_1d': {'skip': True},
     'flat_field': {'save_interpolated_flat': True},  # Flats appear to be just nonsense. So skip for now.
-    'nsclean': {'skip': False, 'save_results': True},
+    'nsclean': {'skip': True} # 'save_results': True},
 }
 
 # TODO I'm rather unclear on what to do with the src_type since I'm not following what the JWST ipeline is doing there very
@@ -183,9 +195,10 @@ param_dict_spec2 = {
 # Run the spec2 pipeline
 
 for sci in scifiles_all:
-    nscleanfile = os.path.join(output_dir, sci.replace('_rate', '_nsclean'))
-    if os.path.isfile(nscleanfile) and not overwrite_stage2:
-        msgs.info('Using existing nsclean file: {0}'.format(nscleanfile))
+    suffix = 'cal' #'nsclean'
+    step2cal_file = os.path.join(output_dir, sci.replace('_rate', f'_{suffix}'))
+    if os.path.isfile(step2cal_file) and not overwrite_stage2:
+        msgs.info(f'Using existing {suffix} file: {0}'.format(step2cal_file))
         continue
     Spec2Pipeline.call(sci, save_results=True, output_dir=output_dir, steps=param_dict_spec2)
 
@@ -209,13 +222,17 @@ if not os.path.isdir(qa_dir):
 if not os.path.isdir(png_dir):
     os.makedirs(png_dir)
 
-# Set some parameters for difference imaging
+par['reduce']['findobj']['snr_thresh'] = 6.0
+par['reduce']['findobj']['maxnumber_sci'] = 1
+
+# # Set some parameters for difference imaging
 if bkg_redux:
-    par['reduce']['findobj']['skip_skysub'] = True # Do not sky-subtract when object finding
+    # par['reduce']['findobj']['skip_skysub'] = True # Do not sky-subtract when object finding
     par['reduce']['extraction']['skip_optimal'] = True # Skip local_skysubtraction and profile fitting
 
-
-
+par_outfile = os.path.join(pypeit_output_dir, 'jwst_nirspec_reduce.par')
+print(f'Writing full parameter set to {par_outfile}.')
+par.to_config(par_outfile, exclude_defaults=False, include_descr=False)
 
 # Output file names
 intflat_output_files_1 = []
@@ -227,8 +244,9 @@ msa_output_files_2 = []
 cal_output_files_2 = []
 
 for base1, base2 in zip(basenames_1, basenames_2):
-    msa_output_files_1.append(os.path.join(output_dir, base1 + '_nsclean.fits'))
-    msa_output_files_2.append(os.path.join(output_dir, base2 + '_nsclean.fits'))
+    suffix = 'rate'
+    msa_output_files_1.append(os.path.join(output_dir, base1 + f'_{suffix}.fits'))
+    msa_output_files_2.append(os.path.join(output_dir, base2 + f'_{suffix}.fits'))
 
     intflat_output_files_1.append(os.path.join(output_dir, base1 + '_interpolatedflat.fits'))
     cal_output_files_1.append(os.path.join(output_dir, base1 + '_cal.fits'))
@@ -337,12 +355,12 @@ if not os.path.isdir(scipath):
 
 
 if reduce_slits is not None:
-    gd_slits_sources = [(slt, src) 
-                        for slt, src in slit_sources_uni 
+    gd_slits_sources = [(slt, src)
+                        for slt, src in slit_sources_uni
                         for slit in reduce_slits if slt.strip() == slit.strip()]
 elif reduce_sources is not None:
-    gd_slits_sources = [(slt, src) 
-                        for slt, src in slit_sources_uni 
+    gd_slits_sources = [(slt, src)
+                        for slt, src in slit_sources_uni
                         for source in reduce_sources if src == source.strip()]
 else:
     gd_slits_sources = slit_sources_uni
@@ -376,20 +394,20 @@ for ii, (islit, isource) in enumerate(gd_slits_sources):
         # Create the image mosaic
         sciImg, slits, waveimg, tilts, ndet = jwst_mosaic(msa_data[:, iexp], [CalibrationsNRS1, CalibrationsNRS2], kludge_err=kludge_err,
             noise_floor=par['scienceframe']['process']['noise_floor'], show=show)
-        
+
         #    show=show & (iexp == iexp_ref))
 
         # If this is a bkg_redux, perform background subtraction
         if bkg_redux:
             ibkg = bkg_indices[iexp]
             bkgImg_list = []
-            for msa_data_i in msa_data[:,ibkg]: 
+            for msa_data_i in msa_data[:,ibkg]:
                 bkgImg_i, _, _, _, _= jwst_mosaic(msa_data_i, [CalibrationsNRS1, CalibrationsNRS2], kludge_err=kludge_err,
-                                          noise_floor=par['scienceframe']['process']['noise_floor'])
+                                          noise_floor=par['scienceframe']['process']['noise_floor'], use_flat=False)
                 bkgImg_list.append(bkgImg_i)
 
             # TODO the parset label here may change in Pypeit to bkgframe
-            combineImage = combineimage.CombineImage(bkgImg_list, spectrograph, par['scienceframe']['process'])
+            combineImage = combineimage.CombineImage(bkgImg_list, par['scienceframe']['process'])
             bkgImg = combineImage.run(ignore_saturation=True)
             sciImg = sciImg.sub(bkgImg)
 

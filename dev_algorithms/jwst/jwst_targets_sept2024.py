@@ -1,6 +1,8 @@
 import os
 from IPython import embed 
 
+# DP: This is a version of jwst_targets.py edited by Debora on Sept 2024
+
 def jwst_targets(progid, disperser, target, slits=None):
     """
     Routine to return a list of JWST NIRSpec exposures for a given target and disperser and possibly slits.
@@ -128,23 +130,41 @@ def jwst_targets(progid, disperser, target, slits=None):
                 uncalfile1 = os.path.join(rawpath_level2, 'jw02756001001_03101_00001_' + detname + '_uncal.fits')
                 uncalfile2 = os.path.join(rawpath_level2, 'jw02756001001_03101_00002_' + detname + '_uncal.fits')
                 uncalfile3 = os.path.join(rawpath_level2, 'jw02756001001_03101_00003_' + detname + '_uncal.fits')
+                msafile = os.path.join(rawpath_level2, 'jw02756001001_01_msa.fits')
 
-                uncalfile4 = os.path.join(rawpath_level2, 'jw02756001001_03103_00001_' + detname + '_uncal.fits')
-                uncalfile5 = os.path.join(rawpath_level2, 'jw02756001001_03103_00002_' + detname + '_uncal.fits')
-                uncalfile6 = os.path.join(rawpath_level2, 'jw02756001001_03103_00003_' + detname + '_uncal.fits')
-
-                if detname == 'nrs1':
-                    msafile = os.path.join(rawpath_level2, 'jw02756001001_01_msa.fits')
-                elif detname == 'nrs2':
-                    msafile = os.path.join(rawpath_level2, 'jw02756001001_02_msa.fits')
+                # these files do not have YD8 (2756_10025) object
+                # uncalfile1 = os.path.join(rawpath_level2, 'jw02756001001_03103_00001_' + detname + '_uncal.fits')
+                # uncalfile2 = os.path.join(rawpath_level2, 'jw02756001001_03103_00002_' + detname + '_uncal.fits')
+                # uncalfile3 = os.path.join(rawpath_level2, 'jw02756001001_03103_00003_' + detname + '_uncal.fits')
+                # msafile = os.path.join(rawpath_level2, 'jw02756001001_02_msa.fits')
 
                 # dither offset
                 # uncalfile  = os.path.join(rawpath_level2, 'jw01133003001_0310x_00003_' + detname + '_uncal.fits')
                 # bkgfile1 = os.path.join(rawpath_level2, 'jw01133003001_0310x_00001_' + detname + '_uncal.fits')
                 # bkgfile2 = os.path.join(rawpath_level2, 'jw01133003001_0310x_00002_' + detname + '_uncal.fits')
 
-                exp_list.append([uncalfile1, uncalfile2, uncalfile3, uncalfile4, uncalfile5, uncalfile6])
+                exp_list.append([uncalfile1, uncalfile2, uncalfile3])
                 msafile_list.append(msafile)
+
+        elif '1345' in progid:
+            if 'G395M' in disperser:
+                # PRISM data
+                rawpath_level2 = '/Users/dpelliccia/Desktop/jwst/CEERS_1019/fromMAST/level_12'
+                redux_dir = '/Users/dpelliccia/Desktop/jwst/CEERS_1019/redux'
+                output_dir = os.path.join(redux_dir, 'output')
+                pypeit_output_dir = os.path.join(redux_dir, 'pypeit')
+
+                # NIRSPEC 3-point dither
+                # looking for object 1345_1019
+                uncalfile1 = os.path.join(rawpath_level2, 'jw01345069001_07101_00001_' + detname + '_uncal.fits')
+                uncalfile2 = os.path.join(rawpath_level2, 'jw01345069001_07101_00002_' + detname + '_uncal.fits')
+                uncalfile3 = os.path.join(rawpath_level2, 'jw01345069001_07101_00003_' + detname + '_uncal.fits')
+                msafile = os.path.join(rawpath_level2, 'jw01345069001_01_msa.fits')
+
+                exp_list.append([uncalfile1, uncalfile2, uncalfile3])
+                msafile_list.append(msafile)
+
+
         if '1133' in progid:
             if 'PRISM' in disperser:
                 ## Prorgram for Slit Loss Characterization for MSA shutters

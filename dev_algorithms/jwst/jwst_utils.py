@@ -433,7 +433,7 @@ class NIRSpecSlitCalibrations(datamodel.DataContainer):
 
 
 def jwst_mosaic(image_model_tuple, Calibrations_tuple, kludge_err=1.0,
-                noise_floor=0.01, show=False):
+                noise_floor=0.01, show=False, use_flat=False):
     """
     Create a JWST NIRSpec mosaic image from the provided image models and calibrations.
     
@@ -449,6 +449,8 @@ def jwst_mosaic(image_model_tuple, Calibrations_tuple, kludge_err=1.0,
         Noise floor for the variance arrays. Default is 0.01.
     show : bool, optional
         Show the raw rate images with their associated slits in Ginga. Default is False.
+    use_flat : bool, optional
+        Use the flat field in the image processing. Default is False.
 
     """
 
@@ -460,7 +462,8 @@ def jwst_mosaic(image_model_tuple, Calibrations_tuple, kludge_err=1.0,
         if Calib.on_detector:
             sciimg, sciivar, gpm, base_var, count_scale, rn2_img = jwst_proc(
                 image_model, Calib.slit_slice, Calib.finitemask, Calib.flatfield, Calib.pathloss, Calib.barshadow,
-                Calib.photom_conversion, Calib.detector.ronoise, noise_floor=noise_floor, kludge_err=kludge_err)
+                Calib.photom_conversion, Calib.detector.ronoise, noise_floor=noise_floor, kludge_err=kludge_err,
+                use_flat=use_flat)
             sciimg_list.append(sciimg)
             sciivar_list.append(sciivar)
             gpm_list.append(gpm)
