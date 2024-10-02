@@ -7,7 +7,7 @@
 
 [scienceframe]
     [[process]]
-        spat_flexure_correct = detector
+        spat_flexure_method = detector
         spat_flexure_maxlag = 40
 
 # Setup
