@@ -5,7 +5,8 @@ import shutil
 import os
 from pathlib import Path
 import re
-from qtpy.QtCore import Qt, QSettings
+import gc
+from qtpy.QtCore import Qt, QSettings, QDeadlineTimer
 
 import numpy as np
 
@@ -27,7 +28,7 @@ def raw_data_path():
 
 def get_test_metadata(raw_data_path):
     # Create a PypeItMetadata to test with
-    files = list((raw_data_path / "shane_kast_blue" / "600_4310_d55").glob("*.fits.gz"))
+    files = list((raw_data_path / "shane_kast_blue" / "600_4310_d55").resolve().glob("*.fits.gz"))
     spec = load_spectrograph("shane_kast_blue")
     par = spec.default_pypeit_par()
     return PypeItMetaData(spec, par, files)
@@ -248,8 +249,8 @@ def test_pypeit_file_model(qtbot, raw_data_path, tmp_path):
     # Make sure one setup A and one setup B is there. This would probably be invalid
     # but the GUI trusts the user to know what they're doing
     shane_kast_blue_path = (raw_data_path / "shane_kast_blue" / "600_4310_d55").absolute()
-    assert str(shane_kast_blue_path / "b11.fits.gz") in filenames
-    assert str(shane_kast_blue_path / "b1.fits.gz") in filenames
+    assert str((shane_kast_blue_path / "b11.fits.gz").resolve()) in filenames
+    assert str((shane_kast_blue_path / "b1.fits.gz").resolve()) in filenames
 
     # TODO
     # test removed files not being saved
@@ -319,7 +320,7 @@ def test_pypeit_obslog_model(qtbot, raw_data_path, tmp_path):
 
     raw_data_dirs = obslog_model.raw_data_directories
     assert len(raw_data_dirs) == 1
-    assert raw_data_dirs[0] == str(shane_kast_blue_path)
+    assert raw_data_dirs[0] == str(shane_kast_blue_path.resolve())
     
     assert obslog_model.spec_name == "shane_kast_blue"
     assert obslog_model.spectrograph.name == "shane_kast_blue"
@@ -432,7 +433,7 @@ def test_pypeit_setup_gui_model(qtbot, tmp_path):
     assert setup_model.state == model.ModelState.NEW
     """
 
-def setup_offscreen_gui(tmp_path, monkeypatch, qtbot, verbosity=2, logfile="test_log.log"):
+def setup_offscreen_gui(tmp_path, monkeypatch, qapp, qtbot, verbosity=2):
     """Helper function to setup the gui to run in offscreen mode"""
     # Change to tmp_path so that log goes there
     monkeypatch.chdir(tmp_path)
@@ -444,9 +445,7 @@ def setup_offscreen_gui(tmp_path, monkeypatch, qtbot, verbosity=2, logfile="test
     QSettings.setPath(QSettings.Format.IniFormat, QSettings.Scope.SystemScope, str(tmp_path / "config_system.ini"))
     
     # Start the gui with with the "offscreen" platform for headless testing.
-    Args = namedtuple("Args", ['verbosity','logfile','spectrograph', 'root', 'extension'])
-    args = Args(verbosity=verbosity,logfile=logfile,spectrograph=None, root=None, extension=".fits")
-    c = controller.SetupGUIController(args)
+    c = controller.SetupGUIController(qapp, verbosity=verbosity)
     main_window = c.main_window
 
     # Patch display error so we don't get hung on it's modal dialog box
@@ -458,17 +457,14 @@ def setup_offscreen_gui(tmp_path, monkeypatch, qtbot, verbosity=2, logfile="test
 
     # qtbot will close the window for us, but we have to take care of the
     # class variables in SetupGUIController
-    def cleanup(widget):
-        controller.SetupGUIController.model = model.PypeItSetupGUIModel()
-        controller.SetupGUIController.main_window = None
-    qtbot.addWidget(main_window, before_close_func=cleanup)
+    qtbot.addWidget(main_window)
     main_window.show()
     return c, main_window
 
-def run_setup(spectrograph_name, setup_raw_data_path, main_window, qtbot):
+def run_setup(spectrograph_name, setup_raw_data_path, main_controller, qtbot):
     """Run setup in an already started GUI. This is a helper method intended to set things up
     for tests that focus on functionality that require a populated GUI."""
-    
+    main_window = main_controller.main_window
     spectrograph_widget = main_window._obs_log_tab.spectrograph
     raw_data_paths_widget = main_window._obs_log_tab.paths_editor._path
     obslog_model = main_window.model.obslog_model
@@ -487,10 +483,13 @@ def run_setup(spectrograph_name, setup_raw_data_path, main_window, qtbot):
     with qtbot.waitSignal(main_window.model.stateChanged, raising=True, timeout=10000):
         qtbot.mouseClick(main_window.setupButton, Qt.MouseButton.LeftButton)
 
-def test_run_setup(qtbot, raw_data_path, tmp_path, monkeypatch):
+    # Make sure the thread finishes before continuing
+    assert main_controller.operation_thread.wait(QDeadlineTimer(1000)) is True
+
+def test_run_setup(qapp, qtbot, raw_data_path, tmp_path, monkeypatch):
     """Test the basic process of setting a spectrograph, a raw data directory, and
     running setup."""
-    c, main_window = setup_offscreen_gui(tmp_path, monkeypatch, qtbot)    
+    c, main_window = setup_offscreen_gui(tmp_path, monkeypatch, qapp, qtbot)
     setup_gui_model = c.model
 
     # Validate initial state
@@ -557,6 +556,7 @@ def test_run_setup(qtbot, raw_data_path, tmp_path, monkeypatch):
 
     with qtbot.waitSignal(setup_gui_model.stateChanged, raising=True, timeout=10000):
         qtbot.mouseClick(main_window.setupButton, Qt.MouseButton.LeftButton)
+    assert c.operation_thread.wait(QDeadlineTimer(1000)) is True
 
     assert main_window.saveAllButton.isEnabled()
     assert not main_window.saveTabButton.isEnabled()
@@ -590,8 +590,8 @@ def test_run_setup(qtbot, raw_data_path, tmp_path, monkeypatch):
     history = settings.value('History')
     assert history == [str(j_multi)]
 
-def test_run_setup_failure(qtbot, raw_data_path, tmp_path, monkeypatch):
-    c, main_window = setup_offscreen_gui(tmp_path, monkeypatch, qtbot)    
+def test_run_setup_failure(qapp, qtbot, raw_data_path, tmp_path, monkeypatch):
+    c, main_window = setup_offscreen_gui(tmp_path, monkeypatch, qapp, qtbot)    
     setup_gui_model = c.model
     obs_log_tab = main_window._obs_log_tab
 
@@ -608,17 +608,16 @@ def test_run_setup_failure(qtbot, raw_data_path, tmp_path, monkeypatch):
                             order = 'strict', raising=True, timeout=1000):
         obs_log_tab.paths_editor._path.setCurrentText(str(j_multi))
         qtbot.keyClick(obs_log_tab.paths_editor._path, Qt.Key_Enter)
-
     # Click the Run Setup button and wait for the background operation to complete, verifying it was canceled
-
     with qtbot.waitSignal(setup_gui_model.stateChanged, raising=True, timeout=10000):
         qtbot.mouseClick(main_window.setupButton, Qt.MouseButton.LeftButton)
+    assert c.operation_thread.wait(QDeadlineTimer(1000)) is True
 
     # Verify all of the files are commented out
     assert np.all([filename.startswith("#") for filename in setup_gui_model.obslog_model.metadata_model.metadata['filename']])
 
-def test_run_setup_cancel(qtbot, raw_data_path, tmp_path, monkeypatch):
-    c, main_window = setup_offscreen_gui(tmp_path, monkeypatch, qtbot)    
+def test_run_setup_cancel(qapp, qtbot, raw_data_path, tmp_path, monkeypatch):
+    c, main_window = setup_offscreen_gui(tmp_path, monkeypatch, qapp, qtbot)    
     setup_gui_model = c.model
     obs_log_tab = main_window._obs_log_tab
 
@@ -650,13 +649,17 @@ def test_run_setup_cancel(qtbot, raw_data_path, tmp_path, monkeypatch):
         # Use the GUI's internal log watcher to trigger the canceled exception
         setup_gui_model.log_buffer.watch("test_cancel", re.compile("Adding metadata for .*$"), raise_cancel_exception)
         qtbot.mouseClick(main_window.setupButton, Qt.MouseButton.LeftButton)
+
+    # Make sure the thread finishes before continuing
+    assert c.operation_thread.wait(QDeadlineTimer(1000)) is True
+
     assert setup_gui_model.state == model.ModelState.NEW
  
     setup_gui_model.log_buffer.unwatch("test_cancel")
 
-def test_multi_paths(qtbot, raw_data_path, tmp_path, monkeypatch):
+def test_multi_paths(qapp, qtbot, raw_data_path, tmp_path, monkeypatch):
     """Test re-running setup on setting multiple paths"""
-    c, main_window = setup_offscreen_gui(tmp_path, monkeypatch, qtbot)    
+    c, main_window = setup_offscreen_gui(tmp_path, monkeypatch, qapp, qtbot)    
     setup_gui_model = c.model
     obs_log_tab = main_window._obs_log_tab
 
@@ -664,7 +667,7 @@ def test_multi_paths(qtbot, raw_data_path, tmp_path, monkeypatch):
 
     # run_setup helper to run setup on one keck_mosfire setup
     y_long = str((raw_dir / "Y_long").absolute())
-    run_setup("keck_mosfire", y_long, main_window, qtbot)
+    run_setup("keck_mosfire", y_long, c, qtbot)
 
     # add a second raw data path
     j_multi = str((raw_dir / "J_multi").absolute())
@@ -696,6 +699,9 @@ def test_multi_paths(qtbot, raw_data_path, tmp_path, monkeypatch):
         # Click the Run Setup button to re-run setup
         with qtbot.waitSignal(setup_gui_model.stateChanged, raising=True, timeout=10000):
             qtbot.mouseClick(main_window.setupButton, Qt.MouseButton.LeftButton)
+
+        # Make sure the thread finishes before continuing
+        assert c.operation_thread.wait(QDeadlineTimer(1000)) is True
 
     assert main_window.saveAllButton.isEnabled()
     assert not main_window.saveTabButton.isEnabled()
@@ -732,11 +738,11 @@ def test_multi_paths(qtbot, raw_data_path, tmp_path, monkeypatch):
     assert str(y_long) in history
 
 
-def test_save_and_open(qtbot, raw_data_path, tmp_path, monkeypatch):
-    c, main_window = setup_offscreen_gui(tmp_path, monkeypatch, qtbot)    
+def test_save_and_open(qapp, qtbot, raw_data_path, tmp_path, monkeypatch):
+    c, main_window = setup_offscreen_gui(tmp_path, monkeypatch, qapp, qtbot)    
 
     # Use the run_setup helper to run setup on J_muilti, which will create two tabs
-    run_setup("keck_mosfire", (raw_data_path / "keck_mosfire" / "J_multi").absolute(), main_window, qtbot)
+    run_setup("keck_mosfire", (raw_data_path / "keck_mosfire" / "J_multi").absolute(), c, qtbot)
 
     tab_widget = main_window.tab_widget
 
@@ -798,6 +804,9 @@ def test_save_and_open(qtbot, raw_data_path, tmp_path, monkeypatch):
         with qtbot.waitSignal(c.model.stateChanged, raising=True, timeout=10000):
             qtbot.mouseClick(main_window.openButton, Qt.MouseButton.LeftButton)
 
+        # Make sure the thread finishes before continuing
+        assert c.operation_thread.wait(QDeadlineTimer(1000)) is True
+
     assert MockFileDialog.call_count == 1
 
     # Verify a single tab was opened and everthing is the correct state
@@ -819,11 +828,11 @@ def test_save_and_open(qtbot, raw_data_path, tmp_path, monkeypatch):
 
 # TODO test dialog_helpers directly and verify it's history abilities
 
-def test_save_all(qtbot, raw_data_path, tmp_path, monkeypatch):
-    c, main_window = setup_offscreen_gui(tmp_path, monkeypatch, qtbot)    
+def test_save_all(qapp, qtbot, raw_data_path, tmp_path, monkeypatch):
+    c, main_window = setup_offscreen_gui(tmp_path, monkeypatch, qapp, qtbot)    
 
     # Use the run_setup helper to run setup on J_muilti, which will create two tabs
-    run_setup("keck_mosfire", (raw_data_path / "keck_mosfire" / "J_multi").absolute(), main_window, qtbot)
+    run_setup("keck_mosfire", (raw_data_path / "keck_mosfire" / "J_multi").absolute(), c, qtbot)
 
     assert main_window.saveAllButton.isEnabled()
 
@@ -919,6 +928,9 @@ def test_save_all(qtbot, raw_data_path, tmp_path, monkeypatch):
         with qtbot.waitSignal(c.model.stateChanged, raising=True, timeout=10000):
             qtbot.mouseClick(main_window.setupButton, Qt.MouseButton.LeftButton)
 
+        # Make sure the thread finishes before continuing
+        assert c.operation_thread.wait(QDeadlineTimer(1000)) is True
+
     tab_a_file.unlink()
     tab_b_file.unlink()
 
@@ -952,15 +964,15 @@ def test_save_all(qtbot, raw_data_path, tmp_path, monkeypatch):
     assert tab_a_file.is_file()
     assert not tab_b_file.is_file()
 
-def test_clear(qtbot, raw_data_path, tmp_path, monkeypatch):
+def test_clear(qapp, qtbot, raw_data_path, tmp_path, monkeypatch):
     """
     Test the "clear" button
     """
 
-    c, main_window = setup_offscreen_gui(tmp_path, monkeypatch, qtbot)    
+    c, main_window = setup_offscreen_gui(tmp_path, monkeypatch, qapp, qtbot)    
 
     # Use the run_setup helper to run setup on J_muilti, which will create two tabs
-    run_setup("keck_mosfire", (raw_data_path / "keck_mosfire" / "J_multi").absolute(), main_window, qtbot)
+    run_setup("keck_mosfire", (raw_data_path / "keck_mosfire" / "J_multi").absolute(), c, qtbot)
 
     setup_gui_model = c.model
     obs_log_tab = main_window._obs_log_tab
@@ -999,8 +1011,8 @@ def test_clear(qtbot, raw_data_path, tmp_path, monkeypatch):
     assert main_window.tab_widget.widget(0).name == "ObsLog"
     assert main_window.tab_widget.count() == 2
 
-def test_log_window(qtbot, tmp_path, monkeypatch):
-    c, main_window = setup_offscreen_gui(tmp_path, monkeypatch, qtbot, verbosity=1, logfile=None)
+def test_log_window(qapp, qtbot, tmp_path, monkeypatch):
+    c, main_window = setup_offscreen_gui(tmp_path, monkeypatch, qapp, qtbot, verbosity=1)
 
     # Open the log window
     qtbot.mouseClick(main_window.logButton, Qt.MouseButton.LeftButton)
