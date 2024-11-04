@@ -1,11 +1,67 @@
 """
 Module to test spectrograph read functions
 """
+from pathlib import Path
 import os
 
 from IPython import embed
 
 from pypeit import spectrographs
+from pypeit.spectrographs.util import load_spectrograph
+
+
+# test that we can find the correct files
+def generic_file_search_test(spec, root, nfiles):
+    devroot = os.getenv('PYPEIT_DEV')
+    assert devroot is not None, 'PYPEIT_DEV not defined'
+    _root = Path(devroot).absolute() / 'RAW_DATA' / spec / root
+    assert _root.is_dir(), f'{_root} is not a directory'
+    files = load_spectrograph(spec).find_raw_files(_root)
+    assert len(files) == nfiles, f'Found {len(files)} {spec} files in {_root}, not {nfiles}'
+
+def test_filesearch():
+    #         Spectrograph name, setup directory, expected number of files
+    args = [['aat_uhrf', '3875', 5],
+            ['bok_bc', '300', 8],
+            ['gemini_flamingos2', 'HK_HK', 9],
+            ['gemini_gnirs_echelle', '32_SB_SXD', 28],
+            ['gemini_gnirs_ifu', 'LR_IFU_32mm', 23],
+            ['gtc_osiris', 'R1000B', 9],
+            ['keck_deimos', '1200B_LVM_5200', 8],
+            ['keck_esi', '1arc_1x1', 10],
+            ['keck_hires', 'HS1700+6416_H45aH_RED_B2_ECH_0.00_XD_-0.00_1x2', 13],
+            ['keck_kcrm', 'low_rl', 23],
+            ['keck_kcwi', 'medium_bl', 9],
+            ['keck_lris_blue', 'long_400_3400_d560', 6],
+            ['keck_lris_blue_orig', 'long_600_4000_d500', 7],
+            ['keck_lris_red', 'long_150_7500_d560', 4],
+            ['keck_lris_red_mark4', 'long_400_8500_d560', 12],
+            ['keck_lris_red_orig', 'long_1200_7500_d560', 3],
+            ['keck_mosfire', 'J2_long', 16],
+            ['keck_nires', 'ABBA_wstandard', 10],
+            ['keck_nirspec_high', 'Hband', 10],
+            ['ldt_deveny', 'DV1', 10],
+            ['magellan_fire', 'FIRE', 13],
+            ['magellan_mage', '1x1', 51],
+            ['mdm_modspec', 'Echelle', 13],
+            ['mmt_binospec', 'Longslit_G600', 5],
+            ['mmt_bluechannel', '300l', 15],
+            ['mmt_mmirs', 'HK_zJ', 5],
+            ['not_alfosc', 'grism10', 10],
+            ['ntt_efosc2', 'gr4', 9],
+            ['p200_dbsp_blue', '1200_5000_d55', 8],
+            ['p200_dbsp_red', '1200_7100_d68', 6],
+            ['p200_tspec', 'TSPEC', 16],
+            ['shane_kast_blue', '452_3306_d57', 11],
+            ['shane_kast_red', '1200_5000_d57', 4],
+            ['soar_goodman_blue', 'M1', 5],
+            ['tng_dolores', 'LRB', 8],
+            ['vlt_fors2', '300I', 30],
+            ['vlt_sinfoni', 'K_0.8', 14],
+            ['wht_isis_blue', 'long_R300B_d5300', 16],
+    ]
+    for a in args:
+        generic_file_search_test(*a)
 
 
 def test_mdm_osmos():

@@ -26,15 +26,20 @@ def parser(options=None):
     parser.add_argument('outfile', type=str, default=None, help='Name of the YAML outfile')
     parser.add_argument('-p', '--pypeit_branch', type=str, default='develop', help='Name of the PypeIt branch to test')
     parser.add_argument('-d', '--dev_branch', type=str, default='develop', help='Name of the PypeIt Dev-Suite branch to use')
+    parser.add_argument('-w', '--from_wheel', default=False, action='store_true', help='If set build a PypeIt wheel and install PypeIt from that. The default behavior is to install PypeIt directly from git.')
     parser.add_argument('--ncpu', type=int, default=8, help='Number of CPUs request')
     parser.add_argument('--ram', type=int, default=100, help='Amount of RAM to request (Gi)')
+    parser.add_argument('--storage', type=int, default=400, help="Amount of storage to request (Gi). A buffer of 50 Gi is added for the limit.")
     parser.add_argument('--coverage', default=False, action="store_true", help="Collect code coverage data.")
     parser.add_argument('--container', type=str, default='python3.12', help="What docker container to use. 'pypeit' for the latest pypeit conatiner. 'python3.9', 'python3.10', etc for a specific python version. Or the full path to a different image.")
     parser.add_argument('--priority_list', default=False, action="store_true", help="Copy the test_priority_list to S3 after testing.")
     parser.add_argument('additional_args', type=str, nargs='*', default=["all"], help="Additional arguments to pypeit_test. Defaults to 'all'. "
                                                                                       "For example, if you would like to run all tests, but only reduce "
                                                                                       "the data for one instrument, you could append the following string: "
-                                                                                      "'all --instruments shane_kast_blue' to the end of your command (including the quotes).")
+                                                                                      "'all --instruments shane_kast_blue shane_kast_red' to the end of "
+                                                                                      "your command (including the quotes).")
+    #parser.add_argument('-d', '--dryrun', default=False, action='store_true',
+    #                    help='Only list the steps')
 
     return parser.parse_args() if options is None else parser.parse_args(options)
 
@@ -57,11 +62,13 @@ def main():
     requests = data['spec']['template']['spec']['containers'][0]['resources']['requests']
     requests['cpu'] = str(pargs.ncpu)
     requests['memory'] = f'{pargs.ram}Gi'
+    requests['ephemeral-storage'] = f'{pargs.storage}Gi'
 
     # Limits
     limits = data['spec']['template']['spec']['containers'][0]['resources']['limits']
     limits['cpu'] = str(pargs.ncpu + 1)
     limits['memory'] = f'{pargs.ram + 10}Gi'
+    limits['ephemeral-storage'] = f'{pargs.storage+50}Gi'
 
     ###### Args #####
     arguments = pargs.additional_args
@@ -72,16 +79,27 @@ def main():
     my_args = 'apt-get -y update; apt-get -y install git awscli build-essential qtbase5-dev rclone;'
     my_args += ' cd /tmp;'
     my_args += ' git clone https://github.com/pypeit/PypeIt.git; cd PypeIt;'
+    my_args += f' git checkout {pargs.pypeit_branch};' 
 
     # Install PypeIt
-    my_args += f' git checkout {pargs.pypeit_branch};' 
-    my_args += ' git pull --ff-only;'
-    my_args += ' pip install -e ".[dev,specutils]";'
-    # Telluric
-    my_args += ' cd pypeit/data/telluric/atm_grids;'
-    my_args += ' aws --endpoint $ENDPOINT_URL s3 cp s3://pypeit/telluric/atm_grids/TelFit_MaunaKea_3100_26100_R20000.fits /tmp/telluric/TelFit_MaunaKea_3100_26100_R20000.fits --no-progress;'
-    my_args += ' aws --endpoint $ENDPOINT_URL s3 cp s3://pypeit/telluric/atm_grids/TelFit_LasCampanas_3100_26100_R20000.fits /tmp/telluric/TelFit_LasCampanas_3100_26100_R20000.fits --no-progress;'
-    my_args += ' ln -s /tmp/telluric/* .;'
+    if pargs.from_wheel:
+        # Build a PypeIt wheel and install from it
+        my_args += ' pip install setuptools extension_helpers;'
+        my_args += ' python setup.py sdist bdist_wheel;'
+        my_args += ' whl_file=(dist/pypeit*.whl);'
+        my_args += ' pip install ${whl_file}[dev];'
+    else:
+        # Install directly from git
+        my_args += ' pip install -e ".[dev]";'
+
+        # Telluric
+        # These are not installed when running from a wheel so that the cache code to download
+        # the telluric data is tested.
+        my_args += ' cd pypeit/data/telluric/atm_grids;'
+        my_args += ' aws --endpoint $ENDPOINT_URL s3 cp s3://pypeit/telluric/atm_grids/TelFit_MaunaKea_3100_26100_R20000.fits /tmp/telluric/TelFit_MaunaKea_3100_26100_R20000.fits --no-progress;'
+        my_args += ' aws --endpoint $ENDPOINT_URL s3 cp s3://pypeit/telluric/atm_grids/TelFit_LasCampanas_3100_26100_R20000.fits /tmp/telluric/TelFit_LasCampanas_3100_26100_R20000.fits --no-progress;'
+        my_args += ' ln -s /tmp/telluric/* .;'
+    
     # Dev suite
     my_args += ' cd /tmp;'
     my_args += f' git clone --branch {pargs.dev_branch}  --depth 1 https://github.com/pypeit/PypeIt-development-suite.git;'
@@ -91,8 +109,10 @@ def main():
     my_args += ' echo Copying CALIBS from Google Drive...; rclone --config nautilus/rclone.conf copy gdrive:CALIBS/ CALIBS/;'
     # Raw Data
     my_args += ' echo Copying RAW_DATA from Google Drive...; rclone --config nautilus/rclone.conf copy gdrive:RAW_DATA/ RAW_DATA/;'
-    # Run the test and copy results back to s3
+    # Run the test 
     my_args += f' ./pypeit_test -t {pargs.ncpu} {" ".join(arguments)} -r pypeit.report -o /tmp/REDUX_OUT --csv performance.csv;'
+
+    #Copy results back to s3    
     my_args += f' aws --endpoint $ENDPOINT_URL s3 cp pypeit.report s3://pypeit/Reports/{pargs.name}.report;'
     my_args += f' aws --endpoint $ENDPOINT_URL s3 cp performance.csv s3://pypeit/Reports/{pargs.name}_performance.csv;'
     if pargs.coverage:
