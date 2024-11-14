@@ -40,14 +40,14 @@ filenames = [os.path.join(redux_path, 'Science', f) for f in scifiles]
 
 # Instantiate the coadd1d object
 coadd1d_hires = coadd1d.CoAdd1D.get_instance(filenames, objids, spectrograph=spectrograph, par=par['coadd1d'],
-                                           sensfile=sensfile, debug=True, show=True)
+                                             sensfile=sensfile, debug=True, show=True)
 iexp = 0
 sobjs = specobjs.SpecObjs.from_fitsfile(filenames[iexp])
 
 indx = sobjs.name_indices(objids[iexp])
 if not np.any(indx):
     msgs.error("No matching objects for {:s}.  Odds are you input the wrong OBJID".format(objids[iexp]))
-wave_iexp, flux_iexp, ivar_iexp, gpm_iexp, trace_spec, trace_spat, meta_spec, header = \
+wave_iexp, flux_iexp, ivar_iexp, gpm_iexp, blaze_iexp, meta_spec, header = \
     sobjs[indx].unpack_object(ret_flam=par['coadd1d']['flux_value'], extract_type=par['coadd1d']['ex_value'])
 #
 

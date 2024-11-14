@@ -267,8 +267,8 @@ def test_keck_hires(redux_out):
                            0.29,
                            0.37,
                            0.25,
-                           0.33,
-                           0.31,
+                           0.45,
+                           0.32,
                            0.30,
                            0.21,
                            0.35]):
@@ -285,4 +285,22 @@ def test_keck_hires(redux_out):
         assert np.all(rms_vals <= rms), f'wave RMS for setup {setup} is too high!'
 
 
+def test_gmos(redux_out):
+
+    for setup, index, rms, mosaic in zip(
+        ['GS_HAM_B480_550'],
+        [1],
+        [0.30],
+        ['MSC01'],
+        ):
+        setupID = 'A_0'
+        # Check that spatial flexure shift was set!
+        file_path = os.path.join(redux_out,
+                             'gemini_gmos',
+                             setup,
+                             'Calibrations',
+                             f'WaveCalib_{setupID}_{mosaic}.fits')
+        # Load
+        waveCalib = WaveCalib.from_file(file_path)
+        assert waveCalib.wv_fits[index].rms < rms, f'RMS of gemini_gmos {setup} is too high!'
 

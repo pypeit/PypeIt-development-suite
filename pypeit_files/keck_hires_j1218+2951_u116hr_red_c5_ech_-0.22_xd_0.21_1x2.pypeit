@@ -1,0 +1,47 @@
+# Auto-generated PypeIt input file using PypeIt version: 1.15.1.dev218+g3070fd947
+# UTC 2024-06-11T01:02:58.779+00:00
+
+# User-defined execution parameters
+[rdx]
+    spectrograph = keck_hires
+[calibrations]
+   [[slitedges]]
+      edge_thresh = 50
+
+# Setup
+setup read
+Setup A:
+  binning: 1,2
+  decker: C5
+  dispname: RED
+  echangle: -0.21606848
+  filter1: kv370
+  xdangle: 0.2095
+setup end
+
+# Data block 
+data read
+ path PypeIt-development-suite/RAW_DATA/keck_hires/J1218+2951_U116Hr_RED_C5_ECH_-0.22_XD_0.21_1x2
+              filename |        frametype |                 ra |               dec |        target | dispname | decker | binning |          mjd | airmass | exptime | filter1 |    echangle |     xdangle | hatch | lampstat01 | frameno | calib
+HI.20160330.02184.fits |         arc,tilt | 235.49999999999997 |               0.0 |        Arc_C5 |      RED |     C5 |     1,2 | 57477.025302 |   13.37 |     1.0 |   kv370 |  -0.2160262 |      0.2095 | False |      ThAr2 |    1015 |     0
+HI.20160330.01872.fits |  illumflat,trace | 235.49999999999997 |               0.0 |      Flat_BHB |      RED |     C5 |     1,2 | 57477.021683 |   13.37 |     2.0 |   kv370 | -0.21606848 |      0.2095 | False |         on |    1012 |     0
+HI.20160330.01924.fits |  illumflat,trace | 235.49999999999997 |               0.0 |      Flat_BHB |      RED |     C5 |     1,2 | 57477.022298 |   13.37 |     2.0 |   kv370 | -0.21606848 |      0.2095 | False |         on |    1013 |     0
+HI.20160330.01977.fits |  illumflat,trace | 235.49999999999997 |               0.0 |      Flat_BHB |      RED |     C5 |     1,2 | 57477.022906 |   13.37 |     2.0 |   kv370 | -0.21606848 |      0.2095 | False |         on |    1014 |     0
+HI.20160330.23932.fits |          science |  184.5018333333333 | 29.86063888888889 |    J1218+2951 |      RED |     C5 |     1,2 | 57477.277011 |     1.5 |  1200.0 |   kv370 | -0.21594162 |      0.2095 |  True |        off |    1077 |     0
+HI.20160330.04198.fits | slitless_pixflat | 235.49999999999997 |               0.0 | Pixel_Flats_R |      RED |     D2 |     1,2 | 57477.048605 |   13.37 |    15.0 |   bg24a |         0.0 |        -5.5 | False |         on |    1025 |     0
+HI.20160330.04285.fits | slitless_pixflat | 235.49999999999997 |               0.0 | Pixel_Flats_R |      RED |     D2 |     1,2 | 57477.049621 |   13.37 |    15.0 |   bg24a |         0.0 |        -5.5 | False |         on |    1026 |     0
+HI.20160330.04350.fits | slitless_pixflat | 235.49999999999997 |               0.0 | Pixel_Flats_R |      RED |     D2 |     1,2 | 57477.050374 |   13.37 |    15.0 |   bg24a |         0.0 |        -5.5 | False |         on |    1027 |     0
+HI.20160330.04417.fits | slitless_pixflat | 235.49999999999997 |               0.0 | Pixel_Flats_R |      RED |     D2 |     1,2 | 57477.051143 |   13.37 |    15.0 |   bg24a |         0.0 |        -5.5 | False |         on |    1028 |     0
+HI.20160330.04483.fits | slitless_pixflat | 235.49999999999997 |               0.0 | Pixel_Flats_R |      RED |     D2 |     1,2 |  57477.05191 |   13.37 |    15.0 |   bg24a |         0.0 |        -5.5 | False |         on |    1029 |     0
+HI.20160330.05616.fits | slitless_pixflat |                0.0 |               0.0 | Pixel_Flats_G |      RED |     D2 |     1,2 | 57477.065024 |    1.41 |    30.0 |   og530 |         0.0 | -4.09800005 | False |         on |    1045 |     0
+HI.20160330.05697.fits | slitless_pixflat |                0.0 |               0.0 | Pixel_Flats_G |      RED |     D2 |     1,2 | 57477.065966 |    1.41 |    30.0 |   og530 |         0.0 | -4.09800005 | False |         on |    1046 |     0
+HI.20160330.05778.fits | slitless_pixflat |                0.0 |               0.0 | Pixel_Flats_G |      RED |     D2 |     1,2 | 57477.066898 |    1.41 |    30.0 |   og530 |         0.0 | -4.09800005 | False |         on |    1047 |     0
+HI.20160330.05859.fits | slitless_pixflat |                0.0 |               0.0 | Pixel_Flats_G |      RED |     D2 |     1,2 | 57477.067835 |    1.41 |    30.0 |   og530 |         0.0 | -4.09800005 | False |         on |    1048 |     0
+HI.20160330.05938.fits | slitless_pixflat |                0.0 |               0.0 | Pixel_Flats_G |      RED |     D2 |     1,2 | 57477.068749 |    1.41 |    30.0 |   og530 |         0.0 | -4.09800005 | False |         on |    1049 |     0
+HI.20160330.61072.fits | slitless_pixflat | 247.35829166666664 |               0.0 |          flat |      RED |     D2 |     1,2 | 57477.706875 |   13.37 |    40.0 |   clear |   4.228e-05 | -3.09899998 | False |         on |    1109 |     0
+HI.20160330.61163.fits | slitless_pixflat | 247.35829166666664 |               0.0 |          flat |      RED |     D2 |     1,2 | 57477.707928 |   13.37 |    40.0 |   clear |   4.228e-05 | -3.09899998 | False |         on |    1110 |     0
+HI.20160330.61255.fits | slitless_pixflat | 247.35829166666664 |               0.0 |          flat |      RED |     D2 |     1,2 |  57477.70899 |   13.37 |    40.0 |   clear |   4.228e-05 | -3.09899998 | False |         on |    1111 |     0
+HI.20160330.61347.fits | slitless_pixflat | 247.35829166666664 |               0.0 |          flat |      RED |     D2 |     1,2 | 57477.710061 |   13.37 |    40.0 |   clear |   4.228e-05 | -3.09899998 | False |         on |    1112 |     0
+HI.20160330.61440.fits | slitless_pixflat | 247.35829166666664 |               0.0 |          flat |      RED |     D2 |     1,2 | 57477.711133 |   13.37 |    40.0 |   clear |   4.228e-05 | -3.09899998 | False |         on |    1113 |     0
+data end
+
