@@ -252,10 +252,11 @@ def jwst_targets(progid, disperser, target, slits=None):
 
         if '1764' in progid:
             rawpath_level2 = '/Users/joe/jwst_redux/Raw/NIRSPEC_FS/1764/level_12/01764/'
+            redux_dir = os.path.join('/Users/joe/jwst_redux/redux/NIRSPEC_FS/1764/', target)
             if 'J0313-1806' in target:
-                redux_dir = '/Users/joe/jwst_redux/redux/NIRSPEC_FS/1764/J0313-1806/calwebb'
-                output_dir = '/Users/joe/jwst_redux/redux/NIRSPEC_FS/1764/J0313-1806/calwebb/output'
-                pypeit_output_dir = '/Users/joe/jwst_redux/redux/NIRSPEC_FS/1764/J0313-1806/calwebb/pypeit'
+                #redux_dir = '/Users/joe/jwst_redux/redux/NIRSPEC_FS/1764/J0313-1806/calwebb'
+                #output_dir = '/Users/joe/jwst_redux/redux/NIRSPEC_FS/1764/J0313-1806/calwebb/output'
+                #pypeit_output_dir = '/Users/joe/jwst_redux/redux/NIRSPEC_FS/1764/J0313-1806/calwebb/pypeit'
                 if disperser == '235H':
                     # NIRSPEC 3-point dither dither center
                     if slits == 'S200A1':
@@ -290,9 +291,9 @@ def jwst_targets(progid, disperser, target, slits=None):
                 exp_list.append([uncalfile1, uncalfile2, uncalfile3])
 
             elif 'J1007+2115' in target:
-                redux_dir = '/Users/joe/jwst_redux/redux/NIRSPEC_FS/1764/J1007+2115/calwebb'
-                output_dir = '/Users/joe/jwst_redux/redux/NIRSPEC_FS/1764/J1007+2115/calwebb/output'
-                pypeit_output_dir = '/Users/joe/jwst_redux/redux/NIRSPEC_FS/1764/J1007+2115/calwebb/pypeit'
+                #redux_dir = '/Users/joe/jwst_redux/redux/NIRSPEC_FS/1764/J1007+2115/calwebb'
+                #output_dir = '/Users/joe/jwst_redux/redux/NIRSPEC_FS/1764/J1007+2115/calwebb/output'
+                #pypeit_output_dir = '/Users/joe/jwst_redux/redux/NIRSPEC_FS/1764/J1007+2115/calwebb/pypeit'
                 if disperser == '235H':
                     # NIRSPEC 3-point dither dither center
                     if slits == 'S200A1':
@@ -328,8 +329,8 @@ def jwst_targets(progid, disperser, target, slits=None):
         if '3526' in progid:
             rawpath_level2 = '/Users/joe/jwst_redux/Raw/NIRSPEC_FS/3526/level_12/03526/'
             redux_dir = os.path.join('/Users/joe/jwst_redux/redux/NIRSPEC_FS/3526/', target)
-            output_dir = os.path.join(redux_dir, 'calwebb', 'output')        
-            pypeit_output_dir = os.path.join(redux_dir, 'calwebb', 'pypeit')
+            #output_dir = os.path.join(redux_dir, 'calwebb', 'output')        
+            #pypeit_output_dir = os.path.join(redux_dir, 'calwebb', 'pypeit')
             if 'J0410-0139' in target:
                 file_list = []
                 for ii in range(1,11): 
