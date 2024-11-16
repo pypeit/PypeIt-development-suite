@@ -60,17 +60,8 @@ for star in star_list:
                 skipped.append(str(run.parent.parent.parent))
                 reasons.append('No spec1d files')
                 continue
-            # get the path to the Flat calibration file on the Google Drive
-            flatfiles = list(run.glob('Calibrations/Flat*'))
-            if len(flatfiles) == 0:
-                msgs.warn(f'No flat file found in {run}.')
-                skipped.append(str(run.parent.parent.parent))
-                reasons.append('No flat files')
-                continue
             # use the first spec1d file to compute the sensitivity function
             spec1d = spec1ds[0]
-            # use the first flat file to compute the sensitivity function
-            flatfile = flatfiles[0]
 
             # set the path to the pypeit_sensfunc run on the working directory
             fname = '_'.join(str(runs[0]).split(f'{star}/')[1].split('/')[0:2])
@@ -92,12 +83,11 @@ for star in star_list:
                 parser = sensfunc.SensFunc.get_parser()
                 if boxcar:
                     msgs.info('Using BOXCAR extraction for the sensitivity function computation.')
-                    args = parser.parse_args([str(spec1d), '-f', str(flatfile), '-o', str(out_sensfile),
+                    args = parser.parse_args([str(spec1d), '-o', str(out_sensfile),
                                               '--par_outfile', str(par_outfile), '--extr', 'BOX'])
                 else:
-                    args = parser.parse_args([str(spec1d), '-f', str(flatfile), '-o', str(out_sensfile),
+                    args = parser.parse_args([str(spec1d), '-f', '-o', str(out_sensfile),
                                               '--par_outfile', str(par_outfile)])
-
                 sensfunc.SensFunc.main(args)
                 msgs.info(f'Sensitivity function for {workrun_dir.name} computed.')
             except Exception as e:
@@ -108,7 +98,6 @@ for star in star_list:
                 msgs.warn(f'Sensitivity function file {out_sensfile} not created. '
                           f'Deleting the folder {workrun_dir.name}.')
                 shutil.rmtree(workrun_dir)
-
 
 
 # print the list of skipped sensitivity functions
