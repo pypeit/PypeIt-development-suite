@@ -4,6 +4,10 @@
 # User-defined execution parameters
 [rdx]
     spectrograph = keck_lris_blue
+[calibrations]
+    [[standardframe]]
+        [[[process]]]
+            spat_flexure_maxlag = 10
 
 # Setup
 setup read

@@ -7,6 +7,12 @@
 [calibrations]
    [[flatfield]]
       pixelflat_file = PYPEIT_LRISb_pixflat_B400_2x2_15apr2015_specflip.fits.gz
+    [[standardframe]]
+        [[[process]]]
+            spat_flexure_sigdetect = 40
+[scienceframe]
+    [[process]]
+	spat_flexure_sigdetect = 40
 
 
 # Setup
