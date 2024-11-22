@@ -83,7 +83,7 @@ for star in star_list:
                 parser = sensfunc.SensFunc.get_parser()
                 if boxcar:
                     msgs.info('Using BOXCAR extraction for the sensitivity function computation.')
-                    args = parser.parse_args([str(spec1d), '-o', str(out_sensfile),
+                    args = parser.parse_args([str(spec1d), '-f', '-o', str(out_sensfile),
                                               '--par_outfile', str(par_outfile), '--extr', 'BOX'])
                 else:
                     args = parser.parse_args([str(spec1d), '-f', '-o', str(out_sensfile),
