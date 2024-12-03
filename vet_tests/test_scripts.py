@@ -16,6 +16,7 @@ from pypeit.display import display
 from pypeit import wavecalib
 from pypeit import coadd1d
 from pypeit import inputfiles
+from pypeit import calibrations
 from pypeit.utils import jsonify
 import json
 
@@ -501,6 +502,27 @@ def test_setup_coadd2d(redux_out):
     # Clean-up
     for f in coadd_files:
         f.unlink()
+
+    # Go back
+    os.chdir(cdir)
+
+def test_run_to_calibstep(redux_out):
+    cdir = os.getcwd()
+
+    # Set the pypeit file
+    _redux_out = Path(redux_out).resolve() / 'shane_kast_blue' / '600_4310_d55' / 'shane_kast_blue_A'
+
+    # move to the redux_out directory
+    os.chdir(_redux_out)
+    pypeit_file = _redux_out / 'shane_kast_blue_A.pypeit'
+    #pypeit_file = 'shane_kast_blue_A.pypeit'
+
+    #pytest.set_trace()
+    # Run on all the steps
+    for step in calibrations.MultiSlitCalibrations.default_steps():
+        scripts.run_to_calibstep.RunToCalibStep.main(
+            scripts.run_to_calibstep.RunToCalibStep.parse_args(
+            [str(pypeit_file), 'b28.fits.gz', step]))
 
     # Go back
     os.chdir(cdir)
