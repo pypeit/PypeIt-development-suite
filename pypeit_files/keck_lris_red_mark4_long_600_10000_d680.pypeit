@@ -4,17 +4,13 @@
 # User-defined execution parameters
 [rdx]
     spectrograph = keck_lris_red_mark4
+[reduce]
+    [[findobj]]
+        snr_thresh = 20.0    
 [calibrations]
     [[tiltframe]]
         [[[process]]]
             spat_flexure_correct = True
-	    spat_flexure_maxlag = 10
-[scienceframe]
-    [[process]]
-	spat_flexure_maxlag = 10
-[reduce]
-    [[findobj]]
-        snr_thresh = 20.0    
 
 # Setup
 setup read
