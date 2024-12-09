@@ -11,7 +11,7 @@ all_setups = {
     'gemini_gmos': ['GS_HAM_R400_700', 'GS_HAM_R400_860',
                     'GN_HAM_R400_885', 'GN_HAM_NS_B600_620',
                     'GS_HAM_MULTI_R400_700', 'GN_E2V_MULTI_R400_600',
-                    'GS_HAM_B600_MOS', 'GN_HAM_B480'],
+                    'GS_HAM_B600_MOS', 'GN_HAM_B480', 'GS_HAM_B480_550'],
     'gemini_flamingos2': ['HK_HK', 'JH_JH'],
     'gtc_osiris': ['R1000B', 'R1000BMOS', 'R1000RMOS', 'R2500R', 'R2500V'],
     'gtc_osiris_plus': ['R1000R', 'R300B'],
