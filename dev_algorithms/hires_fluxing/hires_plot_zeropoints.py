@@ -2,19 +2,18 @@
 # for each order and plot them.
 
 
-
+import shutil
 from copy import deepcopy
 from pathlib import Path
 from pypeit import sensfunc
 from pypeit.core.wavecal import wvutils
 from pypeit.core import fitting
-from pypeit.par import pypeitpar
-from pypeit.spectrographs.util import load_spectrograph
 import numpy as np
 import matplotlib.pyplot as plt
 from matplotlib.backends.backend_pdf import PdfPages
 import matplotlib.colors as mcolors
 from astropy import stats
+from astropy.io import fits
 from IPython import embed
 
 # for plots
@@ -35,12 +34,11 @@ plt.rc('axes', linewidth=1.5)
 colors_values = np.array(list(mcolors.XKCD_COLORS.values()))
 # exclude light and dark colors. Colors that have v (of hsv) values between 0.15 and 0.85 are kept
 hsv_v = np.array([mcolors.rgb_to_hsv(mcolors.to_rgba(c)[:3])[-1] for c in colors_values])
-pcolors = colors_values[(hsv_v >= 0.2) & (hsv_v <= 0.85)]
+pcolors = colors_values[(hsv_v >= 0.15) & (hsv_v <= 0.985)]
 
 #####################################################################
 
 plotname = 'collection_RESCALEDzeropoints_by_order_with_comb.pdf'
-comb_zeropoints_name = 'keck_hires_RED_orders_93-35_sensfumc.fits'
 
 # REDUX/keck_hires path
 hires_redux = Path('/Users/dpelliccia/Desktop/adap2020/')
@@ -70,32 +68,21 @@ order_vec = np.arange(all_orders.min(), all_orders.max()+1, dtype=int)
 # trim the sensfuncs 50 pixels from left and 100 pixels from right. This is to avoid the edges drops
 cut_left, cut_right = 50, -100
 
-# initialize sensfunc object for the combined zeropoints
-# make a copy of an existing sensfunc object
-comb_sensobj = deepcopy(sensobjs_list[0])
-# remove attributes that are not general to all the sensfuncs
-att_to_reinit = ['spec1df', 'std_name', 'std_cal', 'std_ra', 'std_dec', 'airmass', 'exptime', 'sens', 'wave', 'zeropoint', 'throughput']
-for att in att_to_reinit:
-    setattr(comb_sensobj, att, None)
-tell_att_to_reinit = ['std_src', 'std_name', 'std_cal', 'airmass', 'exptime', 'std_ra', 'std_dec', 'model']
-for att in tell_att_to_reinit:
-    setattr(comb_sensobj.telluric, att, None)
-
 # initialize the combined zeropoints
 comb_zeropoints_list = []
 comb_wavegrids_list = []
 comb_orders_list = []
+ok_sensfiles = []
+ok_spec1dfiles = []
 
 # plot the zeropoints
 with PdfPages(plotname) as pdf:
     for o,iord in enumerate(order_vec[::-1]):
         zeropoint_medians = []
-        datasets_iord, stdnames_iord = [], []
+        datasets_iord, stdnames_iord, sensfiles_iord, spec1dfiles_iord = [], [], [], []
         waves_iord, zeropoints_data_iord, zeropoints_fit_iord, gpms_iord = [], [], [], []
-        for i,sensobj in enumerate(sensobjs_list):
-            stdname = sensobj.std_name
-            sens_tab = sensobj.sens
-            for sens in sens_tab:
+        for s,sensobj in enumerate(sensobjs_list):
+            for sens in sensobj.sens:
                 if sens['ECH_ORDERS'] == iord:
                     wave = sens['SENS_WAVE']
                     wv_gpm = wave > 1.0
@@ -110,8 +97,10 @@ with PdfPages(plotname) as pdf:
                     gpms_iord.append(zeropoint_data_gpm & zeropoint_fit_gpm)
                     zeropoints_fit_iord.append(zeropoint_fit)
                     zeropoints_data_iord.append(zeropoint_data)
-                    datasets_iord.append(datasets[i])
-                    stdnames_iord.append(stdname)
+                    datasets_iord.append(datasets[s])
+                    stdnames_iord.append(sensobj.std_name)
+                    sensfiles_iord.append(str(sens_files[s]))
+                    spec1dfiles_iord.append(sensobj.spec1df)
 
         # scale the zeropoints to the same median value (max of all the medians)
         zeropoint_medians = np.array(zeropoint_medians)
@@ -128,19 +117,23 @@ with PdfPages(plotname) as pdf:
         ok_waves = []
         ok_gpms = []
         # lower limit for the zeropoints
-        low_thresh = 16.
+        low_thresh = 15.
         if iord == 35:
             low_thresh = 13.
         elif iord in [43,66,84]:
             low_thresh = 18.
         elif iord == 88:
             low_thresh = 17.
+        elif iord == 76:
+            low_thresh = 17.5
         for i in range(len(zeropoints_fit_scaled)):
             if np.any(zeropoints_fit_scaled[i] < low_thresh) or np.any(zeropoints_fit_scaled[i] > 20.):
                 continue
             ok_zeropoints.append(zeropoints_fit_scaled[i])
             ok_waves.append(waves_iord[i])
             ok_gpms.append(gpms_iord[i])
+            ok_sensfiles.append(sensfiles_iord[i])
+            ok_spec1dfiles.append(spec1dfiles_iord[i])
             # plot the zeropoints
             label = f'{stdnames_iord[i]} - {datasets_iord[i]} - order {iord}'
 
@@ -178,20 +171,32 @@ with PdfPages(plotname) as pdf:
             # plt.show()
         plt.close(fig)
 
-# Find the maximum length of the arrays
-max_length = max(len(arr) for arr in comb_zeropoints_list)
+used_sensfiles = np.unique(ok_sensfiles)
+used_spec1dfiles = np.unique(ok_spec1dfiles)
 
-# Pad the arrays with zeros to make them the same size
-comb_zeropoints_list = [np.pad(arr, (0, max_length - len(arr)), constant_values=0) for arr in comb_zeropoints_list]
-comb_wavegrids_list = [np.pad(arr, (0, max_length - len(arr)), constant_values=0) for arr in comb_wavegrids_list]
-embed()
-# Convert lists to 2D arrays
-comb_zeropoints_array = np.array(comb_zeropoints_list)
-comb_wavegrids_array = np.array(comb_wavegrids_list)
+# save the sensfunc and spec1d files that were used to compute the combined zeropoints to a text file and copy them
+# to a new directory
+sensfunc_basename = f'used_sensfuncs_v{sensobjs_list[0].version}'
+spec1d_basename = f'used_spec1ds_v{fits.getval(used_spec1dfiles[0], "DMODVER", 1)}'
+# Save the file paths to text files
+with open(f'{sensfunc_basename}.txt', 'w') as f:
+    for file in used_sensfiles:
+        f.write(f"{Path(file).name}\n")
 
-# Save the combined zeropoints to a sensfunc file
-comb_sensobj.empty_sensfunc_table(len(comb_orders_list), comb_zeropoints_array.shape[0], 0)
+with open(f'{spec1d_basename}.txt', 'w') as f:
+    for file in used_spec1dfiles:
+        f.write(f"{Path(file).name}\n")
 
+# Create a new folder in the current working directory
+sensfuncs_folder = Path().cwd() / sensfunc_basename
+spec1ds_folder = Path().cwd() / spec1d_basename
+sensfuncs_folder.mkdir(exist_ok=True)
+spec1ds_folder.mkdir(exist_ok=True)
+# Copy the files to the new folder
+for file in used_sensfiles:
+    shutil.copy(file, sensfuncs_folder)
+for file in used_spec1dfiles:
+    shutil.copy(file, spec1ds_folder)
 
 
 
