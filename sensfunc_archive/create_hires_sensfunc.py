@@ -26,7 +26,7 @@ def color_distance(c1, c2):
 
 def is_blackish_or_whiteish(color):
     rgb = np.array(mcolors.to_rgb(color))
-    return np.all(rgb > 0.95) or np.all(rgb < 0.3)
+    return np.all(rgb > 0.8) or np.all(rgb < 0.1)
 
 
 def get_unique_colors(n, color_dict):
