@@ -268,6 +268,7 @@ def combine_sensfuncs(sensfuncs, cut_left=50, cut_right=-100, poly_order=4, qa_p
     zeropoints_data_list = []
     waves_list = []
     sensfiles_iord_list = []
+    gpm_list = []
 
     # loop over the orders
     for iord in order_vec:
@@ -322,28 +323,36 @@ def combine_sensfuncs(sensfuncs, cut_left=50, cut_right=-100, poly_order=4, qa_p
             sensfiles_iord = [sensfiles_iord[k] for k in range(len(sensfiles_iord)) if k not in ind_to_remove]
 
         if len(waves_iord) > 0:
-            # create wave grid
-            wave_grid, wave_grid_mid, _ = wvutils.get_wave_grid(waves=waves_iord)
-            # fit a polynomial to all the zeropoints
-            all_zeropoints_iord = np.concatenate(zeropoints_fit_scaled_iord)
-            all_waves_iord = np.concatenate(waves_iord)
-            all_gpms_iord = np.concatenate(gpms_iord)
-            wave_min_iord, wave_max_iord = all_waves_iord.min(), all_waves_iord.max()
-            pypeitFit = fitting.robust_fit(all_waves_iord, all_zeropoints_iord, poly_order,
-                                           minx=wave_min_iord, maxx=wave_max_iord,
-                                           in_gpm=all_gpms_iord, lower=3, upper=3, use_mad=True)
-            # evaluate the polynomial
-            comb_zeropoint_fit_iord = pypeitFit.eval(wave_grid)
-
-            # append the results to the lists
-            comb_zeropoint_fit_list.append(comb_zeropoint_fit_iord)
-            comb_wave_list.append(wave_grid)
+        #     # create wave grid
+        #     wave_grid, wave_grid_mid, _ = wvutils.get_wave_grid(waves=waves_iord)
+        #     # fit a polynomial to all the zeropoints
+        #     all_zeropoints_iord = np.concatenate(zeropoints_fit_scaled_iord)
+        #     all_waves_iord = np.concatenate(waves_iord)
+        #     all_gpms_iord = np.concatenate(gpms_iord)
+        #     wave_min_iord, wave_max_iord = all_waves_iord.min(), all_waves_iord.max()
+        #     pypeitFit = fitting.robust_fit(all_waves_iord, all_zeropoints_iord, poly_order,
+        #                                    minx=wave_min_iord, maxx=wave_max_iord,
+        #                                    in_gpm=all_gpms_iord, lower=3, upper=3, use_mad=True)
+        #     # evaluate the polynomial
+        #     comb_zeropoint_fit_iord = pypeitFit.eval(wave_grid)
+        #
+        #     # append the results to the lists
+        #     comb_zeropoint_fit_list.append(comb_zeropoint_fit_iord)
+        #     comb_wave_list.append(wave_grid)
             comb_orders_list.append(iord)
             zeropoints_fit_list.append(zeropoints_fit_scaled_iord)
             zeropoints_data_list.append(zeropoints_data_scaled_iord)
             waves_list.append(waves_iord)
             sensfiles_iord_list.append(sensfiles_iord)
 
+    # get the wavelength grid from the telluric grid
+    hdul = io.load_telluric_grid(sensfuncs[0].telluric.telgrid)
+    wave_grid_tell = hdul[1].data
+    # keep only the wavelengths that are within the range of the zeropoints
+    wmin_grid = np.array([[w.min(), w.max()] for sublist in waves_list for w in sublist]).min()
+    wmax_grid = np.array([[w.min(), w.max()] for sublist in waves_list for w in sublist]).max()
+    wave_grid = wave_grid_tell[(wave_grid_tell > wmin_grid) & (wave_grid_tell < wmax_grid)]
+    embed()
     # QA plots
     if qa_plots:
         plot_by_order(comb_orders_list, comb_wave_list, comb_zeropoint_fit_list,
