@@ -1,4 +1,4 @@
-
+import os 
 import copy
 import numpy as np
 from scipy import interpolate
@@ -7,13 +7,15 @@ from astropy.stats import sigma_clipped_stats
 from astropy.table import Table
 from astropy.io import fits
 from astropy.wcs import WCS
+from astropy import units as u
+from astropy import constants as const
 
 from pypeit.display import display
 from pypeit.core import fitting
 from gwcs import wcstools
 from matplotlib import pyplot as plt
 from jwst import datamodels
-from pypeit.utils import inverse, zero_not_finite
+from pypeit.utils import inverse, zero_not_finite, fast_running_median
 DO_NOT_USE = datamodels.dqflags.pixel['DO_NOT_USE']
 from pypeit import msgs
 from pypeit import datamodel
@@ -25,6 +27,8 @@ from pypeit.images.pypeitimage import PypeItImage
 from pypeit.images.mosaic import Mosaic
 from pypeit import slittrace, spec2dobj
 from pypeit import find_objects, extraction
+from pypeit import specobjs
+
 
 #import grismconf
 
@@ -337,6 +341,271 @@ def jwst_proc(msa_data, slit_slice, finitemask, flatfield, pathloss, barshadow, 
     return zero_not_finite(science), zero_not_finite(sciivar), gpm, zero_not_finite(base_var), \
         zero_not_finite(count_scale), rn2_img
 
+
+
+def jwst_fnu_to_flam(fnufile, outfile=None, plot=False):
+    """
+    Utility routine to convert a PypeIt coadded JWST spectrum in F_nu to F_lambda.
+    
+    Parameters
+    ----------
+    fnufile : str
+        Name of the input file with the F_nu spectrum
+    outfile : str
+        Name of the output file with the F_lambda spectrum. If None, the output file is written to the same directory with the same name as 
+        fnufile, but with the _Flam.fits suffix.
+    plot : bool
+        If True, a plot of the F_lambda spectrum is displayed.
+    
+    Returns
+    -------
+    outfile : str
+        Name of the output file with the F_lambda spectrum.
+    """
+
+    _outfile = os.path.join(os.path.dirname(fnufile), os.path.basename(fnufile).replace('.fits', '_Flam.fits')) if outfile is None else outfile
+    spec_table = Table.read(fnufile, format='fits')
+
+    flux_MJy = spec_table['flux']*u.MJy
+    wave = spec_table['wave_grid_mid']*u.angstrom
+    sigma_MJy = np.sqrt(inverse(spec_table['ivar']))*u.MJy
+    gpm = spec_table['mask'].astype(bool)
+    nu_to_flam_factor =const.c/np.square(wave)
+    factor = nu_to_flam_factor
+
+    F_lam = (flux_MJy*factor).decompose().to(u.erg/u.s/u.cm**2/u.angstrom).value/1e-17
+    sigma_lam = (sigma_MJy*factor).decompose().to(u.erg/u.s/u.cm**2/u.angstrom).value/1e-17
+
+    # Create an output table
+    spec_table['F_lam'] = F_lam
+    spec_table['sigma_lam'] = sigma_lam
+    # Write it out to disk
+    spec_table.write(_outfile, overwrite=True) 
+    
+    if plot: 
+        F_lam_sm = fast_running_median(F_lam*gpm, 10)
+        sigma_lam_sm = fast_running_median(sigma_lam*gpm, 10)
+        ymin = -1.2*np.max(sigma_lam_sm)
+        ymax = 1.2*np.max(F_lam_sm)
+        plt.plot(wave, F_lam, drawstyle='steps-mid', label='JWST')
+        plt.ylim([ymin, ymax])
+        plt.ylabel(r'$F_\lambda$ (10$^{-17}$ erg s$^{-1}$ cm$^{-2}$ $\AA^{-1}$)')
+        plt.xlabel(r'$\lambda$ ($\AA$)')
+        plt.legend()
+        plt.show()
+
+    
+    return _outfile
+
+
+def _jwst_bogus_f100lp(file, outpath=None):
+    """Utility routine to create a bogus 140H rate file with F100LP in the filter header to trick calwebb into 
+    reducing F070LP data with the full wavelength coverage of the 140H grating, instead of cutting of the wavelength
+    coverage because of second order contaminatinon
+    
+    Parameters
+    ----------
+    file : str
+        Rate file to copy and modify
+    outpath : str
+        Path to write the new file. If None, the new file is written to the same directory as the input file.
+
+    Returns
+    -------
+    newfile : str
+        Name of the new bogus file created with the bogus filter header
+
+    """
+    
+    dirname, basename = os.path.split(file)
+    outpath = dirname if outpath is None else outpath
+    newfile = os.path.join(outpath, os.path.basename(file).replace('jw', 'bogus_F100LP_jw'))
+    #print('cp -f ' + file + ' ' + newfile)        
+    os.system('cp -f ' + file + ' ' + newfile)
+    fits.setval(newfile, 'FILTER', value='F100LP')        
+
+    return newfile
+
+def jwst_bogus_f100lp(rate_files, outpath=None):
+    """
+    Utility routine to create a set of bogus 140H rate files with F100LP in the filter header to trick calwebb into 
+    reducing F070LP data with the full wavelength coverage of the 140H grating, instead of cutting off the wavelength
+    coverage because of second order contamination.
+
+    Parameters
+    ----------
+    rate_files : list or str
+        A rate file, list of files, or nested list of rate files to copy and modify.
+    outpath : str
+        Path to write the new files. If None, the new files are written to the same directory as the input files.
+
+    Returns
+    -------
+    newfiles : list or str
+        A new rate file, list of new rate files, or nested list of new rate files created with the bogus filter header. The
+        output format matches the input format.
+    """
+    if isinstance(rate_files, list):
+        return [jwst_bogus_f100lp(item, outpath) for item in rate_files]
+    else:
+        return _jwst_bogus_f100lp(rate_files, outpath)
+
+def get_2ndorder_bpm(wave, wave_1st_order_minmax): 
+    """
+    Utility routine to create a bad pixel mask for 2nd order contamination from a set of 1st order contaminated
+    regions.
+    
+    Parameters
+    ----------
+    wave : np.ndarray
+        Wavelength array for the 2nd order contamination
+    wave_1st_order_minmax : list of tuples or a tuple
+        A list of tuples with the minimum and maximum wavelengths of (first order) regions that have significant emission
+        that would need to be masked at locations where this light would land in the second order regions of the
+        spectrum in coinsideration. This should be a list of tuples of tuples or a tuple where each tuple[0] is
+        the minimum 1st order wavelength and tuple[1] is the maximum 1st order wavelength.
+    
+    Returns
+    -------
+    bpm : np.ndarray
+        A boolean array with the same shape as wave, which is True for contaminated 2nd order regions and False
+        for uncontaminated regions.
+    """
+    
+    bpm = np.zeros_like(wave, dtype=bool)
+    if wave_1st_order_minmax is not None:
+        for wave_min, wave_max in wave_1st_order_minmax:
+            bpm |= (wave >= 2.0*wave_min) & (wave <= 2.0*wave_max)
+
+    return bpm
+
+def jwst_bogus_masking(original_f070lp_files, bogus_f100lp_files, wave_1st_order_minmax=None, wave_bogus = 12699.12):
+    """
+    Utility routine to create masks for the 140H/F070LP grating data that has been reduced with twice, one set 
+    the normal way, and another set with fake F100LP filter information in the header cards in order to trick calwebb 
+    into reducing the entire wavelength coverage of the 140H grating, instead of cutting off the wavelength coverage 
+    because of second order contamination.
+    
+    Background: NIRSpec 140H/F070LP data reduced with calwebb cuts of at 12699.12 Angstroms, because the F070LP block
+    filter transmit light (few percent) at lambda > 6350A, which results in 2nd order contamination at lambda > 12699.12A.
+    However, for dropout sources, the 2nd order contamination is not an issue and we want to use the entire spectral
+    range afforded by the 140H/F070LP combination, which extends to lambda ~ 18600A. 
+    
+    To deal with this problem we reduce the F140H/F070LP data twice, once the normal way, and once with fake F100LP 
+    header cards. As such, we need to create masks for both sets of data for two reasons: 
+    
+    1. We need to mask out the region with wavelength < 12699.12A in the bogus F140H/F100LP data, since
+    we have those wavelengths covered in the originoal F140/F070LP reduction. 
+    
+    2. We may need to mask out pixels that actually do suffer from second order contamination in the bogus 
+    F140H/F100LP data. This masking of course depends on the actual spectrum of the source, and these regions
+    can be identified from a combination of the JWST spectrum itself (down to lambda > 7000A) 
+    as well as ground based spectra. 
+    
+    As an example, consider at z = 6.8 quasar observed with F140H/F070LP. 
+        - The Ly-b line is at (1 + z)*1025.72A = 8000A, and the Ly-beta proximity zone might extend to 7956A.  We may
+          need to mask this region depending on what transmission we can see in the (JWST/ground-based) spectrum. 
+        - The Ly-a forest extends from (1+z)*1025.72 < lambda < (1+z)*1215.67A = 9482A, or 5.58 < z_lya < 6.8. 
+          Suppose there is significant Ly-a forest transmission from 8000-8267A (5.58 < z_lya < 5.8). We may need
+          to mask this region depending on what transmission we can see in the (JWST/ground-based) spectrum. 
+        - The Ly-a proximity zone might result in transmission at 9430A, but since 2*9430=18860A > 18600A (the 
+          limit of the F140H spectral coverage), so we don't need to mask this region. 
+          
+    So based on this we might conservatively set: 
+        
+        wave_1st_order_minmax = [(7956, 8267)]
+    
+    to mask the entire region, or we could break up the mask into smaller regions using more detailed information
+    from the JWST/ground-based spectra.
+    
+    
+    Parameters
+    ----------
+    bogus_f100lp_files : list or str
+        A bogus rate file, list of files, or nested list of bogus rate files that have been reduced with the F100LP header cards.
+    original_f070lp_files : list or str
+        A rate file, list of files, or nested list of rate files that have been reduced with the F070LP header cards.
+    wave_1st_order_minmax : list of tuples or a tuple
+        A list of tuples with the minimum and maximum wavelengths of (first order) regions that have significant emission 
+        that would need to be masked at locations where this light would land in the second order regions of the 
+        bogus_f100lp spectra. This should be a list of tuples of tuples or a tuple where each tuple[0] is 
+        the minimum 1st order wavelength and tuple[1] is the maximum 1st order wavelength. If None, 
+        no 2nd order masking of the bogus_f100lp spectra will be performed. 
+    wave_bogus : float
+        The wavelength at which the second order contamination starts in the original F140H/F070LP data. This is 
+        interpreted as basically where the calwebb pipeline cuts off the wavelength coverage of the 140H/F070LP 
+        data, which is at 12699.12 Angstroms. We must mask this region in the bogus F140H/F100LP data since it is 
+        already covered in the original F140H/F070LP data, so as not to double count and obtain incorrect S/N ratios. 
+
+    Returns
+    -------
+    new_original_files : list or str
+        A list of new original spec1d files which are masked, which have prefix 'spec1d_masked' instead of 'spec1d'.
+    new_bogus_files : list or str
+        A list of new bogus spec1d files which are masked, which have prefix 'spec1d_masked' instead of 'spec1d'.
+    """
+        
+    if isinstance(wave_1st_order_minmax, tuple):
+        _wave_1st_order_minmax = [wave_1st_order_minmax]
+    elif isinstance(wave_1st_order_minmax, list):
+        _wave_1st_order_minmax = wave_1st_order_minmax
+    elif wave_1st_order_minmax is None:
+        _wave_1st_order_minmax = None
+    else:
+        raise ValueError('wave_1st_order_minmax must be a tuple, a list of tuples, or None')
+
+    new_original_files = []
+    for file in original_f070lp_files:
+        sobjs = specobjs.SpecObjs.from_fitsfile(file)
+        # Mask all below wave_bogus, above wave_bogus is good
+        bogus_gpm_opt = (sobjs.OPT_WAVE <= wave_bogus)
+        sobjs.OPT_MASK         *= bogus_gpm_opt
+        sobjs.OPT_COUNTS       *= bogus_gpm_opt
+        sobjs.OPT_COUNTS_IVAR  *= bogus_gpm_opt
+        sobjs.OPT_COUNTS_NIVAR *= bogus_gpm_opt
+        sobjs.OPT_COUNTS_SIG   *= bogus_gpm_opt
+
+        bogus_gpm_box = (sobjs.BOX_WAVE <= wave_bogus)
+        sobjs.BOX_MASK         *= bogus_gpm_box
+        sobjs.BOX_COUNTS       *= bogus_gpm_box
+        sobjs.BOX_COUNTS_IVAR  *= bogus_gpm_box
+        sobjs.BOX_COUNTS_NIVAR *= bogus_gpm_box
+        sobjs.BOX_COUNTS_SIG   *= bogus_gpm_box
+        new_original_file = file.replace('spec1d', 'spec1d_masked')
+        sobjs.write_to_fits(sobjs.header, new_original_file, overwrite=True)
+        new_original_files.append(new_original_file)
+            
+    new_bogus_files = []
+    for file in bogus_f100lp_files:
+        sobjs = specobjs.SpecObjs.from_fitsfile(file)
+        # Mask the second order contaminated region
+        bpm_2nd_order_opt = get_2ndorder_bpm(sobjs.OPT_WAVE, _wave_1st_order_minmax)
+        # Mask all below wave_bogus since these wavelengths are covered in the original F070/140H frames
+        # Good wavelengths are > wave_bogus and not in the 2nd order contaminated region
+        bogus_gpm_opt = (sobjs.OPT_WAVE > wave_bogus) & np.logical_not(bpm_2nd_order_opt)
+        sobjs.OPT_MASK         *= bogus_gpm_opt
+        sobjs.OPT_COUNTS       *= bogus_gpm_opt
+        sobjs.OPT_COUNTS_IVAR  *= bogus_gpm_opt
+        sobjs.OPT_COUNTS_NIVAR *= bogus_gpm_opt
+        sobjs.OPT_COUNTS_SIG   *= bogus_gpm_opt
+
+        # Mask the second order contaminated region
+        bpm_2nd_order_box = get_2ndorder_bpm(sobjs.BOX_WAVE, _wave_1st_order_minmax)
+        # Mask all below wave_bogus since these wavelengths are covered in the original F070/140H frames
+        # Good wavelengths are > wave_bogus and not in the 2nd order contaminated region
+        bogus_gpm_box = (sobjs.BOX_WAVE > wave_bogus) & np.logical_not(bpm_2nd_order_box)
+        sobjs.BOX_MASK         *= bogus_gpm_box
+        sobjs.BOX_COUNTS       *= bogus_gpm_box
+        sobjs.BOX_COUNTS_IVAR  *= bogus_gpm_box
+        sobjs.BOX_COUNTS_NIVAR *= bogus_gpm_box
+        sobjs.BOX_COUNTS_SIG   *= bogus_gpm_box
+
+        new_bogus_file = file.replace('spec1d', 'spec1d_masked')
+        sobjs.write_to_fits(sobjs.header, new_bogus_file, overwrite=True)
+        new_bogus_files.append(new_bogus_file)  
+        
+    return new_original_files, new_bogus_files
+    
 
 
 
@@ -738,7 +1007,7 @@ def jwst_extract_subimgs(final_slit, intflat_slit, f070_f100_rescale=False):
         # of flux calibration I could also multiply into the flat. But since the pathloss is already near unity, it seems
         # more transparent to multiply this factor here, since this correction is also order unity.
         # TODO put this file in pypeit/data
-        rescale_table = fits.getdata('/Users/joe/python/PypeIt-development-suite/dev_algorithms/jwst/filters/'
+        rescale_table = fits.getdata('/Users/joe/python/PypeIt-development-suite/pypeitdev/jwst/filters/'
                                      'nirspec/F070overF100_trans_ratio.fits')
         wave_rescale = rescale_table['wavelength'] # Units are microns
         trans_rescale = rescale_table['F070overF100_trans_ratio']

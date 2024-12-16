@@ -23,9 +23,8 @@ from jwst import datamodels
 DO_NOT_USE = datamodels.dqflags.pixel['DO_NOT_USE']
 
 # PypeIt imports
-from jwst_utils import NIRSpecSlitCalibrations, jwst_mosaic, jwst_reduce
-from jwst_targets import jwst_targets
-from jwst_calwebb_detector1 import run_calwebb_detector1
+from pypeitdev.jwst.jwst_utils import NIRSpecSlitCalibrations, jwst_mosaic, jwst_reduce
+from pypeitdev.jwst import jwst_targets
 from pypeit.metadata import PypeItMetaData
 from pypeit.display import display
 from pypeit.images import combineimage
@@ -82,18 +81,57 @@ DO_NOT_USE = datamodels.dqflags.pixel['DO_NOT_USE']
 #target, slits, disperser = 'J0252-0503', 'S200A2', '235H'
 #target, disperser, slits = 'J0410-0139', 'S200A2', '235H'
 
-def jwst_run_redux(exp_list, redux_dir, disperser, source_type='POINT', show=False, overwrite_stage1=False, overwrite_stage2=False, reduce_slits=None, reduce_sources=None, kludge_err=1.5, bkg_redux=False):
+def validate_redux_input(reduce_input, name):
+    """
+    Utility method to validate the reduction input keyword parameters and guarantee they are lists. 
+    
+    Parameters
+    ----------
+    reduce_input : str or list
+        The input to validate.
+    name : str
+        The name of the parameter.
+        
+    Returns
+    -------
+    _reduce_input : list
+    """
+
+    if isinstance(reduce_input, str):
+        _reduce_input = [reduce_input] 
+    elif isinstance(reduce_input, list):
+        _reduce_input = reduce_input
+    elif reduce_input is None:
+        _reduce_input = None
+    else: 
+        msgs.error(f'{name} must be a string or a list of strings.')
+        
+    return _reduce_input
+    
+
+
+
+def jwst_run_redux(redux_dir, disperser, uncal_list=None, rate_list=None, 
+                   reduce_slits=None, reduce_sources=None,
+                   source_type='POINT', show=False, overwrite_stage1=False, overwrite_stage2=False, 
+                   kludge_err=1.5, bkg_redux=False):
     """
     Main routine to reduce JWST NIRSpec data
     
     Parameters
     ----------
-    exp_list : list
-        List of lists of uncalibrated files for each exposure.
     redux_dir : str
         Path to the directory where the data will be reduced.
-   disperser : str
+    disperser : str
         Name of the disperser.
+    uncal_list : list
+        List of lists of uncalibrated files for each exposure. exp_list[0] is for nrs1 and exp_list[1] is for nrs2.  Optional, default is None. Either uncal_list or rate_list must be provided.
+    rate_list : list
+        List of lists of rate files for each exposure. rate_list[0] is for nrs1 and rate_list[1] is for nrs2. Optional, default is None. Either uncal_list or rate_list must be provided.
+    reduce_slits : str or list, optional
+        List of slits to reduce. If None, reduce all. 
+    reduce_sources : str or list, optional
+        List of sources to reduce. If None, reduce all. 
     source_type = str
         source_type for the spec2d pipeline. Options are 'POINT' or 'EXTENDED'. Optional, default is 'POINT'.  This the flux calibration, I believe via slit loss corrections and what is assumed.  
         Previously we were setting this parameter to be 'POINT' for FS data and 'EXTENDED' for MSA data, which may be the right choice, but it needs to be more carefully investiated. 
@@ -103,39 +141,16 @@ def jwst_run_redux(exp_list, redux_dir, disperser, source_type='POINT', show=Fal
         Rerun the jwst pipeline overwriting existing stage1 reductions 
     overwrite_stage2 : bool, optional
         Rerun the jwst pipeline overwriting existing stage2 reductions
-    reduce_slits : list, optional
-        List of slits to reduce. If None, reduce all. 
-    reduce_sources : list, optional
-        List of sources to reduce. If None, reduce all. 
     kludge_err : float, optional
         Factor to scale the sigma error maps up by to account for the incorrect error propagation in the JWST pipeline. 
     bkg_redux : bool, optional
         If True, perform a background redux using image differencing. If False, model the background with a bspline. bkg_redux should typically be set to True for MSA reductions, 
         and False for FS reductions.
     """
+
+    _reduce_slits = validate_redux_input(reduce_slits, 'reduce_slits')
+    _reduce_sources = validate_redux_input(reduce_sources, 'reduce_sources')
     
-    
-    #slits = 'S200A2' #'S200A1' #'S200A2' #'S200A1' # 'S200A2'
-    #disperser = '235H' #'235H' #'235H_bogus_FS' #'140H_bogus_FS_F100LP'
-    #exp_list, redux_dir = jwst_targets(progid, disperser, target, slits=slits)
-
-    # Redux parameters 
-    #mode = 'MSA'
-    #mode = 'FS'
-    # This only impacts the srctype
-    #bkg_redux = False #False #False #False #False
-    #run_stage1 = True
-    #run_stage2 = True
-    #overwrite_stage1 = True
-    #overwrite_stage2 = True 
-    #show=False
-    #reduce_slits = [slits] # None
-    #reduce_sources = None
-
-    #kludge_err = 1.5 # More recent reductions suggest this number ought to be more like 1.2
-    # Is this correct?
-    bkg_indices = [(1,2), (0,2), (0,1)]
-
     # Define the path
     output_dir = os.path.join(redux_dir, 'output')
     pypeit_output_dir = os.path.join(redux_dir, 'pypeit')
@@ -149,39 +164,53 @@ def jwst_run_redux(exp_list, redux_dir, disperser, source_type='POINT', show=Fal
     if not os.path.isdir(output_dir):
         msgs.info('Creating directory for calwebb output: {0}'.format(output_dir))
         os.makedirs(output_dir)
-
-    uncalfiles_1 = exp_list[0]
-    uncalfiles_2 = exp_list[1] if len(exp_list) > 1 else []
-    uncalfiles = [uncalfiles_1, uncalfiles_2]
-    uncalfiles_all = uncalfiles_1 + uncalfiles_2
-    nexp = len(uncalfiles_1)
-
-
-    basenames, basenames_1, basenames_2, scifiles_1, scifiles_2 = [], [], [], [], []
-    for sci1, sci2 in zip(uncalfiles_1, uncalfiles_2):
-        b1 = os.path.basename(sci1).replace('_uncal.fits', '')
-        b2 = os.path.basename(sci2).replace('_uncal.fits', '')
-        basenames_1.append(b1)
-        basenames_2.append(b2)
-        basenames.append(b2.replace('_nrs2', ''))
-        scifiles_1.append(os.path.join(output_dir, b1 + '_rate.fits'))
-        scifiles_2.append(os.path.join(output_dir, b2 + '_rate.fits'))
-
-    scifiles = [scifiles_1, scifiles_2]
-    scifiles_all = scifiles_1 + scifiles_2
-
-    #parameter_dict_det1 = {"jump": {"maximum_cores": 'quarter'},}
-
-    #run_calwebb_detector1(uncalfiles_all, output_dir, cores2use='quarter', overwrite=False)
-    # Run the stage1 pipeline
-    for uncal in uncalfiles_all:
-        ratefile = os.path.join(output_dir,  os.path.basename(uncal).replace('_uncal', '_rate'))
-        if os.path.isfile(ratefile) and not overwrite_stage1:
-            msgs.info('Using existing rate file: {0}'.format(ratefile))
-            continue
-        Detector1Pipeline.call(uncal, save_results=True, output_dir=output_dir) #, steps=parameter_dict_det1)
-
     
+    # Did the user pass in an uncal_list? 
+    if uncal_list is None and rate_list is None:
+        msgs.error('Either uncal_list or rate_list must be provided.')
+    elif uncal_list is not None and rate_list is not None:
+        msgs.error('Only one of uncal_list or rate_list can be provided.')
+    elif uncal_list is not None and rate_list is None: 
+        uncalfiles_1 = uncal_list[0]
+        uncalfiles_2 = uncal_list[1] if len(uncal_list) > 1 else []
+        uncalfiles_all = uncalfiles_1 + uncalfiles_2
+        nexp = len(uncalfiles_1)
+
+        basenames, basenames_1, basenames_2, rate_files_1, rate_files_2 = [], [], [], [], []
+        for sci1, sci2 in zip(uncalfiles_1, uncalfiles_2):
+            b1 = os.path.basename(sci1).replace('_uncal.fits', '')
+            b2 = os.path.basename(sci2).replace('_uncal.fits', '')
+            basenames_1.append(b1)
+            basenames_2.append(b2)
+            basenames.append(b2.replace('_nrs2', ''))
+            rate_files_1.append(os.path.join(output_dir, b1 + '_rate.fits'))
+            rate_files_2.append(os.path.join(output_dir, b2 + '_rate.fits'))
+
+
+        #parameter_dict_det1 = {"jump": {"maximum_cores": 'quarter'},}
+        for uncal in uncalfiles_all:
+            ratefile = os.path.join(output_dir,  os.path.basename(uncal).replace('_uncal', '_rate'))
+            if os.path.isfile(ratefile) and not overwrite_stage1:
+                msgs.info('Using existing rate file: {0}'.format(ratefile))
+                continue
+            Detector1Pipeline.call(uncal, save_results=True, output_dir=output_dir) #, steps=parameter_dict_det1)
+
+    elif uncal_list is None and rate_list is not None:
+        rate_files_1 = rate_list[0]
+        rate_files_2 = rate_list[1] if len(rate_list) > 1 else []
+        nexp = len(rate_files_1)
+        
+        basenames, basenames_1, basenames_2 = [], [], []
+        for rate1, rate2 in zip(rate_files_1, rate_files_2):
+            b1 = os.path.basename(rate1).replace('_rate.fits', '')
+            b2 = os.path.basename(rate2).replace('_rate.fits', '')
+            basenames_1.append(b1)
+            basenames_2.append(b2)
+            basenames.append(b2.replace('_nrs2', ''))
+
+
+    rate_files_all = rate_files_1 + rate_files_2
+    bkg_indices = [(1,2), (0,2), (0,1)]
 
     # TODO Should we flat field. The flat field and flat field error are wonky and probably nonsense
     param_dict_spec2 = {
@@ -214,7 +243,7 @@ def jwst_run_redux(exp_list, redux_dir, disperser, source_type='POINT', show=Fal
     #param_dict_spec2['nsclean'] = {'save_results': True, 'skip': False}
     # Run the spec2 pipeline
 
-    for sci in scifiles_all:
+    for sci in rate_files_all:
         nscleanfile = os.path.join(output_dir, sci.replace('_rate', '_nsclean'))
         if os.path.isfile(nscleanfile) and not overwrite_stage2:
             msgs.info('Using existing nsclean file: {0}'.format(nscleanfile))
@@ -226,8 +255,8 @@ def jwst_run_redux(exp_list, redux_dir, disperser, source_type='POINT', show=Fal
     spectrograph = load_spectrograph('jwst_nirspec')
     par = spectrograph.default_pypeit_par()
     det_container_list = [spectrograph.get_detector_par(1), spectrograph.get_detector_par(2)]
-    fitstbl_1 = PypeItMetaData(spectrograph, par=par,files=scifiles_1, strict=True)
-    fitstbl_2 = PypeItMetaData(spectrograph, par=par,files=scifiles_2, strict=True)
+    fitstbl_1 = PypeItMetaData(spectrograph, par=par,files=rate_files_1, strict=True)
+    fitstbl_2 = PypeItMetaData(spectrograph, par=par,files=rate_files_2, strict=True)
     fitstbls = [fitstbl_1, fitstbl_2]
 
     pypeline = 'MultiSlit'
@@ -292,7 +321,7 @@ def jwst_run_redux(exp_list, redux_dir, disperser, source_type='POINT', show=Fal
     # TODO: This probably isn't correct.  I.e., need to know offsets and slit
     # position angle.
     for iexp in range(nexp):
-        with fits.open(scifiles_1[iexp]) as hdu:
+        with fits.open(rate_files_1[iexp]) as hdu:
             dither_offsets[0,iexp] = hdu[0].header['YOFFSET']
     for idet in range(1,ndetectors):
         dither_offsets[idet] = dither_offsets[0]
@@ -368,14 +397,14 @@ def jwst_run_redux(exp_list, redux_dir, disperser, source_type='POINT', show=Fal
     #out_filenames = [diff_str + base for base in basenames]
 
 
-    if reduce_slits is not None:
+    if _reduce_slits is not None:
         gd_slits_sources = [(slt, src) 
                             for slt, src in slit_sources_uni 
-                            for slit in reduce_slits if slt.strip() == slit.strip()]
-    elif reduce_sources is not None:
+                            for slit in _reduce_slits if slt.strip() == slit.strip()]
+    elif _reduce_sources is not None:
         gd_slits_sources = [(slt, src) 
                             for slt, src in slit_sources_uni 
-                            for source in reduce_sources if src == source.strip()]
+                            for source in _reduce_sources if src == source.strip()]
     else:
         gd_slits_sources = slit_sources_uni
 
@@ -473,7 +502,7 @@ def jwst_run_redux(exp_list, redux_dir, disperser, source_type='POINT', show=Fal
 
             # Write out specobjs
             # Build header for spec2d
-            head2d = fits.getheader(scifiles_1[iexp])
+            head2d = fits.getheader(rate_files_1[iexp])
             subheader = spectrograph.subheader_for_spec(fitstbl_1[iexp], head2d, allow_missing=False)
             # Overload the target name with the source name
             subheader['target'] = isource
@@ -493,6 +522,27 @@ def jwst_run_redux(exp_list, redux_dir, disperser, source_type='POINT', show=Fal
             # Write spec2d
             all_spec2d.write_to_fits(outfile2d, pri_hdr=pri_hdr, overwrite=True)
 
+
+
+#slits = 'S200A2' #'S200A1' #'S200A2' #'S200A1' # 'S200A2'
+#disperser = '235H' #'235H' #'235H_bogus_FS' #'140H_bogus_FS_F100LP'
+#exp_list, redux_dir = jwst_targets(progid, disperser, target, slits=slits)
+
+# Redux parameters 
+#mode = 'MSA'
+#mode = 'FS'
+# This only impacts the srctype
+#bkg_redux = False #False #False #False #False
+#run_stage1 = True
+#run_stage2 = True
+#overwrite_stage1 = True
+#overwrite_stage2 = True 
+#show=False
+#reduce_slits = [slits] # None
+#reduce_sources = None
+
+#kludge_err = 1.5 # More recent reductions suggest this number ought to be more like 1.2
+# Is this correct?
 
 # if __name__ == '__main__':
     
