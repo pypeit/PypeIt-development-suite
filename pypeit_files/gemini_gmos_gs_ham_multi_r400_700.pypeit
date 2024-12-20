@@ -3,10 +3,16 @@
 
 # User-defined execution parameters
 [rdx]
-spectrograph = gemini_gmos_south_ham
+    spectrograph = gemini_gmos_south_ham
 [calibrations]
- [[slitedges]]
-   follow_span = 80
+    [[slitedges]]
+        follow_span = 80
+        # This tests adding and removing slits: Removes one slit that is
+        # too narrow and tries to add two new slits.  The second one
+        # overlaps an existing slit.  The code *should* recognize this
+        # and ignore the 2nd added slit.
+        rm_slits = (1,2,3):1500:331
+        add_slits = (1,2,3):1537:297.2:353.5, (1,2,3):1537:659.7:691.0
 
 # Setup
 setup read
