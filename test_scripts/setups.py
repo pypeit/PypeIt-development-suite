@@ -50,7 +50,7 @@ all_setups = {
     'keck_lris_red_orig': ['long_150_7500_d500', 'long_300_5000', 'long_400_8500_d560', 'multi_600_5000_d500',
                            'long_600_7500_d680', 'long_600_10000_d460', 'long_831_8200_d460', 'long_900_5500_d560',
                            'long_1200_7500_d560'],
-    'keck_lris_red_mark4': ['long_400_8500_d560', 'long_600_10000_d680', 'multi_600_10000_slitmask'],
+    'keck_lris_red_mark4': ['long_400_8500_d560', 'long_600_10000_d680', 'multi_600_10000_slitmask', 'multi_1200_9000_d680'],
     'lbt_luci': ['LUCI-I', 'LUCI-II'],
     'lbt_mods': ['MODS1R_Longslit', 'MODS2R_Longslit'],
     'ldt_deveny': ['DV1', 'DV2', 'DV3', 'DV4', 'DV5', 'DV6', 'DV7', 'DV8', 'DV9'],
