@@ -1,11 +1,13 @@
 
 import argparse
 import scipy
+import yaml
 from copy import deepcopy
 from pathlib import Path
 import matplotlib.pyplot as plt
 import matplotlib.colors as mcolors
 from matplotlib.backends.backend_pdf import PdfPages
+from functools import partial
 import numpy as np
 from astropy.io import fits
 from astropy.table import Table
@@ -49,7 +51,21 @@ def get_unique_colors(n, color_dict):
     if len(unique_colors) < n:
         raise ValueError("Not enough unique colors available")
     return unique_colors
+
+
+def on_pick(event, selected_lines, key, key_type='order'):
+    # Get the line that was picked
+    line = event.artist
+    label = line.get_label().split(' - ')[0]
+
+    # Add the label to the dictionary under the specific key
+    if key not in selected_lines:
+        selected_lines[key] = []
+    if label not in selected_lines[key]:
+        selected_lines[key].append(label)
+        print(f"Selected: {label} in {key_type}: {key}/n")
 ###########
+
 
 def select_datasets(sensfuncs):
     """ ONLY FOR DEBUGGING. GET info on the sensfuncs and select the ones to use for the combined sensfunc.
@@ -97,7 +113,7 @@ def select_datasets(sensfuncs):
 
 
 def create_sens_files(spec1d_files, spec1d_files_path, sens_files_path, boxcar=False,
-                      use_flat=True, skip_existing=True, only=None):
+                      use_flat=True, skip_existing=True, only=None, parse=False):
     """Generate sensitivity functions from the spec1d files provided in the list.
 
     Args:
@@ -116,6 +132,9 @@ def create_sens_files(spec1d_files, spec1d_files_path, sens_files_path, boxcar=F
         only (`numpy.ndarray`_):
             Array of files to use (raw filename used).
             If None, all the files in spec1d_files will be used.
+        parse (bool):
+            Parse the sensitivity functions. If True, all the sensitivity functions
+            will be plotted per order and the user will be able to select the ones to use.
 
     Returns:
         tuple: List of SensFunc objects and list of sensitivity function file names.
@@ -151,8 +170,11 @@ def create_sens_files(spec1d_files, spec1d_files_path, sens_files_path, boxcar=F
     par['sensfunc'].to_config(par_outfile, section_name='sensfunc', include_descr=False)
 
     sensfuncs = []
-    use_sensfiles_list = []
+    sensnames = []
+    deckers = []
+    filters = []
     use_spec1dfiles_list = []
+    all_orders = np.array([])
     for spec1d_file in spec1d_files:
         if only is not None and spec1d_file.split('-')[0].split('_')[1]+'.fits' not in only:
             continue
@@ -170,29 +192,45 @@ def create_sens_files(spec1d_files, spec1d_files_path, sens_files_path, boxcar=F
             sensobj.run()
             msgs.info(f'Sensitivity function for {spec1d_file} computed.')
             sensfuncs.append(sensobj)
+            sensnames.append(sens_file.name)
+            deckers.append(fits.getval(sens_file, 'DECKER'))
+            filters.append(fits.getval(sens_file, 'FILTER1'))
             use_spec1dfiles_list.append(spec1d_file)
-            use_sensfiles_list.append(sens_file.name)
+            all_orders = np.append(all_orders, sensobj.sens['ECH_ORDERS'].data)
+
         except Exception as e:
             msgs.warn(f'Error computing sensitivity function for {spec1d_file}.\n{e}')
 
-    if len(sensfuncs) > 0:
-        # save the sensfunc and spec1d files that were used to compute the combined zeropoints to a text file and copy them
-        # to a new directory
-        sensfunc_basename = f'used_sensfuncs_v{sensobj.version}'
-        spec1d_basename = f'used_spec1ds_v{fits.getval(sensfuncs[0], "DMODVER", 1)}'
-        # Save the file paths to text files
-        with open(f'{sensfunc_basename}.txt', 'w') as f:
-            for fname in use_sensfiles_list:
-                f.write(f"{fname}\n")
+    if len(sensfuncs) == 0:
+        msgs.error("No sensitivity functions loaded.")
 
-        with open(f'{spec1d_basename}.txt', 'w') as f:
-            for fname in use_spec1dfiles_list:
-                f.write(f"{fname}\n")
+    # generate the orders vector for the combined sensitivity function
+    order_vec = np.arange(all_orders.min(), all_orders.max() + 1, dtype=int)
+    # invert the order vector so that it goes from the highest order to the lowest (i.e., from blue to red)
+    order_vec = order_vec[::-1]
 
-    return sensfuncs, use_sensfiles_list
+    parsed_sensobjs, parsed_sensnames = parse_sensfunc(order_vec, sensfuncs, sensnames, deckers, filters, use_all=(not parse))
+    # save to file
+    parsed_sens_file = f'used_sensfuncs_v{sensfuncs[0].version}.yaml'
+    with open(parsed_sens_file, 'w') as f:
+        yaml.dump(parsed_sensnames, f)
+
+    # get the spec1d file names corresponding to the parsed sensobjs
+    use_spec1dfiles_list = []
+    for parsed in parsed_sensobjs.values():
+        for sensobj in parsed:
+            use_spec1dfiles_list.append(Path(sensobj.spec1df).name)
+    # save to file
+    use_spec1dfiles_file = f'used_spec1ds_v{fits.getval(sensfuncs[0], "DMODVER", 1)}.txt'
+    with open(use_spec1dfiles_file, 'w') as f:
+        for fname in use_spec1dfiles_list:
+            f.write(f"{fname}\n")
+
+    return parsed_sensobjs, parsed_sensnames
 
 
-def load_sensfunc(sens_files, sens_files_path, only=None, plot_all=False, ptype='zeropoint'):
+def load_sensfunc(sens_files, sens_files_path, sens_fnames_dict=None,
+                  only=None, parse=False, plot_all=False, ptype='zeropoint'):
     """Load the sensitivity functions from a list of files.
 
     Args:
@@ -203,6 +241,9 @@ def load_sensfunc(sens_files, sens_files_path, only=None, plot_all=False, ptype=
         only (`numpy.ndarray`_):
             Array of files to use (raw filename used).
             If None, all the files in sens_files will be used.
+        parse (bool):
+            Parse the sensitivity functions. If True, all the sensitivity functions
+            will be plotted per order and the user will be able to select the ones to use.
         plot_all (bool):
             Plot the sensitivity functions.
         ptype (str):
@@ -220,6 +261,7 @@ def load_sensfunc(sens_files, sens_files_path, only=None, plot_all=False, ptype=
         msgs.error(f"Sensitivity functions path {sens_files_path} does not exist.")
 
     sensfuncs = []
+    sensnames = []
     deckers = []
     filters = []
 
@@ -231,27 +273,38 @@ def load_sensfunc(sens_files, sens_files_path, only=None, plot_all=False, ptype=
             msgs.warn(f'Sensitivity function file {sens_file} does not exist.')
         else:
             sensfuncs.append(SensFunc.from_file(sens_file, chk_version=False))
+            sensnames.append(sens_file.name)
             deckers.append(fits.getval(sens_file, 'DECKER'))
             filters.append(fits.getval(sens_file, 'FILTER1'))
 
 
-    if len(sensfuncs) == 0:
-        msgs.error("No sensitivity functions loaded.")
+
+    order_vec = np.arange(35, 103+1, dtype=int)
+    order_vec = order_vec[::-1]
+
+    parsed_sensobjs, parsed_sensnames = parse_sensfunc(order_vec, sensfuncs, sensnames, deckers, filters, use_all=(not parse))
+    # save to file
+    parsed_sens_file = f'used_sensfuncs_v{sensfuncs[0].version}.yaml'
+    with open(parsed_sens_file, 'w') as f:
+        yaml.dump(parsed_sensnames, f)
 
     if plot_all:
         unique_colors = get_unique_colors(len(sensfuncs), mcolors.CSS4_COLORS)
         color_map = {sensobj: unique_colors[i] for i, sensobj in enumerate(sensfuncs)}
-        order_vec = np.arange(35, 103, dtype=int)
         outfile_name = f'collection_{ptype}_by_order.pdf'
         y_list = []
         wave_list = []
         with PdfPages(outfile_name) as pdf:
-            for o in order_vec[::-1]:
+            for p, parsed in enumerate(parsed_sensobjs):
+                iord = parsed[0]
+                i_sensfuncs = parsed[1]
+                if len(i_sensfuncs) == 0:
+                    continue
                 fig = plt.figure(figsize=(23, 6.))
                 plt.minorticks_on()
                 plt.tick_params(axis='both', direction='in', top=True, right=True, which='both')
-                for s,sensobj in enumerate(sensfuncs):
-                    indx = sensobj.sens['ECH_ORDERS'].data == o
+                for s,sensobj in enumerate(i_sensfuncs):
+                    indx = sensobj.sens['ECH_ORDERS'].data == iord
                     if np.any(indx):
                         name = Path(sensobj.spec1df).name.split('-')[0].split('_')[1]
                         airmass = sensobj.airmass
@@ -282,7 +335,7 @@ def load_sensfunc(sens_files, sens_files_path, only=None, plot_all=False, ptype=
                 if np.sum(plt.axis()[:2]) < 10.:
                     plt.close(fig)
                     continue
-                plt.title(f'Order {o}')
+                plt.title(f'Order {iord}')
                 plt.xlabel('Wavelength (Angstroms)')
                 plt.ylabel(y_label)
                 if ptype == 'zeropoint':
@@ -309,7 +362,85 @@ def load_sensfunc(sens_files, sens_files_path, only=None, plot_all=False, ptype=
             pdf.savefig(dpi=60)
             plt.close(fig)
 
-    return sensfuncs
+    return parsed_sensobjs, parsed_sensnames
+
+
+def parse_sensfunc(ordervec, sensfuncs, sensnames, deckers, filters, use_all=True, rescale=True):
+    """Parse the sensitivity functions.
+
+    Args:
+        ordervec (list or `numpy.ndarray`_):
+            List of orders.
+        sensfuncs (list):
+            List of SensFunc objects.
+        sensnames (list):
+            List of sensitivity function file names.
+        deckers (list):
+            List of deckers of the SensFunc objects.
+        filters (list):
+            List of filters of the SensFunc objects.
+        use_all (bool):
+            Use all the sensitivity functions. If False,
+            the user will be able to select the ones to use in each order.
+        rescale (bool):
+            Rescale the zeropoints to the same median value. Only when use_all is False.
+
+    Returns:
+        dict: Dictionary with the selected SensFunc objects.
+
+    """
+
+    if rescale:
+        zpoint_fit_list = []
+        for sensobj in sensfuncs:
+            wv_gpm = sensobj.sens['SENS_WAVE'] > 1.0
+            zpoint_fit_list.append(sensobj.sens['SENS_ZEROPOINT_FIT'][wv_gpm])
+
+        # get the rescaling factor
+        medians = [stats.sigma_clipped_stats(zp, mask_value=0., sigma=3)[1] for zp in zpoint_fit_list]
+        max_median = np.nanmax(medians)
+        scales = np.ones(len(medians)) * max_median / medians
+    else:
+        scales = np.ones(len(sensfuncs))
+
+    # colors
+    unique_colors = get_unique_colors(len(sensfuncs), mcolors.CSS4_COLORS)
+    color_map = {sensobj: unique_colors[i] for i, sensobj in enumerate(sensfuncs)}
+
+    selected_sensfuncs = {}
+    selected_lines = {}
+    for iord in ordervec:
+        if use_all:
+            selected_sensfuncs[iord] = sensfuncs
+        else:
+            selected_lines[iord] = []
+            fig = plt.figure(figsize=(23, 6.))
+            ax = plt.subplot()
+            ax.set_title(f'Order {iord}')
+            ax.set_xlabel('Wavelength (Angstroms)')
+            ax.set_ylabel('Zeropoint (AB mag)')
+            ax.minorticks_on()
+            ax.tick_params(axis='both', direction='in', top=True, right=True, which='both')
+            for sensobj, sname, scale, decker, filt in zip(sensfuncs, sensnames, scales, deckers, filters):
+                indx = sensobj.sens['ECH_ORDERS'].data == iord
+                if np.any(indx):
+                    airmass = sensobj.airmass
+                    wave = sensobj.sens['SENS_WAVE'][indx]
+                    wave_gmp = wave > 1.0
+                    y = sensobj.sens['SENS_ZEROPOINT_FIT'][indx] * scale
+                    color = color_map[sensobj]
+                    line, = ax.plot(wave[wave_gmp], y[wave_gmp], color=color, lw=0.6, zorder=0,
+                            label=f'{sname} - {decker} - {filt} -airmass: {airmass:.2f}', picker=True)
+            ax.legend(fontsize=5)
+            ax.set_ylim(13.1, 20.9)
+            fig.tight_layout()
+            fig.canvas.mpl_connect('pick_event', partial(on_pick, selected_lines=selected_lines, key=iord))
+            plt.show()
+            selected_sensfuncs[iord] = [sensobj for sensobj in sensfuncs if
+                                        Path(sensobj.spec1df).name.replace('spec1d', 'sens') in selected_lines[iord]]
+
+    return selected_sensfuncs, selected_lines
+
 
 def get_std_dict(sensfuncs):
     """Get the standard star dictionary from the sensitivity functions.
@@ -403,6 +534,7 @@ def fill_combSensObj(comb_zeropoint_fit_list, comb_wave_list, comb_orders_list, 
     comb_sensobj.throughput = comb_sensobj.compute_throughput()[0]
 
     return comb_sensobj
+
 
 def combine_sensfuncs(sensfuncs, cut_left=50, cut_right=-100, poly_order=4, qa_plots=False):
     """Combine the sensitivity functions.
@@ -801,15 +933,15 @@ def plot_by_order(comb_sensobj, zeropoints_data, zeropoints_fit, waves_list, sca
                           label=label, zorder=0)
                 # recover the original zeropoints using the combined coefficients
                 this_comb = flux_calib.eval_zeropoint(coeff, 'legendre', waves_iord[i],
-                                                            waves_iord[i].min(), waves_iord[i].max(),
-                                                            log10_blaze_func_per_ang=lblaze[i])
+                                                      waves_iord[i].min(), waves_iord[i].max(),
+                                                      log10_blaze_func_per_ang=lblaze[i])
                 axis.plot(waves_iord[i], this_comb, color='k', marker='x', markersize=5, linewidth=None,
                           alpha=0.4, zorder=2)
 
             axis.plot(wave[wave>1], comb_zeropoint[wave>1], color='k', linewidth=2.5, ls='--', alpha=1., zorder=1,
                       label='combined zeropoint - no blaze')
 
-            #axis.set_ylim(13.1, 20.9)
+            axis.set_ylim(10.1, 20.9)
             # axis.set_xlim(_wmin, _wmax)
             axis.legend(fontsize=5)
             axis.set_xlabel('Wavelength (Angstroms)')
@@ -848,6 +980,7 @@ def plot_all_orders(comb_sensobj, comb_type='zeropoint'):
         color = pcolors[order]
         axis.plot(wave[wave>1], comb[wave>1], color=color, linewidth=1, alpha=1., label=f'order {order}', zorder=1)
     #axis.set_ylim(13.1, 20.9) if comb_type == 'zeropoint' else axis.set_ylim(0.0, 0.15)
+    axis.set_ylim(10.1, 20.9)
     axis.set_xlim(3600., 10400.)
     axis.legend(loc='lower left', fontsize=4)
     axis.set_xlabel('Wavelength (Angstroms)')
@@ -900,13 +1033,18 @@ def main(args):
         msgs.error(f"Sensitivity functions path {sensfuncs_path} does not exist.")
 
     if args.reuse:
+        sens_fnames_dict = None
         if args.sens_fnames is not None:
-            sens_fnames = np.loadtxt(args.sens_fnames, dtype=str)
+            with open(args.sens_fnames, 'r') as file:
+                sens_fnames_dict = yaml.safe_load(file)
+            sens_fnames = list(sens_fnames_dict.values())
+            # sens_fnames = np.loadtxt(args.sens_fnames, dtype=str)
         else:
             sens_fnames = [f.name for f in sensfuncs_path.glob('sens*.fits')]
         if len(sens_fnames) == 0:
             msgs.error(f"No sensitivity function files found.")
-        sensfuncs = load_sensfunc(sens_fnames, sensfuncs_path)
+        sensfuncs_dict, sens_fname_dict = load_sensfunc(sens_fnames, sensfuncs_path, sens_fnames_dict=sens_fnames_dict,
+                                                        parse=True)
 
     else:
         spec1ds_path = Path(args.spec1ds_path).absolute()
@@ -919,15 +1057,16 @@ def main(args):
         if len(spec1d_fnames) == 0:
             msgs.error(f"No spec1d files found.")
         # create the sensitivity functions
-        sensfuncs, sens_fnames = create_sens_files(spec1d_fnames, spec1ds_path, sensfuncs_path,
-                                                   boxcar=args.boxcar, use_flat=args.use_flat,
-                                                   skip_existing=args.skip_existing, only=only_these_datasets())
+        sensfuncs_dict, sens_fname_dict = create_sens_files(spec1d_fnames, spec1ds_path, sensfuncs_path,
+                                                            boxcar=args.boxcar, use_flat=args.use_flat,
+                                                            skip_existing=args.skip_existing,
+                                                            only=only_these_datasets())
 
     # for debugging
     # tab_all, aa = select_datasets(sensfuncs)
 
     # combine the sensitivity functions
-    sensfunc = combine_sensfuncs(sensfuncs, qa_plots=args.QA)
+    sensfunc = combine_sensfuncs(sensfuncs_dict, qa_plots=args.QA)
 
     # save the combined sensitivity function
     # Construct a primary FITS header
