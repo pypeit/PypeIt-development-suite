@@ -63,19 +63,19 @@ def on_pick(event, selected_lines, key, key_type='order'):
         selected_lines[key] = []
     if label not in selected_lines[key]:
         selected_lines[key].append(label)
-        print(f"Selected: {label} in {key_type}: {key}/n")
+        print(f"Selected: {label} in {key_type}: {key}")
 ###########
 
 
-def select_datasets(sensfuncs):
-    """ ONLY FOR DEBUGGING. GET info on the sensfuncs and select the ones to use for the combined sensfunc.
+def print_datasets(sensfuncs):
+    """ ONLY FOR DEBUGGING. Print info on the sensfuncs.
 
     Args:
         sensfuncs (list):
             List of SensFunc objects.
 
     Returns:
-        tuple: Table with the information of the SensFunc objects and a boolean array to select the objects to use.
+        Table: Table with the information of the SensFunc objects.
 
     """
     # for debugging
@@ -106,10 +106,8 @@ def select_datasets(sensfuncs):
     tab_all = table.join(tab, stars_tab, keys_left='name', keys_right='koaid')
     tab_all.sort(['airmass_1', 'skyprobe extinction'])
     tab_all.write('sensfunc_info.csv', format='csv', overwrite=True)
-    keep = only_these_datasets()
-    aa = np.isin(tab_all['name'].data, keep)
-    tab_all[aa].pprint_all()
-    return tab_all, aa
+    tab_all.pprint_all()
+    return tab_all
 
 
 def create_sens_files(spec1d_files, spec1d_files_path, sens_files_path, boxcar=False,
@@ -137,7 +135,8 @@ def create_sens_files(spec1d_files, spec1d_files_path, sens_files_path, boxcar=F
             will be plotted per order and the user will be able to select the ones to use.
 
     Returns:
-        tuple: List of SensFunc objects and list of sensitivity function file names.
+        tuple: Dictionary with the selected SensFunc objects and the selected sensitivity function file names
+            to use in the combined sensitivity function per ech order.
 
     """
 
@@ -229,15 +228,18 @@ def create_sens_files(spec1d_files, spec1d_files_path, sens_files_path, boxcar=F
     return parsed_sensobjs, parsed_sensnames
 
 
-def load_sensfunc(sens_files, sens_files_path, sens_fnames_dict=None,
+def load_sensfunc(sens_files_path, sens_fnames=None, sens_fnames_dict=None,
                   only=None, parse=False, plot_all=False, ptype='zeropoint'):
     """Load the sensitivity functions from a list of files.
 
     Args:
-        sens_files (list):
-            List of sensitivity function file names.
         sens_files_path (str or Path):
             Path to the sensitivity function files.
+        sens_fnames (list, optional):
+            List of sensitivity function file names.
+        sens_fnames_dict (dict, optional):
+            Dictionary with the orders as keys and the
+            sensitivity function file names as values.
         only (`numpy.ndarray`_):
             Array of files to use (raw filename used).
             If None, all the files in sens_files will be used.
@@ -250,7 +252,8 @@ def load_sensfunc(sens_files, sens_files_path, sens_fnames_dict=None,
             Type of plot to generate. It can be 'zeropoint', 'throughput', or 'counts_per_angs'.
 
     Returns:
-        list: List of SensFunc objects.
+        tuple: Dictionary with the selected SensFunc objects and the selected sensitivity function file names
+            to use in the combined sensitivity function per ech order.
     """
 
     # check if sens_files_path is a Path object
@@ -260,33 +263,59 @@ def load_sensfunc(sens_files, sens_files_path, sens_fnames_dict=None,
     if not sens_files_path.exists():
         msgs.error(f"Sensitivity functions path {sens_files_path} does not exist.")
 
+    if sens_fnames is None and sens_fnames_dict is None:
+        msgs.error("No sensitivity function files provided. "
+                   "Please provide a list of files or a dictionary with the orders and the files.")
+    elif sens_fnames is not None and sens_fnames_dict is not None:
+        msgs.warn("Both a list of files and a dictionary provided. "
+                   "Using the dictionary and ignoring the list of files.")
+        sens_fnames = np.unique([item for sublist in sens_fnames_dict.values() for item in sublist if sublist])
+    elif sens_fnames is None and sens_fnames_dict is not None:
+        sens_fnames = np.unique([item for sublist in sens_fnames_dict.values() for item in sublist if sublist])
+
     sensfuncs = []
     sensnames = []
     deckers = []
     filters = []
+    orders = np.array([])
 
-    for sens_file in sens_files:
+    for sens_file in sens_fnames:
         if only is not None and sens_file.split('-')[0].split('_')[1]+'.fits' not in only:
             continue
         sens_file = sens_files_path / sens_file
         if not sens_file.exists():
             msgs.warn(f'Sensitivity function file {sens_file} does not exist.')
         else:
-            sensfuncs.append(SensFunc.from_file(sens_file, chk_version=False))
+            sensobj = SensFunc.from_file(sens_file, chk_version=False)
+            sensfuncs.append(sensobj)
+            orders = np.append(orders, sensobj.sens['ECH_ORDERS'].data)
             sensnames.append(sens_file.name)
             deckers.append(fits.getval(sens_file, 'DECKER'))
             filters.append(fits.getval(sens_file, 'FILTER1'))
 
+    if len(sensfuncs) == 0:
+        msgs.error("No sensitivity functions loaded.")
 
-
-    order_vec = np.arange(35, 103+1, dtype=int)
+    order_vec = np.arange(orders.min(), orders.max() + 1, dtype=int)
     order_vec = order_vec[::-1]
 
-    parsed_sensobjs, parsed_sensnames = parse_sensfunc(order_vec, sensfuncs, sensnames, deckers, filters, use_all=(not parse))
+    if sens_fnames_dict is None and parse:
+        parsed_sensobjs, parsed_sensnames = parse_sensfunc(order_vec, sensfuncs, sensnames, deckers, filters,
+                                                           use_all=False)
+    elif sens_fnames_dict is None and not parse:
+        parsed_sensobjs, parsed_sensnames = parse_sensfunc(order_vec, sensfuncs, sensnames, deckers, filters,
+                                                           use_all=True)
+    else:
+        parsed_sensobjs = {}
+        for iord, sens_fnames in sens_fnames_dict.items():
+            parsed_sensobjs[iord] = [sensobj for sensobj in sensfuncs if Path(sensobj.spec1df).name.replace('spec1d', 'sens') in sens_fnames]
+        parsed_sensnames = sens_fnames_dict
+
     # save to file
     parsed_sens_file = f'used_sensfuncs_v{sensfuncs[0].version}.yaml'
+    _parsed_sensnames = {str(key): value for key, value in parsed_sensnames.items()}
     with open(parsed_sens_file, 'w') as f:
-        yaml.dump(parsed_sensnames, f)
+        yaml.dump(_parsed_sensnames, f)
 
     if plot_all:
         unique_colors = get_unique_colors(len(sensfuncs), mcolors.CSS4_COLORS)
@@ -304,18 +333,19 @@ def load_sensfunc(sens_files, sens_files_path, sens_fnames_dict=None,
                 plt.minorticks_on()
                 plt.tick_params(axis='both', direction='in', top=True, right=True, which='both')
                 for s,sensobj in enumerate(i_sensfuncs):
-                    indx = sensobj.sens['ECH_ORDERS'].data == iord
-                    if np.any(indx):
+                    _indx = np.where(sensobj.sens['ECH_ORDERS'].data == iord)[0]
+                    if _indx.size > 0:
+                        indx = _indx[0]
                         name = Path(sensobj.spec1df).name.split('-')[0].split('_')[1]
                         airmass = sensobj.airmass
                         exptime = sensobj.exptime
-                        wave = sensobj.sens['SENS_WAVE'][indx]
+                        wave = sensobj.sens['SENS_WAVE'].data[indx]
                         wave_gmp = wave > 1.0
                         wmin = wave[wave_gmp].min()
                         wmax = wave[wave_gmp].max()
                         if ptype == 'zeropoint':
-                            zeropoint_data = sensobj.sens['SENS_ZEROPOINT'][indx]
-                            y = sensobj.sens['SENS_ZEROPOINT_FIT'][indx]
+                            zeropoint_data = sensobj.sens['SENS_ZEROPOINT'].data[indx]
+                            y = sensobj.sens['SENS_ZEROPOINT_FIT'].data[indx]
                             y_label = 'Zeropoint (AB mag)'
                         elif ptype == 'throughput':
                             y = sensobj.throughput[:,indx]
@@ -323,7 +353,7 @@ def load_sensfunc(sens_files, sens_files_path, sens_fnames_dict=None,
                             wave_gmp = (wave >= wmin) & (wave <= wmax)
                             y_label = 'Throughput'
                         elif ptype == 'counts_per_angs':
-                            y = sensobj.sens['SENS_COUNTS_PER_ANG'][indx]/exptime
+                            y = sensobj.sens['SENS_COUNTS_PER_ANG'].data[indx]/exptime
                             y_label = 'Counts /(Angstrom s)'
                         color = color_map[sensobj]
                         if ptype == 'zeropoint':
@@ -365,7 +395,7 @@ def load_sensfunc(sens_files, sens_files_path, sens_fnames_dict=None,
     return parsed_sensobjs, parsed_sensnames
 
 
-def parse_sensfunc(ordervec, sensfuncs, sensnames, deckers, filters, use_all=True, rescale=True):
+def parse_sensfunc(ordervec, sensfuncs, sensnames, deckers, filters, use_all=True, rescale=False):
     """Parse the sensitivity functions.
 
     Args:
@@ -393,8 +423,8 @@ def parse_sensfunc(ordervec, sensfuncs, sensnames, deckers, filters, use_all=Tru
     if rescale:
         zpoint_fit_list = []
         for sensobj in sensfuncs:
-            wv_gpm = sensobj.sens['SENS_WAVE'] > 1.0
-            zpoint_fit_list.append(sensobj.sens['SENS_ZEROPOINT_FIT'][wv_gpm])
+            wv_gpm = sensobj.sens['SENS_WAVE'].data > 1.0
+            zpoint_fit_list.append(sensobj.sens['SENS_ZEROPOINT_FIT'].data[wv_gpm])
 
         # get the rescaling factor
         medians = [stats.sigma_clipped_stats(zp, mask_value=0., sigma=3)[1] for zp in zpoint_fit_list]
@@ -412,6 +442,7 @@ def parse_sensfunc(ordervec, sensfuncs, sensnames, deckers, filters, use_all=Tru
     for iord in ordervec:
         if use_all:
             selected_sensfuncs[iord] = sensfuncs
+            selected_lines[iord] = sensnames
         else:
             selected_lines[iord] = []
             fig = plt.figure(figsize=(23, 6.))
@@ -422,12 +453,13 @@ def parse_sensfunc(ordervec, sensfuncs, sensnames, deckers, filters, use_all=Tru
             ax.minorticks_on()
             ax.tick_params(axis='both', direction='in', top=True, right=True, which='both')
             for sensobj, sname, scale, decker, filt in zip(sensfuncs, sensnames, scales, deckers, filters):
-                indx = sensobj.sens['ECH_ORDERS'].data == iord
-                if np.any(indx):
+                _indx = np.where(sensobj.sens['ECH_ORDERS'].data == iord)[0]
+                if _indx.size > 0:
+                    indx = _indx[0]
                     airmass = sensobj.airmass
-                    wave = sensobj.sens['SENS_WAVE'][indx]
+                    wave = sensobj.sens['SENS_WAVE'].data[indx]
                     wave_gmp = wave > 1.0
-                    y = sensobj.sens['SENS_ZEROPOINT_FIT'][indx] * scale
+                    y = sensobj.sens['SENS_ZEROPOINT_FIT'][indx].data * scale
                     color = color_map[sensobj]
                     line, = ax.plot(wave[wave_gmp], y[wave_gmp], color=color, lw=0.6, zorder=0,
                             label=f'{sname} - {decker} - {filt} -airmass: {airmass:.2f}', picker=True)
@@ -435,6 +467,7 @@ def parse_sensfunc(ordervec, sensfuncs, sensnames, deckers, filters, use_all=Tru
             ax.set_ylim(13.1, 20.9)
             fig.tight_layout()
             fig.canvas.mpl_connect('pick_event', partial(on_pick, selected_lines=selected_lines, key=iord))
+            print(' ')
             plt.show()
             selected_sensfuncs[iord] = [sensobj for sensobj in sensfuncs if
                                         Path(sensobj.spec1df).name.replace('spec1d', 'sens') in selected_lines[iord]]
@@ -442,32 +475,32 @@ def parse_sensfunc(ordervec, sensfuncs, sensnames, deckers, filters, use_all=Tru
     return selected_sensfuncs, selected_lines
 
 
-def get_std_dict(sensfuncs):
-    """Get the standard star dictionary from the sensitivity functions.
-
-    Args:
-        sensfuncs (list):
-            List of SensFunc objects.
-
-    Returns:
-        dict: Dictionary with the standard star information.
-    """
-
-    cal_names = []
-    cal_ras = []
-    cal_decs = []
-    for sensobj in sensfuncs:
-        if sensobj.std_name not in cal_names:
-            cal_names.append(sensobj.std_name)
-            cal_ras.append(sensobj.std_ra)
-            cal_decs.append(sensobj.std_dec)
-
-    all_std_dicts = {}
-    for i, cal_name in enumerate(cal_names):
-        std_dict = flux_calib.get_standard_spectrum(ra=cal_ras[i], dec=cal_decs[i])
-        all_std_dicts[cal_name] = std_dict
-
-    return all_std_dicts
+# def get_std_dict(sensfuncs):
+#     """Get the standard star dictionary from the sensitivity functions.
+#
+#     Args:
+#         sensfuncs (list):
+#             List of SensFunc objects.
+#
+#     Returns:
+#         dict: Dictionary with the standard star information.
+#     """
+#
+#     cal_names = []
+#     cal_ras = []
+#     cal_decs = []
+#     for sensobj in sensfuncs:
+#         if sensobj.std_name not in cal_names:
+#             cal_names.append(sensobj.std_name)
+#             cal_ras.append(sensobj.std_ra)
+#             cal_decs.append(sensobj.std_dec)
+#
+#     all_std_dicts = {}
+#     for i, cal_name in enumerate(cal_names):
+#         std_dict = flux_calib.get_standard_spectrum(ra=cal_ras[i], dec=cal_decs[i])
+#         all_std_dicts[cal_name] = std_dict
+#
+#     return all_std_dicts
 
 
 def fill_combSensObj(comb_zeropoint_fit_list, comb_wave_list, comb_orders_list, poly_order, comb_coeff_list, sensobj):
@@ -523,8 +556,8 @@ def fill_combSensObj(comb_zeropoint_fit_list, comb_wave_list, comb_orders_list, 
     comb_sensobj.sens['SENS_ZEROPOINT_GPM'] = comb_wave_array > 1.0
     comb_sensobj.sens['SENS_ZEROPOINT_FIT'] = comb_zeropoint_fit_array
     comb_sensobj.sens['SENS_ZEROPOINT_FIT_GPM'] = comb_wave_array > 1.0
-    comb_sensobj.sens['WAVE_MIN'] = np.array([np.min(w[w>1]) for w in comb_wave_array])
-    comb_sensobj.sens['WAVE_MAX'] = np.array([np.max(w[w>1]) for w in comb_wave_array])
+    comb_sensobj.sens['WAVE_MIN'] = np.array([np.min(w[w > 1]) if w[w > 1].size > 0 else 0 for w in comb_wave_array])
+    comb_sensobj.sens['WAVE_MAX'] = np.array([np.max(w[w > 1]) if w[w > 1].size > 0 else 0 for w in comb_wave_array])
     comb_sensobj.sens['POLYORDER_VEC'] = poly_order
 
     comb_sensobj.wave = comb_wave_array.T
@@ -536,16 +569,21 @@ def fill_combSensObj(comb_zeropoint_fit_list, comb_wave_list, comb_orders_list, 
     return comb_sensobj
 
 
-def combine_sensfuncs(sensfuncs, cut_left=50, cut_right=-100, poly_order=4, qa_plots=False):
+def combine_sensfuncs(sensfuncs_dict, sensnames_dict, cut_left=50, cut_right=-100, rescale=True,
+                      poly_order=4, qa_plots=False):
     """Combine the sensitivity functions.
 
     Args:
-        sensfuncs (list):
-            List of SensFunc objects.
+        sensfuncs_dict (dict):
+            Dictionary with the selected SensFunc objects per ech order.
+        sensnames_dict (dict):
+            Dictionary with the selected sensitivity function file names per ech order.
         cut_left (int):
             Number of pixels to cut from the left.
         cut_right (int):
             Number of pixels to cut from the right.
+        rescale (bool):
+            Rescale the zeropoints to the same median value.
         poly_order (int):
             Order of the polynomial to fit the zeropoints.
         qa_plots (bool):
@@ -555,162 +593,139 @@ def combine_sensfuncs(sensfuncs, cut_left=50, cut_right=-100, poly_order=4, qa_p
         SensFunc: Combined sensitivity function object.
     """
 
-    all_orders = np.array([])
-    counts_per_angs_list = []
-    for sensobj in sensfuncs:
-        all_orders = np.append(all_orders, sensobj.sens['ECH_ORDERS'].data)
-        wv_gpm = sensobj.sens['SENS_WAVE'] > 1.0
-        counts_per_angs_list.append(sensobj.sens['SENS_COUNTS_PER_ANG'].data[wv_gpm][cut_left:cut_right]/sensobj.exptime)
+    sensfuncs = list({s for sf in sensfuncs_dict.values() for s in sf})
+    sens_orders = np.sort(list(sensfuncs_dict.keys()))[::-1]
+    if np.any(np.diff(sens_orders) != -1):
+        msgs.warns("Orders are not contiguous. There might be missing orders.")
 
-    # generate the orders vector for the combined sensitivity function
-    order_vec = np.arange(all_orders.min(), all_orders.max() + 1, dtype=int)
-    # invert the order vector so that it goes from the highest order to the lowest (i.e., from blue to red)
-    order_vec = order_vec[::-1]
+    # if rescale:
+    #     medians = []
+    #     for sensobj in sensfuncs:
+    #         zpoint_poly = np.array([])
+    #         gpm = np.array([])
+    #         for i,sens in enumerate(sensobj.sens):
+    #             wave = sens['SENS_WAVE']
+    #             wv_gpm = wave > 1.0
+    #             wave = wave[wv_gpm][cut_left:cut_right]
+    #             zpoint_data = sens['SENS_ZEROPOINT'].data[wv_gpm][cut_left:cut_right]
+    #             zpoint_data_gpm = sens['SENS_ZEROPOINT_GPM'].data[wv_gpm][cut_left:cut_right]
+    #             log10blaze = sens['SENS_LOG10_BLAZE_FUNCTION'].data[wv_gpm][cut_left:cut_right]
+    #             # get zeropoint_poly
+    #             _zpoint_poly = zpoint_data + 5.0*np.log10(wave) - ZP_UNIT_CONST
+    #             if not np.all(log10blaze==0):
+    #                 _zpoint_poly -= 2.5*log10blaze
+    #             zpoint_poly = np.concatenate([zpoint_poly, _zpoint_poly])
+    #             gpm = np.concatenate([gpm, zpoint_data_gpm])
+    #
+    #         medians.append(stats.sigma_clipped_stats(zpoint_poly,
+    #                                                  mask=np.isinf(zpoint_poly) | np.isnan(zpoint_poly) | np.logical_not(gpm.astype(bool)),
+    #                                                  mask_value=0., sigma=3)[1])
+    #     max_median = np.nanmax(medians)
+    #     scales = np.ones(len(medians)) * max_median / medians
+    # else:
+    #     scales = np.ones(len(sensfuncs))
 
-    # rescale the counts_per_angs to the same median value
-    medians = [stats.sigma_clipped_stats(cpa, mask_value=0., sigma=3)[1] for cpa in counts_per_angs_list]
-    max_median = np.nanmax(medians)
-    scales = np.ones(len(medians)) * max_median / medians
+    # initialize the collection of zeropoints as a dictionary
+    zpoints_all = {}
 
-    # load all the calibration standard stars
-    all_std_dicts = get_std_dict(sensfuncs)
+    for iord in sens_orders:
+        # get the SensFunc objects that will be used for the current order
+        sensobjs = [sfs for sfs in sensfuncs_dict[iord]]
+        sensnames = [sns for sns in sensnames_dict[iord]]
+        # get the zeropoints for the current order
+        zpoints_iord = {}
+        zpoints_iord['name'] = []
+        zpoints_iord['wave'] = []
+        zpoints_iord['zpoint_data'] = []
+        zpoints_iord['zpoint_data_gpm'] = []
+        zpoints_iord['log10blaze'] = []
+        zpoints_iord['zpoint_poly'] = []
+        zpoints_iord['median'] = []
+        zpoints_iord['max_med'] = []
+        for sensobj, sensname in zip(sensobjs, sensnames):
+            _indx = np.where(sensobj.sens['ECH_ORDERS'].data == iord)[0]
+            if np.any(_indx):
+                indx = _indx[0]
+                wave = sensobj.sens['SENS_WAVE'].data[indx]
+                wave_gpm = wave > 1.0
+                wave = wave[wave_gpm][cut_left:cut_right]
+                zpoint_data = sensobj.sens['SENS_ZEROPOINT'].data[indx][wave_gpm][cut_left:cut_right]
+                zpoint_data_gpm = sensobj.sens['SENS_ZEROPOINT_GPM'].data[indx][wave_gpm][cut_left:cut_right]
+                log10blaze = sensobj.sens['SENS_LOG10_BLAZE_FUNCTION'].data[indx][wave_gpm][cut_left:cut_right]
+                # get zeropoint_poly
+                zpoint_poly = zpoint_data + 5.0*np.log10(wave) - ZP_UNIT_CONST
+                if not np.all(log10blaze==0):
+                    zpoint_poly -= 2.5*log10blaze
+                med = stats.sigma_clipped_stats(zpoint_poly,
+                                                mask=np.isinf(zpoint_poly) | np.isnan(zpoint_poly) | np.logical_not(zpoint_data_gpm.astype(bool)),
+                                                mask_value=0., sigma=3)[1]
+                zpoints_iord['name'].append(sensname)
+                zpoints_iord['wave'].append(wave)
+                zpoints_iord['zpoint_data'].append(zpoint_data)
+                zpoints_iord['zpoint_data_gpm'].append(zpoint_data_gpm)
+                zpoints_iord['log10blaze'].append(log10blaze)
+                zpoints_iord['zpoint_poly'].append(zpoint_poly)
+                zpoints_iord['median'].append(med)
+        max_median = np.nanmax(zpoints_iord['median']) if len(zpoints_iord['median']) > 0 else []
+        zpoints_iord['max_med'].append(max_median)
+
+        zpoints_all[iord] = zpoints_iord
+
+    # get the wavelength grid from the telluric grid
+    hdul = io.load_telluric_grid(sensfuncs[0].telluric.telgrid)
+    wave_grid_tell = hdul[1].data
+    # keep only the wavelengths that are within the range of the zeropoints
+    pad_frac = 0.1
+    wmin_grid = (1.0 - pad_frac)*np.min([z.min() for zpoints in zpoints_all.values() if len(zpoints['wave']) > 0 for z in zpoints['wave']])
+    wmax_grid = (1.0 - pad_frac)*np.max([z.max() for zpoints in zpoints_all.values() if len(zpoints['wave']) > 0 for z in zpoints['wave']])
+    wave_grid = wave_grid_tell[(wave_grid_tell > wmin_grid) & (wave_grid_tell < wmax_grid)]
 
     # initialize the combined zeropoints
     comb_zeropoint_fit_list = []
     comb_wave_list = []
     comb_orders_list = []
     comb_coeff_list = []
-    scale_list = []
-    # list of the zeropoints for each order
-    zeropoints_fit_list = []
-    zeropoints_data_list = []
-    zeropoint_poly_list = []
-    logblaze_list = []
-    waves_list = []
-    sensfiles_iord_list = []
-    gpm_list = []
-
-    # loop over the orders
-    for iord in order_vec:
-        zeropoint_medians = []
-        waves_iord, zeropoints_data_iord, zeropoints_fit_iord, zeropoint_poly_iord, gpms_iord, sensfiles_iord, log10blaze_iord = \
-            [], [], [], [], [], [], []
-        for _s, sensobj in enumerate(sensfuncs):
-            for sens in sensobj.sens:
-                if sens['ECH_ORDERS'] == iord:
-                    wave = sens['SENS_WAVE']
-                    wv_gpm = wave > 1.0
-                    wave = wave[wv_gpm][cut_left:cut_right]
-                    counts_per_angs =scales[_s] * sens['SENS_COUNTS_PER_ANG'][wv_gpm][cut_left:cut_right]/sensobj.exptime
-                    std_dict = all_std_dicts[sensobj.std_name]
-                    flam_true = scipy.interpolate.interp1d(std_dict['wave'].value, std_dict['flux'].value, kind='linear',
-                                                           bounds_error=False, fill_value=-1e20)(wave)
-                    flam_true_gpm = (wave >= std_dict['wave'].value.min()) & (wave <= std_dict['wave'].value.max())
-
-                    zeropoint_data, zeropoint_data_gpm = flux_calib.compute_zeropoint(wave, counts_per_angs,
-                                                                                      flam_true_gpm, flam_true)
-                    log10blaze = sens['SENS_LOG10_BLAZE_FUNCTION'][wv_gpm][cut_left:cut_right]
-                    # get zeropoint_poly
-                    zeropoint_poly = zeropoint_data + 5.0*np.log10(wave) - ZP_UNIT_CONST
-                    if not np.all(log10blaze==0):
-                        zeropoint_poly -= 2.5*log10blaze
-
-
-
-                    # zeropoint_data2 = sens['SENS_ZEROPOINT'][wv_gpm][cut_left:cut_right]
-                    # zeropoint_data_gpm = sens['SENS_ZEROPOINT_GPM'][wv_gpm][cut_left:cut_right]
-                    zeropoint_fit = sens['SENS_ZEROPOINT_FIT'][wv_gpm][cut_left:cut_right]
-                    # zeropoint_fit_gpm = sens['SENS_ZEROPOINT_FIT_GPM'][wv_gpm][cut_left:cut_right]
-
-
-                    # compute median of the zeropoints
-                    # zeropoint_medians.append(stats.sigma_clipped_stats(zeropoint_poly, mask_value=0., sigma=3)[1])
-                    waves_iord.append(wave)
-                    gpms_iord.append(zeropoint_data_gpm)
-                    zeropoints_fit_iord.append(zeropoint_fit)
-                    zeropoints_data_iord.append(zeropoint_data)
-                    zeropoint_poly_iord.append(zeropoint_poly)
-                    log10blaze_iord.append(log10blaze)
-                    sensfiles_iord.append(f"{Path(sensobj.spec1df).name.replace('spec1d', 'sens')}")
-
-        # # scale the zeropoints to the same median value (max of all the medians)
-        # zeropoint_medians = np.array(zeropoint_medians)
-        # max_median = np.nanmax(zeropoint_medians)
-        # scales = np.ones(len(zeropoint_medians)) * max_median / zeropoint_medians
-        # zeropoints_fit_scaled_iord = [z * s for z, s in zip(zeropoints_fit_iord, scales)]
-        # zeropoints_data_scaled_iord = [z * s for z, s in zip(zeropoints_data_iord, scales)]
-        # zeropoint_poly_scaled_iord = [z * s for z, s in zip(zeropoint_poly_iord, scales)]
-
-        # discard the zeropoints that have values below a certain threshold. This allows to discard zeropoints
-        # that go down because of the blocking filter or other reasons.
-        # lower limit for the zeropoints
-        low_thresh = 7.
-        # if iord == 35:
-        #     low_thresh = 13.
-        # elif iord in [43,66,84]:
-        #     low_thresh = 18.
-        # elif iord == 88:
-        #     low_thresh = 17.
-        # elif iord == 76:
-        #     low_thresh = 17.5
-        # ind_to_remove = []
-        # for i in range(len(zeropoints_fit_scaled_iord)):
-        #     if np.any(zeropoints_fit_scaled_iord[i] < low_thresh) or np.any(zeropoints_fit_scaled_iord[i] > 20.):
-        #         ind_to_remove.append(i)
-        # if len(ind_to_remove) > 0:
-        #     zeropoints_data_scaled_iord = [zeropoints_data_scaled_iord[k] for k in range(len(zeropoints_data_scaled_iord)) if k not in ind_to_remove]
-        #     zeropoints_fit_scaled_iord = [zeropoints_fit_scaled_iord[k] for k in range(len(zeropoints_fit_scaled_iord)) if k not in ind_to_remove]
-        #     zeropoint_poly_scaled_iord = [zeropoint_poly_scaled_iord[k] for k in range(len(zeropoint_poly_scaled_iord)) if k not in ind_to_remove]
-        #     log10blaze_iord = [log10blaze_iord[k] for k in range(len(log10blaze_iord)) if k not in ind_to_remove]
-        #     waves_iord = [waves_iord[k] for k in range(len(waves_iord)) if k not in ind_to_remove]
-        #     gpms_iord = [gpms_iord[k] for k in range(len(gpms_iord)) if k not in ind_to_remove]
-        #     sensfiles_iord = [sensfiles_iord[k] for k in range(len(sensfiles_iord)) if k not in ind_to_remove]
-
-        if len(waves_iord) > 0:
-            comb_orders_list.append(iord)
-            zeropoints_fit_list.append(zeropoints_fit_iord)
-            zeropoints_data_list.append(zeropoints_data_iord)
-            zeropoint_poly_list.append(zeropoint_poly_iord)
-            scale_list.append(scales)
-            logblaze_list.append(log10blaze_iord)
-            waves_list.append(waves_iord)
-            gpm_list.append(gpms_iord)
-            sensfiles_iord_list.append(sensfiles_iord)
-
-    # get the wavelength grid from the telluric grid
-    hdul = io.load_telluric_grid(sensfuncs[0].telluric.telgrid)
-    wave_grid_tell = hdul[1].data
-    # keep only the wavelengths that are within the range of the zeropoints
-    wmin_grid = np.array([[w.min(), w.max()] for sublist in waves_list for w in sublist]).min()
-    wmax_grid = np.array([[w.min(), w.max()] for sublist in waves_list for w in sublist]).max()
-    wave_grid = wave_grid_tell[(wave_grid_tell > wmin_grid) & (wave_grid_tell < wmax_grid)]
-
-    for iord, order in enumerate(comb_orders_list):
-        # interpolate the zeropoints to the wave_grid
-        zeropoint_poly_iord = np.concatenate(zeropoint_poly_list[iord])
-        wave_iord = np.concatenate(waves_list[iord])
-        gpm_iord = np.concatenate(gpm_list[iord])
-        pypeitFit = fitting.robust_fit(wave_iord, zeropoint_poly_iord, poly_order,
-                                       function='legendre', minx=wave_iord.min(), maxx=wave_iord.max(),
+    for iord in sens_orders:
+        if len(zpoints_all[iord]['wave']) == 0:
+            continue
+        zpoints_iord = zpoints_all[iord]
+        wave_iord = np.concatenate(zpoints_iord['wave'])
+        medians_iord = np.array(zpoints_iord['median'])
+        max_median_iord = np.array(zpoints_iord['max_med'])
+        # rescale the zeropoints
+        scale_iord = max_median_iord / medians_iord
+        zpoint_poly_iord = np.concatenate([z * s for z,s in zip(zpoints_iord['zpoint_poly'], scale_iord)])
+        gpm_iord = np.concatenate(zpoints_iord['zpoint_data_gpm'])
+        func = 'legendre'
+        pypeitFit = fitting.robust_fit(wave_iord, zpoint_poly_iord, poly_order,
+                                       function=func, minx=wave_iord.min(), maxx=wave_iord.max(),
                                        in_gpm=gpm_iord, lower=3, upper=3, use_mad=True)
-        comb_zeropoint_fit_iord = flux_calib.eval_zeropoint(pypeitFit.fitc, 'legendre', wave_grid,
+        comb_zeropoint_fit_iord = flux_calib.eval_zeropoint(pypeitFit.fitc, func, wave_grid,
                                                             wave_iord.min(), wave_iord.max())
         comb_wave = wave_grid.copy()
         outside_gpm = (comb_wave < wave_iord.min()) | (comb_wave > wave_iord.max())
         comb_zeropoint_fit_iord[outside_gpm] = 0.
         comb_wave[outside_gpm] = 0.
+        # poly_model = fitting.evaluate_fit(pypeitFit.fitc, func, wave_grid, minx=wave_iord.min(),
+        #                                   maxx=wave_iord.max())
+        # plt.plot(wave_iord[wave_iord > 1], zpoint_poly_iord[wave_iord > 1])
+        # plt.plot(comb_wave[comb_wave > 0], poly_model[comb_wave > 0], '--r')
+        # plt.show()
+        #embed()
         # append the results to the lists
         comb_zeropoint_fit_list.append(comb_zeropoint_fit_iord)
         comb_wave_list.append(comb_wave)
+        comb_orders_list.append(iord)
         comb_coeff_list.append(pypeitFit.fitc)
+        # save also the scale
+        zpoints_all[iord]['scale'] = scale_iord
 
     comb_sensobj = fill_combSensObj(comb_zeropoint_fit_list, comb_wave_list, comb_orders_list, poly_order,
                                     comb_coeff_list, deepcopy(sensfuncs[0]))
 
     # QA plots
     if qa_plots:
-        plot_by_order(comb_sensobj, zeropoints_data_list, zeropoints_fit_list, waves_list, scale_list,
-                      sensfiles_iord_list, logblaze=logblaze_list)
+        plot_by_order(comb_sensobj, zpoints_all)
 
 
     if qa_plots:
@@ -722,191 +737,20 @@ def combine_sensfuncs(sensfuncs, cut_left=50, cut_right=-100, poly_order=4, qa_p
     return comb_sensobj
 
 
-# def combine_sensfuncs(sensfuncs, cut_left=50, cut_right=-100, poly_order=4, qa_plots=False):
-#     """Combine the sensitivity functions.
-#
-#     Args:
-#         sensfuncs (list):
-#             List of SensFunc objects.
-#         cut_left (int):
-#             Number of pixels to cut from the left.
-#         cut_right (int):
-#             Number of pixels to cut from the right.
-#         poly_order (int):
-#             Order of the polynomial to fit the zeropoints.
-#         qa_plots (bool):
-#             Generate QA plots.
-#
-#     Returns:
-#         SensFunc: Combined sensitivity function object.
-#     """
-#
-#     all_orders = np.array([])
-#     for sensobj in sensfuncs:
-#         all_orders = np.append(all_orders, sensobj.sens['ECH_ORDERS'].data)
-#     order_vec = np.arange(all_orders.min(), all_orders.max() + 1, dtype=int)
-#     # invert the order vector so that it goes from the highest order to the lowest (i.e., from blue to red)
-#     order_vec = order_vec[::-1]
-#
-#     # initialize the combined zeropoints
-#     comb_zeropoint_fit_list = []
-#     comb_wave_list = []
-#     comb_orders_list = []
-#     comb_coeff_list = []
-#     scale_list = []
-#     # list of the zeropoints for each order
-#     zeropoints_fit_list = []
-#     zeropoints_data_list = []
-#     zeropoint_poly_list = []
-#     logblaze_list = []
-#     waves_list = []
-#     sensfiles_iord_list = []
-#     gpm_list = []
-#     # loop over the orders
-#     for iord in order_vec:
-#         zeropoint_medians = []
-#         waves_iord, zeropoints_data_iord, zeropoints_fit_iord, zeropoint_poly_iord, gpms_iord, sensfiles_iord, log10blaze_iord = \
-#             [], [], [], [], [], [], []
-#         for s, sensobj in enumerate(sensfuncs):
-#             for sens in sensobj.sens:
-#                 if sens['ECH_ORDERS'] == iord:
-#                     wave = sens['SENS_WAVE']
-#                     wv_gpm = wave > 1.0
-#                     wave = wave[wv_gpm][cut_left:cut_right]
-#                     zeropoint_data = sens['SENS_ZEROPOINT'][wv_gpm][cut_left:cut_right]
-#                     zeropoint_data_gpm = sens['SENS_ZEROPOINT_GPM'][wv_gpm][cut_left:cut_right]
-#                     zeropoint_fit = sens['SENS_ZEROPOINT_FIT'][wv_gpm][cut_left:cut_right]
-#                     zeropoint_fit_gpm = sens['SENS_ZEROPOINT_FIT_GPM'][wv_gpm][cut_left:cut_right]
-#                     log10blaze = sens['SENS_LOG10_BLAZE_FUNCTION'][wv_gpm][cut_left:cut_right]
-#                     # get zeropoint_poly
-#                     zeropoint_poly = zeropoint_data + 5.0*np.log10(wave) - ZP_UNIT_CONST
-#                     if not np.all(log10blaze==0):
-#                         zeropoint_poly -= 2.5*log10blaze
-#
-#                     # compute median of the zeropoints
-#                     zeropoint_medians.append(stats.sigma_clipped_stats(zeropoint_poly, mask_value=0., sigma=3)[1])
-#                     waves_iord.append(wave)
-#                     gpms_iord.append(zeropoint_data_gpm)
-#                     zeropoints_fit_iord.append(zeropoint_fit)
-#                     zeropoints_data_iord.append(zeropoint_data)
-#                     zeropoint_poly_iord.append(zeropoint_poly)
-#                     log10blaze_iord.append(log10blaze)
-#                     sensfiles_iord.append(f"{Path(sensobj.spec1df).name.replace('spec1d', 'sens')}")
-#
-#         # scale the zeropoints to the same median value (max of all the medians)
-#         zeropoint_medians = np.array(zeropoint_medians)
-#         max_median = np.nanmax(zeropoint_medians)
-#         scales = np.ones(len(zeropoint_medians)) * max_median / zeropoint_medians
-#         zeropoints_fit_scaled_iord = [z * s for z, s in zip(zeropoints_fit_iord, scales)]
-#         zeropoints_data_scaled_iord = [z * s for z, s in zip(zeropoints_data_iord, scales)]
-#         zeropoint_poly_scaled_iord = [z * s for z, s in zip(zeropoint_poly_iord, scales)]
-#
-#         # discard the zeropoints that have values below a certain threshold. This allows to discard zeropoints
-#         # that go down because of the blocking filter or other reasons.
-#         # lower limit for the zeropoints
-#         low_thresh = 7.
-#         # if iord == 35:
-#         #     low_thresh = 13.
-#         # elif iord in [43,66,84]:
-#         #     low_thresh = 18.
-#         # elif iord == 88:
-#         #     low_thresh = 17.
-#         # elif iord == 76:
-#         #     low_thresh = 17.5
-#         ind_to_remove = []
-#         for i in range(len(zeropoints_fit_scaled_iord)):
-#             if np.any(zeropoints_fit_scaled_iord[i] < low_thresh) or np.any(zeropoints_fit_scaled_iord[i] > 20.):
-#                 ind_to_remove.append(i)
-#         if len(ind_to_remove) > 0:
-#             zeropoints_data_scaled_iord = [zeropoints_data_scaled_iord[k] for k in range(len(zeropoints_data_scaled_iord)) if k not in ind_to_remove]
-#             zeropoints_fit_scaled_iord = [zeropoints_fit_scaled_iord[k] for k in range(len(zeropoints_fit_scaled_iord)) if k not in ind_to_remove]
-#             zeropoint_poly_scaled_iord = [zeropoint_poly_scaled_iord[k] for k in range(len(zeropoint_poly_scaled_iord)) if k not in ind_to_remove]
-#             log10blaze_iord = [log10blaze_iord[k] for k in range(len(log10blaze_iord)) if k not in ind_to_remove]
-#             waves_iord = [waves_iord[k] for k in range(len(waves_iord)) if k not in ind_to_remove]
-#             gpms_iord = [gpms_iord[k] for k in range(len(gpms_iord)) if k not in ind_to_remove]
-#             sensfiles_iord = [sensfiles_iord[k] for k in range(len(sensfiles_iord)) if k not in ind_to_remove]
-#
-#         if len(waves_iord) > 0:
-#             comb_orders_list.append(iord)
-#             zeropoints_fit_list.append(zeropoints_fit_iord)
-#             zeropoints_data_list.append(zeropoints_data_iord)
-#             zeropoint_poly_list.append(zeropoint_poly_scaled_iord)
-#             scale_list.append(scales)
-#             logblaze_list.append(log10blaze_iord)
-#             waves_list.append(waves_iord)
-#             gpm_list.append(gpms_iord)
-#             sensfiles_iord_list.append(sensfiles_iord)
-#
-#     # get the wavelength grid from the telluric grid
-#     hdul = io.load_telluric_grid(sensfuncs[0].telluric.telgrid)
-#     wave_grid_tell = hdul[1].data
-#     # keep only the wavelengths that are within the range of the zeropoints
-#     wmin_grid = np.array([[w.min(), w.max()] for sublist in waves_list for w in sublist]).min()
-#     wmax_grid = np.array([[w.min(), w.max()] for sublist in waves_list for w in sublist]).max()
-#     wave_grid = wave_grid_tell[(wave_grid_tell > wmin_grid) & (wave_grid_tell < wmax_grid)]
-#
-#     for iord, order in enumerate(comb_orders_list):
-#         # interpolate the zeropoints to the wave_grid
-#         zeropoint_poly_iord = np.concatenate(zeropoint_poly_list[iord])
-#         wave_iord = np.concatenate(waves_list[iord])
-#         gpm_iord = np.concatenate(gpm_list[iord])
-#         pypeitFit = fitting.robust_fit(wave_iord, zeropoint_poly_iord, poly_order,
-#                                        function='legendre', minx=wave_iord.min(), maxx=wave_iord.max(),
-#                                        in_gpm=gpm_iord, lower=3, upper=3, use_mad=True)
-#         comb_zeropoint_fit_iord = flux_calib.eval_zeropoint(pypeitFit.fitc, 'legendre', wave_grid,
-#                                                             wave_iord.min(), wave_iord.max())
-#         comb_wave = wave_grid.copy()
-#         outside_gpm = (comb_wave < wave_iord.min()) | (comb_wave > wave_iord.max())
-#         comb_zeropoint_fit_iord[outside_gpm] = 0.
-#         comb_wave[outside_gpm] = 0.
-#         # append the results to the lists
-#         comb_zeropoint_fit_list.append(comb_zeropoint_fit_iord)
-#         comb_wave_list.append(comb_wave)
-#         comb_coeff_list.append(pypeitFit.fitc)
-#
-#     comb_sensobj = fill_combSensObj(comb_zeropoint_fit_list, comb_wave_list, comb_orders_list, poly_order,
-#                                     comb_coeff_list, deepcopy(sensfuncs[0]))
-#
-#     # QA plots
-#     if qa_plots:
-#         plot_by_order(comb_sensobj, zeropoints_data_list, zeropoints_fit_list, waves_list, scale_list,
-#                       sensfiles_iord_list, logblaze=logblaze_list)
-#
-#
-#     if qa_plots:
-#         # plot the zeropoints for all orders
-#         plot_all_orders(comb_sensobj, comb_type='zeropoint')
-#         # plot the throughput for all orders
-#         plot_all_orders(comb_sensobj,comb_type='throughput')
-#
-#     return comb_sensobj
-
-
-def plot_by_order(comb_sensobj, zeropoints_data, zeropoints_fit, waves_list, scale_list, sensfile_list, logblaze=None):
+def plot_by_order(comb_sensobj, zpoints_all):
     """Plot the zeropoints by order.
 
     Args:
         comb_sensobj (SensFunc):
             Combined sensitivity function object.
-        zeropoints_data (list):
-            List of zeropoints data that were combined (several per order)
-        zeropoints_fit (list):
-            List of zeropoints fits that were combined (several per order)
-        waves_list (list):
-            List of wavelength arrays for the zeropoints (several per order)
-        scale_list (list):
-            List of scales used to rescale the zeropoints (several per order)
-        sensfile_list (list):
-            List of sensitivity function file names (several per order)
-        logblaze (list, optional):
-            List of log10 blaze functions (several per order). If None the blaze is not applied.
+        zpoints_all
     """
 
-    unique_sensfiles = np.unique([sensfile for sublist in sensfile_list for sensfile in sublist])
+    unique_sensfiles = np.unique([z for zpoints in zpoints_all.values() if len(zpoints['name']) > 0 for z in zpoints['name']])
     unique_colors = get_unique_colors(unique_sensfiles.size, mcolors.CSS4_COLORS)
     color_map = {sensobj: unique_colors[i] for i, sensobj in enumerate(unique_sensfiles)}
 
-    outfile = 'collection_RESCALEDzeropoints_by_order_with_comb.pdf'
+    outfile = 'collection_RESCALEDzeropoints_by_order_with_comb2.pdf'
 
     # get the values to plot
     orders = comb_sensobj.sens['ECH_ORDERS'].data
@@ -915,33 +759,47 @@ def plot_by_order(comb_sensobj, zeropoints_data, zeropoints_fit, waves_list, sca
     comb_coeff = comb_sensobj.sens['SENS_COEFF'].data
 
     with PdfPages(outfile) as pdf:
-        for (order, wave, comb_zeropoint, coeff, zeropoint_data, zeropoint_fits, waves_iord, scales, lblaze, sensfiles_iord) in \
-                zip(orders, waves, comb_zeropoint_fit, comb_coeff, zeropoints_data, zeropoints_fit, waves_list, scale_list, logblaze, sensfile_list):
+        for i, iord in enumerate(orders):
+            if len(zpoints_all[iord]['wave']) == 0:
+                continue
+            zpoints_iord = zpoints_all[iord]
+            waves_iord = zpoints_iord['wave']
+            zeropoints_data_iord = zpoints_iord['zpoint_data']
+            zeropoints_fit_iord = zpoints_iord['zpoint_poly']
+            scales_iord = zpoints_iord['scale']
+            logblaze_iord = zpoints_iord['log10blaze']
+            sensfiles_iord = zpoints_iord['name']
+            # combined zpoints
+            comb_zeropoint = comb_zeropoint_fit[i]
+            wave = waves[i]
+            coeff = comb_coeff[i]
 
             fig = plt.figure(figsize=(23, 6.))
             axis = plt.subplot()
             plt.minorticks_on()
             plt.tick_params(axis='both', direction='in', top=True, right=True, which='both')
-            plt.title(f'Order {order}')
+            plt.title(f'Order {iord}')
             for i in range(len(sensfiles_iord)):
                 label = f"{sensfiles_iord[i]}"
                 color = color_map[sensfiles_iord[i]]
 
-                axis.plot(waves_iord[i], zeropoint_data[i], drawstyle='steps-mid',
+                axis.plot(waves_iord[i], zeropoints_data_iord[i], drawstyle='steps-mid',
                           color=color, linewidth=0.6, alpha=0.4, zorder=-2)
-                axis.plot(waves_iord[i], zeropoint_fits[i], color=color, linewidth=1., alpha=1.,
-                          label=label, zorder=0)
+                # axis.plot(waves_iord[i], zeropoints_fit_iord[i], color=color, linewidth=1., alpha=1.,
+                #           label=label, zorder=0)
                 # recover the original zeropoints using the combined coefficients
-                this_comb = flux_calib.eval_zeropoint(coeff, 'legendre', waves_iord[i],
-                                                      waves_iord[i].min(), waves_iord[i].max(),
-                                                      log10_blaze_func_per_ang=lblaze[i])
-                axis.plot(waves_iord[i], this_comb, color='k', marker='x', markersize=5, linewidth=None,
-                          alpha=0.4, zorder=2)
-
-            axis.plot(wave[wave>1], comb_zeropoint[wave>1], color='k', linewidth=2.5, ls='--', alpha=1., zorder=1,
-                      label='combined zeropoint - no blaze')
-
-            axis.set_ylim(10.1, 20.9)
+                poly_model = fitting.evaluate_fit(coeff, 'legendre', waves_iord[i],
+                                                  minx=waves_iord[i].min(), maxx=waves_iord[i].max())
+                # correct for scale
+                poly_model /= scales_iord[i]
+                this_comb = poly_model - 5.0 * np.log10(waves_iord[i]) + ZP_UNIT_CONST
+                if np.all(logblaze_iord[i]!=0):
+                    this_comb += 2.5 * logblaze_iord[i]
+                axis.plot(waves_iord[i], this_comb, color=color, linewidth=1., alpha=1.,
+                          label=label, zorder=0)
+            # axis.plot(wave[wave>1], comb_zeropoint[wave>1], color='k', linewidth=2.5, ls='--', alpha=1., zorder=1,
+            #           label='combined zeropoint - no blaze')
+            axis.set_ylim(14.1, 20.9)
             # axis.set_xlim(_wmin, _wmax)
             axis.legend(fontsize=5)
             axis.set_xlabel('Wavelength (Angstroms)')
@@ -979,8 +837,8 @@ def plot_all_orders(comb_sensobj, comb_type='zeropoint'):
     for (order, wave, comb) in zip(orders, waves, combined):
         color = pcolors[order]
         axis.plot(wave[wave>1], comb[wave>1], color=color, linewidth=1, alpha=1., label=f'order {order}', zorder=1)
-    #axis.set_ylim(13.1, 20.9) if comb_type == 'zeropoint' else axis.set_ylim(0.0, 0.15)
-    axis.set_ylim(10.1, 20.9)
+    axis.set_ylim(13.1, 20.9) if comb_type == 'zeropoint' else axis.set_ylim(0.0, 0.15)
+    # axis.set_ylim(10.1, 20.9)
     axis.set_xlim(3600., 10400.)
     axis.legend(loc='lower left', fontsize=4)
     axis.set_xlabel('Wavelength (Angstroms)')
@@ -989,10 +847,6 @@ def plot_all_orders(comb_sensobj, comb_type='zeropoint'):
     plt.savefig(outfile, dpi=60)
     # plt.show()
     plt.close(fig)
-
-def only_these_datasets():
-    return np.array(['HI.20191209.57374.fits', 'HI.20191209.16095.fits', 'HI.20151214.15526.fits', 'HI.20080704.52715.fits',
-         'HI.20151215.16490.fits', 'HI.20151215.16075.fits', 'HI.20151214.16715.fits', 'HI.20151214.16343.fits'])
 
 
 def parse_args():
@@ -1013,6 +867,8 @@ def parse_args():
                         help="Generate and save the QA plots to a pdf file")
     parser.add_argument("--reuse", action="store_true", default=False,
                         help="Reuse existing sensfunc and spec1d files.")
+    parser.add_argument("--parse", action="store_true", default=False,
+                        help="Parse the sensitivity functions to select the ones to use for each order.")
     parser.add_argument("--boxcar", action="store_true", default=False,
                         help="Use boxcar extraction for the sensitivity function computation.This is used only when "
                              "--reuse is not set.")
@@ -1035,16 +891,18 @@ def main(args):
     if args.reuse:
         sens_fnames_dict = None
         if args.sens_fnames is not None:
+            # this needs to be a dictionary with order as key and sensfunc file name as value
             with open(args.sens_fnames, 'r') as file:
                 sens_fnames_dict = yaml.safe_load(file)
-            sens_fnames = list(sens_fnames_dict.values())
-            # sens_fnames = np.loadtxt(args.sens_fnames, dtype=str)
+            # convert the keys to integers
+            sens_fnames_dict = {int(key): value for key, value in sens_fnames_dict.items()}
+            sens_fnames = np.unique([item for sublist in sens_fnames_dict.values() for item in sublist if sublist])
         else:
             sens_fnames = [f.name for f in sensfuncs_path.glob('sens*.fits')]
-        if len(sens_fnames) == 0:
-            msgs.error(f"No sensitivity function files found.")
-        sensfuncs_dict, sens_fname_dict = load_sensfunc(sens_fnames, sensfuncs_path, sens_fnames_dict=sens_fnames_dict,
-                                                        parse=True)
+        # load the sensitivity functions
+        sensfuncs_dict, sens_fnames_dict = load_sensfunc(sensfuncs_path, sens_fnames=sens_fnames,
+                                                        sens_fnames_dict=sens_fnames_dict,
+                                                        parse=args.parse)
 
     else:
         spec1ds_path = Path(args.spec1ds_path).absolute()
@@ -1057,16 +915,19 @@ def main(args):
         if len(spec1d_fnames) == 0:
             msgs.error(f"No spec1d files found.")
         # create the sensitivity functions
-        sensfuncs_dict, sens_fname_dict = create_sens_files(spec1d_fnames, spec1ds_path, sensfuncs_path,
+        sensfuncs_dict, sens_fnames_dict = create_sens_files(spec1d_fnames, spec1ds_path, sensfuncs_path,
                                                             boxcar=args.boxcar, use_flat=args.use_flat,
-                                                            skip_existing=args.skip_existing,
-                                                            only=only_these_datasets())
+                                                            skip_existing=args.skip_existing, parse=args.parse)
+        sens_fnames = np.unique([item for sublist in sens_fnames_dict.values() for item in sublist if sublist])
+
+    if len(sens_fnames) == 0:
+        msgs.error(f"No sensitivity functions found.")
 
     # for debugging
-    # tab_all, aa = select_datasets(sensfuncs)
+    # tab_all = print_datasets(sensfuncs)
 
     # combine the sensitivity functions
-    sensfunc = combine_sensfuncs(sensfuncs_dict, qa_plots=args.QA)
+    sensfunc = combine_sensfuncs(sensfuncs_dict, sens_fnames_dict, poly_order=4, qa_plots=args.QA)
 
     # save the combined sensitivity function
     # Construct a primary FITS header
