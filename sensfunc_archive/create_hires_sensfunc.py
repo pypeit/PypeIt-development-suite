@@ -58,10 +58,13 @@ def on_pick(event, selected_lines, key, key_type='order'):
     line = event.artist
     label = line.get_label().split(' - ')[0]
 
-    # Add the label to the dictionary under the specific key
+    # Add or remove the label to/from the dictionary under the specific key
     if key not in selected_lines:
         selected_lines[key] = []
-    if label not in selected_lines[key]:
+    if label in selected_lines[key]:
+        selected_lines[key].remove(label)
+        print(f"Removed: {label} from {key_type}: {key}")
+    else:
         selected_lines[key].append(label)
         print(f"Selected: {label} in {key_type}: {key}")
 ###########
@@ -208,7 +211,8 @@ def create_sens_files(spec1d_files, spec1d_files_path, sens_files_path, boxcar=F
     # invert the order vector so that it goes from the highest order to the lowest (i.e., from blue to red)
     order_vec = order_vec[::-1]
 
-    parsed_sensobjs, parsed_sensnames = parse_sensfunc(order_vec, sensfuncs, sensnames, deckers, filters, use_all=(not parse))
+    parsed_sensobjs, parsed_sensnames = parse_sensfunc(order_vec, sensfuncs, sensnames, deckers, filters,
+                                                       use_all=(not parse))
     # save to file
     parsed_sens_file = f'used_sensfuncs_v{sensfuncs[0].version}.yaml'
     with open(parsed_sens_file, 'w') as f:
@@ -308,7 +312,8 @@ def load_sensfunc(sens_files_path, sens_fnames=None, sens_fnames_dict=None,
     else:
         parsed_sensobjs = {}
         for iord, sens_fnames in sens_fnames_dict.items():
-            parsed_sensobjs[iord] = [sensobj for sensobj in sensfuncs if Path(sensobj.spec1df).name.replace('spec1d', 'sens') in sens_fnames]
+            parsed_sensobjs[iord] = [sensobj for sensobj in sensfuncs if
+                                     Path(sensobj.spec1df).name.replace('spec1d', 'sens') in sens_fnames]
         parsed_sensnames = sens_fnames_dict
 
     # save to file
@@ -324,9 +329,8 @@ def load_sensfunc(sens_files_path, sens_fnames=None, sens_fnames_dict=None,
         y_list = []
         wave_list = []
         with PdfPages(outfile_name) as pdf:
-            for p, parsed in enumerate(parsed_sensobjs):
-                iord = parsed[0]
-                i_sensfuncs = parsed[1]
+            for iord in order_vec:
+                i_sensfuncs = parsed_sensobjs[iord]
                 if len(i_sensfuncs) == 0:
                     continue
                 fig = plt.figure(figsize=(23, 6.))
@@ -461,7 +465,7 @@ def parse_sensfunc(ordervec, sensfuncs, sensnames, deckers, filters, use_all=Tru
                     wave_gmp = wave > 1.0
                     y = sensobj.sens['SENS_ZEROPOINT_FIT'][indx].data * scale
                     color = color_map[sensobj]
-                    line, = ax.plot(wave[wave_gmp], y[wave_gmp], color=color, lw=0.6, zorder=0,
+                    ax.plot(wave[wave_gmp], y[wave_gmp], color=color, lw=3., zorder=0,
                             label=f'{sname} - {decker} - {filt} -airmass: {airmass:.2f}', picker=True)
             ax.legend(fontsize=5)
             ax.set_ylim(13.1, 20.9)
@@ -901,8 +905,8 @@ def main(args):
             sens_fnames = [f.name for f in sensfuncs_path.glob('sens*.fits')]
         # load the sensitivity functions
         sensfuncs_dict, sens_fnames_dict = load_sensfunc(sensfuncs_path, sens_fnames=sens_fnames,
-                                                        sens_fnames_dict=sens_fnames_dict,
-                                                        parse=args.parse)
+                                                         sens_fnames_dict=sens_fnames_dict,
+                                                         parse=args.parse, plot_all=args.QA)
 
     else:
         spec1ds_path = Path(args.spec1ds_path).absolute()
@@ -916,8 +920,8 @@ def main(args):
             msgs.error(f"No spec1d files found.")
         # create the sensitivity functions
         sensfuncs_dict, sens_fnames_dict = create_sens_files(spec1d_fnames, spec1ds_path, sensfuncs_path,
-                                                            boxcar=args.boxcar, use_flat=args.use_flat,
-                                                            skip_existing=args.skip_existing, parse=args.parse)
+                                                             boxcar=args.boxcar, use_flat=args.use_flat,
+                                                             skip_existing=args.skip_existing, parse=args.parse)
         sens_fnames = np.unique([item for sublist in sens_fnames_dict.values() for item in sublist if sublist])
 
     if len(sens_fnames) == 0:
