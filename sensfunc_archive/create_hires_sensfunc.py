@@ -658,8 +658,8 @@ def combine_sensfuncs(sensfuncs_dict, sensnames_dict, cut_left=50, cut_right=-10
                 log10blaze = sensobj.sens['SENS_LOG10_BLAZE_FUNCTION'].data[indx][wave_gpm][cut_left:cut_right]
                 # get zeropoint_poly
                 zpoint_poly = zpoint_data + 5.0*np.log10(wave) - ZP_UNIT_CONST
-                if not np.all(log10blaze==0):
-                    zpoint_poly -= 2.5*log10blaze
+                # if not np.all(log10blaze==0):
+                #     zpoint_poly -= 2.5*log10blaze
                 med = stats.sigma_clipped_stats(zpoint_poly,
                                                 mask=np.isinf(zpoint_poly) | np.isnan(zpoint_poly) | np.logical_not(zpoint_data_gpm.astype(bool)),
                                                 mask_value=0., sigma=3)[1]
@@ -797,8 +797,8 @@ def plot_by_order(comb_sensobj, zpoints_all):
                 # correct for scale
                 poly_model /= scales_iord[i]
                 this_comb = poly_model - 5.0 * np.log10(waves_iord[i]) + ZP_UNIT_CONST
-                if np.all(logblaze_iord[i]!=0):
-                    this_comb += 2.5 * logblaze_iord[i]
+                # if np.all(logblaze_iord[i]!=0):
+                #     this_comb += 2.5 * logblaze_iord[i]
                 axis.plot(waves_iord[i], this_comb, color=color, linewidth=1., alpha=1.,
                           label=label, zorder=0)
             # axis.plot(wave[wave>1], comb_zeropoint[wave>1], color='k', linewidth=2.5, ls='--', alpha=1., zorder=1,
