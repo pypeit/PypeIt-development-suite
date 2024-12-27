@@ -8,6 +8,13 @@ spectrograph = keck_lris_red
 [baseprocess]
     use_biasimage = False
     use_illumflat = False
+[calibrations]
+    [[standardframe]]
+        [[[process]]]
+            spat_flexure_correct = False
+[scienceframe]
+    [[process]]
+	spat_flexure_correct = False
 [reduce]
    [[findobj]]
          snr_thresh = 50.
