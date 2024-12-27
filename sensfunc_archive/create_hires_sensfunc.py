@@ -654,12 +654,17 @@ def combine_sensfuncs(sensfuncs_dict, sensnames_dict, cut_left=50, cut_right=-10
                 wave_gpm = wave > 1.0
                 wave = wave[wave_gpm][cut_left:cut_right]
                 zpoint_data = sensobj.sens['SENS_ZEROPOINT'].data[indx][wave_gpm][cut_left:cut_right]
+                zpoint_fit = sensobj.sens['SENS_ZEROPOINT_FIT'].data[indx][wave_gpm][cut_left:cut_right]
                 zpoint_data_gpm = sensobj.sens['SENS_ZEROPOINT_GPM'].data[indx][wave_gpm][cut_left:cut_right]
                 log10blaze = sensobj.sens['SENS_LOG10_BLAZE_FUNCTION'].data[indx][wave_gpm][cut_left:cut_right]
-                # get zeropoint_poly
-                zpoint_poly = zpoint_data + 5.0*np.log10(wave) - ZP_UNIT_CONST
+                zpoint_coeff = sensobj.sens['SENS_COEFF'].data[indx]
+                # # get zeropoint_poly
+                # zpoint_poly = zpoint_data + 5.0*np.log10(wave) - ZP_UNIT_CONST
                 # if not np.all(log10blaze==0):
                 #     zpoint_poly -= 2.5*log10blaze
+                # this is actually the zeropoint
+                # zpoint_poly = flux_calib.eval_zeropoint(zpoint_coeff, 'legendre', wave, wave.min(), wave.max())
+                zpoint_poly = zpoint_fit
                 med = stats.sigma_clipped_stats(zpoint_poly,
                                                 mask=np.isinf(zpoint_poly) | np.isnan(zpoint_poly) | np.logical_not(zpoint_data_gpm.astype(bool)),
                                                 mask_value=0., sigma=3)[1]
@@ -681,7 +686,7 @@ def combine_sensfuncs(sensfuncs_dict, sensnames_dict, cut_left=50, cut_right=-10
     # keep only the wavelengths that are within the range of the zeropoints
     pad_frac = 0.1
     wmin_grid = (1.0 - pad_frac)*np.min([z.min() for zpoints in zpoints_all.values() if len(zpoints['wave']) > 0 for z in zpoints['wave']])
-    wmax_grid = (1.0 - pad_frac)*np.max([z.max() for zpoints in zpoints_all.values() if len(zpoints['wave']) > 0 for z in zpoints['wave']])
+    wmax_grid = (1.0 + pad_frac)*np.max([z.max() for zpoints in zpoints_all.values() if len(zpoints['wave']) > 0 for z in zpoints['wave']])
     wave_grid = wave_grid_tell[(wave_grid_tell > wmin_grid) & (wave_grid_tell < wmax_grid)]
 
     # initialize the combined zeropoints
@@ -703,17 +708,18 @@ def combine_sensfuncs(sensfuncs_dict, sensnames_dict, cut_left=50, cut_right=-10
         func = 'legendre'
         pypeitFit = fitting.robust_fit(wave_iord, zpoint_poly_iord, poly_order,
                                        function=func, minx=wave_iord.min(), maxx=wave_iord.max(),
-                                       in_gpm=gpm_iord, lower=3, upper=3, use_mad=True)
-        comb_zeropoint_fit_iord = flux_calib.eval_zeropoint(pypeitFit.fitc, func, wave_grid,
-                                                            wave_iord.min(), wave_iord.max())
+                                       in_gpm=gpm_iord, lower=10, upper=10, use_mad=True)
+        # comb_zeropoint_fit_iord = flux_calib.eval_zeropoint(pypeitFit.fitc, func, wave_grid,
+        #                                                     wave_iord.min(), wave_iord.max())
+        comb_zeropoint_fit_iord = fitting.evaluate_fit(pypeitFit.fitc, func, wave_grid, minx=wave_iord.min(),
+                                                        maxx=wave_iord.max())
         comb_wave = wave_grid.copy()
         outside_gpm = (comb_wave < wave_iord.min()) | (comb_wave > wave_iord.max())
         comb_zeropoint_fit_iord[outside_gpm] = 0.
         comb_wave[outside_gpm] = 0.
-        # poly_model = fitting.evaluate_fit(pypeitFit.fitc, func, wave_grid, minx=wave_iord.min(),
-        #                                   maxx=wave_iord.max())
-        # plt.plot(wave_iord[wave_iord > 1], zpoint_poly_iord[wave_iord > 1])
-        # plt.plot(comb_wave[comb_wave > 0], poly_model[comb_wave > 0], '--r')
+
+        # plt.plot(wave_iord[wave_iord > 1], zpoint_poly_iord[wave_iord > 1], marker='.', ms=4, ls='')
+        # plt.plot(comb_wave[comb_wave > 0], comb_zeropoint_fit_iord[comb_wave > 0], '--r')
         # plt.show()
         #embed()
         # append the results to the lists
@@ -787,23 +793,31 @@ def plot_by_order(comb_sensobj, zpoints_all):
                 label = f"{sensfiles_iord[i]}"
                 color = color_map[sensfiles_iord[i]]
 
-                axis.plot(waves_iord[i], zeropoints_data_iord[i], drawstyle='steps-mid',
-                          color=color, linewidth=0.6, alpha=0.4, zorder=-2)
+                axis.plot(waves_iord[i], zeropoints_data_iord[i]*scales_iord[i], drawstyle='steps-mid',
+                          color=color, ls='', marker='.', ms=2, alpha=0.2, zorder=-2)
                 # axis.plot(waves_iord[i], zeropoints_fit_iord[i], color=color, linewidth=1., alpha=1.,
                 #           label=label, zorder=0)
                 # recover the original zeropoints using the combined coefficients
-                poly_model = fitting.evaluate_fit(coeff, 'legendre', waves_iord[i],
-                                                  minx=waves_iord[i].min(), maxx=waves_iord[i].max())
-                # correct for scale
-                poly_model /= scales_iord[i]
-                this_comb = poly_model - 5.0 * np.log10(waves_iord[i]) + ZP_UNIT_CONST
+                # poly_model = fitting.evaluate_fit(coeff, 'legendre', waves_iord[i],
+                #                                   minx=waves_iord[i].min(), maxx=waves_iord[i].max())
+                # # correct for scale
+                # poly_model /= scales_iord[i]
+                # this_comb = poly_model - 5.0 * np.log10(waves_iord[i]) + ZP_UNIT_CONST
                 # if np.all(logblaze_iord[i]!=0):
                 #     this_comb += 2.5 * logblaze_iord[i]
-                axis.plot(waves_iord[i], this_comb, color=color, linewidth=1., alpha=1.,
-                          label=label, zorder=0)
-            # axis.plot(wave[wave>1], comb_zeropoint[wave>1], color='k', linewidth=2.5, ls='--', alpha=1., zorder=1,
-            #           label='combined zeropoint - no blaze')
-            axis.set_ylim(14.1, 20.9)
+                # comb_zpoint = flux_calib.eval_zeropoint(coeff, 'legendre', waves_iord[i],
+                #                                         waves_iord[i].min(), waves_iord[i].max(),
+                #                                         log10_blaze_func_per_ang=logblaze_iord[i])
+                if wave[wave>0].size > 0:
+                    comb_zpoint = scipy.interpolate.interp1d(wave[wave>0], comb_zeropoint[wave>0],
+                                                             bounds_error=False, fill_value=0.)(waves_iord[i])
+                    axis.plot(waves_iord[i], comb_zpoint, color=color, linewidth=1.5, alpha=1.,
+                              label=label, zorder=0)
+                    axis.plot(waves_iord[i], comb_zpoint, color='k', linewidth=1.5, alpha=1.,zorder=1)
+            if iord in [93, 35, 36, 37]:
+                axis.set_ylim(13.1, 17.1)
+            else:
+                axis.set_ylim(16.5, 20.5)
             # axis.set_xlim(_wmin, _wmax)
             axis.legend(fontsize=5)
             axis.set_xlabel('Wavelength (Angstroms)')
@@ -906,7 +920,7 @@ def main(args):
         # load the sensitivity functions
         sensfuncs_dict, sens_fnames_dict = load_sensfunc(sensfuncs_path, sens_fnames=sens_fnames,
                                                          sens_fnames_dict=sens_fnames_dict,
-                                                         parse=args.parse, plot_all=args.QA)
+                                                         parse=args.parse, plot_all=False)
 
     else:
         spec1ds_path = Path(args.spec1ds_path).absolute()
