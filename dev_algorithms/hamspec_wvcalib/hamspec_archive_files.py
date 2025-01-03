@@ -6,13 +6,13 @@ from importlib.resources import files
 
 from matplotlib import pyplot as plt
 
-from scipy.io import readsav
-
 from astropy.table import Table
 from astropy.io import fits
+from astropy import units
 
 from pypeit.core.wavecal import templates
 from pypeit.core.fitting import robust_fit
+from pypeit.core import wave as core_wave 
 
 from IPython import embed
 
@@ -25,6 +25,19 @@ nirspec_composite_arc_file = os.path.join(files('pypeit'), 'data', 'arc_lines', 
 hamspec_idl_file = os.path.join(os.getenv('PYPEIT_DEV'), 'dev_algorithms', 'hamspec_wvcalib', 'Arc_01_fit.idl')
 order_vec, wave, spec, NORDs = templates.xidl_esihires(hamspec_idl_file, ret_NORD=True)
 norders = order_vec.size
+
+# Check
+if True:
+    #idx = 2  # Order 71, which is legit
+    # This is the same as -16 in my extracted arc.
+    idx = 20
+
+    print(f'Order: {order_vec[idx]}')
+    fig = plt.figure(figsize=(12, 8))
+    ax = plt.gca()
+    ax.plot(core_wave.vactoair(wave[idx, :]*units.AA), spec[idx, :])
+    plt.show()
+    embed(header='hamspec_archive_files.py: Check 35')
 
 #  Angles file
 hdu = fits.open(nirspec_angle_fits_file)
@@ -106,7 +119,7 @@ hdu = fits.open(nirspec_composite_arc_file)
 hamspec_composite_arc_params = Table(hdu[1].data)
 hamspec_wave_composite = wave.T
 hamspec_arc_composite = spec.T
-hamspec_gpm_composite = spec.astype(bool)
+hamspec_gpm_composite = hamspec_arc_composite.astype(bool)
 
 outfile2 = os.path.join(files('pypeit'), 'data', 'arc_lines', 'reid_arxiv', 'lick_hamspec_composite_arc.fits')
 hdulist = fits.HDUList()
