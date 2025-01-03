@@ -28,7 +28,7 @@ def raw_data_path():
 
 def get_test_metadata(raw_data_path):
     # Create a PypeItMetadata to test with
-    files = list((raw_data_path / "shane_kast_blue" / "600_4310_d55").resolve().glob("*.fits.gz"))
+    files = list((raw_data_path / "shane_kast_blue" / "600_4310_d55").absolute().glob("*.fits.gz"))
     spec = load_spectrograph("shane_kast_blue")
     par = spec.default_pypeit_par()
     return PypeItMetaData(spec, par, files)
@@ -249,8 +249,8 @@ def test_pypeit_file_model(qtbot, raw_data_path, tmp_path):
     # Make sure one setup A and one setup B is there. This would probably be invalid
     # but the GUI trusts the user to know what they're doing
     shane_kast_blue_path = (raw_data_path / "shane_kast_blue" / "600_4310_d55").absolute()
-    assert str((shane_kast_blue_path / "b11.fits.gz").resolve()) in filenames
-    assert str((shane_kast_blue_path / "b1.fits.gz").resolve()) in filenames
+    assert str((shane_kast_blue_path / "b11.fits.gz").absolute()) in filenames
+    assert str((shane_kast_blue_path / "b1.fits.gz").absolute()) in filenames
 
     # TODO
     # test removed files not being saved
@@ -320,7 +320,7 @@ def test_pypeit_obslog_model(qtbot, raw_data_path, tmp_path):
 
     raw_data_dirs = obslog_model.raw_data_directories
     assert len(raw_data_dirs) == 1
-    assert raw_data_dirs[0] == str(shane_kast_blue_path.resolve())
+    assert raw_data_dirs[0] == str(shane_kast_blue_path.absolute())
     
     assert obslog_model.spec_name == "shane_kast_blue"
     assert obslog_model.spectrograph.name == "shane_kast_blue"
