@@ -4,6 +4,11 @@
 # User-defined execution parameters
 [rdx]
     spectrograph = keck_hires
+[scienceframe]
+    [[process]]
+	spat_flexure_correct = True
+	spat_flexure_maxlag = 5
+	spat_flexure_sigdetect = 1.
 
 
 # Setup
