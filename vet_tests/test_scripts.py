@@ -515,14 +515,13 @@ def test_run_to_calibstep(redux_out):
     # move to the redux_out directory
     os.chdir(_redux_out)
     pypeit_file = _redux_out / 'shane_kast_blue_A.pypeit'
-    #pypeit_file = 'shane_kast_blue_A.pypeit'
 
     #pytest.set_trace()
     # Run on all the steps
     for step in calibrations.MultiSlitCalibrations.default_steps():
         scripts.run_to_calibstep.RunToCalibStep.main(
             scripts.run_to_calibstep.RunToCalibStep.parse_args(
-            [str(pypeit_file), 'b28.fits.gz', step]))
+            [str(pypeit_file), step, '--science_frame', 'b28.fits.gz']))
 
     # Go back
     os.chdir(cdir)
