@@ -1,0 +1,15 @@
+##########################################################
+Setup A
+      decker: ic348_TK_M03A
+    dispname: J-spectroscopy
+     filter1: J
+#---------------------------------------------------------
+         filename |                 frametype |          ra |         dec |        target |       dispname |        decker | binning |            mjd |    airmass |  exptime | filter1 | lampstat01 | dithpat | dithpos | dithoff | frameno
+m121128_0132.fits | pixelflat,illumflat,trace |         7.8 |        45.0 |       unknown | J-spectroscopy | ic348_TK_M03A |     1,1 | 56259.15157182 | 1.41291034 |  14.5479 |       J |         on |    none |    none |     0.0 |     132
+m121128_0133.fits | pixelflat,illumflat,trace |         7.8 |        45.0 |       unknown | J-spectroscopy | ic348_TK_M03A |     1,1 | 56259.15192021 | 1.41291034 |  14.5479 |       J |         on |    none |    none |     0.0 |     133
+m121128_0134.fits | pixelflat,illumflat,trace |         7.8 |        45.0 |       unknown | J-spectroscopy | ic348_TK_M03A |     1,1 | 56259.15220956 | 1.41291034 |  14.5479 |       J |         on |    none |    none |     0.0 |     134
+m121128_0198.fits |          arc,science,tilt | 56.27484011 | 32.19165488 | ic348_TK_M03A | J-spectroscopy | ic348_TK_M03A |     1,1 | 56259.25354429 | 1.51635941 | 59.64639 |       J |        off |   Stare |       A |     1.5 |     198
+m121128_0199.fits |          arc,science,tilt | 56.27402153 | 32.19170348 | ic348_TK_M03A | J-spectroscopy | ic348_TK_M03A |     1,1 | 56259.25462473 | 1.50649994 | 59.64639 |       J |        off |   Stare |       B |    -1.5 |     199
+m121128_0200.fits |          arc,science,tilt | 56.27402153 | 32.19170348 | ic348_TK_M03A | J-spectroscopy | ic348_TK_M03A |     1,1 | 56259.25567856 | 1.49707424 | 59.64639 |       J |        off |   Stare |       B |    -1.5 |     200
+m121128_0201.fits |          arc,science,tilt | 56.27484011 | 32.19165488 | ic348_TK_M03A | J-spectroscopy | ic348_TK_M03A |     1,1 | 56259.25677058 |  1.4874996 | 59.64639 |       J |        off |   Stare |       A |     1.5 |     201
+##end

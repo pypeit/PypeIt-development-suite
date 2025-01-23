@@ -1,0 +1,14 @@
+{
+	"folders": [
+        {
+            "path": "../Python/PypeIt"
+        },
+        {
+            "path": "."
+        },
+        {
+            "path": "../adap"
+        }
+    ],
+	"settings": {}
+}

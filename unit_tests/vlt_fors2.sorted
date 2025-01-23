@@ -1,0 +1,71 @@
+##########################################################
+Setup A
+     dispname: GRIS_300I
+    dispangle: 857.5
+       decker: LSS_1.0_arcsec
+     detector: CHIP1
+#---------------------------------------------------------
+                          filename | frametype |        ra |       dec | target |  dispname |         decker | binning |            mjd | airmass | exptime | dispangle | detector
+FORS2.2018-12-04T00:49:39.578.fits |  standard | 12.505749 | -52.13766 |    STD | GRIS_300I | LSS_1.0_arcsec |     2,2 | 58456.03448586 |   1.127 | 54.9913 |     857.5 |    CHIP1
+##########################################################
+Setup B
+     dispname: None
+    dispangle: None
+       decker: lSlit1_0arcsec
+     detector: CHIP1
+#---------------------------------------------------------
+                          filename | frametype |         ra |       dec |             target | dispname |         decker | binning |            mjd | airmass | exptime | dispangle | detector
+FORS2.2018-12-05T02:01:02.548.fits |      None | 327.338652 | -52.96823 | Unknown FRB Host Y |     None | lSlit1_0arcsec |     2,2 | 58457.08405727 |   1.797 | 29.9974 |      None |    CHIP1
+##########################################################
+Setup C
+     dispname: None
+    dispangle: None
+       decker: lSlit1_0arcsec
+     detector: CHIP2
+#---------------------------------------------------------
+                          filename | frametype |         ra |       dec |             target | dispname |         decker | binning |            mjd | airmass | exptime | dispangle | detector
+FORS2.2018-12-05T02:01:02.549.fits |      None | 327.338652 | -52.96823 | Unknown FRB Host Y |     None | lSlit1_0arcsec |     2,2 | 58457.08405727 |   1.797 | 29.9974 |      None |    CHIP2
+##########################################################
+Setup D
+     dispname: GRIS_300I
+    dispangle: 857.5
+       decker: lSlit1_0arcsec
+     detector: CHIP1
+#---------------------------------------------------------
+                          filename |                 frametype |         ra |       dec |             target |  dispname |         decker | binning |            mjd | airmass |  exptime | dispangle | detector
+FORS2.2018-12-05T02:02:41.687.fits |                   science | 327.338652 | -52.96823 | Unknown FRB Host Y | GRIS_300I | lSlit1_0arcsec |     2,2 | 58457.08520471 |   1.809 | 889.9697 |     857.5 |    CHIP1
+FORS2.2018-12-05T02:18:15.356.fits |                   science | 327.336769 | -52.97077 | Unknown FRB Host Y | GRIS_300I | lSlit1_0arcsec |     2,2 | 58457.09601107 |   1.929 | 889.9498 |     857.5 |    CHIP1
+FORS2.2018-12-05T02:33:49.816.fits |                   science | 327.340535 |  -52.9657 | Unknown FRB Host Y | GRIS_300I | lSlit1_0arcsec |     2,2 | 58457.10682657 |   2.071 | 889.9612 |     857.5 |    CHIP1
+FORS2.2018-12-05T12:14:16.719.fits | pixelflat,illumflat,trace |       None |      None |          FLAT,LAMP | GRIS_300I | lSlit1_0arcsec |     2,2 | 58457.50991573 |    None |   3.9996 |     857.5 |    CHIP1
+FORS2.2018-12-05T12:14:57.493.fits | pixelflat,illumflat,trace |       None |      None |          FLAT,LAMP | GRIS_300I | lSlit1_0arcsec |     2,2 | 58457.51038765 |    None |   3.9964 |     857.5 |    CHIP1
+FORS2.2018-12-05T12:15:38.497.fits | pixelflat,illumflat,trace |       None |      None |          FLAT,LAMP | GRIS_300I | lSlit1_0arcsec |     2,2 | 58457.51086223 |    None |   4.0048 |     857.5 |    CHIP1
+FORS2.2018-12-05T12:16:19.511.fits | pixelflat,illumflat,trace |       None |      None |          FLAT,LAMP | GRIS_300I | lSlit1_0arcsec |     2,2 | 58457.51133693 |    None |   3.9926 |     857.5 |    CHIP1
+FORS2.2018-12-05T12:17:00.575.fits | pixelflat,illumflat,trace |       None |      None |          FLAT,LAMP | GRIS_300I | lSlit1_0arcsec |     2,2 | 58457.51181221 |    None |   3.9957 |     857.5 |    CHIP1
+FORS2.2018-12-05T12:17:41.509.fits | pixelflat,illumflat,trace |       None |      None |          FLAT,LAMP | GRIS_300I | lSlit1_0arcsec |     2,2 | 58457.51228598 |    None |   4.0037 |     857.5 |    CHIP1
+FORS2.2018-12-05T12:18:22.593.fits | pixelflat,illumflat,trace |       None |      None |          FLAT,LAMP | GRIS_300I | lSlit1_0arcsec |     2,2 | 58457.51276149 |    None |   3.9991 |     857.5 |    CHIP1
+FORS2.2018-12-05T12:19:37.190.fits |                  arc,tilt |       None |      None |          WAVE,LAMP | GRIS_300I | lSlit1_0arcsec |     2,2 | 58457.51362488 |    None | 299.9848 |     857.5 |    CHIP1
+##########################################################
+Setup E
+     dispname: GRIS_300I
+    dispangle: 857.5
+       decker: lSlit1_0arcsec
+     detector: CHIP2
+#---------------------------------------------------------
+                          filename |                 frametype |         ra |       dec |             target |  dispname |         decker | binning |            mjd | airmass |  exptime | dispangle | detector
+FORS2.2018-12-04T09:47:52.688.fits |                      bias |       None |      None |               BIAS |      None |           None |     2,2 |  58456.4082487 |    None |      0.0 |      None |    CHIP1
+FORS2.2018-12-04T09:50:42.724.fits |                      bias |       None |      None |               BIAS |      None |           None |     2,2 | 58456.41021671 |    None |      0.0 |      None |    CHIP1
+FORS2.2018-12-05T02:02:41.688.fits |                   science | 327.338652 | -52.96823 | Unknown FRB Host Y | GRIS_300I | lSlit1_0arcsec |     2,2 | 58457.08520471 |   1.809 | 889.9697 |     857.5 |    CHIP2
+FORS2.2018-12-05T02:18:15.357.fits |                   science | 327.336769 | -52.97077 | Unknown FRB Host Y | GRIS_300I | lSlit1_0arcsec |     2,2 | 58457.09601107 |   1.929 | 889.9498 |     857.5 |    CHIP2
+FORS2.2018-12-05T02:33:49.817.fits |                   science | 327.340535 |  -52.9657 | Unknown FRB Host Y | GRIS_300I | lSlit1_0arcsec |     2,2 | 58457.10682657 |   2.071 | 889.9612 |     857.5 |    CHIP2
+FORS2.2018-12-05T09:05:18.323.fits |                      bias |       None |      None |               BIAS |      None |           None |     2,2 | 58457.37868429 |    None |      0.0 |      None |    CHIP1
+FORS2.2018-12-05T09:09:50.318.fits |                      bias |       None |      None |               BIAS |      None |           None |     2,2 | 58457.38183239 |    None |      0.0 |      None |    CHIP1
+FORS2.2018-12-05T09:13:48.331.fits |                      bias |       None |      None |               BIAS |      None |           None |     2,2 | 58457.38458717 |    None |      0.0 |      None |    CHIP1
+FORS2.2018-12-05T12:14:16.720.fits | pixelflat,illumflat,trace |       None |      None |          FLAT,LAMP | GRIS_300I | lSlit1_0arcsec |     2,2 | 58457.50991573 |    None |   3.9996 |     857.5 |    CHIP2
+FORS2.2018-12-05T12:14:57.494.fits | pixelflat,illumflat,trace |       None |      None |          FLAT,LAMP | GRIS_300I | lSlit1_0arcsec |     2,2 | 58457.51038765 |    None |   3.9964 |     857.5 |    CHIP2
+FORS2.2018-12-05T12:15:38.498.fits | pixelflat,illumflat,trace |       None |      None |          FLAT,LAMP | GRIS_300I | lSlit1_0arcsec |     2,2 | 58457.51086223 |    None |   4.0048 |     857.5 |    CHIP2
+FORS2.2018-12-05T12:16:19.512.fits | pixelflat,illumflat,trace |       None |      None |          FLAT,LAMP | GRIS_300I | lSlit1_0arcsec |     2,2 | 58457.51133693 |    None |   3.9926 |     857.5 |    CHIP2
+FORS2.2018-12-05T12:17:00.576.fits | pixelflat,illumflat,trace |       None |      None |          FLAT,LAMP | GRIS_300I | lSlit1_0arcsec |     2,2 | 58457.51181221 |    None |   3.9957 |     857.5 |    CHIP2
+FORS2.2018-12-05T12:17:41.510.fits | pixelflat,illumflat,trace |       None |      None |          FLAT,LAMP | GRIS_300I | lSlit1_0arcsec |     2,2 | 58457.51228598 |    None |   4.0037 |     857.5 |    CHIP2
+FORS2.2018-12-05T12:18:22.594.fits | pixelflat,illumflat,trace |       None |      None |          FLAT,LAMP | GRIS_300I | lSlit1_0arcsec |     2,2 | 58457.51276149 |    None |   3.9991 |     857.5 |    CHIP2
+FORS2.2018-12-05T12:19:37.191.fits |                  arc,tilt |       None |      None |          WAVE,LAMP | GRIS_300I | lSlit1_0arcsec |     2,2 | 58457.51362488 |    None | 299.9848 |     857.5 |    CHIP2
+##end

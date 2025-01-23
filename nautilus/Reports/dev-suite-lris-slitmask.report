@@ -1,0 +1,3829 @@
+Reduced data for the following setups:
+    bok_bc/600
+    gemini_gnirs/32_SB_SXD
+    gemini_gnirs/10_LB_SXD
+    gemini_gmos/GS_HAM_R400_700
+    gemini_gmos/GS_HAM_R400_860
+    gemini_gmos/GN_HAM_R400_885
+    gemini_gmos/GN_HAM_NS_B600_620
+    gemini_flamingos2/HK_HK
+    gemini_flamingos2/JH_JH
+    gtc_osiris/R1000B
+    gtc_osiris/R1000BMOS
+    gtc_osiris/R1000RMOS
+    gtc_osiris/R2500R
+    gtc_osiris/R2500V
+    keck_deimos/600ZD_M_6500
+    keck_deimos/600ZD_tilted
+    keck_deimos/1200G_M_7750
+    keck_deimos/830G_LVM_8400
+    keck_deimos/830G_M_8100_26
+    keck_deimos/830G_M_8500
+    keck_deimos/830G_L_8100
+    keck_deimos/1200B_M_5200
+    keck_deimos/1200G_M_5500
+    keck_deimos/900ZD_M_6000
+    keck_deimos/1200B_LVM_5200
+    keck_deimos/900ZD_LVM_5500
+    keck_deimos/830G_M_9000_dither
+    keck_kcwi/bh2_4200
+    keck_kcwi/bl
+    keck_nires/NIRES
+    keck_nirspec/LOW_NIRSPEC-1
+    keck_mosfire/Y_long
+    keck_mosfire/J_multi
+    keck_mosfire/K_long
+    keck_mosfire/Y_multi
+    keck_mosfire/long2pos1_H
+    keck_mosfire/longslit_3x0.7_H
+    keck_mosfire/mask1_K_with_continuum
+    keck_mosfire/mask1_J_with_continuum
+    keck_lris_blue/multi_600_4000_d560
+    keck_lris_blue/long_400_3400_d560
+    keck_lris_blue/long_600_4000_d560
+    keck_lris_blue/multi_300_5000_d680
+    keck_lris_blue/multi_600_4000_slitmask
+    keck_lris_blue_orig/long_600_4000_d500
+    keck_lris_red/long_600_7500_d560
+    keck_lris_red/multi_1200_9000_d680_1x2
+    keck_lris_red/multi_600_5000_d560
+    keck_lris_red/multi_1200_9000_d680
+    keck_lris_red/multi_400_8500_d560
+    keck_lris_red/long_600_10000_d680
+    keck_lris_red/long_400_8500_longread
+    keck_lris_red_orig/long_300_5000
+    keck_lris_red_mark4/long_400_8500
+    lbt_luci/LUCI-I
+    lbt_luci/LUCI-II
+    lbt_mods/MODS1R_Longslit
+    lbt_mods/MODS2R_Longslit
+    ldt_deveny/DV1
+    ldt_deveny/DV2
+    ldt_deveny/DV5
+    ldt_deveny/DV6
+    ldt_deveny/DV8
+    magellan_mage/1x1
+    magellan_fire/FIRE_Echelle
+    magellan_fire/FIRE_Long
+    mdm_osmos/MDM4K
+    mmt_binospec/Longslit_G600
+    mmt_binospec/Multislit_G270
+    mmt_mmirs/HK_zJ
+    mmt_mmirs/J_zJ
+    mmt_mmirs/K_K
+    mmt_bluechannel/300l
+    ntt_efosc2/gr5
+    ntt_efosc2/gr6
+    not_alfosc/grism4
+    not_alfosc/grism19
+    p200_dbsp_blue/600_4000_d55
+    p200_dbsp_blue/600_4000_d68
+    p200_dbsp_blue/1200_5000_d68
+    p200_dbsp_red/316_7500_d55
+    p200_dbsp_red/600_10000_d55
+    p200_dbsp_red/1200_7100_d68
+    p200_tspec/TSPEC
+    shane_kast_blue/452_3306_d57
+    shane_kast_blue/600_4310_d55
+    shane_kast_blue/830_3460_d46
+    shane_kast_red/300_7500_Ne
+    shane_kast_red/600_7500_d55_ret
+    shane_kast_red/600_7500_d57
+    shane_kast_red/600_5000_d46
+    shane_kast_red/1200_5000_d57
+    soar_goodman_red/M1
+    soar_goodman_red/M2
+    vlt_fors2/300I
+    vlt_xshooter/VIS_1x1
+    vlt_xshooter/VIS_2x1
+    vlt_xshooter/VIS_2x2
+    vlt_xshooter/VIS_manual
+    vlt_xshooter/NIR
+    vlt_sinfoni/K_0.8
+
+Ran tests in 6 parallel processes
+
+-------------------------
+Test Setup: keck_lris_red/multi_1200_9000_d680_1x2
+
+-------------------------
+Directories:
+         Raw data: /PypeIt-development-suite/RAW_DATA/keck_lris_red/multi_1200_9000_d680_1x2
+    PypeIt output: /tmp/REDUX_OUT/keck_lris_red/multi_1200_9000_d680_1x2
+Files:
+     .pypeit file: None
+ Std .pypeit file: None
+Tests:
+----
+keck_lris_red/multi_1200_9000_d680_1x2 pypeit (without masters) Result: [1;32m--- PASSED[0m
+
+Logfile:    /tmp/REDUX_OUT/keck_lris_red/multi_1200_9000_d680_1x2/keck_lris_red_multi_1200_9000_d680_1x2.test.log
+Process Id: 190
+Start time: Fri Jan 28 20:52:37 2022
+End time:   Fri Jan 28 21:33:21 2022
+Duration:   0:40:44.034139
+Command:    run_pypeit /tmp/REDUX_OUT/keck_lris_red/multi_1200_9000_d680_1x2/keck_lris_red_multi_1200_9000_d680_1x2.pypeit -o
+
+Error Messages:
+
+End of Log:
+[1;32m[INFO]    ::[0m [1;34mrun_pypeit.py 143 main()[0m - Data reduction complete
+[1;32m[INFO]    ::[0m [1;34mrun_pypeit.py 146 main()[0m - Generating QA HTML
+Wrote: /tmp/REDUX_OUT/keck_lris_red/multi_1200_9000_d680_1x2/QA/MF_A.html
+
+
+
+----
+keck_lris_red/multi_1200_9000_d680_1x2 pypeit (with masters) Result: [1;32m--- PASSED[0m
+
+Logfile:    /tmp/REDUX_OUT/keck_lris_red/multi_1200_9000_d680_1x2/keck_lris_red_multi_1200_9000_d680_1x2.test.2.log
+Process Id: 215
+Start time: Fri Jan 28 21:33:21 2022
+End time:   Fri Jan 28 22:36:38 2022
+Duration:   1:03:16.225879
+Command:    run_pypeit /tmp/REDUX_OUT/keck_lris_red/multi_1200_9000_d680_1x2/keck_lris_red_multi_1200_9000_d680_1x2.pypeit -o -m
+
+Error Messages:
+
+End of Log:
+[1;32m[INFO]    ::[0m [1;34mrun_pypeit.py 143 main()[0m - Data reduction complete
+[1;32m[INFO]    ::[0m [1;34mrun_pypeit.py 146 main()[0m - Generating QA HTML
+Wrote: /tmp/REDUX_OUT/keck_lris_red/multi_1200_9000_d680_1x2/QA/MF_A.html
+
+
+
+-------------------------
+Test Setup: lbt_mods/MODS1R_Longslit
+
+-------------------------
+Directories:
+         Raw data: /PypeIt-development-suite/RAW_DATA/lbt_mods/MODS1R_Longslit
+    PypeIt output: /tmp/REDUX_OUT/lbt_mods/MODS1R_Longslit
+Files:
+     .pypeit file: None
+ Std .pypeit file: None
+Tests:
+----
+lbt_mods/MODS1R_Longslit pypeit (without masters) Result: [1;32m--- PASSED[0m
+
+Logfile:    /tmp/REDUX_OUT/lbt_mods/MODS1R_Longslit/lbt_mods_mods1r_longslit.test.log
+Process Id: 185
+Start time: Fri Jan 28 20:52:37 2022
+End time:   Fri Jan 28 22:40:49 2022
+Duration:   1:48:12.017923
+Command:    run_pypeit /tmp/REDUX_OUT/lbt_mods/MODS1R_Longslit/lbt_mods_mods1r_longslit.pypeit -o
+
+Error Messages:
+
+End of Log:
+[1;32m[INFO]    ::[0m [1;34mrun_pypeit.py 143 main()[0m - Data reduction complete
+[1;32m[INFO]    ::[0m [1;34mrun_pypeit.py 146 main()[0m - Generating QA HTML
+Wrote: /tmp/REDUX_OUT/lbt_mods/MODS1R_Longslit/QA/MF_A.html
+
+
+
+-------------------------
+Test Setup: vlt_xshooter/VIS_manual
+
+-------------------------
+Directories:
+         Raw data: /PypeIt-development-suite/RAW_DATA/vlt_xshooter/VIS_manual
+    PypeIt output: /tmp/REDUX_OUT/vlt_xshooter/VIS_manual
+Files:
+     .pypeit file: None
+ Std .pypeit file: None
+Tests:
+----
+vlt_xshooter/VIS_manual pypeit (without masters) Result: [1;32m--- PASSED[0m
+
+Logfile:    /tmp/REDUX_OUT/vlt_xshooter/VIS_manual/vlt_xshooter_vis_manual.test.log
+Process Id: 189
+Start time: Fri Jan 28 20:52:37 2022
+End time:   Fri Jan 28 22:32:01 2022
+Duration:   1:39:23.286633
+Command:    run_pypeit /tmp/REDUX_OUT/vlt_xshooter/VIS_manual/vlt_xshooter_vis_manual.pypeit -o
+
+Error Messages:
+
+End of Log:
+[1;32m[INFO]    ::[0m [1;34mrun_pypeit.py 143 main()[0m - Data reduction complete
+[1;32m[INFO]    ::[0m [1;34mrun_pypeit.py 146 main()[0m - Generating QA HTML
+Wrote: /tmp/REDUX_OUT/vlt_xshooter/VIS_manual/QA/MF_B.html
+
+
+
+----
+vlt_xshooter/VIS_manual pypeit_coadd_2dspec Result: [1;32m--- PASSED[0m
+
+Logfile:    /tmp/REDUX_OUT/vlt_xshooter/VIS_manual/vlt_xshooter_vis_manual.test_2dcoadd.log
+Process Id: 217
+Start time: Fri Jan 28 22:32:01 2022
+End time:   Fri Jan 28 22:40:54 2022
+Duration:   0:08:53.266660
+Command:    pypeit_coadd_2dspec --file /PypeIt-development-suite/coadd2d_files/vlt_xshooter_vis_manual.coadd2d
+
+Error Messages:
+
+End of Log:
+WARNING: VerifyWarning: Card is too long, comment will be truncated. [astropy.io.fits.card]
+[1;32m[INFO]    ::[0m Wrote: /tmp/REDUX_OUT/vlt_xshooter/VIS_manual/Science_coadd/spec2d_XSHOO.2019-XSHOO.2019-08.fits
+Writing the parameters to XSHOO.2019-XSHOO.2019-08_coadd2d.par
+
+
+
+-------------------------
+Test Setup: magellan_fire/FIRE_Echelle
+
+-------------------------
+Directories:
+         Raw data: /PypeIt-development-suite/RAW_DATA/magellan_fire/FIRE_Echelle
+    PypeIt output: /tmp/REDUX_OUT/magellan_fire/FIRE_Echelle
+Files:
+     .pypeit file: None
+ Std .pypeit file: None
+Tests:
+----
+magellan_fire/FIRE_Echelle pypeit (without masters) Result: [1;32m--- PASSED[0m
+
+Logfile:    /tmp/REDUX_OUT/magellan_fire/FIRE_Echelle/magellan_fire_fire_echelle.test.log
+Process Id: 187
+Start time: Fri Jan 28 20:52:37 2022
+End time:   Fri Jan 28 22:56:45 2022
+Duration:   2:04:07.782742
+Command:    run_pypeit /tmp/REDUX_OUT/magellan_fire/FIRE_Echelle/magellan_fire_fire_echelle.pypeit -o
+
+Error Messages:
+
+End of Log:
+[1;32m[INFO]    ::[0m [1;34mrun_pypeit.py 143 main()[0m - Data reduction complete
+[1;32m[INFO]    ::[0m [1;34mrun_pypeit.py 146 main()[0m - Generating QA HTML
+Wrote: /tmp/REDUX_OUT/magellan_fire/FIRE_Echelle/QA/MF_A.html
+
+
+
+-------------------------
+Test Setup: keck_kcwi/bh2_4200
+
+-------------------------
+Directories:
+         Raw data: /PypeIt-development-suite/RAW_DATA/keck_kcwi/bh2_4200
+    PypeIt output: /tmp/REDUX_OUT/keck_kcwi/bh2_4200
+Files:
+     .pypeit file: None
+ Std .pypeit file: None
+Tests:
+----
+keck_kcwi/bh2_4200 pypeit (without masters) Result: [1;32m--- PASSED[0m
+
+Logfile:    /tmp/REDUX_OUT/keck_kcwi/bh2_4200/keck_kcwi_bh2_4200.test.log
+Process Id: 184
+Start time: Fri Jan 28 20:52:37 2022
+End time:   Fri Jan 28 23:03:18 2022
+Duration:   2:10:41.221583
+Command:    run_pypeit /tmp/REDUX_OUT/keck_kcwi/bh2_4200/keck_kcwi_bh2_4200.pypeit -o
+
+Error Messages:
+
+End of Log:
+             KB.20191221.15638.fits.gz  0-0 0-0 0-0 0 off
+             -------------------------  -----------------
+Wrote: /tmp/REDUX_OUT/keck_kcwi/bh2_4200/QA/MF_A.html
+
+
+
+-------------------------
+Test Setup: lbt_mods/MODS2R_Longslit
+
+-------------------------
+Directories:
+         Raw data: /PypeIt-development-suite/RAW_DATA/lbt_mods/MODS2R_Longslit
+    PypeIt output: /tmp/REDUX_OUT/lbt_mods/MODS2R_Longslit
+Files:
+     .pypeit file: None
+ Std .pypeit file: None
+Tests:
+----
+lbt_mods/MODS2R_Longslit pypeit (without masters) Result: [1;32m--- PASSED[0m
+
+Logfile:    /tmp/REDUX_OUT/lbt_mods/MODS2R_Longslit/lbt_mods_mods2r_longslit.test.log
+Process Id: 228
+Start time: Fri Jan 28 22:40:54 2022
+End time:   Sat Jan 29 00:11:09 2022
+Duration:   1:30:15.215536
+Command:    run_pypeit /tmp/REDUX_OUT/lbt_mods/MODS2R_Longslit/lbt_mods_mods2r_longslit.pypeit -o
+
+Error Messages:
+
+End of Log:
+[1;32m[INFO]    ::[0m [1;34mrun_pypeit.py 143 main()[0m - Data reduction complete
+[1;32m[INFO]    ::[0m [1;34mrun_pypeit.py 146 main()[0m - Generating QA HTML
+Wrote: /tmp/REDUX_OUT/lbt_mods/MODS2R_Longslit/QA/MF_A.html
+
+
+
+-------------------------
+Test Setup: mmt_binospec/Longslit_G600
+
+-------------------------
+Directories:
+         Raw data: /PypeIt-development-suite/RAW_DATA/mmt_binospec/Longslit_G600
+    PypeIt output: /tmp/REDUX_OUT/mmt_binospec/Longslit_G600
+Files:
+     .pypeit file: None
+ Std .pypeit file: None
+Tests:
+----
+mmt_binospec/Longslit_G600 pypeit (without masters) Result: [1;32m--- PASSED[0m
+
+Logfile:    /tmp/REDUX_OUT/mmt_binospec/Longslit_G600/mmt_binospec_longslit_g600.test.log
+Process Id: 221
+Start time: Fri Jan 28 22:36:38 2022
+End time:   Sat Jan 29 00:17:04 2022
+Duration:   1:40:26.645142
+Command:    run_pypeit /tmp/REDUX_OUT/mmt_binospec/Longslit_G600/mmt_binospec_longslit_g600.pypeit -o
+
+Error Messages:
+
+End of Log:
+[1;32m[INFO]    ::[0m [1;34mrun_pypeit.py 143 main()[0m - Data reduction complete
+[1;32m[INFO]    ::[0m [1;34mrun_pypeit.py 146 main()[0m - Generating QA HTML
+Wrote: /tmp/REDUX_OUT/mmt_binospec/Longslit_G600/QA/MF_A.html
+
+
+
+-------------------------
+Test Setup: keck_deimos/600ZD_M_6500
+
+-------------------------
+Directories:
+         Raw data: /PypeIt-development-suite/RAW_DATA/keck_deimos/600ZD_M_6500
+    PypeIt output: /tmp/REDUX_OUT/keck_deimos/600ZD_M_6500
+Files:
+     .pypeit file: None
+ Std .pypeit file: None
+Tests:
+----
+keck_deimos/600ZD_M_6500 pypeit (without masters) Result: [1;32m--- PASSED[0m
+
+Logfile:    /tmp/REDUX_OUT/keck_deimos/600ZD_M_6500/keck_deimos_600zd_m_6500.test.log
+Process Id: 224
+Start time: Fri Jan 28 22:40:49 2022
+End time:   Sat Jan 29 00:19:03 2022
+Duration:   1:38:13.465085
+Command:    run_pypeit /tmp/REDUX_OUT/keck_deimos/600ZD_M_6500/keck_deimos_600zd_m_6500.pypeit -o
+
+Error Messages:
+
+End of Log:
+             d1010_0019.fits.gz  A r   Z n
+             ------------------  ---------------------
+Wrote: /tmp/REDUX_OUT/keck_deimos/600ZD_M_6500/QA/MF_A.html
+
+
+
+-------------------------
+Test Setup: keck_deimos/830G_M_8500
+
+-------------------------
+Directories:
+         Raw data: /PypeIt-development-suite/RAW_DATA/keck_deimos/830G_M_8500
+    PypeIt output: /tmp/REDUX_OUT/keck_deimos/830G_M_8500
+Files:
+     .pypeit file: None
+ Std .pypeit file: None
+Tests:
+----
+keck_deimos/830G_M_8500 pypeit (without masters) Result: [1;32m--- PASSED[0m
+
+Logfile:    /tmp/REDUX_OUT/keck_deimos/830G_M_8500/keck_deimos_830g_m_8500.test.log
+Process Id: 231
+Start time: Fri Jan 28 22:56:45 2022
+End time:   Sat Jan 29 00:25:31 2022
+Duration:   1:28:45.649767
+Command:    run_pypeit /tmp/REDUX_OUT/keck_deimos/830G_M_8500/keck_deimos_830g_m_8500.pypeit -o
+
+Error Messages:
+
+End of Log:
+[1;32m[INFO]    ::[0m [1;34mrun_pypeit.py 143 main()[0m - Data reduction complete
+[1;32m[INFO]    ::[0m [1;34mrun_pypeit.py 146 main()[0m - Generating QA HTML
+Wrote: /tmp/REDUX_OUT/keck_deimos/830G_M_8500/QA/MF_A.html
+
+
+
+----
+keck_deimos/830G_M_8500 pypeit_multislit_flexure Result: [1;32m--- PASSED[0m
+
+Logfile:    /tmp/REDUX_OUT/keck_deimos/830G_M_8500/keck_deimos_830g_m_8500.test_flexure.log
+Process Id: 245
+Start time: Sat Jan 29 00:25:31 2022
+End time:   Sat Jan 29 00:25:40 2022
+Duration:   0:00:09.577973
+Command:    pypeit_multislit_flexure /PypeIt-development-suite/flexure_files/keck_deimos_830g_m_8500.flex testing_
+
+Error Messages:
+
+End of Log:
+[1;32m[INFO]    ::[0m File written to: testing_CFHQS1_22358.fits
+-6.023638505591559e-05 6.023638505591559e-05
+All done!!
+
+
+
+-------------------------
+Test Setup: gemini_gmos/GN_HAM_NS_B600_620
+
+-------------------------
+Directories:
+         Raw data: /PypeIt-development-suite/RAW_DATA/gemini_gmos/GN_HAM_NS_B600_620
+    PypeIt output: /tmp/REDUX_OUT/gemini_gmos/GN_HAM_NS_B600_620
+Files:
+     .pypeit file: None
+ Std .pypeit file: None
+Tests:
+----
+gemini_gmos/GN_HAM_NS_B600_620 pypeit (without masters) Result: [1;32m--- PASSED[0m
+
+Logfile:    /tmp/REDUX_OUT/gemini_gmos/GN_HAM_NS_B600_620/gemini_gmos_gn_ham_ns_b600_620.test.log
+Process Id: 234
+Start time: Fri Jan 28 23:03:18 2022
+End time:   Sat Jan 29 00:53:56 2022
+Duration:   1:50:37.665108
+Command:    run_pypeit /tmp/REDUX_OUT/gemini_gmos/GN_HAM_NS_B600_620/gemini_gmos_gn_ham_ns_b600_620.pypeit -o
+
+Error Messages:
+
+End of Log:
+[1;32m[INFO]    ::[0m [1;34mrun_pypeit.py 143 main()[0m - Data reduction complete
+[1;32m[INFO]    ::[0m [1;34mrun_pypeit.py 146 main()[0m - Generating QA HTML
+Wrote: /tmp/REDUX_OUT/gemini_gmos/GN_HAM_NS_B600_620/QA/MF_E.html
+
+
+
+-------------------------
+Test Setup: keck_deimos/1200B_M_5200
+
+-------------------------
+Directories:
+         Raw data: /PypeIt-development-suite/RAW_DATA/keck_deimos/1200B_M_5200
+    PypeIt output: /tmp/REDUX_OUT/keck_deimos/1200B_M_5200
+Files:
+     .pypeit file: None
+ Std .pypeit file: None
+Tests:
+----
+keck_deimos/1200B_M_5200 pypeit (without masters) Result: [1;32m--- PASSED[0m
+
+Logfile:    /tmp/REDUX_OUT/keck_deimos/1200B_M_5200/keck_deimos_1200b_m_5200.test.log
+Process Id: 243
+Start time: Sat Jan 29 00:19:03 2022
+End time:   Sat Jan 29 01:25:01 2022
+Duration:   1:05:58.330789
+Command:    run_pypeit /tmp/REDUX_OUT/keck_deimos/1200B_M_5200/keck_deimos_1200b_m_5200.pypeit -o
+
+Error Messages:
+
+End of Log:
+             d1003_0129.fits  H g
+             ---------------  -----------
+Wrote: /tmp/REDUX_OUT/keck_deimos/1200B_M_5200/QA/MF_A.html
+
+
+
+-------------------------
+Test Setup: keck_lris_red/multi_1200_9000_d680
+
+-------------------------
+Directories:
+         Raw data: /PypeIt-development-suite/RAW_DATA/keck_lris_red/multi_1200_9000_d680
+    PypeIt output: /tmp/REDUX_OUT/keck_lris_red/multi_1200_9000_d680
+Files:
+     .pypeit file: None
+ Std .pypeit file: None
+Tests:
+----
+keck_lris_red/multi_1200_9000_d680 pypeit (without masters) Result: [1;32m--- PASSED[0m
+
+Logfile:    /tmp/REDUX_OUT/keck_lris_red/multi_1200_9000_d680/keck_lris_red_multi_1200_9000_d680.test.log
+Process Id: 240
+Start time: Sat Jan 29 00:17:04 2022
+End time:   Sat Jan 29 00:47:03 2022
+Duration:   0:29:59.105744
+Command:    run_pypeit /tmp/REDUX_OUT/keck_lris_red/multi_1200_9000_d680/keck_lris_red_multi_1200_9000_d680.pypeit -o
+
+Error Messages:
+
+End of Log:
+[1;32m[INFO]    ::[0m [1;34mrun_pypeit.py 143 main()[0m - Data reduction complete
+[1;32m[INFO]    ::[0m [1;34mrun_pypeit.py 146 main()[0m - Generating QA HTML
+Wrote: /tmp/REDUX_OUT/keck_lris_red/multi_1200_9000_d680/QA/MF_A.html
+
+
+
+----
+keck_lris_red/multi_1200_9000_d680 pypeit (with masters) Result: [1;32m--- PASSED[0m
+
+Logfile:    /tmp/REDUX_OUT/keck_lris_red/multi_1200_9000_d680/keck_lris_red_multi_1200_9000_d680.test.2.log
+Process Id: 251
+Start time: Sat Jan 29 00:47:03 2022
+End time:   Sat Jan 29 01:33:26 2022
+Duration:   0:46:23.109430
+Command:    run_pypeit /tmp/REDUX_OUT/keck_lris_red/multi_1200_9000_d680/keck_lris_red_multi_1200_9000_d680.pypeit -o -m
+
+Error Messages:
+
+End of Log:
+[1;32m[INFO]    ::[0m [1;34mrun_pypeit.py 143 main()[0m - Data reduction complete
+[1;32m[INFO]    ::[0m [1;34mrun_pypeit.py 146 main()[0m - Generating QA HTML
+Wrote: /tmp/REDUX_OUT/keck_lris_red/multi_1200_9000_d680/QA/MF_A.html
+
+
+
+-------------------------
+Test Setup: keck_lris_red/multi_600_5000_d560
+
+-------------------------
+Directories:
+         Raw data: /PypeIt-development-suite/RAW_DATA/keck_lris_red/multi_600_5000_d560
+    PypeIt output: /tmp/REDUX_OUT/keck_lris_red/multi_600_5000_d560
+Files:
+     .pypeit file: None
+ Std .pypeit file: None
+Tests:
+----
+keck_lris_red/multi_600_5000_d560 pypeit (without masters) Result: [1;32m--- PASSED[0m
+
+Logfile:    /tmp/REDUX_OUT/keck_lris_red/multi_600_5000_d560/keck_lris_red_multi_600_5000_d560.test.log
+Process Id: 249
+Start time: Sat Jan 29 00:25:40 2022
+End time:   Sat Jan 29 00:56:53 2022
+Duration:   0:31:12.653943
+Command:    run_pypeit /tmp/REDUX_OUT/keck_lris_red/multi_600_5000_d560/keck_lris_red_multi_600_5000_d560.pypeit -o
+
+Error Messages:
+
+End of Log:
+[1;32m[INFO]    ::[0m [1;34mrun_pypeit.py 143 main()[0m - Data reduction complete
+[1;32m[INFO]    ::[0m [1;34mrun_pypeit.py 146 main()[0m - Generating QA HTML
+Wrote: /tmp/REDUX_OUT/keck_lris_red/multi_600_5000_d560/QA/MF_B.html
+
+
+
+----
+keck_lris_red/multi_600_5000_d560 pypeit (with masters) Result: [1;32m--- PASSED[0m
+
+Logfile:    /tmp/REDUX_OUT/keck_lris_red/multi_600_5000_d560/keck_lris_red_multi_600_5000_d560.test.2.log
+Process Id: 256
+Start time: Sat Jan 29 00:56:53 2022
+End time:   Sat Jan 29 01:47:37 2022
+Duration:   0:50:44.216772
+Command:    run_pypeit /tmp/REDUX_OUT/keck_lris_red/multi_600_5000_d560/keck_lris_red_multi_600_5000_d560.pypeit -o -m
+
+Error Messages:
+
+End of Log:
+[1;32m[INFO]    ::[0m [1;34mrun_pypeit.py 143 main()[0m - Data reduction complete
+[1;32m[INFO]    ::[0m [1;34mrun_pypeit.py 146 main()[0m - Generating QA HTML
+Wrote: /tmp/REDUX_OUT/keck_lris_red/multi_600_5000_d560/QA/MF_B.html
+
+
+
+----
+None None Result: [1;32m--- PASSED[0m
+
+Logfile:    None
+Process Id: None
+Start time: n/a
+End time:   n/a
+Duration:   None
+Command:    
+
+Error Messages:
+
+End of Log:
+
+
+-------------------------
+Test Setup: gemini_gmos/GS_HAM_R400_860
+
+-------------------------
+Directories:
+         Raw data: /PypeIt-development-suite/RAW_DATA/gemini_gmos/GS_HAM_R400_860
+    PypeIt output: /tmp/REDUX_OUT/gemini_gmos/GS_HAM_R400_860
+Files:
+     .pypeit file: None
+ Std .pypeit file: None
+Tests:
+----
+gemini_gmos/GS_HAM_R400_860 pypeit (without masters) Result: [1;32m--- PASSED[0m
+
+Logfile:    /tmp/REDUX_OUT/gemini_gmos/GS_HAM_R400_860/gemini_gmos_gs_ham_r400_860.test.log
+Process Id: 237
+Start time: Sat Jan 29 00:11:09 2022
+End time:   Sat Jan 29 01:49:26 2022
+Duration:   1:38:17.412210
+Command:    run_pypeit /tmp/REDUX_OUT/gemini_gmos/GS_HAM_R400_860/gemini_gmos_gs_ham_r400_860.pypeit -o
+
+Error Messages:
+
+End of Log:
+[1;32m[INFO]    ::[0m [1;34mrun_pypeit.py 143 main()[0m - Data reduction complete
+[1;32m[INFO]    ::[0m [1;34mrun_pypeit.py 146 main()[0m - Generating QA HTML
+Wrote: /tmp/REDUX_OUT/gemini_gmos/GS_HAM_R400_860/QA/MF_A.html
+
+
+
+----
+gemini_gmos/GS_HAM_R400_860 pypeit standards (without masters) Result: [1;32m--- PASSED[0m
+
+Logfile:    /tmp/REDUX_OUT/gemini_gmos/GS_HAM_R400_860/gemini_gmos_gs_ham_r400_860.test.2.log
+Process Id: 271
+Start time: Sat Jan 29 01:49:26 2022
+End time:   Sat Jan 29 01:55:19 2022
+Duration:   0:05:53.043197
+Command:    run_pypeit /tmp/REDUX_OUT/gemini_gmos/GS_HAM_R400_860/gemini_gmos_gs_ham_r400_860_std.pypeit -o
+
+Error Messages:
+
+End of Log:
+[1;32m[INFO]    ::[0m [1;34mrun_pypeit.py 143 main()[0m - Data reduction complete
+[1;32m[INFO]    ::[0m [1;34mrun_pypeit.py 146 main()[0m - Generating QA HTML
+Wrote: /tmp/REDUX_OUT/gemini_gmos/GS_HAM_R400_860/QA/MF_A.html
+
+
+
+----
+gemini_gmos/GS_HAM_R400_860 pypeit_sensfunc Result: [1;32m--- PASSED[0m
+
+Logfile:    /tmp/REDUX_OUT/gemini_gmos/GS_HAM_R400_860/gemini_gmos_gs_ham_r400_860.test_sens.log
+Process Id: 273
+Start time: Sat Jan 29 01:55:19 2022
+End time:   Sat Jan 29 02:00:27 2022
+Duration:   0:05:07.938078
+Command:    pypeit_sensfunc /tmp/REDUX_OUT/gemini_gmos/GS_HAM_R400_860/Science/spec1d_S20181219S0316-GD71_GMOS-S_18640527T230832.356.fits
+
+Error Messages:
+
+End of Log:
+WARNING: VerifyWarning: Keyword name 'ALGORITHM' is greater than 8 characters or contains characters not allowed by the FITS standard; a HIERARCH card will be created. [astropy.io.fits.card]
+[1;32m[INFO]    ::[0m File written to: sens_S20181219S0316-GD71_GMOS-S_18640527T230832.356.fits
+Writing the parameters to sensfunc.par
+
+
+
+----
+gemini_gmos/GS_HAM_R400_860 pypeit_flux_setup Result: [1;32m--- PASSED[0m
+
+Logfile:    /tmp/REDUX_OUT/gemini_gmos/GS_HAM_R400_860/gemini_gmos_gs_ham_r400_860.test_flux_setup.log
+Process Id: 275
+Start time: Sat Jan 29 02:00:27 2022
+End time:   Sat Jan 29 02:00:31 2022
+Duration:   0:00:04.026959
+Command:    pypeit_flux_setup /tmp/REDUX_OUT/gemini_gmos/GS_HAM_R400_860/Science
+
+Error Messages:
+
+End of Log:
+[1;32m[INFO]    ::[0m PypeIt file written to: gemini_gmos_south_ham.flux
+[1;32m[INFO]    ::[0m PypeIt file written to: gemini_gmos_south_ham.coadd1d
+[1;32m[INFO]    ::[0m PypeIt file written to: gemini_gmos_south_ham.tell
+
+
+
+----
+gemini_gmos/GS_HAM_R400_860 pypeit_flux Result: [1;32m--- PASSED[0m
+
+Logfile:    /tmp/REDUX_OUT/gemini_gmos/GS_HAM_R400_860/gemini_gmos_gs_ham_r400_860.test_flux.log
+Process Id: 277
+Start time: Sat Jan 29 02:00:31 2022
+End time:   Sat Jan 29 02:00:39 2022
+Duration:   0:00:07.120020
+Command:    pypeit_flux_calib /PypeIt-development-suite/fluxing_files/gemini_gmos_gs_ham_r400_860.flux
+
+Error Messages:
+
+End of Log:
+[1;32m[INFO]    ::[0m Wrote 1D spectra to Science/spec1d_S20180903S0137-J0252-0503_GMOS-S_18640527T160719.968.fits
+[1;32m[INFO]    ::[0m Flux calibration complete
+Writing the parameters to fluxing.par
+
+
+
+----
+gemini_gmos/GS_HAM_R400_860 pypeit_coadd_1dspec Result: [1;32m--- PASSED[0m
+
+Logfile:    /tmp/REDUX_OUT/gemini_gmos/GS_HAM_R400_860/gemini_gmos_gs_ham_r400_860.test_1dcoadd.log
+Process Id: 279
+Start time: Sat Jan 29 02:00:39 2022
+End time:   Sat Jan 29 02:00:45 2022
+Duration:   0:00:06.338532
+Command:    pypeit_coadd_1dspec /PypeIt-development-suite/coadd1d_files/gemini_gmos_gs_ham_r400_860.coadd1d
+
+Error Messages:
+
+End of Log:
+[1;32m[INFO]    ::[0m File written to: J0252_cont_source.fits
+[1;32m[INFO]    ::[0m Coadding complete
+Writing the parameters to coadd1d.par
+
+
+
+-------------------------
+Test Setup: keck_lris_red/multi_400_8500_d560
+
+-------------------------
+Directories:
+         Raw data: /PypeIt-development-suite/RAW_DATA/keck_lris_red/multi_400_8500_d560
+    PypeIt output: /tmp/REDUX_OUT/keck_lris_red/multi_400_8500_d560
+Files:
+     .pypeit file: None
+ Std .pypeit file: None
+Tests:
+----
+keck_lris_red/multi_400_8500_d560 pypeit (without masters) Result: [1;32m--- PASSED[0m
+
+Logfile:    /tmp/REDUX_OUT/keck_lris_red/multi_400_8500_d560/keck_lris_red_multi_400_8500_d560.test.log
+Process Id: 254
+Start time: Sat Jan 29 00:53:56 2022
+End time:   Sat Jan 29 01:24:26 2022
+Duration:   0:30:30.135906
+Command:    run_pypeit /tmp/REDUX_OUT/keck_lris_red/multi_400_8500_d560/keck_lris_red_multi_400_8500_d560.pypeit -o
+
+Error Messages:
+
+End of Log:
+[1;32m[INFO]    ::[0m [1;34mrun_pypeit.py 143 main()[0m - Data reduction complete
+[1;32m[INFO]    ::[0m [1;34mrun_pypeit.py 146 main()[0m - Generating QA HTML
+Wrote: /tmp/REDUX_OUT/keck_lris_red/multi_400_8500_d560/QA/MF_A.html
+
+
+
+----
+keck_lris_red/multi_400_8500_d560 pypeit (with masters) Result: [1;32m--- PASSED[0m
+
+Logfile:    /tmp/REDUX_OUT/keck_lris_red/multi_400_8500_d560/keck_lris_red_multi_400_8500_d560.test.2.log
+Process Id: 258
+Start time: Sat Jan 29 01:24:26 2022
+End time:   Sat Jan 29 02:17:56 2022
+Duration:   0:53:30.009964
+Command:    run_pypeit /tmp/REDUX_OUT/keck_lris_red/multi_400_8500_d560/keck_lris_red_multi_400_8500_d560.pypeit -o -m
+
+Error Messages:
+
+End of Log:
+[1;32m[INFO]    ::[0m [1;34mrun_pypeit.py 143 main()[0m - Data reduction complete
+[1;32m[INFO]    ::[0m [1;34mrun_pypeit.py 146 main()[0m - Generating QA HTML
+Wrote: /tmp/REDUX_OUT/keck_lris_red/multi_400_8500_d560/QA/MF_A.html
+
+
+
+-------------------------
+Test Setup: keck_deimos/900ZD_M_6000
+
+-------------------------
+Directories:
+         Raw data: /PypeIt-development-suite/RAW_DATA/keck_deimos/900ZD_M_6000
+    PypeIt output: /tmp/REDUX_OUT/keck_deimos/900ZD_M_6000
+Files:
+     .pypeit file: None
+ Std .pypeit file: None
+Tests:
+----
+keck_deimos/900ZD_M_6000 pypeit (without masters) Result: [1;32m--- PASSED[0m
+
+Logfile:    /tmp/REDUX_OUT/keck_deimos/900ZD_M_6000/keck_deimos_900zd_m_6000.test.log
+Process Id: 261
+Start time: Sat Jan 29 01:25:01 2022
+End time:   Sat Jan 29 02:25:40 2022
+Duration:   1:00:39.398842
+Command:    run_pypeit /tmp/REDUX_OUT/keck_deimos/900ZD_M_6000/keck_deimos_900zd_m_6000.pypeit -o
+
+Error Messages:
+
+End of Log:
+[1;32m[INFO]    ::[0m [1;34mrun_pypeit.py 143 main()[0m - Data reduction complete
+[1;32m[INFO]    ::[0m [1;34mrun_pypeit.py 146 main()[0m - Generating QA HTML
+Wrote: /tmp/REDUX_OUT/keck_deimos/900ZD_M_6000/QA/MF_A.html
+
+
+
+-------------------------
+Test Setup: keck_deimos/1200G_M_7750
+
+-------------------------
+Directories:
+         Raw data: /PypeIt-development-suite/RAW_DATA/keck_deimos/1200G_M_7750
+    PypeIt output: /tmp/REDUX_OUT/keck_deimos/1200G_M_7750
+Files:
+     .pypeit file: None
+ Std .pypeit file: None
+Tests:
+----
+keck_deimos/1200G_M_7750 pypeit (without masters) Result: [1;32m--- PASSED[0m
+
+Logfile:    /tmp/REDUX_OUT/keck_deimos/1200G_M_7750/keck_deimos_1200g_m_7750.test.log
+Process Id: 265
+Start time: Sat Jan 29 01:33:26 2022
+End time:   Sat Jan 29 02:43:33 2022
+Duration:   1:10:06.512327
+Command:    run_pypeit /tmp/REDUX_OUT/keck_deimos/1200G_M_7750/keck_deimos_1200g_m_7750.pypeit -o
+
+Error Messages:
+
+End of Log:
+[1;32m[INFO]    ::[0m [1;34mrun_pypeit.py 143 main()[0m - Data reduction complete
+[1;32m[INFO]    ::[0m [1;34mrun_pypeit.py 146 main()[0m - Generating QA HTML
+Wrote: /tmp/REDUX_OUT/keck_deimos/1200G_M_7750/QA/MF_A.html
+
+
+
+-------------------------
+Test Setup: keck_lris_red/long_600_10000_d680
+
+-------------------------
+Directories:
+         Raw data: /PypeIt-development-suite/RAW_DATA/keck_lris_red/long_600_10000_d680
+    PypeIt output: /tmp/REDUX_OUT/keck_lris_red/long_600_10000_d680
+Files:
+     .pypeit file: None
+ Std .pypeit file: None
+Tests:
+----
+keck_lris_red/long_600_10000_d680 pypeit (without masters) Result: [1;32m--- PASSED[0m
+
+Logfile:    /tmp/REDUX_OUT/keck_lris_red/long_600_10000_d680/keck_lris_red_long_600_10000_d680.test.log
+Process Id: 269
+Start time: Sat Jan 29 01:47:37 2022
+End time:   Sat Jan 29 02:07:55 2022
+Duration:   0:20:18.217561
+Command:    run_pypeit /tmp/REDUX_OUT/keck_lris_red/long_600_10000_d680/keck_lris_red_long_600_10000_d680.pypeit -o
+
+Error Messages:
+
+End of Log:
+[1;32m[INFO]    ::[0m [1;34mrun_pypeit.py 143 main()[0m - Data reduction complete
+[1;32m[INFO]    ::[0m [1;34mrun_pypeit.py 146 main()[0m - Generating QA HTML
+Wrote: /tmp/REDUX_OUT/keck_lris_red/long_600_10000_d680/QA/MF_A.html
+
+
+
+----
+keck_lris_red/long_600_10000_d680 pypeit (with masters) Result: [1;32m--- PASSED[0m
+
+Logfile:    /tmp/REDUX_OUT/keck_lris_red/long_600_10000_d680/keck_lris_red_long_600_10000_d680.test.2.log
+Process Id: 289
+Start time: Sat Jan 29 02:07:55 2022
+End time:   Sat Jan 29 02:53:58 2022
+Duration:   0:46:02.197784
+Command:    run_pypeit /tmp/REDUX_OUT/keck_lris_red/long_600_10000_d680/keck_lris_red_long_600_10000_d680.pypeit -o -m
+
+Error Messages:
+
+End of Log:
+[1;32m[INFO]    ::[0m [1;34mrun_pypeit.py 143 main()[0m - Data reduction complete
+[1;32m[INFO]    ::[0m [1;34mrun_pypeit.py 146 main()[0m - Generating QA HTML
+Wrote: /tmp/REDUX_OUT/keck_lris_red/long_600_10000_d680/QA/MF_A.html
+
+
+
+-------------------------
+Test Setup: keck_deimos/600ZD_tilted
+
+-------------------------
+Directories:
+         Raw data: /PypeIt-development-suite/RAW_DATA/keck_deimos/600ZD_tilted
+    PypeIt output: /tmp/REDUX_OUT/keck_deimos/600ZD_tilted
+Files:
+     .pypeit file: None
+ Std .pypeit file: None
+Tests:
+----
+keck_deimos/600ZD_tilted pypeit (without masters) Result: [1;32m--- PASSED[0m
+
+Logfile:    /tmp/REDUX_OUT/keck_deimos/600ZD_tilted/keck_deimos_600zd_tilted.test.log
+Process Id: 287
+Start time: Sat Jan 29 02:00:45 2022
+End time:   Sat Jan 29 02:57:26 2022
+Duration:   0:56:40.770624
+Command:    run_pypeit /tmp/REDUX_OUT/keck_deimos/600ZD_tilted/keck_deimos_600zd_tilted.pypeit -o
+
+Error Messages:
+
+End of Log:
+             d0225_0094.fits  C d   Z n
+             ---------------  ---------------------
+Wrote: /tmp/REDUX_OUT/keck_deimos/600ZD_tilted/QA/MF_A.html
+
+
+
+-------------------------
+Test Setup: keck_lris_blue/multi_300_5000_d680
+
+-------------------------
+Directories:
+         Raw data: /PypeIt-development-suite/RAW_DATA/keck_lris_blue/multi_300_5000_d680
+    PypeIt output: /tmp/REDUX_OUT/keck_lris_blue/multi_300_5000_d680
+Files:
+     .pypeit file: None
+ Std .pypeit file: None
+Tests:
+----
+keck_lris_blue/multi_300_5000_d680 pypeit (without masters) Result: [1;32m--- PASSED[0m
+
+Logfile:    /tmp/REDUX_OUT/keck_lris_blue/multi_300_5000_d680/keck_lris_blue_multi_300_5000_d680.test.log
+Process Id: 293
+Start time: Sat Jan 29 02:17:56 2022
+End time:   Sat Jan 29 03:02:31 2022
+Duration:   0:44:34.592734
+Command:    run_pypeit /tmp/REDUX_OUT/keck_lris_blue/multi_300_5000_d680/keck_lris_blue_multi_300_5000_d680.pypeit -o
+
+Error Messages:
+
+End of Log:
+[1;32m[INFO]    ::[0m [1;34mrun_pypeit.py 143 main()[0m - Data reduction complete
+[1;32m[INFO]    ::[0m [1;34mrun_pypeit.py 146 main()[0m - Generating QA HTML
+Wrote: /tmp/REDUX_OUT/keck_lris_blue/multi_300_5000_d680/QA/MF_A.html
+
+
+
+-------------------------
+Test Setup: vlt_xshooter/VIS_1x1
+
+-------------------------
+Directories:
+         Raw data: /PypeIt-development-suite/RAW_DATA/vlt_xshooter/VIS_1x1
+    PypeIt output: /tmp/REDUX_OUT/vlt_xshooter/VIS_1x1
+Files:
+     .pypeit file: None
+ Std .pypeit file: None
+Tests:
+----
+vlt_xshooter/VIS_1x1 pypeit (without masters) Result: [1;32m--- PASSED[0m
+
+Logfile:    /tmp/REDUX_OUT/vlt_xshooter/VIS_1x1/vlt_xshooter_vis_1x1.test.log
+Process Id: 296
+Start time: Sat Jan 29 02:25:40 2022
+End time:   Sat Jan 29 03:03:46 2022
+Duration:   0:38:05.425511
+Command:    run_pypeit /tmp/REDUX_OUT/vlt_xshooter/VIS_1x1/vlt_xshooter_vis_1x1.pypeit -o
+
+Error Messages:
+
+End of Log:
+[1;32m[INFO]    ::[0m [1;34mrun_pypeit.py 143 main()[0m - Data reduction complete
+[1;32m[INFO]    ::[0m [1;34mrun_pypeit.py 146 main()[0m - Generating QA HTML
+Wrote: /tmp/REDUX_OUT/vlt_xshooter/VIS_1x1/QA/MF_A.html
+
+
+
+-------------------------
+Test Setup: mmt_binospec/Multislit_G270
+
+-------------------------
+Directories:
+         Raw data: /PypeIt-development-suite/RAW_DATA/mmt_binospec/Multislit_G270
+    PypeIt output: /tmp/REDUX_OUT/mmt_binospec/Multislit_G270
+Files:
+     .pypeit file: None
+ Std .pypeit file: None
+Tests:
+----
+mmt_binospec/Multislit_G270 pypeit (without masters) Result: [1;32m--- PASSED[0m
+
+Logfile:    /tmp/REDUX_OUT/mmt_binospec/Multislit_G270/mmt_binospec_multislit_g270.test.log
+Process Id: 182
+Start time: Fri Jan 28 20:52:37 2022
+End time:   Sat Jan 29 03:13:56 2022
+Duration:   6:21:18.325996
+Command:    run_pypeit /tmp/REDUX_OUT/mmt_binospec/Multislit_G270/mmt_binospec_multislit_g270.pypeit -o
+
+Error Messages:
+
+End of Log:
+[1;32m[INFO]    ::[0m [1;34mrun_pypeit.py 143 main()[0m - Data reduction complete
+[1;32m[INFO]    ::[0m [1;34mrun_pypeit.py 146 main()[0m - Generating QA HTML
+Wrote: /tmp/REDUX_OUT/mmt_binospec/Multislit_G270/QA/MF_A.html
+
+
+
+-------------------------
+Test Setup: vlt_xshooter/NIR
+
+-------------------------
+Directories:
+         Raw data: /PypeIt-development-suite/RAW_DATA/vlt_xshooter/NIR
+    PypeIt output: /tmp/REDUX_OUT/vlt_xshooter/NIR
+Files:
+     .pypeit file: None
+ Std .pypeit file: None
+Tests:
+----
+vlt_xshooter/NIR pypeit (without masters) Result: [1;32m--- PASSED[0m
+
+Logfile:    /tmp/REDUX_OUT/vlt_xshooter/NIR/vlt_xshooter_nir.test.log
+Process Id: 299
+Start time: Sat Jan 29 02:43:33 2022
+End time:   Sat Jan 29 03:35:05 2022
+Duration:   0:51:32.194375
+Command:    run_pypeit /tmp/REDUX_OUT/vlt_xshooter/NIR/vlt_xshooter_nir.pypeit -o
+
+Error Messages:
+
+End of Log:
+[1;32m[INFO]    ::[0m [1;34mrun_pypeit.py 143 main()[0m - Data reduction complete
+[1;32m[INFO]    ::[0m [1;34mrun_pypeit.py 146 main()[0m - Generating QA HTML
+Wrote: /tmp/REDUX_OUT/vlt_xshooter/NIR/QA/MF_A.html
+
+
+
+-------------------------
+Test Setup: keck_deimos/1200G_M_5500
+
+-------------------------
+Directories:
+         Raw data: /PypeIt-development-suite/RAW_DATA/keck_deimos/1200G_M_5500
+    PypeIt output: /tmp/REDUX_OUT/keck_deimos/1200G_M_5500
+Files:
+     .pypeit file: None
+ Std .pypeit file: None
+Tests:
+----
+keck_deimos/1200G_M_5500 pypeit (without masters) Result: [1;32m--- PASSED[0m
+
+Logfile:    /tmp/REDUX_OUT/keck_deimos/1200G_M_5500/keck_deimos_1200g_m_5500.test.log
+Process Id: 312
+Start time: Sat Jan 29 03:03:46 2022
+End time:   Sat Jan 29 03:36:16 2022
+Duration:   0:32:30.535825
+Command:    run_pypeit /tmp/REDUX_OUT/keck_deimos/1200G_M_5500/keck_deimos_1200g_m_5500.pypeit -o
+
+Error Messages:
+
+End of Log:
+             d0417_0080.fits  K r   X e
+             ---------------  ---------------------
+Wrote: /tmp/REDUX_OUT/keck_deimos/1200G_M_5500/QA/MF_B.html
+
+
+
+-------------------------
+Test Setup: keck_mosfire/J_multi
+
+-------------------------
+Directories:
+         Raw data: /PypeIt-development-suite/RAW_DATA/keck_mosfire/J_multi
+    PypeIt output: /tmp/REDUX_OUT/keck_mosfire/J_multi
+Files:
+     .pypeit file: None
+ Std .pypeit file: None
+Tests:
+----
+keck_mosfire/J_multi pypeit (without masters) Result: [1;32m--- PASSED[0m
+
+Logfile:    /tmp/REDUX_OUT/keck_mosfire/J_multi/keck_mosfire_j_multi.test.log
+Process Id: 306
+Start time: Sat Jan 29 02:57:26 2022
+End time:   Sat Jan 29 03:36:30 2022
+Duration:   0:39:04.033353
+Command:    run_pypeit /tmp/REDUX_OUT/keck_mosfire/J_multi/keck_mosfire_j_multi.pypeit -o
+
+Error Messages:
+
+End of Log:
+[1;32m[INFO]    ::[0m [1;34mrun_pypeit.py 143 main()[0m - Data reduction complete
+[1;32m[INFO]    ::[0m [1;34mrun_pypeit.py 146 main()[0m - Generating QA HTML
+Wrote: /tmp/REDUX_OUT/keck_mosfire/J_multi/QA/MF_A.html
+
+
+
+-------------------------
+Test Setup: gemini_gnirs/32_SB_SXD
+
+-------------------------
+Directories:
+         Raw data: /PypeIt-development-suite/RAW_DATA/gemini_gnirs/32_SB_SXD
+    PypeIt output: /tmp/REDUX_OUT/gemini_gnirs/32_SB_SXD
+Files:
+     .pypeit file: None
+ Std .pypeit file: None
+Tests:
+----
+gemini_gnirs/32_SB_SXD pypeit (without masters) Result: [1;32m--- PASSED[0m
+
+Logfile:    /tmp/REDUX_OUT/gemini_gnirs/32_SB_SXD/gemini_gnirs_32_sb_sxd.test.log
+Process Id: 309
+Start time: Sat Jan 29 03:02:31 2022
+End time:   Sat Jan 29 03:19:15 2022
+Duration:   0:16:43.628655
+Command:    run_pypeit /tmp/REDUX_OUT/gemini_gnirs/32_SB_SXD/gemini_gnirs_32_sb_sxd.pypeit -o
+
+Error Messages:
+
+End of Log:
+[1;32m[INFO]    ::[0m [1;34mrun_pypeit.py 143 main()[0m - Data reduction complete
+[1;32m[INFO]    ::[0m [1;34mrun_pypeit.py 146 main()[0m - Generating QA HTML
+Wrote: /tmp/REDUX_OUT/gemini_gnirs/32_SB_SXD/QA/MF_A.html
+
+
+
+----
+gemini_gnirs/32_SB_SXD pypeit_sensfunc Result: [1;32m--- PASSED[0m
+
+Logfile:    /tmp/REDUX_OUT/gemini_gnirs/32_SB_SXD/gemini_gnirs_32_sb_sxd.test_sens.log
+Process Id: 317
+Start time: Sat Jan 29 03:19:15 2022
+End time:   Sat Jan 29 03:36:53 2022
+Duration:   0:17:38.378761
+Command:    pypeit_sensfunc /tmp/REDUX_OUT/gemini_gnirs/32_SB_SXD/Science/spec1d_cN20170331S0206-HIP62745_GNIRS_20170331T083351.681.fits -s /PypeIt-development-suite/sensfunc_files/gemini_gnirs_32_sb_sxd.sens
+
+Error Messages:
+
+End of Log:
+WARNING: VerifyWarning: Keyword name 'ALGORITHM' is greater than 8 characters or contains characters not allowed by the FITS standard; a HIERARCH card will be created. [astropy.io.fits.card]
+[1;32m[INFO]    ::[0m File written to: sens_cN20170331S0206-HIP62745_GNIRS_20170331T083351.681.fits
+Writing the parameters to sensfunc.par
+
+
+
+----
+gemini_gnirs/32_SB_SXD pypeit_flux_setup Result: [1;32m--- PASSED[0m
+
+Logfile:    /tmp/REDUX_OUT/gemini_gnirs/32_SB_SXD/gemini_gnirs_32_sb_sxd.test_flux_setup.log
+Process Id: 328
+Start time: Sat Jan 29 03:36:53 2022
+End time:   Sat Jan 29 03:36:57 2022
+Duration:   0:00:04.159439
+Command:    pypeit_flux_setup /tmp/REDUX_OUT/gemini_gnirs/32_SB_SXD/Science
+
+Error Messages:
+
+End of Log:
+[1;32m[INFO]    ::[0m PypeIt file written to: gemini_gnirs.flux
+[1;32m[INFO]    ::[0m PypeIt file written to: gemini_gnirs.coadd1d
+[1;32m[INFO]    ::[0m PypeIt file written to: gemini_gnirs.tell
+
+
+
+----
+gemini_gnirs/32_SB_SXD pypeit_flux Result: [1;32m--- PASSED[0m
+
+Logfile:    /tmp/REDUX_OUT/gemini_gnirs/32_SB_SXD/gemini_gnirs_32_sb_sxd.test_flux.log
+Process Id: 330
+Start time: Sat Jan 29 03:36:57 2022
+End time:   Sat Jan 29 03:37:07 2022
+Duration:   0:00:09.672607
+Command:    pypeit_flux_calib /PypeIt-development-suite/fluxing_files/gemini_gnirs_32_sb_sxd.flux
+
+Error Messages:
+
+End of Log:
+[1;32m[INFO]    ::[0m Wrote 1D spectra to Science/spec1d_cN20170331S0221-pisco_GNIRS_20170331T092059.597.fits
+[1;32m[INFO]    ::[0m Flux calibration complete
+Writing the parameters to fluxing.par
+
+
+
+----
+gemini_gnirs/32_SB_SXD pypeit_coadd_1dspec Result: [1;32m--- PASSED[0m
+
+Logfile:    /tmp/REDUX_OUT/gemini_gnirs/32_SB_SXD/gemini_gnirs_32_sb_sxd.test_1dcoadd.log
+Process Id: 332
+Start time: Sat Jan 29 03:37:07 2022
+End time:   Sat Jan 29 03:37:15 2022
+Duration:   0:00:07.870407
+Command:    pypeit_coadd_1dspec /PypeIt-development-suite/coadd1d_files/gemini_gnirs_32_sb_sxd.coadd1d
+
+Error Messages:
+
+End of Log:
+[1;32m[INFO]    ::[0m File written to: pisco_coadd.fits
+[1;32m[INFO]    ::[0m Coadding complete
+Writing the parameters to coadd1d.par
+
+
+
+----
+gemini_gnirs/32_SB_SXD pypeit_coadd_2dspec Result: [1;32m--- PASSED[0m
+
+Logfile:    /tmp/REDUX_OUT/gemini_gnirs/32_SB_SXD/gemini_gnirs_32_sb_sxd.test_2dcoadd.log
+Process Id: 334
+Start time: Sat Jan 29 03:37:15 2022
+End time:   Sat Jan 29 03:38:24 2022
+Duration:   0:01:08.913009
+Command:    pypeit_coadd_2dspec --obj pisco
+
+Error Messages:
+
+End of Log:
+WARNING: VerifyWarning: Card is too long, comment will be truncated. [astropy.io.fits.card]
+[1;32m[INFO]    ::[0m Wrote: /tmp/REDUX_OUT/gemini_gnirs/32_SB_SXD/Science_coadd/spec2d_cN20170331S0216-cN20170331S0221-pisco.fits
+Writing the parameters to cN20170331S0216-cN20170331S0221-pisco_coadd2d.par
+
+
+
+----
+gemini_gnirs/32_SB_SXD pypeit_tellfit Result: [1;32m--- PASSED[0m
+
+Logfile:    /tmp/REDUX_OUT/gemini_gnirs/32_SB_SXD/gemini_gnirs_32_sb_sxd.test_tellfit.log
+Process Id: 336
+Start time: Sat Jan 29 03:38:24 2022
+End time:   Sat Jan 29 03:43:34 2022
+Duration:   0:05:10.163130
+Command:    pypeit_tellfit /tmp/REDUX_OUT/gemini_gnirs/32_SB_SXD/pisco_coadd.fits -t /PypeIt-development-suite/tellfit_files/gemini_gnirs_32_sb_sxd.tell
+
+Error Messages:
+
+End of Log:
+[1;32m[INFO]    ::[0m File written to: pisco_coadd_tellcorr.fits
+
+
+
+
+
+-------------------------
+Test Setup: vlt_sinfoni/K_0.8
+
+-------------------------
+Directories:
+         Raw data: /PypeIt-development-suite/RAW_DATA/vlt_sinfoni/K_0.8
+    PypeIt output: /tmp/REDUX_OUT/vlt_sinfoni/K_0.8
+Files:
+     .pypeit file: None
+ Std .pypeit file: None
+Tests:
+----
+vlt_sinfoni/K_0.8 pypeit (without masters) Result: [1;32m--- PASSED[0m
+
+Logfile:    /tmp/REDUX_OUT/vlt_sinfoni/K_0.8/vlt_sinfoni_k_0.8.test.log
+Process Id: 303
+Start time: Sat Jan 29 02:53:58 2022
+End time:   Sat Jan 29 03:43:48 2022
+Duration:   0:49:50.583185
+Command:    run_pypeit /tmp/REDUX_OUT/vlt_sinfoni/K_0.8/vlt_sinfoni_k_0.8.pypeit -o
+
+Error Messages:
+
+End of Log:
+[1;32m[INFO]    ::[0m [1;34mrun_pypeit.py 143 main()[0m - Data reduction complete
+[1;32m[INFO]    ::[0m [1;34mrun_pypeit.py 146 main()[0m - Generating QA HTML
+Wrote: /tmp/REDUX_OUT/vlt_sinfoni/K_0.8/QA/MF_A.html
+
+
+
+-------------------------
+Test Setup: keck_deimos/830G_L_8100
+
+-------------------------
+Directories:
+         Raw data: /PypeIt-development-suite/RAW_DATA/keck_deimos/830G_L_8100
+    PypeIt output: /tmp/REDUX_OUT/keck_deimos/830G_L_8100
+Files:
+     .pypeit file: None
+ Std .pypeit file: None
+Tests:
+----
+keck_deimos/830G_L_8100 pypeit (without masters) Result: [1;32m--- PASSED[0m
+
+Logfile:    /tmp/REDUX_OUT/keck_deimos/830G_L_8100/keck_deimos_830g_l_8100.test.log
+Process Id: 315
+Start time: Sat Jan 29 03:13:56 2022
+End time:   Sat Jan 29 03:56:39 2022
+Duration:   0:42:43.009586
+Command:    run_pypeit /tmp/REDUX_OUT/keck_deimos/830G_L_8100/keck_deimos_830g_l_8100.pypeit -o
+
+Error Messages:
+
+End of Log:
+[1;32m[INFO]    ::[0m [1;34mrun_pypeit.py 143 main()[0m - Data reduction complete
+[1;32m[INFO]    ::[0m [1;34mrun_pypeit.py 146 main()[0m - Generating QA HTML
+Wrote: /tmp/REDUX_OUT/keck_deimos/830G_L_8100/QA/MF_A.html
+
+
+
+-------------------------
+Test Setup: keck_deimos/900ZD_LVM_5500
+
+-------------------------
+Directories:
+         Raw data: /PypeIt-development-suite/RAW_DATA/keck_deimos/900ZD_LVM_5500
+    PypeIt output: /tmp/REDUX_OUT/keck_deimos/900ZD_LVM_5500
+Files:
+     .pypeit file: None
+ Std .pypeit file: None
+Tests:
+----
+keck_deimos/900ZD_LVM_5500 pypeit (without masters) Result: [1;32m--- PASSED[0m
+
+Logfile:    /tmp/REDUX_OUT/keck_deimos/900ZD_LVM_5500/keck_deimos_900zd_lvm_5500.test.log
+Process Id: 323
+Start time: Sat Jan 29 03:36:17 2022
+End time:   Sat Jan 29 04:11:59 2022
+Duration:   0:35:42.371552
+Command:    run_pypeit /tmp/REDUX_OUT/keck_deimos/900ZD_LVM_5500/keck_deimos_900zd_lvm_5500.pypeit -o
+
+Error Messages:
+
+End of Log:
+             DE.20110729.15541.fits  A r   Z n
+             ----------------------  ---------------------
+Wrote: /tmp/REDUX_OUT/keck_deimos/900ZD_LVM_5500/QA/MF_A.html
+
+
+
+----
+keck_deimos/900ZD_LVM_5500 pypeit_sensfunc Result: [1;32m--- PASSED[0m
+
+Logfile:    /tmp/REDUX_OUT/keck_deimos/900ZD_LVM_5500/keck_deimos_900zd_lvm_5500.test_sens.log
+Process Id: 365
+Start time: Sat Jan 29 04:11:59 2022
+End time:   Sat Jan 29 04:12:14 2022
+Duration:   0:00:15.314393
+Command:    pypeit_sensfunc /tmp/REDUX_OUT/keck_deimos/900ZD_LVM_5500/Science/spec1d_DE.20110729.54545-Feige110_DEIMOS_20110729T150856.803.fits -s /PypeIt-development-suite/sensfunc_files/keck_deimos_900zd_lvm_5500.sens
+
+Error Messages:
+
+End of Log:
+WARNING: VerifyWarning: Keyword name 'ALGORITHM' is greater than 8 characters or contains characters not allowed by the FITS standard; a HIERARCH card will be created. [astropy.io.fits.card]
+[1;32m[INFO]    ::[0m File written to: sens_DE.20110729.54545-Feige110_DEIMOS_20110729T150856.803.fits
+Writing the parameters to sensfunc.par
+
+
+
+----
+keck_deimos/900ZD_LVM_5500 pypeit_flux Result: [1;32m--- PASSED[0m
+
+Logfile:    /tmp/REDUX_OUT/keck_deimos/900ZD_LVM_5500/keck_deimos_900zd_lvm_5500.test_flux.log
+Process Id: 367
+Start time: Sat Jan 29 04:12:14 2022
+End time:   Sat Jan 29 04:12:23 2022
+Duration:   0:00:09.042270
+Command:    pypeit_flux_calib /PypeIt-development-suite/fluxing_files/keck_deimos_900zd_lvm_5500.flux
+
+Error Messages:
+
+End of Log:
+[1;32m[INFO]    ::[0m Wrote 1D spectra to Science/spec1d_DE.20110729.54545-Feige110_DEIMOS_20110729T150856.803.fits
+[1;32m[INFO]    ::[0m Flux calibration complete
+Writing the parameters to fluxing.par
+
+
+
+-------------------------
+Test Setup: keck_lris_red/long_400_8500_longread
+
+-------------------------
+Directories:
+         Raw data: /PypeIt-development-suite/RAW_DATA/keck_lris_red/long_400_8500_longread
+    PypeIt output: /tmp/REDUX_OUT/keck_lris_red/long_400_8500_longread
+Files:
+     .pypeit file: None
+ Std .pypeit file: None
+Tests:
+----
+keck_lris_red/long_400_8500_longread pypeit (without masters) Result: [1;32m--- PASSED[0m
+
+Logfile:    /tmp/REDUX_OUT/keck_lris_red/long_400_8500_longread/keck_lris_red_long_400_8500_longread.test.log
+Process Id: 326
+Start time: Sat Jan 29 03:36:30 2022
+End time:   Sat Jan 29 03:45:57 2022
+Duration:   0:09:27.571108
+Command:    run_pypeit /tmp/REDUX_OUT/keck_lris_red/long_400_8500_longread/keck_lris_red_long_400_8500_longread.pypeit -o
+
+Error Messages:
+
+End of Log:
+[1;32m[INFO]    ::[0m [1;34mrun_pypeit.py 143 main()[0m - Data reduction complete
+[1;32m[INFO]    ::[0m [1;34mrun_pypeit.py 146 main()[0m - Generating QA HTML
+Wrote: /tmp/REDUX_OUT/keck_lris_red/long_400_8500_longread/QA/MF_A.html
+
+
+
+----
+keck_lris_red/long_400_8500_longread pypeit (with masters) Result: [1;32m--- PASSED[0m
+
+Logfile:    /tmp/REDUX_OUT/keck_lris_red/long_400_8500_longread/keck_lris_red_long_400_8500_longread.test.2.log
+Process Id: 351
+Start time: Sat Jan 29 03:45:57 2022
+End time:   Sat Jan 29 04:15:24 2022
+Duration:   0:29:27.014676
+Command:    run_pypeit /tmp/REDUX_OUT/keck_lris_red/long_400_8500_longread/keck_lris_red_long_400_8500_longread.pypeit -o -m
+
+Error Messages:
+
+End of Log:
+[1;32m[INFO]    ::[0m [1;34mrun_pypeit.py 143 main()[0m - Data reduction complete
+[1;32m[INFO]    ::[0m [1;34mrun_pypeit.py 146 main()[0m - Generating QA HTML
+Wrote: /tmp/REDUX_OUT/keck_lris_red/long_400_8500_longread/QA/MF_A.html
+
+
+
+-------------------------
+Test Setup: keck_deimos/830G_LVM_8400
+
+-------------------------
+Directories:
+         Raw data: /PypeIt-development-suite/RAW_DATA/keck_deimos/830G_LVM_8400
+    PypeIt output: /tmp/REDUX_OUT/keck_deimos/830G_LVM_8400
+Files:
+     .pypeit file: None
+ Std .pypeit file: None
+Tests:
+----
+keck_deimos/830G_LVM_8400 pypeit (without masters) Result: [1;32m--- PASSED[0m
+
+Logfile:    /tmp/REDUX_OUT/keck_deimos/830G_LVM_8400/keck_deimos_830g_lvm_8400.test.log
+Process Id: 320
+Start time: Sat Jan 29 03:35:05 2022
+End time:   Sat Jan 29 04:16:14 2022
+Duration:   0:41:09.320754
+Command:    run_pypeit /tmp/REDUX_OUT/keck_deimos/830G_LVM_8400/keck_deimos_830g_lvm_8400.pypeit -o
+
+Error Messages:
+
+End of Log:
+[1;32m[INFO]    ::[0m [1;34mrun_pypeit.py 143 main()[0m - Data reduction complete
+[1;32m[INFO]    ::[0m [1;34mrun_pypeit.py 146 main()[0m - Generating QA HTML
+Wrote: /tmp/REDUX_OUT/keck_deimos/830G_LVM_8400/QA/MF_A.html
+
+
+
+-------------------------
+Test Setup: gemini_gmos/GS_HAM_R400_700
+
+-------------------------
+Directories:
+         Raw data: /PypeIt-development-suite/RAW_DATA/gemini_gmos/GS_HAM_R400_700
+    PypeIt output: /tmp/REDUX_OUT/gemini_gmos/GS_HAM_R400_700
+Files:
+     .pypeit file: None
+ Std .pypeit file: None
+Tests:
+----
+gemini_gmos/GS_HAM_R400_700 pypeit (without masters) Result: [1;32m--- PASSED[0m
+
+Logfile:    /tmp/REDUX_OUT/gemini_gmos/GS_HAM_R400_700/gemini_gmos_gs_ham_r400_700.test.log
+Process Id: 349
+Start time: Sat Jan 29 03:43:48 2022
+End time:   Sat Jan 29 03:57:14 2022
+Duration:   0:13:26.012981
+Command:    run_pypeit /tmp/REDUX_OUT/gemini_gmos/GS_HAM_R400_700/gemini_gmos_gs_ham_r400_700.pypeit -o
+
+Error Messages:
+
+End of Log:
+[1;32m[INFO]    ::[0m [1;34mrun_pypeit.py 143 main()[0m - Data reduction complete
+[1;32m[INFO]    ::[0m [1;34mrun_pypeit.py 146 main()[0m - Generating QA HTML
+Wrote: /tmp/REDUX_OUT/gemini_gmos/GS_HAM_R400_700/QA/MF_A.html
+
+
+
+----
+gemini_gmos/GS_HAM_R400_700 pypeit_sensfunc Result: [1;32m--- PASSED[0m
+
+Logfile:    /tmp/REDUX_OUT/gemini_gmos/GS_HAM_R400_700/gemini_gmos_gs_ham_r400_700.test_sens.log
+Process Id: 356
+Start time: Sat Jan 29 03:57:14 2022
+End time:   Sat Jan 29 04:03:24 2022
+Duration:   0:06:09.301813
+Command:    pypeit_sensfunc /tmp/REDUX_OUT/gemini_gmos/GS_HAM_R400_700/Science/spec1d_S20181005S0029-LTT7379_GMOS-S_18640527T181202.909.fits -s /PypeIt-development-suite/sensfunc_files/gemini_gmos_gs_ham_r400_700.sens
+
+Error Messages:
+
+End of Log:
+WARNING: VerifyWarning: Keyword name 'ALGORITHM' is greater than 8 characters or contains characters not allowed by the FITS standard; a HIERARCH card will be created. [astropy.io.fits.card]
+[1;32m[INFO]    ::[0m File written to: sens_S20181005S0029-LTT7379_GMOS-S_18640527T181202.909.fits
+Writing the parameters to sensfunc.par
+
+
+
+----
+gemini_gmos/GS_HAM_R400_700 pypeit_flux Result: [1;32m--- PASSED[0m
+
+Logfile:    /tmp/REDUX_OUT/gemini_gmos/GS_HAM_R400_700/gemini_gmos_gs_ham_r400_700.test_flux.log
+Process Id: 358
+Start time: Sat Jan 29 04:03:24 2022
+End time:   Sat Jan 29 04:03:34 2022
+Duration:   0:00:10.648662
+Command:    pypeit_flux_calib /PypeIt-development-suite/fluxing_files/gemini_gmos_gs_ham_r400_700.flux
+
+Error Messages:
+
+End of Log:
+[1;32m[INFO]    ::[0m Wrote 1D spectra to Science/spec1d_S20181005S0086-FRB180924_GMOS-S_18640527T181235.759.fits
+[1;32m[INFO]    ::[0m Flux calibration complete
+Writing the parameters to fluxing.par
+
+
+
+----
+gemini_gmos/GS_HAM_R400_700 pypeit_coadd_1dspec Result: [1;32m--- PASSED[0m
+
+Logfile:    /tmp/REDUX_OUT/gemini_gmos/GS_HAM_R400_700/gemini_gmos_gs_ham_r400_700.test_1dcoadd.log
+Process Id: 360
+Start time: Sat Jan 29 04:03:34 2022
+End time:   Sat Jan 29 04:03:41 2022
+Duration:   0:00:06.914844
+Command:    pypeit_coadd_1dspec /PypeIt-development-suite/coadd1d_files/gemini_gmos_gs_ham_r400_700.coadd1d
+
+Error Messages:
+
+End of Log:
+[1;32m[INFO]    ::[0m File written to: FRB180924_opt.fits
+[1;32m[INFO]    ::[0m Coadding complete
+Writing the parameters to coadd1d.par
+
+
+
+----
+gemini_gmos/GS_HAM_R400_700 pypeit_tellfit Result: [1;32m--- PASSED[0m
+
+Logfile:    /tmp/REDUX_OUT/gemini_gmos/GS_HAM_R400_700/gemini_gmos_gs_ham_r400_700.test_tellfit.log
+Process Id: 362
+Start time: Sat Jan 29 04:03:41 2022
+End time:   Sat Jan 29 04:17:39 2022
+Duration:   0:13:58.234728
+Command:    pypeit_tellfit /tmp/REDUX_OUT/gemini_gmos/GS_HAM_R400_700/FRB180924_opt.fits -t /PypeIt-development-suite/tellfit_files/gemini_gmos_gs_ham_r400_700.tell
+
+Error Messages:
+
+End of Log:
+[1;32m[INFO]    ::[0m File written to: FRB180924_opt_tellcorr.fits
+
+
+
+
+
+-------------------------
+Test Setup: keck_deimos/830G_M_8100_26
+
+-------------------------
+Directories:
+         Raw data: /PypeIt-development-suite/RAW_DATA/keck_deimos/830G_M_8100_26
+    PypeIt output: /tmp/REDUX_OUT/keck_deimos/830G_M_8100_26
+Files:
+     .pypeit file: None
+ Std .pypeit file: None
+Tests:
+----
+keck_deimos/830G_M_8100_26 pypeit (without masters) Result: [1;32m--- PASSED[0m
+
+Logfile:    /tmp/REDUX_OUT/keck_deimos/830G_M_8100_26/keck_deimos_830g_m_8100_26.test.log
+Process Id: 346
+Start time: Sat Jan 29 03:43:34 2022
+End time:   Sat Jan 29 04:21:18 2022
+Duration:   0:37:43.779934
+Command:    run_pypeit /tmp/REDUX_OUT/keck_deimos/830G_M_8100_26/keck_deimos_830g_m_8100_26.pypeit -o
+
+Error Messages:
+
+End of Log:
+[1;32m[INFO]    ::[0m [1;34mrun_pypeit.py 143 main()[0m - Data reduction complete
+[1;32m[INFO]    ::[0m [1;34mrun_pypeit.py 146 main()[0m - Generating QA HTML
+Wrote: /tmp/REDUX_OUT/keck_deimos/830G_M_8100_26/QA/MF_A.html
+
+
+
+-------------------------
+Test Setup: vlt_xshooter/VIS_2x1
+
+-------------------------
+Directories:
+         Raw data: /PypeIt-development-suite/RAW_DATA/vlt_xshooter/VIS_2x1
+    PypeIt output: /tmp/REDUX_OUT/vlt_xshooter/VIS_2x1
+Files:
+     .pypeit file: None
+ Std .pypeit file: None
+Tests:
+----
+vlt_xshooter/VIS_2x1 pypeit (without masters) Result: [1;32m--- PASSED[0m
+
+Logfile:    /tmp/REDUX_OUT/vlt_xshooter/VIS_2x1/vlt_xshooter_vis_2x1.test.log
+Process Id: 354
+Start time: Sat Jan 29 03:56:39 2022
+End time:   Sat Jan 29 04:23:07 2022
+Duration:   0:26:27.922172
+Command:    run_pypeit /tmp/REDUX_OUT/vlt_xshooter/VIS_2x1/vlt_xshooter_vis_2x1.pypeit -o
+
+Error Messages:
+
+End of Log:
+[1;32m[INFO]    ::[0m [1;34mrun_pypeit.py 143 main()[0m - Data reduction complete
+[1;32m[INFO]    ::[0m [1;34mrun_pypeit.py 146 main()[0m - Generating QA HTML
+Wrote: /tmp/REDUX_OUT/vlt_xshooter/VIS_2x1/QA/MF_A.html
+
+
+
+-------------------------
+Test Setup: keck_mosfire/Y_long
+
+-------------------------
+Directories:
+         Raw data: /PypeIt-development-suite/RAW_DATA/keck_mosfire/Y_long
+    PypeIt output: /tmp/REDUX_OUT/keck_mosfire/Y_long
+Files:
+     .pypeit file: None
+ Std .pypeit file: None
+Tests:
+----
+keck_mosfire/Y_long pypeit_ql Result: [1;31m--- FAILED[0m
+
+Logfile:    None
+Process Id: None
+Start time: n/a
+End time:   n/a
+Duration:   None
+Command:    
+
+Error Messages:
+Failed to generate QL masters.
+
+End of Log:
+
+
+----
+keck_mosfire/Y_long pypeit (without masters) Result: [1;31m--- SKIPPED[0m
+
+Logfile:    None
+Process Id: None
+Start time: n/a
+End time:   n/a
+Duration:   None
+Command:    
+
+Error Messages:
+
+End of Log:
+
+
+----
+keck_mosfire/Y_long pypeit_sensfunc Result: [1;31m--- SKIPPED[0m
+
+Logfile:    None
+Process Id: None
+Start time: n/a
+End time:   n/a
+Duration:   None
+Command:    
+
+Error Messages:
+
+End of Log:
+
+
+-------------------------
+Test Setup: keck_lris_blue_orig/long_600_4000_d500
+
+-------------------------
+Directories:
+         Raw data: /PypeIt-development-suite/RAW_DATA/keck_lris_blue_orig/long_600_4000_d500
+    PypeIt output: /tmp/REDUX_OUT/keck_lris_blue_orig/long_600_4000_d500
+Files:
+     .pypeit file: None
+ Std .pypeit file: None
+Tests:
+----
+keck_lris_blue_orig/long_600_4000_d500 pypeit (without masters) Result: [1;32m--- PASSED[0m
+
+Logfile:    /tmp/REDUX_OUT/keck_lris_blue_orig/long_600_4000_d500/keck_lris_blue_orig_long_600_4000_d500.test.log
+Process Id: 372
+Start time: Sat Jan 29 04:12:23 2022
+End time:   Sat Jan 29 04:32:40 2022
+Duration:   0:20:16.441914
+Command:    run_pypeit /tmp/REDUX_OUT/keck_lris_blue_orig/long_600_4000_d500/keck_lris_blue_orig_long_600_4000_d500.pypeit -o
+
+Error Messages:
+
+End of Log:
+[1;32m[INFO]    ::[0m [1;34mrun_pypeit.py 143 main()[0m - Data reduction complete
+[1;32m[INFO]    ::[0m [1;34mrun_pypeit.py 146 main()[0m - Generating QA HTML
+Wrote: /tmp/REDUX_OUT/keck_lris_blue_orig/long_600_4000_d500/QA/MF_A.html
+
+
+
+-------------------------
+Test Setup: gemini_flamingos2/HK_HK
+
+-------------------------
+Directories:
+         Raw data: /PypeIt-development-suite/RAW_DATA/gemini_flamingos2/HK_HK
+    PypeIt output: /tmp/REDUX_OUT/gemini_flamingos2/HK_HK
+Files:
+     .pypeit file: None
+ Std .pypeit file: None
+Tests:
+----
+gemini_flamingos2/HK_HK pypeit (without masters) Result: [1;32m--- PASSED[0m
+
+Logfile:    /tmp/REDUX_OUT/gemini_flamingos2/HK_HK/gemini_flamingos2_hk_hk.test.log
+Process Id: 379
+Start time: Sat Jan 29 04:16:14 2022
+End time:   Sat Jan 29 04:48:55 2022
+Duration:   0:32:40.361259
+Command:    run_pypeit /tmp/REDUX_OUT/gemini_flamingos2/HK_HK/gemini_flamingos2_hk_hk.pypeit -o
+
+Error Messages:
+
+End of Log:
+[1;32m[INFO]    ::[0m [1;34mrun_pypeit.py 143 main()[0m - Data reduction complete
+[1;32m[INFO]    ::[0m [1;34mrun_pypeit.py 146 main()[0m - Generating QA HTML
+Wrote: /tmp/REDUX_OUT/gemini_flamingos2/HK_HK/QA/MF_A.html
+
+
+
+-------------------------
+Test Setup: gtc_osiris/R2500R
+
+-------------------------
+Directories:
+         Raw data: /PypeIt-development-suite/RAW_DATA/gtc_osiris/R2500R
+    PypeIt output: /tmp/REDUX_OUT/gtc_osiris/R2500R
+Files:
+     .pypeit file: None
+ Std .pypeit file: None
+Tests:
+----
+gtc_osiris/R2500R pypeit (without masters) Result: [1;32m--- PASSED[0m
+
+Logfile:    /tmp/REDUX_OUT/gtc_osiris/R2500R/gtc_osiris_r2500r.test.log
+Process Id: 394
+Start time: Sat Jan 29 04:23:08 2022
+End time:   Sat Jan 29 04:50:41 2022
+Duration:   0:27:32.897704
+Command:    run_pypeit /tmp/REDUX_OUT/gtc_osiris/R2500R/gtc_osiris_r2500r.pypeit -o
+
+Error Messages:
+
+End of Log:
+[1;32m[INFO]    ::[0m [1;34mrun_pypeit.py 143 main()[0m - Data reduction complete
+[1;32m[INFO]    ::[0m [1;34mrun_pypeit.py 146 main()[0m - Generating QA HTML
+Wrote: /tmp/REDUX_OUT/gtc_osiris/R2500R/QA/MF_A.html
+
+
+
+-------------------------
+Test Setup: keck_lris_red/long_600_7500_d560
+
+-------------------------
+Directories:
+         Raw data: /PypeIt-development-suite/RAW_DATA/keck_lris_red/long_600_7500_d560
+    PypeIt output: /tmp/REDUX_OUT/keck_lris_red/long_600_7500_d560
+Files:
+     .pypeit file: None
+ Std .pypeit file: None
+Tests:
+----
+keck_lris_red/long_600_7500_d560 pypeit (without masters) Result: [1;32m--- PASSED[0m
+
+Logfile:    /tmp/REDUX_OUT/keck_lris_red/long_600_7500_d560/keck_lris_red_long_600_7500_d560.test.log
+Process Id: 386
+Start time: Sat Jan 29 04:17:39 2022
+End time:   Sat Jan 29 04:25:42 2022
+Duration:   0:08:02.742432
+Command:    run_pypeit /tmp/REDUX_OUT/keck_lris_red/long_600_7500_d560/keck_lris_red_long_600_7500_d560.pypeit -o
+
+Error Messages:
+
+End of Log:
+[1;32m[INFO]    ::[0m [1;34mrun_pypeit.py 143 main()[0m - Data reduction complete
+[1;32m[INFO]    ::[0m [1;34mrun_pypeit.py 146 main()[0m - Generating QA HTML
+Wrote: /tmp/REDUX_OUT/keck_lris_red/long_600_7500_d560/QA/MF_A.html
+
+
+
+----
+keck_lris_red/long_600_7500_d560 pypeit (with masters) Result: [1;32m--- PASSED[0m
+
+Logfile:    /tmp/REDUX_OUT/keck_lris_red/long_600_7500_d560/keck_lris_red_long_600_7500_d560.test.2.log
+Process Id: 396
+Start time: Sat Jan 29 04:25:42 2022
+End time:   Sat Jan 29 04:50:46 2022
+Duration:   0:25:03.599887
+Command:    run_pypeit /tmp/REDUX_OUT/keck_lris_red/long_600_7500_d560/keck_lris_red_long_600_7500_d560.pypeit -o -m
+
+Error Messages:
+
+End of Log:
+[1;32m[INFO]    ::[0m [1;34mrun_pypeit.py 143 main()[0m - Data reduction complete
+[1;32m[INFO]    ::[0m [1;34mrun_pypeit.py 146 main()[0m - Generating QA HTML
+Wrote: /tmp/REDUX_OUT/keck_lris_red/long_600_7500_d560/QA/MF_A.html
+
+
+
+-------------------------
+Test Setup: gtc_osiris/R1000RMOS
+
+-------------------------
+Directories:
+         Raw data: /PypeIt-development-suite/RAW_DATA/gtc_osiris/R1000RMOS
+    PypeIt output: /tmp/REDUX_OUT/gtc_osiris/R1000RMOS
+Files:
+     .pypeit file: None
+ Std .pypeit file: None
+Tests:
+----
+gtc_osiris/R1000RMOS pypeit (without masters) Result: [1;32m--- PASSED[0m
+
+Logfile:    /tmp/REDUX_OUT/gtc_osiris/R1000RMOS/gtc_osiris_r1000rmos.test.log
+Process Id: 389
+Start time: Sat Jan 29 04:21:18 2022
+End time:   Sat Jan 29 04:56:31 2022
+Duration:   0:35:13.660903
+Command:    run_pypeit /tmp/REDUX_OUT/gtc_osiris/R1000RMOS/gtc_osiris_r1000rmos.pypeit -o
+
+Error Messages:
+
+End of Log:
+[1;32m[INFO]    ::[0m [1;34mrun_pypeit.py 143 main()[0m - Data reduction complete
+[1;32m[INFO]    ::[0m [1;34mrun_pypeit.py 146 main()[0m - Generating QA HTML
+Wrote: /tmp/REDUX_OUT/gtc_osiris/R1000RMOS/QA/MF_A.html
+
+
+
+-------------------------
+Test Setup: mmt_mmirs/J_zJ
+
+-------------------------
+Directories:
+         Raw data: /PypeIt-development-suite/RAW_DATA/mmt_mmirs/J_zJ
+    PypeIt output: /tmp/REDUX_OUT/mmt_mmirs/J_zJ
+Files:
+     .pypeit file: None
+ Std .pypeit file: None
+Tests:
+----
+mmt_mmirs/J_zJ pypeit (without masters) Result: [1;32m--- PASSED[0m
+
+Logfile:    /tmp/REDUX_OUT/mmt_mmirs/J_zJ/mmt_mmirs_j_zj.test.log
+Process Id: 376
+Start time: Sat Jan 29 04:15:24 2022
+End time:   Sat Jan 29 04:57:56 2022
+Duration:   0:42:32.049171
+Command:    run_pypeit /tmp/REDUX_OUT/mmt_mmirs/J_zJ/mmt_mmirs_j_zj.pypeit -o
+
+Error Messages:
+
+End of Log:
+[1;32m[INFO]    ::[0m [1;34mrun_pypeit.py 143 main()[0m - Data reduction complete
+[1;32m[INFO]    ::[0m [1;34mrun_pypeit.py 146 main()[0m - Generating QA HTML
+Wrote: /tmp/REDUX_OUT/mmt_mmirs/J_zJ/QA/MF_A.html
+
+
+
+-------------------------
+Test Setup: gemini_gmos/GN_HAM_R400_885
+
+-------------------------
+Directories:
+         Raw data: /PypeIt-development-suite/RAW_DATA/gemini_gmos/GN_HAM_R400_885
+    PypeIt output: /tmp/REDUX_OUT/gemini_gmos/GN_HAM_R400_885
+Files:
+     .pypeit file: None
+ Std .pypeit file: None
+Tests:
+----
+gemini_gmos/GN_HAM_R400_885 pypeit (without masters) Result: [1;32m--- PASSED[0m
+
+Logfile:    /tmp/REDUX_OUT/gemini_gmos/GN_HAM_R400_885/gemini_gmos_gn_ham_r400_885.test.log
+Process Id: 399
+Start time: Sat Jan 29 04:32:40 2022
+End time:   Sat Jan 29 05:03:00 2022
+Duration:   0:30:20.616213
+Command:    run_pypeit /tmp/REDUX_OUT/gemini_gmos/GN_HAM_R400_885/gemini_gmos_gn_ham_r400_885.pypeit -o
+
+Error Messages:
+
+End of Log:
+[1;32m[INFO]    ::[0m [1;34mrun_pypeit.py 143 main()[0m - Data reduction complete
+[1;32m[INFO]    ::[0m [1;34mrun_pypeit.py 146 main()[0m - Generating QA HTML
+Wrote: /tmp/REDUX_OUT/gemini_gmos/GN_HAM_R400_885/QA/MF_A.html
+
+
+
+-------------------------
+Test Setup: gemini_flamingos2/JH_JH
+
+-------------------------
+Directories:
+         Raw data: /PypeIt-development-suite/RAW_DATA/gemini_flamingos2/JH_JH
+    PypeIt output: /tmp/REDUX_OUT/gemini_flamingos2/JH_JH
+Files:
+     .pypeit file: None
+ Std .pypeit file: None
+Tests:
+----
+gemini_flamingos2/JH_JH pypeit (without masters) Result: [1;32m--- PASSED[0m
+
+Logfile:    /tmp/REDUX_OUT/gemini_flamingos2/JH_JH/gemini_flamingos2_jh_jh.test.log
+Process Id: 405
+Start time: Sat Jan 29 04:50:41 2022
+End time:   Sat Jan 29 05:11:28 2022
+Duration:   0:20:46.921762
+Command:    run_pypeit /tmp/REDUX_OUT/gemini_flamingos2/JH_JH/gemini_flamingos2_jh_jh.pypeit -o
+
+Error Messages:
+
+End of Log:
+[1;32m[INFO]    ::[0m [1;34mrun_pypeit.py 143 main()[0m - Data reduction complete
+[1;32m[INFO]    ::[0m [1;34mrun_pypeit.py 146 main()[0m - Generating QA HTML
+Wrote: /tmp/REDUX_OUT/gemini_flamingos2/JH_JH/QA/MF_A.html
+
+
+
+-------------------------
+Test Setup: keck_mosfire/K_long
+
+-------------------------
+Directories:
+         Raw data: /PypeIt-development-suite/RAW_DATA/keck_mosfire/K_long
+    PypeIt output: /tmp/REDUX_OUT/keck_mosfire/K_long
+Files:
+     .pypeit file: None
+ Std .pypeit file: None
+Tests:
+----
+keck_mosfire/K_long pypeit (without masters) Result: [1;32m--- PASSED[0m
+
+Logfile:    /tmp/REDUX_OUT/keck_mosfire/K_long/keck_mosfire_k_long.test.log
+Process Id: 409
+Start time: Sat Jan 29 04:50:46 2022
+End time:   Sat Jan 29 05:12:19 2022
+Duration:   0:21:33.496870
+Command:    run_pypeit /tmp/REDUX_OUT/keck_mosfire/K_long/keck_mosfire_k_long.pypeit -o
+
+Error Messages:
+
+End of Log:
+[1;32m[INFO]    ::[0m [1;34mrun_pypeit.py 143 main()[0m - Data reduction complete
+[1;32m[INFO]    ::[0m [1;34mrun_pypeit.py 146 main()[0m - Generating QA HTML
+Wrote: /tmp/REDUX_OUT/keck_mosfire/K_long/QA/MF_A.html
+
+
+
+-------------------------
+Test Setup: lbt_luci/LUCI-I
+
+-------------------------
+Directories:
+         Raw data: /PypeIt-development-suite/RAW_DATA/lbt_luci/LUCI-I
+    PypeIt output: /tmp/REDUX_OUT/lbt_luci/LUCI-I
+Files:
+     .pypeit file: None
+ Std .pypeit file: None
+Tests:
+----
+lbt_luci/LUCI-I pypeit (without masters) Result: [1;32m--- PASSED[0m
+
+Logfile:    /tmp/REDUX_OUT/lbt_luci/LUCI-I/lbt_luci_luci-i.test.log
+Process Id: 412
+Start time: Sat Jan 29 04:56:31 2022
+End time:   Sat Jan 29 05:14:18 2022
+Duration:   0:17:46.814606
+Command:    run_pypeit /tmp/REDUX_OUT/lbt_luci/LUCI-I/lbt_luci_luci-i.pypeit -o
+
+Error Messages:
+
+End of Log:
+[1;32m[INFO]    ::[0m [1;34mrun_pypeit.py 143 main()[0m - Data reduction complete
+[1;32m[INFO]    ::[0m [1;34mrun_pypeit.py 146 main()[0m - Generating QA HTML
+Wrote: /tmp/REDUX_OUT/lbt_luci/LUCI-I/QA/MF_A.html
+
+
+
+-------------------------
+Test Setup: keck_nires/NIRES
+
+-------------------------
+Directories:
+         Raw data: /PypeIt-development-suite/RAW_DATA/keck_nires/NIRES
+    PypeIt output: /tmp/REDUX_OUT/keck_nires/NIRES
+Files:
+     .pypeit file: None
+ Std .pypeit file: None
+Tests:
+----
+keck_nires/NIRES pypeit_ql Result: [1;31m--- FAILED[0m
+
+Logfile:    None
+Process Id: None
+Start time: n/a
+End time:   n/a
+Duration:   None
+Command:    
+
+Error Messages:
+Failed to generate QL masters.
+
+End of Log:
+
+
+----
+keck_nires/NIRES pypeit (without masters) Result: [1;31m--- SKIPPED[0m
+
+Logfile:    None
+Process Id: None
+Start time: n/a
+End time:   n/a
+Duration:   None
+Command:    
+
+Error Messages:
+
+End of Log:
+
+
+-------------------------
+Test Setup: keck_lris_blue/multi_600_4000_d560
+
+-------------------------
+Directories:
+         Raw data: /PypeIt-development-suite/RAW_DATA/keck_lris_blue/multi_600_4000_d560
+    PypeIt output: /tmp/REDUX_OUT/keck_lris_blue/multi_600_4000_d560
+Files:
+     .pypeit file: None
+ Std .pypeit file: None
+Tests:
+----
+keck_lris_blue/multi_600_4000_d560 pypeit (without masters) Result: [1;32m--- PASSED[0m
+
+Logfile:    /tmp/REDUX_OUT/keck_lris_blue/multi_600_4000_d560/keck_lris_blue_multi_600_4000_d560.test.log
+Process Id: 402
+Start time: Sat Jan 29 04:48:55 2022
+End time:   Sat Jan 29 05:13:12 2022
+Duration:   0:24:17.104281
+Command:    run_pypeit /tmp/REDUX_OUT/keck_lris_blue/multi_600_4000_d560/keck_lris_blue_multi_600_4000_d560.pypeit -o
+
+Error Messages:
+
+End of Log:
+[1;32m[INFO]    ::[0m [1;34mrun_pypeit.py 143 main()[0m - Data reduction complete
+[1;32m[INFO]    ::[0m [1;34mrun_pypeit.py 146 main()[0m - Generating QA HTML
+Wrote: /tmp/REDUX_OUT/keck_lris_blue/multi_600_4000_d560/QA/MF_A.html
+
+
+
+----
+keck_lris_blue/multi_600_4000_d560 pypeit_coadd_2dspec Result: [1;32m--- PASSED[0m
+
+Logfile:    /tmp/REDUX_OUT/keck_lris_blue/multi_600_4000_d560/keck_lris_blue_multi_600_4000_d560.test_2dcoadd.log
+Process Id: 426
+Start time: Sat Jan 29 05:13:12 2022
+End time:   Sat Jan 29 05:15:35 2022
+Duration:   0:02:22.826653
+Command:    pypeit_coadd_2dspec --file /PypeIt-development-suite/coadd2d_files/keck_lris_blue_multi_600_4000_d560.coadd2d
+
+Error Messages:
+
+End of Log:
+WARNING: VerifyWarning: Card is too long, comment will be truncated. [astropy.io.fits.card]
+[1;32m[INFO]    ::[0m Wrote: /tmp/REDUX_OUT/keck_lris_blue/multi_600_4000_d560/Science_coadd/spec2d_b170320-b170320-c17.fits
+Writing the parameters to b170320-b170320-c17_coadd2d.par
+
+
+
+-------------------------
+Test Setup: vlt_xshooter/VIS_2x2
+
+-------------------------
+Directories:
+         Raw data: /PypeIt-development-suite/RAW_DATA/vlt_xshooter/VIS_2x2
+    PypeIt output: /tmp/REDUX_OUT/vlt_xshooter/VIS_2x2
+Files:
+     .pypeit file: None
+ Std .pypeit file: None
+Tests:
+----
+vlt_xshooter/VIS_2x2 pypeit (without masters) Result: [1;32m--- PASSED[0m
+
+Logfile:    /tmp/REDUX_OUT/vlt_xshooter/VIS_2x2/vlt_xshooter_vis_2x2.test.log
+Process Id: 415
+Start time: Sat Jan 29 04:57:56 2022
+End time:   Sat Jan 29 05:20:34 2022
+Duration:   0:22:37.252531
+Command:    run_pypeit /tmp/REDUX_OUT/vlt_xshooter/VIS_2x2/vlt_xshooter_vis_2x2.pypeit -o
+
+Error Messages:
+
+End of Log:
+[1;32m[INFO]    ::[0m [1;34mrun_pypeit.py 143 main()[0m - Data reduction complete
+[1;32m[INFO]    ::[0m [1;34mrun_pypeit.py 146 main()[0m - Generating QA HTML
+Wrote: /tmp/REDUX_OUT/vlt_xshooter/VIS_2x2/QA/MF_A.html
+
+
+
+-------------------------
+Test Setup: not_alfosc/grism19
+
+-------------------------
+Directories:
+         Raw data: /PypeIt-development-suite/RAW_DATA/not_alfosc/grism19
+    PypeIt output: /tmp/REDUX_OUT/not_alfosc/grism19
+Files:
+     .pypeit file: None
+ Std .pypeit file: None
+Tests:
+----
+not_alfosc/grism19 pypeit (without masters) Result: [1;32m--- PASSED[0m
+
+Logfile:    /tmp/REDUX_OUT/not_alfosc/grism19/not_alfosc_grism19.test.log
+Process Id: 418
+Start time: Sat Jan 29 05:03:00 2022
+End time:   Sat Jan 29 05:23:47 2022
+Duration:   0:20:46.342896
+Command:    run_pypeit /tmp/REDUX_OUT/not_alfosc/grism19/not_alfosc_grism19.pypeit -o
+
+Error Messages:
+
+End of Log:
+[1;32m[INFO]    ::[0m [1;34mrun_pypeit.py 143 main()[0m - Data reduction complete
+[1;32m[INFO]    ::[0m [1;34mrun_pypeit.py 146 main()[0m - Generating QA HTML
+Wrote: /tmp/REDUX_OUT/not_alfosc/grism19/QA/MF_A.html
+
+
+
+-------------------------
+Test Setup: vlt_fors2/300I
+
+-------------------------
+Directories:
+         Raw data: /PypeIt-development-suite/RAW_DATA/vlt_fors2/300I
+    PypeIt output: /tmp/REDUX_OUT/vlt_fors2/300I
+Files:
+     .pypeit file: None
+ Std .pypeit file: None
+Tests:
+----
+vlt_fors2/300I pypeit (without masters) Result: [1;32m--- PASSED[0m
+
+Logfile:    /tmp/REDUX_OUT/vlt_fors2/300I/vlt_fors2_300i.test.log
+Process Id: 424
+Start time: Sat Jan 29 05:12:19 2022
+End time:   Sat Jan 29 05:31:41 2022
+Duration:   0:19:21.324685
+Command:    run_pypeit /tmp/REDUX_OUT/vlt_fors2/300I/vlt_fors2_300i.pypeit -o
+
+Error Messages:
+
+End of Log:
+[1;32m[INFO]    ::[0m [1;34mrun_pypeit.py 143 main()[0m - Data reduction complete
+[1;32m[INFO]    ::[0m [1;34mrun_pypeit.py 146 main()[0m - Generating QA HTML
+Wrote: /tmp/REDUX_OUT/vlt_fors2/300I/QA/MF_E.html
+
+
+
+-------------------------
+Test Setup: mmt_mmirs/K_K
+
+-------------------------
+Directories:
+         Raw data: /PypeIt-development-suite/RAW_DATA/mmt_mmirs/K_K
+    PypeIt output: /tmp/REDUX_OUT/mmt_mmirs/K_K
+Files:
+     .pypeit file: None
+ Std .pypeit file: None
+Tests:
+----
+mmt_mmirs/K_K pypeit (without masters) Result: [1;32m--- PASSED[0m
+
+Logfile:    /tmp/REDUX_OUT/mmt_mmirs/K_K/mmt_mmirs_k_k.test.log
+Process Id: 421
+Start time: Sat Jan 29 05:11:28 2022
+End time:   Sat Jan 29 05:31:49 2022
+Duration:   0:20:21.105816
+Command:    run_pypeit /tmp/REDUX_OUT/mmt_mmirs/K_K/mmt_mmirs_k_k.pypeit -o
+
+Error Messages:
+
+End of Log:
+[1;32m[INFO]    ::[0m [1;34mrun_pypeit.py 143 main()[0m - Data reduction complete
+[1;32m[INFO]    ::[0m [1;34mrun_pypeit.py 146 main()[0m - Generating QA HTML
+Wrote: /tmp/REDUX_OUT/mmt_mmirs/K_K/QA/MF_A.html
+
+
+
+-------------------------
+Test Setup: p200_tspec/TSPEC
+
+-------------------------
+Directories:
+         Raw data: /PypeIt-development-suite/RAW_DATA/p200_tspec/TSPEC
+    PypeIt output: /tmp/REDUX_OUT/p200_tspec/TSPEC
+Files:
+     .pypeit file: None
+ Std .pypeit file: None
+Tests:
+----
+p200_tspec/TSPEC pypeit (without masters) Result: [1;32m--- PASSED[0m
+
+Logfile:    /tmp/REDUX_OUT/p200_tspec/TSPEC/p200_tspec_tspec.test.log
+Process Id: 431
+Start time: Sat Jan 29 05:14:19 2022
+End time:   Sat Jan 29 05:33:15 2022
+Duration:   0:18:55.906438
+Command:    run_pypeit /tmp/REDUX_OUT/p200_tspec/TSPEC/p200_tspec_tspec.pypeit -o
+
+Error Messages:
+
+End of Log:
+[1;32m[INFO]    ::[0m [1;34mrun_pypeit.py 143 main()[0m - Data reduction complete
+[1;32m[INFO]    ::[0m [1;34mrun_pypeit.py 146 main()[0m - Generating QA HTML
+Wrote: /tmp/REDUX_OUT/p200_tspec/TSPEC/QA/MF_A.html
+
+
+
+-------------------------
+Test Setup: gtc_osiris/R1000BMOS
+
+-------------------------
+Directories:
+         Raw data: /PypeIt-development-suite/RAW_DATA/gtc_osiris/R1000BMOS
+    PypeIt output: /tmp/REDUX_OUT/gtc_osiris/R1000BMOS
+Files:
+     .pypeit file: None
+ Std .pypeit file: None
+Tests:
+----
+gtc_osiris/R1000BMOS pypeit (without masters) Result: [1;32m--- PASSED[0m
+
+Logfile:    /tmp/REDUX_OUT/gtc_osiris/R1000BMOS/gtc_osiris_r1000bmos.test.log
+Process Id: 435
+Start time: Sat Jan 29 05:15:35 2022
+End time:   Sat Jan 29 05:36:40 2022
+Duration:   0:21:05.207561
+Command:    run_pypeit /tmp/REDUX_OUT/gtc_osiris/R1000BMOS/gtc_osiris_r1000bmos.pypeit -o
+
+Error Messages:
+
+End of Log:
+[1;32m[INFO]    ::[0m [1;34mrun_pypeit.py 143 main()[0m - Data reduction complete
+[1;32m[INFO]    ::[0m [1;34mrun_pypeit.py 146 main()[0m - Generating QA HTML
+Wrote: /tmp/REDUX_OUT/gtc_osiris/R1000BMOS/QA/MF_A.html
+
+
+
+-------------------------
+Test Setup: keck_deimos/1200B_LVM_5200
+
+-------------------------
+Directories:
+         Raw data: /PypeIt-development-suite/RAW_DATA/keck_deimos/1200B_LVM_5200
+    PypeIt output: /tmp/REDUX_OUT/keck_deimos/1200B_LVM_5200
+Files:
+     .pypeit file: None
+ Std .pypeit file: None
+Tests:
+----
+keck_deimos/1200B_LVM_5200 pypeit (without masters) Result: [1;32m--- PASSED[0m
+
+Logfile:    /tmp/REDUX_OUT/keck_deimos/1200B_LVM_5200/keck_deimos_1200b_lvm_5200.test.log
+Process Id: 438
+Start time: Sat Jan 29 05:20:34 2022
+End time:   Sat Jan 29 05:37:17 2022
+Duration:   0:16:43.138533
+Command:    run_pypeit /tmp/REDUX_OUT/keck_deimos/1200B_LVM_5200/keck_deimos_1200b_lvm_5200.pypeit -o
+
+Error Messages:
+
+End of Log:
+             DE.20170915.07757.fits  K r   X e
+             ----------------------  -----------
+Wrote: /tmp/REDUX_OUT/keck_deimos/1200B_LVM_5200/QA/MF_A.html
+
+
+
+-------------------------
+Test Setup: gtc_osiris/R2500V
+
+-------------------------
+Directories:
+         Raw data: /PypeIt-development-suite/RAW_DATA/gtc_osiris/R2500V
+    PypeIt output: /tmp/REDUX_OUT/gtc_osiris/R2500V
+Files:
+     .pypeit file: None
+ Std .pypeit file: None
+Tests:
+----
+gtc_osiris/R2500V pypeit (without masters) Result: [1;32m--- PASSED[0m
+
+Logfile:    /tmp/REDUX_OUT/gtc_osiris/R2500V/gtc_osiris_r2500v.test.log
+Process Id: 441
+Start time: Sat Jan 29 05:23:47 2022
+End time:   Sat Jan 29 05:39:31 2022
+Duration:   0:15:44.327399
+Command:    run_pypeit /tmp/REDUX_OUT/gtc_osiris/R2500V/gtc_osiris_r2500v.pypeit -o
+
+Error Messages:
+
+End of Log:
+[1;32m[INFO]    ::[0m [1;34mrun_pypeit.py 143 main()[0m - Data reduction complete
+[1;32m[INFO]    ::[0m [1;34mrun_pypeit.py 146 main()[0m - Generating QA HTML
+Wrote: /tmp/REDUX_OUT/gtc_osiris/R2500V/QA/MF_A.html
+
+
+
+-------------------------
+Test Setup: ldt_deveny/DV2
+
+-------------------------
+Directories:
+         Raw data: /PypeIt-development-suite/RAW_DATA/ldt_deveny/DV2
+    PypeIt output: /tmp/REDUX_OUT/ldt_deveny/DV2
+Files:
+     .pypeit file: None
+ Std .pypeit file: None
+Tests:
+----
+ldt_deveny/DV2 pypeit (without masters) Result: [1;32m--- PASSED[0m
+
+Logfile:    /tmp/REDUX_OUT/ldt_deveny/DV2/ldt_deveny_dv2.test.log
+Process Id: 444
+Start time: Sat Jan 29 05:31:41 2022
+End time:   Sat Jan 29 05:41:44 2022
+Duration:   0:10:02.901036
+Command:    run_pypeit /tmp/REDUX_OUT/ldt_deveny/DV2/ldt_deveny_dv2.pypeit -o
+
+Error Messages:
+
+End of Log:
+[1;32m[INFO]    ::[0m [1;34mrun_pypeit.py 143 main()[0m - Data reduction complete
+[1;32m[INFO]    ::[0m [1;34mrun_pypeit.py 146 main()[0m - Generating QA HTML
+Wrote: /tmp/REDUX_OUT/ldt_deveny/DV2/QA/MF_A.html
+
+
+
+-------------------------
+Test Setup: lbt_luci/LUCI-II
+
+-------------------------
+Directories:
+         Raw data: /PypeIt-development-suite/RAW_DATA/lbt_luci/LUCI-II
+    PypeIt output: /tmp/REDUX_OUT/lbt_luci/LUCI-II
+Files:
+     .pypeit file: None
+ Std .pypeit file: None
+Tests:
+----
+lbt_luci/LUCI-II pypeit (without masters) Result: [1;32m--- PASSED[0m
+
+Logfile:    /tmp/REDUX_OUT/lbt_luci/LUCI-II/lbt_luci_luci-ii.test.log
+Process Id: 459
+Start time: Sat Jan 29 05:39:31 2022
+End time:   Sat Jan 29 05:47:39 2022
+Duration:   0:08:08.226347
+Command:    run_pypeit /tmp/REDUX_OUT/lbt_luci/LUCI-II/lbt_luci_luci-ii.pypeit -o
+
+Error Messages:
+
+End of Log:
+[1;32m[INFO]    ::[0m [1;34mrun_pypeit.py 143 main()[0m - Data reduction complete
+[1;32m[INFO]    ::[0m [1;34mrun_pypeit.py 146 main()[0m - Generating QA HTML
+Wrote: /tmp/REDUX_OUT/lbt_luci/LUCI-II/QA/MF_A.html
+
+
+
+-------------------------
+Test Setup: gtc_osiris/R1000B
+
+-------------------------
+Directories:
+         Raw data: /PypeIt-development-suite/RAW_DATA/gtc_osiris/R1000B
+    PypeIt output: /tmp/REDUX_OUT/gtc_osiris/R1000B
+Files:
+     .pypeit file: None
+ Std .pypeit file: None
+Tests:
+----
+gtc_osiris/R1000B pypeit (without masters) Result: [1;32m--- PASSED[0m
+
+Logfile:    /tmp/REDUX_OUT/gtc_osiris/R1000B/gtc_osiris_r1000b.test.log
+Process Id: 450
+Start time: Sat Jan 29 05:33:15 2022
+End time:   Sat Jan 29 05:47:44 2022
+Duration:   0:14:28.961845
+Command:    run_pypeit /tmp/REDUX_OUT/gtc_osiris/R1000B/gtc_osiris_r1000b.pypeit -o
+
+Error Messages:
+
+End of Log:
+[1;32m[INFO]    ::[0m [1;34mrun_pypeit.py 143 main()[0m - Data reduction complete
+[1;32m[INFO]    ::[0m [1;34mrun_pypeit.py 146 main()[0m - Generating QA HTML
+Wrote: /tmp/REDUX_OUT/gtc_osiris/R1000B/QA/MF_A.html
+
+
+
+-------------------------
+Test Setup: ldt_deveny/DV5
+
+-------------------------
+Directories:
+         Raw data: /PypeIt-development-suite/RAW_DATA/ldt_deveny/DV5
+    PypeIt output: /tmp/REDUX_OUT/ldt_deveny/DV5
+Files:
+     .pypeit file: None
+ Std .pypeit file: None
+Tests:
+----
+ldt_deveny/DV5 pypeit (without masters) Result: [1;32m--- PASSED[0m
+
+Logfile:    /tmp/REDUX_OUT/ldt_deveny/DV5/ldt_deveny_dv5.test.log
+Process Id: 456
+Start time: Sat Jan 29 05:37:17 2022
+End time:   Sat Jan 29 05:48:14 2022
+Duration:   0:10:56.827709
+Command:    run_pypeit /tmp/REDUX_OUT/ldt_deveny/DV5/ldt_deveny_dv5.pypeit -o
+
+Error Messages:
+
+End of Log:
+[1;32m[INFO]    ::[0m [1;34mrun_pypeit.py 143 main()[0m - Data reduction complete
+[1;32m[INFO]    ::[0m [1;34mrun_pypeit.py 146 main()[0m - Generating QA HTML
+Wrote: /tmp/REDUX_OUT/ldt_deveny/DV5/QA/MF_A.html
+
+
+
+-------------------------
+Test Setup: magellan_mage/1x1
+
+-------------------------
+Directories:
+         Raw data: /PypeIt-development-suite/RAW_DATA/magellan_mage/1x1
+    PypeIt output: /tmp/REDUX_OUT/magellan_mage/1x1
+Files:
+     .pypeit file: None
+ Std .pypeit file: None
+Tests:
+----
+magellan_mage/1x1 pypeit (without masters) Result: [1;32m--- PASSED[0m
+
+Logfile:    /tmp/REDUX_OUT/magellan_mage/1x1/magellan_mage_1x1.test.log
+Process Id: 447
+Start time: Sat Jan 29 05:31:49 2022
+End time:   Sat Jan 29 05:49:21 2022
+Duration:   0:17:31.805472
+Command:    run_pypeit /tmp/REDUX_OUT/magellan_mage/1x1/magellan_mage_1x1.pypeit -o
+
+Error Messages:
+
+End of Log:
+[1;32m[INFO]    ::[0m [1;34mrun_pypeit.py 143 main()[0m - Data reduction complete
+[1;32m[INFO]    ::[0m [1;34mrun_pypeit.py 146 main()[0m - Generating QA HTML
+Wrote: /tmp/REDUX_OUT/magellan_mage/1x1/QA/MF_A.html
+
+
+
+-------------------------
+Test Setup: mdm_osmos/MDM4K
+
+-------------------------
+Directories:
+         Raw data: /PypeIt-development-suite/RAW_DATA/mdm_osmos/MDM4K
+    PypeIt output: /tmp/REDUX_OUT/mdm_osmos/MDM4K
+Files:
+     .pypeit file: None
+ Std .pypeit file: None
+Tests:
+----
+mdm_osmos/MDM4K pypeit (without masters) Result: [1;32m--- PASSED[0m
+
+Logfile:    /tmp/REDUX_OUT/mdm_osmos/MDM4K/mdm_osmos_mdm4k.test.log
+Process Id: 453
+Start time: Sat Jan 29 05:36:40 2022
+End time:   Sat Jan 29 05:50:32 2022
+Duration:   0:13:52.362090
+Command:    run_pypeit /tmp/REDUX_OUT/mdm_osmos/MDM4K/mdm_osmos_mdm4k.pypeit -o
+
+Error Messages:
+
+End of Log:
+             MDM_arc_Xe.fits  X e
+             ---------------  -----------
+Wrote: /tmp/REDUX_OUT/mdm_osmos/MDM4K/QA/MF_A.html
+
+
+
+-------------------------
+Test Setup: mmt_mmirs/HK_zJ
+
+-------------------------
+Directories:
+         Raw data: /PypeIt-development-suite/RAW_DATA/mmt_mmirs/HK_zJ
+    PypeIt output: /tmp/REDUX_OUT/mmt_mmirs/HK_zJ
+Files:
+     .pypeit file: None
+ Std .pypeit file: None
+Tests:
+----
+mmt_mmirs/HK_zJ pypeit (without masters) Result: [1;32m--- PASSED[0m
+
+Logfile:    /tmp/REDUX_OUT/mmt_mmirs/HK_zJ/mmt_mmirs_hk_zj.test.log
+Process Id: 462
+Start time: Sat Jan 29 05:41:44 2022
+End time:   Sat Jan 29 05:51:11 2022
+Duration:   0:09:27.209001
+Command:    run_pypeit /tmp/REDUX_OUT/mmt_mmirs/HK_zJ/mmt_mmirs_hk_zj.pypeit -o
+
+Error Messages:
+
+End of Log:
+[1;32m[INFO]    ::[0m [1;34mrun_pypeit.py 143 main()[0m - Data reduction complete
+[1;32m[INFO]    ::[0m [1;34mrun_pypeit.py 146 main()[0m - Generating QA HTML
+Wrote: /tmp/REDUX_OUT/mmt_mmirs/HK_zJ/QA/MF_A.html
+
+
+
+-------------------------
+Test Setup: gemini_gnirs/10_LB_SXD
+
+-------------------------
+Directories:
+         Raw data: /PypeIt-development-suite/RAW_DATA/gemini_gnirs/10_LB_SXD
+    PypeIt output: /tmp/REDUX_OUT/gemini_gnirs/10_LB_SXD
+Files:
+     .pypeit file: None
+ Std .pypeit file: None
+Tests:
+----
+gemini_gnirs/10_LB_SXD pypeit (without masters) Result: [1;32m--- PASSED[0m
+
+Logfile:    /tmp/REDUX_OUT/gemini_gnirs/10_LB_SXD/gemini_gnirs_10_lb_sxd.test.log
+Process Id: 468
+Start time: Sat Jan 29 05:47:44 2022
+End time:   Sat Jan 29 05:55:47 2022
+Duration:   0:08:02.497310
+Command:    run_pypeit /tmp/REDUX_OUT/gemini_gnirs/10_LB_SXD/gemini_gnirs_10_lb_sxd.pypeit -o
+
+Error Messages:
+
+End of Log:
+[1;32m[INFO]    ::[0m [1;34mrun_pypeit.py 143 main()[0m - Data reduction complete
+[1;32m[INFO]    ::[0m [1;34mrun_pypeit.py 146 main()[0m - Generating QA HTML
+Wrote: /tmp/REDUX_OUT/gemini_gnirs/10_LB_SXD/QA/MF_A.html
+
+
+
+-------------------------
+Test Setup: ldt_deveny/DV8
+
+-------------------------
+Directories:
+         Raw data: /PypeIt-development-suite/RAW_DATA/ldt_deveny/DV8
+    PypeIt output: /tmp/REDUX_OUT/ldt_deveny/DV8
+Files:
+     .pypeit file: None
+ Std .pypeit file: None
+Tests:
+----
+ldt_deveny/DV8 pypeit (without masters) Result: [1;32m--- PASSED[0m
+
+Logfile:    /tmp/REDUX_OUT/ldt_deveny/DV8/ldt_deveny_dv8.test.log
+Process Id: 471
+Start time: Sat Jan 29 05:48:14 2022
+End time:   Sat Jan 29 05:56:01 2022
+Duration:   0:07:47.200432
+Command:    run_pypeit /tmp/REDUX_OUT/ldt_deveny/DV8/ldt_deveny_dv8.pypeit -o
+
+Error Messages:
+
+End of Log:
+[1;32m[INFO]    ::[0m [1;34mrun_pypeit.py 143 main()[0m - Data reduction complete
+[1;32m[INFO]    ::[0m [1;34mrun_pypeit.py 146 main()[0m - Generating QA HTML
+Wrote: /tmp/REDUX_OUT/ldt_deveny/DV8/QA/MF_A.html
+
+
+
+-------------------------
+Test Setup: ldt_deveny/DV6
+
+-------------------------
+Directories:
+         Raw data: /PypeIt-development-suite/RAW_DATA/ldt_deveny/DV6
+    PypeIt output: /tmp/REDUX_OUT/ldt_deveny/DV6
+Files:
+     .pypeit file: None
+ Std .pypeit file: None
+Tests:
+----
+ldt_deveny/DV6 pypeit (without masters) Result: [1;32m--- PASSED[0m
+
+Logfile:    /tmp/REDUX_OUT/ldt_deveny/DV6/ldt_deveny_dv6.test.log
+Process Id: 477
+Start time: Sat Jan 29 05:50:32 2022
+End time:   Sat Jan 29 05:56:40 2022
+Duration:   0:06:07.057057
+Command:    run_pypeit /tmp/REDUX_OUT/ldt_deveny/DV6/ldt_deveny_dv6.pypeit -o
+
+Error Messages:
+
+End of Log:
+[1;32m[INFO]    ::[0m [1;34mrun_pypeit.py 143 main()[0m - Data reduction complete
+[1;32m[INFO]    ::[0m [1;34mrun_pypeit.py 146 main()[0m - Generating QA HTML
+Wrote: /tmp/REDUX_OUT/ldt_deveny/DV6/QA/MF_A.html
+
+
+
+-------------------------
+Test Setup: ntt_efosc2/gr6
+
+-------------------------
+Directories:
+         Raw data: /PypeIt-development-suite/RAW_DATA/ntt_efosc2/gr6
+    PypeIt output: /tmp/REDUX_OUT/ntt_efosc2/gr6
+Files:
+     .pypeit file: None
+ Std .pypeit file: None
+Tests:
+----
+ntt_efosc2/gr6 pypeit (without masters) Result: [1;32m--- PASSED[0m
+
+Logfile:    /tmp/REDUX_OUT/ntt_efosc2/gr6/ntt_efosc2_gr6.test.log
+Process Id: 480
+Start time: Sat Jan 29 05:51:11 2022
+End time:   Sat Jan 29 05:57:24 2022
+Duration:   0:06:13.570155
+Command:    run_pypeit /tmp/REDUX_OUT/ntt_efosc2/gr6/ntt_efosc2_gr6.pypeit -o
+
+Error Messages:
+
+End of Log:
+[1;32m[INFO]    ::[0m [1;34mrun_pypeit.py 143 main()[0m - Data reduction complete
+[1;32m[INFO]    ::[0m [1;34mrun_pypeit.py 146 main()[0m - Generating QA HTML
+Wrote: /tmp/REDUX_OUT/ntt_efosc2/gr6/QA/MF_A.html
+
+
+
+-------------------------
+Test Setup: shane_kast_red/600_7500_d57
+
+-------------------------
+Directories:
+         Raw data: /PypeIt-development-suite/RAW_DATA/shane_kast_red/600_7500_d57
+    PypeIt output: /tmp/REDUX_OUT/shane_kast_red/600_7500_d57
+Files:
+     .pypeit file: None
+ Std .pypeit file: None
+Tests:
+----
+shane_kast_red/600_7500_d57 pypeit (without masters) Result: [1;32m--- PASSED[0m
+
+Logfile:    /tmp/REDUX_OUT/shane_kast_red/600_7500_d57/shane_kast_red_600_7500_d57.test.log
+Process Id: 474
+Start time: Sat Jan 29 05:49:21 2022
+End time:   Sat Jan 29 05:57:53 2022
+Duration:   0:08:32.110150
+Command:    run_pypeit /tmp/REDUX_OUT/shane_kast_red/600_7500_d57/shane_kast_red_600_7500_d57.pypeit -o
+
+Error Messages:
+
+End of Log:
+[1;32m[INFO]    ::[0m [1;34mrun_pypeit.py 143 main()[0m - Data reduction complete
+[1;32m[INFO]    ::[0m [1;34mrun_pypeit.py 146 main()[0m - Generating QA HTML
+Wrote: /tmp/REDUX_OUT/shane_kast_red/600_7500_d57/QA/MF_A.html
+
+
+
+-------------------------
+Test Setup: keck_lris_red_orig/long_300_5000
+
+-------------------------
+Directories:
+         Raw data: /PypeIt-development-suite/RAW_DATA/keck_lris_red_orig/long_300_5000
+    PypeIt output: /tmp/REDUX_OUT/keck_lris_red_orig/long_300_5000
+Files:
+     .pypeit file: None
+ Std .pypeit file: None
+Tests:
+----
+keck_lris_red_orig/long_300_5000 pypeit (without masters) Result: [1;32m--- PASSED[0m
+
+Logfile:    /tmp/REDUX_OUT/keck_lris_red_orig/long_300_5000/keck_lris_red_orig_long_300_5000.test.log
+Process Id: 465
+Start time: Sat Jan 29 05:47:39 2022
+End time:   Sat Jan 29 05:58:43 2022
+Duration:   0:11:03.372967
+Command:    run_pypeit /tmp/REDUX_OUT/keck_lris_red_orig/long_300_5000/keck_lris_red_orig_long_300_5000.pypeit -o
+
+Error Messages:
+
+End of Log:
+[1;32m[INFO]    ::[0m [1;34mrun_pypeit.py 143 main()[0m - Data reduction complete
+[1;32m[INFO]    ::[0m [1;34mrun_pypeit.py 146 main()[0m - Generating QA HTML
+Wrote: /tmp/REDUX_OUT/keck_lris_red_orig/long_300_5000/QA/MF_A.html
+
+
+
+-------------------------
+Test Setup: keck_lris_blue/long_400_3400_d560
+
+-------------------------
+Directories:
+         Raw data: /PypeIt-development-suite/RAW_DATA/keck_lris_blue/long_400_3400_d560
+    PypeIt output: /tmp/REDUX_OUT/keck_lris_blue/long_400_3400_d560
+Files:
+     .pypeit file: None
+ Std .pypeit file: None
+Tests:
+----
+keck_lris_blue/long_400_3400_d560 pypeit (without masters) Result: [1;32m--- PASSED[0m
+
+Logfile:    /tmp/REDUX_OUT/keck_lris_blue/long_400_3400_d560/keck_lris_blue_long_400_3400_d560.test.log
+Process Id: 486
+Start time: Sat Jan 29 05:56:01 2022
+End time:   Sat Jan 29 06:00:52 2022
+Duration:   0:04:50.570302
+Command:    run_pypeit /tmp/REDUX_OUT/keck_lris_blue/long_400_3400_d560/keck_lris_blue_long_400_3400_d560.pypeit -o
+
+Error Messages:
+
+End of Log:
+[1;32m[INFO]    ::[0m [1;34mrun_pypeit.py 143 main()[0m - Data reduction complete
+[1;32m[INFO]    ::[0m [1;34mrun_pypeit.py 146 main()[0m - Generating QA HTML
+Wrote: /tmp/REDUX_OUT/keck_lris_blue/long_400_3400_d560/QA/MF_A.html
+
+
+
+-------------------------
+Test Setup: p200_dbsp_red/316_7500_d55
+
+-------------------------
+Directories:
+         Raw data: /PypeIt-development-suite/RAW_DATA/p200_dbsp_red/316_7500_d55
+    PypeIt output: /tmp/REDUX_OUT/p200_dbsp_red/316_7500_d55
+Files:
+     .pypeit file: None
+ Std .pypeit file: None
+Tests:
+----
+p200_dbsp_red/316_7500_d55 pypeit (without masters) Result: [1;32m--- PASSED[0m
+
+Logfile:    /tmp/REDUX_OUT/p200_dbsp_red/316_7500_d55/p200_dbsp_red_316_7500_d55.test.log
+Process Id: 489
+Start time: Sat Jan 29 05:56:40 2022
+End time:   Sat Jan 29 06:01:30 2022
+Duration:   0:04:50.264178
+Command:    run_pypeit /tmp/REDUX_OUT/p200_dbsp_red/316_7500_d55/p200_dbsp_red_316_7500_d55.pypeit -o
+
+Error Messages:
+
+End of Log:
+[1;32m[INFO]    ::[0m [1;34mrun_pypeit.py 143 main()[0m - Data reduction complete
+[1;32m[INFO]    ::[0m [1;34mrun_pypeit.py 146 main()[0m - Generating QA HTML
+Wrote: /tmp/REDUX_OUT/p200_dbsp_red/316_7500_d55/QA/MF_A.html
+
+
+
+-------------------------
+Test Setup: keck_lris_blue/long_600_4000_d560
+
+-------------------------
+Directories:
+         Raw data: /PypeIt-development-suite/RAW_DATA/keck_lris_blue/long_600_4000_d560
+    PypeIt output: /tmp/REDUX_OUT/keck_lris_blue/long_600_4000_d560
+Files:
+     .pypeit file: None
+ Std .pypeit file: None
+Tests:
+----
+keck_lris_blue/long_600_4000_d560 pypeit (without masters) Result: [1;32m--- PASSED[0m
+
+Logfile:    /tmp/REDUX_OUT/keck_lris_blue/long_600_4000_d560/keck_lris_blue_long_600_4000_d560.test.log
+Process Id: 492
+Start time: Sat Jan 29 05:57:24 2022
+End time:   Sat Jan 29 06:01:59 2022
+Duration:   0:04:34.530077
+Command:    run_pypeit /tmp/REDUX_OUT/keck_lris_blue/long_600_4000_d560/keck_lris_blue_long_600_4000_d560.pypeit -o
+
+Error Messages:
+
+End of Log:
+[1;32m[INFO]    ::[0m [1;34mrun_pypeit.py 143 main()[0m - Data reduction complete
+[1;32m[INFO]    ::[0m [1;34mrun_pypeit.py 146 main()[0m - Generating QA HTML
+Wrote: /tmp/REDUX_OUT/keck_lris_blue/long_600_4000_d560/QA/MF_A.html
+
+
+
+-------------------------
+Test Setup: ntt_efosc2/gr5
+
+-------------------------
+Directories:
+         Raw data: /PypeIt-development-suite/RAW_DATA/ntt_efosc2/gr5
+    PypeIt output: /tmp/REDUX_OUT/ntt_efosc2/gr5
+Files:
+     .pypeit file: None
+ Std .pypeit file: None
+Tests:
+----
+ntt_efosc2/gr5 pypeit (without masters) Result: [1;32m--- PASSED[0m
+
+Logfile:    /tmp/REDUX_OUT/ntt_efosc2/gr5/ntt_efosc2_gr5.test.log
+Process Id: 483
+Start time: Sat Jan 29 05:55:47 2022
+End time:   Sat Jan 29 06:02:03 2022
+Duration:   0:06:16.646654
+Command:    run_pypeit /tmp/REDUX_OUT/ntt_efosc2/gr5/ntt_efosc2_gr5.pypeit -o
+
+Error Messages:
+
+End of Log:
+[1;32m[INFO]    ::[0m [1;34mrun_pypeit.py 143 main()[0m - Data reduction complete
+[1;32m[INFO]    ::[0m [1;34mrun_pypeit.py 146 main()[0m - Generating QA HTML
+Wrote: /tmp/REDUX_OUT/ntt_efosc2/gr5/QA/MF_A.html
+
+
+
+-------------------------
+Test Setup: shane_kast_blue/600_4310_d55
+
+-------------------------
+Directories:
+         Raw data: /PypeIt-development-suite/RAW_DATA/shane_kast_blue/600_4310_d55
+    PypeIt output: /tmp/REDUX_OUT/shane_kast_blue/600_4310_d55/shane_kast_blue_A
+Files:
+     .pypeit file: shane_kast_blue_A.pypeit
+ Std .pypeit file: None
+Tests:
+----
+shane_kast_blue/600_4310_d55 pypeit_setup Result: [1;32m--- PASSED[0m
+
+Logfile:    /tmp/REDUX_OUT/shane_kast_blue/600_4310_d55/shane_kast_blue_600_4310_d55.setup.log
+Process Id: 495
+Start time: Sat Jan 29 05:57:53 2022
+End time:   Sat Jan 29 05:57:59 2022
+Duration:   0:00:05.825836
+Command:    pypeit_setup -r /PypeIt-development-suite/RAW_DATA/shane_kast_blue/600_4310_d55 -s shane_kast_blue -c all -o --output_path /tmp/REDUX_OUT/shane_kast_blue/600_4310_d55
+
+Error Messages:
+
+End of Log:
+[1;32m[INFO]    ::[0m Setup is complete.
+[1;32m[INFO]    ::[0m Inspect the .sorted file
+[1;32m[INFO]    ::[0m PypeIt file written to: /tmp/REDUX_OUT/shane_kast_blue/600_4310_d55/shane_kast_blue_A/shane_kast_blue_A.pypeit
+
+
+
+----
+shane_kast_blue/600_4310_d55 pypeit_ql Result: [1;32m--- PASSED[0m
+
+Logfile:    /tmp/REDUX_OUT/shane_kast_blue/600_4310_d55/shane_kast_blue_A/shane_kast_blue_600_4310_d55.test_ql.log
+Process Id: 497
+Start time: Sat Jan 29 05:57:59 2022
+End time:   Sat Jan 29 05:59:28 2022
+Duration:   0:01:28.309068
+Command:    pypeit_ql_mos shane_kast_blue /PypeIt-development-suite/RAW_DATA/shane_kast_blue/600_4310_d55 b1.fits.gz b10.fits.gz b27.fits.gz
+
+Error Messages:
+
+End of Log:
+[1;32m[INFO]    ::[0m [1;34mql_mos.py 129 main()[0m - Data reduction complete
+[1;32m[INFO]    ::[0m [1;34mql_mos.py 131 main()[0m - Generating QA HTML
+Wrote: /tmp/REDUX_OUT/shane_kast_blue/600_4310_d55/shane_kast_blue_A/shane_kast_blue_A/QA/MF_A.html
+
+
+
+----
+shane_kast_blue/600_4310_d55 pypeit (without masters) Result: [1;32m--- PASSED[0m
+
+Logfile:    /tmp/REDUX_OUT/shane_kast_blue/600_4310_d55/shane_kast_blue_A/shane_kast_blue_600_4310_d55.test.log
+Process Id: 502
+Start time: Sat Jan 29 05:59:28 2022
+End time:   Sat Jan 29 06:02:27 2022
+Duration:   0:02:59.736840
+Command:    run_pypeit shane_kast_blue_A.pypeit -o
+
+Error Messages:
+
+End of Log:
+[1;32m[INFO]    ::[0m [1;34mrun_pypeit.py 143 main()[0m - Data reduction complete
+[1;32m[INFO]    ::[0m [1;34mrun_pypeit.py 146 main()[0m - Generating QA HTML
+Wrote: /tmp/REDUX_OUT/shane_kast_blue/600_4310_d55/shane_kast_blue_A/QA/MF_A.html
+
+
+
+----
+shane_kast_blue/600_4310_d55 pypeit_sensfunc Result: [1;32m--- PASSED[0m
+
+Logfile:    /tmp/REDUX_OUT/shane_kast_blue/600_4310_d55/shane_kast_blue_A/shane_kast_blue_600_4310_d55.test_sens.log
+Process Id: 516
+Start time: Sat Jan 29 06:02:27 2022
+End time:   Sat Jan 29 06:02:32 2022
+Duration:   0:00:04.995962
+Command:    pypeit_sensfunc /tmp/REDUX_OUT/shane_kast_blue/600_4310_d55/shane_kast_blue_A/Science/spec1d_b24-Feige66_KASTb_20150520T041246.960.fits
+
+Error Messages:
+
+End of Log:
+WARNING: VerifyWarning: Keyword name 'ALGORITHM' is greater than 8 characters or contains characters not allowed by the FITS standard; a HIERARCH card will be created. [astropy.io.fits.card]
+[1;32m[INFO]    ::[0m File written to: sens_b24-Feige66_KASTb_20150520T041246.960.fits
+Writing the parameters to sensfunc.par
+
+
+
+----
+shane_kast_blue/600_4310_d55 pypeit_flux_setup Result: [1;32m--- PASSED[0m
+
+Logfile:    /tmp/REDUX_OUT/shane_kast_blue/600_4310_d55/shane_kast_blue_A/shane_kast_blue_600_4310_d55.test_flux_setup.log
+Process Id: 518
+Start time: Sat Jan 29 06:02:32 2022
+End time:   Sat Jan 29 06:02:37 2022
+Duration:   0:00:04.717138
+Command:    pypeit_flux_setup /tmp/REDUX_OUT/shane_kast_blue/600_4310_d55/shane_kast_blue_A/Science
+
+Error Messages:
+
+End of Log:
+[1;32m[INFO]    ::[0m PypeIt file written to: shane_kast_blue.flux
+[1;32m[INFO]    ::[0m PypeIt file written to: shane_kast_blue.coadd1d
+[1;32m[INFO]    ::[0m PypeIt file written to: shane_kast_blue.tell
+
+
+
+----
+shane_kast_blue/600_4310_d55 pypeit_flux Result: [1;32m--- PASSED[0m
+
+Logfile:    /tmp/REDUX_OUT/shane_kast_blue/600_4310_d55/shane_kast_blue_A/shane_kast_blue_600_4310_d55.test_flux.log
+Process Id: 520
+Start time: Sat Jan 29 06:02:37 2022
+End time:   Sat Jan 29 06:02:42 2022
+Duration:   0:00:04.944646
+Command:    pypeit_flux_calib /PypeIt-development-suite/fluxing_files/shane_kast_blue_600_4310_d55.flux
+
+Error Messages:
+
+End of Log:
+[1;32m[INFO]    ::[0m Wrote 1D spectra to Science/spec1d_b28-J1217p3905_KASTb_20150520T051801.470.fits
+[1;32m[INFO]    ::[0m Flux calibration complete
+Writing the parameters to fluxing.par
+
+
+
+----
+shane_kast_blue/600_4310_d55 pypeit_coadd_1dspec Result: [1;32m--- PASSED[0m
+
+Logfile:    /tmp/REDUX_OUT/shane_kast_blue/600_4310_d55/shane_kast_blue_A/shane_kast_blue_600_4310_d55.test_1dcoadd.log
+Process Id: 522
+Start time: Sat Jan 29 06:02:42 2022
+End time:   Sat Jan 29 06:02:47 2022
+Duration:   0:00:05.296394
+Command:    pypeit_coadd_1dspec /PypeIt-development-suite/coadd1d_files/shane_kast_blue_600_4310_d55.coadd1d
+
+Error Messages:
+
+End of Log:
+[1;32m[INFO]    ::[0m File written to: J1217p3905_coadd.fits
+[1;32m[INFO]    ::[0m Coadding complete
+Writing the parameters to coadd1d.par
+
+
+
+-------------------------
+Test Setup: p200_dbsp_red/1200_7100_d68
+
+-------------------------
+Directories:
+         Raw data: /PypeIt-development-suite/RAW_DATA/p200_dbsp_red/1200_7100_d68
+    PypeIt output: /tmp/REDUX_OUT/p200_dbsp_red/1200_7100_d68
+Files:
+     .pypeit file: None
+ Std .pypeit file: None
+Tests:
+----
+p200_dbsp_red/1200_7100_d68 pypeit (without masters) Result: [1;32m--- PASSED[0m
+
+Logfile:    /tmp/REDUX_OUT/p200_dbsp_red/1200_7100_d68/p200_dbsp_red_1200_7100_d68.test.log
+Process Id: 500
+Start time: Sat Jan 29 05:58:43 2022
+End time:   Sat Jan 29 06:02:57 2022
+Duration:   0:04:14.776747
+Command:    run_pypeit /tmp/REDUX_OUT/p200_dbsp_red/1200_7100_d68/p200_dbsp_red_1200_7100_d68.pypeit -o
+
+Error Messages:
+
+End of Log:
+[1;32m[INFO]    ::[0m [1;34mrun_pypeit.py 143 main()[0m - Data reduction complete
+[1;32m[INFO]    ::[0m [1;34mrun_pypeit.py 146 main()[0m - Generating QA HTML
+Wrote: /tmp/REDUX_OUT/p200_dbsp_red/1200_7100_d68/QA/MF_A.html
+
+
+
+-------------------------
+Test Setup: keck_nirspec/LOW_NIRSPEC-1
+
+-------------------------
+Directories:
+         Raw data: /PypeIt-development-suite/RAW_DATA/keck_nirspec/LOW_NIRSPEC-1
+    PypeIt output: /tmp/REDUX_OUT/keck_nirspec/LOW_NIRSPEC-1
+Files:
+     .pypeit file: None
+ Std .pypeit file: None
+Tests:
+----
+keck_nirspec/LOW_NIRSPEC-1 pypeit (without masters) Result: [1;32m--- PASSED[0m
+
+Logfile:    /tmp/REDUX_OUT/keck_nirspec/LOW_NIRSPEC-1/keck_nirspec_low_nirspec-1.test.log
+Process Id: 505
+Start time: Sat Jan 29 06:00:52 2022
+End time:   Sat Jan 29 06:05:58 2022
+Duration:   0:05:06.161518
+Command:    run_pypeit /tmp/REDUX_OUT/keck_nirspec/LOW_NIRSPEC-1/keck_nirspec_low_nirspec-1.pypeit -o
+
+Error Messages:
+
+End of Log:
+[1;32m[INFO]    ::[0m [1;34mrun_pypeit.py 143 main()[0m - Data reduction complete
+[1;32m[INFO]    ::[0m [1;34mrun_pypeit.py 146 main()[0m - Generating QA HTML
+Wrote: /tmp/REDUX_OUT/keck_nirspec/LOW_NIRSPEC-1/QA/MF_A.html
+
+
+
+-------------------------
+Test Setup: shane_kast_red/1200_5000_d57
+
+-------------------------
+Directories:
+         Raw data: /PypeIt-development-suite/RAW_DATA/shane_kast_red/1200_5000_d57
+    PypeIt output: /tmp/REDUX_OUT/shane_kast_red/1200_5000_d57
+Files:
+     .pypeit file: None
+ Std .pypeit file: None
+Tests:
+----
+shane_kast_red/1200_5000_d57 pypeit (without masters) Result: [1;32m--- PASSED[0m
+
+Logfile:    /tmp/REDUX_OUT/shane_kast_red/1200_5000_d57/shane_kast_red_1200_5000_d57.test.log
+Process Id: 514
+Start time: Sat Jan 29 06:02:03 2022
+End time:   Sat Jan 29 06:06:11 2022
+Duration:   0:04:07.576914
+Command:    run_pypeit /tmp/REDUX_OUT/shane_kast_red/1200_5000_d57/shane_kast_red_1200_5000_d57.pypeit -o
+
+Error Messages:
+
+End of Log:
+[1;32m[INFO]    ::[0m [1;34mrun_pypeit.py 143 main()[0m - Data reduction complete
+[1;32m[INFO]    ::[0m [1;34mrun_pypeit.py 146 main()[0m - Generating QA HTML
+Wrote: /tmp/REDUX_OUT/shane_kast_red/1200_5000_d57/QA/MF_A.html
+
+
+
+-------------------------
+Test Setup: p200_dbsp_red/600_10000_d55
+
+-------------------------
+Directories:
+         Raw data: /PypeIt-development-suite/RAW_DATA/p200_dbsp_red/600_10000_d55
+    PypeIt output: /tmp/REDUX_OUT/p200_dbsp_red/600_10000_d55
+Files:
+     .pypeit file: None
+ Std .pypeit file: None
+Tests:
+----
+p200_dbsp_red/600_10000_d55 pypeit (without masters) Result: [1;32m--- PASSED[0m
+
+Logfile:    /tmp/REDUX_OUT/p200_dbsp_red/600_10000_d55/p200_dbsp_red_600_10000_d55.test.log
+Process Id: 511
+Start time: Sat Jan 29 06:01:59 2022
+End time:   Sat Jan 29 06:06:13 2022
+Duration:   0:04:13.950027
+Command:    run_pypeit /tmp/REDUX_OUT/p200_dbsp_red/600_10000_d55/p200_dbsp_red_600_10000_d55.pypeit -o
+
+Error Messages:
+
+End of Log:
+[1;32m[INFO]    ::[0m [1;34mrun_pypeit.py 143 main()[0m - Data reduction complete
+[1;32m[INFO]    ::[0m [1;34mrun_pypeit.py 146 main()[0m - Generating QA HTML
+Wrote: /tmp/REDUX_OUT/p200_dbsp_red/600_10000_d55/QA/MF_A.html
+
+
+
+-------------------------
+Test Setup: shane_kast_red/600_5000_d46
+
+-------------------------
+Directories:
+         Raw data: /PypeIt-development-suite/RAW_DATA/shane_kast_red/600_5000_d46
+    PypeIt output: /tmp/REDUX_OUT/shane_kast_red/600_5000_d46
+Files:
+     .pypeit file: None
+ Std .pypeit file: None
+Tests:
+----
+shane_kast_red/600_5000_d46 pypeit (without masters) Result: [1;32m--- PASSED[0m
+
+Logfile:    /tmp/REDUX_OUT/shane_kast_red/600_5000_d46/shane_kast_red_600_5000_d46.test.log
+Process Id: 508
+Start time: Sat Jan 29 06:01:30 2022
+End time:   Sat Jan 29 06:06:13 2022
+Duration:   0:04:43.667216
+Command:    run_pypeit /tmp/REDUX_OUT/shane_kast_red/600_5000_d46/shane_kast_red_600_5000_d46.pypeit -o
+
+Error Messages:
+
+End of Log:
+[1;32m[INFO]    ::[0m [1;34mrun_pypeit.py 143 main()[0m - Data reduction complete
+[1;32m[INFO]    ::[0m [1;34mrun_pypeit.py 146 main()[0m - Generating QA HTML
+Wrote: /tmp/REDUX_OUT/shane_kast_red/600_5000_d46/QA/MF_A.html
+
+
+
+-------------------------
+Test Setup: shane_kast_blue/452_3306_d57
+
+-------------------------
+Directories:
+         Raw data: /PypeIt-development-suite/RAW_DATA/shane_kast_blue/452_3306_d57
+    PypeIt output: /tmp/REDUX_OUT/shane_kast_blue/452_3306_d57
+Files:
+     .pypeit file: None
+ Std .pypeit file: None
+Tests:
+----
+shane_kast_blue/452_3306_d57 pypeit (without masters) Result: [1;32m--- PASSED[0m
+
+Logfile:    /tmp/REDUX_OUT/shane_kast_blue/452_3306_d57/shane_kast_blue_452_3306_d57.test.log
+Process Id: 534
+Start time: Sat Jan 29 06:02:58 2022
+End time:   Sat Jan 29 06:06:14 2022
+Duration:   0:03:16.163860
+Command:    run_pypeit /tmp/REDUX_OUT/shane_kast_blue/452_3306_d57/shane_kast_blue_452_3306_d57.pypeit -o
+
+Error Messages:
+
+End of Log:
+[1;32m[INFO]    ::[0m [1;34mrun_pypeit.py 143 main()[0m - Data reduction complete
+[1;32m[INFO]    ::[0m [1;34mrun_pypeit.py 146 main()[0m - Generating QA HTML
+Wrote: /tmp/REDUX_OUT/shane_kast_blue/452_3306_d57/QA/MF_A.html
+
+
+
+-------------------------
+Test Setup: soar_goodman_red/M2
+
+-------------------------
+Directories:
+         Raw data: /PypeIt-development-suite/RAW_DATA/soar_goodman_red/M2
+    PypeIt output: /tmp/REDUX_OUT/soar_goodman_red/M2
+Files:
+     .pypeit file: None
+ Std .pypeit file: None
+Tests:
+----
+soar_goodman_red/M2 pypeit (without masters) Result: [1;32m--- PASSED[0m
+
+Logfile:    /tmp/REDUX_OUT/soar_goodman_red/M2/soar_goodman_red_m2.test.log
+Process Id: 531
+Start time: Sat Jan 29 06:02:47 2022
+End time:   Sat Jan 29 06:06:41 2022
+Duration:   0:03:54.145463
+Command:    run_pypeit /tmp/REDUX_OUT/soar_goodman_red/M2/soar_goodman_red_m2.pypeit -o
+
+Error Messages:
+
+End of Log:
+[1;32m[INFO]    ::[0m [1;34mrun_pypeit.py 143 main()[0m - Data reduction complete
+[1;32m[INFO]    ::[0m [1;34mrun_pypeit.py 146 main()[0m - Generating QA HTML
+Wrote: /tmp/REDUX_OUT/soar_goodman_red/M2/QA/MF_A.html
+
+
+
+-------------------------
+Test Setup: ldt_deveny/DV1
+
+-------------------------
+Directories:
+         Raw data: /PypeIt-development-suite/RAW_DATA/ldt_deveny/DV1
+    PypeIt output: /tmp/REDUX_OUT/ldt_deveny/DV1
+Files:
+     .pypeit file: None
+ Std .pypeit file: None
+Tests:
+----
+ldt_deveny/DV1 pypeit (without masters) Result: [1;32m--- PASSED[0m
+
+Logfile:    /tmp/REDUX_OUT/ldt_deveny/DV1/ldt_deveny_dv1.test.log
+Process Id: 537
+Start time: Sat Jan 29 06:05:58 2022
+End time:   Sat Jan 29 06:08:45 2022
+Duration:   0:02:47.442096
+Command:    run_pypeit /tmp/REDUX_OUT/ldt_deveny/DV1/ldt_deveny_dv1.pypeit -o
+
+Error Messages:
+
+End of Log:
+[1;32m[INFO]    ::[0m [1;34mrun_pypeit.py 143 main()[0m - Data reduction complete
+[1;32m[INFO]    ::[0m [1;34mrun_pypeit.py 146 main()[0m - Generating QA HTML
+Wrote: /tmp/REDUX_OUT/ldt_deveny/DV1/QA/MF_A.html
+
+
+
+-------------------------
+Test Setup: p200_dbsp_blue/1200_5000_d68
+
+-------------------------
+Directories:
+         Raw data: /PypeIt-development-suite/RAW_DATA/p200_dbsp_blue/1200_5000_d68
+    PypeIt output: /tmp/REDUX_OUT/p200_dbsp_blue/1200_5000_d68
+Files:
+     .pypeit file: None
+ Std .pypeit file: None
+Tests:
+----
+p200_dbsp_blue/1200_5000_d68 pypeit (without masters) Result: [1;32m--- PASSED[0m
+
+Logfile:    /tmp/REDUX_OUT/p200_dbsp_blue/1200_5000_d68/p200_dbsp_blue_1200_5000_d68.test.log
+Process Id: 552
+Start time: Sat Jan 29 06:06:41 2022
+End time:   Sat Jan 29 06:09:00 2022
+Duration:   0:02:18.713599
+Command:    run_pypeit /tmp/REDUX_OUT/p200_dbsp_blue/1200_5000_d68/p200_dbsp_blue_1200_5000_d68.pypeit -o
+
+Error Messages:
+
+End of Log:
+[1;32m[INFO]    ::[0m [1;34mrun_pypeit.py 143 main()[0m - Data reduction complete
+[1;32m[INFO]    ::[0m [1;34mrun_pypeit.py 146 main()[0m - Generating QA HTML
+Wrote: /tmp/REDUX_OUT/p200_dbsp_blue/1200_5000_d68/QA/MF_A.html
+
+
+
+-------------------------
+Test Setup: p200_dbsp_blue/600_4000_d55
+
+-------------------------
+Directories:
+         Raw data: /PypeIt-development-suite/RAW_DATA/p200_dbsp_blue/600_4000_d55
+    PypeIt output: /tmp/REDUX_OUT/p200_dbsp_blue/600_4000_d55
+Files:
+     .pypeit file: None
+ Std .pypeit file: None
+Tests:
+----
+p200_dbsp_blue/600_4000_d55 pypeit (without masters) Result: [1;32m--- PASSED[0m
+
+Logfile:    /tmp/REDUX_OUT/p200_dbsp_blue/600_4000_d55/p200_dbsp_blue_600_4000_d55.test.log
+Process Id: 543
+Start time: Sat Jan 29 06:06:13 2022
+End time:   Sat Jan 29 06:09:16 2022
+Duration:   0:03:03.017869
+Command:    run_pypeit /tmp/REDUX_OUT/p200_dbsp_blue/600_4000_d55/p200_dbsp_blue_600_4000_d55.pypeit -o
+
+Error Messages:
+
+End of Log:
+[1;32m[INFO]    ::[0m [1;34mrun_pypeit.py 143 main()[0m - Data reduction complete
+[1;32m[INFO]    ::[0m [1;34mrun_pypeit.py 146 main()[0m - Generating QA HTML
+Wrote: /tmp/REDUX_OUT/p200_dbsp_blue/600_4000_d55/QA/MF_A.html
+
+
+
+-------------------------
+Test Setup: mmt_bluechannel/300l
+
+-------------------------
+Directories:
+         Raw data: /PypeIt-development-suite/RAW_DATA/mmt_bluechannel/300l
+    PypeIt output: /tmp/REDUX_OUT/mmt_bluechannel/300l
+Files:
+     .pypeit file: None
+ Std .pypeit file: None
+Tests:
+----
+mmt_bluechannel/300l pypeit (without masters) Result: [1;32m--- PASSED[0m
+
+Logfile:    /tmp/REDUX_OUT/mmt_bluechannel/300l/mmt_bluechannel_300l.test.log
+Process Id: 546
+Start time: Sat Jan 29 06:06:13 2022
+End time:   Sat Jan 29 06:09:24 2022
+Duration:   0:03:10.561129
+Command:    run_pypeit /tmp/REDUX_OUT/mmt_bluechannel/300l/mmt_bluechannel_300l.pypeit -o
+
+Error Messages:
+
+End of Log:
+[1;32m[INFO]    ::[0m [1;34mrun_pypeit.py 143 main()[0m - Data reduction complete
+[1;32m[INFO]    ::[0m [1;34mrun_pypeit.py 146 main()[0m - Generating QA HTML
+Wrote: /tmp/REDUX_OUT/mmt_bluechannel/300l/QA/MF_A.html
+
+
+
+-------------------------
+Test Setup: p200_dbsp_blue/600_4000_d68
+
+-------------------------
+Directories:
+         Raw data: /PypeIt-development-suite/RAW_DATA/p200_dbsp_blue/600_4000_d68
+    PypeIt output: /tmp/REDUX_OUT/p200_dbsp_blue/600_4000_d68
+Files:
+     .pypeit file: None
+ Std .pypeit file: None
+Tests:
+----
+p200_dbsp_blue/600_4000_d68 pypeit (without masters) Result: [1;32m--- PASSED[0m
+
+Logfile:    /tmp/REDUX_OUT/p200_dbsp_blue/600_4000_d68/p200_dbsp_blue_600_4000_d68.test.log
+Process Id: 549
+Start time: Sat Jan 29 06:06:14 2022
+End time:   Sat Jan 29 06:09:34 2022
+Duration:   0:03:20.685436
+Command:    run_pypeit /tmp/REDUX_OUT/p200_dbsp_blue/600_4000_d68/p200_dbsp_blue_600_4000_d68.pypeit -o
+
+Error Messages:
+
+End of Log:
+[1;32m[INFO]    ::[0m [1;34mrun_pypeit.py 143 main()[0m - Data reduction complete
+[1;32m[INFO]    ::[0m [1;34mrun_pypeit.py 146 main()[0m - Generating QA HTML
+Wrote: /tmp/REDUX_OUT/p200_dbsp_blue/600_4000_d68/QA/MF_A.html
+
+
+
+-------------------------
+Test Setup: shane_kast_red/300_7500_Ne
+
+-------------------------
+Directories:
+         Raw data: /PypeIt-development-suite/RAW_DATA/shane_kast_red/300_7500_Ne
+    PypeIt output: /tmp/REDUX_OUT/shane_kast_red/300_7500_Ne
+Files:
+     .pypeit file: None
+ Std .pypeit file: None
+Tests:
+----
+shane_kast_red/300_7500_Ne pypeit (without masters) Result: [1;32m--- PASSED[0m
+
+Logfile:    /tmp/REDUX_OUT/shane_kast_red/300_7500_Ne/shane_kast_red_300_7500_ne.test.log
+Process Id: 540
+Start time: Sat Jan 29 06:06:11 2022
+End time:   Sat Jan 29 06:10:00 2022
+Duration:   0:03:49.452445
+Command:    run_pypeit /tmp/REDUX_OUT/shane_kast_red/300_7500_Ne/shane_kast_red_300_7500_ne.pypeit -o
+
+Error Messages:
+
+End of Log:
+             r1018.fits  o f f o f f o f f o f f o f f o f f o f f o f f o f f o f f o n o f f o n o f f o n o f f
+             ----------  -----------------------------------------------------------------------------------------
+Wrote: /tmp/REDUX_OUT/shane_kast_red/300_7500_Ne/QA/MF_B.html
+
+
+
+-------------------------
+Test Setup: soar_goodman_red/M1
+
+-------------------------
+Directories:
+         Raw data: /PypeIt-development-suite/RAW_DATA/soar_goodman_red/M1
+    PypeIt output: /tmp/REDUX_OUT/soar_goodman_red/M1
+Files:
+     .pypeit file: None
+ Std .pypeit file: None
+Tests:
+----
+soar_goodman_red/M1 pypeit (without masters) Result: [1;32m--- PASSED[0m
+
+Logfile:    /tmp/REDUX_OUT/soar_goodman_red/M1/soar_goodman_red_m1.test.log
+Process Id: 570
+Start time: Sat Jan 29 06:10:00 2022
+End time:   Sat Jan 29 06:10:50 2022
+Duration:   0:00:50.053514
+Command:    run_pypeit /tmp/REDUX_OUT/soar_goodman_red/M1/soar_goodman_red_m1.pypeit -o
+
+Error Messages:
+
+End of Log:
+[1;32m[INFO]    ::[0m [1;34mrun_pypeit.py 143 main()[0m - Data reduction complete
+[1;32m[INFO]    ::[0m [1;34mrun_pypeit.py 146 main()[0m - Generating QA HTML
+Wrote: /tmp/REDUX_OUT/soar_goodman_red/M1/QA/MF_A.html
+
+
+
+-------------------------
+Test Setup: shane_kast_blue/830_3460_d46
+
+-------------------------
+Directories:
+         Raw data: /PypeIt-development-suite/RAW_DATA/shane_kast_blue/830_3460_d46
+    PypeIt output: /tmp/REDUX_OUT/shane_kast_blue/830_3460_d46
+Files:
+     .pypeit file: None
+ Std .pypeit file: None
+Tests:
+----
+shane_kast_blue/830_3460_d46 pypeit (without masters) Result: [1;32m--- PASSED[0m
+
+Logfile:    /tmp/REDUX_OUT/shane_kast_blue/830_3460_d46/shane_kast_blue_830_3460_d46.test.log
+Process Id: 561
+Start time: Sat Jan 29 06:09:16 2022
+End time:   Sat Jan 29 06:10:57 2022
+Duration:   0:01:40.797857
+Command:    run_pypeit /tmp/REDUX_OUT/shane_kast_blue/830_3460_d46/shane_kast_blue_830_3460_d46.pypeit -o
+
+Error Messages:
+
+End of Log:
+[1;32m[INFO]    ::[0m [1;34mrun_pypeit.py 143 main()[0m - Data reduction complete
+[1;32m[INFO]    ::[0m [1;34mrun_pypeit.py 146 main()[0m - Generating QA HTML
+Wrote: /tmp/REDUX_OUT/shane_kast_blue/830_3460_d46/QA/MF_A.html
+
+
+
+-------------------------
+Test Setup: not_alfosc/grism4
+
+-------------------------
+Directories:
+         Raw data: /PypeIt-development-suite/RAW_DATA/not_alfosc/grism4
+    PypeIt output: /tmp/REDUX_OUT/not_alfosc/grism4
+Files:
+     .pypeit file: None
+ Std .pypeit file: None
+Tests:
+----
+not_alfosc/grism4 pypeit (without masters) Result: [1;32m--- PASSED[0m
+
+Logfile:    /tmp/REDUX_OUT/not_alfosc/grism4/not_alfosc_grism4.test.log
+Process Id: 567
+Start time: Sat Jan 29 06:09:34 2022
+End time:   Sat Jan 29 06:11:03 2022
+Duration:   0:01:28.277226
+Command:    run_pypeit /tmp/REDUX_OUT/not_alfosc/grism4/not_alfosc_grism4.pypeit -o
+
+Error Messages:
+
+End of Log:
+[1;32m[INFO]    ::[0m [1;34mrun_pypeit.py 143 main()[0m - Data reduction complete
+[1;32m[INFO]    ::[0m [1;34mrun_pypeit.py 146 main()[0m - Generating QA HTML
+Wrote: /tmp/REDUX_OUT/not_alfosc/grism4/QA/MF_A.html
+
+
+
+-------------------------
+Test Setup: magellan_fire/FIRE_Long
+
+-------------------------
+Directories:
+         Raw data: /PypeIt-development-suite/RAW_DATA/magellan_fire/FIRE_Long
+    PypeIt output: /tmp/REDUX_OUT/magellan_fire/FIRE_Long
+Files:
+     .pypeit file: None
+ Std .pypeit file: None
+Tests:
+----
+magellan_fire/FIRE_Long pypeit (without masters) Result: [1;32m--- PASSED[0m
+
+Logfile:    /tmp/REDUX_OUT/magellan_fire/FIRE_Long/magellan_fire_fire_long.test.log
+Process Id: 564
+Start time: Sat Jan 29 06:09:24 2022
+End time:   Sat Jan 29 06:11:04 2022
+Duration:   0:01:40.044496
+Command:    run_pypeit /tmp/REDUX_OUT/magellan_fire/FIRE_Long/magellan_fire_fire_long.pypeit -o
+
+Error Messages:
+
+End of Log:
+[1;32m[INFO]    ::[0m [1;34mrun_pypeit.py 143 main()[0m - Data reduction complete
+[1;32m[INFO]    ::[0m [1;34mrun_pypeit.py 146 main()[0m - Generating QA HTML
+Wrote: /tmp/REDUX_OUT/magellan_fire/FIRE_Long/QA/MF_A.html
+
+
+
+-------------------------
+Test Setup: shane_kast_red/600_7500_d55_ret
+
+-------------------------
+Directories:
+         Raw data: /PypeIt-development-suite/RAW_DATA/shane_kast_red/600_7500_d55_ret
+    PypeIt output: /tmp/REDUX_OUT/shane_kast_red/600_7500_d55_ret
+Files:
+     .pypeit file: None
+ Std .pypeit file: None
+Tests:
+----
+shane_kast_red/600_7500_d55_ret pypeit (without masters) Result: [1;32m--- PASSED[0m
+
+Logfile:    /tmp/REDUX_OUT/shane_kast_red/600_7500_d55_ret/shane_kast_red_600_7500_d55_ret.test.log
+Process Id: 558
+Start time: Sat Jan 29 06:09:00 2022
+End time:   Sat Jan 29 06:11:17 2022
+Duration:   0:02:16.944117
+Command:    run_pypeit /tmp/REDUX_OUT/shane_kast_red/600_7500_d55_ret/shane_kast_red_600_7500_d55_ret.pypeit -o
+
+Error Messages:
+
+End of Log:
+[1;32m[INFO]    ::[0m [1;34mrun_pypeit.py 143 main()[0m - Data reduction complete
+[1;32m[INFO]    ::[0m [1;34mrun_pypeit.py 146 main()[0m - Generating QA HTML
+Wrote: /tmp/REDUX_OUT/shane_kast_red/600_7500_d55_ret/QA/MF_A.html
+
+
+
+-------------------------
+Test Setup: bok_bc/600
+
+-------------------------
+Directories:
+         Raw data: /PypeIt-development-suite/RAW_DATA/bok_bc/600
+    PypeIt output: /tmp/REDUX_OUT/bok_bc/600
+Files:
+     .pypeit file: None
+ Std .pypeit file: None
+Tests:
+----
+bok_bc/600 pypeit (without masters) Result: [1;32m--- PASSED[0m
+
+Logfile:    /tmp/REDUX_OUT/bok_bc/600/bok_bc_600.test.log
+Process Id: 555
+Start time: Sat Jan 29 06:08:45 2022
+End time:   Sat Jan 29 06:11:17 2022
+Duration:   0:02:32.030906
+Command:    run_pypeit /tmp/REDUX_OUT/bok_bc/600/bok_bc_600.pypeit -o
+
+Error Messages:
+
+End of Log:
+[1;32m[INFO]    ::[0m [1;34mrun_pypeit.py 143 main()[0m - Data reduction complete
+[1;32m[INFO]    ::[0m [1;34mrun_pypeit.py 146 main()[0m - Generating QA HTML
+Wrote: /tmp/REDUX_OUT/bok_bc/600/QA/MF_A.html
+
+
+
+-------------------------
+Test Setup: keck_mosfire/longslit_3x0.7_H
+
+-------------------------
+Directories:
+         Raw data: /PypeIt-development-suite/RAW_DATA/keck_mosfire/longslit_3x0.7_H
+    PypeIt output: /tmp/REDUX_OUT/keck_mosfire/longslit_3x0.7_H
+Files:
+     .pypeit file: None
+ Std .pypeit file: None
+Tests:
+----
+keck_mosfire/longslit_3x0.7_H pypeit (without masters) Result: [1;32m--- PASSED[0m
+
+Logfile:    /tmp/REDUX_OUT/keck_mosfire/longslit_3x0.7_H/keck_mosfire_longslit_3x0.7_h.test.log
+Process Id: 587
+Start time: Sat Jan 29 06:11:17 2022
+End time:   Sat Jan 29 06:17:05 2022
+Duration:   0:05:47.398864
+Command:    run_pypeit /tmp/REDUX_OUT/keck_mosfire/longslit_3x0.7_H/keck_mosfire_longslit_3x0.7_h.pypeit -o
+
+Error Messages:
+
+End of Log:
+[1;32m[INFO]    ::[0m [1;34mrun_pypeit.py 143 main()[0m - Data reduction complete
+[1;32m[INFO]    ::[0m [1;34mrun_pypeit.py 146 main()[0m - Generating QA HTML
+Wrote: /tmp/REDUX_OUT/keck_mosfire/longslit_3x0.7_H/QA/MF_B.html
+
+
+
+-------------------------
+Test Setup: keck_mosfire/long2pos1_H
+
+-------------------------
+Directories:
+         Raw data: /PypeIt-development-suite/RAW_DATA/keck_mosfire/long2pos1_H
+    PypeIt output: /tmp/REDUX_OUT/keck_mosfire/long2pos1_H
+Files:
+     .pypeit file: None
+ Std .pypeit file: None
+Tests:
+----
+keck_mosfire/long2pos1_H pypeit (without masters) Result: [1;32m--- PASSED[0m
+
+Logfile:    /tmp/REDUX_OUT/keck_mosfire/long2pos1_H/keck_mosfire_long2pos1_h.test.log
+Process Id: 585
+Start time: Sat Jan 29 06:11:17 2022
+End time:   Sat Jan 29 06:22:42 2022
+Duration:   0:11:25.369101
+Command:    run_pypeit /tmp/REDUX_OUT/keck_mosfire/long2pos1_H/keck_mosfire_long2pos1_h.pypeit -o
+
+Error Messages:
+
+End of Log:
+[1;32m[INFO]    ::[0m [1;34mrun_pypeit.py 143 main()[0m - Data reduction complete
+[1;32m[INFO]    ::[0m [1;34mrun_pypeit.py 146 main()[0m - Generating QA HTML
+Wrote: /tmp/REDUX_OUT/keck_mosfire/long2pos1_H/QA/MF_A.html
+
+
+
+-------------------------
+Test Setup: keck_mosfire/mask1_J_with_continuum
+
+-------------------------
+Directories:
+         Raw data: /PypeIt-development-suite/RAW_DATA/keck_mosfire/mask1_J_with_continuum
+    PypeIt output: /tmp/REDUX_OUT/keck_mosfire/mask1_J_with_continuum
+Files:
+     .pypeit file: None
+ Std .pypeit file: None
+Tests:
+----
+keck_mosfire/mask1_J_with_continuum pypeit (without masters) Result: [1;32m--- PASSED[0m
+
+Logfile:    /tmp/REDUX_OUT/keck_mosfire/mask1_J_with_continuum/keck_mosfire_mask1_j_with_continuum.test.log
+Process Id: 573
+Start time: Sat Jan 29 06:10:50 2022
+End time:   Sat Jan 29 06:47:56 2022
+Duration:   0:37:05.812137
+Command:    run_pypeit /tmp/REDUX_OUT/keck_mosfire/mask1_J_with_continuum/keck_mosfire_mask1_j_with_continuum.pypeit -o
+
+Error Messages:
+
+End of Log:
+[1;32m[INFO]    ::[0m [1;34mrun_pypeit.py 143 main()[0m - Data reduction complete
+[1;32m[INFO]    ::[0m [1;34mrun_pypeit.py 146 main()[0m - Generating QA HTML
+Wrote: /tmp/REDUX_OUT/keck_mosfire/mask1_J_with_continuum/QA/MF_A.html
+
+
+
+-------------------------
+Test Setup: keck_lris_red_mark4/long_400_8500
+
+-------------------------
+Directories:
+         Raw data: /PypeIt-development-suite/RAW_DATA/keck_lris_red_mark4/long_400_8500
+    PypeIt output: /tmp/REDUX_OUT/keck_lris_red_mark4/long_400_8500
+Files:
+     .pypeit file: None
+ Std .pypeit file: None
+Tests:
+----
+keck_lris_red_mark4/long_400_8500 pypeit (without masters) Result: [1;32m--- PASSED[0m
+
+Logfile:    /tmp/REDUX_OUT/keck_lris_red_mark4/long_400_8500/keck_lris_red_mark4_long_400_8500.test.log
+Process Id: 576
+Start time: Sat Jan 29 06:10:57 2022
+End time:   Sat Jan 29 06:53:34 2022
+Duration:   0:42:37.280193
+Command:    run_pypeit /tmp/REDUX_OUT/keck_lris_red_mark4/long_400_8500/keck_lris_red_mark4_long_400_8500.pypeit -o
+
+Error Messages:
+
+End of Log:
+[1;32m[INFO]    ::[0m [1;34mrun_pypeit.py 143 main()[0m - Data reduction complete
+[1;32m[INFO]    ::[0m [1;34mrun_pypeit.py 146 main()[0m - Generating QA HTML
+Wrote: /tmp/REDUX_OUT/keck_lris_red_mark4/long_400_8500/QA/MF_A.html
+
+
+
+-------------------------
+Test Setup: keck_mosfire/mask1_K_with_continuum
+
+-------------------------
+Directories:
+         Raw data: /PypeIt-development-suite/RAW_DATA/keck_mosfire/mask1_K_with_continuum
+    PypeIt output: /tmp/REDUX_OUT/keck_mosfire/mask1_K_with_continuum
+Files:
+     .pypeit file: None
+ Std .pypeit file: None
+Tests:
+----
+keck_mosfire/mask1_K_with_continuum pypeit (without masters) Result: [1;32m--- PASSED[0m
+
+Logfile:    /tmp/REDUX_OUT/keck_mosfire/mask1_K_with_continuum/keck_mosfire_mask1_k_with_continuum.test.log
+Process Id: 591
+Start time: Sat Jan 29 06:17:05 2022
+End time:   Sat Jan 29 06:54:41 2022
+Duration:   0:37:36.487921
+Command:    run_pypeit /tmp/REDUX_OUT/keck_mosfire/mask1_K_with_continuum/keck_mosfire_mask1_k_with_continuum.pypeit -o
+
+Error Messages:
+
+End of Log:
+[1;32m[INFO]    ::[0m [1;34mrun_pypeit.py 143 main()[0m - Data reduction complete
+[1;32m[INFO]    ::[0m [1;34mrun_pypeit.py 146 main()[0m - Generating QA HTML
+Wrote: /tmp/REDUX_OUT/keck_mosfire/mask1_K_with_continuum/QA/MF_A.html
+
+
+
+-------------------------
+Test Setup: keck_lris_blue/multi_600_4000_slitmask
+
+-------------------------
+Directories:
+         Raw data: /PypeIt-development-suite/RAW_DATA/keck_lris_blue/multi_600_4000_slitmask
+    PypeIt output: /tmp/REDUX_OUT/keck_lris_blue/multi_600_4000_slitmask
+Files:
+     .pypeit file: None
+ Std .pypeit file: None
+Tests:
+----
+keck_lris_blue/multi_600_4000_slitmask pypeit (without masters) Result: [1;32m--- PASSED[0m
+
+Logfile:    /tmp/REDUX_OUT/keck_lris_blue/multi_600_4000_slitmask/keck_lris_blue_multi_600_4000_slitmask.test.log
+Process Id: 597
+Start time: Sat Jan 29 06:47:56 2022
+End time:   Sat Jan 29 07:09:08 2022
+Duration:   0:21:11.465399
+Command:    run_pypeit /tmp/REDUX_OUT/keck_lris_blue/multi_600_4000_slitmask/keck_lris_blue_multi_600_4000_slitmask.pypeit -o
+
+Error Messages:
+
+End of Log:
+[1;32m[INFO]    ::[0m [1;34mrun_pypeit.py 143 main()[0m - Data reduction complete
+[1;32m[INFO]    ::[0m [1;34mrun_pypeit.py 146 main()[0m - Generating QA HTML
+Wrote: /tmp/REDUX_OUT/keck_lris_blue/multi_600_4000_slitmask/QA/MF_J.html
+
+
+
+-------------------------
+Test Setup: keck_deimos/830G_M_9000_dither
+
+-------------------------
+Directories:
+         Raw data: /PypeIt-development-suite/RAW_DATA/keck_deimos/830G_M_9000_dither
+    PypeIt output: /tmp/REDUX_OUT/keck_deimos/830G_M_9000_dither
+Files:
+     .pypeit file: None
+ Std .pypeit file: None
+Tests:
+----
+keck_deimos/830G_M_9000_dither pypeit (without masters) Result: [1;32m--- PASSED[0m
+
+Logfile:    /tmp/REDUX_OUT/keck_deimos/830G_M_9000_dither/keck_deimos_830g_m_9000_dither.test.log
+Process Id: 579
+Start time: Sat Jan 29 06:11:03 2022
+End time:   Sat Jan 29 07:10:53 2022
+Duration:   0:59:50.562743
+Command:    run_pypeit /tmp/REDUX_OUT/keck_deimos/830G_M_9000_dither/keck_deimos_830g_m_9000_dither.pypeit -o
+
+Error Messages:
+
+End of Log:
+[1;32m[INFO]    ::[0m [1;34mrun_pypeit.py 143 main()[0m - Data reduction complete
+[1;32m[INFO]    ::[0m [1;34mrun_pypeit.py 146 main()[0m - Generating QA HTML
+Wrote: /tmp/REDUX_OUT/keck_deimos/830G_M_9000_dither/QA/MF_A.html
+
+
+
+-------------------------
+Test Setup: keck_kcwi/bl
+
+-------------------------
+Directories:
+         Raw data: /PypeIt-development-suite/RAW_DATA/keck_kcwi/bl
+    PypeIt output: /tmp/REDUX_OUT/keck_kcwi/bl
+Files:
+     .pypeit file: None
+ Std .pypeit file: None
+Tests:
+----
+keck_kcwi/bl pypeit (without masters) Result: [1;32m--- PASSED[0m
+
+Logfile:    /tmp/REDUX_OUT/keck_kcwi/bl/keck_kcwi_bl.test.log
+Process Id: 594
+Start time: Sat Jan 29 06:22:42 2022
+End time:   Sat Jan 29 07:14:31 2022
+Duration:   0:51:48.572477
+Command:    run_pypeit /tmp/REDUX_OUT/keck_kcwi/bl/keck_kcwi_bl.pypeit -o
+
+Error Messages:
+
+End of Log:
+[1;32m[INFO]    ::[0m [1;34mrun_pypeit.py 143 main()[0m - Data reduction complete
+[1;32m[INFO]    ::[0m [1;34mrun_pypeit.py 146 main()[0m - Generating QA HTML
+Wrote: /tmp/REDUX_OUT/keck_kcwi/bl/QA/MF_A.html
+
+
+
+-------------------------
+Test Setup: keck_mosfire/Y_multi
+
+-------------------------
+Directories:
+         Raw data: /PypeIt-development-suite/RAW_DATA/keck_mosfire/Y_multi
+    PypeIt output: /tmp/REDUX_OUT/keck_mosfire/Y_multi
+Files:
+     .pypeit file: None
+ Std .pypeit file: None
+Tests:
+----
+keck_mosfire/Y_multi pypeit (without masters) Result: [1;32m--- PASSED[0m
+
+Logfile:    /tmp/REDUX_OUT/keck_mosfire/Y_multi/keck_mosfire_y_multi.test.log
+Process Id: 582
+Start time: Sat Jan 29 06:11:04 2022
+End time:   Sat Jan 29 08:27:46 2022
+Duration:   2:16:42.110898
+Command:    run_pypeit /tmp/REDUX_OUT/keck_mosfire/Y_multi/keck_mosfire_y_multi.pypeit -o
+
+Error Messages:
+
+End of Log:
+[1;32m[INFO]    ::[0m [1;34mrun_pypeit.py 143 main()[0m - Data reduction complete
+[1;32m[INFO]    ::[0m [1;34mrun_pypeit.py 146 main()[0m - Generating QA HTML
+Wrote: /tmp/REDUX_OUT/keck_mosfire/Y_multi/QA/MF_A.html
+
+
+
+-------------------------
+
+[1;31m--- PYPEIT DEVELOPMENT SUITE FAILED 2/135 TESTS (Masters ignored) ---[0m
+Failed tests:
+    keck_mosfire/Y_long pypeit_ql
+    keck_nires/NIRES pypeit_ql
+Skipped tests:
+    keck_mosfire/Y_long pypeit (without masters)
+    keck_mosfire/Y_long pypeit_sensfunc
+    keck_nires/NIRES pypeit (without masters)
+Testing Started at 2022-01-28T20:52:37.723388
+Testing Completed at 2022-01-29T08:27:48.761094
+Total Time: 11:35:11.037706
