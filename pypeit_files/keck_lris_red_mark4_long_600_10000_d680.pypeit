@@ -7,6 +7,10 @@
 [reduce]
     [[findobj]]
         snr_thresh = 20.0    
+[calibrations]
+    [[tiltframe]]
+        [[[process]]]
+            spat_flexure_correct = True
 
 # Setup
 setup read
