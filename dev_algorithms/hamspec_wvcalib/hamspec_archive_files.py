@@ -14,17 +14,35 @@ from pypeit.core.wavecal import templates
 from pypeit.core.fitting import robust_fit
 from pypeit.core import wave as core_wave 
 
+import readmultispec
+
 from IPython import embed
 
 
-# NIRSPEC files
+# NIRSPEC files -- used as templates
 nirspec_angle_fits_file = os.path.join(files('pypeit'), 'data', 'arc_lines', 'reid_arxiv', 'keck_nirspec_j_preupgrade_angle_fits.fits')
 nirspec_composite_arc_file = os.path.join(files('pypeit'), 'data', 'arc_lines', 'reid_arxiv', 'keck_nirspec_j_preupgrade_composite_arc.fits')
 
 # Load XIDL solution
-hamspec_idl_file = os.path.join(os.getenv('PYPEIT_DEV'), 'dev_algorithms', 'hamspec_wvcalib', 'Arc_01_fit.idl')
-order_vec, wave, spec, NORDs = templates.xidl_esihires(hamspec_idl_file, ret_NORD=True)
+if False:
+    hamspec_idl_file = os.path.join(os.getenv('PYPEIT_DEV'), 'dev_algorithms', 'hamspec_wvcalib', 'Arc_01_fit.idl')
+    order_vec, wave, spec, NORDs = templates.xidl_esihires(hamspec_idl_file, ret_NORD=True)
+
+# Load IRAF solution
+wrs_file = os.path.join(os.getenv('PYPEIT_DEV'), 'dev_algorithms', 'hamspec_wvcalib', 'IRAF',
+                        'THAR20240125.wrsfbo_1.fits')
+multi = readmultispec.readmultispec(wrs_file)
+wave_air, spec = multi['wavelen'], multi['flux']
+
+
+# idx=20 is Order=77
+order_vec = (77-20) + np.arange(wave_air.shape[0]) 
 norders = order_vec.size
+
+# Air to vac
+wave = wave_air.copy()
+for iord in range(norders):
+    wave[iord,:] = core_wave.airtovac(wave_air[iord, :]*units.AA)
 
 # Check
 if True:
@@ -36,8 +54,10 @@ if True:
     fig = plt.figure(figsize=(12, 8))
     ax = plt.gca()
     ax.plot(core_wave.vactoair(wave[idx, :]*units.AA), spec[idx, :])
+    ax.set_ylim(0., 10000)
+
     plt.show()
-    embed(header='hamspec_archive_files.py: Check 35')
+    embed(header='hamspec_archive_files.py: Check 20')
 
 #  Angles file
 hdu = fits.open(nirspec_angle_fits_file)
@@ -62,7 +82,9 @@ xnspec = np.arange(nspec)/xnspecmin1
 
 for iord in range(norders):
     # Fit the wavelengths
-    pypeitFit = robust_fit(xnspec, wave[iord, :], n_final,
+
+    pypeitFit = robust_fit(xnspec, wave[iord, :], 
+                           n_final,
         function='legendre',
         minx=hamspec_angle_params['wave_xmin'], 
         maxx=hamspec_angle_params['wave_xmax'], maxiter=25,
