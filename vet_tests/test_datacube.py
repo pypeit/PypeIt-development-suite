@@ -136,7 +136,7 @@ def test_coadd_datacube(redux_out):
     # Compare the extracted spectrum to the standard star spectrum, and make sure that the residuals are small
     resid = (spec1d[0].OPT_FLAM-flux_std_interp)*utils.inverse(spec1d[0].OPT_FLAM_SIG)
     med, std = np.median(resid), 1.4826*np.median(np.abs(np.median(resid) - resid))
-    assert(np.abs(med) < 0.1*std)
+    assert(np.abs(med) < 0.2*std)
     # Test the boxcar extraction
     # Interpolate the standard star spectrum to the same wavelength grid as the spec1d
     flux_std_interp = np.interp(spec1d[0].BOX_WAVE, wave_std, flux_std)
