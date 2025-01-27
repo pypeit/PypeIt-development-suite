@@ -308,153 +308,231 @@ def load_sensfunc(sens_files_path, sens_fnames=None, sens_fnames_dict=None,
     order_vec = np.arange(orders.min(), 93 + 1, dtype=int)
     order_vec = order_vec[::-1]
 
-    if sens_fnames_dict is None and parse:
-        parsed_sensobjs, parsed_sensnames = parse_sensfunc(order_vec, sensfuncs, sensnames, deckers, filters,
-                                                           use_all=False)
-    elif sens_fnames_dict is None and not parse:
-        parsed_sensobjs, parsed_sensnames = parse_sensfunc(order_vec, sensfuncs, sensnames, deckers, filters,
-                                                           use_all=True)
-    else:
+    # unpack everything and parse if requested
+    parsed_sensobjs = {}
+    parsed_sensnames = {}
+
+    if sens_fnames_dict is not None:
         parsed_sensobjs = {}
         for iord, sens_fnames in sens_fnames_dict.items():
             parsed_sensobjs[iord] = [sensobj for sensobj in sensfuncs if
                                      Path(sensobj.spec1df).name.replace('spec1d', 'sens') in sens_fnames]
         parsed_sensnames = sens_fnames_dict
 
-    # save to file
-    parsed_sens_file = f'used_sensfuncs_v{sensfuncs[0].version}.yaml'
-    _parsed_sensnames = {str(key): value for key, value in parsed_sensnames.items()}
-    with open(parsed_sens_file, 'w') as f:
-        yaml.dump(_parsed_sensnames, f)
+    parsed_sensobjs, parsed_sensnames = plot_parse_loaded(
+
+
+
+
+    if sens_fnames_dict is None and parse:
+        parsed_sensobjs, parsed_sensnames = parse_sensfunc(order_vec, sensfuncs, sensnames, deckers, filters,
+                                                           use_all=False)
+    elif sens_fnames_dict is None and not parse:
+        parsed_sensobjs, parsed_sensnames = parse_sensfunc(order_vec, sensfuncs, sensnames, deckers, filters,
+                                                           use_all=True)
+    # else:
+    #     parsed_sensobjs = {}
+    #     for iord, sens_fnames in sens_fnames_dict.items():
+    #         parsed_sensobjs[iord] = [sensobj for sensobj in sensfuncs if
+    #                                  Path(sensobj.spec1df).name.replace('spec1d', 'sens') in sens_fnames]
+    #     parsed_sensnames = sens_fnames_dict
 
     if plot_all:
-        # colors by SensFunc object
-        unique_colors_sens = get_unique_colors(len(sensfuncs), mcolors.CSS4_COLORS)
-        color_map_sens = {sensobj: unique_colors_sens[i] for i, sensobj in enumerate(sensfuncs)}
-        # color by order
-        unique_colors_ord = get_unique_colors(len(order_vec), mcolors.CSS4_COLORS)
-        color_map_ord = {ord: unique_colors_ord[i] for i, ord in enumerate(order_vec)}
-        y_label = 'Zeropoint (AB mag)' if ptype == 'zeropoint' else 'Throughput' if ptype == 'throughput' \
-            else 'Counts /(Angstrom s)'
-        outfile_name = f'collection_{ptype}_by_order.pdf'
-        y_all = []
-        y_smooth_all = []
-        y_scale_all = []
-        y_maxmax_all = []
-        wave_all = []
-        order_all = []
-        with PdfPages(outfile_name) as pdf:
-            for iord in order_vec:
-                i_sensfuncs = parsed_sensobjs[iord]
-                if len(i_sensfuncs) == 0:
-                    continue
-                fig = plt.figure(figsize=(23, 6.))
-                plt.minorticks_on()
-                plt.tick_params(axis='both', direction='in', top=True, right=True, which='both')
-                y_iord = []
-                y_iord_smooth = []
-                y_iord_smooth_max = []
-                wave_iord = []
-                legend_iord = []
-                color_iord = []
-                for s,sensobj in enumerate(i_sensfuncs):
-                    _indx = np.where(sensobj.sens['ECH_ORDERS'].data == iord)[0]
-                    if _indx.size > 0:
-                        indx = _indx[0]
-                        name = Path(sensobj.spec1df).name.split('_')[1]
-                        airmass = sensobj.airmass
-                        exptime = sensobj.exptime
-                        color = color_map_sens[sensobj]
-                        wave = sensobj.sens['SENS_WAVE'].data[indx]
-                        wave_gmp = wave > 1.0
-                        wmin = wave[wave_gmp].min()
-                        wmax = wave[wave_gmp].max()
-                        if ptype == 'zeropoint':
-                            zeropoint_data = sensobj.sens['SENS_ZEROPOINT'].data[indx]
-                            plt.plot(wave[wave_gmp], zeropoint_data[wave_gmp], alpha=0.4, color=color, lw=0.6,
-                                     zorder=-2)
-                            y = sensobj.sens['SENS_ZEROPOINT_FIT'].data[indx]
-                        elif ptype == 'throughput':
-                            wave = sensobj.wave[:,indx]
-                            wcut = (wave >= wmin) & (wave <= wmax)
-                            wave = wave[wcut]
-                            wave_gmp = wave > 1.0
-                            y = sensobj.throughput[:, indx][wcut]
-                        else:
-                            # counts per Angstrom
-                            y = sensobj.sens['SENS_COUNTS_PER_ANG'].data[indx]/exptime
+        parsed_sensobjs, parsed_sensnames = plot_all_loaded(sensfuncs, sensnames, order_vec, deckers, filters, echangles, xdangles, ptype=ptype)
 
-                        # smooth y
-                        filt = 100
-                        y_smooth = utils.fast_running_median(y[wave_gmp], filt)
-                        y_smooth_max = np.nanmax(y_smooth[y_smooth < 10000])
-                        # append by order
-                        y_iord.append(y[wave_gmp])
-                        y_iord_smooth.append(y_smooth)
-                        y_iord_smooth_max.append(y_smooth_max)
-                        wave_iord.append(wave[wave_gmp])
-                        color_iord.append(color)
-                        legend_iord.append(f'{name} - {deckers[s]} - {filters[s]} - ech: {echangles[s]} - xd: {xdangles[s]}\n'
-                                           f'- airmass: {airmass:.2f} - exptime: {exptime:.1f}')
 
-                        # append to all
-                        y_all.append(y[wave_gmp])
-                        y_smooth_all.append(y_smooth)
-                        wave_all.append(wave[wave_gmp])
-                        order_all.append(iord)
-                if len(y_iord) == 0:
-                    plt.close(fig)
-                    continue
-                # get the max value of the smoothed y
-                y_maxmax = np.nanmax(y_iord_smooth_max)
-                # append to all
-                y_maxmax_all.append(y_maxmax)
 
-                # plot by order
-                for y, y_sm, y_max, wave, color, legend in zip(y_iord, y_iord_smooth, y_iord_smooth_max, wave_iord, color_iord, legend_iord):
-                    s = y_maxmax/y_max
-                    plt.plot(wave, y*s, color=color, alpha=0.6, lw=0.6, zorder=0, label=legend)
-                    plt.plot(wave, y_sm*s, color=color, lw=1.5, zorder=1)
-                    y_scale_all.append(s)
-                plt.title(f'Order {iord}')
-                plt.xlabel('Wavelength (Angstroms)')
-                plt.ylabel(y_label)
-                if ptype == 'zeropoint':
-                    plt.ylim(13.1, 20.9)
-                elif ptype == 'throughput':
-                    plt.ylim(0.0, 0.15)
-                else:
-                    plt.ylim(0.0, y_maxmax*1.2)
-                plt.legend(fontsize=5)
-                fig.tight_layout()
-                pdf.savefig(dpi=60)
-                plt.close(fig)
-            # plot all orders
+    #embed()
+    return parsed_sensobjs, parsed_sensnames
+
+def plot_parse_loaded(sensfuncs, sensnames, order_vec, deckers, filters, echangles, xdangles,
+                    selected_sensfuncs=None, selected_lines=None, parse=None, plot_all=False, ptype='counts_per_angs'):
+    """Plot all the loaded sensitivity functions.
+
+    Args:
+        sensfuncs (list):
+            List of SensFunc objects.
+        sensnames (list):
+            List of sensitivity function file names.
+        order_vec (`numpy.ndarray`_):
+            Array of orders.
+        deckers (list):
+            List of deckers of the SensFunc objects.
+        filters (list):
+            List of filters of the SensFunc objects.
+        echangles (list):
+            List of echangles of the SensFunc objects.
+        xdangles (list):
+            List of xdangles of the SensFunc objects.
+        parse (bool):
+            Parse the sensitivity functions. If None, no parsing will be done
+            only the plotting will be done. If 'use_all', all the sensitivity functions
+            will be parsed per each order. If 'select' the user will be able to select
+            in a matplotlib plot the sensitivity functions to use per each order.
+        ptype (str):
+            Type of plot to generate. It can be 'zeropoint', 'throughput', or 'counts_per_angs'.
+
+    """
+
+    if plot_all and parse is None:
+        return selected_sensfuncs, selected_lines
+
+    # colors by SensFunc object
+    unique_colors_sens = get_unique_colors(len(sensfuncs), mcolors.CSS4_COLORS)
+    color_map_sens = {sensobj: unique_colors_sens[i] for i, sensobj in enumerate(sensfuncs)}
+    # color by order
+    unique_colors_ord = get_unique_colors(len(order_vec), mcolors.CSS4_COLORS)
+    color_map_ord = {i_ord: unique_colors_ord[i] for i, i_ord in enumerate(order_vec)}
+    y_label = 'Zeropoint (AB mag)' if ptype == 'zeropoint' else 'Throughput' if ptype == 'throughput' \
+        else 'Counts /(Angstrom s)'
+    outfile_name = f'collection_{ptype}_by_order.pdf'
+
+    # dictionaries to store the parsed SensFunc objects
+    if parse is not None:
+        selected_sensfuncs = {}
+        selected_lines = {}
+
+    y_all = []
+    y_smooth_all = []
+    y_scale_all = []
+    y_maxmax_all = []
+    wave_all = []
+    order_all = []
+    with PdfPages(outfile_name, keep_empty=False) as pdf:
+        for iord in order_vec:
+            i_sensfuncs = sensfuncs
+            if parse == 'use_all':
+                selected_sensfuncs[iord] = sensfuncs
+                selected_lines[iord] = sensnames
+            elif parse == 'select':
+                selected_lines[iord] = []
+            elif len(selected_sensfuncs)>0 and iord in selected_sensfuncs.keys():
+                i_sensfuncs = selected_sensfuncs[iord]
+
             fig = plt.figure(figsize=(23, 6.))
             plt.minorticks_on()
             plt.tick_params(axis='both', direction='in', top=True, right=True, which='both')
-            plt.title(f'All orders')
-            for y, y_sm, s, wave, o in zip(y_all, y_smooth_all, y_scale_all, wave_all, order_all):
-                color = color_map_ord[o]
-                leg = f'order {o}' if o not in [line.get_label() for line in plt.gca().get_lines()] else ''
-                plt.plot(wave, y*s, lw=0.6, color=color, alpha=0.6, zorder=0, label=leg)
-                plt.plot(wave, y_sm*s, lw=1.5, color=color, zorder=1)
+            y_iord = []
+            y_iord_smooth = []
+            y_iord_smooth_max = []
+            wave_iord = []
+            legend_iord = []
+            color_iord = []
+            for s, sensobj in enumerate(i_sensfuncs):
+                _indx = np.where(sensobj.sens['ECH_ORDERS'].data == iord)[0]
+                if _indx.size > 0:
+                    indx = _indx[0]
+                    name = Path(sensobj.spec1df).name.split('_')[1]
+                    airmass = sensobj.airmass
+                    exptime = sensobj.exptime
+                    color = color_map_sens[sensobj]
+                    wave = sensobj.sens['SENS_WAVE'].data[indx]
+                    wave_gmp = wave > 1.0
+                    wmin = wave[wave_gmp].min()
+                    wmax = wave[wave_gmp].max()
+                    if ptype == 'zeropoint':
+                        zeropoint_data = sensobj.sens['SENS_ZEROPOINT'].data[indx]
+                        plt.plot(wave[wave_gmp], zeropoint_data[wave_gmp], alpha=0.4, color=color, lw=0.6,
+                                 zorder=-2)
+                        y = sensobj.sens['SENS_ZEROPOINT_FIT'].data[indx]
+                    elif ptype == 'throughput':
+                        wave = sensobj.wave[:, indx]
+                        wcut = (wave >= wmin) & (wave <= wmax)
+                        wave = wave[wcut]
+                        wave_gmp = wave > 1.0
+                        y = sensobj.throughput[:, indx][wcut]
+                    else:
+                        # counts per Angstrom
+                        y = sensobj.sens['SENS_COUNTS_PER_ANG'].data[indx] / exptime
 
+                    # smooth y
+                    filt = 100
+                    y_smooth = utils.fast_running_median(y[wave_gmp], filt)
+                    y_smooth_max = np.nanmax(y_smooth[y_smooth < 10000])
+                    # append by order
+                    y_iord.append(y[wave_gmp])
+                    y_iord_smooth.append(y_smooth)
+                    y_iord_smooth_max.append(y_smooth_max)
+                    wave_iord.append(wave[wave_gmp])
+                    color_iord.append(color)
+                    legend_iord.append(
+                        f'{name} - {deckers[s]} - {filters[s]} - ech: {echangles[s]} - xd: {xdangles[s]}\n'
+                        f'- airmass: {airmass:.2f} - exptime: {exptime:.1f}')
+
+                    # append to all
+                    y_all.append(y[wave_gmp])
+                    y_smooth_all.append(y_smooth)
+                    wave_all.append(wave[wave_gmp])
+                    order_all.append(iord)
+            if len(y_iord) == 0:
+                plt.close(fig)
+                continue
+            # get the max value of the smoothed y
+            y_maxmax = np.nanmax(y_iord_smooth_max)
+            # append to all
+            y_maxmax_all.append(y_maxmax)
+
+            # plot by order
+            for y, y_sm, y_max, wave, color, legend in zip(y_iord, y_iord_smooth, y_iord_smooth_max, wave_iord,
+                                                           color_iord, legend_iord):
+                s = y_maxmax / y_max
+                plt.plot(wave, y * s, color=color, alpha=0.6, lw=0.6, zorder=0, label=legend)
+                plt.plot(wave, y_sm * s, color=color, lw=1.5, zorder=1)
+                y_scale_all.append(s)
+            plt.title(f'Order {iord}')
             plt.xlabel('Wavelength (Angstroms)')
             plt.ylabel(y_label)
-            plt.legend(fontsize=5)
             if ptype == 'zeropoint':
                 plt.ylim(13.1, 20.9)
             elif ptype == 'throughput':
                 plt.ylim(0.0, 0.15)
             else:
-                plt.ylim(0.0, np.nanmax(y_maxmax_all)*1.2)
+                plt.ylim(0.0, y_maxmax * 1.2)
+            plt.legend(fontsize=5)
             fig.tight_layout()
-            pdf.savefig(dpi=60)
+            if parse == 'select':
+                fig.canvas.mpl_connect('pick_event', partial(on_pick, selected_lines=selected_lines, key=iord))
+                print('')
+                plt.show()
+            if plot_all:
+                pdf.savefig(dpi=60)
             plt.close(fig)
-    #embed()
-    return parsed_sensobjs, parsed_sensnames
+            if parse == 'select':
+                selected_sensfuncs[iord] = [sensobj for sensobj in sensfuncs if
+                                        Path(sensobj.spec1df).name.replace('spec1d', 'sens') in selected_lines[iord]]
+        # plot all orders
+        fig = plt.figure(figsize=(23, 6.))
+        plt.minorticks_on()
+        plt.tick_params(axis='both', direction='in', top=True, right=True, which='both')
+        plt.title(f'All orders')
+        for y, y_sm, s, wave, o in zip(y_all, y_smooth_all, y_scale_all, wave_all, order_all):
+            color = color_map_ord[o]
+            leg = f'order {o}' if o not in [line.get_label() for line in plt.gca().get_lines()] else ''
+            plt.plot(wave, y * s, lw=0.6, color=color, alpha=0.6, zorder=0, label=leg)
+            plt.plot(wave, y_sm * s, lw=1.5, color=color, zorder=1)
 
+        plt.xlabel('Wavelength (Angstroms)')
+        plt.ylabel(y_label)
+        plt.legend(fontsize=5)
+        if ptype == 'zeropoint':
+            plt.ylim(13.1, 20.9)
+        elif ptype == 'throughput':
+            plt.ylim(0.0, 0.15)
+        else:
+            plt.ylim(0.0, np.nanmax(y_maxmax_all) * 1.2)
+        fig.tight_layout()
+        if plot_all:
+            pdf.savefig(dpi=60)
+        plt.close(fig)
+
+    if parse == 'select':
+        # save to file
+        parsed_sens_file = f'used_sensfuncs_v{sensfuncs[0].version}.yaml'
+        _parsed_sensnames = {str(key): value for key, value in selected_lines.items()}
+        with open(parsed_sens_file, 'w') as f:
+            yaml.dump(_parsed_sensnames, f)
+
+    return selected_sensfuncs, selected_lines
 
 def parse_sensfunc(ordervec, sensfuncs, sensnames, deckers, filters, use_all=True, rescale=False):
     """Parse the sensitivity functions.
@@ -792,19 +870,19 @@ def combine_sensfuncs(sensfuncs_dict, sensnames_dict, cut_left=50, cut_right=-10
 
     # QA plots
     if qa_plots:
-        plot_by_order(comb_sensobj, zpoints_all)
+        plot_combined_by_order(comb_sensobj, zpoints_all)
 
 
     if qa_plots:
         # plot the zeropoints for all orders
-        plot_all_orders(comb_sensobj, comb_type='zeropoint')
+        plot_combined_all_orders(comb_sensobj, comb_type='zeropoint')
         # plot the throughput for all orders
-        plot_all_orders(comb_sensobj,comb_type='throughput')
+        plot_combined_all_orders(comb_sensobj,comb_type='throughput')
 
     return comb_sensobj
 
 
-def plot_by_order(comb_sensobj, zpoints_all):
+def plot_combined_by_order(comb_sensobj, zpoints_all):
     """Plot the zeropoints by order.
 
     Args:
@@ -885,7 +963,7 @@ def plot_by_order(comb_sensobj, zpoints_all):
             plt.close(fig)
 
 
-def plot_all_orders(comb_sensobj, comb_type='zeropoint'):
+def plot_combined_all_orders(comb_sensobj, comb_type='zeropoint'):
     """Plot the combined zeropoint or throughput for all orders.
 
     Args:
