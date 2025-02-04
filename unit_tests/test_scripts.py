@@ -5,14 +5,10 @@ import os
 import shutil
 from pathlib import Path
 
-import numpy as np
-import pytest
+from IPython import embed
 
 import matplotlib
-from IPython import embed
 matplotlib.use('agg')  # For Travis
-
-from astropy.io import fits
 
 from pypeit import scripts
 from pypeit import edgetrace
