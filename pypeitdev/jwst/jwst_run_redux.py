@@ -111,10 +111,10 @@ def validate_redux_input(reduce_input, name):
 
 
 
-def jwst_run_redux(redux_dir, disperser, uncal_list=None, rate_list=None, 
+def jwst_run_redux(redux_dir, uncal_list=None, rate_list=None, 
                    reduce_slits=None, reduce_sources=None,
                    source_type='POINT', show=False, overwrite_stage1=False, overwrite_stage2=False, 
-                   kludge_err=1.5, bkg_redux=False):
+                   kludge_err=1.5, bkg_redux=False, run_bogus_f100lp=False):
     """
     Main routine to reduce JWST NIRSpec data
     
@@ -122,8 +122,6 @@ def jwst_run_redux(redux_dir, disperser, uncal_list=None, rate_list=None,
     ----------
     redux_dir : str
         Path to the directory where the data will be reduced.
-    disperser : str
-        Name of the disperser.
     uncal_list : list
         List of lists of uncalibrated files for each exposure. exp_list[0] is for nrs1 and exp_list[1] is for nrs2.  Optional, default is None. Either uncal_list or rate_list must be provided.
     rate_list : list
@@ -146,13 +144,17 @@ def jwst_run_redux(redux_dir, disperser, uncal_list=None, rate_list=None,
     bkg_redux : bool, optional
         If True, perform a background redux using image differencing. If False, model the background with a bspline. bkg_redux should typically be set to True for MSA reductions, 
         and False for FS reductions.
-    """
+    run_bogus_f100lp : bool
+        If True, run bogus redux for the 140H/F100LP grating to accomodate data taken with the F070LP filter? Default is False. 
+      """
 
     _reduce_slits = validate_redux_input(reduce_slits, 'reduce_slits')
     _reduce_sources = validate_redux_input(reduce_sources, 'reduce_sources')
     
     # Define the path
     output_dir = os.path.join(redux_dir, 'output')
+    output_dir_level1 = os.path.join(output_dir, 'level1')
+    output_dir_level2 = os.path.join(output_dir, 'level2')
     pypeit_output_dir = os.path.join(redux_dir, 'pypeit')
 
     # Make the new Science dir
@@ -164,6 +166,12 @@ def jwst_run_redux(redux_dir, disperser, uncal_list=None, rate_list=None,
     if not os.path.isdir(output_dir):
         msgs.info('Creating directory for calwebb output: {0}'.format(output_dir))
         os.makedirs(output_dir)
+    if not os.path.isdir(output_dir_level1):
+        msgs.info('Creating directory for calwebb level 1 output: {0}'.format(output_dir_level1))
+        os.makedirs(output_dir_level1)
+    if not os.path.isdir(output_dir_level2):
+        msgs.info('Creating directory for calwebb level 2 output: {0}'.format(output_dir_level2))
+        os.makedirs(output_dir_level2)
     
     # Did the user pass in an uncal_list? 
     if uncal_list is None and rate_list is None:
@@ -183,17 +191,17 @@ def jwst_run_redux(redux_dir, disperser, uncal_list=None, rate_list=None,
             basenames_1.append(b1)
             basenames_2.append(b2)
             basenames.append(b2.replace('_nrs2', ''))
-            rate_files_1.append(os.path.join(output_dir, b1 + '_rate.fits'))
-            rate_files_2.append(os.path.join(output_dir, b2 + '_rate.fits'))
+            rate_files_1.append(os.path.join(output_dir_level1, b1 + '_rate.fits'))
+            rate_files_2.append(os.path.join(output_dir_level1, b2 + '_rate.fits'))
 
 
         #parameter_dict_det1 = {"jump": {"maximum_cores": 'quarter'},}
         for uncal in uncalfiles_all:
-            ratefile = os.path.join(output_dir,  os.path.basename(uncal).replace('_uncal', '_rate'))
+            ratefile = os.path.join(output_dir_level1,  os.path.basename(uncal).replace('_uncal', '_rate'))
             if os.path.isfile(ratefile) and not overwrite_stage1:
                 msgs.info('Using existing rate file: {0}'.format(ratefile))
                 continue
-            Detector1Pipeline.call(uncal, save_results=True, output_dir=output_dir) #, steps=parameter_dict_det1)
+            Detector1Pipeline.call(uncal, save_results=True, output_dir=output_dir_level1) #, steps=parameter_dict_det1)
 
     elif uncal_list is None and rate_list is not None:
         rate_files_1 = rate_list[0]
@@ -244,11 +252,11 @@ def jwst_run_redux(redux_dir, disperser, uncal_list=None, rate_list=None,
     # Run the spec2 pipeline
 
     for sci in rate_files_all:
-        nscleanfile = os.path.join(output_dir, sci.replace('_rate', '_nsclean'))
+        nscleanfile = os.path.join(output_dir_level2, os.path.basename(sci).replace('_rate', '_nsclean'))
         if os.path.isfile(nscleanfile) and not overwrite_stage2:
             msgs.info('Using existing nsclean file: {0}'.format(nscleanfile))
             continue
-        Spec2Pipeline.call(sci, save_results=True, output_dir=output_dir, steps=param_dict_spec2)
+        Spec2Pipeline.call(sci, save_results=True, output_dir=output_dir_level2, steps=param_dict_spec2)
 
 
     # Some pypeit things
@@ -288,13 +296,13 @@ def jwst_run_redux(redux_dir, disperser, uncal_list=None, rate_list=None,
     cal_output_files_2 = []
 
     for base1, base2 in zip(basenames_1, basenames_2):
-        msa_output_files_1.append(os.path.join(output_dir, base1 + '_nsclean.fits'))
-        msa_output_files_2.append(os.path.join(output_dir, base2 + '_nsclean.fits'))
+        msa_output_files_1.append(os.path.join(output_dir_level2, base1 + '_nsclean.fits'))
+        msa_output_files_2.append(os.path.join(output_dir_level2, base2 + '_nsclean.fits'))
 
-        intflat_output_files_1.append(os.path.join(output_dir, base1 + '_interpolatedflat.fits'))
-        cal_output_files_1.append(os.path.join(output_dir, base1 + '_cal.fits'))
-        intflat_output_files_2.append(os.path.join(output_dir, base2 + '_interpolatedflat.fits'))
-        cal_output_files_2.append(os.path.join(output_dir, base2 + '_cal.fits'))
+        intflat_output_files_1.append(os.path.join(output_dir_level2, base1 + '_interpolatedflat.fits'))
+        cal_output_files_1.append(os.path.join(output_dir_level2, base1 + '_cal.fits'))
+        intflat_output_files_2.append(os.path.join(output_dir_level2, base2 + '_interpolatedflat.fits'))
+        cal_output_files_2.append(os.path.join(output_dir_level2, base2 + '_cal.fits'))
 
 
 
@@ -423,9 +431,9 @@ def jwst_run_redux(redux_dir, disperser, uncal_list=None, rate_list=None,
         # actual locations on the sky, which would be preferable. However, this does not appear to be working correctly
         # in calwebb. So for now, we just use the first exposure as the reference exposure for the calibrations.
         CalibrationsNRS1 = NIRSpecSlitCalibrations(det_container_list[0], cal_data[0, iexp_ref], flat_data[0, iexp_ref],
-                                                islit, f070_f100_rescale='bogus_FS_F100LP' in disperser)
+                                                islit, f070_f100_rescale=run_bogus_f100lp)
         CalibrationsNRS2 = NIRSpecSlitCalibrations(det_container_list[1], cal_data[1, iexp_ref], flat_data[1, iexp_ref],
-                                                islit, f070_f100_rescale='bogus_FS_F100LP' in disperser)
+                                                islit, f070_f100_rescale=run_bogus_f100lp)
         for iexp in range(nexp):
             # Container for all the Spec2DObj, different spec2dobj and specobjs for each slit
             all_spec2d = spec2dobj.AllSpec2DObj()

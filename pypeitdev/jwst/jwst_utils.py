@@ -652,6 +652,24 @@ class NIRSpecSlitCalibrations(datamodel.DataContainer):
 
     internals = ['_indx', 'slit_names', 'intflat_slit_names',]
     def __init__(self, detector, ms_model, ms_model_flat, slit_name, f070_f100_rescale=False):
+        """
+        Initialize a NIRSpecSlitCalibrations object. 
+        
+        Parameters
+        ----------
+        detector : :class:`~pypeit.images.detector_container.DetectorContainer`
+            Detector parameters container.
+        ms_model : :class:`~jwst.datamodels.MultiSlitModel`
+            The input NIRSpec MultiSlit data model from the _cal.fits output files 
+        ms_model_flat : :class:`~jwst.datamodels.MultiSlitModel`
+            The input NIRSpec MultiSlit data model of the flat field from the interpolatedflat.fits output files
+        slit_name : str
+            Name of the slit.
+        f070_f100_rescale : bool
+            If True, this is actually F070LP data that has been reduced with the header cards swithced to
+            F100LP to get calwebb to reduce the nrs2 data. In this case, the F070LP data must be pathloss
+            must be corrected to account for the differences in throughputs of the F070LP and F100LP filters.
+        """
 
         # Instantiate as an empty DataContainer
         super().__init__()
@@ -963,6 +981,78 @@ def jwst_reduce(sciImg, slits, waveimg, tilts, spectrograph, par, show=False, fi
 
 
 def jwst_extract_subimgs(final_slit, intflat_slit, f070_f100_rescale=False):
+    """
+    Extract calibration subimages from the NIRSpec Spec2 pipeline outputs.  
+    
+    Parameters
+    ----------
+    final_slit : :class:`~jwst.datamodels.MultiSlitModel`
+        The input NIRSpec MultiSlit data model from the _cal.fits output files 
+    intflat_slit : :class:`~jwst.datamodels.MultiSlitModel`
+        The input NIRSpec MultiSlit data model of the flat field from the interpolatedflat.fits output files
+    f070_f100_rescale : bool
+        If True, this is actually F070LP data that has been reduced with the header cards swithced to
+        F100LP to get calwebb to reduce the nrs2 data. In this case, the F070LP data must be pathloss
+        must be corrected to account for the differences in throughputs of the F070LP and F100LP filters.
+        
+    Returns
+    -------
+    slit_slice : tuple
+        Numpy slit object which can be used to extract the subimage from the full frame image.
+    slit_left : `numpy.ndarray`
+        Left slit edge for the subimage of the slit in subimage pixel coordinates. Shape is (nspec,) where
+        nspec is the number of spectral pixels in the subimage. 
+    slit_righ : `numpy.ndarray`
+        Right slit edge for the subimage of the slit in subimage pixel coordinates. Shape is (nspec,) where
+        nspec is the number of spectral pixels in the subimage. 
+    slit_left_orig : `numpy.ndarray`
+        Original left slit edge for the slit in full frame pixel coordinates. Shape is (nspec,) where
+        nspec is the number of spectral pixels in the subimage
+    slit_righ_orig : `numpy.ndarray`
+        Original right slit edge for the slit in full frame pixel coordinates
+    spec_vals_orig : `numpy.ndarray`
+        Original spectral values for the slit in full frame pixel coordinates. Shape is (nspec,) where
+        nspec is the number of spectral pixels in the subimage. 
+    src_trace_ra : `numpy.ndarray`
+        Source trace RA for the slit in the subimage. Shape is (nspec,) where nspec is the number of spectral pixels
+        in the subimage.
+    src_trace_dec : `numpy.ndarray`
+        Source trace DEC for the slit in the subimage. Shape is (nspec,) where nspec is the number of spectral pixels
+        in the subimage.
+    dq_sub : `numpy.ndarray`
+        DQ flags images for the slit in the subimage. Shape is (nspec, nspat) where nspec is the number of spectral
+        pixels in the subimage and nspat is the number of spatial pixels in the subimage.
+    ra : `numpy.ndarray`
+        RA image map for the slit in the subimage. Shape is (nspec, nspat) where nspec is the number of spectral
+        pixels in the subimage and nspat is the number of spatial pixels in the subimage.
+    dec : `numpy.ndarray`
+        DEC image map for the slit in the subimage. Shape is (nspec, nspat) where nspec is the number of spectral
+        pixels in the subimage and nspat is the number of spatial pixels in the subimage.
+    finitemask : `numpy.ndarray`
+        Mask indicating where wavelengths are defined for the slit in the subimage. Shape is (nspec, nspat) where
+        nspec is the number of spectral pixels in the subimage and nspat is the number of spatial pixels in the subimage.
+    waveimg : `numpy.ndarray`
+        Wavelength image for the slit in the subimage. Shape is (nspec, nspat) where nspec is the number of spectral
+        pixels in the subimage and nspat is the number of spatial pixels in the subimage.
+    tilts : `numpy.ndarray`
+        Tilt image for the slit in the subimage. Shape is (nspec, nspat) where nspec is the number of spectral
+        pixels in the subimage and nspat is the number of spatial pixels in the subimage.
+    flatfield : `numpy.ndarray`
+        Flat field image for the slit in the subimage. Shape is (nspec, nspat) where nspec is the number of spectral
+        pixels in the subimage and nspat is the number of spatial pixels in the subimage.
+    pathloss : `numpy.ndarray`
+        Pathloss image for the slit in the subimage. Shape is (nspec, nspat) where nspec is the number of spectral
+        pixels in the subimage and nspat is the number of spatial pixels in the subimage.
+    barshadow : `numpy.ndarray`
+        Barshadow image for the slit in the subimage. Shape is (nspec, nspat) where nspec is the number of spectral
+        pixels in the subimage and nspat is the number of spatial pixels in the subimage.
+    photom_conversion : float
+        Photom conversion in MJy for the slit in the subimage.
+    calwebb_proc : `numpy.ndarray`
+        Calwebb processed image for the slit in the subimage, i.e. this is final_slit.data.T. Shape is (nspec, nspat) where nspec 
+        is the number of spectral pixels in the subimage and nspat is the number of spatial pixels in the subimage.
+    """
+    
 
     # The various multiplicative calibrations we need.
     slit_name = final_slit.name
