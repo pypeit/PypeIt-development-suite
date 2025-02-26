@@ -109,6 +109,40 @@ def validate_redux_input(reduce_input, name):
     return _reduce_input
     
 
+def validate_interpolatedflat_files(intflat_fs_output_files, intflat_output_files, detector):
+    """
+    Utility method to validate the interpolated flat files for FS slits.
+    
+    Parameters
+    ----------
+    intflat_fs_output_files : list
+        List of interpolated flat files for FS slits.
+    intflat_output_files : list
+        List of interpolated flat files for MOS slits.
+    detector : str
+        The detector name, i.e. 'nrs1' or 'nrs2'.
+    
+    Returns
+    -------
+    merge_fs : bool
+        True if there are FS slits to merge, False otherwise
+    
+    Raises
+    ------
+    ValueError 
+        If the length of the _interpolatedflat_fs.fits files does not match the length of the _interpolatedflat.fits files.
+    
+    """
+
+    #  intflat for FS slits for NRS1
+    if (len(intflat_fs_output_files) > 0) & (len(intflat_fs_output_files) == len(intflat_output_files)):
+        merge_fs = True
+        msgs.info('Found _nrs1_interpolatedflat_fs.fits files. There are FS slits and MOS slits on nrs1')
+    elif len(intflat_fs_output_files) == 0:
+        merge_fs = False
+    else: 
+        raise ValueError('The length of the _interpolatedflat_fs.fits files does not match the length of the _interpolatedflat.fits files for {:s}'.format(detector))
+    return merge_fs
 
 
 def jwst_run_redux(redux_dir, uncal_list=None, rate_list=None, 
@@ -195,13 +229,19 @@ def jwst_run_redux(redux_dir, uncal_list=None, rate_list=None,
             rate_files_2.append(os.path.join(output_dir_level1, b2 + '_rate.fits'))
 
 
+
         #parameter_dict_det1 = {"jump": {"maximum_cores": 'quarter'},}
+        # These clean_flicker_noise parameters for NIRSpec are based on the recommended values here: 
+        # https://jwst-docs.stsci.edu/known-issues-with-jwst-data/1-f-noise#gsc.tab=0 
+        # which were created after JWST moved the 1/f noise correction to the level1 correction stage
+        parameter_dict_det1 = {'clean_flicker_noise': 
+            {'skip': False, 'fit_method': 'fft', 'n_sigma': 2, 'mask_science_regions': False, 'background_method': None}}
         for uncal in uncalfiles_all:
             ratefile = os.path.join(output_dir_level1,  os.path.basename(uncal).replace('_uncal', '_rate'))
             if os.path.isfile(ratefile) and not overwrite_stage1:
                 msgs.info('Using existing rate file: {0}'.format(ratefile))
                 continue
-            Detector1Pipeline.call(uncal, save_results=True, output_dir=output_dir_level1) #, steps=parameter_dict_det1)
+            Detector1Pipeline.call(uncal, save_results=True, output_dir=output_dir_level1, steps=parameter_dict_det1)
 
     elif uncal_list is None and rate_list is not None:
         rate_files_1 = rate_list[0]
@@ -222,6 +262,7 @@ def jwst_run_redux(redux_dir, uncal_list=None, rate_list=None,
 
     # TODO Should we flat field. The flat field and flat field error are wonky and probably nonsense
     param_dict_spec2 = {
+        'assign_wcs': {'save_results': True}, # This output now has the full 2d image 
         'extract_2d': {'save_results': True},
         'bkg_subtract': {'skip': True},
         'imprint_subtract': {'save_results': True}, # TODO Check up on whether imprint subtraction is being done by us???
@@ -232,9 +273,10 @@ def jwst_run_redux(redux_dir, uncal_list=None, rate_list=None,
         # 'flat_field': {'skip': True},
         'resample_spec': {'skip': True},
         'extract_1d': {'skip': True},
-        'flat_field': {'save_interpolated_flat': True},  # Flats appear to be just nonsense. So skip for now.
-        'nsclean': {'skip': False, 'save_results': True},
+        'flat_field': {'save_interpolated_flat': True}, 
+        'nsclean': {'skip': True, 'save_results': False},
     }
+    # So the nsclean is now being done via clean_flicker_noise in the Det1 pipeline. 
 
     # TODO I'm rather unclear on what to do with the src_type since I'm not following what the JWST ipeline is doing there very
     # well. I think they are trying to model slit losses for point sources but not for extended sources. Changing src_type
@@ -252,9 +294,9 @@ def jwst_run_redux(redux_dir, uncal_list=None, rate_list=None,
     # Run the spec2 pipeline
 
     for sci in rate_files_all:
-        nscleanfile = os.path.join(output_dir_level2, os.path.basename(sci).replace('_rate', '_nsclean'))
-        if os.path.isfile(nscleanfile) and not overwrite_stage2:
-            msgs.info('Using existing nsclean file: {0}'.format(nscleanfile))
+        assign_wcs_file = os.path.join(output_dir_level2, os.path.basename(sci).replace('_rate', '_assign_wcs'))
+        if os.path.isfile(assign_wcs_file) and not overwrite_stage2:
+            msgs.info('Found existing assign_wcs file: {0}; not running Spec2'.format(assign_wcs_file))
             continue
         Spec2Pipeline.call(sci, save_results=True, output_dir=output_dir_level2, steps=param_dict_spec2)
 
@@ -296,14 +338,25 @@ def jwst_run_redux(redux_dir, uncal_list=None, rate_list=None,
     cal_output_files_2 = []
 
     for base1, base2 in zip(basenames_1, basenames_2):
-        msa_output_files_1.append(os.path.join(output_dir_level2, base1 + '_nsclean.fits'))
-        msa_output_files_2.append(os.path.join(output_dir_level2, base2 + '_nsclean.fits'))
+        msa_output_files_1.append(os.path.join(output_dir_level2, base1 + '_assign_wcs.fits'))
+        msa_output_files_2.append(os.path.join(output_dir_level2, base2 + '_assign_wcs.fits'))
 
         intflat_output_files_1.append(os.path.join(output_dir_level2, base1 + '_interpolatedflat.fits'))
         cal_output_files_1.append(os.path.join(output_dir_level2, base1 + '_cal.fits'))
         intflat_output_files_2.append(os.path.join(output_dir_level2, base2 + '_interpolatedflat.fits'))
         cal_output_files_2.append(os.path.join(output_dir_level2, base2 + '_cal.fits'))
 
+    # Check to see if there are also _interpolatedflat_fs.fits files, since the Spec2 pipeline writes these out separately for MOS + FS data
+    # If they exist, we need to append these slits to the  MOS slits in the _interpolatedflat.fits files that we read in
+    intflat_fs_output_files_1, intflat_fs_output_files_2 = [], []
+    for file_1, file_2 in zip(intflat_output_files_1, intflat_output_files_2):
+        if os.path.isfile(file_1.replace('_interpolatedflat.fits', '_interpolatedflat_fs.fits')):
+            intflat_fs_output_files_1.append(file_1.replace('_interpolatedflat.fits', '_interpolatedflat_fs.fits'))
+        if os.path.isfile(file_2.replace('_interpolatedflat.fits', '_interpolatedflat_fs.fits')):
+            intflat_fs_output_files_2.append(file_2.replace('_interpolatedflat.fits', '_interpolatedflat_fs.fits'))
+    # Validate 
+    merge_fs_nrs1 = validate_interpolatedflat_files(intflat_fs_output_files_1, intflat_output_files_1, 'nrs1')
+    merge_fs_nrs2 = validate_interpolatedflat_files(intflat_fs_output_files_2, intflat_output_files_2, 'nrs2')
 
 
     # Read in calwebb outputs for everytihng
@@ -345,14 +398,28 @@ def jwst_run_redux(redux_dir, uncal_list=None, rate_list=None,
     # TODO Figure out why this is so damn slow! I suspect it is calwebb1
     for iexp in range(nexp):
         # Open some JWST data models
-        #e2d_multi_list_1.append(datamodels.open(e2d_output_files_1[iexp]))
         msa_data[0, iexp] = datamodels.open(msa_output_files_1[iexp])
-        flat_data[0, iexp] = datamodels.open(intflat_output_files_1[iexp])
         cal_data[0, iexp] = datamodels.open(cal_output_files_1[iexp])
+        flat_data_1 = datamodels.open(intflat_output_files_1[iexp])
+        # Merge the FS slits into the MOS slits for NRS1      
+        if merge_fs_nrs1: 
+            msgs.info('Appending interpolatedflat FS slits into MOS output for {:s}'.format(basenames_1[iexp]))
+            flat_data_fs_1 = datamodels.open(intflat_fs_output_files_1[iexp])
+            for slit in flat_data_fs_1.slits:
+                flat_data_1.slits.append(slit)
+        flat_data[0, iexp] = flat_data_1
+
 
         msa_data[1, iexp] = datamodels.open(msa_output_files_2[iexp])
-        flat_data[1, iexp] = datamodels.open(intflat_output_files_2[iexp])
         cal_data[1, iexp] = datamodels.open(cal_output_files_2[iexp])
+        flat_data_2 = datamodels.open(intflat_output_files_2[iexp])
+        # Merge the FS slits into the MOS slits for NRS2
+        if merge_fs_nrs2:
+            msgs.info('Appending interpolatedflat FS slits into MOS output for {:s}'.format(basenames_2[iexp]))
+            flat_data_fs_2 = datamodels.open(intflat_fs_output_files_2[iexp])
+            for slit in flat_data_fs_2.slits:
+                flat_data_2.slits.append(slit)
+        flat_data[1, iexp] = flat_data_2
 
 
     # Create a set of aligned slit and source names for both detectors
@@ -415,6 +482,7 @@ def jwst_run_redux(redux_dir, uncal_list=None, rate_list=None,
                             for source in _reduce_sources if src == source.strip()]
     else:
         gd_slits_sources = slit_sources_uni
+
 
     # Loop over all slits. For each exposure create a mosaic and save them to individual PypeIt spec2d files.
     for ii, (islit, isource) in enumerate(gd_slits_sources):
@@ -503,7 +571,8 @@ def jwst_run_redux(redux_dir, uncal_list=None, rate_list=None,
                     plt.show()
 
             # THE FOLLOWING MIMICS THE CODE IN pypeit.save_exposure()
-            base_suffix = 'source_{:s}'.format(isource) if isource is not None else 'slit_{:s}'.format(islit)
+            base_suffix = 'slit_{:s}'.format(islit) if _reduce_slits is not None else 'source_{:s}'.format(isource)
+            #base_suffix = 'source_{:s}'.format(isource) if isource is not None else 'slit_{:s}'.format(islit)
             basename = '{:s}_{:s}'.format(basenames[iexp], base_suffix)
 
             # TODO Populate the header with metadata relevant to this source?

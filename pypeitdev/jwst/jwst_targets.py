@@ -224,26 +224,26 @@ def jwst_targets(progid, disperser, target, slit=None):
                         
             elif 'J1120+0641' in target:
                 redux_dir = '/Users/joe/jwst_redux/redux/NIRSPEC_FS/1222/J1120+0641/'
-                if disperser == '235H':
+                if disperser == '140H':
                     # NIRSPEC 3-point dither dither center
                     if slit == 'S200A1':
-                        uncalfile1 = os.path.join(rawpath_level2, 'jw01222012001_03108_00001_' + detname + '_uncal.fits')
-                        uncalfile2 = os.path.join(rawpath_level2, 'jw01222012001_03108_00002_' + detname + '_uncal.fits')
-                        uncalfile3 = os.path.join(rawpath_level2, 'jw01222012001_03108_00003_' + detname + '_uncal.fits')
+                        uncalfile1 = os.path.join(rawpath_level2, 'jw01222005001_03101_00001_' + detname + '_uncal.fits')
+                        uncalfile2 = os.path.join(rawpath_level2, 'jw01222005001_03101_00002_' + detname + '_uncal.fits')
+                        uncalfile3 = os.path.join(rawpath_level2, 'jw01222005001_03101_00003_' + detname + '_uncal.fits')
                     elif slit == 'S200A2':
-                        uncalfile1 = os.path.join(rawpath_level2, 'jw01222012001_03106_00001_' + detname + '_uncal.fits')
-                        uncalfile2 = os.path.join(rawpath_level2, 'jw01222012001_03106_00002_' + detname + '_uncal.fits')
-                        uncalfile3 = os.path.join(rawpath_level2, 'jw01222012001_03106_00003_' + detname + '_uncal.fits')
-                elif disperser == '140H':
+                        uncalfile1 = os.path.join(rawpath_level2, 'jw01222005001_09101_00001_' + detname + '_uncal.fits')
+                        uncalfile2 = os.path.join(rawpath_level2, 'jw01222005001_09101_00002_' + detname + '_uncal.fits')
+                        uncalfile3 = os.path.join(rawpath_level2, 'jw01222005001_09101_00003_' + detname + '_uncal.fits')
+                elif disperser == '235H':
                     # NIRSPEC 3-point dither dither center
                     if slit == 'S200A1':
-                        uncalfile1 = os.path.join(rawpath_level2, 'jw01222012001_03102_00001_' + detname + '_uncal.fits')
-                        uncalfile2 = os.path.join(rawpath_level2, 'jw01222012001_03102_00002_' + detname + '_uncal.fits')
-                        uncalfile3 = os.path.join(rawpath_level2, 'jw01222012001_03102_00003_' + detname + '_uncal.fits')
+                        uncalfile1 = os.path.join(rawpath_level2, 'jw01222005001_05101_00001_' + detname + '_uncal.fits')
+                        uncalfile2 = os.path.join(rawpath_level2, 'jw01222005001_05101_00002_' + detname + '_uncal.fits')
+                        uncalfile3 = os.path.join(rawpath_level2, 'jw01222005001_05101_00003_' + detname + '_uncal.fits')
                     elif slit == 'S200A2':
-                        uncalfile1 = os.path.join(rawpath_level2, 'jw01222012001_03104_00001_' + detname + '_uncal.fits')
-                        uncalfile2 = os.path.join(rawpath_level2, 'jw01222012001_03104_00002_' + detname + '_uncal.fits')
-                        uncalfile3 = os.path.join(rawpath_level2, 'jw01222012001_03104_00003_' + detname + '_uncal.fits')                        
+                        uncalfile1 = os.path.join(rawpath_level2, 'jw01222005001_07101_00001_' + detname + '_uncal.fits')
+                        uncalfile2 = os.path.join(rawpath_level2, 'jw01222005001_07101_00002_' + detname + '_uncal.fits')
+                        uncalfile3 = os.path.join(rawpath_level2, 'jw01222005001_07101_00003_' + detname + '_uncal.fits')                        
 
             exp_list.append([uncalfile1, uncalfile2, uncalfile3])
 
