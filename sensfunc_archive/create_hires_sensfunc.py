@@ -27,55 +27,61 @@ from pypeit import utils
 
 from IPython import embed
 
-# def get_std_dict(sensfuncs):
-#     """Get the standard star dictionary from the sensitivity functions.
-#
-#     Args:
-#         sensfuncs (list):
-#             List of SensFunc objects.
-#
-#     Returns:
-#         dict: Dictionary with the standard star information.
-#     """
-#
-#     cal_names = []
-#     cal_ras = []
-#     cal_decs = []
-#     for sensobj in sensfuncs:
-#         if sensobj.std_name not in cal_names:
-#             cal_names.append(sensobj.std_name)
-#             cal_ras.append(sensobj.std_ra)
-#             cal_decs.append(sensobj.std_dec)
-#
-#     all_std_dicts = {}
-#     for i, cal_name in enumerate(cal_names):
-#         std_dict = flux_calib.get_standard_spectrum(ra=cal_ras[i], dec=cal_decs[i])
-#         all_std_dicts[cal_name] = std_dict
-#
-#     return all_std_dicts
+def get_std_dict(sensfuncs):
+    """Get the standard star dictionary from the sensitivity functions.
+
+    Args:
+        sensfuncs (list):
+            List of SensFunc objects.
+
+    Returns:
+        dict: Dictionary with the standard star information.
+    """
+
+    cal_names = []
+    cal_ras = []
+    cal_decs = []
+    for sensobj in sensfuncs:
+        if sensobj.std_name not in cal_names:
+            cal_names.append(sensobj.std_name)
+            cal_ras.append(sensobj.std_ra)
+            cal_decs.append(sensobj.std_dec)
+
+    all_std_dicts = {}
+    for i, cal_name in enumerate(cal_names):
+        std_dict = flux_calib.get_standard_spectrum(ra=cal_ras[i], dec=cal_decs[i])
+        all_std_dicts[cal_name] = std_dict
+
+    return all_std_dicts
+
 
 # PLOTS RELATED FUNCTIONS #
 def color_distance(c1, c2):
     return np.sqrt(sum((a - b) ** 2 for a, b in zip(mcolors.to_rgb(c1), mcolors.to_rgb(c2))))
 
 
-def is_blackish_or_whiteish(color):
+def is_blackish_or_whiteish(color, bw_th=0.8):
     rgb = np.array(mcolors.to_rgb(color))
-    return np.all(rgb > 0.8) or np.all(rgb < 0.1)
+    return np.all(rgb > bw_th) or np.all(rgb < (1 - bw_th))
 
 
 def get_unique_colors(n, color_dict):
-    colors = [color for color in color_dict.keys() if not is_blackish_or_whiteish(color)]
+    colors = list(color_dict.keys())
     unique_colors = []
-    threshold = 0.3
-    while len(unique_colors) < n and threshold > 0:
-        unique_colors = []
-        for color in colors:
-            if all(color_distance(color, uc) > threshold for uc in unique_colors):
-                unique_colors.append(color)
-            if len(unique_colors) == n:
-                break
-        threshold -= 0.01
+    bw_th = 0.8
+    while bw_th < 0.99 and len(unique_colors) < n:
+        filtered_colors = [color for color in colors if not is_blackish_or_whiteish(color, bw_th)]
+        threshold = 0.3
+        while len(unique_colors) < n and threshold > 0:
+            unique_colors = list(mcolors.TABLEAU_COLORS)
+            for color in filtered_colors:
+                if all(color_distance(color, uc) > threshold for uc in unique_colors):
+                    unique_colors.append(color)
+                if len(unique_colors) == n:
+                    break
+            threshold -= 0.01
+        bw_th += 0.01
+
     if len(unique_colors) < n:
         raise ValueError("Not enough unique colors available")
     return unique_colors
@@ -108,7 +114,7 @@ def on_pick(event, selected_lines, removed_lines, key, key_type='order'):
         line.set_visible(False)
         # update legend
         handles, labels = ax.get_legend_handles_labels()
-        ax.legend(handles, labels, fontsize=5)
+        ax.legend(handles, labels, fontsize=2)
         event.canvas.draw()
         # remove from dictionary
         removed_lines.append((label, line))
@@ -146,7 +152,7 @@ def colormap(objlist):
     """Create a colormap for a list of objects.
 
     Args:
-        objlist (list):
+        objlist (list or `~numpy.ndarray`):
             List of objects.
 
     Returns:
@@ -214,6 +220,26 @@ def get_sname_from_sensobj(sensobj):
     """
     return Path(sensobj.spec1df).name.replace('spec1d', 'sens').replace(' (1)', '')
 
+
+def match_sensobj2sensfile(sensobjs, sensnames):
+    """Match the SensFunc objects to the sensitivity function file names.
+
+    Args:
+        sensobjs (list):
+            List of SensFunc objects.
+        sensnames (list):
+            List of sensitivity function file names.
+
+    Returns:
+        list: list of indexes to match the SensFunc objects to the sensitivity function file names.
+
+    """
+    mtch = []
+    for n in sensnames:
+        for s, sf in enumerate(sensobjs):
+            if get_sname_from_sensobj(sf) == n.replace(' (1)', ''):
+                mtch.append(s)
+    return mtch
 
 def create_sens_files(spec1d_files, spec1d_files_path, sens_files_path, boxcar=False,
                       use_flat=True, skip_existing=True):
@@ -361,46 +387,22 @@ def load_sensfunc(sens_files_path, sens_fnames=None, sens_fnames_dict=None,
     elif sens_fnames is None and sens_fnames_dict is not None:
         sens_fnames = np.unique([item for sublist in sens_fnames_dict.values() for item in sublist if sublist])
 
-    sensfuncs = []
     sensnames = []
-    orders = np.array([])
 
     for sens_file in sens_fnames:
+        if 'HZ44' in sens_file:
+            continue
         sens_file = sens_files_path / sens_file
         if not sens_file.exists():
             msgs.warn(f'Sensitivity function file {sens_file} does not exist.')
         else:
-            sensobj = SensFunc.from_file(sens_file, chk_version=False)
-            sensfuncs.append(sensobj)
-            orders = np.append(orders, sensobj.sens['ECH_ORDERS'].data)
             sensnames.append(sens_file.name)
 
-    if len(sensfuncs) == 0:
+    if len(sensnames) == 0:
         msgs.error("No sensitivity functions loaded.")
 
-    # order_vec = np.arange(orders.min(), orders.max() + 1, dtype=int)
-    order_vec = np.arange(orders.min(), 93 + 1, dtype=int)
-    order_vec = order_vec[::-1]
-
-    # unpack everything and parse if requested
-    parsed_sensobjs = {}
-    parsed_sensnames = {}
-
-    if sens_fnames_dict is not None:
-        parsed_sensobjs = {}
-        parsed_sensnames = {}
-        for iord, sens_fnames in sens_fnames_dict.items():
-            # sort the sensitivity function file names from the dictionary
-            parsed_sensnames[iord] = sorted(sens_fnames_dict[iord])
-            # get the sorted index of the sensitivity function file names from the dictionary
-            sort_from_objs = np.argsort([get_sname_from_sensobj(sensobj) for sensobj in sensfuncs if get_sname_from_sensobj(sensobj) in parsed_sensnames[iord]])
-            # get the SensFunc objects for the current order and sort them
-
-            parsed_sensobjs[iord] = list(np.array([sensobj for sensobj in sensfuncs if get_sname_from_sensobj(sensobj) in parsed_sensnames[iord]])[sort_from_objs])
-
-    zps, zp_scales, waves, ords, snames = plot_parse_loaded(sensfuncs, sensnames, order_vec, sens_files_path,
-                                                            selected_sensfuncs=parsed_sensobjs,
-                                                            selected_lines=parsed_sensnames,
+    zps, zp_scales, waves, ords, snames = plot_parse_loaded(sensnames, sens_files_path,
+                                                            selected_lines=sens_fnames_dict,
                                                             parse=parse, plot_all=plot_all, ptype=ptype)
 
     if len(zps) == 0:
@@ -408,22 +410,16 @@ def load_sensfunc(sens_files_path, sens_fnames=None, sens_fnames_dict=None,
     return zps, zp_scales, waves, ords, snames
 
 
-def plot_parse_loaded(sensfuncs, sensnames, order_vec, sens_files_path,
-                      selected_sensfuncs=None, selected_lines=None, parse=None, plot_all=False,
+def plot_parse_loaded(sensnames, sens_files_path, cut_left=100, cut_right=-100,
+                      selected_lines=None, parse=None, plot_all=False,
                       savetofile=False, ptype='counts_per_angs'):
     """Plot all the loaded sensitivity functions.
 
     Args:
-        sensfuncs (list):
-            List of SensFunc objects.
         sensnames (list):
             List of sensitivity function file names.
-        order_vec (`numpy.ndarray`_):
-            Array of orders.
         sens_files_path (Path):
             Path to the sensitivity function files.
-        selected_sensfuncs (dict):
-            Dictionary with the selected SensFunc objects per ech order.
         selected_lines (dict):
             Dictionary with the selected sensitivity function file names per ech order.
         parse (str):
@@ -440,8 +436,13 @@ def plot_parse_loaded(sensfuncs, sensnames, order_vec, sens_files_path,
 
     """
 
+    # define the order vector. HARD CODED FOR NOW
+    order_vec = np.arange(93, 34, -1)
+    # get SensFunc objects
+    sensfuncs = [SensFunc.from_file(sens_files_path / sn, chk_version=False) for sn in sensnames]
+
     # colors by SensFunc object
-    color_map_sens = colormap(sensfuncs)
+    color_map_sens = colormap(sensnames)
     # color by order
     color_map_ord = colormap(order_vec)
     y_label = 'Zeropoint (AB mag)' if ptype == 'zeropoint' else 'Throughput' if ptype == 'throughput' \
@@ -452,28 +453,27 @@ def plot_parse_loaded(sensfuncs, sensnames, order_vec, sens_files_path,
     y_smooth_all = []
     y_scale_all = []
     y_maxmax_all = []
+    y_med_all = []
     wave_all = []
     order_all = []
     sname_all = []
     with PdfPages(outfile_name) as pdf:
         for iord in order_vec:
             # get the SensFunc objects for the current order
-            if selected_sensfuncs is not None and iord in selected_sensfuncs.keys() and len(selected_sensfuncs[iord]) > 0:
+            if selected_lines is not None and iord in selected_lines.keys() and len(selected_lines[iord]) > 0:
                 i_sensnames = selected_lines[iord]
-                i_sensfuncs = selected_sensfuncs[iord]
+                mtch = match_sensobj2sensfile(sensfuncs, i_sensnames)
+                i_sensfuncs = [sensfuncs[m] for m in mtch]
             else:
                 i_sensfuncs = sensfuncs
                 i_sensnames = sensnames
 
-            # initialize the selected sensfuncs and lines for each order for the different parsing options
-            if parse == 'use_all':
-                selected_sensfuncs[iord] = i_sensfuncs
-                selected_lines[iord] = i_sensnames
-            elif parse == 'select':
-                selected_sensfuncs[iord] = []
-                if iord in selected_lines.keys() and len(selected_lines[iord]) == 0:
-                    selected_lines[iord] = i_sensfuncs
+            # reset selected_lines if it already exists, otherwise create it
+            if selected_lines is None:
+                selected_lines = {}
+            selected_lines[iord] = []
 
+            # plot
             fig = plt.figure(figsize=(23, 6.))
             plt.minorticks_on()
             plt.tick_params(axis='both', direction='in', top=True, right=True, which='both')
@@ -497,7 +497,7 @@ def plot_parse_loaded(sensfuncs, sensnames, order_vec, sens_files_path,
                     echangle = fits.getval(sens_files_path / sname, 'ECHANGLE')
                     xdangle = fits.getval(sens_files_path / sname, 'XDANGLE')
 
-                    color = color_map_sens[sensobj]
+                    color = color_map_sens[sname]
                     wave = sensobj.sens['SENS_WAVE'].data[indx]
                     wave_gmp = wave > 1.0
                     wmin = wave[wave_gmp].min()
@@ -507,31 +507,43 @@ def plot_parse_loaded(sensfuncs, sensnames, order_vec, sens_files_path,
                         # plt.plot(wave[wave_gmp], zeropoint_data[wave_gmp], alpha=0.4, color=color, lw=0.6,
                         #          zorder=-2)
                         y = sensobj.sens['SENS_ZEROPOINT_FIT'].data[indx]
+                        zcut = y > 12.
+                        y = y[zcut]
+                        wave = wave[zcut]
+                        wave_gmp = wave > 1.0
+                        y_tresh = 20.
                     elif ptype == 'throughput':
                         wave = sensobj.wave[:, indx]
                         wcut = (wave >= wmin) & (wave <= wmax)
                         wave = wave[wcut]
                         wave_gmp = wave > 1.0
                         y = sensobj.throughput[:, indx][wcut]
+                        y_tresh = 0.2
                     else:
                         # counts per Angstrom
                         y = sensobj.sens['SENS_COUNTS_PER_ANG'].data[indx] / exptime
+                        y_tresh = 10000.
 
                     # smooth y
                     filt = 100
                     y_smooth = utils.fast_running_median(y[wave_gmp], filt)
-                    y_smooth_max = np.nanmax(y_smooth[y_smooth < 10000])
+                    y_smooth_max = np.nanmax(y_smooth[y_smooth < y_tresh])
                     # append by order
                     y_iord.append(y[wave_gmp])
                     y_iord_smooth.append(y_smooth)
                     y_iord_smooth_max.append(y_smooth_max)
                     wave_iord.append(wave[wave_gmp])
-                    wave_iord_min.append(wave[wave_gmp][y[wave_gmp] > 15.].min())
-                    wave_iord_max.append(wave[wave_gmp][y[wave_gmp] > 15.].max())
+                    y_mintresh = 0.0
+                    # if ptype == 'zeropoint':
+                    #     y_mintresh = 13. if iord in [93, 92, 35] else 16.
+                    _w = wave[wave_gmp][y_smooth > y_mintresh]
+                    wave_iord_min.append(_w.min())
+                    wave_iord_max.append(_w.max())
                     color_iord.append(color)
-                    legend_iord.append(
-                        f'{sname} - {decker} - {filter} - ech: {echangle} - xd: {xdangle}\n'
-                        f'- airmass: {airmass:.2f} - exptime: {exptime:.1f}')
+                    # legend_iord.append(
+                    #     f'{sname} - {decker} - {filter} - ech: {echangle:.3f} - xd: {xdangle:.3f}\n'
+                    #     f'- airmass: {airmass:.2f} - exptime: {exptime:.1f}')
+                    legend_iord.append(f'{sname} - {decker} - {filter} - ech: {echangle:.3f} - xd: {xdangle:.3f}')
 
                     # append to all
                     y_all.append(y[wave_gmp])
@@ -539,6 +551,7 @@ def plot_parse_loaded(sensfuncs, sensnames, order_vec, sens_files_path,
                     wave_all.append(wave[wave_gmp])
                     order_all.append(iord)
                     sname_all.append(sname)
+                    selected_lines[iord].append(sname)
             if len(y_iord) == 0:
                 plt.close(fig)
                 continue
@@ -562,28 +575,33 @@ def plot_parse_loaded(sensfuncs, sensnames, order_vec, sens_files_path,
 
             # get the max value of the smoothed y
             y_maxmax = np.nanmax(y_iord_smooth_ref)
+            y_med = stats.sigma_clipped_stats(y_iord_smooth_ref, sigma=3, maxiters=5)[1]
             # append to all
             y_maxmax_all.append(y_maxmax)
+            y_med_all.append(y_med)
 
             # plot by order
             for y_i, y_sm, y_ref, wave, color, legend in zip(y_iord, y_iord_smooth, y_iord_smooth_ref, wave_iord,
                                                              color_iord, legend_iord):
-                s = y_maxmax / y_ref
+                s = y_med / y_ref
                 legend += f' - scale: {s:.2f}'
+                # if iord != 93:
+                #     s = 1
                 plt.plot(wave, y_i * s, color=color, alpha=0.3, lw=0.5, zorder=0)
                 plt.plot(wave, y_sm * s, color=color, lw=1.5, zorder=1, label=legend, picker=True)
                 y_scale_all.append(s)
             plt.axvline(wave_mid, color='k', ls='--', lw=0.5)
+            plt.axhline(y_med, color='k', ls='--', lw=0.5)
             plt.title(f'Order {iord}')
             plt.xlabel('Wavelength (Angstroms)')
             plt.ylabel(y_label)
             if ptype == 'zeropoint':
-                plt.ylim(y_maxmax*0.8, y_maxmax * 1.1)
+                plt.ylim(y_med*0.8, y_maxmax * 1.1)
             elif ptype == 'throughput':
-                plt.ylim(0.0, y_maxmax * 1.2)
+                plt.ylim(0.0,  y_maxmax * 1.2)
             else:
                 plt.ylim(0.0, y_maxmax * 1.2)
-            plt.legend(fontsize=4)
+            plt.legend(fontsize=2, loc='upper right')
             fig.tight_layout()
             if parse == 'select':
                 removed_lines = []
@@ -593,15 +611,11 @@ def plot_parse_loaded(sensfuncs, sensnames, order_vec, sens_files_path,
                                                                   removed_lines=removed_lines, key=iord))
                 # sort the selected lines
                 selected_lines[iord] = sorted(selected_lines[iord])
-                # # get sorted index of the selected sensfuncs
-                # sort_from_objs = np.argsort([get_sname_from_sensobj(sensobj) for sensobj in i_sensfuncs if get_sname_from_sensobj(sensobj) in selected_lines[iord]])
-                # # get the SensFunc objects for the current order and sort them
-                # selected_sensfuncs[iord] = list(np.array([sensobj for sensobj in i_sensfuncs if get_sname_from_sensobj(sensobj) in selected_lines[iord]])[sort_from_objs])
 
                 print('')
                 plt.show()
             if plot_all:
-                pdf.savefig(dpi=60)
+                pdf.savefig(dpi=50)
             plt.close(fig)
         if plot_all:
             # plot all orders
@@ -621,20 +635,21 @@ def plot_parse_loaded(sensfuncs, sensnames, order_vec, sens_files_path,
 
             plt.xlabel('Wavelength (Angstroms)')
             plt.ylabel(y_label)
-            plt.legend(fontsize=4)
+            plt.legend(fontsize=5, loc='upper right')
             if ptype == 'zeropoint':
-                plt.ylim(np.nanmin(y_maxmax_all) * 0.95, np.nanmax(y_maxmax_all) * 1.05)
+                plt.ylim(np.nanmin(y_med_all) * 0.95, np.nanmax(y_maxmax_all) * 1.05)
             elif ptype == 'throughput':
-                plt.ylim(0.0, 0.2)
+                plt.ylim(0.0, np.nanmax(y_maxmax_all) * 1.2)
             else:
                 plt.ylim(0.0, np.nanmax(y_maxmax_all) * 1.2)
             fig.tight_layout()
-            pdf.savefig(dpi=60)
+            pdf.savefig(dpi=50)
             plt.close(fig)
 
     if parse == 'select' or savetofile:
         # save to file
-        parsed_sens_file = f'used_sensfuncs_v{sensfuncs[0].version}.yaml'
+        dmver = fits.getval(sens_files_path / sensnames[0], 'DMODVER', 2)
+        parsed_sens_file = f'used_sensfuncs_v{dmver}.yaml'
         _parsed_sensnames = {str(key): value for key, value in selected_lines.items()}
         with open(parsed_sens_file, 'w') as f:
             yaml.dump(_parsed_sensnames, f)
@@ -716,7 +731,7 @@ def plot_conbined_sensfunc(comb_sensobj, zps, zp_scales, waves, ords, snames):
     color_map_ord = colormap(list(order_vec))
 
     outfile_name = 'combined_sensfunc.pdf'
-
+    factor = 10  # this is for spacing the data points in the plot
     with PdfPages(outfile_name) as pdf:
         for iord in order_vec:
             fig = plt.figure(figsize=(23, 6.))
@@ -730,7 +745,7 @@ def plot_conbined_sensfunc(comb_sensobj, zps, zp_scales, waves, ords, snames):
                 continue
             for (i_zpoint, i_wave, i_sname) in zip(i_zpoints, i_waves, i_snames):
                 color = color_map_sens[i_sname]
-                plt.plot(i_wave, i_zpoint, color=color, ls='', marker='.',
+                plt.plot(i_wave[::factor], i_zpoint[::factor], color=color, ls='', marker='.',
                          ms=2, alpha=0.2, zorder=-2, label=i_sname)
 
             # plot the combined sensitivity function
@@ -739,14 +754,14 @@ def plot_conbined_sensfunc(comb_sensobj, zps, zp_scales, waves, ords, snames):
                 i_comb_zpoint = comb_sensobj.sens['SENS_ZEROPOINT'].data[indx]
                 i_comb_wave = comb_sensobj.sens['SENS_WAVE'].data[indx]
                 plt.plot(i_comb_wave[i_comb_wave>0], i_comb_zpoint[i_comb_wave>0],
-                         color='k', lw=1.5, zorder=1, label='Combined')
+                         color='k', lw=3., zorder=1, label='Combined')
             plt.title(f'Order {iord}')
             plt.xlabel('Wavelength (Angstroms)')
             plt.ylabel('Zeropoint (AB mag)')
             plt.ylim(i_comb_zpoint[i_comb_wave>0].min()*0.95, i_comb_zpoint[i_comb_wave>0].max()*1.05)
-            plt.legend(fontsize=4, loc='upper right')
+            #plt.legend(fontsize=4, loc='upper right')
             fig.tight_layout()
-            pdf.savefig(dpi=60)
+            pdf.savefig(dpi=50)
             plt.close(fig)
         # plot all orders
         fig = plt.figure(figsize=(23, 6.))
@@ -768,7 +783,7 @@ def plot_conbined_sensfunc(comb_sensobj, zps, zp_scales, waves, ords, snames):
         plt.ylim(z_comb[w_comb > 0].min()*0.95, z_comb[w_comb > 0].max()*1.05)
         plt.legend(fontsize=4, loc='upper right')
         fig.tight_layout()
-        pdf.savefig(dpi=60)
+        pdf.savefig(dpi=50)
         plt.close(fig)
         # plot combined throughput
         fig = plt.figure(figsize=(23, 6.))
@@ -788,7 +803,7 @@ def plot_conbined_sensfunc(comb_sensobj, zps, zp_scales, waves, ords, snames):
         plt.ylim(t_tru[w_tru > 0].min()*0.95, t_tru[w_tru > 0].max()*1.05)
         plt.legend(fontsize=4, loc='upper right')
         fig.tight_layout()
-        pdf.savefig(dpi=60)
+        pdf.savefig(dpi=50)
         plt.close(fig)
 
 
