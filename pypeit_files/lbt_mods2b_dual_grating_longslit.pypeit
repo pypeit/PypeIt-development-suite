@@ -1,0 +1,50 @@
+# Auto-generated PypeIt input file using PypeIt version: 1.17.1
+# UTC 2025-03-14T20:32:31.541+00:00
+
+# User-defined execution parameters
+[rdx]
+    spectrograph = lbt_mods2b
+[calibrations]
+        [[slitedges]]
+           edge_thresh = 30
+           minimum_slit_length = 55
+[reduce]
+        [[findobj]]
+           maxnumber_std = 1
+
+
+# Setup
+setup read
+Setup A:
+  binning: 1,1
+  dichroic: Dual
+  dispname: G400L
+  instrument: MODS2B
+setup end
+
+# Data block 
+data read
+ path /Users/olga/Dropbox/Data/MODS_Sample_Datasets/MODS_LS_ext_sample_dataset/RAW_DATA/lbt_mods/lbt_mods2b/dual_grating_longslit
+                 filename |                 frametype |                 ra |                dec |                                target | dispname |     decker | binning |          mjd | airmass | exptime | instrument | dichroic | calib
+mods2b.20190903.0024.fits |                  arc,tilt |                0.0 |                0.0 |                     Ne + Hg[Ar] Lamps |    G400L | LS5x60x0.6 |     1,1 | 58729.275446 |     1.0 |     2.0 |     MODS2B |     Dual |     0
+mods2b.20190903.0025.fits |                  arc,tilt |                0.0 |                0.0 |                         Kr + Xe Lamps |    G400L | LS5x60x0.6 |     1,1 | 58729.276813 |     1.0 |    15.0 |     MODS2B |     Dual |     0
+mods2b.20190903.0026.fits |                  arc,tilt |                0.0 |                0.0 |                               Ar Lamp |    G400L | LS5x60x0.6 |     1,1 | 58729.278271 |     1.0 |    30.0 |     MODS2B |     Dual |     0
+mods2b.20190903.0028.fits | pixelflat,illumflat,trace |                0.0 |                0.0 |      QTH1 ND1.5 Dual LS60x5 Slit Flat |    G400L |     LS60x5 |     1,1 | 58729.287157 |     1.0 |     3.5 |     MODS2B |     Dual |     0
+mods2b.20190903.0029.fits | pixelflat,illumflat,trace |                0.0 |                0.0 |      QTH1 ND1.5 Dual LS60x5 Slit Flat |    G400L |     LS60x5 |     1,1 |  58729.28851 |     1.0 |     3.5 |     MODS2B |     Dual |     0
+mods2b.20190903.0031.fits | pixelflat,illumflat,trace |                0.0 |                0.0 |        QTH1 UG5 Dual LS60x5 Slit Flat |    G400L |     LS60x5 |     1,1 | 58729.291082 |     1.0 |     1.0 |     MODS2B |     Dual |     0
+mods2b.20190903.0032.fits | pixelflat,illumflat,trace |                0.0 |                0.0 |        QTH1 UG5 Dual LS60x5 Slit Flat |    G400L |     LS60x5 |     1,1 | 58729.292321 |     1.0 |     1.0 |     MODS2B |     Dual |     0
+mods2b.20190903.0075.fits | pixelflat,illumflat,trace |                0.0 |                0.0 |  QTH1 ND1.5 Dual LS5x60x0.6 Slit Flat |    G400L | LS5x60x0.6 |     1,1 |  58730.10359 |     1.0 |    25.0 |     MODS2B |     Dual |     0
+mods2b.20190903.0076.fits | pixelflat,illumflat,trace |                0.0 |                0.0 |  QTH1 ND1.5 Dual LS5x60x0.6 Slit Flat |    G400L | LS5x60x0.6 |     1,1 | 58730.105107 |     1.0 |    25.0 |     MODS2B |     Dual |     0
+mods2b.20190903.0078.fits | pixelflat,illumflat,trace |                0.0 |                0.0 |    QTH1 UG5 Dual LS5x60x0.6 Slit Flat |    G400L | LS5x60x0.6 |     1,1 | 58730.108023 |     1.0 |     8.0 |     MODS2B |     Dual |     0
+mods2b.20190903.0079.fits | pixelflat,illumflat,trace |                0.0 |                0.0 |    QTH1 UG5 Dual LS5x60x0.6 Slit Flat |    G400L | LS5x60x0.6 |     1,1 | 58730.109341 |     1.0 |     8.0 |     MODS2B |     Dual |     0
+mods2b.20190913.0002.fits |                   science | 3.2542374999999995 |  72.52195277777777 |                                NGC 40 |    G400L | LS5x60x0.6 |     1,1 | 58739.427899 |    1.38 |    90.0 |     MODS2B |     Dual |     0
+#mods2b.20190903.0066.fits |          slitless_pixflat |                0.0 |                0.0 | VFLAT5.0 Clear Dual Slitless Pix Flat |    G400L |    Imaging |     1,1 | 58730.081326 |     1.0 |     3.0 |     MODS2B |     Dual |     0
+#mods2b.20190903.0067.fits |          slitless_pixflat |                0.0 |                0.0 | VFLAT5.0 Clear Dual Slitless Pix Flat |    G400L |    Imaging |     1,1 | 58730.082586 |     1.0 |     3.0 |     MODS2B |     Dual |     0
+#mods2b.20190903.0068.fits |          slitless_pixflat |                0.0 |                0.0 | VFLAT5.0 Clear Dual Slitless Pix Flat |    G400L |    Imaging |     1,1 | 58730.083847 |     1.0 |     3.0 |     MODS2B |     Dual |     0
+#mods2b.20190903.0071.fits |          slitless_pixflat |                0.0 |                0.0 |   VFLAT9.0 UG5 Dual Slitless Pix Flat |    G400L |    Imaging |     1,1 | 58730.087727 |     1.0 |     2.0 |     MODS2B |     Dual |     0
+#mods2b.20190903.0072.fits |          slitless_pixflat |                0.0 |                0.0 |   VFLAT9.0 UG5 Dual Slitless Pix Flat |    G400L |    Imaging |     1,1 | 58730.088978 |     1.0 |     2.0 |     MODS2B |     Dual |     0
+#mods2b.20190903.0073.fits |          slitless_pixflat |                0.0 |                0.0 |   VFLAT9.0 UG5 Dual Slitless Pix Flat |    G400L |    Imaging |     1,1 | 58730.090225 |     1.0 |     2.0 |     MODS2B |     Dual |     0
+mods2b.20190903.0033.fits |                  standard |  88.11505833333332 | 15.887152777777777 |                 G191-B2B dual grating |    G400L |     LS60x5 |     1,1 | 58729.489103 |     1.3 |    90.0 |     MODS2B |     Dual |     0
+mods2b.20190904.0065.fits |                  standard |  327.7959208333333 |  28.86398888888889 |               BD+28d4211 dual grating |    G400L |     LS60x5 |     1,1 | 58730.389093 |    1.28 |    60.0 |     MODS2B |     Dual |     0
+data end
+
