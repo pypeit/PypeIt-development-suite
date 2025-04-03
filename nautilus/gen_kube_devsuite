@@ -83,8 +83,6 @@ def main():
     # Install apt packages and setup PypeIt git repository
     my_args = 'apt-get -y update; apt-get -y install git awscli build-essential qtbase5-dev rclone;'
     my_args += ' cd /tmp;'
-#    my_args += ' git clone https://github.com/pypeit/PypeIt.git; cd PypeIt;'
-#    my_args += f' git checkout {pargs.pypeit_branch};' 
     my_args += f' git clone --branch {pargs.pypeit_branch} --depth 1 {pargs.pypeit_fork} PypeIt;'
     my_args += ' cd PypeIt;' 
 
