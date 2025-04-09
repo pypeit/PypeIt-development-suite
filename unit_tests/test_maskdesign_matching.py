@@ -42,8 +42,7 @@ def test_maskdef_id():
         trace_par = par['calibrations']['slitedges']
 
         # Run edge trace
-        edges = EdgeTraceSet(traceImage, instrument, trace_par, auto=True, debug=False,
-                             show_stages=False,qa_path=None)
+        edges = EdgeTraceSet(traceImage, instrument, trace_par, auto=True)
 
         slits = edges.get_slits()
         # Check that the `maskdef_id` assigned to the first and last slits is correct
@@ -82,8 +81,7 @@ def test_add_missing_slits():
         # Running the EdgeTraceSet steps (one-by-one)
 
         # Initialize EdgeTraceSet
-        edges = EdgeTraceSet(traceImage, instrument, trace_par, auto=False, debug=False,
-                             show_stages=False, qa_path=None)
+        edges = EdgeTraceSet(traceImage, instrument, trace_par, auto=False)
         # Perform the initial edge detection and trace identification
         edges.initial_trace()
         # Initial trace can result in no edges found
@@ -95,22 +93,22 @@ def test_add_missing_slits():
         # refinement could have removed all traces (via `check_traces`)
         if not edges.is_empty:
             # Fit the trace locations with a polynomial
-            edges.fit_refine(debug=False)
+            edges.fit_refine()
             # Use the fits to determine if there are any discontinous
             # trace centroid measurements that are actually components
             # of the same slit edge
-            edges.merge_traces(debug=False)
+            edges.merge_traces()
         # Check if the PCA decomposition is possible; this should catch
         # long slits
         if edges.par['auto_pca'] and edges.can_pca():
             # Use a PCA decomposition to parameterize the trace
             # functional forms
-            edges.pca_refine(debug=False)
+            edges.pca_refine()
             # Use the results of the PCA decomposition to rectify and
             # detect peaks/troughs in the spectrally collapsed
             # Sobel-filtered image, then use those peaks to further
             # refine the edge traces
-            edges.peak_refine(rebuild_pca=True, debug=False)
+            edges.peak_refine(rebuild_pca=True)
 
         # Check the values of the traces that will be removed
         if name == 'keck_deimos':
@@ -156,7 +154,7 @@ def test_add_missing_slits():
         edges.remove_traces(edges.synced_selection(indx, mode='ignore'), rebuild_pca=True)
 
         # Run slitmask matching algorithm
-        edges.maskdesign_matching(debug=False)
+        edges.maskdesign_matching()
 
         # Sync left and right edges
         edges.sync()
@@ -212,9 +210,7 @@ def test_overlapped_slits():
     trace_par = par['calibrations']['slitedges']
 
     # Run edge trace
-    edges = EdgeTraceSet(traceImage, keck_deimos, trace_par, auto=True, debug=False,
-                         show_stages=False, qa_path=None)
-
+    edges = EdgeTraceSet(traceImage, keck_deimos, trace_par, auto=True)
     slits = edges.get_slits()
     # Check that the total number of expected slits and the number of alignment slits are correct.
     assert len(slits.maskdef_designtab['MASKDEF_ID'].data) == 22, \
