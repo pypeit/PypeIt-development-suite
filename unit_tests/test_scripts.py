@@ -8,7 +8,7 @@ from pathlib import Path
 from IPython import embed
 
 import matplotlib
-#matplotlib.use('agg')  # For Travis
+matplotlib.use('agg')  # For Travis
 
 from pypeit import scripts
 from pypeit import edgetrace
