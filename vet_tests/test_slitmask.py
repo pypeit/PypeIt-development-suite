@@ -47,7 +47,7 @@ def test_assign_maskinfo_add_missing(redux_out):
 
         # Run edge trace
         edges = edgetrace.EdgeTraceSet(traceImage, instrument, par['calibrations']['slitedges'],
-                                       auto=True, debug=False, show_stages=False,qa_path=None)
+                                       auto=True)
 
         slits = edges.get_slits()
 
