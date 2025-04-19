@@ -481,7 +481,7 @@ def run_setup(spectrograph_name, setup_raw_data_path, main_controller, qtbot):
 
     # Click the Run Setup button
     with qtbot.waitSignal(main_window.model.stateChanged, raising=True, timeout=10000):
-        qtbot.mouseClick(main_window.setupButton, Qt.MouseButton.LeftButton)
+        main_window.setupAction.trigger()
 
     # Make sure the thread finishes before continuing
     assert main_controller.operation_thread.wait(QDeadlineTimer(1000)) is True
@@ -502,12 +502,12 @@ def test_run_setup(qapp, qtbot, raw_data_path, tmp_path, monkeypatch):
     assert not obs_log_tab.paths_editor.isEnabled()
 
 
-    assert main_window.openButton.isEnabled()
-    assert main_window.logButton.isEnabled()
-    assert not main_window.clearButton.isEnabled()
-    assert not main_window.setupButton.isEnabled()
-    assert not main_window.saveTabButton.isEnabled()
-    assert not main_window.saveAllButton.isEnabled()
+    assert main_window.openAction.isEnabled()
+    assert main_window.viewLogAction.isEnabled()
+    assert not main_window.clearAction.isEnabled()
+    assert not main_window.setupAction.isEnabled()
+    assert not main_window.saveTabAction.isEnabled()
+    assert not main_window.saveAllAction.isEnabled()
 
     assert obs_log_tab.state == model.ModelState.UNCHANGED
     assert main_window._current_tab is obs_log_tab
@@ -541,11 +541,11 @@ def test_run_setup(qapp, qtbot, raw_data_path, tmp_path, monkeypatch):
     assert obs_log_tab._paths_viewer.model().stringList()[0] == str(j_multi)
     assert obs_log_tab.paths_editor.isEnabled()
     assert obs_log_tab.spectrograph.isEnabled()
-    assert main_window.openButton.isEnabled()
-    assert not main_window.clearButton.isEnabled()
-    assert main_window.setupButton.isEnabled()
-    assert not main_window.saveTabButton.isEnabled()
-    assert not main_window.saveAllButton.isEnabled()
+    assert main_window.openAction.isEnabled()
+    assert not main_window.clearAction.isEnabled()
+    assert main_window.setupAction.isEnabled()
+    assert not main_window.saveTabAction.isEnabled()
+    assert not main_window.saveAllAction.isEnabled()
 
     assert setup_gui_model.state == model.ModelState.NEW
     assert obs_log_tab.state == model.ModelState.UNCHANGED
@@ -555,12 +555,12 @@ def test_run_setup(qapp, qtbot, raw_data_path, tmp_path, monkeypatch):
     # Click the Run Setup button and wait for the setup operation to complete
 
     with qtbot.waitSignal(setup_gui_model.stateChanged, raising=True, timeout=10000):
-        qtbot.mouseClick(main_window.setupButton, Qt.MouseButton.LeftButton)
+        main_window.setupAction.trigger()
     assert c.operation_thread.wait(QDeadlineTimer(1000)) is True
 
-    assert main_window.saveAllButton.isEnabled()
-    assert not main_window.saveTabButton.isEnabled()
-    assert main_window.clearButton.isEnabled()
+    assert main_window.saveAllAction.isEnabled()
+    assert not main_window.saveTabAction.isEnabled()
+    assert main_window.clearAction.isEnabled()
 
     assert setup_gui_model.state == model.ModelState.CHANGED
     assert obs_log_tab.state == model.ModelState.UNCHANGED
@@ -610,7 +610,7 @@ def test_run_setup_failure(qapp, qtbot, raw_data_path, tmp_path, monkeypatch):
         qtbot.keyClick(obs_log_tab.paths_editor._path, Qt.Key_Enter)
     # Click the Run Setup button and wait for the background operation to complete, verifying it was canceled
     with qtbot.waitSignal(setup_gui_model.stateChanged, raising=True, timeout=10000):
-        qtbot.mouseClick(main_window.setupButton, Qt.MouseButton.LeftButton)
+        main_window.setupAction.trigger()
     assert c.operation_thread.wait(QDeadlineTimer(1000)) is True
 
     # Verify all of the files are commented out
@@ -648,7 +648,7 @@ def test_run_setup_cancel(qapp, qtbot, raw_data_path, tmp_path, monkeypatch):
     with qtbot.waitSignal(c.operation_thread.completed, check_params_cb=verify_canceled_setup, raising=True, timeout=10000):
         # Use the GUI's internal log watcher to trigger the canceled exception
         setup_gui_model.log_buffer.watch("test_cancel", re.compile("Adding metadata for .*$"), raise_cancel_exception)
-        qtbot.mouseClick(main_window.setupButton, Qt.MouseButton.LeftButton)
+        main_window.setupAction.trigger()
 
     # Make sure the thread finishes before continuing
     assert c.operation_thread.wait(QDeadlineTimer(1000)) is True
@@ -684,11 +684,11 @@ def test_multi_paths(qapp, qtbot, raw_data_path, tmp_path, monkeypatch):
     assert y_long in obs_log_tab._paths_viewer.model().stringList()
     assert obs_log_tab.paths_editor.isEnabled()
     assert not obs_log_tab.spectrograph.isEnabled()
-    assert main_window.openButton.isEnabled()
-    assert main_window.clearButton.isEnabled()
-    assert main_window.setupButton.isEnabled()
-    assert not main_window.saveTabButton.isEnabled()
-    assert main_window.saveAllButton.isEnabled()
+    assert main_window.openAction.isEnabled()
+    assert main_window.clearAction.isEnabled()
+    assert main_window.setupAction.isEnabled()
+    assert not main_window.saveTabAction.isEnabled()
+    assert main_window.saveAllAction.isEnabled()
 
     assert setup_gui_model.state == model.ModelState.CHANGED
 
@@ -698,14 +698,14 @@ def test_multi_paths(qapp, qtbot, raw_data_path, tmp_path, monkeypatch):
 
         # Click the Run Setup button to re-run setup
         with qtbot.waitSignal(setup_gui_model.stateChanged, raising=True, timeout=10000):
-            qtbot.mouseClick(main_window.setupButton, Qt.MouseButton.LeftButton)
+            main_window.setupAction.trigger()
 
         # Make sure the thread finishes before continuing
         assert c.operation_thread.wait(QDeadlineTimer(1000)) is True
 
-    assert main_window.saveAllButton.isEnabled()
-    assert not main_window.saveTabButton.isEnabled()
-    assert main_window.clearButton.isEnabled()
+    assert main_window.saveAllAction.isEnabled()
+    assert not main_window.saveTabAction.isEnabled()
+    assert main_window.clearAction.isEnabled()
 
     assert setup_gui_model.state == model.ModelState.CHANGED
     assert main_window.tab_widget.currentWidget().state == model.ModelState.UNCHANGED
@@ -754,7 +754,7 @@ def test_save_and_open(qapp, qtbot, raw_data_path, tmp_path, monkeypatch):
     assert tab_widget.tabText(2) == "*B"
     # The filename displayed should be just the base name until a location is set
     assert tab_b.model.filename == "keck_mosfire_B.pypeit"
-    assert main_window.saveTabButton.isEnabled()
+    assert main_window.saveTabAction.isEnabled()
 
 
     # Set output directory. using a mock file dialog
@@ -765,7 +765,7 @@ def test_save_and_open(qapp, qtbot, raw_data_path, tmp_path, monkeypatch):
         MockFileDialog.selected_path = str(tmp_path)
         # Save the tab
         with qtbot.waitSignal(tab_b.model.stateChanged, raising=True, timeout=10000):
-            qtbot.mouseClick(main_window.saveTabButton, Qt.MouseButton.LeftButton)
+            main_window.saveTabAction.trigger()
 
     # Assert the save file dialog was called once and only once
     assert MockFileDialog.call_count == 1
@@ -779,8 +779,8 @@ def test_save_and_open(qapp, qtbot, raw_data_path, tmp_path, monkeypatch):
     assert tab_a.state == model.ModelState.CHANGED
     assert tab_widget.tabText(1) == "*A"
     assert main_window.model.state == model.ModelState.CHANGED
-    assert not main_window.saveTabButton.isEnabled()
-    assert main_window.saveAllButton.isEnabled()
+    assert not main_window.saveTabAction.isEnabled()
+    assert main_window.saveAllAction.isEnabled()
 
     # Assert the file was created
     tab_b_file = tmp_path / "keck_mosfire_B.pypeit"
@@ -802,7 +802,7 @@ def test_save_and_open(qapp, qtbot, raw_data_path, tmp_path, monkeypatch):
         MockFileDialog.selected_path = str(tab_b_file)
 
         with qtbot.waitSignal(c.model.stateChanged, raising=True, timeout=10000):
-            qtbot.mouseClick(main_window.openButton, Qt.MouseButton.LeftButton)
+            main_window.openAction.trigger()
 
         # Make sure the thread finishes before continuing
         assert c.operation_thread.wait(QDeadlineTimer(1000)) is True
@@ -810,11 +810,11 @@ def test_save_and_open(qapp, qtbot, raw_data_path, tmp_path, monkeypatch):
     assert MockFileDialog.call_count == 1
 
     # Verify a single tab was opened and everthing is the correct state
-    assert main_window.openButton.isEnabled()
-    assert main_window.clearButton.isEnabled()
-    assert main_window.setupButton.isEnabled()
-    assert not main_window.saveTabButton.isEnabled()
-    assert not main_window.saveAllButton.isEnabled()
+    assert main_window.openAction.isEnabled()
+    assert main_window.clearAction.isEnabled()
+    assert main_window.setupAction.isEnabled()
+    assert not main_window.saveTabAction.isEnabled()
+    assert not main_window.saveAllAction.isEnabled()
 
     assert main_window.model.state == model.ModelState.UNCHANGED
     assert tab_widget.count() == 3 # The tab, the obslog tab, and the "new tab" tab
@@ -834,7 +834,7 @@ def test_save_all(qapp, qtbot, raw_data_path, tmp_path, monkeypatch):
     # Use the run_setup helper to run setup on J_muilti, which will create two tabs
     run_setup("keck_mosfire", (raw_data_path / "keck_mosfire" / "J_multi").absolute(), c, qtbot)
 
-    assert main_window.saveAllButton.isEnabled()
+    assert main_window.saveAllAction.isEnabled()
 
     # Select Tab B, test that the save tab button is enabled
     with qtbot.waitSignal(main_window.tab_widget.currentChanged, raising=True, timeout=1000):
@@ -843,8 +843,8 @@ def test_save_all(qapp, qtbot, raw_data_path, tmp_path, monkeypatch):
     tab_b = main_window.tab_widget.currentWidget()
     assert tab_b.name == "B"
     assert main_window.tab_widget.tabText(2) == "*B"
-    assert main_window.saveTabButton.isEnabled()
-    assert main_window.saveAllButton.isEnabled()
+    assert main_window.saveTabAction.isEnabled()
+    assert main_window.saveAllAction.isEnabled()
 
     # Click the save all button
     with monkeypatch.context() as m:
@@ -854,7 +854,7 @@ def test_save_all(qapp, qtbot, raw_data_path, tmp_path, monkeypatch):
         MockFileDialog.selected_path = str(tmp_path)
 
         with qtbot.waitSignal(tab_b.model.stateChanged, raising=True, timeout=10000):
-            qtbot.mouseClick(main_window.saveAllButton, Qt.MouseButton.LeftButton)
+            main_window.saveAllAction.trigger()
 
     # Assert the save file dialog was called twice, once for each tab
     assert MockFileDialog.call_count == 2
@@ -865,8 +865,8 @@ def test_save_all(qapp, qtbot, raw_data_path, tmp_path, monkeypatch):
     assert tab_a.state == model.ModelState.UNCHANGED
     assert tab_b.state == model.ModelState.UNCHANGED
     assert c.model.state == model.ModelState.UNCHANGED
-    assert not main_window.saveTabButton.isEnabled()
-    assert not main_window.saveAllButton.isEnabled()
+    assert not main_window.saveTabAction.isEnabled()
+    assert not main_window.saveAllAction.isEnabled()
 
     tab_a_file = tmp_path / "keck_mosfire_A.pypeit"
     tab_b_file = tmp_path / "keck_mosfire_B.pypeit"
@@ -884,7 +884,7 @@ def test_save_all(qapp, qtbot, raw_data_path, tmp_path, monkeypatch):
 
         # Click the Run Setup button to re-run setup
         with qtbot.waitSignal(c.model.stateChanged, raising=True, timeout=10000):
-            qtbot.mouseClick(main_window.setupButton, Qt.MouseButton.LeftButton)
+            main_window.setupAction.trigger()
 
     tab_a_file.unlink()
     tab_b_file.unlink()
@@ -901,7 +901,7 @@ def test_save_all(qapp, qtbot, raw_data_path, tmp_path, monkeypatch):
         MockFileDialog.mock_response = view.DialogResponses.ACCEPT_FOR_ALL
         MockFileDialog.selected_path = str(tmp_path)
         with qtbot.waitSignal(tab_b.model.stateChanged, raising=True, timeout=10000):
-            qtbot.mouseClick(main_window.saveAllButton, Qt.MouseButton.LeftButton)
+            main_window.saveAllAction.trigger()
 
     # Assert the save file dialog was called once, with ACCEPT_FOR_ALL preventing the second tab
     # from prompting for a location
@@ -911,8 +911,8 @@ def test_save_all(qapp, qtbot, raw_data_path, tmp_path, monkeypatch):
     assert tab_a.state == model.ModelState.UNCHANGED
     assert tab_b.state == model.ModelState.UNCHANGED
     assert c.model.state == model.ModelState.UNCHANGED
-    assert not main_window.saveTabButton.isEnabled()
-    assert not main_window.saveAllButton.isEnabled()
+    assert not main_window.saveTabAction.isEnabled()
+    assert not main_window.saveAllAction.isEnabled()
 
     assert tab_a_file.is_file()
     assert tab_b_file.is_file()
@@ -926,7 +926,7 @@ def test_save_all(qapp, qtbot, raw_data_path, tmp_path, monkeypatch):
 
         # Click the Run Setup button to re-run setup
         with qtbot.waitSignal(c.model.stateChanged, raising=True, timeout=10000):
-            qtbot.mouseClick(main_window.setupButton, Qt.MouseButton.LeftButton)
+            main_window.setupAction.trigger()
 
         # Make sure the thread finishes before continuing
         assert c.operation_thread.wait(QDeadlineTimer(1000)) is True
@@ -948,7 +948,7 @@ def test_save_all(qapp, qtbot, raw_data_path, tmp_path, monkeypatch):
         MockFileDialog.mock_response = view.DialogResponses.CANCEL
         MockFileDialog.selected_path = str(tmp_path)
 
-        qtbot.mouseClick(main_window.saveAllButton, Qt.MouseButton.LeftButton)
+        main_window.saveAllAction.trigger()
         qtbot.waitUntil(lambda: MockFileDialog.call_count > 0 ,timeout=10000)
 
     assert MockFileDialog.call_count == 1
@@ -958,8 +958,8 @@ def test_save_all(qapp, qtbot, raw_data_path, tmp_path, monkeypatch):
     assert tab_a.state == model.ModelState.UNCHANGED
     assert tab_b.state == model.ModelState.CHANGED
     assert c.model.state == model.ModelState.CHANGED
-    assert not main_window.saveTabButton.isEnabled()
-    assert main_window.saveAllButton.isEnabled()
+    assert not main_window.saveTabAction.isEnabled()
+    assert main_window.saveAllAction.isEnabled()
 
     assert tab_a_file.is_file()
     assert not tab_b_file.is_file()
@@ -988,7 +988,7 @@ def test_clear(qapp, qtbot, raw_data_path, tmp_path, monkeypatch):
         
         # clear
         with qtbot.waitSignal(setup_gui_model.filesDeleted, raising=True, timeout=10000):
-            qtbot.mouseClick(main_window.clearButton, Qt.MouseButton.LeftButton)
+            main_window.clearAction.trigger()
 
     # Make sure the prompt for save dialog was actually called
     assert mock_prompt_to_save.call_count == 1
@@ -1000,11 +1000,11 @@ def test_clear(qapp, qtbot, raw_data_path, tmp_path, monkeypatch):
     assert obs_log_tab._paths_viewer.model().rowCount() == 0
     assert not obs_log_tab.paths_editor.isEnabled()
 
-    assert main_window.openButton.isEnabled()
-    assert not main_window.clearButton.isEnabled()
-    assert not main_window.setupButton.isEnabled()
-    assert not main_window.saveTabButton.isEnabled()
-    assert not main_window.saveAllButton.isEnabled()
+    assert main_window.openAction.isEnabled()
+    assert not main_window.clearAction.isEnabled()
+    assert not main_window.setupAction.isEnabled()
+    assert not main_window.saveTabAction.isEnabled()
+    assert not main_window.saveAllAction.isEnabled()
 
     assert c.model.state == model.ModelState.NEW
     assert main_window.tab_widget.widget(0).state == model.ModelState.UNCHANGED
@@ -1015,7 +1015,7 @@ def test_log_window(qapp, qtbot, tmp_path, monkeypatch):
     c, main_window = setup_offscreen_gui(tmp_path, monkeypatch, qapp, qtbot, verbosity=1)
 
     # Open the log window
-    qtbot.mouseClick(main_window.logButton, Qt.MouseButton.LeftButton)
+    main_window.viewLogAction.trigger()
     qtbot.waitUntil(lambda: main_window._logWindow is not None and main_window._logWindow.isVisible(),timeout=5000)
 
     logWindow = main_window._logWindow
