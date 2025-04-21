@@ -6,12 +6,16 @@
     spectrograph = lbt_mods1b_proc
 [calibrations]
     	[[slitedges]]
-           edge_thresh = 30
+           edge_thresh = 20
     	   minimum_slit_length = 55
+           #fit_order = 3
+           fit_niter = 3
+           sobel_enhance = 5
 [reduce]
     	[[findobj]]
     	   snr_thresh = 5.0
     	   maxnumber_std = 1
+    	   maxnumber_sci = 1
 
 # Setup
 setup read

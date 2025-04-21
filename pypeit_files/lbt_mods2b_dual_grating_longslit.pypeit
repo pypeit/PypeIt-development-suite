@@ -5,9 +5,11 @@
 [rdx]
     spectrograph = lbt_mods2b
 [calibrations]
-    	[[slitedges]]
+        [[slitedges]]
            edge_thresh = 30
-    	   minimum_slit_length = 55
+           minimum_slit_length = 55
+           fit_niter = 3
+           sobel_enhance = 5
 [reduce]
     	[[findobj]]
     	   snr_thresh = 5.0
