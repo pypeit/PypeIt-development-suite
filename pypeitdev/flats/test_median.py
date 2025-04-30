@@ -11,7 +11,7 @@ from bisect import insort, bisect_left
 from scipy.signal import medfilt
 import scipy
 def running_median_scipy_medfilt(seq, window_size):
-    return scipy.ndimage.filters.median_filter(seq, size = window_size,mode='reflect')
+    return scipy.ndimage.median_filter(seq, size = window_size,mode='reflect')
 #    return (seq, window_size)
     #if window_size % 2 == 1 else window_size + 1)
 #    return medfilt(seq, window_size if window_size % 2 == 1 else window_size + 1)
