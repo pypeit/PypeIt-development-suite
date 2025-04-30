@@ -147,6 +147,10 @@ _sensfunc = {
         'DV6': [dict(std_file='spec1d**G191-B2B**.fits',
                      sens_file='ldt_deveny_dv6.sens')]
         },
+    'ldt_nihts': {
+        'NIHTS': [dict(std_file='spec1d_**G191-B2B**.fits',
+                       sens_file='ldt_nihts.sens')]
+    },
     'vlt_xshooter': {'UVB_1x1_Feige110': [dict(std_file='spec1d_*2018-06-23T10:03:53.765*.fits',
                                                sens_file='vlt_xshooter_uvb_1x1_feige110.sens')],
                      'VIS_1x1_Feige110': [dict(std_file='spec1d_*2018-06-23T10:03:58.946*.fits',
@@ -185,7 +189,9 @@ _flux = {
         '600ZD_M_6500': [{}]},
     'ldt_deveny': {
         'DV2': [{}],
-        'DV6': [{}]}
+        'DV6': [{}]},
+    'ldt_nihts': {
+        'NIHTS': [{}]}
     }
 
 _flexure ={

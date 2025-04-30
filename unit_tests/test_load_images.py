@@ -154,12 +154,20 @@ def test_load_goodman():
         pytest.fail('Soar Goodman Red test data section failed: {0}'.format(ifile))
 
 def test_load_deveny():
-    ifile = os.path.join(os.environ['PYPEIT_DEV'], 'RAW_DATA','ldt_deveny','DV2',
+    ifile = os.path.join(os.environ['PYPEIT_DEV'], 'RAW_DATA', 'ldt_deveny', 'DV2',
                          '20230423.0004.fits')
     try:
         data_img = grab_img('ldt_deveny', ifile)
     except:
-        pytest.fail('LDT DeVeny test data section failed: {0}'.format(ifile))
+        pytest.fail(f'LDT DeVeny test data section failed: {ifile}')
+
+def test_load_nihts():
+    ifile = os.path.join(os.environ['PYPEIT_DEV'], 'RAW_DATA', 'ldt_nihts', 'NIHTS',
+                         '20230423.0004.fits')
+    try:
+        data_img = grab_img('ldt_nihts', ifile)
+    except:
+        pytest.fail(f'LDT NIHTS test data section failed: {ifile}')
 
 def test_load_fire():
     ifile = os.path.join(os.environ['PYPEIT_DEV'], 

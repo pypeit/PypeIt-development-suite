@@ -54,6 +54,7 @@ all_setups = {
     'lbt_luci': ['LUCI-I', 'LUCI-II'],
     'lbt_mods': ['MODS1R_Longslit', 'MODS2R_Longslit'],
     'ldt_deveny': ['DV1', 'DV2', 'DV3', 'DV4', 'DV5', 'DV6', 'DV7', 'DV8', 'DV9'],
+    'ldt_nihts': ['NIHTS'],
     'magellan_fire': ['FIRE_Echelle', 'FIRE_Long'],
     'magellan_mage': ['1x1'],
     'mdm_osmos': ['MDM4K', 'R4K'],

@@ -41,6 +41,7 @@ def test_filesearch():
             ['keck_nires', 'ABBA_wstandard', 10],
             ['keck_nirspec_high', 'Hband', 10],
             ['ldt_deveny', 'DV1', 10],
+            ['ldt_nihts', 'NIHTS', 15],
             ['magellan_fire', 'FIRE', 13],
             ['magellan_mage', '1x1', 51],
             ['mdm_modspec', 'Echelle', 13],
