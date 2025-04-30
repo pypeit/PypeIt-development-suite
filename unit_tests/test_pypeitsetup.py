@@ -49,8 +49,8 @@ def test_build_fitstbl():
     # Init
     setupc = pypeitsetup.PypeItSetup(files, spectrograph_name='shane_kast_blue')
     #
-    fitstbl = setupc.build_fitstbl(files)
-    assert isinstance(fitstbl, Table)
+    setupc.build_fitstbl(files)
+    assert isinstance(setupc.fitstbl.table, Table)
     assert setupc.nfiles == 25
 
 
@@ -59,7 +59,7 @@ def test_image_type():
     files = get_files()
     # Init
     setupc = pypeitsetup.PypeItSetup(files, spectrograph_name='shane_kast_blue')
-    fitstbl = setupc.build_fitstbl(files)
+    setupc.build_fitstbl(files)
     # Type
     setupc.get_frame_types(flag_unknown=True)
     assert 'framebit' in setupc.fitstbl.keys()
