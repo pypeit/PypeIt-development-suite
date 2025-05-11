@@ -936,7 +936,6 @@ def jwst_reduce(sciImg, slits, waveimg, tilts, spectrograph, par, show=False, fi
         skymask = objFind.create_skymask(sobjs_obj)
         final_global_sky = objFind.global_skysub(previous_sky=global_sky0, skymask=skymask, show=show)
 
-
     # Initiate Extract object
     exTract = extraction.Extract.get_instance(sciImg, slits, sobjs_obj, spectrograph, par,
                                               'science_coadd2d', global_sky=final_global_sky, tilts=tilts,
@@ -971,10 +970,8 @@ def jwst_reduce(sciImg, slits, waveimg, tilts, spectrograph, par, show=False, fi
                                     vel_type=None)
 
     spec2DObj.process_steps = sciImg.process_steps
-
     # QA
     spec2DObj.gen_qa()
-
     return spec2DObj, sobjs
 
 

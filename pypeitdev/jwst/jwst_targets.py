@@ -361,6 +361,60 @@ def jwst_targets(progid, disperser, target, slit=None):
                     file_list.append(os.path.join(rawpath_level2, 'jw03526005001_04101_000' + "{:02d}".format(ii) + '_' + detname + '_uncal.fits'))
                 exp_list.append(file_list)                
 
+        if '1967' in progid:
+            rawpath_level2 = '/Users/joe/jwst_redux/Raw/NIRSPEC_FS/1967/level_12/01967/'
+            redux_dir = os.path.join('/Users/joe/jwst_redux/redux/NIRSPEC_FS/1967/', target)
+            # All of these are with slit S200A2
+            file_list = []
+            if 'J2255+0251' in target:
+                for ii in range(1,4): 
+                    file_list.append(os.path.join(rawpath_level2, 'jw01967012001_03102_000' + "{:02d}".format(ii) + '_' + detname + '_uncal.fits'))
+                exp_list.append(file_list)
+            elif 'J2236+0032' in target:
+                for ii in range(1,4):
+                    file_list.append(os.path.join(rawpath_level2, 'jw01967011001_03102_000' + "{:02d}".format(ii) + '_' + detname + '_uncal.fits'))
+                exp_list.append(file_list)
+            elif 'J0844-0052' in target:
+                for ii in range(1,4):
+                    file_list.append(os.path.join(rawpath_level2, 'jw01967002001_03102_000' + "{:02d}".format(ii) + '_' + detname + '_uncal.fits'))
+                exp_list.append(file_list)            
+            elif 'J0844-0132' in target:
+                for ii in range(1,4):
+                    file_list.append(os.path.join(rawpath_level2, 'jw01967003001_05101_000' + "{:02d}".format(ii) + '_' + detname + '_uncal.fits'))
+                exp_list.append(file_list)   
+            elif 'J0918+0139' in target:
+                for ii in range(1,4):
+                    file_list.append(os.path.join(rawpath_level2, 'jw01967005001_04101_000' + "{:02d}".format(ii) + '_' + detname + '_uncal.fits'))
+                exp_list.append(file_list) 
+            elif 'J1425-0015' in target:
+                for ii in range(1,4):
+                    file_list.append(os.path.join(rawpath_level2, 'jw01967008001_03102_000' + "{:02d}".format(ii) + '_' + detname + '_uncal.fits'))
+                exp_list.append(file_list)                                   
+            elif 'J1512+4422' in target:
+                for ii in range(1,4):
+                    file_list.append(os.path.join(rawpath_level2, 'jw01967009001_04101_000' + "{:02d}".format(ii) + '_' + detname + '_uncal.fits'))
+                exp_list.append(file_list)      
+            elif 'J1525+4303' in target:
+                for ii in range(1,4):
+                    file_list.append(os.path.join(rawpath_level2, 'jw01967010001_03102_000' + "{:02d}".format(ii) + '_' + detname + '_uncal.fits'))
+                exp_list.append(file_list)      
+            elif 'J1146+0124' in target:
+                for ii in range(1,4):
+                    file_list.append(os.path.join(rawpath_level2, 'jw01967006001_04102_000' + "{:02d}".format(ii) + '_' + detname + '_uncal.fits'))
+                exp_list.append(file_list)      
+            elif 'J1146-0005' in target:
+                for ii in range(1,4):
+                    file_list.append(os.path.join(rawpath_level2, 'jw01967007001_04101_000' + "{:02d}".format(ii) + '_' + detname + '_uncal.fits'))
+                exp_list.append(file_list)     
+            elif 'J0217-0208' in target:
+                for ii in range(1,4):
+                    file_list.append(os.path.join(rawpath_level2, 'jw01967001001_04101_000' + "{:02d}".format(ii) + '_' + detname + '_uncal.fits'))
+                exp_list.append(file_list)                     
+            elif 'J0911+0152' in target:
+                for ii in range(1,4):
+                    file_list.append(os.path.join(rawpath_level2, 'jw01967004001_05101_000' + "{:02d}".format(ii) + '_' + detname + '_uncal.fits'))
+                exp_list.append(file_list)      
+                                               
         if '1117' in progid:
             if 'PRISM' in disperser:
                 # PRISM data

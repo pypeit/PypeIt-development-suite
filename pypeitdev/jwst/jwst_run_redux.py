@@ -325,6 +325,8 @@ def jwst_run_redux(redux_dir, uncal_list=None, rate_list=None,
         par['reduce']['findobj']['skip_skysub'] = True # Do not sky-subtract when object finding
         par['reduce']['extraction']['skip_optimal'] = True # Skip local_skysubtraction and profile fitting
 
+    # Turn off 2d model masking
+    par['reduce']['extraction']['use_2dmodel_mask'] = False
 
 
 
