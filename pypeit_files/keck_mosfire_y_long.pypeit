@@ -26,7 +26,7 @@ setup end
 
 # Read in the data
 data read
- path /Users/dpelliccia/PypeIt/PypeIt-development-suite/RAW_DATA/keck_mosfire/Y_long
+ path /Users/joe/python/PypeIt-development-suite/RAW_DATA/keck_mosfire/Y_long/
 |          filename |                 frametype |           ra |          dec |         target |       dispname |        decker | binning |            mjd |    airmass |   exptime | filter1 | lampstat01 |  dithpat | dithpos | dithoff | frameno | calib | comb_id | bkg_id |
 # Flat fields
 | m191119_0027.fits | pixelflat,illumflat,trace |        230.0 |         45.0 |      DOME FLAT | Y-spectroscopy | LONGSLIT-46x1 |     1,1 | 58806.18380414 | 1.41291034 |  11.63832 |       Y |         on |    Stare |  object |     0.0 |      27 |   all |      -1 |     -1 |
@@ -40,12 +40,12 @@ data read
 | m191119_0040.fits |              lampoffflats |        230.0 |         45.0 |      DOME FLAT | Y-spectroscopy | LONGSLIT-46x1 |     1,1 |  58806.1871333 | 1.41291034 |  11.63832 |       Y |        off |    Stare |  object |     0.0 |      40 |   all |      -1 |     -1 |
 | m191119_0041.fits |              lampoffflats |        230.0 |         45.0 |      DOME FLAT | Y-spectroscopy | LONGSLIT-46x1 |     1,1 | 58806.18737532 | 1.41291034 |  11.63832 |       Y |        off |    Stare |  object |     0.0 |      41 |   all |      -1 |     -1 |
 # Standard from first night
-| m191118_0064.fits |         arc,standard,tilt |  88.12398597 |  15.88291243 |          GD 71 | Y-spectroscopy | LONGSLIT-46x1 |     1,1 | 58805.44935772 | 1.09461722 |  59.64639 |       Y |        off |    Stare |  object |     0.0 |      64 |     1 |      10 |     11 |
-| m191118_0065.fits |         arc,standard,tilt |  88.12816249 |  15.88180566 |          GD 71 | Y-spectroscopy | LONGSLIT-46x1 |     1,1 | 58805.45082161 | 1.09057571 |  59.64639 |       Y |        off |    Stare |  object |     0.0 |      65 |     1 |      11 |     10 |
+| m191118_0064.fits |                  standard |  88.12398597 |  15.88291243 |          GD 71 | Y-spectroscopy | LONGSLIT-46x1 |     1,1 | 58805.44935772 | 1.09461722 |  59.64639 |       Y |        off |    Stare |  object |     0.0 |      64 |     1 |      10 |     11 |
+| m191118_0065.fits |                  standard |  88.12816249 |  15.88180566 |          GD 71 | Y-spectroscopy | LONGSLIT-46x1 |     1,1 | 58805.45082161 | 1.09057571 |  59.64639 |       Y |        off |    Stare |  object |     0.0 |      65 |     1 |      11 |     10 |
 # Data for 11/20
-| m191120_0043.fits |          arc,science,tilt | 323.13191558 | -14.57624247 | J2132-1434_OFF | Y-spectroscopy | LONGSLIT-46x1 |     1,1 | 58807.25895078 | 1.47652532 | 149.84337 |       Y |        off | Mask Nod |       A |     7.9 |      43 |     2 |       1 |      2 |
-| m191120_0044.fits |          arc,science,tilt | 323.13616419 | -14.57470789 | J2132-1434_OFF | Y-spectroscopy | LONGSLIT-46x1 |     1,1 | 58807.26107578 | 1.49132421 | 149.84337 |       Y |        off | Mask Nod |       B |    -7.9 |      44 |     3 |       2 |      1 |
-| m191120_0045.fits |          arc,science,tilt | 323.13191558 | -14.57624247 | J2132-1434_OFF | Y-spectroscopy | LONGSLIT-46x1 |     1,1 | 58807.26320899 |  1.5069382 | 149.84337 |       Y |        off | Mask Nod |       A |     7.9 |      45 |     2 |       1 |      2 |
-| m191120_0046.fits |          arc,science,tilt | 323.13616419 | -14.57470789 | J2132-1434_OFF | Y-spectroscopy | LONGSLIT-46x1 |     1,1 | 58807.26531987 | 1.52273222 | 149.84337 |       Y |        off | Mask Nod |       B |    -7.9 |      46 |     3 |       2 |      1 |
+| m191120_0043.fits |          arc,science,tilt | 323.13191558 | -14.57624247 | J2132-1434_OFF | Y-spectroscopy | LONGSLIT-46x1 |     1,1 | 58807.25895078 | 1.47652532 | 149.84337 |       Y |        off | Mask Nod |       A |     7.9 |      43 |     1 |       1 |      2 |
+| m191120_0044.fits |          arc,science,tilt | 323.13616419 | -14.57470789 | J2132-1434_OFF | Y-spectroscopy | LONGSLIT-46x1 |     1,1 | 58807.26107578 | 1.49132421 | 149.84337 |       Y |        off | Mask Nod |       B |    -7.9 |      44 |     1 |       2 |      1 |
+| m191120_0045.fits |          arc,science,tilt | 323.13191558 | -14.57624247 | J2132-1434_OFF | Y-spectroscopy | LONGSLIT-46x1 |     1,1 | 58807.26320899 |  1.5069382 | 149.84337 |       Y |        off | Mask Nod |       A |     7.9 |      45 |     1 |       1 |      2 |
+| m191120_0046.fits |          arc,science,tilt | 323.13616419 | -14.57470789 | J2132-1434_OFF | Y-spectroscopy | LONGSLIT-46x1 |     1,1 | 58807.26531987 | 1.52273222 | 149.84337 |       Y |        off | Mask Nod |       B |    -7.9 |      46 |     1 |       2 |      1 |
 data end
 

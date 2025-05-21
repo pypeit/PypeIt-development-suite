@@ -52,8 +52,6 @@ spec:
         - mountPath: /root/.config/service_account.json
           name: devsuite-rawdata
           subPath: credentials
-      nodeSelector:
-        nautilus.io/disktype: nvme
       restartPolicy: Never
       volumes:
       - name: prp-s3-credentials
