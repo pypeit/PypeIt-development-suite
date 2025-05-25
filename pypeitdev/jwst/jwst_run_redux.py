@@ -7,7 +7,7 @@ from matplotlib import pyplot as plt
 from IPython import embed
 
 # set environment variables
-os.environ['CRDS_PATH'] = '/Users/joe/crds_cache/'
+os.environ["CRDS_PATH"] = '{}/crds_cache'.format(os.environ.get('HOME'))
 os.environ['CRDS_SERVER_URL'] = 'https://jwst-crds.stsci.edu/'
 from matplotlib import pyplot as plt
 from astropy.io import fits
@@ -164,8 +164,8 @@ def jwst_run_redux(redux_dir, disperser, uncal_list=None, rate_list=None,
     if not os.path.isdir(output_dir):
         msgs.info('Creating directory for calwebb output: {0}'.format(output_dir))
         os.makedirs(output_dir)
-    
-    # Did the user pass in an uncal_list? 
+
+    # Did the user pass in an uncal_list?
     if uncal_list is None and rate_list is None:
         msgs.error('Either uncal_list or rate_list must be provided.')
     elif uncal_list is not None and rate_list is not None:
@@ -186,14 +186,15 @@ def jwst_run_redux(redux_dir, disperser, uncal_list=None, rate_list=None,
             rate_files_1.append(os.path.join(output_dir, b1 + '_rate.fits'))
             rate_files_2.append(os.path.join(output_dir, b2 + '_rate.fits'))
 
-
         #parameter_dict_det1 = {"jump": {"maximum_cores": 'quarter'},}
+        parameter_dict = {"jump": {"maximum_cores": 'half', "sat_required_snowball": True},
+                          "ramp_fit": {"maximum_cores": 'half'}}
         for uncal in uncalfiles_all:
             ratefile = os.path.join(output_dir,  os.path.basename(uncal).replace('_uncal', '_rate'))
             if os.path.isfile(ratefile) and not overwrite_stage1:
                 msgs.info('Using existing rate file: {0}'.format(ratefile))
                 continue
-            Detector1Pipeline.call(uncal, save_results=True, output_dir=output_dir) #, steps=parameter_dict_det1)
+            Detector1Pipeline.call(uncal, save_results=True, output_dir=output_dir, steps=parameter_dict) #, steps=parameter_dict_det1)
 
     elif uncal_list is None and rate_list is not None:
         rate_files_1 = rate_list[0]
@@ -207,7 +208,6 @@ def jwst_run_redux(redux_dir, disperser, uncal_list=None, rate_list=None,
             basenames_1.append(b1)
             basenames_2.append(b2)
             basenames.append(b2.replace('_nrs2', ''))
-
 
     rate_files_all = rate_files_1 + rate_files_2
     bkg_indices = [(1,2), (0,2), (0,1)]
@@ -450,7 +450,8 @@ def jwst_run_redux(redux_dir, disperser, uncal_list=None, rate_list=None,
                     bkgImg_list.append(bkgImg_i)
 
                 # TODO the parset label here may change in Pypeit to bkgframe
-                combineImage = combineimage.CombineImage(bkgImg_list, spectrograph, par['scienceframe']['process'])
+                combineImage = combineimage.CombineImage(bkgImg_list, par['scienceframe']['process'])
+                #combineImage = combineimage.CombineImage(bkgImg_list, spectrograph, par['scienceframe']['process'])
                 bkgImg = combineImage.run(ignore_saturation=True)
                 sciImg = sciImg.sub(bkgImg)
 
