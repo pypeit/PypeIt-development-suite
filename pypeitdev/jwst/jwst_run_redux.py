@@ -235,7 +235,9 @@ def jwst_run_redux(redux_dir, disperser, uncal_list=None, rate_list=None,
         # These clean_flicker_noise parameters for NIRSpec are based on the recommended values here:
         # https://jwst-docs.stsci.edu/known-issues-with-jwst-data/1-f-noise#gsc.tab=0
         # which were created after JWST moved the 1/f noise correction to the level1 correction stage
-        parameter_dict_det1 = {'clean_flicker_noise':
+        parameter_dict_det1 = {"jump": {"maximum_cores": 'half', "sat_required_snowball": True},
+                               "ramp_fit": {"maximum_cores": 'half'},
+                               'clean_flicker_noise':
             {'skip': False, 'fit_method': 'fft', 'n_sigma': 2, 'mask_science_regions': False, 'background_method': None}}
         for uncal in uncalfiles_all:
             ratefile = os.path.join(output_dir_level1,  os.path.basename(uncal).replace('_uncal', '_rate'))
