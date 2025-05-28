@@ -1,7 +1,7 @@
 import os
 from IPython import embed 
 
-def jwst_spec1d_files(progid, disperser, target, slit):
+def jwst_spec1d_files(progid, disperser, target, slit=None, source=None):
     """
     Routine to return a list of spec1d filenames for JWST NIRSpec exposures for a given target and disperser and possibly slit.
     
@@ -15,18 +15,27 @@ def jwst_spec1d_files(progid, disperser, target, slit):
         Name of the target.
     slit : str
         Slit requested, optional default is None.
+    source : str
+        Source name, optional default is None.
     
     Return 
     ------
     spec1d_list : list
         List of spec1d filenames.
     """
+    if slit is None and source is None:
+        raise ValueError("Either 'slit' or 'source' must be specified.")
+    elif slit is not None and source is not None:
+        raise ValueError("Only one of 'slit' or 'source' can be specified.")
+
 
     uncal_list, redux_path, rawpath_level2 = jwst_targets(progid, disperser, target, slit=slit)
-    spec1d_pre = ['spec1d_' + os.path.basename(file).split('_nrs1')[0] + f'_slit_{slit}.fits' for file in uncal_list[0]]
+    suffix = f'_slit_{slit}.fits' if slit is not None else f'_source_{source}.fits'
+    spec1d_pre = ['spec1d_' + os.path.basename(file).split('_nrs1')[0] + suffix for file in uncal_list[0]]
     spec1d_filenames = [os.path.join(redux_path, 'pypeit', 'Science', spec) for spec in spec1d_pre]
     
     return redux_path, spec1d_filenames
+
 
 def jwst_targets(progid, disperser, target, slit=None):
     """
@@ -65,17 +74,16 @@ def jwst_targets(progid, disperser, target, slit=None):
                 ## Prorgram for Slit Loss Characterization for MSA shutters
                 # PRISM data
                 rawpath_level2 = '/Users/joe/jwst_redux/Raw/NIRSPEC_MSA/NIRSPEC_2073/level_12/02073/'
-                redux_dir = os.path.join('/Users/joe/jwst_redux/redux/NIRSPEC_MSA/NIRSPEC_PRISM/02073_CLEAR_PRISM', target)
-                calwebb_dir = os.path.join(redux_dir, 'output')
-                pypeit_output_dir = os.path.join(redux_dir, 'pypeit')
+                #redux_dir = os.path.join('/Users/joe/jwst_redux/redux/NIRSPEC_MSA/NIRSPEC_PRISM/02073_CLEAR_PRISM', target)
+                redux_dir = os.path.join('/Users/joe/jwst_redux/redux/NIRSPEC_MSA/2073/', target)
 
                 #J0252
-                if target == 'J0252':
+                if target == 'J0252-0503':
                     uncalfile1 = os.path.join(rawpath_level2, 'jw02073007001_03101_00001_' + detname + '_uncal.fits')
                     uncalfile2 = os.path.join(rawpath_level2, 'jw02073007001_03101_00002_' + detname + '_uncal.fits')
                     uncalfile3 = os.path.join(rawpath_level2, 'jw02073007001_03101_00003_' + detname + '_uncal.fits')
 
-                elif target == 'J1007':
+                elif target == 'J1007+2115':
                     # J1007
                     # NIRSPEC 3-point dither
                     uncalfile1 = os.path.join(rawpath_level2, 'jw02073008001_03101_00001_' + detname + '_uncal.fits')
@@ -475,7 +483,6 @@ def jwst_targets(progid, disperser, target, slit=None):
                 uncalfile2 = os.path.join(rawpath_level2, 'jw01671001001_03101_00003_' + detname + '_uncal.fits')
                 uncalfile3 = os.path.join(rawpath_level2, 'jw01671001001_03101_00004_' + detname + '_uncal.fits')
                 exp_list.append([uncalfile1, uncalfile2, uncalfile3])
-
 
     return exp_list, redux_dir, rawpath_level2
     

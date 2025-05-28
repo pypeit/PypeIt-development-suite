@@ -112,7 +112,7 @@ def validate_redux_input(reduce_input, name):
 def validate_interpolatedflat_files(intflat_fs_output_files, intflat_output_files, detector):
     """
     Utility method to validate the interpolated flat files for FS slits.
-
+    
     Parameters
     ----------
     intflat_fs_output_files : list
@@ -121,17 +121,17 @@ def validate_interpolatedflat_files(intflat_fs_output_files, intflat_output_file
         List of interpolated flat files for MOS slits.
     detector : str
         The detector name, i.e. 'nrs1' or 'nrs2'.
-
+    
     Returns
     -------
     merge_fs : bool
         True if there are FS slits to merge, False otherwise
-
+    
     Raises
     ------
-    ValueError
+    ValueError 
         If the length of the _interpolatedflat_fs.fits files does not match the length of the _interpolatedflat.fits files.
-
+    
     """
 
     #  intflat for FS slits for NRS1
@@ -140,11 +140,12 @@ def validate_interpolatedflat_files(intflat_fs_output_files, intflat_output_file
         msgs.info('Found _nrs1_interpolatedflat_fs.fits files. There are FS slits and MOS slits on nrs1')
     elif len(intflat_fs_output_files) == 0:
         merge_fs = False
-    else:
+    else: 
         raise ValueError('The length of the _interpolatedflat_fs.fits files does not match the length of the _interpolatedflat.fits files for {:s}'.format(detector))
     return merge_fs
 
-def jwst_run_redux(redux_dir, disperser, uncal_list=None, rate_list=None, 
+
+def jwst_run_redux(redux_dir, uncal_list=None, rate_list=None, 
                    reduce_slits=None, reduce_sources=None,
                    source_type='POINT', show=False, overwrite_stage1=False, overwrite_stage2=False, 
                    kludge_err=1.5, bkg_redux=False, run_bogus_f100lp=False):
@@ -155,8 +156,6 @@ def jwst_run_redux(redux_dir, disperser, uncal_list=None, rate_list=None,
     ----------
     redux_dir : str
         Path to the directory where the data will be reduced.
-    disperser : str
-        Name of the disperser.
     uncal_list : list
         List of lists of uncalibrated files for each exposure. exp_list[0] is for nrs1 and exp_list[1] is for nrs2.  Optional, default is None. Either uncal_list or rate_list must be provided.
     rate_list : list
@@ -180,7 +179,7 @@ def jwst_run_redux(redux_dir, disperser, uncal_list=None, rate_list=None,
         If True, perform a background redux using image differencing. If False, model the background with a bspline. bkg_redux should typically be set to True for MSA reductions, 
         and False for FS reductions.
     run_bogus_f100lp : bool
-        If True, run bogus redux for the 140H/F100LP grating to accomodate data taken with the F070LP filter? Default is False.
+        If True, run bogus redux for the 140H/F100LP grating to accomodate data taken with the F070LP filter? Default is False. 
       """
 
     _reduce_slits = validate_redux_input(reduce_slits, 'reduce_slits')
@@ -207,7 +206,7 @@ def jwst_run_redux(redux_dir, disperser, uncal_list=None, rate_list=None,
     if not os.path.isdir(output_dir_level2):
         msgs.info('Creating directory for calwebb level 2 output: {0}'.format(output_dir_level2))
         os.makedirs(output_dir_level2)
-
+    
     # Did the user pass in an uncal_list? 
     if uncal_list is None and rate_list is None:
         msgs.error('Either uncal_list or rate_list must be provided.')
@@ -232,8 +231,8 @@ def jwst_run_redux(redux_dir, disperser, uncal_list=None, rate_list=None,
 
 
         #parameter_dict_det1 = {"jump": {"maximum_cores": 'quarter'},}
-        # These clean_flicker_noise parameters for NIRSpec are based on the recommended values here:
-        # https://jwst-docs.stsci.edu/known-issues-with-jwst-data/1-f-noise#gsc.tab=0
+        # These clean_flicker_noise parameters for NIRSpec are based on the recommended values here: 
+        # https://jwst-docs.stsci.edu/known-issues-with-jwst-data/1-f-noise#gsc.tab=0 
         # which were created after JWST moved the 1/f noise correction to the level1 correction stage
         parameter_dict_det1 = {"jump": {"maximum_cores": 'half', "sat_required_snowball": True},
                                "ramp_fit": {"maximum_cores": 'half'},
@@ -259,12 +258,13 @@ def jwst_run_redux(redux_dir, disperser, uncal_list=None, rate_list=None,
             basenames_2.append(b2)
             basenames.append(b2.replace('_nrs2', ''))
 
+
     rate_files_all = rate_files_1 + rate_files_2
     bkg_indices = [(1,2), (0,2), (0,1)]
 
     # TODO Should we flat field. The flat field and flat field error are wonky and probably nonsense
     param_dict_spec2 = {
-        'assign_wcs': {'save_results': True}, # This output now has the full 2d image
+        'assign_wcs': {'save_results': True}, # This output now has the full 2d image 
         'extract_2d': {'save_results': True},
         'bkg_subtract': {'skip': True},
         'imprint_subtract': {'save_results': True}, # TODO Check up on whether imprint subtraction is being done by us???
@@ -275,10 +275,10 @@ def jwst_run_redux(redux_dir, disperser, uncal_list=None, rate_list=None,
         # 'flat_field': {'skip': True},
         'resample_spec': {'skip': True},
         'extract_1d': {'skip': True},
-        'flat_field': {'save_interpolated_flat': True},
+        'flat_field': {'save_interpolated_flat': True}, 
         'nsclean': {'skip': True, 'save_results': False},
     }
-    # So the nsclean is now being done via clean_flicker_noise in the Det1 pipeline.
+    # So the nsclean is now being done via clean_flicker_noise in the Det1 pipeline. 
 
     # TODO I'm rather unclear on what to do with the src_type since I'm not following what the JWST ipeline is doing there very
     # well. I think they are trying to model slit losses for point sources but not for extended sources. Changing src_type
@@ -358,7 +358,7 @@ def jwst_run_redux(redux_dir, disperser, uncal_list=None, rate_list=None,
             intflat_fs_output_files_1.append(file_1.replace('_interpolatedflat.fits', '_interpolatedflat_fs.fits'))
         if os.path.isfile(file_2.replace('_interpolatedflat.fits', '_interpolatedflat_fs.fits')):
             intflat_fs_output_files_2.append(file_2.replace('_interpolatedflat.fits', '_interpolatedflat_fs.fits'))
-    # Validate
+    # Validate 
     merge_fs_nrs1 = validate_interpolatedflat_files(intflat_fs_output_files_1, intflat_output_files_1, 'nrs1')
     merge_fs_nrs2 = validate_interpolatedflat_files(intflat_fs_output_files_2, intflat_output_files_2, 'nrs2')
 
@@ -405,8 +405,8 @@ def jwst_run_redux(redux_dir, disperser, uncal_list=None, rate_list=None,
         msa_data[0, iexp] = datamodels.open(msa_output_files_1[iexp])
         cal_data[0, iexp] = datamodels.open(cal_output_files_1[iexp])
         flat_data_1 = datamodels.open(intflat_output_files_1[iexp])
-        # Merge the FS slits into the MOS slits for NRS1
-        if merge_fs_nrs1:
+        # Merge the FS slits into the MOS slits for NRS1      
+        if merge_fs_nrs1: 
             msgs.info('Appending interpolatedflat FS slits into MOS output for {:s}'.format(basenames_1[iexp]))
             flat_data_fs_1 = datamodels.open(intflat_fs_output_files_1[iexp])
             for slit in flat_data_fs_1.slits:
@@ -487,6 +487,7 @@ def jwst_run_redux(redux_dir, disperser, uncal_list=None, rate_list=None,
     else:
         gd_slits_sources = slit_sources_uni
 
+
     # Loop over all slits. For each exposure create a mosaic and save them to individual PypeIt spec2d files.
     for ii, (islit, isource) in enumerate(gd_slits_sources):
 
@@ -529,7 +530,6 @@ def jwst_run_redux(redux_dir, disperser, uncal_list=None, rate_list=None,
                     bkgImg_list.append(bkgImg_i)
 
                 # TODO the parset label here may change in Pypeit to bkgframe
-                #combineImage = combineimage.CombineImage(bkgImg_list, spectrograph, par['scienceframe']['process'])
                 combineImage = combineimage.CombineImage(bkgImg_list, par['scienceframe']['process'])
                 bkgImg = combineImage.run(ignore_saturation=True)
                 sciImg = sciImg.sub(bkgImg)
