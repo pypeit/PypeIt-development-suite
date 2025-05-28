@@ -485,7 +485,6 @@ def jwst_run_redux(redux_dir, uncal_list=None, rate_list=None,
     else:
         gd_slits_sources = slit_sources_uni
 
-
     # Loop over all slits. For each exposure create a mosaic and save them to individual PypeIt spec2d files.
     for ii, (islit, isource) in enumerate(gd_slits_sources):
 
@@ -528,7 +527,7 @@ def jwst_run_redux(redux_dir, uncal_list=None, rate_list=None,
                     bkgImg_list.append(bkgImg_i)
 
                 # TODO the parset label here may change in Pypeit to bkgframe
-                combineImage = combineimage.CombineImage(bkgImg_list, spectrograph, par['scienceframe']['process'])
+                combineImage = combineimage.CombineImage(bkgImg_list, par['scienceframe']['process'])
                 bkgImg = combineImage.run(ignore_saturation=True)
                 sciImg = sciImg.sub(bkgImg)
 
