@@ -55,7 +55,8 @@ def jwst_targets(progid, disperser, target, slit=None):
     Returns
     -------
     exp_list : list
-        List of lists of uncalibrated files for each exposure.
+        List of lists of uncalibrated files for each exposure. exp_list[0] contains 
+        all of the exposure files for nrs1 and exp_list[1] contains all of the exposure files for nrs2.
     redux_dir : str
         Path to the directory where the data will be reduced.
     rawpath_level2 : str
