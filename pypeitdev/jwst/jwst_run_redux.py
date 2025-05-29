@@ -517,15 +517,12 @@ def jwst_run_redux(redux_dir, uncal_list=None, rate_list=None,
             # Create the image mosaic
             sciImg, slits, waveimg, tilts, ndet = jwst_mosaic(msa_data[:, iexp], [CalibrationsNRS1, CalibrationsNRS2], kludge_err=kludge_err,
                 noise_floor=par['scienceframe']['process']['noise_floor'], show=show)
-            
-            #    show=show & (iexp == iexp_ref))
 
             # If this is a bkg_redux, perform background subtraction
             if bkg_redux:
-                ibkg = bkg_indices[iexp]
                 bkgImg_list = []
-                for msa_data_i in msa_data[:,ibkg]: 
-                    bkgImg_i, _, _, _, _= jwst_mosaic(msa_data_i, [CalibrationsNRS1, CalibrationsNRS2], kludge_err=kludge_err,
+                for iexp_bkg in bkg_indices[iexp]:
+                    bkgImg_i, _, _, _, _= jwst_mosaic(msa_data[:, iexp_bkg], [CalibrationsNRS1, CalibrationsNRS2], kludge_err=kludge_err,
                                             noise_floor=par['scienceframe']['process']['noise_floor'])
                     bkgImg_list.append(bkgImg_i)
 
