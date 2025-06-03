@@ -1,7 +1,7 @@
 import os
 from IPython import embed 
 
-def jwst_spec1d_files(progid, disperser, target, slit):
+def jwst_spec1d_files(progid, disperser, target, slit=None, source=None):
     """
     Routine to return a list of spec1d filenames for JWST NIRSpec exposures for a given target and disperser and possibly slit.
     
@@ -15,18 +15,27 @@ def jwst_spec1d_files(progid, disperser, target, slit):
         Name of the target.
     slit : str
         Slit requested, optional default is None.
+    source : str
+        Source name, optional default is None.
     
     Return 
     ------
     spec1d_list : list
         List of spec1d filenames.
     """
+    if slit is None and source is None:
+        raise ValueError("Either 'slit' or 'source' must be specified.")
+    elif slit is not None and source is not None:
+        raise ValueError("Only one of 'slit' or 'source' can be specified.")
 
-    uncal_list, redux_path = jwst_targets(progid, disperser, target, slit=slit)
-    spec1d_pre = ['spec1d_' + os.path.basename(file).split('_nrs1')[0] + f'_slit_{slit}.fits' for file in uncal_list[0]]
+
+    uncal_list, redux_path, rawpath_level2 = jwst_targets(progid, disperser, target, slit=slit)
+    suffix = f'_slit_{slit}.fits' if slit is not None else f'_source_{source}.fits'
+    spec1d_pre = ['spec1d_' + os.path.basename(file).split('_nrs1')[0] + suffix for file in uncal_list[0]]
     spec1d_filenames = [os.path.join(redux_path, 'pypeit', 'Science', spec) for spec in spec1d_pre]
     
     return redux_path, spec1d_filenames
+
 
 def jwst_targets(progid, disperser, target, slit=None):
     """
@@ -46,9 +55,12 @@ def jwst_targets(progid, disperser, target, slit=None):
     Returns
     -------
     exp_list : list
-        List of lists of uncalibrated files for each exposure.
+        List of lists of uncalibrated files for each exposure. exp_list[0] contains 
+        all of the exposure files for nrs1 and exp_list[1] contains all of the exposure files for nrs2.
     redux_dir : str
         Path to the directory where the data will be reduced.
+    rawpath_level2 : str
+        Path to the directory where the raw level 2 output files are.
     
     """
 
@@ -63,17 +75,16 @@ def jwst_targets(progid, disperser, target, slit=None):
                 ## Prorgram for Slit Loss Characterization for MSA shutters
                 # PRISM data
                 rawpath_level2 = '/Users/joe/jwst_redux/Raw/NIRSPEC_MSA/NIRSPEC_2073/level_12/02073/'
-                redux_dir = os.path.join('/Users/joe/jwst_redux/redux/NIRSPEC_MSA/NIRSPEC_PRISM/02073_CLEAR_PRISM', target)
-                calwebb_dir = os.path.join(redux_dir, 'output')
-                pypeit_output_dir = os.path.join(redux_dir, 'pypeit')
+                #redux_dir = os.path.join('/Users/joe/jwst_redux/redux/NIRSPEC_MSA/NIRSPEC_PRISM/02073_CLEAR_PRISM', target)
+                redux_dir = os.path.join('/Users/joe/jwst_redux/redux/NIRSPEC_MSA/2073/', target)
 
                 #J0252
-                if target == 'J0252':
+                if target == 'J0252-0503':
                     uncalfile1 = os.path.join(rawpath_level2, 'jw02073007001_03101_00001_' + detname + '_uncal.fits')
                     uncalfile2 = os.path.join(rawpath_level2, 'jw02073007001_03101_00002_' + detname + '_uncal.fits')
                     uncalfile3 = os.path.join(rawpath_level2, 'jw02073007001_03101_00003_' + detname + '_uncal.fits')
 
-                elif target == 'J1007':
+                elif target == 'J1007+2115':
                     # J1007
                     # NIRSPEC 3-point dither
                     uncalfile1 = os.path.join(rawpath_level2, 'jw02073008001_03101_00001_' + detname + '_uncal.fits')
@@ -84,61 +95,7 @@ def jwst_targets(progid, disperser, target, slit=None):
                     #uncalfile2 = os.path.join(rawpath_level2, 'jw02073006001_03101_00002_' + detname + '_uncal.fits')
                     #uncalfile3 = os.path.join(rawpath_level2, 'jw02073006001_03101_00003_' + detname + '_uncal.fits')
 
-                exp_list.append([uncalfile1, uncalfile2, uncalfile3])
-        elif '1219' in progid:
-            if 'J1342+0928' in target:
-                ## Prorgram for Slit Loss Characterization for MSA shutters
-                # PRISM data
-                rawpath_level2 = '/Users/joe/jwst_redux/Raw/NIRSPEC_1219/1219/level_12/01219/'
-                redux_dir = os.path.join('/Users/joe/jwst_redux/redux/NIRSPEC_MSA/1219/J1342+0928/')
-
-                if disperser == '140H':
-                    if slit == 'S200A1':
-                        uncalfile1 = os.path.join(rawpath_level2, 'jw01219006001_04101_00001_' + detname + '_uncal.fits')
-                        uncalfile2 = os.path.join(rawpath_level2, 'jw01219006001_04101_00002_' + detname + '_uncal.fits')
-                        uncalfile3 = os.path.join(rawpath_level2, 'jw01219006001_04101_00003_' + detname + '_uncal.fits')
-                    elif slit == 'S200A2':
-                        uncalfile1 = os.path.join(rawpath_level2, 'jw01219006001_10101_00001_' + detname + '_uncal.fits')
-                        uncalfile2 = os.path.join(rawpath_level2, 'jw01219006001_10101_00002_' + detname + '_uncal.fits')
-                        uncalfile3 = os.path.join(rawpath_level2, 'jw01219006001_10101_00003_' + detname + '_uncal.fits')
-                elif disperser == '140H_bogus_FS': 
-                    if slit == 'S200A1':
-                        uncalfile1 = os.path.join(rawpath_level2, 'bogus_FS_jw01219006001_04101_00001_' + detname + '_uncal.fits')
-                        uncalfile2 = os.path.join(rawpath_level2, 'bogus_FS_jw01219006001_04101_00002_' + detname + '_uncal.fits')
-                        uncalfile3 = os.path.join(rawpath_level2, 'bogus_FS_jw01219006001_04101_00003_' + detname + '_uncal.fits')
-                    elif slit == 'S200A2':
-                        uncalfile1 = os.path.join(rawpath_level2, 'bogus_FS_jw01219006001_10101_00001_' + detname + '_uncal.fits')
-                        uncalfile2 = os.path.join(rawpath_level2, 'bogus_FS_jw01219006001_10101_00002_' + detname + '_uncal.fits')
-                        uncalfile3 = os.path.join(rawpath_level2, 'bogus_FS_jw01219006001_10101_00003_' + detname + '_uncal.fits')
-                elif disperser == '140H_bogus_FS_F100LP': 
-                    if slit == 'S200A1':
-                        uncalfile1 = os.path.join(rawpath_level2, 'bogus_FS_F100LP_jw01219006001_04101_00001_' + detname + '_uncal.fits')
-                        uncalfile2 = os.path.join(rawpath_level2, 'bogus_FS_F100LP_jw01219006001_04101_00002_' + detname + '_uncal.fits')
-                        uncalfile3 = os.path.join(rawpath_level2, 'bogus_FS_F100LP_jw01219006001_04101_00003_' + detname + '_uncal.fits')
-                    elif slit == 'S200A2':
-                        uncalfile1 = os.path.join(rawpath_level2, 'bogus_FS_F100LP_jw01219006001_10101_00001_' + detname + '_uncal.fits')
-                        uncalfile2 = os.path.join(rawpath_level2, 'bogus_FS_F100LP_jw01219006001_10101_00002_' + detname + '_uncal.fits')
-                        uncalfile3 = os.path.join(rawpath_level2, 'bogus_FS_F100LP_jw01219006001_10101_00003_' + detname + '_uncal.fits')
-                elif disperser == '235H':
-                    if slit == 'S200A1':
-                        uncalfile1 = os.path.join(rawpath_level2, 'jw01219006001_06101_00001_' + detname + '_uncal.fits')
-                        uncalfile2 = os.path.join(rawpath_level2, 'jw01219006001_06101_00002_' + detname + '_uncal.fits')
-                        uncalfile3 = os.path.join(rawpath_level2, 'jw01219006001_06101_00003_' + detname + '_uncal.fits')
-                    elif slit == 'S200A2':
-                        uncalfile1 = os.path.join(rawpath_level2, 'jw01219006001_08101_00001_' + detname + '_uncal.fits')
-                        uncalfile2 = os.path.join(rawpath_level2, 'jw01219006001_08101_00002_' + detname + '_uncal.fits')
-                        uncalfile3 = os.path.join(rawpath_level2, 'jw01219006001_08101_00003_' + detname + '_uncal.fits')
-                elif disperser == '235H_bogus_FS':
-                    if slit == 'S200A1':
-                        uncalfile1 = os.path.join(rawpath_level2, 'bogus_FS_jw01219006001_06101_00001_' + detname + '_uncal.fits')
-                        uncalfile2 = os.path.join(rawpath_level2, 'bogus_FS_jw01219006001_06101_00002_' + detname + '_uncal.fits')
-                        uncalfile3 = os.path.join(rawpath_level2, 'bogus_FS_jw01219006001_06101_00003_' + detname + '_uncal.fits')
-                    elif slit == 'S200A2':
-                        uncalfile1 = os.path.join(rawpath_level2, 'bogus_FS_jw01219006001_08101_00001_' + detname + '_uncal.fits')
-                        uncalfile2 = os.path.join(rawpath_level2, 'bogus_FS_jw01219006001_08101_00002_' + detname + '_uncal.fits')
-                        uncalfile3 = os.path.join(rawpath_level2, 'bogus_FS_jw01219006001_08101_00003_' + detname + '_uncal.fits')
-
-                exp_list.append([uncalfile1, uncalfile2, uncalfile3])            
+                exp_list.append([uncalfile1, uncalfile2, uncalfile3]) 
 
         elif '2756' in progid:
             if 'PRISM' in disperser:
@@ -198,9 +155,37 @@ def jwst_targets(progid, disperser, target, slit=None):
                 uncalfile3 = os.path.join(rawpath_level2, 'jw02072002001_05101_00003_' + detname + '_uncal.fits')
 
                 exp_list.append([uncalfile1, uncalfile2, uncalfile3])
+        elif '1219' in progid:
+            if 'J1342+0928' in target:
+                ## Prorgram for Slit Loss Characterization for MSA shutters
+                # PRISM data
+                rawpath_level2 = '/Users/joe/jwst_redux/Raw/NIRSPEC_1219/1219/level_12/01219/'
+                redux_dir = os.path.join('/Users/joe/jwst_redux/redux/NIRSPEC_MSA/1219/J1342+0928/')
+
+                if disperser == '140H':
+                    if slit == 'S200A1':
+                        uncalfile1 = os.path.join(rawpath_level2, 'jw01219006001_04101_00001_' + detname + '_uncal.fits')  # msa_metadata_id  = 1
+                        uncalfile2 = os.path.join(rawpath_level2, 'jw01219006001_04101_00002_' + detname + '_uncal.fits')  
+                        uncalfile3 = os.path.join(rawpath_level2, 'jw01219006001_04101_00003_' + detname + '_uncal.fits')
+                    elif slit == 'S200A2':
+                        uncalfile1 = os.path.join(rawpath_level2, 'jw01219006001_10101_00001_' + detname + '_uncal.fits') # msa_metadata_id  = 29
+                        uncalfile2 = os.path.join(rawpath_level2, 'jw01219006001_10101_00002_' + detname + '_uncal.fits')
+                        uncalfile3 = os.path.join(rawpath_level2, 'jw01219006001_10101_00003_' + detname + '_uncal.fits')
+                elif disperser == '235H':
+                    if slit == 'S200A1':
+                        uncalfile1 = os.path.join(rawpath_level2, 'jw01219006001_06101_00001_' + detname + '_uncal.fits') # msa_metadata_id  = 15
+                        uncalfile2 = os.path.join(rawpath_level2, 'jw01219006001_06101_00002_' + detname + '_uncal.fits')
+                        uncalfile3 = os.path.join(rawpath_level2, 'jw01219006001_06101_00003_' + detname + '_uncal.fits')
+                    elif slit == 'S200A2':
+                        uncalfile1 = os.path.join(rawpath_level2, 'jw01219006001_08101_00001_' + detname + '_uncal.fits') # msa_metadata_id  = 16
+                        uncalfile2 = os.path.join(rawpath_level2, 'jw01219006001_08101_00002_' + detname + '_uncal.fits')
+                        uncalfile3 = os.path.join(rawpath_level2, 'jw01219006001_08101_00003_' + detname + '_uncal.fits')
+
+                exp_list.append([uncalfile1, uncalfile2, uncalfile3])           
+
         elif '1222' in progid:
+            rawpath_level2 = '/Users/joe/jwst_redux/Raw/NIRSPEC_FS/1222/level_12/01222/'
             if 'J0411-0907' in target:
-                rawpath_level2 = '/Users/joe/jwst_redux/Raw/NIRSPEC_FS/1222/level_12/01222/'
                 redux_dir = '/Users/joe/jwst_redux/redux/NIRSPEC_FS/1222/J0411-0907/'
                 if disperser == '235H':
                     # NIRSPEC 3-point dither dither center
@@ -222,22 +207,8 @@ def jwst_targets(progid, disperser, target, slit=None):
                         uncalfile1 = os.path.join(rawpath_level2, 'jw01222002001_03104_00001_' + detname + '_uncal.fits')
                         uncalfile2 = os.path.join(rawpath_level2, 'jw01222002001_03104_00002_' + detname + '_uncal.fits')
                         uncalfile3 = os.path.join(rawpath_level2, 'jw01222002001_03104_00003_' + detname + '_uncal.fits')
-                elif disperser == '140H_bogus_F100LP':
-                    # NIRSPEC 3-point dither dither center
-                    bogus_prefix = 'bogus_'
-                    if slit == 'S200A1':
-                        uncalfile1 = os.path.join(rawpath_level2, bogus_prefix + 'jw01222002001_03102_00001_' + detname + '_uncal.fits')
-                        uncalfile2 = os.path.join(rawpath_level2, bogus_prefix + 'jw01222002001_03102_00002_' + detname + '_uncal.fits')
-                        uncalfile3 = os.path.join(rawpath_level2, bogus_prefix + 'jw01222002001_03102_00003_' + detname + '_uncal.fits')
-                    elif slit == 'S200A2':
-                        uncalfile1 = os.path.join(rawpath_level2, bogus_prefix + 'jw01222002001_03104_00001_' + detname + '_uncal.fits')
-                        uncalfile2 = os.path.join(rawpath_level2, bogus_prefix + 'jw01222002001_03104_00002_' + detname + '_uncal.fits')
-                        uncalfile3 = os.path.join(rawpath_level2, bogus_prefix + 'jw01222002001_03104_00003_' + detname + '_uncal.fits')
-
-                exp_list.append([uncalfile1, uncalfile2, uncalfile3])
 
             elif 'J0020-3653' in target:
-                rawpath_level2 = '/Users/joe/jwst_redux/Raw/NIRSPEC_FS/1222/level_12/01222/'
                 redux_dir = '/Users/joe/jwst_redux/redux/NIRSPEC_FS/1222/J0020-3653/'
                 if disperser == '235H':
                     # NIRSPEC 3-point dither dither center
@@ -259,19 +230,31 @@ def jwst_targets(progid, disperser, target, slit=None):
                         uncalfile1 = os.path.join(rawpath_level2, 'jw01222012001_03104_00001_' + detname + '_uncal.fits')
                         uncalfile2 = os.path.join(rawpath_level2, 'jw01222012001_03104_00002_' + detname + '_uncal.fits')
                         uncalfile3 = os.path.join(rawpath_level2, 'jw01222012001_03104_00003_' + detname + '_uncal.fits')
-                elif disperser == '140H_bogus_F100LP':
+                        
+            elif 'J1120+0641' in target:
+                redux_dir = '/Users/joe/jwst_redux/redux/NIRSPEC_FS/1222/J1120+0641/'
+                if disperser == '140H':
                     # NIRSPEC 3-point dither dither center
-                    bogus_prefix = 'bogus_'
                     if slit == 'S200A1':
-                        uncalfile1 = os.path.join(rawpath_level2, bogus_prefix + 'jw01222012001_03102_00001_' + detname + '_uncal.fits')
-                        uncalfile2 = os.path.join(rawpath_level2, bogus_prefix + 'jw01222012001_03102_00002_' + detname + '_uncal.fits')
-                        uncalfile3 = os.path.join(rawpath_level2, bogus_prefix + 'jw01222012001_03102_00003_' + detname + '_uncal.fits')
+                        uncalfile1 = os.path.join(rawpath_level2, 'jw01222005001_03101_00001_' + detname + '_uncal.fits')
+                        uncalfile2 = os.path.join(rawpath_level2, 'jw01222005001_03101_00002_' + detname + '_uncal.fits')
+                        uncalfile3 = os.path.join(rawpath_level2, 'jw01222005001_03101_00003_' + detname + '_uncal.fits')
                     elif slit == 'S200A2':
-                        uncalfile1 = os.path.join(rawpath_level2, bogus_prefix + 'jw01222012001_03104_00001_' + detname + '_uncal.fits')
-                        uncalfile2 = os.path.join(rawpath_level2, bogus_prefix + 'jw01222012001_03104_00002_' + detname + '_uncal.fits')
-                        uncalfile3 = os.path.join(rawpath_level2, bogus_prefix + 'jw01222012001_03104_00003_' + detname + '_uncal.fits')
+                        uncalfile1 = os.path.join(rawpath_level2, 'jw01222005001_09101_00001_' + detname + '_uncal.fits')
+                        uncalfile2 = os.path.join(rawpath_level2, 'jw01222005001_09101_00002_' + detname + '_uncal.fits')
+                        uncalfile3 = os.path.join(rawpath_level2, 'jw01222005001_09101_00003_' + detname + '_uncal.fits')
+                elif disperser == '235H':
+                    # NIRSPEC 3-point dither dither center
+                    if slit == 'S200A1':
+                        uncalfile1 = os.path.join(rawpath_level2, 'jw01222005001_05101_00001_' + detname + '_uncal.fits')
+                        uncalfile2 = os.path.join(rawpath_level2, 'jw01222005001_05101_00002_' + detname + '_uncal.fits')
+                        uncalfile3 = os.path.join(rawpath_level2, 'jw01222005001_05101_00003_' + detname + '_uncal.fits')
+                    elif slit == 'S200A2':
+                        uncalfile1 = os.path.join(rawpath_level2, 'jw01222005001_07101_00001_' + detname + '_uncal.fits')
+                        uncalfile2 = os.path.join(rawpath_level2, 'jw01222005001_07101_00002_' + detname + '_uncal.fits')
+                        uncalfile3 = os.path.join(rawpath_level2, 'jw01222005001_07101_00003_' + detname + '_uncal.fits')                        
 
-                exp_list.append([uncalfile1, uncalfile2, uncalfile3])
+            exp_list.append([uncalfile1, uncalfile2, uncalfile3])
 
         if '1764' in progid:
             rawpath_level2 = '/Users/joe/jwst_redux/Raw/NIRSPEC_FS/1764/level_12/01764/'
@@ -387,6 +370,60 @@ def jwst_targets(progid, disperser, target, slit=None):
                     file_list.append(os.path.join(rawpath_level2, 'jw03526005001_04101_000' + "{:02d}".format(ii) + '_' + detname + '_uncal.fits'))
                 exp_list.append(file_list)                
 
+        if '1967' in progid:
+            rawpath_level2 = '/Users/joe/jwst_redux/Raw/NIRSPEC_FS/1967/level_12/01967/'
+            redux_dir = os.path.join('/Users/joe/jwst_redux/redux/NIRSPEC_FS/1967/', target)
+            # All of these are with slit S200A2
+            file_list = []
+            if 'J2255+0251' in target:
+                for ii in range(1,4): 
+                    file_list.append(os.path.join(rawpath_level2, 'jw01967012001_03102_000' + "{:02d}".format(ii) + '_' + detname + '_uncal.fits'))
+                exp_list.append(file_list)
+            elif 'J2236+0032' in target:
+                for ii in range(1,4):
+                    file_list.append(os.path.join(rawpath_level2, 'jw01967011001_03102_000' + "{:02d}".format(ii) + '_' + detname + '_uncal.fits'))
+                exp_list.append(file_list)
+            elif 'J0844-0052' in target:
+                for ii in range(1,4):
+                    file_list.append(os.path.join(rawpath_level2, 'jw01967002001_03102_000' + "{:02d}".format(ii) + '_' + detname + '_uncal.fits'))
+                exp_list.append(file_list)            
+            elif 'J0844-0132' in target:
+                for ii in range(1,4):
+                    file_list.append(os.path.join(rawpath_level2, 'jw01967003001_05101_000' + "{:02d}".format(ii) + '_' + detname + '_uncal.fits'))
+                exp_list.append(file_list)   
+            elif 'J0918+0139' in target:
+                for ii in range(1,4):
+                    file_list.append(os.path.join(rawpath_level2, 'jw01967005001_04101_000' + "{:02d}".format(ii) + '_' + detname + '_uncal.fits'))
+                exp_list.append(file_list) 
+            elif 'J1425-0015' in target:
+                for ii in range(1,4):
+                    file_list.append(os.path.join(rawpath_level2, 'jw01967008001_03102_000' + "{:02d}".format(ii) + '_' + detname + '_uncal.fits'))
+                exp_list.append(file_list)                                   
+            elif 'J1512+4422' in target:
+                for ii in range(1,4):
+                    file_list.append(os.path.join(rawpath_level2, 'jw01967009001_04101_000' + "{:02d}".format(ii) + '_' + detname + '_uncal.fits'))
+                exp_list.append(file_list)      
+            elif 'J1525+4303' in target:
+                for ii in range(1,4):
+                    file_list.append(os.path.join(rawpath_level2, 'jw01967010001_03102_000' + "{:02d}".format(ii) + '_' + detname + '_uncal.fits'))
+                exp_list.append(file_list)      
+            elif 'J1146+0124' in target:
+                for ii in range(1,4):
+                    file_list.append(os.path.join(rawpath_level2, 'jw01967006001_04102_000' + "{:02d}".format(ii) + '_' + detname + '_uncal.fits'))
+                exp_list.append(file_list)      
+            elif 'J1146-0005' in target:
+                for ii in range(1,4):
+                    file_list.append(os.path.join(rawpath_level2, 'jw01967007001_04101_000' + "{:02d}".format(ii) + '_' + detname + '_uncal.fits'))
+                exp_list.append(file_list)     
+            elif 'J0217-0208' in target:
+                for ii in range(1,4):
+                    file_list.append(os.path.join(rawpath_level2, 'jw01967001001_04101_000' + "{:02d}".format(ii) + '_' + detname + '_uncal.fits'))
+                exp_list.append(file_list)                     
+            elif 'J0911+0152' in target:
+                for ii in range(1,4):
+                    file_list.append(os.path.join(rawpath_level2, 'jw01967004001_05101_000' + "{:02d}".format(ii) + '_' + detname + '_uncal.fits'))
+                exp_list.append(file_list)      
+                                               
         if '1117' in progid:
             if 'PRISM' in disperser:
                 # PRISM data
@@ -448,7 +485,6 @@ def jwst_targets(progid, disperser, target, slit=None):
                 uncalfile3 = os.path.join(rawpath_level2, 'jw01671001001_03101_00004_' + detname + '_uncal.fits')
                 exp_list.append([uncalfile1, uncalfile2, uncalfile3])
 
-
-    return exp_list, redux_dir 
+    return exp_list, redux_dir, rawpath_level2
     
     
