@@ -1795,7 +1795,7 @@ def jwst_mosaic_fbd(image_model_tuple, Calibrations_tuple, kludge_err=1.0,
         slit_left_tot, slit_righ_tot = jwst_get_slits(finitemask_tot)
         waveimg_tot[np.logical_not(finitemask_tot)] = 0.0
 
-        det_or_mosaic = Mosaic(1, np.array(det_list), shape, None, None, None, None)
+        det_or_mosaic = Mosaic(1, np.array(det_list), shape, 0.0, 0.0, None, None)
     else:
         msgs.error('Invalid number of detectors. There is a problem with this slit')
 
