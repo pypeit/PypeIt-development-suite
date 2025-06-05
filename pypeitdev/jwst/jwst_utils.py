@@ -9,6 +9,7 @@ from astropy.io import fits
 from astropy.wcs import WCS
 from astropy import units as u
 from astropy import constants as const
+from astropy.io.fits import Column
 
 from pypeit.display import display
 from pypeit.core import fitting
@@ -341,6 +342,73 @@ def jwst_proc(msa_data, slit_slice, finitemask, flatfield, pathloss, barshadow, 
     return zero_not_finite(science), zero_not_finite(sciivar), gpm, zero_not_finite(base_var), \
         zero_not_finite(count_scale), rn2_img
 
+
+def jwst_fnu_to_flam_spec1d(fnufile, outfile=None, plot=False):
+    """
+    Utility routine to convert a PypeIt spec1d in F_nu to F_lambda.
+
+    Parameters
+    ----------
+    fnufile : str
+        Name of the input file with the F_nu spectrum
+    outfile : str
+        Name of the output file with the F_lambda spectrum. If None, the output file is written to the same directory with the same name as
+        fnufile, but with the _Flam.fits suffix.
+    plot : bool
+        If True, a plot of the F_lambda spectrum is displayed.
+
+    Returns
+    -------
+    outfile : str
+        Name of the output file with the F_lambda spectrum.
+    """
+    _outfile = os.path.join(os.path.dirname(fnufile), os.path.basename(fnufile).replace('.fits', '_Flam.fits')) if outfile is None else outfile
+    hdul = fits.open(fnufile)
+    nspec = hdul[0].header['NSPEC']
+
+    for ii in range(nspec):
+        spec_table = hdul[ii+1].data
+        columns = hdul[ii+1].columns
+        for extract in ['OPT', 'BOX']:
+            flux_MJy = spec_table['{:}_COUNTS'.format(extract)] * u.MJy
+            wave = spec_table['{:}_WAVE'.format(extract)] * u.angstrom
+            sigma_MJy = np.sqrt(inverse(spec_table['{:}_COUNTS_IVAR'.format(extract)])) * u.MJy
+            gpm = spec_table['{:}_MASK'.format(extract)].astype(bool)
+            nu_to_flam_factor =const.c/np.square(wave)
+            factor = nu_to_flam_factor
+            F_lam = (flux_MJy*factor).decompose().to(u.erg/u.s/u.cm**2/u.angstrom).value/1e-17
+            sigma_lam = (sigma_MJy*factor).decompose().to(u.erg/u.s/u.cm**2/u.angstrom).value/1e-17
+
+            # Create an output table
+            # Create new column data (same length as existing table)
+            new_col_flam = Column(name='{:}_FLAM'.format(extract), format='D', array=F_lam)  # 'K' = 64-bit integer
+            new_col_sig = Column(name='{:}_FLAM_SIG'.format(extract), format='D', array=sigma_lam)  # 'K' = 64-bit integer
+            # Create new columns by appending the new one
+            columns = fits.ColDefs(columns + new_col_flam)
+            columns = fits.ColDefs(columns + new_col_sig)
+        # Create a new binary table HDU with the updated columns
+        new_hdu = fits.BinTableHDU.from_columns(columns)
+        hdul[ii+1].data = new_hdu.data
+    hdul.writeto(_outfile, overwrite=True)
+
+    if plot:
+        ymin = []
+        ymax = []
+        for ii in range(nspec):
+            spec_table = hdul[ii+1].data
+            F_lam = spec_table['OPT_FLAM']
+            gpm = spec_table['OPT_MASK'].astype(bool)
+            sigma_lam = spec_table['OPT_FLAM_SIG']
+            F_lam_sm = fast_running_median(F_lam*gpm, 10)
+            sigma_lam_sm = fast_running_median(sigma_lam*gpm, 10)
+            ymin.append(-1.2*np.max(sigma_lam_sm))
+            ymax.append(1.2*np.max(F_lam_sm))
+            plt.plot(wave, F_lam, drawstyle='steps-mid', label='JWST')
+        plt.ylim([np.min(ymin), np.max(ymax)])
+        plt.ylabel(r'$F_\lambda$ (10$^{-17}$ erg s$^{-1}$ cm$^{-2}$ $\AA^{-1}$)')
+        plt.xlabel(r'$\lambda$ ($\AA$)')
+        plt.legend()
+        plt.show()
 
 
 def jwst_fnu_to_flam(fnufile, outfile=None, plot=False):
