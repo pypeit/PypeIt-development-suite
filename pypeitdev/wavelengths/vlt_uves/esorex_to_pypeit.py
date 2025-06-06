@@ -5,10 +5,12 @@ from IPython import embed
 
 import astropy.io.fits as fits
 from astropy.table import Table
+import astropy.units as units
 from matplotlib import pyplot as plt
 
 from pypeit.core.wavecal import wvutils
 from pypeit.core.arc import fit2darc
+from pypeit.core.wave import airtovac
 
 
 def convert_esorex_to_reid(fname, outname, to_cache=False):
@@ -38,7 +40,10 @@ def convert_esorex_to_reid(fname, outname, to_cache=False):
     hdu = fits.open(wpolname)
     all_pix = hdu[1].data['X']
     all_orders = hdu[1].data['Order']
-    all_wv = hdu[1].data['Ident']
+    # ESOREX is in air wavelengths, so convert to vacuum
+    all_wv_air = hdu[1].data['Ident']*units.AA
+    all_wv = airtovac(all_wv_air).to(units.AA).value
+    # Remove NaNs
     wgd = np.where(np.logical_not(np.isnan(all_wv)))
     orderref = np.min(all_orders)
     if False:
@@ -57,6 +62,10 @@ def convert_esorex_to_reid(fname, outname, to_cache=False):
         norder_coeff = 4
         order_list = (orderref + np.arange(nord))[::-1]
     elif fname == "390":
+        nspec_coeff = 6
+        norder_coeff = 4
+        order_list = (orderref + np.arange(nord))[::-1]
+    elif fname == "437":
         nspec_coeff = 6
         norder_coeff = 4
         order_list = (orderref + np.arange(nord))[::-1]
@@ -106,8 +115,8 @@ def convert_esorex_to_reid(fname, outname, to_cache=False):
 
 if __name__ == "__main__":
     # List of all files to convert
-    fils = ["346", "390"]#, "760"]
-    outnames = ["vlt_uves_346_1x1.fits", "vlt_uves_390_1x1.fits"]
+    fils = ["346", "390", "437"]#, "760"]
+    outnames = ["vlt_uves_346_1x1.fits", "vlt_uves_390_1x1.fits", "vlt_uves_437_1x1.fits"]
     for ff, fil in enumerate(fils):
         # Convert the ESOREX reduction files to a FITS file
         convert_esorex_to_reid(fil, outnames[ff], to_cache=False)
