@@ -28,7 +28,7 @@ c_kms = const.c.to('km/s').value
 
 def load_archive(outfile, n_final=4, func='legendre'):
     """
-    Load the pypeit format archived templates that were created with the `generate_reid_files` function.
+    Load the pypeit format archived templates that were created with the `esorex_to_pypeit` function.
 
     Args:
         outfile (str):
@@ -46,7 +46,7 @@ def load_archive(outfile, n_final=4, func='legendre'):
     order_max = ptbl['EOrder'].max()
     order_vec = np.arange(order_min, order_max + 1, 1)
     norders = order_vec.size
-    nspec =
+    nspec = 3000
 
     # xmin, xmax for wavelength vs pixel fits
     xmin, xmax = 0.0, 1.0
