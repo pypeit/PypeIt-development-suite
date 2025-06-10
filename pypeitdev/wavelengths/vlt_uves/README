@@ -1,0 +1,5 @@
+The following files generated here are now in the main Repo
+with different names:
+
+wvcalib_angle_fits.fits -> vlt_uves_blue_angle_fits.fits
+UVES_composite_arc.fits ->  vlt_uves_blue_composite_arc.fits
