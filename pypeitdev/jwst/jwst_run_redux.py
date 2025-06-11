@@ -530,6 +530,7 @@ def jwst_run_redux(redux_dir, source_type, uncal_list=None, rate_list=None,
                 bkgImg = combineImage.run(ignore_saturation=True)
                 sciImg = sciImg.sub(bkgImg)
 
+            embed()
             # Run the reduction
             all_spec2d[sciImg.detector.name], tmp_sobjs = jwst_reduce(sciImg, slits, waveimg, tilts, spectrograph, par,
                                                                     show=show, find_negative=bkg_redux, bkg_redux=bkg_redux,
