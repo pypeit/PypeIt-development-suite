@@ -82,7 +82,7 @@ class PypeItTest(ABC):
     def get_logfile(self):
         """Return a unique logifle name for the test"""
         # Get a unique log file to prevent a test from overwriting the log from a previous test
-        name = '{0}_{1}.{2}.log'.format(self.setup.instr.lower(), self.setup.name.lower(), self.log_suffix)
+        name = '{0}_{1}.{2}.log'.format(self.setup.instr, self.setup.name.lower(), self.log_suffix)
         return get_unique_file(os.path.join(self.setup.rdxdir, name))
 
 
@@ -179,7 +179,7 @@ class PypeItSetupTest(PypeItTest):
 
         if super().run():
             # Check for the pypeit file after running the test
-            rdxdir = os.path.join(self.setup.rdxdir, self.setup.instr.lower() + '_A')
+            rdxdir = os.path.join(self.setup.rdxdir, self.setup.instr + '_A')
             pyp_file = os.path.join(
                 rdxdir, f'{self.setup.instr}_A.pypeit')
             if not os.path.isfile(pyp_file):
@@ -297,7 +297,7 @@ class PypeItFluxTest(PypeItTest):
         super().__init__(setup, pargs, "pypeit_flux", "test_flux")
 
         self.flux_file = os.path.join(self.setup.dev_path, 'fluxing_files',
-                                      '{0}_{1}.flux'.format(self.setup.instr.lower(), self.setup.name.lower()))
+                                      '{0}_{1}.flux'.format(self.setup.instr, self.setup.name.lower()))
 
     def build_command_line(self):
         return ['pypeit_flux_calib', self.flux_file]
@@ -314,7 +314,7 @@ class PypeItFlexureTest(PypeItTest):
         super().__init__(setup, pargs, "pypeit_multislit_flexure", "test_flexure")
 
         self.flexure_file = os.path.join(self.setup.dev_path, 'flexure_files',
-                                      '{0}_{1}.flex'.format(self.setup.instr.lower(), self.setup.name.lower()))
+                                      '{0}_{1}.flex'.format(self.setup.instr, self.setup.name.lower()))
 
     def build_command_line(self):
         return ['pypeit_multislit_flexure', self.flexure_file, 'testing_']
@@ -331,7 +331,7 @@ class PypeItCoadd1DTest(PypeItTest):
         super().__init__(setup, pargs, "pypeit_coadd_1dspec", "test_1dcoadd")
 
         self.coadd_file = os.path.join(self.setup.dev_path, 'coadd1d_files',
-                                       '{0}_{1}.coadd1d'.format(self.setup.instr.lower(), self.setup.name.lower()))
+                                       '{0}_{1}.coadd1d'.format(self.setup.instr, self.setup.name.lower()))
 
     def build_command_line(self):
 
@@ -405,7 +405,7 @@ class PypeItCoadd1DTest(PypeItTest):
 
         
         # Generate the new coadd1d file
-        final_coadd_file = get_unique_file(os.path.join(self.setup.rdxdir, f"{self.setup.instr.lower()}_{self.setup.name.lower()}_merged.coadd1d"))
+        final_coadd_file = get_unique_file(os.path.join(self.setup.rdxdir, f"{self.setup.instr}_{self.setup.name.lower()}_merged.coadd1d"))
         #data_block = Table()
         data_block = orig_coadd1dFile.data.copy()
         data_block['filename'] = corrected_filenames
@@ -455,7 +455,7 @@ class PypeItTelluricTest(PypeItTest):
         self.coadd_file = coadd_file
 
         self.tell_file = os.path.join(self.setup.dev_path, 'tellfit_files',
-                                f'{self.setup.instr.lower()}_{self.setup.name.lower()}.tell') \
+                                f'{self.setup.instr}_{self.setup.name.lower()}.tell') \
                             if tell_file else None
 
     def build_command_line(self):
@@ -607,7 +607,7 @@ class PypeItQuickLookTest(PypeItTest):
 
 
 def pypeit_file_name(instr, setup, std=False):
-    base = '{0}_{1}'.format(instr.lower(), setup.lower())
+    base = '{0}_{1}'.format(instr, setup.lower())
     return '{0}_std.pypeit'.format(base) if std else '{0}.pypeit'.format(base)
 
 
@@ -616,7 +616,7 @@ def template_pypeit_file(dev_path, instr, setup, std=False):
 
 
 def coadd2d_file_name(instr, setup):
-    return '{0}_{1}.coadd2d'.format(instr.lower(), setup.lower())
+    return '{0}_{1}.coadd2d'.format(instr, setup.lower())
 
 
 def template_coadd2d_file(dev_path, instr, setup):
