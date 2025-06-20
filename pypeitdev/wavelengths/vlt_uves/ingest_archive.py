@@ -63,7 +63,7 @@ def load_archive(outfile, n_final=2, func='legendre'):
     # load the pypeit templates (they are WaveCalib files)
     for irow in np.arange(p_nrows):
         ifinal_row = irow
-        templ_file = os.path.join(os.getenv('PYPEIT_DEV'), 'pypeitdev', 'wavelengths', 'vlt_uves',
+        templ_file = os.path.join(os.getenv('PYPEIT_DEV'), 'pypeitdev', 'wavelengths', 'vlt_uves', 'PypeIt_Templates',
                                   ptbl[irow]['Name'])
         waveCalib = wavecalib.WaveCalib.from_file(templ_file, chk_version=False)
         # this is the order vector available for this wavecalib file

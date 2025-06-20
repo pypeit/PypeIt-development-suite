@@ -1,5 +1,13 @@
+The wavelength calibration required making some template solutions first from esorex data.
+This was done using the esorex_to_pypeit script. Then, the wavelength calibration was performed using the
+reidentify method and ech_fixed_format=True. Then, the wavelength calibration was generated for each setup
+and the resulting WaveCalib Calibration frame was placed in the PypeIt_Templates directory.
+
+The relevant information was collected in the uves_templ_pypeit.dat file, and these were all combined using
+the ingest_archive script.
+
 The following files generated here are now in the main Repo
 with different names:
 
-wvcalib_angle_fits.fits -> vlt_uves_blue_angle_fits.fits
-UVES_composite_arc.fits ->  vlt_uves_blue_composite_arc.fits
+wvcalib_angle_fits.fits -> vlt_uves_angle_fits.fits
+UVES_composite_arc.fits ->  vlt_uves_composite_arc.fits
