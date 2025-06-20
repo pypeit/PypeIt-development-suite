@@ -1,4 +1,4 @@
-Name                       Chip  XDISP    ECH     XDAng   Deck  Rbin  Cbin   IOrder EOrder   Spatids
-vlt_uves_346_1x1.fits      1     BLUE    -0.818   1.6230   C1    1     1      35     35       2986
-vlt_uves_390_1x1.fits      1     BLUE     0.745   1.6890   C1    1     1      35     35       2999
-vlt_uves_437_1x1.fits      1     BLUE     0.050   0.8515   B5    1     1      117    117       180
+Name                       Chip  XDISP    ECH     XDAng  Deck  Rbin  Cbin   IOrder EOrder   Spatids
+WaveCalib_346.fits         1     BLUE     0.0     346.0  346   1     1      121    153      all
+WaveCalib_390.fits         1     BLUE     0.0     390.0  390   1     1      103    142      all
+WaveCalib_437.fits         1     BLUE     0.0     437.0  437   1     1      94     124      all
