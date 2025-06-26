@@ -98,6 +98,12 @@ class TestPhase(Enum):
     AFTERBURN = auto()
     QL        = auto()
 
+# raw data directories for for setups that don't have the normal naming conventions
+_raw_data_dirs = {
+    'p200_ngps_r': 'p200_ngps',
+    'p200_ngps_i': 'p200_ngps',
+}
+
 
 # Tests for full reductions
 _reduce_setups = {}
@@ -108,7 +114,16 @@ for instr in all_setups:
 
 _pypeit_setup = {
     'shane_kast_blue': {
-        '600_4310_d55': [{}]}}
+        '600_4310_d55': [{}]},
+    'p200_ngps_r': {
+        '1.5_2x3': [{}],
+        '1.0_2x2': [{}],
+        '0.5_2x1': [{}]},
+    'p200_ngps_i': {
+        '1.5_2x3': [{}],
+        '1.0_2x2': [{}],
+        '0.5_2x1': [{}]},        
+    }
 
 _additional_reduce = {
     'keck_lris_red': {
