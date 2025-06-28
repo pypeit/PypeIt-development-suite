@@ -70,6 +70,20 @@ def jwst_targets(progid, disperser, target, slit=None):
     # If bkg_redux is False, the code will model the sky and the object profile and perform optimal extraction.
     # If bkg_redux is True, the code will difference image and simply boxcar extract (optimal not implemented yet)
     for detname in detectors:
+        if '3543' in progid:
+            if 'G395M' == disperser:
+                ## BHstar object
+                
+                if target == 'BHstar':
+                    rawpath_level2 = '/Users/joe/jwst_redux/Raw/NIRSPEC_MSA/3543/level_12/03543/'
+                    redux_dir = os.path.join('/Users/joe/jwst_redux/redux/NIRSPEC_MSA/3543/', target)
+
+                    uncalfile1 = os.path.join(rawpath_level2, 'jw03543001001_07101_00002_' + detname + '_uncal.fits')
+                    uncalfile2 = os.path.join(rawpath_level2, 'jw03543001001_07101_00003_' + detname + '_uncal.fits')
+                    uncalfile3 = os.path.join(rawpath_level2, 'jw03543001001_07101_00004_' + detname + '_uncal.fits')
+
+                exp_list.append([uncalfile1, uncalfile2, uncalfile3]) 
+        
         if '2073' in progid:
             if 'PRISM' == disperser:
                 ## Prorgram for Slit Loss Characterization for MSA shutters

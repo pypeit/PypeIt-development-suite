@@ -145,9 +145,9 @@ def validate_interpolatedflat_files(intflat_fs_output_files, intflat_output_file
     return merge_fs
 
 
-def jwst_run_redux(redux_dir, uncal_list=None, rate_list=None, 
-                   reduce_slits=None, reduce_sources=None,
-                   source_type='POINT', show=False, overwrite_stage1=False, overwrite_stage2=False, 
+def jwst_run_redux(redux_dir, source_type, uncal_list=None, rate_list=None, 
+                   reduce_slits=None, reduce_sources=None, 
+                   show=False, overwrite_stage1=False, overwrite_stage2=False, 
                    kludge_err=1.5, bkg_redux=False, run_bogus_f100lp=False):
     """
     Main routine to reduce JWST NIRSpec data
@@ -156,6 +156,9 @@ def jwst_run_redux(redux_dir, uncal_list=None, rate_list=None,
     ----------
     redux_dir : str
         Path to the directory where the data will be reduced.
+    source_type = str
+        source_type for the spec2d pipeline. Options are 'POINT' or 'EXTENDED'. Set this parameter to be 'POINT' for fixed slit data reduction, and 
+        'EXTENDED' for MSA reductions. This impacts the flux calibration, I believe via slit loss corrections and what is assumed.  
     uncal_list : list
         List of lists of uncalibrated files for each exposure. exp_list[0] is for nrs1 and exp_list[1] is for nrs2.  Optional, default is None. Either uncal_list or rate_list must be provided.
     rate_list : list
@@ -164,9 +167,6 @@ def jwst_run_redux(redux_dir, uncal_list=None, rate_list=None,
         List of slits to reduce. If None, reduce all. 
     reduce_sources : str or list, optional
         List of sources to reduce. If None, reduce all. 
-    source_type = str
-        source_type for the spec2d pipeline. Options are 'POINT' or 'EXTENDED'. Optional, default is 'POINT'.  This the flux calibration, I believe via slit loss corrections and what is assumed.  
-        Previously we were setting this parameter to be 'POINT' for FS data and 'EXTENDED' for MSA data, which may be the right choice, but it needs to be more carefully investiated. 
     show : bool, optional
         Show the images and QA for the reduction in the ginga window. 
     overwrite_stage1 : bool, optional
@@ -267,13 +267,15 @@ def jwst_run_redux(redux_dir, uncal_list=None, rate_list=None,
         'bkg_subtract': {'skip': True},
         'imprint_subtract': {'save_results': True}, # TODO Check up on whether imprint subtraction is being done by us???
         'master_background_mos': {'skip': True},
-        'srctype': {'source_type': source_type},
+        'srctype': {'source_type': source_type},        
         # Default to setting the source type to extended for MSA data and point for FS data. This impacts flux calibration.
         #'srctype': {'source_type': 'POINT'} if 'FS' in mode else {'source_type': 'EXTENDED'},
         # 'flat_field': {'skip': True},
         'resample_spec': {'skip': True},
         'extract_1d': {'skip': True},
         'flat_field': {'save_interpolated_flat': True}, 
+         # Forces to always run the barshadow step. Default is to apply  barshadow only for extended sources, which means slit won't be flat
+        'barshadow': {'source_type': 'EXTENDED'},  
         'nsclean': {'skip': True, 'save_results': False},
     }
     # So the nsclean is now being done via clean_flicker_noise in the Det1 pipeline. 
@@ -528,6 +530,7 @@ def jwst_run_redux(redux_dir, uncal_list=None, rate_list=None,
                 bkgImg = combineImage.run(ignore_saturation=True)
                 sciImg = sciImg.sub(bkgImg)
 
+            embed()
             # Run the reduction
             all_spec2d[sciImg.detector.name], tmp_sobjs = jwst_reduce(sciImg, slits, waveimg, tilts, spectrograph, par,
                                                                     show=show, find_negative=bkg_redux, bkg_redux=bkg_redux,
