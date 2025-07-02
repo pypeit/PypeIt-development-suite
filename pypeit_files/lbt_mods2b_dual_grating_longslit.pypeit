@@ -6,14 +6,22 @@
     spectrograph = lbt_mods2b
 [calibrations]
         [[slitedges]]
-           edge_thresh = 30
-           minimum_slit_length = 55
+           exclude_regions = 1:0:130,1:390:2700,1:3025:3087 # mask gaps to create one slit
+           edge_thresh = 20
+           minimum_slit_length = 5
            fit_niter = 3
            sobel_enhance = 5
 [reduce]
-    	[[findobj]]
-    	   snr_thresh = 5.0
-    	   maxnumber_std = 1
+        [[extraction]]
+           boxcar_radius = 20.
+        [[skysub]]
+           no_local_sky = True
+           mask_by_boxcar = True
+        [[findobj]]
+           find_min_max = 3904,4288
+           snr_thresh = 10.0
+           maxnumber_std = 1
+           maxnumber_sci = 2
 
 # Setup
 setup read
