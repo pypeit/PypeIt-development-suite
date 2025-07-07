@@ -399,14 +399,14 @@ def load_sensfunc(sens_files_path, sens_fnames=None, sens_fnames_dict=None,
     if len(sensnames) == 0:
         msgs.error("No sensitivity functions loaded.")
 
-    zps, zp_scales, waves, ords, snames = plot_parse_loaded(sensnames, sens_files_path,
-                                                            selected_lines=sens_fnames_dict,
-                                                            parse=parse, plot_all=plot_all,
-                                                            scale=scale, ptype=ptype)
+    zps, zp_scales, waves, ords, snames, wave_mids, zps_meds = plot_parse_loaded(sensnames, sens_files_path,
+                                                               selected_lines=sens_fnames_dict,
+                                                               parse=parse, plot_all=plot_all,
+                                                               scale=scale, ptype=ptype)
 
     if len(zps) == 0:
         msgs.error("No sensitivity functions loaded. Try setting the parameter --parse.")
-    return zps, zp_scales, waves, ords, snames
+    return zps, zp_scales, waves, ords, snames, wave_mids, zps_meds
 
 
 def plot_parse_loaded(sensnames, sens_files_path, selected_lines=None,
@@ -442,8 +442,8 @@ def plot_parse_loaded(sensnames, sens_files_path, selected_lines=None,
     # get SensFunc objects
     sensfuncs = [SensFunc.from_file(sens_files_path / sn, chk_version=False) for sn in sensnames]
 
-    # # for debugging
-    # print_datasets(sensfuncs, sens_files_path.parent)
+    # for debugging
+    print_datasets(sensfuncs, sens_files_path.parent)
 
     # colors by SensFunc object
     color_map_sens = colormap(sensnames)
@@ -458,6 +458,7 @@ def plot_parse_loaded(sensnames, sens_files_path, selected_lines=None,
     y_scale_all = []
     y_maxmax_all = []
     y_med_all = []
+    wave_mid_all = []
     wave_all = []
     order_all = []
     sname_all = []
@@ -511,7 +512,7 @@ def plot_parse_loaded(sensnames, sens_files_path, selected_lines=None,
                         # plt.plot(wave[wave_gmp], zeropoint_data[wave_gmp], alpha=0.4, color=color, lw=0.6,
                         #          zorder=-2)
                         y = sensobj.sens['SENS_ZEROPOINT_FIT'].data[indx]
-                        zcut = y > 12. if iord in [35] else y > 15.2
+                        zcut = y > 13.5 if iord in [35] else y > 15.0
                         y = y[zcut]
                         wave = wave[zcut]
                         wave_gmp = wave > 1.0
@@ -573,13 +574,13 @@ def plot_parse_loaded(sensnames, sens_files_path, selected_lines=None,
                 continue
             # get the wavelength range for the current order that is common to all the sensitivity functions
             if iord == 93:
-                wave_mid = 3840.
-            elif iord == 62:
-                wave_mid = 5760.
-            elif iord == 38:
-                wave_mid = 9350.
+                wave_mid = 3845.
+            # elif iord == 82:
+            #     wave_mid = 4375.
+            # elif iord == 81:
+            #     wave_mid = 4410.
             elif iord == 36:
-                wave_mid = 9920.
+                wave_mid = 9900.
             # elif iord == 47:
             #     wave_mid = 7540.
             else:
@@ -603,6 +604,7 @@ def plot_parse_loaded(sensnames, sens_files_path, selected_lines=None,
             # append to all
             y_maxmax_all.append(y_maxmax)
             y_med_all.append(y_med)
+            wave_mid_all.append(wave_mid)
 
             # plot by order
             for y_i, y_sm, y_ref, wave, color, legend in zip(y_iord, y_iord_smooth, y_iord_smooth_ref, wave_iord,
@@ -625,7 +627,11 @@ def plot_parse_loaded(sensnames, sens_files_path, selected_lines=None,
             plt.ylabel(y_label)
             if ptype in ['zeropoint', 'zeropoly']:
                 # plt.ylim(y_med*0.8, y_maxmax * 1.1)
-                pass
+                if plt.ylim()[1] > 20.4:
+                    ym = plt.ylim()[0]
+                    plt.ylim(ym, 20)
+                else:
+                    pass
             elif ptype == 'throughput':
                 plt.ylim(0.0,  y_maxmax * 1.2)
             else:
@@ -659,9 +665,10 @@ def plot_parse_loaded(sensnames, sens_files_path, selected_lines=None,
                 color = color_map_ord[o_a]
                 leg = f'order {o_a}' if o_a != in_order else ''
                 # plt.plot(wave_a, y_a * s_a, lw=0.5, color=color, alpha=0.3, zorder=0, label=leg)
-                plt.plot(wave_a, y_sm_a * s_a, lw=1.5, color=color, zorder=1, label=leg)
+                plt.plot(wave_a, y_sm_a * s_a, ls='-', lw=1.5, color=color, zorder=1, label=leg)
                 in_order = o_a
 
+            plt.scatter(wave_mid_all, y_med_all, marker='X', s=6, color='k', alpha=0.8, zorder=2)
             plt.xlabel('Wavelength (Angstroms)')
             plt.ylabel(y_label)
             plt.legend(fontsize=5, loc='upper right')
@@ -686,10 +693,10 @@ def plot_parse_loaded(sensnames, sens_files_path, selected_lines=None,
     if ptype in ['throughput', 'counts_per_angs'] or parse == 'select':
         sys.exit('Exiting after parsing the sensitivity functions.' if parse == 'select' else 'Exiting after plotting.')
     else:
-        return y_all, y_scale_all, wave_all, order_all, sname_all
+        return y_all, y_scale_all, wave_all, order_all, sname_all, wave_mid_all, y_med_all
 
 
-def combine_sensfuncs(zps, zp_scales, waves, ords, snames, sens_file,
+def combine_sensfuncs(zps, zp_scales, waves, ords, snames, sens_file, wave_mids, zps_meds,
                       poly_order=4, extrap=0.0, qa_plots=False):
 
     order_vec = np.unique(ords)[::-1]
@@ -715,8 +722,10 @@ def combine_sensfuncs(zps, zp_scales, waves, ords, snames, sens_file,
         i_waves_max = i_waves.max()
         # fit the zeropoints
         func = 'legendre'
-        pypeitFit = fitting.robust_fit(i_waves, i_zpoly, poly_order, function=func, minx=i_waves_min,
-                                       maxx=i_waves_max, in_gpm=i_zpoints>9., lower=10, upper=10, use_mad=True)
+        poly_ord = 2 if iord in [93] else poly_order
+        zgpm = (i_zpoints > 13.5) if iord in [35] else (i_zpoints > 15.0)
+        pypeitFit = fitting.robust_fit(i_waves, i_zpoly, poly_ord, function=func, minx=i_waves_min,
+                                       maxx=i_waves_max, in_gpm=zgpm, lower=3, upper=3, use_mad=True)
         i_comb_zpoint = flux_calib.eval_zeropoint(pypeitFit.fitc, func, wave_grid, i_waves_min, i_waves_max)
         # i_comb_zpoint = fitting.evaluate_fit(pypeitFit.fitc, func, wave_grid, minx=i_waves_min, maxx=i_waves_max)
         i_comb_wave = wave_grid.copy()
@@ -737,12 +746,14 @@ def combine_sensfuncs(zps, zp_scales, waves, ords, snames, sens_file,
     comb_sensobj = fill_combSensObj(comb_zeropoints, comb_waves, comb_orders, poly_order, comb_coeff, sens_file)
 
     if qa_plots:
-        plot_conbined_sensfunc(comb_sensobj, zps, zp_scales, waves, ords, snames)
+        plot_conbined_sensfunc(comb_sensobj, zps, zp_scales, waves, ords, snames,
+                               wave_mids=wave_mids, zps_meds=zps_meds)
 
     return comb_sensobj
 
 
-def plot_conbined_sensfunc(comb_sensobj, zps, zp_scales, waves, ords, snames):
+def plot_conbined_sensfunc(comb_sensobj, zps, zp_scales, waves, ords, snames,
+                           wave_mids=None, zps_meds=None):
     """Plot the combined sensitivity function.
 
     Args:
@@ -758,6 +769,10 @@ def plot_conbined_sensfunc(comb_sensobj, zps, zp_scales, waves, ords, snames):
             List of orders.
         snames (list):
             List of sensitivity function file names.
+        wave_mids (list, optional):
+            List of wavelength midpoints for each order.
+        zps_meds (list, optional):
+            List of median zeropoints at the wavelength midpoints for each order.
 
     """
     order_vec = comb_sensobj.sens['ECH_ORDERS'].data
@@ -795,7 +810,10 @@ def plot_conbined_sensfunc(comb_sensobj, zps, zp_scales, waves, ords, snames):
             plt.title(f'Order {iord}')
             plt.xlabel('Wavelength (Angstroms)')
             plt.ylabel('Zeropoint (AB mag)')
-            plt.ylim(i_comb_zpoint[i_comb_wave>0].min()*0.95, i_comb_zpoint[i_comb_wave>0].max()*1.05)
+            # plt.ylim(i_comb_zpoint[i_comb_wave>0].min()*0.95, i_comb_zpoint[i_comb_wave>0].max()*1.05)
+            if plt.ylim()[1] > 20.4:
+                ym = plt.ylim()[0]
+                plt.ylim(ym, 20)
             #plt.legend(fontsize=4, loc='upper right')
             fig.tight_layout()
             pdf.savefig(dpi=50)
@@ -815,6 +833,8 @@ def plot_conbined_sensfunc(comb_sensobj, zps, zp_scales, waves, ords, snames):
         z_comb = comb_sensobj.zeropoint.T
         for c, (cw, cz) in enumerate(zip(w_comb, z_comb)):
             plt.plot(cw[cw>1], cz[cw>1], lw=1.5, color='k', zorder=1, label='Combined' if c == 0 else '')
+        if wave_mids is not None and zps_meds is not None:
+            plt.scatter(wave_mids, zps_meds, marker='X', s=6, color='k', alpha=0.8, zorder=2)
         plt.xlabel('Wavelength (Angstroms)')
         plt.ylabel('Zeropoint (AB mag)')
         plt.ylim(z_comb[w_comb > 0].min()*0.95, z_comb[w_comb > 0].max()*1.05)
@@ -1007,16 +1027,16 @@ def main(args):
             # only these files will be used (FOR TESTING - REMEMBER TO REMOVE)
             # # orders 63-92
             # patterns = ['HI.20110226.18289', 'HI.20110226.18832']
-            # #order 35-62
+            #order 35-62
             # patterns = ['HI.20151214.16715','HI.20151214.16343']
-            # sens_fnames = [f.name for pattern in patterns for f in sensfuncs_path.glob(f"sens_{pattern}*.fits")]
-            # combine the combined sensitivity functions
-            sens_fnames = ['sens_keck_hires_RED_orders_63-92.fits', 'sens_keck_hires_RED_orders_35-62.fits']
+            # all
+            patterns = ['']
+            sens_fnames = [f.name for pattern in patterns for f in sensfuncs_path.glob(f"sens_{pattern}*.fits")]
         # load the sensitivity functions
-        zps, zp_scales, waves, ords, snames = load_sensfunc(sensfuncs_path, sens_fnames=sens_fnames,
-                                                            sens_fnames_dict=sens_fnames_dict,
-                                                            parse=args.parse, plot_all=args.QA,
-                                                            scale=args.scale,ptype=args.ptype)
+        zps, zp_scales, waves, ords, snames, wave_mids, zps_meds = load_sensfunc(sensfuncs_path, sens_fnames=sens_fnames,
+                                                                   sens_fnames_dict=sens_fnames_dict,
+                                                                   parse=args.parse, plot_all=args.QA,
+                                                                   scale=args.scale,ptype=args.ptype)
 
     else:
         spec1ds_path = Path(args.spec1ds_path).absolute()
@@ -1032,15 +1052,15 @@ def main(args):
         create_sens_files(spec1d_fnames, spec1ds_path, sensfuncs_path,
                           boxcar=args.boxcar, use_flat=args.use_flat, skip_existing=args.skip_existing)
         sens_fnames = [f.name for f in sensfuncs_path.glob('sens*.fits')]
-        zps, zp_scales, waves, ords, snames = load_sensfunc(sensfuncs_path, sens_fnames=sens_fnames,
-                                                            parse=args.parse, plot_all=args.QA,
-                                                            scale=args.scale, ptype=args.ptype)
+        zps, zp_scales, waves, ords, snames, wave_mids, zps_meds = load_sensfunc(sensfuncs_path, sens_fnames=sens_fnames,
+                                                                   parse=args.parse, plot_all=args.QA,
+                                                                   scale=args.scale, ptype=args.ptype)
 
     if len(zps) == 0:
         msgs.error(f"No sensitivity functions found.")
 
     # combine the sensitivity functions
-    sensfunc = combine_sensfuncs(zps, zp_scales, waves, ords, snames, sensfuncs_path /  sens_fnames[0],
+    sensfunc = combine_sensfuncs(zps, zp_scales, waves, ords, snames, sensfuncs_path /  sens_fnames[0], wave_mids, zps_meds,
                                  poly_order=args.order, extrap=args.extrap, qa_plots=args.QA)
 
     # save the combined sensitivity function
