@@ -224,10 +224,10 @@ def test_residuals(redux_out):
     avg, med = np.mean(resid[ww]), np.median(resid[ww])
     std, mad = np.std(resid[ww]), 1.4826 * np.median(np.abs(np.median(resid[ww]) - resid[ww]))
     # Check the statistics
-    assert(np.abs(avg) < 0.1, 'residuals (average) is not close to zero for method=subpixel(333)')
-    assert(np.abs(med) < 0.1, 'residuals (median) is not close to zero for method=subpixel(333)')
-    assert(np.abs(std-1) < 0.1, 'residuals (std) is not close to 1 for method=subpixel(333)')
-    assert(np.abs(mad-1) < 0.1, 'residuals (1.4826 * mad) is not close to 1 for method=subpixel(333)')
+    assert np.abs(avg) < 0.1, 'residuals (average) is not close to zero for method=subpixel(333)'
+    assert np.abs(med) < 0.1, 'residuals (median) is not close to zero for method=subpixel(333)'
+    assert np.abs(std-1) < 0.1, 'residuals (std) is not close to 1 for method=subpixel(333)'
+    assert np.abs(mad-1) < 0.1, 'residuals (1.4826 * mad) is not close to 1 for method=subpixel(333)'
 
     ######################################
     # Now check the NGP algorithm
@@ -261,10 +261,10 @@ def test_residuals(redux_out):
     avg, med = np.mean(resid[ww]), np.median(resid[ww])
     std, mad = np.std(resid[ww]), 1.4826 * np.median(np.abs(np.median(resid[ww]) - resid[ww]))
     # Check the statistics
-    assert(np.abs(avg) < 0.1, 'residuals (average) is not close to zero for method=NGP')
-    assert(np.abs(med) < 0.1, 'residuals (median) is not close to zero for method=NGP')
-    assert(np.abs(std-1) < 0.1, 'residuals (std) is not close to 1 for method=NGP')
-    assert(np.abs(mad-1) < 0.1, 'residuals (1.4826 * mad) is not close to 1 for method=NGP')
+    assert np.abs(avg) < 0.1, 'residuals (average) is not close to zero for method=NGP'
+    assert np.abs(med) < 0.1, 'residuals (median) is not close to zero for method=NGP'
+    assert np.abs(std-1) < 0.1, 'residuals (std) is not close to 1 for method=NGP'
+    assert np.abs(mad-1) < 0.1, 'residuals (1.4826 * mad) is not close to 1 for method=NGP'
     ######################################
     # Remove all of the created files
     os.remove(output_filename)
