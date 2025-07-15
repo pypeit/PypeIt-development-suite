@@ -384,6 +384,24 @@ def jwst_targets(progid, disperser, target, slit=None):
                     file_list.append(os.path.join(rawpath_level2, 'jw03526005001_04101_000' + "{:02d}".format(ii) + '_' + detname + '_uncal.fits'))
                 exp_list.append(file_list)                
 
+        if '9180' in progid:
+            rawpath_level2 = '/Users/joe/jwst_redux/Raw/NIRSPEC_FS/9180/'
+            redux_dir = os.path.join('/Users/joe/jwst_redux/redux/NIRSPEC_FS/9180/', target)
+            file_list = []
+            if 'J2356+0017' in target:
+                if disperser == '140H': 
+                    prefix = 'jw09180041001_03102_000' if slit == 'S200A1' else 'jw09180041001_03104_000'
+                elif disperser == '235H':
+                    prefix = 'jw09180041001_03107_000' if slit == 'S200A1' else 'jw09180041001_03105_000'
+                else: 
+                    raise ValueError("Disperser not recognized: {}".format(disperser))
+                indx_range = range(1,2)
+
+            for ii in indx_range: 
+                file_list.append(os.path.join(rawpath_level2, prefix + "{:02d}".format(ii) + '_' + detname + '_uncal.fits'))
+            exp_list.append(file_list)
+
+
         if '1967' in progid:
             rawpath_level2 = '/Users/joe/jwst_redux/Raw/NIRSPEC_FS/1967/level_12/01967/'
             redux_dir = os.path.join('/Users/joe/jwst_redux/redux/NIRSPEC_FS/1967/', target)
