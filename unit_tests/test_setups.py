@@ -45,7 +45,14 @@ def generic_setup_test(spec, setup, cfg=None, prefix=None, extension=None):
         data_root /= prefix
 
     # Define the output directory and remove it if it already exist
-    setup_path = Path().resolve() / (f'{spec}_{cfg}' if cfg else 'setup_files')
+    match cfg:
+        case None:
+            outdir = 'setup_files'
+        case 'all':
+            outdir = f'{spec}_A'
+        case _:
+            outdir = f'{spec}_{cfg}'
+    setup_path = Path().resolve() / outdir
     if setup_path.exists():
         shutil.rmtree(setup_path)
 
