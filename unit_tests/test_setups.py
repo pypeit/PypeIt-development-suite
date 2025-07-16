@@ -667,5 +667,42 @@ def test_setup_vlt_fors2():
     assert answers['pass'][0], 'A must pass!'
 
 
+def test_setup_ldt_deveny():
+    spec = 'ldt_deveny'
+    setup = 'DV1'
+    generic_setup_test(spec, setup)
+    # TODO: Think about how to test that all DeVeny setups are being detected
+
+
+def test_setup_param_block():
+    # Define the output directory and remove it if it already exist
+    setup_path = Path().resolve() / 'ldt_deveny_A'
+    if setup_path.exists():
+        shutil.rmtree(setup_path)
+
+    # Test this with LDT/DeVeny::DV6
+    data_root = Path(os.environ['PYPEIT_DEV']).resolve() / 'RAW_DATA' / 'ldt_deveny' / 'DV6'
+    assert data_root.exists(), 'TEST ERROR: Raw data path does not exist'
+
+    # Test the ability to read in the extra parameters
+    parblock_fn = Path(os.environ['PYPEIT_DEV']).resolve() / 'pypeit_files' / 'ldt_deveny_xtra_params.txt'
+    args = ['-r', str(data_root), '-s', 'ldt_deveny', '-p', str(parblock_fn) , '-c' 'A']
+    pargs = Setup.parse_args(args)
+    Setup.main(pargs)
+
+    # Read in the xtra_pars and the created PypeIt file
+    with open(parblock_fn, 'r', encoding='utf-8') as par_fobj:
+        xtra_pars = [l.rstrip() for l in par_fobj.readlines()]
+    with open(setup_path / 'ldt_deveny_A.pypeit', 'r',encoding='utf-8') as pypeit_fobj:
+        pypeit_contents = [l.rstrip() for l in pypeit_fobj.readlines()]
+
+    # Check that each of the `xtra_pars` is in the created PypeIt file
+    for par in xtra_pars:
+        assert par in pypeit_contents
+
+    # Clean-up
+    shutil.rmtree(setup_path)
+
+
 # TODO: Add other instruments!
 
