@@ -45,7 +45,7 @@ def generic_setup_test(spec, setup, cfg=None, prefix=None, extension=None):
         data_root /= prefix
 
     # Define the output directory and remove it if it already exist
-    setup_path = Path().resolve() / (f'{spec}_A' if cfg else 'setup_files')
+    setup_path = Path().resolve() / (f'{spec}_{cfg}' if cfg else 'setup_files')
     if setup_path.exists():
         shutil.rmtree(setup_path)
 
@@ -669,39 +669,72 @@ def test_setup_vlt_fors2():
 
 def test_setup_ldt_deveny():
     spec = 'ldt_deveny'
-    setup = 'DV1'
-    generic_setup_test(spec, setup)
-    # TODO: Think about how to test that all DeVeny setups are being detected
+    # Run through all setups
+    for i in range(1,10):
+        setup = f'DV{i}'
+        generic_setup_test(spec, setup)
+        generic_setup_test(spec, setup, cfg='A')
 
 
 def test_setup_param_block():
+    """This test is for the "-p" option to pypeit_setup
+
+    Use LDT/DeVeny::DV8 as a test case
+    """
     # Define the output directory and remove it if it already exist
     setup_path = Path().resolve() / 'ldt_deveny_A'
     if setup_path.exists():
         shutil.rmtree(setup_path)
 
-    # Test this with LDT/DeVeny::DV6
-    data_root = Path(os.environ['PYPEIT_DEV']).resolve() / 'RAW_DATA' / 'ldt_deveny' / 'DV6'
+    # Test this with LDT/DeVeny::DV8
+    data_root = Path(os.environ['PYPEIT_DEV']).resolve() / 'RAW_DATA' / 'ldt_deveny' / 'DV8'
     assert data_root.exists(), 'TEST ERROR: Raw data path does not exist'
 
+    # Create a temp file containing the extra parameters to be read in
+    test_pars = [
+        "[calibrations]",
+        "  [[slitedges]]",
+        "    minimum_slit_length = 45",
+        "  [[flatfield]]",
+        "    pixelflat_min_wave = 4200",
+        "[reduce]",
+        "  [[findobj]]",
+        "    find_fwhm = 6.0",
+        "  [[extraction]]",
+        "    use_user_fwhm = True",
+    ]
+    parblock_fn = Path().resolve() / 'xtra_params.txt'
+    with open(parblock_fn, 'w', encoding='utf-8') as par_fobj:
+        par_fobj.writelines([f"{l}\n" for l in test_pars])
+
     # Test the ability to read in the extra parameters
-    parblock_fn = Path(os.environ['PYPEIT_DEV']).resolve() / 'pypeit_files' / 'ldt_deveny_xtra_params.txt'
-    args = ['-r', str(data_root), '-s', 'ldt_deveny', '-p', str(parblock_fn) , '-c' 'A']
+    args = ['-r', str(data_root), '-s', 'ldt_deveny', '-p', str(parblock_fn) , '-c', 'A']
     pargs = Setup.parse_args(args)
     Setup.main(pargs)
 
     # Read in the xtra_pars and the created PypeIt file
+    # NOTE: strip whitespace from both ends because indent size doesn't matter
     with open(parblock_fn, 'r', encoding='utf-8') as par_fobj:
-        xtra_pars = [l.rstrip() for l in par_fobj.readlines()]
-    with open(setup_path / 'ldt_deveny_A.pypeit', 'r',encoding='utf-8') as pypeit_fobj:
-        pypeit_contents = [l.rstrip() for l in pypeit_fobj.readlines()]
+        xtra_pars = [l.strip() for l in par_fobj.readlines()]
+    with open(setup_path / 'ldt_deveny_A.pypeit', 'r', encoding='utf-8') as pypeit_fobj:
+        pypeit_file = [l.strip() for l in pypeit_fobj.readlines()]
 
     # Check that each of the `xtra_pars` is in the created PypeIt file
     for par in xtra_pars:
-        assert par in pypeit_contents
+        assert par in pypeit_file, 'TEST ERROR: user-requested parameter not in created PypeIt file'
+
+    # Run a setup WITHOUT the extra parameter block, and make sure the `xtra_pars` are NOT in it
+    args = ['-r', str(data_root), '-s', 'ldt_deveny', '-c', 'A']
+    pargs = Setup.parse_args(args)
+    Setup.main(pargs)
+    with open(setup_path / 'ldt_deveny_A.pypeit', 'r', encoding='utf-8') as pypeit_fobj:
+        pypeit_file = [l.strip() for l in pypeit_fobj.readlines()]
+    for par in xtra_pars:
+        assert par not in pypeit_file, 'TEST ERROR: user-requested parameter found in vanilla PypeIt file'
 
     # Clean-up
     shutil.rmtree(setup_path)
+    parblock_fn.unlink()
 
 
 # TODO: Add other instruments!
