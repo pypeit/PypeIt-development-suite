@@ -261,6 +261,16 @@ all_setups = {
         '1200_7100_d68',
         '1200_9400_d55',
     ],
+    'p200_ngps_r': [
+        '1.5_2x3',
+        '1.0_2x2',
+        '0.5_2x1',
+    ],
+    'p200_ngps_i': [
+        '1.5_2x3',
+        '1.0_2x2',
+        '0.5_2x1',
+    ],
     'p200_tspec': [
         'TSPEC',
     ],
@@ -284,8 +294,14 @@ all_setups = {
     'soar_goodman_blue': [
         'M1',
     ],
+    'subaru_focas': [
+        '300B_None',
+        '300R_O58',
+        'VPH520_2',
+    ],
     'tng_dolores': [
         'LRB',
+        'LRR',
     ],
     'vlt_fors2': [
         '300I',

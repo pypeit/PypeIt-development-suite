@@ -4,6 +4,8 @@
 # User-defined execution parameters
 [rdx]
     spectrograph = keck_hires
+[baseprocess]
+    use_illumflat = False  # illum flat fielding seems unstable	and make this dataset to fail randomly
 
 # Setup
 setup read
