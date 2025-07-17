@@ -666,6 +666,10 @@ def test_setup_vlt_fors2():
     answers, ps = ChkForCalibs.main(pargs)
     assert answers['pass'][0], 'A must pass!'
 
+def test_setup_apf_levy():
+    spec = 'apf_levy'
+    setup = 'W_decker'
+    generic_setup_test(spec, setup)
 
 # TODO: Add other instruments!
 
