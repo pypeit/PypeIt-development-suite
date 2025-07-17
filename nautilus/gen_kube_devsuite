@@ -103,6 +103,11 @@ def main():
         my_args += ' cd pypeit/data/telluric/atm_grids;'
         my_args += ' aws --endpoint $ENDPOINT_URL s3 cp s3://pypeit/telluric/atm_grids/TelFit_MaunaKea_3100_26100_R20000.fits /tmp/telluric/TelFit_MaunaKea_3100_26100_R20000.fits --no-progress;'
         my_args += ' aws --endpoint $ENDPOINT_URL s3 cp s3://pypeit/telluric/atm_grids/TelFit_LasCampanas_3100_26100_R20000.fits /tmp/telluric/TelFit_LasCampanas_3100_26100_R20000.fits --no-progress;'
+        my_args += ' aws --endpoint $ENDPOINT_URL s3 cp s3://pypeit/telluric/atm_grids/TellPCA_3000_10500_R120000.fits /tmp/telluric/TellPCA_3000_10500_R120000.fits --no-progress;'
+        my_args += ' aws --endpoint $ENDPOINT_URL s3 cp s3://pypeit/telluric/atm_grids/TellPCA_3000_26000_R10000.fits /tmp/telluric/TellPCA_3000_26000_R10000.fits --no-progress;'
+        my_args += ' aws --endpoint $ENDPOINT_URL s3 cp s3://pypeit/telluric/atm_grids/TellPCA_3000_26000_R15000.fits /tmp/telluric/TellPCA_3000_26000_R15000.fits --no-progress;'
+        my_args += ' aws --endpoint $ENDPOINT_URL s3 cp s3://pypeit/telluric/atm_grids/TellPCA_3000_26000_R25000.fits /tmp/telluric/TellPCA_3000_26000_R25000.fits --no-progress;'
+        my_args += ' aws --endpoint $ENDPOINT_URL s3 cp s3://pypeit/telluric/atm_grids/TellPCA_9300_55100_R60000.fits /tmp/telluric/TellPCA_9300_55100_R60000.fits --no-progress;'
         my_args += ' ln -s /tmp/telluric/* .;'
     
     # Dev suite
