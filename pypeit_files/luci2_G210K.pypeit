@@ -1,0 +1,63 @@
+# Auto-generated PypeIt input file using PypeIt version: 1.17.3
+# UTC 2025-07-09T18:59:16.496+00:00
+
+# User-defined execution parameters
+[rdx]
+    spectrograph = lbt_luci2
+[calibrations]
+   [[flatfield]]
+        tweak_slits = False #with the default, True, slit edges may move, depending on illumination flat
+   [[wavelengths]]
+    	lamps = OH_NIRES
+    	fwhm = 5.0
+    	rms_thresh_frac_fwhm = 0.06
+        reid_arxiv = wvarxiv_lbt_luci2_G210K.fits
+        method = full_template
+   [[standardframe]]
+    	[[[process]]]
+       	mask_cr = False
+       	spat_flexure_correct = True
+   [[slitedges]]
+            minimum_slit_length = 99.0  # LUCI longslits are longer than 100". Both minimum_slit_length and edge_thresh 
+            edge_thresh = 100.0   # are necessary to reject AFC pinholes and choose only the long-slit.
+[reduce]
+   [[skysub]]
+    	global_sky_std = True
+   [[findobj]]
+    	maxnumber_std = 1
+    	maxnumber_sci = 1
+    	skip_final_global = True
+[scienceframe]
+   [[process]]
+    	spat_flexure_correct = True
+#[flexure]
+#   spec_method = skip 
+
+# Setup
+setup read
+Setup A:
+  decker: LS_1.00arcsec
+  dispname: G210 HiRes
+setup end
+
+# Data block 
+data read
+ path /Users/olga/Dropbox/Data/LUCI_Sample_Datasets/lbt_luci/luci2_G210K
+                filename |        frametype |                 ra |                 dec |              target |   dispname |        decker | binning |          mjd |      airmass | exptime | calib | comb_id | bkg_id |   idname
+luci2.20180103.0072.fits | arc,science,tilt |  49.70759166666666 | -1.9733497222222223 |             NGC1289 | G210 HiRes | LS_1.00arcsec |     1,1 | 58121.192495 | 1.2434061856 |   150.0 |     0 |       3 |      4 |   object
+luci2.20180103.0073.fits | arc,science,tilt |  49.70759166666666 | -1.9733497222222223 |             NGC1289 | G210 HiRes | LS_1.00arcsec |     1,1 | 58121.194709 | 1.2468196524 |   150.0 |     0 |       4 |      3 |   object
+luci2.20180103.0074.fits | arc,science,tilt |  49.70759166666666 | -1.9733497222222223 |             NGC1289 | G210 HiRes | LS_1.00arcsec |     1,1 | 58121.196865 | 1.2509529231 |   150.0 |     0 |       5 |      6 |   object
+luci2.20180103.0075.fits | arc,science,tilt |  49.70759166666666 | -1.9733497222222223 |             NGC1289 | G210 HiRes | LS_1.00arcsec |     1,1 | 58121.199137 | 1.2561246976 |   150.0 |     0 |       6 |      5 |   object
+luci2.20180103.0162.fits |  lampoffflats     | 189.68053749999999 |  0.9347619444444445 | SDSS J084135+010156 | G210 HiRes | LS_1.00arcsec |     1,1 | 58121.600264 |          1.0 |    11.0 |     0 |      -1 |     -1 | flat_off
+luci2.20180103.0163.fits |  lampoffflats     | 189.68053749999999 |  0.9347619444444445 | SDSS J084135+010156 | G210 HiRes | LS_1.00arcsec |     1,1 | 58121.600529 |          1.0 |    11.0 |     0 |      -1 |     -1 | flat_off
+luci2.20180103.0164.fits |  lampoffflats     | 189.68053749999999 |  0.9347619444444445 | SDSS J084135+010156 | G210 HiRes | LS_1.00arcsec |     1,1 | 58121.600771 |          1.0 |    11.0 |     0 |      -1 |     -1 | flat_off
+luci2.20180103.0165.fits |  lampoffflats     | 189.68053749999999 |  0.9347619444444445 | SDSS J084135+010156 | G210 HiRes | LS_1.00arcsec |     1,1 | 58121.601013 |          1.0 |    11.0 |     0 |      -1 |     -1 | flat_off
+luci2.20180103.0166.fits |  lampoffflats     | 189.68053749999999 |  0.9347619444444445 | SDSS J084135+010156 | G210 HiRes | LS_1.00arcsec |     1,1 | 58121.601254 |          1.0 |    11.0 |     0 |      -1 |     -1 | flat_off
+luci2.20180103.0167.fits |  pixelflat,trace | 189.68053749999999 |  0.9347619444444445 | SDSS J084135+010156 | G210 HiRes | LS_1.00arcsec |     1,1 | 58121.601536 |          1.0 |    11.0 |     0 |      -1 |     -1 |     flat
+luci2.20180103.0168.fits |  pixelflat,trace | 189.68053749999999 |  0.9347619444444445 | SDSS J084135+010156 | G210 HiRes | LS_1.00arcsec |     1,1 | 58121.601799 |          1.0 |    11.0 |     0 |      -1 |     -1 |     flat
+luci2.20180103.0169.fits |  pixelflat,trace | 189.68053749999999 |  0.9347619444444445 | SDSS J084135+010156 | G210 HiRes | LS_1.00arcsec |     1,1 | 58121.602044 |          1.0 |    11.0 |     0 |      -1 |     -1 |     flat
+luci2.20180103.0170.fits |  pixelflat,trace | 189.68053749999999 |  0.9347619444444445 | SDSS J084135+010156 | G210 HiRes | LS_1.00arcsec |     1,1 | 58121.602287 |          1.0 |    11.0 |     0 |      -1 |     -1 |     flat
+luci2.20180103.0171.fits |  pixelflat,trace | 189.68053749999999 |  0.9347619444444445 | SDSS J084135+010156 | G210 HiRes | LS_1.00arcsec |     1,1 | 58121.602521 |          1.0 |    11.0 |     0 |      -1 |     -1 |     flat
+luci2.20180103.0066.fits |         standard |  44.81989166666666 |            1.244555 |            HIP13917 | G210 HiRes | LS_1.00arcsec |     1,1 |  58121.18176 | 1.2024008179 |    60.0 |     0 |       1 |      2 | standard
+luci2.20180103.0067.fits |         standard |  44.81989166666666 |            1.244555 |            HIP13917 | G210 HiRes | LS_1.00arcsec |     1,1 | 58121.182822 | 1.2042205729 |    60.0 |     0 |       2 |      1 | standard
+data end
