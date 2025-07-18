@@ -1,0 +1,41 @@
+# Auto-generated PypeIt input file using PypeIt version: 1.14.1.dev0+gff02b9dd7.d20240118
+# UTC 2024-01-18T01:23:08.470
+
+# User-defined execution parameters
+[rdx]
+    spectrograph = gemini_gmos_south_ham
+    # Previous reduction failed on the illum finecorrection step
+    # for a specific slit. on Debora's advice, just turning that off
+[calibrations]
+    [[slitedges]]
+        maskdesign_filename = GS2023BQ103-11_ODF.fits,S20240115S0018.fits
+        use_maskdesign = True
+    [[wavelengths]]
+        # Increasing the default FWHM of these lines. Helps with tilt tracing
+        fwhm = 10
+[reduce]
+    [[slitmask]]
+        extract_missing_objs = True
+        assign_obj = True
+
+# Setup
+setup read
+Setup D:
+  datasec: '"[1:512,1:1056]"'
+  decker: GS2023BQ103-11
+  dichroic: OG515_G0330
+  dispangle: 790.0
+  dispname: R400+_G5325
+setup end
+
+# Data block 
+data read
+ path ./data
+               filename |                 frametype |               ra |               dec |        target |    dispname |         decker | binning |              mjd |          airmass | exptime |    dichroic | dispangle |        datasec
+S20240116S0420.fits.bz2 |                      bias |          -9999.0 |           -9999.0 |          Bias | R400+_G5325 |      2.0arcsec |     4,1 | 2024.04091462279 | 1.00000038078388 |     0.0 | OG515_G0330 |     720.0 | [1:512,1:1056]
+S20240116S0421.fits.bz2 |                      bias |          -9999.0 |           -9999.0 |          Bias | R400+_G5325 |      2.0arcsec |     4,1 |  2024.0409154921 | 1.00000038078388 |     0.0 | OG515_G0330 |     720.0 | [1:512,1:1056]
+S20240115S0340.fits.bz2 |                  arc,tilt |          -9999.0 |           -9999.0 |          CuAr | R400+_G5325 | GS2023BQ103-11 |     4,1 |   2024.038244434 | 1.00000037626915 |    16.0 | OG515_G0330 |     790.0 | [1:512,1:1056]
+S20240115S0022.fits.bz2 | pixelflat,illumflat,trace | 90.9853208333333 | -35.9682194444444 |      GCALflat | R400+_G5325 | GS2023BQ103-11 |     4,1 | 2024.03732067448 | 1.00494452852967 |     1.0 | OG515_G0330 |     790.0 | [1:512,1:1056]
+S20240115S0021.fits.bz2 |                   science | 90.9853208333333 | -35.9682194444444 | DESJ0603-3558 | R400+_G5325 | GS2023BQ103-11 |     4,1 |  2024.0372812545 | 1.00625026147142 |  1200.0 | OG515_G0330 |     790.0 | [1:512,1:1056]
+data end
+
