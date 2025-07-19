@@ -7,7 +7,8 @@ MastClass = MastMissionsClass(mission='JWST')
 datasets = MastClass.query_criteria(program='3543',
                             opmode='MSASPEC',  # lamp operating mode
                             exp_type='NRS_MSASPEC',  # exposure type
-                            productLevel='1b')  # product level (uncalibrated)
+                            productLevel='1b',  # product level (uncalibrated)
+                            opticalElements='G395M') # disperser  (added by DP)
  
 # Fetch products
 products = MastClass.get_unique_product_list(datasets)
@@ -20,4 +21,4 @@ filtered = MastClass.filter_products(products, file_suffix=['_rate', '_msa'], ex
 
 # Download files
 download_dir = '/Users/joe/jwst_redux/Raw/NIRSPEC_MSA/3543'
-MastClass.download_products(filtered, download_dir=download_dir, verbose=True)
+MastClass.download_products(filtered, download_dir=download_dir, verbose=True, flat=True, cache=True)

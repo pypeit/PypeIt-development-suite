@@ -7,8 +7,8 @@ from matplotlib import pyplot as plt
 from IPython import embed
 
 # set environment variables
-os.environ['CRDS_PATH'] = '/Users/joe/crds_cache/'
-os.environ['CRDS_SERVER_URL'] = 'https://jwst-crds.stsci.edu/'
+# os.environ['CRDS_PATH'] = '/Users/joe/crds_cache/'
+# os.environ['CRDS_SERVER_URL'] = 'https://jwst-crds.stsci.edu/'
 from matplotlib import pyplot as plt
 from astropy.io import fits
 from astropy import stats
@@ -267,7 +267,7 @@ def jwst_run_redux(redux_dir, source_type, uncal_list=None, rate_list=None,
         'bkg_subtract': {'skip': True},
         'imprint_subtract': {'save_results': True}, # TODO Check up on whether imprint subtraction is being done by us???
         'master_background_mos': {'skip': True},
-        'srctype': {'source_type': source_type},        
+        'srctype': {'source_type': source_type},
         # Default to setting the source type to extended for MSA data and point for FS data. This impacts flux calibration.
         #'srctype': {'source_type': 'POINT'} if 'FS' in mode else {'source_type': 'EXTENDED'},
         # 'flat_field': {'skip': True},
@@ -300,7 +300,7 @@ def jwst_run_redux(redux_dir, source_type, uncal_list=None, rate_list=None,
         if os.path.isfile(assign_wcs_file) and not overwrite_stage2:
             msgs.info('Found existing assign_wcs file: {0}; not running Spec2'.format(assign_wcs_file))
             continue
-        Spec2Pipeline.call(sci, save_results=True, output_dir=output_dir_level2, steps=param_dict_spec2)
+        Spec2Pipeline.call(sci, save_results=True, output_dir=output_dir_level2, steps=param_dict_spec2, input_dir=os.path.dirname(uncalfiles_all[0]))
 
 
     # Some pypeit things
@@ -530,7 +530,6 @@ def jwst_run_redux(redux_dir, source_type, uncal_list=None, rate_list=None,
                 bkgImg = combineImage.run(ignore_saturation=True)
                 sciImg = sciImg.sub(bkgImg)
 
-            embed()
             # Run the reduction
             all_spec2d[sciImg.detector.name], tmp_sobjs = jwst_reduce(sciImg, slits, waveimg, tilts, spectrograph, par,
                                                                     show=show, find_negative=bkg_redux, bkg_redux=bkg_redux,

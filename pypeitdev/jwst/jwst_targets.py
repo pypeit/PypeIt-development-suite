@@ -75,8 +75,10 @@ def jwst_targets(progid, disperser, target, slit=None):
                 ## BHstar object
                 
                 if target == 'BHstar':
-                    rawpath_level2 = '/Users/joe/jwst_redux/Raw/NIRSPEC_MSA/3543/level_12/03543/'
-                    redux_dir = os.path.join('/Users/joe/jwst_redux/redux/NIRSPEC_MSA/3543/', target)
+                    # rawpath_level2 = '/Users/joe/jwst_redux/Raw/NIRSPEC_MSA/3543/level_12/03543/'
+                    # redux_dir = os.path.join('/Users/joe/jwst_redux/redux/NIRSPEC_MSA/3543/', target)
+                    rawpath_level2 = '/Users/dpelliccia/Desktop/jwst/dev/NIRSPEC_MSA_PID3543/raw/'
+                    redux_dir = os.path.join('/Users/dpelliccia/Desktop/jwst/dev/NIRSPEC_MSA_PID3543/', target)
 
                     uncalfile1 = os.path.join(rawpath_level2, 'jw03543001001_07101_00002_' + detname + '_uncal.fits')
                     uncalfile2 = os.path.join(rawpath_level2, 'jw03543001001_07101_00003_' + detname + '_uncal.fits')
@@ -390,6 +392,8 @@ def jwst_targets(progid, disperser, target, slit=None):
             # All of these are with slit S200A2
             file_list = []
             if 'J2255+0251' in target:
+                rawpath_level2 = '/Users/dpelliccia/Desktop/jwst/dev/NIRSPEC_FS_PID1967/J2255+0251/raw/'
+                redux_dir = '/Users/dpelliccia/Desktop/jwst/dev/NIRSPEC_FS_PID1967/J2255+0251/redux/'
                 for ii in range(1,4): 
                     file_list.append(os.path.join(rawpath_level2, 'jw01967012001_03102_000' + "{:02d}".format(ii) + '_' + detname + '_uncal.fits'))
                 exp_list.append(file_list)
