@@ -8,7 +8,7 @@
 [scienceframe]
     [[process]]
         spat_flexure_correct = True
-        spat_flexure_maxlag = 40
+        spat_flexure_maxlag = 10
 
 # Setup
 setup read
