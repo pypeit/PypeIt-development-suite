@@ -4,8 +4,9 @@
 # This dict specifies all the instruments and setups that are supported by the dev suite.
 #  The keys are the instruments and the values are a list of the supported setups.
 all_setups = {
-        'aat_uhrf': ['3875'],
-        'bok_bc': ['300', 'old_832'], #,'600'],
+    'aat_uhrf': ['3875'],
+    'bok_bc': ['300', 'old_832'], #,'600'],
+    'apf_levy': ['W_decker','N_decker'],
     'gemini_gnirs_echelle': ['32_SB_SXD', '10_LB_SXD'],
     'gemini_gnirs_ifu': ['LR_IFU_32mm'],
     'gemini_gmos': ['GS_HAM_R400_700', 'xGS_HAM_R400_860',
