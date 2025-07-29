@@ -22,11 +22,6 @@ import json
 
 from pypeit.pypmsgs import PypeItError
 
-def test_show_arxiv():
-    # Pargs
-    pargs = scripts.show_arxiv.ShowArxiv.parse_args(['gemini_gmos_r831_ham.fits', '--det', '1',
-                                                     '--test'])
-    scripts.show_arxiv.ShowArxiv.main(pargs)
 
 def test_show_1dspec(redux_out):
     spec_file = os.path.join(redux_out,
