@@ -2,7 +2,7 @@ from astroquery.mast import MastMissionsClass
 
 
 # Create object and initialize mission to JWST, 
-token = "985000d273fd4ed29b24205cea69c7e0"
+token = "d57b21d2d2d740a19a141e3eabdeff8c"
 MastClass = MastMissionsClass(mission='JWST')
 
 # Then login with your token

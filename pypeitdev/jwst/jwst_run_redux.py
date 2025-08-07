@@ -148,7 +148,7 @@ def validate_interpolatedflat_files(intflat_fs_output_files, intflat_output_file
 def jwst_run_redux(redux_dir, source_type, uncal_list=None, rate_list=None, 
                    reduce_slits=None, reduce_sources=None, 
                    show=False, overwrite_stage1=False, overwrite_stage2=False, 
-                   kludge_err=1.5, bkg_redux=False, run_bogus_f100lp=False):
+                   kludge_err=1.5, snr_thresh=10.0, bkg_redux=False, run_bogus_f100lp=False):
     """
     Main routine to reduce JWST NIRSpec data
     
@@ -175,6 +175,8 @@ def jwst_run_redux(redux_dir, source_type, uncal_list=None, rate_list=None,
         Rerun the jwst pipeline overwriting existing stage2 reductions
     kludge_err : float, optional
         Factor to scale the sigma error maps up by to account for the incorrect error propagation in the JWST pipeline. 
+    snr_thresh : float, optional
+        SNR threshold for the spec2d extraction. Default is 10.0. 
     bkg_redux : bool, optional
         If True, perform a background redux using image differencing. If False, model the background with a bspline. bkg_redux should typically be set to True for MSA reductions, 
         and False for FS reductions.
@@ -329,7 +331,8 @@ def jwst_run_redux(redux_dir, source_type, uncal_list=None, rate_list=None,
 
     # Turn off 2d model masking
     par['reduce']['extraction']['use_2dmodel_mask'] = False
-
+    # Set the SNR threshold for the spec2d object finding
+    par['reduce']['findobj']['snr_thresh'] = snr_thresh
 
 
     # Output file names

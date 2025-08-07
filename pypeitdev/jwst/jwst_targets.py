@@ -396,6 +396,63 @@ def jwst_targets(progid, disperser, target, slit=None):
                 else: 
                     raise ValueError("Disperser not recognized: {}".format(disperser))
                 indx_range = range(1,2)
+            if 'J1732+6531' in target:
+                if disperser == '140H': 
+                    prefix = 'jw09180012001_05101_000' if slit == 'S200A1' else 'jw09180012001_07101_000'
+                    indx_range = range(1,6)                    
+                elif disperser == '235H':
+                    prefix = 'jw09180012001_11101_000' if slit == 'S200A1' else 'jw09180012001_09101_000'
+                    indx_range = range(1,6)                    
+                elif disperser == '395M':
+                    prefix = 'jw09180049001_03102_000'
+                    indx_range = range(1,4)
+                else: 
+                    raise ValueError("Disperser not recognized: {}".format(disperser))
+            if 'J1429-0104' in target:
+                if disperser == '140H': 
+                    prefix = 'jw09180031001_03102_000' if slit == 'S200A1' else 'jw09180031001_03104_000'
+                elif disperser == '235H':
+                    prefix = 'jw09180031001_03108_000' if slit == 'S200A1' else 'jw09180031001_03106_000'
+                else: 
+                    raise ValueError("Disperser not recognized: {}".format(disperser))
+                indx_range = range(1,3)           
+            if 'J1428+0454' in target:        
+                if disperser == '140H': 
+                    prefix = 'jw09180029001_03102_000' if slit == 'S200A1' else 'jw09180029001_03104_000'
+                elif disperser == '235H':
+                    prefix = 'jw09180029001_03107_000' if slit == 'S200A1' else 'jw09180029001_03105_000'
+                else: 
+                    raise ValueError("Disperser not recognized: {}".format(disperser))
+                indx_range = range(1,2)
+            if 'J1450-0144' in target:        
+                if disperser == '140H': 
+                    prefix = 'jw09180022001_03102_000' if slit == 'S200A1' else 'jw09180022001_03104_000'
+                elif disperser == '235H':
+                    prefix = 'jw09180022001_03107_000' if slit == 'S200A1' else 'jw09180022001_03105_000'
+                else: 
+                    raise ValueError("Disperser not recognized: {}".format(disperser))
+                indx_range = range(1,2)            
+            if 'J1609+5328' in target:    
+                if disperser == '140H': 
+                    prefix = 'jw09180009001_04101_000' if slit == 'S200A1' else 'jw09180009001_06101_000'
+                    indx_range = range(1,4)
+                elif disperser == '235H':
+                    prefix = 'jw09180009001_10101_000' if slit == 'S200A1' else 'jw09180009001_08101_000'
+                    indx_range = range(1,4)                    
+                elif disperser == '395M':
+                    prefix = 'jw09180050001_04101_000'
+                    indx_range = range(1,3)
+                else: 
+                    raise ValueError("Disperser not recognized: {}".format(disperser))
+            if 'J1440+0019' in target: 
+                # Missing images in mast 
+                if disperser == '140H': 
+                    prefix = 'jw09180037001_03102_000' if slit == 'S200A1' else 'jw09180037001_03104_000'
+                elif disperser == '235H':
+                    prefix = 'jw09180037001_03108_000' if slit == 'S200A1' else 'jw09180037001_03106_000'
+                else: 
+                    raise ValueError("Disperser not recognized: {}".format(disperser))
+                indx_range = range(1,3)
 
             for ii in indx_range: 
                 file_list.append(os.path.join(rawpath_level2, prefix + "{:02d}".format(ii) + '_' + detname + '_uncal.fits'))
