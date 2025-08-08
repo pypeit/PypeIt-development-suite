@@ -9,7 +9,7 @@ all_setups = {
     'apf_levy': ['W_decker','N_decker'],
     'gemini_gnirs_echelle': ['32_SB_SXD', '10_LB_SXD'],
     'gemini_gnirs_ifu': ['LR_IFU_32mm'],
-    'gemini_gmos': ['GS_HAM_R400_700', 'xGS_HAM_R400_860',
+    'gemini_gmos': ['GS_HAM_R400_700', 'GS_HAM_R400_860',
                     'GN_HAM_R400_885', 'GN_HAM_NS_B600_620',
                     'GS_HAM_MULTI_R400_700', 'GN_E2V_MULTI_R400_600',
                     'GS_HAM_B600_MOS', 'GN_HAM_B480', 'GS_HAM_B480_550', 'GS_HAM_R400_TILTED'],
