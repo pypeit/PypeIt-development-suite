@@ -42,9 +42,9 @@ def test_shane_kast_ql(redux_out):
 
         # Additional
         if test == 'boxcar':
-            assert np.isclose(sobjs.BOX_RADIUS[0], 4.651162790697675)
+            assert np.isclose(sobjs.BOX_R_PIX[0], 4.651162790697675)
         else:
-            assert not np.isclose(sobjs.BOX_RADIUS[0], 4.651162790697675)
+            assert not np.isclose(sobjs.BOX_R_PIX[0], 4.651162790697675)
 
 
 def test_keck_deimos_ql(redux_out):
