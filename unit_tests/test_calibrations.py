@@ -101,7 +101,8 @@ def test_it_all(multi_caliBrate):
 
     # Wave image
     slitmask = slits.slit_img()
-    tilts = waveTilts.fit2tiltimg(slitmask)
+    slits_left, slits_right, _ = slits.select_edges()
+    tilts = waveTilts.fit2tiltimg(slitmask, slits_left, slits_right)
 
     #
     mswave = wv_calib.build_waveimg(tilts, slits)

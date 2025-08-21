@@ -23,7 +23,7 @@ def test_spat_flexure(redux_out):
     # Load                                
     spec2dObj = spec2dobj.Spec2DObj.from_file(file_path, 'DET01')
     assert spec2dObj.sci_spat_flexure is not None
-    assert spec2dObj.sci_spat_flexure > 0.
+    assert np.all(spec2dObj.sci_spat_flexure > 0.)
 
 
 def test_spat_flexure_science(redux_out):
