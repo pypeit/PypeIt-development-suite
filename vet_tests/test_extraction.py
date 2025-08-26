@@ -22,7 +22,7 @@ def test_bok_bc_manual(redux_out):
 
     hand_sobj = sobjs[sobjs.hand_extract_flag]
     # Test
-    assert np.isclose(hand_sobj.BOX_RADIUS[0], 4.)  # Value in the pypeit file
+    assert np.isclose(hand_sobj.BOX_R_PIX[0], 4.)  # Value in the pypeit file
 
 
 def test_ech_manual(redux_out):
