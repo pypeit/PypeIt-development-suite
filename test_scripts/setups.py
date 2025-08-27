@@ -12,6 +12,10 @@ all_setups = {
         'old_832',
         #,'600',
     ],
+    'apf_levy': [
+        'W_decker',
+        'N_decker',
+    ],
     'gemini_gnirs_echelle': [
         '10_LB_SXD'
         '32_SB_SXD',

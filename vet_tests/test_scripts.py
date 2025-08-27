@@ -526,6 +526,7 @@ def test_run_to_calibstep(redux_out):
     # Go back
     os.chdir(cdir)
 
+
 # TODO: Include tests for coadd2d, sensfunc
 
 
