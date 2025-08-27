@@ -5,7 +5,7 @@
 #  The keys are the instruments and the values are a list of the supported setups.
 all_setups = {
     'aat_uhrf': [
-        '3875'
+        '3875',
     ],
     'bok_bc': [
         '300',
@@ -17,11 +17,11 @@ all_setups = {
         'N_decker',
     ],
     'gemini_gnirs_echelle': [
-        '10_LB_SXD'
+        '10_LB_SXD',
         '32_SB_SXD',
     ],
     'gemini_gnirs_ifu': [
-        'LR_IFU_32mm'
+        'LR_IFU_32mm',
     ],
     'gemini_gmos': [
         'GS_HAM_R400_700',
@@ -164,30 +164,30 @@ all_setups = {
         'LUCI-I',
         'LUCI-II',
     ],
-    'lbt_mods1r': [
+    'lbt_mods1b': [
+        'dual_grating_longslit_qso',
+    ],
+    'lbt_mods1b_proc': [
+        'dual_grating_longslit_qso',
+    ],
+    'lbt_mods2b': [
         'dual_grating_longslit',
+    ],
+    'lbt_mods2b_proc': [
+        'dual_grating_longslit',
+    ],
+    'lbt_mods1r': [
+        'dual_grating_longslit_qso',
         'red_grating_longslit',
     ],
     'lbt_mods1r_proc': [
-        'dual_grating_longslit',
+        'dual_grating_longslit_qso',
     ],
     'lbt_mods2r': [
         'dual_grating_longslit',
         'red_grating_longslit',
     ],
     'lbt_mods2r_proc': [
-        'dual_grating_longslit',
-    ],
-    'lbt_mods1b': [
-        'dual_grating_longslit',
-    ],
-    'lbt_mods1b_proc': [
-        'dual_grating_longslit',
-    ],
-    'lbt_mods2b': [
-        'dual_grating_longslit',
-    ],
-    'lbt_mods2b_proc': [
         'dual_grating_longslit',
     ],
     'ldt_deveny': [
