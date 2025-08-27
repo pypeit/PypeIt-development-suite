@@ -4,14 +4,16 @@
 # This dict specifies all the instruments and setups that are supported by the dev suite.
 #  The keys are the instruments and the values are a list of the supported setups.
 all_setups = {
-        'aat_uhrf': ['3875'],
-        'bok_bc': ['300', 'old_832'], #,'600'],
+    'aat_uhrf': ['3875'],
+    'bok_bc': ['300', 'old_832'], #,'600'],
+    'apf_levy': ['W_decker','N_decker'],
     'gemini_gnirs_echelle': ['32_SB_SXD', '10_LB_SXD'],
     'gemini_gnirs_ifu': ['LR_IFU_32mm'],
     'gemini_gmos': ['GS_HAM_R400_700', 'GS_HAM_R400_860',
                     'GN_HAM_R400_885', 'GN_HAM_NS_B600_620',
                     'GS_HAM_MULTI_R400_700', 'GN_E2V_MULTI_R400_600',
-                    'GS_HAM_B600_MOS', 'GN_HAM_B480', 'GS_HAM_B480_550', 'GS_HAM_R400_TILTED'],
+                    'GS_HAM_B600_MOS', 'GN_HAM_B480', 'GS_HAM_B480_550',
+                    'GS_HAM_R400_TILTED', 'GS_HAM_R150_869'],
     'gemini_flamingos2': ['HK_HK', 'JH_JH'],
     'gtc_osiris': ['R1000B', 'R1000BMOS', 'R1000RMOS', 'R2500R', 'R2500V'],
     'gtc_osiris_plus': ['R1000R', 'R300B'],
