@@ -83,7 +83,7 @@ all_setups = {
         'J1723+2243_W241_RED_C5_ECH_-0.15_XD_0.90_2x2',
         'J1218+2951_U116Hr_RED_C5_ECH_-0.22_XD_0.21_1x2',
         'Q1009+2956_G10H_BLUE_C5_ECH_-0.00_XD_1.02_1x3',
-                   ],
+    ],
     'keck_kcwi': [
         'small_bh2_4200',
         'medium_bl',
