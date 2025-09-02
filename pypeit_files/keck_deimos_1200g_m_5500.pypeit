@@ -1,5 +1,5 @@
-# Auto-generated PypeIt file
-# Mon 24 Aug 2020 18:51:28
+# Auto-generated PypeIt input file using PypeIt version: 1.17.5.dev906+gc2764adb5
+# UTC 2025-08-29T17:22:27.834+00:00
 
 # User-defined execution parameters
 [rdx]
@@ -17,34 +17,53 @@
 
 # Setup
 setup read
- Setup B:
-   --:
-     binning: 1,1
-     dichroic: none
-     disperser:
-       angle: 5499.96289062
-       name: 1200G
-     slit:
-       decker: agsmsk
-       slitlen: none
-       slitwid: none
+Setup A:
+  amp: '"SINGLE:B"'
+  binning: 1,1
+  decker: agsmsk
+  dispangle: 5499.96289062
+  dispname: 1200G
+  filter1: GG400
 setup end
 
-# Read in the data
+# Data block 
 data read
  path /Users/dpelliccia/Github_Pypeit/PypeIt-development-suite/RAW_DATA/keck_deimos/1200G_Ghassem
-|         filename |                 frametype |                 ra |                dec |       target | dispname | decker | binning |          mjd |     airmass | exptime |     dispangle |
-|  d0417_0054.fits |                  arc,tilt |  57.99999999999999 |               45.0 |      unknown |    1200G | agsmsk |     1,1 | 58590.192262 |  1.41291034 |     1.0 | 5499.96289062 |
-|  d0417_0055.fits |                  arc,tilt |  57.99999999999999 |               45.0 |      unknown |    1200G | agsmsk |     1,1 | 58590.195527 |  1.41291034 |    12.0 | 5499.96289062 |
-#|  d0417_0078.fits |                  arc,tilt |  67.37958333333333 |              0.065 | HORIZON STOW |    1200G | agsmsk |     1,1 |   58590.7743 | 13.37481353 |     1.0 | 5499.96289062 |
-|  d0417_0079.fits |                  arc,tilt |  67.37958333333333 |              0.065 | HORIZON STOW |    1200G | agsmsk |     1,1 | 58590.775197 | 13.37481353 |    46.0 | 5499.96289062 |
-|  d0417_0080.fits |                  arc,tilt |  67.37958333333333 |              0.065 | HORIZON STOW |    1200G | agsmsk |     1,1 | 58590.776643 | 13.37481353 |    35.0 | 5499.96289062 |
-|  d0417_0056.fits | pixelflat,illumflat,trace |  57.99999999999999 |               45.0 |      unknown |    1200G | agsmsk |     1,1 | 58590.196837 |  1.41291034 |    12.0 | 5499.96289062 |
-|  d0417_0057.fits | pixelflat,illumflat,trace |  57.99999999999999 |               45.0 |      unknown |    1200G | agsmsk |     1,1 | 58590.197882 |  1.41291034 |    12.0 | 5499.96289062 |
-|  d0417_0058.fits | pixelflat,illumflat,trace |  57.99999999999999 |               45.0 |      unknown |    1200G | agsmsk |     1,1 | 58590.198927 |  1.41291034 |    12.0 | 5499.96289062 |
-|  d0417_0082.fits | pixelflat,illumflat,trace |  67.37958333333333 |              0.065 | HORIZON STOW |    1200G | agsmsk |     1,1 | 58590.781631 | 13.37481353 |    12.0 | 5499.96289062 |
-|  d0417_0083.fits | pixelflat,illumflat,trace |  67.37958333333333 |              0.065 | HORIZON STOW |    1200G | agsmsk |     1,1 | 58590.782581 | 13.37481353 |    12.0 | 5499.96289062 |
-|  d0417_0084.fits | pixelflat,illumflat,trace |  67.37958333333333 |              0.065 | HORIZON STOW |    1200G | agsmsk |     1,1 | 58590.783632 | 13.37481353 |    12.0 | 5499.96289062 |
-| d0315_45929.fits |                   science | 215.11908333333332 |  53.23422222222222 |       agsmsk |    1200G | agsmsk |     1,1 | 58192.531523 |  1.20049403 |  1200.0 | 5499.96289062 |
+        filename |                 frametype |                 ra |                dec |       target | dispname | decker | binning |          mjd |     airmass | exptime |     dispangle |      amp | filter1 |  lampstat01 |    dateobs |         utc | frameno | calib
+ d0417_0054.fits |                  arc,tilt |  57.99999999999999 |               45.0 |      unknown |    1200G | agsmsk |     1,1 | 58590.192262 |  1.41291034 |     1.0 | 5499.96289062 | SINGLE:B |   GG400 | Kr Xe Ar Ne | 2019-04-17 | 04:36:57.07 |      54 |     0
+ d0417_0055.fits |                  arc,tilt |  57.99999999999999 |               45.0 |      unknown |    1200G | agsmsk |     1,1 | 58590.195527 |  1.41291034 |    12.0 | 5499.96289062 | SINGLE:B |   GG400 |       Ar Zn | 2019-04-17 | 04:41:40.12 |      55 |     0
+ #d0417_0078.fits |                  arc,tilt |  67.37958333333333 |              0.065 | HORIZON STOW |    1200G | agsmsk |     1,1 |   58590.7743 | 13.37481353 |     1.0 | 5499.96289062 | SINGLE:B |   GG400 |          Ne | 2019-04-17 | 18:35:06.13 |      78 |     0
+ d0417_0079.fits |                  arc,tilt |  67.37958333333333 |              0.065 | HORIZON STOW |    1200G | agsmsk |     1,1 | 58590.775197 | 13.37481353 |    46.0 | 5499.96289062 | SINGLE:B |   GG400 |          Ar | 2019-04-17 | 18:36:24.67 |      79 |     0
+ d0417_0080.fits |                  arc,tilt |  67.37958333333333 |              0.065 | HORIZON STOW |    1200G | agsmsk |     1,1 | 58590.776643 | 13.37481353 |    35.0 | 5499.96289062 | SINGLE:B |   GG400 |       Kr Xe | 2019-04-17 | 18:38:28.60 |      80 |     0
+ #d0417_0081.fits |                  arc,tilt |  67.37958333333333 |              0.065 | HORIZON STOW |    1200G | agsmsk |     1,1 | 58590.780439 | 13.37481353 |     1.0 | 5499.96289062 | SINGLE:B |   GG400 |          Hg | 2019-04-17 | 18:43:56.02 |      81 |     0
+ #d0417_0093.fits |                  arc,tilt |  67.37958333333333 |              0.065 | HORIZON STOW |    1200G | agsmsk |     1,1 | 58590.827389 | 13.37481353 |   100.0 | 5499.96289062 | SINGLE:B |   GG400 |          Ne | 2019-04-17 | 19:51:34.09 |      93 |     0
+ #d0417_0094.fits |                  arc,tilt |  67.37958333333333 |              0.065 | HORIZON STOW |    1200G | agsmsk |     1,1 |  58590.83148 | 13.37481353 |   350.0 | 5499.96289062 | SINGLE:B |   GG400 |       Kr Xe | 2019-04-17 | 19:57:26.50 |      94 |     0
+ #d0417_0035.fits |                      bias |  57.99999999999999 |               45.0 |      unknown |    1200G | agsmsk |     1,1 | 58590.161178 |  1.41291034 |     1.0 | 5499.96289062 | SINGLE:B |   GG400 |         Off | 2019-04-17 | 03:52:11.92 |      35 |     0
+ d0417_0056.fits | pixelflat,illumflat,trace |  57.99999999999999 |               45.0 |      unknown |    1200G | agsmsk |     1,1 | 58590.196837 |  1.41291034 |    12.0 | 5499.96289062 | SINGLE:B |   GG400 |          Qz | 2019-04-17 | 04:43:32.83 |      56 |     0
+ d0417_0057.fits | pixelflat,illumflat,trace |  57.99999999999999 |               45.0 |      unknown |    1200G | agsmsk |     1,1 | 58590.197882 |  1.41291034 |    12.0 | 5499.96289062 | SINGLE:B |   GG400 |          Qz | 2019-04-17 | 04:45:03.61 |      57 |     0
+ d0417_0058.fits | pixelflat,illumflat,trace |  57.99999999999999 |               45.0 |      unknown |    1200G | agsmsk |     1,1 | 58590.198927 |  1.41291034 |    12.0 | 5499.96289062 | SINGLE:B |   GG400 |          Qz | 2019-04-17 | 04:46:34.90 |      58 |     0
+ #d0417_0059.fits | pixelflat,illumflat,trace |  57.99999999999999 |               45.0 |      unknown |    1200G | agsmsk |     1,1 | 58590.199871 |  1.41291034 |    45.0 | 5499.96289062 | SINGLE:B |   GG400 |          Qz | 2019-04-17 | 04:47:56.50 |      59 |     0
+ #d0417_0060.fits | pixelflat,illumflat,trace |  67.37958333333333 |              0.065 | HORIZON STOW |    1200G | agsmsk |     1,1 | 58590.201193 | 13.37481353 |    45.0 | 5499.96289062 | SINGLE:B |   GG400 |          Qz | 2019-04-17 | 04:49:50.74 |      60 |     0
+ #d0417_0061.fits | pixelflat,illumflat,trace |  67.37958333333333 |              0.065 | HORIZON STOW |    1200G | agsmsk |     1,1 |  58590.20251 | 13.37481353 |    45.0 | 5499.96289062 | SINGLE:B |   GG400 |          Qz | 2019-04-17 | 04:51:44.57 |      61 |     0
+ #d0417_0062.fits | pixelflat,illumflat,trace |  67.37958333333333 |              0.065 | HORIZON STOW |    1200G | agsmsk |     1,1 | 58590.203855 | 13.37481353 |    45.0 | 5499.96289062 | SINGLE:B |   GG400 |          Qz | 2019-04-17 | 04:53:39.22 |      62 |     0
+ #d0417_0063.fits | pixelflat,illumflat,trace |  67.37958333333333 |              0.065 | HORIZON STOW |    1200G | agsmsk |     1,1 | 58590.205302 | 13.37481353 |    45.0 | 5499.96289062 | SINGLE:B |   GG400 |          Qz | 2019-04-17 | 04:55:44.17 |      63 |     0
+ #d0417_0064.fits | pixelflat,illumflat,trace |  67.37958333333333 |              0.065 | HORIZON STOW |    1200G | agsmsk |     1,1 | 58590.206748 | 13.37481353 |    45.0 | 5499.96289062 | SINGLE:B |   GG400 |          Qz | 2019-04-17 | 04:57:49.12 |      64 |     0
+ d0417_0082.fits | pixelflat,illumflat,trace |  67.37958333333333 |              0.065 | HORIZON STOW |    1200G | agsmsk |     1,1 | 58590.781631 | 13.37481353 |    12.0 | 5499.96289062 | SINGLE:B |   GG400 |          Qz | 2019-04-17 | 18:45:40.06 |      82 |     0
+ d0417_0083.fits | pixelflat,illumflat,trace |  67.37958333333333 |              0.065 | HORIZON STOW |    1200G | agsmsk |     1,1 | 58590.782581 | 13.37481353 |    12.0 | 5499.96289062 | SINGLE:B |   GG400 |          Qz | 2019-04-17 | 18:47:02.17 |      83 |     0
+ d0417_0084.fits | pixelflat,illumflat,trace |  67.37958333333333 |              0.065 | HORIZON STOW |    1200G | agsmsk |     1,1 | 58590.783632 | 13.37481353 |    12.0 | 5499.96289062 | SINGLE:B |   GG400 |          Qz | 2019-04-17 | 18:48:33.46 |      84 |     0
+ #d0417_0085.fits | pixelflat,illumflat,trace |  67.37958333333333 |              0.065 | HORIZON STOW |    1200G | agsmsk |     1,1 | 58590.784588 | 13.37481353 |    48.0 | 5499.96289062 | SINGLE:B |   GG400 |          Qz | 2019-04-17 | 18:49:55.57 |      85 |     0
+ #d0417_0086.fits | pixelflat,illumflat,trace |  67.37958333333333 |              0.065 | HORIZON STOW |    1200G | agsmsk |     1,1 | 58590.786064 | 13.37481353 |    48.0 | 5499.96289062 | SINGLE:B |   GG400 |          Qz | 2019-04-17 | 18:52:03.58 |      86 |     0
+ #d0417_0087.fits | pixelflat,illumflat,trace |  67.37958333333333 |              0.065 | HORIZON STOW |    1200G | agsmsk |     1,1 |  58590.78754 | 13.37481353 |    48.0 | 5499.96289062 | SINGLE:B |   GG400 |          Qz | 2019-04-17 | 18:54:10.57 |      87 |     0
+ #d0417_0088.fits | pixelflat,illumflat,trace |  67.37958333333333 |              0.065 | HORIZON STOW |    1200G | agsmsk |     1,1 | 58590.788903 | 13.37481353 |    48.0 | 5499.96289062 | SINGLE:B |   GG400 |          Qz | 2019-04-17 | 18:56:08.38 |      88 |     0
+ #d0417_0089.fits | pixelflat,illumflat,trace |  67.37958333333333 |              0.065 | HORIZON STOW |    1200G | agsmsk |     1,1 | 58590.790261 | 13.37481353 |    48.0 | 5499.96289062 | SINGLE:B |   GG400 |          Qz | 2019-04-17 | 18:58:05.68 |      89 |     0
+ #d0417_0090.fits | pixelflat,illumflat,trace |  67.37958333333333 |              0.065 | HORIZON STOW |    1200G | agsmsk |     1,1 | 58590.791607 | 13.37481353 |    48.0 | 5499.96289062 | SINGLE:B |   GG400 |          Qz | 2019-04-17 | 19:00:02.47 |      90 |     0
+d0315_45929.fits |                   science | 215.11908333333332 |  53.23422222222222 |       agsmsk |    1200G | agsmsk |     1,1 | 58192.531523 |  1.20049403 |  1200.0 | 5499.96289062 | SINGLE:B |   GG400 |         Off | 2018-03-15 | 12:45:29.70 |      39 |     0
+#d0315_47200.fits |                   science | 215.11904166666665 | 53.233666666666664 |       agsmsk |    1200G | agsmsk |     1,1 | 58192.546221 |  1.19554358 |  1200.0 | 5499.96289062 | SINGLE:B |   GG400 |         Off | 2018-03-15 | 13:06:40.11 |      40 |     0
+#d0315_48489.fits |                   science | 215.11904166666665 | 53.233666666666664 |       agsmsk |    1200G | agsmsk |     1,1 | 58192.561143 |   1.1975444 |  1200.0 | 5499.96289062 | SINGLE:B |   GG400 |         Off | 2018-03-15 | 13:28:09.90 |      41 |     0
+#d0315_49770.fits |                   science | 215.11908333333332 |  53.23422222222222 |       agsmsk |    1200G | agsmsk |     1,1 | 58192.575959 |  1.20660873 |  1200.0 | 5499.96289062 | SINGLE:B |   GG400 |         Off | 2018-03-15 | 13:49:30.51 |      42 |     0
+#d0315_51082.fits |                   science | 215.11908333333332 |  53.23422222222222 |       agsmsk |    1200G | agsmsk |     1,1 | 58192.591153 |   1.2235274 |  1000.0 | 5499.96289062 | SINGLE:B |   GG400 |         Off | 2018-03-15 | 14:11:22.23 |      43 |     0
+#d0315_52152.fits |                   science | 215.11904166666665 | 53.233666666666664 |       agsmsk |    1200G | agsmsk |     1,1 | 58192.603537 |  1.24339712 |  1000.0 | 5499.96289062 | SINGLE:B |   GG400 |         Off | 2018-03-15 | 14:29:12.72 |      44 |     0
+#d0315_53241.fits |                   science | 215.11904166666665 | 53.233666666666664 |       agsmsk |    1200G | agsmsk |     1,1 | 58192.616151 |  1.26952422 |  1000.0 | 5499.96289062 | SINGLE:B |   GG400 |         Off | 2018-03-15 | 14:47:21.06 |      45 |     0
+#d0315_54312.fits |                   science | 215.11908333333332 |  53.23422222222222 |       agsmsk |    1200G | agsmsk |     1,1 | 58192.628529 |  1.30163441 |  1000.0 | 5499.96289062 | SINGLE:B |   GG400 |         Off | 2018-03-15 | 15:05:12.57 |      46 |     0
 data end
 

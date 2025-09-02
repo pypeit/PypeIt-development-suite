@@ -1,5 +1,5 @@
-# Auto-generated PypeIt file
-# Fri 26 Mar 2021 11:36:29
+# Auto-generated PypeIt input file using PypeIt version: 1.17.5.dev906+gc2764adb5
+# UTC 2025-08-29T17:28:51.805+00:00
 
 # User-defined execution parameters
 [rdx]
@@ -11,24 +11,25 @@ spectrograph = gtc_osiris
 
 # Setup
 setup read
-    Setup A:
-        dispname: R1000R
-          decker: GTC9-16AMEX_0002
-         binning: 2,2
+Setup A:
+  binning: 2,2
+  decker: GTC9-16AMEX_0002
+  dispname: R1000R
 setup end
 
-# Read in the data
+# Data block 
 data read
 path /Users/djones/Documents/GitHub/PypeIt-development-suite/RAW_DATA/gtc_osiris/R1000RMOS
-|                                                 filename |                 frametype |                 ra |                dec |       target | dispname |           decker | binning |              mjd |          airmass | exptime |
-| 0001005526-20160728-OSIRIS-OsirisCalibrationLamp.fits.gz |                  arc,tilt |  36.40298333333333 |         61.1124425 | ArcLamp_HgAr |   R1000R | GTC9-16AMEX_0002 |     2,2 | 57597.7919890671 | 13.3748135344195 |    4.68 |
-| 0001005527-20160728-OSIRIS-OsirisCalibrationLamp.fits.gz |                  arc,tilt |  36.60310833333333 |          61.112755 |   ArcLamp_Ne |   R1000R | GTC9-16AMEX_0002 |     2,2 | 57597.7925446227 | 13.3748135344195 |    1.74 |
-| 0001005528-20160728-OSIRIS-OsirisCalibrationLamp.fits.gz |                  arc,tilt | 36.794895833333335 | 61.113059444444445 |   ArcLamp_Xe |   R1000R | GTC9-16AMEX_0002 |     2,2 |  57597.793065456 | 13.3748135344195 |    6.06 |
-|            0001005404-20160728-OSIRIS-OsirisBias.fits.gz |                      bias | 10.742687499999997 |  61.11120972222222 |         BIAS |     OPEN |           NOMASK |     2,2 | 57597.7206811968 | 13.3748135344195 |     0.0 |
-|            0001005405-20160728-OSIRIS-OsirisBias.fits.gz |                      bias | 10.842691666666665 |  61.11123833333333 |         BIAS |     OPEN |           NOMASK |     2,2 | 57597.7209589745 | 13.3748135344195 |     0.0 |
-|            0001005406-20160728-OSIRIS-OsirisBias.fits.gz |                      bias | 10.938524999999998 | 61.111265555555555 |         BIAS |     OPEN |           NOMASK |     2,2 | 57597.7212251782 | 13.3748135344195 |     0.0 |
-|    0001005530-20160728-OSIRIS-OsirisSpectralFlat.fits.gz | pixelflat,illumflat,trace |            37.1201 |  61.11357972222223 | SpectralFlat |   R1000R | GTC9-16AMEX_0002 |     2,2 | 57597.7939798079 | 13.3748135344195 |    5.76 |
-|    0001005531-20160728-OSIRIS-OsirisSpectralFlat.fits.gz | pixelflat,illumflat,trace |  37.24518333333333 | 61.113779722222226 | SpectralFlat |   R1000R | GTC9-16AMEX_0002 |     2,2 |  57597.794315456 | 13.3748135344195 |    5.76 |
-|    0001005532-20160728-OSIRIS-OsirisSpectralFlat.fits.gz | pixelflat,illumflat,trace |  37.36609166666666 | 61.113974722222224 | SpectralFlat |   R1000R | GTC9-16AMEX_0002 |     2,2 | 57597.7946511041 | 13.3748135344195 |    5.76 |
-|             0001006094-20160728-OSIRIS-OsirisMOS.fits.gz |                   science |  341.0428666666666 | 20.353668055555556 |    BZB_J2243 |   R1000R | GTC9-16AMEX_0002 |     2,2 | 57598.1898594375 | 1.05308551174975 |   790.0 |
+                                                filename |                 frametype |                 ra |                dec |       target | dispname |           decker | binning |              mjd |          airmass | exptime |                idname | calib
+0001005526-20160728-OSIRIS-OsirisCalibrationLamp.fits.gz |                  arc,tilt |  36.40298333333333 |         61.1124425 | ArcLamp_HgAr |   R1000R | GTC9-16AMEX_0002 |     2,2 | 57597.7919890671 | 13.3748135344195 |    4.68 | OsirisCalibrationLamp |     0
+0001005527-20160728-OSIRIS-OsirisCalibrationLamp.fits.gz |                  arc,tilt |  36.60310833333333 |          61.112755 |   ArcLamp_Ne |   R1000R | GTC9-16AMEX_0002 |     2,2 | 57597.7925446227 | 13.3748135344195 |    1.74 | OsirisCalibrationLamp |     0
+0001005528-20160728-OSIRIS-OsirisCalibrationLamp.fits.gz |                  arc,tilt | 36.794895833333335 | 61.113059444444445 |   ArcLamp_Xe |   R1000R | GTC9-16AMEX_0002 |     2,2 |  57597.793065456 | 13.3748135344195 |    6.06 | OsirisCalibrationLamp |     0
+           0001005404-20160728-OSIRIS-OsirisBias.fits.gz |                      bias | 10.742687499999997 |  61.11120972222222 |         BIAS |     OPEN |           NOMASK |     2,2 | 57597.7206811968 | 13.3748135344195 |     0.0 |            OsirisBias |     0
+           0001005405-20160728-OSIRIS-OsirisBias.fits.gz |                      bias | 10.842691666666665 |  61.11123833333333 |         BIAS |     OPEN |           NOMASK |     2,2 | 57597.7209589745 | 13.3748135344195 |     0.0 |            OsirisBias |     0
+           0001005406-20160728-OSIRIS-OsirisBias.fits.gz |                      bias | 10.938524999999998 | 61.111265555555555 |         BIAS |     OPEN |           NOMASK |     2,2 | 57597.7212251782 | 13.3748135344195 |     0.0 |            OsirisBias |     0
+   0001005530-20160728-OSIRIS-OsirisSpectralFlat.fits.gz | pixelflat,illumflat,trace |            37.1201 |  61.11357972222223 | SpectralFlat |   R1000R | GTC9-16AMEX_0002 |     2,2 | 57597.7939798079 | 13.3748135344195 |    5.76 |    OsirisSpectralFlat |     0
+   0001005531-20160728-OSIRIS-OsirisSpectralFlat.fits.gz | pixelflat,illumflat,trace |  37.24518333333333 | 61.113779722222226 | SpectralFlat |   R1000R | GTC9-16AMEX_0002 |     2,2 |  57597.794315456 | 13.3748135344195 |    5.76 |    OsirisSpectralFlat |     0
+   0001005532-20160728-OSIRIS-OsirisSpectralFlat.fits.gz | pixelflat,illumflat,trace |  37.36609166666666 | 61.113974722222224 | SpectralFlat |   R1000R | GTC9-16AMEX_0002 |     2,2 | 57597.7946511041 | 13.3748135344195 |    5.76 |    OsirisSpectralFlat |     0
+            0001006094-20160728-OSIRIS-OsirisMOS.fits.gz |                   science |  341.0428666666666 | 20.353668055555556 |    BZB_J2243 |   R1000R | GTC9-16AMEX_0002 |     2,2 | 57598.1898594375 | 1.05308551174975 |   790.0 |             OsirisMOS |     0
 data end
+

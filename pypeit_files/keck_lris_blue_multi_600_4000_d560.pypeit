@@ -1,5 +1,5 @@
-# Auto-generated PypeIt file
-# Wed 02 Jan 2019 16:29:54
+# Auto-generated PypeIt input file using PypeIt version: 1.17.5.dev906+gc2764adb5
+# UTC 2025-08-29T17:39:11.043+00:00
 
 # User-defined execution parameters
 [rdx]
@@ -13,7 +13,8 @@ pixelflat_file = PYPEIT_LRISb_pixflat_B600_2x2_17sep2009_specflip.fits.gz
 
 # Setup
 setup read
-Setup B:
+Setup A:
+  amp: '4'
   binning: 2,2
   decker: c17_60L.
   dichroic: '560'
@@ -37,3 +38,4 @@ b170320_2084.fits.gz |          science |         150.353125 |  2.19847222222222
 b170320_2090.fits.gz |          science | 150.35016666666667 |  2.196472222222222 |   c17_60L. | 600/4000 | c17_60L. |     2,2 | 57832.348432 |  1.05048078 |  1800.0 |      560 |   4 |   open |                         off | 2017-03-20 |    2090 |     1
 b170320_2091.fits.gz |          science | 150.35016666666667 |  2.196472222222222 |   c17_60L. | 600/4000 | c17_60L. |     2,2 | 57832.369721 |  1.05383384 |  1800.0 |      560 |   4 |   open |                         off | 2017-03-20 |    2091 |     1
 data end
+

@@ -1,4 +1,5 @@
-# This is a comment line
+# Auto-generated PypeIt input file using PypeIt version: 1.17.5.dev906+gc2764adb5
+# UTC 2025-08-29T16:22:02.554+00:00
 
 # User-defined execution parameters
 [rdx]
@@ -12,36 +13,28 @@
 
 # Setup
 setup read
- Setup A:
- --:
-   dichroic: None
-   disperser: {angle: 6500.0, name: 600ZD}
-   slit: {decker: jcCIV2C, slitlen: None, slitwid: None}
- '01': {binning: '1,1', det: 1, namp: 1}
- '02': {binning: '1,1', det: 2, namp: 1}
- '03': {binning: '1,1', det: 3, namp: 1}
- '04': {binning: '1,1', det: 4, namp: 1}
- '05': {binning: '1,1', det: 5, namp: 1}
- '06': {binning: '1,1', det: 6, namp: 1}
- '07': {binning: '1,1', det: 7, namp: 1}
- '08': {binning: '1,1', det: 8, namp: 1}
+Setup A:
+  amp: '"SINGLE:B"'
+  binning: 1,1
+  decker: mask03
+  dispangle: 6500.00634766
+  dispname: 600ZD
+  filter1: GG400
 setup end
 
-
-# Read in the data
+# Data block 
 data read
  path /home/xavier/local/Python/PypeIt-development-suite/RAW_DATA/keck_deimos/600ZD_M_6500/
-|           filename |                date  | frametype         |         target | exptime | binning | dichroic | dispname |     dispangle | decker |
-| d1010_0005.fits.gz | 2015-10-10T01:31:58  |     bias          |     DOME PHLAT |       1 |     1,1 |     None |    600ZD | 1097.54162598 | mask04 |
-| d1010_0006.fits.gz | 2015-10-10T01:33:11  |     bias          |     DOME PHLAT |       1 |     1,1 |     None |    600ZD | 1097.54162598 | mask04 |
-| d1010_0040.fits.gz | 2015-10-10T03:28:23  |   arc,tilt        |     DOME PHLAT |       1 |     1,1 |     None |    600ZD | 6500.00634766 | mask03 |
-| d1010_0041.fits.gz | 2015-10-10T03:29:43  | illumflat,pixelflat,trace   |     DOME PHLAT |       6 |     1,1 |     None |    600ZD | 6500.00634766 | mask03 |
-| d1010_0056.fits.gz | 2015-10-10T05:28:23  |   science 	| HIT2015-mask03 |    1800 |     1,1 |     None |    600ZD | 6500.00634766 | mask03 |
-#| d1010_0057.fits.gz | 2015-10-10T05:59:33  |   science 	| HIT2015-mask03 |    1800 |     1,1 |     None |    600ZD | 6500.00634766 | mask03 |
-| d1010_0019.fits.gz | 2015-10-10T02:43:58 |    arc,tilt            |     DOME PHLAT |      12 |     1,1 |     None |    600ZD | 6500.00634766 | mask03 |
-#| d1010_0022.fits.gz | 2015-10-10T02:48:55 | pixelflat,trace  |     DOME PHLAT |      12 |     1,1 |     None |    600ZD | 6500.00634766 | mask03 |
-#| d1010_0025.fits.gz | 2015-10-10T02:54:36 | pixelflat,trace  |     DOME PHLAT |      45 |     1,1 |     None |    600ZD | 6500.00634766 | mask03 |
-
+          filename |                 frametype |                 ra |                 dec |         target | dispname | decker | binning |          mjd |    airmass | exptime |     dispangle |      amp | filter1 |  lampstat01 |    dateobs |         utc | frameno | calib
+d1010_0019.fits.gz |                  arc,tilt |  57.99999999999999 |                45.0 |     DOME PHLAT |    600ZD | mask03 |     1,1 | 57305.113644 | 1.41291034 |    12.0 | 6500.00634766 | SINGLE:B |   GG400 |       Ar Zn | 2015-10-10 | 02:43:45.51 |      19 |     0
+d1010_0040.fits.gz |                  arc,tilt |  57.99999999999999 |                45.0 |     DOME PHLAT |    600ZD | mask03 |     1,1 | 57305.144604 | 1.41291034 |     1.0 | 6500.00634766 | SINGLE:B |   GG400 | Kr Xe Ar Ne | 2015-10-10 | 03:28:20.02 |      40 |     0
+d1010_0005.fits.gz |                      bias |  57.99999999999999 |                45.0 |     DOME PHLAT |    600ZD | mask04 |     1,1 | 57305.063784 | 1.41291034 |     1.0 | 1097.54162598 | SINGLE:B |       R |         Off | 2015-10-10 | 01:31:56.80 |       5 |     0
+d1010_0006.fits.gz |                      bias |  57.99999999999999 |                45.0 |     DOME PHLAT |    600ZD | mask04 |     1,1 | 57305.064619 | 1.41291034 |     1.0 | 1097.54162598 | SINGLE:B |       R |         Off | 2015-10-10 | 01:33:09.50 |       6 |     0
+#d1010_0022.fits.gz | pixelflat,illumflat,trace |  57.99999999999999 |                45.0 |     DOME PHLAT |    600ZD | mask03 |     1,1 | 57305.117107 | 1.41291034 |    12.0 | 6500.00634766 | SINGLE:B |   GG400 |          Qz | 2015-10-10 | 02:48:43.96 |      22 |     0
+#d1010_0025.fits.gz | pixelflat,illumflat,trace |  57.99999999999999 |                45.0 |     DOME PHLAT |    600ZD | mask03 |     1,1 | 57305.120661 | 1.41291034 |    45.0 | 6500.00634766 | SINGLE:B |   GG400 |          Qz | 2015-10-10 | 02:53:50.36 |      25 |     0
+d1010_0041.fits.gz | pixelflat,illumflat,trace |  57.99999999999999 |                45.0 |     DOME PHLAT |    600ZD | mask03 |     1,1 | 57305.145479 | 1.41291034 |     6.0 | 6500.00634766 | SINGLE:B |   GG400 |          Qz | 2015-10-10 | 03:29:36.67 |      41 |     0
+d1010_0056.fits.gz |                   science | 334.44991666666664 | 0.23469444444444446 | HIT2015-mask03 |    600ZD | mask03 |     1,1 | 57305.207136 |  1.3260818 |  1800.0 | 6500.00634766 | SINGLE:B |   GG400 |         Off | 2015-10-10 | 04:58:22.73 |      56 |     0
+#d1010_0057.fits.gz |                   science | 334.44991666666664 | 0.23469444444444446 | HIT2015-mask03 |    600ZD | mask03 |     1,1 | 57305.228756 | 1.21381768 |  1800.0 | 6500.00634766 | SINGLE:B |   GG400 |         Off | 2015-10-10 | 05:29:32.19 |      57 |     0
 data end
 
 # Image 19 is a blue arc created by the calib_blue script. The lamps that are on are Hg Cd Zn Ar Kr but pipeline cannot handle this yet.

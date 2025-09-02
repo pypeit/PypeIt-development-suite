@@ -1,5 +1,5 @@
-# Auto-generated PypeIt file
-# Mon 15 Jun 2020 17:52:33
+# Auto-generated PypeIt input file using PypeIt version: 1.17.5.dev906+gc2764adb5
+# UTC 2025-08-29T18:51:44.749+00:00
 
 # User-defined execution parameters
 [rdx]
@@ -24,30 +24,27 @@
 
 # Setup
 setup read
- Setup A:
-   --:
-     binning: 1,1
-     dichroic: none
-     disperser:
-       angle: 7899.99072266
-       name: 600ZD
-     slit:
-       decker: 16045h
-       slitlen: none
-       slitwid: none
+Setup A:
+  amp: '"SINGLE:B"'
+  binning: 1,1
+  decker: 16045h
+  dispangle: 7899.99072266
+  dispname: 600ZD
+  filter1: GG495
 setup end
 
-# Read in the data
+# Data block 
 data read
  path /Users/dpelliccia/PypeIt-development-suite/PypeIt-development-suite_master/RAW_DATA/keck_deimos/600ZD_tilted
-|        filename |                 frametype |                 ra |                dec |     target | dispname | decker | binning |          mjd |    airmass | exptime |     dispangle | manual |
-| d0225_0088.fits |                  arc,tilt |  57.99999999999999 |               45.0 | DOME PHLAT |    600ZD | 16045h |     1,1 | 58539.696797 | 1.41291034 |     1.0 | 7899.99072266 |        |
-| d0225_0091.fits |                  arc,tilt |  57.99999999999999 |               45.0 | DOME PHLAT |    600ZD | 16045h |     1,1 | 58539.703048 | 1.41291034 |     3.0 | 7899.99072266 |        |
-| d0225_0094.fits |                  arc,tilt |  57.99999999999999 |               45.0 | DOME PHLAT |    600ZD | 16045h |     1,1 | 58539.711725 | 1.41291034 |    12.0 | 7899.99072266 |        |
-| d0225_0103.fits | pixelflat,illumflat,trace |  57.99999999999999 |               45.0 | DOME PHLAT |    600ZD | 16045h |     1,1 | 58539.726423 | 1.41291034 |     6.0 | 7899.99072266 |        |
-| d0225_0104.fits | pixelflat,illumflat,trace |  57.99999999999999 |               45.0 | DOME PHLAT |    600ZD | 16045h |     1,1 | 58539.727291 | 1.41291034 |     6.0 | 7899.99072266 |        |
-| d0225_0105.fits | pixelflat,illumflat,trace |  57.99999999999999 |               45.0 | DOME PHLAT |    600ZD | 16045h |     1,1 | 58539.728153 | 1.41291034 |     6.0 | 7899.99072266 |        |
-| d0225_0106.fits | pixelflat,illumflat,trace |  57.99999999999999 |               45.0 | DOME PHLAT |    600ZD | 16045h |     1,1 | 58539.729021 | 1.41291034 |     6.0 | 7899.99072266 |        |
-| d0225_0054.fits |                   science |  241.1328333333333 | 43.256277777777775 |     16045h |    600ZD | 16045h |     1,1 | 58539.623231 |  1.1266414 |  1320.0 | 7899.99072266 | (1,5):68.0:2960.0:3.;(1,5):211.0:3082.0:3. |
+       filename |                 frametype |                ra |                dec |     target | dispname | decker | binning |          mjd |    airmass | exptime |     dispangle |      amp | filter1 |  lampstat01 |    dateobs |         utc | frameno | calib | manual
+d0225_0088.fits |                  arc,tilt | 57.99999999999999 |               45.0 | DOME PHLAT |    600ZD | 16045h |     1,1 | 58539.696797 | 1.41291034 |     1.0 | 7899.99072266 | SINGLE:B |   GG495 | Kr Xe Ar Ne | 2019-02-25 | 16:43:30.42 |      88 |     0 |       
+d0225_0091.fits |                  arc,tilt | 57.99999999999999 |               45.0 | DOME PHLAT |    600ZD | 16045h |     1,1 | 58539.703048 | 1.41291034 |     3.0 | 7899.99072266 | SINGLE:B |   GG495 |    Hg Cd Zn | 2019-02-25 | 16:52:30.51 |      91 |     0 |       
+d0225_0094.fits |                  arc,tilt | 57.99999999999999 |               45.0 | DOME PHLAT |    600ZD | 16045h |     1,1 | 58539.711725 | 1.41291034 |    12.0 | 7899.99072266 | SINGLE:B |   GG495 |       Cd Zn | 2019-02-25 | 17:04:59.19 |      94 |     0 |       
+d0225_0103.fits | pixelflat,illumflat,trace | 57.99999999999999 |               45.0 | DOME PHLAT |    600ZD | 16045h |     1,1 | 58539.726423 | 1.41291034 |     6.0 | 7899.99072266 | SINGLE:B |   GG495 |          Qz | 2019-02-25 | 17:26:10.11 |     103 |     0 |       
+d0225_0104.fits | pixelflat,illumflat,trace | 57.99999999999999 |               45.0 | DOME PHLAT |    600ZD | 16045h |     1,1 | 58539.727291 | 1.41291034 |     6.0 | 7899.99072266 | SINGLE:B |   GG495 |          Qz | 2019-02-25 | 17:27:25.08 |     104 |     0 |       
+d0225_0105.fits | pixelflat,illumflat,trace | 57.99999999999999 |               45.0 | DOME PHLAT |    600ZD | 16045h |     1,1 | 58539.728153 | 1.41291034 |     6.0 | 7899.99072266 | SINGLE:B |   GG495 |          Qz | 2019-02-25 | 17:28:40.05 |     105 |     0 |       
+d0225_0106.fits | pixelflat,illumflat,trace | 57.99999999999999 |               45.0 | DOME PHLAT |    600ZD | 16045h |     1,1 | 58539.729021 | 1.41291034 |     6.0 | 7899.99072266 | SINGLE:B |   GG495 |          Qz | 2019-02-25 | 17:29:55.02 |     106 |     0 |       
+d0225_0054.fits |                   science | 241.1328333333333 | 43.256277777777775 |     16045h |    600ZD | 16045h |     1,1 | 58539.623231 |  1.1266414 |  1320.0 | 7899.99072266 | SINGLE:B |   GG495 |         Off | 2019-02-25 | 14:57:33.27 |      54 |     0 | (1,5):68.0:2960.0:3.;(1,5):211.0:3082.0:3.
+#d0225_0055.fits |                   science | 241.1328333333333 | 43.256277777777775 |     16045h |    600ZD | 16045h |     1,1 | 58539.639346 | 1.10517426 |  1320.0 | 7899.99072266 | SINGLE:B |   GG495 |         Off | 2019-02-25 | 15:20:45.57 |      55 |     0 |       
 data end
 
