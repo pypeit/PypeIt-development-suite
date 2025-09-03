@@ -91,8 +91,6 @@ def test_sensfunc_from_onespec(redux_out):
     ## create the coadd1d config file
     cfg_lines = ['[rdx]']
     cfg_lines += ['  spectrograph = keck_lris_red_mark4']
-    # TODO: TO REMOVE chk_version when the code is stable
-    cfg_lines += ['  chk_version = False']
     cfg_lines += ['[coadd1d]']
     cfg_lines += [f'  coaddfile = {coadd1d_fname}']
     cfg_lines += ['  wave_method = linear']
