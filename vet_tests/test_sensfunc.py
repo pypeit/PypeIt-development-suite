@@ -10,7 +10,7 @@ from astropy import table
 
 from pypeit import sensfunc
 from pypeit import inputfiles
-from pypeit.scripts import coadd_1dspec
+from pypeit import coadd1d
 from pypeit.spectrographs.util import load_spectrograph
 
 def sensfunc_io_ir_test():
@@ -75,31 +75,31 @@ def sensfunc_io_tester(algorithm, redux_out):
     os.remove(test_file)
 
 def test_sensfunc_from_onespec(redux_out):
-
-    coadd1d_fname = 'GD153_coadd1d.fits'
-
-    rdx = Path(redux_out).resolve()
+    # Paths
     this_rdx = Path(redux_out).resolve() / 'keck_lris_red_mark4' / 'long_600_10000_d680'
     sci_dir = this_rdx / 'Science'
 
-    # spec1d files to coadd
+    ###### FIRST RUN COADD1D #######
+    # set coadded file name
+    coadd1d_fname = 'GD153_coadd1d.fits'
+    if Path(coadd1d_fname).exists():
+        # Remove results from previous runs
+        os.unlink(coadd1d_fname)
+    # read spec1d files to coadd
     spec1d_files = [str(f) for f in sorted(sci_dir.glob('spec1d*GD153*.fits'))]
 
-    ## coadd1d pypeit file
-    cfg_file = 'GD153_coadd1d.coadd1d'
-    if Path(cfg_file).exists():
-        # Remove results from previous run
-        os.unlink(cfg_file)
-    # make it
-    cfg_lines = ['[coadd1d]']
+    ## create the coadd1d config file
+    cfg_lines = ['[rdx]']
+    cfg_lines += ['  spectrograph = keck_lris_red_mark4']
+    # TODO: TO REMOVE chk_version when the code is stable
+    cfg_lines += ['  chk_version = False']
+    cfg_lines += ['[coadd1d]']
     cfg_lines += [f'  coaddfile = {coadd1d_fname}']
     cfg_lines += ['  wave_method = linear']
     cfg_lines += ['  flux_value = False']
-    #TODO: TO REMOVE
-    cfg_lines += ['[rdx]']
-    cfg_lines += ['  chk_version = False']
 
     all_specfiles, all_obj = [], []
+    # NOTE: For simplicity, this assumes that the spec1d files have only one object detected
     for ii in range(len(spec1d_files)):
         txtinfofile = spec1d_files[ii].replace('.fits', '.txt')
         meta_tbl = table.Table.read(txtinfofile,format='ascii.fixed_width')
@@ -110,40 +110,59 @@ def test_sensfunc_from_onespec(redux_out):
     data['obj_id'] = all_obj
 
     coadd1dFile = inputfiles.Coadd1DFile(config=cfg_lines, file_paths=[str(sci_dir)], data_table=data)
-    # Write
-    coadd1dFile.write(cfg_file)
+    # get par and spectrograph
+    spectrograph, par, _ = coadd1dFile.get_pypeitpar()
+    # coadd
+    coAdd1d = coadd1d.CoAdd1D.get_instance(coadd1dFile.filenames,
+                                           coadd1dFile.objids,
+                                           spectrograph=spectrograph,
+                                           par=par['coadd1d'], chk_version=par['rdx']['chk_version'])
+    # Run
+    coAdd1d.run()
+    # Save to file
+    coAdd1d.save(coadd1d_fname)
 
-    parser = coadd_1dspec.CoAdd1DSpec.get_parser()
-    args = parser.parse_args([cfg_file])
-    coadd_1dspec.CoAdd1DSpec.main(args)
+    # checks
+    assert coAdd1d.coaddfile == coadd1d_fname, 'coadd1d file name is wrong'
+    assert Path(coadd1d_fname).exists(), 'coadd1d file does not exist'
 
-    # create sensfunc
+    ###### THEN RUN SENSFUNC #######
+    # set sensfunc file name
     sens_file = 'GD153_sensfunc.fits'
-    if Path(sens_file).exists():
-        # Remove results from previous run
+    # loop on the algorithms
+    algorithms = ['IR', 'UVIS']
+    for algorithm in algorithms:
+        if Path(sens_file).exists():
+            # Remove results from previous runs
+            os.unlink(sens_file)
+
+        # set algorithm
+        par['sensfunc']['algorithm'] = algorithm
+
+        # Instantiate the SensFunc class for the requested algorithm
+        sensobj = sensfunc.SensFunc.get_instance(coadd1d_fname, sens_file, par['sensfunc'], write_qa=False)
+        sensobj.run()
+        sensobj.to_file(sens_file, overwrite=True)
+        # Read it back in and make some checks
+        _sensobj = sensfunc.SensFunc.from_file(sens_file)
+        # check algorithm
+        assert _sensobj.algorithm == algorithm, 'algorithm mismatch after writing to and reading from disk'
+        # check used archival standard star
+        assert Path(_sensobj.std_cal).name == 'fGD153.dat', 'incorrect archival standard star name'
+        # various checks on the sensfunc table
+        assert _sensobj.sens is not None, 'sensfunc table is None'
+        assert len(_sensobj.sens) == 1, 'sensfunc table has wrong length'
+        assert _sensobj.sens['SENS_WAVE'][_sensobj.sens['SENS_WAVE']>0].size > 0, 'SENS_WAVE has no values'
+        assert _sensobj.sens['SENS_ZEROPOINT'][_sensobj.sens['SENS_ZEROPOINT']>0].size > 0, \
+            'SENS_ZEROPOINT has no values'
+        assert _sensobj.sens['SENS_FLUXED_STD_FLAM'][_sensobj.sens['SENS_FLUXED_STD_FLAM']>0].size > 0, \
+            'SENS_FLUXED_STD_FLAM has no values'
+        assert _sensobj.sens['SENS_LOG10_BLAZE_FUNCTION'][_sensobj.sens['SENS_LOG10_BLAZE_FUNCTION']>0].size == 0, \
+            'SENS_LOG10_BLAZE_FUNCTION should be all zero'
+        assert _sensobj.wave[_sensobj.wave > 0].size > 0, 'wave has no values'
+        assert _sensobj.zeropoint[_sensobj.zeropoint > 0].size > 0, 'zeropoint has no values'
+        assert _sensobj.throughput[_sensobj.throughput > 0].size > 0, 'throughput has no values'
         os.unlink(sens_file)
-    spectrograph = load_spectrograph('keck_lris_red_mark4')
-    par = spectrograph.default_pypeit_par()
 
-    # First with IR algorithm
-    par['sensfunc']['algorithm'] = 'IR'
-
-    # Instantiate the relevant class for the requested algorithm
-    sensobj = sensfunc.SensFunc.get_instance(coadd1d_fname, sens_file, par['sensfunc'])
-    sensobj.run()
-    sensobj.to_file(sens_file, overwrite=True)
-
-    # Then with UVIS algorithm
-    os.unlink(sens_file)
-    par['sensfunc']['algorithm'] = 'UVIS'
-    sensobj = sensfunc.SensFunc.get_instance(coadd1d_fname, sens_file, par['sensfunc'])
-    sensobj.run()
-    sensobj.to_file(sens_file, overwrite=True)
-
-    # MAKE some asserts
-
-    # unlink everything
+    # remove coadded file
     os.unlink(coadd1d_fname)
-    os.unlink(cfg_file)
-    os.unlink('coadd1d.par')
-    os.unlink(sens_file)
