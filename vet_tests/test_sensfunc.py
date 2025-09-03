@@ -3,11 +3,14 @@ import os
 from IPython import embed
 
 import numpy as np
+from pathlib import Path
 
 from astropy.io import fits
 from astropy import table
 
 from pypeit import sensfunc
+from pypeit import inputfiles
+from pypeit.scripts import coadd_1dspec
 from pypeit.spectrographs.util import load_spectrograph
 
 def sensfunc_io_ir_test():
@@ -69,4 +72,78 @@ def sensfunc_io_tester(algorithm, redux_out):
     assert _sensobj.algorithm == sensobj.algorithm, \
         'algorithm mismatch after writing to and reading from disk'
 
-    os.remove(test_file) 
+    os.remove(test_file)
+
+def test_sensfunc_from_onespec(redux_out):
+
+    coadd1d_fname = 'GD153_coadd1d.fits'
+
+    rdx = Path(redux_out).resolve()
+    this_rdx = Path(redux_out).resolve() / 'keck_lris_red_mark4' / 'long_600_10000_d680'
+    sci_dir = this_rdx / 'Science'
+
+    # spec1d files to coadd
+    spec1d_files = [str(f) for f in sorted(sci_dir.glob('spec1d*GD153*.fits'))]
+
+    ## coadd1d pypeit file
+    cfg_file = 'GD153_coadd1d.coadd1d'
+    if Path(cfg_file).exists():
+        # Remove results from previous run
+        os.unlink(cfg_file)
+    # make it
+    cfg_lines = ['[coadd1d]']
+    cfg_lines += [f'  coaddfile = {coadd1d_fname}']
+    cfg_lines += ['  wave_method = linear']
+    cfg_lines += ['  flux_value = False']
+    #TODO: TO REMOVE
+    cfg_lines += ['[rdx]']
+    cfg_lines += ['  chk_version = False']
+
+    all_specfiles, all_obj = [], []
+    for ii in range(len(spec1d_files)):
+        txtinfofile = spec1d_files[ii].replace('.fits', '.txt')
+        meta_tbl = table.Table.read(txtinfofile,format='ascii.fixed_width')
+        all_specfiles.append(spec1d_files[ii])
+        all_obj.append(meta_tbl['name'][ii])
+    data = table.Table()
+    data['filename'] = all_specfiles
+    data['obj_id'] = all_obj
+
+    coadd1dFile = inputfiles.Coadd1DFile(config=cfg_lines, file_paths=[str(sci_dir)], data_table=data)
+    # Write
+    coadd1dFile.write(cfg_file)
+
+    parser = coadd_1dspec.CoAdd1DSpec.get_parser()
+    args = parser.parse_args([cfg_file])
+    coadd_1dspec.CoAdd1DSpec.main(args)
+
+    # create sensfunc
+    sens_file = 'GD153_sensfunc.fits'
+    if Path(sens_file).exists():
+        # Remove results from previous run
+        os.unlink(sens_file)
+    spectrograph = load_spectrograph('keck_lris_red_mark4')
+    par = spectrograph.default_pypeit_par()
+
+    # First with IR algorithm
+    par['sensfunc']['algorithm'] = 'IR'
+
+    # Instantiate the relevant class for the requested algorithm
+    sensobj = sensfunc.SensFunc.get_instance(coadd1d_fname, sens_file, par['sensfunc'])
+    sensobj.run()
+    sensobj.to_file(sens_file, overwrite=True)
+
+    # Then with UVIS algorithm
+    os.unlink(sens_file)
+    par['sensfunc']['algorithm'] = 'UVIS'
+    sensobj = sensfunc.SensFunc.get_instance(coadd1d_fname, sens_file, par['sensfunc'])
+    sensobj.run()
+    sensobj.to_file(sens_file, overwrite=True)
+
+    # MAKE some asserts
+
+    # unlink everything
+    os.unlink(coadd1d_fname)
+    os.unlink(cfg_file)
+    os.unlink('coadd1d.par')
+    os.unlink(sens_file)
