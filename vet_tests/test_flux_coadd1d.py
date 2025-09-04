@@ -1,6 +1,7 @@
 import os
 from pathlib import Path
 from configobj import ConfigObj
+from IPython import embed
 
 import numpy as np
 
@@ -215,3 +216,51 @@ def test_feige110_ltt3218(redux_out, monkeypatch):
         # Now test the coadding
         coadd(updated_feige110_filename, feige110_output)
         coadd(updated_ltt3218_filename, ltt3218_output)
+
+def test_keck_hires(redux_out):
+    # keck_hires redux directory
+    this_rdx = Path(redux_out) / 'keck_hires'
+    # setups to work with
+    setups = ['J0100+2802_H204Hr_RED_C1_ECH_-0.82_XD_1.62_1x2', 'J0100+2802_H204Hr_RED_C1_ECH_0.75_XD_1.69_1x2']
+    # get science and sensfunc paths
+    sci_paths = [this_rdx / s / 'Science' for s in setups]
+    sens_paths = [this_rdx / s for s in setups]
+
+    # new directory for this test
+    coadd_dir = this_rdx / 'J0100+2802_H204Hr_coadd'
+    # move to the new directory
+    if not coadd_dir.exists():
+        os.makedirs(coadd_dir)
+    cdir = os.getcwd()
+    os.chdir(coadd_dir)
+
+    # Run flux setup
+    cfg_basename = "keck_hires"
+    flux_file, coadd1d_file, telluric_file = run_flux_setup(sci_paths + sens_paths, cfg_basename)
+    # Now test the fluxing
+    flux_and_validate(cfg_basename + ".flux", flux_file.filenames)
+
+    # remove standard files from the coadd1d file datablock
+    nostd_coaddfiles = np.array(['Feige110' not in f for f in coadd1d_file.data['filename'].data])
+    coadd1d_file.data = coadd1d_file.data[nostd_coaddfiles]
+
+    # update the coadd1d file config
+    coadd1d_file.config['coadd1d']['coaddfile'] = 'J0100+2802_H204Hr_coadd.fits'
+
+    # write the updated files
+    coadd1d_cfg_new = cfg_basename + "_updated.coadd1d"
+    coadd1d_file.write(coadd1d_cfg_new)
+
+    # Now test the coadding
+    coadd(coadd1d_cfg_new, coadd1d_file.config['coadd1d']['coaddfile'])
+
+    # no running the telluric but small test on the telluric file
+    assert telluric_file is not None, "Telluric file was not created"
+    assert telluric_file.config['telluric']['objmodel'] == 'qso', "Telluric objmodel should be qso"
+
+    # Go back
+    os.chdir(cdir)
+
+
+
+    
