@@ -41,8 +41,8 @@ data read
  path /home/xavier/local/Python/PypeIt-development-suite/RAW_DATA/keck_deimos/830G_M_8500/
                  filename |                 frametype |      ra |                 dec |       target | dispname |  decker | binning |          mjd |     airmass | exptime |    dispangle |      amp | filter1 |  lampstat01 |    dateobs |         utc | frameno | calib
 DE.20100913.56927.fits.gz |                  arc,tilt |   67.35 |               0.039 | HORIZON STOW |     830G | CFHQS1B |     1,1 | 55452.658821 | 13.37481353 |     1.0 | 8500.0078125 | SINGLE:B |   OG550 | Kr Xe Ar Ne | 2010-09-13 | 15:48:47.87 |      76 |     0
-DE.20100913.57006.fits.gz | pixelflat,illumflat,trace |   67.35 |               0.039 | HORIZON STOW |     830G | CFHQS1B |     1,1 | 55452.659766 | 13.37481353 |     8.0 | 8500.0078125 | SINGLE:B |   OG550 |          Qz | 2010-09-13 | 15:50:06.07 |      77 |     0
 DE.20100913.57161.fits.gz | pixelflat,illumflat,trace |   67.35 |               0.039 | HORIZON STOW |     830G | CFHQS1B |     1,1 | 55452.661511 | 13.37481353 |     8.0 | 8500.0078125 | SINGLE:B |   OG550 |          Qz | 2010-09-13 | 15:52:41.97 |      79 |     0
+DE.20100913.57006.fits.gz | pixelflat,illumflat,trace |   67.35 |               0.039 | HORIZON STOW |     830G | CFHQS1B |     1,1 | 55452.659766 | 13.37481353 |     8.0 | 8500.0078125 | SINGLE:B |   OG550 |          Qz | 2010-09-13 | 15:50:06.07 |      77 |     0
 DE.20100913.22358.fits.gz |                   science | 352.304 | -3.0970833333333334 |       CFHQS1 |     830G | CFHQS1B |     1,1 | 55452.258696 |  2.40403914 |  1800.0 | 8500.0078125 | SINGLE:B |   OG550 |         Off | 2010-09-13 | 06:12:38.12 |      41 |     0
 data end
 
