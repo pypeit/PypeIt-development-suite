@@ -287,13 +287,13 @@ def test_keck_hires(redux_out):
 
 def test_gmos(redux_out):
 
-    for setup, index, rms, mosaic in zip(
-        ['GS_HAM_B480_550'],
-        [1],
-        [0.30],
-        ['MSC01'],
+    for setup, index, rms, mosaic, setupID in zip(
+        ['GS_HAM_B480_550', 'GS_HAM_R150_869'],
+        [1, 0],
+        [0.30, 0.25],
+        ['MSC01', 'MSC01'],
+        ['A_0', 'LTT7379_0']
         ):
-        setupID = 'A_0'
         # Check that spatial flexure shift was set!
         file_path = os.path.join(redux_out,
                              'gemini_gmos',
@@ -304,3 +304,21 @@ def test_gmos(redux_out):
         waveCalib = WaveCalib.from_file(file_path)
         assert waveCalib.wv_fits[index].rms < rms, f'RMS of gemini_gmos {setup} is too high!'
 
+
+def test_subaru_focas(redux_out):
+
+    for setup, index, rms in zip(
+        ['300B_None'],
+        [1],
+        [0.30],
+        ):
+        setupID = 'A_0'
+        # Check that spatial flexure shift was set!
+        file_path = os.path.join(redux_out,
+                             'subaru_focas',
+                             setup,
+                             'Calibrations',
+                             f'WaveCalib_{setupID}_DET01.fits')
+        # Load
+        waveCalib = WaveCalib.from_file(file_path)
+        assert waveCalib.wv_fits[index].rms < rms, f'RMS of subaru_focas {setup} is too high!'

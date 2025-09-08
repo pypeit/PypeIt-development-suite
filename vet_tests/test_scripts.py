@@ -16,6 +16,7 @@ from pypeit.display import display
 from pypeit import wavecalib
 from pypeit import coadd1d
 from pypeit import inputfiles
+from pypeit import calibrations
 from pypeit.utils import jsonify
 import json
 
@@ -192,7 +193,7 @@ def test_collate_1d(tmp_path, monkeypatch, redux_out):
                               'Science')
 
     # Build up arguments for testing command line parsing
-    args = ['--dry_run', '--chk_version', '--ignore_flux', '--flux', '--outdir', '/outdir2', '--match', 'ra/dec', '--exclude_slit_bm', 'BOXSLIT', '--exclude_serendip', '--wv_rms_thresh', '0.2', '--refframe', 'heliocentric']
+    args = ['--dry_run', '--chk_version', '--ignore_flux', '--flux', '--outdir', '/outdir2', '--match', 'ra/dec', '--exclude_slit_trace_bm', 'BOXSLIT', '--exclude_serendip', '--wv_rms_thresh', '0.2', '--refframe', 'heliocentric']
     spec1d_file = os.path.join(kastb_dir, 'spec1d_b27*fits')
     spec1d_args = ['--spec1d_files', spec1d_file]
     tol_args = ['--tolerance', '0.03d']
@@ -347,7 +348,7 @@ def test_collate_1d(tmp_path, monkeypatch, redux_out):
                                                                '--spec1d_files', expanded_spec1d,
                                                                '--spec1d_outdir', str(tmp_path),
                                                                '--refframe', 'heliocentric',
-                                                               '--exclude_slit_bm', 'BADSKYSUB,BADEXTRACT'])
+                                                               '--exclude_slit_trace_bm', 'BADSKYSUB,BADEXTRACT'])
         assert scripts.collate_1d.Collate1D.main(parsed_args) == 0
         assert os.path.exists(par_file)
         assert os.path.exists(os.path.join(str(tmp_path), os.path.basename(expanded_spec1d)))
@@ -504,6 +505,27 @@ def test_setup_coadd2d(redux_out):
 
     # Go back
     os.chdir(cdir)
+
+def test_run_to_calibstep(redux_out):
+    cdir = os.getcwd()
+
+    # Set the pypeit file
+    _redux_out = Path(redux_out).resolve() / 'shane_kast_blue' / '600_4310_d55' / 'shane_kast_blue_A'
+
+    # move to the redux_out directory
+    os.chdir(_redux_out)
+    pypeit_file = _redux_out / 'shane_kast_blue_A.pypeit'
+
+    #pytest.set_trace()
+    # Run on all the steps
+    for step in calibrations.MultiSlitCalibrations.default_steps():
+        scripts.run_to_calibstep.RunToCalibStep.main(
+            scripts.run_to_calibstep.RunToCalibStep.parse_args(
+            [str(pypeit_file), step, '--science_frame', 'b28.fits.gz']))
+
+    # Go back
+    os.chdir(cdir)
+
 
 # TODO: Include tests for coadd2d, sensfunc
 

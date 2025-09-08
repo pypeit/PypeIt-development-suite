@@ -1,0 +1,54 @@
+# Auto-generated PypeIt input file using PypeIt version: 1.17.1
+# UTC 2025-04-09T19:18:07.178+00:00
+
+# User-defined execution parameters
+[rdx]
+    spectrograph = lbt_mods2b_proc
+[calibrations]
+        [[slitedges]]
+           exclude_regions = 1:0:130,1:390:2700,1:3025:3087 # mask gaps to create one slit
+           edge_thresh = 20
+           minimum_slit_length = 5
+           fit_niter = 3
+           sobel_enhance = 5
+[reduce]
+        [[extraction]]
+           boxcar_radius = 20.
+        [[skysub]]
+           no_local_sky = True
+           mask_by_boxcar = True
+        [[findobj]]
+           find_min_max = 3904,4288
+           snr_thresh = 10.0
+           maxnumber_std = 1
+           maxnumber_sci = 2
+
+
+# Setup
+setup read
+Setup A:
+  binning: 1,1
+  dichroic: Dual
+  dispname: G400L
+  instrument: MODS2B
+setup end
+
+# Data block 
+data read
+ path /Users/olga/Dropbox/Data/MODS_Sample_Datasets/MODS_LS_ext_sample_dataset/RAW_DATA/lbt_mods2b_proc/dual_grating_longslit
+                     filename |                 frametype |                 ra |               dec |                               target | dispname |     decker | binning |          mjd | airmass | exptime | instrument | dichroic | calib
+mods2b.20190903.0024_otf.fits |                  arc,tilt |                0.0 |               0.0 |                    Ne + Hg[Ar] Lamps |    G400L | LS5x60x0.6 |     1,1 | 58729.275446 |     1.0 |     2.0 |     MODS2B |     Dual |     0
+mods2b.20190903.0025_otf.fits |                  arc,tilt |                0.0 |               0.0 |                        Kr + Xe Lamps |    G400L | LS5x60x0.6 |     1,1 | 58729.276813 |     1.0 |    15.0 |     MODS2B |     Dual |     0
+mods2b.20190903.0026_otf.fits |                  arc,tilt |                0.0 |               0.0 |                              Ar Lamp |    G400L | LS5x60x0.6 |     1,1 | 58729.278271 |     1.0 |    30.0 |     MODS2B |     Dual |     0
+#mods2b.20190903.0028_otf.fits |                     trace |                0.0 |               0.0 |     QTH1 ND1.5 Dual LS60x5 Slit Flat |    G400L |     LS60x5 |     1,1 | 58729.287157 |     1.0 |     3.5 |     MODS2B |     Dual |     0
+#mods2b.20190903.0029_otf.fits |                     trace |                0.0 |               0.0 |     QTH1 ND1.5 Dual LS60x5 Slit Flat |    G400L |     LS60x5 |     1,1 |  58729.28851 |     1.0 |     3.5 |     MODS2B |     Dual |     0
+#mods2b.20190903.0031_otf.fits |                     trace |                0.0 |               0.0 |       QTH1 UG5 Dual LS60x5 Slit Flat |    G400L |     LS60x5 |     1,1 | 58729.291082 |     1.0 |     1.0 |     MODS2B |     Dual |     0
+#mods2b.20190903.0032_otf.fits |                     trace |                0.0 |               0.0 |       QTH1 UG5 Dual LS60x5 Slit Flat |    G400L |     LS60x5 |     1,1 | 58729.292321 |     1.0 |     1.0 |     MODS2B |     Dual |     0
+mods2b.20190903.0075_otf.fits |                     trace |                0.0 |               0.0 | QTH1 ND1.5 Dual LS5x60x0.6 Slit Flat |    G400L | LS5x60x0.6 |     1,1 |  58730.10359 |     1.0 |    25.0 |     MODS2B |     Dual |     0
+mods2b.20190903.0076_otf.fits |                     trace |                0.0 |               0.0 | QTH1 ND1.5 Dual LS5x60x0.6 Slit Flat |    G400L | LS5x60x0.6 |     1,1 | 58730.105107 |     1.0 |    25.0 |     MODS2B |     Dual |     0
+mods2b.20190903.0078_otf.fits |                     trace |                0.0 |               0.0 |   QTH1 UG5 Dual LS5x60x0.6 Slit Flat |    G400L | LS5x60x0.6 |     1,1 | 58730.108023 |     1.0 |     8.0 |     MODS2B |     Dual |     0
+mods2b.20190903.0079_otf.fits |                     trace |                0.0 |               0.0 |   QTH1 UG5 Dual LS5x60x0.6 Slit Flat |    G400L | LS5x60x0.6 |     1,1 | 58730.109341 |     1.0 |     8.0 |     MODS2B |     Dual |     0
+mods2b.20190913.0002_otf.fits |                   science | 3.2542374999999995 | 72.52195277777777 |                               NGC 40 |    G400L | LS5x60x0.6 |     1,1 | 58739.427899 |    1.38 |    90.0 |     MODS2B |     Dual |     0
+mods2b.20190904.0065_otf.fits |                  standard |  327.7959208333333 | 28.86398888888889 |              BD+28d4211 dual grating |    G400L |     LS60x5 |     1,1 | 58730.389093 |    1.28 |    60.0 |     MODS2B |     Dual |     0
+data end
+

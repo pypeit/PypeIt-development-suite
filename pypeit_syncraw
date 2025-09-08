@@ -45,8 +45,8 @@ def main():
 
     #
     if pargs.developer == 'jxp':
-        raw_path = 'GoogleDrive:Astronomy/UCO/PypeIt/PypeIt-development-suite/RAW_DATA'
-        calib_path = 'GoogleDrive:Astronomy/UCO/PypeIt/Calibrations'
+        raw_path = 'GDrive:Astronomy/UCO/PypeIt/PypeIt-development-suite/RAW_DATA'
+        calib_path = None #'GoogleDrive:Astronomy/UCO/PypeIt/Calibrations'
     elif pargs.developer == 'rjc':
         raw_path = 'PypeIt:RAW_DATA'
         calib_path = None
