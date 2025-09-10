@@ -1,5 +1,5 @@
-# Auto-generated PypeIt input file using PypeIt version: 1.11.1.dev448+g808467667
-# UTC 2023-02-25T01:17:26.167
+# Auto-generated PypeIt input file using PypeIt version: 1.17.5.dev906+gc2764adb5
+# UTC 2025-09-10T19:27:40.902+00:00
 
 # User-defined execution parameters
 [rdx]
@@ -8,7 +8,7 @@
 # Setup
 setup read
 Setup A:
-  dispangle: 2.762
+  cenwave: 7502.0
   dispname: 832GPM
   filter1: R-63/Clear
 setup end
@@ -16,9 +16,9 @@ setup end
 # Data block 
 data read
  path .
-         filename |       frametype |                 ra |                dec |      target | dispname |  decker | binning |                mjd | airmass | exptime | dispangle |    filter1 | cenwave | lampstat01
-a0039_050925.fits |        arc,tilt | 121.75945833333334 |  36.02809722222222 | comps_J0807 |   832GPM | 1.0x180 |     1,1 |  58907.21487268519 |   1.003 |   120.0 |     2.762 | R-63/Clear |  7502.0 |    HeAr/Ne
-a0049_073048.fits | pixelflat,trace | 159.12113749999997 | 30.794259722222225 |   dome flat |   832GPM | 1.0x180 |     1,1 | 58907.313055555554 |     1.0 |    30.0 |     2.762 | R-63/Clear |  7502.0 |         BC
-a0069_115625.fits |         science | 219.36116666666663 | 50.768747222222224 |    J1437+50 |   832GPM | 1.0x180 |     1,1 | 58907.497511574074 |   1.061 |   900.0 |     2.762 | R-63/Clear |  7502.0 |        off
+         filename |       frametype |                 ra |                dec |      target | dispname |  decker | binning |                mjd | airmass | exptime | cenwave |    filter1 | dispangle | lampstat01 | calib
+a0039_050925.fits |        arc,tilt | 121.75945833333334 |  36.02809722222222 | comps_J0807 |   832GPM | 1.0x180 |     1,1 |  58907.21487268519 |   1.003 |   120.0 |  7502.0 | R-63/Clear |     2.762 |    HeAr/Ne |     0
+a0049_073048.fits | pixelflat,trace | 159.12113749999997 | 30.794259722222225 |   dome flat |   832GPM | 1.0x180 |     1,1 | 58907.313055555554 |     1.0 |    30.0 |  7502.0 | R-63/Clear |     2.762 |         BC |     0
+a0069_115625.fits |         science | 219.36116666666663 | 50.768747222222224 |    J1437+50 |   832GPM | 1.0x180 |     1,1 | 58907.497511574074 |   1.061 |   900.0 |  7502.0 | R-63/Clear |     2.762 |        off |     0
 data end
 
