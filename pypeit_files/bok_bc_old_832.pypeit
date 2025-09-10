@@ -1,5 +1,5 @@
-# Auto-generated PypeIt input file using PypeIt version: 1.17.1
-# UTC 2025-01-02T21:23:02.285+00:00
+# Auto-generated PypeIt input file using PypeIt version: 1.17.5.dev906+gc2764adb5
+# UTC 2025-09-10T20:10:36.961+00:00
 
 # User-defined execution parameters
 [rdx]
@@ -11,7 +11,7 @@
 # Setup
 setup read
 Setup A:
-  binning: null
+  binning: 1,1
   decker: 1.5 arcsec slit
   dispangle: 22.246
   dispname: 832/mm, 3762A, 2nd order
@@ -20,12 +20,12 @@ setup end
 # Data block 
 data read
  path /home/cnaw/stars/boc_bc_test/RAWDIR
-   filename | frametype |                 ra |                 dec |   target |                 dispname |          decker | binning |                mjd | airmass | exptime | dispangle | calib
-  0199.fits |      bias |  345.0067083333333 | -18.249722222222225 |     zero | 832/mm, 3762A, 2nd order | 1.5 arcsec slit |    None |  54457.01550069445 |    1.56 |     0.0 |    22.246 |     0
-  0200.fits | illumflat | 352.37266666666665 |  31.746750000000002 |    SFLAT | 832/mm, 3762A, 2nd order | 1.5 arcsec slit |    None |  54457.03682951389 |     1.0 |    60.0 |    22.246 |     0
-  0204.fits |  arc,tilt |  349.9917499999999 |  -5.161944444444445 |  hear_ne | 832/mm, 3762A, 2nd order | 1.5 arcsec slit |    None | 54457.066108680556 |    1.29 |    30.0 |    22.246 |     0
-  0179.fits | pixelflat,trace |             336.27 | -18.247222222222224 |     flat | 832/mm, 3762A, 2nd order | 1.5 arcsec slit |    None |  54456.99130138889 |    1.56 |  1200.0 |    22.246 |     0
-  0203.fits |   standard|  349.9917499999999 |  -5.161888888888889 | Feige110 | 832/mm, 3762A, 2nd order | 1.5 arcsec slit |    None |  54457.05846111111 |    1.27 |   600.0 |    22.246 |     0
-  0205.fits |   science|  353.9997916666666 |  -8.763111111111112 | HD221890 | 832/mm, 3762A, 2nd order | 1.5 arcsec slit |    None | 54457.068316666664 |    1.34 |   240.0 |    22.246 |     0
+   filename |       frametype |                 ra |                 dec |   target |                 dispname |          decker | binning |                mjd | airmass | exptime | dispangle | calib
+  0199.fits |            bias |  345.0067083333333 | -18.249722222222225 |     zero | 832/mm, 3762A, 2nd order | 1.5 arcsec slit |     1,1 |  54457.01550069445 |    1.56 |     0.0 |    22.246 |     0
+  0200.fits |       illumflat | 352.37266666666665 |  31.746750000000002 |    SFLAT | 832/mm, 3762A, 2nd order | 1.5 arcsec slit |     1,1 |  54457.03682951389 |     1.0 |    60.0 |    22.246 |     0
+  0204.fits |        arc,tilt |  349.9917499999999 |  -5.161944444444445 |  hear_ne | 832/mm, 3762A, 2nd order | 1.5 arcsec slit |     1,1 | 54457.066108680556 |    1.29 |    30.0 |    22.246 |     0
+  0179.fits | pixelflat,trace |             336.27 | -18.247222222222224 |     flat | 832/mm, 3762A, 2nd order | 1.5 arcsec slit |     1,1 |  54456.99130138889 |    1.56 |  1200.0 |    22.246 |     0
+  0203.fits |        standard |  349.9917499999999 |  -5.161888888888889 | Feige110 | 832/mm, 3762A, 2nd order | 1.5 arcsec slit |     1,1 |  54457.05846111111 |    1.27 |   600.0 |    22.246 |     0
+  0205.fits |         science |  353.9997916666666 |  -8.763111111111112 | HD221890 | 832/mm, 3762A, 2nd order | 1.5 arcsec slit |     1,1 | 54457.068316666664 |    1.34 |   240.0 |    22.246 |     0
 data end
 
