@@ -89,8 +89,8 @@ def main():
     # Install PypeIt
     if pargs.from_wheel:
         # Build a PypeIt wheel and install from it
-        my_args += ' pip install setuptools extension_helpers;'
-        my_args += ' python setup.py sdist bdist_wheel;'
+        my_args += ' pip install setuptools extension_helpers build;'
+        my_args += ' python -m build --sdist --wheel;'
         my_args += ' whl_file=(dist/pypeit*.whl);'
         my_args += ' pip install ${whl_file}[dev];'
     else:
