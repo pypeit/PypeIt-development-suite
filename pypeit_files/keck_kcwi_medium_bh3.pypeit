@@ -1,10 +1,13 @@
+# Auto-generated PypeIt input file using PypeIt version: 1.17.5.dev906+gc2764adb5
+# UTC 2025-09-12T16:25:38.759+00:00
+
 # User-defined execution parameters
 [rdx]
     spectrograph = keck_kcwi
     
 # Setup
 setup read
-Setup B:
+Setup A:
   binning: 2,2
   cenwave: 5049.9975586
   decker: Medium
@@ -14,19 +17,19 @@ setup end
 # Data block 
 data read
  path /Users/rcooke/Software/PypeIt-development-suite/RAW_DATA/
-             filename |            frametype |                 ra |                 dec |         target | dispname | decker | binning |          mjd | airmass |  exptime |      cenwave |  posang | ra_off | dec_off |   idname | calpos | calib
-  kb240315_00018.fits |                align |                0.0 |                 0.0 |                |      BH3 | Medium |     2,2 | 60384.075549 |    1.49 |    4.999 | 5049.9975586 |     0.0 |    0.0 |     0.0 | CONTBARS | Mirror |     1
-  kb240315_00019.fits |                  arc |                0.0 |                 0.0 |                |      BH3 | Medium |     2,2 | 60384.078644 |    1.52 |     40.0 | 5049.9975586 |  -259.8 |    0.0 |     0.0 |  ARCLAMP | Mirror |     1
-  kb240315_00020.fits |                 tilt |                0.0 |                 0.0 |                |      BH3 | Medium |     2,2 | 60384.080085 |    1.53 |     65.0 | 5049.9975586 | -100.14 |    0.0 |     0.0 |  ARCLAMP | Mirror |     1
-  kb240315_00015.fits |                 bias |                0.0 |                 0.0 |                |      BH3 | Medium |     2,2 | 60384.073035 |    1.46 |      0.0 | 5049.9975586 |     0.0 |    0.0 |     0.0 |     BIAS | Mirror |     1
-  kb240315_00016.fits |                 bias |                0.0 |                 0.0 |                |      BH3 | Medium |     2,2 | 60384.073708 |    1.47 |      0.0 | 5049.9975586 |     0.0 |    0.0 |     0.0 |     BIAS | Mirror |     1
-  kb240315_00017.fits |                 bias |                0.0 |                 0.0 |                |      BH3 | Medium |     2,2 | 60384.074392 |    1.48 |      0.0 | 5049.9975586 |     0.0 |    0.0 |     0.0 |     BIAS | Mirror |     1
-  kb240315_00030.fits |      illumflat,trace |  63.99999999999999 |                45.0 |        unknown |      BH3 | Medium |     2,2 | 60384.108609 |    1.41 |     50.0 | 5049.9975586 |     0.0 |    0.0 |     0.0 | DOMEFLAT |    Sky |     1
-  kb240315_00031.fits |      illumflat,trace |  63.99999999999999 |                45.0 |        unknown |      BH3 | Medium |     2,2 | 60384.109872 |    1.41 |     50.0 | 5049.9975586 |     0.0 |    0.0 |     0.0 | DOMEFLAT |    Sky |     1
-  kb240315_00032.fits |      illumflat,trace |  63.99999999999999 |                45.0 |        unknown |      BH3 | Medium |     2,2 | 60384.111135 |    1.41 |     50.0 | 5049.9975586 |     0.0 |    0.0 |     0.0 | DOMEFLAT |    Sky |     1
-  kb240315_00024.fits | pixelflat,scattlight |                0.0 |                 0.0 |                |      BH3 | Medium |     2,2 | 60384.082812 |    1.56 |      5.0 | 5049.9975586 | -233.91 |    0.0 |     0.0 | FLATLAMP | Mirror |     1
-  kb240315_00025.fits | pixelflat,scattlight |                0.0 |                 0.0 |                |      BH3 | Medium |     2,2 | 60384.083544 |    1.57 |    5.001 | 5049.9975586 |  -259.8 |    0.0 |     0.0 | FLATLAMP | Mirror |     1
-  kb240315_00026.fits | pixelflat,scattlight |                0.0 |                 0.0 |                |      BH3 | Medium |     2,2 | 60384.084288 |    1.57 |    4.999 | 5049.9975586 |  -259.8 |    0.0 |     0.0 | FLATLAMP | Mirror |     1
-  kb240315_00038.fits |              science | 134.80912499999997 |  32.953361111111114 |         g47-18 |      BH3 | Medium |     2,2 | 60384.233497 |    1.18 |  130.001 | 5049.9975586 |     0.0 |    0.0 |     0.0 |   OBJECT |    Sky |     1
+           filename |            frametype |                 ra |                dec |  target | dispname | decker | binning |          mjd | airmass | exptime |      cenwave |  posang | ra_off | dec_off |   idname | calpos |    slitwid | calib
+kb240315_00018.fits |                align |                0.0 |                0.0 |         |      BH3 | Medium |     2,2 | 60384.075549 |    1.49 |   4.999 | 5049.9975586 |     0.0 |    0.0 |     0.0 | CONTBARS | Mirror | 0.00018859 |     1
+kb240315_00019.fits |                  arc |                0.0 |                0.0 |         |      BH3 | Medium |     2,2 | 60384.078644 |    1.52 |    40.0 | 5049.9975586 |  -259.8 |    0.0 |     0.0 |  ARCLAMP | Mirror | 0.00018859 |     1
+kb240315_00020.fits |                 tilt |                0.0 |                0.0 |         |      BH3 | Medium |     2,2 | 60384.080085 |    1.53 |    65.0 | 5049.9975586 | -100.14 |    0.0 |     0.0 |  ARCLAMP | Mirror | 0.00018859 |     1
+kb240315_00015.fits |                 bias |                0.0 |                0.0 |         |      BH3 | Medium |     2,2 | 60384.073035 |    1.46 |     0.0 | 5049.9975586 |     0.0 |    0.0 |     0.0 |     BIAS | Mirror | 0.00018859 |     1
+kb240315_00016.fits |                 bias |                0.0 |                0.0 |         |      BH3 | Medium |     2,2 | 60384.073708 |    1.47 |     0.0 | 5049.9975586 |     0.0 |    0.0 |     0.0 |     BIAS | Mirror | 0.00018859 |     1
+kb240315_00017.fits |                 bias |                0.0 |                0.0 |         |      BH3 | Medium |     2,2 | 60384.074392 |    1.48 |     0.0 | 5049.9975586 |     0.0 |    0.0 |     0.0 |     BIAS | Mirror | 0.00018859 |     1
+kb240315_00030.fits |      illumflat,trace |  63.99999999999999 |               45.0 | unknown |      BH3 | Medium |     2,2 | 60384.108609 |    1.41 |    50.0 | 5049.9975586 |     0.0 |    0.0 |     0.0 | DOMEFLAT |    Sky | 0.00018859 |     1
+kb240315_00031.fits |      illumflat,trace |  63.99999999999999 |               45.0 | unknown |      BH3 | Medium |     2,2 | 60384.109872 |    1.41 |    50.0 | 5049.9975586 |     0.0 |    0.0 |     0.0 | DOMEFLAT |    Sky | 0.00018859 |     1
+kb240315_00032.fits |      illumflat,trace |  63.99999999999999 |               45.0 | unknown |      BH3 | Medium |     2,2 | 60384.111135 |    1.41 |    50.0 | 5049.9975586 |     0.0 |    0.0 |     0.0 | DOMEFLAT |    Sky | 0.00018859 |     1
+kb240315_00024.fits | pixelflat,scattlight |                0.0 |                0.0 |         |      BH3 | Medium |     2,2 | 60384.082812 |    1.56 |     5.0 | 5049.9975586 | -233.91 |    0.0 |     0.0 | FLATLAMP | Mirror | 0.00018859 |     1
+kb240315_00025.fits | pixelflat,scattlight |                0.0 |                0.0 |         |      BH3 | Medium |     2,2 | 60384.083544 |    1.57 |   5.001 | 5049.9975586 |  -259.8 |    0.0 |     0.0 | FLATLAMP | Mirror | 0.00018859 |     1
+kb240315_00026.fits | pixelflat,scattlight |                0.0 |                0.0 |         |      BH3 | Medium |     2,2 | 60384.084288 |    1.57 |   4.999 | 5049.9975586 |  -259.8 |    0.0 |     0.0 | FLATLAMP | Mirror | 0.00018859 |     1
+kb240315_00038.fits |              science | 134.80912499999997 | 32.953361111111114 |  g47-18 |      BH3 | Medium |     2,2 | 60384.233497 |    1.18 | 130.001 | 5049.9975586 |     0.0 |    0.0 |     0.0 |   OBJECT |    Sky | 0.00018859 |     1
 data end
 

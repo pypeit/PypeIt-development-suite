@@ -1,5 +1,5 @@
-# Auto-generated PypeIt file
-# 2021-08-20
+# Auto-generated PypeIt input file using PypeIt version: 1.17.5.dev906+gc2764adb5
+# UTC 2025-09-12T16:28:41.402+00:00
 
 # User-defined execution parameters
 [rdx]
@@ -18,25 +18,25 @@ spectrograph = keck_kcwi
 
 # Setup
 setup read
-    Setup A:
-         dispname: BL
-           decker: Medium
-          binning: 2,2
-        dispangle: 27.7546692
+Setup A:
+  binning: 2,2
+  cenwave: 4499.8735352
+  decker: Medium
+  dispname: BL
 setup end
 
-# Read in the data
+# Data block 
 data read
  path /Users/rcooke/Software/PypeIt-development-suite/RAW_DATA/keck_kcwi/bl/
-|            filename |            frametype |                 ra |                dec |       target | dispname | decker | binning |          mjd | airmass | exptime |  dispangle |
-| kb210705_00018.fits |                align |  57.99999999999999 |               45.0 |      unknown |       BL | Medium |     2,2 | 59400.085659 |    1.41 |     0.7 | 27.7546692 |
-| kb210705_00019.fits |             arc,tilt |  57.99999999999999 |               45.0 |      unknown |       BL | Medium |     2,2 | 59400.086344 |    1.41 |    10.0 | 27.7546692 |
-| kb210705_00027.fits |      illumflat,trace |  57.99999999999999 |               45.0 |      unknown |       BL | Medium |     2,2 | 59400.092483 |    1.41 |    14.0 | 27.7546692 |
-| kb210705_00028.fits |      illumflat,trace |  57.99999999999999 |               45.0 |      unknown |       BL | Medium |     2,2 | 59400.093333 |    1.41 |    14.0 | 27.7546692 |
-| kb210705_00029.fits |      illumflat,trace |  57.99999999999999 |               45.0 |      unknown |       BL | Medium |     2,2 | 59400.094183 |    1.41 |    14.0 | 27.7546692 |
-| kb210705_00021.fits | scattlight,pixelflat |  57.99999999999999 |               45.0 |      unknown |       BL | Medium |     2,2 | 59400.087288 |    1.41 |     0.7 | 27.7546692 |
-| kb210705_00022.fits | scattlight,pixelflat |  57.99999999999999 |               45.0 |      unknown |       BL | Medium |     2,2 | 59400.087985 |    1.41 |     0.7 | 27.7546692 |
-| kb210705_00023.fits | scattlight,pixelflat |  57.99999999999999 |               45.0 |      unknown |       BL | Medium |     2,2 | 59400.088681 |    1.41 |     0.7 | 27.7546692 |
-| kb210705_00051.fits |              science | 349.99274999999994 | -5.166055555555556 |     feige110 |       BL | Medium |     2,2 | 59400.618459 |     1.1 |     5.0 | 27.7546692 |
+           filename |            frametype |                 ra |                dec |   target | dispname | decker | binning |          mjd | airmass | exptime |      cenwave | posang | ra_off | dec_off |   idname | calpos |    slitwid | calib
+kb210705_00018.fits |                align |  57.99999999999999 |               45.0 |  unknown |       BL | Medium |     2,2 | 59400.085659 |    1.41 |     0.7 | 4499.8735352 |    0.0 |    0.0 |     0.0 | CONTBARS | Mirror | 0.00018859 |     0
+kb210705_00019.fits |             arc,tilt |  57.99999999999999 |               45.0 |  unknown |       BL | Medium |     2,2 | 59400.086344 |    1.41 |    10.0 | 4499.8735352 |    0.0 |    0.0 |     0.0 |  ARCLAMP | Mirror | 0.00018859 |     0
+kb210705_00027.fits |      illumflat,trace |  57.99999999999999 |               45.0 |  unknown |       BL | Medium |     2,2 | 59400.092483 |    1.41 |    14.0 | 4499.8735352 |    0.0 |    0.0 |     0.0 | DOMEFLAT |    Sky | 0.00018859 |     0
+kb210705_00028.fits |      illumflat,trace |  57.99999999999999 |               45.0 |  unknown |       BL | Medium |     2,2 | 59400.093333 |    1.41 |    14.0 | 4499.8735352 |    0.0 |    0.0 |     0.0 | DOMEFLAT |    Sky | 0.00018859 |     0
+kb210705_00029.fits |      illumflat,trace |  57.99999999999999 |               45.0 |  unknown |       BL | Medium |     2,2 | 59400.094183 |    1.41 |    14.0 | 4499.8735352 |    0.0 |    0.0 |     0.0 | DOMEFLAT |    Sky | 0.00018859 |     0
+kb210705_00021.fits | pixelflat,scattlight |  57.99999999999999 |               45.0 |  unknown |       BL | Medium |     2,2 | 59400.087288 |    1.41 |     0.7 | 4499.8735352 |    0.0 |    0.0 |     0.0 | FLATLAMP | Mirror | 0.00018859 |     0
+kb210705_00022.fits | pixelflat,scattlight |  57.99999999999999 |               45.0 |  unknown |       BL | Medium |     2,2 | 59400.087985 |    1.41 |     0.7 | 4499.8735352 |    0.0 |    0.0 |     0.0 | FLATLAMP | Mirror | 0.00018859 |     0
+kb210705_00023.fits | pixelflat,scattlight |  57.99999999999999 |               45.0 |  unknown |       BL | Medium |     2,2 | 59400.088681 |    1.41 |     0.7 | 4499.8735352 |    0.0 |    0.0 |     0.0 | FLATLAMP | Mirror | 0.00018859 |     0
+kb210705_00051.fits |              science | 349.99274999999994 | -5.166055555555556 | feige110 |       BL | Medium |     2,2 | 59400.618459 |     1.1 |     5.0 | 4499.8735352 |   0.02 |   -2.0 |    -2.0 |   OBJECT |    Sky | 0.00018859 |     0
 data end
 
