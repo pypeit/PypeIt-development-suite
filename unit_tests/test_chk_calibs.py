@@ -52,13 +52,13 @@ def test_chk_calibs_save_setups():
     output_path = pathlib.Path().absolute() / 'setup_files'
     assert output_path.is_dir()
     pypeit_file = output_path / ps.pypeit_file
-    assert pypeit_file.is_file()
+    assert pypeit_file.with_suffix('.obslog').is_file()
     assert pypeit_file.with_suffix('.sorted').is_file()
     assert pypeit_file.with_suffix('.calib').is_file()
 
-    # Delete all created files
-    pypeit_file.unlink()
+    # Delete all created setup files and directory
+    pypeit_file.with_suffix('.obslog').unlink()
     pypeit_file.with_suffix('.sorted').unlink()
     pypeit_file.with_suffix('.calib').unlink()
-    output_path.unlink()
+    output_path.rmdir()
 
