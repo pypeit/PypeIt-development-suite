@@ -1,5 +1,5 @@
-# Auto-generated PypeIt file
-# Mon 24 Aug 2020 21:09:48
+# Auto-generated PypeIt input file using PypeIt version: 1.17.5.dev906+gc2764adb5
+# UTC 2025-08-29T16:47:20.379+00:00
 
 # User-defined execution parameters
 [rdx]
@@ -11,30 +11,32 @@
 
 # Setup
 setup read
- Setup A:
-   --:
-     binning: 1,1
-     dichroic: none
-     disperser:
-       angle: 5200.01708984
-       name: 1200B
-     slit:
-       decker: a13_1
-       slitlen: none
-       slitwid: none
+Setup A:
+  amp: '"SINGLE:B"'
+  binning: 1,1
+  decker: a13_1
+  dispangle: 5200.01708984
+  dispname: 1200B
+  filter1: GG400
 setup end
 
-# Read in the data
+# Data block 
 data read
  path /Users/dpelliccia/Github_Pypeit/PypeIt-development-suite/RAW_DATA/keck_deimos/1200B_Percy
-|        filename |                 frametype |                 ra |                  dec |       target | dispname | decker | binning |          mjd |     airmass | exptime |     dispangle |
-| d1003_0126.fits |                  arc,tilt |              67.35 | 0.059000000000000004 | HORIZON STOW |    1200B |  a13_1 |     1,1 | 58029.726347 | 13.37481353 |     1.0 | 5200.01708984 |
-| d1003_0127.fits |                  arc,tilt |              67.35 | 0.059000000000000004 | HORIZON STOW |    1200B |  a13_1 |     1,1 | 58029.727259 | 13.37481353 |    42.0 | 5200.01708984 |
-| d1003_0128.fits |                  arc,tilt |              67.35 | 0.059000000000000004 | HORIZON STOW |    1200B |  a13_1 |     1,1 | 58029.728631 | 13.37481353 |    32.0 | 5200.01708984 |
-| d1003_0129.fits |                  arc,tilt |              67.35 | 0.059000000000000004 | HORIZON STOW |    1200B |  a13_1 |     1,1 | 58029.732241 | 13.37481353 |     1.0 | 5200.01708984 |
-| d1003_0130.fits | pixelflat,illumflat,trace |              67.35 | 0.059000000000000004 | HORIZON STOW |    1200B |  a13_1 |     1,1 | 58029.734124 | 13.37481353 |    20.0 | 5200.01708984 |
-| d1003_0131.fits | pixelflat,illumflat,trace |              67.35 | 0.059000000000000004 | HORIZON STOW |    1200B |  a13_1 |     1,1 | 58029.735139 | 13.37481353 |    20.0 | 5200.01708984 |
-| d1003_0132.fits | pixelflat,illumflat,trace |              67.35 | 0.059000000000000004 | HORIZON STOW |    1200B |  a13_1 |     1,1 |  58029.73618 | 13.37481353 |    20.0 | 5200.01708984 |
-| d1003_0071.fits |                   science | 3.4204999999999997 |   -19.49105555555556 |        a13_1 |    1200B |  a13_1 |     1,1 | 58029.322047 |  1.54107334 |  1800.0 | 5200.01708984 |
+       filename |                 frametype |                 ra |                  dec |       target | dispname | decker | binning |          mjd |     airmass | exptime |     dispangle |      amp | filter1 | lampstat01 |    dateobs |         utc | frameno | calib
+d1003_0126.fits |                  arc,tilt |              67.35 | 0.059000000000000004 | HORIZON STOW |    1200B |  a13_1 |     1,1 | 58029.726347 | 13.37481353 |     1.0 | 5200.01708984 | SINGLE:B |   GG400 |         Ne | 2017-10-03 | 17:26:03.23 |     126 |     0
+d1003_0127.fits |                  arc,tilt |              67.35 | 0.059000000000000004 | HORIZON STOW |    1200B |  a13_1 |     1,1 | 58029.727259 | 13.37481353 |    42.0 | 5200.01708984 | SINGLE:B |   GG400 |         Ar | 2017-10-03 | 17:27:21.98 |     127 |     0
+d1003_0128.fits |                  arc,tilt |              67.35 | 0.059000000000000004 | HORIZON STOW |    1200B |  a13_1 |     1,1 | 58029.728631 | 13.37481353 |    32.0 | 5200.01708984 | SINGLE:B |   GG400 |      Kr Xe | 2017-10-03 | 17:29:20.03 |     128 |     0
+d1003_0129.fits |                  arc,tilt |              67.35 | 0.059000000000000004 | HORIZON STOW |    1200B |  a13_1 |     1,1 | 58029.732241 | 13.37481353 |     1.0 | 5200.01708984 | SINGLE:B |   GG400 |         Hg | 2017-10-03 | 17:34:32.39 |     129 |     0
+d1003_0130.fits | pixelflat,illumflat,trace |              67.35 | 0.059000000000000004 | HORIZON STOW |    1200B |  a13_1 |     1,1 | 58029.734124 | 13.37481353 |    20.0 | 5200.01708984 | SINGLE:B |   GG400 |         Qz | 2017-10-03 | 17:37:14.54 |     130 |     0
+d1003_0131.fits | pixelflat,illumflat,trace |              67.35 | 0.059000000000000004 | HORIZON STOW |    1200B |  a13_1 |     1,1 | 58029.735139 | 13.37481353 |    20.0 | 5200.01708984 | SINGLE:B |   GG400 |         Qz | 2017-10-03 | 17:38:43.14 |     131 |     0
+d1003_0132.fits | pixelflat,illumflat,trace |              67.35 | 0.059000000000000004 | HORIZON STOW |    1200B |  a13_1 |     1,1 |  58029.73618 | 13.37481353 |    20.0 | 5200.01708984 | SINGLE:B |   GG400 |         Qz | 2017-10-03 | 17:40:12.24 |     132 |     0
+#d1003_0133.fits | pixelflat,illumflat,trace |              67.35 | 0.059000000000000004 | HORIZON STOW |    1200B |  a13_1 |     1,1 | 58029.737235 | 13.37481353 |    60.0 | 5200.01708984 | SINGLE:B |   GG400 |         Qz | 2017-10-03 | 17:41:42.29 |     133 |     0
+#d1003_0134.fits | pixelflat,illumflat,trace |              67.35 | 0.059000000000000004 | HORIZON STOW |    1200B |  a13_1 |     1,1 | 58029.738834 | 13.37481353 |    60.0 | 5200.01708984 | SINGLE:B |   GG400 |         Qz | 2017-10-03 | 17:44:00.99 |     134 |     0
+#d1003_0135.fits | pixelflat,illumflat,trace |              67.35 | 0.059000000000000004 | HORIZON STOW |    1200B |  a13_1 |     1,1 | 58029.740331 | 13.37481353 |    60.0 | 5200.01708984 | SINGLE:B |   GG400 |         Qz | 2017-10-03 | 17:46:10.84 |     135 |     0
+#d1003_0136.fits | pixelflat,illumflat,trace |              67.35 | 0.059000000000000004 | HORIZON STOW |    1200B |  a13_1 |     1,1 | 58029.741812 | 13.37481353 |    60.0 | 5200.01708984 | SINGLE:B |   GG400 |         Qz | 2017-10-03 | 17:48:19.79 |     136 |     0
+#d1003_0137.fits | pixelflat,illumflat,trace |              67.35 | 0.059000000000000004 | HORIZON STOW |    1200B |  a13_1 |     1,1 | 58029.743416 | 13.37481353 |    60.0 | 5200.01708984 | SINGLE:B |   GG400 |         Qz | 2017-10-03 | 17:50:38.25 |     137 |     0
+#d1003_0138.fits | pixelflat,illumflat,trace |              67.35 | 0.059000000000000004 | HORIZON STOW |    1200B |  a13_1 |     1,1 |  58029.74502 | 13.37481353 |    60.0 | 5200.01708984 | SINGLE:B |   GG400 |         Qz | 2017-10-03 | 17:52:56.95 |     138 |     0
+d1003_0071.fits |                   science | 3.4204999999999997 |   -19.49105555555556 |        a13_1 |    1200B |  a13_1 |     1,1 | 58029.322047 |  1.54107334 |  1800.0 | 5200.01708984 | SINGLE:B |   GG400 |        Off | 2017-10-03 | 07:43:49.97 |      71 |     0
 data end
 

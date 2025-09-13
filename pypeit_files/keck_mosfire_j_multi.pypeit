@@ -1,5 +1,5 @@
-# Auto-generated PypeIt file
-# Thu 23 May 2019 15:28:57
+# Auto-generated PypeIt input file using PypeIt version: 1.17.5.dev906+gc2764adb5
+# UTC 2025-09-02T19:18:39.818+00:00
 
 # User-defined execution parameters
 [rdx]
@@ -7,37 +7,81 @@ spectrograph = keck_mosfire
 
 # Setup
 setup read
- Setup A:
-   --:
-     dichroic: none
-     disperser: {angle: none, name: spectroscopy}
-     slit: {decker: 2M2228_12, slitlen: none, slitwid: none}
-   '01': {binning: '1,1', det: 1, namp: 1}
+Setup A:
+  decker_secondary: 2M2228_12
+  dispname: J-spectroscopy
+  filter1: J
+  slitlength: null
+  slitwid: null
 setup end
 
-# Read in the data
+# Data block 
 data read
 path /Users/joe/python/PypeIt-development-suite/RAW_DATA/keck_mosfire/J_multi/
-|             filename |       frametype |           ra |         dec |       target |     dispname |    decker | binning |            mjd |    airmass | exptime | filter1 | calib | comb_id |  bkg_id |
-| m191015_0002.fits    | illumflat,pixelflat,trace |          230 |          45 |      unknown | spectroscopy | 2M2228_12 |     1,1 | 58611.14918409 | 1.41291034 |  10.184 |       J | all   |     -1  |      -1 |
-| m191015_0003.fits    | illumflat,pixelflat,trace |          230 |          45 |      unknown | spectroscopy | 2M2228_12 |     1,1 | 58611.14947923 | 1.41291034 |  10.184 |       J | all   |     -1  |      -1 |
-| m191015_0004.fits    | illumflat,pixelflat,trace |          230 |          45 |      unknown | spectroscopy | 2M2228_12 |     1,1 | 58611.14976846 | 1.41291034 |  10.184 |       J | all   |     -1  |      -1 |
-| m191015_0005.fits    | illumflat,pixelflat,trace |          230 |          45 |      unknown | spectroscopy | 2M2228_12 |     1,1 | 58611.14976846 | 1.41291034 |  10.184 |       J | all   |     -1  |      -1 |
-| m191015_0006.fits    | illumflat,pixelflat,trace |          230 |          45 |      unknown | spectroscopy | 2M2228_12 |     1,1 | 58611.14976846 | 1.41291034 |  10.184 |       J | all   |     -1  |      -1 |
-| m191015_0007.fits    | illumflat,pixelflat,trace |          230 |          45 |      unknown | spectroscopy | 2M2228_12 |     1,1 | 58611.14976846 | 1.41291034 |  10.184 |       J | all   |     -1  |      -1 |
-| m191015_0008.fits    | illumflat,pixelflat,trace |          230 |          45 |      unknown | spectroscopy | 2M2228_12 |     1,1 | 58611.14976846 | 1.41291034 |  10.184 |       J | all   |     -1  |      -1 |
-| m191015_0009.fits    | illumflat,pixelflat,trace |          230 |          45 |      unknown | spectroscopy | 2M2228_12 |     1,1 | 58611.14976846 | 1.41291034 |  10.184 |       J | all   |     -1  |      -1 |
-| m191015_0010.fits    | illumflat,pixelflat,trace |          230 |          45 |      unknown | spectroscopy | 2M2228_12 |     1,1 | 58611.14976846 | 1.41291034 |  10.184 |       J | all   |     -1  |      -1 |
-| m191015_0011.fits    | illumflat,pixelflat,trace |          230 |          45 |      unknown | spectroscopy | 2M2228_12 |     1,1 | 58611.14976846 | 1.41291034 |  10.184 |       J | all   |     -1  |      -1 |
-| m191015_0012.fits    | illumflat,pixelflat,trace |          230 |          45 |      unknown | spectroscopy | 2M2228_12 |     1,1 | 58611.14976846 | 1.41291034 |  10.184 |       J | all   |     -1  |      -1 |
-| m191015_0013.fits    | illumflat,pixelflat,trace |          230 |          45 |      unknown | spectroscopy | 2M2228_12 |     1,1 | 58611.14976846 | 1.41291034 |  10.184 |       J | all   |     -1  |      -1 |
-| m191015_0014.fits    | illumflat,pixelflat,trace |          230 |          45 |      unknown | spectroscopy | 2M2228_12 |     1,1 | 58611.14976846 | 1.41291034 |  10.184 |       J | all   |     -1  |      -1 |
-| m200305_0276.fits    | arc,tilt |                 230 |          45 |      unknown | spectroscopy | 2M2228_12 |     1,1 | 58611.14976846 | 1.41291034 |  120    |       J | all   |     -1  |      -1 |
-| m200305_0277.fits    | arc,tilt |                 230 |          45 |      unknown | spectroscopy | 2M2228_12 |     1,1 | 58611.14976846 | 1.41291034 |  120 	  |       J | all   |     -1  |      -1 |
-| m200305_0278.fits    | arc,tilt |                 230 |          45 |      unknown | spectroscopy | 2M2228_12 |     1,1 | 58611.14976846 | 1.41291034 |  120 	  |       J | all   |     -1  |      -1 |
-| m200305_0279.fits    | arc,tilt |                 230 |          45 |      unknown | spectroscopy | 2M2228_12 |     1,1 | 58611.14976846 | 1.41291034 |  120 	  |       J | all   |     -1  |      -1 |
-| m191014_0170.fits    | science  | 332.05347992    	| 29.35401887 | 2M2228_12    | spectroscopy | 2M2228_12 |     1,1 | 58770.41125692 | 1.3038902  |   150   |       J |     1 |      10 |      20 |
-| m191014_0171.fits    | science  | 332.05347992 	| 29.35401887 | 2M2228_12    | spectroscopy | 2M2228_12 |     1,1 | 58770.41125692 | 1.3038902  |   150	  |       J |     2 |      20 |      10 |
-| m191014_0172.fits    | science  | 332.05347992 	| 29.35401887 | 2M2228_12    | spectroscopy | 2M2228_12 |     1,1 | 58770.41125692 | 1.3038902  |   150   |       J |     2 |      20 |      10 |
-| m191014_0173.fits    | science  | 332.05347992 	| 29.35401887 | 2M2228_12    | spectroscopy | 2M2228_12 |     1,1 | 58770.41125692 | 1.3038902  |   150   |       J |     1 |      10 |      20 |
+         filename |                 frametype |           ra |         dec |    target |       dispname |    decker | binning |            mjd |    airmass |   exptime | filter1 | slitrange | lampstat01 |  dithpat | dithpos | dithoff | frameno | calib | comb_id | bkg_id
+#m191014_0122.fits |          arc,science,tilt | 332.05347992 | 29.35401887 | 2M2228_12 | J-spectroscopy | 2M2228_12 |     1,1 |   58770.306034 | 1.01743437 | 149.84337 |       J |      0:-1 |        off |     ABBA |       A |     1.5 |     122 |     0 |       1 |      2
+#m191014_0125.fits |          arc,science,tilt | 332.05347992 | 29.35401887 | 2M2228_12 | J-spectroscopy | 2M2228_12 |     1,1 | 58770.31158261 | 1.02054232 | 149.84337 |       J |      0:-1 |        off |     ABBA |       A |     1.5 |     125 |     0 |       1 |      2
+#m191014_0126.fits |          arc,science,tilt | 332.05347992 | 29.35401887 | 2M2228_12 | J-spectroscopy | 2M2228_12 |     1,1 | 58770.31378435 |  1.0220737 | 178.93917 |       J |      0:-1 |        off |     ABBA |       A |     1.5 |     126 |     0 |       5 |      6
+#m191014_0128.fits |          arc,science,tilt | 332.05342412 | 29.35318696 | 2M2228_12 | J-spectroscopy | 2M2228_12 |     1,1 | 58770.31817011 | 1.02554506 | 178.93917 |       J |      0:-1 |        off |     ABBA |       B |    -1.5 |     128 |     0 |       6 |      5
+#m191014_0129.fits |          arc,science,tilt | 332.05347992 | 29.35401887 | 2M2228_12 | J-spectroscopy | 2M2228_12 |     1,1 | 58770.32037185 | 1.02759725 | 178.93917 |       J |      0:-1 |        off |     ABBA |       A |     1.5 |     129 |     0 |       5 |      6
+#m191014_0130.fits |          arc,science,tilt | 332.05347992 | 29.35401887 | 2M2228_12 | J-spectroscopy | 2M2228_12 |     1,1 | 58770.32286873 | 1.03010152 | 178.93917 |       J |      0:-1 |        off |     ABBA |       A |     1.5 |     130 |     0 |       9 |     10
+#m191014_0131.fits |          arc,science,tilt | 332.05342412 | 29.35318696 | 2M2228_12 | J-spectroscopy | 2M2228_12 |     1,1 | 58770.32505866 | 1.03245467 | 178.93917 |       J |      0:-1 |        off |     ABBA |       B |    -1.5 |     131 |     0 |      10 |      9
+#m191014_0134.fits |          arc,science,tilt | 332.05347992 | 29.35401887 | 2M2228_12 | J-spectroscopy | 2M2228_12 |     1,1 | 58770.33164616 | 1.04071504 | 178.93917 |       J |      0:-1 |        off |     ABBA |       A |     1.5 |     134 |     0 |      13 |     14
+#m191014_0135.fits |          arc,science,tilt | 332.05342412 | 29.35318696 | 2M2228_12 | J-spectroscopy | 2M2228_12 |     1,1 | 58770.33384789 | 1.04383111 | 178.93917 |       J |      0:-1 |        off |     ABBA |       B |    -1.5 |     135 |     0 |      14 |     13
+#m191014_0136.fits |          arc,science,tilt | 332.05342412 | 29.35318696 | 2M2228_12 | J-spectroscopy | 2M2228_12 |     1,1 | 58770.33602602 | 1.04711213 | 178.93917 |       J |      0:-1 |        off |     ABBA |       B |    -1.5 |     136 |     0 |      14 |     13
+#m191014_0137.fits |          arc,science,tilt | 332.05347992 | 29.35401887 | 2M2228_12 | J-spectroscopy | 2M2228_12 |     1,1 | 58770.33823366 | 1.05050499 | 178.93917 |       J |      0:-1 |        off |     ABBA |       A |     1.5 |     137 |     0 |      13 |     14
+#m191014_0138.fits |          arc,science,tilt | 332.05347992 | 29.35401887 | 2M2228_12 | J-spectroscopy | 2M2228_12 |     1,1 | 58770.34042359 | 1.05424357 | 178.93917 |       J |      0:-1 |        off |     ABBA |       A |     1.5 |     138 |     0 |      17 |     18
+#m191014_0139.fits |          arc,science,tilt | 332.05342412 | 29.35318696 | 2M2228_12 | J-spectroscopy | 2M2228_12 |     1,1 | 58770.34262532 | 1.05805079 | 178.93917 |       J |      0:-1 |        off |     ABBA |       B |    -1.5 |     139 |     0 |      18 |     17
+#m191014_0140.fits |          arc,science,tilt | 332.05342412 | 29.35318696 | 2M2228_12 | J-spectroscopy | 2M2228_12 |     1,1 | 58770.34480345 | 1.06203725 | 178.93917 |       J |      0:-1 |        off |     ABBA |       B |    -1.5 |     140 |     0 |      18 |     17
+#m191014_0141.fits |          arc,science,tilt | 332.05347992 | 29.35401887 | 2M2228_12 | J-spectroscopy | 2M2228_12 |     1,1 | 58770.34701109 |  1.0663474 | 178.93917 |       J |      0:-1 |        off |     ABBA |       A |     1.5 |     141 |     0 |      17 |     18
+#m191014_0142.fits |          arc,science,tilt | 332.05347992 | 29.35401887 | 2M2228_12 | J-spectroscopy | 2M2228_12 |     1,1 | 58770.34920102 | 1.07075844 | 178.93917 |       J |      0:-1 |        off |     ABBA |       A |     1.5 |     142 |     0 |      21 |     22
+#m191014_0143.fits |          arc,science,tilt | 332.05342412 | 29.35318696 | 2M2228_12 | J-spectroscopy | 2M2228_12 |     1,1 | 58770.35140866 | 1.07550876 | 178.93917 |       J |      0:-1 |        off |     ABBA |       B |    -1.5 |     143 |     0 |      22 |     21
+#m191014_0144.fits |          arc,science,tilt | 332.05342412 | 29.35318696 | 2M2228_12 | J-spectroscopy | 2M2228_12 |     1,1 | 58770.35359859 | 1.08032026 | 178.93917 |       J |      0:-1 |        off |     ABBA |       B |    -1.5 |     144 |     0 |      22 |     21
+#m191014_0145.fits |          arc,science,tilt | 332.05347992 | 29.35401887 | 2M2228_12 | J-spectroscopy | 2M2228_12 |     1,1 | 58770.35580032 | 1.08545502 | 178.93917 |       J |      0:-1 |        off |     ABBA |       A |     1.5 |     145 |     0 |      21 |     22
+#m191014_0146.fits |          arc,science,tilt | 332.05347992 | 29.35401887 | 2M2228_12 | J-spectroscopy | 2M2228_12 |     1,1 | 58770.35834442 | 1.09152604 | 178.93917 |       J |      0:-1 |        off |     ABBA |       A |     1.5 |     146 |     0 |      25 |     26
+#m191014_0147.fits |          arc,science,tilt | 332.05342412 | 29.35318696 | 2M2228_12 | J-spectroscopy | 2M2228_12 |     1,1 | 58770.36055206 | 1.09717185 | 178.93917 |       J |      0:-1 |        off |     ABBA |       B |    -1.5 |     147 |     0 |      26 |     25
+#m191014_0148.fits |          arc,science,tilt | 332.05342412 | 29.35318696 | 2M2228_12 | J-spectroscopy | 2M2228_12 |     1,1 | 58770.36273018 | 1.10294457 | 178.93917 |       J |      0:-1 |        off |     ABBA |       B |    -1.5 |     148 |     0 |      26 |     25
+#m191014_0149.fits |          arc,science,tilt | 332.05347992 | 29.35401887 | 2M2228_12 | J-spectroscopy | 2M2228_12 |     1,1 | 58770.36493192 | 1.10893574 | 178.93917 |       J |      0:-1 |        off |     ABBA |       A |     1.5 |     149 |     0 |      25 |     26
+#m191014_0150.fits |          arc,science,tilt | 332.05347992 | 29.35401887 | 2M2228_12 | J-spectroscopy | 2M2228_12 |     1,1 | 58770.36712185 | 1.11519682 | 178.93917 |       J |      0:-1 |        off |     ABBA |       A |     1.5 |     150 |     0 |      29 |     30
+#m191014_0151.fits |          arc,science,tilt | 332.05342412 | 29.35318696 | 2M2228_12 | J-spectroscopy | 2M2228_12 |     1,1 | 58770.36932359 | 1.12170403 | 178.93917 |       J |      0:-1 |        off |     ABBA |       B |    -1.5 |     151 |     0 |      30 |     29
+#m191014_0152.fits |          arc,science,tilt | 332.05342412 | 29.35318696 | 2M2228_12 | J-spectroscopy | 2M2228_12 |     1,1 | 58770.37150171 | 1.12846187 | 178.93917 |       J |      0:-1 |        off |     ABBA |       B |    -1.5 |     152 |     0 |      30 |     29
+#m191014_0153.fits |          arc,science,tilt | 332.05347992 | 29.35401887 | 2M2228_12 | J-spectroscopy | 2M2228_12 |     1,1 | 58770.37370345 | 1.13546204 | 178.93917 |       J |      0:-1 |        off |     ABBA |       A |     1.5 |     153 |     0 |      29 |     30
+#m191014_0154.fits |          arc,science,tilt | 332.05347992 | 29.35401887 | 2M2228_12 | J-spectroscopy | 2M2228_12 |     1,1 | 58770.37588157 | 1.14272412 | 178.93917 |       J |      0:-1 |        off |     ABBA |       A |     1.5 |     154 |     0 |      33 |     34
+#m191014_0155.fits |          arc,science,tilt | 332.05342412 | 29.35318696 | 2M2228_12 | J-spectroscopy | 2M2228_12 |     1,1 | 58770.37808921 | 1.15023705 | 178.93917 |       J |      0:-1 |        off |     ABBA |       B |    -1.5 |     155 |     0 |      34 |     33
+#m191014_0156.fits |          arc,science,tilt | 332.05342412 | 29.35318696 | 2M2228_12 | J-spectroscopy | 2M2228_12 |     1,1 | 58770.38027914 | 1.15813221 | 178.93917 |       J |      0:-1 |        off |     ABBA |       B |    -1.5 |     156 |     0 |      34 |     33
+#m191014_0157.fits |          arc,science,tilt | 332.05347992 | 29.35401887 | 2M2228_12 | J-spectroscopy | 2M2228_12 |     1,1 | 58770.38248678 | 1.16621071 | 178.93917 |       J |      0:-1 |        off |     ABBA |       A |     1.5 |     157 |     0 |      33 |     34
+#m191014_0158.fits |          arc,science,tilt | 332.05347992 | 29.35401887 | 2M2228_12 | J-spectroscopy | 2M2228_12 |     1,1 | 58770.38467671 | 1.17469826 | 178.93917 |       J |      0:-1 |        off |     ABBA |       A |     1.5 |     158 |     0 |      37 |     38
+#m191014_0159.fits |          arc,science,tilt | 332.05342412 | 29.35318696 | 2M2228_12 | J-spectroscopy | 2M2228_12 |     1,1 | 58770.38687845 | 1.18337433 | 178.93917 |       J |      0:-1 |        off |     ABBA |       B |    -1.5 |     159 |     0 |      38 |     37
+#m191014_0160.fits |          arc,science,tilt | 332.05342412 | 29.35318696 | 2M2228_12 | J-spectroscopy | 2M2228_12 |     1,1 | 58770.38906838 | 1.19240998 | 178.93917 |       J |      0:-1 |        off |     ABBA |       B |    -1.5 |     160 |     0 |      38 |     37
+#m191014_0161.fits |          arc,science,tilt | 332.05347992 | 29.35401887 | 2M2228_12 | J-spectroscopy | 2M2228_12 |     1,1 | 58770.39127602 | 1.20182303 | 178.93917 |       J |      0:-1 |        off |     ABBA |       A |     1.5 |     161 |     0 |      37 |     38
+#m191014_0162.fits |          arc,science,tilt | 332.05347992 | 29.35401887 | 2M2228_12 | J-spectroscopy | 2M2228_12 |     1,1 | 58770.39373748 | 1.21268873 | 178.93917 |       J |      0:-1 |        off |     ABBA |       A |     1.5 |     162 |     0 |      41 |     42
+#m191014_0163.fits |          arc,science,tilt | 332.05342412 | 29.35318696 | 2M2228_12 | J-spectroscopy | 2M2228_12 |     1,1 | 58770.39593921 | 1.22288094 | 178.93917 |       J |      0:-1 |        off |     ABBA |       B |    -1.5 |     163 |     0 |      42 |     41
+#m191014_0164.fits |          arc,science,tilt | 332.05342412 | 29.35318696 | 2M2228_12 | J-spectroscopy | 2M2228_12 |     1,1 | 58770.39811734 | 1.23320934 | 178.93917 |       J |      0:-1 |        off |     ABBA |       B |    -1.5 |     164 |     0 |      42 |     41
+#m191014_0165.fits |          arc,science,tilt | 332.05347992 | 29.35401887 | 2M2228_12 | J-spectroscopy | 2M2228_12 |     1,1 | 58770.40031907 | 1.24401904 | 178.93917 |       J |      0:-1 |        off |     ABBA |       A |     1.5 |     165 |     0 |      41 |     42
+#m191014_0166.fits |          arc,science,tilt | 332.05347992 | 29.35401887 | 2M2228_12 | J-spectroscopy | 2M2228_12 |     1,1 |  58770.4025031 | 1.25520958 | 178.93917 |       J |      0:-1 |        off |     ABBA |       A |     1.5 |     166 |     0 |      45 |     46
+#m191014_0167.fits |          arc,science,tilt | 332.05342412 | 29.35318696 | 2M2228_12 | J-spectroscopy | 2M2228_12 |     1,1 | 58770.40469303 | 1.26669902 | 178.93917 |       J |      0:-1 |        off |     ABBA |       B |    -1.5 |     167 |     0 |      46 |     45
+#m191014_0168.fits |          arc,science,tilt | 332.05342412 | 29.35318696 | 2M2228_12 | J-spectroscopy | 2M2228_12 |     1,1 | 58770.40687116 | 1.27856049 | 178.93917 |       J |      0:-1 |        off |     ABBA |       B |    -1.5 |     168 |     0 |      46 |     45
+#m191014_0169.fits |          arc,science,tilt | 332.05347992 | 29.35401887 | 2M2228_12 | J-spectroscopy | 2M2228_12 |     1,1 | 58770.40906699 | 1.29103782 | 178.93917 |       J |      0:-1 |        off |     ABBA |       A |     1.5 |     169 |     0 |      45 |     46
+m191014_0170.fits |                   science | 332.05347992 | 29.35401887 | 2M2228_12 | J-spectroscopy | 2M2228_12 |     1,1 | 58770.41125692 |  1.3038902 | 178.93917 |       J |      0:-1 |        off |     ABBA |       A |     1.5 |     170 |     1 |      10 |     20
+m191014_0171.fits |                   science | 332.05342412 | 29.35318696 | 2M2228_12 | J-spectroscopy | 2M2228_12 |     1,1 | 58770.41346456 | 1.31719741 | 178.93917 |       J |      0:-1 |        off |     ABBA |       B |    -1.5 |     171 |     2 |      20 |     10
+m191014_0172.fits |                   science | 332.05342412 | 29.35318696 | 2M2228_12 | J-spectroscopy | 2M2228_12 |     1,1 | 58770.41565449 | 1.33098656 | 178.93917 |       J |      0:-1 |        off |     ABBA |       B |    -1.5 |     172 |     2 |      20 |     10
+m191014_0173.fits |                   science | 332.05347992 | 29.35401887 | 2M2228_12 | J-spectroscopy | 2M2228_12 |     1,1 | 58770.41785623 | 1.34525124 | 178.93917 |       J |      0:-1 |        off |     ABBA |       A |     1.5 |     173 |     1 |      10 |     20
+m200305_0276.fits |                  arc,tilt | 211.35483774 | -2.42988816 |       sky | J-spectroscopy | 2M2228_12 |     1,1 | 58913.65901222 | 1.30630657 | 119.29278 |       J |      0:-1 |        off | Mask Nod |       A |     1.5 |     276 |   all |      -1 |     -1
+m200305_0277.fits |                  arc,tilt | 211.35488726 | -2.42905629 |       sky | J-spectroscopy | 2M2228_12 |     1,1 | 58913.66077125 | 1.31635177 | 119.29278 |       J |      0:-1 |        off | Mask Nod |       B |    -1.5 |     277 |   all |      -1 |     -1
+m200305_0278.fits |                  arc,tilt | 211.35483774 | -2.42988816 |       sky | J-spectroscopy | 2M2228_12 |     1,1 | 58913.66253027 | 1.32681045 | 119.29278 |       J |      0:-1 |        off | Mask Nod |       A |     1.5 |     278 |   all |      -1 |     -1
+m200305_0279.fits |                  arc,tilt | 211.35488726 | -2.42905629 |       sky | J-spectroscopy | 2M2228_12 |     1,1 |  58913.6642952 | 1.33751245 | 119.29278 |       J |      0:-1 |        off | Mask Nod |       B |    -1.5 |     279 |   all |      -1 |     -1
+m191015_0002.fits | pixelflat,illumflat,trace |        230.0 |        45.0 |   unknown | J-spectroscopy | 2M2228_12 |     1,1 | 58771.08819465 | 1.41291034 |   1.45479 |       J |      0:-1 |         on |    Stare |  object |     0.0 |       2 |   all |      -1 |     -1
+m191015_0003.fits | pixelflat,illumflat,trace |        230.0 |        45.0 |   unknown | J-spectroscopy | 2M2228_12 |     1,1 | 58771.08831861 | 1.41291034 |   1.45479 |       J |      0:-1 |         on |    Stare |  object |     0.0 |       3 |   all |      -1 |     -1
+m191015_0004.fits | pixelflat,illumflat,trace |        230.0 |        45.0 |   unknown | J-spectroscopy | 2M2228_12 |     1,1 | 58771.08843076 | 1.41291034 |   1.45479 |       J |      0:-1 |         on |    Stare |  object |     0.0 |       4 |   all |      -1 |     -1
+m191015_0005.fits | pixelflat,illumflat,trace |        230.0 |        45.0 |   unknown | J-spectroscopy | 2M2228_12 |     1,1 | 58771.08855472 | 1.41291034 |   1.45479 |       J |      0:-1 |         on |    Stare |  object |     0.0 |       5 |   all |      -1 |     -1
+m191015_0006.fits | pixelflat,illumflat,trace |        230.0 |        45.0 |   unknown | J-spectroscopy | 2M2228_12 |     1,1 | 58771.08866687 | 1.41291034 |   1.45479 |       J |      0:-1 |         on |    Stare |  object |     0.0 |       6 |   all |      -1 |     -1
+m191015_0007.fits | pixelflat,illumflat,trace |        230.0 |        45.0 |   unknown | J-spectroscopy | 2M2228_12 |     1,1 | 58771.08879673 | 1.41291034 |   1.45479 |       J |      0:-1 |         on |    Stare |  object |     0.0 |       7 |   all |      -1 |     -1
+m191015_0008.fits | pixelflat,illumflat,trace |        230.0 |        45.0 |   unknown | J-spectroscopy | 2M2228_12 |     1,1 | 58771.08892069 | 1.41291034 |   1.45479 |       J |      0:-1 |         on |    Stare |  object |     0.0 |       8 |   all |      -1 |     -1
+m191015_0009.fits | pixelflat,illumflat,trace |        230.0 |        45.0 |   unknown | J-spectroscopy | 2M2228_12 |     1,1 | 58771.08904465 | 1.41291034 |   1.45479 |       J |      0:-1 |         on |    Stare |  object |     0.0 |       9 |   all |      -1 |     -1
+m191015_0010.fits | pixelflat,illumflat,trace |        230.0 |        45.0 |   unknown | J-spectroscopy | 2M2228_12 |     1,1 |  58771.0891568 | 1.41291034 |   1.45479 |       J |      0:-1 |         on |    Stare |  object |     0.0 |      10 |   all |      -1 |     -1
+m191015_0011.fits | pixelflat,illumflat,trace |        230.0 |        45.0 |   unknown | J-spectroscopy | 2M2228_12 |     1,1 | 58771.08928076 | 1.41291034 |   1.45479 |       J |      0:-1 |         on |    Stare |  object |     0.0 |      11 |   all |      -1 |     -1
+m191015_0012.fits | pixelflat,illumflat,trace |        230.0 |        45.0 |   unknown | J-spectroscopy | 2M2228_12 |     1,1 | 58771.08942243 | 1.41291034 |   1.45479 |       J |      0:-1 |         on |    Stare |  object |     0.0 |      12 |   all |      -1 |     -1
+m191015_0013.fits | pixelflat,illumflat,trace |        230.0 |        45.0 |   unknown | J-spectroscopy | 2M2228_12 |     1,1 | 58771.08954638 | 1.41291034 |   1.45479 |       J |      0:-1 |         on |    Stare |  object |     0.0 |      13 |   all |      -1 |     -1
+m191015_0014.fits | pixelflat,illumflat,trace |        230.0 |        45.0 |   unknown | J-spectroscopy | 2M2228_12 |     1,1 | 58771.08967034 | 1.41291034 |   1.45479 |       J |      0:-1 |         on |    Stare |  object |     0.0 |      14 |   all |      -1 |     -1
 data end
+

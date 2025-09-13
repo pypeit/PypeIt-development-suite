@@ -89,8 +89,8 @@ def main():
     # Install PypeIt
     if pargs.from_wheel:
         # Build a PypeIt wheel and install from it
-        my_args += ' pip install setuptools extension_helpers;'
-        my_args += ' python setup.py sdist bdist_wheel;'
+        my_args += ' pip install setuptools extension_helpers build;'
+        my_args += ' python -m build --sdist --wheel;'
         my_args += ' whl_file=(dist/pypeit*.whl);'
         my_args += ' pip install ${whl_file}[dev];'
     else:
@@ -122,9 +122,13 @@ def main():
     # Run the test 
     my_args += f' ./pypeit_test -t {pargs.ncpu} {" ".join(arguments)} -r pypeit.report -o /tmp/REDUX_OUT --csv performance.csv;'
 
+    # Tar up the logs
+    my_args += f' find /tmp/REDUX_OUT -name "*test*log" -print | tar cfz logtar.tar.gz -T -;'
+
     #Copy results back to s3    
     my_args += f' aws --endpoint $ENDPOINT_URL s3 cp pypeit.report s3://pypeit/Reports/{pargs.name}.report;'
     my_args += f' aws --endpoint $ENDPOINT_URL s3 cp performance.csv s3://pypeit/Reports/{pargs.name}_performance.csv;'
+    my_args += f' aws --endpoint $ENDPOINT_URL s3 cp logtar.tar.gz s3://pypeit/Logs/{pargs.name}.logs.tgz;'
     if pargs.coverage:
         my_args += f' aws --endpoint $ENDPOINT_URL s3 cp coverage.report s3://pypeit/Reports/{pargs.name}.coverage.report;'
     if pargs.priority_list:

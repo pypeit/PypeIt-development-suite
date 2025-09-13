@@ -1,5 +1,5 @@
-# Auto-generated PypeIt input file using PypeIt version: 1.11.1.dev372+ge2989ae29
-# UTC 2023-02-07T09:38:23.594
+# Auto-generated PypeIt input file using PypeIt version: 1.17.5.dev906+gc2764adb5
+# UTC 2025-08-29T19:27:23.689+00:00
 
 # User-defined execution parameters
 [rdx]
@@ -19,12 +19,12 @@ setup end
 # Data block 
 data read
  path /Users/rcooke/Desktop/OSIRIS_FINAL/Raw
-                                                  filename |                 frametype |                 ra |                dec |         target | dispname |              decker | binning |              mjd |          airmass | exptime
-                0003800363-20230203-OSIRIS-OsirisBias.fits |                      bias | 131.12714583333332 |  4.773285555555556 |           BIAS |   R2500R | LongSlits1.23Arcsec |     2,2 | 59978.9948143029 | 1.18884575742059 |     0.0
-     0003800027-20230202-OSIRIS-OsirisCalibrationLamp.fits |                  arc,tilt | 132.41539999999998 | 50.105515277777776 |   ArcLamp_HgAr |   R1000R |  LongSlits1.0Arcsec |     2,2 | 59978.0423429729 | 1.09511106102358 |     0.7
-     0003800029-20230202-OSIRIS-OsirisCalibrationLamp.fits |                  arc,tilt | 132.41539999999998 | 50.105515277777776 |     ArcLamp_Ne |   R1000R |  LongSlits1.0Arcsec |     2,2 | 59978.0423429729 | 1.09511106102358 |    0.35
-     0003800031-20230202-OSIRIS-OsirisCalibrationLamp.fits |                  arc,tilt | 132.41539999999998 | 50.105515277777776 |     ArcLamp_Xe |   R1000R |  LongSlits1.0Arcsec |     2,2 | 59978.0423429729 | 1.09511106102358 |     0.7
-        0003800039-20230202-OSIRIS-OsirisSpectralFlat.fits | pixelflat,illumflat,trace | 132.41539999999998 | 50.105515277777776 |   SpectralFlat |   R1000R |  LongSlits1.0Arcsec |     2,2 | 59978.0423429729 | 1.09511106102358 |     2.0
-0003800240-20230203-OSIRIS-OsirisLongSlitSpectroscopy.fits |                  standard |  76.40284583333332 |  52.85015194444445 | SPSTD_G191-B2B |   R1000R | LongSlits2.52Arcsec |     2,2 | 59978.8381592103 | 1.13270066774856 |    50.0
+                                                  filename |                 frametype |                 ra |                dec |         target | dispname |              decker | binning |              mjd |          airmass | exptime |                     idname | calib
+                0003800363-20230203-OSIRIS-OsirisBias.fits |                      bias | 131.12714583333332 |  4.773285555555556 |           BIAS |   R2500R | LongSlits1.23Arcsec |     2,2 | 59978.9948143029 | 1.18884575742059 |     0.0 |                 OsirisBias |     0
+     0003800027-20230202-OSIRIS-OsirisCalibrationLamp.fits |                  arc,tilt | 132.41539999999998 | 50.105515277777776 |   ArcLamp_HgAr |   R1000R |  LongSlits1.0Arcsec |     2,2 | 59978.0423429729 | 1.09511106102358 |     0.7 |      OsirisCalibrationLamp |     0
+     0003800029-20230202-OSIRIS-OsirisCalibrationLamp.fits |                  arc,tilt | 132.41539999999998 | 50.105515277777776 |     ArcLamp_Ne |   R1000R |  LongSlits1.0Arcsec |     2,2 | 59978.0423429729 | 1.09511106102358 |    0.35 |      OsirisCalibrationLamp |     0
+     0003800031-20230202-OSIRIS-OsirisCalibrationLamp.fits |                  arc,tilt | 132.41539999999998 | 50.105515277777776 |     ArcLamp_Xe |   R1000R |  LongSlits1.0Arcsec |     2,2 | 59978.0423429729 | 1.09511106102358 |     0.7 |      OsirisCalibrationLamp |     0
+        0003800039-20230202-OSIRIS-OsirisSpectralFlat.fits | pixelflat,illumflat,trace | 132.41539999999998 | 50.105515277777776 |   SpectralFlat |   R1000R |  LongSlits1.0Arcsec |     2,2 | 59978.0423429729 | 1.09511106102358 |     2.0 |         OsirisSpectralFlat |     0
+0003800240-20230203-OSIRIS-OsirisLongSlitSpectroscopy.fits |                  standard |  76.40284583333332 |  52.85015194444445 | SPSTD_G191-B2B |   R1000R | LongSlits2.52Arcsec |     2,2 | 59978.8381592103 | 1.13270066774856 |    50.0 | OsirisLongSlitSpectroscopy |     0
 data end
 

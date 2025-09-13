@@ -1,5 +1,5 @@
-# Auto-generated PypeIt input file using PypeIt version: 1.11.1.dev448+g808467667
-# UTC 2023-02-25T01:05:44.005
+# Auto-generated PypeIt input file using PypeIt version: 1.17.5.dev906+gc2764adb5
+# UTC 2025-09-10T19:24:11.150+00:00
 
 # User-defined execution parameters
 [rdx]
@@ -8,7 +8,7 @@
 # Setup
 setup read
 Setup A:
-  dispangle: 2.028
+  cenwave: 5497.0
   dispname: 500GPM
   filter1: UV-36/Clear
 setup end
@@ -16,9 +16,9 @@ setup end
 # Data block 
 data read
  path .
-         filename |        frametype |                 ra |                dec |          target | dispname |  decker | binning |                mjd | airmass | exptime | dispangle |     filter1 | cenwave | lampstat01
-b0065_034017.fits |         arc,tilt | 219.56570833333328 |            27.4925 |          HeNeAr |   500GPM | 1.0x180 |     1,2 | 59379.152974537035 |   1.022 |    60.0 |     2.028 | UV-36/Clear |  5497.0 |    HeAr/Ne
-b0245_114814.fits |  pixelflat,trace |         328.930225 | 31.561873055555555 | Flat 5500 1x180 |   500GPM | 1.0x180 |     1,2 |  59379.49182870371 |     1.0 |    30.0 |     2.028 | UV-36/Clear |  5497.0 |         BC
-b0062_033632.fits | science,standard | 219.56570833333328 |            27.4925 |        Feige 98 |   500GPM | 5.0x180 |     1,2 |  59379.15037037037 |   1.026 |    30.0 |     2.028 | UV-36/Clear |  5497.0 |        off
+         filename |        frametype |                 ra |                dec |          target | dispname |  decker | binning |                mjd | airmass | exptime | cenwave |     filter1 | dispangle | lampstat01 | calib
+b0065_034017.fits |         arc,tilt | 219.56570833333328 |            27.4925 |          HeNeAr |   500GPM | 1.0x180 |     1,2 | 59379.152974537035 |   1.022 |    60.0 |  5497.0 | UV-36/Clear |     2.028 |    HeAr/Ne |     0
+b0245_114814.fits |  pixelflat,trace |         328.930225 | 31.561873055555555 | Flat 5500 1x180 |   500GPM | 1.0x180 |     1,2 |  59379.49182870371 |     1.0 |    30.0 |  5497.0 | UV-36/Clear |     2.028 |         BC |     0
+b0062_033632.fits | science,standard | 219.56570833333328 |            27.4925 |        Feige 98 |   500GPM | 5.0x180 |     1,2 |  59379.15037037037 |   1.026 |    30.0 |  5497.0 | UV-36/Clear |     2.028 |        off |     0
 data end
 

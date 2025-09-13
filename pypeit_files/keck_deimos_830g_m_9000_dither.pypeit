@@ -1,5 +1,5 @@
-# Auto-generated PypeIt file
-# 2021-10-25
+# Auto-generated PypeIt input file using PypeIt version: 1.17.5.dev906+gc2764adb5
+# UTC 2025-08-29T18:57:02.304+00:00
 
 # User-defined execution parameters
 [rdx]
@@ -17,24 +17,24 @@
 
 # Setup
 setup read
-    Setup A:
-         dispname: 830G
-           decker: GS14B
-          binning: 1,1
-        dispangle: 8999.99609375
-              amp: SINGLE:B
-          filter1: OG550
+Setup A:
+  amp: '"SINGLE:B"'
+  binning: 1,1
+  decker: GS14B
+  dispangle: 8999.99609375
+  dispname: 830G
+  filter1: OG550
 setup end
 
-# Read in the data
+# Data block 
 data read
  path .
-              filename |                 frametype |                 ra |                 dec |     target | dispname | decker | binning |          mjd |    airmass | exptime |     dispangle |      amp | filter1 |    dateobs |         utc | frameno | calib | comb_id | bkg_id
-DE.20141022.12029.fits |                  arc,tilt |  57.99999999999999 |                45.0 | DOME PHLAT |     830G |  GS14B |     1,1 | 56952.139203 | 1.41291034 |     1.0 | 8999.99609375 | SINGLE:B |   OG550 | 2014-10-22 | 03:20:29.86 |      35 |     0 |      -1 |     -1 
-DE.20141022.12107.fits | pixelflat,illumflat,trace |  57.99999999999999 |                45.0 | DOME PHLAT |     830G |  GS14B |     1,1 | 56952.140048 | 1.41291034 |     8.0 | 8999.99609375 | SINGLE:B |   OG550 | 2014-10-22 | 03:21:47.96 |      36 |     0 |      -1 |     -1 
-DE.20141022.12185.fits | pixelflat,illumflat,trace |  57.99999999999999 |                45.0 | DOME PHLAT |     830G |  GS14B |     1,1 | 56952.140954 | 1.41291034 |     8.0 | 8999.99609375 | SINGLE:B |   OG550 | 2014-10-22 | 03:23:05.11 |      37 |     0 |      -1 |     -1 
-DE.20141022.12263.fits | pixelflat,illumflat,trace |  57.99999999999999 |                45.0 | DOME PHLAT |     830G |  GS14B |     1,1 |  56952.14184 | 1.41291034 |     8.0 | 8999.99609375 | SINGLE:B |   OG550 | 2014-10-22 | 03:24:23.36 |      38 |     0 |      -1 |     -1 
-DE.20141021.34721.fits |                   science | 53.170916666666656 | -27.798250000000003 |     GOODSS |     830G |  GS14B |     1,1 | 56951.401779 |  1.8823348 |   900.0 | 8999.99609375 | SINGLE:B |   OG550 | 2014-10-21 | 09:38:41.38 |      78 |     0 |       1 |      2 
-DE.20141021.35719.fits |                   science |  53.17112499999999 | -27.798444444444446 |     GOODSS |     830G |  GS14B |     1,1 | 56951.413357 | 1.77480311 |   900.0 | 8999.99609375 | SINGLE:B |   OG550 | 2014-10-21 | 09:55:19.98 |      79 |     0 |       2 |      1 
+              filename |                 frametype |                 ra |                 dec |     target | dispname | decker | binning |          mjd |    airmass | exptime |     dispangle |      amp | filter1 |  lampstat01 |    dateobs |         utc | frameno | calib | comb_id | bkg_id
+DE.20141022.12029.fits |                  arc,tilt |  57.99999999999999 |                45.0 | DOME PHLAT |     830G |  GS14B |     1,1 | 56952.139203 | 1.41291034 |     1.0 | 8999.99609375 | SINGLE:B |   OG550 | Kr Xe Ar Ne | 2014-10-22 | 03:20:29.86 |      35 |     0 |      -1 |     -1
+DE.20141022.12107.fits | pixelflat,illumflat,trace |  57.99999999999999 |                45.0 | DOME PHLAT |     830G |  GS14B |     1,1 | 56952.140048 | 1.41291034 |     8.0 | 8999.99609375 | SINGLE:B |   OG550 |          Qz | 2014-10-22 | 03:21:47.96 |      36 |     0 |      -1 |     -1
+DE.20141022.12185.fits | pixelflat,illumflat,trace |  57.99999999999999 |                45.0 | DOME PHLAT |     830G |  GS14B |     1,1 | 56952.140954 | 1.41291034 |     8.0 | 8999.99609375 | SINGLE:B |   OG550 |          Qz | 2014-10-22 | 03:23:05.11 |      37 |     0 |      -1 |     -1
+DE.20141022.12263.fits | pixelflat,illumflat,trace |  57.99999999999999 |                45.0 | DOME PHLAT |     830G |  GS14B |     1,1 |  56952.14184 | 1.41291034 |     8.0 | 8999.99609375 | SINGLE:B |   OG550 |          Qz | 2014-10-22 | 03:24:23.36 |      38 |     0 |      -1 |     -1
+DE.20141021.34721.fits |                   science | 53.170916666666656 | -27.798250000000003 |     GOODSS |     830G |  GS14B |     1,1 | 56951.401779 |  1.8823348 |   900.0 | 8999.99609375 | SINGLE:B |   OG550 |         Off | 2014-10-21 | 09:38:41.38 |      78 |     0 |       1 |      2
+DE.20141021.35719.fits |                   science |  53.17112499999999 | -27.798444444444446 |     GOODSS |     830G |  GS14B |     1,1 | 56951.413357 | 1.77480311 |   900.0 | 8999.99609375 | SINGLE:B |   OG550 |         Off | 2014-10-21 | 09:55:19.98 |      79 |     0 |       2 |      1
 data end
 
