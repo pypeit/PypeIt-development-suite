@@ -1,5 +1,5 @@
-# Auto-generated PypeIt file
-# 2022-02-03
+# Auto-generated PypeIt input file using PypeIt version: 1.17.5.dev906+gc2764adb5
+# UTC 2025-09-13T00:47:13.365+00:00
 
 # User-defined execution parameters
 [rdx]
@@ -16,25 +16,25 @@
 
 # Setup
 setup read
-    Setup A:
-         dispname: R400+_G5325
-         dichroic: open1-6
-           decker: GS2015ALP004-01
-        dispangle: 700.0
-          datasec: "[1:256,1:2112]"
+Setup B:
+  datasec: '"[1:256,1:2112]"'
+  decker: GS2015ALP004-01
+  dichroic: open1-6
+  dispangle: 700.0
+  dispname: R400+_G5325
 setup end
 
-# Read in the data
+# Data block 
 data read
  path /data/Projects/PypeIt-codes/PypeIt-development-suite/RAW_DATA/gemini_gmos/GS_HAM_MULTI_R400_700
-|            filename |                 frametype |         ra |        dec |     target |    dispname |          decker | binning |              mjd | airmass | exptime | dichroic | dispangle |        datasec |
-| S20150217S0123.fits |                  arc,tilt |      147.0 |       89.9 |       CuAr | R400+_G5325 | GS2015ALP004-01 |     2,2 | 2015.12919493668 |     1.0 |    16.0 |  open1-6 |     700.0 | [1:256,1:2112] |
-| S20150427S0184.fits |                      bias |      147.0 |       89.9 |       Bias |      MIRROR |            None |     2,2 | 2015.31817805432 |     1.0 |     0.0 |  open1-6 |       0.0 | [1:256,1:2112] |
-| S20150427S0185.fits |                      bias |      147.0 |       89.9 |       Bias |      MIRROR |            None |     2,2 | 2015.31817881325 |     1.0 |     0.0 |  open1-6 |       0.0 | [1:256,1:2112] |
-| S20150427S0186.fits |                      bias |      147.0 |       89.9 |       Bias |      MIRROR |            None |     2,2 | 2015.31817957218 |     1.0 |     0.0 |  open1-6 |       0.0 | [1:256,1:2112] |
-| S20150427S0187.fits |                      bias |      147.0 |       89.9 |       Bias |      MIRROR |            None |     2,2 | 2015.31818033269 |     1.0 |     0.0 |  open1-6 |       0.0 | [1:256,1:2112] |
-| S20150427S0188.fits |                      bias |      147.0 |       89.9 |       Bias |      MIRROR |            None |     2,2 | 2015.31818109109 |     1.0 |     0.0 |  open1-6 |       0.0 | [1:256,1:2112] |
-| S20150217S0059.fits | pixelflat,illumflat,trace | 155.579125 | 1.53611111 |   GCALflat | R400+_G5325 | GS2015ALP004-01 |     2,2 | 2015.12860830092 |   1.174 |     1.0 |  open1-6 |     700.0 | [1:256,1:2112] |
-| S20150217S0060.fits |                   science | 155.579125 | 1.53611111 | J1022+0132 | R400+_G5325 | GS2015ALP004-01 |     2,2 | 2015.12860994447 |   1.177 |  1200.0 |  open1-6 |     700.0 | [1:256,1:2112] |
+           filename |                 frametype |         ra |        dec |     target |    dispname |          decker | binning |                mjd | airmass | exptime | dichroic | dispangle |        datasec | dithoff | calib
+S20150217S0123.fits |                  arc,tilt |      147.0 |       89.9 |       CuAr | R400+_G5325 | GS2015ALP004-01 |     2,2 |  57070.43845062239 |     1.0 |    16.0 |  open1-6 |     700.0 | [1:256,1:2112] |     0.0 |     1
+S20150427S0184.fits |                      bias |      147.0 |       89.9 |       Bias |      MIRROR |            None |     2,2 |  57139.46453434038 |     1.0 |     0.0 |  open1-6 |       0.0 | [1:256,1:2112] |     0.0 |     1
+S20150427S0185.fits |                      bias |      147.0 |       89.9 |       Bias |      MIRROR |            None |     2,2 |  57139.46481153953 |     1.0 |     0.0 |  open1-6 |       0.0 | [1:256,1:2112] |     0.0 |     1
+S20150427S0186.fits |                      bias |      147.0 |       89.9 |       Bias |      MIRROR |            None |     2,2 |  57139.46508873876 |     1.0 |     0.0 |  open1-6 |       0.0 | [1:256,1:2112] |     0.0 |     1
+S20150427S0187.fits |                      bias |      147.0 |       89.9 |       Bias |      MIRROR |            None |     2,2 |  57139.46536651501 |     1.0 |     0.0 |  open1-6 |       0.0 | [1:256,1:2112] |     0.0 |     1
+S20150427S0188.fits |                      bias |      147.0 |       89.9 |       Bias |      MIRROR |            None |     2,2 | 57139.465643520656 |     1.0 |     0.0 |  open1-6 |       0.0 | [1:256,1:2112] |     0.0 |     1
+S20150217S0059.fits | pixelflat,illumflat,trace | 155.579125 | 1.53611111 |   GCALflat | R400+_G5325 | GS2015ALP004-01 |     2,2 |  57070.22418191101 |   1.174 |     1.0 |  open1-6 |     700.0 | [1:256,1:2112] |     0.0 |     1
+S20150217S0060.fits |                   science | 155.579125 | 1.53611111 | J1022+0132 | R400+_G5325 | GS2015ALP004-01 |     2,2 |   57070.2247822177 |   1.177 |  1200.0 |  open1-6 |     700.0 | [1:256,1:2112] |    12.0 |     1
 data end
 
