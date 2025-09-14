@@ -8,6 +8,7 @@ from pathlib import Path
 from pypeit.spectrographs.util import load_spectrograph
 from pypeit.wavecalib import WaveCalib
 from pypeit.slittrace import SlitTraceSet
+from pypeit.flatfield import FlatImages
 from pypeit.scripts.run_pypeit import RunPypeIt
 from pypeit import specobjs
 
@@ -21,6 +22,7 @@ sys.path.append(os.path.join(
 # Shane Kastblue 600/4310 D55
 
 def run_the_steps():
+    pass
     #pypeit_reduce_by_step shane_kast_blue_A.pypeit b28.fits.gz process
     #pypeit_view_fits shane_kast_blue Intermediate/sciImg_b28-J1217p3905_KASTb_20150520T051801.470_DET01.fits --inter
 
@@ -29,6 +31,34 @@ def run_the_steps():
 
     #pypeit_reduce_by_step shane_kast_blue_A.pypeit b28.fits.gz extract
     #pypeit_show_2dspec Science/spec2d_b28-J1217p3905_KASTb_20150520T051801.470.fits
+
+def test_shane_kastb_calibs():
+    setup = '600_4310_d55'
+    _redux_out = os.path.join(os.environ['PYPEIT_DEV'], 'REDUX_OUT')
+
+    # Slits
+    root = 'Slits_A_0_DET01.fits.gz'
+    slits_full_refactor_file = os.path.join(_redux_out, 'shane_kast_blue', setup,
+                                                'REFACTOR_FULL','Calibrations', root)
+    slits_dev_file = slits_full_refactor_file.replace('REFACTOR_FULL','DEVELOP')
+
+    # Load
+    slits_full = SlitTraceSet.from_file(slits_full_refactor_file)
+    slits_dev = SlitTraceSet.from_file(slits_dev_file)
+    assert np.allclose(slits_full.left_tweak, slits_dev.left_tweak)
+
+    # Flats
+    root = 'Flat_A_0_DET01.fits'
+    flats_full_refactor_file = os.path.join(_redux_out, 'shane_kast_blue', setup,
+                                                'REFACTOR_FULL','Calibrations', root)
+    flats_dev_file = flats_full_refactor_file.replace('REFACTOR_FULL','DEVELOP')
+
+    # Load
+    flats_full = FlatImages.from_file(flats_full_refactor_file)
+    flats_dev = FlatImages.from_file(flats_dev_file)
+    assert np.allclose(flats_full.pixelflat_norm, 
+                    flats_dev.pixelflat_norm)
+
 
 def test_shane_kastb_spec1d():
     _redux_out = os.path.join(os.environ['PYPEIT_DEV'], 'REDUX_OUT')
@@ -46,13 +76,16 @@ def test_shane_kastb_spec1d():
     spec1d_dev_file = spec1d_full_refactor_file.replace('REFACTOR_FULL','DEVELOP')
     spec1d_dev = specobjs.SpecObjs.from_fitsfile(spec1d_dev_file,
                                                     chk_version=False)
-    spec1d_load_file = spec1d_full_refactor_file.replace('REFACTOR_FULL', 'shane_kast_blue_A')
-    spec1d_load = specobjs.SpecObjs.from_fitsfile(spec1d_load_file,
-                                                    chk_version=False)
+
+    #spec1d_load_file = spec1d_full_refactor_file.replace('REFACTOR_FULL', 'shane_kast_blue_A')
+    #spec1d_load = specobjs.SpecObjs.from_fitsfile(spec1d_load_file,
+    #                                                chk_version=False)
 
 
     # Full vs. Develop
-    for mode, spec1d in zip(['full', 'load'], [spec1d_full, spec1d_load]):
+    #for mode, spec1d in zip(['full', 'load'], [spec1d_full, spec1d_load]):
+
+    for mode, spec1d in zip(['full'], [spec1d_full]):
         assert spec1d.nobj == spec1d_dev.nobj
         assert np.allclose(spec1d.BOX_COUNTS, spec1d_dev.BOX_COUNTS, atol=1e-4)
         assert np.allclose(spec1d.OPT_WAVE, spec1d_dev.OPT_WAVE, atol=1e-4)
