@@ -23,13 +23,13 @@ sys.path.append(os.path.join(
 
 def run_the_steps():
     pass
-    #pypeit_reduce_by_step shane_kast_blue_A.pypeit b28.fits.gz process
+    #pypeit_reduce_by_step shane_kast_blue_A.pypeit b28.fits.gz process --det 1
     #pypeit_view_fits shane_kast_blue Intermediate/sciImg_b28-J1217p3905_KASTb_20150520T051801.470_DET01.fits --inter
 
-    #pypeit_reduce_by_step shane_kast_blue_A.pypeit b28.fits.gz findobj
+    #pypeit_reduce_by_step shane_kast_blue_A.pypeit b28.fits.gz findobj --det 1
     #pypeit_view_fits shane_kast_blue Intermediate/initSky_b28-J1217p3905_KASTb_20150520T051801.470_DET01.fits --inter
 
-    #pypeit_reduce_by_step shane_kast_blue_A.pypeit b28.fits.gz extract
+    #pypeit_reduce_by_step shane_kast_blue_A.pypeit b28.fits.gz extract --det 1
     #pypeit_show_2dspec Science/spec2d_b28-J1217p3905_KASTb_20150520T051801.470.fits
 
 def test_shane_kastb_calibs():
