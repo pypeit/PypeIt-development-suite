@@ -1,5 +1,5 @@
-# Auto-generated PypeIt input file using PypeIt version: 1.14.1.dev0+gff02b9dd7.d20240118
-# UTC 2024-01-18T01:23:08.470
+# Auto-generated PypeIt input file using PypeIt version: 1.17.5.dev906+gc2764adb5
+# UTC 2025-09-15T17:20:14.098+00:00
 
 # User-defined execution parameters
 [rdx]
@@ -20,7 +20,7 @@
 
 # Setup
 setup read
-Setup D:
+Setup B:
   datasec: '"[1:512,1:1056]"'
   decker: GS2023BQ103-11
   dichroic: OG515_G0330
@@ -31,11 +31,11 @@ setup end
 # Data block 
 data read
  path ./data
-               filename |                 frametype |               ra |               dec |        target |    dispname |         decker | binning |              mjd |          airmass | exptime |    dichroic | dispangle |        datasec
-S20240116S0420.fits.bz2 |                      bias |          -9999.0 |           -9999.0 |          Bias | R400+_G5325 |      2.0arcsec |     4,1 | 2024.04091462279 | 1.00000038078388 |     0.0 | OG515_G0330 |     720.0 | [1:512,1:1056]
-S20240116S0421.fits.bz2 |                      bias |          -9999.0 |           -9999.0 |          Bias | R400+_G5325 |      2.0arcsec |     4,1 |  2024.0409154921 | 1.00000038078388 |     0.0 | OG515_G0330 |     720.0 | [1:512,1:1056]
-S20240115S0340.fits.bz2 |                  arc,tilt |          -9999.0 |           -9999.0 |          CuAr | R400+_G5325 | GS2023BQ103-11 |     4,1 |   2024.038244434 | 1.00000037626915 |    16.0 | OG515_G0330 |     790.0 | [1:512,1:1056]
-S20240115S0022.fits.bz2 | pixelflat,illumflat,trace | 90.9853208333333 | -35.9682194444444 |      GCALflat | R400+_G5325 | GS2023BQ103-11 |     4,1 | 2024.03732067448 | 1.00494452852967 |     1.0 | OG515_G0330 |     790.0 | [1:512,1:1056]
-S20240115S0021.fits.bz2 |                   science | 90.9853208333333 | -35.9682194444444 | DESJ0603-3558 | R400+_G5325 | GS2023BQ103-11 |     4,1 |  2024.0372812545 | 1.00625026147142 |  1200.0 | OG515_G0330 |     790.0 | [1:512,1:1056]
+               filename |                 frametype |               ra |               dec |        target |    dispname |         decker | binning |                mjd |          airmass | exptime |    dichroic | dispangle |        datasec | dithoff | calib
+S20240116S0420.fits.bz2 |                      bias |          -9999.0 |           -9999.0 |          Bias | R400+_G5325 |      2.0arcsec |     1,4 |  60325.44406597407 | 1.00000038078388 |     0.0 | OG515_G0330 |     720.0 | [1:512,1:1056] |     0.0 |     1
+S20240116S0421.fits.bz2 |                      bias |          -9999.0 |           -9999.0 |          Bias | R400+_G5325 |      2.0arcsec |     1,4 | 60325.444383489565 | 1.00000038078388 |     0.0 | OG515_G0330 |     720.0 | [1:512,1:1056] |     0.0 |     1
+S20240115S0340.fits.bz2 |                  arc,tilt |          -9999.0 |           -9999.0 |          CuAr | R400+_G5325 | GS2023BQ103-11 |     1,4 |  60324.46877951852 | 1.00000037626915 |    16.0 | OG515_G0330 |     790.0 | [1:512,1:1056] |     0.0 |     1
+S20240115S0022.fits.bz2 | pixelflat,illumflat,trace | 90.9853208333333 | -35.9682194444444 |      GCALflat | R400+_G5325 | GS2023BQ103-11 |     1,4 | 60324.131376353835 | 1.00494452852967 |     1.0 | OG515_G0330 |     790.0 | [1:512,1:1056] |     0.0 |     1
+S20240115S0021.fits.bz2 |                   science | 90.9853208333333 | -35.9682194444444 | DESJ0603-3558 | R400+_G5325 | GS2023BQ103-11 |     1,4 |   60324.1169782061 | 1.00625026147142 |  1200.0 | OG515_G0330 |     790.0 | [1:512,1:1056] |   -3.92 |     1
 data end
 
