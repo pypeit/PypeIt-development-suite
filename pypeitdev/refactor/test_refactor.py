@@ -11,6 +11,7 @@ from pypeit.slittrace import SlitTraceSet
 from pypeit.flatfield import FlatImages
 from pypeit.scripts.run_pypeit import RunPypeIt
 from pypeit import specobjs
+from pypeit import spec2dobj
 
 import pytest
 from IPython import embed
@@ -45,7 +46,7 @@ def test_shane_kastb_calibs():
     # Load
     slits_full = SlitTraceSet.from_file(slits_full_refactor_file)
     slits_dev = SlitTraceSet.from_file(slits_dev_file)
-    assert np.allclose(slits_full.left_tweak, slits_dev.left_tweak)
+    assert np.allclose(slits_full.left_tweak, slits_dev.left_tweak, rtol=1e-8)
 
     # Flats
     root = 'Flat_A_0_DET01.fits'
@@ -57,10 +58,112 @@ def test_shane_kastb_calibs():
     flats_full = FlatImages.from_file(flats_full_refactor_file)
     flats_dev = FlatImages.from_file(flats_dev_file)
     assert np.allclose(flats_full.pixelflat_norm, 
-                    flats_dev.pixelflat_norm)
+                    flats_dev.pixelflat_norm, rtol=1e-8)
+
+def test_shane_kastb_sciimg():
+    _redux_out = os.path.join(os.environ['PYPEIT_DEV'], 'REDUX_OUT')
+    setup = '600_4310_d55'
+    root = 'spec2d_b27-J1217p3905_KASTb_20150520T045733.560.fits'
+    spec2d_full_refactor_file = os.path.join(_redux_out, 
+                                                'shane_kast_blue', 
+                                                setup,
+                                                'REFACTOR_FULL','Science', root)
+
+    # Load
+    spec2d_full = spec2dobj.Spec2DObj.from_file(spec2d_full_refactor_file, 'DET01',
+                                                    chk_version=False)
+    spec2d_dev_file = spec2d_full_refactor_file.replace('REFACTOR_FULL','DEVELOP')
+    spec2d_dev = spec2dobj.Spec2DObj.from_file(spec2d_dev_file, 'DET01',
+                                                        chk_version=False)
+    # Compare
+    assert np.allclose(spec2d_full.sciimg, spec2d_dev.sciimg, rtol=1e-8)
+
+
+'''
+# FUSSING WITH TRACES
+#sobjs_obj.write_to_fits({}, 'initial_sobjs.fits')
+#sobjs.write_to_fits({}, 'extract_sobjs.fits')
+
+_redux_out = os.path.join(os.environ['PYPEIT_DEV'], 'REDUX_OUT')
+
+# Load spec1d's
+setup = '600_4310_d55'
+root_initial = 'initial_sobjs.fits'
+root_ex = 'extract_sobjs.fits'
+
+init_spec1d_full_refactor_file = os.path.join(_redux_out, 
+                                            'shane_kast_blue', 
+                                            setup,
+                                            'REFACTOR_FULL', root_initial)
+ex_spec1d_full_refactor_file = os.path.join(_redux_out, 
+                                            'shane_kast_blue', 
+                                            setup,
+                                            'REFACTOR_FULL', root_ex)
+
+init_spec1d_full = specobjs.SpecObjs.from_fitsfile(init_spec1d_full_refactor_file,
+                                                chk_version=False)
+init_spec1d_dev_file = init_spec1d_full_refactor_file.replace('REFACTOR_FULL','DEVELOP')
+init_spec1d_dev = specobjs.SpecObjs.from_fitsfile(init_spec1d_dev_file,
+                                                chk_version=False)
+assert np.allclose(init_spec1d_full.TRACE_SPAT, init_spec1d_dev.TRACE_SPAT, rtol=1e-8)
+
+ex_spec1d_full = specobjs.SpecObjs.from_fitsfile(ex_spec1d_full_refactor_file,
+                                                chk_version=False)
+ex_spec1d_dev_file = ex_spec1d_full_refactor_file.replace('REFACTOR_FULL','DEVELOP')
+ex_spec1d_dev = specobjs.SpecObjs.from_fitsfile(ex_spec1d_dev_file,
+                                                chk_version=False)
+
+embed(header='End of loading spec1d')
+assert np.allclose(ex_spec1d_full.TRACE_SPAT, ex_spec1d_dev.TRACE_SPAT)#, atol=1e-4)
+'''
+
+# FWHM (DEVELOP)
+#In [23]: sobjs.FWHM
+#Out[23]: array([71.78102448,  5.16074157, 13.061549  ])
+
+#In [1]: sobjs.FWHM
+#Out[1]: array([72.08452694,  5.15945478, 23.80638717])
+
+# Simple RERUN from an embed
+
+#In [1]: sobjs.FWHM
+#Out[1]: array([71.58973139,  5.1598249 , 24.41008157])
+
+#In [3]: sobjs.FWHM
+#Out[3]: array([71.68468681,  5.160167  , 22.69068257])
+
+#In [5]: sobjs.FWHM
+#Out[5]: array([71.64438716,  5.15979802, 12.22337752])
+
+
+
+_redux_out = os.path.join(os.environ['PYPEIT_DEV'], 'REDUX_OUT')
+setup = '600_4310_d55'
+root_ex = 'spec1d_b24-Feige66_KASTb_20150520T041246.960.fits'
+ex1_spec1d_full_refactor_file = os.path.join(_redux_out, 
+                                            'shane_kast_blue', 
+                                            setup,
+                                            'DEVELOP', 'Sci_1', root_ex)
+ex2_spec1d_full_refactor_file = ex1_spec1d_full_refactor_file.replace('Sci_1','Sci_2')
+ex3_spec1d_full_refactor_file = ex1_spec1d_full_refactor_file.replace('Sci_1','Sci_3')
+
+# Load em
+ex1_spec1d_full = specobjs.SpecObjs.from_fitsfile(ex1_spec1d_full_refactor_file,
+                                                chk_version=False)
+ex2_spec1d_full = specobjs.SpecObjs.from_fitsfile(ex2_spec1d_full_refactor_file,
+                                                chk_version=False)
+ex3_spec1d_full = specobjs.SpecObjs.from_fitsfile(ex3_spec1d_full_refactor_file,
+                                                chk_version=False)
+
+embed(header='End of loading spec1d')
+# Compare FWHM
+assert np.allclose(ex1_spec1d_full.FWHM, ex2_spec1d_full.FWHM, rtol=1e-8)
+assert np.allclose(ex1_spec1d_full.FWHM, ex3_spec1d_full.FWHM, rtol=1e-8)
 
 
 def test_shane_kastb_spec1d():
+    # Initial sky, traces look identical
+
     _redux_out = os.path.join(os.environ['PYPEIT_DEV'], 'REDUX_OUT')
 
     # Load spec1d's
@@ -87,8 +190,9 @@ def test_shane_kastb_spec1d():
 
     for mode, spec1d in zip(['full'], [spec1d_full]):
         assert spec1d.nobj == spec1d_dev.nobj
-        assert np.allclose(spec1d.BOX_COUNTS, spec1d_dev.BOX_COUNTS, atol=1e-4)
-        assert np.allclose(spec1d.OPT_WAVE, spec1d_dev.OPT_WAVE, atol=1e-4)
+        assert np.allclose(spec1d.TRACE_SPAT, spec1d_dev.TRACE_SPAT)#, atol=1e-4)
+        #assert np.allclose(spec1d.BOX_COUNTS, spec1d_dev.BOX_COUNTS, atol=1e-4)
+        #assert np.allclose(spec1d.OPT_WAVE, spec1d_dev.OPT_WAVE, atol=1e-4)
 
 
 
