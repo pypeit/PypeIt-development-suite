@@ -15,7 +15,7 @@ setup end
 # Data block 
 data read
  path /home/holden/src/PypeIt-development-suite/RAW_DATA/apf_levy/bin2
-           filename |       frametype |                 ra |                dec |                      target | dispname | decker | binning |                mjd |       airmass | exptime | calib
+           filename |       frametype |                 ra |                dec |                         target | dispname | decker | binning |                mjd |       airmass | exptime | calib
 20250823_18882.fits.gz |        arc,tilt | 105.91958333333332 | -8.855611111111111 |                             |  default |    8.0 |     2,2 | 60911.718099652775 |           1.0 |    10.0 |     0
 20250823_18890.fits.gz | pixelflat,trace | 107.89583333333331 | -8.850833333333332 |                             |  default |    8.0 |     2,2 | 60911.723533449076 |           1.0 |    12.0 |     0
 20250823_18891.fits.gz | pixelflat,trace | 108.01249999999999 | -8.850555555555555 |                             |  default |    8.0 |     2,2 |  60911.72385347222 |           1.0 |    12.0 |     0
