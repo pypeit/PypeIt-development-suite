@@ -6,7 +6,7 @@
 all_setups = {
     'aat_uhrf': ['3875'],
     'bok_bc': ['300', 'old_832'], #,'600'],
-    'apf_levy': ['W_decker','N_decker','bin2'],
+    'apf_levy': ['W_decker','N_decker'],
     'gemini_gnirs_echelle': ['32_SB_SXD', '10_LB_SXD'],
     'gemini_gnirs_ifu': ['LR_IFU_32mm'],
     'gemini_gmos': ['GS_HAM_R400_700', 'GS_HAM_R400_860',
