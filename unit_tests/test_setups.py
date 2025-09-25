@@ -552,13 +552,12 @@ def test_setup_keck_nires():
     generic_setup_test(spec, setup)
 
 
-
 def test_setup_keck_nires_comb():
 
     dev_root = Path(os.environ['PYPEIT_DEV']).resolve()
     data_root = dev_root / 'RAW_DATA' / 'keck_nires'
 
-    output_path = Path().resolve() / 'output'
+    output_path = dev_root / 'output'
     if output_path.exists():
         shutil.rmtree(output_path)
     output_path.mkdir()
@@ -600,6 +599,9 @@ def test_setup_keck_nires_comb():
                 'Combination group is wrong'
             assert ps.fitstbl['bkg_id'][where_this].data[0] == int(pypeitFile.data[correct_science]['bkg_id'][i]), \
                 'Background group is wrong'
+
+    if output_path.exists():
+        shutil.rmtree(output_path)
 
 
 def test_setup_keck_nirspec():
