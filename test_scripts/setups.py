@@ -15,6 +15,7 @@ all_setups = {
     'apf_levy': [
         'W_decker',
         'N_decker',
+        'bin2',
     ],
     'gemini_gnirs_echelle': [
         '10_LB_SXD',
