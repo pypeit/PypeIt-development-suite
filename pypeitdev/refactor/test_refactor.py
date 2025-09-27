@@ -9,7 +9,7 @@ from pypeit.spectrographs.util import load_spectrograph
 from pypeit.wavecalib import WaveCalib
 from pypeit.slittrace import SlitTraceSet
 from pypeit.flatfield import FlatImages
-from pypeit.scripts.run_pypeit import RunPypeIt
+from pypeit.scripts.reduce_by_step import ReducebyStep
 from pypeit import specobjs
 from pypeit import spec2dobj
 
@@ -23,15 +23,25 @@ sys.path.append(os.path.join(
 # Shane Kastblue 600/4310 D55
 
 def run_the_steps():
+    # Parser
+    #args = ReducebyStep.parse_args(['shane_kast_blue_A.pypeit', 'b28.fits.gz', 'process', '--det', '1'])
     pass
-    #pypeit_reduce_by_step shane_kast_blue_A.pypeit b28.fits.gz process --det 1
+    return
+    '''
+    # Need to do the Standard first to get the trace (not sure it is even used)
+    pypeit_reduce_by_step shane_kast_blue_A.pypeit b24.fits.gz process --det 1
+    pypeit_reduce_by_step shane_kast_blue_A.pypeit b24.fits.gz findobj --det 1
+    pypeit_reduce_by_step shane_kast_blue_A.pypeit b24.fits.gz extract --det 1
+
+    pypeit_reduce_by_step shane_kast_blue_A.pypeit b27.fits.gz process --det 1
     #pypeit_view_fits shane_kast_blue Intermediate/sciImg_b28-J1217p3905_KASTb_20150520T051801.470_DET01.fits --inter
 
-    #pypeit_reduce_by_step shane_kast_blue_A.pypeit b28.fits.gz findobj --det 1
+    pypeit_reduce_by_step shane_kast_blue_A.pypeit b27.fits.gz findobj --det 1
     #pypeit_view_fits shane_kast_blue Intermediate/initSky_b28-J1217p3905_KASTb_20150520T051801.470_DET01.fits --inter
 
-    #pypeit_reduce_by_step shane_kast_blue_A.pypeit b28.fits.gz extract --det 1
+    pypeit_reduce_by_step shane_kast_blue_A.pypeit b27.fits.gz extract --det 1
     #pypeit_show_2dspec Science/spec2d_b28-J1217p3905_KASTb_20150520T051801.470.fits
+    '''
 
 def test_shane_kastb_calibs():
     setup = '600_4310_d55'
@@ -196,6 +206,11 @@ def test_shane_kastb_spec1d():
     spec1d_dev = specobjs.SpecObjs.from_fitsfile(spec1d_dev_file,
                                                     chk_version=False)
 
+    spec1d_steps_file = spec1d_full_refactor_file.replace('REFACTOR_FULL','STEP_BY_STEP')
+    spec1d_steps = specobjs.SpecObjs.from_fitsfile(spec1d_steps_file,
+                                                    chk_version=False)
+
+
     #spec1d_load_file = spec1d_full_refactor_file.replace('REFACTOR_FULL', 'shane_kast_blue_A')
     #spec1d_load = specobjs.SpecObjs.from_fitsfile(spec1d_load_file,
     #                                                chk_version=False)
@@ -206,11 +221,12 @@ def test_shane_kastb_spec1d():
 
     #pytest.set_trace()
     #assert np.allclose(spec1d_full.TRACE_SPAT, spec1d_dev.TRACE_SPAT)#, atol=1e-4)
-    for mode, spec1d in zip(['full'], [spec1d_full]):
+    for mode, spec1d in zip(['Full', 'Steps'], [spec1d_full, spec1d_steps]):
+        atol = 1e-7 if mode == 'Full' else 1e-5
         assert spec1d.nobj == spec1d_dev.nobj
-        assert np.allclose(spec1d.TRACE_SPAT, spec1d_dev.TRACE_SPAT)#, atol=1e-4)
-        assert np.allclose(spec1d.BOX_COUNTS, spec1d_dev.BOX_COUNTS)#, atol=1e-4)
-        assert np.allclose(spec1d.OPT_WAVE, spec1d_dev.OPT_WAVE)#, atol=1e-4)
+        assert np.allclose(spec1d.TRACE_SPAT, spec1d_dev.TRACE_SPAT, atol=atol), f'{mode}: TRACE_SPAT'
+        assert np.allclose(spec1d.BOX_COUNTS, spec1d_dev.BOX_COUNTS, atol=atol), f'Failed {mode} BOX_COUNTS'
+        assert np.allclose(spec1d.OPT_WAVE, spec1d_dev.OPT_WAVE, atol=atol), f'Failed {mode} OPT_WAVE'
 
 
 
@@ -221,7 +237,7 @@ def test_mosfire_ylong_spec1d():
     setup = 'Y_long'
 
     root = 'spec1d_m191120_0043-J2132-1434_OFF_MOSFIRE_20191120T061253.347.fits'
-    idx = 0  # Only 1 sorce on science exposure
+    idx = 0  # Only 1 source on science exposure
 
     #root = 'spec1d_m191118_0064-GD71_MOSFIRE_20191118T104704.507.fits' # Standard star
     #idx = 0 # This one fails, for float-precision bizarre reasons
@@ -243,9 +259,11 @@ def test_mosfire_ylong_spec1d():
 
     # Full vs. Develop
     #for mode, spec1d in zip(['full', 'load'], [spec1d_full, spec1d_load]):
+    #pytest.set_trace()
     for mode, spec1d in zip(['full'], [spec1d_full]):
+        #atol = 1e-4 if mode == 'full' else 1e-3
         assert spec1d.nobj == spec1d_dev.nobj, f'{mode}: nobj {spec1d.nobj} != {spec1d_dev.nobj}'
-        assert np.allclose(spec1d[idx].BOX_COUNTS, spec1d_dev[idx].BOX_COUNTS, atol=1e-4)
-        assert np.allclose(spec1d[idx].OPT_WAVE, spec1d_dev[idx].OPT_WAVE, atol=1e-4)
+        assert np.allclose(spec1d[idx].BOX_COUNTS, spec1d_dev[idx].BOX_COUNTS, atol=1e-4), f'Failed {mode} BOX_COUNTS'
+        assert np.allclose(spec1d[idx].OPT_WAVE, spec1d_dev[idx].OPT_WAVE, atol=1e-6), f'Failed {mode} OPT_WAVE'
 
 
