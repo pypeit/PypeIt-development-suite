@@ -267,3 +267,8 @@ def test_mosfire_ylong_spec1d():
         assert np.allclose(spec1d[idx].OPT_WAVE, spec1d_dev[idx].OPT_WAVE, atol=1e-6), f'Failed {mode} OPT_WAVE'
 
 
+# DEIMOS
+#    pypeit_reduce_by_step keck_deimos_600zd_m_6500.pypeit d1010_0056.fits.gz process --det 1,5
+#    pypeit_reduce_by_step keck_deimos_600zd_m_6500.pypeit d1010_0056.fits.gz process --det 2,6
+#    pypeit_reduce_by_step keck_deimos_600zd_m_6500.pypeit d1010_0056.fits.gz process --det 3,7
+#    pypeit_reduce_by_step keck_deimos_600zd_m_6500.pypeit d1010_0056.fits.gz process --det 4,8
