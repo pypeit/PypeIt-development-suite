@@ -39,7 +39,7 @@ def generic_setup_test(spec, setup, cfg=None, prefix=None, extension=None):
         spec_dir = 'vlt_xshooter'
     else:
         spec_dir = spec
-    data_root = Path(os.environ['PYPEIT_DEV']).resolve() / 'RAW_DATA' / spec_dir / setup
+    data_root = Path(os.environ['PYPEIT_DEV']).absolute() / 'RAW_DATA' / spec_dir / setup
     assert data_root.exists(), 'TEST ERROR: Raw data path does not exist'
     if prefix is not None:
         data_root /= prefix
@@ -52,7 +52,7 @@ def generic_setup_test(spec, setup, cfg=None, prefix=None, extension=None):
             outdir = f'{spec}_A'
         case _:
             outdir = f'{spec}_{cfg}'
-    setup_path = Path().resolve() / outdir
+    setup_path = Path().absolute() / outdir
     if setup_path.exists():
         shutil.rmtree(setup_path)
 
@@ -79,7 +79,7 @@ def test_setup_keck_lris_red_mark4():
 
 def test_setup_keck_lris_red_mark4_multiconfig():
     # Dev suite directory
-    dev_root = Path(os.getenv('PYPEIT_DEV')).resolve()
+    dev_root = Path(os.getenv('PYPEIT_DEV')).absolute()
     assert dev_root.exists(), f'PypeIt development suite directory does not exist: {dev_root}'
     # Raw data directory
     raw_dir = dev_root / 'RAW_DATA' / 'keck_lris_red_mark4'
@@ -90,7 +90,7 @@ def test_setup_keck_lris_red_mark4_multiconfig():
     files = np.concatenate([sorted(raw_dir.glob(f'{s}/*fits*')) for s in datasets]).tolist()
 
     # Set the output path and remove if it already exists
-    output_path = Path('.').resolve() / 'output'
+    output_path = Path('.').absolute() / 'output'
     if output_path.exists():
         shutil.rmtree(output_path)
 
@@ -124,7 +124,7 @@ def test_setup_keck_lris_red():
 
 def test_setup_keck_lris_red_multiconfig():
     # Dev suite directory
-    dev_root = Path(os.getenv('PYPEIT_DEV')).resolve()
+    dev_root = Path(os.getenv('PYPEIT_DEV')).absolute()
     assert dev_root.exists(), f'PypeIt development suite directory does not exist: {dev_root}'
     # Raw data directory
     raw_dir = dev_root / 'RAW_DATA' / 'keck_lris_red'
@@ -135,7 +135,7 @@ def test_setup_keck_lris_red_multiconfig():
     files = np.concatenate([sorted(raw_dir.glob(f'{s}/*fits*')) for s in datasets]).tolist()
 
     # Set the output path and remove if it already exists
-    output_path = Path('.').resolve() / 'output'
+    output_path = Path('.').absolute() / 'output'
     if output_path.exists():
         shutil.rmtree(output_path)
 
@@ -170,7 +170,7 @@ def test_setup_keck_lris_red_orig():
 
 def test_setup_keck_lris_red_orig_multiconfig():
     # Dev suite directory
-    dev_root = Path(os.getenv('PYPEIT_DEV')).resolve()
+    dev_root = Path(os.getenv('PYPEIT_DEV')).absolute()
     assert dev_root.exists(), f'PypeIt development suite directory does not exist: {dev_root}'
     # Raw data directory
     raw_dir = dev_root / 'RAW_DATA' / 'keck_lris_red_orig'
@@ -181,7 +181,7 @@ def test_setup_keck_lris_red_orig_multiconfig():
     files = np.concatenate([sorted(raw_dir.glob(f'{s}/*fits*')) for s in datasets]).tolist()
 
     # Set the output path and remove if it already exists
-    output_path = Path('.').resolve() / 'output'
+    output_path = Path('.').absolute() / 'output'
     if output_path.exists():
         shutil.rmtree(output_path)
 
@@ -217,7 +217,7 @@ def test_setup_keck_lris_blue():
 
 def test_setup_keck_lris_blue_multiconfig():
     # Dev suite directory
-    dev_root = Path(os.getenv('PYPEIT_DEV')).resolve()
+    dev_root = Path(os.getenv('PYPEIT_DEV')).absolute()
     assert dev_root.exists(), f'PypeIt development suite directory does not exist: {dev_root}'
     # Raw data directory
     raw_dir = dev_root / 'RAW_DATA' / 'keck_lris_blue'
@@ -228,7 +228,7 @@ def test_setup_keck_lris_blue_multiconfig():
     files = np.concatenate([sorted(raw_dir.glob(f'{s}/*fits*')) for s in datasets]).tolist()
 
     # Set the output path and remove if it already exists
-    output_path = Path('.').resolve() / 'output'
+    output_path = Path('.').absolute() / 'output'
     if output_path.exists():
         shutil.rmtree(output_path)
 
@@ -264,7 +264,7 @@ def test_setup_keck_lris_blue_orig():
 
 def test_setup_keck_lris_blue_orig_multiconfig():
     # Dev suite directory
-    dev_root = Path(os.getenv('PYPEIT_DEV')).resolve()
+    dev_root = Path(os.getenv('PYPEIT_DEV')).absolute()
     assert dev_root.exists(), f'PypeIt development suite directory does not exist: {dev_root}'
     # Raw data directory
     raw_dir = dev_root / 'RAW_DATA' / 'keck_lris_blue_orig'
@@ -275,7 +275,7 @@ def test_setup_keck_lris_blue_orig_multiconfig():
     files = np.concatenate([sorted(raw_dir.glob(f'{s}/*fits*')) for s in datasets]).tolist()
 
     # Set the output path and remove if it already exists
-    output_path = Path('.').resolve() / 'output'
+    output_path = Path('.').absolute() / 'output'
     if output_path.exists():
         shutil.rmtree(output_path)
 
@@ -552,13 +552,12 @@ def test_setup_keck_nires():
     generic_setup_test(spec, setup)
 
 
-
 def test_setup_keck_nires_comb():
 
-    dev_root = Path(os.environ['PYPEIT_DEV']).resolve()
+    dev_root = Path(os.environ['PYPEIT_DEV']).absolute()
     data_root = dev_root / 'RAW_DATA' / 'keck_nires'
 
-    output_path = Path().resolve() / 'output'
+    output_path = Path().absolute() / 'output'
     if output_path.exists():
         shutil.rmtree(output_path)
     output_path.mkdir()
@@ -600,6 +599,9 @@ def test_setup_keck_nires_comb():
                 'Combination group is wrong'
             assert ps.fitstbl['bkg_id'][where_this].data[0] == int(pypeitFile.data[correct_science]['bkg_id'][i]), \
                 'Background group is wrong'
+
+    if output_path.exists():
+        shutil.rmtree(output_path)
 
 
 def test_setup_keck_nirspec():
@@ -668,7 +670,7 @@ def test_setup_vlt_fors2():
     generic_setup_test(spec, setup, prefix=prefix)
 
     # Now chk calib
-    data_root = Path(os.environ['PYPEIT_DEV']).resolve() / 'RAW_DATA' / spec / setup / prefix
+    data_root = Path(os.environ['PYPEIT_DEV']).absolute() / 'RAW_DATA' / spec / setup / prefix
     pargs = ChkForCalibs.parse_args([str(data_root), '-s', 'vlt_fors2'])
     answers, ps = ChkForCalibs.main(pargs)
     assert answers['pass'][0], 'A must pass!'
@@ -693,12 +695,12 @@ def test_setup_param_block():
     Use LDT/DeVeny::DV8 as a test case
     """
     # Define the output directory and remove it if it already exist
-    setup_path = Path().resolve() / 'ldt_deveny_A'
+    setup_path = Path().absolute() / 'ldt_deveny_A'
     if setup_path.exists():
         shutil.rmtree(setup_path)
 
     # Test this with LDT/DeVeny::DV8
-    data_root = Path(os.environ['PYPEIT_DEV']).resolve() / 'RAW_DATA' / 'ldt_deveny' / 'DV8'
+    data_root = Path(os.environ['PYPEIT_DEV']).absolute() / 'RAW_DATA' / 'ldt_deveny' / 'DV8'
     assert data_root.exists(), 'TEST ERROR: Raw data path does not exist'
 
     # Create a temp file containing the extra parameters to be read in
@@ -714,7 +716,7 @@ def test_setup_param_block():
         "  [[extraction]]",
         "    use_user_fwhm = True",
     ]
-    parblock_fn = Path().resolve() / 'xtra_params.txt'
+    parblock_fn = Path().absolute() / 'xtra_params.txt'
     with open(parblock_fn, 'w', encoding='utf-8') as par_fobj:
         par_fobj.writelines([f"{l}\n" for l in test_pars])
 
