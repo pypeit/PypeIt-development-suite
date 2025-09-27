@@ -135,6 +135,21 @@ assert np.allclose(ex_spec1d_full.TRACE_SPAT, ex_spec1d_dev.TRACE_SPAT)#, atol=1
 #In [5]: sobjs.FWHM
 #Out[5]: array([71.64438716,  5.15979802, 12.22337752])
 
+# Calls to local_skysub_extract
+#In [3]: self.sobjs[thisobj].FWHM
+#Out[3]: array([71.8780582 ,  5.15966312, 15.98746125])
+
+#In [8]: self.sobjs[thisobj].FWHM
+#Out[8]: array([71.68468681,  5.160167  , 22.69068257])
+
+# From within the subroutine
+#In [6]: sobjs.FWHM
+#Out[6]: array([71.67431597,  5.16014457, 22.56220688])
+
+#In [8]: sobjs.FWHM
+#Out[8]: array([71.74012149,  5.16000288, 22.66154206])
+
+
 
 
 _redux_out = os.path.join(os.environ['PYPEIT_DEV'], 'REDUX_OUT')
