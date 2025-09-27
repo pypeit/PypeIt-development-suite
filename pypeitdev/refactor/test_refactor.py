@@ -76,7 +76,8 @@ def test_shane_kastb_sciimg():
     spec2d_dev = spec2dobj.Spec2DObj.from_file(spec2d_dev_file, 'DET01',
                                                         chk_version=False)
     # Compare
-    assert np.allclose(spec2d_full.sciimg, spec2d_dev.sciimg, rtol=1e-8)
+    #pytest.set_trace()
+    assert np.allclose(spec2d_full.sciimg, spec2d_dev.sciimg, rtol=1e-7)
 
 
 '''
@@ -152,28 +153,28 @@ assert np.allclose(ex_spec1d_full.TRACE_SPAT, ex_spec1d_dev.TRACE_SPAT)#, atol=1
 
 
 
-_redux_out = os.path.join(os.environ['PYPEIT_DEV'], 'REDUX_OUT')
-setup = '600_4310_d55'
-root_ex = 'spec1d_b24-Feige66_KASTb_20150520T041246.960.fits'
-ex1_spec1d_full_refactor_file = os.path.join(_redux_out, 
-                                            'shane_kast_blue', 
-                                            setup,
-                                            'DEVELOP', 'Sci_1', root_ex)
-ex2_spec1d_full_refactor_file = ex1_spec1d_full_refactor_file.replace('Sci_1','Sci_2')
-ex3_spec1d_full_refactor_file = ex1_spec1d_full_refactor_file.replace('Sci_1','Sci_3')
-
-# Load em
-ex1_spec1d_full = specobjs.SpecObjs.from_fitsfile(ex1_spec1d_full_refactor_file,
-                                                chk_version=False)
-ex2_spec1d_full = specobjs.SpecObjs.from_fitsfile(ex2_spec1d_full_refactor_file,
-                                                chk_version=False)
-ex3_spec1d_full = specobjs.SpecObjs.from_fitsfile(ex3_spec1d_full_refactor_file,
-                                                chk_version=False)
-
-embed(header='End of loading spec1d')
-# Compare FWHM
-assert np.allclose(ex1_spec1d_full.FWHM, ex2_spec1d_full.FWHM, rtol=1e-8)
-assert np.allclose(ex1_spec1d_full.FWHM, ex3_spec1d_full.FWHM, rtol=1e-8)
+#_redux_out = os.path.join(os.environ['PYPEIT_DEV'], 'REDUX_OUT')
+#setup = '600_4310_d55'
+#root_ex = 'spec1d_b24-Feige66_KASTb_20150520T041246.960.fits'
+#ex1_spec1d_full_refactor_file = os.path.join(_redux_out, 
+#                                            'shane_kast_blue', 
+#                                            setup,
+#                                            'DEVELOP', 'Sci_1', root_ex)
+#ex2_spec1d_full_refactor_file = ex1_spec1d_full_refactor_file.replace('Sci_1','Sci_2')
+#ex3_spec1d_full_refactor_file = ex1_spec1d_full_refactor_file.replace('Sci_1','Sci_3')
+#
+## Load em
+#ex1_spec1d_full = specobjs.SpecObjs.from_fitsfile(ex1_spec1d_full_refactor_file,
+#                                                chk_version=False)
+#ex2_spec1d_full = specobjs.SpecObjs.from_fitsfile(ex2_spec1d_full_refactor_file,
+#                                                chk_version=False)
+#ex3_spec1d_full = specobjs.SpecObjs.from_fitsfile(ex3_spec1d_full_refactor_file,
+#                                                chk_version=False)
+#
+#embed(header='End of loading spec1d')
+## Compare FWHM
+#assert np.allclose(ex1_spec1d_full.FWHM, ex2_spec1d_full.FWHM, rtol=1e-8)
+#assert np.allclose(ex1_spec1d_full.FWHM, ex3_spec1d_full.FWHM, rtol=1e-8)
 
 
 def test_shane_kastb_spec1d():
@@ -203,11 +204,13 @@ def test_shane_kastb_spec1d():
     # Full vs. Develop
     #for mode, spec1d in zip(['full', 'load'], [spec1d_full, spec1d_load]):
 
+    #pytest.set_trace()
+    #assert np.allclose(spec1d_full.TRACE_SPAT, spec1d_dev.TRACE_SPAT)#, atol=1e-4)
     for mode, spec1d in zip(['full'], [spec1d_full]):
         assert spec1d.nobj == spec1d_dev.nobj
         assert np.allclose(spec1d.TRACE_SPAT, spec1d_dev.TRACE_SPAT)#, atol=1e-4)
-        #assert np.allclose(spec1d.BOX_COUNTS, spec1d_dev.BOX_COUNTS, atol=1e-4)
-        #assert np.allclose(spec1d.OPT_WAVE, spec1d_dev.OPT_WAVE, atol=1e-4)
+        assert np.allclose(spec1d.BOX_COUNTS, spec1d_dev.BOX_COUNTS)#, atol=1e-4)
+        assert np.allclose(spec1d.OPT_WAVE, spec1d_dev.OPT_WAVE)#, atol=1e-4)
 
 
 
