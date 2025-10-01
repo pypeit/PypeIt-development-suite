@@ -93,3 +93,10 @@ def test_obslog():
     shutil.rmtree(setupdir)
 
 
+def test_show_arxiv():
+    # Pargs
+    pargs = scripts.show_arxiv.ShowArxiv.parse_args(['gemini_gmos_r831_ham.fits', '--det', '1',
+                                                     '--test'])
+    scripts.show_arxiv.ShowArxiv.main(pargs)
+
+

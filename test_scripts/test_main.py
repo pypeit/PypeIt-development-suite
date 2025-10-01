@@ -25,7 +25,7 @@ import pypeit
 pypeit.msgs.reset(verbosity=0) 
 
 
-from .test_setups import TestPhase, all_tests, all_setups
+from .test_setups import TestPhase, all_tests, all_setups, _raw_data_dirs
 from .pypeit_tests import get_unique_file, _COVERAGE_ARGS
 
 test_run_queue = PriorityQueue()
@@ -1011,7 +1011,13 @@ def build_test_setup(pargs, instr, setup_name, flg_reduce, flg_after, flg_ql):
     raw_data = raw_data_dir()
 
     # Directory with raw data
-    rawdir = os.path.join(raw_data, instr, setup_name)
+    if instr in _raw_data_dirs:
+        instr_base_dir = _raw_data_dirs[instr]
+    else:
+        # The default raw data directory name is in the instrument name
+        instr_base_dir = instr
+
+    rawdir = os.path.join(raw_data, instr_base_dir, setup_name)
 
     # Directory for reduced data
     rdxdir = os.path.join(pargs.outputdir, instr, setup_name)

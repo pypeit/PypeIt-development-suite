@@ -98,6 +98,12 @@ class TestPhase(Enum):
     AFTERBURN = auto()
     QL        = auto()
 
+# raw data directories for for setups that don't have the normal naming conventions
+_raw_data_dirs = {
+    'p200_ngps_r': 'p200_ngps',
+    'p200_ngps_i': 'p200_ngps',
+}
+
 
 # Tests for full reductions
 _reduce_setups = {}
@@ -108,7 +114,16 @@ for instr in all_setups:
 
 _pypeit_setup = {
     'shane_kast_blue': {
-        '600_4310_d55': [{}]}}
+        '600_4310_d55': [{}]},
+    'p200_ngps_r': {
+        '1.5_2x3': [{}],
+        '1.0_2x2': [{}],
+        '0.5_2x1': [{}]},
+    'p200_ngps_i': {
+        '1.5_2x3': [{}],
+        '1.0_2x2': [{}],
+        '0.5_2x1': [{}]},        
+    }
 
 _additional_reduce = {
     'keck_lris_red': {
@@ -134,6 +149,13 @@ _sensfunc = {
     'keck_deimos': {
         '900ZD_LVM_5500': [dict(std_file='spec1d_*Feige110*.fits',
                                 sens_file='keck_deimos_900zd_lvm_5500.sens')]},
+
+    'keck_hires': {
+        'J0100+2802_H204Hr_RED_C1_ECH_0.75_XD_1.69_1x2': [dict(std_file='spec1d_*20151214.16343*.fits',
+                                                          sens_file='keck_hires_RED_C1_ECH_0.75_XD_1.69_1x2_Feige110.sens')],
+        'J0100+2802_H204Hr_RED_C1_ECH_-0.82_XD_1.62_1x2': [dict(std_file='spec1d_*20151214.16715*.fits',
+                                                           sens_file='keck_hires_RED_C1_ECH_-0.82_XD_1.62_1x2_Feige110.sens')],
+                     },
     'keck_mosfire': {
         'Y_long': [dict(std_file='spec1d_*0064-GD71*.fits',
                         sens_file='keck_mosfire_Y_long.sens')]},
