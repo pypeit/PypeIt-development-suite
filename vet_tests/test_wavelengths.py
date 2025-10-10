@@ -292,7 +292,7 @@ def test_gmos(redux_out):
         [1, 0],
         [0.30, 0.25],
         ['MSC01', 'MSC01'],
-        ['A_0', 'A_0']
+        ['A_0', 'LTT7379_0']
         ):
         # Check that spatial flexure shift was set!
         file_path = os.path.join(redux_out,
