@@ -1,0 +1,32 @@
+# Auto-generated Coadd2D input file using PypeIt version: 1.18.1.dev24+g48a8f3837
+# UTC 2025-10-12T18:45:35.907+00:00
+
+# User-defined execution parameters
+[rdx]
+    spectrograph = soar_goodman_blue
+    redux_path = /data/tbowers/PypeIt-development-suite/REDUX_OUT/soar_goodman_blue/M1
+    scidir = Science
+    qadir = QA
+[calibrations]
+    calib_dir = Calibrations
+    [[wavelengths]]
+        refframe = observed
+[coadd2d]
+    offsets = auto
+    weights = auto
+    spat_toler = 5
+    spec_samp_fact = 1.0
+    spat_samp_fact = 1.0
+[flexure]
+    spec_method = skip
+[reduce]
+    [[findobj]]
+        skip_skysub = True
+
+# Data block 
+spec2d read
+ path /data/tbowers/PypeIt-development-suite/REDUX_OUT/soar_goodman_blue/M1/Science
+                                                                              filename
+spec2d_0141_BB034315_m660205_10-02-2023-BB034315_m660205_blue_20230210T031908.230.fits
+spec2d end
+
