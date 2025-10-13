@@ -11,7 +11,7 @@
     	lamps = OH_NIRES
     	fwhm = 5.0
     	rms_thresh_frac_fwhm = 0.06
-        reid_arxiv = wvarxiv_lbt_luci2_G210K.fits
+        reid_arxiv = lbt_luci_G210K_22000.fits
         method = full_template
    [[standardframe]]
     	[[[process]]]
