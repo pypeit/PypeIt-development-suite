@@ -177,3 +177,12 @@ def test_load_modspec():
         data_img = grab_img('mdm_modspec', ifile)
     except:
         pytest.fail('MDM Modspec test data section failed: {0}'.format(ifile))
+
+def test_load_apf_levy():
+    ifile = os.path.join(os.environ['PYPEIT_DEV'], 'RAW_DATA','apf_levy',
+                         'W_decker', '20250128_16421.fits.gz')
+    try:
+        data_img = grab_img('apf_levy', ifile)
+    except:
+        pytest.fail('APF Levy test data section failed: {0}'.format(ifile))
+
