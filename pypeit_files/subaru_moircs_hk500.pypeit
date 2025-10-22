@@ -1,0 +1,23 @@
+[rdx]
+    spectrograph = subaru_moircs
+setup read
+Setup A:
+  decker: MO17A_COSMOS2
+  detector: '1'
+  dispname: HK500
+setup end
+
+# Data block 
+data read
+ path /home/xavier/Projects/PypeIt-Codes/PypeIt-development-suite/REDUX_OUT/subaru_moircs/../../RAW_DATA/subaru_moircs
+         filename |                 frametype |                 ra |                dec |       target | dispname |        decker | binning |               mjd | airmass | exptime | detector | calib | comb_id | bkg_id
+#MCSP00237177.fits |                      dark |        103.0039625 |  19.85227777777778 | DOMEFLAT_OFF |    HK500 | MO17A_COSMOS2 |     1,1 | 57853.16683944874 |     1.0 |     5.0 |        1 |     0 |      -1 |     -1
+#MCSP00237179.fits |                      dark | 103.06746666666666 | 19.852380555555555 | DOMEFLAT_OFF |    HK500 | MO17A_COSMOS2 |     1,1 | 57853.16702463385 |     1.0 |     5.0 |        1 |     0 |      -1 |     -1
+#MCSP00237181.fits |                      dark | 103.13432083333333 | 19.852486111111112 | DOMEFLAT_OFF |    HK500 | MO17A_COSMOS2 |     1,1 | 57853.16719825659 |     1.0 |     5.0 |        1 |     0 |      -1 |     -1
+MCSP00237163.fits | pixelflat,illumflat,trace | 102.12359583333331 |  19.85086388888889 |     DOMEFLAT |    HK500 | MO17A_COSMOS2 |     1,1 | 57853.16443201806 |     1.0 |     5.0 |        1 |     0 |      -1 |     -1
+MCSP00237165.fits | pixelflat,illumflat,trace | 102.19253749999999 | 19.850975000000002 |     DOMEFLAT |    HK500 | MO17A_COSMOS2 |     1,1 | 57853.16458248114 |     1.0 |     5.0 |        1 |     0 |      -1 |     -1
+MCSP00237167.fits | pixelflat,illumflat,trace | 102.25228333333331 | 19.851072222222225 |     DOMEFLAT |    HK500 | MO17A_COSMOS2 |     1,1 | 57853.16475609224 |     1.0 |     5.0 |        1 |     0 |      -1 |     -1
+MCSP00237323.fits |          arc,tilt,science | 149.76983749999997 |            1.79965 |      COSMOS2 |    HK500 | MO17A_COSMOS2 |     1,1 | 57853.28436814342 |   1.055 |   180.0 |        1 |     0 |       1 |      3
+MCSP00237325.fits |          arc,tilt,science | 149.76899999999995 | 1.7998416666666666 |      COSMOS2 |    HK500 | MO17A_COSMOS2 |     1,1 | 57853.28689131467 |   1.054 |   180.0 |        1 |     0 |       3 |      1
+data end
+
