@@ -79,8 +79,7 @@ Attributes:
 
 from . import pypeit_tests
 from .setups import all_setups 
-from enum import Enum, IntEnum, auto
-import copy
+from enum import Enum, auto
 
 class TestPhase(Enum):
     """Enumeration for specifying the test phase that a test runs in.
@@ -240,8 +239,13 @@ _coadd2d = {
     'keck_nires': {
         'ABBA_wstandard': [dict(coadd_file=True)]},
     'keck_nires': {
-        'ABBA_nostandard_faint': [dict(coadd_file=True)]}
+        'ABBA_nostandard_faint': [dict(coadd_file=True)]},
+    'soar_goodman_blue': {
+        'M1': [dict(coadd_file=True)]}
     }
+
+# TODO: Test the pypeit_coadd_datacube setups!
+_coadd3d = {}
 
 _telluric = {
     'gemini_gnirs_echelle': {
