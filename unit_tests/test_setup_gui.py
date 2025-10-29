@@ -15,7 +15,7 @@ from pypeit.setup_gui import view, model, controller
 from pypeit.spectrographs.util import load_spectrograph
 from pypeit.metadata import PypeItMetaData
 from pypeit.inputfiles import PypeItFile
-from pypeit import msgs
+from pypeit import log
 
 # Override pytest-qt's QApplication arguments
 @pytest.fixture(scope="session")
@@ -1025,8 +1025,8 @@ def test_log_window(qapp, qtbot, tmp_path, monkeypatch):
     wip_msg = "WIP message should not appear in verbosity=1"
 
     with qtbot.waitSignal(logWindow.textViewer.textChanged, raising=True, timeout=1000):
-        msgs.work(wip_msg)
-        msgs.info(info_msg)
+        log.debug(wip_msg)
+        log.info(info_msg)
 
     log_text = logWindow.textViewer.toPlainText()
     assert info_msg in log_text
