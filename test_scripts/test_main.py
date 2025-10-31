@@ -10,7 +10,7 @@ This script runs the PypeIt development suite of tests
 
 import sys
 import os
-import os.path
+from pathlib import Path
 import subprocess
 from queue import PriorityQueue, Empty
 from threading import Thread, Lock
@@ -49,14 +49,14 @@ class TestPriorityList(object):
         _file (str):        The file name to write the priority list to.
     """
 
-    def __init__(self, file):
+    def __init__(self, file : Path):
         """Reads the priority list from a file."""
         self._priority_map = dict()
         self._updated = False
         self._file = file
 
         count = 0
-        if os.path.exists(file):
+        if file.is_file():
             with open(file, "r") as f:
                 while True:
                     line = f.readline()
@@ -132,7 +132,7 @@ class TestSetup(object):
         missing_files (:obj:`list` of str): List of missing files preventing the test setup from running.
 
     """
-    def __init__(self, instr, name, rawdir, rdxdir, dev_path):
+    def __init__(self, instr : str, name: str, rawdir : Path, rdxdir : Path, dev_path : Path):
         self.instr = instr
         self.name = name
         self.key = f'{self.instr}/{self.name}'
@@ -214,7 +214,7 @@ class TestReport(object):
 
         self.pytest_results=dict()
 
-        if pargs.report is not None and os.path.exists(pargs.report):
+        if pargs.report is not None and Path(pargs.report).exists():
             # Remove any old report files if we've been asked to overwrite it
             if not pargs.quiet:
                 print(f"Overwriting existing report {pargs.report}",flush=True)
@@ -490,7 +490,7 @@ class TestReport(object):
 
         print('', file=output, flush=flush)
         print("End of Log:", file=output, flush=flush)
-        if test.logfile is not None and os.path.exists(test.logfile):
+        if test.logfile is not None and test.logfile.exists():
             self.print_tail(test.logfile, 3, output, flush)
 
         print('\n', file=output, flush=flush)
@@ -519,8 +519,8 @@ def clear_coverage_data(redux_out):
     for file in path.rglob(".coverage*"):
         file.unlink(missing_ok = True)
 
-def run_pytest(pargs, test_descr, test_dir, test_report, 
-               redux_out=None):
+def run_pytest(pargs, test_descr : str, test_dir : Path, test_report : TestReport, 
+               redux_out: Path|None=None):
     """Run pytest on a directory of test files.
     
     Args:
@@ -542,7 +542,7 @@ def run_pytest(pargs, test_descr, test_dir, test_report,
             The location of the output of this dev-suite run. Optional, only required
             if the pytest suite requires the output from the dev-suite (i.e vet_tests).
     """
-    abs_test_dir = os.path.abspath(test_dir)
+    abs_test_dir = test_dir.absolute()
 
     test_report.pytest_started(test_descr)
 
@@ -561,7 +561,7 @@ def run_pytest(pargs, test_descr, test_dir, test_report,
     if redux_out is not None:
         args += ["--redux_out", redux_out]
 
-    args.append(abs_test_dir)
+    args.append(str(abs_test_dir))
 
     # Run pytest, sending the outpu to the test report.
     # We change the current directory so that the coverage output goes to the outputdir
@@ -598,7 +598,7 @@ def generate_coverage_report(pargs):
         process = subprocess.run(["coverage", "report", "-m"], stdout=f, stderr=subprocess.STDOUT, cwd=pargs.outputdir)
 
 def raw_data_dir():
-    return os.path.join(os.environ['PYPEIT_DEV'], 'RAW_DATA')
+    return Path(os.environ['PYPEIT_DEV'], 'RAW_DATA')
 
 
 def available_data():
@@ -722,18 +722,18 @@ def main():
         os.environ['OMP_NUM_THREADS'] = '1'
 
     raw_data = raw_data_dir()
-    if not os.path.isdir(raw_data):
+    if not raw_data.is_dir():
         raise NotADirectoryError('No directory: {0}'.format(raw_data))
 
-    if not os.path.exists(pargs.outputdir):
+    pargs.outputdir = Path(pargs.outputdir).absolute()
+    if not pargs.outputdir.exists():
         os.mkdir(pargs.outputdir)
-    pargs.outputdir = os.path.abspath(pargs.outputdir)
 
     # Make sure we can create a writable report file (if needed) before starting the tests
     if pargs.report is None and pargs.quiet:
         # If there's no report file specified in the command line, but we're in quiet mode,
         # make up a report file name
-        pargs.report = get_unique_file(os.path.join(pargs.outputdir, "pypeit_test_results.txt"))
+        pargs.report = get_unique_file(pargs.outputdir / "pypeit_test_results.txt")
 
     # ---------------------------------------------------------------------------
     # Determine which tests to run
@@ -846,11 +846,11 @@ def main():
     # For coverage testing, run the PypeIt unit tests too
     if flg_pypeit_tests and not pargs.prep_only:
         pypeit_tests_dir = Path(pypeit.__file__).parent.joinpath("tests")
-        run_pytest(pargs, "PypeIt Unit Tests", str(pypeit_tests_dir), test_report)
+        run_pytest(pargs, "PypeIt Unit Tests", pypeit_tests_dir, test_report)
 
-    dev_path = os.getenv('PYPEIT_DEV')
+    dev_path = Path(os.getenv('PYPEIT_DEV'))
     if flg_unit is True and not pargs.prep_only:
-        run_pytest(pargs, "Unit Tests", os.path.join(dev_path, "unit_tests"), test_report)
+        run_pytest(pargs, "Unit Tests", dev_path / "unit_tests", test_report)
 
 
     if flg_reduce or flg_after or flg_ql:
@@ -858,7 +858,7 @@ def main():
         # Build the TestSetup and PypeItTest objects for testing
 
         # Load test setup priority from file
-        priority_list = TestPriorityList('test_priority_list')
+        priority_list = TestPriorityList(dev_path / 'test_priority_list')
         if not pargs.quiet and pargs.verbose:
             print(f'Loaded {len(priority_list)} setup priorities')
 
@@ -947,7 +947,7 @@ def main():
 
     # Run the vet tests
     if flg_vet is True:
-        run_pytest(pargs, "Vet Tests", os.path.join(dev_path, "vet_tests"), test_report, redux_out=pargs.outputdir)
+        run_pytest(pargs, "Vet Tests", dev_path / "vet_tests", test_report, redux_out=pargs.outputdir)
 
 
     # ---------------------------------------------------------------------------
@@ -1007,7 +1007,7 @@ def build_test_setup(pargs, instr, setup_name, flg_reduce, flg_after, flg_ql):
             A TestSetup object representing the test setup.
     """
 
-    dev_path = os.getenv('PYPEIT_DEV')
+    dev_path = Path(os.getenv('PYPEIT_DEV'))
     raw_data = raw_data_dir()
 
     # Directory with raw data
@@ -1017,11 +1017,11 @@ def build_test_setup(pargs, instr, setup_name, flg_reduce, flg_after, flg_ql):
         # The default raw data directory name is in the instrument name
         instr_base_dir = instr
 
-    rawdir = os.path.join(raw_data, instr_base_dir, setup_name)
+    rawdir = raw_data / instr_base_dir / setup_name
 
     # Directory for reduced data
-    rdxdir = os.path.join(pargs.outputdir, instr, setup_name)
-    if not os.path.exists(rdxdir):
+    rdxdir = pargs.outputdir / instr / setup_name
+    if not rdxdir.exists():
         # Make the directory
         os.makedirs(rdxdir)
 

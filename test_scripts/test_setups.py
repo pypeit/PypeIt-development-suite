@@ -125,6 +125,21 @@ _pypeit_setup = {
         '0.5_2x1': [{}]},        
     }
 
+_step_by_step = {
+    'shane_kast_blue': {
+        '600_4310_d55': [{"files": ["b24.fits.gz", "b27.fits.gz"],
+                          "detectors": ["1"],}],
+    },
+    'keck_mosfire': {
+        'Y_long': [{"files": ["m191118_0064.fits", "m191120_0043.fits"],
+                              "detectors": ["1"],}],
+    },
+    'keck_deimos': {
+        '600ZD_M_6500': [{"files": ["d1010_0056.fits.gz"],
+                          "detectors": ["(1,5)","(2,6)","(3,7)","(4,8)"],}],
+    },
+}
+
 _additional_reduce = {
     'keck_lris_red': {
         'long_600_7500_d560': [dict(ignore_calibs=True)]},
@@ -427,6 +442,9 @@ all_tests = [{'factory': pypeit_tests.PypeItSetupTest,
              {'factory': pypeit_tests.PypeItReduceTest,
               'type':    TestPhase.REDUCE,
               'setups':  _additional_reduce},
+             {'factory': pypeit_tests.PypeItReduceStepByStepTest,
+              'type':    TestPhase.REDUCE,
+              'setups':  _step_by_step},
              {'factory': pypeit_tests.PypeItSensFuncTest,
               'type':    TestPhase.AFTERBURN,
               'setups':  _sensfunc},
