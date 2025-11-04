@@ -157,9 +157,9 @@ _sensfunc = {
         '32_SB_SXD': [dict(std_file='spec1d_*S0206-HIP62745*.fits',
                            sens_file='gemini_gnirs_echelle_32_sb_sxd.sens')]},
     'gemini_gmos': {
-        'GS_HAM_R400_860': [dict(std_file='spec1d_**GD71*.fits',
+        'GS_HAM_R400_860': [dict(std_file='spec1d_*GD71*.fits',
                                  sens_file='gemini_gmos_gs_ham_r400_860.sens')],
-        'GS_HAM_R400_700': [dict(std_file='spec1d_**LTT7379*.fits',
+        'GS_HAM_R400_700': [dict(std_file='spec1d_*LTT7379*.fits',
                                  sens_file='gemini_gmos_gs_ham_r400_700.sens')]},
     'keck_deimos': {
         '900ZD_LVM_5500': [dict(std_file='spec1d_*Feige110*.fits',
@@ -179,9 +179,9 @@ _sensfunc = {
                                      sens_file='keck_lris_red_mark4_long_600_10000_d680.sens')]
         },
     'ldt_deveny': {
-        'DV2': [dict(std_file='spec1d_**BD+33d2642**.fits',
+        'DV2': [dict(std_file='spec1d_*BD+33d2642*.fits',
                      sens_file='ldt_deveny_dv2.sens')],
-        'DV6': [dict(std_file='spec1d**G191-B2B**.fits',
+        'DV6': [dict(std_file='spec1d*G191-B2B*.fits',
                      sens_file='ldt_deveny_dv6.sens')]
         },
     'vlt_xshooter': {'UVB_1x1_Feige110': [dict(std_file='spec1d_*2018-06-23T10:03:53.765*.fits',

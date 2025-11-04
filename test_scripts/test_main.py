@@ -680,6 +680,7 @@ def show_setup_list():
 def thread_target(test_report):
     """Thread target method for running tests."""
     while not test_report.testing_complete:
+        
         try:
             test_setup = test_run_queue.get(timeout=2)
         except Empty:
@@ -688,16 +689,19 @@ def thread_target(test_report):
 
         passed = True
         for test in test_setup.tests:
-
-            if not passed:
-                test_report.test_skipped(test)
-            else:
-                test_report.test_started(test)
-                passed = test.run()
+            try:
+                if not passed:
+                    test_report.test_skipped(test)
+                else:
+                    test_report.test_started(test)
+                    passed = test.run()
+            except Exception as e:
+                passed=False
+                test.passed=False
+            finally:
                 test_report.test_completed(test)
 
         test_report.test_setup_completed(test_setup)
-
         # Count the test setup as done. This needs to be done to allow the join() call in main to return when
         # all of the tests have been completed
         test_run_queue.task_done()
