@@ -145,6 +145,7 @@ class TestSetup(object):
         self.generate_pyp_file = False
         self.tests = []
         self.missing_files = []
+        self.space_usage = 0
 
     def __str__(self):
         """Return a string representation of this setup of the format "instr/name"""""
@@ -156,6 +157,26 @@ class TestSetup(object):
         TestSetup object can be placed into a PriorityQueue
         """
         return self.priority < other.priority
+
+    def completed(self):
+        """Called when the test setup is completed. Can do cleanup and performance measurements, although
+        right now all it does is capture the space used"""
+        try:
+            # When generating a pypeit file, the reduction is done at a lower level than the afterburner/ql tests
+            # So use the parent directory to capture all of the data
+            if self.generate_pyp_file:
+                setup_dir = self.rdxdir.parent
+            else:
+                setup_dir = self.rdxdir
+    
+            result = subprocess.run(["du", "-sb", str(setup_dir) + '/'], stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
+            if result.returncode == 0:
+                self.space_usage = int(str(result.stdout,'UTF-8').split()[0])
+            else:
+                self.space_usage = result = str(result.stdout,'UTF-8').strip()
+        except Exception as e:
+            self.space_usage = f"Failed to get space used: {e.__class__.__name__}: {e}"
+        
 
 
 def red_text(text):
@@ -211,7 +232,7 @@ class TestReport(object):
         self.lock = Lock()
         self.testing_complete = False
         self.start_time = datetime.datetime.now()
-
+        self.total_usage = 0
         self.pytest_results=dict()
 
         if pargs.report is not None and Path(pargs.report).exists():
@@ -301,8 +322,11 @@ class TestReport(object):
 
     def test_setup_completed(self, test_setup):
         """Called once all of the tests in a test setup have completed"""
+        if not self.pargs.quiet and self.pargs.verbose:
+            print(f'{test_setup} COMPLETED. Space Usage: {test_setup.space_usage}', flush=True)        
         if self.pargs.report is not None:
             with self.lock:
+                self.total_usage += (test_setup.space_usage/2**30)
                 with open(self.pargs.report, "a") as report_file:
                     self.report_on_setup(test_setup, report_file)            
 
@@ -433,6 +457,9 @@ class TestReport(object):
 
                 print(f'{test.setup},{test.description},{test.start_time},{test.end_time},{duration_secs},{mem_usage},{duration},{mem_usage_megs}', file=output)
 
+        print(f"\nSetup,Space Usage (bytes),Space Usage (GiB)", file=output)
+        for setup in self.test_setups:
+            print(f'{setup},{setup.space_usage},{setup.space_usage/2**30}', file=output)
 
     def print_tail(self, file, num_lines, output=sys.stdout, flush=False):
         """Print the last num_lines of a file."""
@@ -453,9 +480,12 @@ class TestReport(object):
             print(f"Coverage results:", file=output)
             self.print_tail(self.pargs.coverage, 1, output)
 
+        print(f"Total disk usage: {self.total_usage:0.6} GiB", file=output)
+
         print(f"Testing Started at {self.start_time.isoformat()}", file=output)
         print(f"Testing Completed at {self.end_time.isoformat()}", file=output)
         print(f"Total Time: {self.end_time - self.start_time}", file=output)
+
 
 
     def report_on_test(self, test, output=sys.stdout, flush=False):
@@ -498,12 +528,19 @@ class TestReport(object):
     def report_on_setup(self, setup, output=sys.stdout):
         """Print a detailed report on the status of a test setup and the tests within it to the given output stream."""
 
+        if isinstance(setup.space_usage, int):
+            gib_usage = setup.space_usage / 2**30
+            gib_usage_str =  f" ({gib_usage:0.6} GiB)"
+        else:
+            gib_usage_str = ""
+
         print ("-------------------------", file=output)
         print (f"Test Setup: {setup}\n", file=output)
         print ("-------------------------", file=output)
         print("Directories:", file=output)
         print(f"         Raw data: {setup.rawdir}", file=output)
         print(f"    PypeIt output: {setup.rdxdir}", file=output)
+        print(f"       Space Used: {setup.space_usage}{gib_usage_str}", file=output)
         print("Files:", file=output)
         print(f"     .pypeit file: {setup.pyp_file}", file=output)
         print(f" Std .pypeit file: {setup.std_pyp_file}", file=output)
@@ -700,7 +737,7 @@ def thread_target(test_report):
                 test.passed=False
             finally:
                 test_report.test_completed(test)
-
+        test_setup.completed()
         test_report.test_setup_completed(test_setup)
         # Count the test setup as done. This needs to be done to allow the join() call in main to return when
         # all of the tests have been completed
