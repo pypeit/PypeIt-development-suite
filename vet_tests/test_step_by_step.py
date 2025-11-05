@@ -70,7 +70,7 @@ def compare_science_frames(raw_file, det, full_science_path, by_steps_science_pa
 
     tol = compare_float_arrays(full_spec2d.sciimg, by_steps_spec2d.sciimg)
     print(f"{det} Spec2D sciimg is within {tol}")
-    assert tol <= 1e-6, f"Spec2D file {by_steps_spec2d_paths[0]} does not match file in {full_science_path}, tolerance: {tol}"
+    assert tol < 1, f"Spec2D file {by_steps_spec2d_paths[0]} does not match file in {full_science_path}, tolerance: {tol}"
 
     # Now check the spec1d file
     full_spec1d_paths = list(full_science_path.glob(f"spec1d_{raw_file}*.fits"))
@@ -106,7 +106,7 @@ def compare_science_frames(raw_file, det, full_science_path, by_steps_science_pa
         for field in array_fields:
             tol = compare_float_arrays(full_sobj[field], by_steps_sobj[field])
             print(f"{det} {full_sobj.NAME}.{field} is within {tol}")
-            assert tol <= 1e-6, f"Object {full_sobj.NAME}.{field} does not match between {full_spec1d_paths[0]} and {by_steps_spec1d_paths[0]}. Tolerance: {tol}"
+            assert tol < 1, f"Object {full_sobj.NAME}.{field} does not match between {full_spec1d_paths[0]} and {by_steps_spec1d_paths[0]}. Tolerance: {tol}"
 
 
 

@@ -232,7 +232,7 @@ class TestReport(object):
         self.lock = Lock()
         self.testing_complete = False
         self.start_time = datetime.datetime.now()
-        self.total_usage = 0
+        self.total_usage = 0.0
         self.pytest_results=dict()
 
         if pargs.report is not None and Path(pargs.report).exists():
@@ -324,9 +324,9 @@ class TestReport(object):
         """Called once all of the tests in a test setup have completed"""
         if not self.pargs.quiet and self.pargs.verbose:
             print(f'{test_setup} COMPLETED. Space Usage: {test_setup.space_usage}', flush=True)        
-        if self.pargs.report is not None:
-            with self.lock:
-                self.total_usage += (test_setup.space_usage/2**30)
+        with self.lock:
+            self.total_usage += (test_setup.space_usage/2**30)
+            if self.pargs.report is not None:
                 with open(self.pargs.report, "a") as report_file:
                     self.report_on_setup(test_setup, report_file)            
 
