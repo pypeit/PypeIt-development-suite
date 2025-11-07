@@ -3,18 +3,15 @@ Module to run tests on arcoadd
 """
 import os
 
-import pytest
-
 import numpy as np
 from astropy.table import Table
-from astropy.io import ascii
 
 from pypeit.coadd3d import CoAdd3D, DataCube
 from pypeit.scripts.extract_datacube import ExtractDataCube
 from pypeit.scripts.sensfunc import SensFunc
 from pypeit.spectrographs.util import load_spectrograph
 from pypeit import inputfiles, specobjs, utils
-from pypeit.core import flux_calib
+from pypeit.core import standard
 
 from IPython import embed
 
@@ -37,7 +34,6 @@ def test_coadd_datacube(redux_out):
               '  spectrograph = keck_kcwi']
     output_filename = "BB1245p4238_KCWI_20191219.fits"
     # Fake data table
-    #tbl = ascii.read([files], header_start=0, data_start=1, delimiter='|', format='basic')
     tbl = Table()
     tbl['filename'] = files
 
@@ -128,8 +124,8 @@ def test_coadd_datacube(redux_out):
     # Generate a spectrum of the standard star that was used to generate the sensitivity function
     # Load in the standard star spectrum
     ra, dec = 191.39844, 42.64016
-    std_dict = flux_calib.find_standard_file(ra, dec)
-    wave_std, flux_std = std_dict['wave'].value, std_dict['flux'].value
+    std_spec = standard.get_archive_standard(ra, dec, archives='blackbody')
+    wave_std, flux_std = std_spec.wave, std_spec.flux
     # Test the optimal extraction
     # Interpolate the standard star spectrum to the same wavelength grid as the spec1d
     flux_std_interp = np.interp(spec1d[0].OPT_WAVE, wave_std, flux_std)
