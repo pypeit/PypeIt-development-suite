@@ -750,6 +750,9 @@ def fix_pypeit_file_directory(pyp_file:Path, raw_data:Path,
     # Write the pypeit file
     if outfile is None:
         outpath = rdxdir / pypeit_file_name(instr, setup, std=std)
+    else:
+        outpath = outfile
+
     with open(outpath, 'w') as ofile:
         ofile.writelines(lines)
     return outpath

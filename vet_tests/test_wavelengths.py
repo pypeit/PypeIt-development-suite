@@ -99,15 +99,11 @@ def test_redoslits_kastr(redux_out):
 
     setup = '600_5000_d46'
 
-    rdx_dir = os.path.join(redux_out,
-                             'shane_kast_red',
-                             setup)
+    rdx_dir = Path(redux_out, 'shane_kast_red', setup)
     # Artificially make the slit bad
-    slit_file = os.path.join(rdx_dir,
-                             'Calibrations',
-                             'Slits_A_0_DET01.fits.gz')
+    slit_file = Path(rdx_dir, 'Calibrations', 'Slits_A_0_DET01.fits.gz')
     # Copy the original
-    orig_slit_file = slit_file.replace('.fits.gz', '_orig.fits.gz')
+    orig_slit_file = slit_file.with_name(slit_file.name.replace('.fits.gz', '_orig.fits.gz'))
     shutil.copyfile(slit_file, orig_slit_file)
 
     # Modify
@@ -117,19 +113,14 @@ def test_redoslits_kastr(redux_out):
 
     # Copy the pypeit file
     root_redoslit_file = 'shane_kast_red_redoslit_600_5000_d46.pypeit'
-    pyp_file = os.path.join(os.path.abspath(
-        os.environ["PYPEIT_DEV"]), "vet_tests", "files", root_redoslit_file)
+    pyp_file = Path(os.environ["PYPEIT_DEV"], "vet_tests", "files", root_redoslit_file).absolute()
 
-    new_pyp_file = os.path.join(redux_out,
-                             'shane_kast_red',
-                             setup, root_redoslit_file)
+    new_pyp_file = Path(redux_out, 'shane_kast_red', setup, root_redoslit_file)
                              
-    raw_data_path =   os.path.join(os.path.abspath(
-            os.environ["PYPEIT_DEV"]),"RAW_DATA",
-            'shane_kast_red', setup)
+    raw_data_path =   Path(os.environ["PYPEIT_DEV"],"RAW_DATA", 'shane_kast_red', setup).absolute()
 
     pypeit_tests.fix_pypeit_file_directory(
-        pyp_file, None, raw_data_path,
+        pyp_file, raw_data_path,
         None, None, None, outfile=new_pyp_file)
         
     # Run 
