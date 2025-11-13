@@ -263,9 +263,8 @@ class PypeItReduceStepByStepTest(PypeItTest):
 
         detector = self.current_detector
 
-        if ',' in detector:
-            # A mosaic, remove any parens, and replace the, with a dash
-            det_str = f"DET{detector.replace(')', '').replace('(', '').replace(',', '-')}"
+        if isinstance(detector, tuple):
+            # A mosaic
             det_str = f"DET{'-'.join(detector)}"
         else:
             det_str = f"DET{detector}"
@@ -298,14 +297,17 @@ class PypeItReduceStepByStepTest(PypeItTest):
             step_by_step_dir.mkdir(exist_ok=True)
 
 
-            # Copy calibrations to it
+            # Symlink calibrations to it.
             calib_dir = self.setup.rdxdir / "Calibrations"
             if not calib_dir.is_dir():
                 self.error_msgs.append(f"Calibrations dir was not created by reduction for {self}")
                 self.passed=False
                 return self.passed
 
-            shutil.copytree(calib_dir, step_by_step_dir/"Calibrations", dirs_exist_ok=True)
+            target_dir = step_by_step_dir/"Calibrations"
+            if target_dir.exists() and not target_dir.is_symlink():
+                shutil.rmtree(target_dir)
+            target_dir.symlink_to(calib_dir, target_is_directory=True)
 
             # Copy setup file
             new_pypeit_file = step_by_step_dir / self.pyp_file.name
