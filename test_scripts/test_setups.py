@@ -124,19 +124,30 @@ _pypeit_setup = {
         '0.5_2x1': [{}]},        
     }
 
+_calib_step_by_step = {
+    'shane_kast_blue': {
+        '600_4310_d55': [{"files": ["b24.fits.gz"], "detectors": ["1"],}],
+    }
+}
+
 _step_by_step = {
     'shane_kast_blue': {
         '600_4310_d55': [{"files": ["b24.fits.gz", "b27.fits.gz"],
-                          "detectors": ["1"],}],
+                          "detectors": ["1"]}],
     },
     'keck_mosfire': {
         'Y_long': [{"files": ["m191118_0064.fits", "m191120_0043.fits"],
-                              "detectors": ["1"],}],
+                              "detectors": ["1"]}],
     },
     'keck_deimos': {
         '600ZD_M_6500': [{"files": ["d1010_0056.fits.gz"],
-                          "detectors": ["(1,5)","(2,6)","(3,7)","(4,8)"],}],
+                          "detectors": ["(1,5)","(2,6)","(3,7)","(4,8)"]}],
     },
+}
+
+_calib_only = {
+        'keck_deimos': {
+            '600ZD_M_6500': [dict(calib_only=True)]},
 }
 
 _additional_reduce = {
@@ -440,6 +451,12 @@ _quick_look = {
 all_tests = [{'factory': pypeit_tests.PypeItSetupTest,
               'type':    TestPhase.PREP,
               'setups':  _pypeit_setup},
+             {'factory': pypeit_tests.PypeItCalibStepByStep,
+              'type':    TestPhase.REDUCE,
+              'setups':  _calib_step_by_step},
+             {'factory': pypeit_tests.PypeItReduceTest,
+              'type':    TestPhase.REDUCE,
+              'setups':  _calib_only},
              {'factory': pypeit_tests.PypeItReduceTest,
               'type':    TestPhase.REDUCE,
               'setups':  _reduce_setups},

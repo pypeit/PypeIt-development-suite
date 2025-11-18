@@ -21,6 +21,8 @@ from astropy.table import Table
 import numpy as np
 
 from pypeit import inputfiles
+from pypeit.spectrographs.util import load_spectrograph
+from pypeit import calibrations
 
 from IPython import embed
 
@@ -197,18 +199,102 @@ class PypeItSetupTest(PypeItTest):
         return ['pypeit_setup', '-r', str(self.setup.rawdir), '-s',
                 self.setup.instr, '-c all', '-o', '--output_path', str(self.setup.rdxdir)]
 
+class PypeItCalibStepByStep(PypeItTest):
+    """Test subclass that runs pypeit_run_to_calibstep"""
+
+    def __init__(self, setup, pargs, files, detectors):
+        description = f"calib step-by-step"
+        super().__init__(setup, pargs, description, "test")
+
+        # If the pypeit file isn't being created by pypeit_setup, copy it and update it's path
+        if not self.setup.generate_pyp_file:
+            self.pyp_file = template_pypeit_file(self.setup.dev_path,
+                                                 self.setup.instr,
+                                                 self.setup.name,
+                                                 False)
+
+            self.pyp_file = fix_pypeit_file_directory(self.pyp_file,
+                                                      self.setup.rawdir,
+                                                      self.setup.instr,
+                                                      self.setup.name,
+                                                      self.setup.rdxdir,
+                                                      False)
+
+        self.detectors = detectors
+        self.current_detector = detectors[0]
+        self.step = 'bias'
+        self.calib_steps =  []
+        self.files = files
+        self.current_file = files[0]
+
+    def get_logfile(self):
+        detector = self.current_detector
+
+        if isinstance(detector, tuple):
+            # A mosaic
+            det_str = f"DET{'-'.join(detector)}"
+        else:
+            det_str = f"DET{detector}"
+
+        file_path = Path(self.current_file)
+        # Deal with a compressed file
+        if file_path.suffix == '.gz':
+            file_str = Path(file_path.stem).stem
+        else:
+            file_str = file_path.stem
+
+
+        """Return a unique log file for the individual steps of this test"""
+        return Path(self.setup.rdxdir, f"pypeit_run_to_calibstep.{file_str}_{det_str}_{self.step}.log")
+
+
+    def build_command_line(self):
+        return ['pypeit_run_to_calibstep', str(self.pyp_file), self.step, '--science_frame', self.current_file, '--det', str(self.current_detector)]
+
+    def run(self):
+        
+        try:
+            # If the pypeit file was generated, set it now
+            if self.setup.generate_pyp_file:
+                self.pyp_file = self.setup.rdxdir / self.setup.pyp_file
+
+            # Figure out the steps for this spectrograph
+            pf = inputfiles.PypeItFile.from_file(self.pyp_file)
+            spectrograph = pf.get_pypeitpar()[0]
+
+            # Stolen from calibrations.Calibrations.get_instance()
+            calibclass = calibrations.MultiSlitCalibrations if spectrograph.pypeline in ['MultiSlit', 'Echelle'] \
+                         else calibrations.IFUCalibrations
+            steps = calibclass.default_steps()
+
+            for self.current_file in self.files:
+                for self.current_detector in self.detectors:
+                    for self.step in steps:
+                        self.passed = super().run()
+                        if not self.passed:
+                            # Failure
+                            return self.passed
+
+        except Exception:
+            self.error_msgs.append(f"Exception in Test {self}-{self.step}:")
+            self.error_msgs.append(traceback.format_exc())
+            self.passed = False
+
+        return self.passed
 
 class PypeItReduceTest(PypeItTest):
     """Test subclass that runs run_pypeit"""
 
-    def __init__(self, setup, pargs, ignore_calibs=None, std=False):
+    def __init__(self, setup, pargs, ignore_calibs=None, calib_only=False, std=False):
 
         self.ignore_calibs = ignore_calibs if ignore_calibs is not None else pargs.do_not_reuse_calibs
+        self.calib_only = calib_only
 
-        description = f"pypeit{' standards' if std else ''}{' (ignore calibrations)' if self.ignore_calibs else ''}"
+        description = f"pypeit{' standards' if std else ''}{' (calib only)' if self.calib_only else ''}{' (ignore calibrations)' if self.ignore_calibs else ''}"
         super().__init__(setup, pargs, description, "test")
 
         self.std = std
+
         # If the pypeit file isn't being created by pypeit_setup, copy it and update it's path
         if not self.setup.generate_pyp_file:
             self.pyp_file = template_pypeit_file(self.setup.dev_path,
@@ -230,7 +316,8 @@ class PypeItReduceTest(PypeItTest):
         command_line = ['run_pypeit', str(self.pyp_file), '-o']
         if self.ignore_calibs:
             command_line += ['-m']
-
+        if self.calib_only:
+            command_line += ['-c']
         return command_line
 
     def check_for_missing_files(self):
@@ -240,7 +327,7 @@ class PypeItReduceTest(PypeItTest):
             return []
 
 class PypeItReduceStepByStepTest(PypeItTest):
-    """Test subclass that runs run_pypeit"""
+    """Test subclass that runs pypeit_reduce_by_steps"""
 
     def __init__(self, setup, pargs, files, detectors):
         description = "reduce step-by-step"
@@ -295,7 +382,6 @@ class PypeItReduceStepByStepTest(PypeItTest):
             # Make step_by_step dir
             step_by_step_dir = self.setup.rdxdir / "step_by_step"
             step_by_step_dir.mkdir(exist_ok=True)
-
 
             # Symlink calibrations to it.
             calib_dir = self.setup.rdxdir / "Calibrations"
