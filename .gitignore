@@ -1,5 +1,17 @@
 *.DS_Store
 *.swp
+# data files
+*.fits
+*.png
+!pypeitdev/wavelengths/template_files/*/*/*.fits
+!pypeitdev/wavelengths/template_files/*/*/*.png
+*.json
+*.yaml
+*.obslog
+*.log
+*.zip
+# Notebooks
+*.ipynb
 RAW_DATA/
 RAW_DATA
 REDUX_OUT/

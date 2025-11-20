@@ -81,10 +81,11 @@ def test_skysub(redux_out):
     assert len(_new_spec1d) == 1, 'Should extract 1 spectrum'
 
     # Result should be identical
-    # NOTE: This may be too strict, but it worked for me...
-    assert np.array_equal(new_spec1d[0].BOX_WAVE, _new_spec1d[0].BOX_WAVE), \
+    # NOTE: This used to use np.array_equal, but this caused an error in the
+    # cloud.
+    assert np.allclose(new_spec1d[0].BOX_WAVE, _new_spec1d[0].BOX_WAVE), \
             'wavelength should be the same'
-    assert np.array_equal(new_spec1d[0].BOX_COUNTS, _new_spec1d[0].BOX_COUNTS), \
+    assert np.allclose(new_spec1d[0].BOX_COUNTS, _new_spec1d[0].BOX_COUNTS), \
             'extracted counts should be the same'
 
 

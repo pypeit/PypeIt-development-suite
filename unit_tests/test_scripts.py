@@ -5,14 +5,10 @@ import os
 import shutil
 from pathlib import Path
 
-import numpy as np
-import pytest
+from IPython import embed
 
 import matplotlib
-from IPython import embed
 matplotlib.use('agg')  # For Travis
-
-from astropy.io import fits
 
 from pypeit import scripts
 from pypeit import edgetrace
@@ -95,5 +91,12 @@ def test_obslog():
 
     # Clean up
     shutil.rmtree(setupdir)
+
+
+def test_show_arxiv():
+    # Pargs
+    pargs = scripts.show_arxiv.ShowArxiv.parse_args(['gemini_gmos_r831_ham.fits', '--det', '1',
+                                                     '--test'])
+    scripts.show_arxiv.ShowArxiv.main(pargs)
 
 

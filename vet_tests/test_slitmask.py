@@ -47,7 +47,7 @@ def test_assign_maskinfo_add_missing(redux_out):
 
         # Run edge trace
         edges = edgetrace.EdgeTraceSet(traceImage, instrument, par['calibrations']['slitedges'],
-                                       auto=True, debug=False, show_stages=False,qa_path=None)
+                                       auto=True)
 
         slits = edges.get_slits()
 
@@ -264,7 +264,7 @@ def test_gmos_slitmask(redux_out):
                              'gemini_gmos', 
                              'GS_HAM_B600_MOS',
                              'Science', 
-                             'spec1d_S20221128S0038-FRB190711_GMOS-S_18640531T214523.954.fits')
+                             'spec1d_S20221128S0038-FRB190711_GMOS-S_20221128T023704.067.fits')
     # Load                                
     specObjs = specobjs.SpecObjs.from_fitsfile(file_path)
 
