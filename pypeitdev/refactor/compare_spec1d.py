@@ -28,7 +28,7 @@ for sobj1 in sobjs1:
     sobj2 = sobjs2[idx][0]
 
     datamodel = sobj1.datamodel
-    rtols = [1e-8, 1e-7, 1e-6, 1e-5, 1e-4, 1e-3, 1e-2, 1e-1, 1]
+    rtols = [1e-8, 1e-7, 1e-6, 1e-5, 1e-4, 1e-3, 1e-2, 1e-1, 1, 10, 100, 1000, 10000]
     for key in datamodel:
         if sobj1[key] is None or sobj2[key] is None:
             if sobj1[key] is None and sobj2[key] is None:
@@ -56,7 +56,7 @@ for sobj1 in sobjs1:
                         matched=True
                         break
                 if not matched:
-                    print(f"{sobj1.NAME}.{key}: differs by more than rtol=1")
+                    print(f"{sobj1.NAME}.{key}: differs by more than rtol=10000")
             else:
                 if np.array_equal(sobj1[key], sobj2[key]):
                     if verbose:
