@@ -146,6 +146,7 @@ class TestSetup(object):
         self.tests = []
         self.missing_files = []
         self.space_usage = 0
+        self.fs_space = ""
 
     def __str__(self):
         """Return a string representation of this setup of the format "instr/name"""""
@@ -173,7 +174,13 @@ class TestSetup(object):
             if result.returncode == 0:
                 self.space_usage = int(str(result.stdout,'UTF-8').split()[0])
             else:
-                self.space_usage = result = str(result.stdout,'UTF-8').strip()
+                self.space_usage = f"Failed to get space used return code: {result.returncode}"
+
+            result = subprocess.run(["df", "-k", str(setup_dir)], stdout = subprocess.PIPE, stderr=subprocess.STDOUT)
+
+            self.fs_space = str(result.stdout, 'UTF-8').strip()
+
+
         except Exception as e:
             self.space_usage = f"Failed to get space used: {e.__class__.__name__}: {e}"
         
@@ -323,9 +330,14 @@ class TestReport(object):
     def test_setup_completed(self, test_setup):
         """Called once all of the tests in a test setup have completed"""
         if not self.pargs.quiet and self.pargs.verbose:
-            print(f'{test_setup} COMPLETED. Space Usage: {test_setup.space_usage}', flush=True)        
+            print(f'{test_setup} COMPLETED. Space Usage: {test_setup.space_usage}', flush=True)
+            print(f'File system usage:', flush=True)
+            print(test_setup.fs_space, flush=True)
+    
         with self.lock:
-            self.total_usage += (test_setup.space_usage/2**30)
+            if isinstance(test_setup.space_usage, int):
+                self.total_usage += (test_setup.space_usage/2**30)
+
             if self.pargs.report is not None:
                 with open(self.pargs.report, "a") as report_file:
                     self.report_on_setup(test_setup, report_file)            
@@ -544,6 +556,7 @@ class TestReport(object):
         print("Files:", file=output)
         print(f"     .pypeit file: {setup.pyp_file}", file=output)
         print(f" Std .pypeit file: {setup.std_pyp_file}", file=output)
+        print(f"File system usage:\n{setup.fs_space}", file=output)
 
         print("Tests:", file=output)
 
