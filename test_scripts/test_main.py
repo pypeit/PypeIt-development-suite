@@ -170,20 +170,24 @@ class TestSetup(object):
             else:
                 setup_dir = self.rdxdir
     
-            result = subprocess.run(["du", "-sb", str(setup_dir) + '/'], stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
+            result = subprocess.run(["du", "-sk", str(setup_dir) + '/'], stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
             if result.returncode == 0:
                 self.space_usage = int(str(result.stdout,'UTF-8').split()[0])
             else:
                 self.space_usage = f"Failed to get space used return code: {result.returncode}"
 
             result = subprocess.run(["df", "-k", str(setup_dir)], stdout = subprocess.PIPE, stderr=subprocess.STDOUT)
-
-            self.fs_space = str(result.stdout, 'UTF-8').strip()
+            if result.returncode == 0:
+                last_line = str(result.stdout, 'UTF-8').splitlines()[-1]                
+                (fs, total, used, avail, rest) = last_line.split(maxsplit=4)
+                self.fs_space = f"Total: {total} KiB -- Used: {used} KiB -- Avail: {avail} KiB"
+            else:
+                self.fs_space = "Failed to get file system usage."
 
 
         except Exception as e:
             self.space_usage = f"Failed to get space used: {e.__class__.__name__}: {e}"
-        
+            self.fs_space = f"Failed to get file system used."
 
 
 def red_text(text):
@@ -330,13 +334,12 @@ class TestReport(object):
     def test_setup_completed(self, test_setup):
         """Called once all of the tests in a test setup have completed"""
         if not self.pargs.quiet and self.pargs.verbose:
-            print(f'{test_setup} COMPLETED. Space Usage: {test_setup.space_usage}', flush=True)
-            print(f'File system usage:', flush=True)
-            print(test_setup.fs_space, flush=True)
+            print(f'{test_setup} COMPLETED. Space Usage: {test_setup.space_usage} KiB', flush=True)
+            print(f'File system usage: {test_setup.fs_space}', flush=True)
     
         with self.lock:
             if isinstance(test_setup.space_usage, int):
-                self.total_usage += (test_setup.space_usage/2**30)
+                self.total_usage += (test_setup.space_usage/2**20)
 
             if self.pargs.report is not None:
                 with open(self.pargs.report, "a") as report_file:
@@ -469,9 +472,9 @@ class TestReport(object):
 
                 print(f'{test.setup},{test.description},{test.start_time},{test.end_time},{duration_secs},{mem_usage},{duration},{mem_usage_megs}', file=output)
 
-        print(f"\nSetup,Space Usage (bytes),Space Usage (GiB)", file=output)
+        print(f"\nSetup,Space Usage (KiB),Space Usage (GiB)", file=output)
         for setup in self.test_setups:
-            print(f'{setup},{setup.space_usage},{setup.space_usage/2**30}', file=output)
+            print(f'{setup},{setup.space_usage},{setup.space_usage/2**20}', file=output)
 
     def print_tail(self, file, num_lines, output=sys.stdout, flush=False):
         """Print the last num_lines of a file."""
@@ -541,7 +544,7 @@ class TestReport(object):
         """Print a detailed report on the status of a test setup and the tests within it to the given output stream."""
 
         if isinstance(setup.space_usage, int):
-            gib_usage = setup.space_usage / 2**30
+            gib_usage = setup.space_usage / 2**20
             gib_usage_str =  f" ({gib_usage:0.6} GiB)"
         else:
             gib_usage_str = ""
@@ -552,7 +555,7 @@ class TestReport(object):
         print("Directories:", file=output)
         print(f"         Raw data: {setup.rawdir}", file=output)
         print(f"    PypeIt output: {setup.rdxdir}", file=output)
-        print(f"       Space Used: {setup.space_usage}{gib_usage_str}", file=output)
+        print(f"       Space Used: {setup.space_usage} KiB {gib_usage_str}", file=output)
         print("Files:", file=output)
         print(f"     .pypeit file: {setup.pyp_file}", file=output)
         print(f" Std .pypeit file: {setup.std_pyp_file}", file=output)
