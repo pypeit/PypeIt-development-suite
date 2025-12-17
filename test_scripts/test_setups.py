@@ -140,8 +140,8 @@ _step_by_step = {
                               "detectors": ["1"]}],
     },
     'keck_deimos': {
-        '600ZD_M_6500': [{"files": ["d1010_0056.fits.gz"],
-                          "detectors": ["(1,5)","(2,6)","(3,7)","(4,8)"]}],
+        '600ZD_tilted': [{"files": ["d0225_0054.fits"],
+                          "detectors": ["(1,5)"] }],
     },
 }
 

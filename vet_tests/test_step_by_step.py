@@ -113,11 +113,6 @@ def compare_science_frames(raw_file, det, full_science_path, by_steps_science_pa
 
 def test_shane_kast_blue(redux_out):
     base_dir = Path(redux_out, 'shane_kast_blue', '600_4310_d55','shane_kast_blue_A')
-    full_calib_dir = Path(base_dir, 'Calibrations')
-    by_steps_calib_dir = Path(base_dir, 'Calibrations')
-    
-    # TODO, run run_to_calibstep to generate cals? If so do this.
-    #compare_calibrations(full_calib_dir, by_steps_calib_dir)
 
     full_science_dir = Path(base_dir, "Science")
     by_steps_science_dir = Path(base_dir, "step_by_step", "Science")
@@ -126,28 +121,15 @@ def test_shane_kast_blue(redux_out):
     compare_science_frames("b27", "DET01", full_science_dir, by_steps_science_dir)
 
 def test_keck_deimos(redux_out):
-    base_dir = Path(redux_out, 'keck_deimos', '600ZD_M_6500')
-    full_calib_dir = Path(base_dir, 'Calibrations')
-    by_steps_calib_dir = Path(base_dir, 'Calibrations')
+    base_dir = Path(redux_out, 'keck_deimos', '600ZD_tilted')
     
-    # TODO, maybe run a calib only test?
-    #compare_calibrations(full_calib_dir, by_steps_calib_dir)
-
     full_science_dir = Path(base_dir, "Science")
     by_steps_science_dir = Path(base_dir, "step_by_step", "Science")
 
-    compare_science_frames("d1010_0056", "MSC01", full_science_dir, by_steps_science_dir)
-    compare_science_frames("d1010_0056", "MSC02", full_science_dir, by_steps_science_dir)
-    compare_science_frames("d1010_0056", "MSC03", full_science_dir, by_steps_science_dir)
-    compare_science_frames("d1010_0056", "MSC04", full_science_dir, by_steps_science_dir)
+    compare_science_frames("d0225_0054", "MSC01", full_science_dir, by_steps_science_dir)
 
 def test_keck_mosfire(redux_out):
     base_dir = Path(redux_out, 'keck_mosfire', 'Y_long')
-    full_calib_dir = Path(base_dir, 'Calibrations')
-    by_steps_calib_dir = Path(base_dir, 'Calibrations')
-    
-    # TODO, maybe run a calib only test?
-    #compare_calibrations(full_calib_dir, by_steps_calib_dir)
 
     full_science_dir = Path(base_dir, "Science")
     by_steps_science_dir = Path(base_dir, "step_by_step", "Science")
