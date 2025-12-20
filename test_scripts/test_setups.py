@@ -133,26 +133,28 @@ _additional_reduce = {
 
 _sensfunc = {
     'shane_kast_blue': {
-        '600_4310_d55': [dict(std_file='spec1d_*Feige66*.fits')]},
+        '600_4310_d55': [dict(std_file='spec1d_*b24-Feige66*.fits')]},
     'shane_kast_red': {
-        '600_7500_d55_ret': [dict(std_file='spec1d_*G191b2b*.fits',
+        '600_7500_d55_ret': [dict(std_file='spec1d_*r136-G191b2b*.fits',
                                   sens_file="shane_kast_red_600_7500_d55_ret.sens")]},
     'gemini_gnirs_echelle': {
         '32_SB_SXD': [dict(std_file='spec1d_*S0206-HIP62745*.fits',
                            sens_file='gemini_gnirs_echelle_32_sb_sxd.sens')]},
     'gemini_gmos': {
-        'GS_HAM_R400_860': [dict(std_file='spec1d_**GD71*.fits',
+        'GS_HAM_R400_860': [dict(std_file='spec1d_**S0316-GD71*.fits',
                                  sens_file='gemini_gmos_gs_ham_r400_860.sens')],
-        'GS_HAM_R400_700': [dict(std_file='spec1d_**LTT7379*.fits',
-                                 sens_file='gemini_gmos_gs_ham_r400_700.sens')]},
+        'GS_HAM_R400_700': [dict(std_file='spec1d_**S0029-LTT7379*.fits',
+                                 sens_file='gemini_gmos_gs_ham_r400_700.sens')],
+    'GS_HAM_R400_795_SENS': [dict(std_file='spec1d_**LTT3218*.fits',
+                             sens_file='gemini_gmos_gs_ham_r400_795_sens.sens')]},
     'keck_deimos': {
-        '900ZD_LVM_5500': [dict(std_file='spec1d_*Feige110*.fits',
+        '900ZD_LVM_5500': [dict(std_file='spec1d_*20110729.54545-Feige110*.fits',
                                 sens_file='keck_deimos_900zd_lvm_5500.sens')]},
 
     'keck_hires': {
-        'J0100+2802_H204Hr_RED_C1_ECH_0.75_XD_1.69_1x2': [dict(std_file='spec1d_*20151214.16343*.fits',
+        'J0100+2802_H204Hr_RED_C1_ECH_0.75_XD_1.69_1x2': [dict(std_file='spec1d_*20151214.16343-Feige110*.fits',
                                                           sens_file='keck_hires_RED_C1_ECH_0.75_XD_1.69_1x2_Feige110.sens')],
-        'J0100+2802_H204Hr_RED_C1_ECH_-0.82_XD_1.62_1x2': [dict(std_file='spec1d_*20151214.16715*.fits',
+        'J0100+2802_H204Hr_RED_C1_ECH_-0.82_XD_1.62_1x2': [dict(std_file='spec1d_*20151214.16715-Feige110*.fits',
                                                            sens_file='keck_hires_RED_C1_ECH_-0.82_XD_1.62_1x2_Feige110.sens')],
                      },
     'keck_mosfire': {
@@ -163,9 +165,9 @@ _sensfunc = {
                                      sens_file='keck_lris_red_mark4_long_600_10000_d680.sens')]
         },
     'ldt_deveny': {
-        'DV2': [dict(std_file='spec1d_**BD+33d2642**.fits',
+        'DV2': [dict(std_file='spec1d_**20230423.0018-BD+33d2642**.fits',
                      sens_file='ldt_deveny_dv2.sens')],
-        'DV6': [dict(std_file='spec1d**G191-B2B**.fits',
+        'DV6': [dict(std_file='spec1d**20220221.0066-G191-B2B**.fits',
                      sens_file='ldt_deveny_dv6.sens')]
         },
     'vlt_xshooter': {'UVB_1x1_Feige110': [dict(std_file='spec1d_*2018-06-23T10:03:53.765*.fits',
