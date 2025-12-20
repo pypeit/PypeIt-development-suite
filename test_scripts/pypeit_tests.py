@@ -443,15 +443,12 @@ class PypeItSensFuncTest(PypeItTest):
         if len(files) == 0:
             self.error_msgs.append(f"Could not find std file matching!: {search_pattern}")
             self.passed = False
-        elif len(files) > 1:
-            self.error_msgs.append(f"Found more than one std file matching!: {search_pattern}")
-            self.passed = False
         else:
-            self.std_file = files[0]
+            self.std_file = [str(f) for f in files]
             return super().run()
 
     def build_command_line(self):
-        command_line = ['pypeit_sensfunc', str(self.std_file)]
+        command_line = ['pypeit_sensfunc'] + self.std_file
 
         if self.sens_file is not None:
             command_line += ['-s', str(self.sens_file)]
