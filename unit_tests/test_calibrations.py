@@ -50,17 +50,16 @@ def multi_caliBrate(fitstbl):
     calib_par['slitedges']['sync_predict'] = 'nearest'
 
     multi_caliBrate = calibrations.MultiSlitCalibrations(fitstbl, calib_par, spectrograph,
-                                                         data_output_path('Calibrations'))
+                                                         data_output_path('Calibrations'), 0, indx, 1)
     multi_caliBrate.success = True
     return reset_calib(multi_caliBrate)
 
 
 def reset_calib(calib):
     # Find the first science row
-    frame = calib.fitstbl.find_frames('science', index=True)[0]
+    calib.frame = calib.fitstbl.find_frames('science', index=True)[0]
     # Set
-    det = 1
-    calib.set_config(frame, det)
+    calib.det = 1
     return calib
 
 
@@ -138,7 +137,7 @@ def test_reuse(multi_caliBrate, fitstbl):
     spectrograph = load_spectrograph('shane_kast_blue')
     par = spectrograph.default_pypeit_par()
     multi_caliBrate_reuse = calibrations.MultiSlitCalibrations(fitstbl, par['calibrations'],
-                                                               spectrograph, str(calib_dir))
+                                                               spectrograph, str(calib_dir), 0, multi_caliBrate.frame, 1)
     multi_caliBrate_reuse.reuse_calibs = True
     reset_calib(multi_caliBrate_reuse)
 
