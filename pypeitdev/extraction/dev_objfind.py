@@ -300,7 +300,7 @@ if npeak > 0:
     # Possible thresholds    [significance,  fraction of brightest, absolute]
     threshvec = np.array([SIG_THRESH*sigma, PEAK_THRESH*ypeak.max(), ABS_THRESH])
     threshold = threshvec.max()
-    msgs.info('Using object finding threshold of: {:5.2f}'.format(threshold))
+    log.info('Using object finding threshold of: {:5.2f}'.format(threshold))
     # Trim to only objects above this threshold
     ikeep = (ypeak >= threshold)
     xcen = xcen[ikeep]
@@ -344,7 +344,7 @@ nobj = nobj_reg + nobj_hand
 for iobj in range(nobj):
     # Was a standard trace provided? If so, use that as a crutch.
     if std_trace is not None:
-        msgs.info('Using input STANDARD star trace as crutch for object tracing'.format(threshold))
+        log.info('Using input STANDARD star trace as crutch for object tracing'.format(threshold))
         x_trace = np.interp(specmid, spec_vec, std_trace)
         shift = slit_left + xsize*specobjs[iobj].spat_fracpos - x_trace
         specobjs[iobj].trace_spat = std_trace + shift
@@ -404,7 +404,7 @@ if len(specobjs) == 0:
     # print_objects(
     # return None, None, None, None
 
-msgs.info('Tweaking the object traces')
+log.info('Tweaking the object traces')
 
 
 niter = 12

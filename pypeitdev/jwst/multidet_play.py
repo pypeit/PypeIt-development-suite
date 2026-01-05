@@ -53,7 +53,7 @@ from pypeit.images import pypeitimage
 from pypeit import calibrations
 from pypeit import find_objects
 from pypeit import extraction
-from pypeit import msgs
+from pypeit import log
 from pypeit import spec2dobj
 from pypeit import coadd2d
 DO_NOT_USE = datamodels.dqflags.pixel['DO_NOT_USE']
@@ -127,7 +127,7 @@ for detname in detectors:
 # TODO: This needs to be defined by the user
 scipath = os.path.join(pypeit_output_dir, 'Science')
 if not os.path.isdir(scipath):
-    msgs.info('Creating directory for Science output: {0}'.format(scipath))
+    log.info('Creating directory for Science output: {0}'.format(scipath))
     os.makedirs(scipath)
 
 

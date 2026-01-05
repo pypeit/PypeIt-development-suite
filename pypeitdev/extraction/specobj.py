@@ -207,7 +207,7 @@ def init_exp(lordloc, rordloc, shape, maskslits,
                 # Append
                 specobjs[sl].append(copy.deepcopy(specobj))
         else:
-            msgs.warn("No objects for slit {0:d}".format(sl+1))
+            log.warning("No objects for slit {0:d}".format(sl+1))
             specobjs[sl].append(None)
     # Return
     return specobjs
@@ -339,7 +339,7 @@ def instconfig(fitsrow=None, binning=None):
         config = config + key+'{:s}-'.format(val)
     # Binning
     if binning is None:
-        msgs.warn("Assuming 1x1 binning for your detector")
+        log.warning("Assuming 1x1 binning for your detector")
         binning = '1x1'
     val = ''
     for s in binning:

@@ -4,10 +4,7 @@ Module to run tests on scripts
 import os
 import glob
 import numpy as np
-import pytest
 
-from pypeit.pypmsgs import PypeItError
-from pypeit.inputfiles import PypeItFile
 from pypeit import specobjs
 
 def test_bok_bc_manual(redux_out):
