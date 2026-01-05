@@ -15,6 +15,7 @@ from pypeit.calibframe import CalibFrame
 from pypeit.images.buildimage import SkyRegions
 from pypeit import io
 from pypeit import pypeit
+from pypeit import exposure
 from pypeit.core import skysub
 
 
@@ -30,8 +31,9 @@ def test_skysub(redux_out):
     spec2DObj = spec2dobj.Spec2DObj.from_file(spec2d, spec.get_det_name(1), chk_version=True)
 
     # Set the name for the SkyRegions file
+    calib_dir = spec2DObj.head0['CALIBDIR']
     calib_key, _ = CalibFrame.parse_key_dir(spec2DObj.calibs['EDGES'], from_filename=True)
-    regfile = SkyRegions.construct_file_name(calib_key, calib_dir=spec2DObj.head0['CALIBDIR'],
+    regfile = SkyRegions.construct_file_name(calib_key, calib_dir=calib_dir,
                                              basename=io.remove_suffix(spec2DObj.head0['FILENAME']))
     regfile = Path(regfile).resolve()
 
@@ -65,10 +67,12 @@ def test_skysub(redux_out):
     assert np.sum(is_standard) == 1, 'Number of standard frames changed'
     std_frame = np.where(is_standard)[0]
 
+    calib_id = pypeIt.fitstbl.find_frame_calib_groups(std_frame[0])[0]
+
     # Use the SkyRegions file
     pypeIt.par['reduce']['skysub']['user_regions'] = 'user'
     # This should *not* overwrite any existing spec2d or spec1d file
-    new_spec2d, new_spec1d = pypeIt.reduce_exposure(std_frame)
+    new_spec2d, new_spec1d = exposure.reduce_exposure(spec, pypeIt.fitstbl, pypeIt.par, std_frame, calib_id, calib_dir)
 
     # TODO: Would be nice to have tests that can tell whether or not the code
     # actually used the SkyRegions file...
@@ -77,7 +81,7 @@ def test_skysub(redux_out):
     # And try again using a directly defined region
     pypeIt.par['reduce']['skysub']['user_regions'] = region
     # This should *not* overwrite any existing spec2d or spec1d file
-    _new_spec2d, _new_spec1d = pypeIt.reduce_exposure(std_frame)
+    _new_spec2d, _new_spec1d = exposure.reduce_exposure(spec, pypeIt.fitstbl, pypeIt.par, std_frame, calib_id, calib_dir)
     assert len(_new_spec1d) == 1, 'Should extract 1 spectrum'
 
     # Result should be identical
