@@ -323,7 +323,7 @@ class TestReport(object):
                     else:
                         duration = 'n/a'
 
-                    verbose_info = f' with pid {test.pid} at {datetime.datetime.now().ctime()} Duration {duration}'
+                    verbose_info = f' with pid {test.pid} at {datetime.datetime.now().ctime()} Duration {duration} Memory: {test.max_mem}'
 
                 if test.passed:
                     print(f'{self._get_test_counts()} {green_text("PASSED")}  {test}{verbose_info}', flush=True)
