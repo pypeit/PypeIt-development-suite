@@ -6,7 +6,6 @@ import numpy as np
 from pypeit.core import telluric
 from pypeit.core.flux_calib import apply_sensfunc
 from pypeit.core import coadd1d
-from pypeit import log
 from pypeit import PypeItError
 
 debug = False

@@ -702,7 +702,7 @@ def combine_sensfuncs(zps, zp_scales, waves, ords, snames, sens_file, wave_mids,
 
     order_vec = np.unique(ords)[::-1]
     if np.any(np.diff(order_vec) != -1):
-        log.warnings("Orders are not contiguous. There might be missing orders.")
+        log.warning("Orders are not contiguous. There might be missing orders.")
 
     # get the wavelength grid
     wave_grid, wave_grid_mid, dsamp = wvutils.get_wave_grid(waves, wave_method='velocity',

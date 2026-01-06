@@ -328,18 +328,18 @@ def main(args):
     dither_pattern_A, dither_id_A, offset_arcsec_A = parse_dither_pattern(A_files, spectrograph.primary_hdrext)
     dither_pattern_B, dither_id_B, offset_arcsec_B = parse_dither_pattern(B_files, spectrograph.primary_hdrext)
     # Print out a report on the offsets
-    msg_string = msgs.newline()  +     '****************************************************'
-    msg_string += msgs.newline() +     ' Summary of offsets for dither pattern:   {:s}'.format(dither_pattern_A[0])
-    msg_string += msgs.newline() +     '****************************************************'
-    msg_string += msgs.newline() +     'Position     filename         arcsec    pixels    '
-    msg_string += msgs.newline() +     '----------------------------------------------------'
+    msg_string = '\n****************************************************'
+    msg_string += '\n Summary of offsets for dither pattern:   {:s}'.format(dither_pattern_A[0])
+    msg_string += '\n****************************************************'
+    msg_string += '\nPosition     filename         arcsec    pixels    '
+    msg_string += '\n----------------------------------------------------'
     for iexp, file in enumerate(A_files):
-        msg_string += msgs.newline() + '    A    {:s}   {:6.2f}    {:6.2f}'.format(
+        msg_string += '\n    A    {:s}   {:6.2f}    {:6.2f}'.format(
             os.path.basename(file), offset_arcsec_A[iexp], offset_arcsec_A[iexp]/sciImg.detector.platescale)
     for iexp, file in enumerate(B_files):
-        msg_string += msgs.newline() + '    B    {:s}   {:6.2f}    {:6.2f}'.format(
+        msg_string += '\n    B    {:s}   {:6.2f}    {:6.2f}'.format(
             os.path.basename(file), offset_arcsec_B[iexp], offset_arcsec_B[iexp]/sciImg.detector.platescale)
-    msg_string += msgs.newline() +     '****************************************************'
+    msg_string += '\n****************************************************'
     log.info(msg_string)
 
     #offset_dith_pix = offset_dith_pix = offset_arcsec_A[0]/sciImg.detector.platescale

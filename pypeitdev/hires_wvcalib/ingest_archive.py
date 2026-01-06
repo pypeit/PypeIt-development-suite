@@ -23,7 +23,6 @@ from pypeit.core import fitting
 from pypeit.core.wavecal import autoid, waveio, wv_fitting
 from pypeit.core.wavecal.wvutils import  get_xcorr_arc, xcorr_shift
 from pypeit import utils
-from pypeit import log
 from pypeit import PypeItError
 from pypeit import wavecalib
 from astropy import table

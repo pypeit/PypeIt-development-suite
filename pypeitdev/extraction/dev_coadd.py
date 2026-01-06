@@ -6,7 +6,6 @@ import matplotlib.pyplot as plt
 import os
 from astropy.io import fits
 from astropy import time
-from pypeit import log
 from pypeit import utils
 from pypeit import waveimage
 from pypeit.core import arc

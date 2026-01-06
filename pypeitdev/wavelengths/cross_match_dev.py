@@ -5,6 +5,7 @@ import numpy as np
 from pypeit import wavecalib
 from pypeit.core.wavecal import autoid, waveio
 from pypeit import utils
+from pypeit import log
 from pypeit import PypeItError
 
 
@@ -339,9 +340,9 @@ def reidentify_old(spec, wv_calib_arxiv, lamps, nreid_min, detections=None, cc_t
             continue
         # Is the RMS below the threshold?
         if final_fit['rms'] > rms_threshold:
-            log.warning('---------------------------------------------------' + msgs.newline() +
-                      'Reidentify report for slit {0:d}/{1:d}:'.format(islit + 1, nslits) + msgs.newline() +
-                      '  Poor RMS ({0:.3f})! Need to add additional spectra to arxiv to improve fits'.format(final_fit['rms']) + msgs.newline() +
+            log.warning('---------------------------------------------------\n' +
+                      'Reidentify report for slit {0:d}/{1:d}:\n'.format(islit + 1, nslits) +
+                      '  Poor RMS ({0:.3f})! Need to add additional spectra to arxiv to improve fits\n'.format(final_fit['rms']) +
                       '---------------------------------------------------')
             bad_slits = np.append(bad_slits, islit)
             # Note this result in new_bad_slits, but store the solution since this might be the best possible

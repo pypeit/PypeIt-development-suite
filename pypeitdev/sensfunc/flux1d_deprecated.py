@@ -123,7 +123,7 @@ def find_standard_file(ra, dec, toler=20.*units.arcmin, check=False):
     if check:
         return False
 
-    raise PypeItError("No standard star was found within a tolerance of {:g}".format(toler) + msgs.newline()
+    raise PypeItError("No standard star was found within a tolerance of {:g}\n".format(toler)
                + "Closest standard was {:s} at separation {:g}".format(closest['name'], closest['sep'].to('arcmin')))
 
     return None
@@ -431,7 +431,7 @@ def apply_sens_tell_specobjs(specobjs, sens_meta, sens_table, airmass, exptime, 
 
             if len(extract) == 0:
                 continue
-            log.info("Fluxing {:s} extraction for:".format(extract_type) + msgs.newline() + "{}".format(idx))
+            log.info("Fluxing {:s} extraction for:\n{}".format(extract_type, idx))
             wave = extract['WAVE'].value.copy()
             wave_mask = wave > 1.0
             counts = extract['COUNTS'].copy()

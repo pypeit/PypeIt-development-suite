@@ -185,7 +185,7 @@ def ech_load_master(filename, force=False):
         #log.warning("No Master frame found of type {:s}: {:s}".format(self.frametype, filename))
         log.warning("No Master frame found of {:s}".format(filename))
         if force:
-            raise PypeItError("Crashing out because reduce-masters-force=True:" + msgs.newline() + filename)
+            raise PypeItError("Crashing out because reduce-masters-force=True:\n" + filename)
         return None
     else:
         #log.info("Loading a pre-existing master calibration frame of type: {:}".format(self.frametype) + " from filename: {:}".format(filename))

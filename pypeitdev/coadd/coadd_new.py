@@ -35,7 +35,7 @@ def median_ratio_flux(flux,ivar,flux_ref,ivar_ref,mask=None,mask_ref=None,
     if mask_ref is None:
         mask_ref = (ivar_ref > 0.0) & (flux_ref*np.sqrt(ivar_ref) > snr_cut)
     if np.sum(mask_ref)<1:
-        log.warn('Not a single pixel has SNR>{:}, estimate median ratio based on data with \
+        log.warning('Not a single pixel has SNR>{:}, estimate median ratio based on data with \
                   20-80 percentile'.format(snr_cut))
         p20 = np.percentile(flux_ref, 20)
         p80 = np.percentile(flux_ref, 80)
@@ -43,7 +43,7 @@ def median_ratio_flux(flux,ivar,flux_ref,ivar_ref,mask=None,mask_ref=None,
     if mask is None:
         mask = (ivar > 0.0) & (flux*np.sqrt(ivar) > snr_cut)
     if np.sum(mask_ref)<1:
-        log.warn('Not a single pixel has SNR>{:}, estimate median ratio based on data with \
+        log.warning('Not a single pixel has SNR>{:}, estimate median ratio based on data with \
                   20-80 percentile'.format(snr_cut))
         p20 = np.percentile(flux, 20)
         p80 = np.percentile(flux, 80)

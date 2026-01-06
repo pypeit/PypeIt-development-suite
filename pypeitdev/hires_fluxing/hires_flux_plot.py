@@ -7,7 +7,6 @@ import numpy as np
 from astropy.io import fits
 from astropy.time import Time
 
-from pypeit import log
 from pypeit import PypeItError
 from pypeit import coadd1d
 from pypeit import specobjs

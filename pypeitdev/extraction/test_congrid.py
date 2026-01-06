@@ -4,7 +4,6 @@ from pypeit.spectrographs.util import load_spectrograph
 from pypeit import ginga
 from scipy import interpolate
 from scipy import ndimage
-from pypeit import log
 from pypeit import PypeItError
 from skimage.transform import resize
 

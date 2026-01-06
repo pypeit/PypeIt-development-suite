@@ -9,7 +9,6 @@ from astropy.table import Table
 from astropy.stats import sigma_clipped_stats
 from matplotlib import pyplot as plt
 
-from pypeit import log
 from pypeit import PypeItError
 from pypeit import ginga
 from pypeit.core import pydl
