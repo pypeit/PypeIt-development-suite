@@ -32,9 +32,10 @@ def parser(options=None):
     parser.add_argument('-p', '--pypeit_branch', type=str, default='develop', help='Name of the PypeIt branch to test')
     parser.add_argument('-d', '--dev_branch', type=str, default='develop', help='Name of the PypeIt Dev-Suite branch to use')
     parser.add_argument('-w', '--from_wheel', default=False, action='store_true', help='If set build a PypeIt wheel and install PypeIt from that. The default behavior is to install PypeIt directly from git.')
+    parser.add_argument('-v', '--verbose', default=False, action='store_true', help='If set, the dev-suite displays additional information to stdout when running.')
     parser.add_argument('--ncpu', type=int, default=8, help='Number of CPUs request')
     parser.add_argument('--ram', type=int, default=100, help='Amount of RAM to request (Gi)')
-    parser.add_argument('--storage', type=int, default=400, help="Amount of storage to request (Gi). A buffer of 50 Gi is added for the limit.")
+    parser.add_argument('--storage', type=int, default=450, help="Amount of storage to request (Gi). A buffer of 50 Gi is added for the limit.")
     parser.add_argument('--coverage', default=False, action="store_true", help="Collect code coverage data.")
     parser.add_argument('--container', type=str, default='python3.12', help="What docker container to use. 'pypeit' for the latest pypeit conatiner. 'python3.9', 'python3.10', etc for a specific python version. Or the full path to a different image.")
     parser.add_argument('--priority_list', default=False, action="store_true", help="Copy the test_priority_list to S3 after testing.")
@@ -120,11 +121,15 @@ def main():
     # Raw Data
     my_args += ' echo Copying RAW_DATA from Google Drive...; rclone --config nautilus/rclone.conf copy gdrive:RAW_DATA/ RAW_DATA/;'
     # Run the test 
-    my_args += f' ./pypeit_test -t {pargs.ncpu} {" ".join(arguments)} -r pypeit.report -o /tmp/REDUX_OUT --csv performance.csv;'
+    my_args += f' ./pypeit_test -t {pargs.ncpu} {" ".join(arguments)} -r pypeit.report -o /tmp/REDUX_OUT --csv performance.csv {"-v" if pargs.verbose else ""};'
+
+    # Tar up the logs
+    my_args += f' find /tmp/REDUX_OUT -name "*test*log" -print | tar cfz logtar.tar.gz -T -;'
 
     #Copy results back to s3    
     my_args += f' aws --endpoint $ENDPOINT_URL s3 cp pypeit.report s3://pypeit/Reports/{pargs.name}.report;'
     my_args += f' aws --endpoint $ENDPOINT_URL s3 cp performance.csv s3://pypeit/Reports/{pargs.name}_performance.csv;'
+    my_args += f' aws --endpoint $ENDPOINT_URL s3 cp logtar.tar.gz s3://pypeit/Logs/{pargs.name}.logs.tgz;'
     if pargs.coverage:
         my_args += f' aws --endpoint $ENDPOINT_URL s3 cp coverage.report s3://pypeit/Reports/{pargs.name}.coverage.report;'
     if pargs.priority_list:
