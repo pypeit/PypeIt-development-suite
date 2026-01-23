@@ -10,7 +10,7 @@ This script runs the PypeIt development suite of tests
 
 import sys
 import os
-import os.path
+from pathlib import Path
 import subprocess
 from queue import PriorityQueue, Empty
 from threading import Thread, Lock
@@ -49,14 +49,14 @@ class TestPriorityList(object):
         _file (str):        The file name to write the priority list to.
     """
 
-    def __init__(self, file):
+    def __init__(self, file : Path):
         """Reads the priority list from a file."""
         self._priority_map = dict()
         self._updated = False
         self._file = file
 
         count = 0
-        if os.path.exists(file):
+        if file.is_file():
             with open(file, "r") as f:
                 while True:
                     line = f.readline()
@@ -132,7 +132,7 @@ class TestSetup(object):
         missing_files (:obj:`list` of str): List of missing files preventing the test setup from running.
 
     """
-    def __init__(self, instr, name, rawdir, rdxdir, dev_path):
+    def __init__(self, instr : str, name: str, rawdir : Path, rdxdir : Path, dev_path : Path):
         self.instr = instr
         self.name = name
         self.key = f'{self.instr}/{self.name}'
@@ -145,6 +145,8 @@ class TestSetup(object):
         self.generate_pyp_file = False
         self.tests = []
         self.missing_files = []
+        self.space_usage = 0
+        self.fs_space = ""
 
     def __str__(self):
         """Return a string representation of this setup of the format "instr/name"""""
@@ -156,6 +158,36 @@ class TestSetup(object):
         TestSetup object can be placed into a PriorityQueue
         """
         return self.priority < other.priority
+
+    def completed(self):
+        """Called when the test setup is completed. Can do cleanup and performance measurements, although
+        right now all it does is capture the space used"""
+        try:
+            # When generating a pypeit file, the reduction is done at a lower level than the afterburner/ql tests
+            # So use the parent directory to capture all of the data
+            if self.generate_pyp_file:
+                setup_dir = self.rdxdir.parent
+            else:
+                setup_dir = self.rdxdir
+    
+            result = subprocess.run(["du", "-sk", str(setup_dir) + '/'], stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
+            if result.returncode == 0:
+                self.space_usage = int(str(result.stdout,'UTF-8').split()[0])
+            else:
+                self.space_usage = f"Failed to get space used return code: {result.returncode}"
+
+            result = subprocess.run(["df", "-k", str(setup_dir)], stdout = subprocess.PIPE, stderr=subprocess.STDOUT)
+            if result.returncode == 0:
+                last_line = str(result.stdout, 'UTF-8').splitlines()[-1]                
+                (fs, total, used, avail, rest) = last_line.split(maxsplit=4)
+                self.fs_space = f"Total: {total} KiB -- Used: {used} KiB -- Avail: {avail} KiB"
+            else:
+                self.fs_space = "Failed to get file system usage."
+
+
+        except Exception as e:
+            self.space_usage = f"Failed to get space used: {e.__class__.__name__}: {e}"
+            self.fs_space = f"Failed to get file system used."
 
 
 def red_text(text):
@@ -211,10 +243,10 @@ class TestReport(object):
         self.lock = Lock()
         self.testing_complete = False
         self.start_time = datetime.datetime.now()
-
+        self.total_usage = 0.0
         self.pytest_results=dict()
 
-        if pargs.report is not None and os.path.exists(pargs.report):
+        if pargs.report is not None and Path(pargs.report).exists():
             # Remove any old report files if we've been asked to overwrite it
             if not pargs.quiet:
                 print(f"Overwriting existing report {pargs.report}",flush=True)
@@ -301,8 +333,15 @@ class TestReport(object):
 
     def test_setup_completed(self, test_setup):
         """Called once all of the tests in a test setup have completed"""
-        if self.pargs.report is not None:
-            with self.lock:
+        if not self.pargs.quiet and self.pargs.verbose:
+            print(f'{test_setup} COMPLETED. Space Usage: {test_setup.space_usage} KiB', flush=True)
+            print(f'File system usage: {test_setup.fs_space}', flush=True)
+    
+        with self.lock:
+            if isinstance(test_setup.space_usage, int):
+                self.total_usage += (test_setup.space_usage/2**20)
+
+            if self.pargs.report is not None:
                 with open(self.pargs.report, "a") as report_file:
                     self.report_on_setup(test_setup, report_file)            
 
@@ -433,6 +472,9 @@ class TestReport(object):
 
                 print(f'{test.setup},{test.description},{test.start_time},{test.end_time},{duration_secs},{mem_usage},{duration},{mem_usage_megs}', file=output)
 
+        print(f"\nSetup,Space Usage (KiB),Space Usage (GiB)", file=output)
+        for setup in self.test_setups:
+            print(f'{setup},{setup.space_usage},{setup.space_usage/2**20}', file=output)
 
     def print_tail(self, file, num_lines, output=sys.stdout, flush=False):
         """Print the last num_lines of a file."""
@@ -453,9 +495,12 @@ class TestReport(object):
             print(f"Coverage results:", file=output)
             self.print_tail(self.pargs.coverage, 1, output)
 
+        print(f"Total disk usage: {self.total_usage:0.6} GiB", file=output)
+
         print(f"Testing Started at {self.start_time.isoformat()}", file=output)
         print(f"Testing Completed at {self.end_time.isoformat()}", file=output)
         print(f"Total Time: {self.end_time - self.start_time}", file=output)
+
 
 
     def report_on_test(self, test, output=sys.stdout, flush=False):
@@ -490,7 +535,7 @@ class TestReport(object):
 
         print('', file=output, flush=flush)
         print("End of Log:", file=output, flush=flush)
-        if test.logfile is not None and os.path.exists(test.logfile):
+        if test.logfile is not None and test.logfile.exists():
             self.print_tail(test.logfile, 3, output, flush)
 
         print('\n', file=output, flush=flush)
@@ -498,15 +543,23 @@ class TestReport(object):
     def report_on_setup(self, setup, output=sys.stdout):
         """Print a detailed report on the status of a test setup and the tests within it to the given output stream."""
 
+        if isinstance(setup.space_usage, int):
+            gib_usage = setup.space_usage / 2**20
+            gib_usage_str =  f" ({gib_usage:0.6} GiB)"
+        else:
+            gib_usage_str = ""
+
         print ("-------------------------", file=output)
         print (f"Test Setup: {setup}\n", file=output)
         print ("-------------------------", file=output)
         print("Directories:", file=output)
         print(f"         Raw data: {setup.rawdir}", file=output)
         print(f"    PypeIt output: {setup.rdxdir}", file=output)
+        print(f"       Space Used: {setup.space_usage} KiB {gib_usage_str}", file=output)
         print("Files:", file=output)
         print(f"     .pypeit file: {setup.pyp_file}", file=output)
         print(f" Std .pypeit file: {setup.std_pyp_file}", file=output)
+        print(f"File system usage:\n{setup.fs_space}", file=output)
 
         print("Tests:", file=output)
 
@@ -519,8 +572,8 @@ def clear_coverage_data(redux_out):
     for file in path.rglob(".coverage*"):
         file.unlink(missing_ok = True)
 
-def run_pytest(pargs, test_descr, test_dir, test_report, 
-               redux_out=None):
+def run_pytest(pargs, test_descr : str, test_dir : Path, test_report : TestReport, 
+               redux_out: Path|None=None):
     """Run pytest on a directory of test files.
     
     Args:
@@ -542,7 +595,7 @@ def run_pytest(pargs, test_descr, test_dir, test_report,
             The location of the output of this dev-suite run. Optional, only required
             if the pytest suite requires the output from the dev-suite (i.e vet_tests).
     """
-    abs_test_dir = os.path.abspath(test_dir)
+    abs_test_dir = test_dir.absolute()
 
     test_report.pytest_started(test_descr)
 
@@ -561,7 +614,7 @@ def run_pytest(pargs, test_descr, test_dir, test_report,
     if redux_out is not None:
         args += ["--redux_out", redux_out]
 
-    args.append(abs_test_dir)
+    args.append(str(abs_test_dir))
 
     # Run pytest, sending the outpu to the test report.
     # We change the current directory so that the coverage output goes to the outputdir
@@ -598,7 +651,7 @@ def generate_coverage_report(pargs):
         process = subprocess.run(["coverage", "report", "-m"], stdout=f, stderr=subprocess.STDOUT, cwd=pargs.outputdir)
 
 def raw_data_dir():
-    return os.path.join(os.environ['PYPEIT_DEV'], 'RAW_DATA')
+    return Path(os.environ['PYPEIT_DEV'], 'RAW_DATA')
 
 
 def available_data():
@@ -680,6 +733,7 @@ def show_setup_list():
 def thread_target(test_report):
     """Thread target method for running tests."""
     while not test_report.testing_complete:
+        
         try:
             test_setup = test_run_queue.get(timeout=2)
         except Empty:
@@ -688,16 +742,19 @@ def thread_target(test_report):
 
         passed = True
         for test in test_setup.tests:
-
-            if not passed:
-                test_report.test_skipped(test)
-            else:
-                test_report.test_started(test)
-                passed = test.run()
+            try:
+                if not passed:
+                    test_report.test_skipped(test)
+                else:
+                    test_report.test_started(test)
+                    passed = test.run()
+            except Exception as e:
+                passed=False
+                test.passed=False
+            finally:
                 test_report.test_completed(test)
-
+        test_setup.completed()
         test_report.test_setup_completed(test_setup)
-
         # Count the test setup as done. This needs to be done to allow the join() call in main to return when
         # all of the tests have been completed
         test_run_queue.task_done()
@@ -722,18 +779,18 @@ def main():
         os.environ['OMP_NUM_THREADS'] = '1'
 
     raw_data = raw_data_dir()
-    if not os.path.isdir(raw_data):
+    if not raw_data.is_dir():
         raise NotADirectoryError('No directory: {0}'.format(raw_data))
 
-    if not os.path.exists(pargs.outputdir):
+    pargs.outputdir = Path(pargs.outputdir).absolute()
+    if not pargs.outputdir.exists():
         os.mkdir(pargs.outputdir)
-    pargs.outputdir = os.path.abspath(pargs.outputdir)
 
     # Make sure we can create a writable report file (if needed) before starting the tests
     if pargs.report is None and pargs.quiet:
         # If there's no report file specified in the command line, but we're in quiet mode,
         # make up a report file name
-        pargs.report = get_unique_file(os.path.join(pargs.outputdir, "pypeit_test_results.txt"))
+        pargs.report = get_unique_file(pargs.outputdir / "pypeit_test_results.txt")
 
     # ---------------------------------------------------------------------------
     # Determine which tests to run
@@ -846,11 +903,11 @@ def main():
     # For coverage testing, run the PypeIt unit tests too
     if flg_pypeit_tests and not pargs.prep_only:
         pypeit_tests_dir = Path(pypeit.__file__).parent.joinpath("tests")
-        run_pytest(pargs, "PypeIt Unit Tests", str(pypeit_tests_dir), test_report)
+        run_pytest(pargs, "PypeIt Unit Tests", pypeit_tests_dir, test_report)
 
-    dev_path = os.getenv('PYPEIT_DEV')
+    dev_path = Path(os.getenv('PYPEIT_DEV'))
     if flg_unit is True and not pargs.prep_only:
-        run_pytest(pargs, "Unit Tests", os.path.join(dev_path, "unit_tests"), test_report)
+        run_pytest(pargs, "Unit Tests", dev_path / "unit_tests", test_report)
 
 
     if flg_reduce or flg_after or flg_ql:
@@ -858,7 +915,7 @@ def main():
         # Build the TestSetup and PypeItTest objects for testing
 
         # Load test setup priority from file
-        priority_list = TestPriorityList('test_priority_list')
+        priority_list = TestPriorityList(dev_path / 'test_priority_list')
         if not pargs.quiet and pargs.verbose:
             print(f'Loaded {len(priority_list)} setup priorities')
 
@@ -947,7 +1004,7 @@ def main():
 
     # Run the vet tests
     if flg_vet is True:
-        run_pytest(pargs, "Vet Tests", os.path.join(dev_path, "vet_tests"), test_report, redux_out=pargs.outputdir)
+        run_pytest(pargs, "Vet Tests", dev_path / "vet_tests", test_report, redux_out=pargs.outputdir)
 
 
     # ---------------------------------------------------------------------------
@@ -1007,7 +1064,7 @@ def build_test_setup(pargs, instr, setup_name, flg_reduce, flg_after, flg_ql):
             A TestSetup object representing the test setup.
     """
 
-    dev_path = os.getenv('PYPEIT_DEV')
+    dev_path = Path(os.getenv('PYPEIT_DEV'))
     raw_data = raw_data_dir()
 
     # Directory with raw data
@@ -1017,11 +1074,11 @@ def build_test_setup(pargs, instr, setup_name, flg_reduce, flg_after, flg_ql):
         # The default raw data directory name is in the instrument name
         instr_base_dir = instr
 
-    rawdir = os.path.join(raw_data, instr_base_dir, setup_name)
+    rawdir = raw_data / instr_base_dir / setup_name
 
     # Directory for reduced data
-    rdxdir = os.path.join(pargs.outputdir, instr, setup_name)
-    if not os.path.exists(rdxdir):
+    rdxdir = pargs.outputdir / instr / setup_name
+    if not rdxdir.exists():
         # Make the directory
         os.makedirs(rdxdir)
 

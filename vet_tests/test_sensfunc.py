@@ -138,7 +138,7 @@ def test_sensfunc_from_onespec(redux_out):
         par['sensfunc']['algorithm'] = algorithm
 
         # Instantiate the SensFunc class for the requested algorithm
-        sensobj = sensfunc.SensFunc.get_instance(coadd1d_fname, sens_file, par['sensfunc'], write_qa=False)
+        sensobj = sensfunc.SensFunc.get_instance([coadd1d_fname], sens_file, par['sensfunc'], write_qa=False)
         sensobj.run()
         sensobj.to_file(sens_file, overwrite=True)
         # Read it back in and make some checks

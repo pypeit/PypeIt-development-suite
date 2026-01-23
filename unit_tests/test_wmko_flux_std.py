@@ -37,7 +37,7 @@ def test_wmko_flux_std():
     par['sensfunc']['algorithm'] = "IR"
     par['sensfunc']['multi_spec_det'] = [3,7]
     # Instantiate the relevant class for the requested algorithm
-    sensobj = sensfunc.SensFunc.get_instance(spec1dfile, outfile, par['sensfunc'])
+    sensobj = sensfunc.SensFunc.get_instance([spec1dfile], outfile, par['sensfunc'])
     # Generate the sensfunc
     sensobj.run()
     # Write it out to a file
