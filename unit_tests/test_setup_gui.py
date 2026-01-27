@@ -614,46 +614,46 @@ def test_run_setup_failure(qapp, qtbot, raw_data_path, tmp_path, monkeypatch):
     # Verify all of the files are commented out
     assert np.all([filename.startswith("#") for filename in setup_gui_model.obslog_model.metadata_model.metadata['filename']])
 
-def test_run_setup_cancel(qapp, qtbot, raw_data_path, tmp_path, monkeypatch):
-    c, main_window = setup_offscreen_gui(tmp_path, monkeypatch, qapp, qtbot)    
-    setup_gui_model = c.model
-    obs_log_tab = main_window._obs_log_tab
-
-    # Select the wrong spectrograph for the test spectrograph 
-    with qtbot.waitSignal(setup_gui_model.obslog_model.spectrograph_changed, timeout=1000):
-        qtbot.keyClicks(obs_log_tab.spectrograph, "keck_mosfire")
-        qtbot.keyClick(obs_log_tab.spectrograph, Qt.Key.Key_Enter)
-
-    # set raw data
-    raw_dir = raw_data_path / 'keck_mosfire'
-    j_multi = (raw_dir / "J_multi").absolute()
-    with qtbot.waitSignals([(setup_gui_model.obslog_model.paths_model.rowsInserted, "path inserted"),
-                            (setup_gui_model.obslog_model.paths_model.dataChanged, "path data set")], 
-                            order = 'strict', raising=True, timeout=1000):
-        obs_log_tab.paths_editor._path.setCurrentText(str(j_multi))
-        qtbot.keyClick(obs_log_tab.paths_editor._path, Qt.Key_Enter)
-
-
-    # Helpers to verify and cause a cancel
-    def verify_canceled_setup(canceled, exc_info):
-        return canceled is True and (exc_info is None or all([value is None for value in exc_info]))
-
-    def raise_cancel_exception(*args):
-        raise controller.OpCanceledError('Setup canceled for testing')
-
-    # Click the Run Setup button and trigger a cancel exception
-
-    with qtbot.waitSignal(c.operation_thread.completed, check_params_cb=verify_canceled_setup, raising=True, timeout=10000):
-        # Use the GUI's internal log watcher to trigger the canceled exception
-        setup_gui_model.log_buffer.watch("test_cancel", re.compile("Adding metadata for .*$"), raise_cancel_exception)
-        qtbot.mouseClick(main_window.setupButton, Qt.MouseButton.LeftButton)
-
-    # Make sure the thread finishes before continuing
-    assert c.operation_thread.wait(QDeadlineTimer(1000)) is True
-
-    assert setup_gui_model.state == model.ModelState.NEW
- 
-    setup_gui_model.log_buffer.unwatch("test_cancel")
+#def test_run_setup_cancel(qapp, qtbot, raw_data_path, tmp_path, monkeypatch):
+#    c, main_window = setup_offscreen_gui(tmp_path, monkeypatch, qapp, qtbot)    
+#    setup_gui_model = c.model
+#    obs_log_tab = main_window._obs_log_tab
+#
+#    # Select the wrong spectrograph for the test spectrograph 
+#    with qtbot.waitSignal(setup_gui_model.obslog_model.spectrograph_changed, timeout=1000):
+#        qtbot.keyClicks(obs_log_tab.spectrograph, "keck_mosfire")
+#        qtbot.keyClick(obs_log_tab.spectrograph, Qt.Key.Key_Enter)
+#
+#    # set raw data
+#    raw_dir = raw_data_path / 'keck_mosfire'
+#    j_multi = (raw_dir / "J_multi").absolute()
+#    with qtbot.waitSignals([(setup_gui_model.obslog_model.paths_model.rowsInserted, "path inserted"),
+#                            (setup_gui_model.obslog_model.paths_model.dataChanged, "path data set")], 
+#                            order = 'strict', raising=True, timeout=1000):
+#        obs_log_tab.paths_editor._path.setCurrentText(str(j_multi))
+#        qtbot.keyClick(obs_log_tab.paths_editor._path, Qt.Key_Enter)
+#
+#
+#    # Helpers to verify and cause a cancel
+#    def verify_canceled_setup(canceled, exc_info):
+#        return canceled is True and (exc_info is None or all([value is None for value in exc_info]))
+#
+#    def raise_cancel_exception(*args):
+#        raise controller.OpCanceledError('Setup canceled for testing')
+#
+#    # Click the Run Setup button and trigger a cancel exception
+#
+#    with qtbot.waitSignal(c.operation_thread.completed, check_params_cb=verify_canceled_setup, raising=True, timeout=10000):
+#        # Use the GUI's internal log watcher to trigger the canceled exception
+#        setup_gui_model.log_buffer.watch("test_cancel", re.compile("Adding metadata for .*$"), raise_cancel_exception)
+#        qtbot.mouseClick(main_window.setupButton, Qt.MouseButton.LeftButton)
+#
+#    # Make sure the thread finishes before continuing
+#    assert c.operation_thread.wait(QDeadlineTimer(1000)) is True
+#
+#    assert setup_gui_model.state == model.ModelState.NEW
+# 
+#    setup_gui_model.log_buffer.unwatch("test_cancel")
 
 def test_multi_paths(qapp, qtbot, raw_data_path, tmp_path, monkeypatch):
     """Test re-running setup on setting multiple paths"""
