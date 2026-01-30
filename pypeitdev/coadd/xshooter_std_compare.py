@@ -7,7 +7,6 @@ from astropy.io import fits
 from astropy.time import Time
 from astropy.table import Table
 
-from pypeit import msgs
 from pypeit.core import meta
 from pypeit import utils
 from pypeit.spectrographs.util import load_spectrograph

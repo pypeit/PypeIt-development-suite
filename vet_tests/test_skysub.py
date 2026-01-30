@@ -60,8 +60,7 @@ def test_skysub(redux_out):
     assert pypeit_file.exists(), 'PypeIt file missing!'
 
     # Initialize the main pypeit run
-    pypeIt = pypeit.PypeIt(str(pypeit_file), verbosity=2, reuse_calibs=True, overwrite=True,
-                           redux_path=str(redux_path))
+    pypeIt = pypeit.PypeIt(str(pypeit_file), reuse_calibs=True, overwrite=True, redux_path=str(redux_path))
     assert pypeIt.fitstbl.n_calib_groups == 1, 'Number of calibration groups changed'
     is_standard = pypeIt.fitstbl.find_frames('standard')
     assert np.sum(is_standard) == 1, 'Number of standard frames changed'

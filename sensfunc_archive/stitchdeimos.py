@@ -1,7 +1,7 @@
 import numpy as np
 from stitchutils import sanity_check_sf, stitch_sf_polyfit, stitch_sf_polyfit_old, stitch_sf, truncate_sf, translate_sf, gradient_stitch_sf
 
-from pypeit import msgs
+from pypeit import log
 
 def stitch_sensfunc(grating, sflist):
     if grating == '1200G':
@@ -105,7 +105,7 @@ def stitch_1200G_sensfunc(sflist):
                                                gen_wave_grid=True, 
                                                telgrid_file = "TelFit_MaunaKea_3100_26100_R20000.fits")
 
-    msgs.info(f"Region overwritten with polyfit: {fit_info[0]} to {fit_info[1]}")
+    log.info(f"Region overwritten with polyfit: {fit_info[0]} to {fit_info[1]}")
 
     # Create a mask for the areas that were filled in with a polynomial fit. This is used for 
     # plotting

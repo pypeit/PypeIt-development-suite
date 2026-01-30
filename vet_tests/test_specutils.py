@@ -13,7 +13,7 @@ except ModuleNotFoundError:
     pypeit_loaders = None
 from pypeit.specutils import Spectrum, SpectrumList
 
-from pypeit.pypmsgs import PypeItError
+from pypeit import PypeItError
 
 specutils_required = pytest.mark.skipif(Spectrum is None or SpectrumList is None 
                                             or pypeit_loaders is None,

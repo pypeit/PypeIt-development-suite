@@ -21,7 +21,8 @@ from pypeit.core.telluric import ZP_UNIT_CONST
 from pypeit.core.wavecal import wvutils
 from pypeit.spectrographs.util import load_spectrograph
 from pypeit.sensfunc import SensFunc
-from pypeit import msgs
+from pypeit import log
+from pypeit import PypeItError
 from pypeit import io
 from pypeit import utils
 
@@ -278,9 +279,9 @@ def create_sens_files(spec1d_files, spec1d_files_path, sens_files_path, boxcar=F
 
     # check if the paths exist
     if not spec1d_files_path.exists():
-        msgs.error(f"Spec1d files path {spec1d_files_path} does not exist.")
+        raise PypeItError(f"Spec1d files path {spec1d_files_path} does not exist.")
     if not sens_files_path.exists():
-        msgs.error(f"Sensitivity functions path {sens_files_path} does not exist.")
+        raise PypeItError(f"Sensitivity functions path {sens_files_path} does not exist.")
 
     # load the spectrograph
     spectrograph = load_spectrograph("keck_hires")
@@ -318,7 +319,7 @@ def create_sens_files(spec1d_files, spec1d_files_path, sens_files_path, boxcar=F
 
             # Generate the sensfunc
             sensobj.run()
-            msgs.info(f'Sensitivity function for {spec1d_file} computed.')
+            log.info(f'Sensitivity function for {spec1d_file} computed.')
             sensfuncs.append(sensobj)
             orders = np.append(orders, sensobj.sens['ECH_ORDERS'].data)
             sensnames.append(sens_file.name)
@@ -327,10 +328,10 @@ def create_sens_files(spec1d_files, spec1d_files_path, sens_files_path, boxcar=F
             save_sensobj_to_fits(sensobj, sens_file, fits.open(spec1d))
 
         except Exception as e:
-            msgs.warn(f'Error computing sensitivity function for {spec1d_file}.\n{e}')
+            log.warning(f'Error computing sensitivity function for {spec1d_file}.\n{e}')
 
     if len(sensfuncs) == 0:
-        msgs.error("No sensitivity functions loaded.")
+        raise PypeItError("No sensitivity functions loaded.")
 
     # save to file
     use_spec1dfiles_file = f'used_spec1ds_v{fits.getval(sensfuncs[0], "DMODVER", 1)}.txt'
@@ -373,13 +374,13 @@ def load_sensfunc(sens_files_path, sens_fnames=None, sens_fnames_dict=None,
         sens_files_path = Path(sens_files_path).absolute()
     # check if the path exists
     if not sens_files_path.exists():
-        msgs.error(f"Sensitivity functions path {sens_files_path} does not exist.")
+        raise PypeItError(f"Sensitivity functions path {sens_files_path} does not exist.")
 
     if sens_fnames is None and sens_fnames_dict is None:
-        msgs.error("No sensitivity function files provided. "
+        raise PypeItError("No sensitivity function files provided. "
                    "Please provide a list of files or a dictionary with the orders and the files.")
     elif sens_fnames is not None and sens_fnames_dict is not None:
-        msgs.warn("Both a list of files and a dictionary provided. "
+        log.warning("Both a list of files and a dictionary provided. "
                    "Using the dictionary and ignoring the list of files.")
         sens_fnames = np.unique([item for sublist in sens_fnames_dict.values() for item in sublist if sublist])
     elif sens_fnames is None and sens_fnames_dict is not None:
@@ -392,12 +393,12 @@ def load_sensfunc(sens_files_path, sens_fnames=None, sens_fnames_dict=None,
         #     continue
         sens_file = sens_files_path / sens_file
         if not sens_file.exists():
-            msgs.warn(f'Sensitivity function file {sens_file} does not exist.')
+            log.warning(f'Sensitivity function file {sens_file} does not exist.')
         else:
             sensnames.append(sens_file.name)
 
     if len(sensnames) == 0:
-        msgs.error("No sensitivity functions loaded.")
+        raise PypeItError("No sensitivity functions loaded.")
 
     zps, zp_scales, waves, ords, snames, wave_mids, zps_meds = plot_parse_loaded(sensnames, sens_files_path,
                                                                selected_lines=sens_fnames_dict,
@@ -405,7 +406,7 @@ def load_sensfunc(sens_files_path, sens_fnames=None, sens_fnames_dict=None,
                                                                scale=scale, ptype=ptype)
 
     if len(zps) == 0:
-        msgs.error("No sensitivity functions loaded. Try setting the parameter --parse.")
+        raise PypeItError("No sensitivity functions loaded. Try setting the parameter --parse.")
     return zps, zp_scales, waves, ords, snames, wave_mids, zps_meds
 
 
@@ -701,7 +702,7 @@ def combine_sensfuncs(zps, zp_scales, waves, ords, snames, sens_file, wave_mids,
 
     order_vec = np.unique(ords)[::-1]
     if np.any(np.diff(order_vec) != -1):
-        msgs.warns("Orders are not contiguous. There might be missing orders.")
+        log.warning("Orders are not contiguous. There might be missing orders.")
 
     # get the wavelength grid
     wave_grid, wave_grid_mid, dsamp = wvutils.get_wave_grid(waves, wave_method='velocity',
@@ -1011,7 +1012,7 @@ def main(args):
 
     sensfuncs_path = Path(args.sensfuncs_path).absolute()
     if not sensfuncs_path.exists():
-        msgs.error(f"Sensitivity functions path {sensfuncs_path} does not exist.")
+        raise PypeItError(f"Sensitivity functions path {sensfuncs_path} does not exist.")
 
     if args.reuse:
         sens_fnames_dict = None
@@ -1041,13 +1042,13 @@ def main(args):
     else:
         spec1ds_path = Path(args.spec1ds_path).absolute()
         if not spec1ds_path.exists():
-            msgs.error(f"Spec1d files path {spec1ds_path} does not exist.")
+            raise PypeItError(f"Spec1d files path {spec1ds_path} does not exist.")
         if args.spec1d_fnames is not None:
             spec1d_fnames = np.loadtxt(args.spec1d_fnames, dtype=str)
         else:
             spec1d_fnames = [f.name for f in spec1ds_path.glob('spec1d*.fits')]
         if len(spec1d_fnames) == 0:
-            msgs.error(f"No spec1d files found.")
+            raise PypeItError(f"No spec1d files found.")
         # create the sensitivity functions and save them to disk
         create_sens_files(spec1d_fnames, spec1ds_path, sensfuncs_path,
                           boxcar=args.boxcar, use_flat=args.use_flat, skip_existing=args.skip_existing)
@@ -1057,7 +1058,7 @@ def main(args):
                                                                    scale=args.scale, ptype=args.ptype)
 
     if len(zps) == 0:
-        msgs.error(f"No sensitivity functions found.")
+        raise PypeItError(f"No sensitivity functions found.")
 
     # combine the sensitivity functions
     sensfunc = combine_sensfuncs(zps, zp_scales, waves, ords, snames, sensfuncs_path /  sens_fnames[0], wave_mids, zps_meds,
