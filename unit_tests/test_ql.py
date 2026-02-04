@@ -12,7 +12,7 @@ import pytest
 import numpy as np
 
 from pypeit import pypeitsetup
-from pypeit.pypmsgs import PypeItError
+from pypeit import PypeItError
 from pypeit.scripts import ql
 
 def test_dither_parse():

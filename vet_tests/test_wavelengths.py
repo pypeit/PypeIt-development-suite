@@ -99,15 +99,11 @@ def test_redoslits_kastr(redux_out):
 
     setup = '600_5000_d46'
 
-    rdx_dir = os.path.join(redux_out,
-                             'shane_kast_red',
-                             setup)
+    rdx_dir = Path(redux_out, 'shane_kast_red', setup)
     # Artificially make the slit bad
-    slit_file = os.path.join(rdx_dir,
-                             'Calibrations',
-                             'Slits_A_0_DET01.fits.gz')
+    slit_file = Path(rdx_dir, 'Calibrations', 'Slits_A_0_DET01.fits.gz')
     # Copy the original
-    orig_slit_file = slit_file.replace('.fits.gz', '_orig.fits.gz')
+    orig_slit_file = slit_file.with_name(slit_file.name.replace('.fits.gz', '_orig.fits.gz'))
     shutil.copyfile(slit_file, orig_slit_file)
 
     # Modify
@@ -117,19 +113,14 @@ def test_redoslits_kastr(redux_out):
 
     # Copy the pypeit file
     root_redoslit_file = 'shane_kast_red_redoslit_600_5000_d46.pypeit'
-    pyp_file = os.path.join(os.path.abspath(
-        os.environ["PYPEIT_DEV"]), "vet_tests", "files", root_redoslit_file)
+    pyp_file = Path(os.environ["PYPEIT_DEV"], "vet_tests", "files", root_redoslit_file).absolute()
 
-    new_pyp_file = os.path.join(redux_out,
-                             'shane_kast_red',
-                             setup, root_redoslit_file)
+    new_pyp_file = Path(redux_out, 'shane_kast_red', setup, root_redoslit_file)
                              
-    raw_data_path =   os.path.join(os.path.abspath(
-            os.environ["PYPEIT_DEV"]),"RAW_DATA",
-            'shane_kast_red', setup)
+    raw_data_path =   Path(os.environ["PYPEIT_DEV"],"RAW_DATA", 'shane_kast_red', setup).absolute()
 
     pypeit_tests.fix_pypeit_file_directory(
-        pyp_file, None, raw_data_path,
+        pyp_file, raw_data_path,
         None, None, None, outfile=new_pyp_file)
         
     # Run 
@@ -287,13 +278,13 @@ def test_keck_hires(redux_out):
 
 def test_gmos(redux_out):
 
-    for setup, index, rms, mosaic in zip(
-        ['GS_HAM_B480_550'],
-        [1],
-        [0.30],
-        ['MSC01'],
+    for setup, index, rms, mosaic, setupID in zip(
+        ['GS_HAM_B480_550', 'GS_HAM_R150_869'],
+        [1, 0],
+        [0.30, 0.25],
+        ['MSC01', 'MSC01'],
+        ['A_0', 'LTT7379_0']
         ):
-        setupID = 'A_0'
         # Check that spatial flexure shift was set!
         file_path = os.path.join(redux_out,
                              'gemini_gmos',
@@ -304,3 +295,21 @@ def test_gmos(redux_out):
         waveCalib = WaveCalib.from_file(file_path)
         assert waveCalib.wv_fits[index].rms < rms, f'RMS of gemini_gmos {setup} is too high!'
 
+
+def test_subaru_focas(redux_out):
+
+    for setup, index, rms in zip(
+        ['300B_None'],
+        [1],
+        [0.30],
+        ):
+        setupID = 'A_0'
+        # Check that spatial flexure shift was set!
+        file_path = os.path.join(redux_out,
+                             'subaru_focas',
+                             setup,
+                             'Calibrations',
+                             f'WaveCalib_{setupID}_DET01.fits')
+        # Load
+        waveCalib = WaveCalib.from_file(file_path)
+        assert waveCalib.wv_fits[index].rms < rms, f'RMS of subaru_focas {setup} is too high!'

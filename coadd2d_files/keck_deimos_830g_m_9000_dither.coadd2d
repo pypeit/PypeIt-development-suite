@@ -10,7 +10,7 @@
 [coadd2d]
   offsets = maskdef_offsets
   weights = auto
-  user_obj = 1305,1
+  user_obj_ids = 1303, 1305
   manual = (4,8):1395.4:609.9:4.2:2;(4,8):495.:5900.:4.2:2
 
 

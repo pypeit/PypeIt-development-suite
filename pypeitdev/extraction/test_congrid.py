@@ -4,15 +4,15 @@ from pypeit.spectrographs.util import load_spectrograph
 from pypeit import ginga
 from scipy import interpolate
 from scipy import ndimage
-from pypeit import msgs
+from pypeit import PypeItError
 from skimage.transform import resize
 
 
 # if not (np.mod(a.shape[0], newshape[0]) == 0) or (np.mod(newshape[0], a.shape[0]) == 0):
-#    msgs.error('a.shape[0] and newshape[0] are not interger multiples of each other')
+#    raise PypeItError('a.shape[0] and newshape[0] are not interger multiples of each other')
 
 # if not (np.mod(a.shape[1], newshape[1]) == 0) or (np.mod(newshape[1], a.shape[1]) == 0):
-#    msgs.error('a.shape[1] and newshape[1] are not interger multiples of each other')
+#    raise PypeItError('a.shape[1] and newshape[1] are not interger multiples of each other')
 
 
 def rebin(a, newshape):
@@ -21,7 +21,7 @@ def rebin(a, newshape):
     '''
 
     if not len(a.shape) == len(newshape):
-        msgs.error('Dimension of a image does not match dimension of new requested image shape')
+        raise PypeItError('Dimension of a image does not match dimension of new requested image shape')
 
     slices = [slice(0, old, float(old) / new) for old, new in zip(a.shape, newshape)]
     coordinates = np.mgrid[slices]

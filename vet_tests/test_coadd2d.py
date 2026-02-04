@@ -30,7 +30,9 @@ def test_offsets_and_weights(redux_out):
     assert len(spec2d_files) == 4, 'Wrong number of exposures'
 
     # init coadd2d with offsets='auto' and weights='auto'
-    coadd = coadd2d.CoAdd2D.get_instance(spec2d_files, spectrograph, par, offsets='auto', weights='auto')
+    par['coadd2d']['offsets'] = 'auto'
+    par['coadd2d']['weights'] = 'auto'
+    coadd = coadd2d.CoAdd2D.get_instance(spec2d_files, spectrograph, par)
 
     # check the offsets
     assert coadd.offsets is None, 'Wrong offsets'
@@ -38,8 +40,9 @@ def test_offsets_and_weights(redux_out):
     assert len(coadd.use_weights) == 5, 'The size of the weights should be equal to the number of orders'
 
     # init coadd2d with offsets=list and weights=list
-    coadd = coadd2d.CoAdd2D.get_instance(spec2d_files, spectrograph, par,
-                                         offsets=[0.5, 0.5, 0.5, 0.5], weights=[1., 1., 1., 1.])
+    par['coadd2d']['offsets'] = [0.5, 0.5, 0.5, 0.5]
+    par['coadd2d']['weights'] = [1., 1., 1., 1.]
+    coadd = coadd2d.CoAdd2D.get_instance(spec2d_files, spectrograph, par)
 
     # check the offsets
     assert np.all(coadd.offsets == [0.5, 0.5, 0.5, 0.5]), 'Wrong offsets'
@@ -49,7 +52,9 @@ def test_offsets_and_weights(redux_out):
     assert isinstance(coadd.use_weights, list), 'Weights should be a list'
 
     # init coadd2d with offsets='header' and weights='uniform'
-    coadd = coadd2d.CoAdd2D.get_instance(spec2d_files, spectrograph, par, offsets='header', weights='uniform')
+    par['coadd2d']['offsets'] = 'header'
+    par['coadd2d']['weights'] = 'uniform'
+    coadd = coadd2d.CoAdd2D.get_instance(spec2d_files, spectrograph, par)
 
     # check the offsets
     assert np.all(np.round(coadd.offsets) == [0., -67., 0., -67.]), 'Wrong offsets'
@@ -77,7 +82,9 @@ def test_offsets_and_weights(redux_out):
     assert len(spec2d_files) == 2, 'Wrong number of exposures'
 
     # init coadd2d with offsets='maskdef_offsets' and weights='auto'
-    coadd = coadd2d.CoAdd2D.get_instance(spec2d_files, spectrograph, par, offsets='maskdef_offsets', weights='auto')
+    par['coadd2d']['offsets'] = 'maskdef_offsets'
+    par['coadd2d']['weights'] = 'auto'
+    coadd = coadd2d.CoAdd2D.get_instance(spec2d_files, spectrograph, par)
 
     # check the offsets
     assert np.all(np.round(coadd.offsets) == [0., 78.]), 'Wrong offsets'
@@ -85,7 +92,9 @@ def test_offsets_and_weights(redux_out):
     assert len(coadd.use_weights) == len(spec2d_files), 'Wrong size for the weights'
 
     # init coadd2d with offsets='auto' and weights=list
-    coadd = coadd2d.CoAdd2D.get_instance(spec2d_files, spectrograph, par, offsets='auto', weights=[1., 1.])
+    par['coadd2d']['offsets'] = 'auto'
+    par['coadd2d']['weights'] = [1., 1.]
+    coadd = coadd2d.CoAdd2D.get_instance(spec2d_files, spectrograph, par)
 
     # check the offsets
     assert np.all(np.round(coadd.offsets) == [0., 77.]), 'Wrong offsets'
