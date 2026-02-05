@@ -25,7 +25,6 @@ def test_get_slitmask_mmt_binospec():
 
     assert slits.corners.shape == (72, 4, 2), 'Corner shape is incorrect'
 
-
     slits = spec.get_slitmask(ifile, det=2)
 
     assert slits.nslits == 73, 'Incorrect number of slits'
@@ -48,6 +47,3 @@ def test_get_slitmask_mmt_binospec():
     )
     slits = spec.get_slitmask(ifile, det=1)
     assert slits.nslits == 1, 'Incorrect number of slits'
-
-
-
