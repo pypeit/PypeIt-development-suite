@@ -1,7 +1,6 @@
 
 import numpy as np
 from pypeit.core import extract
-from pypeit import msgs
 from astropy.io import fits
 from astropy.table import Table
 from astropy.stats import sigma_clipped_stats

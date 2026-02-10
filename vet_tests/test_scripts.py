@@ -5,6 +5,7 @@ from pathlib import Path
 import os
 import numpy as np
 import pytest
+from astropy.io import fits
 
 import matplotlib
 from IPython import embed
@@ -20,7 +21,7 @@ from pypeit import calibrations
 from pypeit.utils import jsonify
 import json
 
-from pypeit.pypmsgs import PypeItError
+from pypeit import PypeItError
 
 
 def test_show_1dspec(redux_out):
@@ -525,6 +526,72 @@ def test_run_to_calibstep(redux_out):
 
     # Go back
     os.chdir(cdir)
+
+
+def test_rectify_2dspec(redux_out):
+    """Test the rectify_2dspec script."""
+    # Get the spec2d file path
+    _redux_out = Path(redux_out).resolve() / 'keck_deimos' / '600ZD_tilted' / 'Science'
+    spec2d_fname = 'spec2d_d0225_0054-16045h_DEIMOS_20190225T145727.158.fits'
+
+    # Test basic execution
+    pargs = scripts.rectify_2dspec.Rectify2DSpec.parse_args([str(_redux_out / spec2d_fname)])
+    scripts.rectify_2dspec.Rectify2DSpec.main(pargs)
+
+    # Check that the output file was created
+    out_file = spec2d_fname.replace('spec2d', 'rectified_spec2d')
+    assert (_redux_out / out_file).exists(), 'Rectified spec2d file was not created'
+
+    # Verify the output file has the proper structure
+    with fits.open(_redux_out / out_file) as hdul:
+        assert len(hdul) > 1, 'Output file should have multiple HDUs'
+        # Check that the detector extension exists
+        assert 'MSC01' in [hdu.name for hdu in hdul], 'MSC01 extension missing'
+
+        # Verify WCS headers are present
+        det_hdu = hdul['MSC01']
+        hdr = det_hdu.header
+        assert 'CRPIX1' in hdr, 'Missing CRPIX1 in header'
+        assert 'CRPIX2' in hdr, 'Missing CRPIX2 in header'
+        assert 'CDELT1' in hdr, 'Missing CDELT1 in header'
+        assert 'CDELT2' in hdr, 'Missing CDELT2 in header'
+        assert 'CTYPE1' in hdr, 'Missing CTYPE1 in header'
+        assert 'CTYPE2' in hdr, 'Missing CTYPE2 in header'
+        assert hdr['CTYPE1'] == 'LAMBDA', 'Wrong CTYPE1 value'
+        assert hdr['CTYPE2'] == 'LINEAR', 'Wrong CTYPE2 value'
+
+        # get wavelength array
+        pix_arr = np.arange(hdr['NAXIS1']) - (hdr['CRPIX1'] - 1)
+        wave_arr = hdr['CRVAL1'] + pix_arr * hdr['CDELT1']
+        assert np.isclose(wave_arr[4612], 8158.24, rtol=1e-4), 'Wavelength array derivation seems wrong'
+
+    # Clean up
+    os.remove(_redux_out / out_file)
+
+    # Test with the -- no_rot flag
+    pargs = scripts.rectify_2dspec.Rectify2DSpec.parse_args([str(_redux_out / spec2d_fname), '--no_rot'])
+    scripts.rectify_2dspec.Rectify2DSpec.main(pargs)
+
+    # Verify the output with no rotation has wavelength on y-axis
+    with fits.open(_redux_out / out_file) as hdul:
+        det_hdu = hdul['MSC01']
+        hdr = det_hdu.header
+        assert 'CRPIX1' in hdr, 'Missing CRPIX1 in header'
+        assert 'CRPIX2' in hdr, 'Missing CRPIX2 in header'
+        assert 'CDELT1' in hdr, 'Missing CDELT1 in header'
+        assert 'CDELT2' in hdr, 'Missing CDELT2 in header'
+        assert 'CTYPE1' in hdr, 'Missing CTYPE1 in header'
+        assert 'CTYPE2' in hdr, 'Missing CTYPE2 in header'
+        assert hdr['CTYPE2'] == 'LAMBDA', 'CTYPE2 should be LAMBDA when not rotated'
+        assert hdr['CTYPE1'] == 'LINEAR', 'CTYPE1 should be LINEAR when not rotated'
+
+        # get wavelength array
+        pix_arr = np.arange(hdr['NAXIS2']) - (hdr['CRPIX2'] - 1)
+        wave_arr = hdr['CRVAL2'] + pix_arr * hdr['CDELT2']
+        assert np.isclose(wave_arr[4612], 8158.24, rtol=1e-4), 'Wavelength array derivation seems wrong'
+
+    # Clean up
+    os.remove(_redux_out / out_file)
 
 
 # TODO: Include tests for coadd2d, sensfunc

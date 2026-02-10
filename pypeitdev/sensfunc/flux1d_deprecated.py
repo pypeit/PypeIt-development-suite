@@ -12,7 +12,8 @@ from astropy import coordinates
 from astropy.table import Table, Column
 
 from pypeit import utils
-from pypeit import msgs
+from pypeit import log
+from pypeit import PypeItError
 from pypeit.core import load, save, coadd1d
 from pypeit.spectrographs.util import load_spectrograph
 from IPython import embed
@@ -86,10 +87,10 @@ def find_standard_file(ra, dec, toler=20.*units.arcmin, check=False):
                     root = resource_filename('pypeit', std_dict['cal_file'] + '*')
                     fil = glob.glob(root)
                     if len(fil) == 0:
-                        msgs.error("No standard star file: {:s}".format(fil))
+                        raise PypeItError("No standard star file: {:s}".format(fil))
                     else:
                         fil = fil[0]
-                        msgs.info("Loading standard star file: {:s}".format(fil))
+                        log.info("Loading standard star file: {:s}".format(fil))
                     if sset == 'xshooter':
                         # TODO let's add the star_mag here and get a uniform set of tags in the std_dict
                         std_spec = Table.read(fil, format='ascii')
@@ -97,16 +98,16 @@ def find_standard_file(ra, dec, toler=20.*units.arcmin, check=False):
                         std_dict['wave'] = std_spec['col1'] * units.AA
                         std_dict['flux'] = std_spec['col2'] / PYPEIT_FLUX_SCALE * \
                                            units.erg / units.s / units.cm ** 2 / units.AA
-                        msgs.info("Fluxes are flambda, normalized to 1e-17")
+                        log.info("Fluxes are flambda, normalized to 1e-17")
                     elif sset == 'calspec':
                         std_dict['std_source'] = sset
                         std_spec = fits.open(fil)[1].data
                         std_dict['wave'] = std_spec['WAVELENGTH'] * units.AA
                         std_dict['flux'] = std_spec['FLUX'] / PYPEIT_FLUX_SCALE \
                                            * units.erg / units.s / units.cm ** 2 / units.AA
-                        msgs.info("Fluxes are flambda, normalized to 1e-17")
+                        log.info("Fluxes are flambda, normalized to 1e-17")
                 else:
-                    msgs.error("No standard star file found: {:s}".format(star_file))
+                    raise PypeItError("No standard star file found: {:s}".format(star_file))
 
                 return std_dict
         else:
@@ -122,7 +123,7 @@ def find_standard_file(ra, dec, toler=20.*units.arcmin, check=False):
     if check:
         return False
 
-    msgs.error("No standard star was found within a tolerance of {:g}".format(toler) + msgs.newline()
+    raise PypeItError("No standard star was found within a tolerance of {:g}\n".format(toler)
                + "Closest standard was {:s} at separation {:g}".format(closest['name'], closest['sep'].to('arcmin')))
 
     return None
@@ -235,14 +236,14 @@ def get_standard_spectrum(star_type=None, star_mag=None, ra=None, dec=None):
     # Create star model
     if (ra is not None) and (dec is not None) and (star_mag is None) and (star_type is None):
         # Pull star spectral model from archive
-        msgs.info("Getting archival standard spectrum")
+        log.info("Getting archival standard spectrum")
         # Grab closest standard within a tolerance
         std_dict = find_standard_file(ra, dec)
 
     elif (star_mag is not None) and (star_type is not None):
         ## using vega spectrum
         if 'A0' in star_type:
-            msgs.info('Getting vega spectrum')
+            log.info('Getting vega spectrum')
             ## Vega model from TSPECTOOL
             vega_file = resource_filename('pypeit', '/data/standards/vega_tspectool_vacuum.dat')
             vega_data = Table.read(vega_file, comment='#', format='ascii')
@@ -256,12 +257,12 @@ def get_standard_spectrum(star_type=None, star_mag=None, ra=None, dec=None):
         ## using Kurucz stellar model
         else:
             # Create star spectral model
-            msgs.info("Getting kurucz+93 stellar model")
+            log.info("Getting kurucz+93 stellar model")
             std_dict = stellar_model(star_mag, star_type)
             std_dict['std_ra'] = ra
             std_dict['std_dec'] = dec
     else:
-        msgs.error('Insufficient information provided for fluxing. '
+        raise PypeItError('Insufficient information provided for fluxing. '
                    'Either the coordinates of the standard or a stellar type and magnitude are needed.')
 
     return std_dict
@@ -295,10 +296,10 @@ def load_extinction_data(longitude, latitude, toler=5. * units.deg):
     idx, d2d, d3d = coordinates.match_coordinates_sky(mosaic_coord, ext_coord, nthneighbor=1)
     if d2d < toler:
         extinct_file = extinct_files[int(idx)]['File']
-        msgs.info("Using {:s} for extinction corrections.".format(extinct_file))
+        log.info("Using {:s} for extinction corrections.".format(extinct_file))
     else:
-        msgs.warn("No file found for extinction corrections.  Applying none")
-        msgs.warn("You should generate a site-specific file")
+        log.warning("No file found for extinction corrections.  Applying none")
+        log.warning("You should generate a site-specific file")
         return None
     # Read
     extinct = Table.read(extinct_path + extinct_file, comment='#', format='ascii',
@@ -330,7 +331,7 @@ def extinction_correction(wave, airmass, extinct):
     """
     # Checks
     if airmass < 1.:
-        msgs.error("Bad airmass value in extinction_correction")
+        raise PypeItError("Bad airmass value in extinction_correction")
     # Interpolate
     f_mag_ext = scipy.interpolate.interp1d(extinct['wave'],extinct['mag_ext'], bounds_error=False, fill_value=0.)
     mag_ext = f_mag_ext(wave)#.to('AA').value)
@@ -339,15 +340,15 @@ def extinction_correction(wave, airmass, extinct):
     gdv = np.where(mag_ext > 0.)[0]
 
     if len(gdv) == 0:
-        msgs.warn("No valid extinction data available at this wavelength range. Extinction correction not applied")
+        log.warning("No valid extinction data available at this wavelength range. Extinction correction not applied")
     elif gdv[0] != 0:  # Low wavelengths
         mag_ext[0:gdv[0]] = mag_ext[gdv[0]]
-        msgs.warn("Extrapolating at low wavelengths using last valid value")
+        log.warning("Extrapolating at low wavelengths using last valid value")
     elif gdv[-1] != (mag_ext.size - 1):  # High wavelengths
         mag_ext[gdv[-1] + 1:] = mag_ext[gdv[-1]]
-        msgs.warn("Extrapolating at high wavelengths using last valid value")
+        log.warning("Extrapolating at high wavelengths using last valid value")
     else:
-        msgs.info("Extinction data covered the whole spectra. Correct it!")
+        log.info("Extinction data covered the whole spectra. Correct it!")
     # Evaluate
     flux_corr = 10.0 ** (0.4 * mag_ext * airmass)
     # Return
@@ -362,15 +363,15 @@ def apply_sens_tell_spec(wave, counts, ivar, sensfunc, airmass, exptime, mask=No
     # Did the user request a telluric correction from the same file?
     if telluric is not None:
         # This assumes there is a separate telluric key in this dict.
-        msgs.info('Applying telluric correction')
+        log.info('Applying telluric correction')
         sensfunc = sensfunc*(telluric > 1e-10)/(telluric + (telluric < 1e-10))
 
     if extinct_correct:
         if longitude is None or latitude is None:
-            msgs.error('You must specify longitude and latitude if we are extinction correcting')
+            raise PypeItError('You must specify longitude and latitude if we are extinction correcting')
         # Apply Extinction if optical bands
-        msgs.info("Applying extinction correction")
-        msgs.warn("Extinction correction applyed only if the spectra covers <10000Ang.")
+        log.info("Applying extinction correction")
+        log.warning("Extinction correction applyed only if the spectra covers <10000Ang.")
         extinct = load_extinction_data(longitude,latitude)
         ext_corr = extinction_correction(wave* units.AA, airmass, extinct)
         senstot = sensfunc * ext_corr
@@ -381,7 +382,7 @@ def apply_sens_tell_spec(wave, counts, ivar, sensfunc, airmass, exptime, mask=No
     flam_ivar = ivar / (senstot / exptime) **2
 
     # Mask bad pixels
-    msgs.info(" Masking bad pixels")
+    log.info(" Masking bad pixels")
     outmask =  mask & (senstot>0.)
 
     # debug
@@ -419,18 +420,18 @@ def apply_sens_tell_specobjs(specobjs, sens_meta, sens_table, airmass, exptime, 
         ## TODO Comment on the logich here. Hard to follow
         try:
             ech_order, ech_orderindx, idx = sobj_ispec.ech_order, sobj_ispec.ech_orderindx, sobj_ispec.idx
-            msgs.info('Applying sensfunc to Echelle data')
+            log.info('Applying sensfunc to Echelle data')
         except:
             ech_orderindx = 0
             idx = sobj_ispec.idx
-            msgs.info('Applying sensfunc to Longslit/Multislit data')
+            log.info('Applying sensfunc to Longslit/Multislit data')
 
         for extract_type in ['boxcar', 'optimal']:
             extract = getattr(sobj_ispec, extract_type)
 
             if len(extract) == 0:
                 continue
-            msgs.info("Fluxing {:s} extraction for:".format(extract_type) + msgs.newline() + "{}".format(idx))
+            log.info("Fluxing {:s} extraction for:\n{}".format(extract_type, idx))
             wave = extract['WAVE'].value.copy()
             wave_mask = wave > 1.0
             counts = extract['COUNTS'].copy()

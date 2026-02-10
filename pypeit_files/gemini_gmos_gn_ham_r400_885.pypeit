@@ -37,13 +37,13 @@ setup end
 # Read in the data
 data read
  path /Users/joe/python/PypeIt-development-suite/RAW_DATA/gemini_gmos/GN_HAM_R400_885/
-           filename |                 frametype |          ra |          dec |                       target |    dispname |    decker | binning |              mjd | airmass | exptime |    dichroic | dispangle |        datasec | calib
-N20190205S0240.fits |                      bias |        75.0 |        89.97 |                         Bias | R150+_G5308 | 1.0arcsec |     2,2 | 2019.09705217233 |     1.0 |     0.0 | GG455_G0305 |     630.0 | [1:256,1:2112] |   all
-N20190205S0241.fits |                      bias |        75.0 |        89.97 |                         Bias | R150+_G5308 | 1.0arcsec |     2,2 | 2019.09705321751 |     1.0 |     0.0 | GG455_G0305 |     630.0 | [1:256,1:2112] |   all
-N20190205S0242.fits |                      bias |        75.0 |        89.97 |                         Bias | R150+_G5308 | 1.0arcsec |     2,2 | 2019.09705426322 |     1.0 |     0.0 | GG455_G0305 |     630.0 | [1:256,1:2112] |   all
-N20190205S0034.fits | pixelflat,illumflat,trace | 49.92364167 | -10.14608333 |                     GCALflat | R400+_G5305 | 1.0arcsec |     2,2 | 2019.09581673829 |    1.22 |     1.0 | RG610_G0307 |     900.0 | [1:256,1:2112] |   all
-N20190205S0039.fits | pixelflat,illumflat,trace | 49.92364167 | -10.14608333 |                     GCALflat | R400+_G5305 | 1.0arcsec |     2,2 | 2019.09597553522 |   1.521 |     1.0 | RG610_G0307 |     900.0 | [1:256,1:2112] |   all
-N20190205S0044.fits | pixelflat,illumflat,trace | 49.92364167 | -10.14608333 |                     GCALflat | R400+_G5305 | 1.0arcsec |     2,2 | 2019.09608777654 |   2.063 |     1.0 | RG610_G0307 |     900.0 | [1:256,1:2112] |   all
-N20190205S0035.fits |          arc,tilt,science | 49.92364167 | -10.14608333 | J0319-1008  Invisible Target | R400+_G5305 | 1.0arcsec |     2,2 | 2019.09581830685 |   1.243 |  1200.0 | RG610_G0307 |     900.0 | [1:256,1:2112] |     1
-N20190205S0036.fits |          arc,tilt,science | 49.92364167 | -10.14608333 | J0319-1008  Invisible Target | R400+_G5305 | 1.0arcsec |     2,2 | 2019.09585759374 |   1.297 |  1200.0 | RG610_G0307 |     900.0 | [1:256,1:2112] |     2
+           filename |                 frametype |          ra |          dec |                       target |    dispname |    decker | binning |                mjd | airmass | exptime |    dichroic | dispangle |        datasec | calib
+N20190205S0240.fits |                      bias |        75.0 |        89.97 |                         Bias | R150+_G5308 | 1.0arcsec |     2,2 |  58519.69830594353 |     1.0 |     0.0 | GG455_G0305 |     630.0 | [1:256,1:2112] |   all
+N20190205S0241.fits |                      bias |        75.0 |        89.97 |                         Bias | R150+_G5308 | 1.0arcsec |     2,2 | 58519.698687695505 |     1.0 |     0.0 | GG455_G0305 |     630.0 | [1:256,1:2112] |   all
+N20190205S0242.fits |                      bias |        75.0 |        89.97 |                         Bias | R150+_G5308 | 1.0arcsec |     2,2 | 58519.699069641065 |     1.0 |     0.0 | GG455_G0305 |     630.0 | [1:256,1:2112] |   all
+N20190205S0034.fits | pixelflat,illumflat,trace | 49.92364167 | -10.14608333 |                     GCALflat | R400+_G5305 | 1.0arcsec |     2,2 |  58519.24706366045 |    1.22 |     1.0 | RG610_G0307 |     900.0 | [1:256,1:2112] |   all
+N20190205S0039.fits | pixelflat,illumflat,trace | 49.92364167 | -10.14608333 |                     GCALflat | R400+_G5305 | 1.0arcsec |     2,2 |  58519.30506423913 |   1.521 |     1.0 | RG610_G0307 |     900.0 | [1:256,1:2112] |   all
+N20190205S0044.fits | pixelflat,illumflat,trace | 49.92364167 | -10.14608333 |                     GCALflat | R400+_G5305 | 1.0arcsec |     2,2 |   58519.3460603812 |   2.063 |     1.0 | RG610_G0307 |     900.0 | [1:256,1:2112] |   all
+N20190205S0035.fits |          arc,tilt,science | 49.92364167 | -10.14608333 | J0319-1008  Invisible Target | R400+_G5305 | 1.0arcsec |     2,2 |    58519.247636577 |   1.243 |  1200.0 | RG610_G0307 |     900.0 | [1:256,1:2112] |     1
+N20190205S0036.fits |          arc,tilt,science | 49.92364167 | -10.14608333 | J0319-1008  Invisible Target | R400+_G5305 | 1.0arcsec |     2,2 |  58519.26198611353 |   1.297 |  1200.0 | RG610_G0307 |     900.0 | [1:256,1:2112] |     2
 data end

@@ -6,7 +6,6 @@ import matplotlib.pyplot as plt
 import os
 from astropy.io import fits
 from astropy import time
-from pypeit import msgs
 from pypeit import utils
 from pypeit import waveimage
 from pypeit.core import arc
@@ -87,7 +86,7 @@ spec2d_files = glob.glob(redux_path + 'Science/spec2d_' + objprefix + '*')
 #     # ToDO Generalize this to be a loop over detectors, such tha the coadd_list is an ordered dict (perhaps) with
 #     # all the slits on all detectors
 #     for islit in range(nslits):
-#         msgs.info('Performing 2d coadd for slit: {:d}/{:d}'.format(islit,nslits-1))
+#         log.info('Performing 2d coadd for slit: {:d}/{:d}'.format(islit,nslits-1))
 #         # Determine the wavelength dependent optimal weights and grab the reference trace
 #         rms_sn, weights, trace_stack, wave_stack = coadd2d.optimal_weights(stack_dict['specobjs_list'], islit, objid)
 #         thismask_stack = stack_dict['slitmask_stack'] == islit
