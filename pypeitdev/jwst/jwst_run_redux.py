@@ -32,7 +32,8 @@ from pypeit import specobjs
 from pypeit.utils import inverse, fast_running_median, nan_mad_std
 
 from pypeit.spectrographs.util import load_spectrograph
-from pypeit import msgs
+from pypeit import log
+from pypeit import PypeItError
 from pypeit import spec2dobj
 
 
@@ -104,7 +105,7 @@ def validate_redux_input(reduce_input, name):
     elif reduce_input is None:
         _reduce_input = None
     else: 
-        msgs.error(f'{name} must be a string or a list of strings.')
+        raise PypeItError(f'{name} must be a string or a list of strings.')
         
     return _reduce_input
     
@@ -195,10 +196,10 @@ def jwst_run_redux(redux_dir, source_type, uncal_list=None, rate_list=None,
     # TODO: This needs to be defined by the user
     scipath = os.path.join(pypeit_output_dir, 'Science')
     if not os.path.isdir(scipath):
-        msgs.info('Creating directory for Science output: {0}'.format(scipath))
+        log.info('Creating directory for Science output: {0}'.format(scipath))
         os.makedirs(scipath)
     if not os.path.isdir(output_dir):
-        msgs.info('Creating directory for calwebb output: {0}'.format(output_dir))
+        log.info('Creating directory for calwebb output: {0}'.format(output_dir))
         os.makedirs(output_dir)
     if not os.path.isdir(output_dir_level1):
         msgs.info('Creating directory for calwebb level 1 output: {0}'.format(output_dir_level1))
@@ -209,9 +210,9 @@ def jwst_run_redux(redux_dir, source_type, uncal_list=None, rate_list=None,
     
     # Did the user pass in an uncal_list? 
     if uncal_list is None and rate_list is None:
-        msgs.error('Either uncal_list or rate_list must be provided.')
+        raise PypeItError('Either uncal_list or rate_list must be provided.')
     elif uncal_list is not None and rate_list is not None:
-        msgs.error('Only one of uncal_list or rate_list can be provided.')
+        raise PypeItError('Only one of uncal_list or rate_list can be provided.')
     elif uncal_list is not None and rate_list is None: 
         uncalfiles_1 = uncal_list[0]
         uncalfiles_2 = uncal_list[1] if len(uncal_list) > 1 else []
@@ -239,7 +240,7 @@ def jwst_run_redux(redux_dir, source_type, uncal_list=None, rate_list=None,
         for uncal in uncalfiles_all:
             ratefile = os.path.join(output_dir_level1,  os.path.basename(uncal).replace('_uncal', '_rate'))
             if os.path.isfile(ratefile) and not overwrite_stage1:
-                msgs.info('Using existing rate file: {0}'.format(ratefile))
+                log.info('Using existing rate file: {0}'.format(ratefile))
                 continue
             Detector1Pipeline.call(uncal, save_results=True, output_dir=output_dir_level1, steps=parameter_dict_det1)
 
@@ -317,7 +318,7 @@ def jwst_run_redux(redux_dir, source_type, uncal_list=None, rate_list=None,
     par['rdx']['qadir'] = 'QA'
     png_dir = os.path.join(qa_dir, 'PNGs')
     if not os.path.isdir(qa_dir):
-        msgs.info('Creating directory for QA output: {0}'.format(qa_dir))
+        log.info('Creating directory for QA output: {0}'.format(qa_dir))
         os.makedirs(qa_dir)
     if not os.path.isdir(png_dir):
         os.makedirs(png_dir)
@@ -470,7 +471,7 @@ def jwst_run_redux(redux_dir, source_type, uncal_list=None, rate_list=None,
     #out_filenames = basenames
     iexp_ref = 0
     if not os.path.isdir(scipath):
-        msgs.info('Creating directory for Science output: {0}'.format(scipath))
+        log.info('Creating directory for Science output: {0}'.format(scipath))
 
     #diff_str = 'diff_' if bkg_redux else ''
     #out_filenames = [diff_str + base for base in basenames]

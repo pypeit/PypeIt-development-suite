@@ -21,7 +21,7 @@ from pypeit import calibrations
 from pypeit.utils import jsonify
 import json
 
-from pypeit.pypmsgs import PypeItError
+from pypeit import PypeItError
 
 
 def test_show_1dspec(redux_out):

@@ -7,7 +7,7 @@
 """
 This script runs the PypeIt development suite of tests
 """
-
+from importlib import resources
 import sys
 import os
 from pathlib import Path
@@ -20,9 +20,9 @@ from pathlib import Path
 import textwrap
 
 import numpy as np
-import pypeit 
 # Stop logging from pypeit.par.utils when reading/writing coadd1d files
-pypeit.msgs.reset(verbosity=0) 
+from pypeit import log
+log.init(level=log.convert_verbosity_to_logging_level(0))
 
 
 from .test_setups import TestPhase, all_tests, all_setups, _raw_data_dirs
@@ -902,7 +902,7 @@ def main():
 
     # For coverage testing, run the PypeIt unit tests too
     if flg_pypeit_tests and not pargs.prep_only:
-        pypeit_tests_dir = Path(pypeit.__file__).parent.joinpath("tests")
+        pypeit_tests_dir = resources.files('pypeit') / 'tests' 
         run_pytest(pargs, "PypeIt Unit Tests", pypeit_tests_dir, test_report)
 
     dev_path = Path(os.getenv('PYPEIT_DEV'))

@@ -11,7 +11,7 @@ import pytest
 import glob
 import numpy as np
 
-from pypeit.pypmsgs import PypeItError
+from pypeit import PypeItError
 from pypeit.images import buildimage
 from pypeit.images import pypeitimage
 from pypeit.calibframe import CalibFrame
