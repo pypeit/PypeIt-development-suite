@@ -112,9 +112,11 @@ def test_spat_spec_fract(redux_out):
     _redux_out = Path(redux_out).resolve() / 'gemini_gmos' / 'GS_HAM_B600_MOS'
     coadd2dfname = Path(redux_out).resolve().parent / 'coadd2d_files'/ 'gemini_gmos_gs_ham_b600_mos.coadd2d'
     coadd_dir = _redux_out / 'Science_coadd'
-    os.chdir(_redux_out)
+    sci_dir = _redux_out / 'Science'
 
     coadd2dFile = inputfiles.Coadd2DFile.from_file(str(coadd2dfname))
+    # update coadd2dFile files paths to point to the correct location
+    coadd2dFile.file_paths = [str(sci_dir)]
     spectrograph, par, _ = coadd2dFile.get_pypeitpar(pypeit_fits=True)
 
     # check the spatial and spectral fraction resampling parameters
@@ -127,7 +129,7 @@ def test_spat_spec_fract(redux_out):
 
     # grab the spec1d files and objects
     # non coadded
-    spec1d_file = coadd2dFile.filenames[0].replace('spec2d', 'spec1d')
+    spec1d_file = sorted(sci_dir.glob('spec1d*.fits'))[0]
     sobj = specobjs.SpecObjs.from_fitsfile(spec1d_file)
     # coadded
     spec1d_coadd_file = sorted(coadd_dir.glob('spec1d*.fits'))[0]
