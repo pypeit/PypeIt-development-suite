@@ -256,6 +256,8 @@ _coadd1d = {
 _coadd2d = {
     'gemini_gnirs_echelle': {
         '32_SB_SXD': [dict(coadd_file=True)]},
+    'gemini_gmos': {
+        'GS_HAM_B600_MOS': [dict(coadd_file=True)]},
     'keck_lris_blue': {
         'multi_600_4000_d560': [dict(coadd_file=True)]},
     'vlt_xshooter': {
