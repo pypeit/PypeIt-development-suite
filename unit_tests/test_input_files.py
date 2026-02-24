@@ -103,3 +103,26 @@ def test_get_pypeitpar():
     # Clean-up
     shutil.rmtree(setup_path)
 
+
+def test_get_pypeitpar_baseprocess():
+    """
+    Test setting up the PypeItPar instance when there is a baseprocess
+    configuration key in the pypeit file.
+    """
+
+    spec = 'keck_deimos'
+    setup = '600ZD_M_7500'
+
+    # Get the pypeitfile
+    ifile = (
+        Path(os.environ['PYPEIT_DEV']).resolve() / 'pypeit_files' 
+        / f'{spec}_{setup.lower()}.pypeit'
+    )
+    assert ifile.is_file(), f'PypeIt file does not exist {ifile}'
+
+    pf = inputfiles.PypeItFile.from_file(ifile)
+
+    embed()
+    exit()
+
+test_get_pypeitpar_baseprocess()

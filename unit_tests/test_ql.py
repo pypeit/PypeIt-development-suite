@@ -87,6 +87,3 @@ def test_run_ql():
                                  'b10.fits.gz', 'b27.fits.gz']))
 
     shutil.rmtree(rdxpath)
-
-
-
