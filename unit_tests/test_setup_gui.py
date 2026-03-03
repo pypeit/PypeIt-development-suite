@@ -52,7 +52,6 @@ def get_mock_setup(metadata=None):
                 "[calibrations]", # Double nested entries in config
                 "bpm_usebias = True",
                 "[[biasframe]]",
-                "frametype = bias",
                 "[[[process]]]",
                 "combine = median", ]
 
