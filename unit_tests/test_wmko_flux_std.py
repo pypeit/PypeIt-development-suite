@@ -14,7 +14,7 @@ from pypeit import dataPaths
 from pypeit import sensfunc
 from pypeit.tests.tstutils import data_output_path
 from pypeit.spectrographs.util import load_spectrograph
-from pypeit.spectrographs import keck_deimos
+from pypeit.loader import load_wmko_std_spectrum
 
 
 def test_wmko_flux_std():
@@ -29,7 +29,7 @@ def test_wmko_flux_std():
 
     # Load + write
     spec1dfile = data_output_path('tmp_spec1d.fits')
-    sobjs = keck_deimos.load_wmko_std_spectrum(wmko_file, outfile=spec1dfile)
+    sobjs = load_wmko_std_spectrum(wmko_file, outfile=spec1dfile)
 
     # Sensfunc
     #  The following mirrors the main() call of sensfunc.py

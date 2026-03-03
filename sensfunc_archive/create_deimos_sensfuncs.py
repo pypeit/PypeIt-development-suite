@@ -20,7 +20,7 @@ from astropy.table import Table
 
 from pypeit.sensfunc import SensFunc
 from pypeit.spectrographs.util import load_spectrograph
-from pypeit.spectrographs.keck_deimos import load_wmko_std_spectrum
+from pypeit.loader import load_wmko_std_spectrum
 import pypeit.io
 
 from pypeit import utils
