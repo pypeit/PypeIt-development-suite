@@ -33,3 +33,7 @@
 ## Goal:  Refactor so that most of the state routines are isolated in the state.py module.
 
 ### I would like to move routines like bias_state(), wvcalib_state(), tilts_state(), and slits_state() in calibrations.py to the state.py module so that they can be run outside of the calibration class.  This will allow us to check the status of the reduction process without actually running the reduction.  Can you plan this refactoring?
+
+# Script me
+
+## Generate a script based on run_pypeit.py that will run through the code as if it were the full run, but only record the status of the reduction.  For now, we will only run the calibration steps.  Therefore, it should call the calib_all() method with status_only=True and reload_only=True.  Have the script print the state to the screen in a pretty format.  The script should be called pypeit_status.py.
