@@ -8,6 +8,8 @@ import pytest
 
 from IPython import embed
 from pypeit import coadd2d
+from pypeit import inputfiles
+from pypeit import specobjs
 from pypeit.spectrographs.util import load_spectrograph
 
 
@@ -103,6 +105,58 @@ def test_offsets_and_weights(redux_out):
     assert isinstance(coadd.use_weights, list), 'weights should be a list'
     # Go back
     os.chdir(cdir)
+
+def test_spat_spec_fract(redux_out):
+
+    # check multislit with slitmask data - gmos data
+    _redux_out = Path(redux_out).resolve() / 'gemini_gmos' / 'GS_HAM_B600_MOS'
+    coadd2dfname = Path(redux_out).resolve().parent / 'coadd2d_files'/ 'gemini_gmos_gs_ham_b600_mos.coadd2d'
+    coadd_dir = _redux_out / 'Science_coadd'
+    sci_dir = _redux_out / 'Science'
+
+    coadd2dFile = inputfiles.Coadd2DFile.from_file(str(coadd2dfname))
+    # update coadd2dFile files paths to point to the correct location
+    coadd2dFile.file_paths = [str(sci_dir)]
+    spectrograph, par, _ = coadd2dFile.get_pypeitpar(pypeit_fits=True)
+
+    # check the spatial and spectral fraction resampling parameters
+    assert par['coadd2d']['spat_samp_fact'] == 1.2, 'Wrong spatial sampling factor'
+    assert par['coadd2d']['spec_samp_fact'] == 1.2, 'Wrong spectral sampling factor'
+
+    # check the boxcar parameters
+    assert par['reduce']['extraction']['boxcar_radius'] == 1.5, 'Wrong boxcar radius in reduce parameters'
+    assert par['reduce']['slitmask']['missing_objs_boxcar_rad'] == 1., 'Wrong boxcar radius for missing objects in slitmask reductions'
+
+    # grab the spec1d files and objects
+    # non coadded
+    spec1d_file = sorted(sci_dir.glob('spec1d*.fits'))[0]
+    sobj = specobjs.SpecObjs.from_fitsfile(spec1d_file)
+    # coadded
+    spec1d_coadd_file = sorted(coadd_dir.glob('spec1d*.fits'))[0]
+    sobj_coadd = specobjs.SpecObjs.from_fitsfile(spec1d_coadd_file)
+
+    # check that the boxcar radius (in arcsec) used for the coadd2d is the same as
+    # the one in the parameters after applying the spatial sampling factor
+    for s in sobj_coadd:
+        if s.MASKDEF_EXTRACT:
+            assert s.BOX_R_ASEC == par['reduce']['slitmask']['missing_objs_boxcar_rad'], \
+                f'Wrong boxcar radius for missing objects in slitmask reductions for slit {s.SLITID}'
+        else:
+            assert s.BOX_R_ASEC == par['reduce']['extraction']['boxcar_radius'], \
+                f'Wrong boxcar radius in reduce parameters for slit {s.SLITID}'
+
+    # check that the platescale of the coadd2d data is equal to
+    # the platescale of the non coadded data * the spatial sampling factor
+    for s in sobj_coadd:
+        assert np.isclose(s.DETECTOR.platescale, sobj[0].DETECTOR.platescale * par['coadd2d']['spat_samp_fact']), \
+            f'Wrong platescale for slit {s.SLITID} in coadd2d mosaic container'
+        for d in s.DETECTOR.detectors:
+            assert d.platescale == s.DETECTOR.platescale, \
+                f'Wrong platescale for slit {s.SLITID} in coadd2d single detector container'
+
+    # check the spectral sampling factor by comparing the wavelength arrays of the coadded and non coadded data
+    assert np.isclose(sobj.OPT_WAVE.shape[1]/sobj_coadd.OPT_WAVE.shape[1], par['coadd2d']['spec_samp_fact'], atol=0.01), \
+        'Wrong spectral sampling factor applied to the coadd2d data'
 
 
 
