@@ -3,7 +3,6 @@ import numpy as np
 from pypeit import spec2dobj
 from pypeit.wavetilts import WaveTilts
 from pypeit.images.buildimage import TiltImage
-#from pypeit.core import flexure
 from pypeit import multislit_flexure
 from pypeit.spectrographs.util import load_spectrograph
 from pypeit import inputfiles
