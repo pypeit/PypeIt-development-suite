@@ -116,7 +116,7 @@ def test_spat_spec_fract(redux_out):
 
     coadd2dFile = inputfiles.Coadd2DFile.from_file(str(coadd2dfname))
     # update coadd2dFile files paths to point to the correct location
-    coadd2dFile.file_paths = [str(sci_dir)]
+    coadd2dFile.file_paths = [Path(sci_dir).absolute()]
     spectrograph, par, _ = coadd2dFile.get_pypeitpar(pypeit_fits=True)
 
     # check the spatial and spectral fraction resampling parameters
