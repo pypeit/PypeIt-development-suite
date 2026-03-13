@@ -39,7 +39,7 @@ def test_spat_flexure_science(redux_out):
     for spec, setup, det, sigdet, maxlag, flex in zip(specs, setups, detnames, flexure_sigdet, flexure_maxlag, spat_flexure):
 
         # Define the path with the raw data
-        data_redux = Path(redux_out).resolve() / spec / setup
+        data_redux = Path(redux_out).absolute() / spec / setup
         assert data_redux.exists(), f'TEST ERROR: REDUX data path does not exist for {spec}/{setup}'
 
         # find pypeit file
@@ -71,7 +71,7 @@ def test_spat_flexure_tilts(redux_out):
     setup = 'long_600_10000_d680'
 
     # Define the path with the raw data
-    data_redux = Path(redux_out).resolve() / spec / setup
+    data_redux = Path(redux_out).absolute() / spec / setup
     assert data_redux.exists(), f'TEST ERROR: REDUX data path does not exist for {spec}/{setup}'
 
     # find pypeit file

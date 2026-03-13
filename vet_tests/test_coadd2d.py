@@ -17,7 +17,7 @@ def test_offsets_and_weights(redux_out):
 
     # echelle data
     spec_name = 'keck_nires'
-    _redux_out = Path(redux_out).resolve() / spec_name / 'ABBA_nostandard'
+    _redux_out = Path(redux_out).absolute() / spec_name / 'ABBA_nostandard'
     sci_dir = _redux_out / 'Science'
 
     cdir = os.getcwd()
@@ -70,7 +70,7 @@ def test_offsets_and_weights(redux_out):
 
     # check multislit data
     spec_name = 'keck_mosfire'
-    _redux_out = Path(redux_out).resolve() / spec_name / 'long2pos1_H'
+    _redux_out = Path(redux_out).absolute() / spec_name / 'long2pos1_H'
     sci_dir = _redux_out / 'Science'
 
     os.chdir(_redux_out)
@@ -109,8 +109,19 @@ def test_offsets_and_weights(redux_out):
 def test_spat_spec_fract(redux_out):
 
     # check multislit with slitmask data - gmos data
-    _redux_out = Path(redux_out).resolve() / 'gemini_gmos' / 'GS_HAM_B600_MOS'
-    coadd2dfname = Path(redux_out).resolve().parent / 'coadd2d_files'/ 'gemini_gmos_gs_ham_b600_mos.coadd2d'
+    _redux_out = Path(redux_out).absolute() / 'gemini_gmos' / 'GS_HAM_B600_MOS'
+
+    # TODO: I think this may be the only time that we had tried to grab the
+    # parent of the `redux_out` directory, assuming it is the same as the
+    # top-level directory dev-suite directory.
+#    coadd2dfname = Path(redux_out).absolute().parent / 'coadd2d_files'/ 'gemini_gmos_gs_ham_b600_mos.coadd2d'
+    # I changed it to the below instead, mimicking how the top-level directory
+    # is defined in the unit tests.  We may want to define a `redux_in` or
+    # `dev_root` fixture for this.
+    coadd2dfname = (
+        Path(os.getenv('PYPEIT_DEV')).absolute() / 'coadd2d_files'
+        / 'gemini_gmos_gs_ham_b600_mos.coadd2d'
+    )
     coadd_dir = _redux_out / 'Science_coadd'
     sci_dir = _redux_out / 'Science'
 
