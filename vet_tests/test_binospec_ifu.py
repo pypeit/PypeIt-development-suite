@@ -1,44 +1,12 @@
 """
-Tests for the Binospec IFU illumination correction and cube building tools.
+Tests for the Binospec IFU cube building tools.
 """
 from pathlib import Path
 
 import numpy as np
 from astropy.io import fits
 
-from pypeit.scripts.binospec_ifu_illumcorr import BinospecIFUIllumCorr
 from pypeit.scripts.binospec_ifu_cube import BinospecIFUCube
-
-
-def test_binospec_ifu_illumcorr(redux_out):
-    """Test that pypeit_binospec_ifu_illumcorr produces a corrected spec1d file."""
-    sci_dir = Path(redux_out) / 'mmt_binospec_ifu' / 'G270' / 'Science'
-    spec1d_files = sorted(sci_dir.glob('spec1d_*.fits'))
-    assert len(spec1d_files) > 0, f"No spec1d files found in {sci_dir}"
-
-    spec1d_file = spec1d_files[0]
-
-    # Run illumination correction
-    pargs = BinospecIFUIllumCorr.parse_args([str(spec1d_file)])
-    BinospecIFUIllumCorr.main(pargs)
-
-    # Check the output file was created
-    illumcorr_file = spec1d_file.with_name(
-        spec1d_file.stem + '_illumcorr' + spec1d_file.suffix)
-    assert illumcorr_file.exists(), \
-        f"Illumination-corrected file not created: {illumcorr_file}"
-
-    # Check ILLUMCOR header flag is set
-    with fits.open(illumcorr_file) as hdu:
-        assert hdu[0].header.get('ILLUMCOR', False), \
-            "ILLUMCOR header flag not set in output file"
-
-        # Check that at least some BinTableHDU extensions exist (fiber spectra)
-        n_tables = sum(1 for ext in hdu[1:] if isinstance(ext, fits.BinTableHDU))
-        assert n_tables > 0, "No BinTableHDU extensions found in output"
-
-    # Clean up
-    illumcorr_file.unlink()
 
 
 def test_binospec_ifu_cube_from_spec1d(redux_out):
