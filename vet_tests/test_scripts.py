@@ -405,7 +405,7 @@ def test_parse_slits(redux_out):
 def test_setup_coadd2d(redux_out):
 
     # Set the pypeit file
-    _redux_out = Path(redux_out).resolve() / 'gemini_gnirs_echelle' / '32_SB_SXD'
+    _redux_out = Path(redux_out).absolute() / 'gemini_gnirs_echelle' / '32_SB_SXD'
     pypeit_file = _redux_out / 'gemini_gnirs_echelle_32_sb_sxd.pypeit'
 
     # move to the redux_out directory
@@ -471,7 +471,7 @@ def test_setup_coadd2d(redux_out):
     # test another dataset and the only_slits and exclude_slits parameters
 
     # Set the pypeit file
-    _redux_out = Path(redux_out).resolve() / 'keck_mosfire' / 'mask1_K_with_continuum'
+    _redux_out = Path(redux_out).absolute() / 'keck_mosfire' / 'mask1_K_with_continuum'
     pypeit_file = _redux_out / 'keck_mosfire_mask1_k_with_continuum.pypeit'
 
     # move to the redux_out directory
@@ -516,7 +516,7 @@ def test_run_to_calibstep(redux_out):
     cdir = os.getcwd()
 
     # Set the pypeit file
-    _redux_out = Path(redux_out).resolve() / 'shane_kast_blue' / '600_4310_d55' / 'shane_kast_blue_A'
+    _redux_out = Path(redux_out).absolute() / 'shane_kast_blue' / '600_4310_d55' / 'shane_kast_blue_A'
 
     # move to the redux_out directory
     os.chdir(_redux_out)
@@ -536,7 +536,7 @@ def test_run_to_calibstep(redux_out):
 def test_rectify_2dspec(redux_out):
     """Test the rectify_2dspec script."""
     # Get the spec2d file path
-    _redux_out = Path(redux_out).resolve() / 'keck_deimos' / '600ZD_tilted' / 'Science'
+    _redux_out = Path(redux_out).absolute() / 'keck_deimos' / '600ZD_tilted' / 'Science'
     spec2d_fname = 'spec2d_d0225_0054-16045h_DEIMOS_20190225T145727.158.fits'
 
     # Test basic execution
