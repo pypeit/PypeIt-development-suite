@@ -8,6 +8,10 @@ spectrograph = magellan_fire
  [[findobj]]
    maxnumber_sci = 1
    maxnumber_std = 1
+[calibrations]
+  [[tilts]]
+   spat_order = 2, 3, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 3, 3
+   spec_order = 2, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3
 
 # Setup
 setup read

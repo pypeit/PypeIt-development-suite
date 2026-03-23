@@ -17,7 +17,6 @@ from pypeit.core import coadd2d
 from pypeit.core import coadd1d
 from pypeit.spectrographs import util
 from pypeit import utils
-from pypeit import msgs
 import pickle
 PYPEIT_FLUX_SCALE = 1e-17
 from astropy.io import fits
@@ -67,7 +66,7 @@ sys.exit(-1)
 
 #if np.size(polyorder) > 1:
 #    if np.size(polyorder) != norders:
-#        msgs.error('polyorder must have either have norder elements or be a scalar')
+#        raise PypeItError('polyorder must have either have norder elements or be a scalar')
 #    polyorder_vec = np.array(polyorder)
 #else:
 #    polyorder_vec = np.full(norders, polyorder)

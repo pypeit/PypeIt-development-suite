@@ -3,6 +3,8 @@
 # data files
 *.fits
 *.png
+!pypeitdev/wavelengths/template_files/*/*/*.fits
+!pypeitdev/wavelengths/template_files/*/*/*.png
 *.json
 *.yaml
 *.obslog

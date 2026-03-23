@@ -18,8 +18,8 @@ from pypeit.pypeitsetup import PypeItSetup
 
 def test_trace_add_rm():
     # Define the output directories (HARDCODED!!)
-    outdir = Path().resolve() / 'shane_kast_blue_A'
-    calibdir = Path().resolve() / 'Calibrations'
+    outdir = Path().absolute() / 'shane_kast_blue_A'
+    calibdir = Path().absolute() / 'Calibrations'
     # Remove them if they already exist
     if outdir.exists():
         shutil.rmtree(outdir)
@@ -38,7 +38,7 @@ def test_trace_add_rm():
                     'add_slits = 1:1028:30:300', 'add_predict = straight']
 
     # Use PypeItMetaData to write the complete PypeIt file
-    pypeit_file = ps.fitstbl.write_pypeit(output_path=Path().resolve(), cfg_lines=ps.user_cfg,
+    pypeit_file = ps.fitstbl.write_pypeit(output_path=Path().absolute(), cfg_lines=ps.user_cfg,
                                           configs=['all'])[0]
 
     # Run the tracing
@@ -59,7 +59,7 @@ def test_trace_add_rm():
 def test_view_fits_proc():
     """ Test that it works on a raw image
     """
-    spec_file = Path(os.getenv('PYPEIT_DEV')).resolve() / 'RAW_DATA' / 'shane_kast_blue' \
+    spec_file = Path(os.getenv('PYPEIT_DEV')).absolute() / 'RAW_DATA' / 'shane_kast_blue' \
                     / '830_3460_d46' / 'b100.fits.gz'
     pargs = scripts.view_fits.ViewFits.parse_args(['shane_kast_blue', str(spec_file), '--proc'])
     scripts.view_fits.ViewFits.main(pargs)
@@ -91,5 +91,12 @@ def test_obslog():
 
     # Clean up
     shutil.rmtree(setupdir)
+
+
+def test_show_arxiv():
+    # Pargs
+    pargs = scripts.show_arxiv.ShowArxiv.parse_args(['gemini_gmos_r831_ham.fits', '--det', '1',
+                                                     '--test'])
+    scripts.show_arxiv.ShowArxiv.main(pargs)
 
 

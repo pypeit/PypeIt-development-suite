@@ -23,7 +23,6 @@ from pypeit.core import fitting
 from pypeit.core.wavecal import autoid, waveio, wv_fitting
 from pypeit.core.wavecal.wvutils import  smooth_ceil_cont, xcorr_shift
 from pypeit import utils
-from pypeit import msgs
 from astropy import table
 from scipy import interpolate
 from IPython import embed
