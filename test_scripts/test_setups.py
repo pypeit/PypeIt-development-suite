@@ -270,6 +270,8 @@ _coadd2d = {
         'ABBA_wstandard': [dict(coadd_file=True)]},
     'keck_nires': {
         'ABBA_nostandard_faint': [dict(coadd_file=True)]},
+    'ldt_deveny': {
+        'DV1': [dict(coadd_file=True)]},
     'soar_goodman_blue': {
         'M1': [dict(coadd_file=True)]}
     }
