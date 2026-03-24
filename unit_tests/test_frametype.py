@@ -124,7 +124,7 @@ def test_mosfire():
 def test_nires():
 
     # Raw NIRES directory
-    dev_root = Path(os.getenv('PYPEIT_DEV')).resolve()
+    dev_root = Path(os.getenv('PYPEIT_DEV')).absolute()
     assert dev_root.exists(), f'PypeIt development suite directory does not exist: {dev_root}'
 
     raw_dir = dev_root / 'RAW_DATA' / 'keck_nires'
@@ -134,7 +134,7 @@ def test_nires():
     setups = list(raw_dir.glob('*'))
 
     # Set the output path and *remove if* if it already exists
-    output_path = Path('.').resolve() / 'output'
+    output_path = Path('.').absolute() / 'output'
     if output_path.exists():
         shutil.rmtree(output_path)
 
@@ -181,7 +181,7 @@ def test_nires():
 
 def test_lris_red():
     # Raw LRIS RED directory
-    dev_root = Path(os.getenv('PYPEIT_DEV')).resolve()
+    dev_root = Path(os.getenv('PYPEIT_DEV')).absolute()
     assert dev_root.exists(), f'PypeIt development suite directory does not exist: {dev_root}'
 
     raw_dir = dev_root / 'RAW_DATA' / 'keck_lris_red'
@@ -194,7 +194,7 @@ def test_lris_red():
     setups = np.concatenate([sorted(raw_dir.glob(s)) for s in setups_names]).tolist()
 
     # Set the output path and *remove if it already exists
-    output_path = Path('.').resolve() / 'output'
+    output_path = Path('.').absolute() / 'output'
     if output_path.exists():
         shutil.rmtree(output_path)
 
@@ -240,7 +240,7 @@ def test_lris_red():
 
 def test_lris_red_orig():
     # Raw LRIS RED ORIG directory
-    dev_root = Path(os.getenv('PYPEIT_DEV')).resolve()
+    dev_root = Path(os.getenv('PYPEIT_DEV')).absolute()
     assert dev_root.exists(), f'PypeIt development suite directory does not exist: {dev_root}'
 
     raw_dir = dev_root / 'RAW_DATA' / 'keck_lris_red_orig'
@@ -250,7 +250,7 @@ def test_lris_red_orig():
     setups = list(raw_dir.glob('*'))
 
     # Set the output path and *remove if it already exists
-    output_path = Path('.').resolve() / 'output'
+    output_path = Path('.').absolute() / 'output'
     if output_path.exists():
         shutil.rmtree(output_path)
 
@@ -296,7 +296,7 @@ def test_lris_red_orig():
 
 def test_lris_red_mark4():
     # Raw LRIS RED MARK 4 directory
-    dev_root = Path(os.getenv('PYPEIT_DEV')).resolve()
+    dev_root = Path(os.getenv('PYPEIT_DEV')).absolute()
     assert dev_root.exists(), f'PypeIt development suite directory does not exist: {dev_root}'
 
     raw_dir = dev_root / 'RAW_DATA' / 'keck_lris_red_mark4'
@@ -307,7 +307,7 @@ def test_lris_red_mark4():
     setups = np.concatenate([sorted(raw_dir.glob(s)) for s in setups_names]).tolist()
 
     # Set the output path and *remove if it already exists
-    output_path = Path('.').resolve() / 'output'
+    output_path = Path('.').absolute() / 'output'
     if output_path.exists():
         shutil.rmtree(output_path)
 
@@ -353,7 +353,7 @@ def test_lris_red_mark4():
 
 def test_lris_blue():
     # Raw LRIS BLUE directory
-    dev_root = Path(os.getenv('PYPEIT_DEV')).resolve()
+    dev_root = Path(os.getenv('PYPEIT_DEV')).absolute()
     assert dev_root.exists(), f'PypeIt development suite directory does not exist: {dev_root}'
 
     raw_dir = dev_root / 'RAW_DATA' / 'keck_lris_blue'
@@ -364,7 +364,7 @@ def test_lris_blue():
     setups = np.concatenate([sorted(raw_dir.glob(s)) for s in setups_names]).tolist()
 
     # Set the output path and *remove if it already exists
-    output_path = Path('.').resolve() / 'output'
+    output_path = Path('.').absolute() / 'output'
     if output_path.exists():
         shutil.rmtree(output_path)
 
@@ -410,7 +410,7 @@ def test_lris_blue():
 
 def test_lris_blue_orig():
     # Raw LRIS BLUE ORIG directory
-    dev_root = Path(os.getenv('PYPEIT_DEV')).resolve()
+    dev_root = Path(os.getenv('PYPEIT_DEV')).absolute()
     assert dev_root.exists(), f'PypeIt development suite directory does not exist: {dev_root}'
 
     raw_dir = dev_root / 'RAW_DATA' / 'keck_lris_blue_orig'
@@ -420,7 +420,7 @@ def test_lris_blue_orig():
     setups = list(raw_dir.glob('*'))
 
     # Set the output path and *remove if it already exists
-    output_path = Path('.').resolve() / 'output'
+    output_path = Path('.').absolute() / 'output'
     if output_path.exists():
         shutil.rmtree(output_path)
 
@@ -466,7 +466,7 @@ def test_lris_blue_orig():
 
 def test_hires():
     # Raw HIRES directory
-    dev_root = Path(os.getenv('PYPEIT_DEV')).resolve()
+    dev_root = Path(os.getenv('PYPEIT_DEV')).absolute()
     assert dev_root.exists(), f'PypeIt development suite directory does not exist: {dev_root}'
 
     raw_dir = dev_root / 'RAW_DATA' / 'keck_hires'
@@ -478,7 +478,7 @@ def test_hires():
     setups = np.concatenate([sorted(raw_dir.glob(s)) for s in setups_names]).tolist()
 
     # Set the output path and *remove if it already exists
-    output_path = Path('.').resolve() / 'output'
+    output_path = Path('.').absolute() / 'output'
     if output_path.exists():
         shutil.rmtree(output_path)
 
@@ -524,7 +524,7 @@ def test_hires():
 
 def test_vet_assigned_ftypes():
 
-    dev_root = Path(os.getenv('PYPEIT_DEV')).resolve()
+    dev_root = Path(os.getenv('PYPEIT_DEV')).absolute()
     assert dev_root.exists(), f'PypeIt development suite directory does not exist: {dev_root}'
 
     raw_dir = dev_root / 'RAW_DATA' / 'keck_lris_blue' / 'long_600_4000_d560_slitless'

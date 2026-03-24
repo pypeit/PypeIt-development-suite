@@ -76,7 +76,7 @@ def sensfunc_io_tester(algorithm, redux_out):
 
 def test_sensfunc_from_onespec(redux_out):
     # Paths
-    this_rdx = Path(redux_out).resolve() / 'keck_lris_red_mark4' / 'long_600_10000_d680'
+    this_rdx = Path(redux_out).absolute() / 'keck_lris_red_mark4' / 'long_600_10000_d680'
     sci_dir = this_rdx / 'Science'
 
     ###### FIRST RUN COADD1D #######
