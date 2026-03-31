@@ -112,7 +112,7 @@ def test_get_pypeitpar_baseprocess():
     configuration key in the pypeit file.
     """
 
-    # NOTE: This is one of the (few) spectrographs+setups that use_biasimage set
+    # NOTE: This is one of the (few) spectrographs+setups that set use_biasimage
     # to True by default but uses `baseprocess` to turn it off for this specific
     # dataset.
     spec = 'keck_kcwi'
