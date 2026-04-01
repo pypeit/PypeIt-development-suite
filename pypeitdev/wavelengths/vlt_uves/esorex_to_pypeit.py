@@ -1,11 +1,9 @@
 import copy
 import numpy as np
-from scipy.io import readsav
 import glob
 from IPython import embed
 
 import astropy.io.fits as fits
-from astropy.table import Table
 import astropy.units as units
 from matplotlib import pyplot as plt
 
@@ -21,7 +19,8 @@ def convert_esorex_to_reid(fname, outname, debug=False, to_cache=False):
     Convert the ESOREX outputs to a FITS file for use in PypeIt.
     """
     # Load the data from the .sav file
-    allfils = glob.glob("{0:s}/thar_*_sci_{0:s}_??_?.fits".format(fname))
+    grat, chip = fname.split("_")
+    allfils = glob.glob("{0:s}/thar_*_sci_{0:s}_??_{1:s}.fits".format(grat, chip))
     if len(allfils) == 0:
         raise IOError("No ThAr files found in {0:s}".format(fname))
     elif len(allfils) > 1:
@@ -32,7 +31,7 @@ def convert_esorex_to_reid(fname, outname, debug=False, to_cache=False):
     specdata = fits.open(tharname)[0].data
     nord, nspec = specdata.shape
 
-    wallfils = glob.glob("{0:s}/wpol_*_sci_{0:s}_??_?.fits".format(fname))
+    wallfils = glob.glob("{0:s}/wpol_*_sci_{0:s}_??_{1:s}.fits".format(grat, chip))
     if len(wallfils) == 0:
         raise IOError("No ThAr files found in {0:s}".format(fname))
     elif len(wallfils) > 1:
@@ -60,24 +59,72 @@ def convert_esorex_to_reid(fname, outname, debug=False, to_cache=False):
         plt.show()
 
     print("Manually update the order list for each setting here")
-    if fname == "346":
+    if grat == "346":
         nspec_coeff = 6
         norder_coeff = 4
         order_list = (orderref + np.arange(nord))[::-1]
         specname='vlt_uves_blue'
         det = 1
-    elif fname == "390":
+    elif grat == "390":
         nspec_coeff = 6
         norder_coeff = 4
         order_list = (orderref + np.arange(nord))[::-1]
         specname='vlt_uves_blue'
         det = 1
-    elif fname == "437":
+    elif grat == "437":
         nspec_coeff = 6
         norder_coeff = 4
         order_list = (orderref + np.arange(nord))[::-1]
         specname='vlt_uves_blue'
         det = 1
+    elif grat == "564" and chip == "l":
+        nspec_coeff = 6
+        norder_coeff = 4
+        order_list = (orderref + np.arange(nord))[::-1]
+        specname='vlt_uves_red'
+        det = 1
+    elif grat == "564" and chip == "u":
+        nspec_coeff = 6
+        norder_coeff = 4
+        order_list = (orderref + np.arange(nord))[::-1]
+        specname='vlt_uves_red'
+        det = 2
+    elif grat == "580" and chip == "l":
+        nspec_coeff = 6
+        norder_coeff = 4
+        order_list = (orderref + np.arange(nord))[::-1]
+        specname='vlt_uves_red'
+        det = 1
+    elif grat == "580" and chip == "u":
+        nspec_coeff = 6
+        norder_coeff = 4
+        order_list = (orderref + np.arange(nord))[::-1]
+        specname='vlt_uves_red'
+        det = 2
+    elif grat == "760" and chip == "l":
+        nspec_coeff = 6
+        norder_coeff = 4
+        order_list = (orderref + np.arange(nord))[::-1]
+        specname='vlt_uves_red'
+        det = 1
+    elif grat == "760" and chip == "u":
+        nspec_coeff = 6
+        norder_coeff = 4
+        order_list = (orderref + np.arange(nord))[::-1]
+        specname='vlt_uves_red'
+        det = 2
+    elif grat == "860" and chip == "l":
+        nspec_coeff = 6
+        norder_coeff = 4
+        order_list = (orderref + np.arange(nord))[::-1]
+        specname='vlt_uves_red'
+        det = 1
+    elif grat == "860" and chip == "u":
+        nspec_coeff = 6
+        norder_coeff = 4
+        order_list = (orderref + np.arange(nord))[::-1]
+        specname='vlt_uves_red'
+        det = 2
     else:
         print("Unknown order list")
         embed()
@@ -111,10 +158,10 @@ def convert_esorex_to_reid(fname, outname, debug=False, to_cache=False):
         binspec = 2
         print("npix=", nspec, " --> BLUE XD --> Binning = 2")
     # RED XDs
-    elif np.abs(nspec - 4060) < 1:#4060 / 100:
+    elif np.abs(nspec - 4096) < 1:#4060 / 100:
         binspec = 1
         print("npix=", nspec, " --> RED XD --> Binning = 1")
-    elif np.abs(nspec - 2030) < 1:#2030 / 100:
+    elif np.abs(nspec - 2048) < 1:#2030 / 100:
         binspec = 1
         print("npix=", nspec, " --> RED XD --> Binning = 2")
     else:
@@ -163,14 +210,18 @@ def convert_esorex_to_reid(fname, outname, debug=False, to_cache=False):
                              PYP_SPEC=specname,
                              lamps='ThAr')
         wv_calib.to_file()
-    embed()
+    # embed()
     wvutils.write_template(wavelengths, specdata, binspec, './', outname, to_cache=to_cache, order=order_list)
 
 
 if __name__ == "__main__":
     # List of all files to convert
-    fils = ["346", "390", "437"]#, "760"]
-    outnames = ["vlt_uves_346_1x1.fits", "vlt_uves_390_1x1.fits", "vlt_uves_437_1x1.fits"]
+    fils = ["346_b", "390_b", "437_b", "564_l", "564_u", "580_l", "580_u", "760_l", "760_u", "860_l", "860_u"]
+    outnames = ["vlt_uves_346_1x1.fits", "vlt_uves_390_1x1.fits", "vlt_uves_437_1x1.fits",
+                "vlt_uves_564l_1x1.fits", "vlt_uves_564u_1x1.fits",
+                "vlt_uves_580l_1x1.fits", "vlt_uves_580u_1x1.fits",
+                "vlt_uves_760l_1x1.fits", "vlt_uves_760u_1x1.fits",
+                "vlt_uves_860l_1x1.fits", "vlt_uves_860u_1x1.fits"]
     for ff, fil in enumerate(fils):
         # Convert the ESOREX reduction files to a FITS file
         convert_esorex_to_reid(fil, outnames[ff], to_cache=False)
