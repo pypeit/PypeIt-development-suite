@@ -12,13 +12,15 @@ from pypeit.core.arc import fit2darc
 from pypeit.core.wave import airtovac
 from pypeit.par.pypeitpar import WavelengthSolutionPar
 from pypeit.wavecalib import WaveCalib
+from pypeit import slittrace
+from pypeit import edgetrace
 
 
-def convert_esorex_to_reid(fname, outname, debug=False, to_cache=False):
+def load_arcdata(fname):
     """
-    Convert the ESOREX outputs to a FITS file for use in PypeIt.
+    By default, the ESOREX reductions divide out the blaze function in the ThAr spectra. This function is used to
+    add it back in, which is consistent with what PypeIt expects.
     """
-    # Load the data from the .sav file
     grat, chip = fname.split("_")
     allfils = glob.glob("{0:s}/thar_*_sci_{0:s}_??_{1:s}.fits".format(grat, chip))
     if len(allfils) == 0:
@@ -29,8 +31,29 @@ def convert_esorex_to_reid(fname, outname, debug=False, to_cache=False):
     tharname = allfils[0]
     print("Reading ThAr file: {0:s}".format(tharname))
     specdata = fits.open(tharname)[0].data
-    nord, nspec = specdata.shape
+    try:
+        print("No Edges file found, so not applying blaze function")
+        # Load the edge traces and slit traces to get the blaze function
+        edges = edgetrace.EdgeTraceSet.from_file(f'{grat}/Edges_{chip}.fits.gz')
+        flatimg = edges.traceimg.image
 
+        edge_fit = edges.edge_fit
+        slitcen = np.round(np.mean(edge_fit.reshape((edge_fit.shape[0], edge_fit.shape[1] // 2, 2)), axis=2)).astype(int)
+
+        slitspec = np.zeros(slitcen.shape).T
+        nspec, nord = slitcen.shape
+        for ii in range(nord):
+            speccoo = np.arange(nspec)
+            spatcoo = slitcen[:, ii]
+            ww = np.where((spatcoo >= 0) & (spatcoo < flatimg.shape[1]))
+            spec = np.zeros(nspec)
+            spec[ww] = flatimg[(speccoo[ww], spatcoo[ww])]
+            slitspec[ii, :] = spec / spec[nspec // 2]
+    except FileNotFoundError:
+        slitspec = 1
+
+    # Now load the wavelength polynomial fits file, which contains the pixel and wavelength information
+    # for the ThAr lines. This is needed to fit the 2D wavelength solution.
     wallfils = glob.glob("{0:s}/wpol_*_sci_{0:s}_??_{1:s}.fits".format(grat, chip))
     if len(wallfils) == 0:
         raise IOError("No ThAr files found in {0:s}".format(fname))
@@ -39,11 +62,23 @@ def convert_esorex_to_reid(fname, outname, debug=False, to_cache=False):
     # Read the wavelength fits file
     wpolname = wallfils[0]
     print("Reading WPOL file: {0:s}".format(wpolname))
-    hdu = fits.open(wpolname)
-    all_pix = hdu[1].data['X']
-    all_orders = hdu[1].data['Order']
+    wpol = fits.open(wpolname)
+
+    return specdata * slitspec, wpol
+
+def convert_esorex_to_reid(fname, outname, debug=False, to_cache=False):
+    """
+    Convert the ESOREX outputs to a FITS file for use in PypeIt.
+    """
+    grat, chip = fname.split("_")
+    # Load the data from the .sav file
+    specdata, wpol = load_arcdata(fname)
+    nord, nspec = specdata.shape
+
+    all_pix = wpol[1].data['X']
+    all_orders = wpol[1].data['Order']
     # ESOREX is in air wavelengths, so convert to vacuum
-    all_wv_air = hdu[1].data['Ident']*units.AA
+    all_wv_air = wpol[1].data['Ident']*units.AA
     all_wv = airtovac(all_wv_air).to(units.AA).value
     # Remove NaNs
     wgd = np.where(np.logical_not(np.isnan(all_wv)))
@@ -51,7 +86,7 @@ def convert_esorex_to_reid(fname, outname, debug=False, to_cache=False):
     if False:
         test_order = 130
         wgd = np.where(np.logical_not(np.isnan(all_wv)) & (all_orders==test_order))
-        all_peak = hdu[1].data['Peak']
+        all_peak = wpol[1].data['Peak']
         wave = np.arange(nspec)
         spec = specdata[orderref-test_order-1,:]
         plt.plot(wave, spec, 'k-', drawstyle='steps-mid', lw=1)
@@ -129,6 +164,9 @@ def convert_esorex_to_reid(fname, outname, debug=False, to_cache=False):
         print("Unknown order list")
         embed()
         assert False
+    print("norders = ", nord)
+    order_list_str = "[" + ", ".join(["{0:d}".format(oo) for oo in order_list]) + "]"
+    print("Order list = ", order_list_str)
 
     # Fit the 2D arc
     fit2d = fit2darc(all_wv[wgd], all_pix[wgd], all_orders[wgd], nspec, nspec_coeff=nspec_coeff, norder_coeff=norder_coeff, debug=debug)
