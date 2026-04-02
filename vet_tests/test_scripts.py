@@ -539,7 +539,6 @@ def test_run_to_calibstep(redux_out):
     os.chdir(_redux_out)
     pypeit_file = _redux_out / 'shane_kast_blue_A.pypeit'
 
-    #pytest.set_trace()
     # Run on all the steps
     for step in calibrations.MultiSlitCalibrations.default_steps():
         run_to_calibstep.RunToCalibStep.main(run_to_calibstep.RunToCalibStep.parse_args([
