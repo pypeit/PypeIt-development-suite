@@ -48,7 +48,8 @@ def load_arcdata(fname):
             ww = np.where((spatcoo >= 0) & (spatcoo < flatimg.shape[1]))
             spec = np.zeros(nspec)
             spec[ww] = flatimg[(speccoo[ww], spatcoo[ww])]
-            slitspec[ii, :] = spec / spec[nspec // 2]
+            nrmfact = np.max(spec[ww]) if spec[nspec // 2] == 0 else spec[nspec // 2]
+            slitspec[ii, :] = spec / nrmfact
     except FileNotFoundError:
         slitspec = 1
 
@@ -133,7 +134,8 @@ def convert_esorex_to_reid(fname, outname, debug=False, to_cache=False):
     elif grat == "580" and chip == "u":
         nspec_coeff = 6
         norder_coeff = 4
-        order_list = (orderref + np.arange(nord))[::-1]
+        order_list = 1+(orderref + np.arange(nord))[::-1]
+        all_orders += 1
         specname='vlt_uves_red'
         det = 2
     elif grat == "760" and chip == "l":
@@ -145,7 +147,8 @@ def convert_esorex_to_reid(fname, outname, debug=False, to_cache=False):
     elif grat == "760" and chip == "u":
         nspec_coeff = 6
         norder_coeff = 4
-        order_list = (orderref + np.arange(nord))[::-1]
+        order_list = 1+(orderref + np.arange(nord))[::-1]
+        all_orders += 1
         specname='vlt_uves_red'
         det = 2
     elif grat == "860" and chip == "l":
