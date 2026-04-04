@@ -14,7 +14,7 @@ from numpy.polynomial.polynomial import polyval2d
 # 2D polynomial wavelength model (no PypeIt dependency)
 # ---------------------------------------------------------------------------
 
-def fit_wave2d(spec, spat, wave, order_spec=4, order_spat=4):
+def fit_wave2d(spec, spat, wave, order_spec=6, order_spat=4):
     """
     Fit a 2D polynomial to the wavelength solution across all orders.
 
@@ -170,12 +170,13 @@ def unpack_data(alldata, allorders):
         for det, (spec_list, spat_list, wave_list) in enumerate(
                 [(spec1_list, spat1_list, wave1_list),
                  (spec2_list, spat2_list, wave2_list)]):
-            data = alldata[ii][det]          # shape (nspec, norders, 3)
+            data = alldata[ii][det]          # shape (nspec, norders, 4)
             nspec, norders, _ = data.shape
             for ord_idx in range(norders):
-                wave_list.append(data[:, ord_idx, 0])
-                spec_list.append(data[:, ord_idx, 1])
-                spat_list.append(data[:, ord_idx, 2])
+                ww = np.where(data[:, ord_idx, 3])
+                wave_list.append(data[:, ord_idx, 0][ww])
+                spec_list.append(data[:, ord_idx, 1][ww])
+                spat_list.append(data[:, ord_idx, 2][ww])
 
     return (np.concatenate(spec1_list), np.concatenate(spat1_list), np.concatenate(wave1_list),
             np.concatenate(spec2_list), np.concatenate(spat2_list), np.concatenate(wave2_list))
@@ -233,7 +234,7 @@ def fit_mosaic_parameters(alldata, allorders,
                            dx_range=(-200, 200), dy_range=(-10, 10),
                            theta_range=(-0.01, 0.01),
                            coarse_steps=(21, 11, 11),
-                           order_spec=4, order_spat=4,
+                           order_spec=6, order_spat=4,
                            verbose=True):
     """
     Find the optimal rigid-body alignment (dx, dy, theta) of detector 2
@@ -322,6 +323,12 @@ def fit_mosaic_parameters(alldata, allorders,
     }
 
 def load_data():
+    """
+    This function loads the 2D best-fit wavelength solution for each order and each detector, along with the
+    corresponding spatial positions of the slit centers. It constructs a combined dataset that includes the
+    wavelength, spectral pixel, spatial pixel, and a mask indicating valid points for both detectors across
+    all setups.
+    """
     dirc = 'PypeIt_Templates/'
     # setups = [['564_l', '564_u'],
     #          ['580_l', '580_u']]
@@ -346,14 +353,16 @@ def load_data():
             wvcal = wavecalib.WaveCalib.from_file(wvcal_file)
             orders = wvcal.ech_orders
             assert orders.size==norders
-            thisdata = np.zeros((nspec, norders, 3))
+            thisdata = np.zeros((nspec, norders, 4))
             for ord in range(norders):
                 wave = wvcal.wv_fit2d[0].eval(np.linspace(0.0, 1.0, nspec), x2=np.full(nspec, orders[ord]))/orders[ord]
                 spec = np.arange(nspec)
                 spat = slitcen[:,ord] + offset
+                mask = (slitcen[:,ord] >= 0) & (slitcen[:,ord] < edges.traceimg.image.shape[1])
                 thisdata[:, ord, 0] = wave
                 thisdata[:, ord, 1] = spec
                 thisdata[:, ord, 2] = spat
+                thisdata[:, ord, 3] = mask
             alldata[ii][dd] = thisdata.copy()
             allorders[ii][dd] = orders.copy()
     return alldata, allorders
@@ -368,17 +377,11 @@ if __name__ == '__main__':
     # Load the data
     alldata, allorders = load_data()
 
-    # spec1, spat1, wave1, spec2, spat2, wave2 = unpack_data(alldata, allorders)
-    # print("Det1 spat range:", spat1.min(), spat1.max())
-    # print("Det2 spat range:", spat2.min(), spat2.max())
-    # print("Det1 wave range:", wave1.min(), wave1.max())
-    # print("Det2 wave range:", wave2.min(), wave2.max())
-
     result = fit_mosaic_parameters(alldata, allorders,
                                    dx_range=(-200, 200),
-                                   dy_range=(-10, 10),
-                                   theta_range=(-0.01, 0.01),
-                                   coarse_steps=(21, 11, 11))
+                                   dy_range=(-50, 50),
+                                   theta_range=(-0.0, 0.0),
+                                   coarse_steps=(21, 15, 1))
 
     print("\nFinal result:")
     print(f"  dx    = {result['dx']:.4f} pixels")
