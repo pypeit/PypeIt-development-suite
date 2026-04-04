@@ -31,6 +31,20 @@ def load_arcdata(fname):
     tharname = allfils[0]
     print("Reading ThAr file: {0:s}".format(tharname))
     specdata = fits.open(tharname)[0].data
+
+    # Subtract the continuum from the ThAr spectrum to get the line peaks.
+    # specdata_sub = np.zeros(specdata.shape)
+    # for ii in range(specdata.shape[0]):
+    #     _, _, _, _, specdata_sub[ii, :] = wvutils.arc_lines_from_spec(specdata[ii, :], fwhm=4.0)
+    # specdata = specdata_sub
+    if grat == "760" and chip == "u":
+        specdata_pypeit = np.load("760/thar_pypeit_760_u.npy")
+        embed()
+        for ii in range(specdata.shape[0]):
+            plt.plot(specdata[ii, :], 'k-', drawstyle='steps-mid', lw=1)
+            plt.plot(specdata_pypeit[:, ii], 'r-', drawstyle='steps-mid', lw=1)
+            plt.show()
+        # specdata = specdata_pypeit
     try:
         print("No Edges file found, so not applying blaze function")
         # Load the edge traces and slit traces to get the blaze function
@@ -134,8 +148,7 @@ def convert_esorex_to_reid(fname, outname, debug=False, to_cache=False):
     elif grat == "580" and chip == "u":
         nspec_coeff = 6
         norder_coeff = 4
-        order_list = 1+(orderref + np.arange(nord))[::-1]
-        all_orders += 1
+        order_list = (orderref + np.arange(nord))[::-1]
         specname='vlt_uves_red'
         det = 2
     elif grat == "760" and chip == "l":
@@ -147,8 +160,7 @@ def convert_esorex_to_reid(fname, outname, debug=False, to_cache=False):
     elif grat == "760" and chip == "u":
         nspec_coeff = 6
         norder_coeff = 4
-        order_list = 1+(orderref + np.arange(nord))[::-1]
-        all_orders += 1
+        order_list = (orderref + np.arange(nord))[::-1]
         specname='vlt_uves_red'
         det = 2
     elif grat == "860" and chip == "l":
@@ -263,6 +275,9 @@ if __name__ == "__main__":
                 "vlt_uves_580l_1x1.fits", "vlt_uves_580u_1x1.fits",
                 "vlt_uves_760l_1x1.fits", "vlt_uves_760u_1x1.fits",
                 "vlt_uves_860l_1x1.fits", "vlt_uves_860u_1x1.fits"]
+    # fils = ["760_u"]
+    # outnames = ["vlt_uves_760u_1x1.fits"]
     for ff, fil in enumerate(fils):
         # Convert the ESOREX reduction files to a FITS file
         convert_esorex_to_reid(fil, outnames[ff], to_cache=False)
+    print("\n\nDone converting ESOREX files to PypeIt format. Now run check_orders.py and compare with the VLT UVES ThAr spectral atlas.\n\n")
