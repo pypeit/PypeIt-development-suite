@@ -1,4 +1,12 @@
 Name                       Chip  XDISP    ECH     XDAng  Deck  Rbin  Cbin   IOrder EOrder   Spatids
 WaveCalib_346.fits         1     BLUE     0.0     346.0  346   1     1      121    153      all
 WaveCalib_390.fits         1     BLUE     0.0     390.0  390   1     1      103    142      all
-WaveCalib_437.fits         1     BLUE     0.0     437.0  437   1     1      94     124      all
+WaveCalib_437.fits         1     BLUE     0.0     437.0  437   1     1       94    124      all
+WaveCalib_564l.fits        1     RED      0.0     564.0  564   1     1      109    132      all
+WaveCalib_564u.fits        2     RED      0.0     564.0  564   1     1       92    107      all
+WaveCalib_580l.fits        1     RED      0.0     580.0  580   1     1      106    128      all
+WaveCalib_580u.fits        2     RED      0.0     580.0  580   1     1       91    106      all
+WaveCalib_760l.fits        1     RED      0.0     760.0  760   1     1       81    107      all
+WaveCalib_760u.fits        2     RED      0.0     760.0  760   1     1       ##     ##      all
+WaveCalib_860l.fits        1     RED      0.0     860.0  860   1     1       72     91      all
+WaveCalib_860u.fits        2     RED      0.0     860.0  860   1     1       ##     ##      all
