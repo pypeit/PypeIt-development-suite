@@ -37,16 +37,17 @@ def load_arcdata(fname):
     # for ii in range(specdata.shape[0]):
     #     _, _, _, _, specdata_sub[ii, :] = wvutils.arc_lines_from_spec(specdata[ii, :], fwhm=4.0)
     # specdata = specdata_sub
-    if grat == "760" and chip == "u":
-        specdata_pypeit = np.load("760/thar_pypeit_760_u.npy")
-        embed()
-        for ii in range(specdata.shape[0]):
-            plt.plot(specdata[ii, :], 'k-', drawstyle='steps-mid', lw=1)
-            plt.plot(specdata_pypeit[:, ii], 'r-', drawstyle='steps-mid', lw=1)
-            plt.show()
-        # specdata = specdata_pypeit
+    if grat == "860" and chip == "u":
+        specdata_pypeit = np.load("860/thar_pypeit_860_u.npy")
+        if False:
+            for ii in range(specdata_pypeit.shape[1]+1):
+                if ii < specdata.shape[0]:
+                    plt.plot(specdata[ii, :], 'k-', drawstyle='steps-mid', lw=1)
+                if ii != 0:
+                    plt.plot(specdata_pypeit[:, ii-1], 'r-', drawstyle='steps-mid', lw=1)
+                plt.show()
+        specdata = np.append(specdata[1:,:], specdata_pypeit.T[-2:,:], axis=0)
     try:
-        print("No Edges file found, so not applying blaze function")
         # Load the edge traces and slit traces to get the blaze function
         edges = edgetrace.EdgeTraceSet.from_file(f'{grat}/Edges_{chip}.fits.gz')
         flatimg = edges.traceimg.image
@@ -64,7 +65,12 @@ def load_arcdata(fname):
             spec[ww] = flatimg[(speccoo[ww], spatcoo[ww])]
             nrmfact = np.max(spec[ww]) if spec[nspec // 2] == 0 else spec[nspec // 2]
             slitspec[ii, :] = spec / nrmfact
+        # Hack because PypeIt found more orders than ESOREX.
+        if grat == "860" and chip == "u":
+            print("WARNING!!  Hack to add blaze function for 860_u because ESOREX found fewer orders than PypeIt")
+            slitspec[-2:, :] = 1  # Set the blaze function to 1 for the last two orders, which are the ones that ESOREX missed.
     except FileNotFoundError:
+        print("No Edges file found, so not applying blaze function")
         slitspec = 1
 
     # Now load the wavelength polynomial fits file, which contains the pixel and wavelength information
@@ -99,14 +105,15 @@ def convert_esorex_to_reid(fname, outname, debug=False, to_cache=False):
     wgd = np.where(np.logical_not(np.isnan(all_wv)))
     orderref = np.min(all_orders)
     if False:
-        test_order = 130
-        wgd = np.where(np.logical_not(np.isnan(all_wv)) & (all_orders==test_order))
-        all_peak = wpol[1].data['Peak']
-        wave = np.arange(nspec)
-        spec = specdata[orderref-test_order-1,:]
-        plt.plot(wave, spec, 'k-', drawstyle='steps-mid', lw=1)
-        plt.plot(all_pix[wgd], all_peak[wgd], 'ro', markersize=1)
-        plt.show()
+        test_orders = [70, 65]
+        for test_order in test_orders:
+            wgd = np.where(np.logical_not(np.isnan(all_wv)) & (all_orders==test_order))
+            all_peak = wpol[1].data['Peak']
+            wave = np.arange(nspec)
+            spec = specdata[orderref-test_order-1,:]
+            plt.plot(wave, spec, 'k-', drawstyle='steps-mid', lw=1)
+            plt.plot(all_pix[wgd], all_peak[wgd], 'ro', markersize=1)
+            plt.show()
 
     print("Manually update the order list for each setting here")
     if grat == "346":
@@ -170,9 +177,9 @@ def convert_esorex_to_reid(fname, outname, debug=False, to_cache=False):
         specname='vlt_uves_red'
         det = 1
     elif grat == "860" and chip == "u":
-        nspec_coeff = 6
+        nspec_coeff = 4
         norder_coeff = 4
-        order_list = (orderref + np.arange(nord))[::-1]
+        order_list = (orderref + np.arange(nord))[::-1] - 2  # Hack because ESOREX found fewer orders than PypeIt
         specname='vlt_uves_red'
         det = 2
     else:
@@ -275,8 +282,8 @@ if __name__ == "__main__":
                 "vlt_uves_580l_1x1.fits", "vlt_uves_580u_1x1.fits",
                 "vlt_uves_760l_1x1.fits", "vlt_uves_760u_1x1.fits",
                 "vlt_uves_860l_1x1.fits", "vlt_uves_860u_1x1.fits"]
-    # fils = ["760_u"]
-    # outnames = ["vlt_uves_760u_1x1.fits"]
+    # fils = ["860_u"]
+    # outnames = ["vlt_uves_860u_1x1.fits"]
     for ff, fil in enumerate(fils):
         # Convert the ESOREX reduction files to a FITS file
         convert_esorex_to_reid(fil, outnames[ff], to_cache=False)
