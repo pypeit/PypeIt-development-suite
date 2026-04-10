@@ -37,7 +37,7 @@ Set ech_fixed_format = True
 Remove all files in the Calibrations folder, and then run the reduction to get a new edges file.
 
 Copy this to the dev-suite folder
-cp Calibrations/Edges_C_2_DET01.fits.gz /Users/rcooke/Software/PypeIt-development-suite/pypeitdev/wavelengths/vlt_uves/580/Edges_l.fits.gz
+cp Calibrations/Edges_C_2_DET01.fits.gz ~/Software/PypeIt-development-suite/pypeitdev/wavelengths/vlt_uves/580/Edges_l.fits.gz
 
 Run the esorex_to_pypeit script
 
@@ -45,4 +45,4 @@ Copy the resulting reidentify script over to PypeIt
 cp vlt_uves_580l_1x1.fits ~/Software/PypeIt/pypeit/data/arc_lines/reid_arxiv/
 
 Run the reduction again to get the Calibrations wavecal file and copy this to the PypeIt_Templates
-cp Calibrations/WaveCalib_C_2_DET01.fits /Users/rcooke/Software/PypeIt-development-suite/pypeitdev/wavelengths/vlt_uves/PypeIt_Templates/WaveCalib_580l.fits
+cp Calibrations/WaveCalib_C_2_DET01.fits ~/Software/PypeIt-development-suite/pypeitdev/wavelengths/vlt_uves/PypeIt_Templates/WaveCalib_580l.fits

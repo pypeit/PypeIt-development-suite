@@ -6,6 +6,7 @@ from astropy.table import Table, vstack
 from astropy.io import fits
 from pkg_resources import resource_filename
 from matplotlib import pyplot as plt
+from pypeit import PypeItError
 from pypeit.spectrographs.util import load_spectrograph
 from pypeit.core.wavecal import templates
 from pypeit.core.wavecal import wvutils
@@ -16,7 +17,6 @@ from pypeit.core import fitting
 from pypeit.core.wavecal import autoid, waveio, wv_fitting
 from pypeit.core.wavecal.wvutils import get_xcorr_arc, xcorr_shift
 from pypeit import utils
-from pypeit import msgs
 from pypeit import wavecalib
 from astropy import table
 from scipy import interpolate
@@ -73,13 +73,13 @@ def load_archive(outfile, n_final=2, func='legendre'):
         if ptbl[irow]['Spatids'] == 'all':
             igood = np.ones(waveCalib.spat_ids.size, dtype=bool)
             if this_order_vec_raw.size != waveCalib.spat_ids.size:
-                msgs.error('the number of order determined using IOrder and EOrder does not match the number of '
+                raise PypeItError('the number of order determined using IOrder and EOrder does not match the number of '
                            'orders in the WaveCalib file')
         elif isinstance(ptbl[irow]['Spatids'], (list, tuple, np.integer)):
             spat_ids = np.atleast_1d(ptbl[irow]['Spatids'])
             igood = np.isin(waveCalib.spat_ids, spat_ids)
         else:
-            msgs.error('Unrecognized format for Spatids')
+            raise PypeItError('Unrecognized format for Spatids')
         this_order_vec = this_order_vec_raw[igood]
         this_arc = np.array([arc.resize_spec(ww, nspec) for ww in waveCalib.arc_spectra.T])
         this_wave = np.array([arc.resize_spec(wvfit.wave_soln, nspec) for wvfit in waveCalib.wv_fits])
@@ -209,7 +209,7 @@ def fit_wvcalib_vs_angles(arxiv_file, outfile, func='legendre',
         None
     """
 
-    msgs.info("Fitting wavelength calibration coefficients vs. ECH and XD angles")
+    print("Fitting wavelength calibration coefficients vs. ECH and XD angles")
     arxiv_params = Table.read(arxiv_file, hdu=1)[0]
     arxiv = Table.read(arxiv_file, hdu=2)
 
@@ -262,7 +262,7 @@ def fit_coeffs_vs_ech_angle(arxiv_params, arxiv, func='legendre', nmax = 3, coef
         ech_angle_fit_coeffs (numpy.ndarray):
             Array containing the fit coefficients.
     """
-    msgs.info("Fitting wavelength calibration coefficients vs. ECH angle")
+    print("Fitting wavelength calibration coefficients vs. ECH angle")
     order_min, order_max = arxiv_params['order_min'], arxiv_params['order_max']
     order_vec = np.arange(order_min, order_max + 1, 1)
     norders = arxiv_params['norders'] # Total number of orders in the arxiv
@@ -274,7 +274,7 @@ def fit_coeffs_vs_ech_angle(arxiv_params, arxiv, func='legendre', nmax = 3, coef
 
     # Assign orders for each coefficient that we are fitting
     if nmax > n_final + 1:
-        msgs.error(f'nmax={nmax} cannot be greater than n_final+1={n_final+1}. Reduce nmax')
+        raise PypeItError(f'nmax={nmax} cannot be greater than n_final+1={n_final+1}. Reduce nmax')
     # This vector holds the polynomial order used to fit each coefficient
     coeff_fit_order_vec = np.full(n_final+1, coeff_fit_order_min)
     # DP: the fits look better if we remove the following line
@@ -380,7 +380,7 @@ def fit_reddest_vs_xd_angle(arxiv, func='legendre', polyorder=1, sigrej=3.0, max
 
 
 def echelle_composite_arcspec(arxiv_file, outfile, show_individual_solns=False, do_total=False, show_orders=False, debug=False):
-    msgs.info("Generating composite arc spectrum from the echelle archive file: {}".format(arxiv_file))
+    print("Generating composite arc spectrum from the echelle archive file: {}".format(arxiv_file))
     color_tuple = ('green', 'cyan', 'magenta', 'blue', 'darkorange', 'yellow', 'dodgerblue', 'purple',
                    'lightgreen', 'cornflowerblue')
     colors = itertools.cycle(color_tuple)
@@ -413,7 +413,7 @@ def echelle_composite_arcspec(arxiv_file, outfile, show_individual_solns=False, 
             dwave_pix[iord] = np.median(this_dwave.min(axis=1, where=this_dwave!=0, initial=10))
             dloglam_pix[iord] = np.median((this_dwave/this_wave/np.log(10.0)).min(axis=1, where=this_dwave!=0, initial=10))
         else:
-            msgs.error(f'No arc solutions contribute to order={iord}. There must be a bug')
+            raise PypeItError(f'No arc solutions contribute to order={iord}. There must be a bug')
 
     # Use the smallest value of dloglam across all orders for the spectral grid spacing
     dloglam_pix_final = dloglam_pix.max()
@@ -442,7 +442,6 @@ def echelle_composite_arcspec(arxiv_file, outfile, show_individual_solns=False, 
     gpm_composite = np.zeros((nspec_max, norders), dtype=bool)
 
     sn_smooth_npix = 1  # Should not matter since we use uniform weights
-    embed()
     for iord, this_order in enumerate(order_vec):
         populated = arxiv['populated_and_good'][:, iord]
         nsolns_this_order = np.sum(populated)

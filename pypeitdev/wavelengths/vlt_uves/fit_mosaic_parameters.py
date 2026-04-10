@@ -61,7 +61,7 @@ def transform_det2(all_specpix, all_spatpix, all_detector, dx, dy, theta):
 
 def cost_function(params, all_specpix, all_spatpix, all_wave,
                   all_orders, all_detector, all_setup, all_slitcen, all_ordrcen,
-                  nspec_coeff=6, norder_coeff=4):
+                  nspec_coeff=7, norder_coeff=7, plot_qa=False):
     """
     Cost function for the rigid-body alignment optimisation.
 
@@ -85,6 +85,7 @@ def cost_function(params, all_specpix, all_spatpix, all_wave,
     rms : float
         RMS wavelength residual of the global 2D fit, in wavelength units.
     """
+    print("Current params = ", params)
     dx, dy, theta = params
 
     # Transform detector 2 into detector 1's frame
@@ -105,8 +106,9 @@ def cost_function(params, all_specpix, all_spatpix, all_wave,
         dwav_dpix = np.abs(waveord_fit_p1 - waveord_fit) / all_orders[wgd]
         all_wavefit[wgd] = waveord_fit / all_orders[wgd]
         # Save some QA
-        fit2darc_global_qa(fit2d, det_nspec, outfile=f"global_qa_{unq_setup[ss]}.pdf")
-        fit2darc_orders_qa(fit2d, det_nspec, outfile=f"orders_qa_{unq_setup[ss]}.pdf")
+        if plot_qa:
+            fit2darc_global_qa(fit2d, det_nspec, outfile=f"global_qa_{unq_setup[ss]}.pdf")
+            fit2darc_orders_qa(fit2d, det_nspec, outfile=f"orders_qa_{unq_setup[ss]}.pdf")
 
         # Finally, calculate the spectral residual in pixels
         spec_resid = (all_wave[wgd] - all_wavefit[wgd]) / dwav_dpix
@@ -114,32 +116,36 @@ def cost_function(params, all_specpix, all_spatpix, all_wave,
         ##########################
         # Now do the spatial fit as well, and combine the residuals in quadrature
         ##########################
-        all_slitcen_spat = np.array([])
-        all_slitcen_spec = np.array([])
-        all_slitcen_ordr = np.array([])
-        all_slitcen_det = np.array([])
-        for dd in range(len(all_slitcen[ss])):
-            all_speccen = np.arange(det_nspec).reshape(-1, 1).repeat(all_slitcen[ss][dd].shape[1], axis=1)
-            all_ordrcen_t = np.tile(all_ordrcen[ss][dd].reshape(1, -1), (det_nspec, 1))
-            # Mask of good values that are actually on the detector
-            if dd == 0:
-                mask = ((all_slitcen[ss][dd] >= 0) & (all_slitcen[ss][dd] < det_nspat))
-            else:
-                mask = ((all_slitcen[ss][dd] >= det_nspat) & (all_slitcen[ss][dd] < 2*det_nspat))
-            all_slitcen_spec = np.concatenate([all_slitcen_spec, all_speccen[mask]])
-            all_slitcen_spat = np.concatenate([all_slitcen_spat, all_slitcen[ss][dd][mask]])
-            all_slitcen_ordr = np.concatenate([all_slitcen_ordr, all_ordrcen_t[mask]])
-            all_slitcen_det = np.concatenate([all_slitcen_det, np.full_like(all_ordrcen_t[mask], dd, dtype=int)])
-        # Transform the slitcen coordinates for det2 as well
-        all_slitcen_spec_t, all_slitcen_spat_t = transform_det2(all_slitcen_spec, all_slitcen_spat, all_slitcen_det, dx, dy, theta)
+        do_spatial = True
+        if do_spatial:
+            all_slitcen_spat = np.array([])
+            all_slitcen_spec = np.array([])
+            all_slitcen_ordr = np.array([])
+            all_slitcen_det = np.array([])
+            for dd in range(len(all_slitcen[ss])):
+                all_speccen = np.arange(det_nspec).reshape(-1, 1).repeat(all_slitcen[ss][dd].shape[1], axis=1)
+                all_ordrcen_t = np.tile(all_ordrcen[ss][dd].reshape(1, -1), (det_nspec, 1))
+                # Mask of good values that are actually on the detector
+                if dd == 0:
+                    mask = ((all_slitcen[ss][dd] >= 0) & (all_slitcen[ss][dd] < det_nspat))
+                else:
+                    mask = ((all_slitcen[ss][dd] >= det_nspat) & (all_slitcen[ss][dd] < 2*det_nspat))
+                all_slitcen_spec = np.concatenate([all_slitcen_spec, all_speccen[mask]])
+                all_slitcen_spat = np.concatenate([all_slitcen_spat, all_slitcen[ss][dd][mask]])
+                all_slitcen_ordr = np.concatenate([all_slitcen_ordr, all_ordrcen_t[mask]])
+                all_slitcen_det = np.concatenate([all_slitcen_det, np.full_like(all_ordrcen_t[mask], dd, dtype=int)])
+            # Transform the slitcen coordinates for det2 as well
+            all_slitcen_spec_t, all_slitcen_spat_t = transform_det2(all_slitcen_spec, all_slitcen_spat, all_slitcen_det, dx, dy, theta)
 
-        # Perform a 2D fit to the spatial coordinates as well
-        pypeitFit = fitting.robust_fit(all_slitcen_spec_t/(det_nspec-1), all_slitcen_spat_t/(2*det_nspat), (nspec_coeff, norder_coeff), x2=all_slitcen_ordr/200,
-                                       function="legendre2d", maxiter=100, lower=10, upper=10, minx=0, maxx=1,
-                                       minx2=0, maxx2=1, use_mad=True, sticky=False)
-        # Evaluate the spatial fit at the slitcen positions, and estimate the spatial residuals next the locations of the arc lines
-        slitcen_spat_fit = (2*det_nspat) * pypeitFit.eval(all_specpix_t[wgd]/(det_nspec-1), x2=all_orders[wgd]/200)
-        spat_resid = all_spatpix_t[wgd] - slitcen_spat_fit
+            # Perform a 2D fit to the spatial coordinates as well
+            pypeitFit = fitting.robust_fit(all_slitcen_spec_t/(det_nspec-1), all_slitcen_spat_t/(2*det_nspat), (nspec_coeff, norder_coeff), x2=all_slitcen_ordr/200,
+                                           function="legendre2d", maxiter=100, lower=100, upper=100, minx=0, maxx=1,
+                                           minx2=0, maxx2=1, use_mad=True, sticky=False, verbose=False)
+            # Evaluate the spatial fit at the slitcen positions, and estimate the spatial residuals next the locations of the arc lines
+            slitcen_spat_fit = (2*det_nspat) * pypeitFit.eval(all_specpix_t[wgd]/(det_nspec-1), x2=all_orders[wgd]/200)
+            spat_resid = all_spatpix_t[wgd] - slitcen_spat_fit
+        else:
+            spat_resid = 0.0
         all_resid[wgd] = np.sqrt(spec_resid**2 + spat_resid**2)
     # residuals = all_wave - all_wavefit
     rms = np.sqrt(np.mean(all_resid**2))
@@ -210,9 +216,9 @@ def bootstrap_errors(best_params, spec1, spat1, wave1, spec2, spat2, wave2,
 
         args = (s1, p1, wave1, s2, p2, wave2, order_spec, order_spat)
 
-        res = minimize(cost_function, x0=best_params, args=args,
-                       method='L-BFGS-B', bounds=bounds,
-                       options={'ftol': 1e-10, 'gtol': 1e-6, 'maxiter': 500})
+        res = minimize(cost_function, x0=best_params, args=args, bounds=bounds,
+                       # method='Nelder-Mead', options={'fatol':0.1, 'xatol':0.1})
+                       method='L-BFGS-B', options={'ftol': 1E-4, 'gtol': 1E-4, 'maxiter': 50})
         samples[i] = res.x
 
     errors = {
@@ -390,7 +396,7 @@ def fit_mosaic_parameters(all_specpix, all_spatpix, all_wave,
                   f"theta={np.degrees(theta0):.4f} deg, RMS={rms0:.6f}")
 
     else:
-        dx0, dy0, theta0 = 70.0, 0.0, 0.0
+        dx0, dy0, theta0 = 100.0, 0.0, 0.0
 
     # --- Stage 2: fine gradient-based optimisation ---
     if verbose:
@@ -398,7 +404,7 @@ def fit_mosaic_parameters(all_specpix, all_spatpix, all_wave,
 
     fine_result = minimize(cost_function, x0=[dx0, dy0, theta0], args=args,
                            method='L-BFGS-B', bounds=bounds,
-                           options={'ftol': 1e-12, 'gtol': 1e-8, 'maxiter': 1000})
+                           options={'ftol': 1e-12, 'gtol': 1e-8, 'maxiter': 100})
 
     dx_fit, dy_fit, theta_fit = fine_result.x
     rms_fit = fine_result.fun
@@ -546,7 +552,8 @@ def load_data(idx=None):
 if __name__ == '__main__':
 
     # Fit the mosaic parameters for all setups combined (idx=None) or a single setup (idx=0, 1, 2, or 3)
-    setups = [0, 1, 2, 3, None]  # Run for each setup and the combined case
+    # setups = [0, 1, 2, 3, None]  # Run for each setup and the combined case
+    setups = [None]  # Run for each setup and the combined case
     for idx in setups:
         idxstr = f"idx={idx}" if idx is not None else "all setups combined"
         print(f"\n=== Fitting mosaic parameters for setup: {idxstr} ===")
@@ -555,12 +562,17 @@ if __name__ == '__main__':
         result = fit_mosaic_parameters(
             all_specpix, all_spatpix, all_wave, all_orders, all_detector, all_setup, all_slitcen, all_ordrcen,
             dx_range=(50, 150),
-            dy_range=(-100, 0),
-            theta_range=(0.0, 0.0),
+            dy_range=(-20, 20),
+            theta_range=(-0.0, 0.0),
             coarse_steps=(21, 21, 1),
             n_bootstrap=200,
             pixel_sigma=0.1)
+        # Grab the best-fit values and plot QA
+        _ = cost_function((result['dx'], result['dy'], result['theta']),
+                         all_specpix, all_spatpix, all_wave, all_orders, all_detector, all_setup, all_slitcen, all_ordrcen,
+                         plot_qa=True)
 
+        # Print out the results
         print("\nFinal result:")
         print(f"  dx    = {result['dx']:.4f} pixels")
         print(f"  dy    = {result['dy']:.4f} pixels")
