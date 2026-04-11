@@ -26,19 +26,28 @@ from astropy import constants as const
 c_kms = const.c.to('km/s').value
 
 
-def load_archive(outfile, n_final=2, func='legendre'):
+def load_archive(outfile, xdisp, n_final=2, func='legendre'):
     """
     Load the pypeit format archived templates that were created with the `esorex_to_pypeit` function.
 
     Args:
         outfile (str):
             Name of the output file
+        xdisp (str):
+            XDISP to select from the pypeit templates. Should be either 'BLUE' or 'RED'.
 
     """
+    if xdisp not in ['BLUE', 'RED']:
+        raise ValueError(f'xdisp={xdisp} is not valid. Must be either "BLUE" or "RED"')
+
     # load the list of pypeit templates
     ptempl_table_file = os.path.join(os.getenv('PYPEIT_DEV'), 'pypeitdev', 'wavelengths', 'vlt_uves',
                                      'uves_templ_pypeit.dat')
     ptbl = Table.read(ptempl_table_file, format='ascii')
+    # select the templates for the specified xdisp
+    ptbl = ptbl[ptbl['XDISP'] == xdisp]
+
+    # Number of rows in the pypeit template table for this xdisp
     p_nrows = len(ptbl)
 
     # recomputing the final order min, max, order_vec, norders
@@ -68,7 +77,7 @@ def load_archive(outfile, n_final=2, func='legendre'):
         waveCalib = wavecalib.WaveCalib.from_file(templ_file, chk_version=False)
         # this is the order vector available for this wavecalib file
         this_order_vec_raw = waveCalib.ech_orders if waveCalib.ech_orders is not None else \
-            np.arange(ptbl[irow]['IOrder'], ptbl[irow]['EOrder'] + 1, 1)
+            np.arange(ptbl[irow]['IOrder'], ptbl[irow]['EOrder'] + 1, 1)[::-1]
         # select the orders that we want to use
         if ptbl[irow]['Spatids'] == 'all':
             igood = np.ones(waveCalib.spat_ids.size, dtype=bool)
@@ -448,21 +457,24 @@ def echelle_composite_arcspec(arxiv_file, outfile, show_individual_solns=False, 
         if nsolns_this_order > 0:
             this_wave = arxiv['wave'][:, iord, :][populated, :]
             this_arc = arxiv['arcspec'][:, iord, :][populated, :]
-            this_gpm = (this_wave > 0.0) & (this_arc != 0.0)
+            this_gpm = (this_wave > 0.0) & (this_arc > 0.0)
             this_wave_composite = wave_total_composite[ind_min[iord]:ind_max[iord]]
             this_nspec = this_wave_composite.size
             arc_interp_iord = np.zeros((this_nspec, nsolns_this_order))
             gpm_arc_iord = np.zeros((this_nspec, nsolns_this_order), dtype=bool)
             # Interpolate our arcs onto the new grid
             for ii in range(nsolns_this_order):
+                # if iord==5:
+                #     embed()
+                #     assert False
                 this_arc_interp = interpolate.interp1d(
                     this_wave[ii, this_gpm[ii, :]], this_arc[ii, this_gpm[ii,:]], kind='cubic',
                     bounds_error=False, fill_value=-1e10)(this_wave_composite)
                 arc_interp_iord[:, ii] = this_arc_interp
-                gpm_arc_iord[:, ii] = arc_interp_iord[:, ii] > -1e9
+                gpm_arc_iord[:, ii] = arc_interp_iord[:, ii] > -10.0
                 if show_individual_solns:
                     # plt.plot(iwave[in_gpm], this_arc[ii, in_gpm], color=next(colors), alpha=0.7)
-                    plt.plot(this_wave_composite[gpm_arc_iord[ii, :]],this_arc_interp[gpm_arc_iord[ii, :]],
+                    plt.plot(this_wave_composite[gpm_arc_iord[:, ii]],this_arc_interp[gpm_arc_iord[:, ii]],
                              color=next(colors), alpha=0.7)
             if show_individual_solns:
                 plt.title(f'Order={this_order}')
@@ -496,6 +508,17 @@ def echelle_composite_arcspec(arxiv_file, outfile, show_individual_solns=False, 
             lower=5.0, upper=5.0,
             debug=debug, debug_scale=debug, show_scale=debug, show=show_total, verbose=True)
 
+    # Plot the final composite arc
+    if debug:
+        for iord in range(norders):
+            if order_vec[iord] == 130:
+                plt.plot(wave_composite[gpm_composite[:, iord], iord], arc_composite[gpm_composite[:, iord], iord],
+                         color=next(colors), alpha=0.7)
+        plt.title('Composite Arc')
+        plt.xlabel('Wavelength')
+        plt.ylabel('Arcspec')
+        plt.show()
+
     params = Table([[os.path.basename(arxiv_file)], [arxiv_params['order_min']],[arxiv_params['order_max']],[norders],
                   [wave_composite[gpm_composite > 0.0].min()], [wave_composite[gpm_composite > 0.0].max()],
                   [dloglam_pix_final], [dv_pix_final]],
@@ -510,33 +533,41 @@ def echelle_composite_arcspec(arxiv_file, outfile, show_individual_solns=False, 
 
 
 if __name__ == '__main__':
-    # xidl_arxiv_file = os.path.join(os.getenv('PYPEIT_DEV'), 'pypeitdev', 'hires_wvcalib', 'hires_wvcalib_xidl.fits')
-    # # Create the astropy table form of the xidl save file arxiv
-    # if not os.path.isfile(xidl_arxiv_file):
-    #     ingest_xidl_archive(xidl_arxiv_file)
-    # # append the pypeit templates to the xidl archive
-    arxiv_file = os.path.join(os.getenv('PYPEIT_DEV'), 'pypeitdev', 'wavelengths', 'vlt_uves', 'uves_wvcalib.fits')
-    # if not os.path.isfile(arxiv_file):
-    #     append_pypeit_archive(arxiv_file, xidl_arxiv_file)
+    # Allow for command line arguments to specify an overwrite option
+    import argparse
+    parser = argparse.ArgumentParser(description='Ingest UVES wavelength calibrations and perform fits to the wavelength solution coefficients vs. ECH angle')
+    parser.add_argument('-o', '--overwrite', action='store_true', help='Whether to overwrite existing files')
+    args = parser.parse_args()
 
-    # Load the wavelength solutions
-    load_archive(arxiv_file)
+    overwrite = args.overwrite
 
-    # sys.exit(-1)
-    # Perform fits to the coefficients vs ech angle
-    # TODO see if pca works better here
-    debug = False
-    wvcalib_angle_fit_file = os.path.join(os.getenv('PYPEIT_DEV'), 'pypeitdev', 'wavelengths', 'vlt_uves', 'wvcalib_angle_fits.fits')
-    if not os.path.isfile(wvcalib_angle_fit_file):
-        fit_wvcalib_vs_angles(arxiv_file, wvcalib_angle_fit_file, func='legendre',
-                          ech_nmax = 3, ech_coeff_fit_order_min=1, ech_coeff_fit_order_max=2,
-                          xd_reddest_fit_polyorder=2, sigrej=3.0, maxrej=1, debug=debug)
+    for xdisp in ['BLUE', 'RED']:
+        # Store info in a file
+        arxiv_file = os.path.join(os.getenv('PYPEIT_DEV'), 'pypeitdev', 'wavelengths', 'vlt_uves', 'uves_wvcalib.fits')
 
-    # Compute a composite arc from the solution arxiv
-    composite_arcfile = os.path.join(os.getenv('PYPEIT_DEV'), 'pypeitdev', 'wavelengths', 'vlt_uves', 'UVES_composite_arc.fits')
-    if not os.path.isfile(composite_arcfile):
-        echelle_composite_arcspec(arxiv_file, composite_arcfile, show_orders=debug)
+        # Load the wavelength solutions
+        load_archive(arxiv_file, xdisp)
 
+        # sys.exit(-1)
+        # Perform fits to the coefficients vs ech angle
+        # TODO see if pca works better here
+        debug = False
+        wvcalib_angle_fit_file = os.path.join(os.getenv('PYPEIT_DEV'), 'pypeitdev', 'wavelengths', 'vlt_uves', f'vlt_uves_{xdisp.lower()}_angle_fits.fits')
+        if os.path.isfile(wvcalib_angle_fit_file) and not overwrite:
+            print(f'File {wvcalib_angle_fit_file} already exists. Use --overwrite or -o to overwrite it.')
+        else:
+            fit_wvcalib_vs_angles(arxiv_file, wvcalib_angle_fit_file, func='legendre',
+                              ech_nmax = 3, ech_coeff_fit_order_min=1, ech_coeff_fit_order_max=2,
+                              xd_reddest_fit_polyorder=2, sigrej=3.0, maxrej=1, debug=debug)
+
+        # Compute a composite arc from the solution arxiv
+        composite_arcfile = os.path.join(os.getenv('PYPEIT_DEV'), 'pypeitdev', 'wavelengths', 'vlt_uves', f'vlt_uves_{xdisp.lower()}_composite_arc.fits')
+        if os.path.isfile(composite_arcfile) and not overwrite:
+            print(f'File {composite_arcfile} already exists. Use --overwrite or -o to overwrite it.')
+        else:
+            echelle_composite_arcspec(arxiv_file, composite_arcfile, show_orders=debug)
+
+    print("Exiting without error.")
     sys.exit(-1)
 
     use_unknowns = True

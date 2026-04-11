@@ -7,11 +7,16 @@ instructions of this procedure, see the decsription at the bottom of this README
 The relevant information was collected in the uves_templ_pypeit.dat file, and these were all combined using
 the ingest_archive script.
 
-The following files generated here are now in the main Repo
-with different names:
+The following files generated here are now in the main Repo:
 
-wvcalib_angle_fits.fits -> vlt_uves_angle_fits.fits
-UVES_composite_arc.fits ->  vlt_uves_composite_arc.fits
+vlt_uves_blue_angle_fits.fits
+vlt_uves_blue_composite_arc.fits
+vlt_uves_red_angle_fits.fits
+vlt_uves_red_composite_arc.fits
+
+This command will copy the angle fits and composite arc fits to the PypeIt data directory
+cp vlt_uves_blue_*_*.fits ~/Software/PypeIt/pypeit/data/arc_lines/reid_arxiv/
+cp vlt_uves_red_*_*.fits ~/Software/PypeIt/pypeit/data/arc_lines/reid_arxiv/
 
 ###################
 Instructions for generating the wavelength calibration frames:
