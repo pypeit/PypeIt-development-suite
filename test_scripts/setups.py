@@ -320,6 +320,16 @@ all_setups = {
     'vlt_sinfoni': [
         'K_0.8',
     ],
+    'vlt_uves_blue': [
+        '346',
+        '437',
+    ],
+    'vlt_uves_red': [
+        '564',
+        '580',
+        '760',
+        '860',
+    ],
     'vlt_xshooter': [
         'VIS_1x1',
         'VIS_2x1',
