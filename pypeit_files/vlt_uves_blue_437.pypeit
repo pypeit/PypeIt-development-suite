@@ -1,0 +1,33 @@
+# Auto-generated PypeIt input file using PypeIt version: 1.15.1.dev38+g075fdecaa.d20240212
+# UTC 2025-10-23T10:09:48.850+00:00
+
+# User-defined execution parameters
+[rdx]
+    spectrograph = vlt_uves_blue
+
+# Setup
+setup read
+Setup A:
+  arm: BLUE
+  binning: 1,1
+  xdangle: 437.0
+setup end
+
+# Data block 
+data read
+ path /Users/rcooke/Software/PypeIt-development-suite/RAW_DATA/vlt_uves_blue/437
+                           filename |                      frametype |         ra |       dec |        target | dispname | decker | binning |             mjd | airmass |  exptime | xdangle |  arm | calib
+  UVES.2023-02-28T12:10:06.147.fits |                       arc,tilt | 235.816065 |  -9.15733 |     LAMP,WAVE |     BLUE |    0.8 |     1,1 | 60003.507015591 |     1.0 |  35.1894 |   437.0 | BLUE |     0
+  UVES.2023-02-28T11:53:52.439.fits |      pixelflat,illumflat,trace | 235.816066 |  -9.15733 |     LAMP,FLAT |     BLUE |    0.8 |     1,1 | 60003.495745817 |     1.0 | 124.0004 |   437.0 | BLUE |     0
+  UVES.2023-02-28T11:57:03.114.fits |      pixelflat,illumflat,trace | 235.816066 |  -9.15733 |     LAMP,FLAT |     BLUE |    0.8 |     1,1 | 60003.497952707 |     1.0 | 124.0004 |   437.0 | BLUE |     0
+  UVES.2023-02-28T12:00:14.089.fits |      pixelflat,illumflat,trace | 235.816066 |  -9.15733 |     LAMP,FLAT |     BLUE |    0.8 |     1,1 | 60003.500163071 |     1.0 | 124.0004 |   437.0 | BLUE |     0
+  UVES.2023-02-28T12:03:24.924.fits |      pixelflat,illumflat,trace | 235.816065 |  -9.15733 |     LAMP,FLAT |     BLUE |    0.8 |     1,1 | 60003.502371814 |     1.0 | 124.0004 |   437.0 | BLUE |     0
+  UVES.2023-02-28T12:06:35.900.fits |      pixelflat,illumflat,trace | 235.816065 |  -9.15733 |     LAMP,FLAT |     BLUE |    0.8 |     1,1 | 60003.504582177 |     1.0 | 124.0004 |   437.0 | BLUE |     0
+  UVES.2023-02-28T09:34:33.335.fits |                           bias | 235.816081 |  -9.15734 |          BIAS |     BLUE |   None |     1,1 | 60003.398996927 |     1.0 |      0.0 |    None | BLUE |     0
+  UVES.2023-02-28T09:35:18.919.fits |                           bias | 235.816081 |  -9.15734 |          BIAS |     BLUE |   None |     1,1 | 60003.399524516 |     1.0 |      0.0 |    None | BLUE |     0
+  UVES.2023-02-28T09:36:04.492.fits |                           bias | 235.816081 |  -9.15734 |          BIAS |     BLUE |   None |     1,1 | 60003.400051989 |     1.0 |      0.0 |    None | BLUE |     0
+  UVES.2023-02-28T09:36:50.065.fits |                           bias | 235.816081 |  -9.15734 |          BIAS |     BLUE |   None |     1,1 | 60003.400579463 |     1.0 |      0.0 |    None | BLUE |     0
+  UVES.2023-02-28T09:37:35.640.fits |                           bias | 235.816081 |  -9.15734 |          BIAS |     BLUE |   None |     1,1 | 60003.401106935 |     1.0 |      0.0 |    None | BLUE |     0
+  UVES.2023-02-28T01:18:40.225.fits |                        science | 125.228883 | -36.21636 |   WRAY 15-199 |     BLUE |    0.8 |     1,1 | 60003.054632227 |   1.063 | 375.9988 |   437.0 | BLUE |     0
+data end
+
