@@ -58,6 +58,8 @@ def test_filesearch():
             ['tng_dolores', 'LRB', 8],
             ['vlt_fors2', '300I', 30],
             ['vlt_sinfoni', 'K_0.8', 14],
+            ['vlt_uves_blue', '346', 12],
+            ['vlt_uves_blue', '760', 12],
             ['wht_isis_blue', 'long_R300B_d5300', 16],
     ]
     for a in args:
