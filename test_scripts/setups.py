@@ -204,6 +204,12 @@ all_setups = {
         'DV8',
         'DV9',
     ],
+    'ldt_rimas_vph': [
+        'Vph30_YJ',
+        'Vph30_HK',
+        'Vph300_YJ',
+        'Vph300_HK',
+    ],
     'magellan_fire': [
         'FIRE_Echelle',
         'FIRE_Long',
