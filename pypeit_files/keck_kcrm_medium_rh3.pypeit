@@ -9,7 +9,7 @@
         [[[process]]]
             combine = median  # This is a good choice in case you want to use multiple science frames to determine the tilts from the sky lines.
     [[wavelengths]]
-        boxcar_radius = 6  # The arc frame does not have many counts, so we need to use a large boxcar radius to get a good wavelength solution. This is not ideal, but it is necessary when enough lines are not detected.
+        reference_slit = 306  # This slit provides a good solution, to help provide a good solution for other slits.
 
 # Setup
 setup read
