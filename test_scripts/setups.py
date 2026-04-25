@@ -36,6 +36,7 @@ all_setups = {
         'GS_HAM_B480_550',
         'GS_HAM_R400_TILTED',
         'GS_HAM_R150_869',
+        'GS_HAM_R400_795_SENS',
     ],
     'gemini_flamingos2': [
         'HK_HK',

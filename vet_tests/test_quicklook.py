@@ -6,7 +6,6 @@ import glob
 from IPython import embed
 import numpy as np
 
-from pypeit.pypmsgs import PypeItError
 from pypeit.inputfiles import PypeItFile
 from pypeit import specobjs
 

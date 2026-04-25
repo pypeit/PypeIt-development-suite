@@ -15,7 +15,7 @@ from pypeit.setup_gui import view, model, controller
 from pypeit.spectrographs.util import load_spectrograph
 from pypeit.metadata import PypeItMetaData
 from pypeit.inputfiles import PypeItFile
-from pypeit import msgs
+from pypeit import log
 
 # Override pytest-qt's QApplication arguments
 @pytest.fixture(scope="session")
@@ -327,111 +327,109 @@ def test_pypeit_obslog_model(qtbot, raw_data_path, tmp_path):
     assert obslog_model.state == model.ModelState.UNCHANGED
 
 
-def test_pypeit_setup_gui_model(qtbot, tmp_path):
-
-    """
-    setup_model = model.PypeItSetupModel()
-    logname = str(tmp_path / "setup_gui_model_test.log")
-    setup_model.setup_logging(logname, 2)
-
-    assert setup_model.state == model.ModelState.NEW
-
-    # Copy only those fits files we want to run on
-    shutil.copy2(data_path("b1.fits.gz"), tmp_path)
-    shutil.copy2(data_path("b27.fits.gz"), tmp_path)
-
-    # Test a failed setup run with the wrong spectrograph
-    with qtbot.waitSignal(setup_model.operation_complete, raising=True, check_params_cb=verify_failed_setup, timeout=10000):
-        setup_model.set_spectrograph("keck_deimos")
-        setup_model.add_raw_data_directory(str(tmp_path))
-        assert setup_model.scan_raw_data_directories() == 2
-        setup_model.run_setup()
-
-    # The controller normally does this reset after an error
-    setup_model.reset()
-
-    # Test a canceled setup run 
-    with qtbot.waitSignal(setup_model.operation_complete, raising=True, check_params_cb=verify_canceled_setup, timeout=10000):
-        setup_model.set_spectrograph("shane_kast_blue")
-        setup_model.add_raw_data_directory(str(tmp_path))
-        assert setup_model.scan_raw_data_directories() == 2
-        # Use the proxy's internal log watcher to trigger the canceled exception
-        setup_model.log_buffer.watch("test_cancel", re.compile("Adding metadata for .*$"), raise_cancel_exception)
-        setup_model.run_setup()
-        setup_model.log_buffer.unwatch("test_cancel")
-
-    # The controller normally does this reset after an error
-    setup_model.reset()
-
-    # Run setup on those files
-    signal_list = [(setup_model.spectrograph_changed, "set_spec"), 
-                   (setup_model.raw_data_dirs_changed, "reset_raw_data"), 
-                   (setup_model.operation_progress, "op_progress_file1"),
-                   (setup_model.operation_progress, "op_progress_file2"),
-                   (setup_model.configs_added, "configs_added"),
-                   (setup_model.operation_complete, "op_complete"),]
-
-    with qtbot.waitSignals(signal_list, raising=True, order='strict', timeout=10000):
-        setup_model.set_spectrograph("shane_kast_blue")
-        setup_model.add_raw_data_directory(str(tmp_path))
-        assert setup_model.scan_raw_data_directories() == 2
-        setup_model.run_setup()
-        assert setup_model.state == model.ModelState.CHANGED
-        assert setup_model._pypeit_setup is not None
-
-    # Save the setup
-    pypeit_file_model = setup_model.pypeit_files["A"]
-    pypeit_file_model.save_location = str(tmp_path)
-    pypeit_file_model.save()
-    dest_file = tmp_path / "shane_kast_blue_A" / "shane_kast_blue_A.pypeit"
-    assert dest_file.exists()
-    assert setup_model.state == model.ModelState.UNCHANGED
-
-    # Reset the proxy
-    signal_list = [(setup_model.raw_data_dirs_changed, "reset_raw_data"), 
-                   (setup_model.spectrograph_changed, "reset_spec"), 
-                   (setup_model.configs_deleted, "configs_deleted"),]
-    with qtbot.waitSignals(signal_list, raising=True, order='strict', timeout=1000):
-        setup_model.reset()
-    assert setup_model.state == model.ModelState.NEW
-    assert setup_model.spectrograph == None
-    assert len(setup_model.raw_data_directories) == 0
-    assert len(setup_model.pypeit_files.values()) == 0
-
-    # Now open the previously created file
-    signal_list = [(setup_model.raw_data_dirs_changed, "set_raw_data"), 
-                   (setup_model.spectrograph_changed, "set_spec"),
-                   (setup_model.configs_added,        "configs_added")]
-
-    with qtbot.waitSignals(signal_list, raising=True, order='strict', timeout=1000):
-        setup_model.open_pypeit_file(str(dest_file))
-
-    assert setup_model.state == model.ModelState.UNCHANGED
-
-    assert setup_model.spectrograph == "shane_kast_blue"
-    assert str(tmp_path) in setup_model.raw_data_directories
-    assert "A" in setup_model.pypeit_files
-    assert "b1.fits.gz" in setup_model.pypeit_files["A"].metadata_model._metadata.table['filename']
-
-
-    # Test a failed save
-    dest_file.unlink()
-    dest_file.mkdir(parents=True)
-    assert dest_file.is_dir()
-
-    with pytest.raises(RuntimeError, match="Failed saving setup"):
-        pypeit_file_model.save()
-
-
-    # Reset the proxy
-    signal_list = [(setup_model.raw_data_dirs_changed, "reset_raw_data"), 
-                   (setup_model.spectrograph_changed, "reset_spec"), 
-                   (setup_model.configs_deleted, "configs_deleted"),]
-    with qtbot.waitSignals(signal_list, raising=True, order='strict', timeout=1000):
-        setup_model.reset()
-
-    assert setup_model.state == model.ModelState.NEW
-    """
+#def test_pypeit_setup_gui_model(qtbot, tmp_path):
+#
+#    setup_model = model.PypeItSetupModel()
+#    logname = str(tmp_path / "setup_gui_model_test.log")
+#    setup_model.setup_logging(logname, 2)
+#
+#    assert setup_model.state == model.ModelState.NEW
+#
+#    # Copy only those fits files we want to run on
+#    shutil.copy2(data_path("b1.fits.gz"), tmp_path)
+#    shutil.copy2(data_path("b27.fits.gz"), tmp_path)
+#
+#    # Test a failed setup run with the wrong spectrograph
+#    with qtbot.waitSignal(setup_model.operation_complete, raising=True, check_params_cb=verify_failed_setup, timeout=10000):
+#        setup_model.set_spectrograph("keck_deimos")
+#        setup_model.add_raw_data_directory(str(tmp_path))
+#        assert setup_model.scan_raw_data_directories() == 2
+#        setup_model.run_setup()
+#
+#    # The controller normally does this reset after an error
+#    setup_model.reset()
+#
+#    # Test a canceled setup run 
+#    with qtbot.waitSignal(setup_model.operation_complete, raising=True, check_params_cb=verify_canceled_setup, timeout=10000):
+#        setup_model.set_spectrograph("shane_kast_blue")
+#        setup_model.add_raw_data_directory(str(tmp_path))
+#        assert setup_model.scan_raw_data_directories() == 2
+#        # Use the proxy's internal log watcher to trigger the canceled exception
+#        setup_model.log_buffer.watch("test_cancel", re.compile("Adding metadata for .*$"), raise_cancel_exception)
+#        setup_model.run_setup()
+#        setup_model.log_buffer.unwatch("test_cancel")
+#
+#    # The controller normally does this reset after an error
+#    setup_model.reset()
+#
+#    # Run setup on those files
+#    signal_list = [(setup_model.spectrograph_changed, "set_spec"), 
+#                   (setup_model.raw_data_dirs_changed, "reset_raw_data"), 
+#                   (setup_model.operation_progress, "op_progress_file1"),
+#                   (setup_model.operation_progress, "op_progress_file2"),
+#                   (setup_model.configs_added, "configs_added"),
+#                   (setup_model.operation_complete, "op_complete"),]
+#
+#    with qtbot.waitSignals(signal_list, raising=True, order='strict', timeout=10000):
+#        setup_model.set_spectrograph("shane_kast_blue")
+#        setup_model.add_raw_data_directory(str(tmp_path))
+#        assert setup_model.scan_raw_data_directories() == 2
+#        setup_model.run_setup()
+#        assert setup_model.state == model.ModelState.CHANGED
+#        assert setup_model._pypeit_setup is not None
+#
+#    # Save the setup
+#    pypeit_file_model = setup_model.pypeit_files["A"]
+#    pypeit_file_model.save_location = str(tmp_path)
+#    pypeit_file_model.save()
+#    dest_file = tmp_path / "shane_kast_blue_A" / "shane_kast_blue_A.pypeit"
+#    assert dest_file.exists()
+#    assert setup_model.state == model.ModelState.UNCHANGED
+#
+#    # Reset the proxy
+#    signal_list = [(setup_model.raw_data_dirs_changed, "reset_raw_data"), 
+#                   (setup_model.spectrograph_changed, "reset_spec"), 
+#                   (setup_model.configs_deleted, "configs_deleted"),]
+#    with qtbot.waitSignals(signal_list, raising=True, order='strict', timeout=1000):
+#        setup_model.reset()
+#    assert setup_model.state == model.ModelState.NEW
+#    assert setup_model.spectrograph == None
+#    assert len(setup_model.raw_data_directories) == 0
+#    assert len(setup_model.pypeit_files.values()) == 0
+#
+#    # Now open the previously created file
+#    signal_list = [(setup_model.raw_data_dirs_changed, "set_raw_data"), 
+#                   (setup_model.spectrograph_changed, "set_spec"),
+#                   (setup_model.configs_added,        "configs_added")]
+#
+#    with qtbot.waitSignals(signal_list, raising=True, order='strict', timeout=1000):
+#        setup_model.open_pypeit_file(str(dest_file))
+#
+#    assert setup_model.state == model.ModelState.UNCHANGED
+#
+#    assert setup_model.spectrograph == "shane_kast_blue"
+#    assert str(tmp_path) in setup_model.raw_data_directories
+#    assert "A" in setup_model.pypeit_files
+#    assert "b1.fits.gz" in setup_model.pypeit_files["A"].metadata_model._metadata.table['filename']
+#
+#
+#    # Test a failed save
+#    dest_file.unlink()
+#    dest_file.mkdir(parents=True)
+#    assert dest_file.is_dir()
+#
+#    with pytest.raises(RuntimeError, match="Failed saving setup"):
+#        pypeit_file_model.save()
+#
+#
+#    # Reset the proxy
+#    signal_list = [(setup_model.raw_data_dirs_changed, "reset_raw_data"), 
+#                   (setup_model.spectrograph_changed, "reset_spec"), 
+#                   (setup_model.configs_deleted, "configs_deleted"),]
+#    with qtbot.waitSignals(signal_list, raising=True, order='strict', timeout=1000):
+#        setup_model.reset()
+#
+#    assert setup_model.state == model.ModelState.NEW
 
 def setup_offscreen_gui(tmp_path, monkeypatch, qapp, qtbot, verbosity=2):
     """Helper function to setup the gui to run in offscreen mode"""
@@ -481,7 +479,7 @@ def run_setup(spectrograph_name, setup_raw_data_path, main_controller, qtbot):
 
     # Click the Run Setup button
     with qtbot.waitSignal(main_window.model.stateChanged, raising=True, timeout=10000):
-        qtbot.mouseClick(main_window.setupButton, Qt.MouseButton.LeftButton)
+        main_window.setupAction.trigger()
 
     # Make sure the thread finishes before continuing
     assert main_controller.operation_thread.wait(QDeadlineTimer(1000)) is True
@@ -502,12 +500,12 @@ def test_run_setup(qapp, qtbot, raw_data_path, tmp_path, monkeypatch):
     assert not obs_log_tab.paths_editor.isEnabled()
 
 
-    assert main_window.openButton.isEnabled()
-    assert main_window.logButton.isEnabled()
-    assert not main_window.clearButton.isEnabled()
-    assert not main_window.setupButton.isEnabled()
-    assert not main_window.saveTabButton.isEnabled()
-    assert not main_window.saveAllButton.isEnabled()
+    assert main_window.openAction.isEnabled()
+    assert main_window.viewLogAction.isEnabled()
+    assert not main_window.clearAction.isEnabled()
+    assert not main_window.setupAction.isEnabled()
+    assert not main_window.saveTabAction.isEnabled()
+    assert not main_window.saveAllAction.isEnabled()
 
     assert obs_log_tab.state == model.ModelState.UNCHANGED
     assert main_window._current_tab is obs_log_tab
@@ -541,11 +539,11 @@ def test_run_setup(qapp, qtbot, raw_data_path, tmp_path, monkeypatch):
     assert obs_log_tab._paths_viewer.model().stringList()[0] == str(j_multi)
     assert obs_log_tab.paths_editor.isEnabled()
     assert obs_log_tab.spectrograph.isEnabled()
-    assert main_window.openButton.isEnabled()
-    assert not main_window.clearButton.isEnabled()
-    assert main_window.setupButton.isEnabled()
-    assert not main_window.saveTabButton.isEnabled()
-    assert not main_window.saveAllButton.isEnabled()
+    assert main_window.openAction.isEnabled()
+    assert not main_window.clearAction.isEnabled()
+    assert main_window.setupAction.isEnabled()
+    assert not main_window.saveTabAction.isEnabled()
+    assert not main_window.saveAllAction.isEnabled()
 
     assert setup_gui_model.state == model.ModelState.NEW
     assert obs_log_tab.state == model.ModelState.UNCHANGED
@@ -555,12 +553,12 @@ def test_run_setup(qapp, qtbot, raw_data_path, tmp_path, monkeypatch):
     # Click the Run Setup button and wait for the setup operation to complete
 
     with qtbot.waitSignal(setup_gui_model.stateChanged, raising=True, timeout=10000):
-        qtbot.mouseClick(main_window.setupButton, Qt.MouseButton.LeftButton)
+        main_window.setupAction.trigger()
     assert c.operation_thread.wait(QDeadlineTimer(1000)) is True
 
-    assert main_window.saveAllButton.isEnabled()
-    assert not main_window.saveTabButton.isEnabled()
-    assert main_window.clearButton.isEnabled()
+    assert main_window.saveAllAction.isEnabled()
+    assert not main_window.saveTabAction.isEnabled()
+    assert main_window.clearAction.isEnabled()
 
     assert setup_gui_model.state == model.ModelState.CHANGED
     assert obs_log_tab.state == model.ModelState.UNCHANGED
@@ -610,7 +608,7 @@ def test_run_setup_failure(qapp, qtbot, raw_data_path, tmp_path, monkeypatch):
         qtbot.keyClick(obs_log_tab.paths_editor._path, Qt.Key_Enter)
     # Click the Run Setup button and wait for the background operation to complete, verifying it was canceled
     with qtbot.waitSignal(setup_gui_model.stateChanged, raising=True, timeout=10000):
-        qtbot.mouseClick(main_window.setupButton, Qt.MouseButton.LeftButton)
+        main_window.setupAction.trigger()
     assert c.operation_thread.wait(QDeadlineTimer(1000)) is True
 
     # Verify all of the files are commented out
@@ -648,7 +646,7 @@ def test_run_setup_cancel(qapp, qtbot, raw_data_path, tmp_path, monkeypatch):
     with qtbot.waitSignal(c.operation_thread.completed, check_params_cb=verify_canceled_setup, raising=True, timeout=10000):
         # Use the GUI's internal log watcher to trigger the canceled exception
         setup_gui_model.log_buffer.watch("test_cancel", re.compile("Adding metadata for .*$"), raise_cancel_exception)
-        qtbot.mouseClick(main_window.setupButton, Qt.MouseButton.LeftButton)
+        main_window.setupAction.trigger()
 
     # Make sure the thread finishes before continuing
     assert c.operation_thread.wait(QDeadlineTimer(1000)) is True
@@ -684,11 +682,11 @@ def test_multi_paths(qapp, qtbot, raw_data_path, tmp_path, monkeypatch):
     assert y_long in obs_log_tab._paths_viewer.model().stringList()
     assert obs_log_tab.paths_editor.isEnabled()
     assert not obs_log_tab.spectrograph.isEnabled()
-    assert main_window.openButton.isEnabled()
-    assert main_window.clearButton.isEnabled()
-    assert main_window.setupButton.isEnabled()
-    assert not main_window.saveTabButton.isEnabled()
-    assert main_window.saveAllButton.isEnabled()
+    assert main_window.openAction.isEnabled()
+    assert main_window.clearAction.isEnabled()
+    assert main_window.setupAction.isEnabled()
+    assert not main_window.saveTabAction.isEnabled()
+    assert main_window.saveAllAction.isEnabled()
 
     assert setup_gui_model.state == model.ModelState.CHANGED
 
@@ -698,14 +696,14 @@ def test_multi_paths(qapp, qtbot, raw_data_path, tmp_path, monkeypatch):
 
         # Click the Run Setup button to re-run setup
         with qtbot.waitSignal(setup_gui_model.stateChanged, raising=True, timeout=10000):
-            qtbot.mouseClick(main_window.setupButton, Qt.MouseButton.LeftButton)
+            main_window.setupAction.trigger()
 
         # Make sure the thread finishes before continuing
         assert c.operation_thread.wait(QDeadlineTimer(1000)) is True
 
-    assert main_window.saveAllButton.isEnabled()
-    assert not main_window.saveTabButton.isEnabled()
-    assert main_window.clearButton.isEnabled()
+    assert main_window.saveAllAction.isEnabled()
+    assert not main_window.saveTabAction.isEnabled()
+    assert main_window.clearAction.isEnabled()
 
     assert setup_gui_model.state == model.ModelState.CHANGED
     assert main_window.tab_widget.currentWidget().state == model.ModelState.UNCHANGED
@@ -754,7 +752,7 @@ def test_save_and_open(qapp, qtbot, raw_data_path, tmp_path, monkeypatch):
     assert tab_widget.tabText(2) == "*B"
     # The filename displayed should be just the base name until a location is set
     assert tab_b.model.filename == "keck_mosfire_B.pypeit"
-    assert main_window.saveTabButton.isEnabled()
+    assert main_window.saveTabAction.isEnabled()
 
 
     # Set output directory. using a mock file dialog
@@ -765,7 +763,7 @@ def test_save_and_open(qapp, qtbot, raw_data_path, tmp_path, monkeypatch):
         MockFileDialog.selected_path = str(tmp_path)
         # Save the tab
         with qtbot.waitSignal(tab_b.model.stateChanged, raising=True, timeout=10000):
-            qtbot.mouseClick(main_window.saveTabButton, Qt.MouseButton.LeftButton)
+            main_window.saveTabAction.trigger()
 
     # Assert the save file dialog was called once and only once
     assert MockFileDialog.call_count == 1
@@ -779,8 +777,8 @@ def test_save_and_open(qapp, qtbot, raw_data_path, tmp_path, monkeypatch):
     assert tab_a.state == model.ModelState.CHANGED
     assert tab_widget.tabText(1) == "*A"
     assert main_window.model.state == model.ModelState.CHANGED
-    assert not main_window.saveTabButton.isEnabled()
-    assert main_window.saveAllButton.isEnabled()
+    assert not main_window.saveTabAction.isEnabled()
+    assert main_window.saveAllAction.isEnabled()
 
     # Assert the file was created
     tab_b_file = tmp_path / "keck_mosfire_B.pypeit"
@@ -802,7 +800,7 @@ def test_save_and_open(qapp, qtbot, raw_data_path, tmp_path, monkeypatch):
         MockFileDialog.selected_path = str(tab_b_file)
 
         with qtbot.waitSignal(c.model.stateChanged, raising=True, timeout=10000):
-            qtbot.mouseClick(main_window.openButton, Qt.MouseButton.LeftButton)
+            main_window.openAction.trigger()
 
         # Make sure the thread finishes before continuing
         assert c.operation_thread.wait(QDeadlineTimer(1000)) is True
@@ -810,11 +808,11 @@ def test_save_and_open(qapp, qtbot, raw_data_path, tmp_path, monkeypatch):
     assert MockFileDialog.call_count == 1
 
     # Verify a single tab was opened and everthing is the correct state
-    assert main_window.openButton.isEnabled()
-    assert main_window.clearButton.isEnabled()
-    assert main_window.setupButton.isEnabled()
-    assert not main_window.saveTabButton.isEnabled()
-    assert not main_window.saveAllButton.isEnabled()
+    assert main_window.openAction.isEnabled()
+    assert main_window.clearAction.isEnabled()
+    assert main_window.setupAction.isEnabled()
+    assert not main_window.saveTabAction.isEnabled()
+    assert not main_window.saveAllAction.isEnabled()
 
     assert main_window.model.state == model.ModelState.UNCHANGED
     assert tab_widget.count() == 3 # The tab, the obslog tab, and the "new tab" tab
@@ -834,7 +832,7 @@ def test_save_all(qapp, qtbot, raw_data_path, tmp_path, monkeypatch):
     # Use the run_setup helper to run setup on J_muilti, which will create two tabs
     run_setup("keck_mosfire", (raw_data_path / "keck_mosfire" / "J_multi").absolute(), c, qtbot)
 
-    assert main_window.saveAllButton.isEnabled()
+    assert main_window.saveAllAction.isEnabled()
 
     # Select Tab B, test that the save tab button is enabled
     with qtbot.waitSignal(main_window.tab_widget.currentChanged, raising=True, timeout=1000):
@@ -843,8 +841,8 @@ def test_save_all(qapp, qtbot, raw_data_path, tmp_path, monkeypatch):
     tab_b = main_window.tab_widget.currentWidget()
     assert tab_b.name == "B"
     assert main_window.tab_widget.tabText(2) == "*B"
-    assert main_window.saveTabButton.isEnabled()
-    assert main_window.saveAllButton.isEnabled()
+    assert main_window.saveTabAction.isEnabled()
+    assert main_window.saveAllAction.isEnabled()
 
     # Click the save all button
     with monkeypatch.context() as m:
@@ -854,7 +852,7 @@ def test_save_all(qapp, qtbot, raw_data_path, tmp_path, monkeypatch):
         MockFileDialog.selected_path = str(tmp_path)
 
         with qtbot.waitSignal(tab_b.model.stateChanged, raising=True, timeout=10000):
-            qtbot.mouseClick(main_window.saveAllButton, Qt.MouseButton.LeftButton)
+            main_window.saveAllAction.trigger()
 
     # Assert the save file dialog was called twice, once for each tab
     assert MockFileDialog.call_count == 2
@@ -865,8 +863,8 @@ def test_save_all(qapp, qtbot, raw_data_path, tmp_path, monkeypatch):
     assert tab_a.state == model.ModelState.UNCHANGED
     assert tab_b.state == model.ModelState.UNCHANGED
     assert c.model.state == model.ModelState.UNCHANGED
-    assert not main_window.saveTabButton.isEnabled()
-    assert not main_window.saveAllButton.isEnabled()
+    assert not main_window.saveTabAction.isEnabled()
+    assert not main_window.saveAllAction.isEnabled()
 
     tab_a_file = tmp_path / "keck_mosfire_A.pypeit"
     tab_b_file = tmp_path / "keck_mosfire_B.pypeit"
@@ -884,7 +882,7 @@ def test_save_all(qapp, qtbot, raw_data_path, tmp_path, monkeypatch):
 
         # Click the Run Setup button to re-run setup
         with qtbot.waitSignal(c.model.stateChanged, raising=True, timeout=10000):
-            qtbot.mouseClick(main_window.setupButton, Qt.MouseButton.LeftButton)
+            main_window.setupAction.trigger()
 
     tab_a_file.unlink()
     tab_b_file.unlink()
@@ -901,7 +899,7 @@ def test_save_all(qapp, qtbot, raw_data_path, tmp_path, monkeypatch):
         MockFileDialog.mock_response = view.DialogResponses.ACCEPT_FOR_ALL
         MockFileDialog.selected_path = str(tmp_path)
         with qtbot.waitSignal(tab_b.model.stateChanged, raising=True, timeout=10000):
-            qtbot.mouseClick(main_window.saveAllButton, Qt.MouseButton.LeftButton)
+            main_window.saveAllAction.trigger()
 
     # Assert the save file dialog was called once, with ACCEPT_FOR_ALL preventing the second tab
     # from prompting for a location
@@ -911,8 +909,8 @@ def test_save_all(qapp, qtbot, raw_data_path, tmp_path, monkeypatch):
     assert tab_a.state == model.ModelState.UNCHANGED
     assert tab_b.state == model.ModelState.UNCHANGED
     assert c.model.state == model.ModelState.UNCHANGED
-    assert not main_window.saveTabButton.isEnabled()
-    assert not main_window.saveAllButton.isEnabled()
+    assert not main_window.saveTabAction.isEnabled()
+    assert not main_window.saveAllAction.isEnabled()
 
     assert tab_a_file.is_file()
     assert tab_b_file.is_file()
@@ -926,7 +924,7 @@ def test_save_all(qapp, qtbot, raw_data_path, tmp_path, monkeypatch):
 
         # Click the Run Setup button to re-run setup
         with qtbot.waitSignal(c.model.stateChanged, raising=True, timeout=10000):
-            qtbot.mouseClick(main_window.setupButton, Qt.MouseButton.LeftButton)
+            main_window.setupAction.trigger()
 
         # Make sure the thread finishes before continuing
         assert c.operation_thread.wait(QDeadlineTimer(1000)) is True
@@ -948,7 +946,7 @@ def test_save_all(qapp, qtbot, raw_data_path, tmp_path, monkeypatch):
         MockFileDialog.mock_response = view.DialogResponses.CANCEL
         MockFileDialog.selected_path = str(tmp_path)
 
-        qtbot.mouseClick(main_window.saveAllButton, Qt.MouseButton.LeftButton)
+        main_window.saveAllAction.trigger()
         qtbot.waitUntil(lambda: MockFileDialog.call_count > 0 ,timeout=10000)
 
     assert MockFileDialog.call_count == 1
@@ -958,8 +956,8 @@ def test_save_all(qapp, qtbot, raw_data_path, tmp_path, monkeypatch):
     assert tab_a.state == model.ModelState.UNCHANGED
     assert tab_b.state == model.ModelState.CHANGED
     assert c.model.state == model.ModelState.CHANGED
-    assert not main_window.saveTabButton.isEnabled()
-    assert main_window.saveAllButton.isEnabled()
+    assert not main_window.saveTabAction.isEnabled()
+    assert main_window.saveAllAction.isEnabled()
 
     assert tab_a_file.is_file()
     assert not tab_b_file.is_file()
@@ -988,7 +986,7 @@ def test_clear(qapp, qtbot, raw_data_path, tmp_path, monkeypatch):
         
         # clear
         with qtbot.waitSignal(setup_gui_model.filesDeleted, raising=True, timeout=10000):
-            qtbot.mouseClick(main_window.clearButton, Qt.MouseButton.LeftButton)
+            main_window.clearAction.trigger()
 
     # Make sure the prompt for save dialog was actually called
     assert mock_prompt_to_save.call_count == 1
@@ -1000,11 +998,11 @@ def test_clear(qapp, qtbot, raw_data_path, tmp_path, monkeypatch):
     assert obs_log_tab._paths_viewer.model().rowCount() == 0
     assert not obs_log_tab.paths_editor.isEnabled()
 
-    assert main_window.openButton.isEnabled()
-    assert not main_window.clearButton.isEnabled()
-    assert not main_window.setupButton.isEnabled()
-    assert not main_window.saveTabButton.isEnabled()
-    assert not main_window.saveAllButton.isEnabled()
+    assert main_window.openAction.isEnabled()
+    assert not main_window.clearAction.isEnabled()
+    assert not main_window.setupAction.isEnabled()
+    assert not main_window.saveTabAction.isEnabled()
+    assert not main_window.saveAllAction.isEnabled()
 
     assert c.model.state == model.ModelState.NEW
     assert main_window.tab_widget.widget(0).state == model.ModelState.UNCHANGED
@@ -1015,7 +1013,7 @@ def test_log_window(qapp, qtbot, tmp_path, monkeypatch):
     c, main_window = setup_offscreen_gui(tmp_path, monkeypatch, qapp, qtbot, verbosity=1)
 
     # Open the log window
-    qtbot.mouseClick(main_window.logButton, Qt.MouseButton.LeftButton)
+    main_window.viewLogAction.trigger()
     qtbot.waitUntil(lambda: main_window._logWindow is not None and main_window._logWindow.isVisible(),timeout=5000)
 
     logWindow = main_window._logWindow
@@ -1025,8 +1023,8 @@ def test_log_window(qapp, qtbot, tmp_path, monkeypatch):
     wip_msg = "WIP message should not appear in verbosity=1"
 
     with qtbot.waitSignal(logWindow.textViewer.textChanged, raising=True, timeout=1000):
-        msgs.work(wip_msg)
-        msgs.info(info_msg)
+        log.debug(wip_msg)
+        log.info(info_msg)
 
     log_text = logWindow.textViewer.toPlainText()
     assert info_msg in log_text

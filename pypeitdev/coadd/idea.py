@@ -31,6 +31,8 @@ from scipy.interpolate import interp1d
 from astropy import stats
 from astropy.stats import sigma_clip,sigma_clipped_stats
 
+from pypeit import log
+
 def poly_ratio():
     '''
     This is a function to calculate the polynomial ratio
@@ -178,7 +180,7 @@ def long_comb(waves,fluxes,sigs,iref=0,wave_method='pixel'):
 
     ## Some judgements here
     if (ndim_wave == 1) and (ndim_spec==1):
-        msgs.warn('Only one spectrum, no coadding will be performed.')
+        log.warning('Only one spectrum, no coadding will be performed.')
         return
     if (ndim_wave == 1) and (ndim_spec>1):
         waves = np.reshape(np.tile(waves,3),np.shape(fluxes))

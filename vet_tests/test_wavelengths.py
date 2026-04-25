@@ -99,15 +99,11 @@ def test_redoslits_kastr(redux_out):
 
     setup = '600_5000_d46'
 
-    rdx_dir = os.path.join(redux_out,
-                             'shane_kast_red',
-                             setup)
+    rdx_dir = Path(redux_out, 'shane_kast_red', setup)
     # Artificially make the slit bad
-    slit_file = os.path.join(rdx_dir,
-                             'Calibrations',
-                             'Slits_A_0_DET01.fits.gz')
+    slit_file = Path(rdx_dir, 'Calibrations', 'Slits_A_0_DET01.fits.gz')
     # Copy the original
-    orig_slit_file = slit_file.replace('.fits.gz', '_orig.fits.gz')
+    orig_slit_file = slit_file.with_name(slit_file.name.replace('.fits.gz', '_orig.fits.gz'))
     shutil.copyfile(slit_file, orig_slit_file)
 
     # Modify
@@ -117,19 +113,14 @@ def test_redoslits_kastr(redux_out):
 
     # Copy the pypeit file
     root_redoslit_file = 'shane_kast_red_redoslit_600_5000_d46.pypeit'
-    pyp_file = os.path.join(os.path.abspath(
-        os.environ["PYPEIT_DEV"]), "vet_tests", "files", root_redoslit_file)
+    pyp_file = Path(os.environ["PYPEIT_DEV"], "vet_tests", "files", root_redoslit_file).absolute()
 
-    new_pyp_file = os.path.join(redux_out,
-                             'shane_kast_red',
-                             setup, root_redoslit_file)
+    new_pyp_file = Path(redux_out, 'shane_kast_red', setup, root_redoslit_file)
                              
-    raw_data_path =   os.path.join(os.path.abspath(
-            os.environ["PYPEIT_DEV"]),"RAW_DATA",
-            'shane_kast_red', setup)
+    raw_data_path =   Path(os.environ["PYPEIT_DEV"],"RAW_DATA", 'shane_kast_red', setup).absolute()
 
     pypeit_tests.fix_pypeit_file_directory(
-        pyp_file, None, raw_data_path,
+        pyp_file, raw_data_path,
         None, None, None, outfile=new_pyp_file)
         
     # Run 
@@ -150,7 +141,7 @@ def test_redoslits_kastr(redux_out):
 
 def test_keck_lris_blue(redux_out):
 
-    _redux_out = Path(redux_out).resolve()
+    _redux_out = Path(redux_out).absolute()
 
     for setup, det, rms in zip(['multi_300_5000_d680', 'long_400_3400_d560', 'long_600_4000_d560'],
                                [1, 1, 1],
@@ -170,7 +161,7 @@ def test_keck_lris_blue(redux_out):
 
 def test_keck_lris_blue_orig(redux_out):
 
-    _redux_out = Path(redux_out).resolve()
+    _redux_out = Path(redux_out).absolute()
 
     for setup, det, rms in zip(['long_600_4000_d500', 'multi_1200_3400_d460'],
                                [1, 1],
@@ -190,7 +181,7 @@ def test_keck_lris_blue_orig(redux_out):
 
 def test_keck_lris_red(redux_out):
 
-    _redux_out = Path(redux_out).resolve()
+    _redux_out = Path(redux_out).absolute()
 
     for setup, det, rms in zip(['long_150_7500_d560', 'long_300_5000_d560', 'long_400_8500_longread',
                                 'multi_600_5000_d560', 'long_600_7500_d560', 'long_600_10000_d680',
@@ -213,7 +204,7 @@ def test_keck_lris_red(redux_out):
 
 def test_keck_lris_red_orig(redux_out):
 
-    _redux_out = Path(redux_out).resolve()
+    _redux_out = Path(redux_out).absolute()
 
     for setup, rms in zip(['long_150_7500_d500', 'long_300_5000', 'long_400_8500_d560', 'multi_600_5000_d500',
                            'long_600_7500_d680', 'long_600_10000_d460', 'long_831_8200_d460',
@@ -234,7 +225,7 @@ def test_keck_lris_red_orig(redux_out):
 
 def test_keck_lris_red_mark4(redux_out):
 
-    _redux_out = Path(redux_out).resolve()
+    _redux_out = Path(redux_out).absolute()
 
     for setup, rms in zip(['long_400_8500_d560', 'long_600_10000_d680'],
                           [0.07, 0.08]):
@@ -253,7 +244,7 @@ def test_keck_lris_red_mark4(redux_out):
 
 def test_keck_hires(redux_out):
 
-    _redux_out = Path(redux_out).resolve()
+    _redux_out = Path(redux_out).absolute()
     for setup, rms in zip(['J0100+2802_H204Hr_RED_C1_ECH_-0.82_XD_1.62_1x2',
                            'J0100+2802_H204Hr_RED_C1_ECH_0.75_XD_1.69_1x2',
                            'J0100+2802_H237Hr_RED_C1_ECH_-0.91_XD_1.46_1x2',

@@ -11,7 +11,7 @@ import pytest
 import glob
 import numpy as np
 
-from pypeit.pypmsgs import PypeItError
+from pypeit import PypeItError
 from pypeit.images import buildimage
 from pypeit.images import pypeitimage
 from pypeit.calibframe import CalibFrame
@@ -31,7 +31,7 @@ calib_dir = data_output_path('')
 
 @pytest.fixture
 def kast_blue_bias_files():
-    root = Path(os.getenv('PYPEIT_DEV')).resolve() / 'RAW_DATA' / 'shane_kast_blue' / '600_4310_d55'
+    root = Path(os.getenv('PYPEIT_DEV')).absolute() / 'RAW_DATA' / 'shane_kast_blue' / '600_4310_d55'
     kast_blue_files = sorted(list(root.glob('b1?.fits*')))
     return [str(f) for f in kast_blue_files[5:]]
 
@@ -57,7 +57,7 @@ def test_io(kast_blue_bias_files):
     bias_img = buildimage.buildimage_fromlist(shane_kast_blue, 1, frame_par,
                                               kast_blue_bias_files, calib_dir=calib_dir,
                                               setup=setup, calib_id=calib_id)
-    ofile = Path(bias_img.get_path()).resolve()
+    ofile = Path(bias_img.get_path()).absolute()
     bias_img.to_file(overwrite=True)
     assert ofile.exists(), 'Error writing Bias file'
 
