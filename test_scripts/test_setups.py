@@ -79,8 +79,7 @@ Attributes:
 
 from . import pypeit_tests
 from .setups import all_setups 
-from enum import Enum, IntEnum, auto
-import copy
+from enum import Enum, auto
 
 class TestPhase(Enum):
     """Enumeration for specifying the test phase that a test runs in.
@@ -125,6 +124,32 @@ _pypeit_setup = {
         '0.5_2x1': [{}]},        
     }
 
+_calib_step_by_step = {
+    'shane_kast_blue': {
+        '600_4310_d55': [{"files": ["b24.fits.gz"], "detectors": ["1"],}],
+    }
+}
+
+_step_by_step = {
+    'shane_kast_blue': {
+        '600_4310_d55': [{"files": ["b24.fits.gz", "b27.fits.gz"],
+                          "detectors": ["1"]}],
+    },
+    'keck_mosfire': {
+        'Y_long': [{"files": ["m191118_0064.fits", "m191120_0043.fits"],
+                              "detectors": ["1"]}],
+    },
+    'keck_deimos': {
+        '600ZD_tilted': [{"files": ["d0225_0054.fits"],
+                          "detectors": ["(1,5)"] }],
+    },
+}
+
+_calib_only = {
+        'keck_deimos': {
+            '600ZD_M_6500': [dict(calib_only=True)]},
+}
+
 _additional_reduce = {
     'keck_lris_red': {
         'long_600_7500_d560': [dict(ignore_calibs=True)]},
@@ -134,21 +159,30 @@ _additional_reduce = {
 
 _sensfunc = {
     'shane_kast_blue': {
-        '600_4310_d55': [dict(std_file='spec1d_*Feige66*.fits')]},
+        '600_4310_d55': [dict(std_file='spec1d_*b24-Feige66*.fits')]},
     'shane_kast_red': {
-        '600_7500_d55_ret': [dict(std_file='spec1d_*G191b2b*.fits',
+        '600_7500_d55_ret': [dict(std_file='spec1d_*r136-G191b2b*.fits',
                                   sens_file="shane_kast_red_600_7500_d55_ret.sens")]},
     'gemini_gnirs_echelle': {
         '32_SB_SXD': [dict(std_file='spec1d_*S0206-HIP62745*.fits',
                            sens_file='gemini_gnirs_echelle_32_sb_sxd.sens')]},
     'gemini_gmos': {
-        'GS_HAM_R400_860': [dict(std_file='spec1d_**GD71*.fits',
+        'GS_HAM_R400_860': [dict(std_file='spec1d_*S0316-GD71*.fits',
                                  sens_file='gemini_gmos_gs_ham_r400_860.sens')],
-        'GS_HAM_R400_700': [dict(std_file='spec1d_**LTT7379*.fits',
-                                 sens_file='gemini_gmos_gs_ham_r400_700.sens')]},
+        'GS_HAM_R400_700': [dict(std_file='spec1d_*S0029-LTT7379*.fits',
+                                 sens_file='gemini_gmos_gs_ham_r400_700.sens')],
+    'GS_HAM_R400_795_SENS': [dict(std_file='spec1d_*LTT3218*.fits',
+                             sens_file='gemini_gmos_gs_ham_r400_795_sens.sens')]},
     'keck_deimos': {
-        '900ZD_LVM_5500': [dict(std_file='spec1d_*Feige110*.fits',
+        '900ZD_LVM_5500': [dict(std_file='spec1d_*20110729.54545-Feige110*.fits',
                                 sens_file='keck_deimos_900zd_lvm_5500.sens')]},
+
+    'keck_hires': {
+        'J0100+2802_H204Hr_RED_C1_ECH_0.75_XD_1.69_1x2': [dict(std_file='spec1d_*20151214.16343-Feige110*.fits',
+                                                          sens_file='keck_hires_RED_C1_ECH_0.75_XD_1.69_1x2_Feige110.sens')],
+        'J0100+2802_H204Hr_RED_C1_ECH_-0.82_XD_1.62_1x2': [dict(std_file='spec1d_*20151214.16715-Feige110*.fits',
+                                                           sens_file='keck_hires_RED_C1_ECH_-0.82_XD_1.62_1x2_Feige110.sens')],
+                     },
     'keck_mosfire': {
         'Y_long': [dict(std_file='spec1d_*0064-GD71*.fits',
                         sens_file='keck_mosfire_Y_long.sens')]},
@@ -157,9 +191,9 @@ _sensfunc = {
                                      sens_file='keck_lris_red_mark4_long_600_10000_d680.sens')]
         },
     'ldt_deveny': {
-        'DV2': [dict(std_file='spec1d_**BD+33d2642**.fits',
+        'DV2': [dict(std_file='spec1d_*20230423.0018-BD+33d2642*.fits',
                      sens_file='ldt_deveny_dv2.sens')],
-        'DV6': [dict(std_file='spec1d**G191-B2B**.fits',
+        'DV6': [dict(std_file='spec1d*20220221.0066-G191-B2B*.fits',
                      sens_file='ldt_deveny_dv6.sens')]
         },
     'vlt_xshooter': {'UVB_1x1_Feige110': [dict(std_file='spec1d_*2018-06-23T10:03:53.765*.fits',
@@ -222,6 +256,8 @@ _coadd1d = {
 _coadd2d = {
     'gemini_gnirs_echelle': {
         '32_SB_SXD': [dict(coadd_file=True)]},
+    'gemini_gmos': {
+        'GS_HAM_B600_MOS': [dict(coadd_file=True)]},
     'keck_lris_blue': {
         'multi_600_4000_d560': [dict(coadd_file=True)]},
     'vlt_xshooter': {
@@ -233,8 +269,13 @@ _coadd2d = {
     'keck_nires': {
         'ABBA_wstandard': [dict(coadd_file=True)]},
     'keck_nires': {
-        'ABBA_nostandard_faint': [dict(coadd_file=True)]}
+        'ABBA_nostandard_faint': [dict(coadd_file=True)]},
+    'soar_goodman_blue': {
+        'M1': [dict(coadd_file=True)]}
     }
+
+# TODO: Test the pypeit_coadd_datacube setups!
+_coadd3d = {}
 
 _telluric = {
     'gemini_gnirs_echelle': {
@@ -414,12 +455,21 @@ _quick_look = {
 all_tests = [{'factory': pypeit_tests.PypeItSetupTest,
               'type':    TestPhase.PREP,
               'setups':  _pypeit_setup},
+             {'factory': pypeit_tests.PypeItCalibStepByStep,
+              'type':    TestPhase.REDUCE,
+              'setups':  _calib_step_by_step},
+             {'factory': pypeit_tests.PypeItReduceTest,
+              'type':    TestPhase.REDUCE,
+              'setups':  _calib_only},
              {'factory': pypeit_tests.PypeItReduceTest,
               'type':    TestPhase.REDUCE,
               'setups':  _reduce_setups},
              {'factory': pypeit_tests.PypeItReduceTest,
               'type':    TestPhase.REDUCE,
               'setups':  _additional_reduce},
+             {'factory': pypeit_tests.PypeItReduceStepByStepTest,
+              'type':    TestPhase.REDUCE,
+              'setups':  _step_by_step},
              {'factory': pypeit_tests.PypeItSensFuncTest,
               'type':    TestPhase.AFTERBURN,
               'setups':  _sensfunc},

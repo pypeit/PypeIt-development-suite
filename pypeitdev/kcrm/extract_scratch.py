@@ -2,7 +2,7 @@ import numpy as np
 from matplotlib import pyplot as plt
 from astropy.visualization import ZScaleInterval, ImageNormalize
 from pypeit.coadd3d import DataCube
-from pypeit import msgs
+from pypeit import log
 
 filename = '/Users/joe/kcwi_type2/dec2023/red/WISEW4J1152+310_KCRM_cube.fits'
 cube = DataCube.from_file(filename)
@@ -104,7 +104,7 @@ def extract_standard_spec(stdcube, subpixel=20):
     sky_val = np.sum(wl_img[:, :, np.newaxis] * smask) / np.sum(smask)
     wl_img -= sky_val
 
-    msgs.info("Extracting a boxcar spectrum of datacube")
+    log.info("Extracting a boxcar spectrum of datacube")
     # Construct an image that contains the fraction of flux included in the
     # boxcar extraction at each wavelength interval
     norm_flux = wl_img[:,:,np.newaxis] * mask
