@@ -2,7 +2,10 @@ The wavelength calibration required making some template solutions first from es
 This was done using the esorex_to_pypeit script. Then, the wavelength calibration was performed using the
 reidentify method and ech_fixed_format=True. Then, the wavelength calibration was generated for each setup
 and the resulting WaveCalib Calibration frame was placed in the PypeIt_Templates directory. For detailed
-instructions of this procedure, see the decsription at the bottom of this README file.
+instructions of this procedure, see the description at the bottom of this README file. You will also need
+to review the code in README_vlt_uves.code to see the additions that need to be made to the:
+   spectrographs/vlt_uves.py
+file in the main PypeIt repo.
 
 The relevant information was collected in the uves_templ_pypeit.dat file, and these were all combined using
 the ingest_archive script.
