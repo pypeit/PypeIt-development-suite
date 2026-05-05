@@ -70,16 +70,14 @@ def parse_resource_list(arg_list, arg_type, arg_name):
         try: 
             request=arg_type(values[0])
         except ValueError as e:
-            print(f"Invalid value passed to {arg_name} request: {values[0]}: {e}")
-            sys.exit(1)
+            raise ValueError(f"Invalid value passed to {arg_name} request: {values[0]}: {e}")
 
         # Get the limit value, if specified
         if num_values == 2:
             try:
                 limit = arg_type(values[1])
             except ValueError as e:
-                print(f"Invalid value passed to {arg_name} limit: {values[1]}: {e}")
-                sys.exit(1)
+                raise ValueError(f"Invalid value passed to {arg_name} limit: {values[1]}: {e}")
         else:
             # No limit specified, use the request value
             limit = request
@@ -95,9 +93,13 @@ def main():
     pargs = parser()
 
     # Parse resource values from arguments
-    cpu_request,  cpu_limit   = parse_resource_list(pargs.ncpu, float, "ncpu")
-    ram_request,  ram_limit   = parse_resource_list(pargs.ram, int, "ram")
-    disk_request, disk_limit  = parse_resource_list(pargs.storage, int, "storage")
+    try:
+        cpu_request,  cpu_limit   = parse_resource_list(pargs.ncpu, float, "ncpu")
+        ram_request,  ram_limit   = parse_resource_list(pargs.ram, int, "ram")
+        disk_request, disk_limit  = parse_resource_list(pargs.storage, int, "storage")
+    except ValueError as e:
+        print(str(e), file=sys.stderr)
+        sys.exit(1)
 
     # Load the default
     def_yaml_file = os.path.join(os.getenv('PYPEIT_DEV'), 
