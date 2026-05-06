@@ -6,7 +6,7 @@
     spectrograph = lbt_luci2
 [calibrations]
    [[wavelengths]]
-        reid_arxiv = wvarxiv_lbt_luci2_20260424T2138.fits
+        reid_arxiv = lbt_luci2_G210K_22000.fits
         method = full_template
    [[standardframe]]
         [[[process]]]
