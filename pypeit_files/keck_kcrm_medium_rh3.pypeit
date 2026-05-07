@@ -8,6 +8,8 @@
     [[tiltframe]]
         [[[process]]]
             combine = median  # This is a good choice in case you want to use multiple science frames to determine the tilts from the sky lines.
+    [[wavelengths]]
+        reference_slit = 306  # This slit provides a good solution, to help provide a good solution for other slits.
 
 # Setup
 setup read
