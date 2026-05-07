@@ -129,7 +129,7 @@ def test_lris_red_multi_calib():
     ps.fitstbl.set_calibration_groups()
 
     calib_file = data_output_path('test.calib')
-    caldir = Path(data_output_path('')).resolve() / ps.par['calibrations']['calib_dir']
+    caldir = Path(data_output_path('')).absolute() / ps.par['calibrations']['calib_dir']
     Calibrations.association_summary(calib_file, ps.fitstbl, ps.spectrograph, caldir,
                                      overwrite=True)
     with open(calib_file, 'r') as f:
