@@ -13,7 +13,7 @@ except ModuleNotFoundError:
     pypeit_loaders = None
 from pypeit.specutils import Spectrum, SpectrumList
 
-from pypeit.pypmsgs import PypeItError
+from pypeit import PypeItError
 
 specutils_required = pytest.mark.skipif(Spectrum is None or SpectrumList is None 
                                             or pypeit_loaders is None,
@@ -22,7 +22,7 @@ specutils_required = pytest.mark.skipif(Spectrum is None or SpectrumList is None
 
 @specutils_required
 def test_identify_as_pypeit_file(redux_out):
-    rdx = Path(redux_out).resolve()
+    rdx = Path(redux_out).absolute()
 
     # Spec2D file
     test_file = rdx / 'gemini_gnirs_echelle' / '32_SB_SXD' / 'Science' \
@@ -80,7 +80,7 @@ def test_identify_as_pypeit_file(redux_out):
 
 @specutils_required
 def test_identify_as_spec1d_file(redux_out):
-    rdx = Path(redux_out).resolve()
+    rdx = Path(redux_out).absolute()
 
     # Spec1D file
     test_file = rdx / 'shane_kast_blue' / '600_4310_d55' / 'shane_kast_blue_A' \
@@ -106,7 +106,7 @@ def test_identify_as_spec1d_file(redux_out):
 
 @specutils_required
 def test_identify_as_onespec_file(redux_out):
-    rdx = Path(redux_out).resolve()
+    rdx = Path(redux_out).absolute()
 
     # coadd1d file
     test_file = rdx / 'shane_kast_blue' / '600_4310_d55' / 'shane_kast_blue_A' \
@@ -131,7 +131,7 @@ def test_identify_as_onespec_file(redux_out):
 # TODO: Break some of these out into separate tests?
 @specutils_required
 def test_load_spec1d(redux_out):
-    rdx = Path(redux_out).resolve()
+    rdx = Path(redux_out).absolute()
 
     # Spec1D file
     test_file = rdx / 'shane_kast_blue' / '600_4310_d55' / 'shane_kast_blue_A' \
@@ -169,7 +169,7 @@ def test_load_spec1d(redux_out):
 
 @specutils_required
 def test_load_onespec(redux_out):
-    rdx = Path(redux_out).resolve()
+    rdx = Path(redux_out).absolute()
 
     # coadd1d file
     test_file = rdx / 'shane_kast_blue' / '600_4310_d55' / 'shane_kast_blue_A' \

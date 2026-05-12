@@ -14,7 +14,7 @@ from pypeit.core import arc
 from pypeit import utils
 from matplotlib import pyplot as plt
 from pypeit.core import trace_slits
-from pypeit import msgs
+from pypeit import log
 
 
 dev_path = os.getenv('PYPEIT_DEV')
@@ -55,7 +55,7 @@ tampl_true, tampl, pix_max, twid, centerr, ww, arc_cont, nsig = arc.detect_lines
                                                                                  nfind=1, debug=True)
 xcorr_max = np.interp(pix_max, np.arange(lags.shape[0]), xcorr_norm)
 lag_max = np.interp(pix_max, np.arange(lags.shape[0]), lags)
-msgs.info('Flexure compensation ')
+log.info('Flexure compensation ')
 debug=True
 if debug:
     # Interpolate for bad lines since the fitting code often returns nan
