@@ -166,7 +166,7 @@ all_setups = {
     'lbt_luci': [
         'LUCI-I',
         'LUCI-II',
-        'lbt_luci2_G210K',
+        'luci2_G210K',
     ],
     'lbt_mods1b': [
         'dual_grating_longslit_qso',
