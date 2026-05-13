@@ -2,9 +2,13 @@
 Module to run tests on arcoadd
 """
 import os
+from pathlib import Path
+import shutil
 
-import numpy as np
 from astropy.table import Table
+from IPython import embed
+import numpy as np
+import pytest
 
 from pypeit.coadd3d import CoAdd3D, DataCube
 from pypeit.scripts.extract_datacube import ExtractDataCube
@@ -13,35 +17,35 @@ from pypeit.spectrographs.util import load_spectrograph
 from pypeit import inputfiles, specobjs, utils
 from pypeit.core import standard
 
-from IPython import embed
-
-import warnings
-warnings.simplefilter("ignore", UserWarning)
-
 
 def test_coadd_datacube(redux_out):
     """ Test the coaddition of spec2D files into datacubes """
     # Setup the dev path
-    dev_path = os.getenv('PYPEIT_DEV')
+    dev_path = Path(os.getenv('PYPEIT_DEV')).absolute()
+    outdir = dev_path / 'REDUX_OUT_TEST'
+    if outdir.is_dir():
+        shutil.rmtree(outdir)
+    outdir.mkdir(parents=True)
+
     # Define the input files
-    droot = os.path.join(redux_out,
-                         'keck_kcwi',
-                         'small_bh2_4200',
-                         'Science')
-    files = ['spec2d_KB.20191219.56886-BB1245p4238_KCWI_20191219T154806.538.fits',
-             'spec2d_KB.20191219.57662-BB1245p4238_KCWI_20191219T160102.755.fits']
-    config = ['[rdx]',
-              '  spectrograph = keck_kcwi']
+    droot = Path(redux_out).absolute() / 'keck_kcwi' / 'small_bh2_4200' / 'Science'
+    files = [
+        'spec2d_KB.20191219.56886-BB1245p4238_KCWI_20191219T154806.538.fits',
+        'spec2d_KB.20191219.57662-BB1245p4238_KCWI_20191219T160102.755.fits'
+    ]
+    config = [
+        '[rdx]',
+        '  spectrograph = keck_kcwi'
+    ]
     output_filename = "BB1245p4238_KCWI_20191219.fits"
     # Fake data table
     tbl = Table()
     tbl['filename'] = files
 
     # Generate a mock coadd3dfile
-    coadd3dfile = inputfiles.Coadd3DFile(config=config,
-                                         file_paths=[droot],
-                                         data_table=tbl,
-                                         setup=None)
+    coadd3dfile = inputfiles.Coadd3DFile(
+        config=config, file_paths=[droot], data_table=tbl, setup=None
+    )
     # Grab the spectrograph and parset
     spec = load_spectrograph("keck_kcwi")
     parset = spec.default_pypeit_par()
@@ -59,6 +63,8 @@ def test_coadd_datacube(redux_out):
     parset['reduce']['cube']['wave_delta'] = 0.115005
 
     # Extract the options
+    # TODO: Why are these here?  At least at the moment, all the options are
+    # None.
     ra_offsets = coadd3dfile.options['ra_offset']
     dec_offsets = coadd3dfile.options['dec_offset']
     skysub_frame = coadd3dfile.options['skysub_frame']
@@ -67,33 +73,45 @@ def test_coadd_datacube(redux_out):
     sensfuncfile = coadd3dfile.options['sensfile']
 
     # Instantiate CoAdd3d, and then coadd the frames
-    coadd = CoAdd3D.get_instance(coadd3dfile.filenames, parset, skysub_frame=skysub_frame, grating_corr=grating_corr,
-                                 scale_corr=scale_corr, sensfile=sensfuncfile,
-                                 ra_offsets=ra_offsets, dec_offsets=dec_offsets, spectrograph=spec, overwrite=True)
+    coadd = CoAdd3D.get_instance(
+        coadd3dfile.filenames, parset, output_dir=str(outdir), skysub_frame=skysub_frame,
+        grating_corr=grating_corr, scale_corr=scale_corr, sensfile=sensfuncfile,
+        ra_offsets=ra_offsets, dec_offsets=dec_offsets, spectrograph=spec, overwrite=True
+    )
     coadd.run()
     # Check the file exists
-    assert(os.path.exists(output_filename))
+    cube_file = coadd.scidir / output_filename
+    assert cube_file.is_file(), 'output file not written'
+
     ######################################
     # Test the extraction of a 1D spectrum from the datacube
     # Prepare the output filename
-    output1d_filename = output_filename.replace('.fits', '_spec1d.fits')
-    pargs = ExtractDataCube.parse_args(["-o", "-s", output1d_filename, output_filename])
+    pargs = ExtractDataCube.parse_args([
+        str(coadd.scidir / output_filename), "-o", "-s", output_filename
+    ])
     ExtractDataCube.main(pargs)
+    # Expected output files
+    ext_spec1d_file = coadd.scidir / f'spec1d_{output_filename}'
+    ext_spec2d_file = coadd.scidir / f'spec2d_{output_filename}'
     # Check the files exist
-    assert(os.path.exists(output1d_filename))
+    assert ext_spec1d_file.is_file(), 'spec1d file not written'
+    assert ext_spec2d_file.is_file(), 'spec2d file not written'
+    # TODO: Check for the whitelight file?
+
     ######################################
     # Using the 1D spectrum, generate a sensitivity function to flux the datacube
     # Prepare the output filename
-    outfile_sens = output1d_filename.replace('.fits', '_sens.fits')
-    input_senspar = os.path.join(dev_path, 'sensfunc_files', 'keck_kcwi_small_bh2_4200.sens')
-    pargs = SensFunc.parse_args(["-o", outfile_sens, "-s", input_senspar, output1d_filename])
+    outfile_sens = ext_spec1d_file.name.replace('.fits', '_sens.fits')
+    input_senspar = dev_path / 'sensfunc_files' / 'keck_kcwi_small_bh2_4200.sens'
+    pargs = SensFunc.parse_args([str(ext_spec1d_file), "-o", outfile_sens, "-s", str(input_senspar)])
     SensFunc.main(pargs)
     # Check the files exist
-    assert(os.path.exists(outfile_sens))
+    assert Path(outfile_sens).is_file(), 'Sensitivity function not written'
+
     ######################################
     # Now test the fluxing of the datacube
-    output_fileflux = "BB1245p4238_KCWI_20191219_fluxing.fits"
-    parset['reduce']['cube']['output_filename'] = output_fileflux
+    fluxed_output_file = "BB1245p4238_KCWI_20191219_fluxing.fits"
+    parset['reduce']['cube']['output_filename'] = fluxed_output_file
     parset['reduce']['cube']['sensfile'] = outfile_sens
 
     # Extract the options
@@ -103,24 +121,37 @@ def test_coadd_datacube(redux_out):
     scale_corr = coadd3dfile.options['scale_corr']
 
     # Instantiate CoAdd3d, and then coadd the frames
-    coadd = CoAdd3D.get_instance(coadd3dfile.filenames, parset, skysub_frame=skysub_frame, grating_corr=grating_corr,
-                                 scale_corr=scale_corr, sensfile=sensfuncfile,
-                                 ra_offsets=ra_offsets, dec_offsets=dec_offsets, spectrograph=spec, overwrite=True)
+    coadd = CoAdd3D.get_instance(
+        coadd3dfile.filenames, parset, skysub_frame=skysub_frame, grating_corr=grating_corr,
+        scale_corr=scale_corr, sensfile=outfile_sens, ra_offsets=ra_offsets,
+        dec_offsets=dec_offsets, spectrograph=spec, overwrite=True
+    )
+
     coadd.run()
 
     # Check the files exist
-    assert(os.path.exists(output_fileflux))
+    fluxed_cube_file = coadd.scidir / fluxed_output_file
+    assert fluxed_cube_file.is_file(), 'output fluxed file not written'
+
     ######################################
     # Finally, test the extraction of a 1D fluxed spectrum from the datacube
     # Prepare the output filename
-    output1d_fileflux = output_fileflux.replace('.fits', '_spec1d.fits')
-    pargs = ExtractDataCube.parse_args(["-o", "-s", output1d_fileflux, output_fileflux])
+
+    pargs = ExtractDataCube.parse_args([
+        str(coadd.scidir / fluxed_output_file), "-o", "-s", fluxed_output_file
+    ])
     ExtractDataCube.main(pargs)
+    # Expected output files
+    fluxed_ext_spec1d_file = coadd.scidir / f'spec1d_{fluxed_output_file}'
+    fluxed_ext_spec2d_file = coadd.scidir / f'spec2d_{fluxed_output_file}'
     # Check the files exist
-    assert(os.path.exists(output1d_fileflux))
+    assert fluxed_ext_spec1d_file.is_file(), 'fluxed_spec1d file not written'
+    assert fluxed_ext_spec2d_file.is_file(), 'fluxed_spec2d file not written'
+    # TODO: Check for the whitelight file?
+
     ######################################
     # Load in the extracted spec1d file, and compare it to the expected values
-    spec1d = specobjs.SpecObjs.from_fitsfile(output1d_fileflux)
+    spec1d = specobjs.SpecObjs.from_fitsfile(fluxed_ext_spec1d_file)
     # Generate a spectrum of the standard star that was used to generate the sensitivity function
     # Load in the standard star spectrum
     ra, dec = 191.39844, 42.64016
@@ -142,21 +173,23 @@ def test_coadd_datacube(redux_out):
     # The sensitivity function is based on the optimal extraction, so the optimal should be spot on.
     # The boxcar will be worse, so allow a larger tolerance
     assert(np.abs(med) < std)
+
     ######################################
     # Remove all of the created files
-    # First remove the non-fluxed files
-    os.remove(output_filename)
-    os.remove(output1d_filename)
-    # Remove the sensitivity function files and the associated QA files
-    os.remove(outfile_sens)
-    os.remove('sensfunc.par')
-    os.remove(outfile_sens.replace('.fits', '_QA.pdf'))
-    os.remove(outfile_sens.replace('.fits', '_throughput.pdf'))
-    os.remove(outfile_sens.replace('.fits', '_fluxed_std.pdf'))
-    # Remove the fluxed files
-    os.remove(output_fileflux)
-    os.remove(output1d_fileflux)
+    shutil.rmtree(outdir)
 
+#    # First remove the non-fluxed files
+#    os.remove(output_filename)
+#    os.remove(output1d_filename)
+#    # Remove the sensitivity function files and the associated QA files
+#    os.remove(outfile_sens)
+#    os.remove('sensfunc.par')
+#    os.remove(outfile_sens.replace('.fits', '_QA.pdf'))
+#    os.remove(outfile_sens.replace('.fits', '_throughput.pdf'))
+#    os.remove(outfile_sens.replace('.fits', '_fluxed_std.pdf'))
+#    # Remove the fluxed files
+#    os.remove(output_fileflux)
+#    os.remove(output1d_fileflux)
 
 def test_residuals(redux_out):
     """ Test the residuals of a spec2D DOMEFLAT file
