@@ -106,6 +106,38 @@ def test_offsets_and_weights(redux_out):
     # Go back
     os.chdir(cdir)
 
+def test_offsets_with_user_obj_ids(redux_out):
+
+    # LDT/DeVeny DV1 data
+    spec_name = 'ldt_deveny'
+    _redux_out = Path(redux_out).absolute() / spec_name / 'DV1'
+    sci_dir = _redux_out / 'Science'
+
+    cdir = os.getcwd()
+    os.chdir(_redux_out)
+    # Load spectrograph
+    spectrograph = load_spectrograph(spec_name)
+    par = spectrograph.default_pypeit_par()
+    # Grab the spec2d files
+    spec2d_files = [str(f) for f in sorted(sci_dir.glob('spec2d*.fits'))]
+
+    # check the number of exposures
+    assert len(spec2d_files) == 3, 'Wrong number of exposures'
+
+    # Init coadd2d with offsets='auto', weights='auto', and user_obj_ids
+    par['coadd2d']['offsets'] = 'auto'
+    par['coadd2d']['weights'] = 'auto'
+    par['coadd2d']['user_obj_ids'] = [244, 243, 241]
+    coadd = coadd2d.CoAdd2D.get_instance(spec2d_files, spectrograph, par)
+
+    # Check the offsets
+    assert np.allclose(coadd.offsets, [0.0, 1.29, 3.91], atol=0.01), 'Wrong offsets'
+
+    # Check that, if no `user_obj_ids` are provided, other bright sources are detected
+    par['coadd2d']['user_obj_ids'] = None
+    coadd = coadd2d.CoAdd2D.get_instance(spec2d_files, spectrograph, par)
+    assert not np.allclose(coadd.offsets, [0.0, 1.29, 3.91], atol=0.01), 'Found dim target'
+
 def test_spat_spec_fract(redux_out):
 
     # check multislit with slitmask data - gmos data

@@ -1,0 +1,32 @@
+# Auto-generated Coadd2D input file using PypeIt version: 2.0.1.dev139+gcfc66e3e2
+# UTC 2026-03-17T20:10:38.708+00:00
+
+# User-defined execution parameters
+[rdx]
+    spectrograph = ldt_deveny
+[calibrations]
+    calib_dir = Calibrations
+    [[wavelengths]]
+        refframe = observed
+[coadd2d]
+    offsets = auto
+    weights = auto
+    spat_toler = 5
+    spec_samp_fact = 1.0
+    spat_samp_fact = 1.0
+    user_obj_ids = 244, 243, 241
+[flexure]
+    spec_method = skip
+[reduce]
+    [[findobj]]
+        skip_skysub = True
+
+# Data block 
+spec2d read
+ path Science
+                                                   filename
+spec2d_20251027.0210-2009HC_DeVeny_20251027T115148.850.fits
+spec2d_20251027.0211-2009HC_DeVeny_20251027T115657.310.fits
+spec2d_20251027.0212-2009HC_DeVeny_20251027T120209.740.fits
+spec2d end
+

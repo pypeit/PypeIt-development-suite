@@ -1,0 +1,33 @@
+# Auto-generated PypeIt input file using PypeIt version: 2.0.2.dev183+g10bc07e23
+# UTC 2026-04-01T14:52:13.135+00:00
+
+# User-defined execution parameters
+[rdx]
+    spectrograph = vlt_uves_red
+
+# Setup
+setup read
+Setup B:
+  arm: RED
+  binning: 1,1
+  xdangle: 860.0
+setup end
+
+# Data block 
+data read
+ path /Users/rcooke/Software/PypeIt-development-suite/RAW_DATA/vlt_uves_red/860
+                           filename |                 frametype |         ra |       dec | target | dispname | decker | binning |            mjd | airmass |   exptime | xdangle | arm | calib
+  UVES.2001-08-11T12:41:15.462.fits |                  arc,tilt | 356.793424 | -50.23727 |        |      RED |   None |     1,1 | 52132.52865118 |     1.0 |   10.2897 |   860.0 | RED |     1
+  UVES.2009-04-19T11:01:12.297.fits |                      bias | 290.975752 | -27.88428 |   BIAS |      RED |   None |     1,1 |  54940.4591701 |     1.0 |       0.0 |    None | RED |     1
+  UVES.2009-04-19T11:01:59.111.fits |                      bias | 290.975752 | -27.88428 |   BIAS |      RED |   None |     1,1 | 54940.45971193 |     1.0 |       0.0 |    None | RED |     1
+  UVES.2009-04-19T11:02:45.905.fits |                      bias | 290.975752 | -27.88428 |   BIAS |      RED |   None |     1,1 | 54940.46025353 |     1.0 |       0.0 |    None | RED |     1
+  UVES.2009-04-19T11:03:32.699.fits |                      bias | 290.975752 | -27.88428 |   BIAS |      RED |   None |     1,1 | 54940.46079513 |     1.0 |       0.0 |    None | RED |     1
+  UVES.2009-04-19T11:04:19.493.fits |                      bias | 290.975752 | -27.88428 |   BIAS |      RED |   None |     1,1 | 54940.46133673 |     1.0 |       0.0 |    None | RED |     1
+  UVES.2001-08-11T12:34:42.492.fits | pixelflat,illumflat,trace | 356.793425 | -50.23727 |        |      RED |   None |     1,1 | 52132.52410292 |     1.0 |   16.4696 |   860.0 | RED |     1
+  UVES.2001-08-11T12:35:51.567.fits | pixelflat,illumflat,trace | 356.793425 | -50.23727 |        |      RED |   None |     1,1 |  52132.5249024 |     1.0 |   16.4696 |   860.0 | RED |     1
+  UVES.2001-08-11T12:37:00.223.fits | pixelflat,illumflat,trace | 356.793425 | -50.23727 |        |      RED |   None |     1,1 | 52132.52569702 |     1.0 |   16.4696 |   860.0 | RED |     1
+  UVES.2001-08-11T12:38:12.106.fits | pixelflat,illumflat,trace | 356.793425 | -50.23727 |        |      RED |   None |     1,1 |   52132.526529 |     1.0 |   16.4696 |   860.0 | RED |     1
+  UVES.2001-08-11T12:39:22.221.fits | pixelflat,illumflat,trace | 356.793425 | -50.23727 |        |      RED |   None |     1,1 | 52132.52734052 |     1.0 |   16.4696 |   860.0 | RED |     1
+  UVES.2001-08-11T02:37:04.577.fits |                   science | 333.798947 |  -0.76383 | OBJECT |      RED |   None |     1,1 | 52132.10908075 |   1.557 | 3599.9994 |   860.0 | RED |     1
+data end
+
