@@ -1,0 +1,74 @@
+# User-defined execution parameters
+[rdx]
+    spectrograph = jwst_nirspec
+    maskIDs = 20013731, 183348    # gs-z14-1 (183348), gs-z13-1-LA (20013731)
+[reduce]
+    [[findobj]]
+      snr_thresh = 1.2
+      skip_skysub = True
+    [[extraction]]
+      boxcar_radius = 0.3
+    [[skysub]]
+      local_maskwidth = 3.
+
+
+
+
+setup read
+Setup A:
+  decker: NRS_FULL_MSA
+  dispname: PRISM
+  filter1: CLEAR
+  target: GOODS-South
+setup end
+
+# Data block 
+data read
+ path MSA_PRISM_nomosaic
+                                            filename |       frametype |          ra |                dec |      target | dispname |       decker |                mjd |  exptime | filter1 |   pid | obsnum | visitnum | groupnum | expnum |                 dateobs |           dithpat | dithpos | dithoff | calib | comb_id | bkg_id
+             jw01287001001_11101_00001_nrs1_cal.fits |        arc,tilt | 53.08138625 | -27.86647499999998 | GOODS-South |    PRISM | NRS_FULL_MSA |  60320.48511622106 | 2771.889 |   CLEAR | 01287 |    001 |      001 |    11101 |  00001 | 2024-01-11T11:38:34.041 |              None |    None |     0.0 |     1 |      -1 |     -1
+             jw01287001001_11101_00001_nrs2_cal.fits |        arc,tilt | 53.08138625 | -27.86647499999998 | GOODS-South |    PRISM | NRS_FULL_MSA | 60320.484997702544 | 2771.889 |   CLEAR | 01287 |    001 |      001 |    11101 |  00001 | 2024-01-11T11:38:23.801 |              None |    None |     0.0 |     1 |      -1 |     -1
+             jw01287001001_11101_00002_nrs1_cal.fits |        arc,tilt | 53.08138625 | -27.86647499999998 | GOODS-South |    PRISM | NRS_FULL_MSA |  60320.51837990162 | 2771.889 |   CLEAR | 01287 |    001 |      001 |    11101 |  00002 | 2024-01-11T12:26:28.024 |              None |    None |     0.0 |     2 |      -1 |     -1
+             jw01287001001_11101_00002_nrs2_cal.fits |        arc,tilt | 53.08138625 | -27.86647499999998 | GOODS-South |    PRISM | NRS_FULL_MSA |  60320.51843027199 | 2771.889 |   CLEAR | 01287 |    001 |      001 |    11101 |  00002 | 2024-01-11T12:26:32.376 |              None |    None |     0.0 |     2 |      -1 |     -1
+             jw01287001001_11101_00003_nrs1_cal.fits |        arc,tilt | 53.08138625 | -27.86647499999998 | GOODS-South |    PRISM | NRS_FULL_MSA |  60320.55181320023 | 2771.889 |   CLEAR | 01287 |    001 |      001 |    11101 |  00003 | 2024-01-11T13:14:36.661 |              None |    None |     0.0 |     3 |      -1 |     -1
+             jw01287001001_11101_00003_nrs2_cal.fits |        arc,tilt | 53.08138625 | -27.86647499999998 | GOODS-South |    PRISM | NRS_FULL_MSA |   60320.5518635706 | 2771.889 |   CLEAR | 01287 |    001 |      001 |    11101 |  00003 | 2024-01-11T13:14:41.013 |              None |    None |     0.0 |     3 |      -1 |     -1
+
+             jw01287001001_13101_00001_nrs1_cal.fits |        arc,tilt | 53.08138625 | -27.86647499999998 | GOODS-South |    PRISM | NRS_FULL_MSA |  60320.58845464699 | 2771.889 |   CLEAR | 01287 |    001 |      001 |    13101 |  00001 | 2024-01-11T14:07:22.481 |              None |    None |     0.0 |     4 |      -1 |     -1
+             jw01287001001_13101_00001_nrs2_cal.fits |        arc,tilt | 53.08138625 | -27.86647499999998 | GOODS-South |    PRISM | NRS_FULL_MSA |  60320.58833612847 | 2771.889 |   CLEAR | 01287 |    001 |      001 |    13101 |  00001 | 2024-01-11T14:07:12.242 |              None |    None |     0.0 |     4 |      -1 |     -1
+             jw01287001001_13101_00002_nrs1_cal.fits |        arc,tilt | 53.08138625 | -27.86647499999998 | GOODS-South |    PRISM | NRS_FULL_MSA | 60320.621718315975 | 2771.889 |   CLEAR | 01287 |    001 |      001 |    13101 |  00002 | 2024-01-11T14:55:16.463 |              None |    None |     0.0 |     5 |      -1 |     -1
+             jw01287001001_13101_00002_nrs2_cal.fits |        arc,tilt | 53.08138625 | -27.86647499999998 | GOODS-South |    PRISM | NRS_FULL_MSA | 60320.621768686346 | 2771.889 |   CLEAR | 01287 |    001 |      001 |    13101 |  00002 | 2024-01-11T14:55:20.815 |              None |    None |     0.0 |     5 |      -1 |     -1
+             jw01287001001_13101_00003_nrs1_cal.fits |        arc,tilt | 53.08138625 | -27.86647499999998 | GOODS-South |    PRISM | NRS_FULL_MSA | 60320.655151614585 | 2771.889 |   CLEAR | 01287 |    001 |      001 |    13101 |  00003 | 2024-01-11T15:43:25.100 |              None |    None |     0.0 |     6 |      -1 |     -1
+             jw01287001001_13101_00003_nrs2_cal.fits |        arc,tilt | 53.08138625 | -27.86647499999998 | GOODS-South |    PRISM | NRS_FULL_MSA | 60320.655201984955 | 2771.889 |   CLEAR | 01287 |    001 |      001 |    13101 |  00003 | 2024-01-11T15:43:29.452 |              None |    None |     0.0 |     6 |      -1 |     -1
+
+
+jw01287001001_11101_00001_nrs1_interpolatedflat.fits | pixelflat,trace | 53.08138625 | -27.86647499999998 | GOODS-South |    PRISM | NRS_FULL_MSA |  60320.48511622106 | 2771.889 |   CLEAR | 01287 |    001 |      001 |    11101 |  00001 | 2024-01-11T11:38:34.041 |              None |    None |     0.0 |     1 |      -1 |     -1
+jw01287001001_11101_00001_nrs2_interpolatedflat.fits | pixelflat,trace | 53.08138625 | -27.86647499999998 | GOODS-South |    PRISM | NRS_FULL_MSA | 60320.484997702544 | 2771.889 |   CLEAR | 01287 |    001 |      001 |    11101 |  00001 | 2024-01-11T11:38:23.801 |              None |    None |     0.0 |     1 |      -1 |     -1
+jw01287001001_11101_00002_nrs1_interpolatedflat.fits | pixelflat,trace | 53.08138625 | -27.86647499999998 | GOODS-South |    PRISM | NRS_FULL_MSA |  60320.51837990162 | 2771.889 |   CLEAR | 01287 |    001 |      001 |    11101 |  00002 | 2024-01-11T12:26:28.024 |              None |    None |     0.0 |     2 |      -1 |     -1
+jw01287001001_11101_00002_nrs2_interpolatedflat.fits | pixelflat,trace | 53.08138625 | -27.86647499999998 | GOODS-South |    PRISM | NRS_FULL_MSA |  60320.51843027199 | 2771.889 |   CLEAR | 01287 |    001 |      001 |    11101 |  00002 | 2024-01-11T12:26:32.376 |              None |    None |     0.0 |     2 |      -1 |     -1
+jw01287001001_11101_00003_nrs1_interpolatedflat.fits | pixelflat,trace | 53.08138625 | -27.86647499999998 | GOODS-South |    PRISM | NRS_FULL_MSA |  60320.55181320023 | 2771.889 |   CLEAR | 01287 |    001 |      001 |    11101 |  00003 | 2024-01-11T13:14:36.661 |              None |    None |     0.0 |     3 |      -1 |     -1
+jw01287001001_11101_00003_nrs2_interpolatedflat.fits | pixelflat,trace | 53.08138625 | -27.86647499999998 | GOODS-South |    PRISM | NRS_FULL_MSA |   60320.5518635706 | 2771.889 |   CLEAR | 01287 |    001 |      001 |    11101 |  00003 | 2024-01-11T13:14:41.013 |              None |    None |     0.0 |     3 |      -1 |     -1
+
+jw01287001001_13101_00001_nrs1_interpolatedflat.fits | pixelflat,trace | 53.08138625 | -27.86647499999998 | GOODS-South |    PRISM | NRS_FULL_MSA |  60320.58845464699 | 2771.889 |   CLEAR | 01287 |    001 |      001 |    13101 |  00001 | 2024-01-11T14:07:22.481 |              None |    None |     0.0 |     4 |      -1 |     -1
+jw01287001001_13101_00001_nrs2_interpolatedflat.fits | pixelflat,trace | 53.08138625 | -27.86647499999998 | GOODS-South |    PRISM | NRS_FULL_MSA |  60320.58833612847 | 2771.889 |   CLEAR | 01287 |    001 |      001 |    13101 |  00001 | 2024-01-11T14:07:12.242 |              None |    None |     0.0 |     4 |      -1 |     -1
+jw01287001001_13101_00002_nrs1_interpolatedflat.fits | pixelflat,trace | 53.08138625 | -27.86647499999998 | GOODS-South |    PRISM | NRS_FULL_MSA | 60320.621718315975 | 2771.889 |   CLEAR | 01287 |    001 |      001 |    13101 |  00002 | 2024-01-11T14:55:16.463 |              None |    None |     0.0 |     5 |      -1 |     -1
+jw01287001001_13101_00002_nrs2_interpolatedflat.fits | pixelflat,trace | 53.08138625 | -27.86647499999998 | GOODS-South |    PRISM | NRS_FULL_MSA | 60320.621768686346 | 2771.889 |   CLEAR | 01287 |    001 |      001 |    13101 |  00002 | 2024-01-11T14:55:20.815 |              None |    None |     0.0 |     5 |      -1 |     -1
+jw01287001001_13101_00003_nrs1_interpolatedflat.fits | pixelflat,trace | 53.08138625 | -27.86647499999998 | GOODS-South |    PRISM | NRS_FULL_MSA | 60320.655151614585 | 2771.889 |   CLEAR | 01287 |    001 |      001 |    13101 |  00003 | 2024-01-11T15:43:25.100 |              None |    None |     0.0 |     6 |      -1 |     -1
+jw01287001001_13101_00003_nrs2_interpolatedflat.fits | pixelflat,trace | 53.08138625 | -27.86647499999998 | GOODS-South |    PRISM | NRS_FULL_MSA | 60320.655201984955 | 2771.889 |   CLEAR | 01287 |    001 |      001 |    13101 |  00003 | 2024-01-11T15:43:29.452 |              None |    None |     0.0 |     6 |      -1 |     -1
+
+
+      jw01287001001_11101_00001_nrs1_assign_wcs.fits |         science | 53.08138625 | -27.86647499999998 | GOODS-South |    PRISM | NRS_FULL_MSA |  60320.48511622106 | 2771.889 |   CLEAR | 01287 |    001 |      001 |    11101 |  00001 | 2024-01-11T11:38:34.041 | 3-SHUTTER-SLITLET |       1 | -30.878 |     1 |       1 |    3,5
+      jw01287001001_11101_00001_nrs2_assign_wcs.fits |         science | 53.08138625 | -27.86647499999998 | GOODS-South |    PRISM | NRS_FULL_MSA | 60320.484997702544 | 2771.889 |   CLEAR | 01287 |    001 |      001 |    11101 |  00001 | 2024-01-11T11:38:23.801 | 3-SHUTTER-SLITLET |       1 | -30.878 |     1 |       1 |    3,5
+      jw01287001001_11101_00002_nrs1_assign_wcs.fits |         science | 53.08138625 | -27.86647499999998 | GOODS-South |    PRISM | NRS_FULL_MSA |  60320.51837990162 | 2771.889 |   CLEAR | 01287 |    001 |      001 |    11101 |  00002 | 2024-01-11T12:26:28.024 | 3-SHUTTER-SLITLET |       2 | -30.349 |     2 |       3 |    1,5
+      jw01287001001_11101_00002_nrs2_assign_wcs.fits |         science | 53.08138625 | -27.86647499999998 | GOODS-South |    PRISM | NRS_FULL_MSA |  60320.51843027199 | 2771.889 |   CLEAR | 01287 |    001 |      001 |    11101 |  00002 | 2024-01-11T12:26:32.376 | 3-SHUTTER-SLITLET |       2 | -30.349 |     2 |       3 |    1,5
+      jw01287001001_11101_00003_nrs1_assign_wcs.fits |         science | 53.08138625 | -27.86647499999998 | GOODS-South |    PRISM | NRS_FULL_MSA |  60320.55181320023 | 2771.889 |   CLEAR | 01287 |    001 |      001 |    11101 |  00003 | 2024-01-11T13:14:36.661 | 3-SHUTTER-SLITLET |       3 | -31.407 |     3 |       5 |    1,3
+      jw01287001001_11101_00003_nrs2_assign_wcs.fits |         science | 53.08138625 | -27.86647499999998 | GOODS-South |    PRISM | NRS_FULL_MSA |   60320.5518635706 | 2771.889 |   CLEAR | 01287 |    001 |      001 |    11101 |  00003 | 2024-01-11T13:14:41.013 | 3-SHUTTER-SLITLET |       3 | -31.407 |     3 |       5 |    1,3
+
+      jw01287001001_13101_00001_nrs1_assign_wcs.fits |         science | 53.08138625 | -27.86647499999998 | GOODS-South |    PRISM | NRS_FULL_MSA |  60320.58845464699 | 2771.889 |   CLEAR | 01287 |    001 |      001 |    13101 |  00001 | 2024-01-11T14:07:22.481 | 3-SHUTTER-SLITLET |       1 | -30.878 |     4 |       7 |   9,11
+      jw01287001001_13101_00001_nrs2_assign_wcs.fits |         science | 53.08138625 | -27.86647499999998 | GOODS-South |    PRISM | NRS_FULL_MSA |  60320.58833612847 | 2771.889 |   CLEAR | 01287 |    001 |      001 |    13101 |  00001 | 2024-01-11T14:07:12.242 | 3-SHUTTER-SLITLET |       1 | -30.878 |     4 |       7 |   9,11
+      jw01287001001_13101_00002_nrs1_assign_wcs.fits |         science | 53.08138625 | -27.86647499999998 | GOODS-South |    PRISM | NRS_FULL_MSA | 60320.621718315975 | 2771.889 |   CLEAR | 01287 |    001 |      001 |    13101 |  00002 | 2024-01-11T14:55:16.463 | 3-SHUTTER-SLITLET |       2 | -30.349 |     5 |       9 |   7,11
+      jw01287001001_13101_00002_nrs2_assign_wcs.fits |         science | 53.08138625 | -27.86647499999998 | GOODS-South |    PRISM | NRS_FULL_MSA | 60320.621768686346 | 2771.889 |   CLEAR | 01287 |    001 |      001 |    13101 |  00002 | 2024-01-11T14:55:20.815 | 3-SHUTTER-SLITLET |       2 | -30.349 |     5 |       9 |   7,11
+      jw01287001001_13101_00003_nrs1_assign_wcs.fits |         science | 53.08138625 | -27.86647499999998 | GOODS-South |    PRISM | NRS_FULL_MSA | 60320.655151614585 | 2771.889 |   CLEAR | 01287 |    001 |      001 |    13101 |  00003 | 2024-01-11T15:43:25.100 | 3-SHUTTER-SLITLET |       3 | -31.407 |     6 |      11 |    7,9
+      jw01287001001_13101_00003_nrs2_assign_wcs.fits |         science | 53.08138625 | -27.86647499999998 | GOODS-South |    PRISM | NRS_FULL_MSA | 60320.655201984955 | 2771.889 |   CLEAR | 01287 |    001 |      001 |    13101 |  00003 | 2024-01-11T15:43:29.452 | 3-SHUTTER-SLITLET |       3 | -31.407 |     6 |      11 |    7,9
+
+data end
+

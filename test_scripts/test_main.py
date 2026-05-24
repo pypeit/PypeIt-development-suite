@@ -967,7 +967,7 @@ def main():
         # Check all the data and relevant files exist before starting!
         if len(missing_files) > 0:
             raise ValueError('Missing the following files:\n    {0}'.format(
-                            '\n    '.join(missing_files)))
+                            '\n    '.join([str(f) for f in missing_files])))
 
 
         # ---------------------------------------------------------------------------

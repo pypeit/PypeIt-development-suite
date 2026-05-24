@@ -53,6 +53,9 @@ all_setups = {
         'R1000R',
         'R300B',
     ],
+    'jwst_nirspec': [
+        'MSA_PRISM_nomosaic',
+    ],
     'keck_esi': [
         'Ech_1x1',
         'Ech_2x1',
