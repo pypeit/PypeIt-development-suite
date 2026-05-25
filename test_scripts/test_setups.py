@@ -251,6 +251,8 @@ _coadd1d = {
         'GS_HAM_R400_860': [{}]},
     'gemini_gmos': {
         'GS_HAM_R400_700': [{}]},
+    'jwst_nirspec': {
+        'S200A2_G395M_F290LP': [{}]},
     }
 
 _coadd2d = {

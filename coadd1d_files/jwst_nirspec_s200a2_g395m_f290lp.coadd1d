@@ -1,0 +1,21 @@
+# Auto-generated Coadd1D input file using PypeIt version: 2.0.2.dev388+g0450df05c
+# UTC 2026-05-25T02:04:39.097+00:00
+
+# User-defined execution parameters
+[coadd1d]
+  coaddfile = J2255+0251_1dcoadd.fits
+flux_value = False # The JWST data is already fluxed BUT it would be in F_nu
+  wave_method = log10
+   dv = 150.0 
+   wave_grid_min = 26000.0
+   wave_grid_max = 52700.0
+
+# Data block 
+coadd1d read
+ path /Users/dpelliccia/Desktop/jwst/dev/NIRSPEC_FS_PID1967/J2255+0251/test_fixslit/jwst_nirspec_A/Science
+                                                                           filename |                  obj_id
+spec1d_jw01967012001_03102_00001-J2255+0251_S200A2_NIRSPEC_20221028T062125.115.fits | SPAT0033-SLIT0023-DET01
+spec1d_jw01967012001_03102_00003-J2255+0251_S200A2_NIRSPEC_20221028T064642.427.fits | SPAT0013-SLIT0023-DET01
+spec1d_jw01967012001_03102_00002-J2255+0251_S200A2_NIRSPEC_20221028T063403.771.fits | SPAT0024-SLIT0023-DET01
+coadd1d end
+
