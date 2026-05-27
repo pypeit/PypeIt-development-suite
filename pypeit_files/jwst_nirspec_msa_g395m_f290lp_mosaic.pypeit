@@ -1,0 +1,49 @@
+# Auto-generated PypeIt input file using PypeIt version: 2.0.2.dev388+g0450df05c
+# UTC 2026-05-25T02:27:33.981+00:00
+
+# User-defined execution parameters
+[rdx]
+    spectrograph = jwst_nirspec
+    maskIDs = 119077
+[reduce]
+    [[findobj]]
+      snr_thresh = 7.
+      skip_skysub = True
+    [[extraction]]
+      boxcar_radius = 0.3
+
+# Setup
+setup read
+Setup A:
+  decker: NRS_FULL_MSA
+  dispname: G395M
+  filter1: F290LP
+  target: excels_apt_cat_pointing_1
+setup end
+
+# Data block 
+data read
+ path MSA_G395M_F290LP_mosaic
+                                            filename |       frametype |                 ra |                dec |                    target | dispname |       decker |               mjd |  exptime | filter1 |   pid | obsnum | visitnum | groupnum | expnum |                 dateobs |           dithpat | dithpos | dithoff | calib | comb_id | bkg_id
+             jw03543001001_07101_00002_nrs1_cal.fits |        arc,tilt | 34.371145416666664 | -5.150558333333322 | excels_apt_cat_pointing_1 |    G395M | NRS_FULL_MSA | 60298.28555701968 | 4814.334 |  F290LP | 03543 |    001 |      001 |    07101 |  00002 | 2023-12-20T06:51:12.127 |              None |    None |     0.0 |     1 |      -1 |     -1
+             jw03543001001_07101_00002_nrs2_cal.fits |        arc,tilt | 34.371145416666664 | -5.150558333333322 | excels_apt_cat_pointing_1 |    G395M | NRS_FULL_MSA | 60298.28564589699 | 4814.334 |  F290LP | 03543 |    001 |      001 |    07101 |  00002 | 2023-12-20T06:51:19.806 |              None |    None |     0.0 |     1 |      -1 |     -1
+             jw03543001001_07101_00003_nrs1_cal.fits |        arc,tilt | 34.371145416666664 | -5.150558333333322 | excels_apt_cat_pointing_1 |    G395M | NRS_FULL_MSA | 60298.34330436921 | 4814.334 |  F290LP | 03543 |    001 |      001 |    07101 |  00003 | 2023-12-20T08:14:21.498 |              None |    None |     0.0 |     2 |      -1 |     -1
+             jw03543001001_07101_00003_nrs2_cal.fits |        arc,tilt | 34.371145416666664 | -5.150558333333322 | excels_apt_cat_pointing_1 |    G395M | NRS_FULL_MSA | 60298.34322510995 | 4814.334 |  F290LP | 03543 |    001 |      001 |    07101 |  00003 | 2023-12-20T08:14:14.649 |              None |    None |     0.0 |     2 |      -1 |     -1
+             jw03543001001_07101_00004_nrs1_cal.fits |        arc,tilt | 34.371145416666664 | -5.150558333333322 | excels_apt_cat_pointing_1 |    G395M | NRS_FULL_MSA | 60298.40105245949 | 4814.334 |  F290LP | 03543 |    001 |      001 |    07101 |  00004 | 2023-12-20T09:37:30.933 |              None |    None |     0.0 |     3 |      -1 |     -1
+             jw03543001001_07101_00004_nrs2_cal.fits |        arc,tilt | 34.371145416666664 | -5.150558333333322 | excels_apt_cat_pointing_1 |    G395M | NRS_FULL_MSA | 60298.40114134838 | 4814.334 |  F290LP | 03543 |    001 |      001 |    07101 |  00004 | 2023-12-20T09:37:38.613 |              None |    None |     0.0 |     3 |      -1 |     -1
+
+jw03543001001_07101_00002_nrs1_interpolatedflat.fits | pixelflat,trace | 34.371145416666664 | -5.150558333333322 | excels_apt_cat_pointing_1 |    G395M | NRS_FULL_MSA | 60298.28555701968 | 4814.334 |  F290LP | 03543 |    001 |      001 |    07101 |  00002 | 2023-12-20T06:51:12.127 |              None |    None |     0.0 |     1 |      -1 |     -1
+jw03543001001_07101_00002_nrs2_interpolatedflat.fits | pixelflat,trace | 34.371145416666664 | -5.150558333333322 | excels_apt_cat_pointing_1 |    G395M | NRS_FULL_MSA | 60298.28564589699 | 4814.334 |  F290LP | 03543 |    001 |      001 |    07101 |  00002 | 2023-12-20T06:51:19.806 |              None |    None |     0.0 |     1 |      -1 |     -1
+jw03543001001_07101_00003_nrs1_interpolatedflat.fits | pixelflat,trace | 34.371145416666664 | -5.150558333333322 | excels_apt_cat_pointing_1 |    G395M | NRS_FULL_MSA | 60298.34330436921 | 4814.334 |  F290LP | 03543 |    001 |      001 |    07101 |  00003 | 2023-12-20T08:14:21.498 |              None |    None |     0.0 |     2 |      -1 |     -1
+jw03543001001_07101_00003_nrs2_interpolatedflat.fits | pixelflat,trace | 34.371145416666664 | -5.150558333333322 | excels_apt_cat_pointing_1 |    G395M | NRS_FULL_MSA | 60298.34322510995 | 4814.334 |  F290LP | 03543 |    001 |      001 |    07101 |  00003 | 2023-12-20T08:14:14.649 |              None |    None |     0.0 |     2 |      -1 |     -1
+jw03543001001_07101_00004_nrs1_interpolatedflat.fits | pixelflat,trace | 34.371145416666664 | -5.150558333333322 | excels_apt_cat_pointing_1 |    G395M | NRS_FULL_MSA | 60298.40105245949 | 4814.334 |  F290LP | 03543 |    001 |      001 |    07101 |  00004 | 2023-12-20T09:37:30.933 |              None |    None |     0.0 |     3 |      -1 |     -1
+jw03543001001_07101_00004_nrs2_interpolatedflat.fits | pixelflat,trace | 34.371145416666664 | -5.150558333333322 | excels_apt_cat_pointing_1 |    G395M | NRS_FULL_MSA | 60298.40114134838 | 4814.334 |  F290LP | 03543 |    001 |      001 |    07101 |  00004 | 2023-12-20T09:37:38.613 |              None |    None |     0.0 |     3 |      -1 |     -1
+
+      jw03543001001_07101_00002_nrs1_assign_wcs.fits |         science | 34.371145416666664 | -5.150558333333322 | excels_apt_cat_pointing_1 |    G395M | NRS_FULL_MSA | 60298.28555701968 | 4814.334 |  F290LP | 03543 |    001 |      001 |    07101 |  00002 | 2023-12-20T06:51:12.127 | 3-SHUTTER-SLITLET |       1 |  29.069 |     1 |       1 |    3,5
+      jw03543001001_07101_00002_nrs2_assign_wcs.fits |         science | 34.371145416666664 | -5.150558333333322 | excels_apt_cat_pointing_1 |    G395M | NRS_FULL_MSA | 60298.28564589699 | 4814.334 |  F290LP | 03543 |    001 |      001 |    07101 |  00002 | 2023-12-20T06:51:19.806 | 3-SHUTTER-SLITLET |       1 |  29.069 |     1 |       1 |    3,5
+      jw03543001001_07101_00003_nrs1_assign_wcs.fits |         science | 34.371145416666664 | -5.150558333333322 | excels_apt_cat_pointing_1 |    G395M | NRS_FULL_MSA | 60298.34330436921 | 4814.334 |  F290LP | 03543 |    001 |      001 |    07101 |  00003 | 2023-12-20T08:14:21.498 | 3-SHUTTER-SLITLET |       2 |  29.598 |     2 |       3 |    1,5
+      jw03543001001_07101_00003_nrs2_assign_wcs.fits |         science | 34.371145416666664 | -5.150558333333322 | excels_apt_cat_pointing_1 |    G395M | NRS_FULL_MSA | 60298.34322510995 | 4814.334 |  F290LP | 03543 |    001 |      001 |    07101 |  00003 | 2023-12-20T08:14:14.649 | 3-SHUTTER-SLITLET |       2 |  29.598 |     2 |       3 |    1,5
+      jw03543001001_07101_00004_nrs1_assign_wcs.fits |         science | 34.371145416666664 | -5.150558333333322 | excels_apt_cat_pointing_1 |    G395M | NRS_FULL_MSA | 60298.40105245949 | 4814.334 |  F290LP | 03543 |    001 |      001 |    07101 |  00004 | 2023-12-20T09:37:30.933 | 3-SHUTTER-SLITLET |       3 |   28.54 |     3 |       5 |    1,3
+      jw03543001001_07101_00004_nrs2_assign_wcs.fits |         science | 34.371145416666664 | -5.150558333333322 | excels_apt_cat_pointing_1 |    G395M | NRS_FULL_MSA | 60298.40114134838 | 4814.334 |  F290LP | 03543 |    001 |      001 |    07101 |  00004 | 2023-12-20T09:37:38.613 | 3-SHUTTER-SLITLET |       3 |   28.54 |     3 |       5 |    1,3
+data end
+

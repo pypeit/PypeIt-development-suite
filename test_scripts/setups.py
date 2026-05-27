@@ -56,6 +56,7 @@ all_setups = {
     'jwst_nirspec': [
         'MSA_PRISM_nomosaic',
         'S200A2_G395M_F290LP',
+        'MSA_G395M_F290LP_mosaic'
     ],
     'keck_esi': [
         'Ech_1x1',
