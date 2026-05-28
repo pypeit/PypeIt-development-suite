@@ -1,0 +1,38 @@
+# Auto-generated Coadd2D input file using PypeIt version: 2.0.2.dev388+g0450df05c
+# UTC 2026-05-27T03:43:14.130+00:00
+
+# User-defined execution parameters
+[rdx]
+    spectrograph = jwst_nirspec
+    redux_path = ./
+    scidir = Science
+    qadir = QA
+    detnum=(1,2)
+[calibrations]
+    calib_dir = Calibrations
+    [[wavelengths]]
+        refframe = observed
+[coadd2d]
+    offsets = auto
+    weights = auto
+    spat_toler = 5
+    spec_samp_fact = 1.0
+    spat_samp_fact = 1.0
+[flexure]
+    spec_method = skip
+[reduce]
+    [[findobj]]
+        skip_skysub = True
+        snr_thresh = 7.
+        maxnumber_sci = 4
+    [[extraction]]
+      boxcar_radius = 0.3
+
+# Data block 
+spec2d read
+                                                                                               filename
+Science/spec2d_jw03543001001_07101_00002-excels_apt_cat_pointing_1_138_NIRSPEC_20231220T065112.127.fits
+Science/spec2d_jw03543001001_07101_00003-excels_apt_cat_pointing_1_138_NIRSPEC_20231220T081421.498.fits
+Science/spec2d_jw03543001001_07101_00004-excels_apt_cat_pointing_1_138_NIRSPEC_20231220T093730.933.fits
+spec2d end
+

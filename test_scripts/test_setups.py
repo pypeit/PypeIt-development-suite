@@ -266,6 +266,8 @@ _coadd2d = {
         'VIS_manual': [dict(coadd_file=True)]},
     'jwst_nirspec': {
         'MSA_PRISM_nomosaic': [dict(coadd_file=True)]},
+    'jwst_nirspec': {
+        'MSA_G395M_F290LP_mosaic': [dict(coadd_file=True)]},
     'keck_deimos': {
         '830G_M_9000_dither': [dict(coadd_file=True)]},
     'keck_mosfire': {
