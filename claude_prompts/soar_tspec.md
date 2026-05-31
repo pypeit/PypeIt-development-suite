@@ -52,7 +52,12 @@ The current wavelength calibration fails only Order 3 of the 5 orders (see the L
 
 2. Using the solution you found in your previous effort, generate a new reidentify file for the soar_triplespec spectrograph.  Check to see if you can then increase the cc_thresh parameter back to its default.
 
+## Docs
 
+1. Generate a soar_triplespec.rst doc in doc/spectrographs.  Model it after the other files in that folder.  Update any other files in doc/
+
+2. Generate a tutorial for soar_triplespec in doc/tutorials.  Model it after the other files in that folder.  Use outputs in the 
+PypeIt-development-suite/pypeitdev/soar_tspec/TripleSpec/ folder as needed.  As always, Log your work.  Run make_html to generate the docs and inspect the outputs.
 
 ## Prompts
 
@@ -61,6 +66,9 @@ The current wavelength calibration fails only Order 3 of the 5 orders (see the L
 3. Read this doc.  Perform the 3rd task under Prep
 4. Read this doc.  Perform the 1st task under Development/Wavelength Calibration
 5. Read this doc.  Perform the 2nd task under Development/Wavelength Calibration
+6. Read this doc.  Remove all the files in Calibrations/ and do a fresh run.  Inspect the outputs and report your findings in the Logs.
+7. Read this doc.  Execute the first request in the Docs Section.
+8. Read this doc.  Execute the 2nd request in the Docs Section.
 
 ## Logging
 
@@ -277,3 +285,104 @@ No "Masking … bad orders" warning; 2D global fit RMS 0.547 Ang·Order#, covera
 5. Register the dev-suite setup (`add-devsuite-setup`) + add to the changelog.
 
 **Files touched this run:** `PypeIt/pypeit/spectrographs/soar_tspec.py` (reid_arxiv → native, cc_thresh override removed); **new** `PypeIt/pypeit/data/arc_lines/reid_arxiv/soar_triplespec.fits` (committed data file); `run_arxiv.txt`, `Calibrations/`, `Science/`, `QA/` (git-ignored outputs).
+
+### 2026-05-30 (Prompt 6 — clean-slate validation: wiped Calibrations/ and re-reduced from scratch)
+
+**Goal:** delete everything in `Calibrations/` and run fresh, to prove the full pipeline rebuilds end-to-end from raw frames with the current code (native `soar_triplespec.fits` arxiv, default `cc_thresh`, no `.pypeit` overrides).
+
+**Command used**
+```bash
+rm -rf Calibrations/* Science/* QA/*    # full clean slate (also cleared stale Science/QA)
+conda activate pypeit14
+run_pypeit soar_tspec_A.pypeit -o > run_fresh.txt 2>&1   # EXIT 0, no ERROR/WARNING
+```
+
+**Result — clean reduction, no errors or warnings.** Every calibration was rebuilt from the raw frames: `Arc, Dark, Edges, Flat, Slits, Tiltimg, Tilts, WaveCalib`. All 5 orders reidentified against the native arxiv at **cc = 1.000, shift = 0.000**; 2D fit RMS 0.547 Ang·Order#; tilt RMS 0.018–0.057 px. No "bad orders" masking. Products: `spec1d`+`spec2d` for both science (0116, 0117) and both standards (0120, 0121); QA = 5 HTML + 72 PNGs.
+
+**Extraction quality (spec1d for 0116).** The science target 2025cy (OBJ0697, spat_frac 0.70) is extracted on all 5 orders with per-order `wv_rms` matching the WaveCalib (0.099/0.070/0.105/0.065/0.108 px):
+
+| Order | S/N | opt_fwhm (px) |
+|------:|----:|--------------:|
+| 7 | 28.3 | 1.03 |
+| 6 | 30.3 | 0.99 |
+| 5 | 16.6 | 0.95 |
+| 4 | 21.0 | 0.89 |
+| 3 | 4.0 | 0.59 |
+
+Order 3 (K band) has the lowest S/N (4.0), as expected for the faintest/highest-background order.
+
+**Minor finding.** A second object OBJ0432 (spat_frac 0.43) is also extracted on every order but is essentially **noise** (S/N from −1.8 to +5.5, `opt_fwhm` pinned at the 4.291 px ceiling on several orders). It appears only because `default_pypeit_par` sets `reduce.findobj.maxnumber_sci = 2`. The inline comment there actually says "Slit is narrow so allow one object per order" — which argues for **1**, not 2. Recommend revisiting `maxnumber_sci` (set to 1, or raise the SNR threshold) so spurious second objects aren't carried through to coadd/flux. Not a blocker.
+
+**Conclusion.** The SOAR/TripleSpec reduction is now fully reproducible from a clean slate end-to-end. Wavelength calibration (the long-standing blocker) is solved for all 5 orders. The pipeline is ready for the afterburn path.
+
+**Recommendations for the next stage:**
+1. Sensfunc from HD 116699 (A0 V) → telluric (`TellPCA_3000_26000`) → 1D coadd of the ABBA science pairs.
+2. Tidy `maxnumber_sci` (see minor finding) to avoid spurious objects.
+3. Validate the native arxiv on an **independent** SOAR dataset (still the one outstanding wavelength caveat from the previous entry).
+4. Commit the staged code/data changes (`soar_tspec.py`, `edgetrace.py`, `reid_arxiv/soar_triplespec.fits`), update `CHANGES.rst`, and register a dev-suite setup.
+
+**Files touched this run:** none (run only); `run_fresh.txt`, `Calibrations/`, `Science/`, `QA/` (git-ignored outputs).
+
+### 2026-05-30 (Docs task 1 — authored `doc/spectrographs/soar_triplespec.rst` and refreshed the auto-generated doc tables)
+
+**Goal:** Docs task 1 — create `soar_triplespec.rst` under `doc/spectrographs/`, modeled on the existing files, and update any other affected `doc/` files.
+
+**Model chosen.** Surveyed `doc/spectrographs/`; `keck_nires.rst` is the closest analog (fixed-format NIR cross-dispersed echelle that wavelength-calibrates off OH sky lines in the science frames), with `soar_goodman.rst` for the SOAR-house style. Wrote the new page in the same structure: *Overview → PypeIt File (setup command + data-block example) → Calibrations (Wavelength Calibration, Flat Fielding) → Additional Reading.*
+
+**New file:** `PypeIt/doc/spectrographs/soar_triplespec.rst`. Content captures everything learned in the earlier log entries:
+- Echelle pipeline, 5 fixed orders (7→3), ~0.8–2.47 µm.
+- `pypeit_setup -s soar_tspec -b -c A` plus a representative data block.
+- Frame typing (dome-on = `pixelflat,trace`, dome-off = `dark`, science = `science`).
+- **Wavelength calibration**: OH sky lines from the *science* frames (type them `arc,tilt`, omit the short arc); native `soar_triplespec.fits` arxiv + `OH_NIRES`; why OH_NIRES anchors order 3.
+- A `.. warning::` documenting the stale-cached-calibration trap (the run-2 lesson): `run_pypeit -o` does not rebuild `Arc_*`/`WaveCalib_*`, so delete them after re-typing frames.
+
+**Other `doc/` files updated:**
+- `doc/spectrographs/spectrographs.rst` — added `soar_triplespec` to the instrument toctree (after `soar_goodman`). *(hand-edited)*
+- Regenerated the three auto-built tables that key off the spectrograph registry, by running the same scripts the `apirst` Make target uses (no dev-suite data needed):
+  - `scripts/build_spectbl_rst.py` → `include/spectrographs_table.rst` now has the `soar_tspec` row (Echelle, Supported=True).
+  - `scripts/build_detector_table.py` → `include/inst_detector_table.rst` now has the `soar_tspec` detector row.
+  - `scripts/build_par_rst.py` → `pypeit_par.rst` now has the "SOAR TSPEC (`soar_tspec`)" parameter section (reflects the `reid_arxiv = soar_triplespec.fits` default).
+
+**Validation.** Parsed the new `.rst` with docutils — no structural errors (the only messages are "unknown role" for `:ref:`/`:doc:`/`:meth:`, which are Sphinx-only roles also used by `keck_nires.rst`; they resolve in a real build). Avoided two easy pitfalls: (a) dropped the `|micron|`/`|Angstrom|` substitutions since they are not defined in `include/links.rst`, using plain text; (b) made "Additional Reading" plain `:doc:` bullets rather than a `toctree`, to avoid "document already in a toctree" warnings.
+
+**Not done (out of scope / needs full build):** the API stub `doc/api/pypeit.spectrographs.soar_tspec.rst` is produced by `sphinx-apidoc` during `make apirst`; it will appear on the next full doc build (`cd doc; make html`, which needs internet + `PYPEIT_DEV`). A complete `make html` was not run here.
+
+**Recommendations for the next stage:**
+1. On the next full `make html`, confirm `soar_triplespec` renders and the API stub is generated; fix any cross-ref warnings.
+2. Add a CHANGES.rst / release-notes entry (the `update-changelog` skill) for the new spectrograph + arxiv.
+3. Proceed to the afterburn path (sensfunc → telluric → coadd) and the dev-suite registration.
+
+**Files touched this run:** `PypeIt/doc/spectrographs/soar_triplespec.rst` (new); `PypeIt/doc/spectrographs/spectrographs.rst`, `PypeIt/doc/include/spectrographs_table.rst`, `PypeIt/doc/include/inst_detector_table.rst`, `PypeIt/doc/pypeit_par.rst` (updated/regenerated).
+
+### 2026-05-30 (Docs task 2 — authored the SOAR/TripleSpec tutorial and built the HTML)
+
+**Goal:** Docs task 2 — write a tutorial in `doc/tutorials/` modeled on the existing ones, using the real reduction outputs in `pypeitdev/soar_tspec/TripleSpec/`, then run the HTML build and inspect.
+
+**Model chosen.** `nires_howto.rst` (Keck/NIRES) — the same kind of fixed-format NIR echelle that wavelength-calibrates off OH sky lines. Mirrored its structure: *Overview → Setup (with data block + wavecal-frame and A-B notes) → Core Processing (Order Edges, Wavelength Calibration, Field Flattening, Object Finding) → Outputs (2D/1D) → Next Steps.*
+
+**New file:** `PypeIt/doc/tutorials/soar_triplespec_howto.rst`, populated with **real numbers and products from the prompt-6 clean run** (not invented):
+- The actual `pypeit_chk_wavecalib` table (5 orders, RMS 0.065–0.108 px, ~8100–24700 Å).
+- The actual standard-star (HD 116699) `spec1d` `.txt` summary (S/N 110–150 per order).
+- Real `pypeit_show_2dspec` / `pypeit_show_1dspec` / `pypeit_chk_*` commands with the real filenames.
+- The OH-from-science-frames rationale, the stale-calibration `.. warning::`, and the A-B differencing setup.
+
+**Figures.** Copied four auto-generated QA PNGs from `TripleSpec/QA/PNGs/` into the (git-tracked) `doc/figures/` with descriptive names, and embedded them:
+- `soar_triplespec_arc1d_order3.png` (order-3 1D wave fit)
+- `soar_triplespec_2dwave_global.png` (global 2D solution, all 5 orders)
+- `soar_triplespec_tilts2d_order3.png` (order-3 2D tilts)
+- `soar_triplespec_obj_prof.png` (2025cy detected in order 7, S/N ~28)
+
+**Wiring:** added the tutorial to the `doc/tutorials/tutorials.rst` toctree (after Shane Kast), and linked it from `doc/spectrographs/soar_triplespec.rst` (Additional Reading).
+
+**HTML build + inspection.** A full `make html` needs network (`apirst` does `wget`) and the dev suite (`examples`), so I ran the offline equivalent: regenerated the API stubs with `sphinx-apidoc` (creating the missing `api/pypeit.spectrographs.soar_tspec.rst`) and then `sphinx-build -b html . _build/html`.
+- First pass surfaced **two warnings on my files**, both fixed:
+  1. `undefined label: 'telluric'` → the correct label is `telluric_correction` (also confirmed `sensitivity_function`, `fluxing`, `coadd1d/2d` labels).
+  2. `api/...soar_tspec.rst not in any toctree` → incremental `sphinx-apidoc` does not overwrite the existing `api/pypeit.spectrographs.rst` index (a real `make html` runs `make clean` first, which would regenerate it); added the `soar_tspec` entry to that index by hand to match.
+- Second pass: **build exit 0, zero soar/triplespec warnings.** Verified the rendered pages (`spectrographs/soar_triplespec.html`, `tutorials/soar_triplespec_howto.html`) and that all four figures were copied into `_build/html/_images/`.
+
+**Recommendations for the next stage:**
+1. On a real `cd doc; make html` (clean build with network + `PYPEIT_DEV`), re-confirm — the api index regenerates automatically there.
+2. Afterburn path (sensfunc → telluric → coadd) is the substantive next step; the tutorial's "Next Steps" section is the placeholder to expand once that's run.
+3. Commit the docs + figures with the code/data changes; add a `CHANGES.rst` entry.
+
+**Files touched this run:** `PypeIt/doc/tutorials/soar_triplespec_howto.rst` (new); `PypeIt/doc/tutorials/tutorials.rst`, `PypeIt/doc/spectrographs/soar_triplespec.rst`, `PypeIt/doc/api/pypeit.spectrographs.rst` (updated); `PypeIt/doc/figures/soar_triplespec_{arc1d_order3,2dwave_global,tilts2d_order3,obj_prof}.png` (new, git-tracked); plus the `sphinx-apidoc`-generated `api/*.rst` stubs and the untracked `doc/_build/` output.
