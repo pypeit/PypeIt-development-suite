@@ -43,11 +43,15 @@ If you need to test the code:
 
 ### Wavelength Calibration
 
-The current wavelength calibration fails because the P200 reid archive is not appropriate for SOAR/Triplespec.  We need to build a new reid archive for SOAR/Triplespec.
+The current wavelength calibration fails only Order 3 of the 5 orders (see the Logs for details).
 
-1. Try using the Holy Grail algorithm to build a wavelength solution.  You may try 
+1. Try multiple methods of wavelength calibration to capture order 3.   You may need to remove the WaveCalib_A_0_DET01.fits each time you run PypeIt and try another method.  Here are some additional things to consider:
 
-2. Confirm OH_NIRES is the right line list for SOAR's wavelength range / orders 3–7; swap to OH_triplespec if its coverage matches better.
+- Use the Holy Grail algorithm to bootstrap a solution from the OH lines without any archive. Run it on the science-frame arc we just built. This both (a) tests whether `OH_NIRES` covers SOAR's range for orders 3–7, and (b) produces an initial per-order solution we can promote into a new `soar_triplespec.fits` reid archive.
+- Verify the line list. Compare `OH_NIRES` vs `OH_triplespec` coverage against SOAR's order wavelengths; pick whichever matches the detected OH lines better.
+
+2. Using the solution you found in your previous effort, generate a new reidentify file for the soar_triplespec spectrograph.  Check to see if you can then increase the cc_thresh parameter back to its default.
+
 
 
 ## Prompts
@@ -55,6 +59,8 @@ The current wavelength calibration fails because the P200 reid archive is not ap
 1. Read this doc.  Perform the first task under Prep.
 2. Read this doc.  Perform the 2nd task under Prep.
 3. Read this doc.  Perform the 3rd task under Prep
+4. Read this doc.  Perform the 1st task under Development/Wavelength Calibration
+5. Read this doc.  Perform the 2nd task under Development/Wavelength Calibration
 
 ## Logging
 
@@ -197,3 +203,77 @@ Note the now-consistent ~−16 px shift across all orders (vs the nonsensical �
 4. Once order 3 is solid, build `soar_triplespec.fits` from this run's `WaveCalib` (covers all 5 orders), then proceed to sensfunc/telluric and register the setup as a dev-suite regression test (`add-devsuite-setup`).
 
 **Files touched this run:** none (run only); `run_log3.txt`, `Calibrations/`, `Science/`, `QA/` (all git-ignored outputs).
+
+### 2026-05-30 (Development/Wavelength task 1 — recovered order 3; settled on `cc_thresh=0.60` with OH_NIRES)
+
+**Goal:** Development → Wavelength Calibration task 1 — try multiple wavelength-calibration methods to capture the one failing order (order 3, K band), removing `WaveCalib_A_0_DET01.fits` between runs.
+
+**Diagnosis first.** Loaded the run-3 `WaveCalib` and confirmed order 3 had **no solution** (masked). The reason: order 3 reidentifies against the P200 arxiv with **cc = 0.660**, sitting just under the default **`cc_thresh = 0.70`**, so it is dropped before fitting. The per-order shift (−15.6 px) is consistent with the other orders, i.e. the cross-correlation is geometrically fine — only the correlation *strength* is marginal (K band has higher thermal background and a sparser OH forest). Also checked the line lists: `OH_NIRES` has **118** lines redward of 19000 Å (out to **24980 Å**), vs `OH_triplespec`'s **67** (out to **23535 Å**) — so the line list is *not* the limitation for order 3; OH_NIRES covers it better.
+
+**Method:** in-place experiments via a `[calibrations][[wavelengths]]` block in the `.pypeit`, deleting `WaveCalib_*` before each `run_pypeit -o`. (`.pypeit` backed up to `.bak` and restored at the end; the working WaveCalib was saved to `/tmp` first.)
+
+| Exp | Change | Result |
+|----|--------|--------|
+| **1** | `cc_thresh = 0.60` (keep reidentify + P200 + OH_NIRES) | ✅ **All 5 orders.** Order 3: rms **0.108 px**, **78** lines, 18806–24681 Å. Bluer orders unchanged. |
+| **2** | `method = holy-grail` (no arxiv), OH_NIRES | ❌ **Crashes** in `wavecalib.py:redo_echelle_orders` → `AttributeError: 'BuildWaveCalib' object has no attribute 'arcspec_arxiv'` (the bad-order-redo path assumes a reid arxiv exists). Even before the crash, per-order fits were erratic (good orders ~0.10 px, others 0.88–3.1 px). Not viable. |
+| **3** | `cc_thresh = 0.60` + `lamps = OH_triplespec` | ✅ All 5 orders, order 3 rms **0.054 px** but only **52** lines, and OH_triplespec stops at 23535 Å so the reddest ~1000 Å of order 3 is **extrapolated**, not anchored. |
+
+**Decision — Exp 1.** `cc_thresh = 0.60` is the minimal, robust fix: it admits order 3 while every order's final reidentify RMS stays ~0.06–0.11 px, and OH_NIRES anchors order 3 across its *full* wavelength range with real lines (Exp 3's lower RMS is partly an artifact of fewer points + extrapolation). Holy-Grail is both buggy here and less reliable, so a bespoke SOAR arxiv is **not** needed — the P200 arxiv + relaxed threshold suffices.
+
+**Code change (permanent):** added to `soar_tspec.py:default_pypeit_par` (with an explanatory inline comment), so users get this for free:
+```python
+par['calibrations']['wavelengths']['cc_thresh'] = 0.60
+```
+Kept `lamps = ['OH_NIRES']` and `method = 'reidentify'` as-is.
+
+**Verification (final clean run with the new default, no `.pypeit` overrides):** `run_pypeit` exits 0; **all 5 orders solved**, no "Masking … bad orders (RMS)" warning. Per-order: ord7 0.102 px (55 ln), ord6 0.073 px (102), ord5 0.105 px (95), ord4 0.065 px (100), ord3 0.108 px (78). 2D global fit now spans **~8000–24700 Å (0.80–2.47 µm)** across all 5 orders, RMS 0.123 Ang·Order# (`Arc_2dfit_global_A_0_DET01.png`). Full Science + QA regenerated.
+
+**Side finding (worth an upstream issue/PR):** `redo_echelle_orders` is not safe for `method='holy-grail'` — it unconditionally references `self.arcspec_arxiv`, which only exists on the reidentify path. Any echelle run that uses holy-grail and has a bad order will crash there.
+
+**Recommendations for the next stage:**
+1. Wavelength calibration is now complete for all 5 orders — close this Development task.
+2. Sanity-check the **absolute** wavelength scale on a few known OH lines (esp. order 3's red end) using `pypeit_chk_wavecalib` / the 1D-fit QA before trusting the K-band tail.
+3. Proceed down the afterburn path: sensfunc from HD 116699 (A0 V telluric standard), telluric correction (`TellPCA_3000_26000`), then 1D coadd of the ABBA science pairs.
+4. Optionally build a native `soar_triplespec.fits` arxiv from this 5-order `WaveCalib` to drop the P200 dependence (low priority — current setup works).
+5. Register the setup as a dev-suite regression test (`add-devsuite-setup`).
+
+**Files touched this run:** `PypeIt/pypeit/spectrographs/soar_tspec.py` (added `cc_thresh=0.60` + comment); `run_exp1.txt`/`run_exp2.txt`/`run_exp3.txt`/`run_final.txt`, `Calibrations/`, `Science/`, `QA/` (git-ignored outputs). The `.pypeit` was modified during experiments and **restored** to its task-3 state.
+
+### 2026-05-30 (Development/Wavelength task 2 — built native `soar_triplespec.fits` arxiv; restored `cc_thresh` to default)
+
+**Goal:** Development → Wavelength Calibration task 2 — promote the 5-order solution from task 1 into a native SOAR reid arxiv, then check whether `cc_thresh` can go back to its default (0.70).
+
+**Skill:** invoked the `wavelength-calibration` skill. It documents `pypeit_compile_wvarxiv`, but that tool ingests per-order `wvarxiv` files emitted by `pypeit_identify`; I instead already had a complete automatic `WaveCalib_A_0_DET01.fits`, so I built the arxiv directly from it (same end format).
+
+**How the arxiv was built.** Inspected the existing `p200_triplespec.fits`: it is a single `BinTableHDU` with one row per echelle order and columns `wave[2048]`, `flux[2048]`, `order`. My `WaveCalib` carries exactly these per order (`wave_soln`, `spec`, `ech_order`), all length-2048 and monotonic. I wrote a 5-row table (orders 7,6,5,4,3 — blue→red, matching the P200 ordering) to:
+```
+PypeIt/pypeit/data/arc_lines/reid_arxiv/soar_triplespec.fits
+```
+(`flux` = the per-order OH-sky arc spectrum, `wave` = the task-1 wavelength solution.)
+
+**Spectrograph change.** In `soar_tspec.py:default_pypeit_par`:
+- `reid_arxiv`: `'p200_triplespec.fits'` → `'soar_triplespec.fits'`
+- **removed** the `cc_thresh = 0.60` override (back to the default 0.70); replaced the comment block with one documenting the arxiv's bootstrap provenance.
+
+**Verification (final run, default params, no `.pypeit` overrides):** `run_pypeit` exits 0. Every order now self-reidentifies essentially perfectly against the native arxiv:
+
+| Order | shift (px) | cc | 1D RMS (px) | nlines |
+|------:|-----------:|----:|------------:|-------:|
+| 7 | 0.000 | 1.000 | 0.099 | 55 |
+| 6 | 0.000 | 1.000 | 0.070 | 101 |
+| 5 | −0.000 | 1.000 | 0.105 | 95 |
+| 4 | −0.000 | 1.000 | 0.065 | 100 |
+| 3 | −0.000 | 1.000 | 0.108 | 78 |
+
+No "Masking … bad orders" warning; 2D global fit RMS 0.547 Ang·Order#, coverage ~8000–24700 Å. **So yes — with the native arxiv, `cc_thresh` returns to its default and all 5 orders (including the previously-failing order 3) pass.** Confirmed `WavelengthSolutionPar` default `cc_thresh = 0.7`.
+
+**Important caveat (honest assessment).** The arxiv was built from *this exact* arc, so cc = 1.000 / shift = 0.000 is a **self-reference** — it proves the arxiv format/wiring is correct and that the default threshold is no longer the limiter, but it is **not** an independent validation. The real test is a *different* SOAR/TripleSpec dataset (another night / target), where the proper checks are a high-but-not-unity cc, a small consistent shift, and per-order RMS ~0.1 px. Until then, treat the restored default `cc_thresh` as validated only for setup A.
+
+**Recommendations for the next stage:**
+1. Re-reduce an **independent** SOAR/TripleSpec dataset against `soar_triplespec.fits` to confirm cross-dataset reidentification and lock in the default `cc_thresh`. (If a second night isn't available yet, keep an eye on cc when one is.)
+2. Consider seeding the arxiv with **2+ exposures** (more rows / S-N) once more data exist, so it generalizes better than a single-arc template.
+3. The arxiv is a binary file under `pypeit/data/arc_lines/reid_arxiv/` — make sure it is committed with the branch (it is *not* git-ignored there, unlike dev-suite outputs) and noted in the PR.
+4. Proceed to the afterburn path (sensfunc → telluric → coadd) now that wavecal is fully solved.
+5. Register the dev-suite setup (`add-devsuite-setup`) + add to the changelog.
+
+**Files touched this run:** `PypeIt/pypeit/spectrographs/soar_tspec.py` (reid_arxiv → native, cc_thresh override removed); **new** `PypeIt/pypeit/data/arc_lines/reid_arxiv/soar_triplespec.fits` (committed data file); `run_arxiv.txt`, `Calibrations/`, `Science/`, `QA/` (git-ignored outputs).
