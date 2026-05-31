@@ -302,6 +302,9 @@ all_setups = {
     'soar_goodman_blue': [
         'M1',
     ],
+    'soar_tspec': [
+        'TSPEC',
+    ],
     'subaru_focas': [
         '300B_None',
         '300R_O58',

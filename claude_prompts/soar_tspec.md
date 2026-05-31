@@ -59,6 +59,19 @@ The current wavelength calibration fails only Order 3 of the 5 orders (see the L
 2. Generate a tutorial for soar_triplespec in doc/tutorials.  Model it after the other files in that folder.  Use outputs in the 
 PypeIt-development-suite/pypeitdev/soar_tspec/TripleSpec/ folder as needed.  As always, Log your work.  Run make_html to generate the docs and inspect the outputs.
 
+## Finishing up
+
+1. Follow standard PypeIt development procedure to indicate the changes and double check we have included proper doc strings for any new methods.
+
+2. Set up for Dev-Suite testing by following what already exists for p200_tspec:
+
+- Copy the raw files necessary for the test from PypeIt-development-suite/pypeitdev/soar_tspec/TripleSpec/ to 
+PypeIt-development-suite/RAW_DATA/soar_tspec/TSPEC/
+- Copy the PypeIt file into PypeIt-development-suite/pypeit_files/ and rename it accorinding the naming convention there
+- Edit the test files so that this test is run automatically
+
+3. From your work on this spectrograph, update any of the Skills as you see fit.
+
 ## Prompts
 
 1. Read this doc.  Perform the first task under Prep.
@@ -69,6 +82,8 @@ PypeIt-development-suite/pypeitdev/soar_tspec/TripleSpec/ folder as needed.  As 
 6. Read this doc.  Remove all the files in Calibrations/ and do a fresh run.  Inspect the outputs and report your findings in the Logs.
 7. Read this doc.  Execute the first request in the Docs Section.
 8. Read this doc.  Execute the 2nd request in the Docs Section.
+9. Read this doc.  Execute the 1st request in the Finishing up Section.
+10. Read this doc.  Execute the 2nd request in the Finishing up Section.
 
 ## Logging
 
@@ -386,3 +401,55 @@ Order 3 (K band) has the lowest S/N (4.0), as expected for the faintest/highest-
 3. Commit the docs + figures with the code/data changes; add a `CHANGES.rst` entry.
 
 **Files touched this run:** `PypeIt/doc/tutorials/soar_triplespec_howto.rst` (new); `PypeIt/doc/tutorials/tutorials.rst`, `PypeIt/doc/spectrographs/soar_triplespec.rst`, `PypeIt/doc/api/pypeit.spectrographs.rst` (updated); `PypeIt/doc/figures/soar_triplespec_{arc1d_order3,2dwave_global,tilts2d_order3,obj_prof}.png` (new, git-tracked); plus the `sphinx-apidoc`-generated `api/*.rst` stubs and the untracked `doc/_build/` output.
+
+### 2026-05-31 (Finishing up task 1 — release notes + docstring audit, standard PypeIt dev procedure)
+
+**Goal:** Finishing-up task 1 — follow standard PypeIt development procedure to record the changes, and verify docstrings for any new methods.
+
+**State at start.** The prior sessions' work was already committed to the `soar_triplespec` branch across three commits (`msgs`, `docs`, `mo docs`); the working tree was clean. So this step is the changelog + docstring audit, not new code.
+
+**Docstring audit.** Ran an AST check over `pypeit/spectrographs/soar_tspec.py`: all 14 methods (`init_meta`, `compound_meta`, `configuration_keys`, `raw_header_cards`, `get_detector_par`, `default_pypeit_par`, `pypeit_file_keys`, `check_frame_type`, `bpm`, `norders`, `order_spat_pos`, `orders`, `spec_min_max`, `order_platescale`) have docstrings. No *new* methods were added during this development (the work was parameter defaults + a reid archive + docs), so nothing was undocumented.
+
+**Changelog (used the `update-changelog` skill).** `CHANGES.rst` is deprecated; entries now go in `doc/releases/`. Added bullets to the in-development `doc/releases/2.1.0dev.rst`:
+- *Instrument-specific Updates*: new `soar_tspec` echelle support (5 orders 7--3, ~0.8--2.47 um; OH-sky wavecal + native `soar_triplespec.fits` arxiv).
+- *Documentation Updates*: new spectrograph page + tutorial (with `:ref:` links).
+- To make the `:ref:`<soar_triplespec>`` link resolve, added a `.. _soar_triplespec:` label atop `doc/spectrographs/soar_triplespec.rst` (matching the `gemini_gmos` convention; the tutorial already had `.. _soar_triplespec_howto:`).
+
+**Not added:** a *Bug Fixes* bullet for the `edgetrace.py` stale-`msgs` fix — the user declined that entry (treated as an internal branch regression rather than a user-facing release fix), so it was intentionally left out of the release notes.
+
+**Verification.** `sphinx-build -b html` exits 0 with **zero soar/triplespec/2.1.0dev warnings** after adding the label.
+
+**Remaining (standard procedure, not yet done):** the changelog edit to `doc/releases/2.1.0dev.rst` and the `soar_triplespec.rst` label are **uncommitted**; commit them with the branch. Then the usual PR steps (push branch, open PR against `develop`) plus dev-suite registration via `add-devsuite-setup`. The afterburn path (sensfunc -> telluric -> coadd) and independent-dataset wavelength validation remain open from earlier entries.
+
+**Files touched this run:** `PypeIt/doc/releases/2.1.0dev.rst` (release notes), `PypeIt/doc/spectrographs/soar_triplespec.rst` (added ref label).
+
+
+### 2026-05-31 (Finishing up task 2 — registered the SOAR/TripleSpec dev-suite reduce test; PASSED 1/1)
+
+**Goal:** Finishing-up task 2 — set up dev-suite testing for `soar_tspec`, mirroring `p200_tspec`.
+
+**Skill:** used the `add-devsuite-setup` skill.
+
+**Path note.** `$PYPEIT_DEV` was stale (pointed at a missing `.../PypeIt-Codes/...`). The live dev suite is the working-tree repo `/home/xavier/Projects/PypeIt/PypeIt-development-suite`, with `RAW_DATA` symlinked to `/media/xavier/SamsungT7/RAW_DATA`. Set `PYPEIT_DEV` to the working-tree path for the test run.
+
+**What "mirror p200_tspec" actually means.** Studied the existing `p200_tspec` wiring:
+- raw data at `RAW_DATA/p200_tspec/TSPEC/`, input file `pypeit_files/p200_tspec_tspec.pypeit`;
+- registered only in `test_scripts/setups.py` `all_setups` (NOT in `test_setups.py` directly — that module imports `all_setups` from `setups.py` and auto-derives `_reduce_setups` from it). The `supported_instruments` list referenced in the `test_setups.py` docstring no longer exists as code; instruments come from `all_setups` keys.
+- `p200_tspec` has no `test_load_images.py` entry, so (mirroring it) I added none.
+- Filename convention: `pypeit_file_name(instr, setup)` = `{instr}_{setup.lower()}.pypeit`, and the harness rewrites the `path` line to the real RAW_DATA dir at runtime (`fix_pypeit_file_directory`).
+
+**Changes made (this repo, PypeIt-development-suite):**
+1. **Raw data** — created `RAW_DATA/soar_tspec/TSPEC/` and copied the 6 frames the reduction uses (2 dome flats on/off, 2 science, 2 standard) from `pypeitdev/soar_tspec/TripleSpec/`. (The commented-out dedicated arc is not used.) These live on the external-drive symlink and go to Google Drive, not git.
+2. **Input file** — wrote `pypeit_files/soar_tspec_tspec.pypeit` (modeled on the working file; dropped the commented arc line; set `path ../soar_tspec/TSPEC`).
+3. **Registration** — added `'soar_tspec': ['TSPEC']` to `all_setups` in `test_scripts/setups.py` (alphabetically, after `soar_goodman_blue`). This auto-enrolls it in the `reduce` phase, so the test runs automatically.
+
+**Verification.**
+- `./pypeit_test list` now shows `soar_tspec / TSPEC`.
+- `./pypeit_test reduce -s soar_tspec/TSPEC` → **PASSED 1/1** (~3:54 run, ~1.5 GB peak RAM, no error messages; full QA written). Output under `REDUX_OUT/soar_tspec/TSPEC/`.
+
+**Files to commit (left to the user, who handles git):** `test_scripts/setups.py`, `pypeit_files/soar_tspec_tspec.pypeit`. Raw data → Google Drive. `RAW_DATA/`, `REDUX_OUT/`, and `pypeitdev/` scratch are git-ignored / not for commit.
+
+**Recommendations / remaining:**
+1. Upload the 6 staged raw frames to the dev-suite Google Drive so CI/other users get them.
+2. Optional: add a `unit_tests/test_load_images.py` entry for `soar_tspec` (p200_tspec lacks one, but it is the "supported instrument" convention).
+3. Finishing-up task 3 (update Skills) is the remaining prompt.
