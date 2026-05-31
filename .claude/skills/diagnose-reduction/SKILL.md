@@ -47,6 +47,13 @@ by `run_pypeit` (often under this repo's `REDUX_OUT/`).
 
 ## Common causes to consider
 
+- **Stale cached calibrations.** `run_pypeit -o` overwrites only the *science*
+  products; it reuses any existing `Calibrations/*.fits` regardless of `-o` or
+  edits to the `.pypeit` file. After changing frame typing or calibration
+  grouping, **delete the affected `Calibrations/` files** (or wipe the dir) and
+  re-run, or you will silently diagnose a calibration built from the old inputs.
+  A tell-tale sign is two runs giving byte-identical calibration results after
+  you changed the inputs.
 - Wrong/insufficient calibration frames or mis-set `configuration_keys`.
 - Wavelength solution failure → revisit with the `wavelength-calibration` skill.
 - Parameter mistuning → adjust via the `.pypeit` file (see `add-parameter` for

@@ -23,6 +23,13 @@ on dev-suite arc data.
    `Calibrations/Arc_*` / `WaveCalib_*` products, or use `pypeit_identify`
    directly on the arc frame for the setup.
 
+   - **Near-IR with no usable arc lamp:** use the OH sky-emission lines from the
+     *science* frames instead. Type the science exposures `arc,tilt,science` in
+     the `.pypeit` file and comment out any short dedicated arc — a long science
+     exposure has far more OH signal, especially in the reddest order. Give the
+     standard frames the same `calib` value so they inherit the solution. (See
+     `keck_nires`, `soar_tspec`.)
+
 2. **Identify lines interactively:**
    ```console
    pypeit_identify Arc_A_1_DET01.fits Slits_A_1_DET01.fits
@@ -40,8 +47,39 @@ on dev-suite arc data.
    place/install it in the wavelength archive
    (`pypeit/data/arc_lines/reid_arxiv/`). Inspect with `pypeit_show_arxiv`.
 
+   - `pypeit_compile_wvarxiv` expects per-order `wvarxiv` files written by
+     `pypeit_identify`. If you instead already have a good automatic
+     `WaveCalib_*.fits` (e.g. an echelle solution bootstrapped from a related
+     instrument's arxiv), you can build the reid arxiv **directly from it** — it
+     is just a `BinTableHDU` with one row per order and columns `wave[Nspec]`,
+     `flux[Nspec]`, `order`. Read the `WaveCalib` (`wavecalib.WaveCalib.from_file`)
+     and write each order's `wave_soln`, `spec`, and `ech_order`:
+     ```python
+     from pypeit import wavecalib
+     from astropy.table import Table
+     wc = wavecalib.WaveCalib.from_file('Calibrations/WaveCalib_A_0_DET01.fits')
+     n = len(wc.wv_fits[0].wave_soln)
+     t = Table(names=('wave','flux','order'),
+               dtype=(f'({n},)>f8', f'({n},)>f8', '>i8'))
+     for w in wc.wv_fits:
+         t.add_row([w.wave_soln, w.spec, int(w.ech_order)])
+     t.write('pypeit/data/arc_lines/reid_arxiv/<instr>.fits', format='fits')
+     ```
+     Mirror an existing arxiv's row order (e.g. `p200_triplespec.fits`). After
+     this, the same arc self-reidentifies at cc ~ 1, so a previously-needed
+     ``cc_thresh`` reduction can be reverted to the default — but validate on an
+     *independent* dataset, since a self-built arxiv matches its own arc trivially.
+
+   - **A single marginal order** (e.g. the reddest, low-S/N echelle order)
+     failing reidentification at cc just under the default ``cc_thresh`` (0.7) is
+     often recoverable by lowering ``cc_thresh`` (e.g. to 0.6); check the
+     resulting per-order RMS is consistent with the others before trusting it.
+
 5. **New or updated line list**: install via `pypeit_install_linelist`; keep
-   lists in `pypeit/data/arc_lines/lists/`.
+   lists in `pypeit/data/arc_lines/lists/`. For echelle, prefer the line list
+   that covers the *full* wavelength range with real lines (e.g. `OH_NIRES`
+   reaches ~24980 A) over one that stops short and forces extrapolation in the
+   reddest order.
 
 ## Verify
 

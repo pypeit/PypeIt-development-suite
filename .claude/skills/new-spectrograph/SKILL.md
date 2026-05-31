@@ -31,7 +31,11 @@ Work in the `PypeIt/` repo on a branch off `develop`.
    (e.g. `soar_goodman.py`). Subclass `Spectrograph` (or an existing base class
    if adding an arm/mode). Set the `name` attribute (None only for base classes)
    and the `telescope`. **`pypeline` must be `'MultiSlit'`, `'Echelle'`, or
-   `'SlicerIFU'`.**
+   `'SlicerIFU'`.** Use the current logging/error API — `from pypeit import log`
+   and `from pypeit import PypeItError` (`log.info(...)`, `raise PypeItError(...)`)
+   — **not** the deprecated `from pypeit import msgs` (`msgs.info`/`msgs.error`).
+   Copying an older spectrograph module can drag in the old `msgs` import, which
+   now fails at import time.
 
 2. **Register the module** by adding its name to `__all__` in
    `pypeit/spectrographs/__init__.py`, keeping alphabetical order.

@@ -22,22 +22,36 @@ This skill operates on **this** repo (`PypeIt-development-suite/`).
    small input files):
    - Raw frames: `$PYPEIT_DEV/RAW_DATA/<instrument>/<setup>/` (and on the
      Google Drive).
-   - Reduction input: `pypeit_files/<instrument>_<setup>.pypeit`.
+   - Reduction input: `pypeit_files/<instrument>_<setup>.pypeit`. **Note the
+     filename is lower-cased**: the harness builds it as
+     `f'{instr}_{setup.lower()}.pypeit'` (so setup `TSPEC` →
+     `<instrument>_tspec.pypeit`). The `path` line inside the file is rewritten
+     to the real RAW_DATA dir at run time, so its literal value does not matter;
+     the data-block filenames must match what you staged.
    - Afterburn inputs as needed, same naming convention:
      `coadd1d_files/*.coadd1d`, `coadd2d_files/*.coadd2d`,
      `fluxing_files/*.flux`, `sensfunc_files/*.sens`, `tellfit_files/*`,
      `flexure_files/*`.
 
-2. **Register in `test_scripts/test_setups.py`:**
-   - Add the setup to the `all_setups` dict under its instrument.
-   - If the instrument is new, add it to `supported_instruments`.
-   - Add `'<instrument>/<setup>'` to the relevant per-test-type lists/dicts for
-     any extra tests (e.g. `telluric_tests`, `quick_look_tests`,
+2. **Register the setup:**
+   - Add the setup to the `all_setups` dict under its instrument. This dict
+     lives in **`test_scripts/setups.py`** (a simple `instrument -> [setups]`
+     map); `test_scripts/test_setups.py` imports it and auto-derives the default
+     `reduce` coverage (`_reduce_setups`), so a basic reduce test runs
+     automatically with no further edit. (There is no longer a
+     `supported_instruments` list in code, despite older docstrings — instruments
+     are just the `all_setups` keys.)
+   - For extra tests, add `'<instrument>/<setup>'` to the relevant per-test-type
+     lists/dicts in `test_setups.py` (e.g. `telluric_tests`, `quick_look_tests`,
      coadd/flux/sensfunc tests). When a test needs arguments, use the dict form
      (e.g. `{'coadd_file': 'pisco_coadd.fits', 'redshift': 7.52, ...}`).
+   - If the raw-data directory does not follow the `RAW_DATA/<instrument>/<setup>`
+     convention, add an entry to `_raw_data_dirs` in `test_setups.py`.
 
-3. **Load-image unit test** (required for "supported" instruments): add an entry
-   to `unit_tests/test_load_images.py`.
+3. **Load-image unit test** (the convention for "supported" instruments): add an
+   entry to `unit_tests/test_load_images.py`. Not all instruments have one (e.g.
+   `p200_tspec` does not), so mirror whatever the analog instrument you are
+   copying does.
 
 ## Add a new test type
 

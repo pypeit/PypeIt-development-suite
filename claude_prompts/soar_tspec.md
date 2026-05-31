@@ -84,6 +84,7 @@ PypeIt-development-suite/RAW_DATA/soar_tspec/TSPEC/
 8. Read this doc.  Execute the 2nd request in the Docs Section.
 9. Read this doc.  Execute the 1st request in the Finishing up Section.
 10. Read this doc.  Execute the 2nd request in the Finishing up Section.
+11. Read this doc.  Execute the 3rd request in the Finishing up Section.
 
 ## Logging
 
@@ -453,3 +454,46 @@ Order 3 (K band) has the lowest S/N (4.0), as expected for the faintest/highest-
 1. Upload the 6 staged raw frames to the dev-suite Google Drive so CI/other users get them.
 2. Optional: add a `unit_tests/test_load_images.py` entry for `soar_tspec` (p200_tspec lacks one, but it is the "supported instrument" convention).
 3. Finishing-up task 3 (update Skills) is the remaining prompt.
+
+
+### 2026-05-31 (Finishing up task 3 — updated four Skills from lessons learned)
+
+**Goal:** Finishing-up task 3 — update the `.claude/skills/` as I see fit based on the SOAR/TripleSpec work. Each edit below comes from a concrete problem hit during this development, not speculation.
+
+1. **`diagnose-reduction`** — added a "Common causes" bullet on **stale cached
+   calibrations**: `run_pypeit -o` overwrites only science products and reuses
+   existing `Calibrations/*.fits` regardless of `-o` or `.pypeit` edits; delete
+   the affected files after re-typing frames. Tell-tale = two runs with
+   byte-identical calibration results after changing inputs. (This is exactly
+   what made runs 1-2 look like an archive problem when it was a stale arc.)
+
+2. **`wavelength-calibration`** — three additions:
+   - NIR with no usable arc lamp → use OH sky lines from the *science* frames
+     (type them `arc,tilt,science`, give standards the same `calib`).
+   - A code recipe to build an echelle `reid_arxiv` **directly from a
+     `WaveCalib`** (one `BinTableHDU` row per order: `wave`, `flux`, `order`),
+     since `pypeit_compile_wvarxiv` only ingests `pypeit_identify` outputs;
+     plus the note that a self-built arxiv self-reidentifies at cc~1 and needs
+     independent validation.
+   - Tips: lower `cc_thresh` (~0.6) to recover a single marginal reddest order;
+     prefer a line list that covers the full range with real lines (OH_NIRES).
+
+3. **`add-devsuite-setup`** — corrected two inaccuracies and added detail:
+   - `all_setups` lives in **`test_scripts/setups.py`** (not `test_setups.py`,
+     which imports it and auto-derives reduce coverage); there is no longer a
+     `supported_instruments` list in code.
+   - Documented the lower-cased `.pypeit` filename rule
+     (`f'{instr}_{setup.lower()}.pypeit'`) and that the `path` line is rewritten
+     at run time; noted `_raw_data_dirs` for non-standard layouts; noted the
+     load-image unit test is not universal (mirror the analog instrument).
+
+4. **`new-spectrograph`** — added a note to use the current
+   `from pypeit import log` / `PypeItError` API (not the deprecated `msgs`),
+   since copying an older module drags in `from pypeit import msgs`, which now
+   fails at import (the original `soar_tspec.py` failure).
+
+**Verification.** Edits are documentation-only (Markdown skill files); reviewed each for accuracy against the code I touched this project. No build needed.
+
+**This completes all prompts in the doc (Prep 1-3, Wavelength 1-2, fresh run, Docs 1-2, Finishing-up 1-3).** Open follow-ups carried in earlier entries: independent-dataset wavelength validation, the afterburn path (sensfunc -> telluric -> coadd), uploading the staged raw frames to the dev-suite Google Drive, and committing the staged changes (left to the user).
+
+**Files touched this run:** `.claude/skills/{diagnose-reduction,wavelength-calibration,add-devsuite-setup,new-spectrograph}/SKILL.md`.
