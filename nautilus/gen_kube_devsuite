@@ -11,6 +11,7 @@ This script generates a kubernetes YAML file to run the PypeIt development suite
 import shutil
 import os
 import io, yaml
+import sys
 
 from IPython import embed
 
@@ -33,9 +34,9 @@ def parser(options=None):
     parser.add_argument('-d', '--dev_branch', type=str, default='develop', help='Name of the PypeIt Dev-Suite branch to use')
     parser.add_argument('-w', '--from_wheel', default=False, action='store_true', help='If set build a PypeIt wheel and install PypeIt from that. The default behavior is to install PypeIt directly from git.')
     parser.add_argument('-v', '--verbose', default=False, action='store_true', help='If set, the dev-suite displays additional information to stdout when running.')
-    parser.add_argument('--ncpu', type=int, default=8, help='Number of CPUs request')
-    parser.add_argument('--ram', type=int, default=100, help='Amount of RAM to request (Gi)')
-    parser.add_argument('--storage', type=int, default=450, help="Amount of storage to request (Gi). A buffer of 50 Gi is added for the limit.")
+    parser.add_argument('--ncpu', type=str, default='8,8.25', help='Number of CPUs request. Can be fractional. Two values can be given separated by a comma, in which case the request is the first number, and the limit is the second.')
+    parser.add_argument('--ram', type=str, default='128,150', help='Amount of RAM to request (Gi). Two values can be given separated by a comma, in which case the request is the first number, and the limit is the second.')
+    parser.add_argument('--storage', type=str, default='450,500', help="Amount of storage to request (Gi). Two values can be given separated by a comma, in which case the request is the first number, and the limit is the second.")
     parser.add_argument('--coverage', default=False, action="store_true", help="Collect code coverage data.")
     parser.add_argument('--container', type=str, default='python3.12', help="What docker container to use. 'pypeit' for the latest pypeit conatiner. 'python3.9', 'python3.10', etc for a specific python version. Or the full path to a different image.")
     parser.add_argument('--priority_list', default=False, action="store_true", help="Copy the test_priority_list to S3 after testing.")
@@ -49,10 +50,56 @@ def parser(options=None):
 
     return parser.parse_args() if options is None else parser.parse_args(options)
 
+def parse_resource_list(arg_list, arg_type, arg_name):
+    """Parse a list of values used to determine the request and limit of a resource.
+    The list can have one or two values. If one is given, it is used for both the request
+    and the limit. If two are given, the first is the request and the second is the limit.
+
+    Args:
+        arg_list:  The list value from the command line for the argument
+        arg_type:  A method to convert a single value to a python type, e.g. "int"
+        arg_name:  The name of the resource, used in error messages.
+
+    Returns (tuple): A tuple of two values, the first being the resource request the second the resource limit.
+    """
+    # Parse resource requests from command line
+    values = arg_list.split(",")
+    num_values = len(values)
+    if num_values == 1 or num_values == 2:
+        # Get the request value
+        try: 
+            request=arg_type(values[0])
+        except ValueError as e:
+            raise ValueError(f"Invalid value passed to {arg_name} request: {values[0]}: {e}")
+
+        # Get the limit value, if specified
+        if num_values == 2:
+            try:
+                limit = arg_type(values[1])
+            except ValueError as e:
+                raise ValueError(f"Invalid value passed to {arg_name} limit: {values[1]}: {e}")
+        else:
+            # No limit specified, use the request value
+            limit = request
+    else:
+        print(f"Invalid number of values passed to --{arg_name}")
+        sys.exit(1)
+
+    return request, limit
+         
 
 def main():
 
     pargs = parser()
+
+    # Parse resource values from arguments
+    try:
+        cpu_request,  cpu_limit   = parse_resource_list(pargs.ncpu, float, "ncpu")
+        ram_request,  ram_limit   = parse_resource_list(pargs.ram, int, "ram")
+        disk_request, disk_limit  = parse_resource_list(pargs.storage, int, "storage")
+    except ValueError as e:
+        print(str(e), file=sys.stderr)
+        sys.exit(1)
 
     # Load the default
     def_yaml_file = os.path.join(os.getenv('PYPEIT_DEV'), 
@@ -61,20 +108,20 @@ def main():
     with open(def_yaml_file, 'r') as stream:
         data = yaml.safe_load(stream)
 
-    # Modify
+    # Modify the default, starting with the name
     data['metadata']['name'] = pargs.name.lower()
 
     # Resources
     requests = data['spec']['template']['spec']['containers'][0]['resources']['requests']
-    requests['cpu'] = str(pargs.ncpu)
-    requests['memory'] = f'{pargs.ram}Gi'
-    requests['ephemeral-storage'] = f'{pargs.storage}Gi'
+    requests['cpu'] = str(cpu_request)
+    requests['memory'] = f'{ram_request}Gi'
+    requests['ephemeral-storage'] = f'{disk_request}Gi'
 
     # Limits
     limits = data['spec']['template']['spec']['containers'][0]['resources']['limits']
-    limits['cpu'] = str(pargs.ncpu + 1)
-    limits['memory'] = f'{pargs.ram + 10}Gi'
-    limits['ephemeral-storage'] = f'{pargs.storage+50}Gi'
+    limits['cpu'] = str(cpu_limit)
+    limits['memory'] = f'{ram_limit}Gi'
+    limits['ephemeral-storage'] = f'{disk_limit}Gi'
 
     ###### Args #####
     arguments = pargs.additional_args
@@ -121,7 +168,7 @@ def main():
     # Raw Data
     my_args += ' echo Copying RAW_DATA from Google Drive...; rclone --config nautilus/rclone.conf copy gdrive:RAW_DATA/ RAW_DATA/;'
     # Run the test 
-    my_args += f' ./pypeit_test -t {pargs.ncpu} {" ".join(arguments)} -r pypeit.report -o /tmp/REDUX_OUT --csv performance.csv {"-v" if pargs.verbose else ""};'
+    my_args += f' ./pypeit_test -t {int(cpu_request)} {" ".join(arguments)} -r pypeit.report -o /tmp/REDUX_OUT --csv performance.csv {"-v" if pargs.verbose else ""};'
 
     # Tar up the logs
     my_args += f' find /tmp/REDUX_OUT -name "*test*log" -print | tar cfz logtar.tar.gz -T -;'
