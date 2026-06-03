@@ -226,6 +226,7 @@ all_setups = {
     ],
     'mmt_binospec_ifu': [
         'G270',
+        'G270_Sky',
     ],
     'mmt_mmirs': [
         'HK_zJ',
