@@ -2,6 +2,7 @@
 Module to run tests on arcoadd
 """
 import os
+import shutil
 
 import numpy as np
 from astropy.table import Table
@@ -28,6 +29,7 @@ def test_coadd_datacube(redux_out):
                          'keck_kcwi',
                          'small_bh2_4200',
                          'Science')
+    droot = os.path.join('/Users/rcooke/Work/Research/BBN/Yp/HIIregions/IZw18_KCWI/keck_kcwi_BH2_N1/Science')
     files = ['spec2d_KB.20191219.56886-BB1245p4238_KCWI_20191219T154806.538.fits',
              'spec2d_KB.20191219.57662-BB1245p4238_KCWI_20191219T160102.755.fits']
     config = ['[rdx]',
@@ -46,14 +48,14 @@ def test_coadd_datacube(redux_out):
     spec = load_spectrograph("keck_kcwi")
     parset = spec.default_pypeit_par()
     parset['reduce']['cube']['output_filename'] = output_filename
-    parset['reduce']['cube']['align'] = True
+    parset['reduce']['cube']['alignment_method'] = 'cc'
     parset['reduce']['cube']['combine'] = True
     parset['reduce']['cube']['weight_method'] = 'relative'
 
     # Speed up the computation by reducing the number of subpixels
-    parset['reduce']['cube']['spat_subpixel'] = 3
+    parset['reduce']['cube']['spat_subpixel'] = 1
     parset['reduce']['cube']['spec_subpixel'] = 1
-    parset['reduce']['cube']['slice_subpixel'] = 3
+    parset['reduce']['cube']['slice_subpixel'] = 1
     parset['reduce']['cube']['wave_min'] = 3922.758514
     parset['reduce']['cube']['wave_max'] = 4469.062985
     parset['reduce']['cube']['wave_delta'] = 0.115005
@@ -71,25 +73,28 @@ def test_coadd_datacube(redux_out):
                                  scale_corr=scale_corr, sensfile=sensfuncfile,
                                  ra_offsets=ra_offsets, dec_offsets=dec_offsets, spectrograph=spec, overwrite=True)
     coadd.run()
+    cube_dirc = "Science_cube/"
+    qa_dirc = "QA_cube/"
     # Check the file exists
-    assert(os.path.exists(output_filename))
+    assert(os.path.exists(cube_dirc + output_filename), f"{output_filename} does not exist")
     ######################################
     # Test the extraction of a 1D spectrum from the datacube
     # Prepare the output filename
     output1d_filename = output_filename.replace('.fits', '_spec1d.fits')
-    pargs = ExtractDataCube.parse_args(["-o", "-s", output1d_filename, output_filename])
+    pargs = ExtractDataCube.parse_args(["-o", "-s", output1d_filename, cube_dirc + output_filename])
     ExtractDataCube.main(pargs)
     # Check the files exist
-    assert(os.path.exists(output1d_filename))
+    assert(os.path.exists(cube_dirc + "spec1d_" + output1d_filename), f"spec1d_{output1d_filename} does not exist")
+    assert(os.path.exists(cube_dirc + "spec2d_" + output1d_filename), f"spec2d_{output1d_filename} does not exist")
     ######################################
     # Using the 1D spectrum, generate a sensitivity function to flux the datacube
     # Prepare the output filename
     outfile_sens = output1d_filename.replace('.fits', '_sens.fits')
     input_senspar = os.path.join(dev_path, 'sensfunc_files', 'keck_kcwi_small_bh2_4200.sens')
-    pargs = SensFunc.parse_args(["-o", outfile_sens, "-s", input_senspar, output1d_filename])
+    pargs = SensFunc.parse_args(["-o", outfile_sens, "-s", input_senspar, cube_dirc+"spec1d_"+output1d_filename])
     SensFunc.main(pargs)
     # Check the files exist
-    assert(os.path.exists(outfile_sens))
+    assert(os.path.exists(outfile_sens), f"{outfile_sens} does not exist")
     ######################################
     # Now test the fluxing of the datacube
     output_fileflux = "BB1245p4238_KCWI_20191219_fluxing.fits"
@@ -109,18 +114,19 @@ def test_coadd_datacube(redux_out):
     coadd.run()
 
     # Check the files exist
-    assert(os.path.exists(output_fileflux))
+    assert(os.path.exists(cube_dirc + output_fileflux), f"{cube_dirc + output_fileflux} does not exist")
     ######################################
     # Finally, test the extraction of a 1D fluxed spectrum from the datacube
     # Prepare the output filename
     output1d_fileflux = output_fileflux.replace('.fits', '_spec1d.fits')
-    pargs = ExtractDataCube.parse_args(["-o", "-s", output1d_fileflux, output_fileflux])
+    pargs = ExtractDataCube.parse_args(["-o", "-s", output1d_fileflux, cube_dirc + output_fileflux])
     ExtractDataCube.main(pargs)
     # Check the files exist
-    assert(os.path.exists(output1d_fileflux))
+    assert(os.path.exists(cube_dirc + "spec1d_" + output1d_fileflux), f"spec1d_{output1d_fileflux} does not exist")
+    assert(os.path.exists(cube_dirc + "spec2d_" + output1d_fileflux), f"spec2d_{output1d_fileflux} does not exist")
     ######################################
     # Load in the extracted spec1d file, and compare it to the expected values
-    spec1d = specobjs.SpecObjs.from_fitsfile(output1d_fileflux)
+    spec1d = specobjs.SpecObjs.from_fitsfile(cube_dirc + "spec1d_" + output1d_fileflux)
     # Generate a spectrum of the standard star that was used to generate the sensitivity function
     # Load in the standard star spectrum
     ra, dec = 191.39844, 42.64016
@@ -132,7 +138,7 @@ def test_coadd_datacube(redux_out):
     # Compare the extracted spectrum to the standard star spectrum, and make sure that the residuals are small
     resid = (spec1d[0].OPT_FLAM-flux_std_interp)*utils.inverse(spec1d[0].OPT_FLAM_SIG)
     med, std = np.median(resid), 1.4826*np.median(np.abs(np.median(resid) - resid))
-    assert(np.abs(med) < 0.2*std)
+    assert(np.abs(med) < 0.2*std, "Residuals of the optimal spectrum are greater than 0.2*std")
     # Test the boxcar extraction
     # Interpolate the standard star spectrum to the same wavelength grid as the spec1d
     flux_std_interp = np.interp(spec1d[0].BOX_WAVE, wave_std, flux_std)
@@ -141,21 +147,18 @@ def test_coadd_datacube(redux_out):
     med, std = np.median(resid), 1.4826*np.median(np.abs(np.median(resid) - resid))
     # The sensitivity function is based on the optimal extraction, so the optimal should be spot on.
     # The boxcar will be worse, so allow a larger tolerance
-    assert(np.abs(med) < std)
+    assert(np.abs(med) < std, "Residuals of the boxcar spectrum are greater than 1 standard deviation")
     ######################################
     # Remove all of the created files
-    # First remove the non-fluxed files
-    os.remove(output_filename)
-    os.remove(output1d_filename)
+    # First remove the files in the Science folder
+    shutil.rmtree(cube_dirc)
+    shutil.rmtree(qa_dirc)
     # Remove the sensitivity function files and the associated QA files
-    os.remove(outfile_sens)
     os.remove('sensfunc.par')
+    os.remove(outfile_sens)
     os.remove(outfile_sens.replace('.fits', '_QA.pdf'))
     os.remove(outfile_sens.replace('.fits', '_throughput.pdf'))
     os.remove(outfile_sens.replace('.fits', '_fluxed_std.pdf'))
-    # Remove the fluxed files
-    os.remove(output_fileflux)
-    os.remove(output1d_fileflux)
 
 
 def test_residuals(redux_out):
