@@ -29,7 +29,6 @@ def test_coadd_datacube(redux_out):
                          'keck_kcwi',
                          'small_bh2_4200',
                          'Science')
-    droot = os.path.join('/Users/rcooke/Work/Research/BBN/Yp/HIIregions/IZw18_KCWI/keck_kcwi_BH2_N1/Science')
     files = ['spec2d_KB.20191219.56886-BB1245p4238_KCWI_20191219T154806.538.fits',
              'spec2d_KB.20191219.57662-BB1245p4238_KCWI_20191219T160102.755.fits']
     config = ['[rdx]',
