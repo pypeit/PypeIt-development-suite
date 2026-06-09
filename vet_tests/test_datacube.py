@@ -52,9 +52,9 @@ def test_coadd_datacube(redux_out):
     parset['reduce']['cube']['weight_method'] = 'relative'
 
     # Speed up the computation by reducing the number of subpixels
-    parset['reduce']['cube']['spat_subpixel'] = 1
+    parset['reduce']['cube']['spat_subpixel'] = 3
     parset['reduce']['cube']['spec_subpixel'] = 1
-    parset['reduce']['cube']['slice_subpixel'] = 1
+    parset['reduce']['cube']['slice_subpixel'] = 3
     parset['reduce']['cube']['wave_min'] = 3922.758514
     parset['reduce']['cube']['wave_max'] = 4469.062985
     parset['reduce']['cube']['wave_delta'] = 0.115005
