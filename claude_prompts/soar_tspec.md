@@ -52,12 +52,41 @@ The current wavelength calibration fails only Order 3 of the 5 orders (see the L
 
 2. Using the solution you found in your previous effort, generate a new reidentify file for the soar_triplespec spectrograph.  Check to see if you can then increase the cc_thresh parameter back to its default.
 
+### Frame typing
+
+PypeIt uses images of a range of frame types to calibrate and reduce the data.  Two of these are "dark" and "lampoffflats".  These are used to calibrate the detector and remove the thermal emission from the telescope and dome.   
+
+1. The test data set includes an image that is named with DFLAT but has a 'target' of DFLAT_OFF.  Currently we are treating it as a "dark" frmae.  Please:
+
+- Consider if we should type it as a "lampoffflats" frame instead
+- Remind me what will be different in the image processing if we have a "lampoffflats" frame instead of a "dark" frame
+- Do not modify any code (yet)
+- Log your findings below.
+- Include your recommendations
+
+2. I have modified the PypeIt file to type the DFLAT_OFF image as a "lampoffflats" frame.  Please:
+
+- Confirm that by default the "lampoffflats" frame is not used for calibration.
+- Modify the soar_triplespec.rst doc to describe how to use the "lampoffflats" frame for calibration, if the user desires
+- Run PypeIt again and inspect the QA files.  
+- Propose any other additional changes to the code or docs 
+- Log your findings below.
+
 ## Docs
+
+Here are some guidelines when generating the docs:
+
+- Use .rst files
+- Use :ref: tags to link to other pages (instead of paths and :doc:)  
 
 1. Generate a soar_triplespec.rst doc in doc/spectrographs.  Model it after the other files in that folder.  Update any other files in doc/
 
 2. Generate a tutorial for soar_triplespec in doc/tutorials.  Model it after the other files in that folder.  Use outputs in the 
 PypeIt-development-suite/pypeitdev/soar_tspec/TripleSpec/ folder as needed.  As always, Log your work.  Run make_html to generate the docs and inspect the outputs.
+
+3. Make the following modifications for the new docs:
+
+- Use :ref: instead of :doc: for internal links.  Do so in soar_triplespec_howto.rst and soar_triplespec.rst.  Replace any instances of :doc: with :ref:.
 
 ## Finishing up
 
@@ -85,6 +114,9 @@ PypeIt-development-suite/RAW_DATA/soar_tspec/TSPEC/
 9. Read this doc.  Execute the 1st request in the Finishing up Section.
 10. Read this doc.  Execute the 2nd request in the Finishing up Section.
 11. Read this doc.  Execute the 3rd request in the Finishing up Section.
+12. Read this doc.  Execute the 3rd request in the Docs Section.
+13. Read this doc.  Perform the 1st task under Development/Frame typing.
+14. Read this doc.  Perform the 2nd task under Development/Frame typing.
 
 ## Logging
 
@@ -497,3 +529,97 @@ Order 3 (K band) has the lowest S/N (4.0), as expected for the faintest/highest-
 **This completes all prompts in the doc (Prep 1-3, Wavelength 1-2, fresh run, Docs 1-2, Finishing-up 1-3).** Open follow-ups carried in earlier entries: independent-dataset wavelength validation, the afterburn path (sensfunc -> telluric -> coadd), uploading the staged raw frames to the dev-suite Google Drive, and committing the staged changes (left to the user).
 
 **Files touched this run:** `.claude/skills/{diagnose-reduction,wavelength-calibration,add-devsuite-setup,new-spectrograph}/SKILL.md`.
+
+### 2026-06-09 (Docs task 3 — converted all `:doc:` internal links to `:ref:` in the SOAR docs)
+
+**Goal:** Docs task 3 — replace every `:doc:` internal link with `:ref:` in both `soar_triplespec_howto.rst` and `soar_triplespec.rst`.
+
+**Method.** Grepped both files for `:doc:` (7 instances total), then for each target document found its top-level label (`grep '^.. _'`) so the `:ref:` points at a real label rather than a path. Mapping used:
+
+| `:doc:` path | `:ref:` label |
+|---|---|
+| `../A-B_differencing` | `a-b_differencing` |
+| `../tutorials/soar_triplespec_howto` | `soar_triplespec_howto` |
+| `../calibrations/wave_calib` | `wave_calib` |
+| `../calibrations/flat` | `flat` |
+| `../spectrographs/soar_triplespec` | `soar_triplespec` |
+| `../running` | `run-pypeit` (section label; `running.rst` has no doc-level label) |
+| `../out_spec1D` | `spec-1d-output` |
+
+**Edits.**
+- `doc/spectrographs/soar_triplespec.rst` (4): the A-B_differencing inline link + the three Additional Reading bullets. Custom link text ("-- a full worked example reduction.") preserved; bare `:ref:`label`` renders the target's section title, matching the surrounding `:ref:` usage already in the file.
+- `doc/tutorials/soar_triplespec_howto.rst` (3): the instrument-notes link, the `../running` link, and the `../out_spec1D` link.
+
+**Verification.** `grep ':doc:'` on both files now returns nothing. All seven `:ref:` labels were confirmed to exist in their target `.rst` files. Edits are doc-only; no build run (the offline `sphinx-build` path was validated for these files in Docs task 2).
+
+**Files touched this run:** `PypeIt/doc/spectrographs/soar_triplespec.rst`, `PypeIt/doc/tutorials/soar_triplespec_howto.rst`.
+
+### 2026-06-09 (Frame-typing task 1 — analysis: `DFLAT_OFF` should be `lampoffflats`, not `dark` (no code changed))
+
+**Goal:** Frame-typing task 1 — decide whether the `DFLAT_OFF` image (currently typed `dark`) ought to be a `lampoffflats` frame, explain how the processing differs, and log findings/recommendations. **No code modified** (as instructed).
+
+**The frame in question.** `SPEC_DFLAT_04-02-2025_0088.fits`. Header: `OBSTYPE='LAMPFLAT'`, `OBJECT='DFLAT_OFF'`, `EXPTIME=2.0` s. It is the **lamp-off companion of the dome flat** `SPEC_DFLAT_04-02-2025_0042.fits` (`OBSTYPE='LAMPFLAT'`, `OBJECT='DFLAT_ON'`, `EXPTIME=2.0` s, typed `pixelflat,trace`). Same instrument config, same 2.0 s exposure — a matched dome-flat ON/OFF pair, which is the textbook definition of a lamp-off flat, **not** a dark.
+
+**Current typing logic** (`soar_tspec.py:check_frame_type`):
+- `dark` → `idname=='LAMPFLAT' & target=='DFLAT_OFF'`  ← the frame lands here now.
+- `pixelflat,trace` → `idname=='LAMPFLAT' & target=='DFLAT_ON'`.
+There is no `lampoffflats` branch at present.
+
+**What the `dark` typing actually does today: nothing.** `default_pypeit_par` calls `reset_all_processimages_par(use_darkimage=False)`, and the generated `.par` shows `use_darkimage = False` in all 15 frame-process blocks and `True` in none. So PypeIt builds a `Dark` master from the `DFLAT_OFF` frame and then **never subtracts it** from any frame. The lamp-off exposure currently contributes nothing to the reduction.
+
+**How `dark` vs `lampoffflats` differ in image processing:**
+
+| | `dark` | `lampoffflats` |
+|---|---|---|
+| Master built | `Dark_*` (combined dark) | folded into the flat build |
+| When/where applied | only if a frame's `process.use_darkimage=True`; subtracted from that frame **scaled by the exposure-time ratio** (dark current model) | subtracted **directly, 1:1 (no scaling)** from the lamp-on pixel/illum flat *before* normalization — `calibrations.py:897-913`, `pixel_flat = pixel_flat.sub(lampoff_flat)` |
+| Purpose | remove dark-current accumulation (needs a long, dark exposure to be meaningful) | remove the **thermal/dome glow + dark + bias structure imprinted in the flat itself** at the flat's exposure time |
+| Effect here | none (`use_darkimage=False`) | the 2.0 s lamp-off is subtracted from the 2.0 s lamp-on flat — exposure-matched, so the direct subtraction is **exact** |
+
+In short: a 2 s frame is a useless *dark* (captures essentially no dark current and is the wrong tool for scaling onto 300 s science), but it is an ideal *lamp-off flat* — it records exactly the additive background (telescope/dome thermal + bias + dark) present in the 2 s lamp-on dome flat, and `lampoffflats` removes that background from the flat field at matched exposure with no scaling.
+
+**Precedent in the codebase.** `keck_nires` — the closest analog (fixed-format NIR echelle, OH-sky wavecal) — types its lamp-off dome flats as `lampoffflats` and explicitly returns **no** `dark` frames (`keck_nires.py:457-466`). `lbt_luci`, `keck_mosfire`, and `vlt_xshooter` follow the same pattern. SOAR/TripleSpec fits this NIR paradigm exactly.
+
+**Recommendation — yes, retype `DFLAT_OFF` as `lampoffflats`.** It is the physically correct type and it actually *uses* the frame (today it's dead weight). When we make the change (next task), it will require two coordinated edits, **plus** confirming the calib grouping:
+1. `soar_tspec.py:check_frame_type`: replace the `dark` branch with a `lampoffflats` branch (`idname=='LAMPFLAT' & target=='DFLAT_OFF'`); the `dark` branch can then return all-`False` (mirroring NIRES).
+2. The `.pypeit` data block: change the `0088` frametype from `dark` → `lampoffflats`.
+3. **Calib grouping:** the lamp-off must share the pixelflat's `calib` ID so `find_frame_files('lampoffflats', calib_ID=...)` matches it — both are `calib = 0` here, so this already holds.
+4. **Dev-suite knock-on:** the registered test file `PypeIt-development-suite/pypeit_files/soar_tspec_tspec.pypeit` types this frame `dark` too; it must be updated in lockstep so the regression test stays consistent.
+
+**Minor caveats (not blockers).** Only one `DFLAT_OFF` exists, so there's no combine/S-N benefit; subtracting a single lamp-off adds a little read noise to the flat, but it removes a systematic background and is the standard NIR approach — worth it. `darkframe` defaults (`exprng=[0,None]`) become moot once nothing is typed `dark`.
+
+**Files touched this run:** none (analysis only). Inspected `soar_tspec.py`, `calibrations.py`, `keck_nires.py`, the `.pypeit`/`.par`/`.log`, and the two DFLAT FITS headers.
+
+### 2026-06-11 (Frame-typing task 2 — empirically confirmed `lampoffflats` IS subtracted by default; effect negligible; kept as lampoffflats)
+
+**Goal:** Frame-typing task 2 — the `check_frame_type` typing of `DFLAT_OFF` was changed (by JXP) from `dark` to `lampoffflats`. Confirm whether the `lampoffflats` frame is used by default, run PypeIt and inspect, and propose changes.
+
+**Setup observed at start.** `soar_tspec.py:check_frame_type` now auto-types `DFLAT_OFF` (`OBSTYPE='LAMPFLAT'`, `target='DFLAT_OFF'`) as `lampoffflats` (was `dark`). The working `soar_tspec_A.pypeit` data block still typed `0088` as `dark` (explicit frametype overrides auto-typing), so I retyped that row to `lampoffflats` to exercise the new path.
+
+**Headline finding — the lamp-off flat IS used by default (premise was incorrect).** A fresh `pypeit_setup` auto-types `0088` as `lampoffflats` and assigns it `calib = 0`, the **same calibration group as the `pixelflat,trace`**; the `.calib` association file lists `lampoffflats → Flat_A_0_DET01.fits`. A clean `run_pypeit` (deleted `Calibrations/*`, exit 0) then logged the subtraction in **two** places:
+- `calibrations.py:get_slits:1096 — Subtracting lamp off flats using files:` (trace/edges image)
+- `calibrations.py:get_flats:904 — Subtracting lamp off flats using files:` (pixel flat)
+
+So PypeIt subtracts a `lampoffflats` frame from the trace and pixelflat **unconditionally** whenever it is present in their calib group. **There is no enable/disable parameter** (grep of the codebase: no `use_lampoff`/equivalent; the subtraction in `calibrations.py` is gated only on `len(raw_lampoff_files) > 0`). This matches the core docs (`doc/calibrations/flat_fielding.rst`: "The `lampoffflats` frames are *always* subtracted … If distinct frames are desired … we currently advise users to simply not use the lampofflats") and `keck_nires.rst`. The only lever is the **frametype** (`lampoffflats` → used; `dark`/omitted → not used).
+
+**Impact is negligible (per-order science S/N, frame 0116, vs the prompt-6 run with no lamp-off subtraction):**
+
+| Order | S/N (no lamp-off) | S/N (lamp-off) | wv_rms |
+|------:|------------------:|---------------:|-------:|
+| 7 | 28.3 | 28.3 | 0.099 |
+| 6 | 30.3 | 30.2 | 0.070 |
+| 5 | 16.6 | 16.6 | 0.105 |
+| 4 | 21.0 | 21.0 | 0.065 |
+| 3 | 4.0 | 4.4 | 0.108 |
+
+All 5 orders still solved, full Science+QA written, no new errors. The lamp-off subtraction changes the final products at the noise level only — consistent with "users report no significant improvement."
+
+**Decision (JXP).** Keep `DFLAT_OFF` typed as `lampoffflats` even though it is therefore subtracted by default; the negligible effect is acceptable. JXP will update the docs to discuss this. (I initially proposed reverting the auto-typing to `dark` so the example would match the existing doc's "not subtracted by default" wording, and asked which default was wanted — JXP chose to keep `lampoffflats`.) **No code was changed this run**; `check_frame_type` keeps the `lampoffflats` branch. The example `soar_tspec_A.pypeit` now types `0088` as `lampoffflats` to match the auto-typing.
+
+**Note for the docs update (JXP is handling):** the current `doc/spectrographs/soar_triplespec.rst` "Flat Fielding" section says *"By default, the lamp-off flats are **not** subtracted as users report not significant improvement."* — this is now **inaccurate**: with the `lampoffflats` typing they **are** subtracted by default (negligibly). The accurate statement is that the lamp-off flats are subtracted from the trace/pixelflat by default, with negligible effect, and a user who wants to skip the subtraction should re-type the frame as `dark` (or omit it), since there is no on/off parameter.
+
+**Other proposed changes (optional, not made):**
+1. If skipping the lamp-off without retyping is ever wanted, that would require a *core* PypeIt feature (an opt-out flag on `lampoffflatsframe`); out of scope here.
+2. The dev-suite raw set / `pypeit_files/soar_tspec_tspec.pypeit` types this frame `dark`; if we want the regression test to exercise the lamp-off path, retype it `lampoffflats` there too (the reduction passes either way given the negligible effect).
+
+**Files touched this run:** `PypeIt-development-suite/pypeitdev/soar_tspec/TripleSpec/soar_tspec_A.pypeit` (typed `0088` as `lampoffflats`); `run_lampoff.txt` + regenerated `Calibrations/`/`Science/`/`QA/` (git-ignored). No PypeIt source or doc files modified (JXP owns the doc edit).
