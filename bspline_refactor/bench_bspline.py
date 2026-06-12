@@ -18,7 +18,7 @@ import time
 import numpy as np
 
 from pypeit.bspline.bspline import bspline
-from pypeit.bspline.refactor import BSpline, BSpline2D, BSplineBreakpoints
+from pypeit.bspline.refactor import BSpline, BSpline2D, Knots
 
 
 # ---------------------------------------------------------------------------
@@ -69,12 +69,12 @@ def bench_1d(configs, nrep):
             spl.fit(x, y, invvar)
 
         def run_new():
-            spl = BSpline(x=x, bkpts=BSplineBreakpoints(nbkpts=nbkpts), nord=4)
+            spl = BSpline(x=x, knots=Knots(count=nbkpts), nord=4)
             spl.fit(x, y, invvar)
 
         t_old = _time(run_old, nrep)
         t_new = _time(run_new, nrep)
-        _row(f'N={N:>6d}  nbkpts={nbkpts:>4d}', t_old, t_new)
+        _row(f'N={N:>6d}  nknots={nbkpts:>4d}', t_old, t_new)
 
     print()
 
@@ -102,13 +102,13 @@ def bench_2d(configs, nrep, funcname='legendre'):
             spl.fit(x, y, invvar, x2=x2)
 
         def run_new(npoly=npoly):
-            spl = BSpline2D(x=x, npoly=npoly, xmin=0.0, xmax=1.0, funcname=funcname,
-                            bkpts=BSplineBreakpoints(nbkpts=nbkpts), nord=4)
-            spl.fit(x, y, invvar, x2)
+            spl = BSpline2D(x=x, knots=Knots(count=nbkpts), nord=4)
+            spl.fit(x, y, invvar, basis=funcname, npoly=npoly, basis_x=x2,
+                    xmin=0.0, xmax=1.0)
 
         t_old = _time(run_old, nrep)
         t_new = _time(run_new, nrep)
-        _row(f'N={N:>6d}  nbkpts={nbkpts:>4d}  npoly={npoly}', t_old, t_new)
+        _row(f'N={N:>6d}  nknots={nbkpts:>4d}  npoly={npoly}', t_old, t_new)
 
     print()
 
@@ -143,13 +143,13 @@ def bench_sigma_clip(configs, nrep):
                 spl.fit(x, y, iv)
 
         def run_new():
-            spl = BSpline(x=x, bkpts=BSplineBreakpoints(nbkpts=nbkpts), nord=4)
+            spl = BSpline(x=x, knots=Knots(count=nbkpts), nord=4)
             for iv in invvar_list:
                 spl.fit(x, y, iv)
 
         t_old = _time(run_old, nrep)
         t_new = _time(run_new, nrep)
-        _row(f'N={N:>6d}  nbkpts={nbkpts:>4d}', t_old, t_new)
+        _row(f'N={N:>6d}  nknots={nbkpts:>4d}', t_old, t_new)
 
     print()
 

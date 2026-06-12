@@ -28,7 +28,7 @@ import tracemalloc
 import numpy as np
 
 from pypeit.bspline.bspline import bspline
-from pypeit.bspline.refactor import BSpline, BSpline2D, BSplineBreakpoints
+from pypeit.bspline.refactor import BSpline, BSpline2D, Knots
 
 
 # ---------------------------------------------------------------------------
@@ -63,7 +63,7 @@ def _stored_bytes_old(spl):
 def _stored_bytes_new(spl):
     """Sum the nbytes of all numpy arrays stored on a new BSpline/BSpline2D."""
     total = 0
-    for attr in ('breakpoints', 'mask', 'coeff', 'icoeff'):
+    for attr in ('breakpoints', 'bkpt_gpm', 'coeff', 'icoeff'):
         arr = getattr(spl, attr, None)
         if isinstance(arr, np.ndarray):
             total += arr.nbytes
@@ -120,7 +120,7 @@ def bench_1d_memory(configs, nrep):
             return spl
 
         def make_new():
-            spl = BSpline(x=x, bkpts=BSplineBreakpoints(nbkpts=nbkpts), nord=4)
+            spl = BSpline(x=x, knots=Knots(count=nbkpts), nord=4)
             spl.fit(x, y, invvar)
             return spl
 
@@ -131,7 +131,7 @@ def bench_1d_memory(configs, nrep):
         stored_new = _stored_bytes_new(make_new())
 
         _row(
-            f'N={N:>6d}  nbkpts={nbkpts:>4d}',
+            f'N={N:>6d}  nknots={nbkpts:>4d}',
             np.median(peaks_old), np.median(peaks_new),
             stored_old, stored_new,
         )
@@ -162,9 +162,9 @@ def bench_2d_memory(configs, nrep, funcname='legendre'):
             return spl
 
         def make_new(npoly=npoly):
-            spl = BSpline2D(x=x, npoly=npoly, xmin=0.0, xmax=1.0, funcname=funcname,
-                            bkpts=BSplineBreakpoints(nbkpts=nbkpts), nord=4)
-            spl.fit(x, y, invvar, x2)
+            spl = BSpline2D(x=x, knots=Knots(count=nbkpts), nord=4)
+            spl.fit(x, y, invvar, basis=funcname, npoly=npoly, basis_x=x2,
+                    xmin=0.0, xmax=1.0)
             return spl
 
         peaks_old = [_peak_bytes(make_old) for _ in range(nrep)]
@@ -174,7 +174,7 @@ def bench_2d_memory(configs, nrep, funcname='legendre'):
         stored_new = _stored_bytes_new(make_new())
 
         _row(
-            f'N={N:>6d}  nbkpts={nbkpts:>4d}  npoly={npoly}',
+            f'N={N:>6d}  nknots={nbkpts:>4d}  npoly={npoly}',
             np.median(peaks_old), np.median(peaks_new),
             stored_old, stored_new,
         )
