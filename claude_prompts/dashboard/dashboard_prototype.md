@@ -1,8 +1,8 @@
-# Develop the PypeIt Dashboard
+# Examine the PypeIt Dashboard Prototype
 
 ## Goals
 
-We wish to develop a Dashboard for PypeIt that will feed the masses
+We wish to examine the code generated initially for the PypeIt Dashboard.
 
 ## Claude
 
