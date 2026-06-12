@@ -94,15 +94,146 @@ Here are a few basic requirements to get us started:
 
 1. Generate a draft of the initialization design
 
-   - Make it sections titled "Initialization"
+   - Make its first section titled "Initialization"
+   - Include a subsection titled "Requirements"
+   - Include sub-subsections to "Requirements" titled "Pending" "Implemented", "Deferred"
+   - Examine the state.py module in PypeIt/pypeit/state.py to understand the structure of the state
    - Include the basic requirements above
-   - Include a list of your own based on 
+   - Refine them with proposed design ideas on color, formatting, etc.
+   - Emphasize ease of readability and clarity
+   - Include a list of your own based on your understanding of the PypeIt workflow
    - If you have any questions, ask them in the Clarifications section below
    - Update the version number to the document (0.1)
    - Log your work in the Logs section below
 
-#### Clarifications 
+2. I have answered the questions in the Clarifications section below.  Please:
 
+   - Note that I have hand edited the design document (slightly).  In particular, I removed a few of the Requirements that you proposed. Reread it
+   - Update the document to reflect the answers.  
+   - Check for consistency throughout the document
+   - Update the version number 
+   - Log your work in the Logs section below
+
+#### Clarifications
+
+Questions raised while drafting the Initialization design (2026-06-12):
+
+1. **Science-frame status.** `state.py`'s `RunPypeItState` tracks calibration
+   steps only — not per-science-frame object finding / extraction. Should the
+   Initialization state view also show science-frame status? If yes, where
+   should it come from — parsing the `Science/` products (`spec1d`/`spec2d`), or
+   extending the state model to record science steps?
+
+You are correct, the state does not track the science-frame status yet.  But it will.  Make sure any design ideas and requirements account for this.
+
+2. **Cost of computing state with no state file.** Requirement R5 computes state
+   via `PypeIt(calib_only=True).calib_all(status_only=True, reload_only=True)`,
+   which instantiates PypeIt and can be slow for large MOS. Is it acceptable to
+   block the UI briefly on launch, or should this run in a background thread with
+   a loading indicator?
+
+Yes, it is ok to block the UI on launch.
+
+3. **Multiple `.pypeit` files in the launch folder.** Auto-pick (assuming the
+   normal one-file case) or prompt the user to choose?
+
+I have clarified that the user will be required to indicate the .pypeit file to use when launching the Dashboard.
+
+4. **Live "running" detection / monitoring channel.** `state.py` has a
+   commented-out `_broadcast_step` / `log.step(...)` hook that looks intended for
+   GUIs to follow a running reduction via the log stream. Is that the planned
+   mechanism for the (deferred) live-monitoring feature, and should
+   Initialization assume it?
+
+Yes, live "running" detection / monitoring is planned.  Its implementation is open to discussion. 
+
+5. **Safe on-demand refresh.** For the manual-refresh requirement (R12), is it
+   safe to call `calib_all(status_only=True, reload_only=True)` repeatedly, and
+   should refresh prefer re-reading `*_state.json` when present?
+
+This is a good question.  If PypeIt is running, we should be reading the state from the state file.  If PypeIt is not running, we could have the code manually assess the state.
+
+6. **Metric thresholds.** For metric coloring (R10), are the workflow doc's
+   rules of thumb (e.g. wavelength/tilt RMS < 0.1 px = good) the right
+   thresholds, and do you want per-spectrograph overrides?
+
+I have decided to show metrics like these in other windows of the Dashboard and not the state view.
+
+### Calibrations
+
+By clicking on a Calibrations Tab, the user will be shown a separate view (e.g. distinct from the status view) that shows a detailed status of the calibrations for a given calibration group and detector/mosaic.  The latter will need to be chosen by the user (drop-down lists).  The Calibrations Section of the Design doc will specify this view in detail.
+
+Here is what I currently envision for this Tab:
+
+- A set of clickable buttons, one for each calibration step
+- The buttons will be color-coded to indicate the status of the calibration step
+  - Nearly readable if that calibration is not used by the spectrograph
+  - Grey if that calibration is not required
+  - White if the calibration is required but not yet generated
+  - Orange if the calibration is currently being generated
+  - Green if the calibration has been generated successfully
+  - Red if the calibration has failed to be generated
+- When a calibration that is selected (clicked on), the following holds:
+  - Its metrics will be shown
+  - The user can click on another button to view it and/or launch the appropriate PypeIt script to inspect it
+  - The Input files that were used to generate the calibration will be listed
+  - The user should be able to select an Input file and view it
+  - If the Calibration has related QA files, these should be viewable
+  - If PypeIt is not running, the user should be able to launch "pypeit_run_to_calibstep" to generate it (and any calibrations that precede it)
+- This viewer will need to allow for multiple slits/orders for Calibrations where this matters (e.g. Wavelength Calibration)
+
+It might be necessary/helpful to organize this Section of the Design doc by Calibration Type (e.g. Bias, Dark, Arc, etc.) with both Calibration-specific requirements and general requirements.
+
+#### Tasks
+
+1. Generate a draft of the Calibrations design
+
+   - Be mindful of the existing requirements in the Design doc
+   - Make its section titled "Calibrations"
+   - Include subsection(s) for  "Requirements"
+   - Include sub-subsections to "Requirements" titled "Pending" "Implemented", "Deferred"
+   - Examine the "pypeit_run_to_calibstep" script in PypeIt/pypeit/scripts/run_to_calibstep.py to understand the script and the code that it uses
+   - Generate text and requirements for the Calibrations section of the Design doc
+   - Refine them with proposed design ideas on color, formatting, etc.
+   - Emphasize ease of readability and clarity
+   - Include a list of your own requirements based on your understanding of the PypeIt workflow
+   - If you have any questions, ask them in the Clarifications section below
+   - Update the version number 
+   - Log your work in the Logs section below
+
+#### Clarifications
+
+Questions raised while drafting the Calibrations design (2026-06-12):
+
+1. **Color-palette consistency.** The Calibrations button scheme you specified
+   differs from the Initialization state-table key drafted earlier:
+   *running* is **orange** here but **blue** there, and *required-but-not-
+   generated* is **white** here but **amber** there. Should the whole Dashboard
+   use one unified palette? My proposal: adopt your Calibrations colors
+   everywhere (running = orange, required-undone = white, success = green,
+   fail = red, not-required = grey, not-used = dimmed) and update the
+   Initialization key to match. OK to unify that way?
+
+2. **"Not used by spectrograph" rendering.** I interpreted "Nearly readable" as
+   the button being shown but **disabled / dimmed (barely visible)**. Is that
+   right, or would you rather such steps be **hidden** entirely?
+
+3. **Regeneration context.** Since the Calibrations view fixes the calibration
+   group and detector via drop-downs, I plan to always launch
+   `pypeit_run_to_calibstep` with `--calib_group` and `--det` (never the
+   `--science_frame` form). Confirm that's the intended path.
+
+4. **Metrics to surface.** `state.py` exposes `bias` mean/std, per-slit `rms`
+   for `wv_calib`/`tilts`, `slits` `nslits`/`center`, and `flats` `types`. Do you
+   want only these, or should the panel also pull richer metrics from the data
+   products (e.g. full `WaveCalib` fit parameters, arc-line FWHM, flat
+   illumination profile)?
+
+5. **Input-file viewer.** Is `pypeit_view_fits` (ginga) the right tool for
+   "select an input file and view it", or do you have another viewer in mind?
+
+6. **`bpm` button.** `bpm` is a real step but produces no output file/QA. Show it
+   as a (color-coded) button anyway for completeness, or omit it from the row?
 
 ## Docs
 
@@ -118,6 +249,15 @@ Here are a few basic requirements to get us started:
 ### Prep
 
 1. Read this doc.  Perform the 1st task under Design document/Prep
+
+### Initialization
+
+1. Read this doc.  Perform the 1st task under Design document/Initialization
+2. Read this doc.  Perform the 2nd task under Design document/Initialization
+
+### Calibrations
+
+1. Read this doc.  Perform the 1st task under Design document/Calibrations
 
 ## Logging
 
@@ -239,3 +379,142 @@ The Preamble covers:
 
 This only covers the Preamble (the Prep task); the Initialization section will
 be drafted when its prompt is run.
+
+### 2026-06-12 (Drafted the Initialization design section)
+
+Performed the 1st task under "Design document / Initialization". Added an
+**Initialization** section to `pypeit_dashboard_design.md` (still **v0.1**).
+
+First studied the state machinery to ground the design:
+
+- `PypeIt/pypeit/state.py` — `RunPypeItState` (pydantic) tracks **calibrations
+  only**, keyed by calibration group (`calib_id`) and detector/mosaic (`det`),
+  one entry per step (`bias`, `dark`, `arc`, `tiltimg`, `slits`, `wv_calib`,
+  `tilts`, `scattlight`, `flats`, `align`). Each entry has `required`,
+  `input_files`, `output_file`, `qa_files`, `status` ∈ {`undone`, `running`,
+  `success`, `complete`, `fail`}, plus step metrics (bias `mean`/`std`; per-slit
+  `wv_calib`/`tilts` `rms`; `slits` `center`/`nslits`; `flats` `types`).
+  `load()` reads `<root>_state.json`; `get_status()` returns a pandas DataFrame;
+  `print_status()` groups by (calib_id, det).
+- `pypeit/scripts/pypeit_status.py` — computes state with no run via
+  `PypeIt(calib_only=True).calib_all(status_only=True, reload_only=True)` then
+  `run_state.print_status()`.
+- Cross-checked the real Kast `shane_kast_blue_A_state.json` from the §6 run
+  (e.g. wv_calib slit 175 `rms` = 0.074; bias `mean`/`std`; optional `dark`/
+  `scattlight` = `undone`, not required).
+
+The Initialization section includes (as the prompt specified):
+
+- A **Requirements** subsection with **Pending / Implemented / Deferred**
+  sub-subsections. Pending holds the five basic requirements (R1–R5) plus
+  eleven proposed additions (R6–R16: context header, summary strip, grouped
+  ordered rows, required-vs-optional clarity, inline metrics with threshold
+  coloring, per-slit drill-down, output/QA affordances, accessible glyph+color
+  encoding, graceful empty states, manual refresh, stale-state warning).
+  Implemented is empty (design phase). Deferred captures live monitoring,
+  science-frame status, in-dashboard `.pypeit` editing, and a multi-setup view.
+- A **State: where it comes from** subsection documenting the two state sources
+  (load `*_state.json` first; else compute via the `pypeit_status` path) and
+  flagging the key gap: the state model tracks calibrations only, not
+  science-frame object-finding/extraction.
+- A **Default State View — visual design** subsection with a proposed
+  status color+glyph key (green/✓, blue/⏳ running, red/✗, amber/○ required-
+  undone, grey/– optional/n-a), columns, metric threshold coloring, and
+  scanning aids — emphasizing readability and clarity.
+
+Posed six questions in the parent doc's `#### Clarifications` section (science-
+frame status; cost of computing state with no state file; multiple `.pypeit`
+files; the commented-out `log.step` broadcast hook as the monitoring channel;
+safe on-demand refresh; metric thresholds).
+
+### 2026-06-12 (Revised Initialization per Clarifications answers — v0.2)
+
+Performed the 2nd task under "Design document / Initialization". Re-read the
+hand-edited design doc, folded in the user's six Clarifications answers, checked
+consistency throughout, and bumped `pypeit_dashboard_design.md` to **v0.2**.
+
+Noted the user's hand-edits before revising: they pared the proposed
+requirements down to R1–R14 (removing my earlier inline-metrics, per-slit
+drill-down, and output/QA-affordance items), tightened the launch description
+("the user will provide the name of the `.pypeit` file"), and removed
+science-frame status from the Deferred bucket.
+
+Changes made to reflect each answer:
+
+1. **Science-frame status is coming.** Reworked the scope note; the design now
+   anticipates it. Added **R15 (Science-frame readiness)** and threaded it
+   through R7 (summary generalizes), R8 (grouping extends to a science section),
+   and the visual-design layout (reserves room for a science section).
+2. **Blocking on launch is OK.** Stated in R5 and the state-source narrative that
+   briefly blocking the UI while computing state is acceptable; no background
+   thread needed for initialization.
+3. **User names the `.pypeit` file.** Updated R2 and the launch description;
+   removed the "multiple `.pypeit` files" case from R11 (replaced with "named
+   file not found").
+4. **Live monitoring planned, channel open.** Reworded R14 as a planned
+   requirement whose implementation/channel (log.step broadcast vs. state-file
+   polling) is open and deferred to the Monitoring phase.
+5. **Refresh strategy.** Encoded the rule in R12 and the state-source section: if
+   `run_pypeit` is running, re-read `*_state.json`; if not running, re-derive via
+   the `pypeit_status` path.
+6. **Metrics elsewhere.** Confirmed the user's removal of metric columns; added a
+   "Design decision" note that step metrics (RMS, bias mean/std, etc.) live in
+   the inspection windows, not the state table; columns trimmed to
+   `Step | Required | Status | Output`.
+
+Consistency pass: fixed stale cross-references after the renumber — the color
+key now cites R10 (accessible encoding) not R13, and the dangling per-slit
+"(R11)" reference in the layout was removed. Replaced the "Open design questions"
+subsection with a "Resolved decisions and remaining open items" summary (only
+the live-update channel, R14, remains open). Added a changelog block to the
+design doc header.
+
+### 2026-06-12 (Drafted the Calibrations design section — v0.3)
+
+Performed the 1st task under "Design document / Calibrations". Added a
+**Calibrations** section to `pypeit_dashboard_design.md` and bumped it to
+**v0.3**.
+
+Studied the backend first:
+
+- `PypeIt/pypeit/scripts/run_to_calibstep.py` — `pypeit_run_to_calibstep
+  <pypeit_file> <step> --calib_group <id> --det <det>` (or `--science_frame`).
+  It instantiates `PypeIt(calib_only=True)` and calls
+  `pypeit_steps.calib_one(..., stop_at_step=<step>)`, then rebuilds QA. Valid
+  steps: `align, arc, bias, bpm, dark, flats, scattlight, slits, tiltimg, tilts,
+  wv_calib`.
+- `pypeit_steps.calib_one` → `Calibrations.run_the_steps(stop_at_step=...)`, so a
+  request for one step generates that step **and all preceding steps** in
+  dependency order — exactly the user's "generate it (and any that precede it)".
+- `Calibrations.default_steps()` gives the path-aware ordering:
+  MultiSlit/Echelle = `bias→dark→bpm→slits→arc→tiltimg→wv_calib→tilts→
+  scattlight→flats`; IFU = `bias→dark→bpm→arc→tiltimg→slits→wv_calib→tilts→
+  align→scattlight→flats` (adds `align`, reorders `slits`).
+- `Calibrations.step_frame_map` ties each step to its input frametype + output
+  `DataContainer`; `bpm` maps to `None` (no output file) — handled as a special
+  case.
+
+What I wrote (per the task list):
+
+- A **Calibrations** section describing: context selection via two drop-downs
+  (calib group, detector/mosaic) sourced from `state.py`; a left→right
+  dependency-ordered row of **step buttons**; the user's **color scheme** mapped
+  onto the `(required, status)` fields + `default_steps()` membership; a
+  **detail panel** (metrics, inspect-output script, input-file viewer, QA,
+  (re)generate); and a **per-calibration-type** table (input frametype, output
+  file, inspection script, key metric).
+- A **Requirements** subsection with **Pending** (C1–C16), empty **Implemented**,
+  and **Deferred** (CD1–CD3: regenerate-while-running, parameter editing,
+  cross-group comparison).
+- Refined with color/formatting/readability ideas and accessibility (color +
+  glyph, consistent with R10); organized by calibration type as the prompt
+  suggested.
+- Updated the Preamble's planned document structure to list Calibrations.
+
+Flagged a real **consistency issue** in the Calibrations `#### Clarifications`:
+the button palette the user specified (running = orange, required-undone =
+white) diverges from the Initialization state-table key (running = blue,
+required-undone = amber). Proposed unifying on the Calibrations colors and asked
+five more questions (rendering of "not used" steps; always use `--calib_group`;
+which metrics to surface; input-file viewer choice; whether to show a `bpm`
+button).
