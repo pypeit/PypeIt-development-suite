@@ -110,9 +110,14 @@ Here are a few basic requirements to get us started:
 
 ## Prompts
 
+### Workflow
+
 1. Read this doc.  Perform the first task under Workflow doc
 2. Read this doc.  Perform the 2nd task under Workflow doc
-3. Read this doc.  Perform the 1st task under Design document/Prep
+
+### Prep
+
+1. Read this doc.  Perform the 1st task under Design document/Prep
 
 ## Logging
 
@@ -204,3 +209,33 @@ Key learnings captured in `pypeit_workflow.md` (now **v0.2**):
 
 Updated the doc's version (0.2), changelog, date (2026-06-12), and author
 ("JXP and Claude").
+
+### 2026-06-12 (Started pypeit_dashboard_design.md — Preamble)
+
+Performed the 1st task under "Design document / Prep". Created the design
+document `PypeIt-development-suite/pypeitdev/dashboard/pypeit_dashboard_design.md`
+(version 0.1, dated 2026-06-12, author "JXP and Claude") with an opening
+**Preamble** section.
+
+The Preamble covers:
+
+- **What the document is** — an architecture/requirements/design record that
+  stays above the code level (no specific APIs), and is a living document.
+- **What the dashboard is for** — making PypeIt's verbose, CLI-driven,
+  scattered-output workflow legible and navigable from one place.
+- **Scope** — focused on Phase 2 (Reduction) and Phase 3 (Inspection/QA) per the
+  updated project Goals; Setup (existing GUI) and further processing
+  (flux/coadd/telluric/collate) are explicitly out of scope. Folded in the five
+  concrete capabilities listed in the Goals (show state, run individual steps,
+  examine outputs, launch inspection scripts, monitor progress).
+- **Relationship to `pypeit_workflow.md`** — established it as the companion
+  context doc that all design decisions must cross-reference, and reaffirmed the
+  "reuse existing PypeIt code" principle.
+- **Technology/conventions** — Python + PyQt6; code in `pypeit/dashboard/`,
+  prototypes in `pypeitdev/dashboard/py/`.
+- **Proposed design principles** (state-first, reuse-don't-reinvent,
+  workflow-faithful, path-aware, non-destructive/observable) and a planned
+  document structure (Preamble → Initialization → later phases).
+
+This only covers the Preamble (the Prep task); the Initialization section will
+be drafted when its prompt is run.
