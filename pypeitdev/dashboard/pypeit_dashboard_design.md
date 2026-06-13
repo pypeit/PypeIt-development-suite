@@ -1,10 +1,14 @@
 # PypeIt Dashboard — Design Document
 
-**Version:** 0.9
+**Version:** 0.10
 **Date:** 2026-06-13
 **Author:** JXP and Claude
 
 **Changelog**
+- 0.10 (2026-06-13): Clarified **launch mechanism** (Initialization → How launch
+  works, and R1): the dashboard launches **like every other PypeIt script** via
+  the `pypeit_dashboard` console script (a `ScriptBase` entry point, as
+  `run_pypeit`), with the `.pypeit` file as a **required positional** argument.
 - 0.1 (2026-06-12): Preamble; first draft of the Initialization section.
 - 0.2 (2026-06-12): Revised Initialization to reflect the user's answers in
   Clarifications — science-frame status is forthcoming (design accommodates it),
@@ -156,14 +160,17 @@ goal of startup is to answer, immediately and unambiguously, the question
 
 ### How launch works
 
-- The dashboard is started by running a Python script from within a reduction
-  folder — i.e. the per-configuration directory created by `pypeit_setup`
-  (e.g. `shane_kast_blue_A/`) that contains the `.pypeit` file. A console entry
-  point (working name `pypeit_dashboard`) and/or `python -m pypeit.dashboard` is
-  assumed.
+- The dashboard is started **like every other PypeIt command-line script**
+  (e.g. `run_pypeit`): via the **`pypeit_dashboard`** console script — a
+  `ScriptBase` subclass (`RunDashboard`) registered as a `pyproject.toml` entry
+  point, exactly as `run_pypeit` is. It is run from within a reduction folder —
+  i.e. the per-configuration directory created by `pypeit_setup`
+  (e.g. `shane_kast_blue_A/`) that contains the `.pypeit` file. (A
+  `python -m pypeit.dashboard` convenience may also be provided, but the console
+  script is the primary launch path.)
 - The user provides the name of the `.pypeit` file to use as a **required
-  launch argument**. The dashboard does not guess, so the presence of more than
-  one `.pypeit` file in the folder is not a problem.
+  positional launch argument**. The dashboard does not guess, so the presence of
+  more than one `.pypeit` file in the folder is not a problem.
 - On startup the dashboard derives the reduction **state**, then renders it as
   the default view: a color-coded, formatted **State Table**. Deriving the state
   may briefly block the UI on launch, which is acceptable (see below).
@@ -229,10 +236,12 @@ as development proceeds.
 
 *Basic requirements (from the project brief):*
 
-- **R1.** The dashboard launches by running a Python script.
+- **R1.** The dashboard launches **like every other PypeIt command-line script**
+  (e.g. `run_pypeit`): via the `pypeit_dashboard` console script, a `ScriptBase`
+  subclass registered as a `pyproject.toml` entry point.
 - **R2.** It is launched from a folder that contains a `.pypeit` file, and the
-  user specifies **which** `.pypeit` file to use as a required launch argument
-  (so multiple `.pypeit` files in the folder are unambiguous).
+  user specifies **which** `.pypeit` file to use as a required **positional**
+  launch argument (so multiple `.pypeit` files in the folder are unambiguous).
 - **R3.** The default view shows the reduction **state** as a formatted table
   with **color-coded** information.
 - **R4.** If a state file (`*_state.json`) is present in the folder, load it to
