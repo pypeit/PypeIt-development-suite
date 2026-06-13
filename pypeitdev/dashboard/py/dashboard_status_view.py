@@ -17,32 +17,29 @@ The Status View is the landing page and answers "where does this reduction
 stand?".  The sketch lays it out top-to-bottom as:
 
   1. A **tab bar** (Status | Calibrations) -- the Status tab is active here.
-  2. A **header banner** with the run context (pypeit file, spectrograph,
-     reduction path, setup ID, redux dir).  [design req R6]
-  3. A **summary strip** + a mock toolbar (filter + refresh).  [R7, R12]
-  4. A **grouped status table**: one group box per (calibration group,
-     detector/mosaic), with one row per calibration step in processing order.
-     Columns are Step | Required | Status | Output.  [R3, R8, R9]
-  5. A faded **Science frames** section to show that the layout reserves room
-     for per-science-frame status once ``state.py`` tracks it.  [R15]
-  6. A **color key** for the Dashboard-wide status palette.  [R10]
+  2. A **header banner** with the run context + the PypeIt logo.  [R6]
+  3. A **summary strip** (global health across the whole run).  [R7]
+  4. A **scope toolbar**: drop-downs to pick the calibration group and the
+     detector/mosaic, plus a filter and a refresh button.  [R12, R16]
+  5. A compact **configuration-overview navigator**: a small (group x detector)
+     grid, each cell colored by its worst step status.  [R17]
+  6. A **Calibrations** section: the per-step status table for the *selected*
+     (group, detector).  Columns Step | Required | Status | Output.  [R3, R8,
+     R9, R10]
+  7. A **Science frames** section, given equal prominence.  [R15, R18]
+  8. A **color key** for the Dashboard-wide status palette.  [R10]
 
-The status colors come from the *unified* Dashboard-wide palette agreed in the
-design doc (success=green, running=orange, fail=red, required-undone=white,
-optional/not-required=grey, not-used=dimmed grey), each paired with a glyph so
-status never relies on color alone.
+Shared drawing helpers (palette, status pills, tab bar, header+logo, scope
+toolbar, color key) live in ``utils.py`` and are imported here (reuse, design
+principle #2).
 
-The example content mirrors the *real* state produced by the Shane Kast blue
-600/4310 reduction (see ``pypeit_workflow.md`` section 6 and the
-``shane_kast_blue_A_state.json`` file): calib group 0, DET01, with ``dark`` and
-``scattlight`` optional/undone and everything else successful.  ``bpm`` is an
-internal step with no output, so -- as in the Calibrations design -- it is not
-shown as its own row.
+Example content mirrors the *real* outputs of the Shane Kast blue 600/4310
+reduction (calib group 0, DET01; ``dark`` and ``scattlight`` optional/undone;
+three science/standard frames with spec2d + spec1d written).  ``bpm`` is an
+internal step with no output and is not shown.
 
-Drawing approach: plain Matplotlib ``Rectangle`` patches + ``text`` on an axis
-with data coordinates 0..100 (x) and 0..100 (y, top = 100).  No interactivity;
-this is purely a picture.  Matplotlib (rather than PyQt6) is used because a
-static, headless-friendly PNG is all that is needed for a sketch.
+Drawing approach: Matplotlib patches + text on a 0..100 x 0..100 canvas; larger
+y at the top (no y-inversion).  No interactivity; this is purely a picture.
 
 Inputs / Outputs
 ----------------
@@ -53,98 +50,106 @@ Outputs: writes ``dashboard_status_view.png`` to the directory *above* this
 
 import os
 from matplotlib import pyplot as plt
-from matplotlib.patches import Rectangle, FancyBboxPatch
+from matplotlib.patches import Rectangle
+
+import utils
+from utils import (PALETTE, status_text_color, draw_status_pill, draw_tab_bar,
+                   draw_header, draw_logo, draw_scope_toolbar, draw_color_key)
 
 
-# --- Dashboard-wide status palette (unified; see design doc R10) -------------
-# Each status maps to (fill_color, edge_color, glyph, label).  "required_undone"
-# is white so it needs a visible edge; "not_used" is a dimmed grey.
-PALETTE = {
-    'success':         ('#2E7D32', '#2E7D32', '✓', 'success'),
-    'running':         ('#EF6C00', '#EF6C00', '▶', 'running'),
-    'fail':            ('#C62828', '#C62828', '✗', 'fail'),
-    'required_undone': ('#FFFFFF', '#9E9E9E', '○', 'to do'),
-    'not_required':    ('#9E9E9E', '#9E9E9E', '–', 'optional'),
-    'not_used':        ('#E0E0E0', '#CFCFCF', '–', 'n/a'),
+# --- Example state, mirroring the real shane_kast_blue_A reduction -----------
+# Calibration steps: (step_label, required, status_key, output_file).  Order =
+# MultiSlit/Echelle processing order from default_steps(), minus hidden 'bpm'.
+EXAMPLE_STEPS = [
+    ('bias',       True,  'success',      'Bias_A_0_DET01.fits'),
+    ('dark',       False, 'not_required', '--'),
+    ('slits',      True,  'success',      'Slits_A_0_DET01.fits.gz'),
+    ('arc',        True,  'success',      'Arc_A_0_DET01.fits'),
+    ('tiltimg',    True,  'success',      'Tiltimg_A_0_DET01.fits'),
+    ('wv_calib',   True,  'success',      'WaveCalib_A_0_DET01.fits'),
+    ('tilts',      True,  'success',      'Tilts_A_0_DET01.fits'),
+    ('scattlight', False, 'not_required', '--'),
+    ('flats',      True,  'success',      'Flat_A_0_DET01.fits'),
+]
+
+# Science frames: (frame, type, overall_status, spec2d_status, spec1d_status).
+EXAMPLE_SCIENCE = [
+    ('b24-Feige66',    'standard', 'success', 'success', 'success'),
+    ('b27-J1217p3905', 'science',  'success', 'success', 'success'),
+    ('b28-J1217p3905', 'science',  'success', 'success', 'success'),
+]
+
+# Column x-edges in the 0..100 data space for the Calibrations table.
+CAL_COLS = {
+    'step':     (4, 26),
+    'required': (26, 40),
+    'status':   (40, 62),
+    'output':   (62, 98),
 }
-# White/orange backgrounds read better with dark text; dark fills want white.
-LIGHT_TEXT_ON = {'success', 'fail'}
+# Column x-edges for the Science table.
+SCI_COLS = {
+    'frame':  (4, 28),
+    'type':   (28, 42),
+    'status': (42, 62),
+    'spec2d': (62, 78),
+    'spec1d': (78, 94),
+}
 
 
-def _status_text_color(status_key):
+def _draw_summary(ax):
     """
-    Return a readable text color for a status cell.
+    Draw the global at-a-glance summary strip.
 
     Generated by JXP and Claude.
 
     Parameters
     ----------
-    status_key : str
-        One of the keys in :data:`PALETTE`.
+    ax : matplotlib.axes.Axes
+        Axis to draw on.
+
+    Returns
+    -------
+    None
+    """
+    ax.add_patch(Rectangle((4, 84.0), 94, 3.4, facecolor='#F1F8E9',
+                           edgecolor='#C5E1A5'))
+    ax.text(5.5, 85.7, 'Run summary:   Calibrations 7/7 required ✓     '
+            '3/3 science frames reduced ✓     0 ✗ fail     0 ▶ running',
+            color='#33691E', fontsize=9.5, va='center', fontweight='bold')
+
+
+def _aggregate_color(statuses):
+    """
+    Pick the "worst" status key for an overview cell.
+
+    Generated by JXP and Claude.
+
+    Parameters
+    ----------
+    statuses : list of str
+        Status keys for the steps in a (group, detector) cell.
 
     Returns
     -------
     str
-        ``'white'`` for dark-filled cells, else ``'#212121'`` (near-black).
+        A key into :data:`utils.PALETTE` (fail > running > required_undone >
+        success).
     """
-    return 'white' if status_key in LIGHT_TEXT_ON else '#212121'
+    for worst in ('fail', 'running', 'required_undone'):
+        if worst in statuses:
+            return worst
+    return 'success'
 
 
-# --- Example state, mirroring the real shane_kast_blue_A_state.json ----------
-# (step_label, required, status_key, output_file).  Order = MultiSlit/Echelle
-# processing order from Calibrations.default_steps(), minus the hidden 'bpm'.
-EXAMPLE_STEPS = [
-    ('bias',       True,  'success',         'Bias_A_0_DET01.fits'),
-    ('dark',       False, 'not_required',    '--'),
-    ('slits',      True,  'success',         'Slits_A_0_DET01.fits.gz'),
-    ('arc',        True,  'success',         'Arc_A_0_DET01.fits'),
-    ('tiltimg',    True,  'success',         'Tiltimg_A_0_DET01.fits'),
-    ('wv_calib',   True,  'success',         'WaveCalib_A_0_DET01.fits'),
-    ('tilts',      True,  'success',         'Tilts_A_0_DET01.fits'),
-    ('scattlight', False, 'not_required',    '--'),
-    ('flats',      True,  'success',         'Flat_A_0_DET01.fits'),
-]
-
-# Column x-edges in the 0..100 data space: Step | Required | Status | Output.
-COLS = {
-    'step':     (4, 26),
-    'required': (26, 42),
-    'status':   (42, 70),
-    'output':   (70, 98),
-}
-
-
-def _draw_tab_bar(ax):
+def _draw_overview_grid(ax):
     """
-    Draw the (Status | Calibrations) tab bar at the top.
+    Draw the compact (group x detector) configuration-overview navigator.
 
     Generated by JXP and Claude.
 
-    Parameters
-    ----------
-    ax : matplotlib.axes.Axes
-        Axis to draw on (data coords 0..100).
-
-    Returns
-    -------
-    None
-    """
-    # Active "Status" tab (filled) and an inactive "Calibrations" tab (outline).
-    ax.add_patch(Rectangle((4, 95), 18, 4.2, facecolor='#1565C0',
-                           edgecolor='#1565C0'))
-    ax.text(13, 97.1, 'Status', ha='center', va='center', color='white',
-            fontsize=11, fontweight='bold')
-    ax.add_patch(Rectangle((22.5, 95), 22, 4.2, facecolor='#ECEFF1',
-                           edgecolor='#B0BEC5'))
-    ax.text(33.5, 97.1, 'Calibrations', ha='center', va='center',
-            color='#546E7A', fontsize=11)
-
-
-def _draw_header(ax):
-    """
-    Draw the run-context header banner.
-
-    Generated by JXP and Claude.
+    Each cell is colored by the worst step status for that (group, detector).
+    For instruments with many groups/detectors this becomes a small heat-map
+    and a click-to-scope navigator; here the Kast example is a single 1x1 cell.
 
     Parameters
     ----------
@@ -153,54 +158,40 @@ def _draw_header(ax):
 
     Returns
     -------
-    None
+    float
+        The y just below the overview block.
     """
-    ax.add_patch(Rectangle((4, 86.5), 94, 7.2, facecolor='#0D47A1',
-                           edgecolor='#0D47A1'))
-    ax.text(5.5, 91.6, 'shane_kast_blue_A.pypeit', color='white',
-            fontsize=13, fontweight='bold', va='center')
-    # Right-aligned context chips: spectrograph, path, setup.
-    ax.text(96.5, 91.6, 'shane_kast_blue   •   MultiSlit   •   Setup A',
-            color='#BBDEFB', fontsize=10, ha='right', va='center')
-    ax.text(5.5, 88.3, 'Redux dir:  REDUX_OUT/shane_kast_blue/600_4310_d55/'
-            'shane_kast_blue_A', color='#90CAF9', fontsize=8.5, va='center')
+    top = 78.4
+    ax.text(4, top - 0.6, 'Configuration overview (group × detector):',
+            fontsize=9, fontweight='bold', color='#37474F', va='center')
+    groups = ['0']
+    dets = ['DET01']
+    cell = {('0', 'DET01'): _aggregate_color([s[2] for s in EXAMPLE_STEPS])}
+    cx0, cy0, cw, ch = 8, top - 3.6, 7.0, 2.2
+    for j, d in enumerate(dets):
+        ax.text(cx0 + j * (cw + 1) + cw / 2, top - 1.9, d, ha='center',
+                fontsize=7.5, color='#546E7A')
+    for i, g in enumerate(groups):
+        ax.text(cx0 - 1.0, cy0 + ch / 2 - i * (ch + 0.6), 'grp ' + g,
+                ha='right', va='center', fontsize=7.5, color='#546E7A')
+        for j, d in enumerate(dets):
+            key = cell[(g, d)]
+            fill, edge, glyph, _label = PALETTE[key]
+            x = cx0 + j * (cw + 1)
+            y = cy0 - i * (ch + 0.6)
+            ax.add_patch(Rectangle((x, y), cw, ch, facecolor=fill,
+                                   edgecolor=edge))
+            ax.text(x + cw / 2, y + ch / 2, glyph, ha='center', va='center',
+                    fontsize=9, color=status_text_color(key))
+    ax.text(20, top - 2.6, 'click a cell to scope the tables below  •  '
+            'scales to many groups/detectors without stacking everything',
+            fontsize=8, color='#90A4AE', va='center', style='italic')
+    return cy0 - 1.0
 
 
-def _draw_summary_and_toolbar(ax):
+def _section_heading(ax, y, text):
     """
-    Draw the at-a-glance summary strip and a mock toolbar.
-
-    Generated by JXP and Claude.
-
-    Parameters
-    ----------
-    ax : matplotlib.axes.Axes
-        Axis to draw on.
-
-    Returns
-    -------
-    None
-    """
-    ax.add_patch(Rectangle((4, 81), 94, 4.6, facecolor='#F1F8E9',
-                           edgecolor='#C5E1A5'))
-    ax.text(5.5, 83.3, 'Calibrations:  7 / 7 required steps  '
-            '✓ success     0 ✗ fail     0 ▶ running     '
-            '2 optional skipped', color='#33691E', fontsize=9.5, va='center',
-            fontweight='bold')
-    # Mock toolbar controls on the right (filter dropdown + refresh button).
-    ax.add_patch(Rectangle((74, 81.6), 13, 3.4, facecolor='white',
-                           edgecolor='#9E9E9E'))
-    ax.text(80.5, 83.3, 'Filter ▾', ha='center', va='center', fontsize=9,
-            color='#424242')
-    ax.add_patch(Rectangle((88, 81.6), 9.5, 3.4, facecolor='#1565C0',
-                           edgecolor='#1565C0'))
-    ax.text(92.7, 83.3, '↻ Refresh', ha='center', va='center', fontsize=9,
-            color='white')
-
-
-def _draw_column_headers(ax, y):
-    """
-    Draw the table column headers.
+    Draw a prominent section heading bar.
 
     Generated by JXP and Claude.
 
@@ -209,55 +200,25 @@ def _draw_column_headers(ax, y):
     ax : matplotlib.axes.Axes
         Axis to draw on.
     y : float
-        Vertical center (data coords) for the header text.
+        Top edge (data coords) of the heading bar.
+    text : str
+        Heading text.
 
     Returns
     -------
-    None
+    float
+        The y just below the heading bar.
     """
-    labels = {'step': 'Step', 'required': 'Required', 'status': 'Status',
-              'output': 'Output file'}
-    for key, (x0, _x1) in COLS.items():
-        ax.text(x0 + 0.6, y, labels[key], fontsize=9.5, fontweight='bold',
-                color='#37474F', va='center')
+    ax.add_patch(Rectangle((4, y - 3.0), 94, 3.0, facecolor='#37474F',
+                           edgecolor='#37474F'))
+    ax.text(5.5, y - 1.5, text, fontsize=11, fontweight='bold', color='white',
+            va='center')
+    return y - 3.0
 
 
-def _draw_status_cell(ax, x0, y_center, status_key):
+def _draw_calib_section(ax, top_y):
     """
-    Draw a single color-coded status cell (pill) with glyph + label.
-
-    Generated by JXP and Claude.
-
-    Parameters
-    ----------
-    ax : matplotlib.axes.Axes
-        Axis to draw on.
-    x0 : float
-        Left x of the Status column (data coords).
-    y_center : float
-        Vertical center of the row (data coords).
-    status_key : str
-        Key into :data:`PALETTE`.
-
-    Returns
-    -------
-    None
-    """
-    fill, edge, glyph, label = PALETTE[status_key]
-    # Rounded "pill" so the colored chip looks deliberate, not like a table cell.
-    pill = FancyBboxPatch((x0 + 0.6, y_center - 1.1), 16, 2.2,
-                          boxstyle='round,pad=0.15,rounding_size=0.6',
-                          facecolor=fill, edgecolor=edge, linewidth=1.2)
-    ax.add_patch(pill)
-    ax.text(x0 + 1.6, y_center, glyph, ha='center', va='center',
-            fontsize=11, color=_status_text_color(status_key))
-    ax.text(x0 + 3.2, y_center, label, va='center', fontsize=9.5,
-            color=_status_text_color(status_key))
-
-
-def _draw_group(ax, top_y, group_title, steps):
-    """
-    Draw one calibration-group box: a sub-header plus the step rows.
+    Draw the Calibrations section (heading + column headers + step rows).
 
     Generated by JXP and Claude.
 
@@ -266,116 +227,92 @@ def _draw_group(ax, top_y, group_title, steps):
     ax : matplotlib.axes.Axes
         Axis to draw on.
     top_y : float
-        Top edge (data coords) of this group box.
-    group_title : str
-        e.g. ``'Calibration Group 0  •  DET01'``.
-    steps : list
-        List of (step_label, required, status_key, output_file) tuples.
+        Top edge (data coords) of the section.
 
     Returns
     -------
     float
-        The y value just below the group (so the caller can stack content).
+        The y just below the section.
     """
-    row_h = 3.0
-    # Group sub-header bar.
-    ax.add_patch(Rectangle((4, top_y - 3.0), 94, 3.0, facecolor='#CFD8DC',
-                           edgecolor='#B0BEC5'))
-    ax.text(5.5, top_y - 1.5, group_title, fontsize=10.5, fontweight='bold',
-            color='#263238', va='center')
-
-    y = top_y - 3.0
-    for i, (label, required, status_key, output) in enumerate(steps):
+    y = _section_heading(ax, top_y, 'Calibrations  —  Group 0 · DET01')
+    hdr = {'step': 'Step', 'required': 'Required', 'status': 'Status',
+           'output': 'Output file'}
+    for key, (x0, _x1) in CAL_COLS.items():
+        ax.text(x0 + 0.6, y - 1.3, hdr[key], fontsize=9, fontweight='bold',
+                color='#37474F', va='center')
+    y -= 2.4
+    row_h = 2.3
+    for i, (label, required, status_key, output) in enumerate(EXAMPLE_STEPS):
         y0 = y - row_h
-        # Zebra striping for scannability.
         if i % 2 == 0:
             ax.add_patch(Rectangle((4, y0), 94, row_h, facecolor='#FAFAFA',
                                    edgecolor='none'))
         yc = y0 + row_h / 2.0
-        # Step name (monospace-ish via family) .
-        ax.text(COLS['step'][0] + 0.6, yc, label, va='center', fontsize=10,
-                family='monospace', color='#212121')
-        # Required flag.
+        ax.text(CAL_COLS['step'][0] + 0.6, yc, label, va='center',
+                fontsize=9.5, family='monospace', color='#212121')
         req_txt = 'required' if required else 'optional'
         req_col = '#37474F' if required else '#9E9E9E'
-        ax.text(COLS['required'][0] + 0.6, yc, req_txt, va='center',
-                fontsize=9.5, color=req_col)
-        # Status pill.
-        _draw_status_cell(ax, COLS['status'][0], yc, status_key)
-        # Output file (monospace).
-        ax.text(COLS['output'][0] + 0.6, yc, output, va='center', fontsize=8.5,
-                family='monospace', color='#455A64')
+        ax.text(CAL_COLS['required'][0] + 0.6, yc, req_txt, va='center',
+                fontsize=9, color=req_col)
+        draw_status_pill(ax, CAL_COLS['status'][0], yc, status_key)
+        ax.text(CAL_COLS['output'][0] + 0.6, yc, output, va='center',
+                fontsize=8, family='monospace', color='#455A64')
         y = y0
-    # Border around the whole group for grouping clarity.
-    ax.add_patch(Rectangle((4, y), 94, top_y - y, facecolor='none',
+    ax.add_patch(Rectangle((4, y), 94, top_y - 3.0 - y, facecolor='none',
                            edgecolor='#B0BEC5', linewidth=1.0))
     return y
 
 
-def _draw_science_placeholder(ax, top_y):
+def _draw_science_section(ax, top_y):
     """
-    Draw a faded "Science frames (coming soon)" section.
+    Draw the Science frames section, given equal prominence to Calibrations.
 
     Generated by JXP and Claude.
 
-    This shows that the layout reserves room for per-science-frame status once
-    ``state.py`` is extended to track it (design req R15).
+    Columns: Frame | Type | Status | spec2d | spec1d.  Per-frame *step* status
+    (object finding / extraction) will populate as ``state.py`` is extended
+    (R15); for now the example shows the products that were produced.
 
     Parameters
     ----------
     ax : matplotlib.axes.Axes
         Axis to draw on.
     top_y : float
-        Top edge (data coords) of the placeholder box.
+        Top edge (data coords) of the section.
 
     Returns
     -------
     float
-        The y value just below the placeholder.
+        The y just below the section.
     """
-    h = 6.0
-    y0 = top_y - h
-    ax.add_patch(Rectangle((4, y0), 94, h, facecolor='#F5F5F5',
-                           edgecolor='#E0E0E0', linestyle='--'))
-    ax.text(5.5, top_y - 1.7, 'Science frames', fontsize=10.5,
-            fontweight='bold', color='#9E9E9E', va='center')
-    ax.text(5.5, top_y - 4.0, 'per-frame object-finding / extraction status '
-            '— reserved (R15); shown once tracked in state.py',
-            fontsize=9, color='#BDBDBD', va='center', style='italic')
-    return y0
-
-
-def _draw_color_key(ax, y):
-    """
-    Draw the Dashboard-wide status color key.
-
-    Generated by JXP and Claude.
-
-    Parameters
-    ----------
-    ax : matplotlib.axes.Axes
-        Axis to draw on.
-    y : float
-        Vertical center (data coords) of the key row.
-
-    Returns
-    -------
-    None
-    """
-    ax.text(4, y + 2.2, 'Status key', fontsize=9.5, fontweight='bold',
-            color='#37474F', va='center')
-    order = ['success', 'running', 'fail', 'required_undone', 'not_required',
-             'not_used']
-    x = 4
-    for key in order:
-        fill, edge, glyph, label = PALETTE[key]
-        ax.add_patch(FancyBboxPatch((x, y - 1.0), 2.0, 2.0,
-                     boxstyle='round,pad=0.1,rounding_size=0.5',
-                     facecolor=fill, edgecolor=edge, linewidth=1.0))
-        ax.text(x + 1.0, y, glyph, ha='center', va='center', fontsize=10,
-                color=_status_text_color(key))
-        ax.text(x + 2.6, y, label, va='center', fontsize=8.8, color='#546E7A')
-        x += 15.5
+    y = _section_heading(ax, top_y, 'Science frames  —  Group 0 · DET01')
+    hdr = {'frame': 'Frame', 'type': 'Type', 'status': 'Status',
+           'spec2d': 'spec2d', 'spec1d': 'spec1d'}
+    for key, (x0, _x1) in SCI_COLS.items():
+        ax.text(x0 + 0.6, y - 1.3, hdr[key], fontsize=9, fontweight='bold',
+                color='#37474F', va='center')
+    y -= 2.4
+    row_h = 2.3
+    for i, (frame, ftype, stat, s2d, s1d) in enumerate(EXAMPLE_SCIENCE):
+        y0 = y - row_h
+        if i % 2 == 0:
+            ax.add_patch(Rectangle((4, y0), 94, row_h, facecolor='#FAFAFA',
+                                   edgecolor='none'))
+        yc = y0 + row_h / 2.0
+        ax.text(SCI_COLS['frame'][0] + 0.6, yc, frame, va='center',
+                fontsize=9.5, family='monospace', color='#212121')
+        ax.text(SCI_COLS['type'][0] + 0.6, yc, ftype, va='center', fontsize=9,
+                color='#37474F')
+        draw_status_pill(ax, SCI_COLS['status'][0], yc, stat)
+        draw_status_pill(ax, SCI_COLS['spec2d'][0], yc, s2d, width=10)
+        draw_status_pill(ax, SCI_COLS['spec1d'][0], yc, s1d, width=10)
+        y = y0
+    ax.add_patch(Rectangle((4, y), 94, top_y - 3.0 - y, facecolor='none',
+                           edgecolor='#B0BEC5', linewidth=1.0))
+    ax.text(5.5, y - 1.4, 'per-frame object-finding / extraction status will '
+            'populate as state.py tracks it (R15);  long lists scroll & filter '
+            '(R19)', fontsize=8, color='#90A4AE', va='center', style='italic')
+    return y - 2.6
 
 
 def make_status_view_sketch(outpath=None):
@@ -398,37 +335,30 @@ def make_status_view_sketch(outpath=None):
     if outpath is None:
         here = os.path.dirname(os.path.abspath(__file__))
         parent = os.path.dirname(here)
-        outpath = os.path.join(parent, 'dashboard_status_view.png')
+        outpath = os.path.join(parent, 'images', 'dashboard_status_view.png')
 
-    fig, ax = plt.subplots(figsize=(11.5, 8.7), dpi=140)
-    # Window backdrop.
+    fig, ax = plt.subplots(figsize=(11.5, 9.6), dpi=140)
     ax.add_patch(Rectangle((0, 0), 100, 100, facecolor='#FFFFFF',
                            edgecolor='#90A4AE', linewidth=1.5))
 
-    _draw_tab_bar(ax)
-    _draw_header(ax)
-    _draw_summary_and_toolbar(ax)
-    _draw_column_headers(ax, y=79.0)
+    draw_tab_bar(ax, active='status')
+    draw_logo(ax)
+    draw_header(ax)
+    _draw_summary(ax)
+    draw_scope_toolbar(ax, y0=80.0, include_filter=True)
+    after_grid = _draw_overview_grid(ax)
 
-    # The single calibration group from the Kast example.
-    bottom = _draw_group(ax, top_y=77.5,
-                         group_title='Calibration Group 0  •  DET01',
-                         steps=EXAMPLE_STEPS)
+    bottom = _draw_calib_section(ax, top_y=after_grid - 1.0)
+    bottom = _draw_science_section(ax, top_y=bottom - 2.0)
+    draw_color_key(ax, y=bottom - 2.5)
 
-    bottom = _draw_science_placeholder(ax, top_y=bottom - 1.5)
-    _draw_color_key(ax, y=bottom - 4.0)
-
-    # Caption.
-    ax.text(50, 1.6, 'PypeIt Dashboard — Status View (layout sketch; '
+    ax.text(50, 1.4, 'PypeIt Dashboard — Status View (layout sketch; '
             'example data: shane_kast_blue 600/4310)', ha='center',
             fontsize=8.5, color='#90A4AE', style='italic')
 
     ax.set_xlim(0, 100)
     ax.set_ylim(0, 100)
-    # Matplotlib's default has larger y at the top, which is exactly how the
-    # layout above is authored (tab bar at y~99, content descending).  So we do
-    # NOT invert the y-axis.
-    ax.axis('off')
+    ax.axis('off')  # larger y at top matches the top-down layout
     fig.subplots_adjust(left=0.01, right=0.99, top=0.99, bottom=0.01)
     fig.savefig(outpath, dpi=140)
     plt.close(fig)
