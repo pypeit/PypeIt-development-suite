@@ -184,6 +184,89 @@ metadata (the `.pypeit` file + spectrograph), not from the state.
 - The offscreen render matrix produces PNGs that match the header/tab layout in
   the design sketches; structural tests pass under `pytest-qt` offscreen.
 
+#### Sign offs
+
+These are the actions for **you** to take to sign off on Stage 0. Most of
+Stage 0 was verified automatically/headlessly by Claude (tests + offscreen
+renders); the items below are the things best confirmed by a human — especially
+the **interactive launch on your display**, which Claude cannot do. Run them
+from the top of the PypeIt repo (`/home/xavier/Projects/PypeIt/PypeIt`).
+
+A convenience shell variable for the example reduction (used below):
+
+```bash
+PF=$PYPEIT_DEV/REDUX_OUT/shane_kast_blue/600_4310_d55/shane_kast_blue_A/shane_kast_blue_A.pypeit
+```
+
+1. **Console script is wired (R1).**
+   - Execute: `pypeit_dashboard --help`
+   - Inspect: the help shows a **required positional** `pypeit_file` argument and
+     an optional `--redux_path`; the program name is `pypeit_dashboard`. (If the
+     command is *not found*, re-run `pip install -e ".[dev]"` to refresh the
+     entry point, then retry.)
+
+Successfully completed.
+
+2. **Required-argument guard (R2).**
+   - Execute: `pypeit_dashboard` (no arguments)
+   - Inspect: it exits immediately with an argparse error naming the missing
+     `pypeit_file` — **not** a traceback and **not** a launched window.
+
+Successfully completed.
+
+3. **Launch the GUI on your display (R1, R2, R6) — the key interactive check.**
+   - Execute: `pypeit_dashboard $PF`
+     (must be run in a normal desktop session, **not** under
+     `QT_QPA_PLATFORM=offscreen`.)
+   - Inspect, in the window that opens:
+     - the **header banner** shows five fields — *PypeIt file*
+       (`shane_kast_blue_A.pypeit`), *Spectrograph* (`shane_kast_blue`), *Setup*
+       (`A`), *Pipeline* (`MultiSlit`), *Reduction dir* (the full path);
+     - the **PypeIt logo** sits in the **top-right corner**, clear of the text;
+     - there are exactly two tabs, **Status** and **Calibrations**, each showing
+       a greyed "coming in Stage 2/3" placeholder;
+     - the window title is **"PypeIt Dashboard"**; resize the window and confirm
+       the header and tabs reflow without clipping or overlap.
+   - Close the window (or Ctrl+C in the terminal) — it should exit cleanly.
+
+Here are some issues and suggested modifications:
+  - The GUI launches, but the window is a little wider than my screen view.  Please modify the layout to make it fit my screen or be a little smaller than it is.  
+  - I cannot adjust the width of the window, only its vertical size. Check this
+  - "Reduction path" is an odd term.  Used "Pipeline" instead.
+
+Claude addressed these issues and the Sign offs look good.
+
+4. **Module launch path (optional convenience).**
+   - Execute: `python -m pypeit.dashboard $PF`
+   - Inspect: the same window opens (confirms the `__main__.py` path).
+
+I did not try this, but am sure it works.
+
+5. **Automated tests pass (CI-safe).**
+   - Execute: `python -m pytest pypeit/tests/test_dashboard.py -v`
+   - Inspect: **7 passed** — the headless model tests and the offscreen
+     `pytest-qt` structural tests (tab bar, header fields, render).
+
+The 7 tests pass
+
+6. **Review the milestone screenshots (layout matrix).**
+   - Inspect the four PNGs in
+     `$PYPEIT_DEV/pypeitdev/dashboard/py/layout_check/`:
+     `dashboard_main_light_default.png`, `..._light_resized.png`,
+     `..._dark_default.png`, `..._dark_resized.png`.
+   - Confirm: light **and** dark themes are both legible (dark = light text on a
+     dark background, R10 contrast), and the **resized** renders reflow cleanly.
+   - (To regenerate them yourself:
+     `QT_QPA_PLATFORM=offscreen python $PYPEIT_DEV/pypeitdev/dashboard/py/dashboard_layout_check.py`.)
+
+These look fine
+
+**Sign-off:** if items 1–6 look right, Stage 0 is accepted and we proceed to
+Stage 1. If anything is off, note it (ideally with which item and a screenshot)
+and Claude will address it before moving on.
+
+JXP signs off at UT: Sat Jun 13 11:42:39 AM PDT 2026
+
 #### Clarifications
 
 *(Discussion channel for Stage 0. My recommendations and open questions are
@@ -238,6 +321,45 @@ I approve the proposed location and suggestion.
   the header's path field, rather than waiting on the state layer.
 
 Yes, that is the intended source for the header's path field.
+
+---
+
+*(Below: a closer read of the code I will reuse surfaced three further
+implementation questions — **S0-Q7–S0-Q9**. S0-Q1–S0-Q6 above are resolved.)*
+
+- **S0-Q7 — How the header is populated (the cheap, no-reduction source).** To
+  fill the R6 banner I plan to parse the `.pypeit` file with
+  `pypeit.inputfiles.PypeItFile.from_file(<file>)` and `get_spectrograph()`,
+  which gives: `PYP_SPEC` = `spec.name`; the reduction **path** = `spec.pypeline`
+  (`'MultiSlit'` / `'Echelle'` / `'SlicerIFU'`, displayed as **MultiSlit /
+  Echelle / IFU**); and the setup/configuration ID = `PypeItFile.setup_name`. The
+  reduction **directory** comes from the cwd (or `--redux_path`). This is cheap
+  and runs no reduction (consistent with S0-Q6). Confirm this is the intended
+  source, and that mapping `pypeline=='SlicerIFU'` → display **"IFU"** is right.
+
+Yes, this is as intended and that mapping is correct.
+
+- **S0-Q8 — Producing the *dark*-theme render in Stage 0.** The coding doc's
+  layout matrix asks for **light and dark** renders, but `setup_gui` sets **no
+  explicit stylesheet** — it uses the Qt/OS default palette (only bumping the
+  font to ≥14 pt), so an offscreen grab defaults to **light**. I propose the
+  **layout-check harness** apply a Qt **Fusion dark palette** for the dark render,
+  while the production app keeps following the system theme for now (an
+  app-level dark-theme toggle is a later concern). OK, or do you want an
+  app-level theme switch built in Stage 0?
+
+Yes, I approve the proposed approach.
+
+- **S0-Q9 — Logging / verbosity wiring.** Mirror `run_pypeit` / `setup_gui`: keep
+  `ScriptBase.get_parser(default_log_file=True)`, call `cls.init_log(args)` in
+  `RunDashboard.main()`, and route the dashboard's own logging through PypeIt's
+  `log` so the loud `sys.excepthook` and the activity-log debug trace (from the
+  Debugging plan) work from day one. Any preference on a `-v/--verbosity` flag
+  and the default `.log` location for Stage 0, or just inherit the `ScriptBase`
+  defaults?
+
+It should be fine to inherit the ScriptBase defaults.
+
 
 ---
 
@@ -365,6 +487,8 @@ please answer inline under each **S1-Q**.)*
    the loud-failure hooks, the layout-check harness slice, and the structural
    `pytest-qt` tests. Produce the milestone screenshots (light/dark ×
    default/resized) for my sign-off. Log your work.
+3. Generate a set of Sign offs actions that I should take after your development of this Stage.  Add them to the Sign offs sub-section of this stage.  Give me explict instructions on what to execute and what to inspect.
+4. Examine my comments in the Sign offs sub-section and make changes to the code to address them.  I will then re-evaluate the Sign offs and request any additional changes as needed.
 
 ### Stage 1 — State data layer (headless)
 
@@ -375,7 +499,7 @@ please answer inline under each **S1-Q**.)*
    acceptance criteria: the headless `DashboardModel` (load → derive source
    priority), the status-table accessor, the `(calib_id, det)` enumeration,
    `palette.py`, the path-aware step order, the edge-state handling, and the
-   committed `*_state.json` fixtures + headless tests. Log your work.
+   committed `*_state.json` fixtures + headless tests. Also generate set of Sign offs actions that I should take after your development of this Stage.  Add them to the Sign offs sub-section of this stage.  Give me explict instructions on what to execute and what to inspect. Log your work.
 
 ## Logging
 
@@ -432,3 +556,170 @@ reduction **path comes from the spectrograph derived from the `.pypeit` file**.
 
 **Next step:** await the user's edits, then proceed to the Stage 0 implementation
 prompt (the S0 questions are now resolved).
+
+### 2026-06-13 (Stage 0 discussion: scope confirmed; raised S0-Q7–S0-Q9)
+
+**Task.** First task under *Prompts / Stage 0* — discuss Stage 0, confirm scope,
+and answer/raise the S0-Q questions. No code written.
+
+**Scope confirmed (Stage 0 = walking skeleton, R1/R2/R6).** In scope: the
+`pypeit_dashboard` `ScriptBase` launcher (positional `.pypeit` arg), the
+`QApplication` bootstrap reusing `setup_gui`, a `MainWindow` (QMainWindow + a
+QTabWidget central widget, **Status | Calibrations**, title "PypeIt Dashboard",
+`resize(1650, 900)`), the shared header banner + logo, the loud-failure hooks,
+the layout-check harness slice, and structural `pytest-qt` tests. **Out of
+scope:** all reduction/state logic (Stage 1), populated views (Stages 2–3), and
+launching PypeIt work (Stage 4). The header is filled from cheap `.pypeit`
+metadata only.
+
+**Code I read to ground the discussion.**
+- `pypeit/scripts/run_pypeit.py` — the `ScriptBase` launcher pattern to mirror.
+- `pypeit/setup_gui/controller.py` — `start_gui(args)` (creates `QApplication`,
+  sets the window icon from `images/`, builds the controller) and
+  `SetupGUIController` (sets Organization/Application name, bumps the default
+  font to ≥14 pt, builds the main window; `start()` does `show()` + the
+  SIGINT-timer trick + `app.exec_()`). This is the bootstrap I reuse in place
+  (S0-Q3 = option a).
+- `pypeit/setup_gui/view.py` — `SetupGUIMainWindow(QMainWindow)` uses a
+  `QTabWidget` central widget, `setWindowTitle`, and `resize(1650, 900)` —
+  confirming the doc's default window size and the tab-based shell.
+- `pypeit/inputfiles.py` — `PypeItFile.from_file()`, `get_spectrograph()`
+  (→ `spec.name`, `spec.pypeline`), and `setup_name`: the cheap, no-reduction
+  source for the R6 header.
+
+**Outcome.** S0-Q1–S0-Q6 are resolved (recorded inline). A closer read surfaced
+three new, grounded questions added to the Stage 0 Clarifications channel:
+**S0-Q7** (header populated via `PypeItFile`/`get_spectrograph`; `SlicerIFU` →
+display "IFU"), **S0-Q8** (produce the *dark* render via a Fusion dark palette in
+the layout-check harness, since `setup_gui` sets no explicit theme), and
+**S0-Q9** (logging/verbosity wiring — `init_log` + route through PypeIt's `log`
+for the loud excepthook/activity trace).
+
+**Next step:** await answers to S0-Q7–S0-Q9, then implement Stage 0 (the second
+Stage 0 prompt).
+
+### 2026-06-13 (Stage 0 implemented: walking skeleton + tests + renders)
+
+**Task.** Second task under *Prompts / Stage 0* — implement Stage 0 (R1, R2, R6)
+with the S0-Q answers folded in, plus the layout-check harness, structural
+tests, and the milestone screenshots.
+
+**S0-Q7–S0-Q9 (all approved) applied.** Header populated by parsing the
+`.pypeit` file via `PypeItFile.from_file(vet=False)` + `get_spectrograph()`
+(`SlicerIFU`→"IFU"); dark render via a Fusion dark palette in the harness;
+logging inherits the `ScriptBase` defaults (`init_log` in `main()`).
+
+**Files created (production, `pypeit/dashboard/`).**
+- `__init__.py`; `model.py` — Qt-free `HeaderInfo` dataclass + `read_header_info()`
+  (the cheap, no-reduction R6 metadata; `PYPELINE_DISPLAY` maps `SlicerIFU`→IFU;
+  raises `FileNotFoundError` for an absent file, R11);
+- `util.py` — `install_excepthook()` (loud global `sys.excepthook` routed through
+  PypeIt's `log`) and the `safe_slot` decorator (Debugging plan);
+- `app.py` — `launch(args)` bootstrap mirroring `setup_gui.start_gui` (QApplication,
+  icon, ≥14 pt font, excepthook, SIGINT-timer trick, `exec_()`);
+- `__main__.py` — optional `python -m pypeit.dashboard` forwarding to the script;
+- `view/{__init__,main_window,header,status_view,calibrations_view}.py` —
+  `DashboardMainWindow` (header banner above a `QTabWidget`; **Status |
+  Calibrations**; title "PypeIt Dashboard"; `resize(1650, 900)`), `HeaderBanner`
+  (the five R6 fields + the logo anchored top-right), and the two labeled
+  placeholder views;
+- `images/pypeit_logo.png` — the logo copied from `pypeitdev/dashboard/images/`
+  (S0-Q5).
+
+**Launcher rewritten.** `pypeit/scripts/pypeit_dashboard.py` — `RunDashboard`
+`name()`→`'pypeit_dashboard'`, a **required positional** `pypeit_file` argument
+(+ optional `--redux_path`), `main()` calls `init_log` then `app.launch`. (The
+old body imported the now-moved prototype.)
+
+**Tests (CI-safe, `pypeit/tests/`).** Replaced the obsolete prototype-targeting
+`test_dashboard.py` (it imported `pypeit.dashboard.dashboard`, now under
+`prototype/`) with Stage 0 tests: headless model tests (`read_header_info`
+fields, `redux_path` override, missing-file `FileNotFoundError`, the
+`SlicerIFU`→IFU map) and `pytest-qt` offscreen structural tests (tab bar is
+exactly Status|Calibrations, the header exposes the five R6 fields, the window
+builds + renders). Added a minimal bundled fixture
+`pypeit/tests/files/dashboard_shane_kast_blue.pypeit`. **All 7 tests pass**
+offscreen.
+
+**Layout-check harness.** `pypeitdev/dashboard/py/dashboard_layout_check.py`
+imports the real widgets and renders the **light/dark × default/resized** matrix
+to PNGs (default data: `$PYPEIT_DEV` `shane_kast_blue` 600/4310). Verified all
+four renders offscreen; self-inspected each — header fields/logo and the tab bar
+match the design, dark theme keeps contrast, the resized window reflows cleanly.
+Outputs in `pypeitdev/dashboard/py/layout_check/` (working artifacts, not
+committed).
+
+**Verified acceptance criteria.** `pypeit_dashboard <file>.pypeit` launches the
+window (rendered); a missing positional is a clean argparse error (R2);
+`python -m pypeit.dashboard` imports; structural tests pass offscreen.
+
+**Note / housekeeping.** The reference prototype still lives in
+`pypeit/dashboard/prototype/` (delete later, S0-Q4); only a docstring in the new
+test file mentions it. `.claude/settings.json` (project) gained allow-rules for
+routine inspection/test commands.
+
+**Milestone screenshots for sign-off:** the four PNGs in
+`pypeitdev/dashboard/py/layout_check/` (`dashboard_main_{light,dark}_{default,resized}.png`).
+
+**Next step:** your sign-off on the screenshots, then Stage 1 (the headless state
+data layer).
+
+### 2026-06-13 (Stage 0: added the Sign offs checklist)
+
+**Task.** Third task under *Prompts / Stage 0* — generate the sign-off actions
+for the user and add them to the Stage 0 **Sign offs** sub-section, with explicit
+execute/inspect instructions.
+
+**What I did.** Added a **Sign offs** sub-section to the Stage 0 spec (after
+*Acceptance criteria*). It is a six-step checklist the user runs from the PypeIt
+repo root, each step with an explicit *Execute* command and an *Inspect/expect*:
+(1) `pypeit_dashboard --help` (positional arg present; reinstall hint if the
+command is missing); (2) the required-argument guard (`pypeit_dashboard` with no
+args → argparse error); (3) the **interactive GUI launch** on the user's display
+(`pypeit_dashboard $PF`) — the header's five R6 fields, the top-right logo, the
+two tabs/placeholders, the title, and resize reflow — flagged as the human-only
+check Claude can't do headlessly; (4) the optional `python -m pypeit.dashboard`
+path; (5) `pytest pypeit/tests/test_dashboard.py` → 7 passed; (6) reviewing the
+four light/dark × default/resized PNGs (with the harness command to regenerate
+them). Included a `PF=...` convenience variable for the `shane_kast_blue`
+600/4310 example.
+
+**Next step:** the user runs the sign-off checklist; on acceptance, proceed to
+Stage 1.
+
+### 2026-06-13 (Stage 0: addressed sign-off feedback on item 3)
+
+**Task.** Fourth task under *Prompts / Stage 0* — examine the user's comments in
+the Sign offs sub-section and change the code to address them.
+
+**User feedback (Sign offs item 3) and fixes.**
+1. *"Window is a little wider than my screen — make it fit / a bit smaller."*
+   → `app.launch` now clamps the window to **95% of the available screen
+   geometry** (`QApplication.primaryScreen().availableGeometry()`) and anchors it
+   at the screen's top-left. The design default stays 1650×900 (used by the
+   layout-matrix renders); the clamp only applies to the live launch, so it fits
+   any display.
+2. *"I cannot adjust the width of the window, only its vertical size."*
+   → Root cause: the long monospace **reduction-dir** value (a space-less path)
+   forced a large minimum window width. Added an **`ElidingLabel`** (in
+   `header.py`) used for the long fields (`PypeIt file`, `Reduction dir`): it has
+   an `Ignored` horizontal size policy and middle-elides its text to the current
+   width. The window's minimum width dropped from ~the full path width to
+   **364 px**, and it now resizes freely down to 700 px (verified) — the path
+   elides as `/home/xavier/Projects/PypeIt/…/shane_kast_blue_A`.
+3. *"'Reduction path' is an odd term — use 'Pipeline'."*
+   → Renamed the header field label from "Reduction path" to **"Pipeline"** (the
+   model attribute stays `path`; only the display label changed).
+
+**Verification.** `pytest pypeit/tests/test_dashboard.py` → **7 passed** (the
+structural tests read the short plain-label values, unaffected by eliding).
+Re-rendered a narrow (700×500) grab to confirm the shrink + elide + "Pipeline"
+label, and regenerated the light/dark × default/resized matrix PNGs in
+`pypeitdev/dashboard/py/layout_check/`. Updated the design doc R6 *Implemented*
+note and the Sign offs item-3 inspect bullet to say "Pipeline".
+
+**Note.** The two screen-clamp behaviors (fit-to-screen, narrow resize) are best
+re-checked interactively on the user's display (Sign offs item 3).
+
+**Next step:** the user re-evaluates the Sign offs and requests any further
+changes.
