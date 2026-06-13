@@ -236,12 +236,6 @@ as development proceeds.
 
 *Basic requirements (from the project brief):*
 
-- **R1.** The dashboard launches **like every other PypeIt command-line script**
-  (e.g. `run_pypeit`): via the `pypeit_dashboard` console script, a `ScriptBase`
-  subclass registered as a `pyproject.toml` entry point.
-- **R2.** It is launched from a folder that contains a `.pypeit` file, and the
-  user specifies **which** `.pypeit` file to use as a required **positional**
-  launch argument (so multiple `.pypeit` files in the folder are unambiguous).
 - **R3.** The default view shows the reduction **state** as a formatted table
   with **color-coded** information.
 - **R4.** If a state file (`*_state.json`) is present in the folder, load it to
@@ -249,11 +243,6 @@ as development proceeds.
 - **R5.** Otherwise, compute the state as `pypeit_status.py` does
   (`PypeIt(calib_only=True).calib_all(status_only=True, reload_only=True)`). It
   is acceptable for this to briefly block the UI on launch.
-- **R6. Context header.** Display a header banner with the `.pypeit` file name,
-  the spectrograph (`PYP_SPEC`), the setup/configuration ID, the reduction path
-  (MultiSlit / Echelle / IFU), and the reduction directory. The **PypeIt logo**
-  sits in the **top-right corner** (above the banner, clear of the text). This
-  banner+logo is shared by the Status and Calibrations views.
 - **R7. At-a-glance summary.** Show an overall progress/health summary derived
   from the state (e.g. "Calibrations: 6/6 required steps success" plus counts of
   fail / running / undone), so health is readable without scanning every row.
@@ -314,8 +303,25 @@ as development proceeds.
 
 #### Implemented
 
-*(None yet — this is a design-phase document; items move here as they are built
-and verified.)*
+*(Implemented and verified in **Stage 0** — see
+`claude_prompts/dashboard/dashboard_dev_stages_0-1.md`.)*
+
+- **R1.** The dashboard launches **like every other PypeIt command-line script**
+  (e.g. `run_pypeit`): via the `pypeit_dashboard` console script, a `ScriptBase`
+  subclass (`RunDashboard`) registered as a `pyproject.toml` entry point.
+  Implemented in `pypeit/scripts/pypeit_dashboard.py` (+ optional
+  `python -m pypeit.dashboard`).
+- **R2.** Launched from a folder containing a `.pypeit` file, with the `.pypeit`
+  file given as a **required positional** argument (so multiple `.pypeit` files
+  are unambiguous). A missing argument is a clean argparse error.
+- **R6. Context header.** A header banner shows the `.pypeit` file name, the
+  spectrograph (`PYP_SPEC`), the setup/configuration ID, the **Pipeline**
+  (MultiSlit / Echelle / IFU; field labeled "Pipeline" per user feedback), and
+  the reduction directory, with the **PypeIt logo** in the **top-right corner**.
+  Built as `pypeit/dashboard/view/header.py`, shared above the
+  Status/Calibrations tabs in the `MainWindow`. The long filename/path values
+  use an eliding label so the window can be resized narrower. (Stage 0 fills it
+  from cheap `.pypeit` metadata via `read_header_info`, not the state.)
 
 #### Deferred
 
