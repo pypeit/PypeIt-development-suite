@@ -1,10 +1,15 @@
 # PypeIt Dashboard — Coding Document
 
-**Version:** 0.4
+**Version:** 0.5
 **Date:** 2026-06-13
 **Author:** JXP and Claude
 
 **Changelog**
+- 0.5 (2026-06-13): Clarified the Stage 0 **launch mechanism** in the
+  *Developing → Build order* table — the dashboard launches **like every other
+  PypeIt script** (e.g. `run_pypeit`) via the `pypeit_dashboard` console script
+  (a `ScriptBase` entry point), with the `.pypeit` file as a **required
+  positional** argument (`python -m pypeit.dashboard` optional).
 - 0.1 (2026-06-13): Initial draft. Added the **GUI Package** section recording
   the decision to build on PyQt6 via `qtpy`, the import convention, the reuse
   policy for `setup_gui/` infrastructure, the external-viewer (subprocess)
@@ -212,7 +217,7 @@ Each design reference points back to `pypeit_dashboard_design.md`.
 
 | Stage | What is built | Design refs |
 |-------|---------------|-------------|
-| **0. Walking skeleton** | `pypeit_dashboard` console entry point + `python -m pypeit.dashboard`; argparse for the **required `.pypeit` argument**; `MainWindow` with the tab bar (Status \| Calibrations), the shared header banner + logo, reusing `setup_gui`'s app/font/icon bootstrap. Views are empty placeholders. | R1, R2, R6 |
+| **0. Walking skeleton** | Launch **like every other PypeIt script** (e.g. `run_pypeit`): the `pypeit_dashboard` console script — a `ScriptBase` subclass (`RunDashboard`) registered as a `pyproject.toml` entry point (optional `python -m pypeit.dashboard` convenience); argparse for the **required positional `.pypeit` argument**; `MainWindow` with the tab bar (Status \| Calibrations), the shared header banner + logo, reusing `setup_gui`'s app/font/icon bootstrap. Views are empty placeholders. | R1, R2, R6 |
 | **1. State data layer (headless)** | Load `*_state.json` via `RunPypeItState.load()`; otherwise derive the state via `PypeIt(calib_only=True).calib_all(status_only=True, reload_only=True)`; expose the `get_status()` DataFrame; handle empty/edge states. **No Qt.** | R4, R5, R11 |
 | **2. Initialization / Status view** | The landing, *state-first* view: the color + glyph state table, required-vs-optional distinction, global summary strip, configuration-overview navigator grid, scope drop-downs, manual refresh, stale-state indicator, and a **placeholder** Science section (see below). | R3, R7–R13, R15–R18 |
 | **3. Calibrations view** | The path-aware step-button row (from `Calibrations.default_steps()`), the detail panel, and **launching external viewers as subprocesses** (`pypeit_chk_*` / `ginga` / `pypeit_view_fits`); per-slit/order drill-down. Builds the reusable subprocess-launch infrastructure. | C1–C16 |
