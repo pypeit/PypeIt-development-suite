@@ -55,727 +55,383 @@ This section will contain a series of prompts for Claude to generate the coding 
 
 Let us first discuss the GUI package.  Here are some of my thoughts and requirements:
 
-- When performing any of the design, be sure to refer to the pypeit_workflow.md document
-- You are encouraged to suggest your own design ideas 
-- This document will be used to guide the development of the dashboard
-- It will not include specific code recommendations, but do keep in mind we will use Python and PyQt6 
+- It must use Python
+- It should add few, if any new dependencies to PypeIt
+- We currently include PyQt6 in PypeIt.  
+- Emphasize ease of development and maintenance of the code instead of performance.
 
-### Prep
+1. Begin by reading all the items in the Context section above.  And my thoughts on the GUI package.  Then:
 
-1. Start the design document by including a preamble of what it is for.  Title that section "Preamble".
+   - Begin a conversation with me on your best recommendation for the GUI package.  
+   - Put your recommendation in this document in the Logs.
+   - Ask any clarifying questions you have in the Clarifications section below.
+   - Log your work in the Logs section below.
 
-   - Add any other information you think is relevant
+2. We will go forth with PyQt6 accessed through `qtpy` as the GUI package.  Please:
+
+   - Create the pypeit_dashboard_coding.md file in PypeIt-development-suite/pypeitdev/dashboard/ and add the GUI Package section.
    - Add a version number to the document (0.1)
    - Add a date to the document (today's date)
    - Add a author to the document (JXP and Claude)
-
-### Initialization 
-
-The following will set the requirements and design for the Initialization phase, i.e. how to launch the Dashboard and what to display when the Dashboard is launched.
-
-Here are a few basic requirements to get us started:
-
-- The Dashboard will launch by running a python script
-- The user will launch it from a folder that includes a PypeIt file
-- The default view will show the "state" of the PypeIt reduction as a formatted table with color-coded information
-- If a state file is present in the folder, load that file to get the state
-- Otherwise, get the state as done in the pypeit_status.py script
-
-1. Generate a draft of the initialization design
-
-   - Make its first section titled "Initialization"
-   - Include a subsection titled "Requirements"
-   - Include sub-subsections to "Requirements" titled "Pending" "Implemented", "Deferred"
-   - Examine the state.py module in PypeIt/pypeit/state.py to understand the structure of the state
-   - Include the basic requirements above
-   - Refine them with proposed design ideas on color, formatting, etc.
-   - Emphasize ease of readability and clarity
-   - Include a list of your own based on your understanding of the PypeIt workflow
-   - If you have any questions, ask them in the Clarifications section below
-   - Update the version number to the document (0.1)
-   - Log your work in the Logs section below
-
-2. I have answered the questions in the Clarifications section below.  Please:
-
-   - Note that I have hand edited the design document (slightly).  In particular, I removed a few of the Requirements that you proposed. Reread it
-   - Update the document to reflect the answers.  
-   - Check for consistency throughout the document
-   - Update the version number 
    - Log your work in the Logs section below
 
 #### Clarifications
 
-Questions raised while drafting the Initialization design (2026-06-12):
+*Recommendation (summary): use **PyQt6 accessed through `qtpy`**, matching
+`setup_gui/`. It adds **zero** new dependencies (both `qtpy>=2.2.0` and `pyqt6`
+are already in PypeIt's `setup.cfg`, along with `pytest-qt`), maximizes reuse of
+the existing setup-GUI infrastructure, and satisfies the "Python / few new deps /
+ease of maintenance over performance" requirements. Full reasoning is in the
+Logs entry below.*
 
-1. **Science-frame status.** `state.py`'s `RunPypeItState` tracks calibration
-   steps only — not per-science-frame object finding / extraction. Should the
-   Initialization state view also show science-frame status? If yes, where
-   should it come from — parsing the `Science/` products (`spec1d`/`spec2d`), or
-   extending the state model to record science steps?
+Open questions for the user (answers will be folded into the coding document):
 
-You are correct, the state does not track the science-frame status yet.  But it will.  Make sure any design ideas and requirements account for this.
+- **Q1 — `qtpy` vs. direct `PyQt6` imports.** `setup_gui/` imports Qt through
+  `qtpy` (backend-agnostic: it can sit on PyQt6/PySide6/etc.). The prototype
+  `dashboard.py` is inconsistent — it mixes `from PyQt6.QtCore import pyqtSignal`
+  with `from qtpy...`. I recommend committing to **`qtpy` everywhere** for
+  consistency with `setup_gui` and to keep the option of swapping the Qt backend.
+  Do you agree, or do you want to import `PyQt6` directly?
+  - *(Note: `qtpy` exposes the Qt5-style `Signal`/`Slot` names; direct PyQt6 uses
+    `pyqtSignal`/`pyqtSlot`. Picking one avoids the prototype's mismatch.)*
 
-2. **Cost of computing state with no state file.** Requirement R5 computes state
-   via `PypeIt(calib_only=True).calib_all(status_only=True, reload_only=True)`,
-   which instantiates PypeIt and can be slow for large MOS. Is it acceptable to
-   block the UI briefly on launch, or should this run in a background thread with
-   a loading indicator?
+I agree with your recommendation.
 
-Yes, it is ok to block the UI on launch.
+- **Q2 — Reuse `setup_gui` infrastructure?** `setup_gui/` already provides an
+  MVC skeleton, `dialog_helpers.py` (file dialogs, `DialogResponses`),
+  `text_viewer.py` (a `LogWindow` + `TextViewerWindow` — directly useful for the
+  log/QA-text views), and an application font/icon/theming setup. Should the
+  dashboard **reuse/share** these (refactoring common bits into a shared module
+  if needed), or stand up its own independent widgets to avoid coupling two GUIs?
+  I lean toward reuse where it is low-friction (esp. `text_viewer`, dialog
+  helpers, the window-icon/font bootstrap) and independent view code otherwise.
 
-3. **Multiple `.pypeit` files in the launch folder.** Auto-pick (assuming the
-   normal one-file case) or prompt the user to choose?
+I agree with your recommendation; we will re-use as much of the setup_gui infrastructure as possible.
 
-I have clarified that the user will be required to indicate the .pypeit file to use when launching the Dashboard.
+- **Q3 — In-window plotting vs. external viewers (confirm).** The design doc
+  has the dashboard *launch* the existing `pypeit_chk_*` / `ginga` /
+  `pypeit_view_fits` tools as subprocesses rather than embedding plots. That
+  keeps the dependency surface unchanged (no embedded `matplotlib`-Qt canvas
+  required for v1). Confirm this is the intent, so the GUI-package choice need
+  **not** account for an embedded plotting backend yet. (QA PNGs are still shown
+  inline, but those are just images, not live plots.)
 
-4. **Live "running" detection / monitoring channel.** `state.py` has a
-   commented-out `_broadcast_step` / `log.step(...)` hook that looks intended for
-   GUIs to follow a running reduction via the log stream. Is that the planned
-   mechanism for the (deferred) live-monitoring feature, and should
-   Initialization assume it?
+That is correct, we will launch the existing `pypeit_chk_*` / `ginga` / `pypeit_view_fits` tools as subprocesses.
 
-Yes, live "running" detection / monitoring is planned.  Its implementation is open to discussion. 
+### Developing
 
-5. **Safe on-demand refresh.** For the manual-refresh requirement (R12), is it
-   safe to call `calib_all(status_only=True, reload_only=True)` repeatedly, and
-   should refresh prefer re-reading `*_state.json` when present?
+1.  Claude is going to nearly all of the work in coding the Dashboard.  Let us discuss and decide on how best to proceed with developing the code 
 
-This is a good question.  If PypeIt is running, we should be reading the state from the state file.  If PypeIt is not running, we could have the code manually assess the state.
-
-6. **Metric thresholds.** For metric coloring (R10), are the workflow doc's
-   rules of thumb (e.g. wavelength/tilt RMS < 0.1 px = good) the right
-   thresholds, and do you want per-spectrograph overrides?
-
-I have decided to show metrics like these in other windows of the Dashboard and not the state view.
-
-### Calibrations
-
-By clicking on a Calibrations Tab, the user will be shown a separate view (e.g. distinct from the status view) that shows a detailed status of the calibrations for a given calibration group and detector/mosaic.  The latter will need to be chosen by the user (drop-down lists).  The Calibrations Section of the Design doc will specify this view in detail.
-
-Here is what I currently envision for this Tab:
-
-- A set of clickable buttons, one for each calibration step
-- The buttons will be color-coded to indicate the status of the calibration step
-  - Nearly readable if that calibration is not used by the spectrograph
-  - Grey if that calibration is not required
-  - White if the calibration is required but not yet generated
-  - Orange if the calibration is currently being generated
-  - Green if the calibration has been generated successfully
-  - Red if the calibration has failed to be generated
-- When a calibration that is selected (clicked on), the following holds:
-  - Its metrics will be shown
-  - The user can click on another button to view it and/or launch the appropriate PypeIt script to inspect it
-  - The Input files that were used to generate the calibration will be listed
-  - The user should be able to select an Input file and view it
-  - If the Calibration has related QA files, these should be viewable
-  - If PypeIt is not running, the user should be able to launch "pypeit_run_to_calibstep" to generate it (and any calibrations that precede it)
-- This viewer will need to allow for multiple slits/orders for Calibrations where this matters (e.g. Wavelength Calibration)
-
-It might be necessary/helpful to organize this Section of the Design doc by Calibration Type (e.g. Bias, Dark, Arc, etc.) with both Calibration-specific requirements and general requirements.
-
-#### Tasks
-
-1. Generate a draft of the Calibrations design
-
-   - Be mindful of the existing requirements in the Design doc
-   - Make its section titled "Calibrations"
-   - Include subsection(s) for  "Requirements"
-   - Include sub-subsections to "Requirements" titled "Pending" "Implemented", "Deferred"
-   - Examine the "pypeit_run_to_calibstep" script in PypeIt/pypeit/scripts/run_to_calibstep.py to understand the script and the code that it uses
-   - Generate text and requirements for the Calibrations section of the Design doc
-   - Refine them with proposed design ideas on color, formatting, etc.
-   - Emphasize ease of readability and clarity
-   - Include a list of your own requirements based on your understanding of the PypeIt workflow
-   - If you have any questions, ask them in the Clarifications section below
-   - Update the version number 
+   - Have a conversation with me on your best recommendation for how best to develop the code
+   - Here are some questions to consider:
+     - What should be implemented first?
+     - How will we monitor an active Pypeit run?
+   - We will develop in stages.  Make recommendations for the order
+   - Ask any clarifying questions you have in the Clarifications section below.  That will be our way of discussing
+   - Do not modify the coding document yet.  We will do that after we have decided on the best way to check the layout and debug the content.
    - Log your work in the Logs section below
 
-2. I have answered the questions in the Clarifications section below.  Please:
+2. I have read your recommendations and agree with them.  I have also answered all of the D-Q questions in the Clarifications section below.  Please proceed to:
 
-   - Note that I have hand edited the design document (slightly).  Reread it
-   - Update the document to reflect the answers.  
-   - Check for consistency throughout the document
-   - Update the version number 
+   - Add a new section to the coding document called "Developing" and generate the content for the section based on our conversation.
+   - Update the change log
    - Log your work in the Logs section below
 
 #### Clarifications
 
-Questions raised while drafting the Calibrations design (2026-06-12):
+*(This section is our discussion channel for the Developing task. My
+recommendation and the open questions are below; please answer inline under each
+**D-Q**. Per the task instructions I have **not** modified the coding document
+`pypeit_dashboard_coding.md` yet.)*
 
-1. **Color-palette consistency.** The Calibrations button scheme you specified
-   differs from the Initialization state-table key drafted earlier:
-   *running* is **orange** here but **blue** there, and *required-but-not-
-   generated* is **white** here but **amber** there. Should the whole Dashboard
-   use one unified palette? My proposal: adopt your Calibrations colors
-   everywhere (running = orange, required-undone = white, success = green,
-   fail = red, not-required = grey, not-used = dimmed) and update the
-   Initialization key to match. OK to unify that way?
+**Recommendation in brief.** Build the dashboard as an **MVC application
+mirroring `setup_gui/`** (model = state/data layer, view = widgets, controller =
+wiring + subprocess launching), and develop it as a **walking skeleton first,
+then state-first, in stages**. Keep all PypeIt-facing logic (state loading,
+status→DataFrame, palette mapping, path-aware step ordering) in a **headless,
+unit-testable layer** separate from the Qt widgets, so most logic can be tested
+without a display and the GUI stays thin.
 
-Yes, please unify.  And let's try your color scheme.
+**Recommended development stages (proposed order).**
 
-2. **"Not used by spectrograph" rendering.** I interpreted "Nearly readable" as
-   the button being shown but **disabled / dimmed (barely visible)**. Is that
-   right, or would you rather such steps be **hidden** entirely?
+| Stage | What | Design refs | Why this order |
+|------|------|-------------|----------------|
+| **0. Walking skeleton** | `pypeit_dashboard` entry point + `python -m pypeit.dashboard`; argparse for the **required `.pypeit` arg**; `MainWindow` with the tab bar (Status \| Calibrations), shared header banner + logo, reusing `setup_gui`'s app/font/icon bootstrap. Empty/placeholder views. | R1, R2, R6 | Gives a launchable window immediately, so we can iterate on **layout** (the next discussion topic) against real widgets from day one. |
+| **1. State data layer (headless)** | Load `*_state.json` via `RunPypeItState.load()`; else derive via `PypeIt(calib_only=True).calib_all(status_only=True, reload_only=True)`; expose `get_status()` DataFrame; edge/empty handling. **No Qt.** | R4, R5, R11 | Pure logic, fully `pytest`-able without a display; everything else consumes it. |
+| **2. Initialization / Status view** | The landing, *state-first* view: color+glyph state table, required/optional distinction, summary strip, config-overview navigator grid, scope drop-downs, manual refresh, stale indicator, **placeholder** Science section. | R3, R7–R13, R15–R18 | Highest-value first deliverable — answers "where is this reduction?" and exercises the data layer end-to-end. |
+| **3. Calibrations view** | Path-aware step-button row (`default_steps()`), detail panel; **launch external viewers as subprocesses** (`pypeit_chk_*`/`ginga`/`pypeit_view_fits`); per-slit/order drill-down. | C1–C16 | Builds the reusable subprocess-launch infrastructure used everywhere after. |
+| **4. Execution, locking & status** | Single-run lock via **`.log` mtime watching**; clobber confirm; dashboard activity area; (re)generate via `pypeit_run_to_calibstep`. | X1–X5, C10 | Needs the Calibrations view to exist; introduces "the dashboard launches work". |
+| **5. Monitoring (live updates)** | Live refresh while a run is active (see monitoring answer below). | R14 | Naturally follows once launching + the state layer are in place. |
+| **6. Science frames** | Fill the placeholder Science section once `RunPypeItState` tracks science status. | R15, R18 | Gated on the state model growing; designed-for now, built last. |
 
-Yes, that is correct.  Dimmed
+**What to implement first:** Stages 0–1 together (a launchable skeleton + the
+headless state layer), then Stage 2 (the Status view). This satisfies the
+*state-first* design principle and front-loads a runnable artifact for layout
+review.
 
-3. **Regeneration context.** Since the Calibrations view fixes the calibration
-   group and detector via drop-downs, I plan to always launch
-   `pypeit_run_to_calibstep` with `--calib_group` and `--det` (never the
-   `--science_frame` form). Confirm that's the intended path.
+**How to monitor an active PypeIt run (grounded in the code).** I recommend, for
+v1, monitoring via the **state file**, not the log-broadcast hook:
 
-Yes, that is correct.
+- `pypeit/calibrations.py` already calls `self.state.write()` on **every step
+  transition** — it sets the step's `status='running'` before running it and
+  `'success'`/`'failed'` after (see `calibrations.py:1499–1528`). So
+  `*_state.json` is a **live, per-step status feed** that needs *no* new
+  instrumentation.
+- **Plan:** detect that a run is *active* by watching the **`.log` mtime** (per
+  X1 — PypeIt writes to it continuously); while active, **poll `*_state.json`**
+  on a timer (e.g. via `QFileSystemWatcher` on the JSON plus a debounce, or a
+  `QTimer`), reload it, and re-render the status/buttons. Separately, **tail the
+  `.log`** into a log view (reusing `setup_gui/text_viewer.py`'s `LogWindow`).
+- The commented-out **`log.step` broadcast hook** in `state.py` (a STEP-level
+  log record the prototype's `parse_step_message` consumed) would give finer
+  *sub-step* granularity, but it only helps if the dashboard owns the log stream
+  and requires un-commenting PypeIt internals. I propose treating it as a
+  **deferred enhancement** (Stage 5+), with state-file polling as the v1 channel.
 
-4. **Metrics to surface.** `state.py` exposes `bias` mean/std, per-slit `rms`
-   for `wv_calib`/`tilts`, `slits` `nslits`/`center`, and `flats` `types`. Do you
-   want only these, or should the panel also pull richer metrics from the data
-   products (e.g. full `WaveCalib` fit parameters, arc-line FWHM, flat
-   illumination profile)?
+**Open questions (D-Q): please answer inline.**
 
-I expect to add new metrics to the state, but those are the list for now.
+- **D-Q1 — Stage order.** Do you approve the staged order above (skeleton →
+  state layer → Status view → Calibrations → Execution/Lock → Monitoring →
+  Science)? Any re-prioritization (e.g. Calibrations before a polished Status
+  view)?
 
-5. **Input-file viewer.** Is `pypeit_view_fits` (ginga) the right tool for
-   "select an input file and view it", or do you have another viewer in mind?
+Yes, this is a good order.
 
-Yes, that is correct for raw files.  But for processed files, e.g. Bias_*.fits we will just use `ginga`
+- **D-Q2 — Monitoring channel for v1.** Confirm we monitor via **`*_state.json`
+  polling + `.log` mtime/tail** for v1 and **defer** the `log.step` broadcast
+  hook (leave `state.py` internals commented out)? Or do you want the broadcast
+  hook enabled now?
 
-6. **`bpm` button.** `bpm` is a real step but produces no output file/QA. Show it
-   as a (color-coded) button anyway for completeness, or omit it from the row?
+Yes, this is a good recommendation.  You may remove the broadcast hook code from the state.py file.
 
-Omit it
+- **D-Q3 — Launch scope.** The workflow doc says the dashboard should both
+  *launch* and *observe*. For v1, should the dashboard be able to launch a
+  **full `run_pypeit`** reduction itself (owning the subprocess, so it knows
+  exactly when it finishes), or is launching limited to **`pypeit_run_to_calibstep`**
+  (calibration regeneration) with full runs only *observed* via `.log` mtime?
 
-## Sketches
+Let us only implement the `pypeit_run_to_calibstep` functionality for now.  
 
-It will be helpful to have sketches of the overall Dashboard layout before proceeding to develop it.   I will guide you to generate sketches of the Status View and the Calibrations View.  These will:
+- **D-Q4 — Test strategy.** Agree to split a **headless data/logic layer**
+  (state parsing, status DataFrame, palette/glyph mapping, path-aware ordering)
+  testable with plain `pytest`, plus **`pytest-qt`** for widget-level tests — and
+  that dashboard tests live in `PypeIt/pypeit/tests/` like the rest?
 
-- Be Python scripts written to the PypeIt-development-suite/pypeitdev/dashboard/py/ folder
-- Use Matplotlib, unless you think you can do a better job with PyQt6
-- Generate PNG files that we will embed into the Design doc
+Yes, this is a good recommendation.  We will split the tests into headless and widget-level tests.  The headless tests will live in `PypeIt/pypeit/tests/` like the rest.  The widget-level tests should mimic what we do for the setup_gui tests.
 
-### Status View
+- **D-Q5 — Science section in Stage 2.** Confirm we **scaffold a placeholder**
+  Science section in the Status view now (so the layout is right) but only
+  **populate** it in Stage 6 once `RunPypeItState` tracks science-frame status?
 
-1. Generate a sketch of the Dashboard layout with Status view
+That is correct.
 
-   - Generate a new module named "dashboard_status_view.py" in the PypeIt-development-suite/pypeitdev/dashboard/py/ folder
-   - It should Generate a PNG file in the folder above it called "dashboard_status_view.png"
-   - Document the code (include your thinking) so that I can modify it 
-   - It is ok if the sketch is crude
-   - You have my permission to run Python on the script to generate the PNG file
-   - If you want to inspect the PNG you create, you do not need to ask my permission
-   - Log your work in the Logs section below
+### Checking/modifying the layout
 
-2. Wow, that sketch is amazing.  Please make these edits and then include it in the Design doc:
+It will be necessary to check and modify the layout of the GUI.  Let us discuss and decide on how best to proceed with this activity
 
-   - Include the drop-down lists for the calibration group and detector/mosaic
-   - Make the Science frames section more prominent (as prominent as the Calibrations)
-   - This could get cluttered for instruments that have many CALIB_ID groups (and/or detectors).  And if it includes many Science frames. Consider ways to improve this (update the design doc to reflect your idea)
-   - Update your sketch
-   - Log your work in the Logs section below
-
-### Calibrations
-
-1. Generate a sketch of the Dashboard layout for Calibrations.  Be sure to refer to the design doc for the requirements.
-
-   - Generate a new module named "dashboard_calibrations.py" in the PypeIt-development-suite/pypeitdev/dashboard/py/ folder
-   - It should Generate a PNG file in the folder above it called "dashboard_calibrations.png"
-   - Document the code (include your thinking) so that I can modify it 
-   - It is ok if the sketch is crude
-   - You have my permission to run Python on the script to generate the PNG file
-   - If you want to inspect the PNG you create, you do not need to ask my permission
-   - Log your work in the Logs section below
-
-2. Great!  Please make these edits/changes:
-
-   - If there are similar methods in the two sketch modules, move those to a utils.py module and import them
-   - The blue outline on the selected Calibration step is difficult to see.  Consider a different color
-   - Remove the text about BPM
-   - Add the PypeIt logo to the sketch.  You should find it in the PypeIt repository.  Add it to the Status View too
-   - Have the per-slit status be a scrollable list of the status of the slits 
-   - The input files should be a scrollable list of the input files used to generate the calibration
-   - Make the (Re)-generate button a different color than green
-   - Are the little windows next to the QA files meant to be small views of the PNG?  Either way, they should be clickable to provide a full view
-   - As needed, update the design doc to reflect any/all of these edits
-   - Log your work in the Logs section below
-
-3. A few more edits:
-
-   - Copy over the PypeIt logo from the PypeIt repository to the PypeIt-Development-Suite/pypeitdev/dashboard/images/ folder.  
-   - Reduce its resolution to a sensible size
-   - The Logo is clobbering part of the view.  Put it somewhere else
-   - I have moved the other images into that folder.  Update the design doc to reflect this
-   - As needed, update the design doc to reflect any/all of these edits
-   - Log your work in the Logs section below
-
-## Finishing up
+   - Begin a conversation with me on your best recommendation for how best to check the layout
+   - How will Claude confirm the Layout matches the design doc?
+     - By running the code and checking the output?
+     - By presenting the layout to me and asking me to confirm it?
+   - If you are going to inspect the layout, how will you do it?
 
 ## Prompts
 
-### Workflow
+### GUI package
 
-1. Read this doc.  Perform the first task under Workflow doc
-2. Read this doc.  Perform the 2nd task under Workflow doc
+1. Read this doc.  Perform the first task under Coding document/GUI Package
+2. Read this doc.  Perform the 2nd task under Coding document/GUI Package
 
-### Prep
+### Developing
 
-1. Read this doc.  Perform the 1st task under Design document/Prep
-
-### Initialization
-
-1. Read this doc.  Perform the 1st task under Design document/Initialization
-2. Read this doc.  Perform the 2nd task under Design document/Initialization
-
-### Calibrations
-
-1. Read this doc.  Perform the 1st task under Design document/Calibrations
-2. Read this doc.  Perform the 2nd task under Design document/Calibrations
-
-### Sketches
-
-1. Read this doc.  Perform the 1st task under Sketches/Status View
-2. Read this doc.  Perform the 2nd task under Sketches/Status View
-3. Read this doc.  Perform the 1st task under Sketches/Calibrations
-4. Read this doc.  Perform the 2nd task under Sketches/Calibrations
-5. Read this doc.  Perform the 3rd task under Sketches/Calibrations
+1. Read this doc.  Perform the 1st task under Developing
+2. Read this doc.  Perform the 2nd task under Developing
 
 ## Logging
 
 The "Logs" section will record Claude's work.  Please use the following format:
 
-### <Date> (Short summary of the work)
-
-<Detailed description of the work and what you learned>
-
-### <Date> (Short summary of the work)
-
-<Detailed description of the work and what you learned>
-
-...
-
-## Logs
-
-### 2026-06-12 (Drafted pypeit_workflow.md v0.1)
-
-Performed the first task under "Workflow doc". Read the key PypeIt docs to
-establish a working understanding of the reduction workflow:
-
-- `doc/running.rst` — the `run_pypeit` executable, its options, and the general
-  workflow (initialization → reduce standards → reduce science; nested loops
-  over calibration groups → frame-combination groups → detectors/mosaics).
-- `doc/setup.rst` — `pypeit_setup`/`pypeit_obslog`, how instrument
-  configurations ("setups", A/B/C...) are defined from header metadata, and the
-  two-pass setup procedure that produces the `.pypeit` file.
-- `doc/tutorials/tutorials.rst` + `doc/tutorials/kast_howto.rst` — a concrete
-  end-to-end long-slit example (setup → run → inspect calibrations/QA/spectra →
-  sensfunc), which anchored the phase structure.
-- `doc/outputs.rst` and `doc/qa.rst` — the output directory layout
-  (`Calibrations/`, `Science/`, `QA/`), the primary products (`spec2d_*`,
-  `spec1d_*`), and the fixed-format QA PNGs (wavelength 1D/2D, object
-  find/trace, flexure).
-- `doc/scripts.rst` — enumerated the `pypeit_chk_*` / `pypeit_show_*` inspection
-  scripts the dashboard should wrap or replicate.
-
-Key takeaways captured in the new doc:
-
-- The user journey decomposes into four phases — **Setup → Reduction →
-  Inspection/QA → Further processing** — which is the natural organizing
-  principle for the dashboard.
-- The `.pypeit` file (parameter/setup/data blocks) is the hub artifact;
-  validating it pre-run (e.g. flagging `None` frametypes, missing calibrations)
-  is high-value, low-effort dashboard functionality.
-- Three reduction paths (MultiSlit / Echelle / IFU) change which products and QA
-  exist, so dashboard views must adapt per spectrograph path.
-- The QA PNGs are the richest at-a-glance signal of reduction health.
-
-Wrote `PypeIt-development-suite/pypeitdev/dashboard/pypeit_workflow.md`
-(version 0.1, dated 2026-06-12, author "JXP and Claude"), including an initial
-"Dashboard implications" section and open questions to carry into the design
-phase.
-
-### 2026-06-12 (Ran shane_kast_blue reduction; updated workflow doc to v0.2)
-
-Performed the second task under "Workflow doc". Ran a real end-to-end reduction
-and folded the concrete results into the workflow doc.
-
-- Ran `run_pypeit shane_kast_blue_A.pypeit -o` in
-  `REDUX_OUT/shane_kast_blue/600_4310_d55/shane_kast_blue_A` (added `-o` to
-  overwrite the prior run's outputs). Completed cleanly (exit code 0) in
-  **~1m 8s** on the single calibration group.
-- Noted the input frames: 1 `arc,tilt` (b1), 10 `bias`, 11
-  `pixelflat,illumflat,trace` dome flats, 2 `science` (J1217p3905), 1
-  `standard` (Feige 66) — one configuration, one calib group, one detector
-  (DET01), one slit (S0175).
-- Catalogued the output tree: `Calibrations/` (Arc, Bias, Edges, Flat, Slits,
-  Tiltimg, Tilts, WaveCalib), `Science/` (`spec1d_*`/`spec2d_*` + `.txt` per
-  frame), `QA/` (`MF_A.html`, per-exposure HTML, and `PNGs/`). Also noted the
-  state/log artifacts at the top level (`*_state.json`, `*.status.log`,
-  `*.calib`, `*.par`, `*.log`) as candidate machine-readable status sources.
-- Examined the QA PNGs directly (read the actual images): wavelength 1D fit
-  RMS = 0.074 px, tilts 2D RMS = 0.019, object finding found 1 good object on
-  slit 175 (SNR ≈ 142 vs. threshold 10), and a smooth object trace. The
-  reduction is healthy.
-
-Key learnings captured in `pypeit_workflow.md` (now **v0.2**):
-
-- Added a full "Worked example" section (Section 6) with the real file listing,
-  runtime, directory tree, and QA observations; renumbered the later sections.
-- The headline QA metrics (RMS, SNR, object count) are embedded in PNG
-  titles/legends, so the dashboard should read them from data products
-  (`WaveCalib`, `spec1d` headers) rather than scrape figures — added as an open
-  question.
-- `*_state.json` / `*.status.log` look like the most promising run-status
-  source for the dashboard's monitoring view — added as an open question.
-
-Updated the doc's version (0.2), changelog, date (2026-06-12), and author
-("JXP and Claude").
-
-### 2026-06-12 (Started pypeit_dashboard_design.md — Preamble)
-
-Performed the 1st task under "Design document / Prep". Created the design
-document `PypeIt-development-suite/pypeitdev/dashboard/pypeit_dashboard_design.md`
-(version 0.1, dated 2026-06-12, author "JXP and Claude") with an opening
-**Preamble** section.
-
-The Preamble covers:
-
-- **What the document is** — an architecture/requirements/design record that
-  stays above the code level (no specific APIs), and is a living document.
-- **What the dashboard is for** — making PypeIt's verbose, CLI-driven,
-  scattered-output workflow legible and navigable from one place.
-- **Scope** — focused on Phase 2 (Reduction) and Phase 3 (Inspection/QA) per the
-  updated project Goals; Setup (existing GUI) and further processing
-  (flux/coadd/telluric/collate) are explicitly out of scope. Folded in the five
-  concrete capabilities listed in the Goals (show state, run individual steps,
-  examine outputs, launch inspection scripts, monitor progress).
-- **Relationship to `pypeit_workflow.md`** — established it as the companion
-  context doc that all design decisions must cross-reference, and reaffirmed the
-  "reuse existing PypeIt code" principle.
-- **Technology/conventions** — Python + PyQt6; code in `pypeit/dashboard/`,
-  prototypes in `pypeitdev/dashboard/py/`.
-- **Proposed design principles** (state-first, reuse-don't-reinvent,
-  workflow-faithful, path-aware, non-destructive/observable) and a planned
-  document structure (Preamble → Initialization → later phases).
-
-This only covers the Preamble (the Prep task); the Initialization section will
-be drafted when its prompt is run.
-
-### 2026-06-12 (Drafted the Initialization design section)
-
-Performed the 1st task under "Design document / Initialization". Added an
-**Initialization** section to `pypeit_dashboard_design.md` (still **v0.1**).
-
-First studied the state machinery to ground the design:
-
-- `PypeIt/pypeit/state.py` — `RunPypeItState` (pydantic) tracks **calibrations
-  only**, keyed by calibration group (`calib_id`) and detector/mosaic (`det`),
-  one entry per step (`bias`, `dark`, `arc`, `tiltimg`, `slits`, `wv_calib`,
-  `tilts`, `scattlight`, `flats`, `align`). Each entry has `required`,
-  `input_files`, `output_file`, `qa_files`, `status` ∈ {`undone`, `running`,
-  `success`, `complete`, `fail`}, plus step metrics (bias `mean`/`std`; per-slit
-  `wv_calib`/`tilts` `rms`; `slits` `center`/`nslits`; `flats` `types`).
-  `load()` reads `<root>_state.json`; `get_status()` returns a pandas DataFrame;
-  `print_status()` groups by (calib_id, det).
-- `pypeit/scripts/pypeit_status.py` — computes state with no run via
-  `PypeIt(calib_only=True).calib_all(status_only=True, reload_only=True)` then
-  `run_state.print_status()`.
-- Cross-checked the real Kast `shane_kast_blue_A_state.json` from the §6 run
-  (e.g. wv_calib slit 175 `rms` = 0.074; bias `mean`/`std`; optional `dark`/
-  `scattlight` = `undone`, not required).
-
-The Initialization section includes (as the prompt specified):
-
-- A **Requirements** subsection with **Pending / Implemented / Deferred**
-  sub-subsections. Pending holds the five basic requirements (R1–R5) plus
-  eleven proposed additions (R6–R16: context header, summary strip, grouped
-  ordered rows, required-vs-optional clarity, inline metrics with threshold
-  coloring, per-slit drill-down, output/QA affordances, accessible glyph+color
-  encoding, graceful empty states, manual refresh, stale-state warning).
-  Implemented is empty (design phase). Deferred captures live monitoring,
-  science-frame status, in-dashboard `.pypeit` editing, and a multi-setup view.
-- A **State: where it comes from** subsection documenting the two state sources
-  (load `*_state.json` first; else compute via the `pypeit_status` path) and
-  flagging the key gap: the state model tracks calibrations only, not
-  science-frame object-finding/extraction.
-- A **Default State View — visual design** subsection with a proposed
-  status color+glyph key (green/✓, blue/⏳ running, red/✗, amber/○ required-
-  undone, grey/– optional/n-a), columns, metric threshold coloring, and
-  scanning aids — emphasizing readability and clarity.
-
-Posed six questions in the parent doc's `#### Clarifications` section (science-
-frame status; cost of computing state with no state file; multiple `.pypeit`
-files; the commented-out `log.step` broadcast hook as the monitoring channel;
-safe on-demand refresh; metric thresholds).
-
-### 2026-06-12 (Revised Initialization per Clarifications answers — v0.2)
-
-Performed the 2nd task under "Design document / Initialization". Re-read the
-hand-edited design doc, folded in the user's six Clarifications answers, checked
-consistency throughout, and bumped `pypeit_dashboard_design.md` to **v0.2**.
-
-Noted the user's hand-edits before revising: they pared the proposed
-requirements down to R1–R14 (removing my earlier inline-metrics, per-slit
-drill-down, and output/QA-affordance items), tightened the launch description
-("the user will provide the name of the `.pypeit` file"), and removed
-science-frame status from the Deferred bucket.
-
-Changes made to reflect each answer:
-
-1. **Science-frame status is coming.** Reworked the scope note; the design now
-   anticipates it. Added **R15 (Science-frame readiness)** and threaded it
-   through R7 (summary generalizes), R8 (grouping extends to a science section),
-   and the visual-design layout (reserves room for a science section).
-2. **Blocking on launch is OK.** Stated in R5 and the state-source narrative that
-   briefly blocking the UI while computing state is acceptable; no background
-   thread needed for initialization.
-3. **User names the `.pypeit` file.** Updated R2 and the launch description;
-   removed the "multiple `.pypeit` files" case from R11 (replaced with "named
-   file not found").
-4. **Live monitoring planned, channel open.** Reworded R14 as a planned
-   requirement whose implementation/channel (log.step broadcast vs. state-file
-   polling) is open and deferred to the Monitoring phase.
-5. **Refresh strategy.** Encoded the rule in R12 and the state-source section: if
-   `run_pypeit` is running, re-read `*_state.json`; if not running, re-derive via
-   the `pypeit_status` path.
-6. **Metrics elsewhere.** Confirmed the user's removal of metric columns; added a
-   "Design decision" note that step metrics (RMS, bias mean/std, etc.) live in
-   the inspection windows, not the state table; columns trimmed to
-   `Step | Required | Status | Output`.
-
-Consistency pass: fixed stale cross-references after the renumber — the color
-key now cites R10 (accessible encoding) not R13, and the dangling per-slit
-"(R11)" reference in the layout was removed. Replaced the "Open design questions"
-subsection with a "Resolved decisions and remaining open items" summary (only
-the live-update channel, R14, remains open). Added a changelog block to the
-design doc header.
-
-### 2026-06-12 (Drafted the Calibrations design section — v0.3)
-
-Performed the 1st task under "Design document / Calibrations". Added a
-**Calibrations** section to `pypeit_dashboard_design.md` and bumped it to
-**v0.3**.
-
-Studied the backend first:
-
-- `PypeIt/pypeit/scripts/run_to_calibstep.py` — `pypeit_run_to_calibstep
-  <pypeit_file> <step> --calib_group <id> --det <det>` (or `--science_frame`).
-  It instantiates `PypeIt(calib_only=True)` and calls
-  `pypeit_steps.calib_one(..., stop_at_step=<step>)`, then rebuilds QA. Valid
-  steps: `align, arc, bias, bpm, dark, flats, scattlight, slits, tiltimg, tilts,
-  wv_calib`.
-- `pypeit_steps.calib_one` → `Calibrations.run_the_steps(stop_at_step=...)`, so a
-  request for one step generates that step **and all preceding steps** in
-  dependency order — exactly the user's "generate it (and any that precede it)".
-- `Calibrations.default_steps()` gives the path-aware ordering:
-  MultiSlit/Echelle = `bias→dark→bpm→slits→arc→tiltimg→wv_calib→tilts→
-  scattlight→flats`; IFU = `bias→dark→bpm→arc→tiltimg→slits→wv_calib→tilts→
-  align→scattlight→flats` (adds `align`, reorders `slits`).
-- `Calibrations.step_frame_map` ties each step to its input frametype + output
-  `DataContainer`; `bpm` maps to `None` (no output file) — handled as a special
-  case.
-
-What I wrote (per the task list):
-
-- A **Calibrations** section describing: context selection via two drop-downs
-  (calib group, detector/mosaic) sourced from `state.py`; a left→right
-  dependency-ordered row of **step buttons**; the user's **color scheme** mapped
-  onto the `(required, status)` fields + `default_steps()` membership; a
-  **detail panel** (metrics, inspect-output script, input-file viewer, QA,
-  (re)generate); and a **per-calibration-type** table (input frametype, output
-  file, inspection script, key metric).
-- A **Requirements** subsection with **Pending** (C1–C16), empty **Implemented**,
-  and **Deferred** (CD1–CD3: regenerate-while-running, parameter editing,
-  cross-group comparison).
-- Refined with color/formatting/readability ideas and accessibility (color +
-  glyph, consistent with R10); organized by calibration type as the prompt
-  suggested.
-- Updated the Preamble's planned document structure to list Calibrations.
-
-Flagged a real **consistency issue** in the Calibrations `#### Clarifications`:
-the button palette the user specified (running = orange, required-undone =
-white) diverges from the Initialization state-table key (running = blue,
-required-undone = amber). Proposed unifying on the Calibrations colors and asked
-five more questions (rendering of "not used" steps; always use `--calib_group`;
-which metrics to surface; input-file viewer choice; whether to show a `bpm`
-button).
-
-### 2026-06-12 (Revised Calibrations per Clarifications answers — v0.4)
-
-Performed the 2nd task under "Design document / Calibrations". Re-read the
-hand-edited Calibrations section, folded in the user's six answers, ran a
-consistency pass, and bumped `pypeit_dashboard_design.md` to **v0.4**.
-
-Noted the user's hand-edits first: the intro now says the view lets users
-"remake" calibrations; the input-files bullet reads "(raw or processed)"; the QA
-bullet calls for a scrollable PNG list for calibrations with many figures; and
-CD2 (parameter editing) was reworded to "must be done in the PypeIt file".
-
-Changes per answer:
-
-1. **Unify the palette.** Adopted the Calibrations colors Dashboard-wide and
-   **updated the Initialization status color key to match** (running: blue →
-   **orange**; required-undone: amber → **white, outlined**; success green, fail
-   red, optional grey, not-used dimmed light grey). Labeled it the "Dashboard-
-   wide status palette", added hex values to the Calibrations button table, and
-   removed the old "divergence/consistency note". Verified no stale blue/amber
-   references remain.
-2. **"Not used" = dimmed.** Kept dimmed/disabled rendering; wording confirmed.
-3. **Always `--calib_group`/`--det`.** Tightened the backend note to say the
-   dashboard never uses the `--science_frame` form.
-4. **Metric set will grow.** Noted in the metrics bullet and C6 that the panel
-   surfaces whatever `state.py` exposes and the set grows as the state model
-   does; kept today's list.
-5. **Viewer split.** Raw input frames → `pypeit_view_fits`; processed frames →
-   `ginga`. For the processed *output*, use a `pypeit_chk_*` script where one
-   exists, else plain `ginga` (so `bias`/`dark`/`arc`/`tiltimg` now say `ginga`,
-   not `pypeit_view_fits`). Updated the detail-panel bullets, the per-type table,
-   and C7/C8.
-6. **Omit `bpm`.** Removed `bpm` from the button row and the per-type table;
-   added a note that it still runs internally (and as a preceding step for
-   `pypeit_run_to_calibstep`); rewrote C13 from "handle the bpm special case" to
-   "omit bpm".
-
-Consistency pass: C4/C16 now reference the unified palette (dropped "pending the
-Clarifications resolution"); the per-type table header clarifies "Inspect output"
-= processed-file viewer, distinct from the raw-input viewer. Added the v0.4
-changelog entry.
-
-### 2026-06-12 (Sketched the Status View layout)
-
-Performed the 1st task under "Sketches / Status View". Wrote a documented
-Matplotlib mock-up and generated a PNG.
-
-- Created `pypeitdev/dashboard/py/dashboard_status_view.py` — a non-functional
-  layout sketch (heavily commented with the design "thinking" so it's easy to
-  modify). Running it writes `dashboard_status_view.png` to the folder above
-  (`pypeitdev/dashboard/`).
-- Chose Matplotlib over PyQt6: a static, headless-friendly PNG is all a sketch
-  needs. The figure is drawn with `Rectangle`/`FancyBboxPatch` patches on a
-  0–100 data canvas.
-- The sketch realizes the Initialization design: tab bar (Status active |
-  Calibrations); run-context header banner (file, spectrograph, MultiSlit path,
-  Setup A, redux dir; R6); summary strip + Filter/Refresh toolbar (R7, R12);
-  a grouped status table "Calibration Group 0 • DET01" with columns
-  Step | Required | Status | Output and color-coded status pills + glyphs (R3,
-  R8, R9, R10); a faded "Science frames" placeholder (R15); and the unified
-  Dashboard-wide status color key.
-- Grounded the example content in the real `shane_kast_blue_A_state.json` from
-  the §6 run (bias/slits/arc/tiltimg/wv_calib/tilts/flats = success; dark and
-  scattlight = optional/undone; `bpm` not shown, per the Calibrations design).
-
-Two fixes while iterating (inspected the PNG each time): swapped the running
-glyph to one present in DejaVu Sans (the hourglass was missing), and removed an
-erroneous `invert_yaxis()` that had flipped the layout upside-down. Final PNG
-renders cleanly, top-to-bottom.
-
-### 2026-06-12 (Revised Status View sketch + anti-clutter design — v0.5)
-
-Performed the 2nd task under "Sketches / Status View". Updated the sketch,
-embedded it in the design doc, and bumped `pypeit_dashboard_design.md` to
-**v0.5**.
-
-Sketch edits (`dashboard_status_view.py` → regenerated `dashboard_status_view.png`):
-
-- Added a **scope toolbar** with calib-group and detector/mosaic **drop-downs**
-  (plus Filter and Refresh).
-- Promoted the **Science frames** section to equal prominence with Calibrations
-  (same dark heading bar), with columns Frame | Type | Status | spec2d | spec1d,
-  populated from the real run's three frames (b24 standard, b27/b28 science) and
-  a note that per-frame object-find/extraction status arrives as `state.py`
-  grows.
-- Added a compact **configuration-overview navigator** grid (group × detector,
-  cells colored by worst status) as the anti-clutter mechanism.
-
-Anti-clutter idea (the prompt's 3rd bullet), now in the design doc as new
-requirements:
-
-- **R16 (scope drop-downs):** the detailed Calibrations/Science tables show one
-  `(group, detector)` at a time instead of stacking everything; the summary
-  strip keeps whole-run health visible.
-- **R17 (overview navigator):** a small (group × detector) heat-map that scales
-  to MOS/mosaic runs and doubles as a click-to-scope navigator.
-- **R18 (scalable Science section):** equal prominence to Calibrations, with
-  filtering/scrolling and a frame count for long lists.
-
-Also revised R8 (table is scoped, not stacked), updated the visual-design
-"Layout" bullet to describe the new top-to-bottom structure, and **embedded the
-PNG** in the design doc via a relative-path image link.
-
-### 2026-06-12 (Sketched the Calibrations View layout)
-
-Performed the 1st task under "Sketches / Calibrations". Wrote a documented
-Matplotlib mock-up and generated a PNG, following the Calibrations requirements
-(C1–C16) in the design doc.
-
-- Created `pypeitdev/dashboard/py/dashboard_calibrations.py`; running it writes
-  `dashboard_calibrations.png` to the folder above (`pypeitdev/dashboard/`).
-- **Reused** the unified palette and the pill/text helpers from
-  `dashboard_status_view.py` (imported them) so the two sketches stay
-  consistent — matches design principle #2 (reuse, don't reinvent).
-- The sketch realizes the Calibrations design: Calibrations tab active; shared
-  header banner; **scope drop-downs** (calib group 0, DET01) + Refresh (C2); a
-  **dependency-ordered step-button row** from `default_steps()` with arrow
-  connectors, color-coded by status, `bpm` omitted (C3, C4, C12, C13); and a
-  **detail panel** for the selected `wv_calib` step showing metrics
-  (slit 175 rms = 0.074 px ✓, C6), input files with a "view raw"
-  (`pypeit_view_fits`) chip (C7), the output file with `pypeit_chk_wavecalib` /
-  `pypeit_show_wvcalib` inspect chips (C8), a green "(re)generate via
-  `run_to_calibstep`" control noting it's enabled because PypeIt isn't running
-  (C10), a scrollable QA-file list (C9), and a per-slit/order table (C11).
-- Example content mirrors the real `shane_kast_blue_A` run (MultiSlit, group 0,
-  DET01, one slit S0175; `dark`/`scattlight` not required → grey).
-
-Inspected the PNG; it renders cleanly. (This task only asked for the sketch +
-log, so I did not embed it in the design doc or change the version.)
-
-### 2026-06-12 (Revised both sketches: utils refactor, logo, polish — v0.6)
-
-Performed the 2nd task under "Sketches / Calibrations". Applied the requested
-edits to the sketches, refactored shared code, updated the design doc to v0.6,
-and embedded the Calibrations sketch.
-
-- **Shared `utils.py`.** Moved the common drawing code out of both sketch
-  modules into `pypeitdev/dashboard/py/utils.py` (palette, `status_text_color`,
-  `draw_status_pill`, `draw_tab_bar`, `draw_header`, `draw_scope_toolbar`,
-  `draw_color_key`, `chip`, plus logo/image helpers). `dashboard_status_view.py`
-  and `dashboard_calibrations.py` now import from it.
-- **Selected-step color.** Replaced the hard-to-see blue ring with a
-  high-contrast **magenta** (`#D81B60`, `utils.SELECT_COLOR`) ring + pointer.
-- **Removed the BPM text** from the step-button row label.
-- **PypeIt logo.** Found it at `PypeIt/doc/_static/`
-  `PypeIt_color_white_txt_black_background.png`; added it to the shared header
-  banner, so **both** the Status and Calibrations sketches show it. (Tuned the
-  zoom after first overshooting — the PNG is 6088×3216.)
-- **Scrollable lists.** Input files and the per-slit/order status are now drawn
-  as scrollable list viewports (with scrollbar + "… scrolls for many" note).
-- **(Re)generate color.** Changed from green (a status color) to **teal**
-  (`#00796B`) so it reads as an action, not "success".
-- **QA entries.** Per the user's mid-task note, these are **not** PNG previews —
-  just plain **clickable boxes** (with an `↗` enlarge affordance and a "click to
-  open full view" caption).
-- Two glyph swaps for DejaVu Sans coverage (the enlarge glyph → `↗`).
-
-Design-doc updates (v0.6): embedded `dashboard_calibrations.png` in the
-Calibrations section; updated **R6** (logo in the shared banner); added a
-**selected-step** color note; and refined **C7** (scrollable input list), **C9**
-(clickable QA → full view), **C10** (distinct action color), **C11** (scrollable
-per-slit/order list). Regenerated and inspected both PNGs — clean.
-
-### 2026-06-12 (Logo asset + relocation; images/ folder — v0.7)
-
-Performed the 3rd task under "Sketches / Calibrations".
-
-- **Copied + downscaled the logo.** Used PIL to resize the repo logo
-  (`PypeIt/doc/_static/PypeIt_color_white_txt_black_background.png`, 6088×3216,
-  270 KB) to a sensible **600×317 (35 KB)** and saved it as
-  `pypeitdev/dashboard/images/pypeit_logo.png`. `utils.find_logo()` now prefers
-  this local copy (falling back to the repo original).
-- **Relocated the logo.** It was clobbering the header-banner text, so I moved
-  it out of the banner into the **top-right corner** of the window (the empty
-  band right of the tabs) via a new `utils.draw_logo()`; `draw_header()` no
-  longer draws it. Re-tuned the zoom for the 600 px image.
-- **images/ folder.** The user moved the two sketch PNGs into
-  `pypeitdev/dashboard/images/`; I updated both sketch scripts to write their
-  PNGs there by default, and updated the design doc's embedded image links to
-  `images/…`. Added an "Image assets" note to the design doc's conventions and
-  corrected **R6** (logo is top-right, not in the banner).
-- Regenerated and inspected both PNGs — the logo now sits cleanly in the corner
-  and nothing is clobbered. Bumped the design doc to **v0.7**.
+### 2026-06-13 (GUI package recommendation: PyQt6 via qtpy)
+
+**Task.** First task under *Coding document / GUI Package* — read the context
+documents and the user's requirements, then recommend the GUI package.
+
+**Context read.** `pypeit_dashboard_design.md` (v0.9), `pypeit_workflow.md`
+(v0.2), the prototype `pypeit/dashboard/dashboard.py`, and `pypeit/setup_gui/`
+(`controller.py`, `model.py`, `view.py`, `dialog_helpers.py`, `text_viewer.py`).
+I also checked PypeIt's `setup.cfg` dependencies.
+
+**Recommendation: PyQt6, accessed through `qtpy`** (the same stack as
+`setup_gui/`).
+
+Reasoning, mapped to the user's stated requirements:
+
+1. **Must use Python** — PyQt6 is a Python binding for Qt; all dashboard code
+   stays in Python. ✓
+2. **Add few/no new dependencies** — *zero* new dependencies. PypeIt's
+   `setup.cfg` already pins `qtpy>=2.2.0`, `pyqt6`, and `pytest-qt`. The
+   dashboard piggybacks on what is already shipped. ✓
+3. **PyQt6 already included** — both the design doc and the existing setup GUI
+   commit to it; using anything else would fragment the GUI stack and add a
+   second toolkit to maintain. ✓
+4. **Ease of development/maintenance over performance** — Qt is the most
+   feature-complete, best-documented Python desktop toolkit; more importantly,
+   the team already has a substantial, working PyQt6 codebase (`setup_gui/`) to
+   learn from and reuse (MVC layout, `dialog_helpers`, `text_viewer`,
+   table/tree/tab widgets, the QSS/font/icon bootstrap). Two `.claude/skills`
+   (`pyqt-expert`, `pyqt6-ui-development-rules`) further lower the cost. ✓
+
+**Why not the alternatives.** Tkinter (stdlib, no new dep) is too weak for the
+rich, color-coded, tab/grid/scrollable views this design calls for and shares
+nothing with `setup_gui`. Web stacks (Dash/Streamlit/Flask+JS) would add heavy
+new dependencies, a browser/runtime split, and a second language — contrary to
+"few new deps" and "ease of maintenance." Dear PyGui / Kivy / wxPython all add a
+brand-new dependency and toolkit with no existing PypeIt code to reuse. PyQt6 is
+the only option that scores well on *every* requirement.
+
+**Sub-decision surfaced (`qtpy` vs. direct `PyQt6`).** `setup_gui/` imports Qt
+through `qtpy` (backend-agnostic). The prototype `dashboard.py` is
+**inconsistent** — it mixes `from PyQt6.QtCore import pyqtSignal` with
+`from qtpy...` imports (lines 12–24). I recommend standardizing on **`qtpy`
+everywhere** to match `setup_gui` and avoid that mismatch; raised as Q1 in
+Clarifications. Note the API-name consequence: `qtpy` uses Qt5-style
+`Signal`/`Slot`, direct PyQt6 uses `pyqtSignal`/`pyqtSlot`.
+
+**What I learned / will carry into the coding document.**
+
+- The dependency picture is settled and favorable: no toolkit decision is really
+  "open"; the meaningful choices are *consistency* (qtpy vs PyQt6, Q1) and *how
+  much `setup_gui` infrastructure to reuse* (Q2).
+- `setup_gui/text_viewer.py` (`LogWindow`, `TextViewerWindow`) and
+  `dialog_helpers.py` look directly reusable for the dashboard's log view and
+  file dialogs.
+- Per the design doc, inspection is delegated to *external* tools
+  (`pypeit_chk_*`, `ginga`, `pypeit_view_fits`) launched as subprocesses, so v1
+  needs **no** embedded plotting backend — confirmed as Q3 so it does not affect
+  the package choice.
+- Recorded the recommendation in `#### Clarifications` and posed Q1–Q3 there for
+  the user.
+
+**Next step (pending user answers to Q1–Q3):** begin drafting
+`pypeitdev/dashboard/pypeit_dashboard_coding.md` with the GUI-package section
+filled in.
+
+### 2026-06-13 (Created coding document; wrote GUI Package section)
+
+**Task.** Second task under *Coding document / GUI Package* — having settled on
+PyQt6 via `qtpy`, create the coding document and add the GUI Package section.
+
+**User answers folded in (Q1–Q3):**
+- **Q1** — agreed: standardize on **`qtpy` everywhere** (Qt5-style
+  `Signal`/`Slot`), not direct `PyQt6` imports.
+- **Q2** — reuse **as much of the `setup_gui` infrastructure as possible**
+  (refactor shared pieces into a common location where cleaner).
+- **Q3** — confirmed: **launch external tools as subprocesses**
+  (`pypeit_chk_*` / `ginga` / `pypeit_view_fits`); no embedded plotting in v1.
+
+**What I did.** Created
+`PypeIt-development-suite/pypeitdev/dashboard/pypeit_dashboard_coding.md` with:
+- Header metadata — **Version 0.1**, **Date 2026-06-13**, **Author JXP and
+  Claude** — plus a changelog and a Purpose section distinguishing this *coding*
+  document from the *design* document.
+- A full **GUI Package** section: the decision (PyQt6 via `qtpy`), the
+  requirement-by-requirement rationale and rejected alternatives, the **import
+  convention** (`qtpy` only; `Signal`/`Slot`, not `pyqtSignal`/`pyqtSlot`; do
+  not carry forward the prototype's mixed imports), the **`setup_gui` reuse
+  policy** (`text_viewer`, `dialog_helpers`, app bootstrap, MVC layout), the
+  **external-viewer/subprocess** inspection approach (no embedded
+  `matplotlib`-Qt canvas in v1; QA PNGs shown inline as static images), the GUI
+  **coding conventions** (qtpy-only, imports-at-top, ≤80 cols, docstrings with
+  "Generated by JXP and Claude"), **code locations**
+  (`pypeit/dashboard/` for production, `pypeitdev/dashboard/py/` for scratch),
+  and the **dependency posture** (no new deps).
+- A Logs pointer back to this prep document.
+
+**Next step:** await the next prompt (subsequent sections of the coding
+document — e.g. architecture/MVC structure, the Initialization/State view
+implementation plan).
+
+### 2026-06-13 (Developing task: proposed staged dev plan + monitoring approach)
+
+**Task.** First task under *Developing* — discuss and recommend how to develop
+the dashboard code (what to build first; how to monitor an active run; the order
+of stages). Per instructions I **did not** modify the coding document; the
+discussion lives in the *Developing → Clarifications* section of this prep doc.
+
+**Code I read to ground the monitoring recommendation.**
+- `pypeit/state.py` — `RunPypeItState` (pydantic), per-step `BaseCalibState`
+  (`required`, `status ∈ {undone,running,success,complete,fail}`),
+  `load()` / `write()` / `get_status()` (→ pandas DataFrame) / `print_status()`,
+  and the **commented-out** `_broadcast_step` / `log.step` hook (lines 140–181).
+- `pypeit/scripts/pypeit_status.py` — the no-processing status path
+  (`PypeIt(calib_only=True).calib_all(status_only=True, reload_only=True)` then
+  `print_status()`); also where `*.status.log` gets its name.
+- `pypeit/calibrations.py` — confirmed the state file is written **incrementally
+  during a run**: `status='running'` + `state.write()` before each step, then
+  `'success'`/`'failed'` + `write()` after (lines ~1499–1528). This makes
+  `*_state.json` a live per-step feed needing no new instrumentation.
+
+**What I recommended (full detail in Clarifications):**
+- **Architecture:** MVC mirroring `setup_gui/`, with a **headless data/logic
+  layer** (state load, status DataFrame, palette/glyph map, path-aware step
+  order) kept separate from Qt widgets for unit-testability.
+- **Build order (6 stages):** 0) walking skeleton (entry point, MainWindow,
+  tabs, header/logo, reusing `setup_gui` bootstrap) → 1) headless state layer →
+  2) Initialization/Status view (state-first) → 3) Calibrations view (+
+  subprocess-launch infra) → 4) Execution/locking/status (`.log` mtime lock,
+  clobber, `pypeit_run_to_calibstep`) → 5) Monitoring (live updates) → 6)
+  Science frames (when the state model grows). **First:** stages 0–1, then 2.
+- **Monitoring an active run (v1):** detect active via **`.log` mtime** (X1);
+  while active, **poll `*_state.json`** (already written per step) and re-render;
+  **tail `.log`** for the log view (reuse `text_viewer.LogWindow`). Treat the
+  `log.step` broadcast hook as a **deferred** finer-granularity enhancement.
+
+**Open questions posed to user:** D-Q1 (approve stage order), D-Q2 (confirm
+state-file polling for v1, defer broadcast hook), D-Q3 (does v1 launch a full
+`run_pypeit` or only `pypeit_run_to_calibstep`?), D-Q4 (headless + `pytest-qt`
+test split, tests in `pypeit/tests/`), D-Q5 (scaffold-but-don't-populate the
+Science section in Stage 2).
+
+**Next step:** await the user's answers to D-Q1–D-Q5, and the subsequent
+*Checking/modifying the layout* discussion, before writing the Developing
+section into the coding document.
+
+### 2026-06-13 (Developing task 2: wrote Developing section into coding doc)
+
+**Task.** Second task under *Developing* — the user reviewed the recommendation
+and answered all of D-Q1–D-Q5. Fold the discussion into the coding document as a
+new **Developing** section, update the changelog, and log the work.
+
+**User answers (D-Q1–D-Q5):**
+- **D-Q1** — stage order approved as proposed.
+- **D-Q2** — monitor via `*_state.json` polling + `.log` mtime/tail for v1; defer
+  the broadcast hook. **Also granted permission to remove the broadcast-hook code
+  from `state.py`.**
+- **D-Q3** — v1 launching limited to **`pypeit_run_to_calibstep`** only (no full
+  `run_pypeit` launch; full runs observed only).
+- **D-Q4** — split headless (`pytest`) vs. widget (`pytest-qt`) tests; headless
+  tests in `PypeIt/pypeit/tests/`; widget tests mimic the `setup_gui` tests.
+- **D-Q5** — scaffold a placeholder Science section in Stage 2; populate it in
+  Stage 6.
+
+**What I did.**
+1. Added a **Developing** section to
+   `pypeitdev/dashboard/pypeit_dashboard_coding.md` covering: the MVC
+   architecture (headless model / Qt views / controller), the six-stage build
+   order table, what to build first (stages 0–1 then 2), the active-run
+   monitoring approach, the v1 launch scope (`pypeit_run_to_calibstep` only), and
+   the test strategy.
+2. Bumped the coding document to **v0.2** and added a changelog entry.
+3. **Removed the commented-out broadcast-hook code from
+   `PypeIt/pypeit/state.py`** (per D-Q2): deleted the commented `_broadcast_step`
+   method and the commented `log.step` call inside `update_calib`. Kept the live
+   `current_step` / `previous_step` tracking (model fields, also set from
+   `pypeit.py`) and the `step_changed` logic. Verified `state.py` still parses.
+
+**Note:** the prototype `pypeit/dashboard/dashboard.py` still contains
+`parse_step_message` / `update_status_from_step`, which consumed the now-removed
+STEP broadcast. That prototype is reference-only and not the basis for the new
+dashboard, so it was left untouched.
+
+**Next step:** the *Checking/modifying the layout* discussion (next sub-section),
+then implementation starting at Stage 0.
