@@ -1,6 +1,6 @@
 # PypeIt Dashboard — Coding Document
 
-**Version:** 0.3
+**Version:** 0.4
 **Date:** 2026-06-13
 **Author:** JXP and Claude
 
@@ -20,6 +20,13 @@
   `pytest-qt` tests written throughout), the light/dark × default/resized render
   matrix, the layout-check harness (real widgets, `shane_kast_blue` 600/4310
   data, in `pypeitdev/dashboard/py/`), and the sketches-vs-renders doc policy.
+- 0.4 (2026-06-13): Added the **Debugging** section — automated-first headless
+  debugging by bug class (headless `pytest`, `qtbot` interaction sim,
+  render-to-PNG, a loud `sys.excepthook`/slot-wrap, deterministic `*_state.json`
+  fixtures, subprocess capture, activity-log trace), how correctness is confirmed
+  (automated-weighted, user only at milestones), CI-safe test/fixture placement
+  (main repo `pypeit/tests/` by default; dev suite only when data demands), and
+  the per-incident debug-handoff files in `pypeitdev/dashboard/debugging/`.
 
 ---
 
@@ -350,6 +357,97 @@ The matplotlib **sketches stay in the design document** as the intended-look
 reference. Real-widget **renders** are reserved for the *future user
 documentation* (where screenshots of the actual application are appropriate),
 rather than replacing the design sketches.
+
+---
+
+## Debugging
+
+GUI debugging is normally slow because problems are hard to isolate and the
+human is in the loop for every click. Because the bulk of the development is done
+by Claude, the strategy here is **automated-first, headless debugging**: most
+bugs are reproduced and fixed without a display or any human interaction, and the
+user is involved only when genuinely necessary. The thin-view / Qt-free-model
+architecture (see *Developing*) is what makes this possible — the heavy logic
+lives where it can be exercised by plain `pytest`.
+
+### How bugs are debugged, by class
+
+1. **Logic bugs (the majority) — headless `pytest` on the model layer.** State
+   loading/derivation, the status DataFrame, palette/glyph mapping, and
+   path-aware step ordering are Qt-free, so they reproduce in plain `pytest` with
+   full tracebacks and fast iteration — no display.
+2. **Interaction bugs — `pytest-qt` + `qtbot`, offscreen.** User interactions are
+   *simulated* programmatically (`qtbot.mouseClick`, `qtbot.keyClicks`,
+   `qtbot.waitSignal`) and the resulting state asserted. Questions like "does
+   clicking step X open panel Y and launch Z?" become automated tests — no human
+   clicking. This mirrors the existing `setup_gui` test harness, which runs
+   `pytest-qt` with the **offscreen** platform.
+3. **Visual / layout bugs — render-to-PNG self-inspection.** The real widget is
+   rendered offscreen to a PNG (the layout-check harness) and inspected directly
+   (see *Checking and modifying the layout*).
+4. **Crashes — make failures loud (do not let the event loop swallow them).** An
+   exception raised inside a Qt slot is, by default, swallowed by the C++ event
+   loop: the app silently misbehaves and the traceback is lost. The dashboard
+   therefore installs a **global `sys.excepthook`** plus an optional
+   **slot-wrapping decorator** so exceptions in slots are **logged with full
+   tracebacks** (and surfaced in an error dialog when running in dev mode).
+   (`setup_gui` installs no such hook; this is an addition.)
+5. **Deterministic reproduction via state fixtures.** A small set of saved
+   `*_state.json` fixtures — a **healthy** `shane_kast_blue` 600/4310 state plus
+   crafted edge cases (**not-started**, **partial**, **one failed step**,
+   **malformed**) — lets state-driven and rendering bugs reproduce **instantly,
+   without running `run_pypeit` and without RAW_DATA**.
+6. **Subprocess launches — capture and log.** Launches of external tools
+   (`pypeit_chk_*`, `ginga`, `pypeit_view_fits`, `pypeit_run_to_calibstep`)
+   capture `stdout` / `stderr` / return code, so a failed launch is diagnosable
+   from the logs instead of being a silent no-op.
+7. **Activity log as a debug trace.** The dashboard's own logging is routed
+   through PypeIt's `log`, producing a timestamped record (which signal fired,
+   which handler ran, what state changed) that can be read after a headless run —
+   more useful than interactive breakpoints inside a running event loop.
+
+### Confirming the GUI works as expected
+
+**Both** mechanisms, weighted to the automated one: correctness is verified
+primarily by **running headless** (`pytest-qt`-driven interactions +
+render-to-PNG inspection + reading logs/tracebacks); the user is brought in only
+at **milestones**, for **interactive "feel"** that is hard to automate, or for
+**platform/display-specific** rendering on their machine.
+
+### Minimizing the user's debugging time
+
+- **Self-diagnosing failures** — the loud `sys.excepthook` and structured
+  logging mean a failure arrives with a traceback, not a shrug.
+- **Deterministic fixtures** — bugs reproduce on any machine without live data,
+  so the user rarely needs to reproduce anything.
+- **Automated `qtbot` repros** replace "can you try clicking around?".
+- **Structured handoff when the user *is* needed** (below).
+
+### Test & fixture placement (CI-safe by default)
+
+- **Prefer the main repo.** Headless `pytest` tests, `pytest-qt` widget tests,
+  and the committed `*_state.json` fixtures live in **`PypeIt/pypeit/tests/`**
+  (fixtures under `pypeit/tests/files/`). These are CI-safe and self-contained
+  (no RAW_DATA), so they run anywhere — this is the default.
+- **Fall back to the dev suite only when data demands it.** A test that needs a
+  *significant* amount of real data runs in the dev suite (e.g.
+  `unit_tests/`, like the `setup_gui` widget tests), not in the main repo.
+
+### Debug handoffs
+
+When a bug genuinely requires the user, the handoff is a **single self-contained
+file per incident**, written to
+`PypeIt-development-suite/pypeitdev/dashboard/debugging/`. Each handoff file
+contains:
+
+- a **one-line reproduction command** (a single `pytest` or harness invocation);
+- the **screenshot(s)** of the relevant render;
+- a **precise, usually yes/no question** for the user;
+- the relevant **activity log** excerpt.
+
+The user is not expected to run the full application or debug open-endedly —
+only to answer the specific question (and, if asked, run the one provided
+command).
 
 ---
 

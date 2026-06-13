@@ -322,6 +322,120 @@ let's generate tests throughout the development process.
 
 If it isn't too much trouble, let's check them all.
 
+### Debugging
+
+Debugging a GUI can be very time consuming as it is difficult to isolate the problem and/or examine specific lines of code.  I would like to learn best practices for debugging our GUI, especially in the context of Claude doing nearly all of the work.
+
+1. Let us discuss and decide on how best to proceed with this activity.  
+
+   - Begin a conversation with me on your best recommendation for how best to debug the GUI
+   - How will Claude confirm the GUI is working as expected?
+     - By running the code and checking the output?
+     - By presenting the GUI to me and asking me to confirm it?
+   - How do we minimize the amount of time I spend debugging?
+   - Ask any clarifying questions you have in the Clarifications section below.  That will be our way of discussing
+   - Do not modify the coding document yet.  We will do that after we have decided on the best way to debug the GUI.
+
+2. I have read your recommendations and agree with them.  I have also answered all of the Dbg-Q questions in the Clarifications section below.  Please proceed to: 
+
+   - Add a new section to the coding document called "Debugging" and generate the content for the section based on our conversation.
+   - Update the change log
+   - Log your work in the Logs section below
+
+#### Clarifications
+
+*(Discussion channel for the Debugging task. Recommendation and open questions
+below — please answer inline under each **Dbg-Q**. Per instructions I have
+**not** modified the coding document.)*
+
+**Core stance: automated-first, headless debugging — keep the human loop tiny.**
+The architecture we chose makes this possible: because the heavy logic lives in
+a **Qt-free model layer** (state loading, status DataFrame, palette/glyph
+mapping, path-aware ordering), *most* bugs reproduce in plain `pytest` with full
+tracebacks and millisecond iteration — no GUI, no clicking, no human. The thin
+Qt views are where the *remaining* (interaction/visual) bugs live, and those I
+can also drive without you (below). I confirmed the existing
+`unit_tests/test_setup_gui.py` already runs `pytest-qt` **offscreen**
+(`qapp_args → ["pytest","-platform","offscreen"]`) against `shane_kast_blue`
+600/4310 — the exact harness to mirror.
+
+**How I debug, by bug class:**
+
+1. **Logic bugs (most of them) → headless `pytest`** on the model layer. Fast,
+   deterministic, full tracebacks. No display.
+2. **Interaction bugs → `pytest-qt` + `qtbot`, offscreen.** I *simulate* the user
+   programmatically: `qtbot.mouseClick`, `keyClicks`, `waitSignal`, then assert
+   resulting state. "Does clicking step X open panel Y / launch Z?" becomes an
+   automated test — no human clicking required.
+3. **Visual/layout bugs → render-to-PNG self-inspection** (the layout-check
+   harness): render the real widget offscreen, view the PNG, fix, re-render.
+4. **Crashes → make failures loud.** A classic Qt trap: an exception raised
+   *inside a slot* is swallowed by the C++ event loop, so the app silently
+   misbehaves and the traceback is lost. I propose installing a global
+   `sys.excepthook` (and/or a slot-wrapping decorator) so slot exceptions are
+   **logged with full tracebacks** (and, in dev, surfaced in an error dialog).
+   `setup_gui` currently installs no such hook — this is additive.
+5. **Deterministic repro via state fixtures.** Saved `*_state.json` fixtures (a
+   healthy kast state + crafted edge cases: not-started, partial, one failed
+   step, malformed) let state/render bugs reproduce **instantly, without
+   `run_pypeit` or RAW_DATA**.
+6. **Subprocess launches → capture & log.** External-tool launches
+   (`pypeit_chk_*`/`ginga`/`pypeit_view_fits`/`pypeit_run_to_calibstep`) capture
+   stdout/stderr/returncode, so a failed launch is diagnosable from logs instead
+   of being a silent no-op.
+7. **Dashboard activity log doubles as a debug trace.** Routing the dashboard's
+   own logging through PypeIt's `log` gives a timestamped record (what signal
+   fired, what handler ran, what state changed) that I can read after a headless
+   run — more useful to me than interactive breakpoints inside an event loop.
+
+**How I confirm the GUI works as expected:** **both**, weighted to automated — I
+verify primarily by running headless (`pytest-qt`-driven interactions +
+render-to-PNG inspection + reading logs/tracebacks), and bring you in only at
+**milestones**, for **interactive "feel"** that's hard to automate, or for
+**platform/display-specific** rendering on your machine.
+
+**How we minimize *your* debugging time:** (a) self-diagnosing failures (loud
+excepthook + structured logging); (b) deterministic fixtures so I reproduce bugs
+without your machine or live data; (c) automated `qtbot` repros instead of "can
+you try clicking around?"; and (d) when I *do* need you, I hand over a **single
+repro command** (one `pytest` or harness invocation) **+ a screenshot + a precise
+yes/no question + the activity log** — never an open-ended "please debug this".
+
+**Open questions (Dbg-Q): please answer inline.**
+
+- **Dbg-Q1 — Approve the automated-first stance & cadence?** I confirm
+  correctness mainly via headless `pytest-qt` + render-to-PNG + log inspection,
+  and pull you in only at milestones / for interactive-feel / for
+  platform-specific rendering. Good?
+
+yes, this is a good approach
+
+- **Dbg-Q2 — Loud-failure policy.** OK to install a global `sys.excepthook` plus
+  an optional slot-wrapping decorator so exceptions in Qt slots are logged with
+  full tracebacks (and shown in an error dialog in dev mode) instead of being
+  swallowed by the event loop?
+
+yes, that is a good idea
+
+- **Dbg-Q3 — State fixtures: contents & location.** OK to create a small set of
+  `*_state.json` fixtures (healthy kast + not-started / partial / failed /
+  malformed)? **Location nuance:** the dev suite **git-ignores JSON**, so to
+  commit them they'd live in the **main repo** (e.g. `pypeit/tests/files/`)
+  alongside the headless tests. Relatedly: should dashboard **widget** tests that
+  need real state live in the dev-suite `unit_tests/` (like the `setup_gui`
+  tests, requiring RAW_DATA), or in `pypeit/tests/` driven by these **committed
+  fixtures** (no RAW_DATA needed)? I lean toward fixtures in `pypeit/tests/` so
+  the GUI tests are CI-safe and self-contained.
+
+yes, this is a good idea. I can commit them to git.  Whatever you can run in the main repo, do so.  If you need a signficant amount of data to run a test, then we will have to run it in the dev suite.
+
+- **Dbg-Q4 — Debug handoff format.** When I must involve you, confirm the format:
+  one repro command + screenshot + specific question + the activity log — and
+  that you'd generally *not* run the full app yourself unless I ask. Anything you
+  want always included in a handoff?
+
+That sounds great.  Nothing additional for now.  I suggest we generate a unique file for each debug handoff.  I've added a debugging/ folder to PypeIt-development-suite/pypeitdev/dashboard/ to store the debug handoffs.
+
 ## Prompts
 
 ### GUI package
@@ -338,6 +452,11 @@ If it isn't too much trouble, let's check them all.
 
 1. Read this doc.  Perform the 1st task under Checking/modifying the layout
 2. Read this doc.  Perform the 2nd task under Checking/modifying the layout
+
+### Debugging
+
+1. Read this doc.  Perform the 1st task under Debugging
+2. Read this doc.  Perform the 2nd task under Debugging
 
 ## Logging
 
@@ -593,3 +712,77 @@ all of L-Q1–L-Q5; fold the discussion into the coding document as a new
 
 **Next step:** begin implementation at **Stage 0** (walking skeleton) per the
 Developing section, building the layout-check harness alongside it.
+
+### 2026-06-13 (Debugging task 1: recommended automated-first debugging)
+
+**Task.** First task under *Debugging* — discuss/recommend how to debug the GUI,
+how I'll confirm it works, and how to minimize the user's debugging time. Per
+instructions I did **not** modify the coding document; the discussion is in the
+*Debugging → Clarifications* section.
+
+**Grounding I checked.** `unit_tests/test_setup_gui.py` already uses **`pytest-qt`
+offscreen** (`qapp_args → ["pytest","-platform","offscreen"]`) with the
+`shane_kast_blue` 600/4310 data — the harness to mirror; it lives in the
+**dev-suite `unit_tests/`** (needs RAW_DATA). `setup_gui` installs **no global
+`sys.excepthook`**, so a loud-failure hook is additive. Noted the dev suite
+**git-ignores JSON**, which affects where `*_state.json` fixtures can be
+committed.
+
+**What I recommended (detail in Clarifications):** an **automated-first,
+headless** stance leveraging the thin-view/fat-model split — (1) logic bugs →
+headless `pytest`; (2) interaction bugs → `pytest-qt`+`qtbot` simulating
+clicks/keys/signals (no human clicking); (3) visual bugs → render-to-PNG
+self-inspection; (4) a global `sys.excepthook` / slot-wrap decorator so slot
+exceptions aren't swallowed by the event loop; (5) deterministic `*_state.json`
+**fixtures** (healthy + edge cases) so bugs reproduce without `run_pypeit`/
+RAW_DATA; (6) capture subprocess stdout/stderr/returncode; (7) structured
+activity logging as a debug trace. *Confirming correctness:* both, automated-
+weighted — bring the user in only at milestones / for interactive-feel /
+platform rendering. *Minimizing user time:* self-diagnosing failures +
+deterministic fixtures + `qtbot` repros, and when I must ask, a one-command repro
++ screenshot + precise question + log.
+
+**Open questions posed:** Dbg-Q1 (approve automated-first stance/cadence),
+Dbg-Q2 (install global excepthook + slot-wrap), Dbg-Q3 (state-fixture contents &
+location — main-repo `pypeit/tests/files/` given dev-suite JSON gitignore; and
+where widget tests live), Dbg-Q4 (debug-handoff format).
+
+**Next step:** await answers to Dbg-Q1–Dbg-Q4, then write the *Debugging* section
+into the coding document (task 2), and/or begin Stage 0.
+
+### 2026-06-13 (Debugging task 2: wrote Debugging section into coding doc)
+
+**Task.** Second task under *Debugging* — the user answered all of Dbg-Q1–Dbg-Q4;
+fold the discussion into the coding document as a new **Debugging** section,
+update the changelog, log work.
+
+**User answers (Dbg-Q1–Dbg-Q4):**
+- **Dbg-Q1** — automated-first stance & cadence approved.
+- **Dbg-Q2** — yes, install a global `sys.excepthook` + slot-wrap decorator.
+- **Dbg-Q3** — yes, commit `*_state.json` fixtures to git. Guidance: **run in the
+  main repo whenever possible** (CI-safe `pypeit/tests/`); only fall back to the
+  **dev suite** when a test needs a *significant* amount of data.
+- **Dbg-Q4** — handoff format approved; **one unique file per debug handoff**,
+  stored in the new `PypeIt-development-suite/pypeitdev/dashboard/debugging/`
+  folder (confirmed it exists). Nothing else required.
+
+**What I did.**
+1. Added a **Debugging** section to
+   `pypeitdev/dashboard/pypeit_dashboard_coding.md`: automated-first headless
+   strategy by bug class (headless `pytest`, `qtbot` offscreen interaction
+   simulation, render-to-PNG, the loud `sys.excepthook`/slot-wrap, deterministic
+   `*_state.json` fixtures incl. edge cases, subprocess capture, activity-log
+   trace); how correctness is confirmed (automated-weighted; user only at
+   milestones / interactive-feel / platform); how user time is minimized; the
+   **CI-safe test/fixture placement** rule (main repo `pypeit/tests/` +
+   `pypeit/tests/files/` by default, dev suite only when data demands); and the
+   **per-incident debug-handoff files** in `pypeitdev/dashboard/debugging/` (repro
+   command + screenshot + precise question + activity log).
+2. Bumped the coding document to **v0.4** with a changelog entry.
+
+**Status.** The coding document now has all four planned sections (GUI Package,
+Developing, Checking and modifying the layout, Debugging). The
+discussion/design-prep phase is complete.
+
+**Next step:** begin implementation at **Stage 0** (walking skeleton) per the
+Developing section, with the layout-check harness and tests alongside.
