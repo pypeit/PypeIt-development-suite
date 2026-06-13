@@ -1,6 +1,6 @@
 # PypeIt Dashboard — Design Document
 
-**Version:** 0.3
+**Version:** 0.4
 **Date:** 2026-06-12
 **Author:** JXP and Claude
 
@@ -15,6 +15,12 @@
   detector/mosaic) detail view, its color-coded step buttons (grounded in
   `default_steps()` ordering and `state.py` status), the detail panel, and the
   `pypeit_run_to_calibstep` launch path.
+- 0.4 (2026-06-12): Revised Calibrations per the user's answers — **unified the
+  Dashboard-wide status palette** (running = orange, required-undone = white;
+  Initialization key updated to match), `bpm` omitted from the button row, the
+  input/output viewers split (raw → `pypeit_view_fits`, processed → `ginga`),
+  always launch with `--calib_group`/`--det`, and noted the metric set will grow
+  as `state.py` does.
 
 ---
 
@@ -271,18 +277,20 @@ Readability and clarity are the priorities (per the brief). Proposed treatment:
 - **Columns.** `Step` | `Required` | `Status` | `Output`. Step names bold; file
   names in a monospace font. Per-step metrics and per-slit detail are
   intentionally **not** columns here — they live in the inspection windows.
-- **Status color key** (color + glyph, R10):
+- **Status color key** (color + glyph, R10). This is the **Dashboard-wide status
+  palette**, reused verbatim by the Calibrations view:
 
-  | Status            | Color (proposed)        | Glyph |
-  |-------------------|-------------------------|-------|
-  | success / complete| green   (#2E7D32)       | ✓ |
-  | running           | blue    (#1565C0), subtle pulse | ⏳ |
-  | fail              | red     (#C62828)       | ✗ |
-  | undone & required | amber   (#EF6C00)       | ○ |
-  | undone & optional | grey    (#9E9E9E)       | – |
-  | no entry / n/a    | light grey (#BDBDBD)    | – |
+  | Status                  | Color (proposed)            | Glyph |
+  |-------------------------|-----------------------------|-------|
+  | success / complete      | green (#2E7D32)             | ✓ |
+  | running                 | orange (#EF6C00), subtle pulse | ⏳ |
+  | fail                    | red (#C62828)               | ✗ |
+  | required & not done     | white (#FFFFFF, outlined)   | ○ |
+  | optional / not required | grey (#9E9E9E)              | – |
+  | not used / n/a          | dimmed light grey (#BDBDBD) | – |
 
-  A dark-theme-aware palette should keep equivalent contrast ratios.
+  White needs a subtle border to read on a light background. A dark-theme-aware
+  palette should keep equivalent contrast ratios.
 - **Scanning aids.** Sticky group/column headers, gentle zebra striping, and a
   filter control (e.g. *required only*, *failures only*) to cut visual load on
   large MOS/echelle reductions.
@@ -317,7 +325,7 @@ The **Initialization** state table (above) is the at-a-glance overview. The
 status of the calibrations for **one** calibration group and **one**
 detector / mosaic at a time, and that lets the user inspect each calibration and
 (re)generate it. It is where a user answers "is this calibration good, and if
-not, what do I do about it?".
+not, what do I do about it?" and allows them to remake it.
 
 This section first lays out the view and the backend it drives, then gives
 per-calibration-type specifics, then the formal requirements.
@@ -351,24 +359,27 @@ from the spectrograph's pipeline, i.e. `Calibrations.default_steps()`:
 IFU adds an `align` step and orders `slits` after `arc`/`tiltimg`; the button row
 must reflect the active spectrograph's pipeline rather than a fixed list.
 
-**Button color coding.** Following the user's design, each button's color encodes
-the step's state, derived from the `(required, status)` fields in `state.py`
-together with whether the step is part of the spectrograph's `default_steps()`:
+**`bpm` is not shown.** The bad-pixel-mask step runs internally as part of the
+pipeline but produces no standalone output file or QA (its `step_frame_map` entry
+is `None`); per the design decision it is **omitted from the button row** (it is
+still executed by `pypeit_run_to_calibstep` as a preceding step when needed).
 
-| Condition                                   | State source                              | Color        |
-|---------------------------------------------|-------------------------------------------|--------------|
-| Step not used by this spectrograph          | step ∉ `default_steps()`                  | dimmed / disabled (barely visible) |
-| Not required                                | `required = False`                        | grey |
-| Required but not yet generated              | `required = True`, `status = undone`      | white |
-| Currently being generated                   | `status = running`                        | orange |
-| Generated successfully                      | `status ∈ {success, complete}`            | green |
-| Failed to generate                          | `status = fail`                           | red |
+**Button color coding.** Each button's color encodes the step's state, derived
+from the `(required, status)` fields in `state.py` together with whether the step
+is part of the spectrograph's `default_steps()`. This uses the **Dashboard-wide
+status palette** defined in Initialization (the two views are now unified):
 
-As in the state table (R10), color is **paired with a glyph/label** (e.g. ✓ / ✗ /
-⏳ / ○ / –) so status never depends on color alone. *Consistency note:* this
-button palette diverges from the Initialization state-table key (there
-`running` = blue and `required-undone` = amber); unifying the two palettes is
-raised in Clarifications.
+| Condition                            | State source                         | Color (glyph) |
+|--------------------------------------|--------------------------------------|---------------|
+| Step not used by this spectrograph   | step ∉ `default_steps()`             | dimmed light grey #BDBDBD (–), disabled |
+| Not required                         | `required = False`                   | grey #9E9E9E (–) |
+| Required but not yet generated       | `required = True`, `status = undone` | white #FFFFFF, outlined (○) |
+| Currently being generated            | `status = running`                   | orange #EF6C00, subtle pulse (⏳) |
+| Generated successfully               | `status ∈ {success, complete}`       | green #2E7D32 (✓) |
+| Failed to generate                   | `status = fail`                      | red #C62828 (✗) |
+
+As in the state table (R10), color is **paired with a glyph/label** so status
+never depends on color alone.
 
 ### The detail panel (on selecting a step)
 
@@ -376,18 +387,22 @@ Clicking a step button selects it and opens a **detail panel** for that step. Pe
 the user's vision, the panel provides:
 
 - **Metrics.** The step's quality metrics (this is one of the "other windows"
-  where metrics belong, per the Initialization decision). From `state.py`:
+  where metrics belong, per the Initialization decision). From `state.py` today:
   `bias` → `mean`, `std`; `slits` → `nslits` + per-slit `center`; `wv_calib` →
-  per-slit `rms`; `tilts` → per-slit `rms`; `flats` → `types`. Metrics may be
-  threshold-colored using the workflow doc's rules of thumb (e.g. wavelength /
-  tilt `rms` < 0.1 px = good).
-- **Inspect the output.** A control to launch the appropriate PypeIt inspection
-  script for that calibration's output file (see the per-type table below); the
-  user can switch between steps and view each in turn.
-- **Input files.** The list of raw `input_files` used to build the calibration
-  (available in `state.py`); the user can **select an input file and view it**
-  (e.g. via `pypeit_view_fits` / `ginga`).
-- **QA files.** Any related QA PNGs for the step, viewable inline.
+  per-slit `rms`; `tilts` → per-slit `rms`; `flats` → `types`. The panel surfaces
+  whatever metrics the state exposes, so this set will **grow as `state.py`
+  gains metrics**. Metrics may be threshold-colored using the workflow doc's
+  rules of thumb (e.g. wavelength / tilt `rms` < 0.1 px = good).
+- **Inspect the output.** A control to launch the appropriate viewer for that
+  calibration's processed output file (see the per-type table below): a dedicated
+  `pypeit_chk_*` script where one exists (e.g. `slits`, `wv_calib`, `tilts`,
+  `flats`), otherwise plain **`ginga`** for the processed image (e.g. `bias`,
+  `dark`, `arc`, `tiltimg`). The user can switch between steps and view each.
+- **Input files.** The list of `input_files` (raw or processed) used to build the
+  calibration (available in `state.py`); the user can **select an input file and
+  view it** — **raw** frames via **`pypeit_view_fits`**, **processed**
+  calibration frames via **`ginga`**.
+- **QA files.** Any related QA PNGs for the step, viewable inline.  For calibrations with many PNG files, a scrollable list of the PNG files should be provided.
 - **(Re)generate.** When PypeIt is **not** running, a control to launch
   `pypeit_run_to_calibstep` for the selected step (see below). Disabled while a
   reduction is running.
@@ -403,8 +418,8 @@ The (re)generate control wraps the existing
 - **Invocation:**
   `pypeit_run_to_calibstep <pypeit_file> <step> --calib_group <id> --det <det>`.
   Since this view already fixes the group and detector via the drop-downs, the
-  dashboard supplies `--calib_group` and `--det` (the script also accepts
-  `--science_frame`, not needed here).
+  dashboard **always** supplies `--calib_group` and `--det` and never uses the
+  script's alternative `--science_frame` form.
 - **Behavior:** it instantiates `PypeIt(..., calib_only=True)` and calls
   `pypeit_steps.calib_one(..., stop_at_step=<step>)`, which runs
   `Calibrations.run_the_steps(stop_at_step=<step>)` — i.e. it generates the
@@ -424,13 +439,16 @@ The `step_frame_map` in `calibrations.py` ties each step to its input frametype
 and output `DataContainer`. The table below combines that with the inspection
 tools from `pypeit_workflow.md`:
 
-| Step        | Input frametype | Output (example)            | Inspect with | Key metric(s) |
-|-------------|-----------------|-----------------------------|--------------|---------------|
-| `bias`      | bias            | `Bias_*.fits`               | `pypeit_view_fits` / ginga | `mean`, `std` |
-| `dark`      | dark            | `Dark_*.fits`               | `pypeit_view_fits` / ginga | — |
-| `bpm`       | — (no output)   | *(none — internal)*         | — | — |
-| `arc`       | arc             | `Arc_*.fits`                | `pypeit_view_fits` / ginga | — |
-| `tiltimg`   | tilt            | `Tiltimg_*.fits`            | `pypeit_view_fits` / ginga | — |
+"Inspect output" is the viewer for the **processed** output file: a dedicated
+`pypeit_chk_*` script where one exists, otherwise plain `ginga`. (Raw input
+frames are viewed separately via `pypeit_view_fits`; see the detail panel.)
+
+| Step        | Input frametype | Output (example)            | Inspect output with | Key metric(s) |
+|-------------|-----------------|-----------------------------|---------------------|---------------|
+| `bias`      | bias            | `Bias_*.fits`               | `ginga` | `mean`, `std` |
+| `dark`      | dark            | `Dark_*.fits`               | `ginga` | — |
+| `arc`       | arc             | `Arc_*.fits`                | `ginga` | — |
+| `tiltimg`   | tilt            | `Tiltimg_*.fits`            | `ginga` | — |
 | `slits`     | trace           | `Edges_*.fits.gz`, `Slits_*.fits.gz` | `pypeit_chk_edges` | `nslits`, per-slit `center` |
 | `wv_calib`  | arc             | `WaveCalib_*.fits`          | `pypeit_chk_wavecalib`, `pypeit_show_wvcalib` | per-slit `rms` |
 | `tilts`     | tilt            | `Tilts_*.fits.gz`           | `pypeit_chk_tilts` | per-slit `rms` |
@@ -438,9 +456,8 @@ tools from `pypeit_workflow.md`:
 | `flats`     | illumflat/pixelflat | `Flat_*.fits`           | `pypeit_chk_flats`, `pypeit_show_pixflat` | `types` |
 | `align`     | align (IFU)     | `Alignment_*.fits`          | `pypeit_chk_alignments` | — |
 
-`bpm` is a genuine step but produces **no standalone output file** (its
-`step_frame_map` entry is `None`); the view should represent it as a step whose
-"inspect output" / QA affordances are simply absent.
+(`bpm` is not listed: it produces no output file and is omitted from the button
+row, as noted above.)
 
 ### Requirements
 
@@ -452,22 +469,24 @@ tools from `pypeit_workflow.md`:
   state table, scoped to one `(calibration group, detector/mosaic)` at a time.
 - **C2.** Two **drop-down** selectors (calibration group; detector / mosaic),
   populated from the state's `(calib_id, det)` pairs; changing either re-renders
-  the view.
+  the view.  
 - **C3.** A row of **step buttons**, one per calibration step, ordered
   **left→right by dependency** per the spectrograph's `default_steps()`
   (path-aware: MultiSlit/Echelle vs IFU), with connectors conveying precedence.
-- **C4.** **Color-code** each button per the table above (dimmed = not used;
-  grey = not required; white = required-not-generated; orange = running;
-  green = success; red = fail), **paired with a glyph/label** for accessibility
-  (consistent with R10).
+- **C4.** **Color-code** each button per the **Dashboard-wide status palette**
+  (dimmed = not used; grey = not required; white = required-not-generated;
+  orange = running; green = success; red = fail), **paired with a glyph/label**
+  for accessibility (consistent with R10; same palette as Initialization).
 - **C5.** Clicking a button **selects** the step and opens its **detail panel**.
-- **C6.** The detail panel shows the step's **metrics** (per `state.py`), with
-  optional threshold coloring.
+- **C6.** The detail panel shows the step's **metrics** (whatever `state.py`
+  exposes — the set grows as the state model does), with optional threshold
+  coloring.
 - **C7.** The detail panel **lists the input files** and lets the user select one
-  and **view it** (e.g. `pypeit_view_fits` / ginga).
+  and **view it** — raw frames via `pypeit_view_fits`, processed frames via
+  `ginga`.
 - **C8.** The detail panel exposes the **output file** and a control to launch
-  the **appropriate inspection script** for that calibration type (per-type
-  table above).
+  the **appropriate viewer** for that calibration type — a `pypeit_chk_*` script
+  where one exists, otherwise plain `ginga` (per-type table above).
 - **C9.** The detail panel shows related **QA files**, viewable inline.
 - **C10.** When PypeIt is **not running**, provide a control to launch
   `pypeit_run_to_calibstep` for the selected step (passing `--calib_group` and
@@ -477,8 +496,9 @@ tools from `pypeit_workflow.md`:
   and `tilts` (MOS / echelle may have many slits/orders).
 - **C12.** Be **path-aware**: show only the steps used by the active
   spectrograph, in its pipeline's order (including IFU's `align`).
-- **C13.** Handle the **`bpm`** special case — a step with no standalone output
-  file/QA — without dead "inspect/QA" affordances.
+- **C13.** **Omit `bpm`** from the button row — it runs internally (and as a
+  preceding step for `pypeit_run_to_calibstep`) but has no standalone output
+  file/QA to show.
 - **C14.** **Reuse existing PypeIt machinery** (`run_to_calibstep`, `calib_one`,
   `run_the_steps`, `step_frame_map`, the `pypeit_chk_*` scripts) rather than
   reimplement calibration logic (principle #2).
@@ -486,8 +506,8 @@ tools from `pypeit_workflow.md`:
   (principle #5): surface progress/log, and **refresh the state and button
   colors** when it completes.
 - **C16.** Prioritize **readability**: clearly labeled, adequately sized buttons;
-  dependency order obvious at a glance; a palette consistent with the rest of the
-  Dashboard (pending the Clarifications resolution).
+  dependency order obvious at a glance; using the unified Dashboard-wide status
+  palette.
 
 #### Implemented
 
@@ -499,7 +519,7 @@ tools from `pypeit_workflow.md`:
   already running** — out of scope; the (re)generate control is enabled only when
   PypeIt is idle (C10).
 - **CD2.** Editing reduction **parameters** from the panel before re-running a
-  step — a Setup/parameter concern, deferred.
+  step — these must be done in the PypeIt file, not the Dashboard.
 - **CD3.** **Side-by-side comparison** of a calibration across groups/detectors
   (e.g. diffing two `WaveCalib`) — possible future enhancement.
 
