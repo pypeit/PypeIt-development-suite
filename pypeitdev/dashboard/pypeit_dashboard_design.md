@@ -238,11 +238,6 @@ as development proceeds.
 
 - **R3.** The default view shows the reduction **state** as a formatted table
   with **color-coded** information.
-- **R4.** If a state file (`*_state.json`) is present in the folder, load it to
-  get the state.
-- **R5.** Otherwise, compute the state as `pypeit_status.py` does
-  (`PypeIt(calib_only=True).calib_all(status_only=True, reload_only=True)`). It
-  is acceptable for this to briefly block the UI on launch.
 - **R7. At-a-glance summary.** Show an overall progress/health summary derived
   from the state (e.g. "Calibrations: 6/6 required steps success" plus counts of
   fail / running / undone), so health is readable without scanning every row.
@@ -260,9 +255,6 @@ as development proceeds.
 - **R10. Accessible encoding.** Never rely on color alone: pair every status
   color with a glyph and/or text label (e.g. ✓ success, ✗ fail, ⏳ running,
   ○ undone, – n/a) for colorblind readability.
-- **R11. Graceful empty/edge states.** Handle clearly: the named `.pypeit` file
-  not found; a valid `.pypeit` file but no state and no outputs ("not started");
-  a malformed/partial state file.
 - **R12. Manual refresh.** Provide a way to re-read / re-derive the state on
   demand. The refresh **source** depends on whether a reduction is active: if
   `run_pypeit` is **running**, re-read `*_state.json` (the running process owns
@@ -303,7 +295,7 @@ as development proceeds.
 
 #### Implemented
 
-*(Implemented and verified in **Stage 0** — see
+*(Implemented and verified in **Stages 0–1** — see
 `claude_prompts/dashboard/dashboard_dev_stages_0-1.md`.)*
 
 - **R1.** The dashboard launches **like every other PypeIt command-line script**
@@ -322,6 +314,21 @@ as development proceeds.
   Status/Calibrations tabs in the `MainWindow`. The long filename/path values
   use an eliding label so the window can be resized narrower. (Stage 0 fills it
   from cheap `.pypeit` metadata via `read_header_info`, not the state.)
+- **R4 / R5 (Stage 1).** The headless `pypeit/dashboard/model.py`
+  `DashboardModel` acquires the reduction state by **source priority**: load
+  `<root>_state.json` via `RunPypeItState.model_validate` when present (R4),
+  else **derive** it via
+  `PypeIt(reuse_calibs=True, calib_only=True).calib_all(status_only=True,
+  reload_only=True)` → `run_state` (R5). It exposes a **normalized** status
+  table (real `bool` `required`, an `in_pipeline` column, `absent`/`None`
+  sentinels), the `(calib_id, det)` enumeration, and the path-aware
+  `step_order()` (from the spectrograph's `default_steps()`, `bpm` omitted).
+- **R11 (Stage 1).** Graceful edge states are reported via
+  `DashboardModel.load_status` without raising: `file_not_found`,
+  `not_started` (no/empty state), `malformed` (unreadable or
+  schema-mismatched state file), and `error` (derive failed). Covered by
+  committed `pypeit/tests/files/dashboard_state_*.json` fixtures + headless
+  tests.
 
 #### Deferred
 

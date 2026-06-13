@@ -73,6 +73,7 @@ Read the following documents to gain context:
 - The existing entry point: PypeIt/pypeit/scripts/pypeit_dashboard.py
   (`RunDashboard`, currently wrapping the reference prototype
   `pypeit/dashboard/dashboard.py` — reference only, not the basis for this build)
+- The dashboard code in PypeIt/pypeit/dashboard/
 
 ## Development
 
@@ -426,6 +427,66 @@ thin.
   (no exceptions escape the model).
 - Palette/glyph output matches the design doc table exactly (verified by test).
 
+#### Sign offs
+
+Stage 1 is a **headless, Qt-free** layer, so sign-off is mostly running tests
+and (optionally) exercising the model in a Python shell — there is no GUI to
+look at yet (the Status view that renders this is Stage 2). Run from the PypeIt
+repo root (`/home/xavier/Projects/PypeIt/PypeIt`).
+
+1. **CI-safe headless tests pass (model + palette, no RAW_DATA).**
+   - Execute: `python -m pytest pypeit/tests/test_dashboard.py -v`
+   - Inspect: **17 passed** — 7 Stage 0 tests plus 10 Stage 1 tests
+     (`test_model_*` and `test_palette_*`): load/normalize, step order,
+     `(calib_id, det)` pairs, the four edge states (not-started ×2, malformed,
+     file-not-found), and the palette categories/colors/glyphs.
+
+2. **Dev-suite derive-path test passes (needs RAW_DATA).**
+   - Execute (from `$PYPEIT_DEV`):
+     `python -m pytest unit_tests/test_dashboard_model.py -v`
+   - Inspect: **1 passed** — it runs `pypeit_setup` on a small
+     `shane_kast_blue` 600/4310 raw subset and confirms the model **derives**
+     the state (R5) and exposes the required steps. (Skips cleanly if
+     `PYPEIT_DEV`/RAW_DATA are absent.)
+
+3. **Inspect / regenerate the committed fixtures.**
+   - The five `pypeit/tests/files/dashboard_state_*.json` (healthy, not_started,
+     partial, failed, malformed) are **synthesized** by
+     `pypeitdev/dashboard/py/make_state_fixtures.py` so they always validate
+     against the current `RunPypeItState` schema.
+   - Regenerate any time with:
+     `python $PYPEIT_DEV/pypeitdev/dashboard/py/make_state_fixtures.py`
+   - (You said you'll commit these to git.)
+
+4. **(Optional) Exercise the model on a reduction in a shell.**
+   - Execute (point at a clean dir with no `*_state.json` to test *derive*, or a
+     dir that has one to test *load*):
+     ```bash
+     python -c "from pypeit.dashboard.model import DashboardModel as M; \
+       m=M('shane_kast_blue_A.pypeit'); print('source:', m.load_status); \
+       print(m.status_table().to_string(index=False)); \
+       print('steps:', m.step_order()); print('pairs:', m.calib_det_pairs())"
+     ```
+   - Inspect: a normalized table (real `bool` `required`, an `in_pipeline`
+     column, `absent`/`None` for missing entries) and the path-aware step order.
+
+**✅ State-file writer bug — FIXED (2026-06-13).** The nested-`input_files`
+writer bug is now fixed in `pypeit/state.py`: `update_calib` stores a
+list/tuple `value` **wholesale as a flat list** (rather than appending it),
+making repeat calls idempotent. Confirmed (Stage 1, prompt 3): two successive
+`update_calib(..., 'input_files', files)` calls keep a flat `List[str]`, the
+`flats types` scalar-accumulate path still works, and the dump→`model_validate`
+round-trip succeeds; `pytest pypeit/tests/test_state.py` + the dashboard tests
+pass (39 total). *Caveat:* the **pre-existing** on-disk
+`REDUX_OUT/shane_kast_blue/600_4310_d55/shane_kast_blue_A/shane_kast_blue_A_state.json`
+was written *before* the fix, so it is still nested and the model still reports
+`load_status == 'malformed'` on it (handled gracefully, R11); **re-run that
+reduction** to regenerate a loadable state file. New reductions write valid
+state files.
+
+**Sign-off:** if items 1–2 pass (and the fixtures/optional shell check look
+right), Stage 1 is accepted. Note anything off and Claude will address it.
+
 #### Clarifications
 
 *(Discussion channel for Stage 1. Recommendations and open questions below —
@@ -437,11 +498,15 @@ please answer inline under each **S1-Q**.)*
   I lean toward a single class so Stage 2's controller has one object to hold and
   refresh.
 
+Ok, let's try a single class
+
 - **S1-Q2 — Palette as data, not Qt.** Confirm `palette.py` returns **plain
   data** (hex strings + glyph + text label) and the *view* converts to `QColor`,
   keeping the model Qt-free and unit-testable. (A dark-theme-aware variant is
   noted in the design doc; for Stage 1 I'll define both light and dark hex sets
   as data so the view can pick — OK?)
+
+Yes, this is ok.
 
 - **S1-Q3 — Fixture set & placement.** Approve committing these `*_state.json`
   fixtures to `pypeit/tests/files/`: (1) **healthy** `shane_kast_blue` 600/4310,
@@ -450,11 +515,15 @@ please answer inline under each **S1-Q**.)*
   `shane_kast_blue` 600/4310 reduction once (in the dev suite) and copying the
   produced `*_state.json`, then hand-crafting the edge cases from it?
 
+You can generate all of these.  I will eventually commit them to git
+
 - **S1-Q4 — `det` representation.** How should the detector/mosaic identifier be
   surfaced for the drop-downs/labels — the raw `det` value from the state
   (e.g. `1`, or a mosaic tuple), or a formatted name (`DET01`, mosaic label)? I
   can format in the model (single source of truth) or leave raw and format in
   the view; I lean toward formatting in the model.
+
+Format in the view.  Do as you wish otherwise.
 
 - **S1-Q5 — Derive-path testing.** The R5 derive path
   (`PypeIt(calib_only=True)…`) requires RAW_DATA and a real reduction folder, so
@@ -462,11 +531,77 @@ please answer inline under each **S1-Q**.)*
   all pure logic in `pypeit/tests/` (CI-safe), and add a single dev-suite
   `unit_tests/` test for the **derive** path against `shane_kast_blue` 600/4310?
 
+Yes, this is ok.
+
 - **S1-Q6 — `bpm` and not-in-pipeline steps in the model.** The model should
   report, per step, whether it is part of the active spectrograph's
   `default_steps()` (so the view can dim steps not used, and omit `bpm` from the
   button row). Confirm this path-awareness belongs in the model (I think it
   does), exposed as a per-step flag.
+
+Yes, it does
+
+*(Below: grounding from a close read of `state.py`, `pypeit_status.py`, and
+`calibrations.py`, plus three further questions **S1-Q7–S1-Q9**. S1-Q1–S1-Q6
+above still stand; the notes refine them.)*
+
+**Grounding (what the code actually does).**
+
+- **Load path is not the instance `load()`.** `RunPypeItState.load()` is an
+  *instance* method that reads `self.outfile` — it needs an already-built
+  instance, and `RunPypeItState` has required fields
+  (`current_step`/`current_det`/`current_calibID`). The `pypeit_status.py`
+  *derive* path doesn't call `load()` at all; it reads `pypeIt.run_state` after
+  `PypeIt(reuse_calibs=True, calib_only=True).calib_all(status_only=True,
+  reload_only=True)`. So the two sources return a `RunPypeItState` by different
+  means. → see **S1-Q7**.
+- **`get_status()` shape.** It returns a DataFrame with the columns the spec
+  lists, but: `required` is **stringified** (`"True"`/`"False"`/`"--"`),
+  `status`/`output_file` use **`"--"`** for an absent entry, it enumerates **all**
+  `calib_classes` steps for every `(calib_id, det)` (so steps not in the
+  spectrograph's pipeline appear as `"--"` rows), and it returns **`None`** when
+  there are no entries at all. → normalization + pipeline-membership join, see
+  **S1-Q8**.
+- **Path-aware order is reachable without RAW_DATA.** `default_steps()` is a
+  staticmethod selected by pypeline (`MultiSlit`/`Echelle` →
+  `MultiSlitCalibrations`, `SlicerIFU` → `IFUCalibrations`); the model can pick
+  the list from the spectrograph (already loaded for the header) — no `PypeIt`
+  instance needed. `bpm` is in `default_steps()` but has
+  `step_frame_map['bpm'] = None` and **no** `calib_classes` entry, so the state
+  never tracks it (confirms S1-Q6: omit from the button row).
+- **Naming clash to avoid.** `RunPypeItState.path` is the *state-file path
+  override*, **not** the MultiSlit/Echelle/IFU pipeline. The pipeline label comes
+  from the spectrograph (Stage 0's `read_header_info`).
+
+- **S1-Q7 — Load mechanism (confirm).** For the **load** path (R4) I propose
+  computing the `<pypeit_root>_state.json` path in the reduction dir and loading
+  it with `RunPypeItState.model_validate(json.load(...))` — *not* the instance
+  `load()` (which requires pre-constructing an instance with dummy required
+  fields). For the **derive** path (R5) I read `pypeIt.run_state` exactly as
+  `pypeit_status.py` does. Both yield a `RunPypeItState` the rest of the model
+  consumes. OK?
+
+Yes, this is ok.
+
+- **S1-Q8 — Status normalization + pipeline membership.** Confirm the model
+  **normalizes** `get_status()` for the views: `required` → real `bool`, the
+  `"--"` sentinel → an explicit *not-present* status, and an empty state
+  (`get_status()` is `None`) → a typed **"not started"** result (R11). And: add a
+  **`in_pipeline`** column (joining the row's `steps` against the spectrograph's
+  `default_steps()`) so the view can distinguish *not used by this spectrograph*
+  (dimmed) from *required-but-not-generated* (white) — the two the raw `"--"`
+  cannot tell apart. Agree?
+
+Yes, I agree.
+
+- **S1-Q9 — `det` formatting source (refines S1-Q4).** I propose formatting in
+  the model using the spectrograph: single detectors via
+  `spectrograph.get_det_name(det)` (→ `DET01`), mosaics (a tuple/list) via a
+  `MSC`/`(1,5)`-style label. This needs the spectrograph, which the model already
+  loads for the pipeline and step order. Good, or keep `det` raw and format in
+  the view?
+
+Do format in the view.  Do as you wish otherwise.
 
 ## Prompts
 
@@ -500,6 +635,7 @@ please answer inline under each **S1-Q**.)*
    priority), the status-table accessor, the `(calib_id, det)` enumeration,
    `palette.py`, the path-aware step order, the edge-state handling, and the
    committed `*_state.json` fixtures + headless tests. Also generate set of Sign offs actions that I should take after your development of this Stage.  Add them to the Sign offs sub-section of this stage.  Give me explict instructions on what to execute and what to inspect. Log your work.
+3. During your development, you flagged a problem with input_files as nested lists.  I believe I have fixed that in the state.py file.  Please confirm.  If not, please fix it.  I will then evaluate the Sign offs and request any additional changes as needed.
 
 ## Logging
 
@@ -722,4 +858,125 @@ note and the Sign offs item-3 inspect bullet to say "Pipeline".
 re-checked interactively on the user's display (Sign offs item 3).
 
 **Next step:** the user re-evaluates the Sign offs and requests any further
+changes.
+
+### 2026-06-13 (Stage 1 discussion: confirmed model API; raised S1-Q7–S1-Q9)
+
+**Task.** First task under *Prompts / Stage 1* — discuss Stage 1, confirm the
+model API, and answer/raise the S1-Q questions. No code written.
+
+**Model API confirmed (Stage 1 = headless, Qt-free `DashboardModel`).** Given
+the `.pypeit` file + reduction dir, the model: (a) acquires a `RunPypeItState`
+by **source priority** — load `<root>_state.json` if present (R4), else derive
+via `PypeIt(reuse_calibs=True, calib_only=True).calib_all(status_only=True,
+reload_only=True)` → `pypeIt.run_state` (R5) — recording which source was used;
+(b) exposes a **normalized status table** built on `get_status()`; (c)
+enumerates the **`(calib_id, det)`** pairs; (d) returns the **path-aware step
+order** from the spectrograph's `default_steps()`; (e) provides **edge/empty**
+results (R11); and (f) `palette.py` maps `(required, status, in_pipeline)` →
+color+glyph as **plain data** (no Qt). Out of scope: any Qt/view code (Stage 2)
+and the per-slit/order metrics drill-down beyond what `state.py` already exposes.
+
+**Code I read to ground it.**
+- `pypeit/state.py` — `RunPypeItState` (required fields
+  `current_step`/`current_det`/`current_calibID`; the `path` field is the
+  *state-file* override, not the pipeline), the per-step pydantic classes +
+  `calib_classes`, the instance `load()` (uses `self.outfile`), and
+  `get_status()` (stringified `required`, `"--"` sentinels, enumerates **all**
+  steps, returns `None` when empty).
+- `pypeit/scripts/pypeit_status.py` — the derive path reads `pypeIt.run_state`
+  (it does **not** call `RunPypeItState.load()`); also names the `.status.log`.
+- `pypeit/calibrations.py` — `default_steps()` (MultiSlit/Echelle vs IFU),
+  selected by pypeline (`get_instance`); `step_frame_map['bpm'] = None` and `bpm`
+  is absent from `calib_classes`, so the state never tracks it.
+- `pypeit/pypeit.py` — `run_state` is built/owned by `PypeIt`/`calib_all`.
+
+**Outcome.** S1-Q1–S1-Q6 stand (with grounding notes). Added three grounded
+questions to the Stage 1 Clarifications channel: **S1-Q7** (load via
+`RunPypeItState.model_validate(json.load(...))` on the computed
+`<root>_state.json`, since the instance `load()` is awkward and the derive path
+uses `run_state`), **S1-Q8** (normalize `get_status()` — real `bool` `required`,
+explicit not-present status, empty→typed "not started" — and add an
+`in_pipeline` column so the view can tell *not-used* from *required-undone*), and
+**S1-Q9** (format `det` in the model via `spectrograph.get_det_name` for single
+detectors + a mosaic label).
+
+**Next step:** await answers to S1-Q1–S1-Q9, then implement Stage 1 (the second
+Stage 1 prompt).
+
+### 2026-06-13 (Stage 1 implemented: headless state data layer + tests)
+
+**Task.** Second task under *Prompts / Stage 1* — implement Stage 1 (R4, R5,
+R11) per the S1-Q answers, plus the Sign offs sub-section.
+
+**S1-Q answers applied.** S1-Q1 single `DashboardModel` class; S1-Q2 `palette.py`
+plain data with light **and** dark hex sets; S1-Q3 fixtures generated (user will
+commit); S1-Q4/S1-Q9 **`det` left raw in the model, formatted in the view**;
+S1-Q5 load+pure logic CI-safe in `pypeit/tests/`, derive test in the dev suite;
+S1-Q6 `in_pipeline` per-step flag in the model; S1-Q7 load via
+`RunPypeItState.model_validate(json.load(...))`; S1-Q8 normalize `get_status()`
+(real `bool` `required`, `absent`/`None` sentinels, empty→empty table) + add
+`in_pipeline`.
+
+**Files.**
+- `pypeit/dashboard/palette.py` — Qt-free Dashboard-wide palette: `classify()`
+  + `step_style()` returning `StepStyle(category, color, glyph, label)`, with
+  `LIGHT_COLORS`/`DARK_COLORS` and `GLYPHS` matching the design table.
+- `pypeit/dashboard/model.py` — added `DashboardModel`: source-priority
+  acquisition (load `<root>_state.json` → else derive via `PypeIt(calib_only)`),
+  `status_table()` (normalized DataFrame, `STATUS_COLUMNS`), `calib_det_pairs()`,
+  `default_steps()`/`step_order(include_bpm=False)` (pypeline-mapped, no PypeIt
+  instance), `is_started()`, and `LOAD_*` edge-state constants (never raises).
+- `pypeitdev/dashboard/py/make_state_fixtures.py` — generator that **synthesizes**
+  schema-valid `*_state.json` fixtures via the current `RunPypeItState` model.
+- `pypeit/tests/files/dashboard_state_{healthy,not_started,partial,failed,malformed}.json`
+  — the committed fixtures.
+- `pypeit/tests/test_dashboard.py` — +10 Stage 1 headless tests (model load /
+  normalization / step order / pairs / 4 edge states; palette categories +
+  exact colors/glyphs).
+- `PypeIt-development-suite/unit_tests/test_dashboard_model.py` — the dev-suite
+  **derive-path** test (R5; needs RAW_DATA, skips otherwise).
+
+**Verification.** `pytest pypeit/tests/test_dashboard.py` → **17 passed** (7
+Stage 0 + 10 Stage 1); dev-suite `unit_tests/test_dashboard_model.py` →
+**1 passed** (2.6 s). Moved R4/R5/R11 to the design doc *Implemented* bucket.
+
+**Key finding (flagged in Sign offs).** The **real** on-disk
+`shane_kast_blue_A_state.json` in `REDUX_OUT` does **not** validate against the
+current `RunPypeItState` schema — `input_files` are nested lists, caused by a
+writer idempotency bug in `calibrations.py` (`update_calib` *appends* a list on a
+2nd call to a list-valued field). The model handles this as the R11 `malformed`
+case, but it means real reductions won't *load* until the writer is fixed /
+state regenerated. Surfaced for a `state.py`/`calibrations.py` fix before Stage
+2. For now, tests use freshly-synthesized, schema-valid fixtures.
+
+**Next step:** the user runs the Stage 1 Sign offs; on acceptance, Stage 2 (the
+Status view) consumes this model.
+
+### 2026-06-13 (Stage 1: confirmed the input_files writer fix)
+
+**Task.** Third task under *Prompts / Stage 1* — confirm the user's fix for the
+nested-`input_files` writer bug in `state.py` (or fix it otherwise).
+
+**Confirmed — the fix is correct.** `RunPypeItState.update_calib` now, when the
+`value` is a list/tuple, stores it **wholesale as a flat list**
+(`setattr(item, key, list(value))`) instead of appending it; a scalar added to
+an already-list field (e.g. `flats` `types`) still accumulates. This makes
+repeat calls idempotent, which is exactly what was nesting `input_files` before.
+
+**How I verified.** Simulated the writer path: two successive
+`update_calib('arc', 0, 1, 'input_files', files)` calls → `input_files` stays a
+flat `['…b1…', '…b2…']` (not nested); `flats` `types` still accumulates across
+scalar calls; and a `model_dump_json` → `model_validate` round-trip succeeds.
+Re-ran `pytest pypeit/tests/test_dashboard.py pypeit/tests/test_state.py` →
+**39 passed**.
+
+**Caveat (flagged in Sign offs).** The **pre-existing** on-disk REDUX_OUT
+state file was written before the fix, so it is still nested and the model
+reports `malformed` on it (R11, graceful). It must be **regenerated by re-running
+the reduction**; new reductions now write valid state files. I did not mutate
+the user's REDUX_OUT. Updated the Sign offs heads-up from "schema drift / to fix"
+to "FIXED, with regeneration caveat".
+
+**Next step:** the user evaluates the Stage 1 Sign offs and requests any further
 changes.

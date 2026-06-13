@@ -66,8 +66,21 @@ I am worried that the new state class, and especially its I/O will crash PypeIt 
    - Perform a PypeIt run in the $PYPEIT_DEV/REDUX_OUT/shane_kast_blue/830_3460_d46
      - Monitor the generation of the state JSON file
      - Identify any potential issues
+   - Suggest any additional changes
+   - Log your work
+   
+4. Ok, thanks for the running and new suggestions.  Please implement:
+
+   - S1: Make the ordering match the processing order
+   - The issues you raised about flats will need to be addressed in a separate task.
+   - Log your work
+   
+5. Last, we want tests. Please:
+
    - Generate new unit tests to add for the new state class and its I/O.  Put these in a PypeIt/pypeit/tests/test_state.py file.
    - Log your work
+
+6. Make edits to the code to address the bug/issue you identified regarding input files being stored as a list.  Also, add a test for this.
 
 #### Q&A
 
@@ -90,6 +103,10 @@ For the dashboard, it should rebuild from scratch with a warning.  But you don't
 
 1. Read this doc.  Perform the 1st task under Safety checks.
 2. Read this doc.  Perform the 2nd task under Safety checks.
+3. Read this doc.  Perform the 3rd task under Safety checks.
+4. Read this doc.  Perform the 4th task under Safety checks.
+5. Read this doc.  Perform the 5th task under Safety checks.
+6. Read this doc.  Perform the 6th task under Safety checks.
 
 ## Logging
 
@@ -273,3 +290,200 @@ during a run for now, and the dashboard's rebuild-on-malformed behavior is
 deferred — so C4 is intentionally left for later. Task 3 (a real
 `shane_kast_blue/830_3460_d46` run + `test_state.py` unit tests) is also not
 started.
+
+### 2026-06-13 (Live run of shane_kast_blue 830_3460_d46 + state-JSON review — Task 3)
+
+Ran a full, fresh reduction with the Task-2-patched code and watched the state
+file as it was written.
+
+**The run.** From
+`$PYPEIT_DEV/REDUX_OUT/shane_kast_blue/830_3460_d46` I removed the stale
+`Calibrations/` and `*_state.json` (the existing one was from Jun 11, pre-fix;
+backed up to `/tmp/state_prerun_backup.json`) to force fresh calibration
+generation, then ran `run_pypeit shane_kast_blue_830_3460_d46.pypeit -o` in the
+`pypeit14` env. Result: **exit 0, 27.75 s**, science products written
+(`spec1d/spec2d_b188-PG0157+002...`), QA HTML generated.
+
+**Monitoring the state JSON (it works as intended).** Polling
+`shane_kast_blue_830_3460_d46_state.json` while the run progressed showed the
+expected per-step transitions, e.g.:
+- `current_step=tilts`  → `tilts:running`, later `tilts:success`
+- `current_step=flats`  → `flats:running`  → `flats:success`
+
+So `*_state.json` is a genuine live, per-step status feed (as the coding doc
+assumes for monitoring). Confirmations relevant to Tasks 1–2:
+- The final file **reloads cleanly** via `RunPypeItState.load()` and
+  `get_status()` (no `ValidationError`).
+- **No** `Failed to write/update reduction state` or `Failed to collect state
+  metrics` warnings appeared in the log — the `safe_*` wrappers never had to
+  fire on a healthy run (zero overhead/noise in the common case).
+- **Exactly one entry per step** (no C3-style duplication; this is a
+  single-detector setup, `det=1`).
+
+**Potential issues identified (NOT fixed — these are suggestions for review):**
+
+- **S1 — step ordering is inconsistent and wrong in the status table.** There
+  are *three* different step orderings in play and none matches the real
+  pipeline order:
+  - `calib_classes` dict (drives `get_status()` / `print_status()`):
+    `bias, dark, arc, tiltimg, wv_calib, tilts, scattlight, flats, slits, align`
+    → **`slits` is listed dead last**, so the status table shows `slits` *after*
+    `flats`.
+  - `RunPypeItState` model field order (drives JSON layout):
+    `bias, dark, arc, tiltimg, slits, wv_calib, tilts, scattlight, flats, align`.
+  - Actual processing order `MultiSlitCalibrations.default_steps()`:
+    `bias, dark, bpm, slits, arc, tiltimg, wv_calib, tilts, scattlight, flats`.
+  This directly contradicts the dashboard design (R8 "fixed, logical processing
+  order"; the Calibrations view's left→right dependency-ordered buttons, C3).
+  **Suggested change:** make one ordering authoritative — reorder
+  `calib_classes` (move `slits` to just before `arc`) so `get_status()` /
+  `print_status()` match `default_steps()`; ideally derive the display order from
+  the spectrograph's `default_steps()` so it is path-aware (IFU differs).
+
+- **S2 — `flats` records no `input_files`.** `flats_state()`
+  (`calibrations.py`) sets `status`, `output_file`, and `types` but never
+  `input_files`, whereas `base_state()` (arc/tiltimg/bias/dark) and the
+  slits/wv_calib/tilts collectors do. Confirmed in the live file
+  (`flats has input_files key: False`). The dashboard's Calibrations detail panel
+  (C7, "input files as a scrollable list") would therefore show **no inputs for
+  flats**, even though flats typically has many frames (dome flats). **Suggested
+  change:** set `input_files=self.raw_files` in `flats_state()` (or route flats
+  through the same input-file recording the other steps use).
+
+- **S3 — `flats` `types` only ever reports `pixelflat`.** `flats_state()` appends
+  `'pixelflat'` when `pixelflat_norm is not None` but never checks/records
+  `illumflat`, even though this setup is `illumflat,pixelflat,trace`. Minor
+  metric-completeness gap; **suggest** also appending `'illumflat'` when the
+  illumflat model is present.
+
+- **S4 (cosmetic) — no terminal "complete" marker.** The file ends with
+  `current_step=flats`; there is no overall "calibrations complete" / run-done
+  signal, and science-frame status is not yet tracked (already known/planned per
+  the design doc). Not a bug; noting for the monitoring/finish design.
+
+None of S1–S4 affected the run's correctness; they are state-content/usability
+issues that matter mainly to the dashboard consuming the file. Left unimplemented
+pending your go-ahead (Task 3 asked to *suggest* changes). The directory now
+holds a fresh, valid reduction + `*_state.json`.
+
+### 2026-06-13 (Implemented S1 — step ordering matches processing order — Task 4)
+
+Implemented **S1**: the calibration step ordering now follows the pipeline's
+processing order. The flats gaps (**S2**, **S3**) are intentionally left for a
+separate task per your instruction.
+
+**Change (`pypeit/state.py`).** Reordered the two structures that govern step
+order so both match `MultiSlitCalibrations.default_steps()` (with `bpm` omitted —
+it is not tracked — and the IFU-only `align` appended last):
+
+- `calib_classes` dict — authoritative for iteration/display in `get_status()`,
+  `print_status()`, `required_calibs()`. Old order put **`slits` dead last**
+  (after `flats`); new order moves it to **just before `arc`**:
+  `bias, dark, slits, arc, tiltimg, wv_calib, tilts, scattlight, flats, align`.
+- `RunPypeItState` calibration fields — drive the JSON layout; reordered to the
+  same sequence (previously `slits` sat after `tiltimg`).
+- Added comments on both blocks noting the order is authoritative and mirrors
+  `default_steps()`.
+
+**Verification.** Reloaded the live
+`shane_kast_blue/830_3460_d46` state file (no migration needed — field reordering
+does not affect loading existing JSON) and confirmed:
+- `get_status()` step order == `default_steps()` order (with `align` appended):
+  `bias, dark, slits, arc, tiltimg, wv_calib, tilts, scattlight, flats[, align]`
+  → `MATCHES default_steps order: True`.
+- `print_status()` now prints `slits` before `arc`, matching the order PypeIt
+  actually builds the calibrations (and the dashboard's required left→right
+  dependency order, R8/C3).
+- `pypeit.state` / `pypeit.calibrations` still import cleanly.
+
+**Note / not done.** This is a single static order tuned to MultiSlit/Echelle.
+For IFU the true `default_steps()` order is
+`bias, dark, bpm, arc, tiltimg, slits, wv_calib, tilts, align, scattlight, flats`
+(slits after arc/tiltimg; align before scattlight), which a single static list
+cannot also satisfy. The dashboard's Calibrations view already derives its
+button order directly from the spectrograph's `default_steps()` (path-aware, per
+C3/C12), so the static order here only affects the convenience `get_status()` /
+`print_status()` table. A fully path-aware `get_status()` (sorting by the active
+spectrograph's `default_steps()`) remains a possible future enhancement; left out
+to keep this change minimal and Qt/spectrograph-free.
+
+### 2026-06-13 (Unit tests for RunPypeItState + I/O — Task 5)
+
+Added `PypeIt/pypeit/tests/test_state.py` — **21 CI-safe, headless tests** for
+`pypeit.state` (no RAW_DATA; JSON I/O goes to pytest's `tmp_path`). All 21 pass
+(and the related `test_dashboard.py` still passes: 28 total). Lines ≤ 80 chars;
+every test/helper carries "Generated by JXP and Claude".
+
+**What is covered:**
+- *Construction / `outfile`*: empty per-step lists; `outfile` derives from the
+  `.pypeit` name and honors a `path` override.
+- *`same_det` (C3)*: scalar and mosaic comparisons, list-vs-tuple equality,
+  scalar≠mosaic.
+- *`update_calib`*: create-then-update-in-place; step transition bookkeeping
+  (`current_step`/`previous_step`); unknown step (`bpm`) is a safe no-op;
+  per-slit sub-entry creation + metric; **C3 regression** — repeated updates
+  with a mosaic `det` tuple update a *single* entry (distinct mosaics stay
+  distinct).
+- *List-field semantics*: `input_files` (default `None`) stores a passed list
+  wholesale (real usage hands in `self.raw_files`); `flats.types` (default `[]`)
+  *appends* across calls — these tests document the two different behaviors.
+- *Status Literal (C1)*: `BiasCalibState(status='failed')` raises
+  `ValidationError`; `'fail'` validates.
+- *write/load*: full round-trip equality (`model_dump`), per-slit metrics
+  preserved; **C1 end-to-end** — a `'fail'` status survives write→load;
+  `load()` is a no-op returning `self` when no file exists; a mosaic `det`
+  round-trips and re-matches after load.
+- *`safe_write` / `safe_update_calib` (C5)*: return `True` on success and
+  `False` (without raising) on an unwritable path / invalid field.
+- *`get_status` / `print_status`*: `None` when empty; expected columns and
+  required/status/output-basename values; placeholders for steps with no entry;
+  **S1 regression** — step order equals `MultiSlitCalibrations.default_steps()`
+  (bpm dropped, align appended) and is independent of insertion order
+  (`slits` before `arc`); `print_status` smoke test.
+
+**Incidental finding (documented in a test, not fixed):** the append branch in
+`update_calib` only fires when the target field is *already* a list. Because
+`input_files`/`qa_files` default to `None`, those are never appended — they take
+the value as-is (fine, since the caller passes a list). Only fields defaulting to
+`[]` (e.g. `flats.types`) accumulate. Two tests pin this actual behavior so it is
+explicit; no code change made (out of scope for the test task).
+
+This completes Tasks 1–5 under *Safety checks*. Summary of code changes for the
+PR: `pypeit/state.py` (same_det + C3 fix, safe_write/safe_update_calib, C1-safe
+status path via calibrations, S1 ordering, docstrings), `pypeit/calibrations.py`
+(C1 'fail', C2 remove embed/use safe_*, guarded metric collection), and the new
+`pypeit/tests/test_state.py`. (C4 load() hardening intentionally deferred per
+Q&A.)
+
+### 2026-06-13 (Fixed update_calib list-field handling for input_files — Task 6)
+
+Addressed the incidental issue flagged in Task 5: `update_calib`'s list
+handling was fragile for `input_files`.
+
+**The bug.** The old "set" logic was:
+`if isinstance(getattr(entry, key), list): append(value) else: setattr(value)`.
+Because `input_files` (and `qa_files`) default to `None`, the *first*
+`update_calib(..., 'input_files', self.raw_files)` stored the list fine — but a
+*second* call (e.g. a re-run of the step) saw an existing list and `.append()`-ed
+the **whole new list as one element**, producing a nested list
+(`['/a.fits', ['/a.fits', '/b.fits']]`). A nested list is not `List[str]`, so it
+would later fail `load()` validation — exactly the kind of I/O crash this work is
+meant to prevent.
+
+**The fix (`pypeit/state.py`, `update_calib`).** Decide by the *value* type:
+- a `list`/`tuple` value (e.g. `input_files=self.raw_files`) → stored wholesale as
+  a flat `list(value)` (replace). This is idempotent across repeat calls — no
+  nesting.
+- a scalar added to a field that *already* holds a list (e.g. flats `types`,
+  default `[]`) → appended (unchanged behavior).
+- otherwise → plain `setattr`.
+Updated the `value` arg docstring to describe these three cases.
+
+**Verified.** Repeat `input_files` calls now stay flat
+(`['/a.fits', '/b.fits']`); `types` still accumulates
+(`['pixelflat', 'illumflat']`).
+
+**Test added.** `test_update_calib_input_files_repeat_no_nesting` in
+`pypeit/tests/test_state.py`: two `input_files` updates yield a flat list of
+strings that round-trips through `write()`/`load()`. Full file now **22 tests,
+all passing**; lines ≤ 80; "Generated by JXP and Claude" docstring.
