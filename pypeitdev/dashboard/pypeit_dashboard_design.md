@@ -1,7 +1,7 @@
 # PypeIt Dashboard — Design Document
 
-**Version:** 0.7
-**Date:** 2026-06-12
+**Version:** 0.9
+**Date:** 2026-06-13
 **Author:** JXP and Claude
 
 **Changelog**
@@ -35,6 +35,13 @@
   the banner) and pointed image references at the new
   `pypeitdev/dashboard/images/` folder (downscaled `pypeit_logo.png` + the two
   sketch PNGs).
+- 0.8 (2026-06-13): Added the **Execution, Locking & Status** section —
+  single-run lock (X1), clobber confirmation + capability for (re)generation
+  (X2/X3), and the Dashboard's own status/activity area (X4/X5); cross-linked
+  from C10.
+- 0.9 (2026-06-13): Resolved the two execution clarifications — detect an
+  external run by **watching the `.log` mtime** (X1), and **clobber only the
+  selected step** on regeneration (X3).
 
 ---
 
@@ -133,6 +140,8 @@ design phases:
 - **Preamble** (this section).
 - **Initialization** — how the dashboard launches and what it shows on startup.
 - **Calibrations** — the per-(group, detector) calibration detail/inspect view.
+- **Execution, Locking & Status** — cross-cutting run control (single-run lock,
+  clobber protection, the Dashboard's own status/activity area).
 - *(subsequent phases: science-frame reduction, Inspection/QA, Monitoring, ...
   — to be added.)*
 
@@ -554,7 +563,9 @@ row, as noted above.)
   `pypeit_run_to_calibstep` for the selected step (passing `--calib_group` and
   `--det`), which generates that step **and all preceding steps**; disable it
   while a reduction is running. The control uses a distinct **action color**
-  (not a status color, so it is not mistaken for "success").
+  (not a status color, so it is not mistaken for "success"). Launching is
+  governed by the run-lock (X1) and the clobber confirmation (X2/X3) in the
+  *Execution, Locking & Status* section.
 - **C11.** Support **per-slit / per-order** drill-down for `slits`, `wv_calib`,
   and `tilts`, presented as a **scrollable list** (one row per slit/order; MOS /
   echelle may have many).
@@ -586,6 +597,98 @@ row, as noted above.)
   step — these must be done in the PypeIt file, not the Dashboard.
 - **CD3.** **Side-by-side comparison** of a calibration across groups/detectors
   (e.g. diffing two `WaveCalib`) — possible future enhancement.
+
+---
+
+## Execution, Locking & Status
+
+This is a **cross-cutting** section: it applies to every view that can *launch*
+PypeIt work. Today that is the Calibrations view ((re)generation via
+`pypeit_run_to_calibstep`); a future "Run reduction" action (full `run_pypeit`)
+is the same concern. Because PypeIt writes into the reduction directory and is
+not safe to run concurrently against the same outputs, the Dashboard must
+serialize launches, guard against clobbering existing products, and keep the
+user informed about what it is doing.
+
+### Single-run lock
+
+- At most **one** PypeIt process (`run_pypeit` or `pypeit_run_to_calibstep`) may
+  be active at a time. The Dashboard must **not** let the user launch a second
+  run while one is in progress.
+- While a run is active the Dashboard enters a **locked** state: every control
+  that would launch a run (each step's (Re)generate button, a future
+  "Run reduction" action) is **disabled**, and the active task is shown in the
+  status area (below).
+- The lock must also respect a run started **outside** the Dashboard. The
+  Dashboard detects an active run by **watching the modification time of the
+  reduction `.log` file**: PypeIt writes to it continuously while running, so a
+  log whose mtime is advancing means a run is in progress — treat the Dashboard
+  as locked and refuse to launch. (A log that has gone quiet indicates the run
+  has finished or stalled.)
+- On completion the lock releases, the state is refreshed (per R12: read
+  `*_state.json` while running, re-derive when idle), and controls re-enable.
+
+### Clobber protection for (re)generation
+
+- PypeIt's default — and, in `pypeit_run_to_calibstep`, current — behavior is to
+  **reuse** existing calibration files (`reuse_calibs=True`); it will *not*
+  overwrite them. A genuine *re*-generation therefore requires
+  removing/overwriting the existing `Calibrations/` output(s) for the step.
+- **Scope: clobber only the selected step.** Regeneration overwrites *only the
+  selected step's* output file(s); the preceding steps that
+  `pypeit_run_to_calibstep` runs are **reused** (not rebuilt). So "regenerate
+  `wv_calib`" replaces `WaveCalib_*` only, reusing `Bias`/`Slits`/`Arc`/…
+- That is a **destructive** action, so before executing the Dashboard must show
+  a **warning + explicit confirmation** that names the calibration file(s) that
+  will be overwritten/removed (non-destructive & observable, principle #5).
+- **Implementation note:** this needs a clobber/overwrite path threaded through
+  `pypeit_run_to_calibstep` (which currently only reuses). The exact mechanism
+  (delete the selected step's output then run, vs. a new `--clobber` flag) is to
+  be settled in development.
+
+### Dashboard status / activity area
+
+- Separate from the PypeIt reduction **state**, the Dashboard has its **own
+  status area** that reports what the *Dashboard* is doing and, in particular,
+  when it is **waiting on a task** — e.g. "computing state…", "regenerating
+  `wv_calib` (+ preceding)…", "launching `pypeit_chk_wavecalib`…", or "idle".
+- It shows a **busy indicator** for blocking/long operations (recall that
+  computing state on launch may briefly block the UI, R5) so the user can tell
+  the app is working, not frozen.
+- On completion it reports the **outcome** (success / failure, and where to
+  look) and triggers a state refresh.
+
+### Requirements
+
+#### Pending
+
+- **X1. Single-run lock.** Allow at most one active PypeIt process; while any run
+  is active, disable all launch/(re)generate controls. Detect a run started
+  outside the Dashboard by **watching the `.log` mtime** (PypeIt writes to it
+  continuously while running). (Tightens C10; relates to C15.)
+- **X2. Clobber confirmation.** Before (re)generating a calibration that would
+  overwrite existing files, show a warning listing the affected file(s) and
+  require explicit confirmation.
+- **X3. Clobber capability (selected step only).** Implement the overwrite path
+  for regeneration (PypeIt/`run_to_calibstep` reuses by default); clobber **only
+  the selected step's** output(s), reusing the preceding steps. Mechanism TBD in
+  development.
+- **X4. Dashboard status/activity area.** Provide a dedicated indicator —
+  distinct from the reduction state — of what the Dashboard is doing and when it
+  is waiting on a task, with a busy indicator for blocking operations.
+- **X5. Task outcomes & refresh.** Report success/failure of launched tasks and
+  refresh the state (and any affected view) on completion.
+
+#### Implemented
+
+*(None yet — design phase.)*
+
+#### Deferred
+
+- **XD1.** **Queuing** several runs to execute sequentially — out of scope for
+  now; the Dashboard runs one task at a time (X1).
+- **XD2.** **Cancelling/aborting** an in-flight PypeIt run from the Dashboard —
+  possible future enhancement; needs care since PypeIt writes partial outputs.
 
 ---
 
