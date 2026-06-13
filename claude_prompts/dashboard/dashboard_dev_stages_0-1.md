@@ -441,6 +441,8 @@ repo root (`/home/xavier/Projects/PypeIt/PypeIt`).
      `(calib_id, det)` pairs, the four edge states (not-started ×2, malformed,
      file-not-found), and the palette categories/colors/glyphs.
 
+I confirm
+
 2. **Dev-suite derive-path test passes (needs RAW_DATA).**
    - Execute (from `$PYPEIT_DEV`):
      `python -m pytest unit_tests/test_dashboard_model.py -v`
@@ -448,6 +450,8 @@ repo root (`/home/xavier/Projects/PypeIt/PypeIt`).
      `shane_kast_blue` 600/4310 raw subset and confirms the model **derives**
      the state (R5) and exposes the required steps. (Skips cleanly if
      `PYPEIT_DEV`/RAW_DATA are absent.)
+
+I confirm
 
 3. **Inspect / regenerate the committed fixtures.**
    - The five `pypeit/tests/files/dashboard_state_*.json` (healthy, not_started,
@@ -457,6 +461,8 @@ repo root (`/home/xavier/Projects/PypeIt/PypeIt`).
    - Regenerate any time with:
      `python $PYPEIT_DEV/pypeitdev/dashboard/py/make_state_fixtures.py`
    - (You said you'll commit these to git.)
+
+I have committed the fixtures to git.
 
 4. **(Optional) Exercise the model on a reduction in a shell.**
    - Execute (point at a clean dir with no `*_state.json` to test *derive*, or a
@@ -469,6 +475,8 @@ repo root (`/home/xavier/Projects/PypeIt/PypeIt`).
      ```
    - Inspect: a normalized table (real `bool` `required`, an `in_pipeline`
      column, `absent`/`None` for missing entries) and the path-aware step order.
+
+I confirm
 
 **✅ State-file writer bug — FIXED (2026-06-13).** The nested-`input_files`
 writer bug is now fixed in `pypeit/state.py`: `update_calib` stores a
@@ -486,6 +494,8 @@ state files.
 
 **Sign-off:** if items 1–2 pass (and the fixtures/optional shell check look
 right), Stage 1 is accepted. Note anything off and Claude will address it.
+
+JXP signs off:  Sat Jun 13 10:39:04 PM UTC 2026 
 
 #### Clarifications
 
@@ -636,6 +646,10 @@ Do format in the view.  Do as you wish otherwise.
    `palette.py`, the path-aware step order, the edge-state handling, and the
    committed `*_state.json` fixtures + headless tests. Also generate set of Sign offs actions that I should take after your development of this Stage.  Add them to the Sign offs sub-section of this stage.  Give me explict instructions on what to execute and what to inspect. Log your work.
 3. During your development, you flagged a problem with input_files as nested lists.  I believe I have fixed that in the state.py file.  Please confirm.  If not, please fix it.  I will then evaluate the Sign offs and request any additional changes as needed.
+
+### Stage 2
+
+1. Generate a new prompt document for Stage 2.  Call it dashboard_dev_stage_2.md.  Model it after this doc with similar sections (many will be empty).  I will then edit it before proceding with the development.  Be sure to read all of the Context documents and the other prompt documents in this folder.
 
 ## Logging
 
