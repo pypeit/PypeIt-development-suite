@@ -201,6 +201,14 @@ It might be necessary/helpful to organize this Section of the Design doc by Cali
    - Update the version number 
    - Log your work in the Logs section below
 
+2. I have answered the questions in the Clarifications section below.  Please:
+
+   - Note that I have hand edited the design document (slightly).  Reread it
+   - Update the document to reflect the answers.  
+   - Check for consistency throughout the document
+   - Update the version number 
+   - Log your work in the Logs section below
+
 #### Clarifications
 
 Questions raised while drafting the Calibrations design (2026-06-12):
@@ -214,14 +222,20 @@ Questions raised while drafting the Calibrations design (2026-06-12):
    fail = red, not-required = grey, not-used = dimmed) and update the
    Initialization key to match. OK to unify that way?
 
+Yes, please unify.  And let's try your color scheme.
+
 2. **"Not used by spectrograph" rendering.** I interpreted "Nearly readable" as
    the button being shown but **disabled / dimmed (barely visible)**. Is that
    right, or would you rather such steps be **hidden** entirely?
+
+Yes, that is correct.  Dimmed
 
 3. **Regeneration context.** Since the Calibrations view fixes the calibration
    group and detector via drop-downs, I plan to always launch
    `pypeit_run_to_calibstep` with `--calib_group` and `--det` (never the
    `--science_frame` form). Confirm that's the intended path.
+
+Yes, that is correct.
 
 4. **Metrics to surface.** `state.py` exposes `bias` mean/std, per-slit `rms`
    for `wv_calib`/`tilts`, `slits` `nslits`/`center`, and `flats` `types`. Do you
@@ -229,13 +243,38 @@ Questions raised while drafting the Calibrations design (2026-06-12):
    products (e.g. full `WaveCalib` fit parameters, arc-line FWHM, flat
    illumination profile)?
 
+I expect to add new metrics to the state, but those are the list for now.
+
 5. **Input-file viewer.** Is `pypeit_view_fits` (ginga) the right tool for
    "select an input file and view it", or do you have another viewer in mind?
+
+Yes, that is correct for raw files.  But for processed files, e.g. Bias_*.fits we will just use `ginga`
 
 6. **`bpm` button.** `bpm` is a real step but produces no output file/QA. Show it
    as a (color-coded) button anyway for completeness, or omit it from the row?
 
-## Docs
+Omit it
+
+## Sketches
+
+It will be helpful to have sketches of the overall Dashboard layout before proceeding to develop it.   I will guide you to generate sketches of the Status View and the Calibrations View.  These will:
+
+- Be Python scripts written to the PypeIt-development-suite/pypeitdev/dashboard/py/ folder
+- Use Matplotlib, unless you think you can do a better job with PyQt6
+- Generate PNG files that we will embed into the Design doc
+
+### Status View
+
+1. Generate a sketch of the Dashboard layout with Status view
+
+   - Generate a new module named "dashboard_status_view.py" in the PypeIt-development-suite/pypeitdev/dashboard/py/ folder
+   - It should Generate a PNG file in the folder above it called "dashboard_status_view.png"
+   - Document the code (include your thinking) so that I can modify it 
+   - It is ok if the sketch is crude
+   - You have my permission to run Python on the script to generate the PNG file
+   - If you want to inspect the PNG you create, you do not need to ask my permission
+   - Log your work in the Logs section below
+
 
 ## Finishing up
 
@@ -258,6 +297,11 @@ Questions raised while drafting the Calibrations design (2026-06-12):
 ### Calibrations
 
 1. Read this doc.  Perform the 1st task under Design document/Calibrations
+2. Read this doc.  Perform the 2nd task under Design document/Calibrations
+
+### Sketches
+
+1. Read this doc.  Perform the 1st task under Sketches/Status View
 
 ## Logging
 
@@ -518,3 +562,72 @@ required-undone = amber). Proposed unifying on the Calibrations colors and asked
 five more questions (rendering of "not used" steps; always use `--calib_group`;
 which metrics to surface; input-file viewer choice; whether to show a `bpm`
 button).
+
+### 2026-06-12 (Revised Calibrations per Clarifications answers — v0.4)
+
+Performed the 2nd task under "Design document / Calibrations". Re-read the
+hand-edited Calibrations section, folded in the user's six answers, ran a
+consistency pass, and bumped `pypeit_dashboard_design.md` to **v0.4**.
+
+Noted the user's hand-edits first: the intro now says the view lets users
+"remake" calibrations; the input-files bullet reads "(raw or processed)"; the QA
+bullet calls for a scrollable PNG list for calibrations with many figures; and
+CD2 (parameter editing) was reworded to "must be done in the PypeIt file".
+
+Changes per answer:
+
+1. **Unify the palette.** Adopted the Calibrations colors Dashboard-wide and
+   **updated the Initialization status color key to match** (running: blue →
+   **orange**; required-undone: amber → **white, outlined**; success green, fail
+   red, optional grey, not-used dimmed light grey). Labeled it the "Dashboard-
+   wide status palette", added hex values to the Calibrations button table, and
+   removed the old "divergence/consistency note". Verified no stale blue/amber
+   references remain.
+2. **"Not used" = dimmed.** Kept dimmed/disabled rendering; wording confirmed.
+3. **Always `--calib_group`/`--det`.** Tightened the backend note to say the
+   dashboard never uses the `--science_frame` form.
+4. **Metric set will grow.** Noted in the metrics bullet and C6 that the panel
+   surfaces whatever `state.py` exposes and the set grows as the state model
+   does; kept today's list.
+5. **Viewer split.** Raw input frames → `pypeit_view_fits`; processed frames →
+   `ginga`. For the processed *output*, use a `pypeit_chk_*` script where one
+   exists, else plain `ginga` (so `bias`/`dark`/`arc`/`tiltimg` now say `ginga`,
+   not `pypeit_view_fits`). Updated the detail-panel bullets, the per-type table,
+   and C7/C8.
+6. **Omit `bpm`.** Removed `bpm` from the button row and the per-type table;
+   added a note that it still runs internally (and as a preceding step for
+   `pypeit_run_to_calibstep`); rewrote C13 from "handle the bpm special case" to
+   "omit bpm".
+
+Consistency pass: C4/C16 now reference the unified palette (dropped "pending the
+Clarifications resolution"); the per-type table header clarifies "Inspect output"
+= processed-file viewer, distinct from the raw-input viewer. Added the v0.4
+changelog entry.
+
+### 2026-06-12 (Sketched the Status View layout)
+
+Performed the 1st task under "Sketches / Status View". Wrote a documented
+Matplotlib mock-up and generated a PNG.
+
+- Created `pypeitdev/dashboard/py/dashboard_status_view.py` — a non-functional
+  layout sketch (heavily commented with the design "thinking" so it's easy to
+  modify). Running it writes `dashboard_status_view.png` to the folder above
+  (`pypeitdev/dashboard/`).
+- Chose Matplotlib over PyQt6: a static, headless-friendly PNG is all a sketch
+  needs. The figure is drawn with `Rectangle`/`FancyBboxPatch` patches on a
+  0–100 data canvas.
+- The sketch realizes the Initialization design: tab bar (Status active |
+  Calibrations); run-context header banner (file, spectrograph, MultiSlit path,
+  Setup A, redux dir; R6); summary strip + Filter/Refresh toolbar (R7, R12);
+  a grouped status table "Calibration Group 0 • DET01" with columns
+  Step | Required | Status | Output and color-coded status pills + glyphs (R3,
+  R8, R9, R10); a faded "Science frames" placeholder (R15); and the unified
+  Dashboard-wide status color key.
+- Grounded the example content in the real `shane_kast_blue_A_state.json` from
+  the §6 run (bias/slits/arc/tiltimg/wv_calib/tilts/flats = success; dark and
+  scattlight = optional/undone; `bpm` not shown, per the Calibrations design).
+
+Two fixes while iterating (inspected the PNG each time): swapped the running
+glyph to one present in DejaVu Sans (the hourglass was missing), and removed an
+erroneous `invert_yaxis()` that had flipped the layout upside-down. Final PNG
+renders cleanly, top-to-bottom.
