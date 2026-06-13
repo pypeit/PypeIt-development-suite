@@ -227,13 +227,100 @@ That is correct.
 
 ### Checking/modifying the layout
 
-It will be necessary to check and modify the layout of the GUI.  Let us discuss and decide on how best to proceed with this activity
+It will be necessary to check and modify the layout of the GUI.  
+
+1. Let us discuss and decide on how best to proceed with this activity
 
    - Begin a conversation with me on your best recommendation for how best to check the layout
    - How will Claude confirm the Layout matches the design doc?
      - By running the code and checking the output?
      - By presenting the layout to me and asking me to confirm it?
+   - Ask any clarifying questions you have in the Clarifications section below.  That will be our way of discussing
+   - Do not modify the coding document yet.  We will do that after we have decided on the best way to check the layout and debug the content.
    - If you are going to inspect the layout, how will you do it?
+
+2. I have read your recommendations and agree with them.  I have also answered all of the L-Q questions in the Clarifications section below.  Please proceed to:
+
+   - Add a new section to the coding document called "Checking and modifying the layout" and generate the content for the section based on our conversation.
+   - Update the change log
+   - Log your work in the Logs section below
+
+#### Clarifications
+
+*(Discussion channel for the layout-checking task. Recommendation and open
+questions below — please answer inline under each **L-Q**. Per instructions I
+have **not** modified the coding document.)*
+
+**Key capability I verified first.** I can render a **real Qt widget**
+headlessly to a PNG and then *view that image myself*. Spike (confirmed working
+in this environment): with `QT_QPA_PLATFORM=offscreen` (the dev suite's
+`source_headless_test.sh`), `QWidget.grab().save("out.png")` produces a PNG that
+I then open with my Read tool and inspect visually — fonts, colors, and status
+glyphs (e.g. `✓`) all render. This is **not** the same as the existing
+`pypeitdev/dashboard/py/` sketches, which are *matplotlib mock-ups*; the check
+renders the **actual production widget**, so what I inspect is what the user
+sees.
+
+**Recommended layout-checking workflow (three tiers).**
+
+1. **Tier 1 — render-and-view self-check (my primary loop).** A small, reusable
+   harness in `pypeitdev/dashboard/py/` builds each real dashboard view with
+   **representative example data** (the `shane_kast_blue` 600/4310 dataset — the
+   same one behind the current sketches and the workflow worked example), grabs
+   it offscreen to a PNG, and exits. I then **view the PNG** and check it against
+   (a) the design-doc requirements (R/C/X items) and (b) the matplotlib sketches,
+   iterating the widget code until it matches. I render at the design's default
+   window size plus at least one smaller size to check resizing.
+
+2. **Tier 2 — your confirmation (final authority on look & intent).** After the
+   self-check passes, I present the screenshot(s) to you for sign-off and change
+   requests. So the answer to *"run-and-check output vs. present to you"* is
+   **both**: I self-check by rendering the real widget, then show you the result
+   to confirm.
+
+3. **Tier 3 — `pytest-qt` structural assertions (cheap regression guard).**
+   Optional tests that assert *structure* (tab bar = Status | Calibrations; the
+   step-button row contains the path-aware steps in dependency order; the table
+   has the right columns). These catch regressions but do not judge visual
+   layout — Tiers 1–2 do that.
+
+**How I confirm the layout matches the design doc.** By **running the code and
+viewing its rendered output** (Tier 1) and then **presenting it to you** (Tier
+2) — code reasoning alone is not enough; I look at the actual pixels.
+
+**Open questions (L-Q): please answer inline.**
+
+- **L-Q1 — Approve the workflow?** Confirm the render-and-view self-check (Tier
+  1) + your-confirmation (Tier 2) approach. And: do you want a screenshot
+  presented at **every iteration**, or only at **view-completion milestones**
+  (default: milestones, to avoid spamming you)?
+
+This should work well.  Present screenshots at every view-completion milestone.
+
+
+- **L-Q2 — Harness location & data.** OK to put the layout-check harness in
+  `pypeitdev/dashboard/py/` (beside the existing sketches), have it **import the
+  real `pypeit.dashboard` widgets** (once they exist) rather than mock them, and
+  drive them with the `shane_kast_blue` 600/4310 example data?
+
+yes, this is a good approach
+
+- **L-Q3 — Fate of the matplotlib sketches.** Once a real view exists, should its
+  offscreen render **supersede** the corresponding sketch as the reference image
+  (sketches become historical), or do you want the sketches **kept in sync** too?
+
+Let's keep the sketches in the design document.  We can use real views in our (future) docs.
+
+- **L-Q4 — Structural `pytest-qt` tests (Tier 3).** Include them as a regression
+  guard now, or keep layout-checking purely visual for v1?
+
+let's generate tests throughout the development process.
+
+- **L-Q5 — Theme/size matrix.** For v1, check **light theme at the default
+  window size** only, or also a **dark theme** and a **resized/smaller** window
+  (the design doc calls for a dark-theme-aware palette and resizable views)?
+
+If it isn't too much trouble, let's check them all.
 
 ## Prompts
 
@@ -246,6 +333,11 @@ It will be necessary to check and modify the layout of the GUI.  Let us discuss 
 
 1. Read this doc.  Perform the 1st task under Developing
 2. Read this doc.  Perform the 2nd task under Developing
+
+### Checking+modifying the layout
+
+1. Read this doc.  Perform the 1st task under Checking/modifying the layout
+2. Read this doc.  Perform the 2nd task under Checking/modifying the layout
 
 ## Logging
 
@@ -435,3 +527,69 @@ dashboard, so it was left untouched.
 
 **Next step:** the *Checking/modifying the layout* discussion (next sub-section),
 then implementation starting at Stage 0.
+
+### 2026-06-13 (Layout-checking task 1: recommended a render-and-view workflow)
+
+**Task.** First task under *Checking/modifying the layout* — discuss/recommend
+how to check the GUI layout, how I'll confirm it matches the design doc, and how
+I'll inspect it. Per instructions I did **not** modify the coding document; the
+discussion is in the *Checking/modifying the layout → Clarifications* section.
+
+**What I verified first (the enabling capability).** I ran a spike confirming I
+can render a **real Qt widget** offscreen and then *view* the result myself:
+under `QT_QPA_PLATFORM=offscreen`, `QWidget.grab().save("out.png")` produced a
+PNG that I opened with the Read tool and inspected — real fonts/colors and the
+`✓` status glyph rendered correctly. This is the key difference from the
+existing `pypeitdev/dashboard/py/` artifacts, which I confirmed are **matplotlib
+mock-ups** (`dashboard_status_view.py`, `dashboard_calibrations.py` draw with
+`matplotlib.patches`), not Qt renders.
+
+**What I recommended (detail in Clarifications):** a **three-tier** workflow —
+(1) **render-and-view self-check**: a harness in `pypeitdev/dashboard/py/` builds
+each real view with `shane_kast_blue` 600/4310 example data, grabs a PNG
+offscreen, and I view it and iterate against the design requirements + sketches;
+(2) **user confirmation**: present screenshots to JXP for sign-off (so the
+answer to "run-and-check vs. present to you" is **both**); (3) optional
+**`pytest-qt` structural assertions** as a regression guard. *How I confirm the
+layout:* by running the code and viewing its rendered pixels, then presenting to
+the user.
+
+**Open questions posed:** L-Q1 (approve workflow; screenshot at every iteration
+vs. milestones), L-Q2 (harness in `pypeitdev/dashboard/py/`, import real
+widgets, kast example data), L-Q3 (do real renders supersede the matplotlib
+sketches), L-Q4 (include structural `pytest-qt` tests now), L-Q5 (theme/size
+matrix — light+default only vs. also dark + resized).
+
+**Next step:** await answers to L-Q1–L-Q5, then (per the workflow so far) fold
+the layout-checking approach into the coding document and/or begin Stage 0.
+
+### 2026-06-13 (Layout-checking task 2: wrote section into coding doc)
+
+**Task.** Second task under *Checking/modifying the layout* — the user answered
+all of L-Q1–L-Q5; fold the discussion into the coding document as a new
+**Checking and modifying the layout** section, update the changelog, log work.
+
+**User answers (L-Q1–L-Q5):**
+- **L-Q1** — workflow approved; present screenshots at **view-completion
+  milestones** (not every iteration).
+- **L-Q2** — harness in `pypeitdev/dashboard/py/`, importing the **real**
+  `pypeit.dashboard` widgets, driven with `shane_kast_blue` 600/4310 data.
+- **L-Q3** — **keep the matplotlib sketches in the design document**; reserve
+  real-widget renders for the *future user docs* (sketches are not superseded).
+- **L-Q4** — write structural `pytest-qt` tests **throughout** development.
+- **L-Q5** — render the **full matrix**: light **and** dark themes, default
+  **and** resized/smaller windows.
+
+**What I did.**
+1. Added a **Checking and modifying the layout** section to
+   `pypeitdev/dashboard/pypeit_dashboard_coding.md`: the offscreen render→PNG
+   capability (with a code example), the three-tier workflow (render-and-view
+   self-check → user confirmation at milestones → structural `pytest-qt` tests
+   written throughout), the light/dark × default/resized **render matrix**, the
+   **layout-check harness** spec (real widgets, kast data, lives in
+   `pypeitdev/dashboard/py/`, outputs working PNGs), and the
+   **sketches-stay-in-design-doc / renders-for-future-user-docs** policy.
+2. Bumped the coding document to **v0.3** with a changelog entry.
+
+**Next step:** begin implementation at **Stage 0** (walking skeleton) per the
+Developing section, building the layout-check harness alongside it.
