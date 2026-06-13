@@ -1,6 +1,6 @@
 # PypeIt Dashboard — Design Document
 
-**Version:** 0.4
+**Version:** 0.7
 **Date:** 2026-06-12
 **Author:** JXP and Claude
 
@@ -21,6 +21,20 @@
   input/output viewers split (raw → `pypeit_view_fits`, processed → `ginga`),
   always launch with `--calib_group`/`--det`, and noted the metric set will grow
   as `state.py` does.
+- 0.5 (2026-06-12): Embedded the Status View layout sketch and added the
+  anti-clutter scoping design — calib-group/detector **scope drop-downs** (R16),
+  a **configuration-overview navigator** grid (R17), and an equally-prominent,
+  scalable **Science frames** section (R18).
+- 0.6 (2026-06-12): Embedded the Calibrations View sketch; added the **PypeIt
+  logo** to the shared header banner (R6); recorded the **magenta selected-step**
+  highlight; and refined Calibrations requirements — QA entries are **clickable**
+  to a full view (C9), input files and per-slit/order rows are **scrollable
+  lists** (C7, C11), and the (re)generate control uses a distinct **action
+  color** (C10).
+- 0.7 (2026-06-12): Moved the logo to the **top-right corner** (it was clobbering
+  the banner) and pointed image references at the new
+  `pypeitdev/dashboard/images/` folder (downscaled `pypeit_logo.png` + the two
+  sketch PNGs).
 
 ---
 
@@ -89,6 +103,9 @@ phase (fluxing, 1D/2D/3D coaddition, telluric, collation).
 - **Code location:** dashboard code lives in `pypeit/dashboard/`; design-phase
   scratch/prototype code lives in
   `PypeIt-development-suite/pypeitdev/dashboard/py/`.
+- **Image assets:** design images — the layout-sketch PNGs and the (downscaled)
+  PypeIt logo (`pypeit_logo.png`) — live in
+  `PypeIt-development-suite/pypeitdev/dashboard/images/`.
 - This document avoids specific code recommendations but assumes the Python +
   PyQt6 stack throughout.
 
@@ -216,16 +233,20 @@ as development proceeds.
   is acceptable for this to briefly block the UI on launch.
 - **R6. Context header.** Display a header banner with the `.pypeit` file name,
   the spectrograph (`PYP_SPEC`), the setup/configuration ID, the reduction path
-  (MultiSlit / Echelle / IFU), and the reduction directory.
+  (MultiSlit / Echelle / IFU), and the reduction directory. The **PypeIt logo**
+  sits in the **top-right corner** (above the banner, clear of the text). This
+  banner+logo is shared by the Status and Calibrations views.
 - **R7. At-a-glance summary.** Show an overall progress/health summary derived
   from the state (e.g. "Calibrations: 6/6 required steps success" plus counts of
   fail / running / undone), so health is readable without scanning every row.
   The summary should generalize to also cover science frames once their status
   is tracked (see R15).
-- **R8. Grouped, ordered rows.** Group rows by calibration group → detector /
-  mosaic, with steps listed in a fixed, logical processing order; allow groups
-  to be collapsed/expanded. The grouping scheme must extend to a parallel
-  *science-frame* section (see R15) without redesign.
+- **R8. Grouped, ordered rows.** Show steps in a fixed, logical processing
+  order. Rather than stacking every calibration group × detector in one long
+  scroll (which does not scale — see R16/R17), the detailed table is **scoped**
+  to one `(calibration group, detector/mosaic)` at a time. The grouping scheme
+  must extend to a parallel *science-frame* section (see R15/R18) without
+  redesign.
 - **R9. Required vs. optional clarity.** Visually distinguish *required* steps
   from *optional* ones (e.g. `dark`, `scattlight` were `undone` & not required
   in the Kast run) so an `undone` optional step never reads as a problem.
@@ -253,6 +274,25 @@ as development proceeds.
   / extraction), it can be shown as a *science* section alongside the
   *calibration* section — reusing the same status encoding (R10), grouping (R8),
   and summary (R7) — without a redesign.
+- **R16. Scope drop-downs.** Provide calibration-group and detector/mosaic
+  **drop-downs** that scope the detailed Calibrations and Science tables to a
+  single `(group, detector)` — the primary defense against clutter on
+  instruments with many calibration groups and/or detectors. (These mirror the
+  Calibrations view's selectors, C2.) The always-visible summary strip (R7)
+  preserves whole-run health while one scope is shown.
+- **R17. Configuration-overview navigator.** Above the scoped tables, show a
+  compact **(group × detector) grid**, each cell colored by the *worst* step
+  status in that cell (fail > running > to-do > success), per the unified
+  palette. It gives whole-run visibility at a glance and acts as a
+  **click-to-scope navigator** (clicking a cell sets the drop-downs). For a
+  single-group/single-detector run (e.g. Kast) it is a single cell; it scales to
+  a heat-map for MOS/mosaic runs.
+- **R18. Equally-prominent, scalable Science section.** The Science-frames
+  section is given **equal visual weight** to the Calibrations section (same
+  heading treatment). For runs with many science frames it is **filterable and
+  scrollable** with a visible frame count, so long lists do not overwhelm the
+  view. Columns include the per-frame products (`spec2d`, `spec1d`) and will gain
+  object-find/extraction status as the state model grows (R15).
 
 #### Implemented
 
@@ -270,10 +310,19 @@ and verified.)*
 
 Readability and clarity are the priorities (per the brief). Proposed treatment:
 
-- **Layout.** A header banner (R6) + summary strip (R7) above a grouped table.
-  Group sub-headers read e.g. *"Calibration Group 0 · DET01"*. Within a group,
-  one row per step in processing order. The layout reserves room for a parallel
-  *science-frame* section once that status is tracked (R15).
+The layout sketch below (generated by
+`pypeitdev/dashboard/py/dashboard_status_view.py`, example data:
+`shane_kast_blue` 600/4310) illustrates the target:
+
+![PypeIt Dashboard Status View — layout sketch](images/dashboard_status_view.png)
+
+- **Layout.** Top to bottom: tab bar (Status | Calibrations) → header banner
+  (R6) → global summary strip (R7) → **scope toolbar** with the calib-group and
+  detector drop-downs + filter/refresh (R16) → **configuration-overview
+  navigator** grid (R17) → the **Calibrations** section (steps for the selected
+  scope) → an equally-prominent **Science frames** section (R18). The two
+  sections share the same heading treatment, and the Science section is present
+  from the start (populating as the state model grows, R15).
 - **Columns.** `Step` | `Required` | `Status` | `Output`. Step names bold; file
   names in a monospace font. Per-step metrics and per-slit detail are
   intentionally **not** columns here — they live in the inspection windows.
@@ -330,6 +379,12 @@ not, what do I do about it?" and allows them to remake it.
 This section first lays out the view and the backend it drives, then gives
 per-calibration-type specifics, then the formal requirements.
 
+The layout sketch below (generated by
+`pypeitdev/dashboard/py/dashboard_calibrations.py`, example data:
+`shane_kast_blue` 600/4310 with `wv_calib` selected) illustrates the target:
+
+![PypeIt Dashboard Calibrations View — layout sketch](images/dashboard_calibrations.png)
+
 ### Selecting the context
 
 - The view operates on a single `(calibration group, detector/mosaic)` pair,
@@ -380,6 +435,11 @@ status palette** defined in Initialization (the two views are now unified):
 
 As in the state table (R10), color is **paired with a glyph/label** so status
 never depends on color alone.
+
+**Selected step.** The currently selected step (whose detail panel is shown) is
+indicated with a thick, high-contrast **magenta ring** (`#D81B60`) plus a
+pointer toward the detail panel — chosen because it reads clearly against the
+green/grey/white/orange status fills (a blue ring was hard to see).
 
 ### The detail panel (on selecting a step)
 
@@ -481,19 +541,23 @@ row, as noted above.)
 - **C6.** The detail panel shows the step's **metrics** (whatever `state.py`
   exposes — the set grows as the state model does), with optional threshold
   coloring.
-- **C7.** The detail panel **lists the input files** and lets the user select one
+- **C7.** The detail panel shows the input files as a **scrollable list** (one
+  row per input frame; `bias`/`flats` have many) and lets the user select one
   and **view it** — raw frames via `pypeit_view_fits`, processed frames via
   `ginga`.
 - **C8.** The detail panel exposes the **output file** and a control to launch
   the **appropriate viewer** for that calibration type — a `pypeit_chk_*` script
   where one exists, otherwise plain `ginga` (per-type table above).
-- **C9.** The detail panel shows related **QA files**, viewable inline.
+- **C9.** The detail panel shows related **QA files** as **clickable entries**;
+  clicking one opens a **full view** of the PNG.
 - **C10.** When PypeIt is **not running**, provide a control to launch
   `pypeit_run_to_calibstep` for the selected step (passing `--calib_group` and
   `--det`), which generates that step **and all preceding steps**; disable it
-  while a reduction is running.
+  while a reduction is running. The control uses a distinct **action color**
+  (not a status color, so it is not mistaken for "success").
 - **C11.** Support **per-slit / per-order** drill-down for `slits`, `wv_calib`,
-  and `tilts` (MOS / echelle may have many slits/orders).
+  and `tilts`, presented as a **scrollable list** (one row per slit/order; MOS /
+  echelle may have many).
 - **C12.** Be **path-aware**: show only the steps used by the active
   spectrograph, in its pipeline's order (including IFU's `align`).
 - **C13.** **Omit `bpm`** from the button row — it runs internally (and as a

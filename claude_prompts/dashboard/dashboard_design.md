@@ -275,6 +275,47 @@ It will be helpful to have sketches of the overall Dashboard layout before proce
    - If you want to inspect the PNG you create, you do not need to ask my permission
    - Log your work in the Logs section below
 
+2. Wow, that sketch is amazing.  Please make these edits and then include it in the Design doc:
+
+   - Include the drop-down lists for the calibration group and detector/mosaic
+   - Make the Science frames section more prominent (as prominent as the Calibrations)
+   - This could get cluttered for instruments that have many CALIB_ID groups (and/or detectors).  And if it includes many Science frames. Consider ways to improve this (update the design doc to reflect your idea)
+   - Update your sketch
+   - Log your work in the Logs section below
+
+### Calibrations
+
+1. Generate a sketch of the Dashboard layout for Calibrations.  Be sure to refer to the design doc for the requirements.
+
+   - Generate a new module named "dashboard_calibrations.py" in the PypeIt-development-suite/pypeitdev/dashboard/py/ folder
+   - It should Generate a PNG file in the folder above it called "dashboard_calibrations.png"
+   - Document the code (include your thinking) so that I can modify it 
+   - It is ok if the sketch is crude
+   - You have my permission to run Python on the script to generate the PNG file
+   - If you want to inspect the PNG you create, you do not need to ask my permission
+   - Log your work in the Logs section below
+
+2. Great!  Please make these edits/changes:
+
+   - If there are similar methods in the two sketch modules, move those to a utils.py module and import them
+   - The blue outline on the selected Calibration step is difficult to see.  Consider a different color
+   - Remove the text about BPM
+   - Add the PypeIt logo to the sketch.  You should find it in the PypeIt repository.  Add it to the Status View too
+   - Have the per-slit status be a scrollable list of the status of the slits 
+   - The input files should be a scrollable list of the input files used to generate the calibration
+   - Make the (Re)-generate button a different color than green
+   - Are the little windows next to the QA files meant to be small views of the PNG?  Either way, they should be clickable to provide a full view
+   - As needed, update the design doc to reflect any/all of these edits
+   - Log your work in the Logs section below
+
+3. A few more edits:
+
+   - Copy over the PypeIt logo from the PypeIt repository to the PypeIt-Development-Suite/pypeitdev/dashboard/images/ folder.  
+   - Reduce its resolution to a sensible size
+   - The Logo is clobbering part of the view.  Put it somewhere else
+   - I have moved the other images into that folder.  Update the design doc to reflect this
+   - As needed, update the design doc to reflect any/all of these edits
+   - Log your work in the Logs section below
 
 ## Finishing up
 
@@ -302,6 +343,10 @@ It will be helpful to have sketches of the overall Dashboard layout before proce
 ### Sketches
 
 1. Read this doc.  Perform the 1st task under Sketches/Status View
+2. Read this doc.  Perform the 2nd task under Sketches/Status View
+3. Read this doc.  Perform the 1st task under Sketches/Calibrations
+4. Read this doc.  Perform the 2nd task under Sketches/Calibrations
+5. Read this doc.  Perform the 3rd task under Sketches/Calibrations
 
 ## Logging
 
@@ -631,3 +676,117 @@ Two fixes while iterating (inspected the PNG each time): swapped the running
 glyph to one present in DejaVu Sans (the hourglass was missing), and removed an
 erroneous `invert_yaxis()` that had flipped the layout upside-down. Final PNG
 renders cleanly, top-to-bottom.
+
+### 2026-06-12 (Revised Status View sketch + anti-clutter design — v0.5)
+
+Performed the 2nd task under "Sketches / Status View". Updated the sketch,
+embedded it in the design doc, and bumped `pypeit_dashboard_design.md` to
+**v0.5**.
+
+Sketch edits (`dashboard_status_view.py` → regenerated `dashboard_status_view.png`):
+
+- Added a **scope toolbar** with calib-group and detector/mosaic **drop-downs**
+  (plus Filter and Refresh).
+- Promoted the **Science frames** section to equal prominence with Calibrations
+  (same dark heading bar), with columns Frame | Type | Status | spec2d | spec1d,
+  populated from the real run's three frames (b24 standard, b27/b28 science) and
+  a note that per-frame object-find/extraction status arrives as `state.py`
+  grows.
+- Added a compact **configuration-overview navigator** grid (group × detector,
+  cells colored by worst status) as the anti-clutter mechanism.
+
+Anti-clutter idea (the prompt's 3rd bullet), now in the design doc as new
+requirements:
+
+- **R16 (scope drop-downs):** the detailed Calibrations/Science tables show one
+  `(group, detector)` at a time instead of stacking everything; the summary
+  strip keeps whole-run health visible.
+- **R17 (overview navigator):** a small (group × detector) heat-map that scales
+  to MOS/mosaic runs and doubles as a click-to-scope navigator.
+- **R18 (scalable Science section):** equal prominence to Calibrations, with
+  filtering/scrolling and a frame count for long lists.
+
+Also revised R8 (table is scoped, not stacked), updated the visual-design
+"Layout" bullet to describe the new top-to-bottom structure, and **embedded the
+PNG** in the design doc via a relative-path image link.
+
+### 2026-06-12 (Sketched the Calibrations View layout)
+
+Performed the 1st task under "Sketches / Calibrations". Wrote a documented
+Matplotlib mock-up and generated a PNG, following the Calibrations requirements
+(C1–C16) in the design doc.
+
+- Created `pypeitdev/dashboard/py/dashboard_calibrations.py`; running it writes
+  `dashboard_calibrations.png` to the folder above (`pypeitdev/dashboard/`).
+- **Reused** the unified palette and the pill/text helpers from
+  `dashboard_status_view.py` (imported them) so the two sketches stay
+  consistent — matches design principle #2 (reuse, don't reinvent).
+- The sketch realizes the Calibrations design: Calibrations tab active; shared
+  header banner; **scope drop-downs** (calib group 0, DET01) + Refresh (C2); a
+  **dependency-ordered step-button row** from `default_steps()` with arrow
+  connectors, color-coded by status, `bpm` omitted (C3, C4, C12, C13); and a
+  **detail panel** for the selected `wv_calib` step showing metrics
+  (slit 175 rms = 0.074 px ✓, C6), input files with a "view raw"
+  (`pypeit_view_fits`) chip (C7), the output file with `pypeit_chk_wavecalib` /
+  `pypeit_show_wvcalib` inspect chips (C8), a green "(re)generate via
+  `run_to_calibstep`" control noting it's enabled because PypeIt isn't running
+  (C10), a scrollable QA-file list (C9), and a per-slit/order table (C11).
+- Example content mirrors the real `shane_kast_blue_A` run (MultiSlit, group 0,
+  DET01, one slit S0175; `dark`/`scattlight` not required → grey).
+
+Inspected the PNG; it renders cleanly. (This task only asked for the sketch +
+log, so I did not embed it in the design doc or change the version.)
+
+### 2026-06-12 (Revised both sketches: utils refactor, logo, polish — v0.6)
+
+Performed the 2nd task under "Sketches / Calibrations". Applied the requested
+edits to the sketches, refactored shared code, updated the design doc to v0.6,
+and embedded the Calibrations sketch.
+
+- **Shared `utils.py`.** Moved the common drawing code out of both sketch
+  modules into `pypeitdev/dashboard/py/utils.py` (palette, `status_text_color`,
+  `draw_status_pill`, `draw_tab_bar`, `draw_header`, `draw_scope_toolbar`,
+  `draw_color_key`, `chip`, plus logo/image helpers). `dashboard_status_view.py`
+  and `dashboard_calibrations.py` now import from it.
+- **Selected-step color.** Replaced the hard-to-see blue ring with a
+  high-contrast **magenta** (`#D81B60`, `utils.SELECT_COLOR`) ring + pointer.
+- **Removed the BPM text** from the step-button row label.
+- **PypeIt logo.** Found it at `PypeIt/doc/_static/`
+  `PypeIt_color_white_txt_black_background.png`; added it to the shared header
+  banner, so **both** the Status and Calibrations sketches show it. (Tuned the
+  zoom after first overshooting — the PNG is 6088×3216.)
+- **Scrollable lists.** Input files and the per-slit/order status are now drawn
+  as scrollable list viewports (with scrollbar + "… scrolls for many" note).
+- **(Re)generate color.** Changed from green (a status color) to **teal**
+  (`#00796B`) so it reads as an action, not "success".
+- **QA entries.** Per the user's mid-task note, these are **not** PNG previews —
+  just plain **clickable boxes** (with an `↗` enlarge affordance and a "click to
+  open full view" caption).
+- Two glyph swaps for DejaVu Sans coverage (the enlarge glyph → `↗`).
+
+Design-doc updates (v0.6): embedded `dashboard_calibrations.png` in the
+Calibrations section; updated **R6** (logo in the shared banner); added a
+**selected-step** color note; and refined **C7** (scrollable input list), **C9**
+(clickable QA → full view), **C10** (distinct action color), **C11** (scrollable
+per-slit/order list). Regenerated and inspected both PNGs — clean.
+
+### 2026-06-12 (Logo asset + relocation; images/ folder — v0.7)
+
+Performed the 3rd task under "Sketches / Calibrations".
+
+- **Copied + downscaled the logo.** Used PIL to resize the repo logo
+  (`PypeIt/doc/_static/PypeIt_color_white_txt_black_background.png`, 6088×3216,
+  270 KB) to a sensible **600×317 (35 KB)** and saved it as
+  `pypeitdev/dashboard/images/pypeit_logo.png`. `utils.find_logo()` now prefers
+  this local copy (falling back to the repo original).
+- **Relocated the logo.** It was clobbering the header-banner text, so I moved
+  it out of the banner into the **top-right corner** of the window (the empty
+  band right of the tabs) via a new `utils.draw_logo()`; `draw_header()` no
+  longer draws it. Re-tuned the zoom for the 600 px image.
+- **images/ folder.** The user moved the two sketch PNGs into
+  `pypeitdev/dashboard/images/`; I updated both sketch scripts to write their
+  PNGs there by default, and updated the design doc's embedded image links to
+  `images/…`. Added an "Image assets" note to the design doc's conventions and
+  corrected **R6** (logo is top-right, not in the banner).
+- Regenerated and inspected both PNGs — the logo now sits cleanly in the corner
+  and nothing is clobbered. Bumped the design doc to **v0.7**.
