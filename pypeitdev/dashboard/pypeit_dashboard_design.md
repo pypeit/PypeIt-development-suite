@@ -1,10 +1,14 @@
 # PypeIt Dashboard — Design Document
 
-**Version:** 0.10
+**Version:** 0.11
 **Date:** 2026-06-13
 **Author:** JXP and Claude
 
 **Changelog**
+- 0.11 (2026-06-13): **Scheduled the Dashboard status/activity area (X4/X5) for
+  Stage 3** (was Stage 4), per Stage 2 sign-off feedback — so the GUI shows a
+  visible "busy / waiting on a job" indicator and clarifies what Refresh did
+  (re-loaded vs. re-derived the state) as early as the Calibrations view.
 - 0.10 (2026-06-13): Clarified **launch mechanism** (Initialization → How launch
   works, and R1): the dashboard launches **like every other PypeIt script** via
   the `pypeit_dashboard` console script (a `ScriptBase` entry point, as
@@ -653,6 +657,15 @@ user informed about what it is doing.
   the app is working, not frozen.
 - On completion it reports the **outcome** (success / failure, and where to
   look) and triggers a state refresh.
+- **Scheduling note (Stage 3).** Although this whole section is otherwise the
+  *Execution, Locking & Status* phase (Stage 4), the **status/activity area
+  itself (X4/X5) is pulled forward to Stage 3** (per Stage 2 sign-off
+  feedback). The Calibrations view already launches external tools and the
+  Status view's **Refresh** re-acquires the state, so the user benefits from a
+  visible "busy / waiting on a job" indicator — and from seeing **what Refresh
+  did** (re-loaded the `*_state.json` vs. re-derived the state) — as soon as
+  Stage 3, rather than waiting for Stage 4. (The single-run lock and clobber
+  protection, X1–X3, remain in Stage 4.)
 
 ### Requirements
 

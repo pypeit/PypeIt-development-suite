@@ -180,6 +180,8 @@ root (`/home/xavier/Projects/PypeIt/PypeIt`).
    - Inspect: **23 passed** — Stage 0/1 tests plus the Stage 2 Status-view
      structural tests (`test_status_view_*`) and `test_palette_worst_category`.
 
+All passed
+
 2. **Review the milestone screenshots (Status view matrix).**
    - Inspect the PNGs in
      `$PYPEIT_DEV/pypeitdev/dashboard/py/layout_check/`:
@@ -194,6 +196,8 @@ root (`/home/xavier/Projects/PypeIt/PypeIt`).
    - Regenerate with:
      `QT_QPA_PLATFORM=offscreen python $PYPEIT_DEV/pypeitdev/dashboard/py/dashboard_layout_check.py`
 
+These PNGs all look fine
+
 3. **Launch the GUI on your display — the interactive check.**
    - Execute (a reduction whose state file loads with the current schema; a
      freshly re-run `shane_kast_blue` 600/4310 works — see the Stage 1 caveat):
@@ -204,6 +208,22 @@ root (`/home/xavier/Projects/PypeIt/PypeIt`).
      while the summary stays whole-run; click **Refresh** and confirm it
      re-reads/re-derives. The **Calibrations** tab is still a Stage-3
      placeholder.
+
+The view is good.  When I click on **Refresh** it seems to reload the PypeIt file but it is not clear if it is reloading the state file.  Also, and more important, it would be good to have a status window that indicates the GUI is waiting on a job (if it is).  Consider adding this as part of Stage 3.  If you agree, update the design and coding docs to reflect this.
+
+**→ Claude (Stage 2, prompt 3).** Confirmed and agreed.
+- *Refresh behavior:* Refresh rebuilds the `DashboardModel`, which **does**
+  reload `*_state.json` when present (R4) and only re-derives when it is absent
+  (R5) — so it is reloading the state file; today there is just no on-screen
+  feedback saying so. That feedback is exactly what the status/activity area
+  provides.
+- *Status/activity area:* this is the design's **X4/X5** (*Execution, Locking &
+  Status*). I agree it should land sooner, so I **pulled X4/X5 forward from
+  Stage 4 into Stage 3** in both docs: `pypeit_dashboard_coding.md` (build-order
+  table → **v0.6**) and `pypeit_dashboard_design.md` (a Stage-3 scheduling note
+  in *Dashboard status / activity area*, and X4/X5 will report what Refresh did
+  — reloaded vs. re-derived — → **v0.11**). No Stage 2 code change; delivered in
+  Stage 3.
 
 4. **(Optional) Edge states.** Point the dashboard at a folder with no state
    file (not started) and at a setup with a pre-fix (nested-`input_files`) state
@@ -341,6 +361,7 @@ Yes, that sounds fine.
    `pytest-qt` tests. Also generate a set of Sign offs actions and add them to
    the Sign offs sub-section. Produce the milestone screenshots (light/dark ×
    default/resized, across the fixtures) for my sign-off. Log your work.
+3. I have signed off on all items except one.  See that section and act accordingly.  Log your work.
 
 ## Logging
 
@@ -463,3 +484,33 @@ fixtures/tests use schema-valid synthesized states.
 
 **Next step:** the user runs the Stage 2 Sign offs; on acceptance, Stage 3 (the
 Calibrations view).
+
+### 2026-06-13 (Stage 2 sign-off: scheduled the status/activity area for Stage 3)
+
+**Task.** Third task under *Prompts / Stage 2* — the user signed off on all items
+except the item-3 note; act on it.
+
+**The note (item 3).** The view is good; two points: (a) it's unclear whether
+**Refresh** reloads the state file, and (b) more importantly, add a **status
+window** showing when the GUI is waiting on a job — suggested for Stage 3, with
+docs updated if I agree.
+
+**What I did (no Stage 2 code change — this is forward-planning).**
+- *Refresh clarification:* confirmed Refresh rebuilds the model, which **reloads
+  `*_state.json` when present** (R4) and only re-derives when absent (R5); the
+  gap is on-screen feedback, which the status/activity area will provide. Noted
+  inline in the Sign offs.
+- *Agreed and updated the docs* to pull the **Dashboard status/activity area
+  (X4/X5) forward from Stage 4 into Stage 3**:
+  - `pypeit_dashboard_coding.md` — *Developing → Build order* table: Stage 3 now
+    includes X4/X5 (busy/waiting indicator; shows what Refresh/derive did),
+    Stage 4 keeps X1–X3/C10; bumped to **v0.6**.
+  - `pypeit_dashboard_design.md` — added a Stage-3 scheduling note to *Dashboard
+    status / activity area* (and that X4/X5 will report reloaded-vs-re-derived on
+    Refresh); bumped to **v0.11**.
+
+**Outcome.** Stage 2 accepted; the one open item is resolved as a Stage-3
+commitment (status/activity area), recorded in the design and coding docs.
+
+**Next step:** Stage 3 (Calibrations view) — which will now also deliver the
+Dashboard status/activity area (X4/X5).

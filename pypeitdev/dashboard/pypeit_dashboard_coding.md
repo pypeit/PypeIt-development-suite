@@ -1,10 +1,15 @@
 # PypeIt Dashboard — Coding Document
 
-**Version:** 0.5
+**Version:** 0.6
 **Date:** 2026-06-13
 **Author:** JXP and Claude
 
 **Changelog**
+- 0.6 (2026-06-13): **Pulled the Dashboard status/activity area (X4/X5) forward
+  from Stage 4 into Stage 3** in the *Developing → Build order* table (per Stage 2
+  sign-off feedback): the user wants visible "GUI is busy / waiting on a job"
+  feedback as soon as the dashboard launches external tools, and so the
+  Calibrations view (Stage 3) can show what Refresh/derive is doing.
 - 0.5 (2026-06-13): Clarified the Stage 0 **launch mechanism** in the
   *Developing → Build order* table — the dashboard launches **like every other
   PypeIt script** (e.g. `run_pypeit`) via the `pypeit_dashboard` console script
@@ -220,8 +225,8 @@ Each design reference points back to `pypeit_dashboard_design.md`.
 | **0. Walking skeleton** | Launch **like every other PypeIt script** (e.g. `run_pypeit`): the `pypeit_dashboard` console script — a `ScriptBase` subclass (`RunDashboard`) registered as a `pyproject.toml` entry point (optional `python -m pypeit.dashboard` convenience); argparse for the **required positional `.pypeit` argument**; `MainWindow` with the tab bar (Status \| Calibrations), the shared header banner + logo, reusing `setup_gui`'s app/font/icon bootstrap. Views are empty placeholders. | R1, R2, R6 |
 | **1. State data layer (headless)** | Load `*_state.json` via `RunPypeItState.load()`; otherwise derive the state via `PypeIt(calib_only=True).calib_all(status_only=True, reload_only=True)`; expose the `get_status()` DataFrame; handle empty/edge states. **No Qt.** | R4, R5, R11 |
 | **2. Initialization / Status view** | The landing, *state-first* view: the color + glyph state table, required-vs-optional distinction, global summary strip, configuration-overview navigator grid, scope drop-downs, manual refresh, stale-state indicator, and a **placeholder** Science section (see below). | R3, R7–R13, R15–R18 |
-| **3. Calibrations view** | The path-aware step-button row (from `Calibrations.default_steps()`), the detail panel, and **launching external viewers as subprocesses** (`pypeit_chk_*` / `ginga` / `pypeit_view_fits`); per-slit/order drill-down. Builds the reusable subprocess-launch infrastructure. | C1–C16 |
-| **4. Execution, locking & status** | Single-run lock via **`.log` mtime watching**; clobber confirmation; the Dashboard's own status/activity area; (re)generation via `pypeit_run_to_calibstep`. | X1–X5, C10 |
+| **3. Calibrations view** | The path-aware step-button row (from `Calibrations.default_steps()`), the detail panel, and **launching external viewers as subprocesses** (`pypeit_chk_*` / `ginga` / `pypeit_view_fits`); per-slit/order drill-down. Builds the reusable subprocess-launch infrastructure. **Also delivers the Dashboard's own status/activity area** (X4/X5) — pulled forward from Stage 4 — so the user can see when the GUI is busy/waiting on a job (e.g. launching a viewer, deriving/reloading state on Refresh). | C1–C16, X4, X5 |
+| **4. Execution, locking & status** | Single-run lock via **`.log` mtime watching**; clobber confirmation; (re)generation via `pypeit_run_to_calibstep`. (The Dashboard status/activity area, X4/X5, ships earlier in Stage 3.) | X1–X3, C10 |
 | **5. Monitoring (live updates)** | Live status refresh while a reduction is active (see *Monitoring*, below). | R14 |
 | **6. Science frames** | Populate the Science section once `RunPypeItState` is extended to track per-science-frame status. | R15, R18 |
 
