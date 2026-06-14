@@ -365,6 +365,11 @@ Yes, that sounds fine.
    default/resized, across the fixtures) for my sign-off. Log your work.
 3. I have signed off on all items except one.  See that section and act accordingly.  Log your work.
 
+### Stage 3
+
+1. Generate a new prompt document for Stage 3.  Call it dashboard_dev_stage_3.md.  Model it after this doc with similar sections (many will be empty).  I will then edit it before proceding with the development.  Be sure to read all of the Context documents and the other prompt documents in this folder.
+
+
 ## Logging
 
 The "Logs" section will record Claude's work.  Please use the following format:
