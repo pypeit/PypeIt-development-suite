@@ -232,6 +232,8 @@ The view is good.  When I click on **Refresh** it seems to reload the PypeIt fil
 **Sign-off:** if items 1–3 look right, Stage 2 is accepted. Note anything off
 (ideally the item + a screenshot) and Claude will address it.
 
+JXP signs off at Sun Jun 14 01:10:32 AM UTC 2026
+
 #### Clarifications
 
 *(Discussion channel for Stage 2. Recommendations and open questions below —
