@@ -99,6 +99,17 @@ Read the following documents to gain context:
   `run_to_calibstep.py` (the Stage-4 (re)generate backend)
 - The setup GUI: PypeIt/pypeit/setup_gui/ (`text_viewer.py` `LogWindow` for
   subprocess/log output; `dialog_helpers.py`)
+- **Test datasets** (both already loadable by the model):
+  - single-slit, single-detector — `shane_kast_blue` 600/4310 (the running
+    example for the sketches/fixtures); and
+  - **multi-slit, multi-detector** — `keck_lris_blue` in
+    `$PYPEIT_DEV/REDUX_OUT/keck_lris_blue/multi_600_4000_d560` (setup B, calib
+    group 1, **DET01 + DET02**, **many slits** per detector). This is the
+    important case for Stage 3: it exercises the detector scope selector (C2),
+    the per-detector step-button row, and especially the **per-slit/order
+    drill-down** (C11), which is trivial on Kast (one slit) but real here
+    (S0269…S0991 on DET01, etc.). It verified cleanly at the Status-view level
+    (see the Stage 2 log, 2026-06-14).
 
 ## Development
 
@@ -156,7 +167,8 @@ banner sits above):
    magenta selected-ring; connectors conveying precedence.
 3. **Detail panel** (C5–C9) — metrics, input-file list, output viewer, QA files.
 4. **Per-slit/order drill-down** (C11) — scrollable table for slits/wv_calib/
-   tilts.
+   tilts. Must handle a **real many-slit** detector (the `keck_lris_blue` multi
+   data has ~14 slits on DET01), not just Kast's single slit.
 5. **Subprocess-launch infrastructure** (C8/C14/C15) — launch `pypeit_chk_*` /
    `ginga` / `pypeit_view_fits`, capturing stdout/stderr/returncode and routing
    progress/outcome to the status/activity area (Debugging plan).
@@ -167,9 +179,13 @@ banner sits above):
    `MainWindow`; wire the Status view's Refresh and all subprocess launches to
    it (closes the Stage 2 sign-off Refresh-feedback item).
 8. **Layout-check harness extension + structural `pytest-qt` tests** — render
-   the Calibrations view across light/dark × default/resized with the fixtures
-   (`wv_calib` selected, per the sketch); assert structure (button row =
-   path-aware steps, detail panel fields, per-slit table). Milestone screenshots.
+   the Calibrations view across light/dark × default/resized with `wv_calib`
+   selected (per the sketch). Render **both** the single-slit `shane_kast_blue`
+   fixture **and** the **multi-slit, multi-detector `keck_lris_blue` multi**
+   reduction (DET01 with many slits) so the per-slit table and detector
+   selector are exercised on real data. Assert structure (button row =
+   path-aware steps, detail-panel fields, per-slit table populated for a
+   many-slit detector). Milestone screenshots.
 
 **Acceptance criteria.**
 
@@ -177,6 +193,10 @@ banner sits above):
   row (correct colors+glyphs, `bpm` absent), and selecting a step opens its
   detail panel (metrics, input files, output, QA, and — for slits/wv_calib/
   tilts — the per-slit table).
+- On the **multi-slit, multi-detector** `keck_lris_blue` data: the detector
+  selector lists DET01/DET02 and switching re-renders the button row + detail
+  panel for that detector; selecting `wv_calib` shows a **per-slit table with
+  one row per slit** (≈14 on DET01) with each slit's status + `rms`, scrollable.
 - "Inspect" launches the correct tool per step (per-type table) as a subprocess;
   the status/activity area reports the launch + outcome.
 - The status/activity area shows a busy indicator during blocking ops and, after
@@ -199,12 +219,16 @@ please answer inline under each **S3-Q**. No code until these are resolved.)*
   `QGraphicsScene`? I lean toward plain buttons + separators (simplest, matches
   the sketch).
 
+Use plain buttons + separators.
+
 - **S3-Q2 — Subprocess mechanism.** The coding doc says launch via the
   stdlib `subprocess`. For a GUI, a non-blocking launch that captures
   stdout/stderr and signals on completion is cleaner with Qt's **`QProcess`**
   (integrates with the event loop and the status/activity area). Use `QProcess`
   (a minor refinement of "subprocess"), or stick to `subprocess.Popen` in a
   `QThread`? I lean `QProcess`.
+
+Let us try QProcess.
 
 - **S3-Q3 — Output/input viewer mapping.** Encode the per-step viewer map from
   the design's per-type table (`bias`/`dark`/`arc`/`tiltimg` → `ginga`; `slits`
@@ -215,10 +239,14 @@ please answer inline under each **S3-Q**. No code until these are resolved.)*
   `pypeit/dashboard/inspect.py` module (reusable, testable)? I lean a small
   module.
 
+Use the small module.
+
 - **S3-Q4 — Per-slit/order data (model accessor).** Add a Qt-free
   `DashboardModel.slit_table(step, group, det)` returning the per-slit/order
   rows (status + metric) from `run_state` (the normalized status table is
   per-step only). Agree this belongs in the model?
+
+Yes, this belongs in the model.
 
 - **S3-Q5 — Per-step metrics (model accessor).** Similarly add
   `DashboardModel.step_metrics(step, group, det)` returning the step's metrics
@@ -226,29 +254,85 @@ please answer inline under each **S3-Q**. No code until these are resolved.)*
   (C6). Agree? And should the metrics be **threshold-colored** in Stage 3
   (e.g. wavelength/tilt `rms` < 0.1 px = good) or left plain for now?
 
+I agree.  Leave the metrics plain for now.
+
 - **S3-Q6 — QA file viewing (C9).** Show QA PNGs as a scrollable list of
   clickable entries that open the PNG in a simple image window (a
   `QLabel`+`QPixmap` dialog, or reuse a `setup_gui` viewer)? Confirm a basic
   inline/full-view image dialog is enough for Stage 3.
 
+Yes, a basic inline/full-view image dialog is enough for Stage 3.
+
 - **S3-Q7 — (Re)generate deferred to Stage 4.** Confirm Stage 3 shows the step
   buttons + detail + inspection but **no (re)generate button** (C10) — that
   arrives in Stage 4 with the run-lock (X1) and clobber protection (X2/X3).
+
+Yes, the (re)generate button is deferred to Stage 4.
 
 - **S3-Q8 — Status/activity area placement (X4/X5).** Implement it as the
   `QMainWindow` **status bar** (a message label + an indeterminate
   `QProgressBar` busy indicator), shared by both tabs? Or a dedicated panel?
   I lean the status bar (standard, unobtrusive, always visible).
 
+Yes, the status bar is the best place for the status/activity area.
+
 - **S3-Q9 — Refresh feedback wording.** After a Status-view Refresh, the status
   area should state the source — e.g. "Reloaded state file" vs "Re-derived
   state (no state file)". Confirm that closes the Stage 2 item, and that the
   Status and Calibrations tabs share the one status area.
 
+I confirm
+
 - **S3-Q10 — Scope selectors: shared or independent?** The design gives the
   Calibrations view its **own** group/detector selectors (C2), separate from the
   Status tab's. Keep them independent for Stage 3 (no cross-tab sync), or sync
   the two tabs' scope? I lean independent (matches the design; simpler).
+
+It is fine to keep them independent for Stage 3.
+
+- **S3-Q11 — Where the multi-slit/multi-detector test data lives.** The real
+  `keck_lris_blue` multi state lives in `$PYPEIT_DEV/REDUX_OUT` (large, not
+  committed), so it can drive the **layout-check harness** and a **dev-suite**
+  test, but not the **CI-safe** main-repo `pytest-qt` tests. I propose:
+  (a) add a small **synthesized** multi-slit/multi-detector `*_state.json`
+  fixture to `pypeit/tests/files/` (2 detectors, several slits with per-slit
+  `rms`) so the per-slit table + detector selector are covered CI-safe; **and**
+  (b) point the harness (and optionally a dev-suite `unit_tests/` test) at the
+  real LRIS reduction for a realistic render. Agree with both, or prefer only
+  the synthesized fixture (no dev-suite dependency)?
+
+I agree with both.
+
+*(Below: follow-ups **S3-Q12–S3-Q13** raised after a close read of the
+`pypeit_chk_*` / `pypeit_view_fits` CLI signatures. S3-Q1–S3-Q11 are resolved.)*
+
+- **S3-Q12 — `inspect.py` = per-tool command *builders*, not a flat map
+  (refines S3-Q3).** The inspection scripts have **non-uniform** signatures, so a
+  simple `step → (command, output_file)` map won't do:
+  - `pypeit_chk_edges` takes the **`Edges_*`** file — *not* the `slits` step's
+    `Slits_*` `output_file`; the builder must resolve the Edges file.
+  - `pypeit_view_fits` takes **`<spectrograph> <file>`** (+ `--proc` for a
+    processed image) — needs the spectrograph name (the model has it).
+  - `pypeit_chk_scattlight` takes **two** positionals (the `ScatteredLight_*`
+    file **and** a `Slits_*` file) + `--det`.
+  - the rest (`chk_wavecalib`, `chk_tilts`, `chk_flats`, `chk_alignments`) take
+    a single file matching the step's `output_file`.
+  So `inspect.py` exposes a **per-step command builder** that, given the model
+  (its `redux_dir`/`Calibrations/`, `spectrograph`, and the step's
+  `output_file`/`input_files`), returns the `argv`. The launcher resolves the
+  **full path** (the state stores a basename under `Calibrations/`). OK with this
+  builder shape, and with the model surfacing what the builders need (e.g. a
+  helper to find a step's output path, and the matching `Slits_*` for
+  scattlight)?
+
+- **S3-Q13 — Processed images: `pypeit_view_fits --proc` vs bare `ginga`.** The
+  design's per-type table maps `bias`/`dark`/`arc`/`tiltimg` "Inspect output" to
+  **`ginga`**. In practice `pypeit_view_fits <spec> <file> --proc` is PypeIt's
+  wrapper for viewing a *processed* image (it opens ginga) and needs only the
+  spectrograph + file — uniform with the raw-frame path (C7). Use
+  **`pypeit_view_fits --proc`** for the processed-image steps (rather than bare
+  `ginga`), keeping a single reliable viewer path? Or invoke `ginga` directly as
+  the table literally says?
 
 ## Prompts
 
@@ -258,9 +342,7 @@ please answer inline under each **S3-Q**. No code until these are resolved.)*
 
 ### Stage 3 — Calibrations view (+ status/activity area)
 
-1. Read this doc and the Context documents. Begin a conversation with me on
-   Stage 3: confirm the layout/scope and **answer/raise the S3-Q questions** in
-   the Clarifications channel. Do **not** write code yet. Log your work.
+1. Read this doc and the Context documents. I have answered your first set of S3-Q questions.  Examine the answers and write more as needed.  Do **not** write code yet. Log your work.
 2. I have answered the S3-Q questions. Implement Stage 3 per the tasks and
    acceptance criteria: the `CalibrationsView` (scope selectors, path-aware
    step-button row, detail panel with metrics/inputs/output/QA, per-slit/order
@@ -312,3 +394,67 @@ status-bar placement, Refresh wording, independent scope selectors), a
 
 **Next step:** the user edits this doc and answers S3-Q1–S3-Q10, then the Stage 3
 discussion prompt runs (no code until the questions are resolved).
+
+### 2026-06-14 (Folded the multi-slit / multi-detector reduction into Stage 3)
+
+**Task.** Second task under *Prompts / Stage 3* (in `dashboard_dev_stage_2.md`) —
+modify the Stage 3 doc to include the multi-slit, multi-detector reduction.
+
+**What I did.** Wove the `keck_lris_blue` multi
+(`$PYPEIT_DEV/REDUX_OUT/keck_lris_blue/multi_600_4000_d560`; DET01 + DET02, many
+slits) through the Stage 3 plan, since the Calibrations view's per-slit
+drill-down (C11) and detector selector (C2) are exactly what multi-detector,
+many-slit data exercises (trivial on single-slit Kast):
+- **Context** — added both test datasets (single-slit Kast + the multi-slit/
+  multi-detector LRIS reduction), noting LRIS verified cleanly at the
+  Status-view level (Stage 2 log, 2026-06-14).
+- **Deliverables** — task 4 (per-slit drill-down) must handle a real many-slit
+  detector; task 8 (harness + tests) renders **both** Kast and the LRIS multi
+  data with `wv_calib` selected.
+- **Acceptance criteria** — added a multi-detector criterion: detector selector
+  lists DET01/DET02, switching re-renders, and `wv_calib` shows a **per-slit
+  table (~14 rows on DET01)** with per-slit status + `rms`.
+- **S3-Q11 (new)** — where the multi-slit/multi-detector test data lives: a
+  small **synthesized** CI-safe fixture for the `pytest-qt` per-slit test, plus
+  the real LRIS data for the harness / an optional dev-suite test.
+
+**Next step:** the user edits this doc and answers S3-Q1–S3-Q11, then the Stage 3
+discussion prompt runs (no code until resolved).
+
+### 2026-06-14 (Stage 3 discussion: confirmed scope/answers; raised S3-Q12–S3-Q13)
+
+**Task.** First task under *Prompts / Stage 3 — Calibrations view* — confirm the
+layout/scope and answer/raise the S3-Q questions. No code written.
+
+**Scope confirmed.** Stage 3 = the Calibrations view (C1–C9, C11–C16) **plus** the
+Dashboard status/activity area (X4/X5); the (re)generate control (C10) and the
+run-lock/clobber (X1–X3) remain Stage 4. Layout: scope selectors → path-aware
+step-button row → detail panel (metrics/inputs/output/QA + per-slit table) →
+shared status bar.
+
+**User answers (S3-Q1–S3-Q11), folded in.** Plain buttons + separators (Q1);
+**`QProcess`** for launches (Q2); a small **`pypeit/dashboard/inspect.py`** viewer
+module (Q3); add model accessors **`slit_table()`** (Q4) and **`step_metrics()`**
+(Q5, metrics left plain for now); QA via a basic image dialog (Q6); **no
+(re)generate** button in Stage 3 (Q7); status area as the `QMainWindow`
+**status bar** (Q8); Refresh states reloaded-vs-re-derived, shared by both tabs
+(Q9); **independent** scope selectors per tab (Q10); **both** a synthesized
+CI-safe multi-slit/multi-detector fixture **and** the real LRIS data for the
+harness/dev-suite (Q11).
+
+**Grounding for the follow-ups.** Read the `pypeit_chk_*` / `pypeit_view_fits`
+CLI signatures — they are **non-uniform**: `pypeit_chk_edges` wants the `Edges_*`
+file (not the `slits` step's `Slits_*` output); `pypeit_view_fits` wants
+`<spectrograph> <file>` (+`--proc`); `pypeit_chk_scattlight` wants two positionals
+(ScatteredLight + Slits) + `--det`; the rest take one file. Also confirmed the
+per-slit state fields for `slit_table()` (`SlitEdges`: status/center/slitord_id +
+`nslits`; `WvCalibSlit`/`TiltsSlit`: status/rms).
+
+**Raised S3-Q12–S3-Q13.** S3-Q12 (make `inspect.py` per-step **command
+builders**, not a flat map — resolving full `Calibrations/` paths, the `Edges_*`
+file for `slits`, the spectrograph for `pypeit_view_fits`, and the matching
+`Slits_*` for scattlight); S3-Q13 (view processed images via
+`pypeit_view_fits --proc` for a uniform, reliable path vs bare `ginga`).
+
+**Next step:** await answers to S3-Q12–S3-Q13, then implement Stage 3 (the second
+Stage 3 prompt).
