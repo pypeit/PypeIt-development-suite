@@ -125,7 +125,8 @@ order), C4 (color-code buttons via the palette + glyph), C5 (click → detail
 panel), C6 (metrics), C7 (scrollable input-file list; raw → `pypeit_view_fits`,
 processed → `ginga`), C8 (output viewer — `pypeit_chk_*` or `ginga`), C9 (QA
 files, clickable to a full view), C11 (per-slit/order drill-down for `slits` /
-`wv_calib` / `tilts`), C12 (path-aware steps), C13 (omit `bpm`), C14 (reuse
+`wv_calib` / `tilts` / **`flats`** — flats now carries per-slit state, see the
+Flats note below), C12 (path-aware steps), C13 (omit `bpm`), C14 (reuse
 existing PypeIt machinery), C15 (observable launches), C16 (readability). Plus
 X4/X5 (Dashboard status/activity area, pulled forward). **Deferred to Stage 4:**
 C10 (the (re)generate control), X1–X3 (lock + clobber).
@@ -151,12 +152,34 @@ banner sits above):
      `pypeit_view_fits`, processed → `ginga`).
    - **Output** (C8) — launch the appropriate viewer (`pypeit_chk_*` or `ginga`).
    - **QA files** (C9) — clickable entries opening the PNG full-view.
-   - **Per-slit/order drill-down** (C11) — for `slits` / `wv_calib` / `tilts`, a
-     scrollable per-slit/order table (status + metric).
+   - **Per-slit/order drill-down** (C11) — for `slits` / `wv_calib` / `tilts` /
+     **`flats`**, a scrollable per-slit/order table (status + metric). For
+     `flats` the per-slit row is richer (a status that can be **`skip`**, plus
+     per-correction mean/RMS) — see the Flats note and S3-Q14/15.
 4. **Dashboard status/activity area** (X4/X5) — a shared status bar showing what
    the Dashboard is doing / waiting on (launching a viewer, computing state,
    "Reloaded state file" vs "Re-derived state" on Refresh, idle), with a busy
    indicator; reports outcomes.
+
+**Flats — richer state (implemented 2026-06-14; see `claude_prompts/state.md`).**
+`FlatsState` was reworked, which expands what the flats detail panel shows:
+- `types: List[str]` → **`corrections: List[str]`** — which corrections the
+  merged `Flat_*.fits` applies: a subset of `pixelflat` (pixel-to-pixel),
+  `spat_illum` (slit illumination), `spec_illum` (spectral illumination).
+- New **`pixelflat_source`** (`raw` / `user_file` / `slitless`) and **grouped
+  input files** `pixelflat_files` / `illumflat_files` / `lampoff_files` (plus the
+  union on the inherited `input_files`), and **`qa_files`** (the flat QA PNGs).
+- New **per-slit `FlatsSlit`** (`slit_classes['flats']` is registered): a
+  per-slit `status` ∈ {`success`,`fail`,**`skip`**,`undone`} (the bitmask
+  `BADFLATCALIB`→fail, `SKIPFLATCALIB`→skip) plus per-correction
+  `FlatCorrectionMetric(mean, rms)` keyed by correction name.
+
+Impact on Stage 3: flats joins the **C11 per-slit drill-down**; its **C6
+metrics** are `corrections` + `pixelflat_source` (entry-level) and per-slit
+per-correction mean/RMS; its **C7 input files** can be shown grouped by role.
+The new per-slit **`skip`** status needs a palette treatment (S3-Q15), and the
+per-slit table for flats is 2-D (slit × correction) unlike the single-`rms`
+wv_calib/tilts (S3-Q14).
 
 **Deliverables / tasks.**
 
@@ -167,14 +190,19 @@ banner sits above):
    magenta selected-ring; connectors conveying precedence.
 3. **Detail panel** (C5–C9) — metrics, input-file list, output viewer, QA files.
 4. **Per-slit/order drill-down** (C11) — scrollable table for slits/wv_calib/
-   tilts. Must handle a **real many-slit** detector (the `keck_lris_blue` multi
-   data has ~14 slits on DET01), not just Kast's single slit.
+   tilts/**flats**. Must handle a **real many-slit** detector (the
+   `keck_lris_blue` multi data has ~14 slits on DET01), not just Kast's single
+   slit. `flats` is the richer case (per-slit `status` ∈
+   success/fail/skip/undone + per-correction mean/RMS) — see the Flats note.
 5. **Subprocess-launch infrastructure** (C8/C14/C15) — launch `pypeit_chk_*` /
    `ginga` / `pypeit_view_fits`, capturing stdout/stderr/returncode and routing
    progress/outcome to the status/activity area (Debugging plan).
 6. **Model accessors (Stage 1 extension, Qt-free)** — add what the detail panel
-   needs that the normalized status table lacks: per-step **metrics** and
-   **per-slit/order** rows from `run_state` (see S3-Q).
+   needs that the normalized status table lacks: per-step **metrics**
+   (`step_metrics`) and **per-slit/order** rows (`slit_table`) from `run_state`
+   (see S3-Q4/Q5). These must cover **flats** too: `step_metrics('flats', …)`
+   returns `corrections` + `pixelflat_source` (+ grouped files); `slit_table`
+   handles flats' per-slit `status` + per-correction mean/RMS (S3-Q14).
 7. **Dashboard status/activity area** (X4/X5) — a shared status bar in
    `MainWindow`; wire the Status view's Refresh and all subprocess launches to
    it (closes the Stage 2 sign-off Refresh-feedback item).
@@ -334,6 +362,35 @@ I agree with both.
   `ginga`), keeping a single reliable viewer path? Or invoke `ginga` directly as
   the table literally says?
 
+*(Below: follow-ups **S3-Q14–S3-Q16** from the new richer Flats state — see the
+Flats note in the spec and `claude_prompts/state.md`.)*
+
+- **S3-Q14 — Flats per-slit table shape (C11).** Flats' per-slit data is 2-D —
+  each slit has a `status` plus a `mean`/`rms` for **each** present correction
+  (`pixelflat` / `spat_illum` / `spec_illum`) — unlike wv_calib/tilts (one `rms`
+  per slit). Present it as **one row per slit** with a `status` column plus
+  paired `mean`/`rms` columns **per present correction** (columns built from the
+  entry-level `corrections` list)? Or one row per `(slit, correction)`? I lean
+  one-row-per-slit with per-correction columns (compact, scannable). For
+  `slit_table()`, that means flats returns a wider record than the single-`rms`
+  steps — OK?
+
+- **S3-Q15 — Palette for the per-slit `skip` status.** Flats slits can be
+  **`skip`** (`SKIPFLATCALIB` — intentionally skipped, not a failure). The
+  Dashboard palette has no `skip` category. Add a distinct one (e.g. a muted
+  blue/grey with a `⊘`/`–` glyph and label "skipped") in `palette.py`, or map
+  `skip` → the existing `optional`/grey? I lean a **distinct `skip` category**
+  (it is meaningfully different from "optional/not required"). This is a small
+  `palette.py` addition (used only in the per-slit table for now).
+
+- **S3-Q16 — Flats input files: grouped vs union (C7).** The model exposes both
+  the **union** `input_files` and the **grouped** `pixelflat_files` /
+  `illumflat_files` / `lampoff_files` + `pixelflat_source`. In the detail panel's
+  input-file list, show the **grouped** view (role headers: Pixelflat / Illum /
+  Lamp-off, with the source noted) since the data exists, falling back to the
+  union for other steps? Or keep a flat union list everywhere for uniformity?
+  I lean grouped-for-flats, union-elsewhere.
+
 ## Prompts
 
 ### Generate this doc
@@ -343,7 +400,14 @@ I agree with both.
 ### Stage 3 — Calibrations view (+ status/activity area)
 
 1. Read this doc and the Context documents. I have answered your first set of S3-Q questions.  Examine the answers and write more as needed.  Do **not** write code yet. Log your work.
-2. I have answered the S3-Q questions. Implement Stage 3 per the tasks and
+2. Read this doc.  I have modified the way Flats are handled.  Please:
+   - Examine the state.md file in prompts/
+   - Re-examine the code in PypeIt/pypeit/calibrations.py and PypeIt/pypeit/state.py
+   - Update the plan in this doc to reflect the changes
+   - Update the design docs, if necessary
+   - Ask any additional questions you have in S3-Q
+   - Log your work
+3. I have answered the S3-Q questions. Implement Stage 3 per the tasks and
    acceptance criteria: the `CalibrationsView` (scope selectors, path-aware
    step-button row, detail panel with metrics/inputs/output/QA, per-slit/order
    drill-down), the subprocess-launch infrastructure, the model accessors, and
@@ -458,3 +522,34 @@ file for `slits`, the spectrograph for `pypeit_view_fits`, and the matching
 
 **Next step:** await answers to S3-Q12–S3-Q13, then implement Stage 3 (the second
 Stage 3 prompt).
+
+### 2026-06-14 (Stage 3: folded in the reworked Flats state)
+
+**Task.** Second task under *Prompts / Stage 3* — the user reworked how Flats are
+handled; examine `claude_prompts/state.md` + the code, update the Stage 3 plan
+and the design docs, and raise any new S3-Q. No implementation code.
+
+**What changed (verified in `state.py`).** `FlatsState` was reworked
+(implemented 2026-06-14 per `state.md`): `types` → **`corrections`**
+(`pixelflat`/`spat_illum`/`spec_illum`); new `pixelflat_source`
+(`raw`/`user_file`/`slitless`), grouped input files
+(`pixelflat_files`/`illumflat_files`/`lampoff_files`) + union `input_files`,
+`qa_files`; and **per-slit `FlatsSlit`** (`slit_classes['flats']` registered)
+with `status` ∈ {success,fail,**skip**,undone} + per-correction
+`FlatCorrectionMetric(mean, rms)`. Confirmed `FlatCorrectionMetric`/`FlatsSlit`/
+`FlatsState`/`slit_classes` are present in `pypeit/state.py`.
+
+**Impact / plan updates (this doc).** Flats now joins the **C11 per-slit
+drill-down** (design-refs line, layout item 3, deliverable 4); added a **Flats
+note** to the spec; deliverable 6 (model accessors) now says `step_metrics`/
+`slit_table` must cover flats' `corrections`/`pixelflat_source` and per-slit
+per-correction metrics. Raised **S3-Q14** (flats per-slit table shape — one row
+per slit with per-correction `mean`/`rms` columns), **S3-Q15** (a new palette
+`skip` category for `SKIPFLATCALIB`), **S3-Q16** (grouped vs union input-file
+list for flats).
+
+**Design doc updates (→ v0.12).** Updated the Initialization state-metrics list,
+the Calibrations detail-panel metrics, the per-type table row, and the C11
+requirement so flats reflects `corrections`/per-slit; added `flats` to C11.
+
+**Next step:** await answers to S3-Q12–S3-Q16, then implement Stage 3 (prompt 3).

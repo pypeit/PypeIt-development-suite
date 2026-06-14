@@ -1,10 +1,16 @@
 # PypeIt Dashboard — Design Document
 
-**Version:** 0.11
-**Date:** 2026-06-13
+**Version:** 0.12
+**Date:** 2026-06-14
 **Author:** JXP and Claude
 
 **Changelog**
+- 0.12 (2026-06-14): Updated the **Flats** references for the reworked
+  `FlatsState` (`claude_prompts/state.md`): metric `types` → **`corrections`**
+  (+ `pixelflat_source`, grouped input files) and **per-slit** status (incl.
+  `skip`) + per-correction `mean`/`rms`; **added `flats` to the C11 per-slit
+  drill-down** (state-metrics list, Calibrations detail panel, per-type table,
+  and C11).
 - 0.11 (2026-06-13): **Scheduled the Dashboard status/activity area (X4/X5) for
   Stage 3** (was Stage 4), per Stage 2 sign-off feedback — so the GUI shows a
   visible "busy / waiting on a job" indicator and clarifies what Refresh did
@@ -196,7 +202,10 @@ Grounded in `PypeIt/pypeit/state.py` and `pypeit/scripts/pypeit_status.py`
   - `slits`: `nslits`, and per-slit `center`
   - `wv_calib`: per-slit `rms`
   - `tilts`: per-slit `rms`
-  - `flats`: `types`
+  - `flats`: `corrections` (which of `pixelflat`/`spat_illum`/`spec_illum` were
+    applied), `pixelflat_source`, grouped input files, **and per-slit** status
+    (incl. `skip`) + per-correction `mean`/`rms` (reworked 2026-06-14; see
+    `claude_prompts/state.md`)
 
   **Design decision:** these metrics are valuable but are **not** shown in the
   state table. They are surfaced in the Dashboard's dedicated inspection windows
@@ -458,7 +467,9 @@ the user's vision, the panel provides:
 - **Metrics.** The step's quality metrics (this is one of the "other windows"
   where metrics belong, per the Initialization decision). From `state.py` today:
   `bias` → `mean`, `std`; `slits` → `nslits` + per-slit `center`; `wv_calib` →
-  per-slit `rms`; `tilts` → per-slit `rms`; `flats` → `types`. The panel surfaces
+  per-slit `rms`; `tilts` → per-slit `rms`; `flats` → `corrections` +
+  `pixelflat_source` + per-slit per-correction `mean`/`rms` (reworked
+  2026-06-14). The panel surfaces
   whatever metrics the state exposes, so this set will **grow as `state.py`
   gains metrics**. Metrics may be threshold-colored using the workflow doc's
   rules of thumb (e.g. wavelength / tilt `rms` < 0.1 px = good).
@@ -475,9 +486,11 @@ the user's vision, the panel provides:
 - **(Re)generate.** When PypeIt is **not** running, a control to launch
   `pypeit_run_to_calibstep` for the selected step (see below). Disabled while a
   reduction is running.
-- **Per-slit / per-order drill-down.** For `slits`, `wv_calib`, and `tilts`, a
-  sub-table of per-slit/order rows (each with its own `status` and metric),
-  essential for MOS and echelle where there are many slits/orders.
+- **Per-slit / per-order drill-down.** For `slits`, `wv_calib`, `tilts`, and
+  **`flats`**, a sub-table of per-slit/order rows (each with its own `status`
+  and metric), essential for MOS and echelle where there are many slits/orders.
+  `flats` rows are richer: a `status` that can be **`skip`** plus per-correction
+  `mean`/`rms` (reworked 2026-06-14).
 
 ### Backend: `pypeit_run_to_calibstep`
 
@@ -522,7 +535,7 @@ frames are viewed separately via `pypeit_view_fits`; see the detail panel.)
 | `wv_calib`  | arc             | `WaveCalib_*.fits`          | `pypeit_chk_wavecalib`, `pypeit_show_wvcalib` | per-slit `rms` |
 | `tilts`     | tilt            | `Tilts_*.fits.gz`           | `pypeit_chk_tilts` | per-slit `rms` |
 | `scattlight`| scattlight      | `ScatteredLight_*.fits`     | `pypeit_chk_scattlight` | — |
-| `flats`     | illumflat/pixelflat | `Flat_*.fits`           | `pypeit_chk_flats`, `pypeit_show_pixflat` | `types` |
+| `flats`     | illumflat/pixelflat | `Flat_*.fits`           | `pypeit_chk_flats`, `pypeit_show_pixflat` | `corrections` (pixelflat/spat_illum/spec_illum) + `pixelflat_source`; per-slit status (incl. `skip`) + per-correction `mean`/`rms` |
 | `align`     | align (IFU)     | `Alignment_*.fits`          | `pypeit_chk_alignments` | — |
 
 (`bpm` is not listed: it produces no output file and is omitted from the button
@@ -567,8 +580,9 @@ row, as noted above.)
   governed by the run-lock (X1) and the clobber confirmation (X2/X3) in the
   *Execution, Locking & Status* section.
 - **C11.** Support **per-slit / per-order** drill-down for `slits`, `wv_calib`,
-  and `tilts`, presented as a **scrollable list** (one row per slit/order; MOS /
-  echelle may have many).
+  `tilts`, and **`flats`**, presented as a **scrollable list** (one row per
+  slit/order; MOS / echelle may have many). `flats` rows carry a `status` that
+  may be **`skip`** plus per-correction `mean`/`rms` (reworked 2026-06-14).
 - **C12.** Be **path-aware**: show only the steps used by the active
   spectrograph, in its pipeline's order (including IFU's `align`).
 - **C13.** **Omit `bpm`** from the button row — it runs internally (and as a
