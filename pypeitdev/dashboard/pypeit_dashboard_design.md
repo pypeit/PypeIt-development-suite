@@ -234,34 +234,6 @@ as development proceeds.
 
 #### Pending
 
-*Basic requirements (from the project brief):*
-
-- **R3.** The default view shows the reduction **state** as a formatted table
-  with **color-coded** information.
-- **R7. At-a-glance summary.** Show an overall progress/health summary derived
-  from the state (e.g. "Calibrations: 6/6 required steps success" plus counts of
-  fail / running / undone), so health is readable without scanning every row.
-  The summary should generalize to also cover science frames once their status
-  is tracked (see R15).
-- **R8. Grouped, ordered rows.** Show steps in a fixed, logical processing
-  order. Rather than stacking every calibration group × detector in one long
-  scroll (which does not scale — see R16/R17), the detailed table is **scoped**
-  to one `(calibration group, detector/mosaic)` at a time. The grouping scheme
-  must extend to a parallel *science-frame* section (see R15/R18) without
-  redesign.
-- **R9. Required vs. optional clarity.** Visually distinguish *required* steps
-  from *optional* ones (e.g. `dark`, `scattlight` were `undone` & not required
-  in the Kast run) so an `undone` optional step never reads as a problem.
-- **R10. Accessible encoding.** Never rely on color alone: pair every status
-  color with a glyph and/or text label (e.g. ✓ success, ✗ fail, ⏳ running,
-  ○ undone, – n/a) for colorblind readability.
-- **R12. Manual refresh.** Provide a way to re-read / re-derive the state on
-  demand. The refresh **source** depends on whether a reduction is active: if
-  `run_pypeit` is **running**, re-read `*_state.json` (the running process owns
-  it); if **not running**, re-derive via the `pypeit_status` path. (Automatic,
-  continuous refresh while running is R14 / the Monitoring phase.)
-- **R13. Stale-state indication.** If `*_state.json` is older than the
-  `.pypeit` file or the calibration outputs, indicate the state may be stale.
 - **R14. Live status updates (planned).** While a reduction is running, the
   state view should reflect progress in (near) real time. This is planned but
   its **implementation/channel is open** — the commented-out `log.step`
@@ -273,19 +245,6 @@ as development proceeds.
   / extraction), it can be shown as a *science* section alongside the
   *calibration* section — reusing the same status encoding (R10), grouping (R8),
   and summary (R7) — without a redesign.
-- **R16. Scope drop-downs.** Provide calibration-group and detector/mosaic
-  **drop-downs** that scope the detailed Calibrations and Science tables to a
-  single `(group, detector)` — the primary defense against clutter on
-  instruments with many calibration groups and/or detectors. (These mirror the
-  Calibrations view's selectors, C2.) The always-visible summary strip (R7)
-  preserves whole-run health while one scope is shown.
-- **R17. Configuration-overview navigator.** Above the scoped tables, show a
-  compact **(group × detector) grid**, each cell colored by the *worst* step
-  status in that cell (fail > running > to-do > success), per the unified
-  palette. It gives whole-run visibility at a glance and acts as a
-  **click-to-scope navigator** (clicking a cell sets the drop-downs). For a
-  single-group/single-detector run (e.g. Kast) it is a single cell; it scales to
-  a heat-map for MOS/mosaic runs.
 - **R18. Equally-prominent, scalable Science section.** The Science-frames
   section is given **equal visual weight** to the Calibrations section (same
   heading treatment). For runs with many science frames it is **filterable and
@@ -295,8 +254,10 @@ as development proceeds.
 
 #### Implemented
 
-*(Implemented and verified in **Stages 0–1** — see
-`claude_prompts/dashboard/dashboard_dev_stages_0-1.md`.)*
+*(Implemented and verified in **Stages 0–2** — see
+`claude_prompts/dashboard/dashboard_dev_stages_0-1.md` and
+`dashboard_dev_stage_2.md`. R15/R18 Science section is scaffolded as a
+placeholder; its population is deferred to the science-frames stage.)*
 
 - **R1.** The dashboard launches **like every other PypeIt command-line script**
   (e.g. `run_pypeit`): via the `pypeit_dashboard` console script, a `ScriptBase`
@@ -329,6 +290,19 @@ as development proceeds.
   schema-mismatched state file), and `error` (derive failed). Covered by
   committed `pypeit/tests/files/dashboard_state_*.json` fixtures + headless
   tests.
+- **R3, R7–R10, R12, R13, R16, R17 (Stage 2).** The Status view
+  (`pypeit/dashboard/view/status_view.py`) renders the model as the
+  state-first landing view: the color-coded, scoped state **table** (Step |
+  Required | Status | Output) in pipeline order (R3, R8) with color **+ glyph
+  + label** from the palette (R10) and dimmed optional rows (R9); the
+  always-visible **summary strip** (R7); the **scope drop-downs** (R16,
+  group + detector, det names via the spectrograph); the
+  **configuration-overview navigator** grid colored by worst status with
+  click-to-scope (R17); a **Refresh** that re-acquires the model (R12,
+  manual); and a non-blocking **stale** badge via `DashboardModel.is_stale()`
+  (R13). Theme-aware (light/dark). Verified by `pytest-qt` structural tests +
+  the layout-check render matrix. *(R12's active-run-aware source selection
+  and R14 live updates remain for Stage 4/5.)*
 
 #### Deferred
 
