@@ -364,10 +364,12 @@ Yes, that sounds fine.
    the Sign offs sub-section. Produce the milestone screenshots (light/dark ×
    default/resized, across the fixtures) for my sign-off. Log your work.
 3. I have signed off on all items except one.  See that section and act accordingly.  Log your work.
+4. Let us also test on a multi-slit and multi-detector reduction.  This will help us catch any issues with the multi-detector support.  Please use the data in $PYPEIT_DEV/REDUX_OUT/keck_lris_blue/multi_600_4000_d560.  Report back with your findings in the Logs.  If there are no issues, then we can proceed to Stage 3.
 
 ### Stage 3
 
 1. Generate a new prompt document for Stage 3.  Call it dashboard_dev_stage_3.md.  Model it after this doc with similar sections (many will be empty).  I will then edit it before proceding with the development.  Be sure to read all of the Context documents and the other prompt documents in this folder.
+2. Modify the doc you generated for Stage 3 to include the multi-slit and multi-detector reduction.  
 
 
 ## Logging
@@ -521,3 +523,40 @@ commitment (status/activity area), recorded in the design and coding docs.
 
 **Next step:** Stage 3 (Calibrations view) — which will now also deliver the
 Dashboard status/activity area (X4/X5).
+
+### 2026-06-14 (Stage 2: verified on a multi-slit / multi-detector reduction)
+
+**Task.** Fourth task under *Prompts / Stage 2* — exercise the Status view on a
+real multi-slit, multi-detector reduction
+(`$PYPEIT_DEV/REDUX_OUT/keck_lris_blue/multi_600_4000_d560`) and report findings.
+
+**Dataset.** `keck_lris_blue` (MultiSlit), setup B, calibration group `1`, **two
+detectors** DET01 + DET02, **many slits** per detector (S0269…S0991 on DET01,
+etc.); its `*_state.json` was generated today (with the fixed writer).
+
+**Findings — no issues; works end to end.**
+- *Model (Stage 1):* the real state **loads cleanly** —
+  `load_status == 'state_file'`, no nested-`input_files` (the Stage 1 writer fix
+  holds on real, freshly-generated data). `calib_det_pairs()` → `[(1,1),(1,2)]`;
+  `det_name()` → `DET01` / `DET02`; `status_table()` is 20 rows (10 steps × 2
+  detectors); `step_order()` is the MultiSlit order.
+- *Status view (Stage 2):* the **summary strip** reads "14/14 required
+  succeeded" (7 required × 2 detectors) — whole-run, correct; the
+  **configuration-overview navigator** shows **two** green ✓ cells (DET01,
+  DET02); the **detector drop-down** lists DET01/DET02 and **switching to DET02
+  re-scopes** the table to the DET02 outputs (`Bias_B_1_DET02.fits`, …);
+  **click-to-scope** on a navigator cell works (clicking DET01 → scope `(1,1)`).
+- *det_name fallback:* `det_name((1,2))` (not an allowed LRIS mosaic) degrades
+  gracefully to `Mosaic (1, 2)` rather than raising.
+- The multi-detector render (`/tmp/dash_lris_det01.png`,
+  `dash_lris_det02.png`) was self-inspected and matches the design.
+
+**Non-bugs noted (state-writer details, not dashboard issues):** `flats` shows
+`success` but no `output_file` in this state (em-dash in the Output column); and
+per-slit detail is intentionally **not** shown in Stage 2 (that is the Stage 3
+Calibrations drill-down, C11).
+
+**Conclusion.** Multi-detector / multi-slit support is sound at the Status-view
+level — **no issues found**, so proceeding to Stage 3 is clear.
+
+**Next step:** Stage 3 (Calibrations view + status/activity area).
