@@ -41,7 +41,7 @@ from pypeit.dashboard.view.main_window import DashboardMainWindow
 # reduction directory so the Status view renders populated, real widgets.
 _TESTS_FILES = (Path(__file__).resolve().parents[4]
                 / 'PypeIt' / 'pypeit' / 'tests' / 'files')
-_FIXTURE_CASES = ('healthy', 'failed', 'not_started')
+_FIXTURE_CASES = ('healthy', 'failed', 'not_started', 'echelle')
 
 # The render matrix: (label, (width, height)).
 _SIZES = (('default', (1650, 900)), ('resized', (1100, 700)))
@@ -91,11 +91,15 @@ def stage_model(case, tmpdir):
     Returns:
         :class:`DashboardModel`: The model for the staged reduction.
     """
-    pf = tmpdir / 'shane_kast_blue_A.pypeit'
-    pf.write_text((_TESTS_FILES / 'dashboard_shane_kast_blue.pypeit')
-                  .read_text())
+    # The echelle case uses the keck_nires .pypeit fixture; others use kast.
+    if case == 'echelle':
+        root, pyfix = 'keck_nires_A', 'dashboard_keck_nires.pypeit'
+    else:
+        root, pyfix = 'shane_kast_blue_A', 'dashboard_shane_kast_blue.pypeit'
+    pf = tmpdir / f'{root}.pypeit'
+    pf.write_text((_TESTS_FILES / pyfix).read_text())
     if case is not None:
-        (tmpdir / 'shane_kast_blue_A_state.json').write_text(
+        (tmpdir / f'{root}_state.json').write_text(
             (_TESTS_FILES / f'dashboard_state_{case}.json').read_text())
     return DashboardModel(str(pf), derive=False)
 
@@ -150,7 +154,7 @@ def render_matrix(outdir):
 
 # Calibrations-view renders: (fixture case, step to select).
 _CALIB_RENDERS = (('healthy', 'wv_calib'), ('multidet', 'wv_calib'),
-                  ('multidet', 'flats'))
+                  ('multidet', 'flats'), ('echelle', 'wv_calib'))
 
 
 def render_calibrations_matrix(outdir):

@@ -541,6 +541,10 @@ Generate the following docs in the PypeIt/doc directory:
 5. Read this doc.  Generate the docs as described in the Docs section.  Also, it is time to start versioning the Dashboard docs.  Version 1.0.0 is the first version.  Please update the version where sensible
 6. Thanks for the Round 1 modifications.  Please implement/address all of the items listed under Round 2 in the Modifications section.  You may need to update the design and/or PypeIt docs for these and the other modifications. Log your work.
 
+### Stage 3b — Test on keck_nires
+
+1. Before proceeding to Stage 4, we should test the Dashboard on an echelle spectrograph.  Please generate a prompt doc named dashboard_dev_stage_3b.md.  Model it after the Stage 3 prompt doc, but focused only on testing the Dashboard on keck_nires.
+
 ## Logging
 
 The "Logs" section will record Claude's work.  Please use the following format:
