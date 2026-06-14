@@ -482,6 +482,8 @@ Here are a number of items related to the Calibrations view:
 
 6. Please have the items in the Table(s) be centered in each column
 
+7. The "wv_calib" PNGs should include the Arc_tilts_* files too
+
 ## Docs
 
 Read all of the doc files in the PypeIt/doc directory.  Then:
@@ -536,8 +538,8 @@ Generate the following docs in the PypeIt/doc directory:
    generate a set of Sign offs actions and add them to the Sign offs sub-section.
    Produce the milestone screenshots for my sign-off. Log your work.
 4. The first round of development is excellent, but there are a number of Modifications to be made.  Implement/address all of the items listed under Round 1 in the Modifications section.  Log your work.
-5. Thanks for the Round 1 modifications.  Please implement/address all of the items listed under Round 2 in the Modifications section.  You may need to update the design docs for these and the other modifications. Log your work.
-6. Read this doc.  Generate the docs as described in the Docs section.  Also, it is time to start versioning the Dashboard docs.  Version 1.0.0 is the first version.  Please update the version where sensible
+5. Read this doc.  Generate the docs as described in the Docs section.  Also, it is time to start versioning the Dashboard docs.  Version 1.0.0 is the first version.  Please update the version where sensible
+6. Thanks for the Round 1 modifications.  Please implement/address all of the items listed under Round 2 in the Modifications section.  You may need to update the design and/or PypeIt docs for these and the other modifications. Log your work.
 
 ## Logging
 
@@ -784,3 +786,80 @@ states; existing on-disk states need a re-run to show slits inputs / wv QA
 
 **Next step:** the user re-checks the Sign offs (Round 1 addressed); then the
 Docs task (prompt 5) and/or Stage 4.
+
+### 2026-06-14 (Stage 3 Docs + versioning to 1.0.0)
+
+**Task.** Fifth task under *Prompts / Stage 3* — generate the docs in the Docs
+section and start versioning the Dashboard docs at 1.0.0.
+
+**What I did.**
+- **`doc/dashboard/dashboard.rst`** (new) — purpose + architecture (MVC,
+  external-tool subprocess inspection), launching, layout/navigation (header,
+  tabs, status bar), the **status palette** table (color+glyph+meaning, incl.
+  `skipped`), the **Status view** and **Calibrations view** (with the
+  inspection-tool per-type table and an actions table), a "Not yet implemented"
+  note (Stage 4/5/6), and **two embedded real-widget PNGs**
+  (`doc/figures/dashboard_status_view.png`, `dashboard_calibrations_view.png`).
+- **`doc/state.rst`** (new) — what `<root>_state.json` is/contains, how/when it
+  is generated, a **do-not-edit** warning, and the defensive-I/O note.
+- **`pypeit/state.py` docstrings** — rewrote the module + `RunPypeItState`
+  class docstrings; added docstrings to `outfile`, `load`, `get_status`.
+- **`doc/index.rst`** — added "Reduction State <state>" and
+  "Dashboard <dashboard/dashboard>" to the *Core Processing* toctree.
+- **Versioning.** Started semantic versioning of the Dashboard docs at
+  **1.0.0**: `dashboard.rst` carries "version 1.0.0"; bumped
+  `pypeit_dashboard_design.md` (0.12→**1.0.0**) and
+  `pypeit_dashboard_coding.md` (0.6→**1.0.0**) with changelog entries.
+
+**Verification.** `cd doc; make htmlonly` → **build succeeded**, only the one
+pre-existing unrelated warning (`releases/2.1.0dev.rst` not in a toctree); no
+dashboard/state errors. Title-underlines, figure paths, and cross-refs
+(`pypeit_setup`, `pypeit-run-to-calibstep`, the `:doc:` targets) all resolve.
+
+**Status.** Stages 0–3 are implemented, tested, rendered, documented, and
+versioned (1.0.0). Stage 4 (Execution, locking & (re)generate — C10, X1–X3) is
+next.
+
+### 2026-06-14 (Stage 3 Round 2: addressed all 7 modifications)
+
+**Task.** Sixth task under *Prompts / Stage 3* — implement the Round 2
+modifications.
+
+**What I changed (all 7).**
+1. **Input-files box.** The input-file list is now in a titled **`QGroupBox`**
+   ("Input files (double-click to view)"), so the section reads as
+   self-contained (still half-width, bottom).
+2. **Fewer metric digits.** The detail-panel metrics line now formats numeric
+   values to a few significant figures (e.g. ``mean: 0.8743`` instead of the
+   full float).
+3. **arc/tiltimg viewer.** Processed-image steps (``bias``/``dark``/``arc``/
+   ``tiltimg``) now open in **`ginga`** directly instead of
+   ``pypeit_view_fits --proc`` (which failed on these processed FITS).
+4. **wv_calib not viewable.** ``wv_calib`` has **no standalone viewer** now —
+   its "Inspect output" button is disabled (``output_command`` returns ``None``).
+   This reverts the Round-1 ginga-for-wv_calib (there is nothing useful to show;
+   the QA PNGs cover it).
+5. **QA dialog sizing.** `QaImageDialog` now **scales the PNG to fit** a window
+   capped at ~80% of the screen (keeping aspect), so it opens showing the whole
+   figure rather than a zoomed-in crop. Verified the dialog is smaller than the
+   screen.
+6. **Centered tables.** Cell contents are centered in both the Status table and
+   the Calibrations per-slit table (`setTextAlignment(Qt.AlignCenter)`).
+7. **wv_calib QA includes tilts.** `_wv_calib_qa_files` now also matches
+   ``Arc_tilts_*`` (calibrations.py), so the wavelength QA list includes the
+   tilt figures.
+
+**Verification.** `pytest pypeit/tests/test_dashboard.py
+pypeit/tests/test_state.py` → **57 passed** (updated the inspect test:
+bias/arc→ginga, wv_calib→None). Re-rendered the Calibrations view (bias) to
+confirm the titled input box, the short metrics (`mean: 1001 std: 3`), the
+disabled wv_calib Inspect, and the QA-dialog sizing. Updated the user-facing
+**`doc/dashboard/dashboard.rst`** inspection table (processed→ginga;
+wv_calib→no viewer/QA only) and a design-doc implementation note; regenerated
+the doc figures and rebuilt the docs (`make htmlonly` succeeded, no
+dashboard/state errors).
+
+**Note.** Item 7 (Arc_tilts in wv_calib QA) is a calibrations.py recording
+change — it applies to newly generated states.
+
+**Next step:** the user re-checks the Sign offs (Round 2 addressed); then Stage 4.

@@ -1,10 +1,12 @@
 # PypeIt Dashboard — Coding Document
 
-**Version:** 0.6
-**Date:** 2026-06-13
+**Version:** 1.0.0
+**Date:** 2026-06-14
 **Author:** JXP and Claude
 
 **Changelog**
+- 1.0.0 (2026-06-14): First **versioned release** of the Dashboard docs
+  (semantic versioning starts here), coinciding with Stages 0–3 implemented.
 - 0.6 (2026-06-13): **Pulled the Dashboard status/activity area (X4/X5) forward
   from Stage 4 into Stage 3** in the *Developing → Build order* table (per Stage 2
   sign-off feedback): the user wants visible "GUI is busy / waiting on a job"

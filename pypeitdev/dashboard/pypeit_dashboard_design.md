@@ -1,10 +1,13 @@
 # PypeIt Dashboard — Design Document
 
-**Version:** 0.12
+**Version:** 1.0.0
 **Date:** 2026-06-14
 **Author:** JXP and Claude
 
 **Changelog**
+- 1.0.0 (2026-06-14): First **versioned release** of the Dashboard docs
+  (semantic versioning starts here). Coincides with Stages 0–3 implemented and
+  the user-facing docs (`doc/dashboard/dashboard.rst`, `doc/state.rst`).
 - 0.12 (2026-06-14): Updated the **Flats** references for the reworked
   `FlatsState` (`claude_prompts/state.md`): metric `types` → **`corrections`**
   (+ `pixelflat_source`, grouped input files) and **per-slit** status (incl.
@@ -475,9 +478,13 @@ the user's vision, the panel provides:
   rules of thumb (e.g. wavelength / tilt `rms` < 0.1 px = good).
 - **Inspect the output.** A control to launch the appropriate viewer for that
   calibration's processed output file (see the per-type table below): a dedicated
-  `pypeit_chk_*` script where one exists (e.g. `slits`, `wv_calib`, `tilts`,
-  `flats`), otherwise plain **`ginga`** for the processed image (e.g. `bias`,
-  `dark`, `arc`, `tiltimg`). The user can switch between steps and view each.
+  `pypeit_chk_*` script where one exists (e.g. `slits`, `tilts`, `flats`),
+  otherwise plain **`ginga`** for the processed image (`bias`, `dark`, `arc`,
+  `tiltimg`). The control is enabled only when the output file exists.
+  *Implementation note (Stage 3, Round-2):* `wv_calib` has **no standalone
+  viewer** — `pypeit_chk_wavecalib` only prints to the terminal and the
+  `WaveCalib` FITS is not a useful image — so its "Inspect output" is disabled;
+  its wavelength QA PNGs are surfaced in the QA-files list instead.
 - **Input files.** The list of `input_files` (raw or processed) used to build the
   calibration (available in `state.py`); the user can **select an input file and
   view it** — **raw** frames via **`pypeit_view_fits`**, **processed**
