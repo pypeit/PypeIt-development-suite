@@ -233,8 +233,51 @@ wv_calib/tilts (S3-Q14).
 
 #### Sign offs
 
-*(To be filled in when Stage 3 is implemented — explicit execute/inspect
-actions, per the per-stage convention.)*
+Actions for **you** to sign off on Stage 3. As before, the key human check is
+the **interactive launch on your display** (the inspection tools actually open).
+Run from the PypeIt repo root (`/home/xavier/Projects/PypeIt/PypeIt`).
+
+1. **Automated tests pass (CI-safe).**
+   - Execute: `python -m pytest pypeit/tests/test_dashboard.py -v`
+   - Inspect: **32 passed** — Stage 0/1/2 tests plus the Stage 3 model
+     accessors (`step_metrics`/`slit_table`/`output_path`), palette `skip`,
+     `inspect` command builders, and the `CalibrationsView` structural tests
+     (path-aware button row, detector selector, per-slit table incl. flats
+     per-correction columns + skipped slit).
+
+2. **Review the milestone screenshots (Calibrations view matrix).**
+   - Inspect the PNGs in `$PYPEIT_DEV/pypeitdev/dashboard/py/layout_check/`:
+     `dashboard_calib_{healthy,multidet}_{wv_calib,flats}_{light,dark}_{default,resized}.png`.
+   - Confirm: the **path-aware step-button row** (palette colors + glyphs,
+     `bpm` absent, → connectors, magenta ring on the selected step); the
+     **detail panel** (metrics line, Inspect-output button, input-file list —
+     **grouped by role for flats**, QA list); and the **per-slit table**
+     (wv_calib: Slit/Status/rms; flats: per-correction `mean`/`rms` columns with
+     a **⊘ skipped** slit). Light **and** dark legible.
+   - Regenerate with:
+     `QT_QPA_PLATFORM=offscreen python $PYPEIT_DEV/pypeitdev/dashboard/py/dashboard_layout_check.py`
+
+3. **Launch the GUI on your display — the interactive check.**
+   - Execute (a reduction with a current-schema state file; the `keck_lris_blue`
+     multi or a freshly re-run setup): `pypeit_dashboard $PF`
+   - On the **Calibrations** tab: pick a group/detector; click step buttons (the
+     selected one gets the magenta ring); for `wv_calib`/`flats` see the
+     per-slit table; click **Inspect output** and confirm the right tool opens
+     (`pypeit_chk_wavecalib`, `pypeit_chk_edges` for `slits`,
+     `pypeit_view_fits --proc` for `bias`/`arc`, …); double-click an **input
+     file** (opens `pypeit_view_fits`) and a **QA file** (opens the PNG).
+   - Watch the **status bar** (bottom): it shows "Launching …" while a tool
+     starts and the outcome when it finishes, and — on the Status tab — says
+     **"Reloaded state file"** / **"Re-derived state"** after **Refresh**
+     (closes the Stage 2 item).
+
+4. **(Optional) Multi-detector / per-slit.** On the `keck_lris_blue` multi data,
+   switch DET01↔DET02 and confirm the button row + per-slit tables re-render per
+   detector.
+
+**Sign-off:** if items 1–3 look right, Stage 3 is accepted. Note anything off
+(item + screenshot) and Claude will address it. (The **(re)generate** control
+and run-lock/clobber are Stage 4.)
 
 #### Clarifications
 
@@ -396,6 +439,26 @@ Let's have a distinct skip category.
   I lean grouped-for-flats, union-elsewhere.
 
 Let us have the grouped view for flats, union elsewhere.
+
+## Docs
+
+Generate the following docs in the PypeIt/doc directory:
+
+1. doc/dashboard/dashboard.rst
+
+    - This should be a summary of the dashboard.  
+    - It should describe the purpose of the dashboard and the overall architecture.  
+    - It should describe its basic usage
+    - It should describe the different views and how to navigate between them
+    - It should describe the different actions that can be taken in the dashboard
+    - It should point at the state.rst doc when describing state
+    - It should include PNGs of the various views of the dashboard
+    - It should describe how all of the various buttons and actions work
+
+2. doc/state.rst
+
+    - It should point at the state.rst doc when describing state
+
 
 ## Prompts
 
