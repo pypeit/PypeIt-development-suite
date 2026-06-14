@@ -245,6 +245,8 @@ Run from the PypeIt repo root (`/home/xavier/Projects/PypeIt/PypeIt`).
      (path-aware button row, detector selector, per-slit table incl. flats
      per-correction columns + skipped slit).
 
+These passed
+
 2. **Review the milestone screenshots (Calibrations view matrix).**
    - Inspect the PNGs in `$PYPEIT_DEV/pypeitdev/dashboard/py/layout_check/`:
      `dashboard_calib_{healthy,multidet}_{wv_calib,flats}_{light,dark}_{default,resized}.png`.
@@ -256,6 +258,8 @@ Run from the PypeIt repo root (`/home/xavier/Projects/PypeIt/PypeIt`).
      a **⊘ skipped** slit). Light **and** dark legible.
    - Regenerate with:
      `QT_QPA_PLATFORM=offscreen python $PYPEIT_DEV/pypeitdev/dashboard/py/dashboard_layout_check.py`
+
+These look fine
 
 3. **Launch the GUI on your display — the interactive check.**
    - Execute (a reduction with a current-schema state file; the `keck_lris_blue`
@@ -270,6 +274,8 @@ Run from the PypeIt repo root (`/home/xavier/Projects/PypeIt/PypeIt`).
      starts and the outcome when it finishes, and — on the Status tab — says
      **"Reloaded state file"** / **"Re-derived state"** after **Refresh**
      (closes the Stage 2 item).
+
+I have identified a number of modifications to be made.  See Round 1 under Modifications.
 
 4. **(Optional) Multi-detector / per-slit.** On the `keck_lris_blue` multi data,
    switch DET01↔DET02 and confirm the button row + per-slit tables re-render per
@@ -440,7 +446,45 @@ Let's have a distinct skip category.
 
 Let us have the grouped view for flats, union elsewhere.
 
+## Modifications
+
+### Round 1
+
+1. Have the the status bar indicate to the user where to look (e.g. the Ginga window) when the "view xxx finished" is displayed.
+
+2. Add a title to the status bar, e.g. "Dashboard status:"
+
+3. Place the Input files at the bottom of the view and make its window smaller (vertically).  Have it only use half of the width.  We will find a way to fill the rest of that space.
+
+4. When I click on "slits", no input files appear.  This is likely a bug in state.py or calibrations.py.  Each raw frame labeled a "trace" frame should be included in the input files.
+
+5. When I click on "flats", the Inspect output button is disabled.  I don't think this is correct.  
+
+6. I don't see any QA files for the wavelength calibration when I select wvcalib.  Isn't this supposed to be implemented in this Stage?  
+
+7. Nothing appears when I click on "Inspect output" for the wv_calib.  Is it supposed to show anything?
+
+8. The code fails when I click on "Inspect output" for the wv_calib.  I believe you should just be calling ginga directly.
+
+### Round 2
+
+Here are a number of items related to the Calibrations view:
+
+1. Can you draw a box around the "Input files" section or somehow make it clear that is self-contained?
+
+2. Show fewer digits for the mean/rms values for the bias frame
+
+3. The code fails when I click on "Inspect output" for the "arc".  I believe you should just be calling ginga directly.  Same for the "tiltimg"
+
+4. I confused you with Item 8 in Round 1.  There is nothing to view for the "wv_calib" step.  Have the "Inspect output" button be disabled for this step.  
+
+5. I now see the QA/PNG files for the wv_calib step.  But, when I double click on one, it is very zoomed in on the PNG.  Can it default to the showing the full size PNG (but have the window be smaller than the full screen)?
+
+6. Please have the items in the Table(s) be centered in each column
+
 ## Docs
+
+Read all of the doc files in the PypeIt/doc directory.  Then:
 
 Generate the following docs in the PypeIt/doc directory:
 
@@ -457,8 +501,15 @@ Generate the following docs in the PypeIt/doc directory:
 
 2. doc/state.rst
 
-    - It should point at the state.rst doc when describing state
+    - It should describe the _state.log file
+    - It should desribe how/when it is generated
+    - It should inform the user not to edit the _state.log file manually
 
+3. Improve the doc strings in state.py
+
+4. Any other new docs you feel would be useful to include at this stage
+
+5. Edit index.rst and any other docs you think should point to dashboard.rst and state.rst
 
 ## Prompts
 
@@ -484,6 +535,9 @@ Generate the following docs in the PypeIt/doc directory:
    layout-check harness extension and structural `pytest-qt` tests. Also
    generate a set of Sign offs actions and add them to the Sign offs sub-section.
    Produce the milestone screenshots for my sign-off. Log your work.
+4. The first round of development is excellent, but there are a number of Modifications to be made.  Implement/address all of the items listed under Round 1 in the Modifications section.  Log your work.
+5. Thanks for the Round 1 modifications.  Please implement/address all of the items listed under Round 2 in the Modifications section.  You may need to update the design docs for these and the other modifications. Log your work.
+6. Read this doc.  Generate the docs as described in the Docs section.  Also, it is time to start versioning the Dashboard docs.  Version 1.0.0 is the first version.  Please update the version where sensible
 
 ## Logging
 
@@ -622,3 +676,111 @@ the Calibrations detail-panel metrics, the per-type table row, and the C11
 requirement so flats reflects `corrections`/per-slit; added `flats` to C11.
 
 **Next step:** await answers to S3-Q12–S3-Q16, then implement Stage 3 (prompt 3).
+
+### 2026-06-14 (Stage 3 implemented: Calibrations view + status/activity area)
+
+**Task.** Third task under *Prompts / Stage 3* — implement Stage 3 per the tasks
+and the S3-Q answers, with Sign offs + milestone screenshots.
+
+**S3-Q answers applied.** S3-Q1 plain buttons + `→` separators; S3-Q2 **QProcess**
+launcher; S3-Q3/Q12 a `pypeit/dashboard/inspect.py` of **per-step command
+builders**; S3-Q4/Q5 model `slit_table`/`step_metrics`; S3-Q6 basic QA image
+dialog; S3-Q7 **no (re)generate** (Stage 4); S3-Q8 status bar; S3-Q9 Refresh
+reports reloaded/derived; S3-Q10 independent selectors; S3-Q11 synthesized
+multidet fixture + real LRIS; S3-Q13 `pypeit_view_fits --proc` for processed
+images; S3-Q14 flats per-slit = one row/slit with per-correction columns;
+S3-Q15 **distinct `skip` palette category** (`⊘`); S3-Q16 grouped flats inputs.
+
+**Files (production).**
+- `model.py` — added `calib_dir`, `step_entry`, `output_path`,
+  `calib_file_path` (Edges/Slits resolution), `step_metrics`, `slit_table`
+  (slits/wv_calib/tilts/flats; flats carries per-correction mean/rms).
+- `palette.py` — added the `SKIP` category (+ light/dark colors, `⊘` glyph) and
+  `slit_style(status)` for per-slit cells.
+- `inspect.py` (new) — `output_command` (per-step argv: `pypeit_view_fits --proc`
+  for processed; `pypeit_chk_edges` on the **Edges** file for `slits`;
+  `pypeit_chk_scattlight` with the Slits file; single-file `chk_*` otherwise) and
+  `view_input_command`.
+- `launcher.py` (new) — `Launcher` running tools via **`QProcess`**
+  (non-blocking, captures output, reports to the activity bar; guards missing
+  files).
+- `view/activity.py` (new) — `ActivityBar(QStatusBar)` (X4/X5): message + busy
+  indicator.
+- `view/qa_dialog.py` (new) — `QaImageDialog` (C9 full-view PNG).
+- `view/calibrations_view.py` — the real `CalibrationsView`: scope selectors,
+  path-aware step-button row (palette color+glyph, magenta selected-ring,
+  `bpm` omitted), and the detail panel (metrics, grouped-for-flats input list,
+  Inspect-output button, QA list, per-slit table incl. flats per-correction
+  columns + `skip`).
+- `view/main_window.py` + `app.py` — added the shared `ActivityBar` status bar +
+  `Launcher`; wired both views to them; `status_view.py` reports the Refresh
+  source (S3-Q9).
+
+**Tests/fixtures.** Added a synthesized **multidet** fixture (2 detectors,
+multi-slit, flats per-correction + a `skip` slit) via `make_state_fixtures.py`;
+added Stage 3 tests (model accessors, palette `skip`, `inspect` builders,
+`CalibrationsView` structural incl. multidet per-slit/flats). `pytest
+pypeit/tests/test_dashboard.py` → **32 passed**; dev-suite derive test still
+**1 passed**.
+
+**Self-checked renders.** Extended the layout-check harness with a Calibrations
+matrix (`healthy`/`multidet` × `wv_calib`/`flats` × light/dark × default/resized).
+Verified offscreen: the flats panel shows grouped inputs, the per-correction
+per-slit table, and the **⊘ skipped** slit; the magenta selection ring and
+path-aware row render correctly; light+dark legible. Also smoke-rendered the
+real `keck_lris_blue` multi (15-slit wv_calib table). Filled the **Sign offs**.
+
+**Decisions noted (S3-Q12/Q13 were "I lean…" recs).** Proceeded with the
+per-step builder shape (Q12) and `pypeit_view_fits --proc` for processed images
+(Q13); flagged here for objection.
+
+**Next step:** the user runs the Stage 3 Sign offs; on acceptance, Stage 4
+(Execution, locking & (re)generate — C10, X1–X3).
+
+### 2026-06-14 (Stage 3 Round 1: addressed all 8 modifications)
+
+**Task.** Fourth task under *Prompts / Stage 3* — implement the Round 1
+modifications.
+
+**What I changed (all 8).**
+1. **Status-bar "where to look".** The launcher's finished message now reads
+   "{tool} finished — see the {hint}." with `hint` = "Ginga window" /
+   "plot window" passed per tool by the view (`launcher.py`,
+   `calibrations_view._viewer_hint`).
+2. **Status-bar title.** `ActivityBar` now starts with a bold
+   "**Dashboard status:**" label (`view/activity.py`).
+3. **Input files relocated.** Moved the input-file list to the **bottom** of the
+   detail panel, **half width** (list + a right stretch) and shorter
+   (`maxHeight 90`) — the right half is left free for future content
+   (`calibrations_view`).
+4. **slits input files (calibrations.py).** Root cause: `get_slits` only set
+   `self.raw_files` on the from-scratch build path, so **reused/loaded** slits
+   recorded stale/empty inputs. Now `self.raw_files = raw_trace_files` is set
+   up front. **Verified** on a fresh calib-only `shane_kast_blue` 600/4310 run:
+   `slits.input_files` = the 11 trace frames.
+5. **flats Inspect enabled.** The button is now gated on the **output file
+   existing on disk** (`inspect.output_target`) rather than `entry.status`; flats
+   enables once `Flat_*.fits` is present (the old empty-output state was the
+   cause).
+6. **wv_calib QA files (calibrations.py).** Added `_wv_calib_qa_files()` and
+   record them in `wv_calib_state` (the `Arc_1dfit_*` / `Arc_FWHMfit_*` PNGs).
+   **Verified**: the regenerated state lists 2 QA PNGs; they now appear in the
+   detail panel.
+7/8. **wv_calib output viewer.** `pypeit_chk_wavecalib` only **prints to the
+   terminal** (`wave_diagnostics(print_diag=True)`) — no window, and it can
+   crash on a version mismatch. Per the feedback, wv_calib "Inspect output" now
+   calls **`ginga`** on the `WaveCalib_*` FITS (`inspect._GINGA_OUTPUT_STEPS`).
+
+**Verification.** `pytest pypeit/tests/test_dashboard.py pypeit/tests/test_state.py`
+→ **57 passed** (updated the inspect test for wv_calib→ginga); dev-suite derive
+test **1 passed**. Ran a real calib-only reduction to confirm items 4/5/6 in the
+generated state, and re-rendered the Calibrations view on it — the status-bar
+title, the QA list, the bottom half-width input list, and the enabled Inspect
+button all verified.
+
+**Note (calibrations.py items 4 & 6).** These populate **newly generated**
+states; existing on-disk states need a re-run to show slits inputs / wv QA
+(consistent with the earlier state-schema caveat).
+
+**Next step:** the user re-checks the Sign offs (Round 1 addressed); then the
+Docs task (prompt 5) and/or Stage 4.
