@@ -375,6 +375,8 @@ Flats note in the spec and `claude_prompts/state.md`.)*
   `slit_table()`, that means flats returns a wider record than the single-`rms`
   steps — OK?
 
+  Yes, that is ok
+
 - **S3-Q15 — Palette for the per-slit `skip` status.** Flats slits can be
   **`skip`** (`SKIPFLATCALIB` — intentionally skipped, not a failure). The
   Dashboard palette has no `skip` category. Add a distinct one (e.g. a muted
@@ -383,6 +385,8 @@ Flats note in the spec and `claude_prompts/state.md`.)*
   (it is meaningfully different from "optional/not required"). This is a small
   `palette.py` addition (used only in the per-slit table for now).
 
+Let's have a distinct skip category.
+
 - **S3-Q16 — Flats input files: grouped vs union (C7).** The model exposes both
   the **union** `input_files` and the **grouped** `pixelflat_files` /
   `illumflat_files` / `lampoff_files` + `pixelflat_source`. In the detail panel's
@@ -390,6 +394,8 @@ Flats note in the spec and `claude_prompts/state.md`.)*
   Lamp-off, with the source noted) since the data exists, falling back to the
   union for other steps? Or keep a flat union list everywhere for uniformity?
   I lean grouped-for-flats, union-elsewhere.
+
+Let us have the grouped view for flats, union elsewhere.
 
 ## Prompts
 
@@ -407,7 +413,7 @@ Flats note in the spec and `claude_prompts/state.md`.)*
    - Update the design docs, if necessary
    - Ask any additional questions you have in S3-Q
    - Log your work
-3. I have answered the S3-Q questions. Implement Stage 3 per the tasks and
+3. I have answered the S3-Q questions. Update the plan and design docs (if necessary) and proceed with the implementation. Implement Stage 3 per the tasks and
    acceptance criteria: the `CalibrationsView` (scope selectors, path-aware
    step-button row, detail panel with metrics/inputs/output/QA, per-slit/order
    drill-down), the subprocess-launch infrastructure, the model accessors, and
