@@ -1,10 +1,18 @@
 # PypeIt Dashboard — Design Document
 
-**Version:** 1.0.0
+**Version:** 1.0.1
 **Date:** 2026-06-14
 **Author:** JXP and Claude
 
 **Changelog**
+- 1.0.1 (2026-06-14): **Stage 4 consistency pass.** Reconciled the doc with the
+  Stage 3 code: per-type "Inspect output" viewers now read
+  `pypeit_view_fits --inter` for processed images (was `ginga`), `wv_calib` is
+  *no separate viewer* (QA only), `flats` is `pypeit_chk_flats`, and input files
+  are viewed via `pypeit_view_fits --proc` (detail-panel bullets and C7/C8
+  updated to match). Re-bucketed the Calibrations and Execution **Requirements**
+  into Specification + Status: marked C1–C9/C11–C14/C16 and X4/X5 **Implemented
+  (Stage 3)**, leaving C10/C15 and X1–X3 **Pending (Stage 4)**.
 - 1.0.0 (2026-06-14): First **versioned release** of the Dashboard docs
   (semantic versioning starts here). Coincides with Stages 0–3 implemented and
   the user-facing docs (`doc/dashboard/dashboard.rst`, `doc/state.rst`).
@@ -478,17 +486,18 @@ the user's vision, the panel provides:
   rules of thumb (e.g. wavelength / tilt `rms` < 0.1 px = good).
 - **Inspect the output.** A control to launch the appropriate viewer for that
   calibration's processed output file (see the per-type table below): a dedicated
-  `pypeit_chk_*` script where one exists (e.g. `slits`, `tilts`, `flats`),
-  otherwise plain **`ginga`** for the processed image (`bias`, `dark`, `arc`,
-  `tiltimg`). The control is enabled only when the output file exists.
+  `pypeit_chk_*` script where one exists (e.g. `slits` → `pypeit_chk_edges`,
+  `tilts`, `flats`), otherwise **`pypeit_view_fits --inter`** to render the
+  intermediate processed image (`bias`, `dark`, `arc`, `tiltimg`). The control is
+  enabled only when the output file exists.
   *Implementation note (Stage 3, Round-2):* `wv_calib` has **no standalone
   viewer** — `pypeit_chk_wavecalib` only prints to the terminal and the
   `WaveCalib` FITS is not a useful image — so its "Inspect output" is disabled;
   its wavelength QA PNGs are surfaced in the QA-files list instead.
 - **Input files.** The list of `input_files` (raw or processed) used to build the
   calibration (available in `state.py`); the user can **select an input file and
-  view it** — **raw** frames via **`pypeit_view_fits`**, **processed**
-  calibration frames via **`ginga`**.
+  view it** via **`pypeit_view_fits --proc`** (which orients/processes the frame
+  for a proper view).
 - **QA files.** Any related QA PNGs for the step, viewable inline.  For calibrations with many PNG files, a scrollable list of the PNG files should be provided.
 - **(Re)generate.** When PypeIt is **not** running, a control to launch
   `pypeit_run_to_calibstep` for the selected step (see below). Disabled while a
@@ -529,20 +538,22 @@ and output `DataContainer`. The table below combines that with the inspection
 tools from `pypeit_workflow.md`:
 
 "Inspect output" is the viewer for the **processed** output file: a dedicated
-`pypeit_chk_*` script where one exists, otherwise plain `ginga`. (Raw input
-frames are viewed separately via `pypeit_view_fits`; see the detail panel.)
+`pypeit_chk_*` script where one exists, otherwise `pypeit_view_fits --inter`
+(which renders the intermediate processed image in Ginga). (Raw input frames are
+viewed separately via `pypeit_view_fits --proc`; see the detail panel.) The
+mapping below is what the code launches as of Stage 3:
 
 | Step        | Input frametype | Output (example)            | Inspect output with | Key metric(s) |
 |-------------|-----------------|-----------------------------|---------------------|---------------|
-| `bias`      | bias            | `Bias_*.fits`               | `ginga` | `mean`, `std` |
-| `dark`      | dark            | `Dark_*.fits`               | `ginga` | — |
-| `arc`       | arc             | `Arc_*.fits`                | `ginga` | — |
-| `tiltimg`   | tilt            | `Tiltimg_*.fits`            | `ginga` | — |
-| `slits`     | trace           | `Edges_*.fits.gz`, `Slits_*.fits.gz` | `pypeit_chk_edges` | `nslits`, per-slit `center` |
-| `wv_calib`  | arc             | `WaveCalib_*.fits`          | `pypeit_chk_wavecalib`, `pypeit_show_wvcalib` | per-slit `rms` |
+| `bias`      | bias            | `Bias_*.fits`               | `pypeit_view_fits --inter` | `mean`, `std` |
+| `dark`      | dark            | `Dark_*.fits`               | `pypeit_view_fits --inter` | — |
+| `arc`       | arc             | `Arc_*.fits`                | `pypeit_view_fits --inter` | — |
+| `tiltimg`   | tilt            | `Tiltimg_*.fits`            | `pypeit_view_fits --inter` | — |
+| `slits`     | trace           | `Edges_*.fits.gz`, `Slits_*.fits.gz` | `pypeit_chk_edges` (on the `Edges_*` file) | `nslits`, per-slit `center` |
+| `wv_calib`  | arc             | `WaveCalib_*.fits`          | *no separate viewer* — QA PNGs only (see below) | per-slit `rms` |
 | `tilts`     | tilt            | `Tilts_*.fits.gz`           | `pypeit_chk_tilts` | per-slit `rms` |
 | `scattlight`| scattlight      | `ScatteredLight_*.fits`     | `pypeit_chk_scattlight` | — |
-| `flats`     | illumflat/pixelflat | `Flat_*.fits`           | `pypeit_chk_flats`, `pypeit_show_pixflat` | `corrections` (pixelflat/spat_illum/spec_illum) + `pixelflat_source`; per-slit status (incl. `skip`) + per-correction `mean`/`rms` |
+| `flats`     | illumflat/pixelflat | `Flat_*.fits`           | `pypeit_chk_flats` | `corrections` (pixelflat/spat_illum/spec_illum) + `pixelflat_source`; per-slit status (incl. `skip`) + per-correction `mean`/`rms` |
 | `align`     | align (IFU)     | `Alignment_*.fits`          | `pypeit_chk_alignments` | — |
 
 (`bpm` is not listed: it produces no output file and is omitted from the button
@@ -550,7 +561,7 @@ row, as noted above.)
 
 ### Requirements
 
-#### Pending
+#### Specification
 
 *General (view-wide):*
 
@@ -572,11 +583,11 @@ row, as noted above.)
   coloring.
 - **C7.** The detail panel shows the input files as a **scrollable list** (one
   row per input frame; `bias`/`flats` have many) and lets the user select one
-  and **view it** — raw frames via `pypeit_view_fits`, processed frames via
-  `ginga`.
+  and **view it** via `pypeit_view_fits --proc`.
 - **C8.** The detail panel exposes the **output file** and a control to launch
   the **appropriate viewer** for that calibration type — a `pypeit_chk_*` script
-  where one exists, otherwise plain `ginga` (per-type table above).
+  where one exists, otherwise `pypeit_view_fits --inter` (per-type table above);
+  `wv_calib` has no separate viewer (QA PNGs only).
 - **C9.** The detail panel shows related **QA files** as **clickable entries**;
   clicking one opens a **full view** of the PNG.
 - **C10.** When PypeIt is **not running**, provide a control to launch
@@ -605,9 +616,17 @@ row, as noted above.)
   dependency order obvious at a glance; using the unified Dashboard-wide status
   palette.
 
-#### Implemented
+#### Status
 
-*(None yet — design phase.)*
+- **Implemented (Stage 3):** C1–C9, C11, C12, C13, C14, C16 — the Calibrations
+  view with its scope drop-downs, the path-aware step-button row (`bpm` omitted,
+  selected step ringed in magenta), and the detail panel (metrics, "Inspect
+  output", QA-file list, per-slit/order drill-down, and the input-file list),
+  all built on the headless `DashboardModel` and the shared status palette.
+- **Pending (Stage 4):** C10 (launch `pypeit_run_to_calibstep` for the selected
+  step) and C15 (make that (re)generation **observable** and **refresh** the
+  state/buttons on completion). Both are gated on the run-lock and clobber
+  protection (X1–X3) in the *Execution, Locking & Status* section.
 
 #### Deferred
 
@@ -690,7 +709,7 @@ user informed about what it is doing.
 
 ### Requirements
 
-#### Pending
+#### Specification
 
 - **X1. Single-run lock.** Allow at most one active PypeIt process; while any run
   is active, disable all launch/(re)generate controls. Detect a run started
@@ -709,9 +728,16 @@ user informed about what it is doing.
 - **X5. Task outcomes & refresh.** Report success/failure of launched tasks and
   refresh the state (and any affected view) on completion.
 
-#### Implemented
+#### Status
 
-*(None yet — design phase.)*
+- **Implemented (Stage 3):** X4 (the `ActivityBar` status/activity area, with a
+  busy indicator) and X5 (the `Launcher` reports each task's start/outcome — the
+  exact quoted command and where the result appears — and Refresh re-reads the
+  state). These were pulled forward into Stage 3 so the inspection launches were
+  observable.
+- **Pending (Stage 4):** X1 (single-run lock), X2 (clobber confirmation), and
+  X3 (clobber capability for the selected step) — all tied to the C10 (re)generate
+  control.
 
 #### Deferred
 
