@@ -106,9 +106,9 @@ shared header banner from Stage 0 sits above all of this):
 1. **Global summary strip** (R7) — whole-run health (e.g. "Calibrations: 6/6
    required success" + counts of fail / running / undone), always visible.
 2. **Scope toolbar** (R16) — calibration-group and detector/mosaic drop-downs
-   (from `model.calib_det_pairs()`), plus a filter control (e.g. *required
-   only* / *failures only*) and a **Refresh** button (R12); a **stale** badge
-   (R13) when the state file is older than the `.pypeit`/outputs.
+   (from `model.calib_det_pairs()`) and a **Refresh** button (R12); a **stale**
+   badge (R13) when the state file is older than the `.pypeit`/outputs. (A
+   filter control is **deferred** to a later polish pass — S2-Q8.)
 3. **Configuration-overview navigator** (R17) — a compact `(group × detector)`
    grid, each cell colored by the *worst* step status in that cell; clicking a
    cell sets the drop-downs (click-to-scope). A single cell for a
@@ -170,8 +170,47 @@ shared header banner from Stage 0 sits above all of this):
 
 #### Sign offs
 
-*(To be filled in when Stage 2 is implemented — explicit execute/inspect
-actions for the user, per the per-stage convention.)*
+These are the actions for **you** to sign off on Stage 2. As with Stage 0, the
+key human check is the **interactive GUI launch on your display**; the rest is
+running tests and reviewing the rendered screenshots. Run from the PypeIt repo
+root (`/home/xavier/Projects/PypeIt/PypeIt`).
+
+1. **Automated tests pass (CI-safe).**
+   - Execute: `python -m pytest pypeit/tests/test_dashboard.py -v`
+   - Inspect: **23 passed** — Stage 0/1 tests plus the Stage 2 Status-view
+     structural tests (`test_status_view_*`) and `test_palette_worst_category`.
+
+2. **Review the milestone screenshots (Status view matrix).**
+   - Inspect the PNGs in
+     `$PYPEIT_DEV/pypeitdev/dashboard/py/layout_check/`:
+     `dashboard_status_{healthy,failed,not_started}_{light,dark}_{default,resized}.png`.
+   - Confirm: the **summary strip** (e.g. "7/7 required succeeded" for healthy,
+     "3/6 … 1 failed … 2 to-do" for failed), the **scope drop-downs** (group /
+     `DET01`), the **navigator** cell colored by worst status (green ✓ healthy,
+     red ✗ failed), the scoped **table** (Step | Required | Status | Output) with
+     color+glyph and dimmed optional rows, and the **Science** placeholder.
+     Light **and** dark both legible; resized reflows cleanly. The
+     `not_started` case shows the centered "not started" message (no table).
+   - Regenerate with:
+     `QT_QPA_PLATFORM=offscreen python $PYPEIT_DEV/pypeitdev/dashboard/py/dashboard_layout_check.py`
+
+3. **Launch the GUI on your display — the interactive check.**
+   - Execute (a reduction whose state file loads with the current schema; a
+     freshly re-run `shane_kast_blue` 600/4310 works — see the Stage 1 caveat):
+     `pypeit_dashboard $PF`
+   - Inspect, on the **Status** tab: the summary strip, the group/detector
+     drop-downs, the navigator cell, and the color+glyph table; change the
+     drop-downs (multi-group/detector setups) and confirm the table re-scopes
+     while the summary stays whole-run; click **Refresh** and confirm it
+     re-reads/re-derives. The **Calibrations** tab is still a Stage-3
+     placeholder.
+
+4. **(Optional) Edge states.** Point the dashboard at a folder with no state
+   file (not started) and at a setup with a pre-fix (nested-`input_files`) state
+   file (malformed) and confirm each shows a clear message rather than crashing.
+
+**Sign-off:** if items 1–3 look right, Stage 2 is accepted. Note anything off
+(ideally the item + a screenshot) and Claude will address it.
 
 #### Clarifications
 
@@ -185,11 +224,15 @@ resolved.)*
   `QTableWidget` for Stage 2 (simpler, the table is small and re-rendered on
   scope change); we can graduate to a model/view later if needed.
 
+Yes, start with a simple QTableWidget.
+
 - **S2-Q2 — Navigator grid (R17) now or minimal?** Build the
   `(group × detector)` navigator as a general, click-to-scope grid now (it is a
   single cell for Kast but scales to MOS/mosaic heat-maps), or start with a
   minimal single-cell stub and generalize later? I lean toward building it
   generally now, since R17 is core to the state-first view.
+
+Yes, build it generally now.
 
 - **S2-Q3 — Launch wiring & deriving at startup.** Stage 2 should have
   `app.launch`/`MainWindow` construct a `DashboardModel` (it already carries
@@ -198,27 +241,39 @@ resolved.)*
   briefly block the UI (design says acceptable). OK to derive at launch, or
   should Stage 2 default to load-only and offer a "compute state" action?
 
+Yes, derive at launch.
+
 - **S2-Q4 — Stale-state heuristic (R13).** Flag "stale" when the
   `*_state.json` mtime is older than the `.pypeit` file or the newest
   `Calibrations/` output. Agree with that heuristic, and a non-blocking badge
   (not a blocking dialog)?
+
+Yes, flag "stale" when the `*_state.json` mtime is older than the `.pypeit` file or the newest `Calibrations/` output.  A non-blocking badge is fine.
 
 - **S2-Q5 — Refresh semantics (R12).** For Stage 2, **Refresh** re-instantiates
   the model (re-load the state file if present, else re-derive) and re-renders.
   The active-run-aware source selection and continuous live updates are deferred
   to Stage 4/5. Confirm.
 
+I confirm.
+
 - **S2-Q6 — Science section.** Scaffold the Science section as an
   equal-weight-heading **placeholder** only (populated in the later
   science-frames stage once `RunPypeItState` tracks it), per the S0/Stage-6
   decision. Confirm.
 
+I confirm
+
 - **S2-Q7 — Summary-strip content (R7).** Propose: "Calibrations: N/M required
   succeeded" plus small counts of fail / running / undone (optional steps noted
   separately). Good, or do you want a different headline?
 
+That is fine for now.  We might edit it later.
+
 - **S2-Q8 — Filter control.** Include a simple filter (e.g. *required only* /
   *failures only*) in Stage 2, or defer filtering to a later polish pass?
+
+No, defer filtering to a later polish pass.
 
 - **S2-Q9 — `det` formatting in the view (per S1-Q4/Q9).** The model leaves
   `det` raw (int or mosaic tuple); the view formats it. Use
@@ -227,18 +282,58 @@ resolved.)*
   navigator? (The view can reach the spectrograph via the `.pypeit` file, or we
   expose it on the model.)
 
+I only care above the view.  It should be easily interpretable by the user.
+
+*(Below: follow-up questions **S2-Q10–S2-Q13** raised after your answers, from a
+closer read of the built model + `spectrograph.get_det_name`. S2-Q1–S2-Q9 are
+resolved; S2-Q8 = filtering deferred is folded into the spec above.)*
+
+- **S2-Q10 — How the view gets readable `det` names (follow-up to S2-Q9).**
+  PypeIt's canonical names come from `Spectrograph.get_det_name(det)` (→
+  `DET01`; mosaics → `MSC01`), which needs the **spectrograph object** and a
+  **tuple** for mosaics. The model already gives `det` as int/tuple
+  (`status_table`/`calib_det_pairs`), but it does **not** currently expose the
+  spectrograph. Cleanest: add a tiny `DashboardModel.det_name(det)` helper (the
+  model holds the spectrograph it already parses, wraps `get_det_name`, with a
+  plain readable fallback like `Det 1` / `Mosaic (1,5)` if naming fails), and the
+  view just calls it. OK? (This keeps the *display* in the view while the one
+  spectrograph touch stays in the model.)
+
+You can and should take the spectrograph name from the PypeIt file.  Let me know if this is a problem.
+
+- **S2-Q11 — Navigator "worst status" precedence (R17).** To color each
+  `(group × detector)` cell by its worst step, I propose the precedence
+  **fail > running > required-undone (to-do) > success**, with *optional* and
+  *not-used* steps never worsening a cell (so an all-success-plus-skipped-optional
+  cell still reads green). Agree?
+
+Yes, that is fine.
+
+- **S2-Q12 — "Not started" next action (R11).** The design's empty-state example
+  has a *[Run reduction]* button, but launching a full `run_pypeit` is **deferred**
+  (the coding doc limits v1 launching to `pypeit_run_to_calibstep`, Stage 4). So
+  for Stage 2 the `not_started` (and `malformed`/`file_not_found`) states render
+  as an **informational message only** — no actionable button yet. Confirm that's
+  fine for now (the button arrives when launching is wired).
+
+Yes, that's fine.
+
+- **S2-Q13 — `MainWindow` constructor change (wire-in ripple).** Stage 0 built
+  `DashboardMainWindow(header_info)`; Stage 2 needs it to take a
+  `DashboardModel` (the header comes from `model.header_info`, the Status view
+  gets the model). That changes the constructor and so updates the **Stage 0
+  structural tests + the layout-check harness** that currently pass
+  `header_info`. OK to make that refactor (Stage 0 behavior unchanged, just
+  re-wired through the model)?
+
+Yes, that sounds fine.
+
 ## Prompts
-
-### Generate this doc
-
-1. Generate a new prompt document for Stage 2.  Call it dashboard_dev_stage_2.md.  Model it after the Stages 0–1 doc with similar sections (many will be empty).  I will then edit it before proceding with the development.  Be sure to read all of the Context documents and the other prompt documents in this folder.
 
 ### Stage 2 — Initialization / Status view
 
-1. Read this doc and the Context documents. Begin a conversation with me on
-   Stage 2: confirm the layout/scope and **answer/raise the S2-Q questions** in
-   the Clarifications channel. Do **not** write code yet. Log your work.
-2. I have answered the S2-Q questions. Implement Stage 2 per the tasks and
+1. I have answered your first set of S2-Q questions.  Examine the answers and write more as needed.  Do **not** write code yet. Log your work.
+2. I have answered the additional S2-Q questions. Implement Stage 2 per the tasks and
    acceptance criteria: the `StatusView` (summary strip, scope drop-downs,
    configuration-overview navigator, scoped color+glyph state table, edge-state
    messages, Science placeholder), wired into the `MainWindow` via a
@@ -287,3 +382,84 @@ semantics, science placeholder, summary content, filter, `det` formatting), a
 
 **Next step:** the user edits this doc and answers S2-Q1–S2-Q9, then the Stage 2
 discussion prompt runs (no code until the questions are resolved).
+
+### 2026-06-13 (Stage 2 discussion: reviewed S2-Q answers; raised S2-Q10–S2-Q13)
+
+**Task.** First task under *Prompts / Stage 2 — Initialization / Status view* —
+examine the user's answers to S2-Q1–S2-Q9 and write further questions as needed.
+No code written.
+
+**User answers (folded in).** S2-Q1 `QTableWidget` for the scoped table; S2-Q2
+build the navigator generally now; S2-Q3 **derive at launch**; S2-Q4 stale =
+`*_state.json` older than `.pypeit`/newest `Calibrations/` output, non-blocking
+badge; S2-Q5 Refresh re-instantiates the model; S2-Q6 Science placeholder only;
+S2-Q7 summary headline OK for now; **S2-Q8 filtering deferred** (removed from the
+Stage 2 toolbar/spec); S2-Q9 format `det` in the view, must be easily readable.
+
+**Grounding for the follow-ups.** Read `Spectrograph.get_det_name` — it needs the
+**spectrograph object** and a **tuple** for mosaics; the model already yields
+`det` as int/tuple but does not expose the spectrograph. That, plus the
+launching-deferred and MainWindow-wiring implications, drove four new questions.
+
+**Raised S2-Q10–S2-Q13.** S2-Q10 (add a `DashboardModel.det_name(det)` helper
+wrapping `get_det_name` with a readable fallback, so the view just calls it);
+S2-Q11 (navigator worst-status precedence: fail > running > to-do > success,
+optional/not-used never worsen a cell); S2-Q12 (for now `not_started`/`malformed`
+/`file_not_found` render as an informational message — no *[Run reduction]*
+button, since full-run launching is deferred to Stage 4); S2-Q13 (change
+`DashboardMainWindow(header_info)` → `DashboardMainWindow(model)`, updating the
+Stage 0 structural tests + layout harness). Also updated the Scope-toolbar spec
+to mark the filter deferred (S2-Q8).
+
+**Next step:** await answers to S2-Q10–S2-Q13, then implement Stage 2 (the second
+Stage 2 prompt).
+
+### 2026-06-13 (Stage 2 implemented: the Status view)
+
+**Task.** Second task under *Prompts / Stage 2* — implement Stage 2 per the
+S2-Q answers, with Sign offs + milestone screenshots.
+
+**S2-Q10–Q13 applied.** Model holds the spectrograph (parsed from the
+`.pypeit`) and exposes `det_name(det)` (→ `DET01`/`MSC01`, readable fallback);
+navigator worst-status precedence fail>running>to-do>success; edge states are
+informational messages (no launch button yet); `DashboardMainWindow` now takes a
+`DashboardModel`.
+
+**Files.**
+- `pypeit/dashboard/palette.py` — added `worst_category()` (severity precedence
+  for the navigator, R17).
+- `pypeit/dashboard/model.py` — `_parse_pypeit()` (returns HeaderInfo + spec),
+  `DashboardModel` now stores `self.spectrograph`, adds `det_name()` and
+  `is_stale()` (R13).
+- `pypeit/dashboard/view/status_view.py` — the real **`StatusView`**: summary
+  strip (R7), scope toolbar with group/detector drop-downs + stale badge +
+  Refresh (R16/R13/R12), configuration-overview navigator grid (R17, click-to-
+  scope), scoped color+glyph table Step|Required|Status|Output (R3/R8/R9/R10),
+  Science placeholder (R15/R18), and centered edge-state messages (R11).
+  Theme detected from the widget palette (light/dark).
+- `pypeit/dashboard/view/main_window.py` + `app.py` — take/build a
+  `DashboardModel` (derive at launch, S2-Q3); header from `model.header_info`
+  with a minimal fallback when missing.
+- `pypeitdev/dashboard/py/dashboard_layout_check.py` — now stages fixtures into a
+  temp redux dir and renders the **Status view** across
+  case(healthy/failed/not_started) × theme × size.
+
+**Tests.** Updated the Stage 0 widget tests to pass a model; added Stage 2
+structural `pytest-qt` tests (`test_status_view_*`: healthy table, scope
+drop-downs incl. `DET01` formatting, failed row ✗, not-started/malformed edge
+messages) and `test_palette_worst_category`. `pytest pypeit/tests/test_dashboard.py`
+→ **23 passed**; dev-suite derive test still **1 passed**.
+
+**Self-checked renders** (in `pypeitdev/dashboard/py/layout_check/`): healthy
+(7/7, green ✓ navigator + table), failed (3/6, red ✗ navigator, ✗ fail row,
+○ required rows, dimmed optional), not-started (centered message) — light+dark,
+default+resized; all legible and reflow cleanly. Filled the **Sign offs**
+sub-section and moved R3/R7–R10/R12/R13/R16/R17 to the design doc *Implemented*
+bucket (R15/R18 placeholder noted).
+
+**Note.** Real reductions only load once their `*_state.json` is regenerated
+with the fixed writer (the Stage 1 nested-`input_files` caveat); the
+fixtures/tests use schema-valid synthesized states.
+
+**Next step:** the user runs the Stage 2 Sign offs; on acceptance, Stage 3 (the
+Calibrations view).
