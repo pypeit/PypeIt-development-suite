@@ -1,10 +1,31 @@
 # PypeIt Dashboard — Design Document
 
-**Version:** 1.2.4
+**Version:** 1.3.0
 **Date:** 2026-06-15
 **Author:** JXP and Claude
 
 **Changelog**
+- 1.3.0 (2026-06-15): **Stage 6 implemented — the Science view.** The third
+  **Science tab** (per-`(frame, det)` table with the four step statuses + nobj +
+  spec2d/spec1d; per-frame per-slit/per-object drill-down; `pypeit_show_2dspec`
+  + per-object `pypeit_show_1dspec`; a per-step **(Re)Build** via
+  `pypeit_reduce_by_step`), the Status-view compact science summary + summary
+  strip, model science accessors + science-derive-on-launch, and the
+  `reduce_by_step` state-write fix (+ a `raw_files` field on
+  `ScienceFrameState`). R15/R18 implemented — the build order is complete.
+- 1.2.6 (2026-06-15): **Stage 6 discussion round 2 — design resolved.** Finalized
+  R15: per-object 1D via a **reconstructed** `--obj`
+  (`SPAT{round(spat)}-SLIT{slit}-{det}`); the science **(Re)Build** is **re-run
+  with a file-naming confirmation** (no move-aside), step **enabled only when its
+  prerequisite product exists**, and `reduce_by_step` gets the same state-write
+  fix as `run_to_calibstep` (live/observable). All Stage-6 S6-Q resolved.
+- 1.2.5 (2026-06-15): **Stage 6 discussion (S6-Q answers).** Folded the Science-
+  view decisions into R15: a third **Science tab**, flat `(frame, det)` rows with
+  an `objtype` column, status-as-cells; a **per-object** `pypeit_show_1dspec`
+  launch; and — per the user — a **(Re)Build** control mirroring Calibrations
+  (`pypeit_reduce_by_step`), governed by the single-run lock. (Open points:
+  `reduce_by_step` does not yet write state, and the per-object viewer needs an
+  object identifier — Stage-6 S6-Q10–S6-Q12.)
 - 1.2.4 (2026-06-15): **Stage 6 prep — grounded the Science view in the
   implemented state.** Reconciled with the science-state code: fixed the module
   path to `pypeit.state.science_status` and noted the **`pypeit/state/` package**
@@ -355,9 +376,19 @@ as development proceeds.
   - offer a **per-frame detail** (mirroring the Calibrations detail panel): a
     **per-slit** table (`ScienceSlit`: status from `BADSKYSUB`/`BADEXTRACT`,
     `nobj`) and a **per-object** table (`ScienceObj`: `snr_find`, `s2n`,
-    `spat_pixpos`, `fwhm`, `sign`, `extracted`), and launch the existing viewers
-    on the products (`pypeit_show_2dspec` / `pypeit_show_1dspec` on the
-    `spec2d`/`spec1d` files);
+    `spat_pixpos`, `fwhm`, `sign`, `extracted`); launch `pypeit_show_2dspec` on
+    the `spec2d`, and a **per-object** `pypeit_show_1dspec <spec1d> --obj <name>`
+    where the object name is **reconstructed** as
+    `SPAT{round(spat_pixpos):04d}-SLIT{slitid:04d}-{detname}` (matching
+    `SpecObj.set_name`);
+  - provide a **(Re)Build** control mirroring the Calibrations one (Stage 4),
+    launching `pypeit_reduce_by_step <pf> <frame> <step> --det` for a science step
+    (`process` / `findobj` / `extract`), governed by the **same single-run lock**
+    (X1) with a **re-run-with-confirmation** clobber (name the overwritten
+    file(s); no move-aside) and a step **enabled only when its prerequisite
+    product exists**. `reduce_by_step` is given the same **state-write fix** as
+    `run_to_calibstep` (thread `run_state` + a final disk-derive write) so the
+    science (Re)Build is observable + live;
   - treat **0 objects** as a valid `success` (not a failure); `fail` only on a
     step exception or a per-slit bad flag.
 - **R18. Equally-prominent, scalable Science section.** The Science-frames
