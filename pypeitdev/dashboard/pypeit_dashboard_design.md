@@ -296,13 +296,21 @@ Grounded in `PypeIt/pypeit/state.py` and `pypeit/scripts/pypeit_status.py`
   `calibration_group`, `detector`, `steps`, `required`, `status`,
   `output_file`); the dashboard should build on this rather than re-deriving it.
 
-**Important — science-frame status is coming.** Today the state model tracks
-**calibration steps only**; it does not yet capture per-science-frame object
-finding / extraction status. This is, however, planned: `RunPypeItState` *will*
-be extended to record science-frame status. The Initialization design must
-therefore **anticipate** science frames from the start — the state view should
-extend naturally to a *science* section presented alongside the *calibration*
-section (see R8 and R15), rather than being hard-wired to calibrations only.
+**Science-frame status — now tracked in the state (data layer done).** As of
+2026-06-15 `RunPypeItState` records per-science-frame status: a `science` list
+of `ScienceFrameState` entries, one per `(frame/basename, detector)`, each with
+the four macro-step statuses (`process` → `findobj` → `skysub` → `extract`), the
+`spec2d`/`spec1d` product paths, `nobj`, and per-slit / per-object detail
+(per-object `snr_find`/`s2n`/`spat_pixpos`/`fwhm`; per-slit status from the
+`BADSKYSUB`/`BADEXTRACT` bitmask). Standards are tracked too (`objtype`). It is
+populated **live** during a run (hooks in `exposure.reduce_exposure`) and, when
+there is no state file, **derived from disk** by
+`pypeit.science_status.derive_science_from_disk` — preferring the final Science
+`spec2d`/`spec1d`, falling back to `Intermediate/` files. `get_science_status()`
+returns a per-frame DataFrame and `print_status()` prints a Science table. See
+the dev-suite doc `claude_prompts/state_science.md`. The **Initialization /
+Science view (R15, R18) is still to be built** — the data it needs now exists;
+present it as a *science* section alongside the *calibration* section.
 
 ### Requirements
 
