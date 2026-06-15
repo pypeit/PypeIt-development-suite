@@ -1,10 +1,16 @@
 # PypeIt Dashboard — Coding Document
 
-**Version:** 1.1.0
+**Version:** 1.1.2
 **Date:** 2026-06-14
 **Author:** JXP and Claude
 
 **Changelog**
+- 1.1.2 (2026-06-14): **Stage 4 Round 2** — processed-image inspect → `ginga`
+  directly; (Re)Build button orange-while-running + keeps the rebuilt step
+  selected; output filename shown in the detail panel.
+- 1.1.1 (2026-06-14): **Stage 4 Round 1** — crash-safe clobber (move-aside +
+  restore-on-failure), the `pypeit_run_to_calibstep --calib_group` `IndexError`
+  fix, and a bright teal "Inspect output" button beside the blue (Re)Build.
 - 1.1.0 (2026-06-14): **Stage 4 implemented.** Marked the *Execution, locking &
   (Re)Build* build-order row implemented: the blue **(Re)Build** control
   (`pypeit_run_to_calibstep`), the `RunLock` single-run lock (`.log`-mtime +
@@ -154,9 +160,9 @@ subprocesses** rather than embedding live plots:
 
 - Calibration/spectra inspection: `pypeit_chk_*` / `pypeit_show_*` scripts and
   `ginga`.
-- Raw/processed FITS display: `pypeit_view_fits` for both — `--proc` to view a
-  raw frame oriented/processed, `--inter` to view an intermediate processed
-  calibration image (each opens Ginga).
+- Raw input frames: `pypeit_view_fits --proc` (oriented/processed view).
+  Processed calibration outputs (`Bias_*`/`Arc_*`/…): opened **directly in
+  `ginga`** (Stage 4 Round-2 #1; `pypeit_view_fits` does not display them).
 
 Consequently, **v1 needs no embedded `matplotlib`-Qt canvas or in-window
 plotting backend**, and the GUI-package choice does not have to account for one.
