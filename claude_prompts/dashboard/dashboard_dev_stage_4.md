@@ -398,6 +398,11 @@ Agreed, (re)build only
 3. Nice fixes.  Now work on the Round 2 Modifications. Log your work
 4. Nice fixes.  Now work on the Round 3 Modifications. Log your work
 
+### Stage 5
+
+1. Generate a new prompt document for Stage 5.  Call it dashboard_dev_stage_5.md.  Model it after this doc (many will be empty).  I will then edit it before proceding with the development.  Be sure to read all of the Context documents and the other prompt documents in this folder.
+
+
 ## Logging
 
 The "Logs" section will record Claude's work.  Please use the following format:

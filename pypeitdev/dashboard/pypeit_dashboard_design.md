@@ -1,10 +1,21 @@
 # PypeIt Dashboard — Design Document
 
-**Version:** 1.1.3
-**Date:** 2026-06-14
+**Version:** 1.2.0
+**Date:** 2026-06-15
 **Author:** JXP and Claude
 
 **Changelog**
+- 1.2.0 (2026-06-15): **Stage 5 implemented — Monitoring (live updates).** R14
+  moved to **Implemented**: `RunLock` gained a `stateChanged` signal (poll the
+  `*_state.json` mtime on the one ~2 s timer while a run is active);
+  `MainWindow._refresh_from_state` auto-refreshes both views from the state file
+  (R12), preserving scope/selection; the `ActivityBar` is split into **Build**
+  and **Inspection** channels (S5-Q9). The `.log` tail view is deferred.
+- 1.1.4 (2026-06-15): **Stage 5 planning.** Resolved the R14 **live-update
+  channel**: poll the `*_state.json` mtime on the `RunLock` timer and re-render
+  on change (not the removed `log.step` hook); updated R14 + the open-items
+  note. (Two-channel ActivityBar for build-vs-inspection feedback is proposed in
+  `dashboard_dev_stage_5.md` S5-Q9, pending confirmation.)
 - 1.1.3 (2026-06-14): **Stage 4 Round 3.** The **(Re)Build** button now turns
   **orange** and reads "⏳ Run in progress" (disabled) whenever a run is active —
   the lock's visual cue, shown on every step's panel (replacing the Round-2
@@ -282,12 +293,6 @@ as development proceeds.
 
 #### Pending
 
-- **R14. Live status updates (planned).** While a reduction is running, the
-  state view should reflect progress in (near) real time. This is planned but
-  its **implementation/channel is open** — the commented-out `log.step`
-  "broadcast" hook in `state.py` is one candidate (a log-stream channel),
-  polling `*_state.json` is another. The detailed design is deferred to the
-  **Monitoring** phase; Initialization only needs to not preclude it.
 - **R15. Science-frame readiness.** The state view must be designed so that, once
   `RunPypeItState` is extended to track per-science-frame status (object finding
   / extraction), it can be shown as a *science* section alongside the
@@ -349,8 +354,18 @@ placeholder; its population is deferred to the science-frames stage.)*
   click-to-scope (R17); a **Refresh** that re-acquires the model (R12,
   manual); and a non-blocking **stale** badge via `DashboardModel.is_stale()`
   (R13). Theme-aware (light/dark). Verified by `pytest-qt` structural tests +
-  the layout-check render matrix. *(R12's active-run-aware source selection
-  and R14 live updates remain for Stage 4/5.)*
+  the layout-check render matrix.
+- **R12, R14 (Stage 5).** **Live monitoring.** While a run is active (detected
+  by the `RunLock` `.log`-mtime watch, X1), the Dashboard **polls the
+  `*_state.json` mtime** on the one ~2 s timer (`RunLock.stateChanged`) and
+  **auto-refreshes** both views from the state file (R12: load, never derive
+  mid-run), preserving the user's scope + selected step; it returns to idle with
+  a final refresh when the run ends. The `log.step` hook is **not** used. The
+  shared status bar is split into **Build** and **Inspection** channels (X4/X5
+  refinement) so monitoring status and user-inspection feedback do not collide.
+  Implemented in `runlock.py` (`stateChanged`), `view/main_window.py`
+  (`_refresh_from_state` + the lock/state wiring), `view/activity.py`
+  (two-channel `ActivityBar`), and `launcher.py` (channel routing).
 
 #### Deferred
 
@@ -412,11 +427,11 @@ now folded into this section:
 - **Refresh source** — depends on whether a reduction is running (R12).
 - **Metrics** — shown in other (inspection) windows, not the state table.
 
-Remaining open item, carried to a later phase:
+Resolved for the Monitoring phase (Stage 5):
 
-- **Live-update channel (R14).** Whether live monitoring rides the `log.step`
-  broadcast hook, `*_state.json` polling, or another mechanism is open and will
-  be settled in the **Monitoring** phase.
+- **Live-update channel (R14).** Decided: **poll the `*_state.json` mtime** on
+  the `RunLock` timer and re-render on change (not the `log.step` hook, which was
+  removed). See *Stage 5 — Monitoring* in `dashboard_dev_stage_5.md`.
 
 ---
 

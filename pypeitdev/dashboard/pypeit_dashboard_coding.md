@@ -1,10 +1,16 @@
 # PypeIt Dashboard — Coding Document
 
-**Version:** 1.1.3
-**Date:** 2026-06-14
+**Version:** 1.2.0
+**Date:** 2026-06-15
 **Author:** JXP and Claude
 
 **Changelog**
+- 1.2.0 (2026-06-15): **Stage 5 implemented** — live monitoring (the
+  build-order row marked implemented): `RunLock.stateChanged`,
+  `MainWindow._refresh_from_state`, two-channel `ActivityBar`.
+- 1.1.4 (2026-06-15): **Stage 5 planning** — §Monitoring updated to the decided
+  mechanism (poll `*_state.json` mtime on the `RunLock` timer + a `stateChanged`
+  signal; the `.log` tail view deferred).
 - 1.1.3 (2026-06-14): **Stage 4 Round 3** — the (Re)Build button turns orange +
   "⏳ Run in progress" + disabled while any run is active (lock visual cue, all
   steps), via a shared `_style_rebuild_button`.
@@ -250,7 +256,7 @@ Each design reference points back to `pypeit_dashboard_design.md`.
 | **2. Initialization / Status view** | The landing, *state-first* view: the color + glyph state table, required-vs-optional distinction, global summary strip, configuration-overview navigator grid, scope drop-downs, manual refresh, stale-state indicator, and a **placeholder** Science section (see below). | R3, R7–R13, R15–R18 |
 | **3. Calibrations view** | The path-aware step-button row (from `Calibrations.default_steps()`), the detail panel, and **launching external viewers as subprocesses** (`pypeit_chk_*` / `ginga` / `pypeit_view_fits`); per-slit/order drill-down. Builds the reusable subprocess-launch infrastructure. **Also delivers the Dashboard's own status/activity area** (X4/X5) — pulled forward from Stage 4 — so the user can see when the GUI is busy/waiting on a job (e.g. launching a viewer, deriving/reloading state on Refresh). | C1–C9, C11–C14, C16, X4, X5 (C10/C15 deferred to Stage 4) |
 | **4. Execution, locking & (Re)Build** *(implemented 2026-06-14)* | The blue **(Re)Build** control (`pypeit_run_to_calibstep`) in the detail panel; a `RunLock` single-run lock via **`.log` mtime watching** (+ the launched-run lifecycle); a `QMessageBox` clobber confirmation naming the file(s) overwritten; clobber = delete-the-step's-output-then-run (in code); state/buttons refresh on completion. (The Dashboard status/activity area, X4/X5, shipped in Stage 3.) | X1–X3, C10, C15 |
-| **5. Monitoring (live updates)** | Live status refresh while a reduction is active (see *Monitoring*, below). | R14 |
+| **5. Monitoring (live updates)** *(implemented 2026-06-15)* | Live status refresh while a reduction is active: `RunLock` gained a `stateChanged` signal (poll the `*_state.json` mtime on the one ~2 s timer while active); `MainWindow._refresh_from_state` auto-refreshes both views from the state file (R12), preserving scope/selection; the status bar split into **Build** + **Inspection** channels. (`.log` tail view deferred.) | R14 |
 | **6. Science frames** | Populate the Science section once `RunPypeItState` is extended to track per-science-frame status. | R15, R18 |
 
 ### What is implemented first
@@ -269,12 +275,15 @@ through an in-process log hook:
   it sets a step's `status='running'` before running it and `'success'` /
   `'failed'` afterward, calling `state.write()` each time. So `*_state.json` is a
   **live, per-step status feed** that requires no new instrumentation.
-- **Plan:** detect that a run is *active* by watching the **`.log` mtime** (PypeIt
-  writes to it continuously while running; this is also the single-run-lock
-  signal, X1); while active, **poll `*_state.json`** (e.g. a `QTimer` and/or
-  `QFileSystemWatcher` with debounce), reload it, and re-render the status table
-  and calibration buttons. Separately, **tail the `.log`** into a log view that
-  reuses `setup_gui/text_viewer.py`'s `LogWindow`.
+- **Plan (Stage 5, decided):** detect that a run is *active* by watching the
+  **`.log` mtime** (PypeIt writes to it continuously while running; this is also
+  the single-run-lock signal, X1, already in `RunLock`); while active, **poll the
+  `*_state.json` mtime** on the **same `RunLock` ~2 s timer** (no
+  `QFileSystemWatcher`), and on a change re-read the state file and re-render the
+  Status table + calibration buttons, preserving the user's scope/selection.
+  `RunLock` gains a `stateChanged` signal for this. A separate **`.log` tail**
+  view (reusing `setup_gui/text_viewer.py`'s `LogWindow`) is **deferred** (it may
+  not be wanted; see `dashboard_dev_stage_5.md` S5-Q6).
 - The previously-prototyped **`log.step` broadcast hook** (a STEP-level log
   record) is **not** used. The commented-out hook has been **removed from
   `pypeit/state.py`** so the source carries no dead path; finer sub-step
