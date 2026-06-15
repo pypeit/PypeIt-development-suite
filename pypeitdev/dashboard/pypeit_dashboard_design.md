@@ -1,10 +1,28 @@
 # PypeIt Dashboard — Design Document
 
-**Version:** 1.2.0
+**Version:** 1.2.3
 **Date:** 2026-06-15
 **Author:** JXP and Claude
 
 **Changelog**
+- 1.2.3 (2026-06-15): **Post-Stage-5 consistency pass.** Reconciled docs with the
+  code: noted the Stage-5 two-channel `ActivityBar` split in the X4/X5 status
+  entry; in the coding doc clarified that the per-step state writes happen only
+  during a **real run** (a status-only derive is read-only); fixed `state.rst`
+  (`pypeit_run_to_calibstep` also writes state; a status-only derive/`pypeit_status`
+  does **not** write `*_state.json`; refresh via `run_pypeit`/`run_to_calibstep`,
+  not `pypeit_status`) and the `dashboard.rst` startup wording.
+- 1.2.2 (2026-06-15): **Stage 5 Round 2 (read-only derive).** A status-only
+  derive (the Dashboard computing status on launch) no longer **writes**
+  `*_state.json` — `run_the_steps`'s start/per-step writes are now gated by
+  `if not status_only` — so a launch no longer leaves the last step marked
+  `running` (S5-Q12 option A; no schema change).
+- 1.2.1 (2026-06-15): **Stage 5 Round 1 (state writing).** Fixed two
+  state-correctness bugs the sign-off surfaced: (1) a not-yet-built calibration
+  is now `undone`/required (not `fail`) in the reload/status-only derive; (2)
+  `pypeit_run_to_calibstep` now writes `*_state.json` (passes `run_state` to
+  `calib_one` + a final status-reload pass), so a (Re)Build updates the
+  Dashboard and can be monitored live (option (b), S5-Q10/Q11).
 - 1.2.0 (2026-06-15): **Stage 5 implemented — Monitoring (live updates).** R14
   moved to **Implemented**: `RunLock` gained a `stateChanged` signal (poll the
   `*_state.json` mtime on the one ~2 s timer while a run is active);
@@ -781,7 +799,9 @@ user informed about what it is doing.
   busy indicator) and X5 (the `Launcher` reports each task's start/outcome — the
   exact quoted command and where the result appears — and Refresh re-reads the
   state). These were pulled forward into Stage 3 so the inspection launches were
-  observable.
+  observable. *(Stage 5 split the one `ActivityBar` into two channels — **Build**
+  for (re)builds/monitoring and **Inspection** for user viewer launches — so the
+  two never overwrite each other; see the R12/R14 entry above.)*
 - **Implemented (Stage 4):** X1 (single-run lock — a `RunLock` controller that
   locks while a Dashboard-launched run is active **and** when the reduction
   `.log` mtime is recent, i.e. a run started outside the Dashboard; locking
