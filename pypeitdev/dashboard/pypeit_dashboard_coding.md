@@ -1,10 +1,13 @@
 # PypeIt Dashboard — Coding Document
 
-**Version:** 1.2.3
+**Version:** 1.2.4
 **Date:** 2026-06-15
 **Author:** JXP and Claude
 
 **Changelog**
+- 1.2.4 (2026-06-15): **Stage 6 prep** — Science build-order row updated to the
+  implemented state layer + the `pypeit/state/` package
+  (`pypeit.state.science_status.derive_science_from_disk`, `get_science_status()`).
 - 1.2.3 (2026-06-15): **Post-Stage-5 consistency pass** — clarified that the
   per-step `*_state.json` writes happen only during a **real run** (a status-only
   derive is read-only); synced `state.rst`/`dashboard.rst`/design X4/X5.
@@ -266,7 +269,7 @@ Each design reference points back to `pypeit_dashboard_design.md`.
 | **3. Calibrations view** | The path-aware step-button row (from `Calibrations.default_steps()`), the detail panel, and **launching external viewers as subprocesses** (`pypeit_chk_*` / `ginga` / `pypeit_view_fits`); per-slit/order drill-down. Builds the reusable subprocess-launch infrastructure. **Also delivers the Dashboard's own status/activity area** (X4/X5) — pulled forward from Stage 4 — so the user can see when the GUI is busy/waiting on a job (e.g. launching a viewer, deriving/reloading state on Refresh). | C1–C9, C11–C14, C16, X4, X5 (C10/C15 deferred to Stage 4) |
 | **4. Execution, locking & (Re)Build** *(implemented 2026-06-14)* | The blue **(Re)Build** control (`pypeit_run_to_calibstep`) in the detail panel; a `RunLock` single-run lock via **`.log` mtime watching** (+ the launched-run lifecycle); a `QMessageBox` clobber confirmation naming the file(s) overwritten; clobber = delete-the-step's-output-then-run (in code); state/buttons refresh on completion. (The Dashboard status/activity area, X4/X5, shipped in Stage 3.) | X1–X3, C10, C15 |
 | **5. Monitoring (live updates)** *(implemented 2026-06-15)* | Live status refresh while a reduction is active: `RunLock` gained a `stateChanged` signal (poll the `*_state.json` mtime on the one ~2 s timer while active); `MainWindow._refresh_from_state` auto-refreshes both views from the state file (R12), preserving scope/selection; the status bar split into **Build** + **Inspection** channels. (`.log` tail view deferred.) | R14 |
-| **6. Science frames** | Populate the Science section. **State layer done (2026-06-15):** `RunPypeItState.science` (`ScienceFrameState`: process/findobj/skysub/extract per `(frame, det)`, products, per-slit/per-object detail) is recorded live via `exposure.reduce_exposure` hooks and derived from disk by `pypeit.science_status.derive_science_from_disk` (Science `spec2d`/`spec1d` first, `Intermediate/` fallback); `pypeit_status` prints it. **Remaining:** the Qt Science view/table. | R15, R18 |
+| **6. Science frames** | Populate the Science section. **State layer done (2026-06-15):** `RunPypeItState.science` (`ScienceFrameState`: process/findobj/skysub/extract per `(frame, det)`, products, per-slit/per-object detail) is recorded live via `exposure.reduce_exposure` hooks and derived from disk by `pypeit.state.science_status.derive_science_from_disk` (Science `spec2d`/`spec1d` first, `Intermediate/` fallback); `get_science_status()` returns the per-frame table and `pypeit_status` prints it. The state layer now lives in the **`pypeit/state/` package** (`run_state.py` + `science_status.py`). **Remaining:** the Qt Science view/table (per-frame rows + per-slit/per-object drill-down). | R15, R18 |
 
 ### What is implemented first
 

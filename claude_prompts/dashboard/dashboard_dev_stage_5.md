@@ -523,6 +523,12 @@ their versions, and note R14 as implemented.)*
 
 7. I have signed off.  Before proceeding to Stage 6, take a moment to examine the consistency amongst the design docs, the code generated, and the Pypeit/docs.  Please make edits as needed to ensure consistency.  Log your work.
 
+### Stage 6
+
+1.  We have developed new code to handle Science frames in the status.  Please review the new/refactored code in PypeIt/state.  And the state_science.md doc in the folder above.  Modify the design docs accordingly.
+
+2. Generate a new prompt document for Stage 6.  Call it dashboard_dev_stage_6.md.  Model it after this doc (many will be empty).  I will then edit it before proceding with the development.  Be sure to read all of the Context documents and the other prompt documents in this folder.
+
 ## Logging
 
 The "Logs" section will record Claude's work.  Please use the following format:
@@ -795,3 +801,43 @@ htmlonly` → succeeded; `pytest test_dashboard.py + test_state.py` → **75
 passed** (no code changes this pass — docs only).
 
 **Next step:** proceed to **Stage 6 — Science frames** when the user is ready.
+
+### 2026-06-15 (Stage 6 prompt 1: reviewed the science-state code; grounded the design docs)
+
+**Task.** First task under *Prompts / Stage 6* — review the new/refactored
+science-frame code in `pypeit/state` and `claude_prompts/state_science.md`, then
+modify the design docs accordingly. (Docs only — the science **state layer** is
+already implemented per `state_science.md` Tasks 1–4.)
+
+**Reviewed.** The implemented science API in the new **`pypeit/state/`** package:
+`run_state.py` — `science_steps = [process, findobj, skysub, extract]`,
+`ScienceObj` (objid/slitid/spat_pixpos/fwhm/snr_find/s2n/sign/extracted),
+`ScienceSlit` (status + nobj), `ScienceStep`, `ScienceFrameState` (one per
+`(frame, det)`: four steps, spec2d/spec1d, nobj, per-slit `slits`, per-object
+`objects`), plus `science_entry`/`add_or_get_science`/`safe_update_science` and
+**`get_science_status()`** (columns: `frame, detector, objtype, process,
+findobj, skysub, extract, nobj, spec2d, spec1d`); `science_status.py` — the live
+recorders + **`derive_science_from_disk`** (Science products authoritative,
+`Intermediate/` fallback). Confirmed the `__init__` re-exports keep
+`from pypeit.state import RunPypeItState, same_det` working, and ran the suite
+(**80 passed**).
+
+**Design-doc edits.**
+- Fixed the **module-path drift** from the Task-4 refactor:
+  `pypeit.science_status` → **`pypeit.state.science_status`**, and noted the
+  state layer is now the **`pypeit/state/` package** (`run_state.py` +
+  `science_status.py`) — in the science-status note, the "State: where it comes
+  from" grounding line, and the coding-doc Stage 6 row.
+- Expanded the science-status note with the concrete **`get_science_status()`
+  columns** and the per-object/per-slit field sets.
+- Rewrote **R15** into a concrete **Science-view spec** (one row per `(frame,
+  det)` with the four macro-step statuses + `nobj` + `spec2d`/`spec1d`;
+  standards tagged in the same table; a per-frame drill-down with per-slit
+  (`BADSKYSUB`/`BADEXTRACT`, nobj) and per-object (snr_find/s2n/spat/fwhm/sign/
+  extracted) tables; launch `pypeit_show_2dspec`/`pypeit_show_1dspec` on the
+  products; 0 objects = success) and tightened **R18** to the
+  `get_science_status()` fields.
+- Bumped design + coding docs to **v1.2.4**.
+
+**Next step:** Stage 6 prompt 2 — generate `dashboard_dev_stage_6.md` (the Qt
+Science view), modeled on this doc.
