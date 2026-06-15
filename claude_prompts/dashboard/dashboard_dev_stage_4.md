@@ -250,6 +250,8 @@ Yes, the screenshots look fine
    - Cancel the dialog on another step and confirm **nothing** is removed or
      launched.
 
+Now that the Modifications have been addressed, this step is fine.
+
 4. **Single-run lock against an external run.**
    - Start a reduction in a terminal (`run_pypeit $PF` or
      `pypeit_run_to_calibstep …`) and confirm the dashboard's **(Re)Build**
@@ -258,6 +260,8 @@ Yes, the screenshots look fine
 
 **Sign-off:** if items 1–3 look right, Stage 4 is accepted. Note anything off
 (item + screenshot) and Claude will address it in a Modifications round.
+
+JXP signs off on Stage 4 at Mon Jun 15 04:08:09 AM UTC 2026
 
 #### Clarifications
 
@@ -373,6 +377,12 @@ Agreed, (re)build only
 
 3. Although there is no way to view the wv_calib output, I would like the filename to be shown on the Calibrations view.
 
+### Round 3
+
+1. When the Calibration is being (re)built, the (re)build button should turn orange for all steps.  And it should not be selectable
+
+2. I agree that the Re(build) button is locked when a PypeIt run is active.  However, there is no visual clue.  Please provide one.
+
 ## Docs
 
 ## Prompts
@@ -386,6 +396,7 @@ Agreed, (re)build only
 1. I have answered the S3-Q questions. Update the plan and design docs (if necessary) and proceed with the implementation. Implement Stage 4 per the tasks and acceptance criteria
 2. When working on the sign-off, I identified a few issues to work on.  Please address the Round 1 Modifications.
 3. Nice fixes.  Now work on the Round 2 Modifications. Log your work
+4. Nice fixes.  Now work on the Round 3 Modifications. Log your work
 
 ## Logging
 
@@ -616,3 +627,52 @@ notes), and bumped the design/coding/user docs to **v1.1.2**. `make htmlonly`
 **Next step:** the user re-checks the Sign offs (Round 2 addressed) — the arc
 "Inspect output" now opens ginga, the (Re)Build shows orange while running and
 keeps the step selected, and the wv_calib filename is visible.
+
+### 2026-06-14 (Stage 4 Round 3: orange "Run in progress" (Re)Build button as the lock cue)
+
+**Task.** Fourth task under *Prompts / Stage 4* — address the Round 3
+Modifications.
+
+**Diagnosis.** Both items point at the same gap: while the run lock is engaged
+the (Re)Build button was `setEnabled(False)`, but a `QPushButton` with a custom
+**stylesheet** background does **not** visually grey out when disabled (the
+stylesheet overrides the disabled palette) — so the locked button still looked
+blue/clickable (no visual clue, R3 #2), and the Round-2 orange cue was on the
+*step-row box* rather than the (Re)Build button (R3 #1).
+
+**What I changed.**
+- Refactored the (Re)Build styling into a shared **`_style_rebuild_button(locked)`**
+  used by both `_build_rebuild_button` and `set_locked`. While **locked** the
+  button turns **orange** (the running palette color), reads **"⏳ Run in
+  progress"**, and is disabled; when **idle** it is the blue **"(Re)Build
+  <step>"** enabled action. Because every step's panel builds its button against
+  the current lock state (and `set_locked` restyles the visible one on
+  `lockChanged`), the orange cue shows "for all steps" and for **external** runs
+  too (R3 #1/#2).
+- **Removed** the Round-2 step-row-box orange (`_rebuilding_step` +
+  `_restyle_buttons` branch) — the cue now lives on the (Re)Build button, as the
+  user redirected. The **rebuilt step still stays selected** on completion
+  (`_after_rebuild` sets `_selected_step`).
+
+**Files.** `pypeit/dashboard/view/calibrations_view.py` only
+(`_style_rebuild_button`; simplified `_build_rebuild_button`/`set_locked`/
+`_on_rebuild`/`_after_rebuild`; dropped `_rebuilding_step`).
+
+**Tests.** Replaced the running-marker test with
+`test_calib_view_rebuild_locked_visual_cue` (locked → orange + "run in
+progress" + disabled; idle → blue "(Re)Build tilts" + enabled) and
+`test_calib_view_rebuild_keeps_step_selected`. `pytest test_dashboard.py` →
+**47 passed**; `+ test_state.py` → **72 passed**.
+
+**Self-checked render.** Rendered the locked state offscreen: the (Re)Build
+button shows orange **"⏳ Run in progress"** (disabled) while "Inspect output"
+greys normally — the clear lock cue.
+
+**Docs.** Updated `dashboard.rst` (the (Re)Build bullet + single-run-lock bullet
+now describe the orange "Run in progress" cue) and the design/coding docs;
+bumped all three to **v1.1.3**. `make htmlonly` → succeeded (pre-existing warning
+only).
+
+**Next step:** the user re-checks the Sign offs (Round 3 addressed) — the
+(Re)Build button now gives a clear orange "run in progress" cue whenever a run
+is active.

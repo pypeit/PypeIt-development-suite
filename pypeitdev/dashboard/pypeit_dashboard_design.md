@@ -1,10 +1,14 @@
 # PypeIt Dashboard — Design Document
 
-**Version:** 1.1.2
+**Version:** 1.1.3
 **Date:** 2026-06-14
 **Author:** JXP and Claude
 
 **Changelog**
+- 1.1.3 (2026-06-14): **Stage 4 Round 3.** The **(Re)Build** button now turns
+  **orange** and reads "⏳ Run in progress" (disabled) whenever a run is active —
+  the lock's visual cue, shown on every step's panel (replacing the Round-2
+  step-box orange). The rebuilt step still stays selected on completion.
 - 1.1.2 (2026-06-14): **Stage 4 Round 2.** Processed-image "Inspect output"
   (`bias`/`dark`/`arc`/`tiltimg`) now opens **`ginga`** directly (was
   `pypeit_view_fits --inter`); the (Re)Build step button turns **orange** while

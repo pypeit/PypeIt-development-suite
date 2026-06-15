@@ -1,10 +1,13 @@
 # PypeIt Dashboard — Coding Document
 
-**Version:** 1.1.2
+**Version:** 1.1.3
 **Date:** 2026-06-14
 **Author:** JXP and Claude
 
 **Changelog**
+- 1.1.3 (2026-06-14): **Stage 4 Round 3** — the (Re)Build button turns orange +
+  "⏳ Run in progress" + disabled while any run is active (lock visual cue, all
+  steps), via a shared `_style_rebuild_button`.
 - 1.1.2 (2026-06-14): **Stage 4 Round 2** — processed-image inspect → `ginga`
   directly; (Re)Build button orange-while-running + keeps the rebuilt step
   selected; output filename shown in the detail panel.
