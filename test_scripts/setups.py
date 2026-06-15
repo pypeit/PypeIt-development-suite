@@ -319,6 +319,7 @@ all_setups = {
         '600Z',
         '300I_MOS',
         '1200B',
+        '1200R',
         '1400V',
     ],
     'vlt_sinfoni': [
