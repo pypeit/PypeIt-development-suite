@@ -1,10 +1,18 @@
 # PypeIt Dashboard — Design Document
 
-**Version:** 1.2.3
+**Version:** 1.2.4
 **Date:** 2026-06-15
 **Author:** JXP and Claude
 
 **Changelog**
+- 1.2.4 (2026-06-15): **Stage 6 prep — grounded the Science view in the
+  implemented state.** Reconciled with the science-state code: fixed the module
+  path to `pypeit.state.science_status` and noted the **`pypeit/state/` package**
+  refactor (`run_state.py` + `science_status.py`); fleshed out **R15/R18** into a
+  concrete Science-view spec (one row per `(frame, det)` with the four macro-step
+  statuses + `nobj` + `spec2d`/`spec1d` from `get_science_status()`; per-frame
+  per-slit/per-object drill-down; standards in the same table; 0 objects =
+  success).
 - 1.2.3 (2026-06-15): **Post-Stage-5 consistency pass.** Reconciled docs with the
   code: noted the Stage-5 two-channel `ActivityBar` split in the X4/X5 status
   entry; in the coding doc clarified that the per-step state writes happen only
@@ -251,8 +259,10 @@ goal of startup is to answer, immediately and unambiguously, the question
 
 ### State: where it comes from
 
-Grounded in `PypeIt/pypeit/state.py` and `pypeit/scripts/pypeit_status.py`
-(see also the worked example in `pypeit_workflow.md` §6):
+Grounded in the `PypeIt/pypeit/state/` package (`run_state.py` — the
+`RunPypeItState` model + I/O; `science_status.py` — the science recorders +
+disk-derive) and `pypeit/scripts/pypeit_status.py` (see also the worked example
+in `pypeit_workflow.md` §6):
 
 - The state is modeled by the pydantic class `RunPypeItState`. It records, per
   **calibration group** (`calib_id`) and **detector / mosaic** (`det`), the
@@ -301,16 +311,29 @@ Grounded in `PypeIt/pypeit/state.py` and `pypeit/scripts/pypeit_status.py`
 of `ScienceFrameState` entries, one per `(frame/basename, detector)`, each with
 the four macro-step statuses (`process` → `findobj` → `skysub` → `extract`), the
 `spec2d`/`spec1d` product paths, `nobj`, and per-slit / per-object detail
-(per-object `snr_find`/`s2n`/`spat_pixpos`/`fwhm`; per-slit status from the
-`BADSKYSUB`/`BADEXTRACT` bitmask). Standards are tracked too (`objtype`). It is
-populated **live** during a run (hooks in `exposure.reduce_exposure`) and, when
-there is no state file, **derived from disk** by
-`pypeit.science_status.derive_science_from_disk` — preferring the final Science
-`spec2d`/`spec1d`, falling back to `Intermediate/` files. `get_science_status()`
-returns a per-frame DataFrame and `print_status()` prints a Science table. See
-the dev-suite doc `claude_prompts/state_science.md`. The **Initialization /
-Science view (R15, R18) is still to be built** — the data it needs now exists;
-present it as a *science* section alongside the *calibration* section.
+(per-object `snr_find`/`s2n`/`spat_pixpos`/`fwhm`/`sign`/`extracted`; per-slit
+`ScienceSlit` status from the `BADSKYSUB`/`BADEXTRACT` bitmask + per-slit
+`nobj`). Standards are tracked in the same list (`objtype` = `science` /
+`standard`). It is populated **live** during a run (recorder hooks in
+`exposure.reduce_exposure`) and, when there is no state file, **derived from
+disk** by `pypeit.state.science_status.derive_science_from_disk` — preferring the
+final Science `spec2d`/`spec1d`, falling back to `Intermediate/` files (and
+inferring `process` from any later success).
+
+*Code location (refactored 2026-06-15).* The state layer is now a package,
+`pypeit/state/`: `run_state.py` (the `RunPypeItState` model + the calib/science
+classes + I/O) and `science_status.py` (the product-aware recorders +
+`derive_science_from_disk`). `from pypeit import state` / `from pypeit.state
+import RunPypeItState, same_det` are unchanged (re-exported by
+`pypeit/state/__init__.py`).
+
+`RunPypeItState.get_science_status()` returns the per-frame DataFrame the
+Dashboard Science view will render — columns **`frame`, `detector`, `objtype`,
+`process`, `findobj`, `skysub`, `extract`, `nobj`, `spec2d`, `spec1d`** — and
+`print_status()` prints the Science table (`pypeit_status` now does too). See the
+dev-suite doc `claude_prompts/state_science.md`. The **Science view (R15, R18) is
+still to be built** — the data it needs now exists; present it as a *science*
+section alongside the *calibration* section (spec in R15/R18 below).
 
 ### Requirements
 
@@ -319,17 +342,31 @@ as development proceeds.
 
 #### Pending
 
-- **R15. Science-frame readiness.** The state view must be designed so that, once
-  `RunPypeItState` is extended to track per-science-frame status (object finding
-  / extraction), it can be shown as a *science* section alongside the
-  *calibration* section — reusing the same status encoding (R10), grouping (R8),
-  and summary (R7) — without a redesign.
+- **R15. Science-frame readiness (data layer done; view = Stage 6).** The state
+  model now tracks per-science-frame status (see the *Science-frame status* note
+  above), so the **Science view** can be built against `ScienceFrameState` /
+  `get_science_status()` — reusing the same status palette+glyph encoding (R10)
+  and the whole-run summary (R7), presented as a *science* section alongside the
+  *calibration* section. The view should:
+  - show **one row per `(frame, det)`** with the **four macro-step** statuses
+    (`process` / `findobj` / `skysub` / `extract`), color+glyph per the palette,
+    plus `nobj` and `spec2d`/`spec1d` presence (the `get_science_status()`
+    columns), with **standards tagged** (`objtype`) in the **same** table;
+  - offer a **per-frame detail** (mirroring the Calibrations detail panel): a
+    **per-slit** table (`ScienceSlit`: status from `BADSKYSUB`/`BADEXTRACT`,
+    `nobj`) and a **per-object** table (`ScienceObj`: `snr_find`, `s2n`,
+    `spat_pixpos`, `fwhm`, `sign`, `extracted`), and launch the existing viewers
+    on the products (`pypeit_show_2dspec` / `pypeit_show_1dspec` on the
+    `spec2d`/`spec1d` files);
+  - treat **0 objects** as a valid `success` (not a failure); `fail` only on a
+    step exception or a per-slit bad flag.
 - **R18. Equally-prominent, scalable Science section.** The Science-frames
   section is given **equal visual weight** to the Calibrations section (same
   heading treatment). For runs with many science frames it is **filterable and
   scrollable** with a visible frame count, so long lists do not overwhelm the
-  view. Columns include the per-frame products (`spec2d`, `spec1d`) and will gain
-  object-find/extraction status as the state model grows (R15).
+  view. Columns are the `get_science_status()` per-frame fields (the four steps,
+  `nobj`, `spec2d`/`spec1d`); MOS/echelle per-object detail lives in the
+  per-frame drill-down, not the top table.
 
 #### Implemented
 
