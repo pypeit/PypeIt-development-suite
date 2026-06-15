@@ -604,6 +604,8 @@ JXP decided not to add that fix
 
 ## Docs
 
+1. The docs crashed when I tried building them on the readhthedocs.  Try to build them locally.  Install additional packages to do so if you need to.
+
 ## Prompts
 
 ### Generate this doc
@@ -625,6 +627,8 @@ JXP decided not to add that fix
 6. I have answered the questions related to Round 1 of the Modifications section.  Please update this doc and the design docs accordingly.  Please then implement them.  Log your work.
 
 7. Please address the issue in Round 2 of the Modifications section. 
+
+8. Execute the 1st task under Docs.
 
 ## Logging
 
@@ -938,3 +942,34 @@ recommended fix: backfill `entry.raw_files` from the `.pypeit` metadata
 
 **Next step:** on the user's go, implement the `raw_files` backfill so the
 science (Re)Build is enabled for derived/older states.
+
+### 2026-06-15 (Docs task 1: fixed the ReadTheDocs build crash)
+
+**Task.** Eighth task under *Prompts / Stage 6* (the 1st task under *Docs*) —
+the RTD docs build crashed; build locally and fix.
+
+**Diagnosis.** `.readthedocs.yml` sets **`sphinx: fail_on_warning: true`**, so any
+single Sphinx warning aborts the RTD build. Reproducing the RTD strictness
+locally (`sphinx-build -W --keep-going`) surfaced the culprit:
+`doc/releases/2.1.0dev.rst: WARNING: document isn't included in any toctree`.
+Every other release file is pulled into `doc/whatsnew.rst` via `.. include::`
+(which marks it as used), but the **new `2.1.0dev.rst` was never added there**,
+leaving it an orphan → the warning → the crash.
+
+**Fix.** Added `.. include:: releases/2.1.0dev.rst` at the **top** of
+`doc/whatsnew.rst` (newest-first, matching the existing pattern), so the dev
+release notes are now part of "What's New" and no longer orphaned.
+
+**Also (doc hygiene).** Once `2.1.0dev.rst` was rendered, a nitpicky build
+(`-n`) showed three **broken cross-references** in it — to symbols those same
+notes say were removed/moved (`pypeit.core.pydl.TraceSet`,
+`pypeit.loader.load_wmko_std_spectrum`, `pypeit.core.wavecal.waveio.load_tree`).
+These do **not** fire on RTD (no `-n`; `conf.py` sets `nitpick_ignore` but not
+`nitpicky`, and the pre-existing broken ref in `1.17.0.rst` has always shipped),
+but I converted the three to inline literals so the dev notes render correctly.
+Left the old `1.17.0.rst` ref alone.
+
+**Verified.** `sphinx-build -b html -W --keep-going . _build/html` (RTD's exact
+strictness: warnings-as-errors, no nitpicky) → **exit 0, zero warnings**. A
+nitpicky `-n` build shows only the pre-existing `1.17.0.rst` ref. RTD will now
+build.
