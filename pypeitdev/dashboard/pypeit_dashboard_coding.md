@@ -1,10 +1,17 @@
 # PypeIt Dashboard — Coding Document
 
-**Version:** 1.3.0
+**Version:** 1.3.1
 **Date:** 2026-06-15
 **Author:** JXP and Claude
 
 **Changelog**
+- 1.3.1 (2026-06-15): **Stage 6 Round-1 modifications.** A Status-view
+  **science navigator** grid (`ScienceNavCell` + `StatusView.scienceFrameActivated`
+  → `ScienceView.select_frame`); a **neutral** selection fill
+  (`palette.selection_style`) across the tables; and **science QA PNGs**
+  (`model.science_qa_files`/`science_object_qa_files`, a per-frame QA list +
+  per-object `obj_prof`/`obj_trace` columns), derived at view-time. +6 tests
+  (61 dashboard tests pass).
 - 1.3.0 (2026-06-15): **Stage 6 implemented** — the Science view
   (`view/science_view.py`), model science accessors + science-derive-on-launch,
   `inspect` spec2d/per-object-spec1d/`reduce_by_step` builders, the

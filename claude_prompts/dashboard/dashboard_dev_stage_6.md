@@ -537,11 +537,72 @@ Let's show the per object PNGs, and all of them.
    double-click → `QaImageDialog`, S6-Q15d), and the **per-object table** gains
    `obj_prof`/`obj_trace` columns that open that object's QA PNG (S6-Q15c).
 
-## Docs
+### Round 2
 
-*(To be filled when Stage 6 is implemented — update `doc/dashboard/dashboard.rst`
-(populate the Science-frames description; move it out of "Not yet implemented");
-the design/coding docs + versions; note R15/R18 implemented.)*
+1.  On the science view for shane_kast_blue/830_3460_d55, the (Re)build buttons are all grayed out.  Please investigate and describe why. Report back in the Report section below.  Log your work.
+
+#### Report
+
+**Reproduced** on the real reduction (the dev-suite setup is
+`shane_kast_blue/830_3460_d46`): loading the Dashboard model on its
+`shane_kast_blue_830_3460_d46.pypeit` shows the single science frame
+(`b188-PG0157+002parallactic_KASTb_…`, DET01) with all four steps `success`,
+yet `science_run_command(...)` returns **`None`** for `process`, `findobj`, and
+`extract` — so all three (Re)Build buttons are disabled.
+
+**Root cause: the science entry has no `raw_files`.** The chain:
+
+1. A (Re)Build button is enabled only when
+   `dash_inspect.science_run_command(model, frame, det, step)` is **not None**
+   (`science_view._build_rebuild_button` → `available = argv is not None and
+   prereq_ok`).
+2. `science_run_command` (in `inspect.py`) builds the `pypeit_reduce_by_step`
+   argv from the **raw frame** it must pass as a positional argument, taken from
+   `entry.raw_files[0]`. If `raw_files` is empty/`None`, it returns `None`:
+
+   ```python
+   raw_files = getattr(entry, 'raw_files', None) if entry is not None else None
+   if not raw_files:
+       return None
+   ```
+3. Inspecting this reduction's `…_state.json`, the science entry has
+   **`raw_files: None`** (loads as `[]`) even though every step is `success`.
+4. Because `process` has **no prerequisite**, the only thing that can disable
+   *its* button is `argv is None` — confirming the cause is `raw_files`, not the
+   prerequisite gating. All three are `None` for the same reason, so **all**
+   buttons gray out.
+
+**Why `raw_files` is empty here.** `raw_files` is populated **only** by the
+live recorder `science_status.record_process` during a real run
+(`entry.raw_files = [str(f) for f in fitstbl['filename'][frames]]`). The
+**derive-from-disk** path (`science_status.derive_science_from_disk`, used when
+there is no state file — and the source of many state files via `pypeit_status`
+/ older runs) **does not set `raw_files` at all**. So any science state that was
+derived from disk — or written by a PypeIt build predating the Stage-6
+`raw_files` field — carries empty `raw_files`, and the Dashboard then has no raw
+frame to hand to `pypeit_reduce_by_step`, disabling every science (Re)Build.
+
+This is specific to the **science** (Re)Build: the calibration (Re)Build builds
+its `pypeit_run_to_calibstep` argv from the `(group, det)` scope (no stored
+filename needed), so it is unaffected.
+
+**Recommended fix (for a follow-up round).** Make the raw frame resolvable from
+the reduction **metadata**, not only from what happens to be stored in the state:
+
+- *Primary —* backfill `entry.raw_files` from the `.pypeit` data table
+  (basename → its raw frame filename(s), via `construct_basename`/`comb_id`) when
+  it is empty, so a state loaded from disk (or an older state file) still enables
+  (Re)Build without re-running. The mapping is the same one
+  `derive_science_from_disk` already builds in `_basename_lookup`.
+- *Complementary —* also populate `raw_files` inside `derive_science_from_disk`
+  (it already receives `fitstbl`), so freshly-derived states carry it too.
+
+No code changed this turn (the Round-2 item scoped this to *investigate +
+report*); the fix is ready to implement on the next prompt.
+
+JXP decided not to add that fix
+
+## Docs
 
 ## Prompts
 
@@ -562,6 +623,8 @@ the design/coding docs + versions; note R15/R18 implemented.)*
 5. I started on the 2nd step of Sign Off and found a number of issues.  Please address the first set in Round 1 of the Modifications section.  Examine my requests and ask new questions in the Clarifications section.  Do not generate code yet. Log your work.
 
 6. I have answered the questions related to Round 1 of the Modifications section.  Please update this doc and the design docs accordingly.  Please then implement them.  Log your work.
+
+7. Please address the issue in Round 2 of the Modifications section. 
 
 ## Logging
 
@@ -802,3 +865,76 @@ lock, per the established pattern).
 
 **Next step:** the user answers **S6-Q13–S6-Q15**; the next prompt folds them into
 the plan + design docs and implements Round 1.
+
+### 2026-06-15 (Round 1 Modifications implemented: science navigator, neutral selection, science QA)
+
+**Task.** Sixth task under *Prompts / Stage 6* — fold the S6-Q13–Q15 answers into
+this doc + the design docs and **implement** the three Round 1 modifications.
+
+**Implementation (`pypeit/dashboard/`).**
+- **Mod 1 — science navigator (S6-Q13).** `view/status_view.py`: new
+  `ScienceNavCell(QFrame)` (a four-segment color+glyph strip per the four
+  macro-steps + a compact caption, `⭑` for standards, a `clicked(frame, det)`
+  signal on `mousePressEvent`); `_build_science_navigator()` lays the cells in a
+  height-capped scroll-area wrap grid (science first, then standards) under the
+  kept one-line count. A new `StatusView.scienceFrameActivated` signal is wired
+  in `view/main_window.py` (`_on_science_frame_activated`) to switch to the
+  Science tab and call the new **`ScienceView.select_frame()`**.
+- **Mod 2 — neutral selection (S6-Q14).** `palette.py`: `SELECTION_COLORS` +
+  `selection_style(theme)` (soft blue-grey `#CFD8DC`/`#37474F`). Applied to the
+  Science per-frame + per-object tables (`view/science_view.py`) and, for
+  consistency, the Status calibration table + the Calibrations per-slit table.
+- **Mod 3 — science QA (S6-Q15).** `model.py`: `science_qa_files(frame, det)`
+  (globs `QA/PNGs/<frame>*<detname>*.png`) and `science_object_qa_files(frame,
+  det, slitid)` (maps `obj_prof`/`obj_trace` by `S{slitid:04d}`) — **no state
+  change**. `view/science_view.py`: a per-frame **QA-files list** (all PNGs,
+  double-click → `QaImageDialog`) plus `obj_prof`/`obj_trace` columns on the
+  per-object table whose double-click opens that object's QA PNG (metric cells
+  still open the 1D spectrum).
+
+**Verified.** `pytest test_dashboard.py` → **61 passed** (55 + 6 new:
+`test_palette_selection_style_neutral`, `test_science_view_neutral_selection`,
+`test_status_view_science_navigator`, `test_status_navigator_switches_to_science_tab`,
+`test_model_science_qa_files`, `test_science_view_qa_list_and_object_qa`);
+`test_state.py` → 30 passed. Re-rendered `layout_check/dashboard_science_view.png`
+(neutral selection + the obj_prof/obj_trace QA columns) and a new
+`layout_check/dashboard_status_science_nav.png` (the Status-view science
+navigator grid); copied both to `doc/figures/`.
+
+**Docs.** Design + coding docs bumped to **v1.3.1** with a Round-1 changelog
+entry (R15/R17/R18 refinements); `doc/dashboard/dashboard.rst` updated (science
+navigator in the Status view, the neutral selection, the science QA list +
+per-object QA) and the figure added.
+
+**Next step:** the user resumes the interactive Sign offs (the science navigator
+click-through, the neutral selection on their red-highlight theme, and the
+science QA PNGs on a real reduction).
+
+### 2026-06-15 (Round 2 investigation: why the science (Re)Build buttons are grayed out)
+
+**Task.** Seventh task under *Prompts / Stage 6* — investigate the Round-2 issue
+(all science (Re)Build buttons grayed out for `shane_kast_blue/830_3460_d55`) and
+report. **Investigation only** (the item scopes it to "describe why … report").
+
+**Reproduced.** The dev-suite setup is `830_3460_d46`; loaded the Dashboard model
+on its `.pypeit` and confirmed: the one science frame shows all steps `success`,
+but `science_run_command()` returns `None` for every step → all three buttons
+disabled.
+
+**Root cause.** The science entry's **`raw_files` is empty** (`None`/`[]`).
+`science_run_command` needs the raw frame for `pypeit_reduce_by_step`'s
+positional arg and returns `None` when `raw_files` is empty; the button is gated
+on `argv is not None`. Since `process` has no prerequisite, an empty `raw_files`
+is the only thing that can disable *it* — proving the cause. `raw_files` is set
+**only** by the live `record_process`; the **derive-from-disk** path
+(`derive_science_from_disk`) never sets it, so any derived (or pre-Stage-6) state
+has it empty. Calibration (Re)Build is unaffected (its argv comes from the
+`(group, det)` scope, no stored filename).
+
+**Reported** in the Round-2 *Report* sub-section with the code trace and a
+recommended fix: backfill `entry.raw_files` from the `.pypeit` metadata
+(basename → raw frame) when empty — both at model load and inside
+`derive_science_from_disk`. No code this turn.
+
+**Next step:** on the user's go, implement the `raw_files` backfill so the
+science (Re)Build is enabled for derived/older states.
