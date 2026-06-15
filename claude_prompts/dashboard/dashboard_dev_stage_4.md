@@ -365,6 +365,14 @@ Agreed, (re)build only
 
 2. I tried to Regenerate the Arc for the shane_kast_blue spectrograph, but it failed.  It did delete the file.  I then tried "wv_calib" and it failed too, after deleting the file.  Work on this.
 
+### Round 2
+
+1.  The Arc was regenerated, thanks.  I still can't inspect that output though.  This file needs a simple ginga view instead of pypeit_view_fits.  Please fix.  This is true for tiltimg and bias/dark images too.
+
+2. When the Calibration is being (re)built, I wish for the button to turn orange.  This way the user knows it is working.  When it completes, that box should be chosen, not "bias".
+
+3. Although there is no way to view the wv_calib output, I would like the filename to be shown on the Calibrations view.
+
 ## Docs
 
 ## Prompts
@@ -377,6 +385,7 @@ Agreed, (re)build only
 
 1. I have answered the S3-Q questions. Update the plan and design docs (if necessary) and proceed with the implementation. Implement Stage 4 per the tasks and acceptance criteria
 2. When working on the sign-off, I identified a few issues to work on.  Please address the Round 1 Modifications.
+3. Nice fixes.  Now work on the Round 2 Modifications. Log your work
 
 ## Logging
 
@@ -501,3 +510,109 @@ regardless.
 
 **Next step:** the user runs the Stage 4 Sign offs (esp. the interactive
 (Re)Build + lock checks); on acceptance, Stage 5 (live monitoring).
+
+### 2026-06-14 (Stage 4 Round 1: fixed the failed (Re)Build + crash-safe clobber + bright Inspect button)
+
+**Task.** Second task under *Prompts / Stage 4* — address the Round 1
+Modifications surfaced during sign-off.
+
+**Mod 2 (the (Re)Build failure) — root cause + fix.** Reproduced on the real
+`shane_kast_blue` 600/4310 reduction: the dashboard command was correct, but
+**`pypeit_run_to_calibstep` itself** raised `IndexError: invalid index to scalar
+variable` at `run_to_calibstep.py:94`. Its `--calib_group` branch set
+`row = rows[0]` (a **scalar**), then `row = int(row[0])` tried to index it; the
+`--science_frame` branch leaves `row` an array, so this had never been hit — the
+Dashboard is the **first real user** of the `--calib_group` path. Fixed the
+branch to leave `row` an array (`row = np.where(...)[0]`, drop the `rows[0]`).
+**Verified** end-to-end: re-ran `pypeit_run_to_calibstep … arc --calib_group 0
+--det 1` after the fix → exit 0, `Arc_A_0_DET01.fits` rebuilt. Added a Bug-Fixes
+note to `doc/releases/2.1.0dev.rst`.
+
+**Mod 2 (data loss) — crash-safe clobber.** The user also noted the file was
+**deleted even though the run failed** (the dashboard pre-deletes; the script
+then aborted). Made the clobber **crash-safe**: `_on_rebuild` now **renames**
+each output to a `.dashboard_bak` sibling (not `unlink`) before launching, and a
+new `_after_rebuild(code, backups)` callback **restores** the originals if the
+run fails (non-zero exit and nothing rebuilt) or **drops** the backups on
+success. So a failed (Re)Build no longer loses an existing calibration. (Still
+option (a) "delete-then-run" in spirit — the file is moved out of the way so
+`run_to_calibstep` rebuilds it — just reversible.)
+
+**Mod 1 (bright Inspect button).** Added `palette.inspect_color()` (a **teal**
+`#00838F`/`#26C6DA`, distinct from the (Re)Build blue and any status color) and
+applied it to the **enabled** "Inspect output" button, so the two primary
+actions are both bright and easy to tell apart. Disabled (no output on disk)
+stays greyed. Verified with an offscreen render (`slits`, output staged): teal
+"Inspect output" + blue "(Re)Build slits" side by side.
+
+**Files.** `pypeit/scripts/run_to_calibstep.py` (the `IndexError` fix);
+`pypeit/dashboard/palette.py` (`INSPECT_COLORS` + `inspect_color`);
+`pypeit/dashboard/view/calibrations_view.py` (teal Inspect button; crash-safe
+`_on_rebuild` + new `_after_rebuild`); `doc/releases/2.1.0dev.rst` (bug-fix
+note).
+
+**Tests.** Updated the clobber test for the move-aside (asserts the original is
+gone **and** a `.dashboard_bak` exists) and added two `_after_rebuild` tests
+(restore-on-failure, drop-on-success). `pytest test_dashboard.py` → **44
+passed**; `+ test_state.py` → **69 passed**.
+
+**Docs.** Updated `doc/dashboard/dashboard.rst` (crash-safe clobber wording),
+the design + coding docs (X3 crash-safe + the script-fix note; → **v1.1.1**),
+and rebuilt the docs (`make htmlonly` succeeded, only the pre-existing warning).
+
+**Next step:** the user re-checks the Stage 4 Sign offs (Round 1 addressed) —
+especially the interactive (Re)Build, now that the underlying script bug is
+fixed and the clobber is crash-safe.
+
+### 2026-06-14 (Stage 4 Round 2: ginga for processed images, running color, output filename)
+
+**Task.** Third task under *Prompts / Stage 4* — address the Round 2
+Modifications.
+
+**Mod 1 — processed-image inspect → `ginga` directly.** The user confirmed the
+arc rebuilt but its output would not open via `pypeit_view_fits`. Changed
+`inspect.output_command` for the processed-image steps
+(`bias`/`dark`/`arc`/`tiltimg`) from `['pypeit_view_fits', spec, out, '--inter']`
+to **`['ginga', str(out)]`** — these already-oriented PypeIt FITS open directly
+in ginga (confirmed `ginga 6.0.0` is on `PATH`). Updated the inspect-command
+test (bias/arc → `ginga`).
+
+**Mod 2 — running color + keep the rebuilt step selected.**
+- While a (re)build runs, the step's button now shows the **running** palette
+  color (orange) with the ⏳ glyph: `_on_rebuild` sets `self._rebuilding_step`
+  and `_restyle_buttons` honors it (so it stays orange even if the user clicks
+  another step during the run). Cleared in `_after_rebuild`.
+- On completion the rebuilt step **stays selected** (was resetting to `bias`):
+  `_after_rebuild` sets `self._selected_step = step`, and `MainWindow`'s
+  refresh now calls a new **`CalibrationsView.refresh()`** (instead of
+  `set_model()`) that **preserves the scope + selected step** across the
+  state reload.
+
+**Mod 3 — show the output filename.** Added `_add_output_label(entry)` to the
+detail panel — shows `Output: <name>` (selectable) for every step that records
+an output file, so it is visible even for `wv_calib` (which has no viewer).
+
+**Files.** `pypeit/dashboard/inspect.py` (processed → `ginga`);
+`pypeit/dashboard/view/calibrations_view.py` (`_add_output_label`;
+`_rebuilding_step` + orange/⏳ in `_restyle_buttons`; `_after_rebuild` keeps the
+step selected; new `refresh()`); `pypeit/dashboard/view/main_window.py`
+(`_on_run_finished` → `calibrations_view.refresh`).
+
+**Tests.** Updated the inspect test (→ `ginga`) and the `_after_rebuild`
+signature (`code, step, backups`); added `test_calib_view_output_filename_shown`
+and `test_calib_view_rebuild_running_marker_and_selection`. `pytest
+test_dashboard.py` → **46 passed**; `+ test_state.py` → **71 passed**.
+
+**Self-checked render.** Re-ran the harness; the wv_calib panel now shows
+**"Output: WaveCalib_A_0_DET01.fits"** with the disabled "Inspect output" and
+the blue "(Re)Build". (The orange running state is transient — exercised by the
+unit test, not the static harness.)
+
+**Docs.** Updated the per-type viewer table + bullets (processed → `ginga`),
+`dashboard.rst` (inspection table, the running-color + output-filename detail
+notes), and bumped the design/coding/user docs to **v1.1.2**. `make htmlonly`
+→ build succeeded (only the pre-existing warning).
+
+**Next step:** the user re-checks the Sign offs (Round 2 addressed) — the arc
+"Inspect output" now opens ginga, the (Re)Build shows orange while running and
+keeps the step selected, and the wv_calib filename is visible.

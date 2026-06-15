@@ -1,10 +1,21 @@
 # PypeIt Dashboard — Design Document
 
-**Version:** 1.1.0
+**Version:** 1.1.2
 **Date:** 2026-06-14
 **Author:** JXP and Claude
 
 **Changelog**
+- 1.1.2 (2026-06-14): **Stage 4 Round 2.** Processed-image "Inspect output"
+  (`bias`/`dark`/`arc`/`tiltimg`) now opens **`ginga`** directly (was
+  `pypeit_view_fits --inter`); the (Re)Build step button turns **orange** while
+  running and the rebuilt step stays selected on completion; the **output
+  filename** is shown in the detail panel (esp. for `wv_calib`, which has no
+  viewer).
+- 1.1.1 (2026-06-14): **Stage 4 Round 1.** Made the clobber **crash-safe**
+  (move-aside + restore-on-failure, X3) after a failed (re)build lost a file;
+  fixed the underlying `pypeit_run_to_calibstep --calib_group` `IndexError`; and
+  gave "Inspect output" its own bright (teal) action color alongside the blue
+  (Re)Build.
 - 1.1.0 (2026-06-14): **Stage 4 implemented — Execution, Locking & (Re)Build.**
   Marked C10/C15 and X1–X3 **Implemented (Stage 4)**: the detail panel's
   **(Re)Build** control (blue action button, labeled "(Re)Build" per the user)
@@ -496,8 +507,9 @@ the user's vision, the panel provides:
 - **Inspect the output.** A control to launch the appropriate viewer for that
   calibration's processed output file (see the per-type table below): a dedicated
   `pypeit_chk_*` script where one exists (e.g. `slits` → `pypeit_chk_edges`,
-  `tilts`, `flats`), otherwise **`pypeit_view_fits --inter`** to render the
-  intermediate processed image (`bias`, `dark`, `arc`, `tiltimg`). The control is
+  `tilts`, `flats`), otherwise **`ginga`** directly on the processed image
+  (`bias`, `dark`, `arc`, `tiltimg`; Stage 4 Round-2 #1 — `pypeit_view_fits`
+  does not display these processed FITS). The control is
   enabled only when the output file exists.
   *Implementation note (Stage 3, Round-2):* `wv_calib` has **no standalone
   viewer** — `pypeit_chk_wavecalib` only prints to the terminal and the
@@ -548,17 +560,18 @@ and output `DataContainer`. The table below combines that with the inspection
 tools from `pypeit_workflow.md`:
 
 "Inspect output" is the viewer for the **processed** output file: a dedicated
-`pypeit_chk_*` script where one exists, otherwise `pypeit_view_fits --inter`
-(which renders the intermediate processed image in Ginga). (Raw input frames are
-viewed separately via `pypeit_view_fits --proc`; see the detail panel.) The
-mapping below is what the code launches as of Stage 3:
+`pypeit_chk_*` script where one exists, otherwise **`ginga`** directly on the
+processed image (Stage 4 Round-2 #1; `pypeit_view_fits` does not display these
+processed calibration FITS). (Raw input frames are viewed separately via
+`pypeit_view_fits --proc`; see the detail panel.) The mapping below is what the
+code launches:
 
 | Step        | Input frametype | Output (example)            | Inspect output with | Key metric(s) |
 |-------------|-----------------|-----------------------------|---------------------|---------------|
-| `bias`      | bias            | `Bias_*.fits`               | `pypeit_view_fits --inter` | `mean`, `std` |
-| `dark`      | dark            | `Dark_*.fits`               | `pypeit_view_fits --inter` | — |
-| `arc`       | arc             | `Arc_*.fits`                | `pypeit_view_fits --inter` | — |
-| `tiltimg`   | tilt            | `Tiltimg_*.fits`            | `pypeit_view_fits --inter` | — |
+| `bias`      | bias            | `Bias_*.fits`               | `ginga` | `mean`, `std` |
+| `dark`      | dark            | `Dark_*.fits`               | `ginga` | — |
+| `arc`       | arc             | `Arc_*.fits`                | `ginga` | — |
+| `tiltimg`   | tilt            | `Tiltimg_*.fits`            | `ginga` | — |
 | `slits`     | trace           | `Edges_*.fits.gz`, `Slits_*.fits.gz` | `pypeit_chk_edges` (on the `Edges_*` file) | `nslits`, per-slit `center` |
 | `wv_calib`  | arc             | `WaveCalib_*.fits`          | *no separate viewer* — QA PNGs only (see below) | per-slit `rms` |
 | `tilts`     | tilt            | `Tilts_*.fits.gz`           | `pypeit_chk_tilts` | per-slit `rms` |
@@ -594,9 +607,10 @@ row, as noted above.)
 - **C7.** The detail panel shows the input files as a **scrollable list** (one
   row per input frame; `bias`/`flats` have many) and lets the user select one
   and **view it** via `pypeit_view_fits --proc`.
-- **C8.** The detail panel exposes the **output file** and a control to launch
-  the **appropriate viewer** for that calibration type — a `pypeit_chk_*` script
-  where one exists, otherwise `pypeit_view_fits --inter` (per-type table above);
+- **C8.** The detail panel exposes the **output file** (its filename is shown,
+  Round-2 #3) and a control to launch the **appropriate viewer** for that
+  calibration type — a `pypeit_chk_*` script where one exists, otherwise
+  `ginga` directly on the processed image (per-type table above);
   `wv_calib` has no separate viewer (QA PNGs only).
 - **C9.** The detail panel shows related **QA files** as **clickable entries**;
   clicking one opens a **full view** of the PNG.
@@ -754,9 +768,14 @@ user informed about what it is doing.
   `.log` mtime is recent, i.e. a run started outside the Dashboard; locking
   disables the (Re)Build control), X2 (clobber confirmation — a `QMessageBox`
   naming the exact file(s) to be overwritten), and X3 (clobber capability —
-  the Dashboard removes **only the selected step's** output(s) in code, then
+  the Dashboard moves **only the selected step's** output(s) aside in code, then
   reuses the preceding steps via `pypeit_run_to_calibstep`; option (a)
-  "delete-then-run", no `--clobber` flag added to the pipeline).
+  "delete-then-run", no `--clobber` flag added to the pipeline). The move-aside
+  is **crash-safe** (Round 1): each output is renamed to a `.dashboard_bak`
+  sibling and **restored if the run fails**, so a failed (re)build never loses
+  an existing calibration. *(Round 1 also fixed a pre-existing `IndexError` in
+  `pypeit_run_to_calibstep`'s `--calib_group` path — the Dashboard is its first
+  real user.)*
 
 #### Deferred
 
