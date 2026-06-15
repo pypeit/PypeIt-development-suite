@@ -211,11 +211,15 @@ from the PypeIt repo root (`/home/xavier/Projects/PypeIt/PypeIt`).
      `test_main_window_live_refresh` (a state change while active live-refreshes
      both views to a new model and keeps the selected step).
 
+All 50 passed.
+
 2. **Review the monitoring screenshot.**
    - Inspect ``$PYPEIT_DEV/pypeitdev/dashboard/py/layout_check/dashboard_monitoring_live.png``.
    - Confirm: a step button is **orange** (``tilts``, running), and the bottom
      status bar shows the **two channels** — **Build:** "Monitoring run —
      updating live…" (busy) and **Inspection:** the last viewer command.
+
+Looks fine
 
 3. **Watch a live (Re)Build — the interactive check.**
    - Execute: `pypeit_dashboard $PF` on an idle reduction with raw data.
@@ -225,6 +229,9 @@ from the PypeIt repo root (`/home/xavier/Projects/PypeIt/PypeIt`).
      "Monitoring run — updating live…", and when it finishes the views settle and
      the rebuilt step stays selected.
 
+A number of Issues arose.  We will address them in the Modifications section.  
+These are now fixed.
+
 4. **Monitor an externally-started run.**
    - With the Dashboard open on a reduction, start `run_pypeit $PF` (or
      `pypeit_run_to_calibstep …`) in a terminal. Confirm the Dashboard begins
@@ -232,8 +239,12 @@ from the PypeIt repo root (`/home/xavier/Projects/PypeIt/PypeIt`).
      can **inspect already-built calibrations** meanwhile — the **Inspection**
      channel reports those viewers without disturbing the **Build** status.
 
+This works as designed.
+
 **Sign-off:** if items 1–3 look right, Stage 5 is accepted. (The `.log` tail
 view is deferred; the Science-frames section is Stage 6.)
+
+JXP signs off at Mon Jun 15 02:05:44 PM UTC 2026
 
 #### Clarifications
 
@@ -329,11 +340,159 @@ Yes, that sounds good.
 
 I am fine with one-bar/two-channels.
 
+*(Below: follow-ups **S5-Q10/S5-Q11** from the Round 1 findings — how
+`run_to_calibstep` should write the state so a (Re)Build updates the Dashboard.)*
+
+- **S5-Q10 — How `run_to_calibstep` writes the state.** It currently passes no
+  `run_state` to `calib_one`, so it writes nothing. Options:
+  - **(a) Pass the fresh `run_state`** (`run_state=pypeIt.run_state`). One line;
+    the rebuilt step **and its predecessors** (which `calib_one` re-runs/reuses
+    up to `stop_at_step`) are written live → this also makes **live monitoring
+    of a (Re)Build** work. *Caveat:* `calib_one` stops at `stop_at_step`, so
+    steps **after** it are never visited and would be written `undone` even if
+    their files exist on disk.
+  - **(b) (a) + a final status pass** — after `calib_one`, run
+    `calib_all(status_only=True, reload_only=True)` so **every** step's status
+    is refreshed from disk before the final write (the rebuilt one `success`,
+    untouched-but-present ones `success`, genuinely-missing ones `undone` thanks
+    to R1 #1). Most correct; cheap (no rebuilding).
+  - **(c) Load-and-merge** — `run_state.load()` the existing file first, update
+    the rebuilt steps, write. Preserves prior entries but is brittle against a
+    malformed/old state file (the aside in the findings).
+
+  I lean **(b)**: pass `run_state` to `calib_one` (live writes during the
+  (Re)Build) **and** a final status-reload pass so the written state matches disk
+  for *all* steps. Agree, or prefer (a) for minimal change?
+
+  Yes, let us implement option (b).
+
+- **S5-Q11 — Scope of the fix.** The R1 #1 reload→`undone` fix is **in**; for
+  R1 #2 I propose changing only `run_to_calibstep.py` (option (b)) — no
+  `state.py` schema change (the malformed file just predates the `input_files`
+  fix). Confirm I should **not** alter the `state.py` schema, only the
+  run-to-calibstep write path. (And: after a (Re)Build, rely solely on the file
+  `run_to_calibstep` now writes, plus the existing completion refresh? I lean
+  yes — no extra Dashboard-side re-derive.)
+
+Yes, no `state.py` schema change for now.
+
+*(Below: follow-up **S5-Q12** from the Round 2 finding — a status-only *derive*
+writes a misleading state file.)*
+
+- **S5-Q12 — A read-only derive should not leave a "running" state.** Launching
+  the Dashboard with **no** state file triggers a derive
+  (`calib_all(status_only=True, reload_only=True)`). `run_the_steps` writes the
+  file at its start and before each step (sets `'running'`), but in
+  `status_only` mode **skips the final per-step write**, so the **last** step
+  (`flats`) is left persisted as **`running`** with `current_step='flats'`
+  (confirmed). A relaunch then *loads* that file and shows `flats` running.
+  Options:
+  - **(A) Don't write during a status-only pass** — guard the two writes in
+    `run_the_steps` with `if not status_only` (the third is already guarded), so
+    a derive is truly read-only and leaves no file (each launch re-derives
+    cleanly, R5). **No schema change.** *(My lean — simplest, matches "a read
+    must not mutate the authoritative state"; consistent with your "no schema
+    change".)*
+  - **(B) Finalize then write** — after the loop, set `current_step=None` and
+    flip any lingering `running`→its real status, then write once (a clean,
+    cached derived state). Closest to your "set the current step to None", but
+    `current_step` is typed `str`, so None needs `Optional[str]` — a `state.py`
+    **schema change**.
+  - **(C) Persist the correct final status** in status-only mode too (don't skip
+    the final per-step write) **and** clear `current_step`. Also a small schema
+    tweak for the None.
+
+  Do you want **(A)** (no write on a pure read — my recommendation), or keep the
+  derived state cached on disk via **(B)/(C)** (which need the `Optional[str]`
+  schema change)?
+
+Yes, let's go with (A)
+
+#### Planning
+
+**Round 1 findings — state writing (Modifications R1 #1/#2).**
+
+*Investigated 2026-06-15. Both issues are about how the reduction **state** is
+computed/written; details + the proposed fix for R1 #2 are in S5-Q10/Q11 above.*
+
+- **R1 #1 — fresh steps shown "fail" instead of "required" (fixed).** The
+  Dashboard derives a fresh state with
+  `calib_all(status_only=True, reload_only=True)`. In `run_the_steps`, a
+  `force='reload'` step whose calibration **file is missing** sets
+  `self.success=False` (`calibrations._reload_or_remake`, calibrations.py
+  ~1673), which was recorded as **`'fail'`** — so a not-yet-built calibration
+  read as a failure. **Fixed:** in `run_the_steps`, a non-success step in
+  **reload-only** mode is now recorded as **`'undone'`** (→ required), reserving
+  `'fail'` for genuine build failures. Verified on a fresh `shane_kast_blue`
+  (no `Calibrations/`): all steps now report `undone`/`required`.
+
+- **R1 #2 — (Re)Build does not update `*_state.json` (root cause confirmed; fix
+  deferred to S5-Q10).** `run_to_calibstep.py` calls `calib_one(...)` **without
+  `run_state=`** → `Calibrations.state is None` → every `safe_write()` in
+  `run_the_steps` is skipped, so the state file is never rewritten by a
+  (Re)Build (confirmed: the on-disk mtime did not change after a real run). The
+  normal `run_pypeit` path passes `run_state=self.run_state` (pypeit.py:205).
+  Fixing this also enables **live monitoring of a Dashboard-launched (Re)Build**.
+  Proposed fix in S5-Q10 (lean option (b)); awaiting confirmation before
+  touching `run_to_calibstep.py`.
+
+- **Aside — stale/malformed on-disk state.** The existing
+  `shane_kast_blue_A_state.json` (2026-06-13) fails the current schema
+  (`input_files` are nested lists, not `List[str]`), so the model reports it
+  `malformed`. Current `calibrations.base_state` writes a flat
+  `input_files = self.raw_files`, so this predates the earlier `update_calib`
+  fix; the R1 #2 rewrite (or a fresh `run_pypeit`) regenerates a valid state —
+  worth verifying once R1 #2 lands.
+
+**Round 2 findings — a read-only derive writes a stale "running" state
+(Modifications R2 #1).**
+
+*Investigated 2026-06-15. Root cause confirmed; fix deferred to S5-Q12.*
+
+- **Symptom.** Launch the Dashboard on a reduction with calibrations on disk but
+  **no** state file → close → relaunch → the state file shows the "current step"
+  as `flats` (running).
+- **Root cause.** With no state file the model **derives**
+  (`PypeIt(...).calib_all(status_only=True, reload_only=True)`).
+  `calibrations.run_the_steps` writes `*_state.json` at its start (~1692) and
+  before each step after setting `'running'` (~1707) — **both unconditional** —
+  but **skips** the post-step write (~1729) when `status_only`. So each step is
+  re-persisted as `success` by the *next* step's write, except the **last** step
+  (`flats`), whose `'running'` is never overwritten; `current_step` is left at
+  `flats`. **Reproduced:** the derive wrote `current_step=flats`,
+  `flats.status=running` (while `arc.status=success`). On relaunch the model
+  *loads* that file → shows `flats` running. So a **read-only status derive is
+  mutating the persisted state** — the real defect (it also overwrote the
+  otherwise-good state file).
+- **Proposed fix.** Make a status-only pass not leave a misleading file — see
+  **S5-Q12** (I lean **(A)**: don't write at all during `status_only`, so a
+  derive is truly read-only; no `state.py` schema change). Awaiting your choice
+  before touching `calibrations.py`/`state.py`.
+- *(Aside: the derive also logs `PydanticSerializationUnexpectedValue` for
+  `output_file` being a `PosixPath` rather than `str` — harmless today but worth
+  coercing to `str` when we next touch the write path.)*
+
 ### Modifications
 
-*(Rounds of post-sign-off modifications will be added here, as in Stage 4.)*
-
 ### Round 1
+
+1. When I launch on a fresh reduction, the `slits`, `arc` and `tiltimg` Steps are all marked "fail".  I think they should be "required", similar to "wv_calib".  Consider and address.
+
+2. I went to the Calibrations section, clicked on `wv_calib`, and then clicked on (Re)Build.  I believe it ran successfully (files were created), but the `slits`, `arc` and `tiltimg` Steps are still marked "fail".  The culprit is that the _state.json file was not updated at all.  I had expected this might be the case.  I believe we need to modify the state.py and calibrations.py code to enable re-writing the _state.json file.  Please examine and report back
+in the Planning section above.  Add any new S5-Q questions as needed under the Clarifications section.
+
+### Round 2
+
+1. Wow, the shane_kast_blue/830_3460_d46 reduction worked nearly perfectly!  But, when I do:
+
+   - `pypeit_dashboard shane_kast_blue/830_3460_d46.pypeit`
+   - And then close it
+   - And then launch it again
+   - The _state.json file has the current step as flats
+
+This is a flaw of our reading the state from existing files.  If we are only doing a read of the files, we should terminate by setting the current step to "None" or the equivalent.  Please examine and report back in the Planning section above.  Add any new S5-Q questions as needed under the Clarifications section.
+
+2. I have read your planning to address Round 2 and answered your related questions.  Please proceed with the implementation of the fix.  Log your work.
 
 ## Docs
 
@@ -353,6 +512,16 @@ their versions, and note R14 as implemented.)*
 1. I have answered your first round of S5-Q questions. Update the plan and design docs (if necessary) and let me know if you have any additional questions.  Do not proceed with the implementation yet.  Log your work.
 
 2. I have answered your S5-Q9 question.  Please update the plan and design docs.  Implement Stage 5 per the tasks and acceptance criteria.  Also generate a set of Sign offs actions and add them to the Sign offs sub-section.  Log your work.
+
+3. I began my sign-off and uncovered a number of issues.  Please address the first set in Round 1 of the Modifications section. Log your work.
+
+4. Ok, I have read your planning to address Round 1 #2 and answered your related questions.  Please proceed with the implementation of the fix.  Log your work.
+
+5. I have uncovered another issue.  Please work on the Round 2 Modifications. Log your work.
+
+6. Re-read this doc.  Proceed with item 2 under Round 2 Modifications.  Log your work.
+
+7. I have signed off.  Before proceeding to Stage 6, take a moment to examine the consistency amongst the design docs, the code generated, and the Pypeit/docs.  Please make edits as needed to ensure consistency.  Log your work.
 
 ## Logging
 
@@ -459,3 +628,170 @@ Generated the **Sign offs**.
 **Next step:** the user runs the Stage 5 Sign offs (esp. the interactive
 live-(Re)Build + external-run monitoring); on acceptance, Stage 6 (Science
 frames).
+
+### 2026-06-15 (Stage 5 Round 1: fixed fresh-state "fail"→"required"; diagnosed the (Re)Build state-write gap)
+
+**Task.** Third task under *Prompts / Stage 5* — address Round 1 Modifications
+(#1 fix; #2 examine + report + raise S5-Q).
+
+**R1 #1 — fixed.** On a fresh reduction the Dashboard derives status via
+`calib_all(status_only=True, reload_only=True)`; a `force='reload'` step whose
+calibration file is **missing** sets `self.success=False`
+(`_reload_or_remake`), which `run_the_steps` recorded as **`'fail'`**. Changed
+`run_the_steps` so a non-success step in **reload-only** mode is recorded as
+**`'undone'`** (→ required), keeping `'fail'` for genuine build failures
+(`pypeit/calibrations.py`). **Verified** by deriving a fresh `shane_kast_blue`
+with an empty redux dir: all steps now report `undone`/`required` (matching
+`wv_calib`), not `fail`. `pytest test_dashboard.py + test_state.py` → **75
+passed** (no regressions).
+
+**R1 #2 — diagnosed + reported (no code, per the prompt).** Root cause:
+`run_to_calibstep.py` calls `calib_one(...)` **without `run_state=`**, so
+`Calibrations.state is None` and every `safe_write()` in `run_the_steps` is
+skipped → the `*_state.json` is **never rewritten** by a (Re)Build (confirmed:
+the on-disk mtime didn't change after a real run). The `run_pypeit` path passes
+`run_state=self.run_state` (pypeit.py:205). Wrote the findings into the
+**Planning** section and raised **S5-Q10** (how `run_to_calibstep` should write
+state — fresh vs (a)+final-status-pass vs load-merge; I lean **(b)**, which also
+enables **live monitoring of a (Re)Build**) and **S5-Q11** (keep the fix to
+`run_to_calibstep.py`; no `state.py` schema change). Also flagged an aside: the
+existing on-disk state (2026-06-13) is malformed (`input_files` nested lists);
+current code writes flat `input_files`, so a rewrite resolves it.
+
+**Next step:** the user answers **S5-Q10/S5-Q11**, then I implement the
+(Re)Build state-write fix (option (b)) — which also makes a Dashboard-launched
+(Re)Build update live.
+
+### 2026-06-15 (Stage 5 Round 1 fix: run_to_calibstep now writes the state (option (b)))
+
+**Task.** Fourth task under *Prompts / Stage 5* — implement the R1 #2 fix per the
+S5-Q10/Q11 answers (option (b); no `state.py` schema change).
+
+**What I changed (`pypeit/scripts/run_to_calibstep.py`).** Implemented option
+(b):
+1. Pass **`run_state=pypeIt.run_state`** to `calib_one(...)` so each step's
+   status is written to `*_state.json` **as it runs** (this is also what makes a
+   Dashboard-launched (Re)Build observable by the Stage 5 live monitor).
+2. After the build + `build_qa()`, run a **final status-reload pass**
+   (`pypeIt.calib_all(status_only=True, reload_only=True)`) and persist it
+   (`pypeIt.run_state.write()`), so every step — including those **after**
+   `stop_at_step` and in other calibration groups — reflects what is on disk
+   (present → `success`, missing → `undone`). `status_only` doesn't auto-write,
+   hence the explicit `write()`.
+
+**Verified end-to-end** on the real `shane_kast_blue` 600/4310 reduction
+(`pypeit_run_to_calibstep … bias --calib_group 0 --det 1`): the `*_state.json`
+**mtime advanced** (it was previously never rewritten), the file now **loads
+cleanly** (`load_status == state_file`; the old nested-`input_files`
+malformation is gone — current code writes flat `input_files`), and every
+present calibration reports **`success`** (`bias`/`slits`/`arc`/`tiltimg`/
+`wv_calib`/`tilts`/`flats`), with optional/absent ones `undone` — i.e. the
+user's "slits/arc/tiltimg stuck at fail after a (Re)Build" is resolved.
+
+**Tests.** `pytest test_dashboard.py + test_state.py` → **75 passed** (the R1 #1
+`reload→undone` change is in `calibrations.py`; no regressions). The
+`run_to_calibstep` write path needs RAW_DATA so it is covered by the real-data
+run above (a Sign off), not a CI unit test.
+
+**Docs.** Added two **Bug Fixes** notes to `doc/releases/2.1.0dev.rst` (the
+state-writing + the `undone`-not-`fail` derive); bumped the design + coding docs
+to **v1.2.1**. The `dashboard.rst` Live-monitoring section already described
+(Re)Build live updates — now actually true. `make htmlonly` → succeeded.
+
+**Next step:** the user re-checks the Stage 5 Sign offs (Round 1 now addressed:
+fresh steps read `required`, and a (Re)Build updates the state live).
+
+### 2026-06-15 (Stage 5 Round 2: diagnosed the read-only derive writing a stale "running" state)
+
+**Task.** Fifth task under *Prompts / Stage 5* — Round 2 Modification: a relaunch
+shows the "current step" stuck at `flats`. Examine + report + raise S5-Q (per the
+item's instruction); no implementation yet.
+
+**Root cause (confirmed).** With no state file, the model **derives** via
+`PypeIt(...).calib_all(status_only=True, reload_only=True)`.
+`calibrations.run_the_steps` writes `*_state.json` unconditionally at its start
+and before each step (after setting `'running'`), but **skips** the post-step
+write when `status_only`. So every step is re-persisted as `success` by the next
+step's write **except the last** (`flats`), whose `'running'` is never
+overwritten, and `current_step` is left at `flats`. I reproduced it directly
+(the dashboard's exact derive path): the written file had `current_step=flats`,
+`flats.status=running`, `arc.status=success`. On relaunch the model *loads* that
+file → `flats` shows running. The real defect: **a read-only status derive
+mutates (and degrades) the persisted state.**
+
+**Reported + asked.** Wrote a *Round 2 findings* block in the **Planning**
+section and raised **S5-Q12** with three options — **(A)** don't write during a
+`status_only` pass (truly read-only; no schema change; my lean), **(B)** finalize
+with `current_step=None` (needs `Optional[str]` schema), **(C)** persist the
+correct final status + clear `current_step` (also a small schema tweak). Also
+flagged a harmless `output_file` `PosixPath`-vs-`str` serialization warning to
+coerce when we next touch the write path. **No code** this turn.
+
+**Next step:** the user answers **S5-Q12**, then I implement the chosen fix
+(lean (A): guard the two `run_the_steps` writes with `if not status_only`).
+
+### 2026-06-15 (Stage 5 Round 2 fix: a status-only derive no longer writes the state)
+
+**Task.** Sixth task under *Prompts / Stage 5* — implement the Round 2 fix per
+S5-Q12 (**option (A)**: don't write during a status-only pass).
+
+**What I changed (`pypeit/calibrations.py`, `run_the_steps`).** Gated the two
+previously-unconditional `safe_write()` calls — the initial one and the
+per-step `'running'` one — with **`if not status_only`** (the post-step write
+was already gated). So a status-only pass (the Dashboard's derive-on-launch, or
+`pypeit_status`) is now a true **read**: it computes status in memory but does
+**not** touch `*_state.json`. No `state.py` schema change.
+
+**Verified.**
+- *Read-only derive:* re-ran the Dashboard's exact derive
+  (`PypeIt(...).calib_all(status_only=True, reload_only=True)`) on the real
+  `shane_kast_blue` 600/4310 — the state file mtime was **UNCHANGED** and
+  content **identical** (previously it left `current_step=flats`,
+  `flats.status=running`). So a fresh launch no longer writes a misleading file,
+  and a relaunch re-derives cleanly.
+- *Real run still writes:* re-ran `pypeit_run_to_calibstep … bias` — the state
+  is still written, all steps `success` (no stale `running`), and loads cleanly
+  (`load_status=state_file`). The R1 #2 fix's explicit `run_state.write()` is
+  unaffected by the guard.
+- `pytest test_dashboard.py + test_state.py` → **75 passed** (no regressions).
+
+**Docs.** Added a **Bug Fixes** note to `doc/releases/2.1.0dev.rst`; bumped the
+design + coding docs to **v1.2.2**. `make htmlonly` → succeeded.
+
+**Next step:** the user re-checks the Stage 5 Sign offs (Round 2 now addressed:
+a launch no longer leaves a stale `running` state); on acceptance, Stage 6
+(Science frames).
+
+### 2026-06-15 (Post-Stage-5 consistency pass: docs ↔ code)
+
+**Task.** Seventh task under *Prompts / Stage 5* — after sign-off, reconcile the
+design docs, the code, and the PypeIt docs; fix drift; log.
+
+**Audited** the Stage-5 surfaces (live monitoring, two-channel `ActivityBar`,
+the R1/R2 state-writing fixes) against `pypeit_dashboard_design.md`,
+`pypeit_dashboard_coding.md`, `doc/state.rst`, and `doc/dashboard/dashboard.rst`.
+Confirmed in code: `pypeit_status` does **not** write `*_state.json` (its
+`run_state.write()` is commented out), and after the R2 fix neither does any
+status-only derive; `run_to_calibstep` **does** write (R1 #2).
+
+**Drift fixed.**
+- **Coding doc §Monitoring** said "calibrations.py writes `*_state.json` on every
+  step transition … each time" — overstated post-R2. Qualified it to **during a
+  real run**, with a status-only derive being read-only.
+- **Design doc X4/X5 Status** still described a single `ActivityBar`; added a note
+  that **Stage 5 split it into Build + Inspection channels** (cross-refs the
+  R12/R14 entry).
+- **`doc/state.rst`** — "During a run" now also credits
+  `pypeit_run_to_calibstep`; the "without running" bullet states the derive is a
+  **read** that does **not** write `*_state.json`; and the do-not-edit warning's
+  refresh instruction now points at `run_pypeit` / `pypeit_run_to_calibstep`
+  (not `pypeit_status`, which no longer rewrites the json).
+- **`doc/dashboard/dashboard.rst`** — startup wording credits
+  `run_pypeit`/`pypeit_run_to_calibstep` and notes the derive writes no state
+  file.
+
+**Versions.** design + coding → **v1.2.3**; `dashboard.rst` → **1.2.1**. `make
+htmlonly` → succeeded; `pytest test_dashboard.py + test_state.py` → **75
+passed** (no code changes this pass — docs only).
+
+**Next step:** proceed to **Stage 6 — Science frames** when the user is ready.

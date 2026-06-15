@@ -1,10 +1,19 @@
 # PypeIt Dashboard — Coding Document
 
-**Version:** 1.2.0
+**Version:** 1.2.3
 **Date:** 2026-06-15
 **Author:** JXP and Claude
 
 **Changelog**
+- 1.2.3 (2026-06-15): **Post-Stage-5 consistency pass** — clarified that the
+  per-step `*_state.json` writes happen only during a **real run** (a status-only
+  derive is read-only); synced `state.rst`/`dashboard.rst`/design X4/X5.
+- 1.2.2 (2026-06-15): **Stage 5 Round 2** — a status-only derive no longer
+  writes `*_state.json` (`run_the_steps` writes gated by `not status_only`), so
+  a Dashboard launch leaves no stale `running` state.
+- 1.2.1 (2026-06-15): **Stage 5 Round 1** — `pypeit_run_to_calibstep` now writes
+  `*_state.json` (run_state → `calib_one` + final status pass); reload/status
+  derive marks missing calibs `undone` not `fail`.
 - 1.2.0 (2026-06-15): **Stage 5 implemented** — live monitoring (the
   build-order row marked implemented): `RunLock.stateChanged`,
   `MainWindow._refresh_from_state`, two-channel `ActivityBar`.
@@ -271,10 +280,12 @@ principle and produces a runnable artifact early, which the layout-review proces
 For v1 the dashboard monitors a running reduction through the **state file**, not
 through an in-process log hook:
 
-- `pypeit/calibrations.py` writes `*_state.json` on **every step transition** —
-  it sets a step's `status='running'` before running it and `'success'` /
-  `'failed'` afterward, calling `state.write()` each time. So `*_state.json` is a
-  **live, per-step status feed** that requires no new instrumentation.
+- During a **real run** `pypeit/calibrations.py` writes `*_state.json` on
+  **every step transition** — it sets a step's `status='running'` before running
+  it and `'success'` / `'fail'` afterward, calling `state.write()` each time. So
+  `*_state.json` is a **live, per-step status feed** that requires no new
+  instrumentation. (A **status-only** pass — the Dashboard/`pypeit_status`
+  *deriving* status on launch — is a read and does **not** write, Stage 5 R2.)
 - **Plan (Stage 5, decided):** detect that a run is *active* by watching the
   **`.log` mtime** (PypeIt writes to it continuously while running; this is also
   the single-run-lock signal, X1, already in `RunLock`); while active, **poll the
