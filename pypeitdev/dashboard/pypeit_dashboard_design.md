@@ -1,10 +1,19 @@
 # PypeIt Dashboard — Design Document
 
-**Version:** 1.3.0
+**Version:** 1.3.1
 **Date:** 2026-06-15
 **Author:** JXP and Claude
 
 **Changelog**
+- 1.3.1 (2026-06-15): **Stage 6 Round-1 modifications.** (1) A **science
+  navigator** grid in the Status view (R17 extended to science): one clickable
+  four-segment cell per `(frame, det)`, science first then standards, click →
+  the Science tab. (2) A **neutral** (soft blue-grey) row-selection fill across
+  the dashboard tables, replacing the theme's `Highlight` color (which read as a
+  "failed" red on some desktops). (3) **Science QA PNGs** exposed like the
+  Calibrations QA list (R15): a per-frame QA-files list (all `obj_prof`/
+  `obj_trace` + flexure `spec_flex_*`) and per-object `obj_prof`/`obj_trace`
+  columns, derived at view-time from `QA/PNGs/` (no state-model change).
 - 1.3.0 (2026-06-15): **Stage 6 implemented — the Science view.** The third
   **Science tab** (per-`(frame, det)` table with the four step statuses + nobj +
   spec2d/spec1d; per-frame per-slit/per-object drill-down; `pypeit_show_2dspec`
