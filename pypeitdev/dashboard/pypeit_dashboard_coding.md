@@ -1,10 +1,22 @@
 # PypeIt Dashboard — Coding Document
 
-**Version:** 1.2.4
+**Version:** 1.3.0
 **Date:** 2026-06-15
 **Author:** JXP and Claude
 
 **Changelog**
+- 1.3.0 (2026-06-15): **Stage 6 implemented** — the Science view
+  (`view/science_view.py`), model science accessors + science-derive-on-launch,
+  `inspect` spec2d/per-object-spec1d/`reduce_by_step` builders, the
+  `reduce_by_step` state-write fix + `ScienceFrameState.raw_files`, and the
+  Status-view science summary. The six-stage build order is complete.
+- 1.2.6 (2026-06-15): **Stage 6 discussion round 2** — design resolved: per-object
+  1D via reconstructed `--obj`; science (Re)Build = re-run-with-confirmation +
+  prerequisite gating + the `reduce_by_step` state-write fix.
+- 1.2.5 (2026-06-15): **Stage 6 discussion** — Science build-order row updated
+  for the third **Science tab**, per-object `pypeit_show_1dspec`, and the user-
+  requested **(Re)Build** via `pypeit_reduce_by_step` (state-write fix likely
+  needed, à la `run_to_calibstep`).
 - 1.2.4 (2026-06-15): **Stage 6 prep** — Science build-order row updated to the
   implemented state layer + the `pypeit/state/` package
   (`pypeit.state.science_status.derive_science_from_disk`, `get_science_status()`).
@@ -269,7 +281,7 @@ Each design reference points back to `pypeit_dashboard_design.md`.
 | **3. Calibrations view** | The path-aware step-button row (from `Calibrations.default_steps()`), the detail panel, and **launching external viewers as subprocesses** (`pypeit_chk_*` / `ginga` / `pypeit_view_fits`); per-slit/order drill-down. Builds the reusable subprocess-launch infrastructure. **Also delivers the Dashboard's own status/activity area** (X4/X5) — pulled forward from Stage 4 — so the user can see when the GUI is busy/waiting on a job (e.g. launching a viewer, deriving/reloading state on Refresh). | C1–C9, C11–C14, C16, X4, X5 (C10/C15 deferred to Stage 4) |
 | **4. Execution, locking & (Re)Build** *(implemented 2026-06-14)* | The blue **(Re)Build** control (`pypeit_run_to_calibstep`) in the detail panel; a `RunLock` single-run lock via **`.log` mtime watching** (+ the launched-run lifecycle); a `QMessageBox` clobber confirmation naming the file(s) overwritten; clobber = delete-the-step's-output-then-run (in code); state/buttons refresh on completion. (The Dashboard status/activity area, X4/X5, shipped in Stage 3.) | X1–X3, C10, C15 |
 | **5. Monitoring (live updates)** *(implemented 2026-06-15)* | Live status refresh while a reduction is active: `RunLock` gained a `stateChanged` signal (poll the `*_state.json` mtime on the one ~2 s timer while active); `MainWindow._refresh_from_state` auto-refreshes both views from the state file (R12), preserving scope/selection; the status bar split into **Build** + **Inspection** channels. (`.log` tail view deferred.) | R14 |
-| **6. Science frames** | Populate the Science section. **State layer done (2026-06-15):** `RunPypeItState.science` (`ScienceFrameState`: process/findobj/skysub/extract per `(frame, det)`, products, per-slit/per-object detail) is recorded live via `exposure.reduce_exposure` hooks and derived from disk by `pypeit.state.science_status.derive_science_from_disk` (Science `spec2d`/`spec1d` first, `Intermediate/` fallback); `get_science_status()` returns the per-frame table and `pypeit_status` prints it. The state layer now lives in the **`pypeit/state/` package** (`run_state.py` + `science_status.py`). **Remaining:** the Qt Science view/table (per-frame rows + per-slit/per-object drill-down). | R15, R18 |
+| **6. Science frames** | Populate the Science section. **State layer done (2026-06-15):** `RunPypeItState.science` (`ScienceFrameState`: process/findobj/skysub/extract per `(frame, det)`, products, per-slit/per-object detail) is recorded live via `exposure.reduce_exposure` hooks and derived from disk by `pypeit.state.science_status.derive_science_from_disk` (Science `spec2d`/`spec1d` first, `Intermediate/` fallback); `get_science_status()` returns the per-frame table and `pypeit_status` prints it. The state layer now lives in the **`pypeit/state/` package** (`run_state.py` + `science_status.py`). **Remaining (Stage 6 view):** a third **Science tab** (flat `(frame, det)` rows, `objtype` column, status-as-cells) + per-frame drill-down (per-slit/per-object); a **per-object** `pypeit_show_1dspec` + `pypeit_show_2dspec` launch; and — per the user — a **(Re)Build** control mirroring Calibrations via `pypeit_reduce_by_step` (which, like `run_to_calibstep` pre-Stage-4, needs a state-write fix to be live). | R15, R18 |
 
 ### What is implemented first
 
