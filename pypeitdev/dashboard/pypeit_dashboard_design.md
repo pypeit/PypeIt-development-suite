@@ -1,10 +1,19 @@
 # PypeIt Dashboard — Design Document
 
-**Version:** 1.0.1
+**Version:** 1.1.0
 **Date:** 2026-06-14
 **Author:** JXP and Claude
 
 **Changelog**
+- 1.1.0 (2026-06-14): **Stage 4 implemented — Execution, Locking & (Re)Build.**
+  Marked C10/C15 and X1–X3 **Implemented (Stage 4)**: the detail panel's
+  **(Re)Build** control (blue action button, labeled "(Re)Build" per the user)
+  launches `pypeit_run_to_calibstep`; a `RunLock` enforces the single-run lock
+  (Dashboard-launched **or** detected via the reduction `.log` mtime); a
+  `QMessageBox` clobber confirmation names the file(s) overwritten; clobber is
+  "delete-then-run" in code (option (a), no pipeline `--clobber`); the state
+  refreshes on completion. Updated C10 and the detail-panel bullet for the
+  "(Re)Build" name + blue action color.
 - 1.0.1 (2026-06-14): **Stage 4 consistency pass.** Reconciled the doc with the
   Stage 3 code: per-type "Inspect output" viewers now read
   `pypeit_view_fits --inter` for processed images (was `ginga`), `wv_calib` is
@@ -499,9 +508,10 @@ the user's vision, the panel provides:
   view it** via **`pypeit_view_fits --proc`** (which orients/processes the frame
   for a proper view).
 - **QA files.** Any related QA PNGs for the step, viewable inline.  For calibrations with many PNG files, a scrollable list of the PNG files should be provided.
-- **(Re)generate.** When PypeIt is **not** running, a control to launch
-  `pypeit_run_to_calibstep` for the selected step (see below). Disabled while a
-  reduction is running.
+- **(Re)Build.** When PypeIt is **not** running, a distinct blue **(Re)Build**
+  control launches `pypeit_run_to_calibstep` for the selected step (see below).
+  Disabled while a reduction is running (the run-lock). A confirmation names the
+  output file(s) it will overwrite before it runs.
 - **Per-slit / per-order drill-down.** For `slits`, `wv_calib`, `tilts`, and
   **`flats`**, a sub-table of per-slit/order rows (each with its own `status`
   and metric), essential for MOS and echelle where there are many slits/orders.
@@ -590,13 +600,14 @@ row, as noted above.)
   `wv_calib` has no separate viewer (QA PNGs only).
 - **C9.** The detail panel shows related **QA files** as **clickable entries**;
   clicking one opens a **full view** of the PNG.
-- **C10.** When PypeIt is **not running**, provide a control to launch
+- **C10.** When PypeIt is **not running**, provide a control — the **(Re)Build**
+  button (labeled "(Re)Build", per the user) — to launch
   `pypeit_run_to_calibstep` for the selected step (passing `--calib_group` and
   `--det`), which generates that step **and all preceding steps**; disable it
   while a reduction is running. The control uses a distinct **action color**
-  (not a status color, so it is not mistaken for "success"). Launching is
-  governed by the run-lock (X1) and the clobber confirmation (X2/X3) in the
-  *Execution, Locking & Status* section.
+  (a **blue**, not a status color, so it is not mistaken for "success"; the
+  magenta ring stays "selected"). Launching is governed by the run-lock (X1) and
+  the clobber confirmation (X2/X3) in the *Execution, Locking & Status* section.
 - **C11.** Support **per-slit / per-order** drill-down for `slits`, `wv_calib`,
   `tilts`, and **`flats`**, presented as a **scrollable list** (one row per
   slit/order; MOS / echelle may have many). `flats` rows carry a `status` that
@@ -623,10 +634,13 @@ row, as noted above.)
   selected step ringed in magenta), and the detail panel (metrics, "Inspect
   output", QA-file list, per-slit/order drill-down, and the input-file list),
   all built on the headless `DashboardModel` and the shared status palette.
-- **Pending (Stage 4):** C10 (launch `pypeit_run_to_calibstep` for the selected
-  step) and C15 (make that (re)generation **observable** and **refresh** the
-  state/buttons on completion). Both are gated on the run-lock and clobber
-  protection (X1–X3) in the *Execution, Locking & Status* section.
+- **Implemented (Stage 4):** C10 and C15 — the detail panel's **(Re)Build**
+  control (a distinct **blue action** button beside "Inspect output") launches
+  `pypeit_run_to_calibstep` for the selected step with `--calib_group`/`--det`,
+  gated on the single-run lock (X1) and a clobber confirmation (X2/X3); the run
+  is observable in the activity bar and the state/buttons **refresh on
+  completion**. The button is labeled **"(Re)Build"** (per the user) rather than
+  "(Re)generate".
 
 #### Deferred
 
@@ -735,9 +749,14 @@ user informed about what it is doing.
   exact quoted command and where the result appears — and Refresh re-reads the
   state). These were pulled forward into Stage 3 so the inspection launches were
   observable.
-- **Pending (Stage 4):** X1 (single-run lock), X2 (clobber confirmation), and
-  X3 (clobber capability for the selected step) — all tied to the C10 (re)generate
-  control.
+- **Implemented (Stage 4):** X1 (single-run lock — a `RunLock` controller that
+  locks while a Dashboard-launched run is active **and** when the reduction
+  `.log` mtime is recent, i.e. a run started outside the Dashboard; locking
+  disables the (Re)Build control), X2 (clobber confirmation — a `QMessageBox`
+  naming the exact file(s) to be overwritten), and X3 (clobber capability —
+  the Dashboard removes **only the selected step's** output(s) in code, then
+  reuses the preceding steps via `pypeit_run_to_calibstep`; option (a)
+  "delete-then-run", no `--clobber` flag added to the pipeline).
 
 #### Deferred
 

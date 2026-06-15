@@ -210,10 +210,54 @@ Calibrations view and the model/launcher.
 
 #### Sign offs
 
-*(To be generated when Stage 4 is implemented — as in Stage 3, the key human
-check is the **interactive launch on your display**: a real (re)generate of a
-fast step, the lock disabling controls while it runs, the clobber confirmation,
-and the views refreshing on completion. Run from the PypeIt repo root.)*
+Actions for **you** to sign off on Stage 4. As in Stage 3, the key human check
+is the **interactive launch on your display** — a real (Re)Build of a fast step,
+the lock disabling controls while it runs, the clobber confirmation, and the
+views refreshing on completion. Run from the PypeIt repo root
+(`/home/xavier/Projects/PypeIt/PypeIt`).
+
+1. **Automated tests pass (CI-safe).**
+   - Execute: `python -m pytest pypeit/tests/test_dashboard.py -v`
+   - Inspect: **42 passed** — the Stage 0–3b tests plus the new Stage 4 tests:
+     `test_inspect_run_command` (the `pypeit_run_to_calibstep` argv +
+     `--det` mosaic form), `test_model_step_output_files` (the clobber file-set,
+     incl. `slits` → Slits_*+Edges_*), `test_runlock_state_machine` (lock for a
+     Dashboard run **and** a recent `.log`; `lockChanged` transitions),
+     `test_calib_view_rebuild_button` / `…_disabled_when_locked` (the (Re)Build
+     control + lock gating), and `test_calib_view_rebuild_clobbers_and_launches`
+     / `…_cancel_keeps_output` (confirm → delete-then-launch; cancel → no-op).
+
+Yes, all tests pass
+
+2. **Review the screenshots (the (Re)Build control).**
+   - Inspect, in `$PYPEIT_DEV/pypeitdev/dashboard/py/layout_check/`:
+     `dashboard_calib_{healthy,multidet,echelle}_{wv_calib,flats}_{light,dark}_{default,resized}.png`.
+   - Confirm: a **blue "(Re)Build <step>"** button sits beside "Inspect output"
+     in the detail panel; it is not a status color; light/dark both legible.
+   - Regenerate with:
+     `QT_QPA_PLATFORM=offscreen python $PYPEIT_DEV/pypeitdev/dashboard/py/dashboard_layout_check.py`
+
+Yes, the screenshots look fine
+
+3. **Launch the GUI and (Re)Build a calibration — the interactive check.**
+   - Execute (an idle reduction with raw data available, e.g. a `shane_kast_blue`
+     setup): `pypeit_dashboard $PF`
+   - On the **Calibrations** tab: select a step (e.g. `tilts`), click
+     **(Re)Build**; confirm the dialog **names the file(s)** it will overwrite;
+     accept. Watch the status bar report the run (busy), the (Re)Build buttons
+     **disable** while it runs, and the views **refresh** (button colors / tables
+     update) when it finishes.
+   - Cancel the dialog on another step and confirm **nothing** is removed or
+     launched.
+
+4. **Single-run lock against an external run.**
+   - Start a reduction in a terminal (`run_pypeit $PF` or
+     `pypeit_run_to_calibstep …`) and confirm the dashboard's **(Re)Build**
+     control **disables** within a few seconds (it watches the `.log` mtime),
+     re-enabling shortly after the run ends.
+
+**Sign-off:** if items 1–3 look right, Stage 4 is accepted. Note anything off
+(item + screenshot) and Claude will address it in a Modifications round.
 
 #### Clarifications
 
@@ -315,9 +359,11 @@ Agreed, (re)build only
 
 ### Modifications
 
-*(Rounds of post-sign-off modifications will be added here, as in Stage 3.)*
+#### Round 1
 
-### Round 1
+1. I like how easy it is to view the (Re)Build button.  Can we have nice bright color for the "Inspect output" button too?
+
+2. I tried to Regenerate the Arc for the shane_kast_blue spectrograph, but it failed.  It did delete the file.  I then tried "wv_calib" and it failed too, after deleting the file.  Work on this.
 
 ## Docs
 
@@ -330,6 +376,7 @@ Agreed, (re)build only
 ### Stage 4 — Execution, Locking & (Re)generate
 
 1. I have answered the S3-Q questions. Update the plan and design docs (if necessary) and proceed with the implementation. Implement Stage 4 per the tasks and acceptance criteria
+2. When working on the sign-off, I identified a few issues to work on.  Please address the Round 1 Modifications.
 
 ## Logging
 
@@ -380,3 +427,77 @@ CI-safe test split, and the per-step-only execution scope), empty **Modification
 
 **Next step:** the user edits this doc and answers S4-Q1–S4-Q10, then the Stage 4
 discussion prompt runs (no code until the questions are resolved).
+
+### 2026-06-14 (Stage 4 implemented: Execution, Locking & (Re)Build)
+
+**Task.** First task under *Prompts / Stage 4 — Execution, Locking & (Re)Build*
+— with the S4-Q answers in, implement Stage 4 (C10, C15, X1–X3).
+
+**S4-Q answers applied.** S4-Q1 (Re)Build button beside "Inspect output", labeled
+**"(Re)Build"** (not "(Re)generate"); S4-Q2 a distinct **blue** action style;
+S4-Q3 clobber **option (a)** — the Dashboard deletes the selected step's output
+in code (`Path.unlink`, never a shell `rm`) then runs `pypeit_run_to_calibstep`;
+S4-Q4 the confirmation **names all** files (slits → both Slits_*+Edges_*); S4-Q5
+**only runs lock**, `.log` mtime polled every 2.5 s; S4-Q6 a small **`RunLock`**
+controller the launcher drives and the view observes; S4-Q7 **refresh-once-on-
+completion**; S4-Q8 a standard **`QMessageBox`**; S4-Q9 the CI-safe split (mock
+the subprocess; e2e is a Sign off); S4-Q10 **(Re)Build only** (no top-level Run).
+
+**Files (production, `PypeIt/pypeit/dashboard/`).**
+- `palette.py` — added the **action color** (`ACTION_COLORS` + `action_color()`):
+  blue `#1565C0`/`#42A5F5`, deliberately not a status color.
+- `model.py` — added `log_path` (the `.pypeit`-rooted `.log` the lock watches)
+  and `step_output_files()` (the existing `Calibrations/` outputs a (re)build
+  overwrites — both `Slits_*` and `Edges_*` for `slits`; only files on disk).
+- `inspect.py` — added `run_command()` (the `pypeit_run_to_calibstep` argv with
+  `--calib_group`/`--det`/`--redux_path`) + `_det_run_arg()` (int → `"1"`,
+  mosaic → `"(1,2)"` for `parse.eval_detectors`); fixed stale `--proc`/`ginga`
+  comments to `--inter` (the consistency pass).
+- `runlock.py` (new) — `RunLock(QObject)`: locks while a Dashboard-launched run
+  is active **and** when the reduction `.log` mtime is recent (external run);
+  `lockChanged` signal; pure `_is_recent()` for testing; `QTimer` polling.
+- `launcher.py` — added `run()` (+ `_on_run_finished`/`_on_run_error`): engages
+  the lock, reports the quoted command, releases the lock and calls the
+  refresh callback on completion.
+- `view/calibrations_view.py` — the **(Re)Build** control (blue, lock-gated) in a
+  new action row beside "Inspect output"; the `QMessageBox` clobber confirmation
+  (`_confirm_rebuild`) naming the files; `_on_rebuild` (confirm → unlink → run);
+  `set_locked()` for the lock signal.
+- `view/main_window.py` — creates the `RunLock(model.log_path)`, passes it to the
+  launcher + Calibrations view, connects `lockChanged → set_locked`, starts the
+  poll, and adds `_on_run_finished` (re-reads the state and re-renders both
+  views — C15).
+
+**Backend grounding.** Confirmed `pypeit_run_to_calibstep` sets
+`reuse_calibs = True` (no `--clobber`), parses `--det` via
+`parse.eval_detectors` (so mosaics need the `"(1,2)"` form), matches
+`--calib_group` as a string, and defaults its log to `<pypeit>.log` — which is
+why the delete-then-run clobber (option (a)) and the `.log`-mtime lock are the
+right fits without touching the pipeline.
+
+**Tests/fixtures.** Added 7 Stage 4 tests (run-command argv, clobber file-set,
+the `RunLock` state machine incl. an `os.utime`-aged `.log`, the (Re)Build button
++ lock gating, and confirm/cancel clobber with a fake launcher).
+`pytest pypeit/tests/test_dashboard.py` → **42 passed**;
+`+ test_state.py` → **67 passed**.
+
+**Self-checked renders.** Re-ran the layout-check harness: the blue
+**"(Re)Build <step>"** button renders beside "Inspect output" across
+healthy/multidet/echelle × wv_calib/flats × light/dark. Refreshed the user-doc
+figure `doc/figures/dashboard_calibrations_view.png` (now shows the (Re)Build
+button) and corrected its caption.
+
+**Docs.** Updated the design doc (C10 + detail-panel bullet → "(Re)Build" +
+blue; C10/C15 and X1–X3 → **Implemented (Stage 4)**; → v1.1.0), the coding doc
+(build-order Stage 4 row implemented; → v1.1.0), and `doc/dashboard/dashboard.rst`
+(new "(Re)building a calibration" section, the Actions-table (Re)Build row, the
+detail-panel bullet, the "Not yet implemented" edit; → v1.1.0). `make htmlonly`
+→ build succeeded (only the one pre-existing unrelated warning).
+
+**Note.** The lock watches the same `.log` our own run writes, so for ~10 s after
+a Dashboard-launched run the external check can still read it as "recent" — a
+brief, conservative extra lock; the refresh fires on the process-finished signal
+regardless.
+
+**Next step:** the user runs the Stage 4 Sign offs (esp. the interactive
+(Re)Build + lock checks); on acceptance, Stage 5 (live monitoring).
