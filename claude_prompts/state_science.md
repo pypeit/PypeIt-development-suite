@@ -71,7 +71,7 @@ Read the following documents to gain context:
     - Proceed with the implementation.
     - Log your work.
 
-3. Ok, this looks rather good.  Please make these modifications:
+4. Ok, this looks rather good.  Please make these modifications:
 
     - As we now have 2 state modules (state.py, science_status.py), please generate a state/ folder and put the both in it.
     - Refactor the code accordingly.
@@ -515,3 +515,40 @@ JXP and Claude" docstrings.
 **Docs.** Updated `pypeit_dashboard_design.md` (the science-status note) and
 `pypeit_dashboard_coding.md` (Stage 6) to record that the science **state layer**
 is implemented and only the Qt Science view remains.
+
+### 2026-06-15 (Refactor: move state modules into a pypeit/state/ package — Task 4)
+
+Reorganized the two state modules into a package, with no behavior change.
+
+**Layout.** Created `pypeit/state/` containing:
+- `pypeit/state/run_state.py` — the former `pypeit/state.py` (the
+  `RunPypeItState` model + calib/science classes + I/O).
+- `pypeit/state/science_status.py` — the former `pypeit/science_status.py`.
+- `pypeit/state/__init__.py` — re-exports the `run_state` public API
+  (`RunPypeItState`, `same_det`, `calib_classes`, `slit_classes`,
+  `science_steps`, all `*State`/`*Slit`/`Science*`/`FlatCorrectionMetric`
+  classes) so existing `from pypeit import state` / `state.RunPypeItState` and
+  `from pypeit.state import RunPypeItState, same_det` keep working unchanged.
+
+**Refactors.**
+- `science_status.py` now imports the model via
+  `from pypeit.state import run_state as pypeit_state` (was
+  `from pypeit import state ...`), avoiding any package-init cycle.
+- Updated the two external importers from `from pypeit import science_status`
+  to `from pypeit.state import science_status`
+  (`pypeit/exposure.py`, `pypeit/scripts/pypeit_status.py`).
+- Callers that used `from pypeit import state` (`pypeit.py`, `calibrations.py`)
+  and `from pypeit.state import ...` (`dashboard/model.py`) needed **no**
+  change thanks to the `__init__` re-exports.
+
+**Checks.** Packaging uses setuptools auto-discovery
+(`[tool.setuptools.packages] find = {}`), so the new `pypeit.state` subpackage
+is picked up automatically; the editable install resolves it immediately. The
+RST doc-include `.. include:: ../include/links.rst` in `run_state.py` is correct
+as-is (same path used by other one-level-deep modules like `pypeit/core/*.py`).
+
+**Validation.** All imports resolve (`pypeit.state`, `pypeit.state.run_state`,
+`pypeit.state.science_status`, `pypeit.exposure`, `pypeit.calibrations`,
+`pypeit.pypeit`, `pypeit.scripts.pypeit_status`, `pypeit.dashboard.model`);
+`pypeit_status` still prints the calibration + science tables; and the
+`test_state` + `test_dashboard` + `test_flatfield` suites pass (**83 passed**).
