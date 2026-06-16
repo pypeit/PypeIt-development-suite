@@ -15,12 +15,13 @@ from pypeit.calibframe import CalibFrame
 from pypeit.images.buildimage import SkyRegions
 from pypeit import io
 from pypeit import pypeit
+from pypeit import exposure
 from pypeit.core import skysub
 
 
 def test_skysub(redux_out):
 
-    redux_path = Path(redux_out).resolve() / 'shane_kast_blue' / '600_4310_d55' \
+    redux_path = Path(redux_out).absolute() / 'shane_kast_blue' / '600_4310_d55' \
                     / 'shane_kast_blue_A'
 
     # Load the spec2d file
@@ -30,10 +31,11 @@ def test_skysub(redux_out):
     spec2DObj = spec2dobj.Spec2DObj.from_file(spec2d, spec.get_det_name(1), chk_version=True)
 
     # Set the name for the SkyRegions file
+    calib_dir = spec2DObj.head0['CALIBDIR']
     calib_key, _ = CalibFrame.parse_key_dir(spec2DObj.calibs['EDGES'], from_filename=True)
-    regfile = SkyRegions.construct_file_name(calib_key, calib_dir=spec2DObj.head0['CALIBDIR'],
+    regfile = SkyRegions.construct_file_name(calib_key, calib_dir=calib_dir,
                                              basename=io.remove_suffix(spec2DObj.head0['FILENAME']))
-    regfile = Path(regfile).resolve()
+    regfile = Path(regfile).absolute()
 
     # If it exists, remove it
     if regfile.exists():
@@ -53,22 +55,23 @@ def test_skysub(redux_out):
     # Try to re-reduce the standard using the "user-defined" sky-regions
 
     # Set the pypeit file
-    pypeit_file = Path(redux_out).resolve() / 'shane_kast_blue' / '600_4310_d55' \
+    pypeit_file = Path(redux_out).absolute() / 'shane_kast_blue' / '600_4310_d55' \
                     / 'shane_kast_blue_A' / 'shane_kast_blue_A.pypeit'
     assert pypeit_file.exists(), 'PypeIt file missing!'
 
     # Initialize the main pypeit run
-    pypeIt = pypeit.PypeIt(str(pypeit_file), verbosity=2, reuse_calibs=True, overwrite=True,
-                           redux_path=str(redux_path))
+    pypeIt = pypeit.PypeIt(str(pypeit_file), reuse_calibs=True, overwrite=True, redux_path=str(redux_path))
     assert pypeIt.fitstbl.n_calib_groups == 1, 'Number of calibration groups changed'
     is_standard = pypeIt.fitstbl.find_frames('standard')
     assert np.sum(is_standard) == 1, 'Number of standard frames changed'
     std_frame = np.where(is_standard)[0]
 
+    calib_id = pypeIt.fitstbl.find_frame_calib_groups(std_frame[0])[0]
+
     # Use the SkyRegions file
     pypeIt.par['reduce']['skysub']['user_regions'] = 'user'
     # This should *not* overwrite any existing spec2d or spec1d file
-    new_spec2d, new_spec1d = pypeIt.reduce_exposure(std_frame)
+    new_spec2d, new_spec1d = exposure.reduce_exposure(spec, pypeIt.fitstbl, pypeIt.par, std_frame, calib_id, calib_dir)
 
     # TODO: Would be nice to have tests that can tell whether or not the code
     # actually used the SkyRegions file...
@@ -77,14 +80,15 @@ def test_skysub(redux_out):
     # And try again using a directly defined region
     pypeIt.par['reduce']['skysub']['user_regions'] = region
     # This should *not* overwrite any existing spec2d or spec1d file
-    _new_spec2d, _new_spec1d = pypeIt.reduce_exposure(std_frame)
+    _new_spec2d, _new_spec1d = exposure.reduce_exposure(spec, pypeIt.fitstbl, pypeIt.par, std_frame, calib_id, calib_dir)
     assert len(_new_spec1d) == 1, 'Should extract 1 spectrum'
 
     # Result should be identical
-    # NOTE: This may be too strict, but it worked for me...
-    assert np.array_equal(new_spec1d[0].BOX_WAVE, _new_spec1d[0].BOX_WAVE), \
+    # NOTE: This used to use np.array_equal, but this caused an error in the
+    # cloud.
+    assert np.allclose(new_spec1d[0].BOX_WAVE, _new_spec1d[0].BOX_WAVE), \
             'wavelength should be the same'
-    assert np.array_equal(new_spec1d[0].BOX_COUNTS, _new_spec1d[0].BOX_COUNTS), \
+    assert np.allclose(new_spec1d[0].BOX_COUNTS, _new_spec1d[0].BOX_COUNTS), \
             'extracted counts should be the same'
 
 

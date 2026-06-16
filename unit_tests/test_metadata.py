@@ -129,7 +129,7 @@ def test_lris_red_multi_calib():
     ps.fitstbl.set_calibration_groups()
 
     calib_file = data_output_path('test.calib')
-    caldir = Path(data_output_path('')).resolve() / ps.par['calibrations']['calib_dir']
+    caldir = Path(data_output_path('')).absolute() / ps.par['calibrations']['calib_dir']
     Calibrations.association_summary(calib_file, ps.fitstbl, ps.spectrograph, caldir,
                                      overwrite=True)
     with open(calib_file, 'r') as f:
@@ -162,24 +162,23 @@ def test_lris_red_multi_run():
 
 
 def test_lris_blue_pypeit_overwrite():
-    f = os.path.join(os.environ['PYPEIT_DEV'],
-                     'pypeit_files/keck_lris_blue_long_400_3400_d560.pypeit')
-    assert os.path.isfile(f), 'Could not find pypeit file.'
+    pypeit_dev = Path(os.environ['PYPEIT_DEV'])
+    f = pypeit_dev / 'pypeit_files' / 'keck_lris_blue_long_400_3400_d560.pypeit'
+    assert f.is_file(), 'Could not find pypeit file.'
         
     pypeitFile = inputfiles.PypeItFile.from_file(f)
 
     # Reset path
-    istr = pypeitFile.file_paths[0].find('RAW_DATA')
-    pypeitFile.file_paths = [os.path.join(os.environ['PYPEIT_DEV'], 
-                                          pypeitFile.file_paths[0][istr:])]
+    _file_path = str(pypeitFile.file_paths[0])
+    istr = _file_path.find('RAW_DATA')
+    pypeitFile.file_paths = [pypeit_dev / _file_path[istr:]]
     data_files = pypeitFile.filenames
 
     # Read the fits table with and without the user data
     spectrograph = load_spectrograph('keck_lris_blue')
     par = spectrograph.default_pypeit_par()
     fitstbl = PypeItMetaData(spectrograph, par, files=data_files)
-    fitstbl_usr = PypeItMetaData(spectrograph, par, files=data_files, 
-                                 usrdata=pypeitFile.data)
+    fitstbl_usr = PypeItMetaData(spectrograph, par, files=data_files, usrdata=pypeitFile.data)
 
     assert fitstbl['target'][0] == 'unknown', 'Grating name changed in file header'
     assert fitstbl_usr['target'][0] == 'test', 'Grating name changed in pypeit file'

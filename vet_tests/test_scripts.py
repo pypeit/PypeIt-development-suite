@@ -5,22 +5,35 @@ from pathlib import Path
 import os
 import numpy as np
 import pytest
+from astropy.io import fits
 
 import matplotlib
 from IPython import embed
 matplotlib.use('agg')  # For Travis
 
 from pypeit import dataPaths
-from pypeit import scripts
-from pypeit.display import display
 from pypeit import wavecalib
 from pypeit import coadd1d
 from pypeit import inputfiles
 from pypeit import calibrations
+from pypeit.display import display
+from pypeit.scripts import chk_flats
+from pypeit.scripts import chk_edges
+from pypeit.scripts import chk_wavecalib
+from pypeit.scripts import collate_1d
+from pypeit.scripts import compare_sky
+from pypeit.scripts import identify
+from pypeit.scripts import parse_slits
+from pypeit.scripts import rectify_2dspec
+from pypeit.scripts import run_to_calibstep
+from pypeit.scripts import setup_coadd2d
+from pypeit.scripts import show_1dspec
+from pypeit.scripts import show_2dspec
+from pypeit.scripts import view_fits
 from pypeit.utils import jsonify
 import json
 
-from pypeit.pypmsgs import PypeItError
+from pypeit import PypeItError
 
 
 def test_show_1dspec(redux_out):
@@ -29,8 +42,8 @@ def test_show_1dspec(redux_out):
                              'shane_kast_blue_A', 'Science',
                              'spec1d_b27-J1217p3905_KASTb_20150520T045733.560.fits')
     # Just list
-    pargs = scripts.show_1dspec.Show1DSpec.parse_args([spec_file, '--list'])
-    scripts.show_1dspec.Show1DSpec.main(pargs)
+    pargs = show_1dspec.Show1DSpec.parse_args([spec_file, '--list'])
+    show_1dspec.Show1DSpec.main(pargs)
 
 
 def test_show_2dspec(redux_out):
@@ -45,11 +58,11 @@ def test_show_2dspec(redux_out):
     cdir = os.getcwd()
     os.chdir(droot)
     # List
-    pargs = scripts.show_2dspec.Show2DSpec.parse_args([spec2d_file, '--list'])
-    scripts.show_2dspec.Show2DSpec.main(pargs)
+    pargs = show_2dspec.Show2DSpec.parse_args([spec2d_file, '--list'])
+    show_2dspec.Show2DSpec.main(pargs)
     # Show
-    pargs = scripts.show_2dspec.Show2DSpec.parse_args([spec2d_file])
-    scripts.show_2dspec.Show2DSpec.main(pargs)
+    pargs = show_2dspec.Show2DSpec.parse_args([spec2d_file])
+    show_2dspec.Show2DSpec.main(pargs)
     # Go back
     os.chdir(cdir)
 
@@ -63,8 +76,8 @@ def test_chk_edges(redux_out):
     # Ginga needs to be open in RC mode
     display.connect_to_ginga(raise_err=True, allow_new=True)
     #
-    pargs = scripts.chk_edges.ChkEdges.parse_args([mstrace_root])
-    scripts.chk_edges.ChkEdges.main(pargs)
+    pargs = chk_edges.ChkEdges.parse_args([mstrace_root])
+    chk_edges.ChkEdges.main(pargs)
 
 
 def test_view_fits_list(redux_out):
@@ -74,8 +87,8 @@ def test_view_fits_list(redux_out):
                              'shane_kast_blue', '600_4310_d55',
                              'shane_kast_blue_A', 'Science',
                              'spec1d_b27-J1217p3905_KASTb_20150520T045733.560.fits')
-    pargs = scripts.view_fits.ViewFits.parse_args(['shane_kast_blue', spec_file, '--list'])
-    scripts.view_fits.ViewFits.main(pargs)
+    pargs = view_fits.ViewFits.parse_args(['shane_kast_blue', spec_file, '--list'])
+    view_fits.ViewFits.main(pargs)
 
 
 def test_view_fits_proc_fail(redux_out):
@@ -86,9 +99,9 @@ def test_view_fits_proc_fail(redux_out):
                              'shane_kast_blue_A') 
     spec_file = os.path.join(droot, 'Science',
                              'spec2d_b27-J1217p3905_KASTb_20150520T045733.560.fits')
-    pargs = scripts.view_fits.ViewFits.parse_args(['shane_kast_blue', spec_file, '--proc'])
+    pargs = view_fits.ViewFits.parse_args(['shane_kast_blue', spec_file, '--proc'])
     with pytest.raises(PypeItError):
-        scripts.view_fits.ViewFits.main(pargs)
+        view_fits.ViewFits.main(pargs)
 
 
 def test_chk_flat(redux_out):
@@ -101,8 +114,8 @@ def test_chk_flat(redux_out):
     # Ginga needs to be open in RC mode
     display.connect_to_ginga(raise_err=True, allow_new=True)
     #
-    pargs = scripts.chk_flats.ChkFlats.parse_args([mstrace_root])
-    scripts.chk_flats.ChkFlats.main(pargs)
+    pargs = chk_flats.ChkFlats.parse_args([mstrace_root])
+    chk_flats.ChkFlats.main(pargs)
 
 
 def test_chk_wavecalib(redux_out):
@@ -113,8 +126,8 @@ def test_chk_wavecalib(redux_out):
                            'Calibrations',
                            'WaveCalib_A_0_DET01.fits')
     #
-    pargs = scripts.chk_wavecalib.ChkWaveCalib.parse_args([ms_root])
-    scripts.chk_wavecalib.ChkWaveCalib.main(pargs)
+    pargs = chk_wavecalib.ChkWaveCalib.parse_args([ms_root])
+    chk_wavecalib.ChkWaveCalib.main(pargs)
 
 
 def test_identify(redux_out):
@@ -124,8 +137,8 @@ def test_identify(redux_out):
     slits_file = os.path.join(droot, 'Calibrations',
                               'Slits_A_0_DET01.fits.gz')
     # Just list
-    pargs = scripts.identify.Identify.parse_args([arc_file, slits_file, '--test'])
-    arcfitter, msarc = scripts.identify.Identify.main(pargs)
+    pargs = identify.Identify.parse_args([arc_file, slits_file, '--test'])
+    arcfitter, msarc = identify.Identify.main(pargs)
 
     # Load line list
     arcfitter.load_IDs(fname=str(dataPaths.tests.get_file_path('waveid_tests.ascii')))
@@ -175,33 +188,36 @@ def test_compare_sky(redux_out):
     sky_file = 'sky_kastb_600.fits'
 
     # Running in `test` mode for boxcar extraction
-    pargs = scripts.compare_sky.CompareSky.parse_args([spec_file, sky_file, '--test'])
-    scripts.compare_sky.CompareSky.main(pargs)
+    pargs = compare_sky.CompareSky.parse_args([spec_file, sky_file, '--test'])
+    compare_sky.CompareSky.main(pargs)
 
     # Running in `test` mode for optimal extraction
-    pargs = scripts.compare_sky.CompareSky.parse_args([spec_file, sky_file, '--test',
-                                                       '--optimal'])
-    scripts.compare_sky.CompareSky.main(pargs)
+    pargs = compare_sky.CompareSky.parse_args([spec_file, sky_file, '--test', '--optimal'])
+    compare_sky.CompareSky.main(pargs)
 
 
 def test_collate_1d(tmp_path, monkeypatch, redux_out):
-    kastb_dir = os.path.join(redux_out,
-                             'shane_kast_blue', '600_4310_d55',
-                             'shane_kast_blue_A', 'Science')
-    deimos_dir = os.path.join(redux_out, 
-                              'keck_deimos','830G_M_8500', 
-                              'Science')
+    kastb_dir = os.path.join(
+        redux_out, 'shane_kast_blue', '600_4310_d55', 'shane_kast_blue_A', 'Science'
+    )
+    deimos_dir = os.path.join(redux_out, 'keck_deimos','830G_M_8500', 'Science')
 
     # Build up arguments for testing command line parsing
-    args = ['--dry_run', '--chk_version', '--ignore_flux', '--flux', '--outdir', '/outdir2', '--match', 'ra/dec', '--exclude_slit_bm', 'BOXSLIT', '--exclude_serendip', '--wv_rms_thresh', '0.2', '--refframe', 'heliocentric']
+    args = [
+        '--dry_run', '--chk_version', '--ignore_flux', '--flux', '--outdir', '/outdir2',
+        '--match', 'ra/dec', '--exclude_slit_trace_bm', 'BOXSLIT', '--exclude_serendip',
+        '--wv_rms_thresh', '0.2', '--refframe', 'heliocentric'
+    ]
     spec1d_file = os.path.join(kastb_dir, 'spec1d_b27*fits')
     spec1d_args = ['--spec1d_files', spec1d_file]
     tol_args = ['--tolerance', '0.03d']
     alt_spec1d = os.path.join(deimos_dir, 'spec1d_DE.20100913.22358*fits')
-    expanded_spec1d = os.path.join(kastb_dir,
-                                   'spec1d_b27-J1217p3905_KASTb_20150520T045733.560.fits')
-    expanded_alt_spec1d = os.path.join(deimos_dir,
-                                       'spec1d_DE.20100913.22358-CFHQS1_DEIMOS_20100913T061231.334.fits')
+    expanded_spec1d = os.path.join(
+        kastb_dir, 'spec1d_b27-J1217p3905_KASTb_20150520T045733.560.fits'
+    )
+    expanded_alt_spec1d = os.path.join(
+        deimos_dir, 'spec1d_DE.20100913.22358-CFHQS1_DEIMOS_20100913T061231.334.fits'
+    )
     spec1d_args = ['--spec1d_files', expanded_spec1d]
 
     # Create config files for testing config file parsing
@@ -249,13 +265,12 @@ def test_collate_1d(tmp_path, monkeypatch, redux_out):
 
     # Args only, nospec1d files should exit with an errror
     with pytest.raises(SystemExit):
-        parsed_args = scripts.collate_1d.Collate1D.parse_args(args + tol_args)
-        params, spectrograph, expanded_spec1d_files \
-                = scripts.collate_1d.build_parameters(parsed_args)
+        parsed_args = collate_1d.Collate1D.parse_args(args + tol_args)
+        params, spectrograph, expanded_spec1d_files = collate_1d.build_parameters(parsed_args)
 
     # Everything passed via command line
-    parsed_args = scripts.collate_1d.Collate1D.parse_args(args + tol_args + spec1d_args)
-    params, spectrograph, expanded_spec1d_files = scripts.collate_1d.build_parameters(parsed_args)
+    parsed_args = collate_1d.Collate1D.parse_args(args + tol_args + spec1d_args)
+    params, spectrograph, expanded_spec1d_files = collate_1d.build_parameters(parsed_args)
     assert params['collate1d']['dry_run'] is True
     assert params['rdx']['chk_version'] is True
     assert params['collate1d']['outdir'] == '/outdir2'
@@ -270,8 +285,8 @@ def test_collate_1d(tmp_path, monkeypatch, redux_out):
     assert len(expanded_spec1d_files) == 1 and expanded_spec1d_files[0] == expanded_spec1d
 
     # Full config file, should work
-    parsed_args = scripts.collate_1d.Collate1D.parse_args([config_file_full])
-    params, spectrograph, expanded_spec1d_files = scripts.collate_1d.build_parameters(parsed_args)
+    parsed_args = collate_1d.Collate1D.parse_args([config_file_full])
+    params, spectrograph, expanded_spec1d_files = collate_1d.build_parameters(parsed_args)
     assert params['collate1d']['dry_run'] is False
     assert params['rdx']['chk_version'] is False
     assert params['collate1d']['outdir'] == '/outdir'
@@ -288,9 +303,10 @@ def test_collate_1d(tmp_path, monkeypatch, redux_out):
     assert len(expanded_spec1d_files) == 1 and expanded_spec1d_files[0] == expanded_alt_spec1d
 
     # Test that a full command line overrides a config file
-    parsed_args = scripts.collate_1d.Collate1D.parse_args(args + spec1d_args + tol_args
-                                                          + [config_file_full])
-    params, spectrograph, expanded_spec1d_files = scripts.collate_1d.build_parameters(parsed_args)
+    parsed_args = collate_1d.Collate1D.parse_args(
+        args + spec1d_args + tol_args + [config_file_full]
+    )
+    params, spectrograph, expanded_spec1d_files = collate_1d.build_parameters(parsed_args)
     assert params['collate1d']['dry_run'] is True
     assert params['collate1d']['outdir'] == '/outdir2'
     assert params['collate1d']['ignore_flux'] == True
@@ -304,10 +320,11 @@ def test_collate_1d(tmp_path, monkeypatch, redux_out):
     assert spectrograph.name == 'shane_kast_blue'
     assert len(expanded_spec1d_files) == 1 and expanded_spec1d_files[0] == expanded_spec1d
 
-    # Test that a config file with spec1d files. Test that default tolerance and match_using is used
-    # Also test using an external coadd1d file with the same name
-    parsed_args = scripts.collate_1d.Collate1D.parse_args([config_file_spec1d])
-    params, spectrograph, expanded_spec1d_files = scripts.collate_1d.build_parameters(parsed_args)
+    # Test that a config file with spec1d files. Test that default tolerance and
+    # match_using is used.  Also test using an external coadd1d file with the
+    # same name
+    parsed_args = collate_1d.Collate1D.parse_args([config_file_spec1d])
+    params, spectrograph, expanded_spec1d_files = collate_1d.build_parameters(parsed_args)
     assert params['collate1d']['tolerance'] == 1.0
     assert params['collate1d']['match_using'] == 'ra/dec'
     assert params['coadd1d']['ex_value'] == 'BOX'
@@ -343,13 +360,12 @@ def test_collate_1d(tmp_path, monkeypatch, redux_out):
         # * copying of spec1d file when doing refframe correction and spec1d_output is set.
         archive_dir = tmp_path / 'archive'
 
-        parsed_args = scripts.collate_1d.Collate1D.parse_args(['--par_outfile', par_file, '--match',
-                                                               'pixel', '--tolerance', '3',
-                                                               '--spec1d_files', expanded_spec1d,
-                                                               '--spec1d_outdir', str(tmp_path),
-                                                               '--refframe', 'heliocentric',
-                                                               '--exclude_slit_bm', 'BADSKYSUB,BADEXTRACT'])
-        assert scripts.collate_1d.Collate1D.main(parsed_args) == 0
+        parsed_args = collate_1d.Collate1D.parse_args([
+            '--par_outfile', par_file, '--match', 'pixel', '--tolerance', '3', '--spec1d_files',
+            expanded_spec1d, '--spec1d_outdir', str(tmp_path), '--refframe', 'heliocentric',
+            '--exclude_slit_trace_bm', 'BADSKYSUB,BADEXTRACT'
+        ])
+        assert collate_1d.Collate1D.main(parsed_args) == 0
         assert os.path.exists(par_file)
         assert os.path.exists(os.path.join(str(tmp_path), os.path.basename(expanded_spec1d)))
 
@@ -362,20 +378,21 @@ def test_collate_1d(tmp_path, monkeypatch, redux_out):
         # * test exception handling when one file fails
         # The 240 arsec tolerance is to ensure there's only two outputs, one of which the mock 
         # coadd object will fail
-        parsed_args = scripts.collate_1d.Collate1D.parse_args(['--par_outfile', par_file,
-                                                               '--match', 'ra/dec', '--tolerance',
-                                                               '240', '--spec1d_files',
-                                                               expanded_alt_spec1d])                                                            
-        assert scripts.collate_1d.Collate1D.main(parsed_args) == 0
+        parsed_args = collate_1d.Collate1D.parse_args([
+            '--par_outfile', par_file, '--match', 'ra/dec', '--tolerance', '240',
+            '--spec1d_files', expanded_alt_spec1d
+        ])
+        assert collate_1d.Collate1D.main(parsed_args) == 0
 
         # Remove par_file to avoid a warning
         os.unlink(par_file)
 
         # Test parsing of units in ra/dec tolerance
-        parsed_args = scripts.collate_1d.Collate1D.parse_args(['--par_outfile', par_file,
-                                                               '--match', 'ra/dec', '--tolerance', '3d',
-                                                               '--spec1d_files', expanded_alt_spec1d])
-        assert scripts.collate_1d.Collate1D.main(parsed_args) == 0
+        parsed_args = collate_1d.Collate1D.parse_args([
+            '--par_outfile', par_file, '--match', 'ra/dec', '--tolerance', '3d', '--spec1d_files',
+            expanded_alt_spec1d
+        ])
+        assert collate_1d.Collate1D.main(parsed_args) == 0
         
 
 def test_parse_slits(redux_out):
@@ -388,18 +405,18 @@ def test_parse_slits(redux_out):
                               'spec2d_b27-J1217p3905_KASTb_20150520T045733.560.fits')
 
     # Slits
-    pargs = scripts.parse_slits.ParseSlits.parse_args([slits_file])
-    scripts.parse_slits.ParseSlits.main(pargs)
+    pargs = parse_slits.ParseSlits.parse_args([slits_file])
+    parse_slits.ParseSlits.main(pargs)
 
     # Spec2d
-    pargs = scripts.parse_slits.ParseSlits.parse_args([spec2d_file])
-    scripts.parse_slits.ParseSlits.main(pargs)
+    pargs = parse_slits.ParseSlits.parse_args([spec2d_file])
+    parse_slits.ParseSlits.main(pargs)
 
 
 def test_setup_coadd2d(redux_out):
 
     # Set the pypeit file
-    _redux_out = Path(redux_out).resolve() / 'gemini_gnirs_echelle' / '32_SB_SXD'
+    _redux_out = Path(redux_out).absolute() / 'gemini_gnirs_echelle' / '32_SB_SXD'
     pypeit_file = _redux_out / 'gemini_gnirs_echelle_32_sb_sxd.pypeit'
 
     # move to the redux_out directory
@@ -407,8 +424,9 @@ def test_setup_coadd2d(redux_out):
     os.chdir(_redux_out)
 
     # Run the setup
-    scripts.setup_coadd2d.SetupCoAdd2D.main(
-            scripts.setup_coadd2d.SetupCoAdd2D.parse_args(['-f', str(pypeit_file)]))
+    setup_coadd2d.SetupCoAdd2D.main(
+        setup_coadd2d.SetupCoAdd2D.parse_args(['-f', str(pypeit_file)])
+    )
 
     # Check the number of files
     coadd_files = sorted(_redux_out.glob('gemini_gnirs_echelle_32_sb_sxd*.coadd2d'))
@@ -427,9 +445,9 @@ def test_setup_coadd2d(redux_out):
         f.unlink()
 
     # Run the setup, but change the offsets and weights
-    scripts.setup_coadd2d.SetupCoAdd2D.main(
-            scripts.setup_coadd2d.SetupCoAdd2D.parse_args(
-                    ['-f', str(pypeit_file), '--offsets', 'maskdef_offsets', '--weights', 'uniform']))
+    setup_coadd2d.SetupCoAdd2D.main(setup_coadd2d.SetupCoAdd2D.parse_args([
+        '-f', str(pypeit_file), '--offsets', 'maskdef_offsets', '--weights', 'uniform'
+    ]))
 
     # Check the number of files
     coadd_files = sorted(_redux_out.glob('gemini_gnirs_echelle_32_sb_sxd*.coadd2d'))
@@ -447,8 +465,9 @@ def test_setup_coadd2d(redux_out):
     # get Science directory
     sci_dir = _redux_out / 'Science'
     # Run the setup
-    scripts.setup_coadd2d.SetupCoAdd2D.main(
-            scripts.setup_coadd2d.SetupCoAdd2D.parse_args(['-d', str(sci_dir), '--spat_toler', '10']))
+    setup_coadd2d.SetupCoAdd2D.main(
+        setup_coadd2d.SetupCoAdd2D.parse_args(['-d', str(sci_dir), '--spat_toler', '10'])
+    )
 
     # Check the number of files
     coadd_files = sorted(Path().glob('gemini_gnirs_*.coadd2d'))
@@ -465,15 +484,17 @@ def test_setup_coadd2d(redux_out):
     # test another dataset and the only_slits and exclude_slits parameters
 
     # Set the pypeit file
-    _redux_out = Path(redux_out).resolve() / 'keck_mosfire' / 'mask1_K_with_continuum'
+    _redux_out = Path(redux_out).absolute() / 'keck_mosfire' / 'mask1_K_with_continuum'
     pypeit_file = _redux_out / 'keck_mosfire_mask1_k_with_continuum.pypeit'
 
     # move to the redux_out directory
     os.chdir(_redux_out)
 
     # Run the setup
-    scripts.setup_coadd2d.SetupCoAdd2D.main(
-            scripts.setup_coadd2d.SetupCoAdd2D.parse_args(['-f', str(pypeit_file), '--only_slits', 'DET01:306', '--exclude_slits', 'DET01:766,DET01:877']))
+    setup_coadd2d.SetupCoAdd2D.main(setup_coadd2d.SetupCoAdd2D.parse_args([
+        '-f', str(pypeit_file), '--only_slits', 'DET01:306', '--exclude_slits',
+        'DET01:766,DET01:877'
+    ]))
 
     # Check the number of files
     coadd_files = sorted(_redux_out.glob('keck_mosfire_mask1_k_with_continuum*.coadd2d'))
@@ -488,8 +509,9 @@ def test_setup_coadd2d(redux_out):
 
     # re-run with only --exclude_slits
         # Run the setup
-    scripts.setup_coadd2d.SetupCoAdd2D.main(
-            scripts.setup_coadd2d.SetupCoAdd2D.parse_args(['-f', str(pypeit_file), '--exclude_slits', 'DET01:766,DET01:877']))
+    setup_coadd2d.SetupCoAdd2D.main(setup_coadd2d.SetupCoAdd2D.parse_args([
+        '-f', str(pypeit_file), '--exclude_slits', 'DET01:766,DET01:877'
+    ]))
 
     # Check the number of files
     coadd_files = sorted(_redux_out.glob('keck_mosfire_mask1_k_with_continuum*.coadd2d'))
@@ -510,7 +532,7 @@ def test_run_to_calibstep(redux_out):
     cdir = os.getcwd()
 
     # Set the pypeit file
-    _redux_out = Path(redux_out).resolve() / 'shane_kast_blue' / '600_4310_d55' / 'shane_kast_blue_A'
+    _redux_out = Path(redux_out).absolute() / 'shane_kast_blue' / '600_4310_d55' / 'shane_kast_blue_A'
 
     # move to the redux_out directory
     os.chdir(_redux_out)
@@ -519,12 +541,79 @@ def test_run_to_calibstep(redux_out):
     #pytest.set_trace()
     # Run on all the steps
     for step in calibrations.MultiSlitCalibrations.default_steps():
-        scripts.run_to_calibstep.RunToCalibStep.main(
-            scripts.run_to_calibstep.RunToCalibStep.parse_args(
-            [str(pypeit_file), step, '--science_frame', 'b28.fits.gz']))
+        run_to_calibstep.RunToCalibStep.main(run_to_calibstep.RunToCalibStep.parse_args([
+            str(pypeit_file), step, '--science_frame', 'b28.fits.gz'
+        ]))
 
     # Go back
     os.chdir(cdir)
+
+
+def test_rectify_2dspec(redux_out):
+    """Test the rectify_2dspec script."""
+    # Get the spec2d file path
+    _redux_out = Path(redux_out).absolute() / 'keck_deimos' / '600ZD_tilted' / 'Science'
+    spec2d_fname = 'spec2d_d0225_0054-16045h_DEIMOS_20190225T145727.158.fits'
+
+    # Test basic execution
+    pargs = rectify_2dspec.Rectify2DSpec.parse_args([str(_redux_out / spec2d_fname)])
+    rectify_2dspec.Rectify2DSpec.main(pargs)
+
+    # Check that the output file was created
+    out_file = spec2d_fname.replace('spec2d', 'rectified_spec2d')
+    assert (_redux_out / out_file).exists(), 'Rectified spec2d file was not created'
+
+    # Verify the output file has the proper structure
+    with fits.open(_redux_out / out_file) as hdul:
+        assert len(hdul) > 1, 'Output file should have multiple HDUs'
+        # Check that the detector extension exists
+        assert 'MSC01' in [hdu.name for hdu in hdul], 'MSC01 extension missing'
+
+        # Verify WCS headers are present
+        det_hdu = hdul['MSC01']
+        hdr = det_hdu.header
+        assert 'CRPIX1' in hdr, 'Missing CRPIX1 in header'
+        assert 'CRPIX2' in hdr, 'Missing CRPIX2 in header'
+        assert 'CDELT1' in hdr, 'Missing CDELT1 in header'
+        assert 'CDELT2' in hdr, 'Missing CDELT2 in header'
+        assert 'CTYPE1' in hdr, 'Missing CTYPE1 in header'
+        assert 'CTYPE2' in hdr, 'Missing CTYPE2 in header'
+        assert hdr['CTYPE1'] == 'LAMBDA', 'Wrong CTYPE1 value'
+        assert hdr['CTYPE2'] == 'LINEAR', 'Wrong CTYPE2 value'
+
+        # get wavelength array
+        pix_arr = np.arange(hdr['NAXIS1']) - (hdr['CRPIX1'] - 1)
+        wave_arr = hdr['CRVAL1'] + pix_arr * hdr['CDELT1']
+        assert np.isclose(wave_arr[4612], 8158.24, rtol=1e-4), 'Wavelength array derivation seems wrong'
+
+    # Clean up
+    os.remove(_redux_out / out_file)
+
+    # Test with the -- no_rot flag
+    pargs = rectify_2dspec.Rectify2DSpec.parse_args([str(_redux_out / spec2d_fname), '--no_rot'])
+    rectify_2dspec.Rectify2DSpec.main(pargs)
+
+    # Verify the output with no rotation has wavelength on y-axis
+    with fits.open(_redux_out / out_file) as hdul:
+        det_hdu = hdul['MSC01']
+        hdr = det_hdu.header
+        assert 'CRPIX1' in hdr, 'Missing CRPIX1 in header'
+        assert 'CRPIX2' in hdr, 'Missing CRPIX2 in header'
+        assert 'CDELT1' in hdr, 'Missing CDELT1 in header'
+        assert 'CDELT2' in hdr, 'Missing CDELT2 in header'
+        assert 'CTYPE1' in hdr, 'Missing CTYPE1 in header'
+        assert 'CTYPE2' in hdr, 'Missing CTYPE2 in header'
+        assert hdr['CTYPE2'] == 'LAMBDA', 'CTYPE2 should be LAMBDA when not rotated'
+        assert hdr['CTYPE1'] == 'LINEAR', 'CTYPE1 should be LINEAR when not rotated'
+
+        # get wavelength array
+        pix_arr = np.arange(hdr['NAXIS2']) - (hdr['CRPIX2'] - 1)
+        wave_arr = hdr['CRVAL2'] + pix_arr * hdr['CDELT2']
+        assert np.isclose(wave_arr[4612], 8158.24, rtol=1e-4), 'Wavelength array derivation seems wrong'
+
+    # Clean up
+    os.remove(_redux_out / out_file)
+
 
 # TODO: Include tests for coadd2d, sensfunc
 

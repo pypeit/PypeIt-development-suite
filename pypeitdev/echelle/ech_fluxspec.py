@@ -13,7 +13,8 @@ from astropy import units
 from astropy.io import fits
 from astropy.table import Table
 
-from pypeit import msgs
+from pypeit import log
+from pypeit import PypeItError
 from pypeit.core import flux
 from pypeit.core import load
 from pypeit.core import save
@@ -39,7 +40,7 @@ def ech_load_specobj(fname,order=None):
     head0
     """
     #if order is None:
-    #    msgs.warn('You did not specify an order. Return specObjs with all orders.')
+    #    log.warning('You did not specify an order. Return specObjs with all orders.')
     #    specObjs, head0 = load.load_specobj(fname)
     #    return specObjs, head0
 
@@ -63,7 +64,7 @@ def ech_load_specobj(fname,order=None):
         if objp[-2][:5] == 'ORDER':
             iord = int(objp[-2][5:])
         else:
-            msgs.warn('Loading longslit data ?')
+            log.warning('Loading longslit data ?')
             iord = int(-1)
         # if order is not None and iord !=order then do not return this extenction
         # if order is None return all extensions
@@ -78,7 +79,7 @@ def ech_load_specobj(fname,order=None):
             specobj = specobjs.SpecObj(shape, None, None, idx = idx)
         except:
             debugger.set_trace()
-            msgs.error("BUG ME")
+            raise PypeItError("BUG ME")
         # Add order number
         specobj.ech_orderindx = iord
         # ToDo: need to changed to the real order number?
@@ -174,21 +175,21 @@ def ech_save_master(sens_dicts, outfile=None):
     hdulist.writeto(outfile, overwrite=True)
 
     # Finish
-    msgs.info("Wrote sensfunc to MasterFrame: {:s}".format(outfile))
+    log.info("Wrote sensfunc to MasterFrame: {:s}".format(outfile))
 
 
 def ech_load_master(filename, force=False):
 
     # Does the master file exist?
     if not os.path.isfile(filename):
-        #msgs.warn("No Master frame found of type {:s}: {:s}".format(self.frametype, filename))
-        msgs.warn("No Master frame found of {:s}".format(filename))
+        #log.warning("No Master frame found of type {:s}: {:s}".format(self.frametype, filename))
+        log.warning("No Master frame found of {:s}".format(filename))
         if force:
-            msgs.error("Crashing out because reduce-masters-force=True:" + msgs.newline() + filename)
+            raise PypeItError("Crashing out because reduce-masters-force=True:\n" + filename)
         return None
     else:
-        #msgs.info("Loading a pre-existing master calibration frame of type: {:}".format(self.frametype) + " from filename: {:}".format(filename))
-        msgs.info("Loading a pre-existing master calibration frame of SENSFUNC from filename: {:}".format(filename))
+        #log.info("Loading a pre-existing master calibration frame of type: {:}".format(self.frametype) + " from filename: {:}".format(filename))
+        log.info("Loading a pre-existing master calibration frame of SENSFUNC from filename: {:}".format(filename))
 
         hdu = fits.open(filename)
         norder = hdu[0].header['NORDER']
@@ -215,7 +216,7 @@ def ech_generate_sensfunc(stdframe,spectrograph=None, telluric=True, star_type=N
     if spectrograph is None:
         std_specobjs, std_header = ech_load_specobj(stdframe, order=0)
         spectrograph = std_header['INSTRUME']
-        msgs.info('You are working on {:s}'.format(spectrograph))
+        log.info('You are working on {:s}'.format(spectrograph))
     ext_final = fits.getheader(stdframe, -1)
     norder = 5
     #norder = ext_final['ORDER'] + 1
@@ -250,7 +251,7 @@ def ech_flux_science(sci_specobjs,sens_dicts,sci_header,spectrograph=None):
     norder = sens_dicts['norder']
     if spectrograph is None:
         spectrograph = sci_header['INSTRUME']
-        msgs.info('You are working on {:s}'.format(spectrograph))
+        log.info('You are working on {:s}'.format(spectrograph))
     for iord in range(norder):
         sens_dict = sens_dicts[str(iord)]
         for sci_obj in sci_specobjs:
@@ -272,7 +273,7 @@ def write_science(sci_specobjs, sci_header, outfile):
 
     """
     if len(sci_specobjs) == 0:
-        msgs.warn("No science spectra to write to disk!")
+        log.warning("No science spectra to write to disk!")
     #
     if 'VEL-TYPE' in sci_header.keys():
         helio_dict = dict(refframe=sci_header['VEL-TYPE'],
@@ -290,7 +291,7 @@ def write_science(sci_specobjs, sci_header, outfile):
     elif isinstance(sci_specobjs, specobjs.SpecObjs):
         specObjs = sci_specobjs
     else:
-        msgs.error("BAD INPUT")
+        raise PypeItError("BAD INPUT")
     save.save_1d_spectra_fits(specObjs, sci_header,'ECHELLE', outfile,
                               helio_dict=helio_dict,
                               telescope=telescope, overwrite=True)

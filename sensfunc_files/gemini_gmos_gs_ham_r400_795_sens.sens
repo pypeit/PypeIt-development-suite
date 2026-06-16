@@ -1,0 +1,8 @@
+[sensfunc]
+    use_flat = True
+    extrap_blu = 0.05
+    extrap_red = 0.05
+    samp_fact = 1.
+    trim_std_pixs = 50, 50,
+    algorithm = IR
+    polyorder = 5

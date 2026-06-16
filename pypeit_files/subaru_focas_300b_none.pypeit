@@ -1,0 +1,26 @@
+# Auto-generated PypeIt input file using PypeIt version: 1.17.4.dev301+g5627e5f0c.d20250603
+# UTC 2025-06-03T22:46:36.124+00:00
+
+# User-defined execution parameters
+[rdx]
+    spectrograph = subaru_focas
+
+# Setup
+setup read
+Setup A:
+  decker: SCFCSLLC06
+  detector: '2'
+  dispname: SCFCGRMB01
+setup end
+
+# Data block 
+data read
+ path /home/eric/docs/Interns/2024_Pypeit_for_FOCAS/300B_None/RAW_DATA
+         filename |                 frametype |                 ra |                 dec |     target |   dispname |     decker | binning |            mjd | airmass | exptime | detector | calib
+FCSA00230990.fits |                  arc,tilt |        159.9023125 |   43.08157777777778 | COMPARISON | SCFCGRMB01 | SCFCSLLC06 |     1,2 | 59574.65885969 |   1.123 |     2.0 |        2 |     0
+FCSA00249756.fits |                      bias | 252.49954166666663 |   53.48770833333334 |       BIAS |       None | SCFCSLLO08 |     1,2 |  60401.6457853 |   1.228 |     0.0 |        2 |     0
+FCSA00226192.fits | pixelflat,illumflat,trace | 236.09052916666664 |  19.891891666666666 |   DOMEFLAT | SCFCGRMB01 | SCFCSLLC06 |     1,2 |  59442.1859621 |     1.0 |     4.2 |        2 |     0
+FCSA00230974.fits |                   science |          193.22045 | -13.053769444444445 |      19ftg | SCFCGRMB01 | SCFCSLLC06 |     1,2 | 59574.63776355 |   1.316 |   900.0 |        2 |     0
+FCSA00230986.fits |                  standard | 159.90222083333333 |   43.08149166666667 |    Feige34 | SCFCGRMB01 | SCFCSLLC06 |     1,2 | 59574.65623522 |   1.119 |    30.0 |        2 |     0
+data end
+

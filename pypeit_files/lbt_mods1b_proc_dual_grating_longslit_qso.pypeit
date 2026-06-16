@@ -1,0 +1,49 @@
+# Auto-generated PypeIt input file using PypeIt version: 1.17.1
+# UTC 2025-04-22T16:37:49.113+00:00
+
+# User-defined execution parameters
+[rdx]
+    spectrograph = lbt_mods1b_proc
+    slitspatnum = "DET01:1544"
+[calibrations]
+    	[[slitedges]]
+           edge_thresh = 20
+    	   minimum_slit_length = 5
+           fit_niter = 3
+           sobel_enhance = 5
+[reduce]
+        [[findobj]]
+           find_min_max = 3904,4288 #restrict object finding to look at the middle of the spectrum
+                                    #and keep default snr_thresh = 10. Would need to be adjusted 
+                                    #for emission line objects. 
+           snr_thresh = 10
+           find_numiterfit = 50 #default 9, try to improve profile fit and eliminate masking
+           maxnumber_sci = 1
+           maxnumber_std = 1
+
+# Setup
+setup read
+Setup A:
+  binning: 1,1
+  dichroic: Dual
+  dispname: G400L
+  instrument: MODS1B
+setup end
+
+# Data block 
+data read
+ path /Users/olga/Dropbox/Data/MODS_Sample_Datasets/MODS_LS_sample_dataset/RAW_DATA/lbt_mods/lbt_mods1b_proc
+                     filename |                 frametype |                 ra |               dec |                               target | dispname |     decker | binning |          mjd | airmass | exptime | instrument | dichroic | calib
+mods1b.20230910.0028_otf.fits |                  arc,tilt |                0.0 |               0.0 |                        Ne + Hg Lamps |    G400L | LS5x60x0.6 |     1,1 | 60197.202042 |     1.0 |     2.0 |     MODS1B |     Dual |     0
+mods1b.20230910.0029_otf.fits |                  arc,tilt |                0.0 |               0.0 |                        Kr + Xe Lamps |    G400L | LS5x60x0.6 |     1,1 | 60197.203544 |     1.0 |    15.0 |     MODS1B |     Dual |     0
+mods1b.20230910.0030_otf.fits |                  arc,tilt |                0.0 |               0.0 |                              Ar Lamp |    G400L | LS5x60x0.6 |     1,1 | 60197.205049 |     1.0 |    30.0 |     MODS1B |     Dual |     0
+mods1b.20230910.0048_otf.fits |                     trace |                0.0 |               0.0 | QTH1 ND1.5 Dual LS5x60x0.8 Slit Flat |    G400L | LS5x60x0.8 |     1,1 |  60197.25184 |     1.0 |    20.0 |     MODS1B |     Dual |     0
+mods1b.20230910.0049_otf.fits |                     trace |                0.0 |               0.0 | QTH1 ND1.5 Dual LS5x60x0.8 Slit Flat |    G400L | LS5x60x0.8 |     1,1 | 60197.253681 |     1.0 |    20.0 |     MODS1B |     Dual |     0
+mods1b.20230910.0051_otf.fits |                     trace |                0.0 |               0.0 |   QTH1 UG5 Dual LS5x60x0.8 Slit Flat |    G400L | LS5x60x0.8 |     1,1 | 60197.256839 |     1.0 |     8.0 |     MODS1B |     Dual |     0
+mods1b.20230910.0052_otf.fits |                     trace |                0.0 |               0.0 |   QTH1 UG5 Dual LS5x60x0.8 Slit Flat |    G400L | LS5x60x0.8 |     1,1 | 60197.258211 |     1.0 |     8.0 |     MODS1B |     Dual |     0
+#mods1b.20230910.0080_otf.fits |                     trace |                0.0 |               0.0 |     QTH1 ND1.5 Dual LS60x5 Slit Flat |    G400L |     LS60x5 |     1,1 | 60197.457267 |     1.0 |     3.5 |     MODS1B |     Dual |     0
+#mods1b.20230910.0083_otf.fits |                     trace |                0.0 |               0.0 |       QTH1 UG5 Dual LS60x5 Slit Flat |    G400L |     LS60x5 |     1,1 | 60197.461438 |     1.0 |     1.5 |     MODS1B |     Dual |     0
+mods1b.20230909.0028_otf.fits |                   science |  296.2285583333333 | 77.09796388888888 |                          HS1946+7658 |    G400L | LS5x60x0.8 |     1,1 | 60196.425867 |    1.96 |   400.0 |     MODS1B |     Dual |     0
+mods1b.20230909.0024_otf.fits |                  standard | 349.99332499999997 |           -5.1656 |               Feige 110 dual grating |    G400L |     LS60x5 |     1,1 | 60196.366325 |    1.35 |    90.0 |     MODS1B |     Dual |     0
+data end
+

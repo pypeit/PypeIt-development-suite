@@ -57,7 +57,6 @@ from pypeit.images import pypeitimage
 from pypeit import calibrations
 from pypeit import find_objects
 from pypeit import extraction
-from pypeit import msgs
 from pypeit import spec2dobj
 from pypeit import coadd2d
 from pypeit.images.pypeitimage import PypeItImage

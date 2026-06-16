@@ -11,18 +11,18 @@ try:
     from pypeit.specutils import pypeit_loaders
 except ModuleNotFoundError:
     pypeit_loaders = None
-from pypeit.specutils import Spectrum1D, SpectrumList
+from pypeit.specutils import Spectrum, SpectrumList
 
-from pypeit.pypmsgs import PypeItError
+from pypeit import PypeItError
 
-specutils_required = pytest.mark.skipif(Spectrum1D is None or SpectrumList is None 
+specutils_required = pytest.mark.skipif(Spectrum is None or SpectrumList is None 
                                             or pypeit_loaders is None,
                                         reason='specutils not installed')
 
 
 @specutils_required
 def test_identify_as_pypeit_file(redux_out):
-    rdx = Path(redux_out).resolve()
+    rdx = Path(redux_out).absolute()
 
     # Spec2D file
     test_file = rdx / 'gemini_gnirs_echelle' / '32_SB_SXD' / 'Science' \
@@ -80,7 +80,7 @@ def test_identify_as_pypeit_file(redux_out):
 
 @specutils_required
 def test_identify_as_spec1d_file(redux_out):
-    rdx = Path(redux_out).resolve()
+    rdx = Path(redux_out).absolute()
 
     # Spec1D file
     test_file = rdx / 'shane_kast_blue' / '600_4310_d55' / 'shane_kast_blue_A' \
@@ -106,7 +106,7 @@ def test_identify_as_spec1d_file(redux_out):
 
 @specutils_required
 def test_identify_as_onespec_file(redux_out):
-    rdx = Path(redux_out).resolve()
+    rdx = Path(redux_out).absolute()
 
     # coadd1d file
     test_file = rdx / 'shane_kast_blue' / '600_4310_d55' / 'shane_kast_blue_A' \
@@ -131,16 +131,16 @@ def test_identify_as_onespec_file(redux_out):
 # TODO: Break some of these out into separate tests?
 @specutils_required
 def test_load_spec1d(redux_out):
-    rdx = Path(redux_out).resolve()
+    rdx = Path(redux_out).absolute()
 
     # Spec1D file
     test_file = rdx / 'shane_kast_blue' / '600_4310_d55' / 'shane_kast_blue_A' \
                     / 'Science' / 'spec1d_b27-J1217p3905_KASTb_20150520T045733.560.fits'
     assert test_file.exists(), 'Output file does not exist or the name changed'
 
-    # Test failure using a Spectrum1D read
+    # Test failure using a Spectrum read
     with pytest.raises(PypeItError):
-        spec = Spectrum1D.read(str(test_file))
+        spec = Spectrum.read(str(test_file))
 
     # Correctly use SpectrumList to read the file
     spec = SpectrumList.read(str(test_file))
@@ -169,7 +169,7 @@ def test_load_spec1d(redux_out):
 
 @specutils_required
 def test_load_onespec(redux_out):
-    rdx = Path(redux_out).resolve()
+    rdx = Path(redux_out).absolute()
 
     # coadd1d file
     test_file = rdx / 'shane_kast_blue' / '600_4310_d55' / 'shane_kast_blue_A' \
@@ -181,12 +181,12 @@ def test_load_onespec(redux_out):
     spec = SpectrumList.read(str(test_file))
     assert len(spec) == 1, 'Should have only read one spectrum'
 
-    # Try reading as a single Spectrum1D
-    spec = Spectrum1D.read(str(test_file))
+    # Try reading as a single Spectrum
+    spec = Spectrum.read(str(test_file))
     assert not spec.meta['grid'], 'Default read should use the contribution-weighted wavelengths'
 
     # Try reading the grid wavelength vector
-    grid_spec = Spectrum1D.read(str(test_file), grid=True)
+    grid_spec = Spectrum.read(str(test_file), grid=True)
     assert grid_spec.meta['grid'], 'Did not set grid flag correctly.'
     assert not np.array_equal(spec.spectral_axis.data, grid_spec.spectral_axis.data), \
             'Wavelength vector did not change between grid and contribution-weighted read'
@@ -194,13 +194,13 @@ def test_load_onespec(redux_out):
     # coadd1d file
     test_file = rdx / 'gemini_gnirs_echelle' / '32_SB_SXD' / 'pisco_coadd.fits'
     assert test_file.exists(), 'Output file does not exist or the name changed'
-    spec = Spectrum1D.read(str(test_file))
+    spec = Spectrum.read(str(test_file))
     assert spec.meta['extract'] == 'OPT', 'Expected optimal extraction'
 
     # telluric-corrected coadd1d file
     test_file = rdx / 'gemini_gnirs_echelle' / '32_SB_SXD' / 'pisco_coadd_tellcorr.fits'
     assert test_file.exists(), 'Output file does not exist or the name changed'
-    spec = Spectrum1D.read(str(test_file))
+    spec = Spectrum.read(str(test_file))
     assert spec.meta['extract'] == 'OPT', 'Expected optimal extraction'
 
 
