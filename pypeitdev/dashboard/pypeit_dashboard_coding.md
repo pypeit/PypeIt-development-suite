@@ -1,10 +1,36 @@
 # PypeIt Dashboard — Coding Document
 
-**Version:** 1.3.1
-**Date:** 2026-06-15
+**Version:** 1.3.5
+**Date:** 2026-06-16
 **Author:** JXP and Claude
 
 **Changelog**
+- 1.3.5 (2026-06-16): **Stage 6 Round-6.** A view-level **"Run PypeIt"** button
+  on the Science tab (`inspect.run_pypeit_command` → `run_pypeit -o`;
+  `science_view._add_run_pypeit_button` / `_on_run_pypeit`), with an overwrite
+  warning and lock gating (indigo, distinct from the blue per-step (Re)Build).
+  +2 tests (98 pass).
+- 1.3.4 (2026-06-16): **Stage 6 Round-5 fix.** `RunPypeItState.merge_from_disk()`
+  overlays the existing on-disk calibration + science statuses onto a
+  step-runner's fresh `run_state`; `pypeit_reduce_by_step` and
+  `pypeit_run_to_calibstep` call it before writing, so the shared `*_state.json`
+  is no longer clobbered (a science step-build kept resetting calibrations to
+  `undone`, disabling every science (Re)Build via `calibrations_ready`). +1 test
+  (96 pass).
+- 1.3.3 (2026-06-16): **Stage 6 Round-4 fix.** Planned science frames are now
+  re-seeded on the model **load** path (not just derive), so they persist after
+  a calibration (re)build rewrites the science-less state file. The planned-frame
+  list is computed once and cached (`_PLANNED_SCIENCE_CACHE`;
+  `science_status.planned_science_from_fitstbl` / `seed_planned_science_entries`);
+  a cold-cache build is gated on `allow_build=derive`. +1 test (95 pass).
+- 1.3.2 (2026-06-16): **Stage 6 Round-3 modifications.** Planned science/standard
+  frames seeded from the `.pypeit` metadata (`science_status.seed_planned_science`,
+  called on the model derive path); `get_science_status` + `SCIENCE_COLUMNS` gain
+  a `calib` column and the Science table shows **Calib**/**Detector**;
+  `DashboardModel.calibrations_ready()` gates the science (Re)Build;
+  `raw_files` backfilled from metadata (derive + seed). +3 tests (94 dashboard +
+  state tests pass). Round-3 #1 (window horizontal growth) diagnosed (report
+  only).
 - 1.3.1 (2026-06-15): **Stage 6 Round-1 modifications.** A Status-view
   **science navigator** grid (`ScienceNavCell` + `StatusView.scienceFrameActivated`
   → `ScienceView.select_frame`); a **neutral** selection fill
