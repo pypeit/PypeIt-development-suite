@@ -1,10 +1,40 @@
 # PypeIt Dashboard — Design Document
 
-**Version:** 1.3.1
-**Date:** 2026-06-15
+**Version:** 1.3.5
+**Date:** 2026-06-16
 **Author:** JXP and Claude
 
 **Changelog**
+- 1.3.5 (2026-06-16): **Stage 6 Round-6.** Added a view-level **"Run PypeIt"**
+  button to the Science tab that launches the full reduction (`run_pypeit -o`)
+  over all science/standard frames (with an overwrite warning), governed by the
+  single-run lock — distinct from the per-step (Re)Build controls.
+- 1.3.4 (2026-06-16): **Stage 6 Round-5 fix.** The shared `*_state.json` is no
+  longer clobbered by whichever step-runner wrote last: new
+  `RunPypeItState.merge_from_disk()` overlays the existing on-disk calibration +
+  science statuses onto a step-runner's fresh state, and both
+  `pypeit_reduce_by_step` and `pypeit_run_to_calibstep` call it before writing.
+  Previously a science step-build (`reduce_by_step`) reset the calibrations to
+  `undone`, making `calibrations_ready` False and disabling every science
+  (Re)Build (and symmetrically a calib build blanked the science).
+- 1.3.3 (2026-06-16): **Stage 6 Round-4 fix.** The Science view's planned
+  science/standard frames now **persist after a calibration (re)build**: they are
+  re-seeded on the model's state-file **load** path (not just on derive), from a
+  per-`.pypeit` cache of the planned-frame list. Previously
+  `pypeit_run_to_calibstep` wrote a science-less state file and the completion
+  refresh reloaded it, emptying the Science view.
+- 1.3.2 (2026-06-16): **Stage 6 Round-3 modifications.** The Science view now
+  lists **planned** science/standard frames (seeded from the `.pypeit` metadata
+  via `seed_planned_science`) so a not-yet-reduced folder shows upcoming frames,
+  mirroring the planned calibrations; the per-frame table gained **calibration
+  group** and **detector** columns (R15); and the science **(Re)Build** is now
+  gated on `DashboardModel.calibrations_ready(group, det)` — disabled until the
+  frame's calibrations are built. `raw_files` is also backfilled from the
+  metadata (on derive + planned-seed), so derived/older science frames are
+  (re)buildable (the Round-2 finding). Round-3 item 1 (window grows horizontally
+  on WM re-map — `propagateSizeHints` + uncapped preferred width from
+  `ResizeToContents` tables / `widgetResizable` scroll areas) was diagnosed; fix
+  deferred.
 - 1.3.1 (2026-06-15): **Stage 6 Round-1 modifications.** (1) A **science
   navigator** grid in the Status view (R17 extended to science): one clickable
   four-segment cell per `(frame, det)`, science first then standards, click →
