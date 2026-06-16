@@ -1,10 +1,14 @@
 # PypeIt Dashboard — Design Document
 
-**Version:** 1.3.8
+**Version:** 1.3.9
 **Date:** 2026-06-16
 **Author:** JXP and Claude
 
 **Changelog**
+- 1.3.9 (2026-06-16): **Dashboard version in the header.** The header banner now
+  shows the Dashboard version (``pypeit.dashboard.__version__``) beneath the
+  PypeIt logo; `dashboard.rst` documents it (and its version line is the same
+  number). Bump `__version__` and the doc version together.
 - 1.3.8 (2026-06-16): **Docs: niggling dashboard.rst changes.** Moved the
   Architecture section to the bottom; created user docs for **`pypeit_status`**
   (registered it in `pypeit/scripts/__init__.__all__`, added a labelled section

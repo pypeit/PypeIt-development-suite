@@ -889,6 +889,7 @@ This is largely why PypeIt runs end-to-end.  So..  be aware of this and try to
 15. Execute the 4th task under Docs
 16. Execute the 5th task under Docs
 17. Execute the 6th task under Docs
+18. Have the Dashboard indicate its version number underneat the PypeIt logo.  Make sure dashboard.rst indicates it too.
 
 
 ## Logging
@@ -1529,5 +1530,29 @@ small `dashboard.rst` changes.
 `__init__.__all__` addition is safe — no registry/entry-point test regressed);
 `sphinx-build -aE -W --keep-going` → **exit 0, 0 warnings** (the new
 `:ref:`pypeit_status`` / `:ref:`dashboard`` links resolve). Docs → **v1.3.8**.
+
+**Next step:** none outstanding.
+
+### 2026-06-16 (Dashboard version shown under the logo)
+
+**Task.** Eighteenth task under *Prompts / Stage 6* — show the Dashboard version
+under the PypeIt logo in the GUI, and indicate it in `dashboard.rst`.
+
+**What I did.**
+- Added **`pypeit.dashboard.__version__`** (= the documented Dashboard version),
+  with a note to bump it together with the doc version.
+- `view/header.py` — the header banner's right column is now a vbox: the PypeIt
+  logo on top and a small grey **"Dashboard v<X.Y.Z>"** label beneath it
+  (right-aligned, selectable).
+- `dashboard.rst` — the *Layout and navigation* section now states the version is
+  shown beneath the logo, tying it to the "Dashboard documentation version" line
+  at the top of the page (so the doc indicates it too).
+- Bumped everything to **v1.3.9** — `__version__`, both `.rst` version lines, and
+  the design/coding docs — and re-rendered the three view screenshots so they
+  show "Dashboard v1.3.9" under the logo.
+
+**Verified.** `pytest test_dashboard.py + test_state.py` → **98 passed**;
+`sphinx-build -aE -W --keep-going` → **exit 0, 0 warnings**; the header
+screenshot shows the version under the logo.
 
 **Next step:** none outstanding.
