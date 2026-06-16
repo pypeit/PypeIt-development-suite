@@ -1,10 +1,17 @@
 # PypeIt Dashboard — Design Document
 
-**Version:** 1.3.7
+**Version:** 1.3.8
 **Date:** 2026-06-16
 **Author:** JXP and Claude
 
 **Changelog**
+- 1.3.8 (2026-06-16): **Docs: niggling dashboard.rst changes.** Moved the
+  Architecture section to the bottom; created user docs for **`pypeit_status`**
+  (registered it in `pypeit/scripts/__init__.__all__`, added a labelled section
+  to `scripts.rst`, and linked it from `dashboard.rst`/`state.rst`); regenerated
+  the **Status-view** screenshot so it shows science frames (from the real
+  `600_4310_d55` reduction) and the **Science-view** screenshot with the
+  **Run PypeIt** button.
 - 1.3.7 (2026-06-16): **Docs: user-caution warning.** Added a `.. warning::` at
   the top of `dashboard.rst` — because the Dashboard lets you run individual
   pipeline steps, users unfamiliar with PypeIt can run steps out of order; this

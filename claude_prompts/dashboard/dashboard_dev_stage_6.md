@@ -856,6 +856,14 @@ WARNING:  Because the Dashboard intentionally allows you to run individual
 This is largely why PypeIt runs end-to-end.  So..  be aware of this and try to avoid reporting
   what is user error as a Dashboard bug.
 
+6. Here are some niggling changes for dashboard.rst:
+
+    - Move the Architecture section to the bottom.  The users don't care much about it
+    - Have `pypeit_status` link to docs on that script.  If such docs don't exist yet, create them.
+    - Can you have the Status view include a few Science frames (the current one is empty)?  You can generate one from REDUX_OUT/shane_kast_blue/600_4310_d55/shane_kast_blue_A
+    - Update the Science view to include the new Run PypeIt button.
+    - Log your work.
+
 ## Prompts
 
 ### Generate this doc
@@ -880,6 +888,7 @@ This is largely why PypeIt runs end-to-end.  So..  be aware of this and try to
 14. Please address the issues in Round 6 of the Modifications section. 
 15. Execute the 4th task under Docs
 16. Execute the 5th task under Docs
+17. Execute the 6th task under Docs
 
 
 ## Logging
@@ -1487,5 +1496,38 @@ RST.
 
 **Verified.** `sphinx-build -aE -W --keep-going` → **exit 0, 0 warnings**. Docs
 bumped to **v1.3.7** (docs-only; no code).
+
+**Next step:** none outstanding.
+
+### 2026-06-16 (Docs task 6: niggling dashboard.rst changes)
+
+**Task.** Seventeenth task under *Prompts / Stage 6* (the 6th *Docs* task) — four
+small `dashboard.rst` changes.
+
+1. **Architecture moved to the bottom.** Relocated the *Architecture* block from
+   under *Overview* to its own top-level section just before *See also* (users
+   reach it last).
+2. **`pypeit_status` now has docs + a link.** It was a real entry point but
+   **missing from the script registry** (`pypeit/scripts/__init__.__all__`), so it
+   had no generated `-h` help and no user docs. Registered it (alphabetically;
+   `script_classes()` now finds `PypeItStatus`), regenerated `help/pypeit_status.rst`,
+   added a labelled **`.. _pypeit_status:`** section to `scripts.rst` (Core
+   Processing Scripts — description + the `-h` include + an example), and changed
+   the bare ``pypeit_status`` mentions in `dashboard.rst` and `state.rst` to
+   `:ref:`pypeit_status``.
+3. **Status-view screenshot now shows science frames.** Regenerated
+   `dashboard_status_view.png` from the real
+   `REDUX_OUT/shane_kast_blue/600_4310_d55/shane_kast_blue_A` reduction (3 science
+   entries) — the science navigator is populated (b27/b28 science + b24 standard,
+   "3/3 extracted").
+4. **Science-view screenshot shows Run PypeIt.** Regenerated
+   `dashboard_science_view.png` from the same reduction; the indigo **Run PypeIt**
+   button is above the 3-frame table. (The Science-view section already documented
+   it from Round 6.)
+
+**Verified.** `pytest test_dashboard.py + test_state.py` → **98 passed** (the
+`__init__.__all__` addition is safe — no registry/entry-point test regressed);
+`sphinx-build -aE -W --keep-going` → **exit 0, 0 warnings** (the new
+`:ref:`pypeit_status`` / `:ref:`dashboard`` links resolve). Docs → **v1.3.8**.
 
 **Next step:** none outstanding.
