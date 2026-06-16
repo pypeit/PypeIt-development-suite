@@ -1,10 +1,17 @@
 # PypeIt Dashboard — Coding Document
 
-**Version:** 1.3.5
+**Version:** 1.3.7
 **Date:** 2026-06-16
 **Author:** JXP and Claude
 
 **Changelog**
+- 1.3.7 (2026-06-16): **Docs: user-caution warning** at the top of
+  `dashboard.rst` (running individual steps out of order is user error, not a
+  Dashboard bug). No code.
+- 1.3.6 (2026-06-16): **Docs pass for Rounds 3–6.** `dashboard.rst` (Actions
+  table + Live-monitoring extended to the science controls + Science auto-update),
+  `dashboard_design.rst` (planned-frame seed-on-load + cache; `merge_from_disk`
+  two-writer note), `state.rst` (the `calib` column; `merge_from_disk`). No code.
 - 1.3.5 (2026-06-16): **Stage 6 Round-6.** A view-level **"Run PypeIt"** button
   on the Science tab (`inspect.run_pypeit_command` → `run_pypeit -o`;
   `science_view._add_run_pypeit_button` / `_on_run_pypeit`), with an overwrite

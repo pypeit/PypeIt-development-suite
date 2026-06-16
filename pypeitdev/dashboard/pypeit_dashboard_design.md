@@ -1,10 +1,21 @@
 # PypeIt Dashboard — Design Document
 
-**Version:** 1.3.5
+**Version:** 1.3.7
 **Date:** 2026-06-16
 **Author:** JXP and Claude
 
 **Changelog**
+- 1.3.7 (2026-06-16): **Docs: user-caution warning.** Added a `.. warning::` at
+  the top of `dashboard.rst` — because the Dashboard lets you run individual
+  pipeline steps, users unfamiliar with PypeIt can run steps out of order; this
+  is why PypeIt runs end-to-end, and such user error should not be reported as a
+  Dashboard bug.
+- 1.3.6 (2026-06-16): **Docs pass for Rounds 3–6.** Reconciled the user docs with
+  the Round 3–6 changes: `dashboard.rst` (the Actions table + Live-monitoring
+  now cover the science controls — View spec2d, per-object 1D/QA, the science
+  (Re)Build, **Run PypeIt** — and the Science view auto-update); `dashboard_design.rst`
+  (planned-frame seeding on the load path + cache; the `merge_from_disk`
+  two-writer note); `state.rst` (the `calib` column; `merge_from_disk`).
 - 1.3.5 (2026-06-16): **Stage 6 Round-6.** Added a view-level **"Run PypeIt"**
   button to the Science tab that launches the full reduction (`run_pypeit -o`)
   over all science/standard frames (with an overwrite warning), governed by the

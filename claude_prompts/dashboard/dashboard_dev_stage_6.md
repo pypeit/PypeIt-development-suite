@@ -845,6 +845,17 @@ sits above the Science-frames table).
 
 3. I see there are a large number of new api files committed to git, e.g. api/pypeit.dashboard.app.rst.  Can you explain their origin and how they were committed?  Should I keep them?
 
+4. Please take another pass on the docs, taking into account the changes made in Rounds 3-6 of the Modifications section.
+
+5. Add this to the top of the dashboard.rst file:
+
+WARNING:  Because the Dashboard intentionally allows you to run individual
+  steps of the Pipeline, those who are not too familiar with PypeIt (and especially
+  data reduction in general) are apt to get lost or try to do things in an improper order
+
+This is largely why PypeIt runs end-to-end.  So..  be aware of this and try to avoid reporting
+  what is user error as a Dashboard bug.
+
 ## Prompts
 
 ### Generate this doc
@@ -867,6 +878,8 @@ sits above the Science-frames table).
 12. Please address the issues in Round 4 of the Modifications section. 
 13. Please address the issues in Round 5 of the Modifications section. 
 14. Please address the issues in Round 6 of the Modifications section. 
+15. Execute the 4th task under Docs
+16. Execute the 5th task under Docs
 
 
 ## Logging
@@ -1428,3 +1441,51 @@ Docs: `dashboard.rst` gained a **Run PypeIt** bullet; versions → **v1.3.5**;
 RTD-strict build clean (0 warnings).
 
 **Next step:** none outstanding for Round 6.
+
+### 2026-06-16 (Docs task 4: docs pass for Rounds 3–6)
+
+**Task.** Fifteenth task under *Prompts / Stage 6* (the 4th *Docs* task) — another
+docs pass taking Rounds 3–6 into account.
+
+**Reviewed all three docs and filled the gaps the rounds left:**
+- `doc/dashboard/dashboard.rst` — the **Actions table** was calibration-only;
+  added rows for the science controls (science-navigator cell → Science view,
+  **View spec2d**, object double-click → 1D / obj_prof/obj_trace QA, the science
+  **(Re)Build** with its calib+prerequisite gating, and **Run PypeIt**). The
+  **Live monitoring** section now says the **Science view** also auto-updates
+  (science steps go white → orange → green live). (The Science-view section
+  itself — planned frames, Calib/Detector columns, neutral selection, QA, Run
+  PypeIt — was already updated in Rounds 3/6.)
+- `doc/dashboard/dashboard_design.rst` — the state-acquisition diagram + prose
+  now show **planned science frames seeded on both the load and derive paths**
+  (cached per `.pypeit`); the live-monitoring section gained a **"one shared
+  state file, two writers"** note (the step-runners call
+  `RunPypeItState.merge_from_disk()` so neither blanks the other's portion), and
+  the **Run PypeIt** path.
+- `doc/state.rst` — `get_science_status` column list now includes **`calib`**;
+  the generation section notes the step-runners **merge** the existing state
+  (`merge_from_disk`) rather than clobber it.
+
+**Verified.** `sphinx-build -aE -W --keep-going` → **exit 0, 0 warnings**
+(Mermaid still renders; the new `:meth:`…merge_from_disk`` xref resolves). Docs
+bumped to **v1.3.6** (a docs-only pass; no code). The Stage-6 Modifications
+(Rounds 1–6) + the four Docs tasks are now all reflected in the documentation.
+
+### 2026-06-16 (Docs task 5: user-caution warning at the top of dashboard.rst)
+
+**Task.** Sixteenth task under *Prompts / Stage 6* (the 5th *Docs* task) — add a
+warning to the top of `dashboard.rst`.
+
+**What I did.** Added a `.. warning::` admonition immediately after the title /
+version line in `doc/dashboard/dashboard.rst`: because the Dashboard
+intentionally lets you run individual pipeline steps, users unfamiliar with
+PypeIt (and data reduction generally) can get lost or run steps in an improper
+order — which is largely why PypeIt is designed to run end-to-end — so such user
+error (steps out of order / without prerequisite calibrations) should not be
+reported as a Dashboard bug.  Faithful to the user's wording, lightly cleaned for
+RST.
+
+**Verified.** `sphinx-build -aE -W --keep-going` → **exit 0, 0 warnings**. Docs
+bumped to **v1.3.7** (docs-only; no code).
+
+**Next step:** none outstanding.
