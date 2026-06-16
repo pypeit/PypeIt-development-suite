@@ -1,10 +1,17 @@
 # PypeIt Dashboard — Coding Document
 
-**Version:** 1.3.7
+**Version:** 1.3.8
 **Date:** 2026-06-16
 **Author:** JXP and Claude
 
 **Changelog**
+- 1.3.8 (2026-06-16): **Docs: niggling dashboard.rst changes.** Architecture
+  moved to the bottom; **`pypeit_status`** registered in
+  `pypeit/scripts/__init__.__all__` + documented in `scripts.rst` (label
+  `pypeit_status`, `-h` include) and linked from `dashboard.rst`/`state.rst`;
+  Status-view screenshot regenerated with science frames (real `600_4310_d55`);
+  Science-view screenshot regenerated with the **Run PypeIt** button. 98 tests
+  pass; docs build clean.
 - 1.3.7 (2026-06-16): **Docs: user-caution warning** at the top of
   `dashboard.rst` (running individual steps out of order is user error, not a
   Dashboard bug). No code.
