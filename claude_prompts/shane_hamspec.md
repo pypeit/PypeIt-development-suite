@@ -52,6 +52,8 @@ If you need to test the code:
 4. Read this doc.  Perform the 4th task under Prep.
 5. Read this doc.  Perform the 5th task under Prep.
 
+6. Read this doc.  Perform the 1st task under Development/Wavelength Calibration.
+
 ## Prep
 
 1. Begin by trying to view the data in the RAW_DATA/lick_hamspec/ folder with `pypeit_view_fits`.  Write a report of your findings  PypeIt-development-suite/pypeitdev/lick_hamspec/Reports.  Name it as you see fit but adopt a convention that we will use throughout this work (you will write multile reports); use Markdown.  If you have any questions, put them in the Q&A section below.  Log your work in Logs below.
@@ -194,6 +196,23 @@ I actually don't know
     register it as **calib-only** in the interim, or leave it as a known TODO?
 
 No need to do anything for now
+
+---
+
+**Wavelength deep-dive Q&A** — see
+`pypeitdev/shane_hamspec/Reports/04_wavelength_deep_dive.md` (§Q&A). In brief:
+
+17. We only have ThAr at **one** cross-disperser angle (GTILTRAW=9194). Build a
+    single-setting / effectively fixed-format `angle_fits` (anchored by
+    `m·λ≈5.71e5`), or wait for ThAr at other GTILTRAW values? Do Hamspec
+    observers vary the cross-disperser?
+18. Base the composite arc on **XIDL** (turnkey via `xidl_esihires`, 64 orders,
+    m=65–146) now and extend to the full **IRAF** set (102 orders, m=58–159)
+    later, or do the full IRAF set up front?
+19. Both legacy reductions number orders the same (m=58–159, `m·λ≈5.71e5 Å`) —
+    confirm this is the true spectral order number to record in the archive?
+20. Should the Hamspec archive include a `keck_nires`-style per-setup pixel
+    **shift** solve, or is single-setting cross-correlation enough?
 
 ## Development
 
@@ -365,3 +384,28 @@ via the spectrograph class; the archive files themselves remain to be built).
 Q13 (setup name `Hamilton` + data move) accepted; Q15 (171-order count) left
 open for the wavecal phase; Q16 — leave the full `reduce` test as a known TODO
 that will pass once the wavelength archive exists.
+
+### 2026-06-17 (WaveCal #1: deep dive on the ThAr solution + scripts)
+
+Examined the provided wavelength references and characterized the ThAr
+solution. Report: `Reports/04_wavelength_deep_dive.md`; scripts in
+`pypeitdev/shane_hamspec/scripts/`.
+
+What I did / learned:
+- Wrote 3 scripts: `parse_iraf_ecthar.py` (IRAF ecidentify DB → features +
+  2D fit), `read_xidl_arc.py` (XIDL → orders/wave/spec via the existing
+  `templates.xidl_esihires`), `characterize_wavesoln.py` (comparison + QA
+  figures `04_fig1..3`).
+- **Two independent legacy reductions** of the same ThAr exposure exist and
+  agree: IRAF `ecidentify` (1355 lines, **102 orders m=58–159**, 3577–9788 Å
+  air, 2D Chebyshev RMS **13 mÅ**) and XIDL `Arc_01_fit.idl` (**64 orders
+  m=65–146**, 3858–8899 Å vac, per-order RMS **~1 mÅ**). Same physical order
+  numbering; **m·λ ≈ 5.71×10⁵ Å**.
+- **Big find:** `pypeit.core.wavecal.templates.xidl_esihires()` already reads
+  the XIDL schema and returns `(orders, wave_vac, spec)` — turnkey input for
+  building `shane_hamspec_composite_arc.fits`.
+- **The remaining gap is `angle_fits`:** only one cross-disperser setting
+  (GTILTRAW=9194) is available, so an order-vs-angle relation can't be fit
+  from these data — hence Q&A 17 (single-setting/fixed-format vs more data).
+- Other Q&A: which reduction to base the composite arc on (18), confirm the
+  order numbering (19), whether a NIRES-style shift solve is needed (20).
