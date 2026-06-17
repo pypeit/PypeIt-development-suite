@@ -1,10 +1,25 @@
 # PypeIt Dashboard — Coding Document
 
-**Version:** 1.3.9
-**Date:** 2026-06-16
+**Version:** 1.4.0
+**Date:** 2026-06-17
 **Author:** JXP and Claude
 
 **Changelog**
+- 1.4.0 (2026-06-17): **Alpha bug report 000 — crashed (Re)Build shown as
+  failed.** Root cause in the **pipeline**: `Calibrations.run_the_steps`
+  (`pypeit/calibrations.py`) wrote `status='running'` before each
+  `get_<step>()` but only wrote `'fail'` via the `self.success` path; an
+  *exception* in the step (e.g. a `PypeItError` in `flatfield.py`) skipped that,
+  leaving the step stuck at `running`.  Wrapped the `get_<step>()` call in
+  try/except that marks the step `'fail'` (and `safe_write`s) before re-raising.
+  **Dashboard** side (`view/main_window.py`): added a sticky `_last_run_failed`
+  flag set in `_on_run_finished(code)`; `_on_state_changed`/`_on_lock_changed`
+  no longer overwrite the failed Build-channel message while the lock lingers
+  (recent `.log` mtime), and a new run starting clears it.  Regression tests:
+  `test_state.py::test_run_the_steps_marks_fail_on_exception` (pipeline) and
+  `test_dashboard.py::test_main_window_failed_run_marks_build_channel`
+  (Dashboard).  Verified end-to-end on the `keck_mosfire` Fynbo/test_A data
+  (run exits 1, state flats → `fail`).  100 tests pass.
 - 1.3.9 (2026-06-16): **Dashboard version in the header.** Added
   `pypeit.dashboard.__version__` (= the doc version) and show "Dashboard
   vX.Y.Z" beneath the logo in `view/header.py`; documented in `dashboard.rst`.

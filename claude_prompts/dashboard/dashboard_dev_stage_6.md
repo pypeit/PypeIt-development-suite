@@ -891,6 +891,9 @@ This is largely why PypeIt runs end-to-end.  So..  be aware of this and try to
 17. Execute the 6th task under Docs
 18. Have the Dashboard indicate its version number underneat the PypeIt logo.  Make sure dashboard.rst indicates it too.
 
+### Alpha phase
+
+1. We are now entering the Alpha phase of this project, i.e. initial testing with outside users.  We are going to be generating and recording bug reports for you to work on.  Please generate a new prompt document for the Alpha phase.  Call it dashboard_dev_alpha.md.  Model it after this doc, although it will be working on bug reports provided as inputs.  Be sure to read all of the Context documents and the other prompt documents in this folder.
 
 ## Logging
 
@@ -1556,3 +1559,24 @@ under the PypeIt logo in the GUI, and indicate it in `dashboard.rst`.
 screenshot shows the version under the logo.
 
 **Next step:** none outstanding.
+
+### 2026-06-17 (Generated the Alpha-phase prompt document)
+
+**Task.** First task under *Prompts / Alpha phase* — generate a new prompt
+document for the Alpha phase (outside-user testing), modeled on this doc but
+driven by **bug reports** as inputs.
+
+**What I did.** Wrote `claude_prompts/dashboard/dashboard_dev_alpha.md`,
+mirroring the Stage-6 structure but oriented to a report → diagnose → fix →
+verify loop: Goals, Claude/Skills, Coding (with the carried-over
+git/`rm`-via-`pathlib` constraints), Context (design/coding docs, the built
+dashboard + state code, the pipeline entry points, CI-safe fixtures vs real
+dev-suite reductions), a **Workflow** section codifying the per-bug process
+(triage/reproduce → diagnose in a `#### Report` → fix with a regression test →
+verify via `pytest` + the RTD-strict `-aE -W` docs build + screenshots →
+document/version-bump → log), a **Bug Reports** section (report template + an
+empty Round 1 with a `#### Report`), Docs/Prompts/Logging/Logs. Grounded it in
+the current dashboard state (**v1.3.9**) and the conventions from Stages 0–6.
+
+**Next step:** the user pastes bug reports under *Bug Reports / Round 1* in the
+new doc and invokes its Alpha-phase prompts.
