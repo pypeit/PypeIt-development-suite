@@ -53,6 +53,8 @@ If you need to test the code:
 5. Read this doc.  Perform the 5th task under Prep.
 
 6. Read this doc.  Perform the 1st task under Development/Wavelength Calibration.
+7. Read this doc.  Perform the 2nd task under Development/Wavelength Calibration.
+8. Read this doc.  Perform the 3rd task under Development/Wavelength Calibration.
 
 ## Prep
 
@@ -197,23 +199,6 @@ I actually don't know
 
 No need to do anything for now
 
----
-
-**Wavelength deep-dive Q&A** — see
-`pypeitdev/shane_hamspec/Reports/04_wavelength_deep_dive.md` (§Q&A). In brief:
-
-17. We only have ThAr at **one** cross-disperser angle (GTILTRAW=9194). Build a
-    single-setting / effectively fixed-format `angle_fits` (anchored by
-    `m·λ≈5.71e5`), or wait for ThAr at other GTILTRAW values? Do Hamspec
-    observers vary the cross-disperser?
-18. Base the composite arc on **XIDL** (turnkey via `xidl_esihires`, 64 orders,
-    m=65–146) now and extend to the full **IRAF** set (102 orders, m=58–159)
-    later, or do the full IRAF set up front?
-19. Both legacy reductions number orders the same (m=58–159, `m·λ≈5.71e5 Å`) —
-    confirm this is the true spectral order number to record in the archive?
-20. Should the Hamspec archive include a `keck_nires`-style per-setup pixel
-    **shift** solve, or is single-setting cross-correlation enough?
-
 ## Development
 
 ### Wavelength Calibration
@@ -228,6 +213,79 @@ No need to do anything for now
     - Generate a new report of your findings in PypeIt-development-suite/pypeitdev/shane_hamspec/Reports.
     - If you have any questions, put them in the Q&A section below.  
     - Log your work in Logs below.
+
+2. This is great.  I have answered the new Q&A.  Update Report 04 after doing the work for Q&A 18 and 19.  Also, embed the figures you generated in the Report.  Let me know if you have any new questions.  Update Logs below.
+
+3. I have answered the new Q&A.  Update Report 04 and see if you can implement a WaveCalibration for Shane/Hamspec.  Generate a new Report and Log your work in Logs below.
+
+#### Q&A
+
+**Wavelength deep-dive Q&A** — see
+`pypeitdev/shane_hamspec/Reports/04_wavelength_deep_dive.md` (§Q&A). In brief:
+
+17. We only have ThAr at **one** cross-disperser angle (GTILTRAW=9194). Build a
+    single-setting / effectively fixed-format `angle_fits` (anchored by
+    `m·λ≈5.71e5`), or wait for ThAr at other GTILTRAW values? Do Hamspec
+    observers vary the cross-disperser?
+
+The observers are able to vary the cross-disperser by modifying the dewar height.  We need to be prepared for that even though it might be rare.
+
+18. Base the composite arc on **XIDL** (turnkey via `xidl_esihires`, 64 orders,
+    m=65–146) now and extend to the full **IRAF** set (102 orders, m=58–159)
+    later, or do the full IRAF set up front?
+
+Please determine whether the two solutions are compatible. If so, we will start with the XIDL solution and proceed to IRAF
+
+19. Both legacy reductions number orders the same (m=58–159, `m·λ≈5.71e5 Å`) —
+    confirm this is the true spectral order number to record in the archive?
+
+yes, that looks good.
+
+20. Should the Hamspec archive include a `keck_nires`-style per-setup pixel
+    **shift** solve, or is single-setting cross-correlation enough?
+
+Yes, we should follow the NIRES method.  Add more on that in the Report.
+
+---
+
+**WaveCal #2 Q&A** — see
+`pypeitdev/shane_hamspec/Reports/04_wavelength_deep_dive.md` (§Q&A). New:
+
+21. Since the cross-disperser is set by the **dewar height**
+    (`DHEITRAW`/`DHEITVAL`), should we re-map the meta keys so
+    `echangle ← GTILTRAW` (grating tilt; sets wavelength) and
+    `xdangle ← DHEITRAW/DHEITVAL` (dewar height; sets which orders land where)?
+    Harmless for the NIRES single-setting solution, but needed for correctness
+    and any future multi-setting `angle_fits`.
+
+Yes, that sounds great.
+
+22. `wavecalib.py` line 774 has a leftover `embed(header='line 741
+    wavecalib.py')` in the `method='echelle'` branch that would halt any
+    reduction using that path. The NIRES/`reidentify` route avoids it — should
+    I remove the stray `embed` too (it affects all `method='echelle'` users)?
+
+Yes, comment out the embed for now.
+
+---
+
+**WaveCal #3 Q&A** — see
+`pypeitdev/shane_hamspec/Reports/05_wavecal_implementation.md` (§Q&A). The
+NIRES recipe is implemented and the reduction now runs reidentification, but it
+**fails to match because the archive and the raw data are different
+configurations**:
+
+23. **Config mismatch (blocker).** The legacy ThAr solution is GTILTRAW=9308,
+    DHEITRAW=3780, plate 960:5.0 (2024); the dev-suite raw data is
+    GTILTRAW=9194, DHEITRAW=3970, plate 640:5.0 (2014). Can you provide a ThAr
+    arc + solution at the **2014 setting**, or swap the dev-suite raw data to
+    the **2024 setting** so the archive applies?
+24. **Bootstrap instead?** Or should I derive a fresh solution for the existing
+    2014 arcs (d2084/d2085) with `pypeit_identify` (seeded by `m·λ≈5.71e5` +
+    order numbering) and archive that?
+25. **Fixed-format + order count.** Move to `ech_fixed_format=True` with
+    explicit `order_spat_pos`/`orders` (NIRES-style) for fast, unambiguous
+    reidentification, once the true order count is settled (tracer finds 171)?
 
 ## Docs
 
@@ -409,3 +467,60 @@ What I did / learned:
   from these data — hence Q&A 17 (single-setting/fixed-format vs more data).
 - Other Q&A: which reduction to base the composite arc on (18), confirm the
   order numbering (19), whether a NIRES-style shift solve is needed (20).
+
+### 2026-06-17 (WaveCal #2: IRAF↔XIDL compatibility + NIRES plan; Report 04)
+
+Did the Q18/Q19 work and updated `Reports/04_wavelength_deep_dive.md` (figures
+now embedded inline; added §5 compatibility, §6 NIRES-shift, §7 plan).
+
+What I did / learned:
+- New script `scripts/compare_iraf_xidl.py`: matched 952 IRAF lines in the 64
+  common orders against the XIDL solution.
+  - **Q18 — compatible.** Same physical order numbering and pixel direction
+    (the flipped mapping gives ~64 Å residuals). The two extractions differ by
+    a ~constant **−21 px (−0.74 Å)** registration offset; after removing it,
+    dispersion shapes agree to **~93 mÅ RMS**. ⇒ build the composite arc from
+    XIDL (64 orders) first, extend with IRAF (102) later, taking each order's
+    (wave,spec) from one pipeline.
+  - **Q19 — order numbering confirmed** (the line match only closes with
+    identical m).
+- **Q20 — NIRES method.** Recommend switching `shane_hamspec` wavecal to
+  `method='reidentify'` with a single `reid_arxiv` composite arc + cross-
+  correlation **shift** (treating the one cross-disperser setting as fixed-
+  format), rather than the HIRES-style `angle_fits` (which needs many angle
+  settings we don't have). The ~21-px XIDL↔IRAF offset is exactly what the
+  shift absorbs.
+- **New findings/Q&A:** (21) the cross-disperser is set by **dewar height**
+  (`DHEITRAW/DHEITVAL`), so for any future `angle_fits` the meta should map
+  `echangle←GTILTRAW`, `xdangle←dewar height` (currently echangle=0,
+  xdangle=GTILTRAW); (22) `wavecalib.py:774` has a stray
+  `embed()` in the `method='echelle'` branch that would halt that path.
+
+### 2026-06-17 (WaveCal #3: implemented NIRES wavecal; found config mismatch)
+
+Implemented the NIRES-style wavelength calibration and ran it. Report:
+`Reports/05_wavecal_implementation.md`.
+
+What I did:
+- Built `reid_arxiv` `shane_hamspec.fits` from XIDL (64 orders, m=65–146;
+  `scripts/build_reid_arxiv.py`) — same format as `keck_nires.fits`, placed in
+  `pypeit/data/arc_lines/reid_arxiv/`.
+- `shane_hamspec.default_pypeit_par`: `method='reidentify'`,
+  `reid_arxiv='shane_hamspec.fits'`.
+- **Q21:** re-mapped meta `echangle←GTILTRAW`, `xdangle←DHEITRAW`, and
+  `configuration_keys=['echangle','xdangle','binning']`.
+- **Q22:** commented out the `embed`/`reload` in `wavecalib.py`.
+
+Result / key finding:
+- The reduction now runs the full calib chain **and enters reidentification**
+  (404 + embed gone). But it **fails to match**: cc 0.115–0.382 (median 0.17),
+  zero ≥ 0.6 threshold.
+- **Root cause (Report 05 §3): the legacy archive is a different instrument
+  configuration than the dev-suite raw data.** Archive (2024): GTILTRAW=9308,
+  DHEITRAW=3780, plate 960:5.0. Raw data (2014): GTILTRAW=9194, DHEITRAW=3970,
+  plate 640:5.0. Different grating tilt (wavelength) + dewar height (order
+  placement) ⇒ template doesn't align ⇒ cc at noise level.
+  (`scripts/check_arxiv_config.py` documents this.)
+- Secondary: 64×171 cross-correlations is impractically slow; the tracer
+  over-finds 171 orders. New Q&A 23–25 (provide matching arc / swap raw data;
+  or bootstrap with pypeit_identify; or go fixed-format).

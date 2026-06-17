@@ -62,6 +62,8 @@ single most useful fact for building the archive.
   complete catalog; XIDL is the more convenient (ready-made extracted spectra +
   vacuum wavelengths).
 
+![Wavelength coverage vs order](04_fig1_coverage.png)
+
 ### Accuracy
 - **IRAF** global 2D Chebyshev (xorder=5 in pixel, yorder=4 in order):
   residual **RMS 13 mÅ**, max 55 mÅ — i.e. ≈ 0.01 px, excellent.
@@ -74,10 +76,14 @@ single most useful fact for building the archive.
   (a single order spans more Å). Line density peaks in the mid/red orders
   (per-order ThAr counts up to ~37; see Figure 2).
 
+![Dispersion and line density vs order](04_fig2_dispersion_lines.png)
+
 ### Example order (Figure 3)
 - A mid-format XIDL order (m=106, ~5310–5460 Å) showing the extracted ThAr
   spectrum on its vacuum-wavelength grid — clean, well-resolved lines; the
   per-order product a PypeIt archive needs.
+
+![Example extracted ThAr order](04_fig3_example_order.png)
 
 ## 4. What PypeIt needs, and how these map to it
 
@@ -105,19 +111,84 @@ The reidentification itself (matching the 171 traced orders from Report 03 to
 physical m and assigning λ) is what failed at `build_wv_calib: Finding the
 echelle orders`; it needs both files above.
 
-## 5. Recommended path (for the next task)
-1. **Build the composite arc** from the **XIDL** solution first (one call to
-   `xidl_esihires`), since it returns vacuum λ + spectra ready to go; optionally
-   extend to all 102 orders later using the IRAF catalog. Air→vacuum is already
-   handled by `xidl_esihires` (XIDL/IRAF wavelengths are **air**).
-2. **Decide the order/angle strategy** (Q&A): since there is a single XD
-   setting, either (a) treat Hamspec as effectively **fixed-format** for this
-   setup and provide a single-setting `angle_fits` anchored by `m·λ`, or (b)
-   plan to add exposures at other GTILTRAW values to fit a real order-vs-angle
-   relation.
-3. Cross-check the new archive by re-running the Report-03 reduction and
-   inspecting the `WaveCalib` QA (per-order RMS should land near the ~1–13 mÅ
-   the legacy fits achieve).
+## 5. IRAF vs XIDL compatibility (Q&A 18 / 19) — *new*
+
+`scripts/compare_iraf_xidl.py` matches the **952** IRAF identified lines that
+fall in the **64 orders common to both** reductions (m = 65–146): for each line
+it converts the IRAF reference wavelength (air) to vacuum and looks up the XIDL
+wavelength at that order/pixel.
+
+**Result:**
+- **Same physical order numbering and pixel direction.** The match only works
+  with identical `m`; the flipped pixel mapping gives ~64 Å residuals, the
+  direct mapping ~sub-Å — so both pipelines run blue→red with the same `m`
+  (this *confirms Q19*).
+- **A ~constant pixel-registration offset of ≈ −21 px (−0.74 Å)** between the
+  two extractions (range −17.8 to −23.6 px across orders) — i.e. the pipelines
+  defined the extraction pixel origin / trim differently.
+- **After removing that per-order offset, the dispersion shapes agree to
+  ≈ 93 mÅ RMS** (median; ≤ 0.28 Å worst order) — a couple of pixels, well
+  within reidentification tolerance.
+
+![IRAF vs XIDL compatibility](04_fig4_iraf_vs_xidl.png)
+
+**Verdict (Q18): the two solutions are compatible.** The only real difference
+is a roughly constant pixel shift between the two independent extractions —
+exactly the quantity PypeIt's reidentification cross-correlation solves for
+(see §6). Because the composite arc stores each order's `(wave, spec)` *as a
+self-consistent unit*, we can safely **start from XIDL (64 orders) and extend
+with IRAF (to 102 orders) later**, taking each order from a single pipeline
+(never splicing XIDL wavelengths onto IRAF pixels, which would reintroduce the
+21-px offset).
+
+## 6. NIRES-style shift method (Q&A 20) — *new*
+
+PypeIt offers two echelle wavecal routes; the prompt asks us to follow the
+**NIRES** one:
+
+- **`method='echelle'`** (current `shane_hamspec`, à la Keck/HIRES;
+  `ech_fixed_format=False`): needs `get_echelle_angle_files()` →
+  `angle_fits` + `composite_arc`. `wavecalib.identify_ech_orders()` uses the
+  **`echangle`/`xdangle`** metadata + `angle_fits` to *predict* which orders
+  land where and their wavelength solution, by evaluating fits of (order
+  coverage vs `xdangle`) and (per-order wavelength coeffs vs `echangle`). This
+  requires data at **many angle settings** to build — which we do **not** have
+  (one setting only).
+- **`method='reidentify'`** (Keck/**NIRES**; `ech_fixed_format=True`,
+  `reid_arxiv='keck_nires.fits'`): ships a **single template** (per-order arc
+  spectrum + wavelength solution). At reduction it **cross-correlates each
+  observed order against the matching archive order, solving for a pixel
+  shift**, then reidentifies and refits. No angle model needed.
+
+**Why NIRES fits Hamspec here.** We have exactly one cross-disperser setting,
+and (per Q17) observers change the cross-disperser only rarely (via the dewar
+height). For a given setting the format is effectively fixed, so the NIRES
+template-plus-shift approach is the right first solution — and the ≈ 21-px
+XIDL↔IRAF offset measured in §5 is precisely the kind of registration the
+cross-correlation `cc_shift_range` absorbs. This also matches the prompt's note
+that we **won't** use the NIRES *2D* solution — just its shift/reidentify
+mechanism with our composite arc as `reid_arxiv`.
+
+**Caveat for `method='echelle'` path:** `wavecalib.py` currently has a leftover
+`embed(header='line 741 wavecalib.py')` right after `identify_ech_orders`, which
+would halt a reduction even once the angle files exist. The NIRES/`reidentify`
+route avoids that branch (and the unbuildable `angle_fits`). Flagged in Q&A 22.
+
+## 7. Recommended path (for the next task)
+1. **Build a `reid_arxiv` composite arc** from the **XIDL** solution
+   (`xidl_esihires` → 64 orders, vacuum λ + spectra), formatted like
+   `keck_nires.fits`. Air→vacuum is already handled (XIDL/IRAF use **air**).
+2. **Switch `shane_hamspec` wavecal to the NIRES recipe:**
+   `method='reidentify'`, `reid_arxiv='shane_hamspec.fits'`, and treat the
+   single setting as fixed-format (set the order vector from `m·λ`). Keep the
+   echelle refit params (`ech_nspec_coeff`, `ech_norder_coeff`).
+3. **Re-run** the Report-03 reduction and inspect `WaveCalib` QA — per-order
+   RMS should approach the ~1–13 mÅ the legacy fits achieve.
+4. **Extend to 102 orders** using the IRAF catalog once the XIDL-based archive
+   is validated.
+5. Later, if multi-setting support is needed, build the full HIRES-style
+   `angle_fits` keyed on the **dewar height** (cross-disperser) and grating
+   tilt — see Q&A 21.
 
 ## Figures
 | File | Description |
@@ -125,27 +196,53 @@ echelle orders`; it needs both files above.
 | `04_fig1_coverage.png` | Wavelength coverage vs physical order (IRAF spans + XIDL points). |
 | `04_fig2_dispersion_lines.png` | Dispersion (Å/pix) and ThAr lines/order vs order. |
 | `04_fig3_example_order.png` | Example extracted XIDL ThAr order on its vacuum λ grid. |
+| `04_fig4_iraf_vs_xidl.png` | IRAF↔XIDL registration offset (pix) and de-offset residual vs order. |
 
 ---
 
-## Q&A (questions for JXP)
+## Q&A
 
-17. **`angle_fits` with a single XD setting.** We only have data at one
-    cross-disperser angle (GTILTRAW = 9194). Should I (a) build a
-    single-setting / effectively fixed-format `angle_fits` anchored by `m·λ`
-    (good enough if observers always use this setting), or (b) hold off until
-    we have ThAr at additional GTILTRAW values to fit a real order-vs-angle
-    relation? Do you know if Hamspec observers vary the cross-disperser?
-18. **Which reduction to base the composite arc on?** XIDL is turnkey (64
-    orders, vacuum, via `xidl_esihires`) but misses the 7 reddest + 13 bluest
-    orders; IRAF is complete (102 orders) but needs MULTISPE/2D parsing. Build
-    from XIDL now and extend with IRAF later, or invest in the full IRAF set up
-    front?
-19. **Order numbering.** Both legacy reductions number the physical orders the
-    same way (m = 58…159), with `m·λ ≈ 5.71e5 Å`. Can you confirm this is the
-    true spectral order number (not an instrument-specific offset) so we record
-    the correct `m` in the PypeIt archive?
-20. **`keck_nires` shift code.** The prompt mentions the dev-suite code used to
-    derive the NIRES J-band shift "to solve for the shift" — should the
-    Hamspec archive include an analogous per-setup pixel-shift solve, or is the
-    single-setting cross-correlation sufficient?
+**Answered (Prep-7 / this update):**
+
+17. *Single XD setting.* → Observers **can** vary the cross-disperser by
+    changing the **dewar height**, though rarely; we must be prepared. ⇒ We
+    adopt the NIRES single-template approach for the standard setting now
+    (§6), and defer the full multi-setting `angle_fits` (which would key on
+    dewar height, see Q21).
+18. *Which reduction?* → **Compatible** (§5): build from **XIDL** first, then
+    extend with **IRAF**. Done — see §5 for the compatibility analysis.
+19. *Order numbering.* → **Confirmed** by JXP and by §5 (the line-by-line match
+    only closes with identical `m`); record m = 58…159, `m·λ ≈ 5.71e5 Å`.
+20. *NIRES shift.* → **Follow the NIRES method** (§6): a single `reid_arxiv`
+    template + cross-correlation pixel **shift**, *not* the NIRES 2D solution.
+
+**New questions:**
+
+21. **`echangle`/`xdangle` mapping (important).** Since the cross-disperser is
+    set by the **dewar height** (header `DHEITRAW`/`DHEITVAL`), the order
+    *spatial* coverage is controlled by dewar height — so for a future
+    `angle_fits`, **`xdangle` should map to the dewar height**, while the
+    **grating tilt `GTILTRAW`** (which sets the along-dispersion wavelength)
+    is really the **`echangle`**. Currently `init_meta` has
+    `echangle = 0` (fixed) and `xdangle = GTILTRAW`. For the NIRES single-
+    setting solution this doesn't bite, but should we re-map these meta keys
+    (and `configuration_keys`) to `echangle ← GTILTRAW`,
+    `xdangle ← DHEITRAW/DHEITVAL` for correctness and multi-setting support?
+    → **Answered: yes, re-map.** Implemented in `shane_hamspec` (Report 05 §1):
+    `echangle ← GTILTRAW`, `xdangle ← DHEITRAW`, and `configuration_keys =
+    ['echangle','xdangle','binning']`.
+22. **Leftover `embed()` in `wavecalib.py`.** The `method='echelle'` branch has
+    a debug `embed(header='line 741 wavecalib.py')` after `identify_ech_orders`
+    that would halt any reduction using that path. The NIRES/`reidentify`
+    route avoids it; should I also remove that stray `embed` (separate, it
+    affects all `method='echelle'` spectrographs)?
+    → **Answered: yes, comment it out.** Done (`wavecalib.py`, the `embed` and
+    the adjacent `reload(autoid)` are commented).
+
+---
+
+**Implementation outcome (Report 05):** the NIRES recipe was implemented and
+the reduction now reaches and runs reidentification, but it **fails to match**
+— the legacy archive is a *different instrument configuration* than the
+dev-suite raw data (grating tilt 9308 vs 9194; dewar height 3780 vs 3970). See
+[Report 05](05_wavecal_implementation.md) for details and Q&A 23–25.
