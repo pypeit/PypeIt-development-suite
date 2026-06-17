@@ -50,6 +50,7 @@ If you need to test the code:
 2. Read this doc.  Perform the 2nd task under Prep.
 3. Read this doc.  Perform the 3rd task under Prep.
 4. Read this doc.  Perform the 4th task under Prep.
+5. Read this doc.  Perform the 5th task under Prep.
 
 ## Prep
 
@@ -77,6 +78,8 @@ If you need to test the code:
    - Write a report of your findings in PypeIt-development-suite/pypeitdev/hane_hamspec/Reports.
    - If you have any questions, put them in the Q&A section below.  
    - Log your work in Logs below.
+
+5. I answered the new Q&A.  Update Report 03.
 
 ### Q&A
 
@@ -174,16 +177,38 @@ narrow (science) plate, as intended.
     the setup **`Hamilton`** (dev file `shane_hamspec_hamilton.pypeit`). Is
     that the setup name you want, and is moving the data on the external drive
     OK (needs mirroring to Google Drive)?
+
+This is fine for now.
+
 14. `get_echelle_angle_files()` still returns `lick_hamspec_*` archive names —
     rename to `shane_hamspec_*` when we build them?
+
+Yes, rename them.
+
 15. Edge tracing keeps **171 orders** (incl. predicted missing ones). Is that
     the expected Hamspec order count, or should we restrict the range?
+
+I actually don't know  
+
 16. Until the wavelength archive exists, the `reduce` test fails at wavecal —
     register it as **calib-only** in the interim, or leave it as a known TODO?
+
+No need to do anything for now
 
 ## Development
 
 ### Wavelength Calibration
+
+#### Tasks
+
+1. Do a deep dive on wavelength calibration for Shane/Hamspec.  
+
+    - Read the Reports in PypeIt-development-suite/pypeitdev/shane_hamspec/Reports.  
+    - Examine the wavelength related files I have provided in PypeIt-development-suite/pypeitdev/shane_hamspec.
+      - Create and save Python scripts in PypeIt-development-suite/pypeitdev/shane_hamspec/scripts to do this
+    - Generate a new report of your findings in PypeIt-development-suite/pypeitdev/shane_hamspec/Reports.
+    - If you have any questions, put them in the Q&A section below.  
+    - Log your work in Logs below.
 
 ## Docs
 
@@ -329,3 +354,14 @@ What I did / learned:
   QA looks well-behaved (widths ≈9–15 px) except at the high-spatial-pixel
   edge. New Q&A 13–16 (setup name/data move, archive rename, 171-order count,
   interim calib-only test).
+
+### 2026-06-17 (Prep #5: applied Q&A answers; updated Report 03)
+
+Updated `Reports/03_first_reduction.md` with JXP's answers to Q&A 13–16. Only
+one carried an action: per Q14, renamed the archive references in
+`get_echelle_angle_files()` from `lick_hamspec_*` to
+`shane_hamspec_angle_fits.fits` / `shane_hamspec_composite_arc.fits` (verified
+via the spectrograph class; the archive files themselves remain to be built).
+Q13 (setup name `Hamilton` + data move) accepted; Q15 (171-order count) left
+open for the wavecal phase; Q16 — leave the full `reduce` test as a known TODO
+that will pass once the wavelength archive exists.

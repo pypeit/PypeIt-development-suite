@@ -96,9 +96,11 @@ PypeIt tried to download `lick_hamspec_angle_fits.fits` from the GitHub
 in `pypeitdev/shane_hamspec/`. That is the upcoming **Development → Wavelength
 Calibration** effort.
 
-Note the file names still carry the **`lick_hamspec`** prefix (a relic of the
-pre-rename class). They should likely be renamed to **`shane_hamspec_*`** when
-the archives are created (Q&A 14).
+At run time these still carried the **`lick_hamspec`** prefix (a relic of the
+pre-rename class), which is what produced the 404 above. Per Q&A 14 they have
+since been renamed in `get_echelle_angle_files()` to
+**`shane_hamspec_angle_fits.fits`** / **`shane_hamspec_composite_arc.fits`**;
+the archive files themselves still need to be built.
 
 ---
 
@@ -133,20 +135,31 @@ whether all 171 should be kept is a tuning question for later (Q&A 15).
 
 ---
 
-## Q&A (questions for JXP)
+## Q&A (answered by JXP)
 
 13. **Setup name & data move.** I moved the 7 raw frames into
     `RAW_DATA/shane_hamspec/Hamilton/` and named the setup **`Hamilton`** (so
     the dev-suite file is `shane_hamspec_hamilton.pypeit`). Is `Hamilton` the
     name you want, and is moving the data on the external drive OK (it must
     also be mirrored on the Google Drive)?
+    → **"This is fine for now."** Setup name `Hamilton` and the data move are
+    kept.
 14. **Archive file names.** `get_echelle_angle_files()` still returns
     `lick_hamspec_angle_fits.fits` / `lick_hamspec_composite_arc.fits`. Rename
     these to `shane_hamspec_*` when we build them?
+    → **"Yes, rename them."** Done: `get_echelle_angle_files()` now returns
+    `shane_hamspec_angle_fits.fits` / `shane_hamspec_composite_arc.fits` (the
+    files themselves remain to be built in the wavelength-calibration step).
 15. **171 orders.** Edge tracing keeps 171 orders (incl. predicted "missing"
     ones). Is that the expected order count for Hamspec, or should we restrict
     the spatial range / order count (e.g. drop the poorly-fit high-pixel edge)?
+    → **Open / unknown** ("I actually don't know"). Revisit during wavelength
+    calibration, when the physical order numbers become known and the
+    poorly-fit high-spatial-pixel edge can be assessed.
 16. **Dev-suite expectation for now.** Until the wavelength archive exists, the
     `reduce` test will fail at wavecal. Want me to register it as a
     **calib-only** test in the interim, or leave the full reduce test failing
     as a known TODO?
+    → **"No need to do anything for now."** The full `reduce` test stays
+    registered and is a known TODO that will pass once the wavelength archive
+    is built.
