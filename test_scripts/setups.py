@@ -282,6 +282,9 @@ all_setups = {
     'p200_tspec': [
         'TSPEC',
     ],
+    'shane_hamspec': [
+        'Hamilton',
+    ],
     'shane_kast_blue': [
         '452_3306_d57',
         '600_4310_d55',
