@@ -55,6 +55,7 @@ If you need to test the code:
 6. Read this doc.  Perform the 1st task under Development/Wavelength Calibration.
 7. Read this doc.  Perform the 2nd task under Development/Wavelength Calibration.
 8. Read this doc.  Perform the 3rd task under Development/Wavelength Calibration.
+9. Read this doc.  Perform the 4th task under Development/Wavelength Calibration.
 
 ## Prep
 
@@ -218,6 +219,17 @@ No need to do anything for now
 
 3. I have answered the new Q&A.  Update Report 04 and see if you can implement a WaveCalibration for Shane/Hamspec.  Generate a new Report and Log your work in Logs below.
 
+4. Your efforts are fine so far.  I believe you failed when trying to identify the orders.  That is, the test dataset has an Arc frame which you extracted but you were unable to match its individual orders with any in the archive.  Please investigate further by:
+
+    - Cross-correlating individual orders on the red side of the spectra (but not too red as there are fewer known lines for that part of the spectrum) against those in the archive especially the XIDL file.
+    - You may wish to use functions in the wavecal/wvutils.py file to help you with the cross-correlation.  Specifically, you may wish to use the xcorr_shift and xcorr_shift_stretch functions to help you with the cross-correlation.
+    - For this exploration, generate a new module in PypeIt-development-suite/pypeitdev/shane_hamspec/scripts/ to help you with the cross-correlation.
+    - Add to the 05_wavecal_implementation.md report the results of this new exploration.
+    - If you have any questions, put them in the Q&A section below.  
+    - Log your work in Logs below.
+
+Note, I did not answer Q&A 23-25 as I did not considered them off base. 
+
 #### Q&A
 
 **Wavelength deep-dive Q&A** — see
@@ -286,6 +298,25 @@ configurations**:
 25. **Fixed-format + order count.** Move to `ech_fixed_format=True` with
     explicit `order_spat_pos`/`orders` (NIRES-style) for fast, unambiguous
     reidentification, once the true order count is settled (tracer finds 171)?
+
+---
+
+**WaveCal #4 Q&A** — see
+`pypeitdev/shane_hamspec/Reports/05_wavecal_implementation.md` (§5). You were
+right: a direct per-order cross-correlation shows the archive orders **do**
+match the data (cc 0.57–0.85, ~3–4 px shift, no stretch). Q23–25 withdrawn
+(config "mismatch" is not a blocker). New:
+
+26. The order mapping is exact and linear: **m = 200 − (traced order index)**.
+    OK to encode this (or the equivalent `order_spat_pos`)? It shifts if the
+    dewar height moves — should we instead derive the offset per-frame from the
+    cross-correlation so it is robust to dewar moves?
+27. Prefer I (a) **tune the non-fixed `reidentify`** (`reid_cont_sub=True`,
+    `cc_thresh≈0.5`, revisit `sigdetect`/`percent_ceil`) and let it find
+    orders, or (b) go **`ech_fixed_format=True`** with `order_spat_pos`/`orders`
+    for a deterministic per-order match (faster/robust, needs cleaned tracing)?
+28. Still want the order over-tracing trimmed (171 → ~100)? Helps both the
+    reidentification and the final 2D fit (was Q15).
 
 ## Docs
 
@@ -524,3 +555,27 @@ Result / key finding:
 - Secondary: 64×171 cross-correlations is impractically slow; the tracer
   over-finds 171 orders. New Q&A 23–25 (provide matching arc / swap raw data;
   or bootstrap with pypeit_identify; or go fixed-format).
+
+### 2026-06-18 (WaveCal #4: per-order xcorr — the orders DO match)
+
+Per JXP's pushback on the "incompatible configs" claim, cross-correlated
+individual red-side orders of the observed arc against the XIDL archive
+(`scripts/xcorr_orders.py`, using `wvutils.xcorr_shift` +
+`xcorr_shift_stretch`). Added the results to `Reports/05` (§5, fig
+`05_fig1_xcorr_best.png`).
+
+**Outcome — JXP was right; my Report-05 §3 conclusion was wrong:**
+- The archive orders **match** the observed orders: cc **0.57–0.85**, shift
+  only **~3–4 px**, **stretch ≈ 1.000**. Overlay shows ThAr lines on top of
+  each other. The 9308-vs-9194 grating-tilt / dewar-height header delta makes
+  only a few-pixel offset, not an incompatibility.
+- **Exact order mapping found:** physical order **m = 200 − (traced order
+  index)** for all probed orders (80↔120, 90↔110, 110↔90, 120↔80, 130↔70).
+- The full `reidentify` failed (cc≈0.17) due to **method/tuning** (line-pattern
+  cc with `reid_cont_sub=False`, all 64 arxiv tried per slit, diluted by the
+  171 spurious traces), **not** the data. Direct spectrum xcorr gives ~0.7.
+- Rebuilt the observed per-order arc from the existing `Slits`/`Arc` calibs via
+  `arc.get_censpec` (no full re-run needed).
+- Revised path: keep the XIDL archive; assign orders via `m=200−index` (or
+  fixed-format); set `reid_cont_sub=True`, `cc_thresh≈0.5`; trim over-tracing.
+  Withdrew Q23–25; new Q26–28.

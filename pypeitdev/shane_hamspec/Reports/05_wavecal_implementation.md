@@ -51,8 +51,15 @@ matches with cc ≥ cc_thresh (0.6):  0
 Every arxiv order is rejected (`cc < cc_thresh`) for every observed order — no
 wavelength solution is produced.
 
-## 3. Why it fails — the archive and the raw data are *different
-configurations* (key finding)
+> **CORRECTION (see §5).** §3 below originally concluded the archive and data
+> were *incompatible* configurations. A direct per-order cross-correlation
+> (§5, added after JXP's pushback) shows that is **wrong**: the orders match
+> very well (cc up to 0.85, ~3–4 px shift, no stretch). The header settings
+> differ, but the echellograms are nearly identical. The real reason the full
+> `reidentify` failed is method/tuning + order assignment, not the data. Read
+> §3 as "what the headers say," §5 as "what the spectra actually show."
+
+## 3. Header configurations differ (but see §5)
 
 `scripts/check_arxiv_config.py` compares the instrument setting of the legacy
 ThAr (which the archive is built from) to the dev-suite raw arcs:
@@ -62,18 +69,11 @@ ThAr (which the archive is built from) to the dev-suite raw arcs:
 | **Archive** (IRAF/XIDL ThAr) | 2024-08-08 | **9308** | **3780** | 19385 | 960:5.0 |
 | **Raw data** d2084/d2085 | 2014-07-25 | **9194** | **3970** | 20359 | 640:5.0 |
 
-The legacy wavelength solution was taken at a **different grating tilt** (9308
-vs 9194 → a different wavelength zero-point per order) **and a different dewar
-height** (3780 vs 3970 → the cross-disperser is in a different place, so the
-orders land at different spatial/spectral positions), a decade apart. So the
-archive's per-order ThAr spectra simply do not line up with the observed ones,
-and the cross-correlation cc stays at the noise level (~0.17). This — not a
-coding problem — is why reidentification fails.
-
-This is exactly the multi-setting issue anticipated in Report 04 §6 / Q&A 17:
-the dewar height (cross-disperser) **does** vary between data sets, and here the
-only legacy solution we have is for a setting that no raw dev-suite frame
-matches.
+The legacy solution was taken at a different grating tilt (9308 vs 9194) and
+dewar height (3780 vs 3970), a decade apart. My initial inference was that this
+makes the per-order spectra non-overlapping — **but §5 shows that inference is
+wrong**: the resulting echellograms differ by only ~3–4 px. The header deltas
+are real but do not prevent matching.
 
 ## 4. Secondary issues found
 - **Speed.** With `ech_fixed_format=False`, every observed order is
@@ -85,35 +85,74 @@ matches.
 - **Over-tracing.** The 171 traced orders (vs ~100 real) means many spurious
   slits that can never match; this both slows and pollutes the reidentification.
 
-## 5. Status & recommended next steps
-- The **machinery is in place and runs**: composite arc, NIRES `reidentify`
-  recipe, corrected angle meta, no debug halt. What's missing is a wavelength
-  template **for the configuration of the dev-suite data**.
-- **The cleanest fix is data:** either (a) add a ThAr arc taken at the raw
-  data's setting (GTILTRAW≈9194, DHEITRAW≈3970) and build the archive from it,
-  or (b) replace the dev-suite raw set with frames matching the legacy
-  solution's setting (GTILTRAW≈9308, DHEITRAW≈3780, plate 960:5.0). See Q&A 23.
-- **Or bootstrap a solution for the 2014 arcs** with `pypeit_identify` on
-  d2084/d2085 (seeded by `m·λ ≈ 5.71e5` and the line list), then archive that.
-  More effort but self-contained. See Q&A 24.
-- Separately, **reduce the order over-tracing to ~the true count** and consider
-  a **fixed-format** setup (`order_spat_pos`, `orders`) to make
-  reidentification fast and unambiguous (Q&A 25).
+## 5. UPDATE — per-order cross-correlation: the orders **do** match
+
+Prompted by JXP (the §3 "incompatible" inference was suspect), I cross-
+correlated individual **red-side** orders of the *observed* extracted arc
+(rebuilt from the `Slits`/`Arc` calibrations) against the **XIDL** archive,
+using `wvutils.xcorr_shift` (fast scan) then `wvutils.xcorr_shift_stretch`
+(shift + stretch refine). Module: `scripts/xcorr_orders.py`.
+
+**Result — strong, consistent matches:**
+
+| XIDL order m | best observed order # | m + index | refined cc | shift (pix) | stretch |
+|:---:|:---:|:---:|:---:|:---:|:---:|
+| 80  | 120 | 200 | 0.70 | 3.6 | 0.9998 |
+| 90  | 110 | 200 | 0.68 | 3.3 | 1.0000 |
+| 110 |  90 | 200 | 0.57 | 4.6 | 0.9988 |
+| 120 |  80 | 200 | 0.58 | 3.3 | 0.9997 |
+| 130 |  70 | 200 | 0.85 | 3.0 | 1.0000 |
+
+![Best red-side order match](05_fig1_xcorr_best.png)
+
+Three conclusions:
+
+1. **The archive is usable for this data.** Every probed order matches with
+   cc 0.57–0.85, a tiny **~3–4 px shift**, and **no stretch** (≈1.000). The
+   overlay (XIDL m=80 vs observed order #120) shows the ThAr lines landing on
+   top of each other. The header config delta (§3) produces only a few-pixel
+   offset — *not* an incompatibility. **§3's original conclusion is retracted.**
+2. **The order mapping is exact and linear:** physical order
+   **m = 200 − (observed order index)** across the whole probed range. This is
+   the order-identification relation the pipeline was missing — it lets us
+   assign physical `m` (and hence the right archive order) to each traced slit
+   directly.
+3. **So why did the full `reidentify` fail (cc≈0.17)?** Not the data. The
+   `autoid.reidentify` line-pattern cc (with `reid_cont_sub=False`,
+   `sigdetect`, `percent_ceil`, and all 64 arxiv orders tried per slit, diluted
+   by the 171 spurious traces) scores much lower than the direct spectrum
+   cross-correlation here (0.7–0.85). The fix is method/tuning + order
+   assignment, not new data.
+
+### Revised recommended path
+1. **Keep the XIDL archive** — it works.
+2. **Assign orders up front** using `m = 200 − index` (equivalently a
+   fixed-format `order_spat_pos`/`orders` once the tracing is cleaned), so each
+   observed order is reidentified against its single correct archive order.
+3. **Tune `reidentify`**: set `reid_cont_sub = True`, relax/curate `cc_thresh`
+   to ~0.5, and revisit `sigdetect`/`percent_ceil` so the line-pattern cc
+   reflects the real ~0.7 correlation.
+4. **Trim the order over-tracing** (171 → ~100) so spurious slits stop
+   polluting/slowing the match.
+5. Then extend the archive XIDL→IRAF (64→102 orders) as planned (Report 04).
 
 ---
 
 ## Q&A (questions for JXP)
 
-23. **Config mismatch (blocker).** The legacy ThAr solution
-    (GTILTRAW=9308, DHEITRAW=3780, plate 960:5.0; 2024) does **not** match the
-    dev-suite raw data (GTILTRAW=9194, DHEITRAW=3970, plate 640:5.0; 2014). Can
-    you provide a ThAr arc + solution **at the 2014 setting**, or swap the
-    dev-suite raw data to the 2024 setting so the archive applies?
-24. **Bootstrap instead?** Alternatively, should I derive a fresh solution for
-    the existing 2014 arcs (d2084/d2085) with `pypeit_identify` (seeded by the
-    legacy `m·λ` and order numbering) and archive *that*? This keeps the
-    current dev-suite data but is more hands-on.
-25. **Fixed-format + order count.** To make reidentification fast and robust,
-    should we move to `ech_fixed_format=True` with explicit `order_spat_pos`
-    and `orders` (like NIRES), once we settle the true order count (the edge
-    tracer currently finds 171; Q&A 15)?
+*(Q23–25 from the previous version are withdrawn: Q23's "config mismatch
+blocker" is resolved by §5 — the orders match. The relevant questions now:)*
+
+26. **Order mapping.** §5 finds `m = 200 − (traced order index)` for this
+    setup. Is hard-coding/encoding this relation (or the equivalent
+    `order_spat_pos`) acceptable, given the dewar height can move the orders
+    (then the constant 200 would shift)? Should we instead derive the offset
+    per-frame from the cross-correlation (robust to dewar moves)?
+27. **`reidentify` tuning vs fixed-format.** Prefer I (a) tune the existing
+    non-fixed `reidentify` (`reid_cont_sub=True`, `cc_thresh≈0.5`) and let it
+    find orders, or (b) implement `ech_fixed_format=True` with
+    `order_spat_pos`/`orders` for a deterministic per-order match? (b) is
+    faster and more robust but needs the cleaned order count.
+28. **Order over-tracing.** Still want the tracer trimmed from 171 to the true
+    count (~100)? That helps both reidentification and the final 2D solution
+    (was Q15).
