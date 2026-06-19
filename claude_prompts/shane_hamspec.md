@@ -56,6 +56,11 @@ If you need to test the code:
 7. Read this doc.  Perform the 2nd task under Development/Wavelength Calibration.
 8. Read this doc.  Perform the 3rd task under Development/Wavelength Calibration.
 9. Read this doc.  Perform the 4th task under Development/Wavelength Calibration.
+10. Read this doc.  Perform the 5th task under Development/Wavelength Calibration.
+11. Read this doc.  Perform the 6th task under Development/Wavelength Calibration.
+12. Read this doc.  Perform the 7th task under Development/Wavelength Calibration.
+13. Read this doc.  Perform the 8th task under Development/Wavelength Calibration.
+14. Read this doc.  Perform the 9th task under Development/Wavelength Calibration.
 
 ## Prep
 
@@ -230,6 +235,16 @@ No need to do anything for now
 
 Note, I did not answer Q&A 23-25 as I did not considered them off base. 
 
+5. See my answers to Q&A 26-28.  Update the Report accordingly.  Let me know if you have any new questions.  Log your work in Logs below.
+
+6. Let's try again.  The QA&A is now in this doc.  Read it and let me know if you have any new questions.  Log your work in Logs below.
+
+7. I have answered the new Q&A.  Update the Report accordingly.  Let me know if you have any new questions.  Log your work in Logs below.
+
+8. I have answered the new Q&A.  Update the Report accordingly.  Let me know if you have any new questions.  Log your work in Logs below.
+
+9. I have remounted the RAW_DATA drive.  Run the end-to-end reduction and check the WaveCalib RMS.  Let me know if you have any new questions.  Log your work in Logs below.
+
 #### Q&A
 
 **Wavelength deep-dive Q&A** — see
@@ -311,12 +326,108 @@ match the data (cc 0.57–0.85, ~3–4 px shift, no stretch). Q23–25 withdrawn
     OK to encode this (or the equivalent `order_spat_pos`)? It shifts if the
     dewar height moves — should we instead derive the offset per-frame from the
     cross-correlation so it is robust to dewar moves?
+
+We want to be able to derive this when presented with a new set of data.  The dewar position should give an initial guess and then we refine.  This is what we do with `keck_hires`.  Check that out and add it to the Report.
+
 27. Prefer I (a) **tune the non-fixed `reidentify`** (`reid_cont_sub=True`,
     `cc_thresh≈0.5`, revisit `sigdetect`/`percent_ceil`) and let it find
     orders, or (b) go **`ech_fixed_format=True`** with `order_spat_pos`/`orders`
     for a deterministic per-order match (faster/robust, needs cleaned tracing)?
+
+See the answer to Q26.
+
 28. Still want the order over-tracing trimmed (171 → ~100)? Helps both the
     reidentification and the final 2D fit (was Q15).
+
+Yes, that sounds good.  [Done: set `add_missed_orders = False` — the real
+edge tracing already finds ~100 orders; add_missed was inserting ~140 spurious
+orders in the dark detector regions, which corrupted the echelle order-number
+identification (orders came out ~200 instead of 58–159).]
+
+---
+
+**WaveCal #6 Q&A (new)** — see
+`pypeitdev/shane_hamspec/Reports/05_wavecal_implementation.md` (§7 + "Q&A round
+2"). Studied the `keck_hires` order-ID approach (predict from angle → refine)
+and documented it. New questions:
+
+29. **Revert to `method='echelle'`?** The HIRES approach means undoing the
+    earlier NIRES switch: set `method='echelle'` again and build HIRES-format
+    `shane_hamspec_angle_fits.fits` + `shane_hamspec_composite_arc.fits`
+    (instead of the simple `reidentify` table). Confirm that's what you want.
+
+Yes, set to `method='echelle'`.
+
+30. **Building `angle_fits` from limited angle coverage.** HIRES fits its angle
+    coefficients from many settings; we have effectively two (data @9194/3970,
+    archive @9308/3780). Plan: derive the *slopes* from geometry — order
+    spatial shift = ΔDHEITVAL(µm)/pixel-size(µm) for `xd_angle_coeffs`, and the
+    wavelength/grating-tilt slope from the grating equation for
+    `ech_angle_coeffs` — anchored on the one well-measured setting. Acceptable,
+    or can you provide ThAr at a few more dewar/grating settings?
+
+Yes, we only have 1 for now.
+
+31. **Detector pixel size.** The geometry-based dewar→pixel mapping (Q30) needs
+    the pixel size. Header `DSENSOR = 'e2v CCD203-82 4kx4k thin'` → 15 µm
+    pixels, I believe. Confirm 15 µm so I can convert DHEITVAL (µm) to a pixel
+    shift?
+
+Yes, 15 µm is correct.
+
+---
+
+**WaveCal #7 Q&A (new)** — see
+`pypeitdev/shane_hamspec/Reports/05_wavecal_implementation.md` (§8 + "Q&A round
+3"). Worked out the concrete geometry-anchored `angle_fits` plan (dewar slope
+0.0667 px/µm; grating-tilt slope −0.0289 px/count from the measured 3.3 px
+shift; +4 order shift between the two settings). New questions:
+
+32. **Linear angle model OK?** With only two settings the angle dependence is
+    necessarily linear (`xd_polyorder=1`, linear `ech_angle_coeffs`); HIRES uses
+    quadratic/quintic. Fine as v1 near the anchor setting, upgrade later?
+
+Yes, let's go with linear for now.
+
+33. **Raw stepper counts as the angle variable.** OK to use GTILTRAW / DHEITVAL
+    raw counts directly as the polynomial variable (no counts→degrees
+    calibration), or do you have a counts→angle conversion?
+
+Yes, let's try that.
+
+34. **Grating-tilt dispersion slope.** −0.0289 px/count is from the single 3.3
+    px baseline between the two settings. Good enough to anchor v1, or refine
+    per-order from cross-correlation later?
+
+Yes, use that for now.
+
+---
+
+**WaveCal #8 Q&A (new)** — see
+`pypeitdev/shane_hamspec/Reports/05_wavecal_implementation.md` (§9). Built the
+two HIRES-format archive files and **verified the angle-based prediction works**
+(correct order coverage + m·λ=571169). Reverted to `method='echelle'`. But:
+
+35. **Drive remount needed.** The end-to-end reduction is blocked only because
+    the dev-suite `RAW_DATA` symlink target (`/media/xavier/SamsungT7/`) is
+    **not mounted** — the raw frames are unavailable. Please remount it so I can
+    run `pypeit_test reduce -i shane_hamspec` and check the real `WaveCalib`
+    RMS. The archive build + predict verification used only the committed
+    XIDL/IRAF files, so they're done; only the run is waiting.
+
+---
+
+**WaveCal #9 Q&A (new)** — see
+`pypeitdev/shane_hamspec/Reports/05_wavecal_implementation.md` (§10). The
+end-to-end reduction now **PASSES (dev-suite 1/1)**: wavecal → science →
+spec1d/spec2d + QA. WaveCalib: 27/99 orders solved (m=65–97), median per-order
+RMS **0.28 px**. New:
+
+36. **Partial order coverage.** Only 27/99 orders (the red half, m=65–97) get a
+    wavelength solution. Priority next: (a) tune blue-order matching
+    (`cc_thresh`/`sigdetect`/`reid_cont_sub`), (b) extend the composite arc to
+    the IRAF 102 orders, or (c) accept as v1 and move to docs / dev-suite
+    finishing? Your call.
 
 ## Docs
 
@@ -579,3 +690,102 @@ individual red-side orders of the observed arc against the XIDL archive
 - Revised path: keep the XIDL archive; assign orders via `m=200−index` (or
   fixed-format); set `reid_cont_sub=True`, `cc_thresh≈0.5`; trim over-tracing.
   Withdrew Q23–25; new Q26–28.
+
+### 2026-06-18 (WaveCal #6: studied keck_hires order-ID; documented in Report 05)
+
+Read JXP's answers to Q26–28. The directive: identify orders the `keck_hires`
+way — use the instrument **angle as an initial guess, then refine** (not a
+hard-coded `m=200−index`). Trim the over-tracing (Q28: yes).
+
+What I did / learned (added to `Reports/05` §7 + "Q&A round 2"):
+- `keck_hires` uses `method='echelle'` (`ech_fixed_format=False`) with two
+  `reid_arxiv` files via `get_echelle_angle_files()`:
+  - `*_angle_fits.fits` — HDU2 `ech_angle_coeffs` (per-order wavelength-soln
+    coeffs vs **echelle angle**); HDU3 `xd_angle_coeffs` (reddest-order spatial
+    position vs **cross-disperser angle**). `echelle.identify_ech_orders()` →
+    `predict_ech_order_coverage(xdangle)` + `predict_ech_wave_soln(echangle)`
+    give the initial guess, then cross-correlation + `echelle_wvcalib` refine.
+  - `*_composite_arc.fits` — HDU2/3/4 = wave/arc/gpm `(nspec,norders)` on a
+    common log-λ grid (NOT the simple NIRES wave/flux/order table I built).
+- For Hamspec: `xdangle←DHEITRAW` (dewar), `echangle←GTILTRAW` (grating tilt) —
+  already remapped. This matches JXP's "derive from dewar position + refine".
+- **Catch:** HIRES fits its angle coefficients from many settings; we have ~two
+  (data @9194/3970, archive @9308/3780). New Q29–31: revert to
+  `method='echelle'`?; build angle_fits slopes from geometry
+  (ΔDHEITVAL µm / pixel-size; grating eqn) anchored on one setting, or get more
+  data?; confirm e2v CCD203-82 pixel size = 15 µm.
+- No code changed this turn (analysis/doc only); awaiting answers to Q29–31.
+
+### 2026-06-18 (WaveCal #7: confirmed plan; derived geometry slopes; Report §8)
+
+JXP answered Q29–31: yes to `method='echelle'`; yes to geometry-anchored
+`angle_fits` (one setting for now); pixel size = 15 µm confirmed. Updated
+`Reports/05` with §8 (concrete build plan) and a Q&A round 3.
+
+Worked out the angle slopes from the two known settings (data @9194/20359,
+archive @9308/19385):
+- **xdangle (dewar) → spatial:** 1/15 = **0.0667 px/µm**; the two settings
+  differ by ΔDHEITVAL=+974 µm → **+64.9 px ≈ +4.1 orders**.
+- **echangle (grating tilt) → dispersion:** **−0.0289 px/count** (from the
+  measured 3.3 px xcorr shift over ΔGTILT=−114).
+- Two settings ⇒ a **linear** angle model (`xd_polyorder=1`, linear
+  `ech_angle_coeffs`).
+
+Documented the concrete recipe for both HIRES-format files:
+`shane_hamspec_composite_arc.fits` (4-HDU wave/arc/gpm on a log-λ grid from
+XIDL) and `shane_hamspec_angle_fits.fits` (HDU3 reddest-order-vs-dewar line;
+HDU2 per-order λ-coeffs shifting linearly with grating tilt). Next task = build
+these, revert to `method='echelle'`, apply the over-tracing trim, re-run.
+
+New Q32–34 (linear model OK as v1?; raw stepper counts as the angle variable?;
+single-baseline grating slope OK?). No code changed this turn; awaiting answers.
+
+### 2026-06-18 (WaveCal #8: BUILT the HIRES-style wavecal; predict verified)
+
+Q32–34 all yes. Built the two HIRES-format archives and verified the
+angle-based prediction. Report §9.
+
+- `scripts/build_angle_arxiv.py` writes `shane_hamspec_composite_arc.fits`
+  (4-HDU wave/arc/gpm, nspec=4123, 82 orders m=65–146, 64 with real arc) and
+  `shane_hamspec_angle_fits.fits` (per-order degree-4 Legendre λ(pix) +
+  reddest-order-vs-dewar line; angle var = raw stepper counts; linear v1).
+- **Verified `echelle.predict_ech_arcspec`** at the data's angles: order
+  coverage m=64–151, 64 orders with arc, **m·λ=571169** (✓ ~5.71e5), wave
+  3858–8899 Å. The HIRES "predict from angle → refine" machinery now produces
+  the right orders + wavelengths for Hamspec.
+- Fixed two bugs: (a) build gives every order a valid wave ramp+gpm so core
+  `predict_ech_arcspec` doesn't crash on empty orders; (b) `echelle.py:184`
+  unmigrated `msgs.warn` → `log.warning` (same class as Q1).
+- Reverted `shane_hamspec` wavecal to `method='echelle'`.
+- **Blocked:** could not run the full reduction — dev-suite `RAW_DATA` drive
+  (`/media/xavier/SamsungT7/`) is **unmounted**. Q35 asks for a remount; then
+  I'll run end-to-end, check WaveCalib RMS, apply the Q28 over-tracing trim, and
+  extend to the IRAF 102 orders.
+
+### 2026-06-18 (WaveCal #9: END-TO-END REDUCTION PASSES)
+
+Drive remounted. Ran end-to-end; **dev-suite `reduce` test PASSES 1/1**
+(≈15.5 min). Report §10. Also handled the live "figures on screen" issue: it was
+a per-order `embed()`+`plt.show()` debug block in `autoid.echelle_wvcalib`
+(removed); killed the hung process; re-ran with `MPLBACKEND=Agg`.
+
+Applied the **Q28 trim** (`add_missed_orders=False`) → 171 → **99 orders** (the
+spurious add-missed inserts in the dark detector regions were corrupting the
+order-number ID). Then fixed a chain of WIP debug leftovers to reach a passing
+run:
+- `xdangle` meta `DHEITRAW`→`DHEITVAL` (µm, matches angle_fits geometry; orders
+  had come out ~200).
+- `autoid`: removed the "REMOVE THIS!!!" order-90–95 restriction + `msgs.warn`.
+- `echelle.identify_ech_orders`: return per-observed-order arxiv arrays (was a
+  size mismatch → IndexError).
+- `wavecalib`: re-enabled the commented-out `fwhm_map = map_fwhm(...)`.
+- `shane_hamspec`: `ech_separate_2d` True→False (single detector; crashed
+  `echelle_2dfit` on null det_img).
+- `echelle.py:184` `msgs.warn`→`log.warning`.
+
+**Result:** WaveCalib written; **27/99 orders solved (m=65–97), median per-order
+RMS 0.28 px** (best 0.03). Science reduction of HD188209 completed →
+spec1d/spec2d + QA HTML. The HIRES angle→reidentify→2D wavecal works.
+
+Remaining (Q36): only the red half solves; next is tuning blue-order matching /
+extending the composite to the IRAF 102 orders, or moving to docs/finishing.
