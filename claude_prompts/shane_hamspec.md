@@ -61,6 +61,7 @@ If you need to test the code:
 12. Read this doc.  Perform the 7th task under Development/Wavelength Calibration.
 13. Read this doc.  Perform the 8th task under Development/Wavelength Calibration.
 14. Read this doc.  Perform the 9th task under Development/Wavelength Calibration.
+15. Read this doc.  Perform the 10th task under Development/Wavelength Calibration.
 
 ## Prep
 
@@ -244,6 +245,8 @@ Note, I did not answer Q&A 23-25 as I did not considered them off base.
 8. I have answered the new Q&A.  Update the Report accordingly.  Let me know if you have any new questions.  Log your work in Logs below.
 
 9. I have remounted the RAW_DATA drive.  Run the end-to-end reduction and check the WaveCalib RMS.  Let me know if you have any new questions.  Log your work in Logs below.
+
+10.  This all looks great!  Can you add a few more figures to the 05_wavecal_implementation.md report?  Thanks!
 
 #### Q&A
 
