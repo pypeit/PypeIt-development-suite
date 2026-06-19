@@ -389,6 +389,29 @@ subtraction → extraction of the standard → `spec2d`/`spec1d` + QA HTML.
 So the HIRES-style angle→predict→reidentify→2D approach **works**: orders are
 correctly identified and the redder half is solved at sub-pixel RMS.
 
+### WaveCalib QA figures
+Generated from the passing run's `WaveCalib_A_0_DET01.fits`
+(`scripts/plot_wavecalib.py`):
+
+Per-order RMS and ThAr line counts vs order — most solved orders sit at or
+below the 0.3 px threshold:
+
+![RMS and line count vs order](05_fig2_rms_vs_order.png)
+
+Wavelength coverage of the solved orders, and the grating constant
+`m·λ` (constant to ~0.006%, confirming the order identification):
+
+![Coverage and m·lambda](05_fig3_coverage.png)
+
+An example solved order (best RMS, m=95, 0.03 px) — extracted ThAr arc on its
+wavelength solution with the identified lines marked:
+
+![Example solved order](05_fig4_example_order.png)
+
+Fit residuals for that order (sub-pixel across the full order):
+
+![Fit residuals](05_fig5_residuals.png)
+
 ### Bugs fixed this round (all WIP debug leftovers on the branch)
 To get from "reaches wavecal" to "passes," I fixed a chain of leftover
 debug/state issues in the wavecal core:

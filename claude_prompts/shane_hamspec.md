@@ -792,3 +792,15 @@ spec1d/spec2d + QA HTML. The HIRES angle→reidentify→2D wavecal works.
 
 Remaining (Q36): only the red half solves; next is tuning blue-order matching /
 extending the composite to the IRAF 102 orders, or moving to docs/finishing.
+
+### 2026-06-18 (WaveCal #10: added WaveCalib QA figures to Report 05)
+
+Added `scripts/plot_wavecalib.py` and four figures to `Reports/05` §10, built
+from the passing run's `WaveCalib_A_0_DET01.fits`:
+- `05_fig2_rms_vs_order.png` — per-order RMS + ThAr line counts vs order.
+- `05_fig3_coverage.png` — solved-order wavelength coverage + m·λ (constant to
+  ~0.006%, confirming the order ID).
+- `05_fig4_example_order.png` — best order (m=95, 0.03 px) arc + identified
+  lines.
+- `05_fig5_residuals.png` — sub-pixel fit residuals for that order.
+No code changes; Q36 still open.
