@@ -450,3 +450,55 @@ debug/state issues in the wavecal core:
     blue-order matching (`cc_thresh`/`sigdetect`/`reid_cont_sub`), (b) extend
     the composite arc to the IRAF 102 orders, or (c) accept this as the v1 and
     move on to docs/dev-suite finishing? Your call on where to push next.
+
+> **JXP:** Work on (a) and (b).
+
+## 11. Q36 (a)+(b): tried, did not improve — a negative result
+
+Both were implemented and tested against the XIDL baseline (**27 orders solved,
+m=65–97, median RMS 0.278 px**):
+
+| config | archive | cc_thresh | reid_cont_sub | solved | median RMS |
+|--------|---------|:---------:|:---:|:------:|:----------:|
+| baseline | XIDL (64 ord) | 0.6 | False | **27** (65–97) | **0.278** |
+| (a)+(b) | IRAF (95 ord) | 0.5 | True  | 24 (62–93) | 0.349 |
+| (b) only | IRAF (95 ord) | 0.5 | False | 23 (62–93) | 0.351 |
+
+**(b) Extending to the IRAF 102 orders made things *worse*** (fewer orders,
+higher RMS). New scripts `read_iraf_arc.py` (reads the IRAF rsfbo arc + ecTHAR
+line solution; verified rsfbo row = order−57) and a `ARC_SOURCE` switch in
+`build_angle_arxiv.py` build the IRAF archive. But my IRAF per-order
+wavelengths — fit from the raw ecidentify lines (Legendre ≤ deg 4) — are less
+accurate than the polished XIDL `xidl_esihires` solution, so the reidentified
+fits come out worse. (A better IRAF archive would use the IRAF 2-D Chebyshev or
+the `wrsfbo` multispec WCS instead of re-fitting the lines — future work.)
+
+**(a) Loosening the matching did not add blue orders.** `cc_thresh=0.5` and
+`reid_cont_sub=True` produced no extra orders and slightly worse RMS.
+
+**Why the blue half does not solve (the real bottleneck).** It is *not* the
+archive coverage. Standalone cross-correlation of the *current* (trimmed)
+observed arc against the archive shows the **blue observed orders (m≳100) only
+reach cc ≈ 0.24–0.30 with large, spurious shifts**, whereas the red orders
+reach cc 0.5–0.85 at ~3 px. So the blue observed orders themselves do not
+register against the archive in this configuration — likely because the blue
+ThAr orders here are fainter / line-poorer and/or the order-position mapping
+drifts at the blue end. Extending or loosening the archive cannot fix that.
+
+**Action taken:** reverted to the known-best config — **XIDL archive,
+`cc_thresh=0.6`, `reid_cont_sub=False`** — re-confirmed at **27 orders @ 0.278
+px, dev-suite PASS**. The IRAF reader + `ARC_SOURCE` switch are kept for when
+the IRAF wavelengths are improved.
+
+---
+
+## Q&A — round 6 (new, for JXP)
+
+37. **Blue-order coverage is a deeper problem.** Extending the archive (b) and
+    loosening cc (a) did not help; the blue *observed* orders don't
+    cross-correlate (cc ~0.25). Options for the next push: (i) diagnose the
+    blue observed orders directly (are they too faint / line-poor? is the
+    order-number mapping drifting at the blue end?), (ii) build a *higher-
+    quality* IRAF archive from the 2-D Chebyshev / `wrsfbo` WCS rather than
+    re-fitting lines, or (iii) accept 27 red orders (m=65–97) as the v1 and move
+    to docs / dev-suite finishing. Which would you like?

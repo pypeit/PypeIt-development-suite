@@ -62,6 +62,7 @@ If you need to test the code:
 13. Read this doc.  Perform the 8th task under Development/Wavelength Calibration.
 14. Read this doc.  Perform the 9th task under Development/Wavelength Calibration.
 15. Read this doc.  Perform the 10th task under Development/Wavelength Calibration.
+16. Read this doc.  Perform the 11th task under Development/Wavelength Calibration.
 
 ## Prep
 
@@ -248,6 +249,8 @@ Note, I did not answer Q&A 23-25 as I did not considered them off base.
 
 10.  This all looks great!  Can you add a few more figures to the 05_wavecal_implementation.md report?  Thanks!
 
+11. Work on items (a) and (b) described in Q&A item 36.  Let me know if you have any new questions.  Log your work in Logs below.
+
 #### Q&A
 
 **Wavelength deep-dive Q&A** — see
@@ -431,6 +434,30 @@ RMS **0.28 px**. New:
     (`cc_thresh`/`sigdetect`/`reid_cont_sub`), (b) extend the composite arc to
     the IRAF 102 orders, or (c) accept as v1 and move to docs / dev-suite
     finishing? Your call.
+
+Work on items (a) and (b) now.
+
+---
+
+**WaveCal #11 Q&A (new)** — see
+`pypeitdev/shane_hamspec/Reports/05_wavecal_implementation.md` (§11). Did (a)
+and (b); both made things **worse** (negative result):
+
+| config | solved | median RMS |
+|--------|:------:|:----------:|
+| baseline (XIDL, cc 0.6, cont_sub F) | **27** (m65–97) | **0.278** |
+| (a)+(b) IRAF, cc 0.5, cont_sub T | 24 | 0.349 |
+| (b) IRAF, cc 0.5, cont_sub F | 23 | 0.351 |
+
+Reverted to the baseline (27 orders @ 0.278, PASS). The blue half doesn't solve
+because the blue *observed* orders only reach cc~0.25 against the archive (red
+reach 0.5–0.85) — it's the observed-data matching, not the archive coverage.
+
+37. Next push for blue coverage: (i) diagnose the blue observed orders (too
+    faint/line-poor? order-mapping drift?), (ii) build a higher-quality IRAF
+    archive from the 2-D Chebyshev / `wrsfbo` WCS (my line-refit version is too
+    crude), or (iii) accept 27 red orders (m=65–97) as v1 and move to docs /
+    dev-suite finishing?
 
 ## Docs
 
@@ -804,3 +831,22 @@ from the passing run's `WaveCalib_A_0_DET01.fits`:
   lines.
 - `05_fig5_residuals.png` — sub-pixel fit residuals for that order.
 No code changes; Q36 still open.
+
+### 2026-06-19 (WaveCal #11: Q36 a+b tried — negative result; reverted)
+
+Worked Q36 (a) tune blue matching + (b) extend to IRAF orders. Both made it
+worse; reverted to the baseline. Report §11.
+
+- (b) New `scripts/read_iraf_arc.py` (IRAF rsfbo arc + ecTHAR line solution;
+  verified rsfbo row = order−57) + `ARC_SOURCE` switch in
+  `build_angle_arxiv.py`. IRAF archive = 95 orders (m=58–159) but the reduction
+  solved **fewer** (23–24, m=62–93) at **higher RMS (~0.35)** than the XIDL
+  baseline (27, m=65–97, 0.278) — my IRAF per-order wavelengths (line-refit,
+  deg≤4) are less accurate than XIDL's polished solution.
+- (a) `cc_thresh=0.5` + `reid_cont_sub=True`: no extra orders, slightly worse.
+- **Root cause of the blue gap:** not the archive. Standalone xcorr shows the
+  blue *observed* orders only reach cc~0.25 (red reach 0.5–0.85), so they don't
+  register against the archive in this config.
+- **Reverted** to XIDL archive + cc_thresh 0.6 + reid_cont_sub False;
+  re-confirmed **27 orders @ 0.278 px, dev-suite PASS**. Kept the IRAF reader +
+  switch for future. New Q37 on how to push blue coverage (or accept v1).

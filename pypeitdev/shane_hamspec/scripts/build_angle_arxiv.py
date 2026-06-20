@@ -45,8 +45,17 @@ from astropy.table import Table
 from pypeit import dataPaths
 
 import read_xidl_arc as xidl
+import read_iraf_arc as iraf_arc
 
 ROOT = Path(__file__).resolve().parent.parent
+
+# Source of the per-order solution: 'iraf' (102 orders, m=58-159) or 'xidl'
+# (64 orders, m=65-146).  NOTE (Q36b): extending to the IRAF set was tried and
+# gave *worse* results (23-24 orders solved @ ~0.35 px vs 27 @ 0.278 px for
+# XIDL) — my IRAF per-order wavelengths (fit from the raw ecidentify lines) are
+# less accurate than the polished XIDL solution, and the blue orders still do
+# not match.  XIDL is the better archive, so default back to it.
+ARC_SOURCE = 'xidl'
 
 # --- Reference setting of the dev-suite data (the anchor) ---
 ECH_ANCHOR = 9194.0      # GTILTRAW (grating tilt) of the data
@@ -93,7 +102,10 @@ def build(outdir=None):
     Returns:
         :obj:`tuple`: (composite_path, angle_path).
     """
-    orders, wave, spec = xidl.load(ROOT / 'Arc_01_fit.idl')[:3]
+    if ARC_SOURCE == 'iraf':
+        orders, wave, spec = iraf_arc.load()
+    else:
+        orders, wave, spec = xidl.load(ROOT / 'Arc_01_fit.idl')[:3]
     isort = np.argsort(orders)
     orders, wave, spec = orders[isort], wave[isort], spec[isort]
 
