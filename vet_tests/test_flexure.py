@@ -48,7 +48,7 @@ def test_spat_flexure_science(redux_out):
         pypeitFile = inputfiles.PypeItFile.from_file(pypeit_file)
         _, par, _ = pypeitFile.get_pypeitpar()
         # check flexure parameters
-        assert par['scienceframe']['process']['spat_flexure_correct'] == True, 'Spat flexure should be set to True'
+        assert par['scienceframe']['process']['spat_flexure_method'] == 'detector', 'Spat flexure method should be set to detector'
         assert par['scienceframe']['process']['spat_flexure_sigdetect'] == sigdet, f'Spat flexure sigdetect should be {sigdet}'
         assert par['scienceframe']['process']['spat_flexure_maxlag'] == maxlag, f'Spat flexure maxlag should be {maxlag}'
 
@@ -80,7 +80,7 @@ def test_spat_flexure_tilts(redux_out):
     pypeitFile = inputfiles.PypeItFile.from_file(pypeit_file)
     _, par, _ = pypeitFile.get_pypeitpar()
     # check flexure parameters
-    assert par['calibrations']['tiltframe']['process']['spat_flexure_correct'] == True, 'Spat flexure should be set to True'
+    assert par['calibrations']['tiltframe']['process']['spat_flexure_method'] == 'detector', 'Spat flexure should be set to detector'
     assert par['calibrations']['tiltframe']['process']['spat_flexure_maxlag'] == 20, 'Spat flexure maxlag should be 10'
     # read the tiltimg file
     tiltimg_file = list(data_redux.glob('Calibrations/Tiltimg_A_0_DET01.fits'))

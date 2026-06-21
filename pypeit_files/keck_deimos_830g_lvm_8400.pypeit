@@ -12,7 +12,7 @@
         sigdetect = 10.,11.,12.,13.,14.
 [scienceframe]
     [[process]]
-	spat_flexure_correct = True
+	spat_flexure_method = detector
 	spat_flexure_maxlag = 10
 [reduce]
     [[findobj]]
