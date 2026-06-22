@@ -5,13 +5,12 @@ import shutil
 import os
 from pathlib import Path
 import re
-import gc
 from qtpy.QtCore import Qt, QSettings, QDeadlineTimer
 
 import numpy as np
 
-from pypeit.setup_gui import dialog_helpers
-from pypeit.setup_gui import view, model, controller
+from pypeit.gui.setup_gui import dialog_helpers
+from pypeit.gui.setup_gui import view, model, controller
 from pypeit.spectrographs.util import load_spectrograph
 from pypeit.metadata import PypeItMetaData
 from pypeit.inputfiles import PypeItFile
@@ -1034,7 +1033,7 @@ def test_log_window(qapp, qtbot, tmp_path, monkeypatch):
     log_file = tmp_path / "test_log_window.log"
 
     with monkeypatch.context() as m:
-        m.setattr("pypeit.setup_gui.text_viewer.FileDialog", MockFileDialog)
+        m.setattr("pypeit.gui.setup_gui.text_viewer.FileDialog", MockFileDialog)
         MockFileDialog.call_count = 0
         MockFileDialog.mock_response = view.DialogResponses.ACCEPT
         MockFileDialog.selected_path = str(log_file)
