@@ -157,10 +157,14 @@ def test_ech_findobj_ineach_order_maxshift(esi_data):
         esi_data['slit_left'], esi_data['slit_right'], esi_data['slit_spat_id'],
         esi_data['order_vec'], esi_data['spec_min_max'], plate_scale,
         maxshift=2.0, **common)
-
+    
     # Both runs must detect one object per order
-    assert len(sobjs_tight) == esi_data['norders']
-    assert len(sobjs_loose) == esi_data['norders']
+    assert len(sobjs_tight) == esi_data['norders'], (
+        'Mismatch between number of detected objects and orders when no trace shift allowed'
+    )
+    assert len(sobjs_loose) == esi_data['norders'], (
+        'Mismatch between number of detected objects and orders when permissive shift allowed'
+    )
 
     # The traces must differ on every order: a tighter maxshift prevents the
     # centroiding from correcting the trace position, so TRACE_SPAT diverges
