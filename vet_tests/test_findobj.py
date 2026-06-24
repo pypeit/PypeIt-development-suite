@@ -4,6 +4,7 @@ from pathlib import Path
 
 from pypeit import specobjs, spec2dobj
 from pypeit.core import findobj_skymask
+from pypeit.spectrographs.util import load_spectrograph
 
 
 @pytest.fixture
@@ -55,6 +56,7 @@ def esi_data(redux_out):
         slitmask=slitmask,
         spec_min_max=spec_min_max,
         norders=norders,
+        binning=sobjs_all[0].DETECTOR.binning
     )
 
 
@@ -138,29 +140,44 @@ def test_ech_findobj_ineach_order_maxshift(esi_data):
     exceed 0.1 pixels on every order, confirming that the parameter is wired
     in and has a measurable effect.
     """
-    plate_scale = np.ones(esi_data['norders']) * 0.154
+    spec = load_spectrograph('keck_esi')
+    plate_scale = spec.order_platescale(esi_data['order_vec'], binning=esi_data['binning'])
     inmask = esi_data['ivar'] > 0
-    common = dict(
-        inmask=inmask,
-        snr_thresh=10.0)
+    fof_link = 1.5
 
     # Run with no allowed centroid shift → traces remain at the initial peak
     sobjs_tight = findobj_skymask.ech_findobj_ineach_order(
         esi_data['image'], esi_data['ivar'], esi_data['slitmask'],
         esi_data['slit_left'], esi_data['slit_right'], esi_data['slit_spat_id'],
         esi_data['order_vec'], esi_data['spec_min_max'], plate_scale,
-        maxshift=0.0, **common)
+        maxshift=0.0, inmask=inmask, snr_thresh=10.0)
+    obj_id = findobj_skymask.ech_fof_sobjs(
+        sobjs_tight, esi_data['slit_left'], esi_data['slit_right'], esi_data['order_vec'],
+        plate_scale, fof_link=fof_link
+    )
+    uniq_ids, cnts = np.unique(obj_id, return_counts=True)
+    sobjs_tight = sobjs_tight[obj_id == uniq_ids[np.argmax(cnts)]]
 
     # Run with a permissive shift → traces follow the real spectral curvature
     sobjs_loose = findobj_skymask.ech_findobj_ineach_order(
         esi_data['image'], esi_data['ivar'], esi_data['slitmask'],
         esi_data['slit_left'], esi_data['slit_right'], esi_data['slit_spat_id'],
         esi_data['order_vec'], esi_data['spec_min_max'], plate_scale,
-        maxshift=2.0, **common)
+        maxshift=2.0, inmask=inmask, snr_thresh=10.0)
+    obj_id = findobj_skymask.ech_fof_sobjs(
+        sobjs_loose, esi_data['slit_left'], esi_data['slit_right'], esi_data['order_vec'],
+        plate_scale, fof_link=fof_link
+    )
+    uniq_ids, cnts = np.unique(obj_id, return_counts=True)
+    sobjs_loose = sobjs_loose[obj_id == uniq_ids[np.argmax(cnts)]]
 
     # Both runs must detect one object per order
-    assert len(sobjs_tight) == esi_data['norders']
-    assert len(sobjs_loose) == esi_data['norders']
+    assert len(sobjs_tight) == esi_data['norders'], (
+        'Mismatch between number of detected objects and orders when no trace shift allowed'
+    )
+    assert len(sobjs_loose) == esi_data['norders'], (
+        'Mismatch between number of detected objects and orders when permissive shift allowed'
+    )
 
     # The traces must differ on every order: a tighter maxshift prevents the
     # centroiding from correcting the trace position, so TRACE_SPAT diverges
