@@ -104,6 +104,15 @@ def build(outdir=None):
     """
     if ARC_SOURCE == 'iraf':
         orders, wave, spec = iraf_arc.load()
+    elif ARC_SOURCE == 'cooke':
+        # The Cooke 16Nov10 solution is binned 2x1 (2048 pix); resample to the
+        # dev-suite 1x1 grid (4096) with specbin=2.  It is far line-richer
+        # (~36 lines/order incl. the blue) than our default XIDL solution.
+        from pypeit.core.wavecal import templates
+        cooke = (ROOT / 'Cooke_data' / 'redo_from_scratch' / 'Arcs' / 'Fits'
+                 / 'Arc_01_fit.idl')
+        orders, wave, spec = templates.xidl_esihires(
+            str(cooke), specbin=2, log10=True)
     else:
         orders, wave, spec = xidl.load(ROOT / 'Arc_01_fit.idl')[:3]
     isort = np.argsort(orders)

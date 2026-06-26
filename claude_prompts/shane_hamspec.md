@@ -63,6 +63,7 @@ If you need to test the code:
 14. Read this doc.  Perform the 9th task under Development/Wavelength Calibration.
 15. Read this doc.  Perform the 10th task under Development/Wavelength Calibration.
 16. Read this doc.  Perform the 11th task under Development/Wavelength Calibration.
+17. Read this doc.  Perform the 12th task under Development/Wavelength Calibration.
 
 ## Prep
 
@@ -250,6 +251,13 @@ Note, I did not answer Q&A 23-25 as I did not considered them off base.
 10.  This all looks great!  Can you add a few more figures to the 05_wavecal_implementation.md report?  Thanks!
 
 11. Work on items (a) and (b) described in Q&A item 36.  Let me know if you have any new questions.  Log your work in Logs below.
+
+12. I have added a folder `PypeIt-development-suite/pypeitdev/shane_hamspec/Cooke_data/redo_from_scratch` of data reduction on a `hamspec` dataset which was performed with the XIDL package which you can find at `Projects/xidl/`.  Please:
+    - Inspect the files in that folder using Python.  Save any code you generate in a new module named `PypeIt-development-suite/pypeitdev/shane_hamspec/scripts/redo_from_scratch.py`.
+    - Focus on wavelength calibration and especially how we can improve ours.
+    - Write a report on your findings in `PypeIt-development-suite/pypeitdev/shane_hamspec/Reports/06_redo_from_scratch.md`
+    - If you have any questions, put them in the Q&A section below.  
+    - Log your work
 
 #### Q&A
 
@@ -458,6 +466,25 @@ reach 0.5–0.85) — it's the observed-data matching, not the archive coverage.
     archive from the 2-D Chebyshev / `wrsfbo` WCS (my line-refit version is too
     crude), or (iii) accept 27 red orders (m=65–97) as v1 and move to docs /
     dev-suite finishing?
+
+---
+
+**WaveCal #12 Q&A (new)** — see
+`pypeitdev/shane_hamspec/Reports/06_redo_from_scratch.md`. Inspected the Cooke
+XIDL reduction. Its wavelength solution is **far richer** than ours (80 orders,
+**~36 ThAr lines/order incl. the blue**, vs our 64 orders @ ~10 lines) — it is
+the best reference we have for the blue. BUT it is **2×1 binned (2048 px)**;
+building an archive from it (resampled to 4096) **failed** — the 2×→1× resample
+doubles the line width so the cross-correlation fails for *all* orders. Lesson:
+its value is the dense **line list**, not its binned arc spectrum. New:
+
+38. Pursue the most promising route — use Cooke's dense per-order line list to
+    bootstrap a **native 1×1** solution on our dev-suite arcs (d2084/d2085) via
+    `pypeit_identify`, then archive that? (Targets the blue directly.)
+39. Or down-bin the dev-suite arcs to 2×1 to match the Cooke template directly
+    (simpler, but changes the dev-suite reduction binning — OK?).
+40. Do you have / can you reduce a ThAr at the dev-suite **1×1** binning with
+    deep line identification? That's the cleanest input.
 
 ## Docs
 
@@ -850,3 +877,24 @@ worse; reverted to the baseline. Report §11.
 - **Reverted** to XIDL archive + cc_thresh 0.6 + reid_cont_sub False;
   re-confirmed **27 orders @ 0.278 px, dev-suite PASS**. Kept the IRAF reader +
   switch for future. New Q37 on how to push blue coverage (or accept v1).
+
+### 2026-06-25 (WaveCal #12: inspected Cooke XIDL reduction; Report 06)
+
+Inspected `Cooke_data/redo_from_scratch` (a full XIDL Hamilton reduction, UT
+16Nov10, 2×1 binned). Code: `scripts/redo_from_scratch.py` (+ a `cooke` option
+in `build_angle_arxiv.py`). Report 06.
+
+- The Cooke wavelength solution is **far richer**: 80 orders (m=65–147),
+  **~36 ThAr lines/order incl. ~39 in the blue**, RMS 5.6 mÅ — vs ours
+  (64 orders, ~10 lines/order). Figure `06_fig1_linedensity.png`. This is the
+  best blue reference we have.
+- **Tested** building the archive from Cooke (resampled 2048→4096): the
+  reduction **failed** — cross-correlation failed for ALL orders. Cause: the
+  2×→1× resample doubles line width (~3→6 px), breaking the line-pattern match
+  even for red orders. ⇒ a line-rich archive at the *wrong binning* is unusable
+  directly.
+- **Lesson:** Cooke's value is its dense per-order **line list**, not its
+  binned arc. Path to blue coverage: bootstrap a native 1×1 solution on our
+  dev-suite arcs via `pypeit_identify` seeded by Cooke's lines (Q38), or
+  down-bin the data to 2×1 (Q39), or get a 1×1 line-rich ThAr (Q40).
+- Reverted to the working XIDL archive (27 orders @ 0.278, PASS).
