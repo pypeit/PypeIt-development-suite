@@ -36,7 +36,7 @@ def test_instantiate_from_master(redux_out):
     slits = slittrace.SlitTraceSet.from_file(slit_master_file)
     slits_left, slits_right, _ = slits.select_edges()
     waveTilts = wavetilts.WaveTilts.from_file(master_file)
-    tilts = waveTilts.fit2tiltimg(slits.slit_img(), slits_left, slits_right)
+    tilts = waveTilts.fit2tiltimg(slits.slit_img())
     assert isinstance(tilts, np.ndarray)
 
 
@@ -54,7 +54,7 @@ def test_flexure(redux_out):
     slits_left, slits_right, _ = slits.select_edges(spat_flexure=spat_flexure)
     slitmask = slits.slit_img(spat_flexure=spat_flexure)
     # Do it
-    new_tilts = waveTilts.fit2tiltimg(slitmask, slits_left, slits_right, spat_flexure=spat_flexure)
+    new_tilts = waveTilts.fit2tiltimg(slitmask, spat_flexure=spat_flexure)
     # Test?
 
 
@@ -77,6 +77,6 @@ def test_run(redux_out):
     buildwaveTilts = wavetilts.BuildWaveTilts(mstilt, slits, spectrograph, par, wavepar, det=1)
     # Run
     waveTilts = buildwaveTilts.run(doqa=False)
-    assert isinstance(waveTilts.fit2tiltimg(slits.slit_img(), slits_left, slits_right), np.ndarray)
+    assert isinstance(waveTilts.fit2tiltimg(slits.slit_img()), np.ndarray)
 
 
