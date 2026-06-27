@@ -1,0 +1,31 @@
+[rdx]
+    spectrograph = arc_kosmos
+setup read
+Setup A:
+  binning: 1,1
+  decker: 2.10-ctr
+  dispname: red
+setup end
+
+# Data block 
+data read
+ path /home/holtz/apo_testdata/KOSMOS/UT250131_longslit
+                                     filename |                 frametype |                 ra |                dec |              target | dispname |   decker | binning |                mjd |         airmass | exptime | calib | comb_id | bkg_id
+                  KOSMOS_HeNeAr_red.0044.fits |                  arc,tilt | 103.99999999999999 |               80.0 |                     |      red | 2.10-ctr |     1,1 |  60706.56333717142 | 1.0154141521516 |   100.0 |     0 |      -1 |     -1
+                  KOSMOS_HeNeAr_red.0045.fits |                  arc,tilt | 103.99999999999999 |               80.0 |                     |      red | 2.10-ctr |     1,1 |  60706.56512959569 |  1.015414139657 |   100.0 |     0 |      -1 |     -1
+                  KOSMOS_HeNeAr_red.0046.fits |                  arc,tilt | 103.99999999999999 |               80.0 |                     |      red | 2.10-ctr |     1,1 |  60706.56692358284 | 1.0154141177915 |   100.0 |     0 |      -1 |     -1
+                    KOSMOS_NeAr_red.0035.fits |                  arc,tilt | 103.99999999999999 |               80.0 |                     |      red | 2.10-ctr |     1,1 | 60706.553541829366 | 1.0154142521087 |     1.0 |     0 |      -1 |     -1
+                    KOSMOS_NeAr_red.0036.fits |                  arc,tilt | 103.99999999999999 |               80.0 |                     |      red | 2.10-ctr |     1,1 | 60706.554189410694 | 1.0154142364904 |     1.0 |     0 |      -1 |     -1
+                    KOSMOS_NeAr_red.0037.fits |                  arc,tilt | 103.99999999999999 |               80.0 |                     |      red | 2.10-ctr |     1,1 |  60706.55483695459 |  1.015414230243 |     1.0 |     0 |      -1 |     -1
+                        KOSMOS_Bias.0030.fits |                      bias | 103.99999999999999 |               80.0 |                     |      red | 2.10-ctr |     1,1 |  60706.55032848008 | 1.0154143208293 |     0.0 |   0,1 |      -1 |     -1
+                        KOSMOS_Bias.0031.fits |                      bias | 103.99999999999999 |               80.0 |                     |      red | 2.10-ctr |     1,1 |  60706.55096489138 |  1.015414314582 |     0.0 |   0,1 |      -1 |     -1
+                        KOSMOS_Bias.0032.fits |                      bias | 103.99999999999999 |               80.0 |                     |      red | 2.10-ctr |     1,1 |  60706.55160090808 |   1.01541429584 |     0.0 |   0,1 |      -1 |     -1
+                        KOSMOS_Bias.0033.fits |                      bias | 103.99999999999999 |               80.0 |                     |      red | 2.10-ctr |     1,1 |   60706.5522363604 | 1.0154142802216 |     0.0 |   0,1 |      -1 |     -1
+                        KOSMOS_Bias.0034.fits |                      bias | 103.99999999999999 |               80.0 |                     |      red | 2.10-ctr |     1,1 |  60706.55287180118 |  1.015414267727 |     0.0 |   0,1 |      -1 |     -1
+                    KOSMOS_Flat_red.0047.fits | pixelflat,illumflat,trace | 103.99999999999999 |               80.0 |                     |      red | 2.10-ctr |     1,1 | 60706.568746422745 | 1.0154141146679 |    60.0 |     0 |      -1 |     -1
+                    KOSMOS_Flat_red.0048.fits | pixelflat,illumflat,trace | 103.99999999999999 |               80.0 |                     |      red | 2.10-ctr |     1,1 |  60706.57007630723 | 1.0154141084206 |    60.0 |     0 |      -1 |     -1
+                    KOSMOS_Flat_red.0049.fits | pixelflat,illumflat,trace | 103.99999999999999 |               80.0 |                     |      red | 2.10-ctr |     1,1 |  60706.57140615639 | 1.0154141146679 |    60.0 |     0 |      -1 |     -1
+     KOSMOS_1237661950806196527_red.0024.fits |                   science | 219.39091666666664 | 11.201527777777777 | 1237661950806196527 |      red | 2.10-ctr |     1,1 |  60706.46616099882 | 1.1887544568096 |  1200.0 |     0 |      17 |     -1
+                 KOSMOS_Feige34_red.0001.fits |                  standard | 159.90291666666664 |  43.10277777777778 |             Feige34 |      red | 2.10-ctr |     1,1 |  60706.30033835665 | 1.0911904608493 |    60.0 |     0 |       1 |     -1
+data end
+
