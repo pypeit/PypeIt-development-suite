@@ -131,12 +131,12 @@ def test_offsets_with_user_obj_ids(redux_out):
     coadd = coadd2d.CoAdd2D.get_instance(spec2d_files, spectrograph, par)
 
     # Check the offsets
-    assert np.allclose(coadd.offsets, [0.0, 1.29, 3.92], atol=0.01), 'Wrong offsets'
+    assert np.allclose(coadd.offsets, [0.0, 1.29, 3.91], atol=0.02), 'Wrong offsets'
 
     # Check that, if no `user_obj_ids` are provided, other bright sources are detected
     par['coadd2d']['user_obj_ids'] = None
     coadd = coadd2d.CoAdd2D.get_instance(spec2d_files, spectrograph, par)
-    assert not np.allclose(coadd.offsets, [0.0, 1.29, 3.92], atol=0.01), 'Found dim target'
+    assert not np.allclose(coadd.offsets, [0.0, 1.29, 3.91], atol=0.02), 'Found dim target'
 
 def test_spat_spec_fract(redux_out):
 

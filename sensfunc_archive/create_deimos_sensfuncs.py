@@ -26,6 +26,7 @@ from pypeit import specobj
 from pypeit import specobjs
 from pypeit import utils
 from pypeit.core import wave
+from pypeit.core.plot import pyplot_rcparams
 import pypeit.io
 from pypeit.sensfunc import SensFunc
 from pypeit.spectrographs.util import load_spectrograph
@@ -175,7 +176,7 @@ def write_stitched_sensfunc(sflist, args, grating, combined_sf):
 
 def build_figure():
     """Build pyplot figure and axis for the QA plot"""
-    utils.pyplot_rcparams()
+    pyplot_rcparams()
     fig = plot.figure(figsize=(12,8))
     axis = fig.add_axes([0.1, 0.1, 0.8, 0.8])
     return fig, axis
@@ -343,7 +344,7 @@ def create_sens_files(args, spec1d_files):
         dest_file = args.dest_path / spec1d_file.name.replace("spec1d_", "sens_", 1)
 
         # Instantiate the relevant class for the requested algorithm
-        sensobj = SensFunc.get_instance(str(spec1d_file), str(dest_file), par['sensfunc'],par_fluxcalib=par['fluxcalib'] )
+        sensobj = SensFunc.get_instance([str(spec1d_file)], str(dest_file), par['sensfunc'],par_fluxcalib=par['fluxcalib'] )
 
         # Generate the sensfunc
         sensobj.run()
