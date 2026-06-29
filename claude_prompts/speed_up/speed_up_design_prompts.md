@@ -58,61 +58,69 @@ If you need to run Python, use the `pypeit` environment
 
 5. I have answered your questions.  Please read them and proceed to profile `keck_deimos`.  Write a new report in `PypeIt-development-suite/pypeitdev/speed_up/Reports`.
 
-## Design document
+## Plan
 
-Guidelines for the design document which will be named pypeit_dashboard_design.md and will be stored in PypeIt-development-suite/pypeitdev/dashboard/.  Keep in mind:
+1. Given what you have learned so far, develop a plan to speed up PypeIt under these constraints:
+    - KISS: Keep it simple stupid!  
+        - Avoid any significant refactoring
+        - Make use of multi-CPUs
+        - Identify places to use more `numpy` array manipultions/math
+    - The b-spline code is being worked on in another branch, so ignore it
 
-- When performing any of the design, be sure to refer to the pypeit_workflow.md document
-- You are encouraged to suggest your own design ideas 
-- This document will be used to guide the development of the dashboard
-- It will not include specific code recommendations, but do keep in mind we will use Python and PyQt6 
-
-### Prep
-
-1. Start the design document by including a preamble of what it is for.  Title that section "Preamble".
-
-   - Add any other information you think is relevant
-   - Add a version number to the document (0.1)
-   - Add a date to the document (today's date)
-   - Add a author to the document (JXP and Claude)
-
-### Initialization 
-
-The following will set the requirements and design for the Initialization phase, i.e. how to launch the Dashboard and what to display when the Dashboard is launched.
-
-Here are a few basic requirements to get us started:
-
-- The Dashboard will launch by running a python script
-- The user will launch it from a folder that includes a PypeIt file
-- The default view will show the "state" of the PypeIt reduction as a formatted table with color-coded information
-- If a state file is present in the folder, load that file to get the state
-- Otherwise, get the state as done in the pypeit_status.py script
-
-1. Generate a draft of the initialization design
-
-   - Make its first section titled "Initialization"
-   - Include a subsection titled "Requirements"
-   - Include sub-subsections to "Requirements" titled "Pending" "Implemented", "Deferred"
-   - Examine the state.py module in PypeIt/pypeit/state.py to understand the structure of the state
-   - Include the basic requirements above
-   - Refine them with proposed design ideas on color, formatting, etc.
-   - Emphasize ease of readability and clarity
-   - Include a list of your own based on your understanding of the PypeIt workflow
-   - If you have any questions, ask them in the Clarifications section below
-   - Update the version number to the document (0.1)
-   - Log your work in the Logs section below
-
-2. I have answered the questions in the Clarifications section below.  Please:
-
-   - Note that I have hand edited the design document (slightly).  In particular, I removed a few of the Requirements that you proposed. Reread it
-   - Update the document to reflect the answers.  
-   - Check for consistency throughout the document
-   - Update the version number 
-   - Log your work in the Logs section below
-
+Then start a new doc named `PypeIt-development-suite/pypeitdev/speed_up/Reports/speed_up_design.md` for us to iterate on.   Ask question in Q&A/Planing below. Log your work
 
 
 ## Q&A
+
+### Planning
+
+Questions from Claude on the speed-up plan (`Reports/speed_up_design.md`, v0.1).
+Please answer inline beneath each "A:". B-spline is excluded throughout (other
+branch).
+
+**Q1 — Parallelism mechanism, default, and new parameter.** I propose
+parallelizing the existing per-detector loops in `pypeit/exposure.py` with a
+`concurrent.futures.ProcessPoolExecutor` (stdlib, no new dep), gated by a new
+parameter `par['rdx']['ncpu']` (name negotiable: `ncpu` vs `nproc`), **default
+`1`** so current behavior is byte-for-byte preserved and >1 is strictly opt-in.
+OK with stdlib multiprocessing + an opt-in `ncpu` (default 1)? Or do you want a
+smarter default (e.g. `min(n_detectors, os.cpu_count()-1)`) given the heavy
+per-detector RAM?
+A:
+
+**Q2 — Granularity to target first.** I recommend **detector/mosaic-level**
+parallelism first (biggest win for DEIMOS/LRIS/MOSFIRE; finest memory
+granularity; the loops are already isolated). Coarser levels (calibration
+groups, frame/comb-id loops) are Tier 3 / later. Agree to start at the detector
+level only?
+A:
+
+**Q3 — Numerical-identicality tolerance.** Vectorizing the arc-line Gaussian fit
+(replacing per-line `scipy.curve_fit` with an analytic weighted log-parabola fit)
+will change wavelength/tilt results at the **noise level** (not bitwise
+identical). Is "within tolerance, vetted by the dev-suite wavelength/tilt RMS
+checks" acceptable, or must outputs remain numerically identical (which would
+rule this change out)?
+A:
+
+**Q4 — Determinism under multiprocessing.** The dev suite requires deterministic
+output. The parallel path recombines results by detector key (order-independent)
+and seeds are per-call, so I expect `ncpu>1` to match `ncpu=1`. Do you want a
+hard requirement that parallel and serial outputs be identical (I'll add a test),
+or is "deterministic for a fixed `ncpu`" sufficient?
+A:
+
+**Q5 — Validation scope.** I plan to validate on the two profiled setups
+(shane_kast_blue for the single-detector/vectorization path, keck_deimos for the
+multi-detector/parallel path) plus the relevant `vet_tests`. Want any additional
+instrument/setup in the first validation pass (e.g. a keck_lris or mosfire setup)?
+A:
+
+**Q6 — Early cheap-wins PR.** The QA cheap wins (force matplotlib `Agg` for
+headless QA; option to skip/defer/parallelize PNG writes) are independent and
+low-risk. Want these as a **separate early PR** ahead of the parallelism/vectorize
+work, or bundled into one effort?
+A:
 
 ### shane_kast_blue
 
@@ -453,3 +461,48 @@ Key findings (full report:
 
 This completes the Profile section (Kast + DEIMOS). Next up: the **Design
 document** prompts (Preamble + Initialization).
+
+### 2026-06-29 (Plan task 1 — drafted KISS speed-up plan; new doc + questions)
+
+Performed the **1st task under Plan**: developed a speed-up plan under the KISS
+constraints (no significant refactor, use multi-CPU, more numpy vectorization,
+**B-spline excluded** — other branch), started the iteration doc, and posed
+questions.
+
+Grounding (beyond the two profiles): re-read `pypeit_workflow.md` §3 (reduction
+loop structure) and inspected the actual code paths to confirm the plan is
+KISS-feasible:
+- **Reduction is already factored for parallelism.** On this branch `pypeit.py`'s
+  `reduce_all` → `reduce_calibID` → `exposure.reduce_exposure` are module-level
+  functions taking explicit args, and the per-detector work lives in
+  `exposure.process_exposure` / `objfind_exposure` / `extract_exposure`, each
+  looping `for det in detectors` and returning per-detector dicts (calling
+  `pypeit_steps.{process_one_det, objfind_one, extract_det}`). The loop bodies are
+  independent → a process-pool `map` over detectors is a near-drop-in change. This
+  is the single biggest, lowest-risk win (DEIMOS = 4 independent mosaics ⇒ ~4× on
+  the per-detector bulk; single-detector Kast gains nothing, as expected).
+- **Top vectorization target confirmed:** `fit_arcspec` (`core/arc.py:1138`) fits
+  every arc line with `scipy.curve_fit` via `fitting.fit_gauss` in a Python loop →
+  the 1.11 M `curve_fit` calls / 93 M `gauss_3deg` evals seen in the DEIMOS
+  profile. A 3-param Gaussian has a closed form (weighted log-parabola), batchable
+  across all lines with numpy — localized, helps wavecal + tilts.
+- **Secondary vectorize candidate:** `moment1d` (`core/moment.py`) — 1.05 M calls
+  via `trace.masked_centroid`/`follow_centroid`; numpy-internal already, cost is
+  call volume from row-by-row trace following ⇒ more invasive, flagged not
+  committed.
+- **Cheap wins:** force matplotlib `Agg` for headless QA (run uses interactive
+  `qtagg`); parallelize/defer the 971 QA PNG writes; trim obvious numpy churn.
+
+Wrote the draft `pypeitdev/speed_up/Reports/speed_up_design.md` (v0.1): purpose,
+constraints, profile-derived cost classes, a ranked plan (Tier 1 = detector-level
+multiprocessing + arc-fit vectorization; Tier 2 = cheap QA/numpy wins + moment1d;
+Tier 3 = coarser calib-group/frame parallelism), validation strategy (regress
+Kast + DEIMOS, vet_tests, re-profile, determinism check), out-of-scope list, and
+open questions.
+
+Posed six questions in **Q&A/Planning**: (Q1) multiprocessing mechanism + new
+`ncpu`/`nproc` param + default; (Q2) start at detector-level granularity; (Q3)
+tolerance for non-identical numerical output from vectorized fits; (Q4)
+determinism requirement under multiprocessing; (Q5) validation scope/instruments;
+(Q6) whether the cheap QA wins ship as a separate early PR. Awaiting answers
+before any code.
