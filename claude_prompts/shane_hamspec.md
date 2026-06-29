@@ -588,6 +588,21 @@ A. Accept the 27 solved orders for now
 
 #### Q&A
 
+**Finishing-up #1 Q&A (new)** — see
+`pypeitdev/shane_hamspec/Reports/09_full_run.md`. Pushed 9 Cooke frames to
+`RAW_DATA/shane_hamspec/Hamilton/`, wrote a trimmed
+`pypeit_files/shane_hamspec_hamilton.pypeit`, and ran it: **dev-suite test
+PASSES**, wavelength calibration good (19 orders @ 0.147 px). One problem:
+
+47. **Object finding on ~7 px orders.** The reduction completes and the
+    standard star is clearly present in the spec2d, but `objs_in_slit` finds no
+    object on the very narrow Loral orders (~7 px), so the standard isn't
+    extracted (no spec1d). I already lowered `find_trim_edge` 3→1 (necessary
+    but not sufficient). Next: (a) tune echelle object-finding params
+    (`find_fwhm`, `ech_find_*` SNR thresholds, `maxnumber`) for short orders;
+    (b) push a few more trace flats (3→more) so more orders are traced; or
+    (c) accept calibration-only for now. Which next?
+
 ## Docs
 
 Here are some guidelines when generating the docs:
@@ -1083,3 +1098,23 @@ orders were wavelength-calibrated) instead of letting the order-axis
 divide-by-zero produce an opaque `SVD did not converge`. Verified: the 1-order
 case now raises the clear message. Q46: accepting the 27 solved orders for now
 (not pushing the redder half). Next: the Finishing-up dev-suite task.
+
+### 2026-06-29 (Finishing-up #1: pushed Cooke to dev-suite; full run PASSES)
+
+Pushed the smallest useful Cooke set into the dev suite and ran it. Report 09
+(with figures).
+
+- `RAW_DATA/shane_hamspec/Hamilton/` was empty (drive re-pointed to
+  `/data/RAW_DATA`), so Cooke now *is* the Hamilton setup. Pushed 9 frames:
+  arcs d139/140, trace d133-135 (800:2.5), pixelflat d111-113 (800:5.0),
+  standard d144 (HR 7373). Wrote trimmed
+  `pypeit_files/shane_hamspec_hamilton.pypeit`.
+- `pypeit_test reduce -i shane_hamspec` **PASSES (1/1, ~3 min)**: edges (50
+  orders), flats, tilts, **wavecal 19 orders @ median 0.147 px**, spec2d + QA.
+- **Issue:** no `spec1d` — `objs_in_slit` finds **no objects** on the standard,
+  even though the star is bright and clearly present in the sky-subtracted
+  spec2d (Figs 2–3). Cause: orders are only **~7 px** wide on the Loral CCD.
+  Lowered `find_trim_edge` 3→1 (necessary, not sufficient). New Q47 on how to
+  push object finding for short orders.
+- 19 orders here vs 27 earlier because I pushed only 3 trace flats (fewer
+  orders traced); more trace flats would recover orders.
