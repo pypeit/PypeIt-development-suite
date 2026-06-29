@@ -404,3 +404,52 @@ baseline vs a single-mosaic `(3,7)` fast profile; (Q2) run-in-place + cold-clean
 scope; (Q3) reuse the Kast methodology, extended with a per-mosaic breakdown; (Q4)
 single science frame / single cold run. No code run, no profiling yet — awaiting
 answers.
+
+### 2026-06-29 (Task 5 — profiled keck_deimos cold full 4-mosaic run; wrote report)
+
+Performed the **5th task under Profile**: read the keck_deimos Q&A answers (full
+run, run-in-place cold, same Kast methodology + per-mosaic breakdown, single
+science frame) and profiled `keck_deimos_600zd_m_6500`. (The cold cProfile run
+itself had been launched on 2026-06-28 — artifacts dated Jun 28 08:49 — but we
+were cut off before the analysis/report; this entry finalizes it.)
+
+Code: added `pypeitdev/speed_up/scripts/profile_deimos.py` (cold clean + in-process
+`cProfile` driver, same shape as `profile_kast_blue.py`) and extended
+`analyze_profile.py` with `--stem` + a per-mosaic wall-clock breakdown
+(`DET_MARKER` on the "Calibrating detector (a, b)" log lines).
+
+Run: cold, single, **rc 0**, healthy (1 spec1d + 1 spec2d, calibrations for all 4
+mosaics, 971 QA PNGs; the 8 log "error" hits are benign `Max centroid error: None`
+INFO lines). **PypeIt wall-clock 12 393.8 s ≈ 3 h 26 m** (~104× Kast's 119 s);
+4.10 billion function calls.
+
+Key findings (full report:
+`pypeitdev/speed_up/Reports/keck_deimos_600zd_m_6500_profile_report.md`):
+- **Headline confirms Kast at scale:** the pure-Python B-spline kernel
+  (`pypeit/core/bspline/`) is again the dominant engine — **≈2 750 s self-time,
+  ~22 % of the run** (`cholesky_band` 856 s, `solution_arrays` 654 s,
+  `cholesky_solve` 437 s, `intrv` 312 s, `bsplvn` 252 s, `bspline_model` 238 s),
+  reached via `bspline_profile` → `local_skysub_extract` (cum 2 952 s) and
+  `global_skysub` (cum 1 677 s).
+- **Phase split (wall-clock):** sky subtraction 4 284 s (35 %), flat 2 173 s
+  (18 %), slit edges 1 896 s (15 %), extraction 1 097 s (9 %), tilts 779 s, wave
+  771 s, object finding 728 s, image combine 299 s. Sky+extract ≈ 44 %, calib
+  building ≈ 48 %.
+- **New at DEIMOS scale (negligible on Kast):** (a) mosaic resampling via
+  scipy.ndimage — `geometric_transform` 462 s, `correlate` 577 s,
+  `build_image_mosaic` cum 662 s; (b) arc-line fitting — **1.11 M** `curve_fit`
+  calls, `fit_gauss` cum 840 s, `gauss_3deg` 332 s over 93 M calls; (c)
+  `moment1d` 212 s over 1.05 M calls; (d) flexure `spec_flexure_slit` cum 825 s;
+  (e) QA matplotlib text-metrics cum 894 s + 971-PNG encode 276 s.
+- **Per-mosaic caveat:** calibration building is even (~1 300–1 600 s/mosaic), but
+  the marker-based split lumps the whole post-calib science loop (~6 200 s) into
+  the (4,8) interval — the science half is shared, not (4,8)-specific. Noted in
+  the report; finer per-mosaic science attribution needs extra instrumentation.
+- **Ranked opportunities:** (1) B-spline kernel [helps every instrument],
+  (2) mosaic resampling, (3) arc-line `curve_fit` vectorization, (4) headless/
+  parallel QA, (5) `moment1d`, (6) flexure, (7) NumPy/masked-array churn,
+  (8) detector/mosaic + frame parallelism (structural — 4 independent mosaics,
+  the obvious DEIMOS/Echelle/IFU win to design in).
+
+This completes the Profile section (Kast + DEIMOS). Next up: the **Design
+document** prompts (Preamble + Initialization).
