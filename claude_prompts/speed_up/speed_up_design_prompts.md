@@ -29,7 +29,10 @@ If you need to run Python, use the `pypeit` environment
 
 1. Read this doc.  Perform the first task under Profile
 2. Read this doc.  Perform the 2nd task under Profile
-2. Read this doc.  Perform the 3rd task under Profile
+3. Read this doc.  Perform the 3rd task under Profile
+4. Read this doc.  Perform the 4th task under Profile
+5. Read this doc.  Perform the 5th task under Profile
+
 
 ## Profile
 
@@ -50,6 +53,10 @@ If you need to run Python, use the `pypeit` environment
     - Run it
     - Write a report in `PypeIt-development-suite/pypeitdev/speed_up/Reports`
     - Log your work
+
+4. Ok, that report is excellent.  Now, prepare to profile the data in `PypeIt-development-suite/REDUX_OUT/keck_deimos/600ZD_M_6500`.  If you have any questions, put them in the Q&A/keck_deimos section. Log your work.
+
+5. I have answered your questions.  Please read them and proceed to profile `keck_deimos`.  Write a new report in `PypeIt-development-suite/pypeitdev/speed_up/Reports`.
 
 ## Design document
 
@@ -106,6 +113,8 @@ Here are a few basic requirements to get us started:
 
 
 ## Q&A
+
+### shane_kast_blue
 
 Questions from Claude for the Profile task (please answer inline beneath each
 "A:"). Profiling (task 2) will proceed once these are settled.
@@ -170,6 +179,54 @@ use in `pypeit/` core and no `nproc` parameter, so cProfile captures the entire
 workload in one process (no child-process blind spots). Noting this as a fact,
 not a question — no action needed from you.
 A: ok
+
+### keck_deimos
+
+Questions from Claude for the **keck_deimos 600ZD_M_6500** Profile task (4th task
+under Profile). This is a prepare-only step; the profiling run will proceed once
+these are settled. Please answer inline beneath each "A:".
+
+This dataset is a much heavier target than shane_kast_blue: it is **MultiSlit
+with a slitmask (many slits per detector)** and keck_deimos defaults to
+**4 detector mosaics** `[(1,5),(2,6),(3,7),(4,8)]` (the 8 chips paired), with
+`detnum` left commented out in the `.pypeit` so the full 4-mosaic reduction runs
+by default. Expect the run (and the cProfile overhead on top) to be substantially
+longer than Kast — plausibly tens of minutes.
+
+**Q1 — Detector/mosaic scope?** Profile (a) the **full 4-mosaic cold run** (the
+default; a true real-world baseline, but long under cProfile), or (b) **restrict
+to a single mosaic**, e.g. `detnum = (3,7)` as in the commented QL line, for a
+faster, still-representative profile? I recommend **(a) full** for an honest
+baseline and will report a per-mosaic breakdown, but I'll flag the runtime. Your
+call.
+
+A: Yes, the full run.
+
+**Q2 — Run location & cold scope.** Unlike Kast, the `.pypeit` sits *directly* in
+`REDUX_OUT/keck_deimos/600ZD_M_6500/` (no `_A` subdir). I'll run in place there;
+PypeIt will create `Calibrations/`, `Science/`, `QA/` in that dir. The dir is
+already essentially clean (only the `.pypeit` and a stale `.test.log`), so the
+cold-clean is nearly a no-op — I'll remove any products/`_state.json`/`.calib`/
+old `.log`/`.par` if a prior partial run exists, then run with `-o`. The raw data
+and `.pypeit` are untouched. OK?
+
+A: ok
+
+**Q3 — Reuse the Kast methodology?** Same approach as the Kast report: in-process
+`cProfile` driver, pstats cumulative + tottime tables, a per-step wall-clock
+timeline parsed from the timestamped run log, and a report mapping hotspots onto
+the `pypeit_workflow.md` phases — **extended with a per-mosaic breakdown** so we
+can see how cost scales with detector count and slit count. New scripts go in
+`pypeitdev/speed_up/scripts/` (e.g. `profile_deimos.py`, reusing
+`analyze_profile.py`) and the report in `Reports/`. Confirm.
+
+A: Yes, same methodology.
+
+**Q4 — Single science frame, single cold run?** Use the `.pypeit` as-is: one
+science frame (`d1010_0056`; `0057` is commented out), one cold run, no repeats —
+same as Kast. Confirm.
+
+A: confirmed
 
 ## Logging
 
@@ -311,3 +368,39 @@ Key findings (full report:
 
 Note: the log-timeline labels are approximate (the "sky subtraction" aggregate
 folds in the local-sky+extract block); the cProfile tables are authoritative.
+
+### 2026-06-28 (Task 4 — prepared to profile keck_deimos 600ZD_M_6500; posed questions)
+
+Performed the **4th task under Profile** (prepare + ask questions; the actual
+keck_deimos profiling run is a later step). Reconnaissance of the new, much
+heavier target.
+
+Dataset / redux recon (`REDUX_OUT/keck_deimos/600ZD_M_6500/`):
+- The `.pypeit` (`keck_deimos_600zd_m_6500.pypeit`) sits **directly** in the
+  redux dir (no `_A` subdir, unlike Kast). The dir is otherwise clean — only the
+  `.pypeit` and a stale `.test.log` (records a Ctrl+C from a prior aborted run) —
+  so the cold-clean here is essentially a no-op.
+- Frames (raw under `RAW_DATA/keck_deimos/600ZD_M_6500/`, gzipped, large —
+  42–124 MB each): 2 bias, 2 arc/tilt, 1 illum/pixel/trace flat, 1 science
+  (`d1010_0056`, 1800 s; `0057` commented out). Several blue calib frames are
+  commented out (pipeline can't handle that lamp combo yet).
+- `.pypeit` overrides: wavelength `lamps = NeI, ArI, CdI, KrI, XeI, HgI, ZnI`;
+  `detnum` is **commented out** so the keck_deimos default applies.
+
+Why this is a different beast from Kast (from `pypeit/spectrographs/keck_deimos.py`):
+- keck_deimos has **`ndet = 8`** and defaults to **4 mosaics**
+  `par['rdx']['detnum'] = [(1,5),(2,6),(3,7),(4,8)]` (`allowed_mosaics`,
+  `default_mosaic`). So the default run reduces 4 mosaicked detectors, each
+  pairing 2 chips.
+- It is **MultiSlit with a slitmask** → many slits per detector, vs Kast's single
+  slit. The B-spline-heavy sky/extract work (the Kast headline, ~32 % of runtime)
+  scales with slits × detectors, so I expect it to dominate even more here.
+- Still single-process (the Q7 finding — no multiprocessing/`nproc` in core — is
+  global), so cProfile will capture the whole workload; but the wall-clock and
+  cProfile overhead will be far larger (plausibly tens of minutes).
+
+Posed four questions in **Q&A/keck_deimos**: (Q1) detector scope — full 4-mosaic
+baseline vs a single-mosaic `(3,7)` fast profile; (Q2) run-in-place + cold-clean
+scope; (Q3) reuse the Kast methodology, extended with a per-mosaic breakdown; (Q4)
+single science frame / single cold run. No code run, no profiling yet — awaiting
+answers.

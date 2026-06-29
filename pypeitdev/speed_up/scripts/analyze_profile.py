@@ -1,32 +1,45 @@
 #!/usr/bin/env python
 """
-Analyze the cProfile output + run log produced by ``profile_kast_blue.py``.
+Analyze the cProfile output + run log produced by ``profile_kast_blue.py`` or
+``profile_deimos.py``.
 
 Produces two machine-readable text artifacts in ``Reports/``:
 
-- ``shane_kast_blue_A.pstats.txt`` — top functions by cumulative time and by
-  internal (tottime) time, plus a few targeted callers.
-- ``shane_kast_blue_A.timeline.txt`` — per-phase wall-clock timeline parsed from
-  the timestamped run log, mapped onto the ``pypeit_workflow.md`` phases.
+- ``<stem>.pstats.txt`` — top functions by cumulative time and by internal
+  (tottime) time.
+- ``<stem>.timeline.txt`` — per-phase wall-clock timeline parsed from the
+  timestamped run log, mapped onto the ``pypeit_workflow.md`` phases. For
+  multi-detector setups (e.g. keck_deimos) it also reports a per-detector/mosaic
+  wall-clock breakdown.
 
-Run with the pypeit env python::
+The dataset is selected with ``--stem`` (default ``shane_kast_blue_A``)::
 
-    /home/xavier/miniconda3/envs/pypeit/bin/python analyze_profile.py
+    /home/xavier/miniconda3/envs/pypeit/bin/python analyze_profile.py \
+        --stem keck_deimos_600zd_m_6500
 """
 import io
 import re
+import sys
 import json
 import pstats
+import argparse
 import datetime
 from pathlib import Path
 
 REPORTS = Path("/home/xavier/Projects/PypeIt/PypeIt-development-suite/"
                "pypeitdev/speed_up/Reports")
-PROF = REPORTS / "shane_kast_blue_A.prof"
-LOG = REPORTS / "shane_kast_blue_A.run.log"
-META = REPORTS / "shane_kast_blue_A.runmeta.json"
-PSTATS_OUT = REPORTS / "shane_kast_blue_A.pstats.txt"
-TIMELINE_OUT = REPORTS / "shane_kast_blue_A.timeline.txt"
+
+# Set by main() from --stem.
+PROF = LOG = META = PSTATS_OUT = TIMELINE_OUT = None
+
+
+def set_paths(stem):
+    global PROF, LOG, META, PSTATS_OUT, TIMELINE_OUT
+    PROF = REPORTS / f"{stem}.prof"
+    LOG = REPORTS / f"{stem}.run.log"
+    META = REPORTS / f"{stem}.runmeta.json"
+    PSTATS_OUT = REPORTS / f"{stem}.pstats.txt"
+    TIMELINE_OUT = REPORTS / f"{stem}.timeline.txt"
 
 # ---------------------------------------------------------------------------
 # 1. pstats tables
@@ -158,13 +171,77 @@ def parse_timeline():
     print(f"Wrote {TIMELINE_OUT}")
 
 
+# ---------------------------------------------------------------------------
+# 3. Per-detector / per-mosaic wall-clock breakdown (multi-detector setups)
+# ---------------------------------------------------------------------------
+
+# keck_deimos (and other multi-detector setups) emit, inside the science
+# reduction loop, one "Calibrating detector (a, b)" line per mosaic; calibrations
+# are then built lazily for that detector before it is reduced. These lines are
+# clean per-mosaic boundaries.
+DET_MARKER = re.compile(
+    r"reduce_exposure:\d+ \| Calibrating detector (?P<det>.+)$")
+
+
+def per_detector_breakdown():
+    if not LOG.exists():
+        return
+    rows = []  # (datetime, det_label)
+    first_ts = last_ts = None
+    for line in LOG.read_text(errors="replace").splitlines():
+        m = LOGLINE.match(line)
+        if not m:
+            continue
+        ts = datetime.datetime.strptime(m["ts"], "%Y-%m-%d %H:%M:%S")
+        if first_ts is None:
+            first_ts = ts
+        last_ts = ts
+        dm = DET_MARKER.search(line)
+        if dm:
+            rows.append((ts, dm["det"].strip()))
+
+    if not rows:
+        return  # single-detector setup; nothing to break down
+
+    buf = io.StringIO()
+    buf.write("\n" + "=" * 78 + "\n")
+    buf.write("PER-DETECTOR / PER-MOSAIC WALL-CLOCK (science reduction loop)\n")
+    buf.write("Interval = 'Calibrating detector X' -> next detector (or log end).\n")
+    buf.write("Includes that detector's lazily-built calibrations + reduction.\n")
+    buf.write("=" * 78 + "\n")
+    buf.write(f"{'detector/mosaic':<22}{'start':<21}{'wall (s)':>10}\n")
+    buf.write("-" * 78 + "\n")
+    total = 0.0
+    for i, (ts, det) in enumerate(rows):
+        nxt = rows[i + 1][0] if i + 1 < len(rows) else last_ts
+        dt = (nxt - ts).total_seconds()
+        total += dt
+        buf.write(f"{det:<22}{str(ts):<21}{dt:>10.0f}\n")
+    buf.write("-" * 78 + "\n")
+    buf.write(f"{'sum (reduction loop)':<22}{'':<21}{total:>10.0f}\n")
+    if first_ts is not None:
+        pre = (rows[0][0] - first_ts).total_seconds()
+        buf.write(f"{'(pre-loop: init/setup)':<22}{str(first_ts):<21}{pre:>10.0f}\n")
+
+    with open(TIMELINE_OUT, "a") as fp:
+        fp.write(buf.getvalue())
+    print(f"Appended per-detector breakdown to {TIMELINE_OUT}")
+
+
 def main():
+    ap = argparse.ArgumentParser()
+    ap.add_argument("--stem", default="shane_kast_blue_A",
+                    help="Report file stem (e.g. keck_deimos_600zd_m_6500)")
+    args = ap.parse_args()
+    set_paths(args.stem)
+
     if META.exists():
         meta = json.loads(META.read_text())
         print(f"Run: {meta['command']}  wall={meta['wall_clock_s']} s  "
               f"rc={meta['return_code']}")
     write_pstats()
     parse_timeline()
+    per_detector_breakdown()
 
 
 if __name__ == "__main__":
