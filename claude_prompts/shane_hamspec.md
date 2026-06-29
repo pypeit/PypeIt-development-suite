@@ -64,6 +64,12 @@ If you need to test the code:
 15. Read this doc.  Perform the 10th task under Development/Wavelength Calibration.
 16. Read this doc.  Perform the 11th task under Development/Wavelength Calibration.
 17. Read this doc.  Perform the 12th task under Development/Wavelength Calibration.
+18. Read this doc.  Perform the 13th task under Development/Wavelength Calibration.
+19. Read this doc.  Perform the 14th task under Development/Wavelength Calibration.
+20. Read this doc.  Perform the 15th task under Development/Wavelength Calibration.
+21. Read this doc.  Perform the 16th task under Development/Wavelength Calibration.
+
+22. Read this doc.  Perform the 1st task under Finishing up.
 
 ## Prep
 
@@ -258,6 +264,22 @@ Note, I did not answer Q&A 23-25 as I did not considered them off base.
     - Write a report on your findings in `PypeIt-development-suite/pypeitdev/shane_hamspec/Reports/06_redo_from_scratch.md`
     - If you have any questions, put them in the Q&A section below.  
     - Log your work
+
+13. The XIDL solution looks very good.  As such, we will now consider using those files as the development suite.  Please:
+    - Read the files in `PypeIt-development-suite/pypeitdev/shane_hamspec/Cooke_data/redo_from_scratch/`
+    - Generate an archival template for wavelength calibration from those outputs
+    - Run PypeIt on that dataset 
+      - Use `pypeit_setup` to generate a PypeIt file in `PypeIt-development-suite/pypeitdev/shane_hamspec/Cooke_data/redo_from_scratch/PypeIt/`
+      - Run PypeIt on that dataset using the PypeIt file you generated
+      - Generate a new Report named `PypeIt-development-suite/pypeitdev/shane_hamspec/Reports/07_run_on_redo.md` with your findings.
+    - If you have any questions, put them in the Q&A section below.  
+    - Log your work
+
+14. I have answered the new Q&A.  Please proceed with coding after you read them.  Log your work in Logs below.
+
+15. Dig in on the wavelength failure.  I doubt it is as simple as the RMS tolerance.  Generate a new Report in the usual place.  Include figures.  Log your work.
+
+16. I have answered the new Q&A.  Please proceed with coding after you read them.  Log your work in Logs below.
 
 #### Q&A
 
@@ -485,6 +507,86 @@ its value is the dense **line list**, not its binned arc spectrum. New:
     (simpler, but changes the dev-suite reduction binning — OK?).
 40. Do you have / can you reduce a ThAr at the dev-suite **1×1** binning with
     deep line identification? That's the cleanest input.
+
+---
+
+**WaveCal #13 Q&A (new)** — see
+`pypeitdev/shane_hamspec/Reports/07_run_on_redo.md`. Built the Cooke archival
+template (native 2048, 80 orders) and generated a `.pypeit` in
+`Cooke_data/redo_from_scratch/PypeIt/`, but **could not run PypeIt**: the Cooke
+2010 data is a **different detector** (Loral 2Kx2K, single-amp, 1485×2080) than
+the 2014 dev-suite data (e2v 4Kx4K, 2-amp). The detector par, date card
+(`DATE-OBS` vs `DATE`), cross-disp meta (no `DHEITVAL`), and plate names
+(`800:2.5`) all differ. New:
+
+41. **Which dataset is canonical — 2014 (e2v 4Kx4K) or 2010 Cooke (Loral
+    2Kx2K)?** They can't share one archive or detector definition. Move to
+    Cooke (retire 2014), or add Cooke as a second era?
+    A. Move to Cooke.
+42. **OK to add a Loral 2Kx2K detector era?** I'd add a frame-size-based
+    `get_detector_par` branch + `DATE-OBS`/`DHEITRAW` handling + `800:2.5`
+    typing. I need the **Loral 2Kx2K gain + read noise** (not in headers) —
+    have them, or estimate?
+    A. See if you can recover these from XIDL
+43. **echangle/xdangle mapping.** XIDL `hamspec_setup` uses **ECH=DHEITRAW,
+    XD=GTILTRAW** — the reverse of what I implemented (Q21). Flip to match XIDL?
+    A. Yes, flip to match XIDL.
+
+---
+
+**WaveCal #14 Q&A (new)** — Q41–43 coded and verified on the Cooke data
+(Loral detector, flipped angles, DATE-OBS, plate typing). `pypeit_setup` →
+1 clean config; a trimmed reduction reaches and **solves 58 orders per-order**,
+but the **2-D wavelength fit then crashes**.
+
+44. **2-D wavecal SVD failure on Cooke.** `arc.fit2darc` raises
+    `LinAlgError: SVD did not converge` (after "invalid value in divide") in the
+    echelle 2-D fit, once the 58 per-order solutions are in hand. Most likely
+    too few orders survive the per-order RMS mask (degenerate order-axis
+    normalization) or a NaN per-order fit. Want me to dig into this next
+    (inspect how many orders pass the RMS gate; relax `rms_thresh_frac_fwhm` /
+    guard `fit2darc` against <4 unique orders), or is there a known-good set of
+    echelle 2-D-fit params for the Loral data?
+
+A. Yes, dig in.  Sounds like something went awry..
+
+---
+
+**WaveCal #15 Q&A (new)** — see
+`pypeitdev/shane_hamspec/Reports/08_svd_failure_diagnosis.md`. Found it: the
+2-D fit got **only 1 unique order** → order-axis normalization divided by zero
+→ SVD crash. Cause: the Cooke `angle_fits` xd anchor was built for the
+*pre-flip* xdangle (`DHEITVAL` µm, range 18359–22359), but after the Q43 flip
+the reduction passes `xdangle=GTILTRAW=9085` → wild extrapolation → predicted
+orders 15–78 vs the data's 66–123 → almost no archive match. (Also: PypeIt uses
+the **local** redux-dir copy of the archive before the package copy, so I had
+to update that too.) **Fixed** (anchor at the Cooke GTILTRAW/DHEITRAW, constant
+single-setting order model) → reduction now **completes**, 27 orders @
+**0.147 px** median RMS. New:
+
+45. Add a small guard in core `arc.fit2darc` (require ≥2 unique orders, clear
+    message) so a degenerate case fails gracefully instead of an opaque SVD
+    error — or leave core untouched?
+
+A. Yes, add a small guard.
+
+46. Push the redder-half coverage (m≈66–100, still unmatched) next, or accept
+    the 27 solved orders and move to dev-suite finishing?
+
+A. Accept the 27 solved orders for now
+
+### Finishing up
+
+1. Ok, we have a working wavelength calibration.  Let's make sure the rest of the reduction is working well.  Please:
+
+- Push the smallest useful set of files from the Cooke data to the dev-suite, i.e. into RAW_DATA/shane_hamspec/Hamilton/ 
+- Copy the PypeIt file into PypeIt-development-suite/pypeit_files/ and rename it accorinding the naming convention there; be sure to trim down the file to only include the frames you pushed to the dev-suite
+- Run PypeIt on the dev-suite data using the PypeIt file you generated
+- Generate a new Report named `PypeIt-development-suite/pypeitdev/shane_hamspec/Reports/09_full_run.md` with your findings. Include figures.
+- If you have any questions, put them in the Q&A section below.  
+- Log your work
+
+#### Q&A
 
 ## Docs
 
@@ -898,3 +1000,86 @@ in `build_angle_arxiv.py`). Report 06.
   dev-suite arcs via `pypeit_identify` seeded by Cooke's lines (Q38), or
   down-bin the data to 2×1 (Q39), or get a 1×1 line-rich ThAr (Q40).
 - Reverted to the working XIDL archive (27 orders @ 0.278, PASS).
+
+### 2026-06-27 (WaveCal #13: Cooke template built; run blocked by detector era)
+
+Task: build archival template from Cooke + run PypeIt on the Cooke dataset.
+Report 07.
+
+- **Built** the Cooke archival template (native 2048, no resample) →
+  `Cooke_data/redo_from_scratch/PypeIt/shane_hamspec_{composite_arc,angle_fits}
+  .fits` (83 orders m=65–147, ~36 lines/order). `build_angle_arxiv.py`
+  `ARC_SOURCE='cooke'`, specbin=1. Production 2014 archive left intact.
+- **`pypeit_setup`** ran → `Cooke_data/redo_from_scratch/PypeIt/`, but flats
+  untyped (plate `800:2.5` ≠ hardcoded 2014 plates) and header warnings
+  (`mjd`/`airmass` need `DATE-OBS`; `xdangle` needs `DHEITRAW` — no `DHEITVAL`).
+- **Could NOT run PypeIt:** the Cooke 2010 data is a **Loral 2Kx2K** detector
+  (single-amp, 1485×2080) vs the 2014 e2v 4Kx4K 2-amp. `get_detector_par`'s
+  2-amp datasec (to col 4096) is invalid for a 2080-col frame → image
+  processing would fail before wavecal.
+- Supporting Cooke = adding a second detector era (detector par + DATE-OBS/
+  DHEITRAW + 800:2.5 typing) and resolving the archive conflict with the 2014
+  test. Flagged as a direction decision: Q41 (which dataset is canonical), Q42
+  (add Loral era? need gain/RON), Q43 (flip echangle/xdangle to match XIDL).
+- Also noticed: XIDL maps ECH=DHEITRAW, XD=GTILTRAW (reverse of my Q21 mapping).
+
+### 2026-06-28 (WaveCal #14: coded the move-to-Cooke / Loral support)
+
+Implemented the Q41–43 answers (move to Cooke; add Loral 2Kx2K era; flip
+echangle/xdangle to XIDL convention) in `shane_hamspec.py`:
+- **Detector (Q42):** `get_detector_par` now picks the CCD from the raw column
+  count — Loral 2Kx2K (NAXIS1<3000) → single amp, **gain=1.2, ronoise=18.0**,
+  datasec `[:, 1:2048]`, oscansec `[:, 2049:2080]` (overscan boundary verified
+  on the arc); e2v 4kx4k otherwise. gain/RON recovered from XIDL
+  `hamspec_strct.pro` (Loral2Kx2K: 1.2/18.0; e2v: 0.9/2.5).
+- **Angles (Q43):** flipped to XIDL — `echangle←DHEITRAW`, `xdangle←GTILTRAW`
+  (both raw stepper counts, present in all eras; drops the missing-DHEITVAL
+  problem).
+- **Time:** new `_obs_isot` helper — `mjd`/`airmass` use `DATE` (e2v) or
+  `DATE-OBS` (Loral).
+- **Typing:** `check_frame_type` recognises both eras' plates — wide
+  (pixelflat) {800:6.0, 800:5.0}, narrow (trace/illumflat) {640:5.0, 800:2.5}.
+- Copied the Cooke archive (`composite_arc`/`angle_fits`, nspec=2056, 83 orders
+  m=65–147) into the production `reid_arxiv` (move to Cooke).
+
+Verified on the Cooke data: meta correct (Loral detector 1-amp/1.2/18; ech/xd
+flipped; mjd/airmass from DATE-OBS); **`pypeit_setup` gives 1 clean config**
+with correct typing (arcs, **biases** d100–110, trace d133–138 narrow,
+pixelflat d111–132 wide, 15 science + 3 standards). Ran a trimmed reduction
+(calibs + 1 standard): edges/flats/tilts ✓, **per-order wavecal solved 58
+orders (m=66–123)** ✓ — then the **2-D wavelength fit crashes**
+(`arc.fit2darc` → `LinAlgError: SVD did not converge`, preceded by "invalid
+value in divide"). Likely too few orders survive the RMS mask (→ degenerate
+order-axis normalization) or a NaN per-order fit; needs a look next. New Q44.
+
+### 2026-06-29 (WaveCal #15: diagnosed + fixed the Cooke 2-D-fit SVD crash)
+
+Dug into the SVD failure (Report 08, with figures). It was **not** the RMS
+tolerance:
+- Instrumented `echelle_2dfit` (temp dump, since removed): the 2-D fit received
+  **1 unique order** → `fit2darc` normalizes the order axis by
+  (max−min)=0 → NaN → SVD crash.
+- Why 1 order: 43/58 observed orders had an all-zero predicted archive arc. The
+  Cooke `angle_fits` xd anchor was built for the **pre-flip** xdangle
+  (`DHEITVAL` µm, range 18359–22359); after the Q43 flip the run passes
+  `xdangle=GTILTRAW=9085`, so the linear xd model **extrapolated** → predicted
+  orders 15–78 vs the data's 66–123 (≈46-order mismatch).
+- Second gotcha: PypeIt loads `reid_arxiv` from the **redux dir** before the
+  package dir, so the stale Cooke-folder copy was being used; had to update it.
+- **Fix** (`build_angle_arxiv.py` cooke source): anchor at the Cooke
+  GTILTRAW(9085)/DHEITRAW(1700) in the flipped cards; constant single-setting
+  order model (no orders/µm slope — xdangle is now grating-tilt counts).
+- **Result:** prediction now 62–125 (matches data); `run_pypeit` **completes**;
+  2-D fit gets **27 orders**; per-order **median RMS 0.147 px** (all 27 <0.3,
+  better than 2014's 0.278). Removed the temp instrumentation.
+- Open: redder half (m≈66–100) still unmatched (27/58); new Q45 (guard
+  fit2darc), Q46 (push coverage vs finish).
+
+### 2026-06-29 (WaveCal #16: guard arc.fit2darc against degenerate fits)
+
+Per Q45, added a guard at the top of `pypeit/core/arc.fit2darc`: if fewer than
+2 unique orders are passed, raise a clear `PypeItError` (explaining almost no
+orders were wavelength-calibrated) instead of letting the order-axis
+divide-by-zero produce an opaque `SVD did not converge`. Verified: the 1-order
+case now raises the clear message. Q46: accepting the 27 solved orders for now
+(not pushing the redder half). Next: the Finishing-up dev-suite task.

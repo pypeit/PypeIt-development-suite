@@ -55,15 +55,21 @@ ROOT = Path(__file__).resolve().parent.parent
 # XIDL) — my IRAF per-order wavelengths (fit from the raw ecidentify lines) are
 # less accurate than the polished XIDL solution, and the blue orders still do
 # not match.  XIDL is the better archive, so default back to it.
-ARC_SOURCE = 'xidl'
+ARC_SOURCE = 'cooke'
 
-# --- Reference setting of the dev-suite data (the anchor) ---
-ECH_ANCHOR = 9194.0      # GTILTRAW (grating tilt) of the data
-XD_ANCHOR = 20359.0      # DHEITVAL (dewar height, micron) of the data
-# Geometry / measured slopes (Report 05 §8)
-PIX_UM = 15.0                          # detector pixel size (Q31)
-ORDER_SPACING_PIX = 16.0               # cross-dispersion order spacing (Rpt 01)
-XD_SLOPE = 1.0 / PIX_UM / ORDER_SPACING_PIX   # orders per micron of dewar
+# --- Reference angles of the canonical (Cooke 2010) data set ---
+# After the Q43 flip the meta maps echangle<-DHEITRAW and xdangle<-GTILTRAW
+# (raw stepper counts).  These are the Cooke arc header values; the anchors
+# MUST be in the same units/cards the reduction passes at run time, or the
+# angle_fits extrapolates wildly (this was the cause of the 2-D-fit SVD crash,
+# Report 08).
+ECH_ANCHOR = 1700.0      # DHEITRAW of the Cooke arcs (echangle)
+XD_ANCHOR = 9085.0       # GTILTRAW of the Cooke arcs (xdangle)
+# Only ONE cross-disperser setting is available, and xdangle is now grating
+# tilt in raw counts (not microns), so the old geometric orders/micron slope
+# does not apply.  Use a constant order-coverage model anchored at order_min;
+# the per-order reidentification cross-correlation supplies the rest.
+XD_SLOPE = 0.0           # orders per count (single setting -> constant)
 ECH_N_FINAL = 4          # per-order wavelength polynomial degree
 
 
@@ -111,8 +117,11 @@ def build(outdir=None):
         from pypeit.core.wavecal import templates
         cooke = (ROOT / 'Cooke_data' / 'redo_from_scratch' / 'Arcs' / 'Fits'
                  / 'Arc_01_fit.idl')
+        # Native binning (2048) for running on the Cooke 2x1 data itself.
+        # (specbin=2 -> 4096 was tried for the 1x1 dev-suite data and failed,
+        #  Report 06.)
         orders, wave, spec = templates.xidl_esihires(
-            str(cooke), specbin=2, log10=True)
+            str(cooke), specbin=1, log10=True)
     else:
         orders, wave, spec = xidl.load(ROOT / 'Arc_01_fit.idl')[:3]
     isort = np.argsort(orders)
