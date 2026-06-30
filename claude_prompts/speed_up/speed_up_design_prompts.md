@@ -69,6 +69,10 @@ If you need to run Python, use the `pypeit` environment
 
 Then start a new doc named `PypeIt-development-suite/pypeitdev/speed_up/Reports/speed_up_design.md` for us to iterate on.   Ask question in Q&A/Planing below. Log your work
 
+2. I have answered your first round of questions.  Please read those and ask more if you have them.  Log your work.
+3. I have answered your next round of questions.  Please read those and ask more if you have them.  Log your work.
+4. I have answered your next round of questions.  Please read those and ask more if you have them.  Log your work.
+5. I have answered your next round of questions.  Please update the doc accordingly.  Log your work.
 
 ## Q&A
 
@@ -86,14 +90,14 @@ parameter `par['rdx']['ncpu']` (name negotiable: `ncpu` vs `nproc`), **default
 OK with stdlib multiprocessing + an opt-in `ncpu` (default 1)? Or do you want a
 smarter default (e.g. `min(n_detectors, os.cpu_count()-1)`) given the heavy
 per-detector RAM?
-A:
+>A: This is a good default.
 
 **Q2 — Granularity to target first.** I recommend **detector/mosaic-level**
 parallelism first (biggest win for DEIMOS/LRIS/MOSFIRE; finest memory
 granularity; the loops are already isolated). Coarser levels (calibration
 groups, frame/comb-id loops) are Tier 3 / later. Agree to start at the detector
 level only?
-A:
+>A: Yes, start there.
 
 **Q3 — Numerical-identicality tolerance.** Vectorizing the arc-line Gaussian fit
 (replacing per-line `scipy.curve_fit` with an analytic weighted log-parabola fit)
@@ -101,26 +105,120 @@ will change wavelength/tilt results at the **noise level** (not bitwise
 identical). Is "within tolerance, vetted by the dev-suite wavelength/tilt RMS
 checks" acceptable, or must outputs remain numerically identical (which would
 rule this change out)?
-A:
+>A: Yes, within tolerance is fine.
 
 **Q4 — Determinism under multiprocessing.** The dev suite requires deterministic
 output. The parallel path recombines results by detector key (order-independent)
 and seeds are per-call, so I expect `ncpu>1` to match `ncpu=1`. Do you want a
 hard requirement that parallel and serial outputs be identical (I'll add a test),
 or is "deterministic for a fixed `ncpu`" sufficient?
-A:
+>A: Yes, they must be identical within machine precision.
 
 **Q5 — Validation scope.** I plan to validate on the two profiled setups
 (shane_kast_blue for the single-detector/vectorization path, keck_deimos for the
 multi-detector/parallel path) plus the relevant `vet_tests`. Want any additional
 instrument/setup in the first validation pass (e.g. a keck_lris or mosfire setup)?
-A:
+>A: That is fine for now.  We'd eventually run the entier Dev suite.
 
 **Q6 — Early cheap-wins PR.** The QA cheap wins (force matplotlib `Agg` for
 headless QA; option to skip/defer/parallelize PNG writes) are independent and
 low-risk. Want these as a **separate early PR** ahead of the parallelism/vectorize
 work, or bundled into one effort?
-A:
+>A: Yes.
+
+#### Round 2 (after reading the answers above + mapping `reduce_exposure`)
+
+Two findings from reading the code shaped these: (a) `reduce_exposure`
+(`pypeit/exposure.py`) runs **four** sequential per-detector stages — calibration
+build, image/mosaic process, object-find+sky, extract — so detector-level
+parallelism covers ~70% of the DEIMOS run including calibrations; (b) the
+object-find stage (`findobj_on_exposure`) is **not** a flat loop: it fans out per
+detector, then hits a **cross-detector slitmask barrier** (`adjust_for_slitmask`),
+then fans out again.
+
+**Q7 — CLI flag too?** Expose the worker count both as `par['rdx']['ncpu']` *and*
+a `run_pypeit --ncpu N` command-line flag (CLI overrides the par), so a user can
+choose per-run without editing the `.pypeit`? I recommend yes.
+>A: Yes
+
+**Q8 — Pin worker threads + untouched serial path?** To honor "identical within
+machine precision" (Q4) and avoid N×BLAS-thread oversubscription, I propose
+pinning each worker to single-threaded BLAS/OpenMP (`OMP_NUM_THREADS=1` etc.) —
+BLAS thread count can change floating-point reduction order. And keep the
+`ncpu=1` path as *literally the current serial code* (the pool is only entered
+when `ncpu>1`), so default runs are provably unchanged. OK?
+>A: Ok, let's try that.  But be prepared to revert.
+
+**Q9 — Scope of v1 parallelism (the slitmask wrinkle).** Stages 1 (calib), 2
+(process), 4 (extract) are clean flat per-detector loops (~70% of DEIMOS).
+Stage 3 (objfind+sky) needs fan-out → serial slitmask barrier → fan-out, which is
+more than a one-line `map` swap. Do you want v1 to parallelize **only the clean
+stages 1/2/4** (simplest, captures most of the win) and tackle stage 3 in a v2,
+or parallelize **all four** including the stage-3 barrier from the start?
+>A: Yes, only the clean stages
+
+**Q10 — `fork` start method.** For v1 I'll rely on the Linux default `fork` start
+method (workers cheaply inherit the large read-only inputs; only results are
+pickled back). Cross-platform `spawn` support can come later. Acceptable?
+>A: Yes.
+
+#### Round 3 (design converged; sequencing + two implementation details)
+
+The design (`speed_up_design.md` v0.3) is essentially settled. One code finding
+shaped these: the calib loop in `reduce_exposure` already **discards** the
+`caliBrate` object (it only checks `.success`; downstream stages reload from disk
+via `reuse_calibs`), so parallel workers can return lightweight status rather than
+pickling large objects.
+
+**Q11 — Workstream order.** Three independent pieces: (A) the QA cheap-wins PR
+(force `Agg`, defer/parallelize PNGs), (B) detector parallelism v1 (stages 1/2/4),
+(C) arc-fit vectorization. I recommend **A → B → C** (A smallest/independent and
+gives an immediate win; B is the headline; C is self-contained). Confirm, or
+reprioritize?
+>A: That is fine
+
+**Q12 — Parallel logging / progress.** With stages 1/2/4 spread across workers,
+per-detector log lines will interleave and the "Calibrating detector X" markers we
+used to build the per-mosaic timeline will overlap. Do you want me to preserve
+clean per-detector progress — e.g. prefix each worker's log lines with its
+detector, or buffer per-worker and emit in order — so the run log (and the
+dashboard's parsing of it) stays readable? Or is interleaved logging acceptable
+for v1?
+>A:  I'll follow your recommendation here.
+
+**Q13 — Disk-backed lightweight returns.** Confirm the worker-return design:
+stage 1 returns only `(det, success, failed_step)` (calibrations already persist
+to `Calibrations/` and reload via `reuse_calibs`); stages 2/4 return what they do
+today (sciImg already `to_file`'d; spec2d/specobjs assembled by `save_exposure`),
+keyed by detector — i.e. **no pickling of large calibration objects across the
+process boundary**. OK?
+>A: Right, no pickling of large calibration objects.
+
+#### Round 4 (design converged — two practical "before we code" decisions)
+
+The design doc is at v0.4 and considered converged; §8 now has an implementation
+roadmap. On Q12 (parallel logging) you deferred to me — I chose: each worker
+buffers its log records and ships them back; the main process replays them
+grouped in detector order (keeps each detector's block contiguous and the
+dashboard's timeline parsing intact). Just two practical questions remain before
+coding workstream A.
+
+**Q14 — QA cheap-wins PR scope (workstream A, next up).** I propose: (1) force
+matplotlib `Agg` unconditionally for headless reductions (no new param); (2)
+parallelize the QA PNG writes under the same `ncpu` control; (3) *not* add a
+skip-QA option unless you want one. Good, or do you want an explicit QA on/off
+switch (e.g. `--no_qa` / `par['reduce']['qa']['skip']`) and/or a separate QA
+worker count?
+>A: That looks fine.
+
+**Q15 — Branching / PR targets.** These land as separate PRs. Per `CLAUDE.md`,
+simple bug fixes branch from `release` and other development from `develop` —
+these are features/perf, so I'd target **`develop`**. We're currently on the
+`speed_up` branch (which carries the `core_refactor` work). Should the QA
+cheap-wins PR branch **independently off `develop`** (cleanest, lands fast), or
+stack on top of the current `speed_up` branch? And same question for the
+parallelism PR.
+>A: We will stack.
 
 ### shane_kast_blue
 
@@ -506,3 +604,133 @@ tolerance for non-identical numerical output from vectorized fits; (Q4)
 determinism requirement under multiprocessing; (Q5) validation scope/instruments;
 (Q6) whether the cheap QA wins ship as a separate early PR. Awaiting answers
 before any code.
+
+### 2026-06-30 (Plan task 2 — read answers; mapped reduce_exposure; doc v0.2 + round-2 Qs)
+
+Performed the **2nd task under Plan**: read the round-1 answers, refined the
+design doc, and posed a focused round-2.
+
+Round-1 answers (now locked in `speed_up_design.md` §0): stdlib
+`ProcessPoolExecutor` + opt-in `par['rdx']['ncpu']` (default 1, smart cap
+`min(n_det, cpu_count()-1)` ok); detector-level first; noise-level changes from
+vectorized fits ok (vet by RMS); **parallel vs serial output must be identical
+within machine precision**; validate Kast+DEIMOS+vet_tests now (full suite
+later); QA cheap wins as a separate early PR.
+
+Code reading that shaped the refinement (read `pypeit/exposure.py`):
+- **`reduce_exposure` is four sequential per-detector stages**, all looping
+  `for det in detectors`: (1) calibration build/load (`calib_one`, lines ~421–433
+  — the ~45% cost, writes independent FITS per det); (2) `process_exposure`
+  (image proc + mosaic); (3) `findobj_on_exposure` (objfind + sky); (4)
+  `extract_exposure` (local sky + extract, ~24%). So detector-level parallelism
+  covers ~70% of the DEIMOS run **including calibrations** — better leverage than
+  the v0.1 draft assumed.
+- **Stages 1/2/4 are clean flat loops** (independent dets, dict-keyed results) →
+  near-drop-in `map`. **Stage 3 is the wrinkle:** `findobj_on_exposure` fans out
+  `findobj_on_det` per det, then hits a **cross-detector barrier**
+  (`adjust_for_slitmask`, line 228 — DEIMOS-class slitmask offset aggregates over
+  all dets), then fans out `finalize_sky_det`. Fan-out → barrier → fan-out, not a
+  one-line swap.
+- Identical-output design notes added: `ncpu=1` stays literally the current
+  serial path; cross-detector aggregation must iterate dets in fixed order; pin
+  worker BLAS threads to 1 (FP reduction order + anti-oversubscription).
+
+Updated `speed_up_design.md` to **v0.2**: added §0 "Decisions locked," the
+4-stage structural table, the stage-3 barrier explanation, a proposed KISS v1
+scope (parallelize clean stages 1/2/4 first ≈70%, defer stage 3), strengthened
+identical-output risks, and refreshed §7 with round-2 questions.
+
+Posed four round-2 questions in **Q&A/Planning**: (Q7) also expose `ncpu` as a
+`run_pypeit --ncpu` CLI flag; (Q8) pin worker BLAS threads to 1 + keep `ncpu=1`
+as the untouched serial path; (Q9) v1 scope — parallelize only clean stages
+1/2/4 and defer the stage-3 slitmask barrier, or do all four; (Q10) rely on Linux
+`fork` start method for v1. Awaiting answers before any code.
+
+### 2026-06-30 (Plan task 3 — read round-2 answers; doc v0.3; round-3 Qs)
+
+Performed the **3rd task under Plan**: read the round-2 answers, locked them into
+the design doc, refined the implementation design, and posed a (likely final)
+round 3.
+
+Round-2 answers (now in `speed_up_design.md` §0): CLI `--ncpu` flag in addition to
+the par (CLI overrides); pin worker BLAS/OpenMP threads to 1 + keep `ncpu=1` as
+the literal serial path (*"be prepared to revert"* — noted); **v1 parallelizes
+only the clean stages 1/2/4, stage 3's slitmask barrier deferred to v2**; Linux
+`fork` for v1.
+
+Code reading that refined the design (`pypeit/pypeit_steps.py`):
+- `calib_one` builds calibrations (persisted to `Calibrations/*.fits`, per
+  detector/mosaic) and returns a `caliBrate` object, but `reduce_exposure`'s calib
+  loop **discards** it — only `.success` is used; downstream stages reload from
+  disk via `reuse_calibs=True`. ⇒ stage-1 workers can return just
+  `(det, success, failed_step)`; no large-object pickling. `process_one_det`
+  already `to_file`'s the sciImg. This makes the parallel design cheap and
+  identical-output-friendly.
+- Spotted a **latent bug** the parallel rewrite must avoid: the serial calib loop
+  does `detectors.remove(det)` *while iterating* `detectors` (skips the next
+  element). The pool version collects results and rebuilds the surviving list.
+
+Updated `speed_up_design.md` to **v0.3**: round-2 decisions in §0; locked v1 scope
+(stages 1/2/4); the disk-backed lightweight-return design; the failed-detector fix;
+round-3 questions in §7.
+
+Posed three round-3 questions in **Q&A/Planning**: (Q11) workstream order —
+recommend A (QA cheap-wins PR) → B (detector parallelism v1) → C (arc-fit
+vectorization); (Q12) preserve clean per-detector logging/progress under parallel
+workers (matters for the dashboard's log parsing); (Q13) confirm the disk-backed
+lightweight-return design. Design is converged pending these; ready to start
+coding (likely the QA cheap-wins PR first) once answered.
+
+### 2026-06-30 (Plan task 4 — read round-3 answers; doc v0.4 converged + roadmap)
+
+Performed the **4th task under Plan**: read the round-3 answers, finalized the
+design, and posed a final (round-4) pair of practical pre-coding questions.
+
+Round-3 answers (now in `speed_up_design.md` §0): workstream order **A → B → C**
+confirmed; Q12 (parallel logging) **deferred to me** — I chose per-worker buffered
+logging replayed in detector order (keeps each detector's log block contiguous +
+the dashboard's per-mosaic timeline parsing intact; tradeoff: a detector's detail
+appears when it finishes, with a coarse live "det X started/finished" line from
+the main process); Q13 lightweight disk-backed returns confirmed (no pickling of
+large calibration objects).
+
+Updated `speed_up_design.md` to **v0.4 (converged)**: round-3 decisions in §0
+(incl. the logging design and worker-return rules), and a new **§8 Implementation
+roadmap** — three PRs in order: (A) QA cheap-wins [force `Agg`, parallelize PNGs];
+(B) detector parallelism v1 [`ncpu` par + `--ncpu` flag, pool helper, convert the
+three clean stages 1/2/4, fix the `detectors.remove()`-during-iteration bug,
+per-worker buffered logging, identical-output regression test]; (C) arc-fit
+vectorization [log-parabola replacing per-line `curve_fit`]; with stage-3
+parallelism / `moment1d` / coarser parallelism / `spawn` as v2.
+
+Posed two round-4 questions in **Q&A/Planning**: (Q14) QA PR scope — force `Agg`
+always + parallelize PNGs under `ncpu`, hold a skip-QA switch unless wanted;
+(Q15) branching/PR targets — target `develop`; QA PR off `develop` independently
+vs stacked on the current `speed_up` branch. Design is converged; ready to begin
+workstream A (the QA cheap-wins PR) once these are answered.
+
+### 2026-06-30 (Plan task 5 — read round-4 answers; doc v0.5 LOCKED)
+
+Performed the **5th task under Plan** (read answers, update the doc, log — no more
+questions). Round-4 answers:
+- **Q14 (QA PR scope):** approved as proposed — force matplotlib `Agg`
+  unconditionally (no new param), parallelize QA PNG writes under `ncpu`, **no**
+  skip-QA switch.
+- **Q15 (branching):** **"We will stack"** — the workstreams stack on the current
+  `speed_up` branch (A → B → C, each built on the prior), rather than branching
+  independently off `develop`.
+
+Updated `speed_up_design.md` to **v0.5 (locked)**:
+- §0: added the QA-scope and stacked-branching decisions; header marked "locked —
+  ready to implement"; decisions now span rounds 1–4.
+- §7: all questions answered — no open questions remain.
+- §8 roadmap: workstream A scope finalized (unconditional `Agg`, PNG writes
+  parallelized, no skip switch). Resolved an internal-consistency point — since
+  the PRs **stack** and A precedes B, the **`ncpu` parameter + `--ncpu` flag
+  plumbing lands in A** (a thread pool suffices for the render/write-bound PNGs)
+  and B reuses it for its process pool; B's step 1 updated to "reuse" accordingly.
+  Added the stacked-branch note to the §8 header.
+
+Design is **locked**. Next action (a future task): begin **workstream A** — the QA
+cheap-wins PR on a branch stacked on `speed_up` (force `Agg`, add the
+`ncpu`/`--ncpu` plumbing, parallelize PNG writes), then re-profile Kast + DEIMOS.

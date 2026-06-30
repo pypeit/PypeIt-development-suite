@@ -1,10 +1,70 @@
 # Speeding up PypeIt — Design / Plan
 
-**Version:** 0.1 (draft — for iteration)
-**Date:** 2026-06-29
+**Version:** 0.5 (locked — ready to implement)
+**Date:** 2026-06-30
 **Author:** JXP and Claude
 
+**Changelog**
+- 0.1 (2026-06-29): Initial draft from the two profiles; ranked plan + questions.
+- 0.2 (2026-06-30): Incorporated round-1 Q&A answers (decisions locked below);
+  added the concrete 4-stage per-detector structural map of `reduce_exposure`,
+  the slitmask cross-detector barrier, a strengthened identical-output design,
+  and split the QA cheap wins into their own early PR.
+- 0.3 (2026-06-30): Incorporated round-2 Q&A (CLI `--ncpu` flag; pin worker
+  threads; v1 = clean stages 1/2/4 only, stage 3 deferred to v2; `fork`). Added
+  the disk-backed lightweight-return design for workers and the failed-detector
+  handling fix.
+- 0.4 (2026-06-30): Incorporated round-3 Q&A (workstream order A→B→C; parallel
+  logging design chosen; lightweight returns confirmed). Added §8 Implementation
+  roadmap. Design considered converged.
+- 0.5 (2026-06-30): Incorporated round-4 Q&A (QA PR scope finalized; PRs stack on
+  the `speed_up` branch). All questions answered — design locked, ready to
+  implement.
+
 ---
+
+## 0. Decisions locked (round-1 → round-4 Q&A)
+
+- **Mechanism:** stdlib `concurrent.futures.ProcessPoolExecutor`; new parameter
+  **`par['rdx']['ncpu']`, default `1`** (opt-in; default run is byte-for-byte the
+  current serial path). Smart cap `min(n_detectors, os.cpu_count()-1)`.
+- **Also a CLI flag:** `run_pypeit --ncpu N`, which overrides the par value.
+- **Granularity:** **detector/mosaic-level first**; coarser levels deferred.
+- **v1 scope:** parallelize only the **clean flat stages 1 (calib), 2 (process),
+  4 (extract)** — ≈70% of DEIMOS. **Stage 3 (objfind+sky) deferred to v2**
+  because of its cross-detector slitmask barrier.
+- **Worker threading:** pin each worker to single-threaded BLAS/OpenMP
+  (`OMP_NUM_THREADS=1` etc.) for the identical-output guarantee + to avoid
+  oversubscription. *Be prepared to revert if it backfires.*
+- **Serial path untouched:** `ncpu=1` runs the literal current serial code; the
+  pool is only entered when `ncpu>1`.
+- **Start method:** Linux `fork` for v1 (`spawn`/cross-platform later).
+- **Vectorized fits:** noise-level changes are acceptable, **vetted by dev-suite
+  RMS checks**.
+- **Parallel vs serial output:** must be **identical within machine precision**
+  (a test will enforce this).
+- **Validation:** Kast + DEIMOS + relevant `vet_tests` now; full dev suite later.
+- **QA cheap wins:** ship as a **separate early PR**, ahead of the parallel work.
+- **Workstream order:** **A (QA cheap-wins PR) → B (detector parallelism v1) →
+  C (arc-fit vectorization).**
+- **Parallel logging (my call, per Q12):** each worker captures its log records
+  into an in-memory buffer (per-process handler) instead of writing the shared
+  run log directly; on return it ships the buffer back with its result and the
+  main process replays the lines **grouped in detector order**. This keeps each
+  detector's "Calibrating detector X → … → done" block contiguous so the run log
+  stays readable and the dashboard's per-mosaic timeline parsing keeps working.
+  Tradeoff: a detector's detailed log appears when it finishes rather than
+  streaming live; the main process still emits a coarse "det X started/finished"
+  line for live progress. Revisit only if it proves awkward.
+- **Worker returns (per Q13):** no large `DataContainer`s cross the process
+  boundary — stage 1 returns `(det, success, failed_step)` (calibrations persist
+  to disk, reload via `reuse_calibs`); stages 2/4 return as today, keyed by det.
+- **QA cheap-wins scope (per Q14):** force matplotlib `Agg` unconditionally for
+  headless reductions (no new param); parallelize the QA PNG writes under the same
+  `ncpu` control; **no** skip-QA switch.
+- **Branching (per Q15):** the workstreams **stack on the current `speed_up`
+  branch** (A → B → C, each built on the prior), rather than branching
+  independently off `develop`.
 
 ## 1. Purpose
 
@@ -55,31 +115,81 @@ Ranked by (impact × how KISS). Effort/impact are rough.
 
 ### Tier 1 — Multi-CPU over detectors  ★ biggest win, lowest algorithmic risk
 
-**Idea.** Parallelize the existing per-detector loops with a process pool
-(`concurrent.futures.ProcessPoolExecutor` / `multiprocessing.Pool`). The three
-loops in `pypeit/exposure.py` (`process_exposure`, `objfind_exposure`,
-`extract_exposure`) already iterate `for det in detectors` and assemble results
-into dicts keyed by detector — swap the loop for a pool `map`, keyed the same way.
+**The structure that makes this KISS.** `pypeit/exposure.py:reduce_exposure`
+drives the whole per-exposure reduction as **four sequential per-detector
+stages**, each looping `for det in detectors`:
+
+| # | Stage | Code | Shape | DEIMOS cost |
+|---|-------|------|-------|-------------|
+| 1 | **Calibration build/load** | `reduce_exposure` lines ~421–433 → `pypeit_steps.calib_one` | flat per-det loop, writes independent FITS per det | flat+edges+tilts+wave ≈ **45%** |
+| 2 | **Image process / mosaic** | `process_exposure` → `process_one_det` | flat per-det loop | mosaic resampling, img proc |
+| 3 | **Object find + sky** | `findobj_on_exposure` → `findobj_on_det`, then **`adjust_for_slitmask`** (cross-detector), then `finalize_sky_det` | **fan-out → barrier → fan-out** | objfind + global sky |
+| 4 | **Local sky + extract** | `extract_exposure` → `extract_det` | flat per-det loop | local-sky+extract ≈ **24%** |
+
+Stages 1, 2, 4 are **clean flat loops** over independent detectors that assemble
+results into dicts keyed by detector — swap the loop for a pool `map`, keyed the
+same way, loop body untouched. **Together they are ~70% of the DEIMOS runtime
+(calibration ~45% + extraction ~24% + image/mosaic).**
+
+**Stage 3 is the one wrinkle:** `findobj_on_exposure` is *not* a flat loop. It
+fans out `findobj_on_det` per detector, then hits a **cross-detector barrier** —
+`adjust_for_slitmask` (`exposure.py:228`) aggregates objects/slits across *all*
+detectors to compute the slitmask offset (DEIMOS-class instruments) — then fans
+out `finalize_sky_det` per detector. Parallelizing it means fan-out → serial
+barrier → fan-out, which is more than a one-line `map` swap. (See Q&A: candidate
+to defer to a v2.)
+
+**KISS v1 scope (locked).** Parallelize **stages 1, 2, and 4** (the clean flat
+loops) — already ~70% of DEIMOS wall-clock — and leave stage 3 serial. Stage 3
+(its slitmask barrier) is a **v2** item. This is the minimal-risk change that
+captures most of the win.
+
+**Workers return lightweight status, not big objects (disk-backed).** The code
+already persists per-detector products to disk, which keeps the parallel design
+simple and pickling cheap:
+- *Stage 1:* `reduce_exposure`'s calib loop calls `calib_one`, which builds the
+  calibrations (written to `Calibrations/*.fits`, one set per detector/mosaic) and
+  returns a `caliBrate` object that the loop **discards** — it only checks
+  `.success`. Downstream stages reload calibrations from disk via
+  `reuse_calibs=True`. So a stage-1 worker need only return
+  `(det, success, failed_step)`; the heavy object never crosses the process
+  boundary.
+- *Stage 2:* `process_one_det` already does `sciImg.to_file(...)`. Workers can
+  return the (small) per-detector `sciImg` (or a path), consistent with today.
+- *Stage 4:* returns the `spec2d`/`specobjs` to be assembled and saved by
+  `save_exposure`, as today — keyed by detector.
+
+**Failed-detector handling (fix a latent bug).** The current serial calib loop
+does `detectors.remove(det)` *while iterating* `detectors` — which skips the next
+element. The parallel rewrite collects `(det, success)` results and rebuilds the
+surviving-detector list afterward (no mutation during iteration), which is both
+correct and necessary for the pool.
 
 **Why it fits the brief.** No algorithm changes; the loop bodies
-(`process_one_det`, `objfind_one`, `extract_det`) are untouched. Pure
-parallelization of work that is already isolated.
+(`calib_one`, `process_one_det`, `extract_det`) are untouched. Pure
+parallelization of work already isolated into per-detector functions.
 
-**Expected payoff.** DEIMOS has 4 independent mosaics → up to ~4× on the
-per-detector portion, which is the bulk of the run (calibration build + objfind +
-extraction + mosaic resampling). Single-detector instruments (Kast) gain nothing
-from *this* lever — that's expected and fine.
+**Expected payoff.** DEIMOS has 4 independent mosaics → approaching ~4× on the
+parallelized stages (~70% of the run). Single-detector instruments (Kast) gain
+nothing from *this* lever — expected and fine; `ncpu=1` leaves them on today's
+exact path.
 
 **Risks / things to handle.**
+- **Identical-output guarantee (locked requirement).** `ncpu=1` must be the
+  literal current serial code path (no behavior change by default). For `ncpu>1`,
+  results recombine by detector key (order-independent) and any cross-detector
+  aggregation (the slitmask barrier) must iterate detectors in a fixed order. A
+  regression test will assert `ncpu=1` vs `ncpu>1` outputs match to machine
+  precision. **BLAS/OpenMP thread count can change floating-point reduction order
+  inside a worker** → pin workers to single-threaded BLAS (also prevents N×threads
+  oversubscription). (See Q&A.)
 - **Memory.** DEIMOS already uses tens of GB; N detectors in flight ≈ N× peak
-  RAM. Needs a user-controllable worker count and a sane default.
-- **Determinism.** The dev suite requires deterministic output; process pools
-  must not perturb RNG seeding or result ordering (results are recombined by
-  detector key, so ordering is fine; seeds are per-call).
-- **Picklability / logging.** Worker results and the per-detector inputs must
-  pickle; the per-process logger needs to funnel back to the main log.
-- **A new parameter.** Likely `par['rdx']['ncpu']` (or `nproc`), default `1` to
-  preserve today's behavior exactly, opt-in to >1. (See Q&A.)
+  RAM. The `min(n_detectors, os.cpu_count()-1)` cap (per Q1) bounds this; document
+  the RAM-vs-`ncpu` tradeoff.
+- **Picklability / start method.** Per-detector inputs and the returned
+  `DataContainer`s must pickle; on Linux `fork` is the simplest start method and
+  lets workers inherit the large read-only inputs cheaply. Per-process logging
+  must funnel back to the main run log.
 
 ### Tier 1 — Vectorize arc-line Gaussian fitting  ★ biggest single vectorization win
 
@@ -152,13 +262,47 @@ finer memory granularity.
 
 ## 7. Open questions
 
-Tracked in the prompt doc's **Q&A / Planning** section; summarized here:
+**None — all questions (rounds 1–4, Q1–Q15) are answered and folded into §0
+"Decisions locked."** The design is locked; see §8 for the implementation
+roadmap.
 
-1. Parallelism backend, default worker count, and the new parameter
-   (`ncpu`/`nproc`, default 1?).
-2. Parallelism granularity to target first (detector-level recommended).
-3. Tolerance for *non-identical* numerical output from vectorized fits.
-4. Determinism requirements under multiprocessing.
-5. Which instruments/setups to validate against first.
-6. Appetite for the cheap QA wins (force `Agg`; option to skip/defer/parallelize
-   QA) as an early, independent PR.
+## 8. Implementation roadmap
+
+Three workstreams in the locked order **A → B → C**, each its own PR, **stacked on
+the `speed_up` branch** (each branches from the prior), each gated by the
+validation in §5.
+
+### A. QA cheap-wins PR (smallest, immediate)
+- Force matplotlib `Agg` **unconditionally** for headless reductions (the run
+  currently uses the interactive `qtagg` backend to write PNGs); no new param.
+- Parallelize the QA PNG writes under the `ncpu` control (independent per figure).
+  No skip-QA switch. Since A is first in the stack, the **`ncpu` parameter +
+  `--ncpu` flag plumbing lands here** (a thread pool suffices for the
+  render/write-bound PNGs); workstream B then reuses `ncpu` for its process pool.
+- Re-profile Kast + DEIMOS; expect to recover a chunk of the ~0.9–1.2 ks QA cost.
+
+### B. Detector parallelism v1 (the headline win)
+1. Reuse the `ncpu` parameter + `--ncpu` flag introduced in A (default 1).
+2. Add a small helper to map a per-detector function over `detectors` with a
+   `ProcessPoolExecutor` when `ncpu>1`, else the literal serial loop (`ncpu=1`
+   path untouched). Pin worker BLAS/OpenMP threads to 1; `fork` start method.
+3. Convert the **three clean flat loops** to use it:
+   - Stage 1 — calib loop in `reduce_exposure` (workers return
+     `(det, success, failed_step)`; rebuild surviving-detector list, fixing the
+     `detectors.remove()`-during-iteration bug).
+   - Stage 2 — `process_exposure`.
+   - Stage 4 — `extract_exposure`.
+   Leave stage 3 (`findobj_on_exposure`) serial (v2).
+4. Per-worker buffered logging, replayed in detector order (per §0).
+5. Add the **identical-output regression test** (`ncpu=1` vs `ncpu>1`, machine
+   precision) + the determinism check. Re-profile DEIMOS for the speedup.
+
+### C. Arc-fit vectorization (self-contained)
+- Replace the per-line `scipy.curve_fit` in `fit_arcspec` (`core/arc.py:1138`,
+  via `fitting.fit_gauss`) with a vectorized analytic weighted log-parabola fit
+  across all lines.
+- Vet wavelength/tilt RMS via `vet_tests`; confirm within tolerance. Re-profile.
+
+### v2 / later
+- Stage 3 parallelism (fan-out → slitmask barrier → fan-out).
+- `moment1d` de-looping; coarser (calib-group/frame) parallelism; `spawn` support.
