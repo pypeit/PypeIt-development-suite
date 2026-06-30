@@ -99,6 +99,8 @@ class TestPhase(Enum):
 
 # raw data directories for for setups that don't have the normal naming conventions
 _raw_data_dirs = {
+    'p200_ngps_u': 'p200_ngps',
+    'p200_ngps_g': 'p200_ngps',
     'p200_ngps_r': 'p200_ngps',
     'p200_ngps_i': 'p200_ngps',
 }
@@ -114,14 +116,14 @@ for instr in all_setups:
 _pypeit_setup = {
     'shane_kast_blue': {
         '600_4310_d55': [{}]},
+    'p200_ngps_u': {
+        '1.5_2x3': [{}]},
+    'p200_ngps_g': {
+        '1.5_2x3': [{}]},
     'p200_ngps_r': {
-        '1.5_2x3': [{}],
-        '1.0_2x2': [{}],
-        '0.5_2x1': [{}]},
+        '1.5_2x3': [{}]},
     'p200_ngps_i': {
-        '1.5_2x3': [{}],
-        '1.0_2x2': [{}],
-        '0.5_2x1': [{}]},        
+        '1.5_2x3': [{}]},
     }
 
 _calib_step_by_step = {
