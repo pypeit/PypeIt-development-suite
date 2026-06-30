@@ -1,6 +1,7 @@
 """
 Tests for the Binospec IFU cube building and fiber extraction tools.
 """
+import re
 from pathlib import Path
 
 import numpy as np
@@ -11,11 +12,11 @@ from pypeit.onespec import OneSpec
 from pypeit.specobjs import SpecObjs
 from pypeit.spectrographs.util import load_spectrograph
 from pypeit.scripts.binospec_ifu_cube import BinospecIFUCube
-from pypeit.scripts.binospec_ifu_extract import (
-    _load_fibers,
-    _project_to_sky,
-    _resample_and_combine,
-    _write_onespec,
+from pypeit.core.datacube import (
+    load_fibers,
+    project_to_sky,
+    resample_and_combine,
+    write_onespec,
 )
 
 
@@ -85,20 +86,20 @@ def test_binospec_ifu_extract(redux_out):
     assert spectrograph.name == 'mmt_binospec_ifu'
 
     targetx, targety = spectrograph.load_sky_layout()
-    fibers = _load_fibers(sobjs, spectrograph, targetx, targety, prefix='OPT')
+    fibers = load_fibers(sobjs, spectrograph, targetx, targety, prefix='OPT')
     assert len(fibers) > 0, "No science fibers loaded from spec1d"
 
     # Project fiber instrument-frame positions to sky coordinates.
     x = np.array([f['x'] for f in fibers])
     y = np.array([f['y'] for f in fibers])
-    ra, dec = _project_to_sky(x, y, raw_hdr)
+    ra, dec = project_to_sky(x, y, raw_hdr, spectrograph)
     assert ra.shape == (len(fibers),)
     assert dec.shape == (len(fibers),)
     assert np.all(np.isfinite(ra)) and np.all(np.isfinite(dec))
 
     # Combine a handful of fibers into a single 1D spectrum.
     subset = fibers[:min(5, len(fibers))]
-    out_wave, out_flux, out_ivar = _resample_and_combine(
+    out_wave, out_flux, out_ivar = resample_and_combine(
         [f['wave'] for f in subset],
         [f['flux'] for f in subset],
         [f['ivar'] for f in subset])
@@ -109,8 +110,8 @@ def test_binospec_ifu_extract(redux_out):
 
     # Write and round-trip the extracted OneSpec.
     output_file = sci_dir / 'test_extract1d.fits'
-    _write_onespec(out_wave, out_flux, out_ivar, raw_hdr,
-                   spectrograph.name, str(output_file))
+    write_onespec(out_wave, out_flux, out_ivar, raw_hdr,
+                  spectrograph.name, str(output_file))
     assert output_file.exists(), f"OneSpec not created: {output_file}"
 
     one = OneSpec.from_file(str(output_file))
@@ -150,7 +151,61 @@ def test_binospec_ifu_sky_fiber_skymodel(redux_out):
     assert np.all(np.isfinite(skymodel)), "SKYMODEL has non-finite values"
     assert np.any(skymodel > 0), "SKYMODEL has no positive sky counts"
 
-    # The sky-fibers-only model is built from the dedicated sky fibers; confirm
-    # those fibers are identified for this detector.
-    sky_mask = spec.get_sky_fiber_mask(1, spec2DObj.slits.nslits)
-    assert np.any(sky_mask), "No dedicated sky fibers identified on DET01"
+
+def _joint_sky_fiber_counts(redux_dir):
+    """Parse the joint sky-fit fiber counts from a reduction's run log.
+
+    ``FiberFindObjects._fit_fiber_sky_bspline`` logs one line per pass per
+    detector recording how many sky and science fibers entered the joint
+    bspline fit, e.g. ``... 1470817 pts from 40 sky + 320 sci fibers ...``.
+    Returns the list of ``(n_sky, n_sci)`` tuples found in the ``run_pypeit``
+    log under ``redux_dir`` (the ``*.log`` file written next to the ``.pypeit``
+    file, excluding the dev-suite ``*.test.log`` wrapper log).
+    """
+    redux_dir = Path(redux_dir)
+    logs = [p for p in redux_dir.glob('*.log')
+            if not p.name.endswith('.test.log')]
+    assert len(logs) == 1, \
+        f"Expected exactly one run log in {redux_dir}, found {logs}"
+    pattern = re.compile(r'(\d+)\s+sky\s+\+\s+(\d+)\s+sci\s+fibers')
+    counts = []
+    for line in logs[0].read_text().splitlines():
+        if '_fit_fiber_sky_bspline' not in line:
+            continue
+        m = pattern.search(line)
+        if m:
+            counts.append((int(m.group(1)), int(m.group(2))))
+    return counts
+
+
+def test_binospec_ifu_joint_fit_fiber_selection(redux_out):
+    """Confirm ``joint_fit_use_sci`` selects the intended fibers.
+
+    ``G270`` reduces with the default ``joint_fit_use_sci = True`` so the joint
+    sky bspline is fit over all sky *and* science fibers; ``G270_Sky`` reduces
+    the *same* data with ``joint_fit_use_sci = False`` so only the dedicated
+    sky fibers contribute.  This pins down that the parameter actually changes
+    which fibers enter the fit, reading the per-pass provenance the sky fit
+    logs for each detector.
+    """
+    base = Path(redux_out) / 'mmt_binospec_ifu'
+
+    all_counts = _joint_sky_fiber_counts(base / 'G270')
+    sky_counts = _joint_sky_fiber_counts(base / 'G270_Sky')
+
+    assert all_counts, "No joint sky-fit log lines found for G270"
+    assert sky_counts, "No joint sky-fit log lines found for G270_Sky"
+
+    # Default reduction: both sky and science fibers participate.
+    assert all(n_sky > 0 for n_sky, _ in all_counts), \
+        f"G270 joint fit used no sky fibers: {all_counts}"
+    assert all(n_sci > 0 for _, n_sci in all_counts), \
+        f"G270 joint fit used no science fibers despite " \
+        f"joint_fit_use_sci=True: {all_counts}"
+
+    # Sky-only reduction: dedicated sky fibers only, zero science fibers.
+    assert all(n_sky > 0 for n_sky, _ in sky_counts), \
+        f"G270_Sky joint fit used no sky fibers: {sky_counts}"
+    assert all(n_sci == 0 for _, n_sci in sky_counts), \
+        f"G270_Sky joint fit used science fibers despite " \
+        f"joint_fit_use_sci=False: {sky_counts}"
