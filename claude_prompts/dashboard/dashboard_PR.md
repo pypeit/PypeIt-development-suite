@@ -82,6 +82,14 @@ Read the following documents to gain context:
 
 2. The stale API stubs are problematic.  Please fix them.
 
+3.  One of the unit tests is failing.  Please try to fix it.  You can run them all with `py.test` in the PypeIt folder.  Log your work.
+
+4. I issued a PR (2159) for PypeIt: `https://github.com/pypeit/PypeIt/pull/2159`.  The CI tests are not passing even thought they are on this workstation.  Please investigate and fix.  Log your work.  If you have any questions, put them in Q&A below.
+
+5. Please generate a mermaid diagram for PypeIt. Add it to the docs.  You might need to create a new .rst file.  Log your work.
+
+## Q&A
+
 ## Logging
 
 The "Logs" section will record Claude's work.  Please use the following format:
@@ -93,6 +101,54 @@ The "Logs" section will record Claude's work.  Please use the following format:
 ...
 
 ## Logs
+
+### 2026-07-01 (Fix the failing unit test: leftover "bug 000" debug raise in `FlatField.run`)
+
+Ran the full unit suite in the **`pypeit14b`** conda env (python 3.14.6, numpy
+2.5.0, astropy 8.0.0) with `QT_QPA_PLATFORM=offscreen`:
+
+```
+QT_QPA_PLATFORM=offscreen \
+  /home/xavier/miniconda3/envs/pypeit14b/bin/python -m pytest pypeit -q
+```
+
+Result: **1 failed, 463 passed** — the single failure was
+`pypeit/tests/test_runpypeit.py::test_run_pypeit`.
+
+**Root cause.** The traceback bottomed out at `pypeit/flatfield.py:607`:
+
+```
+pypeit/calibrations.py:1139: in get_flats
+pypeit/flatfield.py:607: in run
+>       raise PypeItError("This is only a test")
+E       pypeit.pkg.exceptions.PypeItError: This is only a test
+```
+
+`FlatField.run()` had an unconditional `raise PypeItError("This is only a
+test")` as the **first statement of the method body** (right after the
+docstring, before any real logic). `git blame` traced it to commit
+`132d78e92` ("bug 000") — it was an intentionally-injected fault used to
+exercise the `run_the_steps` fail-marking path (see the 2026-06-29 log note),
+but it was committed and left in, so every real flat-field build aborts.
+It was the **only** `"This is only a test"` occurrence in `pypeit/`.
+
+**Fix.** Deleted the stray `raise` (and its blank line) so `run()` proceeds to
+its actual body. No other change — the import (`from pypeit import
+PypeItError`) and the surrounding logic were untouched.
+
+**Verify.** Re-ran the offending test in isolation → **1 passed** (160s). The
+rest of the suite was already green (463 passed), so the tree is now fully
+passing under `pypeit14b`.
+
+**Note on env.** A first attempt ran in the default `pypeit` env, which is
+currently broken for testing: numpy 2.4.6 there has removed `np.in1d` while its
+astropy 7.0.2 still references it, so `import astropy.units` throws at
+collection and *every* test errors. Use `pypeit14b` (astropy 8 / numpy 2.5) for
+the suite.
+
+**Learned.** Fault-injection commits used to test error-handling paths (here,
+"bug 000") must be reverted before they land, or they surface as a single
+mysterious CI failure deep in an otherwise-passing reduction test.
 
 ### 2026-06-29 (Pre-PR audit of the `state` branch: docstrings, tests, type hints, I/O docs, error handling, usage docs)
 
