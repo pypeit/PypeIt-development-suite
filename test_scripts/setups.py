@@ -15,7 +15,7 @@ all_setups = {
         'UT250131_longslit_red',
     ],
     'arc_tspec': [
-        'UG191026',
+        'UT191026',
     ],
     'bok_bc': [
         '300',
