@@ -1,16 +1,17 @@
 [rdx]
     spectrograph = arc_kosmos
+[calibrations]
+ [[wavelengths]]
+   lamps = KrI, NeI
+   reid_arxiv = arc_kosmos_blue_int_ctr.fits
+
+
 setup read
 Setup C:
   binning: 1,1
   decker: 2.10-ctr
   dispname: red
 setup end
-
-[calibrations]
- [[wavelengths]]
-   lamps = KrI, NeI
-   reid_arxiv = arc_kosmos_blue_int_ctr.fits
 
 
 # Data block 

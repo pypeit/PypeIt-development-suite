@@ -1,5 +1,9 @@
 [rdx]
     spectrograph = arc_kosmos
+[calibrations]
+ [[wavelengths]]
+   lamps = 'NeI'
+
 setup read
 Setup G:
   binning: 1,1
@@ -7,9 +11,6 @@ Setup G:
   dispname: blue
 setup end
 
-[calibrations]
- [[wavelengths]]
-   lamps = 'NeI'
 
 
 # Data block 

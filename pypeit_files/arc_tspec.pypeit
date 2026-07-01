@@ -1,5 +1,6 @@
 [rdx]
     spectrograph = arc_tspec
+    
 setup read
 Setup A:
   dispname: 1.1 Slit

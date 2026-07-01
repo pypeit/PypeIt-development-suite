@@ -1,5 +1,6 @@
 [rdx]
     spectrograph = arc_kosmos
+    
 setup read
 Setup B:
   binning: 1,1
