@@ -166,6 +166,7 @@ all_setups = {
     'lbt_luci': [
         'LUCI-I',
         'LUCI-II',
+        'luci2_G210K',
     ],
     'lbt_mods1b': [
         'dual_grating_longslit_qso',
@@ -268,15 +269,17 @@ all_setups = {
         '1200_7100_d68',
         '1200_9400_d55',
     ],
+    'p200_ngps_u': [
+        '1.5_2x3',
+    ],
+    'p200_ngps_g': [
+        '1.5_2x3',
+    ],
     'p200_ngps_r': [
         '1.5_2x3',
-        '1.0_2x2',
-        '0.5_2x1',
     ],
     'p200_ngps_i': [
         '1.5_2x3',
-        '1.0_2x2',
-        '0.5_2x1',
     ],
     'p200_tspec': [
         'TSPEC',
@@ -301,6 +304,9 @@ all_setups = {
     'soar_goodman_blue': [
         'M1',
     ],
+    'soar_tspec': [
+        'TSPEC',
+    ],
     'subaru_focas': [
         '300B_None',
         '300R_O58',
@@ -315,10 +321,21 @@ all_setups = {
         '600Z',
         '300I_MOS',
         '1200B',
+        '1200R',
         '1400V',
     ],
     'vlt_sinfoni': [
         'K_0.8',
+    ],
+    'vlt_uves_blue': [
+        '346',
+        '437',
+    ],
+    'vlt_uves_red': [
+        '564',
+        '580',
+        '760',
+        '860',
     ],
     'vlt_xshooter': [
         'VIS_1x1',
