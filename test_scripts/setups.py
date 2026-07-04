@@ -7,6 +7,16 @@ all_setups = {
     'aat_uhrf': [
         '3875',
     ],
+    'arc_kosmos': [
+        'UT221221_slitmask_galaxies',
+        'UT230909_slitmask_stars',
+        'UT250131_longslit_blue_HeNeAr',
+        'UT250131_longslit_blue_NeKr',
+        'UT250131_longslit_red',
+    ],
+    'arc_tspec': [
+        'UT191026',
+    ],
     'bok_bc': [
         '300',
         'old_832',
