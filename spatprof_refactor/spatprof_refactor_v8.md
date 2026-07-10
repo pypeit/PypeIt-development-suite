@@ -774,10 +774,13 @@ section for design rationale):
     - ``doc/spatprof.rst`` written covering the S/N decision, B-spline
       fitting, iterative trace/width correction, apodization, Gaussian
       fallback, profile normalization, outputs, and QA output.
+    - ``doc/scripts/make_spatprof_figures.py`` added; uses
+      ``make_fourier_spectrum`` and ``make_profile_inputs`` from
+      ``pypeit/tests/test_spatialprofile.py`` with the same Fourier-spectrum
+      flux and quadratic curved trace as ``test_fourier_flux_and_curved_trace``.
     - ``doc/figures/spatprof_example_bspline.png`` and
-      ``doc/figures/spatprof_example_gaussian.png`` generated from the
-      synthetic unit-test inputs (S/N = 20 and S/N = 2 respectively) and
-      embedded in the page.
+      ``doc/figures/spatprof_example_gaussian.png`` generated (S/N = 20 and
+      S/N = 2 respectively) and embedded in the page.
     - Page registered in the ``Processing Details`` toctree in
       ``doc/index.rst`` between ``skysub`` and ``extraction``.
     - Cross-reference added to ``doc/skysub.rst`` in the Local Sky
@@ -1992,6 +1995,109 @@ pattern in ``find_objects.py``.
   ``qa_outdir = <redux_path>/<qadir>``,
   ``qa_basename = self.basename``, and
   ``qa_detname = self.spectrograph.get_det_name(self.det)``.
+
+### v8 QA figure improvements
+
+Four changes to ``_fit_profile_qa`` in ``spatialprofile.py``:
+
+- **Color scheme**: named and grey-string colors (``'lime'``, ``'red'``,
+  ``'tomato'``, ``'orange'``, ``'0.60'``) replaced with matplotlib
+  property-cycle colors (``'C0'``, ``'C1'``, ``'C3'``, ``'k'``).  This
+  gives consistent, theme-aware colors without hard-coded hue conflicts.
+- **Profile scatter — no subsampling**: the random 8000-point subsample
+  of the normalised-object scatter was removed; all valid pixels are now
+  passed directly to ``ax_prof.scatter``.
+- **Residual scatter — no subsampling**: the same subsampling removal
+  applied to the profile residual panel; all pixels' residuals are plotted.
+- **Residual panel — binned overlay**: ``(y50 − model)[finite]`` is now
+  overplotted in the profile residual panel as ``C0`` circles, matching the
+  binning style already present in the profile panel above it.
+
+### v8 step 19 addendum — figure generation script
+
+The figure generation script was moved from the development suite into the
+main pypeit repo and updated to use the same synthetic data as the existing
+test ``test_fourier_flux_and_curved_trace``:
+
+- **`doc/scripts/make_spatprof_figures.py`** added to the pypeit repo.
+  Imports ``make_fourier_spectrum`` and ``make_profile_inputs`` directly
+  from ``pypeit.tests.test_spatialprofile``.  Uses the same Fourier-spectrum
+  flux (5 modes, mean 1000, std 50) and quadratic curved trace
+  (``10 * (2t² − 1)``, spanning ±10 px) as
+  ``test_fourier_flux_and_curved_trace``.  Output paths are resolved via
+  ``importlib.resources`` so the script works from any working directory.
+- **``PypeIt-development-suite/spatprof_refactor/gen_spatprof_figs.py``**
+  removed; the pypeit-repo script supersedes it.
+- ``doc/figures/spatprof_example_bspline.png`` and
+  ``doc/figures/spatprof_example_gaussian.png`` regenerated with the new
+  inputs (S/N = 20 and S/N = 2 respectively).
+
+### v8 — American English pass
+
+All British English spellings converted to American English in
+``spatialprofile.py`` (18 lines), ``test_spatialprofile.py`` (17 lines),
+and ``doc/spatprof.rst`` (1 line).  Affected forms: normalise(d/s/tion) →
+normalize(d/s/tion), initialise → initialize, modelled → modeled,
+row-normalised → row-normalized, behaviour → behavior, centre(d) →
+center(ed).
+
+### v8 step 19 addendum 2 — editorial pass on ``doc/spatprof.rst``
+
+- **American English**: "modelled/normalised" → "modeled/normalized" throughout.
+- **S/N decision**: prose reflowed; ``\texttt{sn\_gauss}`` changed to
+  ``\texttt{sn_gauss}`` (underscore need not be escaped inside
+  ``\texttt{}`` in math mode); added cross-reference to
+  ``.. _spatprof-parameters:``.
+- **Trace correction**: default-value parenthetical moved inside the
+  inequality display so it reads as a condition rather than a footnote.
+- **QA Output**: description changed from "written to ``QA/PNGs/``" to the
+  more neutral "a diagnostic figure is provided"; the prose description of
+  the figure layout removed and replaced by "Example figures are shown
+  below." (the captions carry that detail instead); ``matplotlib`` wrapped
+  in backticks in the ``show_profile`` note.
+- **B-spline caption**: rewritten panel-by-panel in plain prose, clarifying
+  the six panels and the 20/50/80 percentile annotation.
+- **Gaussian caption**: simplified; removed the redundant explanation of
+  scatter.
+- **Key Parameters**: added ``For more detail, see
+  :func:`~pypeit.core.spatialprofile.fit_profile`.`` at the top; removed
+  repeated default values from individual entries (defaults belong in the
+  API docstring).
+- **Footer**: ``---`` rule and attribution line added at the end of the
+  file.
+
+### v8 step 19 addendum 3 — improved synthetic spectrum and figure parameters
+
+Two further improvements to ``make_fourier_spectrum`` in
+``test_spatialprofile.py`` and corresponding updates to
+``make_spatprof_figures.py``:
+
+**``make_fourier_spectrum`` changes:**
+
+- **``power=1.0`` parameter**: each selected mode's complex coefficient is
+  scaled by :math:`k^{-\text{power}}` before normalisation.  Higher values
+  give proportionally more amplitude to lower-frequency modes.
+  ``power=0`` recovers flat (white-noise) weighting.
+- **``min_period=3.0`` parameter**: replaces the hardcoded ``3.0`` in
+  ``k_min = ceil(nspec / min_period)``, making the low-frequency cutoff
+  configurable.
+- **Log-uniform mode selection**: modes are no longer drawn uniformly from
+  ``[k_min, k_max]``; instead weights :math:`p_k \propto 1/k` are used,
+  so lower-frequency modes are preferentially selected.  Both the amplitude
+  weighting (``power``) and the selection weighting (``p ∝ 1/k``) act in
+  the same direction, giving the resulting spectrum a realistic
+  red-noise character.
+
+**``make_spatprof_figures.py`` changes:**
+
+- ``make_fourier_spectrum`` call updated to ``nmodes=40``,
+  ``min_period=20.``, ``power=2.``.  The longer minimum period (20 px
+  instead of 3 px) and larger ``power`` produce smooth, correlated spectral
+  structure that is visually representative of real continuum spectra; the
+  higher mode count (40 vs. 5) adds enough variation to exercise the
+  spectral B-spline fit.
+- The module-level ``OUT_DIR`` constant removed; ``out_dir`` is now
+  resolved locally inside ``main()``.
 
 ## Migration of `_bin_profile` and `qa_fit_profile_refactor`
 
