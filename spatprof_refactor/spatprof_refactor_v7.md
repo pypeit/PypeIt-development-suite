@@ -1994,3 +1994,148 @@ lines `dspat_x = spat_img[totmask] - trace_in[spec_x]` and
 `diagnostics`.
 
 - **No numerical change**; 56 spatialprofile tests pass unchanged.
+
+## Class-structure consideration and rejection
+
+The possibility of re-implementing `fit_profile_refactor` as a Python class
+(with the module-level function as a thin wrapper) was evaluated.  The primary
+appeal was that instance attributes would replace the intermediate variables
+passed between helper functions, eliminating the need for the `diagnostics`
+object and cleaning up helper-function call signatures.
+
+The proposal was rejected for the following reasons:
+
+- **Early returns become awkward.**  The six Gaussian fallback paths each return
+  immediately from the middle of the computation.  In a class a phase method
+  cannot return from the enclosing `fit()` call; it can only signal the
+  condition back via a sentinel value or a private exception, neither of which
+  is more readable than the current explicit ``return`` statements.
+
+- **Unit tests for helper functions become harder.**  Eleven tests currently
+  call the helper functions directly with clean argument lists.  If the helpers
+  become instance methods, each test must construct a fitter object and manually
+  set the specific attributes the method reads from ``self``, creating implicit
+  dependencies between tests and implementation internals.
+
+- **One-shot classes are a code smell.**  The fitter would be instantiated once
+  per object per ``local_skysub_extract`` iteration, run, and discarded.  Python
+  reserves classes for objects with state that persists or is shared across
+  multiple calls; neither applies here.
+
+- **`diagnostics` could be removed without a class.**  Making the QA function
+  private and calling it internally was sufficient to eliminate the `diagnostics`
+  object — the primary concrete benefit of the class proposal.
+
+## QA restructuring: `_fit_profile_refactor_qa` and `generate_qa`
+
+After completing the `diagnostics` implementation, two additional problems were
+identified:
+
+1. `qa_fit_profile_refactor` was a *public* function that required the caller to
+   make a second, separate call after `fit_profile_refactor`.  Supporting this
+   interface was the entire reason for the `diagnostics` 5th return value.
+
+2. `fit_profile_refactor` was still calling the *old* `qa_fit_profile` from
+   `spatialprofile.py` on every Gaussian fallback path (via `_return_gaussian`)
+   and on the final B-spline path.  The new `qa_fit_profile_refactor` was
+   therefore bypassed on all of those paths.
+
+**Resolution — `_fit_profile_refactor_qa` (private, called internally):**
+
+- `qa_fit_profile_refactor` was renamed to `_fit_profile_refactor_qa` and made
+  private.  It is now called from *inside* `fit_profile_refactor` at each of
+  its six return paths.
+
+- Because the QA function is called with the intermediate arrays directly in
+  scope, the `diagnostics` ``SimpleNamespace`` is unnecessary.  The parameter
+  was replaced by the six constituent fields passed directly:
+  ``norm_obj_x``, ``norm_ivar_x``, ``sigma_x``, ``totmask``, ``l_limit``,
+  ``r_limit``.
+
+- The ``diagnostics`` object was removed from the codebase entirely.
+  ``fit_profile_refactor`` returns a clean 4-tuple
+  ``(profile_model, xnew, fwhmfit, med_sn2)`` again.
+
+**Resolution — `generate_qa` parameter:**
+
+- The ``show_profile : bool`` parameter was replaced by
+  ``generate_qa``, which accepts three types:
+
+  - ``False`` (default) — no QA generated.
+  - ``True`` — display the figure interactively (blocks pipeline progress).
+  - ``str`` or ``pathlib.Path`` — save the figure to that file path.
+
+- ``_return_gaussian`` was reduced to pure profile construction and logging;
+  its ``show_profile``, ``norm_obj``, ``ind``, ``l_limit``, ``r_limit``,
+  ``xlim``, and ``xtrunc`` parameters were all removed.  The old call to
+  ``qa_fit_profile`` from within ``_return_gaussian`` is gone; QA on Gaussian
+  paths now goes through ``_fit_profile_refactor_qa``.
+
+- The imports ``from types import SimpleNamespace`` and
+  ``from pypeit.core.spatialprofile import qa_fit_profile`` were removed.
+
+**Impact on tests:**
+
+All call sites in ``test_spatialprofile.py`` and ``freeze_spatprof.py``
+reverted from 5-tuple to 4-tuple unpacking.  ``test_qa_fit_profile_refactor``
+was simplified from two calls (fit then separate QA call) to a single
+``fit_profile_refactor(..., generate_qa=outfile)`` call.  ``qa_fit_profile_refactor``
+was removed from the import block.
+
+- **No numerical change**; 56 spatialprofile tests pass unchanged.
+
+## Eliminating `_return_gaussian` and positional QA calls
+
+With `_fit_profile_refactor_qa` now called directly at each return site, the
+`_return_gaussian` helper was identified as redundant: its entire body was just
+two lines — a call to `_gaussian_profile` and a `log.info` statement.
+
+**Strategy discussion:**
+
+Two strategies for reducing the repetition in the five Gaussian early-return
+blocks were evaluated, both based on an inner (closure) function defined inside
+`fit_profile_refactor`:
+
+- **Strategy 1** — a `_do_qa` closure capturing the invariant context and
+  accepting only the five varying arguments.  Each return site would remain
+  explicit about profile construction but reduce the QA block to a single call.
+
+- **Strategy 2** — a `_gauss_return` closure that also owned the
+  `_gaussian_profile` call and the `log.info`, collapsing each return site to a
+  single ``return _gauss_return(center, fwhm, sigma_x, ...)`` statement.
+
+Both strategies were rejected in favour of inlining, on the grounds that
+defining a function inside a function is an unnecessary complication when the
+inlined form is only marginally longer.
+
+**What was done:**
+
+- `_return_gaussian` was deleted.  Its two lines were inlined at each of the
+  five Gaussian return sites:
+
+  ```python
+  profile_model = _gaussian_profile(spat_img, center, sigma)
+  log.info(f'{obj_string}, FWHM={fwhm:.2f}, S/N={np.sqrt(med_sn2):.3f}')
+  ```
+
+- All six calls to `_fit_profile_refactor_qa` were updated to pass positional
+  arguments for the 15 positional parameters, reserving keyword form only for
+  the two parameters with defaults (``obj_string`` and ``outfile``):
+
+  ```python
+  _fit_profile_refactor_qa(
+      image, ivar, thismask, trace_in,
+      flux,
+      profile_model, xnew, fwhmfit, med_sn2,
+      norm_obj_x, norm_ivar_x, sigma_x, totmask, l_limit, r_limit,
+      obj_string=obj_string,
+      outfile=None if generate_qa is True else generate_qa,
+  )
+  ```
+
+  The grouping of arguments mirrors the visual grouping in the function
+  signature, which breaks after ``trace_in`` and after ``flux``.
+
+- **No numerical change**; 56 spatialprofile tests pass unchanged.
+
+- **No numerical change**; 56 spatialprofile tests pass unchanged.
