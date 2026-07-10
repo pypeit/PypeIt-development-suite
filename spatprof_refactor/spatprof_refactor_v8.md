@@ -1965,6 +1965,37 @@ def test_bspline_fwhm_improvement_narrow():
   ``toctree`` and cross-referenced from `doc/skysub.rst`, with example figures
   generated from the unit-test synthetic data.
 
+### v8 bug fix — row-normalization shape broadcast
+
+**Discovered**: Keck/NIRES ABBA reduction faulted at ``spatialprofile.py:969``
+with ``ValueError: operands could not be broadcast together with shapes
+(1023,197) (2048,1) (1023,197)``.
+
+**Root cause**: In the final row-normalization block (Block 13):
+
+.. code-block:: python
+
+    profile_model[indx,:] /= row_sums[:,None]   # BUG
+
+``profile_model[indx,:]`` selects only the rows where ``row_sums > 0``,
+giving shape ``(k, nspat)`` where ``k = sum(indx)``.  But ``row_sums[:,None]``
+always has shape ``(nspec, 1)``.  When ``indx`` is all-True (every spectral
+row has at least one positive profile pixel) the shapes happen to be
+consistent and the bug is hidden.  When a short slit (e.g., NIRES 22 arcsec)
+leaves some spectral rows entirely outside the object window, ``indx`` is a
+strict subset and the shapes diverge.
+
+**Fix** (``spatialprofile.py``, line 969):
+
+.. code-block:: python
+
+    profile_model[indx,:] /= row_sums[indx][:,None]   # FIXED
+
+**New test** (``test_spatialprofile.py:test_profile_normalization_partial_slit``):
+restricts ``thismask`` to the middle half of spectral rows so ``indx`` is
+never all-True, then asserts that masked rows are zero and active rows
+normalize to 1.  Test count: 45 → 46.
+
 ### v8 step 17 addenda
 
 Two corrections to the initial step 17 implementation:
@@ -2104,6 +2135,34 @@ Three related changes made after the first dev-suite test run.
 - Removed ``import matplotlib`` and ``matplotlib.use('Agg')`` (backend
   selection is now left to the execution environment; running headlessly via
   a script does not require forcing the Agg backend explicitly).
+
+### v8 bug fix — ``_findfwhm`` crash on all-negative profile
+
+**Discovered**: NIRES ABBA reduction faulted at ``spatialprofile.py:93``
+with ``TypeError: cannot unpack non-iterable NoneType object``.
+
+**Root cause**: When the fitted B-spline profile (after median subtraction) is
+entirely negative within ``|sig_x| <= 2`` — which can occur for a noisy,
+low-S/N object with an implausibly large initial FWHM estimate —
+``peak = argmax(profile)`` is negative.  ``0.5 * peak`` is then more negative
+than ``peak``, so the masking step ``_model[_model < 0.5 * peak]`` removes
+every element including the peak itself.  ``np.ma.flatnotmasked_edges`` returns
+``None``, and the unpack ``lind, rind = None`` crashes.
+
+The triggering NIRES object had S/N = 4.21 (just above the ``sn_gauss``
+threshold) and an initial FWHM of 27 pixels (far wider than the NIRES PSF),
+indicating a false or poorly-conditioned detection.
+
+**Fix** (``spatialprofile.py:_findfwhm``): check the return value of
+``flatnotmasked_edges``; if ``None``, return
+``(peak, peak_x, sig_x[0], sig_x[-1])`` as a fallback.  The resulting
+overestimated FWHM propagates normally and almost always triggers a Gaussian
+fallback via the ``ninside < 10`` guard in the caller.
+
+**New test** (``test_spatialprofile.py:test_findfwhm_all_negative_profile``):
+passes a constant-negative profile to ``_findfwhm`` and asserts that a valid
+4-tuple is returned with ``lwhm == sig_x[0]`` and ``rwhm == sig_x[-1]``.
+Test count: 44 → 45.
 
 ### v8 bug fix — QA trace coordinate offset
 
