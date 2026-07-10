@@ -2066,6 +2066,74 @@ center(ed).
 - **Footer**: ``---`` rule and attribution line added at the end of the
   file.
 
+### v8 — QA figure polish
+
+Three related changes made after the first dev-suite test run.
+
+**``spatialprofile.py`` — ``_fit_profile_qa``:**
+
+- Removed the trace overlay from the Residual image panel (the Data and Model
+  panels already carry ``trace_in`` and ``xnew``; repeating it on the residual
+  was redundant).
+- Added ``label='Measured'`` and ``label='Model'`` to the two spectrum step
+  plots; added ``ax_spec.legend(fontsize=8, loc='upper right')`` so the
+  spectrum panel carries an explicit legend.
+- Added a data-driven y-axis limit to the spatial profile panel using
+  ``utils.growth_lim(..., 0.99, fac=1.7, midpoint='center')``.  When the
+  B-spline fit succeeded, the limit is based on the union of the binned 50th
+  percentile and the model curve; otherwise on the raw ``profile_x`` scatter.
+  This prevents the profile panel from being dominated by outliers while still
+  leaving headroom around the peak.
+- Changed ``ax_prof.legend(fontsize=8)`` to
+  ``ax_prof.legend(fontsize=8, loc='lower center')`` so the legend sits in the
+  low-flux wings and does not overlap the peak.
+
+**``utils.py`` — ``growth_lim``:**
+
+- Default ``midpoint=None`` → ``midpoint='median'`` (behavior preserved for
+  existing callers).
+- New string option ``'center'``: sets the midpoint to
+  ``(a[end] + a[start]) / 2`` (center of the empirical range) rather than the
+  sample median.  Used by the profile panel above so the zero level is
+  symmetric between the left and right wings.
+- Added a ``PypeItError`` guard: if ``midpoint`` is not ``'median'``,
+  ``'center'``, or a floating-point value, an exception is raised.
+
+**``doc/scripts/make_spatprof_figures.py``:**
+
+- Removed ``import matplotlib`` and ``matplotlib.use('Agg')`` (backend
+  selection is now left to the execution environment; running headlessly via
+  a script does not require forcing the Agg backend explicitly).
+
+### v8 bug fix — QA trace coordinate offset
+
+**Bug**: In ``_fit_profile_qa``, the 2-D image panels (Data, Model, Residual)
+were displayed with ``extent = [0, nspat, 0, nspec]``, placing the x-axis
+origin at 0.  But ``trace_in`` and ``xnew`` are in *absolute* spatial pixel
+coordinates (i.e., with respect to the full science image), so for objects
+whose local-sky sub-image does not start at column 0 the trace overlay was
+displaced to the right of the actual flux peak — sometimes outside the
+visible range entirely.
+
+The offset is zero when the sub-image happens to start at column 0 (e.g.,
+for bright objects whose large ``maskwidth`` spans to the slit edge), which
+is why the bug was not apparent in the b24 Feige-66 QA plots but was clearly
+visible in the b27/b28 science-target plots from the ``shane_kast_blue
+600_4310_d55`` test run.
+
+**Fix** (``spatialprofile.py``):
+
+- ``fit_profile`` computes ``spat_offset = float(spat_img[0, 0])`` immediately
+  after ``nspec, nspat = image.shape``.
+- ``_fit_profile_qa`` gains a new ``spat_offset=0.0`` keyword argument.
+- All six internal calls to ``_fit_profile_qa`` pass ``spat_offset=spat_offset``.
+- Inside ``_fit_profile_qa``, ``extent`` is changed from
+  ``[0, nspat, 0, nspec]`` to
+  ``[spat_offset, spat_offset + nspat, 0, nspec]``, aligning the image
+  x-axis with the absolute spatial coordinate frame used by the trace arrays.
+- All 44 unit tests continue to pass (tests use 0-indexed ``spat_img`` so
+  ``spat_offset = 0`` and behavior is unchanged).
+
 ### v8 step 19 addendum 3 — improved synthetic spectrum and figure parameters
 
 Two further improvements to ``make_fourier_spectrum`` in
