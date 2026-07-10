@@ -748,18 +748,7 @@ section for design rationale):
     - 44 tests pass.
     - Dev-suite confirmation deferred to end-of-branch run.
 
-18. Write a new documentation page describing the spatial-profile fitting
-    algorithm.
-    - Place the RST source in the ``doc/`` directory, following existing
-      documentation conventions, and register it in the Sphinx ``toctree``.
-    - Add a reference to the new page in ``doc/skysub.rst``.
-    - Cover the B-spline fitting procedure, the iterative trace and width
-      correction, the Gaussian fallback conditions, and the apodization.
-    - Embed example figures generated from the synthetic inputs used by the
-      unit tests so the examples are reproducible without real observational
-      data.
-
-19. Update `skysub.py` to construct and pass `spec_img` explicitly.
+18. ✅ Update `skysub.py` to construct and pass `spec_img` explicitly.
     - Before the `fit_profile` call, add:
       ```python
       spec_img_sub = np.broadcast_to(
@@ -770,6 +759,30 @@ section for design rationale):
     - Pass ``spec_img=spec_img_sub`` to the function call.
     - This makes the spectral-index provenance explicit and avoids the internal
       ``np.where(totmask)`` fallback, but is otherwise a no-op change.
+    - 44 tests pass.
+
+19. ✅ Write a new documentation page describing the spatial-profile fitting
+    algorithm.
+    - Place the RST source in the ``doc/`` directory, following existing
+      documentation conventions, and register it in the Sphinx ``toctree``.
+    - Add a reference to the new page in ``doc/skysub.rst``.
+    - Cover the B-spline fitting procedure, the iterative trace and width
+      correction, the Gaussian fallback conditions, and the apodization.
+    - Embed example figures generated from the synthetic inputs used by the
+      unit tests so the examples are reproducible without real observational
+      data.
+    - ``doc/spatprof.rst`` written covering the S/N decision, B-spline
+      fitting, iterative trace/width correction, apodization, Gaussian
+      fallback, profile normalization, outputs, and QA output.
+    - ``doc/figures/spatprof_example_bspline.png`` and
+      ``doc/figures/spatprof_example_gaussian.png`` generated from the
+      synthetic unit-test inputs (S/N = 20 and S/N = 2 respectively) and
+      embedded in the page.
+    - Page registered in the ``Processing Details`` toctree in
+      ``doc/index.rst`` between ``skysub`` and ``extraction``.
+    - Cross-reference added to ``doc/skysub.rst`` in the Local Sky
+      Subtraction section.
+    - Sphinx build clean (no new warnings).
 
 ---
 
@@ -1942,12 +1955,12 @@ def test_bspline_fwhm_improvement_narrow():
 - **New step 17 — QA wiring**: wire the `_fit_profile_refactor_qa` figure
   into the standard `run_pypeit` output so that it is automatically written
   to `QA/PNGs/` for each extracted object.
-- **New step 18 — documentation page**: write a new RST page in `doc/`
+- **New step 18 — `spec_img` wiring**: the optional `skysub.py` `spec_img`
+  update is no longer marked optional and is now step 18.
+- **New step 19 — documentation page**: write a new RST page in `doc/`
   describing the spatial-profile fitting algorithm, registered in the Sphinx
   ``toctree`` and cross-referenced from `doc/skysub.rst`, with example figures
   generated from the unit-test synthetic data.
-- **Old step 15 → step 19**: the optional `skysub.py` `spec_img` update is
-  no longer marked optional and renumbered to step 19 at the end of the list.
 
 ### v8 step 17 addenda
 
