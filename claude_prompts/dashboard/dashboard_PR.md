@@ -88,7 +88,33 @@ Read the following documents to gain context:
 
 5. Please generate a mermaid diagram for PypeIt. Add it to the docs.  You might need to create a new .rst file.  Log your work.
 
+6. CI tests are failing on GitHub.  Only the Linux ones, however.  Please investigate and fix.  Log your work.  If you have any questions, put them in Q&A below.  If you need help with `gh` access, let me know.
+
 ## Q&A
+
+**2026-07-09 (prompt 6 — Linux-only CI failure).** I've confirmed the failure
+is Linux-only (all macOS/Windows `test-alldeps` jobs pass) and that the three
+failing Linux jobs (`3.11-test`, `conda`, `3.13-test-astropydev`) all exit with
+**code 3 = pytest INTERNAL_ERROR** (a crash, not a normal `assert` failure /
+exit 1). I could **not** reproduce it on this workstation under faithful CI
+conditions: a clean minimal `test` tox venv, run with **no `$DISPLAY` and no
+`QT_QPA_PLATFORM`**, gives *461 passed, 3 skipped, exit 0*. (Ruled out: the
+missing optional deps `specutils`/`scikit-image` — blocking them still passes;
+and a Qt-headless abort — `test_dashboard.py` sets `QT_QPA_PLATFORM=offscreen`
+process-wide before importing Qt.)
+
+**Question / ask:** I need the raw log of a failing job to see the actual
+traceback — the public API returns 403 for Actions logs without auth. Please
+run `gh auth login` in your terminal (GitHub.com → HTTPS → paste a token or use
+the browser flow); once the token is stored in `~/.config/gh/`, my `gh` calls
+here will pick it up and I can pull the log and finish the fix. (Alternatively,
+paste the "Test with tox" step log from
+`https://github.com/pypeit/PypeIt/actions/runs/28873264477/job/85641428324`.)
+
+**RESOLVED (2026-07-09).** You authorized `gh`; the log gave the exact cause —
+`ImportError: libEGL.so.1` at `pytestqt.plugin.pytest_configure` (a missing
+*system* OpenGL library on the bare ubuntu runner, not a test bug). Fixed by
+installing the libs in the Linux CI jobs. See the Log entry below.
 
 ## Logging
 
@@ -101,6 +127,77 @@ The "Logs" section will record Claude's work.  Please use the following format:
 ...
 
 ## Logs
+
+### 2026-07-09 (Fix the Linux-only CI failure: missing `libEGL.so.1` for PyQt6)
+
+**Symptom.** On PR 2159 (`state` @ `de3919738`), every macOS/Windows job passed
+but all Linux jobs failed: `Tox env 3.11-test`, `conda`, and
+`3.13-test-astropydev` (the remaining Linux envs were `cancelled` by fail-fast).
+Not reproducible on this workstation.
+
+**Investigation.**
+- Mapped the matrix in `.github/workflows/ci_tests.yml`: the `os-tests` job
+  (macOS/Windows) runs *only* `test-alldeps`, whereas the Linux `ci-tests`,
+  `dev-tests`, and `conda` jobs are the only ones that run the minimal/other
+  envs — so "Linux-only" was partly a matrix artifact.
+- The failing jobs exited **code 3 (pytest `INTERNALERROR`)**, not 1 — i.e. a
+  crash at startup, not a test assertion. Each failing job died in ~1 min
+  (healthy runs take ~4 min), pointing at configure-time, not mid-suite.
+- Could not reproduce locally even under faithful CI conditions: a clean minimal
+  `test` tox venv, run with **no `$DISPLAY` and no `QT_QPA_PLATFORM`**, gave
+  *461 passed, 3 skipped*. Ruled out missing `specutils`/`scikit-image`
+  (blocking both still passes) and a Qt display abort (`test_dashboard.py` sets
+  `QT_QPA_PLATFORM=offscreen` before importing Qt).
+- With `gh` authorized, pulled the raw job logs. All three failed identically:
+
+  ```
+  pytestqt/plugin.py:241 in pytest_configure -> qt_api.set_qt_api(...)
+  pytestqt/qt_compat.py:104 in _import_module -> __import__("PyQt6", ..., ["QtGui"])
+  INTERNALERROR> ImportError: libEGL.so.1: cannot open shared object file
+  ```
+
+**Root cause.** `pytest-qt`'s `pytest_configure` hook **imports `PyQt6.QtGui` at
+startup** (before collection, and independent of any `offscreen` setting).
+`PyQt6/QtGui.abi3.so` links `libEGL.so.1`, `libGL.so.1`, and `libxkbcommon.so.0`
+(verified with `ldd`), and **`libEGL.so.1` is not present on a bare
+`ubuntu-latest` runner**, so the import crashes → pytest INTERNALERROR → exit 3.
+This became reachable only after the earlier fix that moved `pytest-qt` from the
+`devsuite` extras into the base `test` extras (commit `f418127e`): that was the
+right move (the dashboard tests need it), but it's what now loads the plugin in
+the minimal Linux CI env. macOS/Windows PyQt6 doesn't need `libEGL`, and this
+workstation is a full desktop that already has it — hence "passes everywhere but
+Linux CI."
+
+**Fix (`PypeIt` repo, `state` branch).**
+1. `.github/workflows/ci_tests.yml` — added an *"Install system libraries for
+   headless Qt"* step (`sudo apt-get install -y libegl1 libgl1 libxkbcommon0`)
+   to the three Linux jobs that run pytest (`ci-tests`, `dev-tests`, `conda`).
+   The `os-tests` (macOS/Windows) job is deliberately left untouched.
+2. `tox.ini` — added `QT_QPA_PLATFORM=offscreen` to the `[testenv]` `setenv`
+   (inherited by every test env, including `conda`) as defense-in-depth so the
+   suite is headless regardless of collection order — matching the dev suite's
+   own `source_headless_test.sh`. Verified `tox c` resolves it.
+
+**Verify.** YAML validates; `ldd` confirms the three libs are exactly what
+`QtGui` needs (glib/dbus are already on the ubuntu image, consistent with only
+`libEGL` being reported missing). Committed as `5fce26965` ("ci fix") and
+pushed; **the CI re-run confirms it** — every Linux job that used to crash now
+passes: `Tox env 3.11-test`, `conda`, `3.13-test-astropydev`,
+`3.13-test-numpydev` = success (they now run the full ~4 min suite instead of
+dying at `pytest_configure` in ~1 min).
+
+*Unrelated flake:* on the same re-run, `Python 3.13 on macos-latest` failed with
+**exit 1** (not the libEGL exit 3) — three tests that download data files
+(`test_install_telluric`, `test_phoenix_model`, `test_get_model_standard`) hit
+`TimeoutError`/SSL-handshake timeouts against the cache server. That's a
+transient network issue on that runner (the other macOS/Windows Python versions
+passed), independent of this fix; a job re-run clears it.
+
+**Learned.** A pytest exit code of **3** (not 1) means INTERNALERROR — a crash
+in a plugin/config hook, so look at *startup*, not a failing assert. `pytest-qt`
+forces a real `PyQt6` import in `pytest_configure`, which needs OpenGL system
+libraries present even for purely offscreen/structural GUI tests; bare CI images
+lack them and must `apt-get install libegl1 libgl1 libxkbcommon0`.
 
 ### 2026-07-01 (Fix the failing unit test: leftover "bug 000" debug raise in `FlatField.run`)
 
