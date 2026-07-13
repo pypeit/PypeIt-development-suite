@@ -219,6 +219,10 @@ all_setups = {
         'FIRE_Echelle',
         'FIRE_Long',
     ],
+    'magellan_ldss3': [
+        'VPH-ALL_Std',
+        'VPH-ALL_Sci',
+    ],
     'magellan_mage': [
         '1x1',
     ],
