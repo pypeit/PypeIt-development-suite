@@ -2226,6 +2226,47 @@ Two further improvements to ``make_fourier_spectrum`` in
 - The module-level ``OUT_DIR`` constant removed; ``out_dir`` is now
   resolved locally inside ``main()``.
 
+### v8 bug fix — ``objtrace_QA`` saves to wrong directory
+
+**Discovered**: Keck/DEIMOS multi-slit reduction faulted during object finding.
+The last PypeIt call before the exception was ``findobj_skymask.objs_in_slit``
+at the ``objtrace_QA`` call site (``findobj_skymask.py:2161``).  The actual
+exception — a ``FileNotFoundError`` — was raised inside ``PIL.Image.save``
+when matplotlib tried to write the QA figure.
+
+**Root cause** (``findobj_skymask.py:2158``): the object-trace QA filename was
+derived from the object-profile QA filename by:
+
+```python
+objtraceQA_filename = objfindQA_filename.replace("prof", "trace")
+```
+
+``str.replace`` with no count argument replaces **all** occurrences of the
+substring.  When the reduction directory contains ``prof`` (e.g. a directory
+named ``spatprof``), that occurrence is also replaced.  A path such as:
+
+```
+…/spatprof/QA/PNGs/…_obj_prof.png
+```
+
+becomes:
+
+```
+…/spattrace/QA/PNGs/…_obj_trace.png
+```
+
+which points to a non-existent directory, causing the save to fail.
+
+**Fix**: replace the over-broad ``.replace`` with the specific suffix:
+
+```python
+objtraceQA_filename = objfindQA_filename.replace("_obj_prof.png", "_obj_trace.png")
+```
+
+This matches the exact suffix used by ``qa.set_qa_filename`` for the
+``'obj_profile_qa'`` case and is guaranteed to produce the correct
+``'obj_trace_qa'`` filename regardless of the run directory name.
+
 ## Migration of `_bin_profile` and `qa_fit_profile_refactor`
 
 Both functions were ported from `qa_spatprof_demo.py` in the development-suite
