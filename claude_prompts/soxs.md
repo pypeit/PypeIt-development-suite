@@ -1,8 +1,8 @@
-# Develop the SOAR/Triplespec spectrograph
+# Develop the NTT/SOXS spectrograph
 
 ## Goals
 
-We wish to develop the SOAR/Triplespec spectrograph for PypeIt.  
+We wish to develop the NTT/SOXS spectrograph for PypeIt.  
 
 ## Claude
 
@@ -10,16 +10,23 @@ We wish to develop the SOAR/Triplespec spectrograph for PypeIt.
 
 Consider using the skills in PypeIt-development-suite/.claude/skills/
 
+## Context
+
+Here are the context documents:
+- Webpage for the instrument: https://www.eso.org/sci/facilities/develop/instruments/SoXS.html#desc
+- SOXS pipeine: /home/xavier/Projects/PypeIt/Others/soxspipe
+
 ## Coding
 
 Here are guidelines for coding: 
 
 - Use Python where possible
-- The main spectrograph class is in PypeIt/pypeit/spectrographs/soar_tspec.py
+- The main spectrograph class is in PypeIt/pypeit/spectrographs/ntt_soxs.py
 - Add inline comments to explain the effort
 - Reuse existing code when possible
 - Place import statements at the top of the file.
 - Include a description of inputs/outputs in the doc string of all methods
+- Add "Created by JXP and Claude" to any new methods.
 
 ## Testing
 
