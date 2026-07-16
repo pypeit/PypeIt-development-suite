@@ -70,6 +70,7 @@ If you need to test the code:
 21. Read this doc.  Perform the 16th task under Development/Wavelength Calibration.
 
 22. Read this doc.  Perform the 1st task under Finishing up.
+23. Read this doc.  Perform the 2nd task under Finishing up.
 
 ## Prep
 
@@ -585,6 +586,8 @@ A. Accept the 27 solved orders for now
 - Generate a new Report named `PypeIt-development-suite/pypeitdev/shane_hamspec/Reports/09_full_run.md` with your findings. Include figures.
 - If you have any questions, put them in the Q&A section below.  
 - Log your work
+
+2. The changes we made to `templates.py` have led to a bad merge because that file has been remoevd from the PypeIt repo to the development suite.  Please fix the merge by moving our changes to `templates.py` in the PypeIt-development-suite repo.
 
 #### Q&A
 
@@ -1118,3 +1121,35 @@ Pushed the smallest useful Cooke set into the dev suite and ran it. Report 09
   push object finding for short orders.
 - 19 orders here vs 27 earlier because I pushed only 3 trace flats (fewer
   orders traced); more trace flats would recover orders.
+
+### 2026-07-16 (Finishing-up #2: fixed the templates.py modify/delete merge)
+
+Resolved the bad merge on the PypeIt `hamspec` branch (mid-merge of
+`origin/develop` into `state`). Only one conflicted path:
+`pypeit/core/wavecal/templates.py`, status **`UD`** (we modified it; the
+incoming develop merge **deleted** it — the file was relocated out of the
+PypeIt package into the dev suite at `pypeitdev/wavecal/templates.py`).
+
+What our branch changed vs the merge-base (`3f0e15e5c`): a small, additive
+extension to `xidl_esihires()` — a new `ret_NORD:bool=False` kwarg that, when
+True, also returns the per-order XIDL `NORD` array (accumulated into a `NORDs`
+vector in the CHEBY/POLY branches). Nothing else.
+
+Fix:
+- **Ported** that exact change onto the dev-suite copy
+  `PypeIt-development-suite/pypeitdev/wavecal/templates.py` (its `xidl_esihires`
+  body was byte-identical to the merge-base, so the edit applied cleanly).
+  `py_compile` OK; the file is git-tracked (not ignored) and now shows modified.
+- **Resolved** the PypeIt conflict by accepting the deletion
+  (`git rm pypeit/core/wavecal/templates.py`) — the module's new home is the dev
+  suite. Verified: no unmerged paths remain, no `<<<`/`>>>` markers anywhere
+  (the `=======` hits are RST underlines), and **no code inside the `pypeit`
+  package still imports `wavecal.templates`**, so the package is intact. The
+  merge is staged and ready to commit.
+
+Note: no committed dev-suite script currently calls `xidl_esihires(...,
+ret_NORD=True)` (all use `log10=True`), so the change is purely preserved for
+future use, not yet exercised. The shane_hamspec scripts still
+`from pypeit.core.wavecal import templates`; once develop's deletion lands they
+will need to import from the dev-suite location instead — out of scope for this
+merge-fix, flagged for a follow-up.
