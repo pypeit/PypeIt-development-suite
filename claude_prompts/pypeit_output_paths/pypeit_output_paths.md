@@ -700,3 +700,110 @@ The decision between them is primarily about state-management philosophy
 (one global registry vs. distributed per-class ownership) and appetite for
 refactoring `CalibFrame`, not about capability — left open for team
 discussion.
+
+---
+
+## 4. Discussion
+
+### 4.1 Recommendation: Design A
+
+Design A (centralized `PypeItOutputPaths` singleton) was recommended over
+Design B, for three reasons:
+
+1. **It matches the actual pain point more directly.** The concrete problem
+   is disconnected CLI scripts (`coadd_2dspec`, `collate_1d`, `sensfunc`,
+   `flux_calib`, `coadd_1dspec`, `flux_setup`) that never share a live
+   `PypeIt` object and currently reinvent path logic ad hoc. Design A fixes
+   each of those with one `outputPaths.configure(par)` call at script
+   entry. Design B requires each script to construct its own
+   mixin-owning objects (a `QAPaths`, a science-dir owner, etc.) and thread
+   `resolve_redux_paths()` through them by hand — more moving parts per
+   script, cutting against the goal of minimizing developer book-keeping.
+2. **Lower risk for no functional gain in the risky part.** Design B's
+   biggest cost — refactoring `CalibFrame` itself onto the mixin — buys
+   nothing, because `CalibFrame` isn't broken. All 9 catalogued violations
+   live outside `CalibFrame`'s territory (directories, not per-calibration-
+   file naming). Design A leaves `CalibFrame` (8 production subclasses)
+   completely untouched and still eliminates every violation.
+3. **Free global introspection.** A single object makes "what paths will
+   this run touch" trivial to log/query, useful given `pypeit.py` already
+   logs all resolved paths at startup (`pypeit.py:132-136`).
+
+A fourth reason initially offered — that Design A more closely matches the
+precedent named first in the original prompt (`PypeItDataPaths`/`PypeItLogger`)
+— was **retracted on review**: it simply reflects the prompt's own framing
+and initial assumption, not an independent argument for the design's merit,
+and should not be counted as a reason.
+
+### 4.2 Response: concern about global mutability
+
+The project lead agreed with the strengths above but flagged a specific
+concern with Design A: a confused/corrupted mutable-singleton state could
+have a more damaging effect on a user's on-disk directory structure and
+overall run success than the equivalent risk in Design B's distributed
+ownership model, where no single shared mutable object exists to corrupt.
+The request was for guards — even weak ones — that gate changes to a
+`PypeItOutputPaths` instance made over the course of a script's execution
+(i.e., after CLI arguments/`.pypeit` file have been parsed and initial
+configuration has occurred).
+
+### 4.3 Proposed guards against mutability risk in Design A
+
+Five guards were proposed, layered on top of the `configure()`/`make()` API
+already sketched in §3.1, without abandoning the singleton pattern for the
+common case:
+
+1. **Freeze-on-first-use, not freeze-on-construction.** A `_frozen` flag
+   flips `True` the moment `make()` actually creates/touches a directory
+   (not at construction, since `configure()` legitimately runs before any
+   directory exists). Once frozen, a `configure()` call that would change
+   any already-resolved value raises `PypeItPathError` unless an explicit
+   `allow_reconfigure=True` is passed — so once files start landing
+   somewhere, the object can no longer be silently redirected elsewhere
+   without an explicit, auditable override.
+2. **Idempotent no-op for unchanged values.** If `configure()` is called
+   with resolved values identical to the current state, it is a silent
+   no-op — no exception, no log spam — so defensive repeated calls from
+   multiple orchestrators (`PypeIt.__init__`, `Calibrations`, a script's
+   `main()`) don't spuriously trip the freeze guard in (1). Only an actual
+   change to resolved paths counts as reconfiguration.
+3. **Derived paths never mutate the shared singleton — they get their own
+   scoped instance.** Add `derive(**overrides)`, returning an independent
+   copy seeded from the current state (e.g.
+   `outputPaths.derive(suffix='_coadd')` for `CoAdd2D`/`collate`/`sensfunc`).
+   This directly targets the `coadd2d.py`-style bug class: the global
+   singleton that other in-process consumers (e.g. a concurrently held
+   `PypeIt`/`Calibrations` reference in a notebook) are reading from is
+   never touched by a derived computation. This turns the design into "one
+   mutable root config + disposable immutable derivations," removing most
+   of the actual corruption risk without abandoning the singleton for the
+   common case.
+4. **Filesystem-level sentinel, not just in-memory state.** The in-memory
+   guards above can't catch two separate *process* invocations (e.g. a
+   `run_pypeit` from one session and a `pypeit_coadd_2dspec` from another)
+   pointed at the same physical directory with different configs. `make()`
+   drops (and checks) a small sentinel file per managed directory, e.g.
+   `.pypeit_paths.json` recording `{redux_path, scidir/qadir/calib_dir,
+   created_by, timestamp}`. If the sentinel exists and disagrees with the
+   currently resolved values, `make()` raises/warns loudly instead of
+   silently writing into a directory another configuration believes it
+   owns. Weak (a user can delete the sentinel) but catches the realistic
+   accidental case, and is the only guard here that protects against
+   corruption originating outside the current process.
+5. **Log every `configure()`/`make()` call, always.** Every resolve and
+   every directory creation logs via `log.info` (root path, what changed,
+   caller). Doesn't prevent anything, but makes any residual failure
+   diagnosable rather than silent — a direct improvement over today's
+   `par['rdx']['qadir'] += '_coadd'` mutation, which gives zero visibility
+   into when or how paths diverged.
+
+Guards (1) and (2) together gate *accidental* reconfiguration after real
+work has started, behind an explicit opt-in. Guard (3) removes the single
+largest actual source of mutation (derived/coadd-style paths) from the
+shared object entirely — arguably more valuable than the freeze guard
+itself. Guard (4) is the only one that protects against corruption
+originating outside the current process. Guard (5) makes any residual
+failure diagnosable. None of these are strong guarantees, but (1) and (3)
+together directly address the "confused state mutates the shared object
+mid-run" scenario raised in §4.2, while (4) covers the cross-process case
+the in-memory design can never see on its own.
