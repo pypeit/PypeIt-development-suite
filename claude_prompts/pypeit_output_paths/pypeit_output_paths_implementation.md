@@ -80,27 +80,36 @@ and `cache.py` already import their `pkg`-sibling modules (e.g.
 """
 Centralized, singleton-managed output-path resolution for PypeIt reductions.
 
-A single instance, ``pypeit.outputPaths``, is created at import time with
-cwd-based defaults (mirroring ``pypeit.log`` and ``pypeit.dataPaths``), but
-is not yet *configured*. Orchestration-layer code (a ``scripts/`` script
-class, or ``PypeIt.__init__`` for entry points where a script can't build
-``par`` itself, e.g. ``run_pypeit``) calls ``configure()`` exactly once per
-CLI execution to lock in the real, par-derived values. ``pypeit/core/`` code
-MUST NOT import or query this object; it only ever receives already-resolved
-Path/str arguments.
+A single instance, :obj:`pypeit.outputPaths`, is created at import time with
+cwd-based defaults (mirroring :obj:`pypeit.log` and :obj:`pypeit.dataPaths`),
+but is not yet *configured*. Orchestration-layer code (a ``scripts/`` script
+class, or :class:`~pypeit.pypeit.PypeIt`'s ``__init__`` for entry points
+where a script can't build the parameter set itself, e.g. ``run_pypeit``)
+calls :func:`PypeItOutputPaths.configure` exactly once per CLI execution to
+lock in the real, parameter-derived values. Code in ``pypeit/core/`` must
+NOT import or query this object; it only ever receives already-resolved
+``Path``/``str`` arguments.
+
+The once-only rule has exactly one narrow, documented exception (the
+``force`` parameter of :func:`configure`), used solely by
+:class:`~pypeit.pypeit.PypeIt`'s ``__init__`` so that more than one
+``PypeIt`` object can be constructed in the same process. See that
+parameter's docstring before assuming this is a general pattern -- it is
+not; every other caller must rely on the default once-only behavior.
 
 Each managed directory (``redux``, ``science``, ``qa``, ``qa_pngs``,
 ``calibrations``, ``coadd_science``, ``coadd_qa``, ``coadd_qa_pngs``,
-``collate``) is tracked internally as a small ``_ManagedPath(parent, name,
-full, ready)`` record. ``configure()`` sets only ``parent``/``name`` for
-every record (pure path arithmetic, no I/O, no ``ready``/``ordered``
-change). The corresponding ``@property`` (e.g. ``.science``) is what
-resolves and caches ``full`` (on first access, if not already cached) and
-creates the directory on disk exactly once, flipping that record's
-``ready`` flag -- but only if the instance has been configured and is not
-in dry-run mode. In dry-run mode (or before ``configure()`` has ever been
-called), a property still resolves and returns ``full``, it just never
-touches the filesystem or sets ``ready``.
+``collate``) is tracked internally as a small :class:`_ManagedPath` record
+holding ``parent``, ``name``, ``full``, and ``ready``. :func:`configure`
+(and ``__init__``) set only ``parent``/``name`` for every record -- pure
+path arithmetic, no I/O, no change to ``ready``. The corresponding
+``@property`` (e.g. :attr:`~PypeItOutputPaths.science`) is what resolves and
+caches ``full`` (on first access, if not already cached) and creates the
+directory on disk exactly once, flipping that record's ``ready`` flag --
+but only if the instance has been configured and is not in dry-run mode. In
+dry-run mode (or before :func:`configure` has ever been called), a property
+still resolves and returns ``full``; it just never touches the filesystem
+or sets ``ready``.
 """
 import dataclasses
 import logging
@@ -274,14 +283,14 @@ class PypeItOutputPaths:
     # ---- one-time (re)configuration --------------------------------------
     def configure(self, par=None, redux_path=None, scidir=None, qadir=None,
                   calib_dir=None, coadd_suffix=None, collate_outdir=None,
-                  dryrun=None, caller=None):
+                  dryrun=None, caller=None, force=False):
         """
         Configure the instance from a :class:`~pypeit.par.pypeitpar.PypeItPar`
         and/or explicit overrides, exactly as if it had just been
         constructed with these arguments -- every managed directory's
         ``full``/``ready`` state is discarded and recomputed from scratch.
         May only be called once per instance unless the instance is in
-        dry-run mode.
+        dry-run mode (or ``force`` is used, see below).
 
         Parameters
         ----------
@@ -306,18 +315,37 @@ class PypeItOutputPaths:
         caller : :obj:`str`, optional
             Free-form string identifying the calling code, included in the
             log message for easier debugging.
+        force : :obj:`bool`, optional
+            Bypass the once-only restriction and reconfigure even if this
+            instance has already been configured (and is not in dry-run
+            mode). **This is not a general-purpose escape hatch** -- it
+            exists solely so that :class:`~pypeit.pypeit.PypeIt` can be
+            instantiated more than once in the same process (e.g.,
+            :mod:`~pypeit.scripts.ql` builds a calibration ``PypeIt`` and a
+            science ``PypeIt`` in one run; a notebook or driver script may
+            loop over several reductions). Constructing a new ``PypeIt``
+            object is a deliberate signal that a new, independent reduction
+            context is starting, which is categorically different from
+            some other function accidentally calling :func:`configure`
+            mid-run. Do not pass ``force=True`` from anywhere other than
+            :class:`~pypeit.pypeit.PypeIt`'s ``__init__``; every other
+            caller should rely on the default once-only behavior.
 
         Raises
         ------
         PypeItPathError
             If the instance has already been configured and is not in
-            dry-run mode.
+            dry-run mode, and ``force`` is not used.
         """
-        if self._configured and not self._dryrun:
+        # See the `force` docstring above: this bypass is a narrow carve-out
+        # for PypeIt.__init__ only, not a general reconfiguration mechanism.
+        if self._configured and not self._dryrun and not force:
             raise PypeItPathError(
                 'PypeItOutputPaths has already been configured for this '
                 'execution and cannot be reconfigured (only permitted when '
-                'the instance is in dry-run mode, for inspection/testing).')
+                'the instance is in dry-run mode, for inspection/testing, '
+                'or via the narrow force=True carve-out used by '
+                'PypeIt.__init__).')
 
         if par is not None:
             rdx, cal = par['rdx'], par['calibrations']
@@ -624,7 +652,7 @@ the docstring/signature polish from the same-day follow-up, folded into
 that commit's content). All 9 tests in `test_outputpaths.py` pass; the
 import-cycle check succeeds.
 
-### Phase 1 — Adopt in `PypeIt`, `Calibrations`, and `exposure.py`
+### Phase 1 — Adopt in `PypeIt`, `Calibrations`, and `exposure.py` — ✅ COMPLETE
 **Files:** `pypeit.py`, `calibrations.py`, `pypeit_steps.py`, `exposure.py`.
 
 **On guideline 3 (§0.1) for this phase specifically**: the ideal per
@@ -712,6 +740,29 @@ for both cases.)
   locked for the rest of the run); and that QA plots are still skipped
   (not regenerated) on the reload-only path through
   `load_calibrations_for_frame`.
+
+**Completed at commit `29bb4b4458b0db1dfecd40fd594c58b2fd498077`** ("Phase 1
+complete", 2026-07-17). Actual scope was broader than the bullets above:
+`calibrations_path` also had to be dropped from `pypeit_steps.py`'s
+`process_one_det`/`findobj_on_det`/`extract_det` and `exposure.py`'s
+`process_exposure`/`findobj_on_exposure`/`extract_exposure`, since all of
+them forward the value further down this same call chain; two scripts
+outside the original file list, `scripts/run_to_calibstep.py` and
+`scripts/reduce_by_step.py`, needed their direct calls into
+`pypeit_steps`/`exposure` updated to match; and `test_calibrations.py`
+needed a new `output_paths` fixture (monkeypatches `calibrations.outputPaths`
+with a freshly configured, real, non-dry-run instance) since its tests
+construct `Calibrations`/`MultiSlitCalibrations` directly, bypassing
+`PypeIt.__init__`. Implementing this phase also surfaced a real conflict
+with the once-only `configure()` rule: `PypeIt` is legitimately constructed
+more than once per process (`scripts/ql.py` builds a calibration `PypeIt`
+and a science `PypeIt` in one run; `test_run_pypeit` calls `RunPypeIt.main()`
+twice), which would have raised `PypeItPathError` on the second
+construction. Fixed by adding a narrowly-scoped `force=True` parameter to
+`configure()` (§2), used only by `PypeIt.__init__` and documented/commented
+at both places as a specific carve-out, not a general pattern. All 51
+targeted tests and the full `pypeit/tests/` suite (413 tests, excluding the
+heavy network-dependent `test_run_pypeit`) pass.
 
 ### Phase 2 — Wire call sites through `outputfiles.py` directly
 **Files:** `outputfiles.py`; call sites identified in Phases 1, 4, 5 below.
@@ -1056,6 +1107,15 @@ redefaulted by this work.
 This section tracks substantive edits to this implementation plan itself,
 and, once Phase 0 landed, keeps §2 in sync with the actual
 `pypeit/pkg/outputpaths.py` source. Newest entries first.
+
+### 2026-07-17 — Phase 1 complete
+
+Phase 1 (§5) is implemented and committed (`29bb4b4458b0db1dfecd40fd594c58b2fd498077`,
+"Phase 1 complete"). See the completion note at the end of the Phase 1
+section in §5 for what was actually touched, including the broader-than-
+planned `calibrations_path` removal and the `force=True` carve-out added to
+`PypeItOutputPaths.configure()` (§2) to allow constructing more than one
+`PypeIt` object per process.
 
 ### 2026-07-17 — Phase 0 annotated with its completing commit
 
