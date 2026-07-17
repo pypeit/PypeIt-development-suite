@@ -121,18 +121,52 @@ log = logging.getLogger('pypeit')
 class _ManagedPath:
     """Internal record for one managed output directory."""
     parent: Path
+    """Parent directory."""
     name: str
+    """Directory name, relative to `parent`."""
     full: Path = None
+    """Full, absolute path (`parent`/`name`); resolved and cached on first
+    access."""
     ready: bool = False
+    """Whether the directory has been created on disk (or was already
+    found to exist) and is available to receive files."""
 
 
 class PypeItOutputPaths:
+    """
+    Single source of truth for PypeIt's output directory structure.
 
-    _PATH_KEYS = ('redux', 'science', 'qa', 'qa_pngs', 'calibrations',
-                  'coadd_science', 'coadd_qa', 'coadd_qa_pngs', 'collate')
+    See the module docstring for the configure-once / lazy-create-on-access
+    lifecycle. Parameters mirror the ``PypeItPar`` keys that define the same
+    concepts (:class:`~pypeit.par.pypeitpar.ReduxPar`,
+    :class:`~pypeit.par.pypeitpar.CalibrationsPar`).
+
+    Parameters
+    ----------
+    redux_path : :obj:`str`, :obj:`~pathlib.Path`, optional
+        Root reduction directory. Defaults to the current working
+        directory.
+    scidir : :obj:`str`, optional
+        Name of the science-output subdirectory.
+    qadir : :obj:`str`, optional
+        Name of the quality-assessment subdirectory.
+    calib_dir : :obj:`str`, optional
+        Name of the processed-calibrations subdirectory.
+    coadd_suffix : :obj:`str`, optional
+        Suffix appended to ``scidir``/``qadir`` for the 2D-coadd output
+        directories.
+    collate_outdir : :obj:`str`, :obj:`~pathlib.Path`, optional
+        Output directory for :ref:`pypeit_collate_1d`. Defaults to
+        ``redux_path`` if not given.
+    dryrun : :obj:`bool`, optional
+        If True, properties resolve ``full`` but never create directories
+        or set ``ready``, and :func:`configure` may be called more than
+        once. Intended for inspection/testing only; always ``False`` in
+        production code paths.
+    """
 
     def __init__(self, redux_path=None, scidir='Science', qadir='QA',
-                 calib_dir='Calibrations', *, coadd_suffix='_coadd',
+                 calib_dir='Calibrations', coadd_suffix='_coadd',
                  collate_outdir=None, dryrun=False):
         self._configured = False
         self._dryrun = dryrun
@@ -182,40 +216,102 @@ class PypeItOutputPaths:
 
     # ---- resolved-path properties ---------------------------------------
     @property
-    def redux(self) -> Path: return self._get('redux')
+    def redux(self) -> Path:
+        """Root reduction directory."""
+        return self._get('redux')
+
     @property
-    def science(self) -> Path: return self._get('science')
+    def science(self) -> Path:
+        """Science-output directory."""
+        return self._get('science')
+
     @property
-    def qa(self) -> Path: return self._get('qa')
+    def qa(self) -> Path:
+        """Quality-assessment directory."""
+        return self._get('qa')
+
     @property
-    def qa_pngs(self) -> Path: return self._get('qa_pngs')
+    def qa_pngs(self) -> Path:
+        """QA PNG-plot directory."""
+        return self._get('qa_pngs')
+
     @property
-    def calibrations(self) -> Path: return self._get('calibrations')
+    def calibrations(self) -> Path:
+        """Processed-calibrations directory."""
+        return self._get('calibrations')
+
     @property
-    def coadd_science(self) -> Path: return self._get('coadd_science')
+    def coadd_science(self) -> Path:
+        """2D-coadd science-output directory."""
+        return self._get('coadd_science')
+
     @property
-    def coadd_qa(self) -> Path: return self._get('coadd_qa')
+    def coadd_qa(self) -> Path:
+        """2D-coadd quality-assessment directory."""
+        return self._get('coadd_qa')
+
     @property
-    def coadd_qa_pngs(self) -> Path: return self._get('coadd_qa_pngs')
+    def coadd_qa_pngs(self) -> Path:
+        """2D-coadd QA PNG-plot directory."""
+        return self._get('coadd_qa_pngs')
+
     @property
-    def collate(self) -> Path: return self._get('collate')
+    def collate(self) -> Path:
+        """Output directory for :ref:`pypeit_collate_1d`."""
+        return self._get('collate')
 
     # ---- object-level state (read-only) ---------------------------------
     @property
-    def configured(self) -> bool: return self._configured
+    def configured(self) -> bool:
+        """Whether :func:`configure` has been called on this instance."""
+        return self._configured
+
     @property
-    def dryrun(self) -> bool: return self._dryrun
+    def dryrun(self) -> bool:
+        """Whether this instance is in dry-run (inspection-only) mode."""
+        return self._dryrun
 
     # ---- one-time (re)configuration --------------------------------------
-    def configure(self, par=None, *, redux_path=None, scidir=None, qadir=None,
+    def configure(self, par=None, redux_path=None, scidir=None, qadir=None,
                   calib_dir=None, coadd_suffix=None, collate_outdir=None,
                   dryrun=None, caller=None):
         """
-        Configure the instance from a PypeItPar and/or explicit overrides,
-        exactly as if it had just been constructed with these arguments --
-        every managed directory's ``full``/``ready`` state is discarded and
-        recomputed from scratch. May only be called once per instance
-        unless the instance is in dry-run mode.
+        Configure the instance from a :class:`~pypeit.par.pypeitpar.PypeItPar`
+        and/or explicit overrides, exactly as if it had just been
+        constructed with these arguments -- every managed directory's
+        ``full``/``ready`` state is discarded and recomputed from scratch.
+        May only be called once per instance unless the instance is in
+        dry-run mode.
+
+        Parameters
+        ----------
+        par : :class:`~pypeit.par.pypeitpar.PypeItPar`, optional
+            Full parameter set to draw ``redux_path``/``scidir``/
+            ``qadir``/``calib_dir``/``collate_outdir`` from. Explicit
+            keyword arguments take precedence over the values in ``par``.
+        redux_path : :obj:`str`, :obj:`~pathlib.Path`, optional
+            Explicit override for the reduction root.
+        scidir : :obj:`str`, optional
+            Explicit override for the science-output subdirectory name.
+        qadir : :obj:`str`, optional
+            Explicit override for the QA subdirectory name.
+        calib_dir : :obj:`str`, optional
+            Explicit override for the calibrations subdirectory name.
+        coadd_suffix : :obj:`str`, optional
+            Explicit override for the 2D-coadd directory suffix.
+        collate_outdir : :obj:`str`, :obj:`~pathlib.Path`, optional
+            Explicit override for the collate1d output directory.
+        dryrun : :obj:`bool`, optional
+            If not None, set the instance's dry-run mode.
+        caller : :obj:`str`, optional
+            Free-form string identifying the calling code, included in the
+            log message for easier debugging.
+
+        Raises
+        ------
+        PypeItPathError
+            If the instance has already been configured and is not in
+            dry-run mode.
         """
         if self._configured and not self._dryrun:
             raise PypeItPathError(
@@ -249,19 +345,24 @@ class PypeItOutputPaths:
         log.info(f'Output paths configured{ctx}{dry}: '
                  f'redux_path={self._paths["redux"].parent / self._paths["redux"].name}')
 
-    # ---- guard 3: HELD IN RESERVE — stub only, not wired to any caller --
+    # ---- held in reserve — stub only, not wired to any caller ------------
     def derive(self, **overrides):
         """
-        Return an independent PypeItOutputPaths seeded from current state
-        with the given overrides applied.
+        Return an independent :class:`PypeItOutputPaths` seeded from current
+        state with the given overrides applied.
 
-        Reserved for future work; not called anywhere in this implementation
-        pass. Its original motivation (letting coadd/collate compute derived
-        paths without touching the shared singleton) is largely superseded
-        by treating `coadd_science`/`coadd_qa`/`collate` as first-class
-        properties on this same object -- kept as a stub rather than
-        removed, pending a decision on whether it's still needed for some
-        other future use.
+        Reserved for future work; not called anywhere in the current
+        implementation. Its original motivation (letting coadd/collate
+        compute derived paths without touching the shared singleton) is
+        largely superseded by treating `coadd_science`/`coadd_qa`/`collate`
+        as first-class properties on this same object -- kept as a stub
+        rather than removed, pending a decision on whether it's still
+        needed for some other future use.
+
+        Raises
+        ------
+        NotImplementedError
+            Always -- this method is not yet implemented.
         """
         raise NotImplementedError(
             'PypeItOutputPaths.derive() is reserved for future work and is '
@@ -508,7 +609,7 @@ mentions a dev-suite setup should be read as "this is what the final,
 single dev-suite pass in §7 needs to cover on behalf of this phase," not
 as a phase-by-phase dev-suite run.
 
-### Phase 0 — Introduce the module (no behavior change elsewhere)
+### Phase 0 — Introduce the module (no behavior change elsewhere) — ✅ COMPLETE
 **Files:** new `pypeit/pkg/outputpaths.py`; `pypeit/__init__.py`.
 - Add the class exactly as in §2. Wire the singleton per §3.
 - Nothing else imports it yet.
@@ -516,6 +617,12 @@ as a phase-by-phase dev-suite run.
   `pytest pypeit/tests/test_outputpaths.py`. Confirm
   `python -c "import pypeit; print(pypeit.outputPaths)"` succeeds with no
   import-cycle error.
+
+**Completed at commit `90f3ae2376eb4ce5bee2af42a8cfc26f8578ec30`** ("Phase 0
+implementation", 2026-07-17), touching exactly the three files above (plus
+the docstring/signature polish from the same-day follow-up, folded into
+that commit's content). All 9 tests in `test_outputpaths.py` pass; the
+import-cycle check succeeds.
 
 ### Phase 1 — Adopt in `PypeIt`, `Calibrations`, and `exposure.py`
 **Files:** `pypeit.py`, `calibrations.py`, `pypeit_steps.py`, `exposure.py`.
@@ -946,9 +1053,37 @@ redefaulted by this work.
 
 ## 8. Change log
 
-This section tracks substantive edits to this implementation plan itself
-(not to `pypeit` source code — none has been written yet). Newest entries
-first.
+This section tracks substantive edits to this implementation plan itself,
+and, once Phase 0 landed, keeps §2 in sync with the actual
+`pypeit/pkg/outputpaths.py` source. Newest entries first.
+
+### 2026-07-17 — Phase 0 annotated with its completing commit
+
+Marked Phase 0 (§5) as ✅ COMPLETE and recorded the commit hash it landed
+in, `90f3ae2376eb4ce5bee2af42a8cfc26f8578ec30` ("Phase 0 implementation"),
+for traceability as later phases build on it.
+
+### 2026-07-17 — Phase 0 implemented; §2 synced to match the merged code
+
+Phase 0 (§5) was implemented: `pypeit/pkg/outputpaths.py`,
+`pypeit/__init__.py` wiring, and `pypeit/tests/test_outputpaths.py` (9
+tests, all passing; `import pypeit` confirmed cycle-free). Two small
+polish requests were then applied directly to the merged code and mirrored
+back into §2 so the reference design doesn't drift from what's actually in
+the repo:
+
+- All docstrings converted from Google (`Args:`/`Returns:`/`Raises:`) to
+  Numpy style (`Parameters\n----------`/`Raises\n------`), matching this
+  project's stated docstring preference and the convention already used
+  elsewhere (e.g. `alignframe.py`, `inputfiles.py`).
+- `_ManagedPath`'s four fields each gained a short attribute docstring.
+- `_PATH_KEYS` was removed — nothing in the class itself referenced it
+  (only the test suite did, to iterate all managed-path keys); the test
+  was updated to iterate `self._paths.values()`/`.keys()` directly instead
+  of relying on a separate, independently-maintained constant.
+- The `*` keyword-only marker was removed from both `__init__` and
+  `configure`'s argument lists, so all parameters are now
+  positional-or-keyword.
 
 ### 2026-07-17 — Class redesign: per-path lazy `parent`/`name`/`full`/`ready` records; object-level `configured`/`dryrun` replace the old freeze/idempotency guards
 
