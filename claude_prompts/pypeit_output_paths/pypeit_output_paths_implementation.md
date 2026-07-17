@@ -764,7 +764,7 @@ at both places as a specific carve-out, not a general pattern. All 51
 targeted tests and the full `pypeit/tests/` suite (413 tests, excluding the
 heavy network-dependent `test_run_pypeit`) pass.
 
-### Phase 2 — Wire call sites through `outputfiles.py` directly
+### Phase 2 — Wire call sites through `outputfiles.py` directly — ✅ COMPLETE
 **Files:** `outputfiles.py`; call sites identified in Phases 1, 4, 5 below.
 - No signature changes to `science_path(par)` or `spec_output_file(...)`
   (both have existing callers, and neither is being wrapped by a method on
@@ -777,7 +777,20 @@ heavy network-dependent `test_run_pypeit`) pass.
 - **Verify:** new unit test asserting `outputPaths.science ==
   outputfiles.science_path(par)` for a `configure()`-d par.
 
-### Phase 3 — Fix `qa.py`, `extraction.py`, `find_objects.py`, `core/findobj_skymask.py`
+**Completed at commit `9d0f21fd5de33482ebbbb6251eae907bdbd79756`** ("Phase 2
+complete", 2026-07-17). Scope was limited to the call sites already present
+in the files Phase 1 touched: `exposure.py`'s `save_exposure` (all three
+`spec_output_file` calls, plus replacing the `science_path(par)` +
+manual `.mkdir()` check with a direct `outputPaths.science` access) and
+`pypeit.py`'s `reduce_calibID`. `scripts/ql.py`'s two `spec_output_file`
+call sites were left untouched, as planned, since that file belongs to
+Phases 4/5. The regression assertion called for above already existed from
+Phase 0's `test_configure_from_par` (`outputPaths.science ==
+outputfiles.science_path(par)`); no new test was needed. Full
+`pypeit/tests/` suite (413 tests, excluding the heavy `test_run_pypeit`)
+passes.
+
+### Phase 3 — Fix `qa.py`, `extraction.py`, `find_objects.py`, `core/findobj_skymask.py` — ✅ COMPLETE
 **Files:** `qa.py`, `extraction.py`, `find_objects.py`,
 `core/findobj_skymask.py`.
 - `qa.set_qa_filename` (27-139): per §4.1, **delete** the five dead
@@ -787,6 +800,12 @@ heavy network-dependent `test_run_pypeit`) pass.
   Delete the `# TODO` (lines 25-26). Signature/argument contract
   (`out_dir`) is unchanged — this remains a pure naming helper callable
   from any layer, no `outputPaths` import needed here.
+
+  **Superseded by a same-day follow-up request** (see the completion note
+  below): `out_dir` was removed from the signature entirely, and the
+  function now returns only a bare file name. Callers join it with
+  `outputPaths.qa_pngs` (or their own already-available QA directory)
+  themselves.
 - `qa.gen_exp_html` (494-520): add a required `qa_path` argument; replace
   the hardcoded `Path("QA")` (~line 500) and `f"QA/{uni_name}.html"`
   (~line 506) with paths built under the passed `qa_path`. Update its sole
@@ -795,6 +814,10 @@ heavy network-dependent `test_run_pypeit`) pass.
   'QA')` with `os.path.join(self.par['rdx']['redux_path'],
   self.par['rdx']['qadir'])` — matching the pattern already correct in
   `find_objects.py:702`.
+
+  **Superseded by a same-day follow-up request**: replaced entirely with
+  `outputPaths.qa` (imported directly), rather than reading
+  `self.par['rdx']` at all.
 - `find_objects.py`: **no change** — per §4, the dead `if False:` block
   containing the hardcoded `'QA'` (~lines 1250-1254) is left in place as
   unreachable code. The only action here is a manual check (not a code
@@ -812,6 +835,52 @@ heavy network-dependent `test_run_pypeit`) pass.
   returned path contains exactly one `PNGs` component; dev-suite run of a
   QA-plot-generating setup (flexure + object-finding QA) confirming no
   crash from the removed `core/` mkdir and correct `QA/PNGs/` placement.
+
+**Completed at commit `64231f23428177332f2ded3e4ccfcce5d7d590f1`** ("Phase 3
+complete", 2026-07-17). This single commit includes both the phase as
+originally planned above *and* two same-day follow-up requests that
+changed the shape of the `qa.py` work substantially:
+
+- **`extraction.py`**: rather than just substituting `qadir` for the
+  hardcoded `'QA'` literal, the `self.par['rdx']['redux_path']`/`qadir`
+  computation was replaced outright with `outputPaths.qa` (imported
+  directly), consistent with §0.1 guideline 2.
+- **`qa.set_qa_filename` no longer takes `out_dir` or returns a full path**
+  — it now returns only a bare file name, with every `case` branch
+  converted to an f-string and a direct `return` (no more
+  `outfile = ...` + a single `return str(pathlib.Path(out_dir) / outfile)`
+  at the end). This is a bigger contract change than originally planned
+  (which assumed `out_dir` stayed as-is), and it rippled through every
+  caller:
+  - `qa.py`'s own internal helpers (`html_mf_pngs`, `html_exp_pngs`,
+    `arc_tilts_2d_qa`, `arc_tilts_spec_qa`, `arc_tilts_spat_qa`,
+    `spec_flexure_qa`'s two call sites) keep their own pre-existing
+    `out_dir` parameter (still the top-level QA path, unchanged contract
+    for *their* callers, e.g. `wavetilts.py` was untouched) and now do
+    the `'PNGs'` join locally via pathlib instead of relying on
+    `set_qa_filename` to do it.
+  - External callers — `find_objects.py`, `flatfield.py` (both call
+    sites), `wavecalib.py` (all five call sites) — now import
+    `outputPaths` directly and build
+    `outputPaths.qa_pngs / qa.set_qa_filename(...)`, dropping their
+    `out_dir=self.qa_path` arguments.
+  - **One more live call site was found during this follow-up that the
+    original Phase 3 research had missed** (grep scope had excluded
+    `pypeit/images/`): `pypeit/images/rawimage.py:800`, the actual live
+    caller of `spat_flexure_qa_corr`. It derived its `out_dir` via
+    `Path(slits.calib_dir).parent` — which resolves to the *redux root*,
+    not the QA directory — a likely pre-existing latent bug, since that
+    QA PNG was probably never actually landing under `QA/PNGs/` at all.
+    Replaced with `outputPaths.qa_pngs` directly, and removed the
+    now-unused `from pathlib import Path` import from that file.
+  - `tests/test_qa.py` rewritten to match: `test_set_qa_filename_no_double_qa`
+    replaced by `test_set_qa_filename_bare_name_only` (asserts every
+    surviving method returns a single-component name with no `QA`/`PNGs`
+    embedded), and `test_set_qa_filename_dead_methods_removed`'s calls
+    drop the now-nonexistent `out_dir` keyword.
+
+Full `pypeit/tests/` suite (415 tests, excluding the heavy
+`test_run_pypeit`) passes.
 
 ### Phase 4 — Fix `coadd2d.py` and its callers
 **Files:** `coadd2d.py`, `scripts/coadd_2dspec.py`, `scripts/ql.py`.
@@ -1107,6 +1176,38 @@ redefaulted by this work.
 This section tracks substantive edits to this implementation plan itself,
 and, once Phase 0 landed, keeps §2 in sync with the actual
 `pypeit/pkg/outputpaths.py` source. Newest entries first.
+
+### 2026-07-17 — Phase 3 complete (plus two same-day follow-up requests)
+
+Phase 3 (§5) is implemented and committed (`64231f23428177332f2ded3e4ccfcce5d7d590f1`,
+"Phase 3 complete"). See the completion note at the end of the Phase 3
+section in §5 for full detail. Two follow-up requests, made and
+implemented in the same commit, changed the shape of this phase
+substantially beyond what was originally planned:
+
+- **`extraction.py`**: rather than the originally planned
+  `qadir`-substitution fix, its `out_dir` computation was replaced outright
+  with a direct `outputPaths.qa` import/read.
+- **`qa.set_qa_filename`**: reworked to drop `out_dir` entirely and return
+  only a bare file name (every `case` branch converted to an f-string with
+  a direct `return`), with callers now responsible for joining
+  `outputPaths.qa_pngs` (or their own QA directory) themselves. This
+  rippled through every direct caller across `qa.py`, `find_objects.py`,
+  `flatfield.py`, and `wavecalib.py`, and surfaced one live call site the
+  original Phase 3 research had missed (`pypeit/images/rawimage.py:800`),
+  which also turned out to carry a likely pre-existing latent bug (QA PNG
+  path derived from the wrong parent directory), now fixed.
+
+Full `pypeit/tests/` suite (415 tests, excluding the heavy
+`test_run_pypeit`) passes.
+
+### 2026-07-17 — Phase 2 complete
+
+Phase 2 (§5) is implemented and committed (`9d0f21fd5de33482ebbbb6251eae907bdbd79756`,
+"Phase 2 complete"). See the completion note at the end of the Phase 2
+section in §5 — scope was limited to the `exposure.py`/`pypeit.py` call
+sites already touched by Phase 1; `scripts/ql.py` was correctly left for
+Phases 4/5.
 
 ### 2026-07-17 — Phase 1 complete
 
