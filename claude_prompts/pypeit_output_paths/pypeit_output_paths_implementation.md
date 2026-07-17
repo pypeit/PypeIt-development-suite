@@ -442,6 +442,10 @@ Notes:
 - (Formerly) guard 4 (filesystem sentinel file) remains intentionally
   absent — not stubbed, not mentioned as a TODO — per the explicit decision
   to skip it.
+- **Note:** the merged `pypeit/pkg/outputpaths.py` has since received a
+  formatting-only style pass (multi-line signature/dict/conditional
+  wrapping) made directly by the project lead. No behavioral change; the
+  code block above is left as-is for now rather than re-synced.
 
 ## 3. `pypeit/__init__.py` wiring
 
@@ -616,6 +620,30 @@ returns the correct `'PNGs/...'` form and is unaffected by this change.)
 
 Phase 3 (§5) should be read as: normalize `spat_flexure_qa_corr`, delete
 the five dead branches, leave the already-correct branches untouched.
+
+**Correction (found during Phase 4 verification, see §5):** this table is
+wrong for three of the five methods it lists as dead. The `grep -rn`
+sweep above only searched for each `method` string appearing as a literal
+argument to `set_qa_filename(...)`. It missed `qa.html_mf_pngs`
+(`qa.py:232-...`), which drives its `set_qa_filename(idval,
+html_dict[key]['fname'], slit=9999)` call from a `method`-string *variable*
+sourced from a `fname=` dictionary value one level up -- a pattern no
+literal-string grep can find. That dictionary's `'sprof'`, `'arc_pca'`, and
+`'blaze'` entries set `fname='slit_profile_qa'`, `fname='pca_arctilt'`, and
+`fname='plot_orderfits_Blaze'` respectively, making all three live call
+sites (exercised by `PypeIt.build_qa()` for any real reduction). Deleting
+them in Phase 3 silently broke calibration-QA HTML generation; this went
+undetected because Phase 3's own verification (per §5's project-direction
+note) was unit-tests-only, and the heavy, dev-suite-backed
+`test_run_pypeit` -- the one test that actually exercises `build_qa()` --
+is excluded from every per-phase verification run and wasn't run again
+until Phase 4. Only `'plot_orderfits_Arc'` and `'pca_plot'` are absent from
+every `fname=` dictionary in both `html_mf_pngs` and its sibling
+`html_exp_pngs` (`qa.py:325-...`), confirming those two, and only those
+two, are genuinely dead. All three wrongly-removed methods were restored
+(in the bare-filename, no-`out_dir` form established by Phase 3's
+same-day follow-up) as part of Phase 4's commit -- see §5 for the full
+account.
 
 ## 5. Phased implementation plan
 
@@ -882,7 +910,18 @@ changed the shape of the `qa.py` work substantially:
 Full `pypeit/tests/` suite (415 tests, excluding the heavy
 `test_run_pypeit`) passes.
 
-### Phase 4 — Fix `coadd2d.py` and its callers
+**Correction found during Phase 4 verification**: three of the five
+`case` branches deleted above as "dead" (§4.1) were actually still
+reachable, indirectly, through `qa.html_mf_pngs`'s `fname=` dictionary
+values -- a call pattern the original dead-code grep sweep couldn't see.
+See §4.1's correction note and Phase 4's completion paragraph below for
+the full account; the fix (restoring `slit_profile_qa`, `pca_arctilt`,
+and `plot_orderfits_Blaze`) landed in Phase 4's commit, not a new Phase 3
+commit, since it was only discovered once Phase 4's verification finally
+exercised the heavy `test_run_pypeit` test that Phase 3's own
+verification had (correctly, per §5's project-direction note) skipped.
+
+### Phase 4 — Fix `coadd2d.py` and its callers — ✅ COMPLETE
 **Files:** `coadd2d.py`, `scripts/coadd_2dspec.py`, `scripts/ql.py`.
 
 **On guideline 3 (§0.1) for this phase**: unlike `run_pypeit.py` (Phase 1),
@@ -933,6 +972,70 @@ never calls `configure()` — it only reads already-resolved properties.
   and a quicklook (`ql`) setup confirming `Science_coadd/` and
   `QA_coadd/PNGs/` are created and spec1d/spec2d names match the shared
   helper in both scripts.
+
+**Completed at commit `5f1fde41fb074c5fc126f1a1ea4c04427200b546`** ("Phase 4
+complete", 2026-07-17). The plan's design held up largely as written, with
+one conflict surfaced and resolved during implementation, plus two
+regressions caught along the way:
+
+- **A configure-conflict analogous to Phase 1's, found before writing any
+  code and confirmed with the project lead**: `scripts/ql.py`'s
+  `QL.main()` (with `--coadd2d`) calls `CoAdd2DSpec.main()` **in-process**,
+  as a plain function call, *after* it has already constructed a science
+  `pypeit.PypeIt(...)` object -- which itself already called
+  `outputPaths.configure(..., force=True)` via `PypeIt.__init__`. Per plan,
+  `CoAdd2DSpec.main()` calling its own `configure()` unconditionally would
+  raise `PypeItPathError` in exactly this scenario. Rather than extending
+  the `force=True` carve-out (kept narrowly scoped to `PypeIt.__init__`,
+  per its docstring), `CoAdd2DSpec.main()`'s `configure()` call is guarded:
+  `if not outputPaths.configured: outputPaths.configure(...)`. Standalone
+  runs configure normally; in-process calls from `ql.py` skip redundant
+  reconfiguration and reuse the state the science `PypeIt` object already
+  established (the coadd's redux_path/scidir/qadir are the same ones, so
+  this is correct, not just expedient). `scripts/ql.py` itself needed no
+  analogous explicit `configure()` call of its own: by the time it reaches
+  its `output_paths(spec2d_files, par)` call (~line 1022), `outputPaths`
+  is already configured by the preceding science `PypeIt` construction, so
+  adding one would only ever be an inert no-op given ql.py's actual code
+  paths -- a deliberate, smaller deviation from the plan's bullet for this
+  file.
+- `outputfiles.coadd_output_file(sci_path, basename, twod=False,
+  ext='.fits')` added as the shared coadd-naming helper (as planned), used
+  by both `coadd_2dspec.py` (`spec1d_*.fits`/`.txt`, `spec2d_*.fits`) and
+  `ql.py` (`spec2d_*.fits`).
+- New `pypeit/tests/test_coadd2d.py` covers the plan's two called-for unit
+  tests (no `par` mutation; `output_paths` never calls `configure()`) plus
+  a third asserting `output_paths`'s return values match
+  `outputPaths.coadd_science`/`coadd_qa_pngs` directly.
+- **Regression #1** (unrelated to this phase's own design, but only
+  surfaced once `test_run_pypeit` -- excluded from every prior phase's
+  verification -- was finally run again as part of verifying this phase):
+  Phase 3's follow-up made `set_qa_filename`'s callers build `Path`
+  objects instead of strings, but `flatfield.py`'s
+  `spatillum_finecorr_qa`/`detector_structure_qa` still did
+  `"Saved QA:\n" + outfile` (string concatenation), which raises
+  `TypeError` against a `Path`. Fixed both to f-strings.
+- **Regression #2, more substantial** (see §4.1's correction note and the
+  note appended to Phase 3, above, for the full account): three of the
+  five `set_qa_filename` methods Phase 3 deleted as dead code --
+  `slit_profile_qa`, `pca_arctilt`, `plot_orderfits_Blaze` -- were actually
+  live, reachable indirectly via `qa.html_mf_pngs`'s `fname=` dictionary
+  values, a call pattern the original literal-string grep sweep couldn't
+  see. Deleting them broke calibration-QA HTML generation for any real
+  reduction; caught only once `test_run_pypeit` (which exercises
+  `PypeIt.build_qa()`) was run. All three restored, in the bare-filename
+  form Phase 3's follow-up established; `tests/test_qa.py` updated to move
+  them from the "dead methods removed" test to the "bare name only" test,
+  leaving only the genuinely-dead `plot_orderfits_Arc`/`pca_plot` in the
+  former.
+- The same commit also carries a formatting-only pass over
+  `pkg/outputpaths.py` (line-wrapping style, no behavioral change),
+  made directly by the project lead in parallel with this phase's work.
+
+Full `pypeit/tests/` suite (418 tests, excluding the heavy
+`test_run_pypeit`) passes, and `test_run_pypeit` itself -- run explicitly
+for this phase, since it's the only test exercising both `build_qa()` and
+a full coadd2d pass -- now also passes.
 
 ### Phase 5 — Remaining scripts and `collate`
 **Files:** `scripts/trace_edges.py`, `collate.py`, `scripts/collate_1d.py`,
@@ -1176,6 +1279,37 @@ redefaulted by this work.
 This section tracks substantive edits to this implementation plan itself,
 and, once Phase 0 landed, keeps §2 in sync with the actual
 `pypeit/pkg/outputpaths.py` source. Newest entries first.
+
+### 2026-07-17 — Phase 4 complete (plus a Phase 3 regression fix)
+
+Phase 4 (§5) is implemented and committed (`5f1fde41fb074c5fc126f1a1ea4c04427200b546`,
+"Phase 4 complete"). See the completion note at the end of the Phase 4
+section in §5 for full detail. Highlights:
+
+- A configure-conflict analogous to Phase 1's (`ql.py` invoking
+  `CoAdd2DSpec.main()` in-process after `outputPaths` is already
+  configured) was flagged and confirmed with the project lead before
+  writing code; resolved by guarding `CoAdd2DSpec.main()`'s `configure()`
+  call with `if not outputPaths.configured`, rather than extending the
+  `force=True` carve-out.
+- New shared `outputfiles.coadd_output_file()` naming helper, used by both
+  `coadd_2dspec.py` and `ql.py`.
+- **A real regression in Phase 3's work was found and fixed**: three of
+  the five `set_qa_filename` methods removed in Phase 3 as "dead code"
+  (`slit_profile_qa`, `pca_arctilt`, `plot_orderfits_Blaze`) were actually
+  reachable indirectly via `qa.html_mf_pngs`'s `fname=` dictionary values —
+  a pattern the original literal-string grep sweep couldn't detect. This
+  broke calibration-QA HTML generation and went unnoticed because it only
+  surfaces in the heavy, dev-suite-backed `test_run_pypeit` test, which is
+  excluded from per-phase verification and wasn't re-run until this phase.
+  All three restored; §4.1 above carries the full correction, and a
+  forward-reference note was added to Phase 3's own completion paragraph
+  in §5. Also fixed in the same commit: a `Path`-vs-`str` concatenation
+  bug in `flatfield.py` introduced by the same Phase 3 follow-up.
+
+Full `pypeit/tests/` suite (418 tests, excluding the heavy
+`test_run_pypeit`) passes, and `test_run_pypeit` itself was also run and
+passes.
 
 ### 2026-07-17 — Phase 3 complete (plus two same-day follow-up requests)
 
