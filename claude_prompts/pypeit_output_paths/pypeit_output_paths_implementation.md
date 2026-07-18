@@ -1147,7 +1147,7 @@ via the heavy `test_run_pypeit` test rather than a fresh dev-suite run
 Full `pypeit/tests/` suite (419 tests, excluding the heavy
 `test_run_pypeit`) passes, and `test_run_pypeit` itself passes.
 
-### Phase 6 — Cleanup, pathlib migration, full regression
+### Phase 6 — Cleanup, pathlib migration, full regression — ✅ COMPLETE
 **Files:** files touched in Phases 1-5, plus `metadata.py`, `collate.py`
 (remaining `os.path` calls beyond those already touched), `pypeit_steps.py`
 stragglers, `qa.py`, `edgetrace.py`, and (per the repo-wide str/Path sweep
@@ -1233,6 +1233,92 @@ conversion, regardless of whether an earlier phase touched it.
 
 - **Verify:** full `pytest pypeit/tests/` (dev-suite regression deferred
   to the single final pass, §7).
+
+**Completed at commit `1a52ec4d07c438ab37341ba4427e66610357ce0d`** ("Phase 6
+complete", 2026-07-17). Both addenda were implemented largely as scoped in
+§5 above, with one design fork resolved before writing code (confirmed with
+the project lead) and one real, previously-undiscovered bug found and
+fixed along the way:
+
+- **The `'PNGs'` removal split into two groups**, not a single uniform
+  fix, once it became clear `scripts/qa_html.py` calls three of the
+  affected functions *standalone*, with an arbitrary `--qapath` unrelated
+  to `outputPaths`'s configured state:
+  - `arc_tilts_2d_qa`, `arc_tilts_spec_qa`, `arc_tilts_spat_qa`,
+    `spec_flexure_qa` (`qa.py`) and `EdgeTraceSet` (`edgetrace.py`): all
+    reachable only mid-reduction, always with `outputPaths.qa` already
+    configured -- these dropped their `out_dir`/`qa_path` parameter
+    entirely and read `outputPaths.qa_pngs` directly, as originally
+    planned. For `EdgeTraceSet` specifically, this meant removing the
+    `qa_path` constructor parameter and the `QAPATH` FITS header keyword
+    entirely (confirmed nothing else reads either) rather than
+    deprecating them.
+  - `html_mf_pngs`, `html_exp_pngs`, and `gen_exp_html` (`qa.py`) --
+    **plus a 9th hardcoded-`'PNGs'` site found during implementation**,
+    `gen_exp_html`'s own `(pathlib.Path(qa_path) / "PNGs").glob(...)`,
+    separate from `html_exp_pngs`'s -- keep their `qa_path` parameter
+    (needed for `qa_html.py`'s standalone, arbitrary-directory use), but
+    now read a new `PNGS_DIRNAME` module-level constant
+    (`pkg/outputpaths.py`) instead of a bare `'PNGs'` literal, so the name
+    still has one source of truth without requiring `outputPaths` to be
+    configured. `PypeItOutputPaths._apply()` itself was updated to use
+    the same constant for `qa_pngs`/`coadd_qa_pngs`.
+  - Fixed a real, pre-existing bug found while auditing `edgetrace.py`'s
+    two hardcode sites: `ofile = self.qa_path / 'PNGs', f'...'` (a comma
+    instead of `/`) silently built a 2-tuple instead of a path.
+  - Knock-on cleanup: `qa.gen_qa_dir` (zero callers) and
+    `BuildWaveTilts`'s `qa_path` parameter (vestigial once its three
+    `qa.py` call sites stopped taking it) were both removed as now-fully-dead.
+- **str/Path sweep**, scoped repo-wide as decided: fixed the ~14
+  originally-identified sites, plus a `calibframe.py`/`calibrations.py`
+  `Path→str→Path` round-trip in `parse_key_dir` (its callers already held
+  a `Path`; the function accepts one directly), `pypeit_steps.py`'s
+  `load_skyregions` signature, and stale `str`-only type hints in `qa.py`
+  and `outputfiles.py`. Left alone every conversion confirmed forced by a
+  real boundary: `ParSet` fields with `dtype=str` (`collate.py`'s
+  `coaddfile`, `PypeIt.__init__`'s `redux_path`), `.replace()`-based
+  string substitution (`find_objects.py`'s QA filename,
+  `SkyRegions.construct_file_name`'s compound-extension rewrite), FITS
+  header serialization (`calibframe.py`/`spec2dobj.py`'s `CALIBDIR`),
+  RPC marshalling (`display.py`'s Ginga interface), and `Path.glob()`'s
+  own string-pattern argument.
+  - **A previously-undiscovered, real bug, found via this sweep**:
+    `argparse.parse_args()` indexes into each argument string before
+    positional-argument handling, so it raises `TypeError` on a bare
+    `Path` object -- confirmed empirically. This is why
+    `scripts/ql.py`'s non-coadd2d branch
+    (`spec2d_file = outputfiles.spec_output_file(...)`, a `Path`, passed
+    directly into `Show2DSpec.parse_args()`) was already broken before
+    this phase, silently, with no test coverage (`test_ql.py` only covers
+    a `test_merge()` helper, and `test_run_pypeit` never exercises
+    `QL.main()`). Fixed both of `ql.py`'s branches at their shared
+    `str(spec2d_file)` consumption point, rather than only at the one
+    site this phase's own edits touched -- confirmed no dev-suite access
+    was available in this environment to verify end-to-end, so this
+    remains code-review-verified only for the `--coadd2d` path.
+  - Deliberately left `edgetrace.py`'s `trc_path`/`_maskfile` string
+    arguments (passed to `Spectrograph.get_maskdef_slitedges`/
+    `maskdef_spec_minmax`, overridden per-instrument across many
+    spectrograph subclasses not individually audited) and
+    `inputfiles.py`'s `.filenames`-list construction (a broadly-consumed
+    public attribute) untouched -- the risk of an unverified ripple
+    through many call sites outweighed the benefit for a cleanup phase.
+- **`os.path`→`pathlib`**: converted `metadata.py`'s `frame_paths()` and
+  `write_pypeit()` (explicitly in scope per this phase's file list),
+  preserving their existing `str`-list return contracts rather than
+  switching to `Path` -- both have upwards of a dozen call sites apiece
+  that weren't individually audited for `Path` compatibility. Left
+  `collate.py`'s `copy_spec1d_to_outdir` and the dead `if False:` block in
+  `find_objects.py` untouched, per Phase 3/5's existing explicit
+  decisions to leave both alone.
+
+Full `pypeit/tests/` suite (418 tests, excluding the heavy
+`test_run_pypeit`) passes, and `test_run_pypeit` itself -- run explicitly,
+since it's the only test exercising `EdgeTraceSet`, `WaveTilts`,
+`build_qa()`, `SensFunc`, and `FluxCalib` together -- also passes.
+`scripts/trace_edges.py` and `QL.main()`'s `--coadd2d` path still have no
+unit-test coverage (pre-existing; both are dev-suite-only), so both
+remain verified by code review alone.
 
 ### Phase 7 — Update `doc/` to reflect the new output-paths system
 **Files:** `doc/outputs.rst` (primary); `doc/qa.rst`, `doc/collate1d.rst`,
@@ -1439,6 +1525,37 @@ choices:
   sweep beyond already-touched files.
 
 See §5's Phase 6 section for the full, itemized scope.
+
+### 2026-07-17 — Phase 6 complete
+
+Phase 6 (§5) is implemented and committed (`1a52ec4d07c438ab37341ba4427e66610357ce0d`,
+"Phase 6 complete"), covering both addenda approved earlier plus the
+originally-scoped cleanup. See the completion note at the end of the Phase
+6 section in §5 for full detail. Highlights:
+
+- The `'PNGs'`-hardcode removal split into two groups once it became clear
+  `scripts/qa_html.py` calls three of the affected `qa.py` functions
+  standalone with an arbitrary `--qapath`: those three (plus a 9th
+  hardcode site found in `gen_exp_html` itself) keep their `qa_path`
+  parameter but now use a shared `PNGS_DIRNAME` constant; the other four
+  (`qa.py`'s three `arc_tilts_*`/`spec_flexure_qa`, plus `EdgeTraceSet`)
+  drop the parameter entirely and read `outputPaths.qa_pngs` directly.
+  `EdgeTraceSet`'s `qa_path` constructor parameter and `QAPATH` FITS
+  header keyword were removed outright (confirmed unused elsewhere).
+- Fixed a real pre-existing bug in `edgetrace.py` (a comma instead of `/`
+  building a 2-tuple instead of a path) found while auditing the
+  hardcode sites.
+- The str/Path sweep (repo-wide, as decided) surfaced a genuine,
+  previously-undiscovered bug: `argparse.parse_args()` crashes on a bare
+  `Path` object, which meant `scripts/ql.py`'s non-coadd2d display path
+  was already silently broken, with no test coverage. Fixed at the shared
+  consumption point for both of `ql.py`'s branches.
+- `metadata.py`'s `frame_paths()`/`write_pypeit()` converted to `pathlib`
+  internally while preserving their `str`-list return contracts, given
+  many unaudited call sites.
+
+Full `pypeit/tests/` suite (418 tests, excluding the heavy
+`test_run_pypeit`) passes, and `test_run_pypeit` itself passes.
 
 ### 2026-07-17 — Phase 5 complete
 
