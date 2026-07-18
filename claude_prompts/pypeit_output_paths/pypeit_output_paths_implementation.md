@@ -1037,7 +1037,7 @@ Full `pypeit/tests/` suite (418 tests, excluding the heavy
 for this phase, since it's the only test exercising both `build_qa()` and
 a full coadd2d pass -- now also passes.
 
-### Phase 5 — Remaining scripts and `collate`
+### Phase 5 — Remaining scripts and `collate` — ✅ COMPLETE
 **Files:** `scripts/trace_edges.py`, `collate.py`, `scripts/collate_1d.py`,
 `scripts/sensfunc.py`, `scripts/flux_calib.py`, `scripts/coadd_1dspec.py`,
 `scripts/flux_setup.py`.
@@ -1088,6 +1088,64 @@ established in Phases 1 and 4.
   `flux_calib`, `coadd_1dspec`, `flux_setup`, `trace_edges` post-processing
   setups; unit test confirming `collate.py`'s functions no longer read
   `par['collate1d']['outdir']` directly (only `outputPaths.collate`).
+
+**Completed at commit `23d174e04d2682ed1b85307e9aaf3490644fd81d`** ("Phase 5
+complete", 2026-07-17). The plan's design held up largely as written, with
+one deliberate scope-narrowing (confirmed with the project lead before
+implementing) and one conflict of the same shape as Phase 4's, discovered
+via the heavy `test_run_pypeit` test rather than a fresh dev-suite run
+(dev-suite access wasn't available in this pass; see below):
+
+- **`coadd_1dspec.py`'s `build_coadd_file_name()` deliberately left alone**:
+  its default output-filename builder co-locates the output beside the
+  first input spec1d file (documented in its own docstring) rather than
+  being cwd-relative like every other default in this phase — unlike the
+  `sens_*`/`.flux`/`.coadd1d`/`.tell` cases, this was never an implicit-cwd
+  inconsistency to fix. Flagged before implementing; confirmed to leave it
+  untouched rather than redirect it to `outputPaths.redux`, which would
+  have changed real, deliberate behavior rather than just fixed a
+  guideline-2 violation. `coadd_1dspec.py` still gained its own
+  `outputPaths.configure(par, ...)` call and an `outputPaths.redux`-based
+  `--par_outfile` default, since that default *is* genuinely cwd-relative
+  today.
+- `create_report_archive()` and `write_warnings()` lost their now-unused
+  `par` parameter entirely once their only use of it (reading
+  `par['collate1d']['outdir']`) was replaced by `outputPaths.collate`.
+- `find_spec2d_from_spec1d`'s spec1d→spec2d translation now derives the
+  basename (stripping the `spec1d_` prefix and extension) and calls the
+  same `outputfiles.coadd_output_file()` helper from Phase 4, rather than
+  a bare string-replace.
+- **A broader instance of Phase 4's configure-conflict, found via
+  `test_run_pypeit`**: that test chains `RunPypeIt.main()` (twice) →
+  `SensFunc.main()` → `FluxCalib.main()` in one process. Every one of this
+  phase's six new `outputPaths.configure(...)` call sites (`trace_edges.py`,
+  `collate_1d.py`, `sensfunc.py`, `flux_calib.py`, `coadd_1dspec.py`,
+  `flux_setup.py`) raised `PypeItPathError` the first time this was run,
+  since `outputPaths` was already configured by the preceding `PypeIt`
+  construction(s). Applied the same `if not outputPaths.configured:` guard
+  established in Phase 4 to all six, rather than re-opening the `force=`
+  carve-out question — this is the general form of that fix, not a new
+  design decision. (A stray `rm -rf` of the dev-suite scratch output
+  directory, run to clean up test artifacts while a second copy of
+  `test_run_pypeit` was still mid-run against it, produced one unrelated,
+  transient `FileNotFoundError` failure along the way; a clean re-run
+  confirmed it was not a real regression.)
+- New `test_collate_paths_use_outputpaths_not_par` (in
+  `tests/test_collate_1d.py`) covers the plan's called-for unit test:
+  configures a dedicated `outputPaths` instance whose `collate` directory
+  differs from what a stray `par` would otherwise point to, and confirms
+  `create_report_archive()`/`write_warnings()` use it, not `par`.
+- **Dev-suite regression was not run for this phase** (no `PYPEIT_DEV`
+  data access in this environment); `trace_edges.py` in particular has no
+  unit-test coverage at all (pre-existing — it's dev-suite-only), so it's
+  verified by code review only. `test_flux_calib`
+  (`tests/test_fluxspec.py`) also surfaced as failing when run in
+  isolation or in small subsets, but this was confirmed via `git stash` to
+  be a pre-existing, unrelated test-isolation/import-order fragility (not
+  a regression from this phase) — it passes in the full-suite context.
+
+Full `pypeit/tests/` suite (419 tests, excluding the heavy
+`test_run_pypeit`) passes, and `test_run_pypeit` itself passes.
 
 ### Phase 6 — Cleanup, pathlib migration, full regression
 **Files:** files touched in Phases 1-5, plus `metadata.py`, `collate.py`
@@ -1279,6 +1337,34 @@ redefaulted by this work.
 This section tracks substantive edits to this implementation plan itself,
 and, once Phase 0 landed, keeps §2 in sync with the actual
 `pypeit/pkg/outputpaths.py` source. Newest entries first.
+
+### 2026-07-17 — Phase 5 complete
+
+Phase 5 (§5) is implemented and committed (`23d174e04d2682ed1b85307e9aaf3490644fd81d`,
+"Phase 5 complete"). See the completion note at the end of the Phase 5
+section in §5 for full detail. Highlights:
+
+- `coadd_1dspec.py`'s `build_coadd_file_name()` deliberately left
+  untouched (confirmed with the project lead) — its default output
+  location (beside the first input spec1d file) is real, documented
+  behavior, not a cwd-relative inconsistency like this phase's other
+  default-file cases.
+- `collate.py`'s `create_report_archive()`/`write_warnings()` lost their
+  now-unused `par` parameter; `find_spec2d_from_spec1d` now uses the
+  shared `outputfiles.coadd_output_file()` helper from Phase 4 instead of
+  a bare string-replace.
+- **The same configure-conflict pattern as Phase 4's, in a broader
+  form**: `test_run_pypeit` chains `RunPypeIt.main()` →
+  `SensFunc.main()` → `FluxCalib.main()` in one process, so all six of
+  this phase's new `configure()` call sites needed the
+  `if not outputPaths.configured:` guard established in Phase 4 — applying
+  an already-agreed fix pattern, not a new design decision.
+- Dev-suite regression was not run (no data access in this environment);
+  `trace_edges.py` has no unit-test coverage at all and is verified by
+  code review only.
+
+Full `pypeit/tests/` suite (419 tests, excluding the heavy
+`test_run_pypeit`) passes, and `test_run_pypeit` itself passes.
 
 ### 2026-07-17 — Phase 4 complete (plus a Phase 3 regression fix)
 
