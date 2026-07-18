@@ -1320,7 +1320,7 @@ since it's the only test exercising `EdgeTraceSet`, `WaveTilts`,
 unit-test coverage (pre-existing; both are dev-suite-only), so both
 remain verified by code review alone.
 
-### Phase 7 — Update `doc/` to reflect the new output-paths system
+### Phase 7 — Update `doc/` to reflect the new output-paths system — ✅ COMPLETE
 **Files:** `doc/outputs.rst` (primary); `doc/qa.rst`, `doc/collate1d.rst`,
 `doc/coadd2d.rst`, `doc/quicklook.rst` (consistency review); optionally
 `pypeit/par/pypeitpar.py` docstrings + the auto-generated
@@ -1373,6 +1373,52 @@ remain verified by code review alone.
   on-disk output of a representative run from the final dev-suite pass
   (§7), to confirm the documentation matches real behavior, not just the
   code.
+
+**Source edits completed at commit `7fbd1cd88b1688ad4c9f743d9f8c54824b7a3434`**
+("Phase 7a (missing doc update) complete", 2026-07-17):
+
+- `doc/outputs.rst`'s "Directory Structure" section: the `.. warning::`
+  block was replaced with an accurate description of the resolution model
+  (`scidir`/`qadir` in `reduxpar`, `calib_dir` in `calibrationspar`,
+  `redux_path` in `reduxpar`, all resolved once via `PypeItOutputPaths`).
+  The `.. TODO: INCLUDE COADD DIRECTORY STRUCTURE` comment was resolved
+  with a new "Coadd Directory Structure" subsection describing
+  `Science_coadd`/`QA_coadd`, referencing Phase 4's fix. Added a
+  cross-reference to `doc/collate1d.rst` for `pypeit_collate_1d`'s
+  separately-scoped `outdir`.
+- `doc/qa.rst`, `doc/collate1d.rst`, `doc/coadd2d.rst`, `doc/quicklook.rst`
+  were reviewed and found to need no changes -- `coadd2d.rst` already
+  correctly documented `*_coadd` directories from Phase 4's earlier fix,
+  and none of the others described the old hardcoded/duplicated behavior
+  as something to work around.
+- `pypeit/par/pypeitpar.py`: removed `CalibrationsPar.calib_dir`'s
+  "Beware that success when changing the default value is not well
+  tested!" caveat, now that it's tested.
+- **`doc/pypeit_par.rst` deviation from the plan**: running the standard
+  regeneration pipeline (`doc/scripts/build_par_rst.py`) to pick up the
+  `calib_dir` docstring change pulled in ~550 unrelated lines -- new
+  spectrograph sections added on a separate, documentation-focused branch
+  that this branch hasn't yet been rebased onto. Rather than fold that
+  unrelated drift into this commit, only the one changed table row was
+  hand-synced to match the docstring; the full regeneration is deferred
+  until after the project lead rebases onto that branch.
+- **The Verify step's documentation build/rebuild was explicitly deferred
+  to the project lead** to run manually, for the same rebase-ordering
+  reason -- not run as part of this pass.
+
+**Verify step and `doc/pypeit_par.rst` regeneration completed at commit
+`df2001c76e6883554cc887a03d2973098edb3b2a`** ("Phase 7 complete",
+2026-07-17), following the project lead's rebase of this branch onto
+`doc_update` (commit `29220a0c7`, "doc update", carries the full
+regenerated `doc/pypeit_par.rst` -- 52 lines changed, not the ~550-line
+unrelated diff seen before the rebase -- plus new
+`doc/api/pypeit.pkg.outputpaths.rst`/updated `doc/api/pypeit.pkg.rst`
+entries for the new module, and minor `doc/help/*.rst` regenerations for
+this project's argparse changes in Phase 5). `doc/pypeit_par.rst`'s
+`calib_dir` row now correctly omits the "not well tested" caveat, matching
+the source docstring. The project lead also tweaked `update_docs` to run
+`make clean` before `make htmlnoex` when dev-suite data isn't available.
+This closes out Phase 7, and with it, the full 7-phase project.
 
 ## 6. Test plan
 
@@ -1525,6 +1571,38 @@ choices:
   sweep beyond already-touched files.
 
 See §5's Phase 6 section for the full, itemized scope.
+
+### 2026-07-17 — Phase 7 complete (build/verify closed out; project complete)
+
+The project lead rebased this branch onto `doc_update` and ran the full
+documentation build/regeneration, completing Phase 7's previously-deferred
+Verify step at commit `df2001c76e6883554cc887a03d2973098edb3b2a` ("Phase 7
+complete"). `doc/pypeit_par.rst` is now fully regenerated (the rebase
+brought in the new-spectrograph content that had caused the ~550-line
+unrelated diff before), correctly reflecting the `calib_dir` docstring
+change with no unrelated drift. See the completion note at the end of the
+Phase 7 section in §5 for full detail. All 7 phases of this plan are now
+complete.
+
+### 2026-07-17 — Phase 7 source edits complete (build/verify deferred)
+
+Phase 7's source-doc and docstring edits (§5) are implemented and committed
+(`7fbd1cd88b1688ad4c9f743d9f8c54824b7a3434`, "Phase 7a (missing doc update)
+complete"). See the completion note at the end of the Phase 7 section in §5
+for full detail. This is the last of the 7 phases, but it is not fully
+closed out:
+
+- `doc/pypeit_par.rst` was hand-synced for just the one changed row rather
+  than fully regenerated, since the standard regeneration script pulled in
+  ~550 unrelated lines from new spectrographs added on a separate branch
+  this one hasn't been rebased onto yet.
+- The documentation build/rebuild itself (this phase's Verify step) was
+  explicitly deferred to the project lead to run manually, for the same
+  reason, rather than attempted in this pass.
+
+Once the project lead rebases onto the documentation-focused branch and
+runs a full `doc/pypeit_par.rst` regeneration and build, Phase 7 (and the
+whole project) can be marked fully complete.
 
 ### 2026-07-17 — Phase 6 complete
 
