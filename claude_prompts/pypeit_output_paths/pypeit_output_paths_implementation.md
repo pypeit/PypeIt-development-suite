@@ -1150,14 +1150,87 @@ Full `pypeit/tests/` suite (419 tests, excluding the heavy
 ### Phase 6 — Cleanup, pathlib migration, full regression
 **Files:** files touched in Phases 1-5, plus `metadata.py`, `collate.py`
 (remaining `os.path` calls beyond those already touched), `pypeit_steps.py`
-stragglers.
+stragglers, `qa.py`, `edgetrace.py`, and (per the repo-wide str/Path sweep
+below) any other file in `pypeit/` with a path-related `str(...)`/`Path(...)`
+conversion, regardless of whether an earlier phase touched it.
+
 - Convert any remaining `os.path.join`/`os.makedirs`/`os.getcwd` calls in
   files already edited by Phases 1-5 to `pathlib`, per this project's
   stated preference for `pathlib` in new/touched code. **Do not** perform a
-  blanket, repo-wide `os.path`→`pathlib` sweep beyond files this refactor
-  already touches — that's separate cleanup work, not part of this plan.
+  blanket, repo-wide `os.path`→`pathlib` *module* sweep beyond files this
+  refactor already touches — that's separate cleanup work, not part of
+  this plan. (This restriction is unchanged; it's distinct from the
+  str/Path *conversion* sweep below, which is explicitly repo-wide.)
 - Remove now-dead helpers if fully superseded (e.g. `qa.gen_qa_dir` if
   accessing `outputPaths.qa_pngs` has fully replaced its role).
+
+- **Remove the hardcoded `'PNGs'` literal from every site outside
+  `PypeItOutputPaths`.** A repo-wide search (excluding `pkg/outputpaths.py`
+  and tests) found 8 live sites, all of which currently receive a
+  top-level QA directory as a parameter and locally join `/ 'PNGs'` onto
+  it -- and, in every current call chain, that parameter already
+  originates from `outputPaths.qa` (or would from `outputPaths.coadd_qa`,
+  for a hypothetical coadd-context caller):
+  - `qa.py`: `html_mf_pngs`, `html_exp_pngs`, `arc_tilts_2d_qa`,
+    `arc_tilts_spec_qa`, `arc_tilts_spat_qa`, `spec_flexure_qa` (6 sites).
+    Remove each function's `out_dir`/`qa_path` parameter entirely and have
+    the function import `outputPaths` directly, reading `outputPaths.qa_pngs`
+    in its place. Update all callers (`pypeit.py`'s `build_qa()`,
+    `extraction.py`, `wavetilts.py`) to drop the now-removed argument.
+  - `edgetrace.py` (2 sites, both derived from the constructor's `qa_path`
+    parameter): since `self.qa_path`/the `QAPATH` FITS header keyword are
+    used *only* to build these two QA-PNG paths -- confirmed no other code
+    anywhere reads `QAPATH` from a written file or `EdgeTraceSet.qa_path`
+    after construction -- remove the `qa_path` constructor parameter and
+    the `QAPATH` header keyword entirely (not deprecated/retained; nothing
+    depends on it). `EdgeTraceSet` imports `outputPaths` directly and reads
+    `outputPaths.qa_pngs`. Update the sole real caller that passes
+    `qa_path=` (`calibrations.py:1109`) to drop the argument;
+    `flatfield.py:2324` and `scripts/trace_edges.py:215`'s construction
+    calls are otherwise unaffected (the former never passed `qa_path`; the
+    latter drops it).
+  - **Fix, in the same pass**: `edgetrace.py:1631` --
+    `ofile = self.qa_path / 'PNGs', f'{fileroot}_{str(page).zfill(ndig)}.png'`
+    -- the missing `/` (a comma instead) makes `ofile` a 2-tuple, not a
+    joined path. A pre-existing bug, found while auditing this line for
+    the hardcode removal above; fixed as part of the same edit since the
+    line is being rewritten regardless.
+
+- **Repo-wide str/Path conversion sweep** (broader than the `os.path`→
+  `pathlib` *module*-usage restriction above -- this specifically targets
+  `str(...)`/`Path(...)` round-trips on values that are already,
+  conceptually, one or the other): a research pass found ~14 concrete,
+  low-risk sites in the files Phases 0-5 already touched where
+  `str(outputPaths...)` is pure overhead (the receiving function already
+  accepts a `Path`, or immediately reconstructs one -- e.g.
+  `coadd2d.py`'s `output_paths()` returns `str(...)` only for its sole
+  caller to immediately rewrap in `Path(...)`), plus a repo-wide total of
+  ~63 path-related `str(...)` calls, thinly spread (no file has more than
+  4). Convert all of these to keep the value as a `Path` throughout,
+  including:
+  - The ~14 sites in `coadd2d.py`, `collate.py` (×4), `scripts/trace_edges.py`,
+    `scripts/sensfunc.py` (×2), `scripts/flux_calib.py`, `scripts/coadd_1dspec.py`,
+    `scripts/collate_1d.py`, `scripts/flux_setup.py` (×3), and
+    `pypeit_steps.py`'s `load_skyregions(..., calibrations_path:str, ...)`
+    (change the parameter's type to accept `Path` directly instead of
+    forcing callers to `str()`-cast).
+  - Stale `str`-only type hints in `qa.py` (`gen_mf_html`, `gen_exp_html`,
+    `gen_qa_dir`, `close_qa`, and the functions above) that already receive
+    and use a `Path` at every current call site -- correct the hints
+    rather than the (already-correct) runtime behavior.
+  - `outputfiles.py`'s `intermediate_filename(..., inter_path:str=...)`
+    hint, for consistency with `spec_output_file`/`coadd_output_file`'s
+    already-`Path`-typed precedent.
+  - **Leave alone** the two sites confirmed to be genuinely forced by a
+    serialization/type boundary, not leftover habit: `collate.py`'s
+    `coaddfile` (a `Collate1DPar` field with `dtype=str`; a `ParSet`
+    rejects a `Path` there) and `find_objects.py`'s QA filename (later
+    passed through `.replace('S0999', ...)` substring substitution,
+    incompatible with `Path.replace()`'s rename semantics). Do not change
+    the underlying `ParSet`-dtype or string-substitution logic to
+    accommodate `Path` -- that's a bigger change than this cleanup phase
+    is scoped for.
+
 - **Verify:** full `pytest pypeit/tests/` (dev-suite regression deferred
   to the single final pass, §7).
 
@@ -1337,6 +1410,35 @@ redefaulted by this work.
 This section tracks substantive edits to this implementation plan itself,
 and, once Phase 0 landed, keeps §2 in sync with the actual
 `pypeit/pkg/outputpaths.py` source. Newest entries first.
+
+### 2026-07-17 — Phase 6 scope expanded: hardcoded `'PNGs'` removal and a repo-wide str/Path sweep
+
+Two additions to Phase 6 (§5), requested by the project lead and folded in
+after a research pass and follow-up questions on the concrete design
+choices:
+
+- **Hardcoded `'PNGs'` removal**: 8 sites outside `PypeItOutputPaths`
+  (6 in `qa.py`, 2 in `edgetrace.py`) locally join `/ 'PNGs'` onto a
+  passed-in QA directory. Decided (over a narrower "shared constant"
+  alternative) to remove the `out_dir`/`qa_path` parameter from all 8 call
+  sites and have each read `outputPaths.qa_pngs` directly, since every
+  current caller already derives that parameter from `outputPaths.qa`
+  anyway. For `EdgeTraceSet` specifically, this means removing its
+  `qa_path` constructor parameter and the `QAPATH` FITS header keyword
+  entirely (confirmed nothing else reads either), rather than deprecating
+  them for backward compatibility. A pre-existing, unrelated tuple bug at
+  `edgetrace.py:1631` (missing `/`) will be fixed in the same pass.
+- **str/Path conversion sweep**: scoped repo-wide (not limited to the
+  files Phases 0-5 already touched), covering ~14 low-risk sites already
+  identified plus stale `str`-only type hints in `qa.py`/`outputfiles.py`.
+  Two sites confirmed genuinely forced by a serialization/type boundary
+  (a `ParSet` `dtype=str` field; `.replace()`-based string-substitution
+  logic) are explicitly left alone -- the underlying constraints are not
+  being reconsidered. This is distinct from, and does not change, the
+  existing restriction against a blanket `os.path`→`pathlib` *module*-usage
+  sweep beyond already-touched files.
+
+See §5's Phase 6 section for the full, itemized scope.
 
 ### 2026-07-17 — Phase 5 complete
 
