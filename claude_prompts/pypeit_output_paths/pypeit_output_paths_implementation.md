@@ -1543,35 +1543,6 @@ This section tracks substantive edits to this implementation plan itself,
 and, once Phase 0 landed, keeps §2 in sync with the actual
 `pypeit/pkg/outputpaths.py` source. Newest entries first.
 
-### 2026-07-17 — Phase 6 scope expanded: hardcoded `'PNGs'` removal and a repo-wide str/Path sweep
-
-Two additions to Phase 6 (§5), requested by the project lead and folded in
-after a research pass and follow-up questions on the concrete design
-choices:
-
-- **Hardcoded `'PNGs'` removal**: 8 sites outside `PypeItOutputPaths`
-  (6 in `qa.py`, 2 in `edgetrace.py`) locally join `/ 'PNGs'` onto a
-  passed-in QA directory. Decided (over a narrower "shared constant"
-  alternative) to remove the `out_dir`/`qa_path` parameter from all 8 call
-  sites and have each read `outputPaths.qa_pngs` directly, since every
-  current caller already derives that parameter from `outputPaths.qa`
-  anyway. For `EdgeTraceSet` specifically, this means removing its
-  `qa_path` constructor parameter and the `QAPATH` FITS header keyword
-  entirely (confirmed nothing else reads either), rather than deprecating
-  them for backward compatibility. A pre-existing, unrelated tuple bug at
-  `edgetrace.py:1631` (missing `/`) will be fixed in the same pass.
-- **str/Path conversion sweep**: scoped repo-wide (not limited to the
-  files Phases 0-5 already touched), covering ~14 low-risk sites already
-  identified plus stale `str`-only type hints in `qa.py`/`outputfiles.py`.
-  Two sites confirmed genuinely forced by a serialization/type boundary
-  (a `ParSet` `dtype=str` field; `.replace()`-based string-substitution
-  logic) are explicitly left alone -- the underlying constraints are not
-  being reconsidered. This is distinct from, and does not change, the
-  existing restriction against a blanket `os.path`→`pathlib` *module*-usage
-  sweep beyond already-touched files.
-
-See §5's Phase 6 section for the full, itemized scope.
-
 ### 2026-07-17 — Phase 7 complete (build/verify closed out; project complete)
 
 The project lead rebased this branch onto `doc_update` and ran the full
@@ -1634,6 +1605,35 @@ originally-scoped cleanup. See the completion note at the end of the Phase
 
 Full `pypeit/tests/` suite (418 tests, excluding the heavy
 `test_run_pypeit`) passes, and `test_run_pypeit` itself passes.
+
+### 2026-07-17 — Phase 6 scope expanded: hardcoded `'PNGs'` removal and a repo-wide str/Path sweep
+
+Two additions to Phase 6 (§5), requested by the project lead and folded in
+after a research pass and follow-up questions on the concrete design
+choices:
+
+- **Hardcoded `'PNGs'` removal**: 8 sites outside `PypeItOutputPaths`
+  (6 in `qa.py`, 2 in `edgetrace.py`) locally join `/ 'PNGs'` onto a
+  passed-in QA directory. Decided (over a narrower "shared constant"
+  alternative) to remove the `out_dir`/`qa_path` parameter from all 8 call
+  sites and have each read `outputPaths.qa_pngs` directly, since every
+  current caller already derives that parameter from `outputPaths.qa`
+  anyway. For `EdgeTraceSet` specifically, this means removing its
+  `qa_path` constructor parameter and the `QAPATH` FITS header keyword
+  entirely (confirmed nothing else reads either), rather than deprecating
+  them for backward compatibility. A pre-existing, unrelated tuple bug at
+  `edgetrace.py:1631` (missing `/`) will be fixed in the same pass.
+- **str/Path conversion sweep**: scoped repo-wide (not limited to the
+  files Phases 0-5 already touched), covering ~14 low-risk sites already
+  identified plus stale `str`-only type hints in `qa.py`/`outputfiles.py`.
+  Two sites confirmed genuinely forced by a serialization/type boundary
+  (a `ParSet` `dtype=str` field; `.replace()`-based string-substitution
+  logic) are explicitly left alone -- the underlying constraints are not
+  being reconsidered. This is distinct from, and does not change, the
+  existing restriction against a blanket `os.path`→`pathlib` *module*-usage
+  sweep beyond already-touched files.
+
+See §5's Phase 6 section for the full, itemized scope.
 
 ### 2026-07-17 — Phase 5 complete
 
