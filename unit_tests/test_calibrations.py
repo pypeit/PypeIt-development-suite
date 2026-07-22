@@ -11,11 +11,38 @@ from IPython import embed
 import pytest
 
 from pypeit import calibrations
+from pypeit import outputPaths
 from pypeit.spectrographs.util import load_spectrograph
 from pypeit import wavecalib
 from pypeit import pypeitsetup
 
 from pypeit.tests.tstutils import dummy_fitstbl, data_output_path
+
+@pytest.fixture
+def output_paths(monkeypatch):
+    """
+    Configure the package-level `outputPaths` singleton for tests that
+    construct `Calibrations` objects directly, without going through
+    `PypeIt.__init__` (which is what normally configures it exactly once
+    per execution).
+
+    Unlike the tests in the main `pypeit` package (e.g.
+    `pypeit/tests/test_calibrations.py`), these dev-suite tests exercise the
+    *full* calibration pipeline (`get_wv_calib`, `get_tilts`, `get_flats`,
+    ...), which reaches into several modules (`wavecalib`, `edgetrace`,
+    `flatfield`, ...) that each hold their own `from pypeit import
+    outputPaths` reference to the same shared singleton. Monkeypatching a
+    dedicated instance into just one module's namespace (as those in-repo
+    tests do) would leave the others pointing at the real, unconfigured
+    singleton. Instead, reconfigure the real singleton in place, and let
+    `monkeypatch` restore its prior internal state on teardown.
+    """
+    monkeypatch.setattr(outputPaths, '_configured', False)
+    monkeypatch.setattr(outputPaths, '_dryrun', False)
+    monkeypatch.setattr(outputPaths, '_paths', {})
+    outputPaths.configure(redux_path=data_output_path(''), calib_dir='Calibrations')
+    return outputPaths
+
 
 @pytest.fixture
 def fitstbl():
@@ -36,7 +63,7 @@ def fitstbl():
 
 
 @pytest.fixture
-def multi_caliBrate(fitstbl):
+def multi_caliBrate(fitstbl, output_paths):
     # Grab a science file for configuration specific parameters
     indx = fitstbl.find_frames('science', index=True)[0]
     sci_file = fitstbl.frame_paths(indx)
@@ -50,7 +77,7 @@ def multi_caliBrate(fitstbl):
     calib_par['slitedges']['sync_predict'] = 'nearest'
 
     multi_caliBrate = calibrations.MultiSlitCalibrations(fitstbl, calib_par, spectrograph,
-                                                         data_output_path('Calibrations'), 0, indx, 1)
+                                                         0, indx, 1)
     multi_caliBrate.success = True
     return reset_calib(multi_caliBrate)
 
@@ -137,7 +164,7 @@ def test_reuse(multi_caliBrate, fitstbl):
     spectrograph = load_spectrograph('shane_kast_blue')
     par = spectrograph.default_pypeit_par()
     multi_caliBrate_reuse = calibrations.MultiSlitCalibrations(fitstbl, par['calibrations'],
-                                                               spectrograph, str(calib_dir), 0, multi_caliBrate.frame, 1)
+                                                               spectrograph, 0, multi_caliBrate.frame, 1)
     multi_caliBrate_reuse.reuse_calibs = True
     reset_calib(multi_caliBrate_reuse)
 
