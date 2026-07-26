@@ -94,6 +94,8 @@ Read the following documents to gain context:
 
 8. Kyle has resolved many of the issues.  Please let me know which ones remain and propose how to address them.  Log your work.  If you have any questions, put them in Q&A below.
 
+9. Yes, please proceed with the four open items as you propose.  Log your work.  If you have any questions, put them in Q&A below.
+
 ## Q&A
 
 **2026-07-26 (prompt 8 — remaining threads).** Kyle resolved 126/130; the
