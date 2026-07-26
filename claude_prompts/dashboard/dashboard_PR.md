@@ -96,6 +96,20 @@ Read the following documents to gain context:
 
 ## Q&A
 
+**2026-07-26 (prompt 8 — remaining threads).** Kyle resolved 126/130; the
+four open items and my proposals are in the Log. Questions before I
+implement:
+
+1. **Go-ahead:** OK to implement all four as proposed (QA-count column +
+   filtered QA list; `undone`→`pending` and drop `complete`; move the last
+   two imports to top; fixtures → `pypeit/data/tests/`)? Items 2–4 are
+   uncontroversial given Kyle's explicit direction; item 1 is a small
+   Science-view redesign — if you'd rather keep per-QA columns, say so and
+   I'll counter-propose to Kyle instead.
+2. **Literal rename fallout:** after the rename, any existing
+   `*_state.json` (your REDUX_OUT runs) will read as "malformed" until
+   re-derived/re-run — acceptable?
+
 **2026-07-20 (prompt 7 — Kyle's review).** No blockers — all 130 inline
 comments were addressed and individually replied to on GitHub. Three
 decisions I made that you may want to weigh in on (each is also flagged in
@@ -151,6 +165,65 @@ The "Logs" section will record Claude's work.  Please use the following format:
 ...
 
 ## Logs
+
+### 2026-07-26 (Prompt 8: audit of Kyle's re-review — 126/130 threads resolved; 4 remain, proposals below)
+
+Queried the PR's review threads via the GraphQL API (`reviewThreads` →
+`isResolved`): **Kyle resolved 126 of the 130 threads.** He also left an
+issue comment ("I went through your comments and left a few unresolved —
+let me know what you think") and a follow-up reply on each of the **4
+unresolved threads**. No other new comments; CI on the head commit is green.
+The four, with his follow-up and my proposed fix (not yet implemented —
+awaiting go-ahead, see Q&A):
+
+1. **Per-object QA columns** (`doc/dashboard/dashboard.rst` thread; really a
+   Science-view design point). Kyle: a table column per QA type
+   (`obj_prof`/`obj_trace`) "could quickly become unwieldy" as new QA plots
+   land — "Is there a different approach?" **Proposal:** drop the fixed
+   per-QA-type columns from the per-object table entirely; keep one generic
+   "QA" column showing the *count* of QA figures discovered for that object
+   (glob by the QA file-naming convention, so new QA types appear with zero
+   code change), and route viewing through the existing QA-files list in the
+   detail panel, filtered to the selected object (double-click to open, as
+   everywhere else). Touches `science_view.py` (+ its tests, + the doc
+   passage). Moderate effort.
+
+2. **Status literals** (`doc/state.rst` thread). Kyle: "This is a new
+   feature, so there's no need to be consistent with 'older state files' …
+   nothing holding us back from removing `complete` and changing `undone` to
+   `pending`." **Proposal:** do exactly that — drop `complete` from the
+   pydantic Literals and rename `undone` → `pending` across the state
+   vocabulary (~31 `.py` sites + palette/model/views + JSON test fixtures +
+   `state.rst`). Existing `*_state.json` files on disk (e.g. in REDUX_OUT)
+   become invalid, which degrades gracefully: pydantic `ValidationError` →
+   the dashboard reports "malformed" → Refresh/`pypeit_status` re-derives
+   from disk. Mechanical sweep; low risk.
+
+3. **Imports at top** (`pypeit/dashboard/model.py` thread). Kyle pushes
+   back on the last two deferred imports: imports should *always* be at the
+   top; the only sanctioned exception is scripts' `main()` (fast `-h`).
+   **Proposal:** comply — move the two remaining `from pypeit import
+   pypeit` derive-path imports (model.py lines ~356/432) to the top.
+   No import cycle (nothing under `pypeit.pypeit` imports the dashboard);
+   the module already imports `pypeit.calibrations` at top, so the extra
+   import cost is marginal. Trivial.
+
+4. **Test fixtures** (`pypeit/tests/test_dashboard.py` thread). Kyle: "Yes,
+   please move these files. All the files required for testing should be in
+   `data/tests`; `pypeit/tests/files` should not be tracked." **Proposal:**
+   move all 10 dashboard fixtures (the only contents of
+   `pypeit/tests/files/`) to `pypeit/data/tests/`, switch the `data_path()`
+   helper to `dataPaths.tests.get_file_path()`, and delete the now-empty
+   `pypeit/tests/files/` from tracking. Straightforward; the tests copy
+   fixtures into tmp dirs, so only the source path changes.
+
+Recommended order once approved: 3 and 4 (mechanical) → 2 (sweep) → 1
+(design change), then push, re-run the suite, and reply on the four threads.
+
+**Learned.** `gh api graphql --paginate` requires the cursor variable to be
+named exactly `$endCursor` — with any other name it silently refetches page
+one forever (a 40 MB output file before I caught it). Manual pagination with
+an explicit cursor loop is the reliable pattern.
 
 ### 2026-07-20 (Prompt 7: address Kyle's review — 130 inline comments + review, all replied to on GitHub)
 
