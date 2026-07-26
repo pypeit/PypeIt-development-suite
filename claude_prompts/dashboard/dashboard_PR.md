@@ -92,6 +92,8 @@ Read the following documents to gain context:
 
 7. Kyle has provided comments on the PR.  Please address them.  If you have any questions, put them in Q&A below.  Log your work.  If you need help with `gh` access, let me know. Use Fable if you can.
 
+8. Kyle has resolved many of the issues.  Please let me know which ones remain and propose how to address them.  Log your work.  If you have any questions, put them in Q&A below.
+
 ## Q&A
 
 **2026-07-20 (prompt 7 — Kyle's review).** No blockers — all 130 inline
