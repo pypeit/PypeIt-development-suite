@@ -168,6 +168,47 @@ The "Logs" section will record Claude's work.  Please use the following format:
 
 ## Logs
 
+### 2026-07-26 (Prompt 9: implement the four remaining review items — pushed as `e763b5c44`, threads answered)
+
+Implemented all four open items exactly as proposed in the prompt-8 log
+(order 3 → 4 → 2 → 1), on top of the fresh `origin/develop` merge:
+
+1. **Imports (trivial).** The last two deferred `from pypeit import pypeit`
+   imports in `dashboard/model.py` moved to the module top; verified no
+   import cycle.
+2. **Fixtures.** All 10 dashboard fixtures `git mv`'d from
+   `pypeit/tests/files/` (directory now gone from the repo — they were its
+   only contents) to `pypeit/data/tests/`; the `data_path()` test helper now
+   resolves via `dataPaths.tests.get_file_path()`. Also fixed a stale
+   "tests/files" comment in `test_inputfiles.py`.
+3. **Status literals.** `undone` → `pending` and `complete` removed
+   everywhere: the pydantic Literals (calib, per-slit, science-step), the
+   writers (`calibrations.py`), the consumers (palette — `_SUCCESS_STATUS`
+   is now just `('success',)` — model, status view), the four JSON fixtures,
+   tests, and the docs (`state.rst` status table, `dashboard.rst` palette
+   table, the two release-notes bullets describing the new behavior). A
+   pre-rename `*_state.json` reads as malformed → re-derived from disk.
+4. **Generic per-object QA column.** `model.science_object_qa_files()` now
+   returns **all** of an object's QA figures (everything carrying the
+   `S{slitid:04d}` tag — including, correctly, the per-slit flexure figure)
+   instead of a fixed `{'obj_prof', 'obj_trace'}` dict. The Science
+   per-object table's two QA columns are replaced by one generic **QA**
+   column showing the figure count; double-click opens the figure, or (for
+   several) multi-selects and scrolls to them in the frame QA-file list
+   (which gained ExtendedSelection for this). Tests updated to assert the
+   generic column + stashed paths; `dashboard.rst` passage rewritten.
+
+**Verify.** Full unit suite: **510 passed** (the suite grew with the merged
+Fiber/Binospec work). Pushed as `e763b5c44`; this time GitHub fired the
+`synchronize` event, so CI runs on the PR checks tab. Replied on each of
+the four threads (with the commit hash) and posted a summary comment
+@-mentioning Kyle.
+
+**Learned.** A generic "discover by naming convention" QA column follows
+the same slit tag (`S####`) used by *all* per-slit science QA, so the
+flexure figure now correctly shows up under the object too — a nice
+side-effect of dropping the hardcoded QA-type list.
+
 ### 2026-07-26 (Prompt 8: audit of Kyle's re-review — 126/130 threads resolved; 4 remain, proposals below)
 
 Queried the PR's review threads via the GraphQL API (`reviewThreads` →
