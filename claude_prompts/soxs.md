@@ -51,6 +51,7 @@ Each has a proposed default — confirm or correct.
    base class with two subclasses, `ntt_soxs_vis` and `ntt_soxs_nir`, both
    `pypeline = 'Echelle'` with `ech_fixed_format = True`. SOXS has no UVB arm and the
    acquisition camera is out of scope. OK?
+>A. Yes, perfect.
 
 2. **VIS arm as echelle.** The VIS arm is not a classical cross-dispersed echelle: it
    has 4 quasi-orders from stacked ion-etched gratings (per the soxspipe spectral
@@ -58,21 +59,26 @@ Each has a proposed default — confirm or correct.
    wavelength is not monotonic with order number. I still plan to treat it as
    fixed-format Echelle with 4 orders. Agree, or would you rather treat VIS as
    MultiSlit with 4 "slits"?
+>A. Yes, sounds good.
 
 3. **Git branch.** The PypeIt repo is currently on a branch named `soxs`, but it looks
    like it contains merges from the `state` (Binospec) work. Should I commit the new
    class to this `soxs` branch, or create a fresh branch off `develop`?
+>A. We will use the soxs branch.  I will perform the git commands.
 
 4. **Detector parameters.** Header values and soxspipe disagree slightly. soxspipe
    (from commissioning): VIS gain 1.0 e/ADU, RON 3.8 e; NIR gain 2.3 e/ADU, RON 7.3 e
    (header NIR cards are placeholders: GAIN=1.0, RON=0.0; header VIS says GAIN=0.909,
    CONAD=1.1, RON=3.3). Default: adopt the soxspipe commissioning values. OK?
+>A. Ok.
 
 5. **VIS readout formats.** All sample VIS frames are windowed 858×4096 (50-px
    prescan + 808 science columns of the 2048×4096 CCD44-82), 1x1 binning, 'Slow High
    Gain' readout. soxspipe also ships bad-pixel maps for 1x2, 2x1, 2x2 binning.
    Should the class support arbitrary binning/readout from the headers, or is
    858×4096 1x1 'Slow High Gain' the fixed operational mode I can assume?
+
+claude --resume 4fcf99de-a03f-48a1-b220-7c7588762111
 
 6. **NIR readout & calibrations.** NIR frames are float32 post-processed up-the-ramp
    images in ADU (DIT×NDIT, e.g. the flux standard has DIT=150 s, NDIT=2). I'll take
