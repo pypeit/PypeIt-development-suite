@@ -238,6 +238,10 @@ all_setups = {
         'Multislit_G270',
         'Longslit_G1000',
     ],
+    'mmt_binospec_ifu': [
+        'G270',
+        'G270_Sky',
+    ],
     'mmt_mmirs': [
         'HK_zJ',
         'J_zJ',

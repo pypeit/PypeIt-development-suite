@@ -1,10 +1,22 @@
 # PypeIt Dashboard — Design Document
 
-**Version:** 1.3.9
-**Date:** 2026-06-16
+**Version:** 1.4.0
+**Date:** 2026-06-17
 **Author:** JXP and Claude
 
 **Changelog**
+- 1.4.0 (2026-06-17): **Alpha bug report 000 — a crashed (Re)Build is now shown
+  as failed.** When a calibration step raised mid-build (e.g. an unrecoverable
+  error deep in ``get_flats``), the pipeline left the step's status at
+  ``running`` in ``*_state.json`` (the exception bypassed the ``fail`` write in
+  ``Calibrations.run_the_steps``), so the Dashboard kept the step **orange**
+  forever and the **Build** channel returned to *Idle*/*Monitoring…* instead of
+  reporting the failure.  Fixed at two layers: (1) ``run_the_steps`` now marks
+  the step ``fail`` (and persists it) before re-raising, so the step turns
+  **red** on the next refresh — for any client (Dashboard, ``pypeit_status``);
+  (2) the Dashboard tracks the last run's non-zero exit and shows a sticky
+  *"(Re)Build failed (exit code N) — see the log."* on the Build channel that
+  the still-active live monitor (recent ``.log`` mtime) no longer overwrites.
 - 1.3.9 (2026-06-16): **Dashboard version in the header.** The header banner now
   shows the Dashboard version (``pypeit.dashboard.__version__``) beneath the
   PypeIt logo; `dashboard.rst` documents it (and its version line is the same
