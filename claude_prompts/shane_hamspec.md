@@ -606,6 +606,12 @@ PASSES**, wavelength calibration good (19 orders @ 0.147 px). One problem:
     (b) push a few more trace flats (3→more) so more orders are traced; or
     (c) accept calibration-only for now. Which next?
 
+### Extraction
+
+1. When running the pipeline, no object was extracted even though there was a very bright star on the slit.  It is because the star fills the slit.  For `shane_hamspec`, we want to always extract one object in the slit.  And, we want to turn off sky subtraction.  Please make these changes.  If you have any questions, put them in the Q&A section below.  Use Fable if you can.  Log your work
+
+#### Q&A
+
 ## Docs
 
 Here are some guidelines when generating the docs:
