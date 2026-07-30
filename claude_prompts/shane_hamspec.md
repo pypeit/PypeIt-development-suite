@@ -610,6 +610,8 @@ PASSES**, wavelength calibration good (19 orders @ 0.147 px). One problem:
 
 1. When running the pipeline, no object was extracted even though there was a very bright star on the slit.  It is because the star fills the slit.  For `shane_hamspec`, we want to always extract one object in the slit.  And, we want to turn off sky subtraction.  Please make these changes.  If you have any questions, put them in the Q&A section below.  Use Fable if you can.  Log your work
 
+2. Please refactor pypeit_syncraw.py to remove `pkg_resources` and use the new `importlib.resources` module instead.
+
 #### Q&A
 
 ## Docs
