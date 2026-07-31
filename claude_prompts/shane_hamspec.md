@@ -614,6 +614,15 @@ PASSES**, wavelength calibration good (19 orders @ 0.147 px). One problem:
 
 #### Q&A
 
+48. **Heads-up (no action needed from me):** while checking whether
+    `pypeit_syncraw` could restore `RAW_DATA/shane_hamspec/Hamilton/`, I found
+    `GDrive:.../RAW_DATA/shane_hamspec/` holds only the seven 2014 e2v frames
+    (d2000–d2100, no `Hamilton/` subfolder). The 9-frame Cooke push from
+    Finishing-up #1 was never mirrored to Google Drive, so the dev-suite
+    `shane_hamspec` test data exists only on whatever drive hosted the last
+    run. Worth mirroring when convenient; the forced-extraction changes
+    (Extraction #1) await that data for their end-to-end verification.
+
 ## Docs
 
 Here are some guidelines when generating the docs:
@@ -1161,3 +1170,63 @@ future use, not yet exercised. The shane_hamspec scripts still
 `from pypeit.core.wavecal import templates`; once develop's deletion lands they
 will need to import from the dev-suite location instead — out of scope for this
 merge-fix, flagged for a follow-up.
+
+### 2026-07-30 (Extraction #1: forced slit-center extraction + sky sub off)
+
+Implemented the Q47 fix: `shane_hamspec` now always extracts one object per
+order and performs no sky subtraction. The star fills the ~7 px Hamspec
+orders, so the smashed spatial profile has no peak and `objs_in_slit` can
+never detect it — the fix forces the aperture instead of tuning detection.
+
+What I did (in the PypeIt repo, `hamspec` branch):
+- **New core routine** `pypeit.core.findobj_skymask.ech_slit_center_objs()`:
+  creates one `SpecObj` per echelle order with the trace forced to the order
+  center (midpoint of the traced edges), `FWHM` = median order width,
+  `BOX_R_PIX` = half order width (boxcar spans the full order),
+  `SPAT_FRACPOS = ECH_FRACPOS = 0.5`, `ECH_OBJID = OBJID = 1`. It also runs
+  the same quick boxcar S/N assessment as `ech_cutobj_on_snr` to set
+  `ech_snr`, which `skysub.ech_local_skysub_extract` requires to order the
+  per-order reduction (objects without it would crash the extractor).
+- **New user parameter** `[reduce][findobj] force_center_obj` (bool, default
+  False) in `FindObjPar`; when True, `EchelleFindObjects.
+  find_objects_pypeline` bypasses `ech_objfind` entirely and returns the
+  forced slit-center objects (built only on the good orders, mirroring the
+  `reduce_bpm` masking of the normal path). Echelle-only for now; documented
+  as ignored by the other pipelines.
+- **`shane_hamspec.default_pypeit_par`**: set `force_center_obj = True`, and
+  turned sky subtraction off end-to-end — `findobj skip_skysub = True` (the
+  global sky model is then identically zero and `finalize_sky_det` keeps it
+  zero) plus `skysub no_local_sky = True` (profile fit + optimal extraction,
+  no local sky evaluation). `global_sky_std = False` and
+  `model_full_slit = True` were already set.
+- **Unit test** `pypeit/tests/test_findobj.py` (new): synthetic 3-order
+  echelle frame with slit-filling flux; asserts one object per order at the
+  order centers with slit-width apertures, common `ECH_OBJID`, and positive
+  `ech_snr`. Passes; `test_pypeitpar.py` (33 tests) also still passes.
+
+**Not yet verified end-to-end:** `RAW_DATA/shane_hamspec/Hamilton/` (the 9
+Cooke frames pushed in Finishing-up #1) is not present on the current
+machine's `RAW_DATA`, so `pypeit_test reduce -i shane_hamspec` could not be
+re-run. Per JXP: don't worry about the Cooke data for now — the run will be
+verified once the raw data is restored.
+
+### 2026-07-30 (Extraction #2: pypeit_syncraw off pkg_resources)
+
+Refactored the dev-suite script `pypeit_syncraw` to drop the deprecated
+`pkg_resources` API (removed from setuptools; breaks on modern
+environments) in favor of stdlib `importlib.resources`:
+`resource_filename('pypeit', 'data')` + `os.path.join` →
+`str(resources.files('pypeit') / 'data' / 'telluric')`.
+
+Verified in the `pypeit14b` env: the script compiles, the new expression
+resolves to the identical on-disk path
+(`.../PypeIt/pypeit/data/telluric`, exists), and
+`pypeit_syncraw jxp --dryrun --print` runs end-to-end and prints the
+expected `rclone sync GDrive:... RAW_DATA -v --dry-run` command.
+
+Also learned while checking whether the sync could restore the missing
+Hamspec raw data: `GDrive:.../RAW_DATA/shane_hamspec/` holds only the seven
+2014 e2v frames (d2000–d2100, no `Hamilton/` subfolder) — the 9-frame Cooke
+push from Finishing-up #1 was never mirrored to Google Drive, so a sync
+would not bring it back (and would actually delete a local copy, since
+`rclone sync` mirrors deletions; use `--copy` for additive transfers).
