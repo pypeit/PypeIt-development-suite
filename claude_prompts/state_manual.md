@@ -48,6 +48,8 @@ Read the following documents to gain context:
     - Move it to the dev-suite
     - Remove the files you left behind in the PypeIt repo
 
+4. I have issued a PR.  Please review the comments and address them.  Log your work.  Use Fable if you can.
+
 ## Q&A
 
 Questions from Claude (2026-08-08), to be answered before implementing the fix:
@@ -247,3 +249,48 @@ change in the PypeIt repo (`M pypeit/tests/test_manual.py`, 34 deletions)
 and needs to be committed before the PR.  The dev-suite repo has the new
 untracked `unit_tests/test_manual_flexure.py`.  No commits were made (per
 standing instruction to commit only when asked).
+
+### 2026-08-09 (Addressed the review comments on PR #2182)
+
+Per prompt 4.  JXP opened PR #2182 (`fix_manual` → `develop`) and had
+meanwhile committed/pushed the test removal (`26e96ecf` "ok"), so the
+branch was clean and in sync when this work started.
+
+**Review inventory.** The PR has one inline review comment, from Cursor
+Bugbot (medium severity): "SkyRegions file ignores flexure" — when
+`user_regions = 'user'`, `load_skyregions()` returns the on-disk
+SkyRegions mask without applying `spat_flexure`, whereas
+percentage-format regions do get the flexure via `generate_mask()`.
+
+**Assessment: intentional behavior, not a defect.** Investigated
+`pypeit/scripts/skysub_regions.py` and `pypeit/gui/skysub_regions.py`:
+
+- The SkyRegions file is *per science frame* (its filename embeds the
+  science-file basename) and is created interactively by
+  `pypeit_skysub_regions` **on that same spec2d frame** — the saved mask
+  is already in the frame's own pixel coordinates.
+- The GUI applies the frame's recorded flexure *at creation time* via
+  its `--flexure` option (it passes `spec2DObj.sci_spat_flexure` into
+  `SkySubGUI`, which shifts the slit edges with
+  `select_edges(flexure=...)`).
+- Applying `spat_flexure` again at load time would therefore
+  double-shift masks created with `--flexure`.
+- Verified v1.18.1's `load_skyregions()` also returned the file-based
+  mask unshifted — the PR restores exact parity.
+
+**Actions taken:**
+
+- Added a NOTE comment at the load site and expanded the
+  `spat_flexure` docstring entry in `pypeit_steps.load_skyregions()`
+  to make the intent explicit (comment/docstring only, no functional
+  change).  Committed as `f2a6a2e52` and pushed to `fix_manual`.
+- Replied to the Bugbot inline comment on PR #2182 with the
+  explanation and the commit reference:
+  https://github.com/pypeit/PypeIt/pull/2182#discussion_r3744193723
+- Checked PR CI after the push: `validate` passed; the remaining
+  matrix jobs were still queued/skipping at the time of writing.
+
+No other review comments were present.  The Cursor summary's "Medium
+Risk" note about `shift=0` semantics is informational — the NaN /
+finite-zero semantics change is already documented in the 2.1.0dev
+release notes and the flexure docs.
