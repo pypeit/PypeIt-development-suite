@@ -50,6 +50,8 @@ Read the following documents to gain context:
 
 4. I have issued a PR.  Please review the comments and address them.  Log your work.  Use Fable if you can.
 
+5. I think you created a number of unnecessary files (e.g. filelist) in the PypeIt Dev-Suite repo.  Please clean them up.  Log your work.
+
 ## Q&A
 
 Questions from Claude (2026-08-08), to be answered before implementing the fix:
