@@ -589,6 +589,8 @@ A. Accept the 27 solved orders for now
 
 2. The changes we made to `templates.py` have led to a bad merge because that file has been remoevd from the PypeIt repo to the development suite.  Please fix the merge by moving our changes to `templates.py` in the PypeIt-development-suite repo.
 
+3. When a very bright object is in the slit, the object finding fails.  Let's explore how best to fix this.
+
 #### Q&A
 
 **Finishing-up #1 Q&A (new)** — see
