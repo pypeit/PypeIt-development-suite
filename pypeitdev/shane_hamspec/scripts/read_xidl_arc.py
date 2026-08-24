@@ -25,12 +25,19 @@ Outputs (via :func:`load`):
     and the per-order RMS array (from ``all_arcfit``, in the fit's units).
 """
 
+import sys
 from pathlib import Path
 
 import numpy as np
 from scipy.io import readsav
 
-from pypeit.core.wavecal import templates
+try:
+    from pypeit.core.wavecal import templates
+except ImportError:
+    # templates.py was moved out of the PypeIt package into the dev suite
+    # (see Finishing-up #2); fall back to the pypeitdev/wavecal copy.
+    sys.path.insert(0, str(Path(__file__).resolve().parents[2] / 'wavecal'))
+    import templates
 
 
 def load(xidl_file):

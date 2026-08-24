@@ -10,13 +10,13 @@ instrument angles (an initial guess), then refine by cross-correlation.  That
 needs two `reid_arxiv` files in the exact HIRES formats consumed by
 `pypeit.core.wavecal.echelle.predict_ech_arcspec`:
 
-  shane_hamspec_composite_arc.fits
+  shane_hamspec_<era>_composite_arc.fits
      HDU1 params (order_min/max, norders, wave_min/max, dloglam, dv)
      HDU2/3/4 = wave / arc / gpm, each (nspec, norders), each column the order's
                 own log-lambda ramp (left-aligned, zero-padded), gpm True where
                 valid.  Columns indexed by (m - order_min); column 0 = reddest.
 
-  shane_hamspec_angle_fits.fits
+  shane_hamspec_<era>_angle_fits.fits
      HDU1 params (funcs, ranges, order_min/max, norders, ech_n_final, ...)
      HDU2 ech_angle_coeffs (norders, ech_n_final+1, n_ech_coeff): per-order
           wavelength-solution coefficients as a function of echelle angle.
@@ -43,6 +43,15 @@ from astropy.io import fits
 from astropy.table import Table
 
 from pypeit import dataPaths
+
+try:
+    from pypeit.core.wavecal import templates
+except ImportError:
+    # templates.py was moved out of the PypeIt package into the dev suite
+    # (see Finishing-up #2); fall back to the pypeitdev/wavecal copy.
+    sys.path.insert(0,
+                    str(Path(__file__).resolve().parents[2] / 'wavecal'))
+    import templates
 
 import read_xidl_arc as xidl
 import read_iraf_arc as iraf_arc
@@ -72,6 +81,19 @@ XD_ANCHOR = 9085.0       # GTILTRAW of the Cooke arcs (xdangle)
 XD_SLOPE = 0.0           # orders per count (single setting -> constant)
 ECH_N_FINAL = 4          # per-order wavelength polynomial degree
 
+# --- Detector eras (Q&A 52) ---
+# Hamspec has had two detectors, each with its own archive (selected at run
+# time by shane_hamspec.get_echelle_angle_files via the 'detector' meta):
+#   loral: Loral 2Kx2K (through ~2010, e.g. the Cooke data; 2048 spectral
+#          pix) -- Cooke XIDL solution, anchors = the Cooke arc angles.
+#   e2v:   e2v 4Kx4K (from ~2013; 4096 spectral pix) -- 2024 XIDL
+#          Arc_01_fit.idl solution, anchors = the 2014 dev-suite arc angles
+#          (flipped convention: ECH=DHEITRAW, XD=GTILTRAW).
+ERAS = {
+    'loral': dict(arc_source='cooke', ech_anchor=1700.0, xd_anchor=9085.0),
+    'e2v': dict(arc_source='xidl', ech_anchor=3970.0, xd_anchor=9194.0),
+}
+
 
 def _fit_order_wave(wave_order, nspec):
     """
@@ -95,7 +117,7 @@ def _fit_order_wave(wave_order, nspec):
     return L.legfit(xnn[good], wave_order[good], ECH_N_FINAL)
 
 
-def build(outdir=None):
+def build(outdir=None, era=None):
     """
     Build and write both archive files.
 
@@ -104,17 +126,31 @@ def build(outdir=None):
     Args:
         outdir (:obj:`str` or `pathlib.Path`, optional):
             Output directory.  If None, PypeIt's reid_arxiv data dir.
+        era (:obj:`str`, optional):
+            Detector era, one of the ``ERAS`` keys ('loral' or 'e2v').  If
+            given, the arc source and angle anchors are taken from ``ERAS``
+            and the output files are named ``shane_hamspec_<era>_*.fits``
+            (the names get_echelle_angle_files returns).  If None, the
+            module-level ``ARC_SOURCE``/``ECH_ANCHOR``/``XD_ANCHOR`` are
+            used and the outputs carry no era tag (legacy behavior).
 
     Returns:
         :obj:`tuple`: (composite_path, angle_path).
     """
+    global ARC_SOURCE, ECH_ANCHOR, XD_ANCHOR
+    if era is not None:
+        cfg = ERAS[era]
+        ARC_SOURCE = cfg['arc_source']
+        ECH_ANCHOR = cfg['ech_anchor']
+        XD_ANCHOR = cfg['xd_anchor']
+    tag = '' if era is None else f'{era}_'
+
     if ARC_SOURCE == 'iraf':
         orders, wave, spec = iraf_arc.load()
     elif ARC_SOURCE == 'cooke':
         # The Cooke 16Nov10 solution is binned 2x1 (2048 pix); resample to the
         # dev-suite 1x1 grid (4096) with specbin=2.  It is far line-richer
         # (~36 lines/order incl. the blue) than our default XIDL solution.
-        from pypeit.core.wavecal import templates
         cooke = (ROOT / 'Cooke_data' / 'redo_from_scratch' / 'Arcs' / 'Fits'
                  / 'Arc_01_fit.idl')
         # Native binning (2048) for running on the Cooke 2x1 data itself.
@@ -233,8 +269,8 @@ def build(outdir=None):
     if outdir is None:
         outdir = dataPaths.reid_arxiv.path
     outdir = Path(outdir)
-    comp_path = outdir / 'shane_hamspec_composite_arc.fits'
-    ang_path = outdir / 'shane_hamspec_angle_fits.fits'
+    comp_path = outdir / f'shane_hamspec_{tag}composite_arc.fits'
+    ang_path = outdir / f'shane_hamspec_{tag}angle_fits.fits'
 
     # Write composite_arc (HDU1 table, HDU2/3/4 images)
     fits.HDUList([
@@ -264,7 +300,10 @@ def build(outdir=None):
 
 
 if __name__ == '__main__':
-    if '--dry' in sys.argv:
-        build(outdir=ROOT / 'scripts')
-    else:
-        build()
+    # Usage: build_angle_arxiv.py [loral|e2v] [--dry]
+    # With an era argument, build that era's archive (Q&A 52); with no era,
+    # fall back to the legacy module-level ARC_SOURCE/anchors.
+    args = [a for a in sys.argv[1:] if a != '--dry']
+    era_arg = args[0] if args else None
+    outdir_arg = (ROOT / 'scripts') if '--dry' in sys.argv else None
+    build(outdir=outdir_arg, era=era_arg)

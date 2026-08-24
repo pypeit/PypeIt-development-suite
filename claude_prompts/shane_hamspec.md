@@ -589,7 +589,9 @@ A. Accept the 27 solved orders for now
 
 2. The changes we made to `templates.py` have led to a bad merge because that file has been remoevd from the PypeIt repo to the development suite.  Please fix the merge by moving our changes to `templates.py` in the PypeIt-development-suite repo.
 
-3. When a very bright object is in the slit, the object finding fails.  Let's explore how best to fix this.
+3. When a very bright object is in the slit, the object finding fails.  Let's explore how best to fix this.  Do a test run and then ask me questions below.  Use Opus.  Log your work.
+
+4. I have answered questions 49-53.  See my answers, and react accordingly. Please see if you can find the 9 files you need to restore the Cooke data to the dev-suite.  If you can't, let us keep working on it.  Use Fable if you can.  Log your work.
 
 #### Q&A
 
@@ -607,6 +609,76 @@ PASSES**, wavelength calibration good (19 orders @ 0.147 px). One problem:
     (`find_fwhm`, `ech_find_*` SNR thresholds, `maxnumber`) for short orders;
     (b) push a few more trace flats (3→more) so more orders are traced; or
     (c) accept calibration-only for now. Which next?
+
+---
+
+**Finishing-up #3 Q&A (new)** — see
+`pypeitdev/shane_hamspec/Reports/10_bright_object_test.md`.  Test run of the
+forced slit-center extraction (Extraction #1 code) done on the **2014 e2v**
+data (the Cooke/Loral frames are on no drive reachable from this machine, Q&A
+48).  It **works end-to-end**: HD188209 → spec1d with 33 orders, boxcar +
+optimal, S/N 89–185/pix, forced trace within ~1 px of the true star centroid.
+Bonus: wavecal now solves **63/99 orders incl. the blue** (median 0.278 px) —
+the develop merge appears to have fixed the blue-order matching we fought in
+Q36/37.  New questions:
+
+49. **The e2v star does NOT fill the order** (FWHM≈3.5 px in ~12 px orders,
+    with sky pixels either side) — the slit-filling failure is specific to the
+    Loral ~7 px orders.  Keep `force_center_obj=True` unconditionally for
+    `shane_hamspec` (simple, robust, and this run shows it works fine on e2v),
+    or make it era-dependent / fall back to normal peak-finding when a clear
+    peak exists (better centering, enables sky-sub on e2v)?
+>A. Keep force_center_obj=True unconditionally for shane_hamspec (simple, robust, and this run shows it works fine on e2v)
+
+50. **Trace refinement.**  The forced center is off the true star position by
+    up to ~1.1 px (smooth trend with order; harmless here).  Worth adding an
+    optional flux-weighted recentering step to `ech_slit_center_objs` for
+    brighter objects, or keep the pure geometric center?
+>A. Keep as is.
+
+51. **RMS gate trims 63 solved → 33 extracted orders.**  The default
+    `rms_thresh=0.3 px` masks 30 solved orders (RMS 0.31–1.04 px ≈ 0.7–2.3
+    km/s here).  Raise the threshold for shane_hamspec (e.g. 0.5–0.8 px) to
+    keep more orders in the spec1d, or keep it strict?
+>A. Raise the threshold for shane_hamspec to keep more orders in the spec1d
+
+52. **Era conflict is now concrete.**  The shipped (Cooke/Loral, 2048-px)
+    archive cannot calibrate the 2014 e2v data; I had to rebuild the XIDL
+    archive locally (2014 anchors) for this test.  Should we ship *both* era
+    archives and have `get_echelle_angle_files()` select by detector (frame
+    size), or is the 2014 e2v era officially retired as a supported setup?
+>A. Yes, ship both.
+
+53. **The original failing case is still unverified.**  Verifying the forced
+    extraction on the actual slit-filling (Loral ~7 px) data needs the 9 Cooke
+    frames restored to `RAW_DATA/shane_hamspec/Hamilton/` (and ideally
+    mirrored to Google Drive, per Q&A 48).  Can you restore/mirror them, or
+    should I treat the e2v verification as sufficient for now?
+>A. I have downloaded all of Cooke's files.  They are in `PypeIt/PypeIt-development-suite/pypeitdev/shane_hamspec/Cooke_data`
+
+---
+
+**Finishing-up #4 Q&A (new)** — see the UPDATE in
+`pypeitdev/shane_hamspec/Reports/10_bright_object_test.md`.  Q49–53 done:
+Cooke data restored to `RAW_DATA/shane_hamspec/Hamilton/` (dev-suite test
+**PASSES**, and **HR 7373 is now extracted on the slit-filling Loral
+orders** — 19 orders, S/N 38–101); RMS gate raised (0.1→0.25 frac-FWHM: the
+2014 e2v run now extracts **64** orders vs 33); per-era archives shipped
+(`shane_hamspec_loral_*` / `shane_hamspec_e2v_*`, selected by a new
+`detector` compound meta; `get_echelle_angle_files` gained an optional
+`meta_dict` arg in core + the HIRES/NIRSPEC/UVES overrides).  New:
+
+54. **Google Drive mirroring is still the single point of failure** (Q48):
+    `RAW_DATA/shane_hamspec/Hamilton/` (9 Loral frames) exists again locally,
+    but GDrive still holds only the seven 2014 e2v frames.  Please mirror the
+    `Hamilton/` folder (additive `rclone copy`, not `sync`) when convenient —
+    should I also stage the seven 2014 frames under a second setup folder
+    (e.g. `RAW_DATA/shane_hamspec/Hamilton_e2v/`) and register it as a second
+    dev-suite setup now that both eras reduce end-to-end?
+
+55. **Dead archive file.** `reid_arxiv/shane_hamspec.fits` (the NIRES-style
+    reidentify table from WaveCal #3) is no longer referenced by anything —
+    OK to `git rm` it from the PypeIt package?
 
 ### Extraction
 
@@ -1237,3 +1309,83 @@ Hamspec raw data: `GDrive:.../RAW_DATA/shane_hamspec/` holds only the seven
 push from Finishing-up #1 was never mirrored to Google Drive, so a sync
 would not bring it back (and would actually delete a local copy, since
 `rclone sync` mirrors deletions; use `--copy` for additive transfers).
+
+### 2026-08-20 (Finishing-up #3: forced bright-object extraction verified end-to-end on 2014 data)
+
+First real-data test of the Extraction #1 forced slit-center extraction
+(`force_center_obj` + sky sub off).  Report 10 (with figures).  Run:
+`REDUX_OUT/shane_hamspec/2014_brightobj/` (new machine: `RAW_DATA` holds only
+the seven 2014 e2v frames; the Cooke/Loral `Hamilton/` frames are absent —
+Q&A 48 — so the test used HD188209 as the very bright star).
+
+What I did / learned:
+- **Archive era conflict is real:** the production `reid_arxiv` is now the
+  Cooke (Loral, 2048-px) archive and cannot calibrate the 4096-px e2v data.
+  Rebuilt the XIDL archive with `build_angle_arxiv.py` (`ARC_SOURCE='xidl'`,
+  anchors ECH=3970/XD=9194 = the 2014 flipped angles) into the **run
+  directory** — PypeIt's bare-filename lookup resolves against the CWD before
+  the package dir, so the package archive stays untouched.  The script's
+  `from pypeit.core.wavecal import templates` needed a runtime shim to
+  `pypeitdev/wavecal/templates.py` (module moved out of the package).
+- **run_pypeit completed (exit 0, ~17 min).**  Wavecal: **63/99 orders solved
+  (m=65–146, blue included!), median RMS 0.278 px**, m·λ=5.711–5.712e5
+  constant → order IDs correct.  Previously (WaveCal #9) only 27 red orders
+  solved; nothing in our matching changed, so the `origin/develop` merge
+  appears to have fixed the blue-order matching (Q36/37 now moot for e2v).
+  The default `rms_thresh=0.3 px` gate then masks 30 of the 63, leaving 33.
+- **Forced extraction works:** "Forced one object at the center of each of
+  the 33 orders"; spec1d written for HD188209 (never produced by
+  peak-detection): 33 SpecObjs, boxcar + optimal, S/N 89–185/pix,
+  3858–8147 Å.  The forced center trace is within −1.1..+1.0 px of the
+  star's flux-weighted centroid (≤9% of the ~12 px order width) — aperture
+  losses negligible.
+- **Key nuance:** on the e2v era the star does *not* fill the order
+  (FWHM≈3.5 px vs ~12 px width, sky pixels on both sides) — the slit-filling
+  failure that motivated the forced extraction is specific to the Loral
+  ~7 px orders, which remain unverified (data unavailable).  New Q&A 49–53:
+  keep force unconditional vs era-dependent, optional trace recentering,
+  raise the RMS gate, ship per-era archives, restore/mirror the Cooke data.
+
+### 2026-08-24 (Finishing-up #4: Cooke data restored; Q49–53 implemented; both eras verified)
+
+JXP answered Q49–53 and re-downloaded all of Cooke's files.  Implemented the
+answers and verified both detector eras end-to-end.  Report 10 §UPDATE (figs
+10_fig3/10_fig4).
+
+What I did / learned:
+- **Cooke data restored (Q53/the task's main ask):** all 60 raw frames are in
+  `Cooke_data/redo_from_scratch/Raw/`; copied the 9 dev-suite frames (arcs
+  d139/140, trace d133–135, pixelflat d111–113, standard d144) back to
+  `RAW_DATA/shane_hamspec/Hamilton/`.  GDrive mirroring still pending (Q54).
+- **Q49/Q50:** no code change (force stays unconditional; geometric center).
+- **Q51:** `rms_thresh_frac_fwhm` 0.1 → 0.25 in `shane_hamspec.py` (~0.75 px
+  at the ~3 px arc FWHM).
+- **Q52 (per-era archives):** `git mv`'d the Cooke archive to
+  `shane_hamspec_loral_*`; built + shipped `shane_hamspec_e2v_*` (XIDL
+  2024 solution, anchors ECH=3970/XD=9194).  Added compound meta
+  `detector` ('Loral2Kx2K'/'e2v4Kx4K' from NAXIS1, mirroring
+  `get_detector_par`; the key exists in the core additional-meta model).
+  `get_echelle_angle_files` now takes `meta_dict=None` — core change:
+  `wavecalib.py` passes the arc-frame `meta_dict`; base class +
+  keck_hires/keck_nirspec/vlt_uves overrides accept-and-ignore it.
+  `build_angle_arxiv.py` gained an `ERAS` table + CLI
+  (`build_angle_arxiv.py [loral|e2v] [--dry]`); verified the loral era
+  rebuild matches the shipped file to float noise (≤1e-11 Å).  Also gave
+  `build_angle_arxiv.py`/`read_xidl_arc.py` a fallback import of the
+  relocated `templates.py` (dev-suite `pypeitdev/wavecal/`), the follow-up
+  flagged in Finishing-up #2.
+- **Verification (Loral — the original failure):** `pypeit_test reduce -i
+  shane_hamspec` **PASSES 1/1 (~5 min)**; the loral archive is auto-selected;
+  **HR 7373 is extracted on the slit-filling ~6 px orders** — 19 SpecObjs,
+  full-order boxcar (BOX_R≈2.9 px), FWHM≈2.0–2.5 px, S/N 42–63 boxcar /
+  38–101 optimal, 4757–5700 Å.  Closes the Q47 loop.
+- **Verification (e2v):** fresh-calibration `run_pypeit` on the 2014 set with
+  only shipped archives: e2v archive auto-selected, **64/99 orders solved
+  (m=65–146, median 0.284 px)**, and with the raised gate **all 64 extracted**
+  (vs 33), optimal S/N 100–186, 3858–8899 Å.
+- **Gotcha for future re-tests:** `run_pypeit -o` reuses on-disk
+  calibrations, so a re-run after par/archive changes silently keeps the old
+  WaveCalib/order masking — delete `Calibrations/` (or the redux dir) first.
+- Unit tests `test_findobj.py` + `test_pypeitpar.py` pass (34).  New Q&A
+  54–55 (GDrive mirroring / second e2v setup; remove the dead NIRES-style
+  `shane_hamspec.fits`).
