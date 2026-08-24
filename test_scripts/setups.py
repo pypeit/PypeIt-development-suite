@@ -304,6 +304,7 @@ all_setups = {
     ],
     'shane_hamspec': [
         'Hamilton',
+        'Hamilton_e2v',
     ],
     'shane_kast_blue': [
         '452_3306_d57',

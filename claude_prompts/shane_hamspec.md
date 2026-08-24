@@ -593,6 +593,8 @@ A. Accept the 27 solved orders for now
 
 4. I have answered questions 49-53.  See my answers, and react accordingly. Please see if you can find the 9 files you need to restore the Cooke data to the dev-suite.  If you can't, let us keep working on it.  Use Fable if you can.  Log your work.
 
+5.  Please double check that we have a full set of Dev-Suite tests on the shane_hamspec spectrograph.  Use Fable if you can.  Log your work.  Tell me if you need any help with files, etc.
+
 #### Q&A
 
 **Finishing-up #1 Q&A (new)** — see
@@ -679,6 +681,34 @@ orders** — 19 orders, S/N 38–101); RMS gate raised (0.1→0.25 frac-FWHM: th
 55. **Dead archive file.** `reid_arxiv/shane_hamspec.fits` (the NIRES-style
     reidentify table from WaveCal #3) is no longer referenced by anything —
     OK to `git rm` it from the PypeIt package?
+
+---
+
+**Finishing-up #5 Q&A (new).**  Audited and filled out the dev-suite
+coverage; `shane_hamspec` now has **two reduce setups (both eras), three
+unit tests, and two vet tests — all passing** (see the 2026-08-24 log
+entry).  New:
+
+56. **Second setup registered (part of Q54).**  I moved the seven 2014
+    frames from the flat `RAW_DATA/shane_hamspec/` layout into
+    `RAW_DATA/shane_hamspec/Hamilton_e2v/` and registered it as a second
+    reduce setup (dev file `shane_hamspec_hamilton_e2v.pypeit`; PASSES).
+    **Google Drive must be restructured to match** — it currently holds the
+    seven e2v frames *flat* under `RAW_DATA/shane_hamspec/`, so a plain
+    `pypeit_syncraw` (rclone *sync*) would delete both local setup folders.
+    Please mirror `Hamilton/` (9 Loral frames) and `Hamilton_e2v/` (7 e2v
+    frames, moved out of the flat layout) to GDrive.  I can prepare the
+    exact rclone commands if helpful.
+
+57. **Afterburn coverage.**  The only remaining gap vs comparable echelle
+    instruments (e.g. keck_hires) is afterburn: no sensfunc/fluxing/coadd1d
+    tests.  Both setups reduce a standard (HR 7373, HD188209), so a
+    `sensfunc_files/shane_hamspec_*.sens` + `sensfunc_tests` entry is
+    feasible — but the par currently sets `algorithm='IR'` with
+    `TellPCA_3000_10500_R120000.fits`, which is a large cached file, and the
+    extracted coverage is modest (Loral: 4757–5700 Å).  Want me to add
+    sensfunc (and optionally fluxing) tests next, or leave afterburn out
+    for the initial PR?
 
 ### Extraction
 
@@ -1389,3 +1419,52 @@ What I did / learned:
 - Unit tests `test_findobj.py` + `test_pypeitpar.py` pass (34).  New Q&A
   54–55 (GDrive mirroring / second e2v setup; remove the dead NIRES-style
   `shane_hamspec.fits`).
+
+### 2026-08-24 (Finishing-up #5: full dev-suite test coverage for shane_hamspec)
+
+Audited the dev-suite coverage for `shane_hamspec` against comparable
+echelle instruments (keck_hires, p200_tspec) and filled the gaps.  All new
+and existing tests pass.
+
+Coverage before: only the `reduce` test for `Hamilton` (registered in
+`test_scripts/setups.py`); nothing in `unit_tests/`, `vet_tests/`, or the
+per-test-type lists.
+
+What I added:
+- **Second reduce setup, `Hamilton_e2v`** (the 2014 e2v data — needed since
+  Q52 made e2v a supported era with its own shipped archive): moved the
+  seven d2xxx frames from the flat `RAW_DATA/shane_hamspec/` layout into
+  `RAW_DATA/shane_hamspec/Hamilton_e2v/`, wrote
+  `pypeit_files/shane_hamspec_hamilton_e2v.pypeit` (from the validated
+  Finishing-up-#4 run), registered it in `test_scripts/setups.py`.
+  `./pypeit_test reduce -i shane_hamspec -t 2` → **PASSES 2/2** (~39 min
+  wall: Hamilton ~5 min, Hamilton_e2v ~34 min).
+- **unit_tests/test_spectrographs.py**: `shane_hamspec` entries in
+  `test_filesearch` (Hamilton: 9 files; Hamilton_e2v: 7), plus a new
+  `test_shane_hamspec_era_archives` that checks the `detector` compound
+  meta on a real frame of each era and the era-matched
+  `get_echelle_angle_files` selection (guards the Q52 mechanism).
+- **unit_tests/test_frametype.py**: new `test_shane_hamspec` — runs
+  `PypeItSetup.from_file_root` on both eras and requires frame types
+  identical to the by-hand pypeit files (guards the PLATENAM-based flat
+  typing and the standard-star exptime windows in both header eras).
+- **vet_tests/test_wavelengths.py**: new `test_shane_hamspec` — per-era
+  order counts (≥15 Loral / ≥50 e2v), median RMS (≤0.25 / ≤0.40 px), and a
+  0.8 px per-order ceiling (matches the Q51 gate).
+- **vet_tests/test_extraction.py**: new
+  `test_shane_hamspec_forced_extraction` — both eras must produce a spec1d
+  with one object per good order, traces at `SPAT_FRACPOS=0.5`, and boxcar
+  + optimal extractions at median S/N > 5 (guards the Q47/49 forced
+  slit-center extraction end-to-end).
+- The generic `vet_tests/test_echelles.py:chk_orders` pattern (all orders
+  unmasked) deliberately NOT used: Hamspec legitimately masks the orders
+  without wavelength solutions, so it would always fail.
+
+Verification: `pypeit_test list` shows both setups; reduce 2/2 PASS; the 3
+unit tests and 2 vet tests all pass against the fresh REDUX_OUT.
+
+Remaining gaps flagged to JXP: GDrive restructuring/mirroring for both
+setup folders (Q56 — a plain rclone *sync* would currently delete them
+locally) and whether to add afterburn sensfunc/fluxing coverage (Q57).
+The main-repo `pypeit/tests/test_findobj.py` (synthetic forced-extraction
+test) already covers the core routine; 34 tests there still pass.
