@@ -46,20 +46,22 @@ If you need to test the code:
 
 2. See the answers to our first Q&A.  Act accordingly.  Use Opus if you can.  Log your work in Logs below.
 
-3. Please:
+3. Please make child classes off of the `INTIDSSpectrograph` class. One for the EEV10 detector and one for the RED+2 detector.  Use Opus.  Log your work in Logs below.
+
+4. Please:
 
    - Try to run `pypeit_setup` on the main data set.  
    - Write a report of your findings in PypeIt-development-suite/pypeitdev/int_ids/Reports. 
    - If you have any questions, put them in the Q&A section below.  Log your work in Logs below.
 
-4. Thanks for your terrific Report.  I have implemented all of the changes except the Airmass calculation which I am leaving for you to implement. See my answers in the Q&A section below. Please:
+5. Thanks for your terrific Report.  I have implemented all of the changes except the Airmass calculation which I am leaving for you to implement. See my answers in the Q&A section below. Please:
    - Use astropy for the calculation following these notes: https://docs.astropy.org/en/latest/coordinates/example_gallery_plot_obs_planning.html
    - Put the method in a common module so it can be reused by other spectrographs.
    - Edit the 02_pypeit_setup.md report to include these updates
    - If you have any questions, put them in the Q&A section below.  
    - Log your work in Logs below.
 
-5.  Excellent work.  Can you now:
+6.  Excellent work.  Can you now:
 
    - Generate a PypeIt file
    - Place it in the PypeIt-development-suite/pypeit_files/ folder following the naming convention there
@@ -68,8 +70,6 @@ If you need to test the code:
    - Write a report of your findings in PypeIt-development-suite/pypeitdev/int_ids/Reports.
    - If you have any questions, put them in the Q&A section below.  
    - Log your work in Logs below.
-
-6. I answered the new Q&A.  Update Report 03.
 
 ### Q&A
 
@@ -112,6 +112,20 @@ If you need to test the code:
    so I used it. Should I keep using `pypeit14b`?
 >A. Yes, use `pypeit14b`
 
+**2026-08-24 (Prep task 4, `pypeit_setup`):**
+
+8. **Airmass policy**: Report 02 recommends computing the mid-exposure
+   airmass with astropy from ra/dec/mjd/site. Should the computed value
+   *replace* the header `AIRMASS` for all frames (falling back to the header
+   only when coordinates are missing, e.g. bias/flat with RA=DEC=0), or only
+   *fill in* when the header card is absent? I lean toward replace-with-
+   fallback, since it also validates the header to <0.2%.
+
+9. **Report numbering**: I named the report `02_pypeit_setup.md` (matching
+   the name referenced in prompt 5). Should I retroactively write a
+   `01_module_creation.md` report covering prompts 1–3, or is the Logs
+   section here sufficient?
+
 ## Logging
 
 The "Logs" section will record Claude's work.  Please use the following format:
@@ -123,6 +137,75 @@ The "Logs" section will record Claude's work.  Please use the following format:
 ...
 
 ## Logs
+
+### 2026-08-24 (Ran pypeit_setup; wrote Report 02)
+
+Executed prompt 4. (Model note: session runs on Claude Fable 5.)
+
+- Ran `pypeit_setup -s int_ids_eev10` on
+  `pypeitdev/int_ids/INT_20201218/`, both the first pass (`.sorted`) and
+  with `-c A` to generate a full `.pypeit` file. **Result: completely
+  clean** — 4 files ingested, frame types correct
+  (arc,tilt / bias / pixelflat,illumflat,trace / science), one unique
+  configuration (R1200B / 4502.182 / EEV10 / 1,1), `.pypeit` and `.calib`
+  files written and vetted, zero warnings or errors in the log.
+- Both `int_ids_eev10` and `int_ids_redplus2` show up in the script's
+  valid-spectrograph list.
+- Cross-checked the header `AIRMASS` with an astropy AltAz computation at
+  Roque de los Muchachos: agreement <0.2% at both exposure start
+  (1.2938 vs AMSTART 1.2930) and mid-exposure (1.3528 vs AIRMASS 1.3549).
+- Wrote `pypeitdev/int_ids/Reports/02_pypeit_setup.md` with the full
+  results plus five recommended changes: (1) astropy-based mid-exposure
+  airmass in a reusable common module (with fallback for RA=DEC=0
+  bias/flat frames), (2) dev-suite registration (RAW_DATA staging,
+  pypeit_files entry, test_setups.py, test_load_images.py), (3) docs
+  (release notes + doc/spectrographs page), (4) frame-typing coverage for
+  darks/sky flats/standards when such data exist, (5) flip
+  `supported=True` after the dev-suite reduction passes.
+- New Q&A items #8 (airmass replace-vs-fill policy) and #9 (whether a
+  retroactive Report 01 is wanted).
+
+### 2026-08-24 (Split into per-detector child classes: EEV10 and RED+2)
+
+Executed prompt 3. (Model note: session runs on Claude Fable 5; the model
+cannot be switched to Opus mid-session.)
+
+**Restructuring of `pypeit/spectrographs/int_ids.py`** (following the
+base/child pattern of `p200_dbsp.py` and `keck_lris.py`):
+
+- `INTIDSSpectrograph` is now an abstract parent (no `name`; not loadable via
+  `load_spectrograph('int_ids')` any more). It keeps everything shared:
+  metadata mapping, compound meta, frame typing, configuration keys, default
+  parameters, the R1200B `full_template` selection in `config_specific_par`,
+  and `get_rawimage`. Three new class attributes are declared for children to
+  set: `detector_name` (the `DETECTOR` header value), `detector_platescale`,
+  and `detector_specflip`; `get_detector_par` now uses these instead of an
+  internal plate-scale dict, and warns if the header `DETECTOR` disagrees
+  with the class.
+- New `check_spectrograph` on the parent (called automatically by
+  `PypeItMetaData`): raises a `PypeItError` naming the sibling class if the
+  data were taken with the other camera.
+- `INTIDSEEV10Spectrograph` → `name='int_ids_eev10'`, camera EEV10,
+  0.40"/pix, `specflip=True` (all verified against the test data).
+- `INTIDSREDPLUS2Spectrograph` → `name='int_ids_redplus2'`, camera RED+2,
+  0.44"/pix. Explicitly documented as a placeholder: the exact `DETECTOR`
+  string (assumed 'REDPLUS2'), amp layout, gain/read-noise cards, and
+  spectral flip all still need verification against real RED+2 frames.
+
+**Validation (pypeit14b):**
+
+- `load_spectrograph('int_ids')` correctly fails; both child names load.
+- `int_ids_eev10`: frame typing of the four test frames unchanged
+  (bias / pixelflat,illumflat,trace / arc,tilt / science), detector par
+  correct (0.40"/pix, specflip=True, gain 1.2), and `config_specific_par`
+  still selects `full_template` + `int_ids_R1200B.fits` for R1200B.
+- `int_ids_redplus2` loads with its placeholder values and its
+  `check_spectrograph` correctly rejects the EEV10 test data, pointing the
+  user at `int_ids_eev10`.
+- PypeIt unit tests `test_spectrographs.py` and `test_pypeitpar.py`:
+  45 passed.
+
+Note: task 4 (`pypeit_setup`) should now use `-s int_ids_eev10`.
 
 ### 2026-08-24 (Acted on Q&A #1: wavelength template, specflip, RED+2 placeholder)
 

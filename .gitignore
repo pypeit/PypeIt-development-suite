@@ -7,6 +7,8 @@
 *.png
 !pypeitdev/wavelengths/template_files/*/*/*.fits
 !pypeitdev/wavelengths/template_files/*/*/*.png
+pypeitdev/int_ids/INT_20201218/*
+pypeitdev/shane_hamspec/Cooke_data/*
 *.json
 *.yaml
 *.obslog
