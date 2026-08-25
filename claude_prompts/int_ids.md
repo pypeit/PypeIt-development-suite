@@ -39,6 +39,11 @@ If you need to test the code:
 ## Prompts
 
 1. Read this doc.  Perform the first task under Prep.
+2. Read this doc.  Perform the second task under Prep.
+3. Read this doc.  Perform the third task under Prep.
+4. Read this doc.  Perform the fourth task under Prep.
+5. Read this doc.  Perform the fifth task under Prep.
+6. Read this doc.  Perform the sixth task under Prep.
 
 ## Prep
 
@@ -54,14 +59,7 @@ If you need to test the code:
    - Write a report of your findings in PypeIt-development-suite/pypeitdev/int_ids/Reports. 
    - If you have any questions, put them in the Q&A section below.  Log your work in Logs below.
 
-5. Thanks for your terrific Report.  I have implemented all of the changes except the Airmass calculation which I am leaving for you to implement. See my answers in the Q&A section below. Please:
-   - Use astropy for the calculation following these notes: https://docs.astropy.org/en/latest/coordinates/example_gallery_plot_obs_planning.html
-   - Put the method in a common module so it can be reused by other spectrographs.
-   - Edit the 02_pypeit_setup.md report to include these updates
-   - If you have any questions, put them in the Q&A section below.  
-   - Log your work in Logs below.
-
-6.  Excellent work.  Can you now:
+5. Thanks for your terrific Report.  I have answered the Q&A.  Can you now:
 
    - Generate a PypeIt file
    - Place it in the PypeIt-development-suite/pypeit_files/ folder following the naming convention there
@@ -120,11 +118,25 @@ If you need to test the code:
    only when coordinates are missing, e.g. bias/flat with RA=DEC=0), or only
    *fill in* when the header card is absent? I lean toward replace-with-
    fallback, since it also validates the header to <0.2%.
+>A. Use AIRMASS when you have it
 
 9. **Report numbering**: I named the report `02_pypeit_setup.md` (matching
    the name referenced in prompt 5). Should I retroactively write a
    `01_module_creation.md` report covering prompts 1–3, or is the Logs
    section here sufficient?
+>A. That is fine
+
+**2026-08-25 (Prep task 5, first reduction):**
+
+10. **Supported flag**: the dev-suite `reduce` test now passes for
+    `int_ids_eev10`. Shall I flip `supported = True` on the EEV10 class
+    (leaving RED+2 unsupported), and add the docs (release-notes entry +
+    `doc/spectrographs/int_ids.rst`)?
+
+11. **Google Drive**: the staged raw data in
+    `RAW_DATA/int_ids_eev10/INT_20201218/` (4 FITS, 12 MB) needs to be
+    uploaded to the dev-suite Google Drive for others to run the test —
+    I don't have access to do that. Will you handle the upload?
 
 ## Logging
 
@@ -137,6 +149,43 @@ The "Logs" section will record Claude's work.  Please use the following format:
 ...
 
 ## Logs
+
+### 2026-08-25 (First full reduction: dev-suite test PASSED; wrote Report 03)
+
+Executed prompt/Prep task 5. (Model note: session runs on Claude Fable 5.)
+
+**Dev-suite registration** (per the add-devsuite-setup skill):
+
+- Staged the 4 raw frames as `RAW_DATA/int_ids_eev10/INT_20201218/`
+  (RAW_DATA symlinks to the external drive; copy succeeded). Google Drive
+  upload still needed (Q&A #11).
+- Created `pypeit_files/int_ids_eev10_int_20201218.pypeit` (lower-cased
+  filename per the harness convention; content from the clean
+  `pypeit_setup` run of task 4).
+- Registered `'int_ids_eev10': ['INT_20201218']` in
+  `test_scripts/setups.py` (`all_setups`), which auto-derives the reduce
+  coverage; `./pypeit_test list` shows the new setup.
+- Added `test_load_int_ids` to `unit_tests/test_load_images.py`
+  (runs and passes).
+
+**Reduction** (`./pypeit_test reduce -s int_ids_eev10/INT_20201218`,
+pypeit14b env):
+
+- **PASSED 1/1 in 3m07s** on the first attempt; no errors.
+- All stages completed: bias; 1 slit traced/synced; wavelengths via the
+  `int_ids_R1200B.fits` template with **RMS 0.226 pix (~0.11 A)**; tilts
+  RMS 0.066 pix; flats built; object found and traced (both passes);
+  sky-subtracted boxcar+optimal extraction; full QA HTML/PNGs.
+- Spec1d sanity: coverage 3487–5412 A (matches template), object FWHM
+  1.88 pix = 0.75" seeing (independently confirms the 0.40"/pix plate
+  scale), median S/N ~3.7/pix for the 2500 s faint Gaia target, object at
+  spatial pixel 172.9 — matching the original IRAF aperture (168–178).
+- Warnings all benign: no darks/scattlight taken, single-flat illumflat
+  fallback, numpy/pydantic noise.
+
+**Written:** `pypeitdev/int_ids/Reports/03_first_reduction.md`.
+**New Q&A:** #10 (flip `supported=True` + docs?) and #11 (Google Drive
+upload of the staged raw data).
 
 ### 2026-08-24 (Ran pypeit_setup; wrote Report 02)
 
