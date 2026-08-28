@@ -10,7 +10,7 @@
             subtract_continuum = True
     [[wavelengths]]
         method = holy-grail
-        lamps = NeI_DeVeny
+        lamps = NeI_DeVeny,
 [reduce]
     [[findobj]]
         snr_thresh = 15

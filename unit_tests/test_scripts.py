@@ -72,9 +72,9 @@ def test_view_fits_mosaic():
     """
     file = os.path.join(os.environ['PYPEIT_DEV'], 'RAW_DATA', 'gemini_gmos', 'GN_HAM_R400_885',
                         'N20190205S0035.fits')
-    pargs = view_fits.ViewFits.parse_args(['gemini_gmos_north_ham', file,
-                                                   '--det', 'mosaic',
-                                                   '--proc'])
+    pargs = view_fits.ViewFits.parse_args([
+        'gemini_gmos_north_ham', file, '--det', 'mosaic', '--proc'
+    ])
     view_fits.ViewFits.main(pargs)
 
 

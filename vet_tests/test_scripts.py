@@ -162,7 +162,8 @@ def test_identify(redux_out):
                               spat_ids=np.atleast_1d(int(arcfitter._spatid)),
                               PYP_SPEC='shane_kast_blue')
     # need to add strpar to waveCalib
-    sv_par = arcfitter.par.data.copy()
+    # TODO: I (KBW) would like to change how we do this...
+    sv_par = arcfitter.par._data.copy()
     j_par = jsonify(sv_par)
     waveCalib.strpar = json.dumps(j_par)
     # copy internals
@@ -538,7 +539,6 @@ def test_run_to_calibstep(redux_out):
     os.chdir(_redux_out)
     pypeit_file = _redux_out / 'shane_kast_blue_A.pypeit'
 
-    #pytest.set_trace()
     # Run on all the steps
     for step in calibrations.MultiSlitCalibrations.default_steps():
         run_to_calibstep.RunToCalibStep.main(run_to_calibstep.RunToCalibStep.parse_args([
