@@ -10,7 +10,7 @@
 [calibrations]
     [[tiltframe]]
         [[[process]]]
-            spat_flexure_correct = True
+            spat_flexure_method = detector
 
 # Setup
 setup read
