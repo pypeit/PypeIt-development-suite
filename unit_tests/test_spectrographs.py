@@ -52,7 +52,7 @@ def test_filesearch():
             ['p200_dbsp_blue', '1200_5000_d55', 8],
             ['p200_dbsp_red', '1200_7100_d68', 6],
             ['p200_tspec', 'TSPEC', 16],
-            ['shane_hamspec', 'Hamilton', 9],
+            ['shane_hamspec', 'Hamilton', 10],
             ['shane_hamspec', 'Hamilton_e2v', 7],
             ['shane_kast_blue', '452_3306_d57', 11],
             ['shane_kast_red', '1200_5000_d57', 4],

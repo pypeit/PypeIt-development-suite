@@ -71,6 +71,10 @@ If you need to test the code:
 
 22. Read this doc.  Perform the 1st task under Finishing up.
 23. Read this doc.  Perform the 2nd task under Finishing up.
+24. Read this doc.  Perform the 3rd task under Finishing up.
+25. Read this doc.  Perform the 4th task under Finishing up.
+26. Read this doc.  Perform the 5th task under Finishing up.
+27. Read this doc.  Perform the 6th task under Finishing up.
 
 ## Prep
 
@@ -594,6 +598,13 @@ A. Accept the 27 solved orders for now
 4. I have answered questions 49-53.  See my answers, and react accordingly. Please see if you can find the 9 files you need to restore the Cooke data to the dev-suite.  If you can't, let us keep working on it.  Use Fable if you can.  Log your work.
 
 5.  Please double check that we have a full set of Dev-Suite tests on the shane_hamspec spectrograph.  Use Fable if you can.  Log your work.  Tell me if you need any help with files, etc.
+
+6. Please check the reviewer comments on GitHub for both PRs: 
+    - `https://github.com/pypeit/PypeIt/pull/2187`
+    - `https://github.com/pypeit/PypeIt-development-suite/pull/426`
+
+Make edits to either Repository as needed.  If you have any questions, ask me below.
+Use Opus if you can.  Log your work.
 
 #### Q&A
 
@@ -1468,3 +1479,69 @@ setup folders (Q56 — a plain rclone *sync* would currently delete them
 locally) and whether to add afterburn sensfunc/fluxing coverage (Q57).
 The main-repo `pypeit/tests/test_findobj.py` (synthetic forced-extraction
 test) already covers the core routine; 34 tests there still pass.
+
+### 2026-08-27 (Finishing-up #6: addressed the PR reviews — PypeIt #2187 + dev-suite #426)
+
+Worked through every reviewer comment (rcooke-ast's "changes requested"
+review + the 4 Cursor-Bugbot findings on PypeIt PR #2187; rcooke's two
+comments on the approved dev-suite PR #426).  All edits verified by a fresh
+two-setup dev-suite run.
+
+PypeIt repo edits (all review-requested cleanups/restorations):
+- `wavecalib.py`: restored the measured per-slit arc FWHM loop (removed the
+  forced `measured_fwhms[:] = 3.` debug override + "PUT THIS BACK" TODOs),
+  dropped the unused `reload` import, removed the `if False:` matplotlib
+  block and the commented-out `embed`/`reload` lines.
+- `autoid.py`: reinstated `cc_shift_range=par['cc_shift_range']` in
+  `echelle_wvcalib` (the hardcoded (-200,200) overrode HIRES/UVES defaults;
+  hamspec already sets that value in its own par), and removed the two
+  leftover NOTE comments the reviewer flagged.
+- `echelle.py`: removed the global `order_vec_guess += 2` hack — the
+  full-stack cross-correlation absorbs whole-order offsets, so order IDs are
+  unchanged (verified: m·λ still 5.711e5 on both eras) — plus the commented
+  embeds and a dead `if debug and False:` block.
+- Made the JXP speed hacks proper options (review asked "make this an
+  option"): new `ech_direct_cc` wavelength parameter (default False =
+  original HIRES behavior) that makes the echelle order-ID cross-correlation
+  operate directly on the stacked arcs (skips `get_xcorr_arc` synthesis and
+  the CCF continuum subtraction — new `cont_subtract=True` kwarg on
+  `wvutils.xcorr_shift`).  `shane_hamspec` sets `ech_direct_cc=True`.
+- Airmass at the exposure **midpoint** (two review comments):
+  `meta.airmass` gained an optional `exptime` arg (obstime = exposure start
+  → compute at start + exptime/2); `shane_hamspec` passes `EXPTIME`.
+  (HD188209: 1.2394 → 1.2327.)
+- `shane_hamspec.py`: tilts `spat_order` 3 → 1 (orders are ~6–12 px wide);
+  renamed `wide/narrow_plates` → `pixelflat/sciflat_plates` with a comment
+  explaining the '<width um>:<length arcsec>' plate naming (the Loral pair
+  differs only in length, so wide/narrow was misleading); removed the
+  commented-out `#return ['GRISM_N', 'BSPLIT_N']`; moved `_obs_isot` from a
+  staticmethod to a module-level function; fixed the stale
+  `configuration_keys` comment that contradicted the (intentional, Q43/XIDL)
+  `echangle←DHEITRAW` / `xdangle←GTILTRAW` mapping — that Bugbot finding is
+  a stale-comment issue, not a real swap.
+- Regenerated `doc/pypeit_par.rst` and added 2.1.0dev release-notes entries
+  (shane_hamspec instrument entry; `ech_direct_cc`; `force_center_obj`;
+  `meta.airmass`).
+
+Dev-suite edits (PR #426 comments — "standard and no science frames?"):
+- **Hamilton:** added a science frame — d143 (PDS 100, 600 s) — to
+  `RAW_DATA/shane_hamspec/Hamilton/` (now 10 frames; GDrive mirror still
+  pending, Q56) and to the pypeit file; it auto-types as `science` and is
+  reduced + extracted (17 orders) by the dev-suite test.
+- **Hamilton_e2v:** intentional — the 2014 dataset contains no science
+  exposures (HD188209 is the only on-sky frame); suggest replying so on the
+  PR.
+- Regenerated both pypeit-file data blocks (picks up the midpoint airmass);
+  updated `test_filesearch` (Hamilton 9→10) and pinned the forced-extraction
+  vet test to the standard's spec1d (the new fainter science frame would
+  make the per-order S/N>5 check fragile).
+
+Verification: dev-suite reduce **2/2 PASS** from scratch (calibrations
+wiped first — remember `-o` reuses them); Hamilton 17 orders @ median
+0.148 px (was 19 @ 0.147: the restored *measured* FWHM (~2.2 px) tightens
+the RMS gate vs the debug-forced 3.0), both science and standard spec1d
+written; Hamilton_e2v 64 orders @ 0.268 px (was 0.284), max 0.746.  All
+hamspec unit tests (3), vet tests (2), and the PypeIt wavecal/par/findobj
+unit tests pass.  Remaining for JXP: reply/resolve the PR threads (esp.
+the intentional angle mapping and the e2v no-science answer) and the Q54/56
+GDrive mirroring.
