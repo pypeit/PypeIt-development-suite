@@ -91,34 +91,45 @@ def load_archive(outfile, n_final=2, func='legendre'):
         if this_order_vec_raw.size != nord:
             embed()
             raise PypeItError(f'Number of orders in the header ({nord}) does not match the number of orders in the table ({this_order_vec_raw.size}) for file {templ_file}')
-        all_wave, all_arc = [], []
-        for ii in range(nord):
-            coeff = np.array(hdu[0].header['WV_0_{0:02d}'.format(ii+1)].split() + \
-                     hdu[0].header['WV_4_{0:02d}'.format(ii+1)].split()).astype(float)[::-1]
-            pixarr = np.arange(hdu[0].header['NAXIS1'])
-            wavarr = np.polyval(coeff, pixarr)
+        all_wave, all_arc, all_shift = [], [], np.zeros(nord)
+        # Repeat twice (get a better cross-correlation shift by iterating)
+        for rep in range(2):
+            for ii in range(nord):
+                coeff = np.array(hdu[0].header['WV_0_{0:02d}'.format(ii+1)].split() + \
+                         hdu[0].header['WV_4_{0:02d}'.format(ii+1)].split()).astype(float)[::-1]
+                pixarr = np.arange(hdu[0].header['NAXIS1'])
+                wavarr = np.polyval(coeff, pixarr)
 
-            # Generate a spectrum from the hires template for this order and interpolate it onto the MAKEE wavelength solution
-            this_ord = this_order_vec_raw[ii]
-            ww_ord = np.where(hires_orders==this_ord)[0][0]
-            this_hspec = hires_specs[:, ww_ord]
-            this_hwave = hires_waves[:, ww_ord]
-            wgud = (this_hwave > 0)
-            this_hires_spec = np.interp(wavarr, this_hwave[wgud], this_hspec[wgud])
-            # Plot to see if the MAKEE and HIRES spectra are aligned.
-            # They are not, so we need to cross-correlate and shift the MAKEE spectrum to match the HIRES spectrum
-            if False:
-                plt.plot(wavarr, hdu[0].data[ii], color='blue', label='MAKEE')
-                plt.plot(wavarr, this_hires_spec, color='red', label='HIRES')
-                plt.legend()
-                plt.show()
-            # Calculate and apply the shift
-            shift, corr = xcorr_shift(hdu[0].data[ii], this_hires_spec, 100, debug=False)
-            wavarr = np.polyval(coeff, pixarr-shift)
+                # Generate a spectrum from the hires template for this order and interpolate it onto the MAKEE wavelength solution
+                this_ord = this_order_vec_raw[ii]
+                ww_ord = np.where(hires_orders==this_ord)[0][0]
+                this_hspec = hires_specs[:, ww_ord]
+                this_hwave = hires_waves[:, ww_ord]
+                wgud = (this_hwave > 0)
+                this_hires_spec = np.interp(wavarr, this_hwave[wgud], this_hspec[wgud])
+                # Plot to see if the MAKEE and HIRES spectra are aligned.
+                # They are not, so we need to cross-correlate and shift the MAKEE spectrum to match the HIRES spectrum
+                if False:
+                    plt.plot(wavarr, hdu[0].data[ii], color='blue', label='MAKEE')
+                    plt.plot(wavarr, this_hires_spec, color='red', label='HIRES')
+                    plt.legend()
+                    plt.show()
+                if rep == 0:
+                    # Calculate the shift
+                    shift, corr = xcorr_shift(hdu[0].data[ii], this_hires_spec, 100, debug=False)
+                    all_shift[ii] = 0.0#shift
+                else:
+                    # On the second iteration, apply the shift to the MAKEE wavelength solution and store it in the final table
+                    wavarr = np.polyval(coeff, pixarr-fit_shift[ii])
 
-            all_wave.append(arc.resize_spec(wavarr, nspec))
-            # all_wave.append(arc.resize_spec(airtovac(wavarr*units.AA).value, nspec))
-            all_arc.append(arc.resize_spec(hdu[0].data[ii], nspec))
+                    all_wave.append(arc.resize_spec(wavarr, nspec))
+                    # all_wave.append(arc.resize_spec(airtovac(wavarr*units.AA).value, nspec))
+                    all_arc.append(arc.resize_spec(hdu[0].data[ii], nspec))
+            if rep == 0:
+                robfit = robust_fit(np.arange(nord), all_shift, 1, function='legendre', maxiter=10,
+                                      lower=5, upper=5, maxrej=1, sticky=True,
+                                        minx=0, maxx=nord-1, weights=None)
+                fit_shift = robfit.eval(np.arange(nord))
 
         # Convert to numpy arrays
         this_wave = np.array(all_wave)
@@ -126,6 +137,7 @@ def load_archive(outfile, n_final=2, func='legendre'):
 
         # Assume all are good
         igood = np.ones(nord, dtype=bool)
+        embed()
 
         this_order_vec = this_order_vec_raw[igood]
         nsolns = this_order_vec_raw.size
@@ -623,10 +635,11 @@ if __name__ == '__main__':
                           xd_reddest_fit_polyorder=2, sigrej=3.0, maxrej=1, debug=debug)
 
     # Compute a composite arc from the solution arxiv
-    composite_arcfile = os.path.join(os.getenv('PYPEIT_DEV'), 'pypeitdev', 'hires_wvcalib', 'tektronix', f'keck_hires_orig_composite_arc.fits')
-    if os.path.isfile(composite_arcfile) and not overwrite:
-        print(f'File {composite_arcfile} already exists. Use --overwrite or -o to overwrite it.')
-    else:
-        echelle_composite_arcspec(arxiv_file, composite_arcfile, show_orders=debug)
+    print("A composite arc is not required for the wavelength calibration. We can just use the pre-existing one.")
+    # composite_arcfile = os.path.join(os.getenv('PYPEIT_DEV'), 'pypeitdev', 'hires_wvcalib', 'tektronix', f'keck_hires_orig_composite_arc.fits')
+    # if os.path.isfile(composite_arcfile) and not overwrite:
+    #     print(f'File {composite_arcfile} already exists. Use --overwrite or -o to overwrite it.')
+    # else:
+    #     echelle_composite_arcspec(arxiv_file, composite_arcfile, show_orders=debug)
 
     print("All done!")
