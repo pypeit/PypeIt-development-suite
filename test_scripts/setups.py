@@ -246,6 +246,7 @@ all_setups = {
         'HK_zJ',
         'J_zJ',
         'K_K',
+        'nep_as1_MOS',
     ],
     'mmt_bluechannel': [
         '300l',
