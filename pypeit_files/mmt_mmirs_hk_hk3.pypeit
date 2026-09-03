@@ -1,0 +1,35 @@
+# Auto-generated PypeIt file (regenerated for the geometry-driven A-B nod
+# pairing and the derived dither columns)
+
+# User-defined execution parameters
+[rdx]
+    spectrograph = mmt_mmirs
+[reduce]
+    [[findobj]]
+        maxnumber_sci = 1
+        maxnumber_std = 1
+
+# Setup
+setup read
+Setup A:
+  decker: 5pixel-long
+  dichroic: HK3
+  dispname: HK
+setup end
+
+# Data block
+# The two science frames are a real ~30" along-slit nod (the supernova
+# SN2026ejy) and are auto-paired A/B by get_comb_group.  At 181s these frames
+# are long enough to double as the OH-airglow wavelength arc, and their post-2019
+# sexagesimal headers exercise deriving the dither offset from the newer format.
+# The single dark is exposure-matched to the science frames for the ramp
+# read-noise calibration.
+data read
+ path /Users/tim/MMT/PypeIt-development-suite/RAW_DATA/mmt_mmirs/HK_HK3
+                       filename |                 frametype |                 ra |                dec |       target | dispname |      decker | binning |               mjd | airmass | exptime | dichroic | dithpat | dithpos |             dithoff | frameno | calib
+SN2026ejy_HK_longslit.0037.fits |          arc,science,tilt | 242.50170833333334 | 0.7044499999999999 | SN2026ejy_HK |       HK | 5pixel-long |     1,1 |  61278.1766087963 |   1.625 | 181.459 |      HK3 |      AB |       A |  -4.605149951465026 |      37 |     0
+SN2026ejy_HK_longslit.0038.fits |          arc,science,tilt | 242.50166666666664 | 0.6961166666666667 | SN2026ejy_HK |       HK | 5pixel-long |     1,1 | 61278.17886574074 |   1.649 | 181.459 |      HK3 |      AB |       B | -34.605415895546486 |      38 |     0
+                 dark.0318.fits |                      dark |                0.0 |                0.0 |         Dark |     open |        dark |     1,1 | 61278.54136574074 |     1.0 | 181.459 |     dark |    None |    None |                 0.0 |     318 |     0
+                 flat.0366.fits | pixelflat,illumflat,trace |                0.0 |                0.0 |         flat |       HK | 5pixel-long |     1,1 | 61278.59916666667 |     1.0 |   4.426 |      HK3 |    None |    None |                 0.0 |     366 |     0
+                 flat.0367.fits | pixelflat,illumflat,trace |                0.0 |                0.0 |         flat |       HK | 5pixel-long |     1,1 | 61278.59931712963 |     1.0 |   4.426 |      HK3 |    None |    None |                 0.0 |     367 |     0
+data end

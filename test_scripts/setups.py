@@ -243,9 +243,12 @@ all_setups = {
         'G270_Sky',
     ],
     'mmt_mmirs': [
+        'H3000_H',
+        'HK_HK3',
         'HK_zJ',
         'J_zJ',
         'K_K',
+        'nep_as1_MOS',
     ],
     'mmt_bluechannel': [
         '300l',
