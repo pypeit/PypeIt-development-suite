@@ -163,10 +163,25 @@ correctly only by the accident of its naive `.split('.fits')[0]` logic; once
 extension-stripping was switched to be driven by `allowed_extensions`, this
 mismatch surfaced as a real regression (basenames retained a trailing
 `.fits`). Fixed by changing `allowed_extensions` to
-`['.fits', '.fits.fz']` (the `.fits` entry also guards against users who
-have already decompressed their files before running PypeIt). Updated the
-one existing test that asserted the old value
+`['.fits', '.fits.fz']` (the `.fits` entry was meant to also guard against
+users who have already decompressed their files before running PypeIt).
+Updated the one existing test that asserted the old value
 (`pypeit/tests/test_spectrographs.py`).
+
+**Correction:** the `.fits` entry above was wrong and has been removed --
+`allowed_extensions` for `soar_goodman.py` is now `['.fits.fz']` only.
+Files distributed by the observatory with a bare `.fits` extension are
+*not* decompressed versions of the `.fits.fz` files; they have a different
+format entirely, so `.fits` should not be accepted as an equivalent raw
+extension for this spectrograph. `pypeit/tests/test_spectrographs.py`
+updated accordingly. Re-verified `pytest pypeit/tests/test_spectrographs.py
+pypeit/tests/test_metadata.py pypeit/tests/test_outputfiles.py
+pypeit/tests/test_io.py` (30 tests) and the dev-suite's
+`unit_tests/test_construct_basename.py::test_construct_basename_soar_goodman`,
+`unit_tests/test_load_images.py::test_load_goodman`, and
+`vet_tests/test_coadd2d.py::test_default_basename_single_spec2d` /
+`test_default_basename_multi_spec2d` -- all still pass, since none of them
+depend on `.fits` being accepted (they all use real `.fits.fz` raw files).
 
 All touched main-repo test modules pass: `test_outputfiles.py`,
 `test_metadata.py`, `test_spectrographs.py`, and `test_dashboard.py` (92
