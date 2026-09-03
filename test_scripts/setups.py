@@ -243,6 +243,8 @@ all_setups = {
         'G270_Sky',
     ],
     'mmt_mmirs': [
+        'H3000_H',
+        'HK_HK3',
         'HK_zJ',
         'J_zJ',
         'K_K',
