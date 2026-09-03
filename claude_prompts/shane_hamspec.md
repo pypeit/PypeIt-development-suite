@@ -75,6 +75,7 @@ If you need to test the code:
 25. Read this doc.  Perform the 4th task under Finishing up.
 26. Read this doc.  Perform the 5th task under Finishing up.
 27. Read this doc.  Perform the 6th task under Finishing up.
+28. Read this doc.  Perform the 7th task under Finishing up.
 
 ## Prep
 
@@ -605,6 +606,8 @@ A. Accept the 27 solved orders for now
 
 Make edits to either Repository as needed.  If you have any questions, ask me below.
 Use Opus if you can.  Log your work.
+
+7. There are new comments on `https://github.com/pypeit/PypeIt/pull/2187` by Kyle Westfall.  Please read them and respond as needed.  Use Opus if you can.  Log your work.
 
 #### Q&A
 
