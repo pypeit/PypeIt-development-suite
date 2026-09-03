@@ -89,7 +89,10 @@ def test_shane_hamspec_era_archives():
         detector = spec.get_meta_value(str(example_file), 'detector')
         assert detector == detname, \
             f'{frame}: detector meta is {detector}, not {detname}.'
-        files = spec.get_echelle_angle_files(meta_dict={'detector': detector})
+        # config_specific_par records the era on the instance, which
+        # get_echelle_angle_files then uses to select the archives
+        spec.config_specific_par(str(example_file))
+        files = spec.get_echelle_angle_files()
         assert files == [f'shane_hamspec_{era}_angle_fits.fits',
                          f'shane_hamspec_{era}_composite_arc.fits'], \
             f'{frame}: wrong era archives selected: {files}'
