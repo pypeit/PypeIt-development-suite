@@ -76,6 +76,8 @@ If you need to test the code:
 26. Read this doc.  Perform the 5th task under Finishing up.
 27. Read this doc.  Perform the 6th task under Finishing up.
 28. Read this doc.  Perform the 7th task under Finishing up.
+29. Read this doc.  Perform the 8th task under Finishing up.
+30. Read this doc.  Perform the 9th task under Finishing up.
 
 ## Prep
 
@@ -609,6 +611,11 @@ Use Opus if you can.  Log your work.
 
 7. There are new comments on `https://github.com/pypeit/PypeIt/pull/2187` by Kyle Westfall.  Please read them and respond as needed.  Use Opus if you can.  Log your work.
 
+8. Kyle has added another comment.  Please read it and then recommend to me a course of action.  
+Put it in the Q&A section below.  Use Opus if you can.  Log your work.
+
+9. I have answered your question.  Please read it and proceed.  Use Opus if you can.  Log your work.
+
 #### Q&A
 
 **Finishing-up #1 Q&A (new)** — see
@@ -723,6 +730,53 @@ entry).  New:
     extracted coverage is modest (Loral: 4757–5700 Å).  Want me to add
     sensfunc (and optionally fluxing) tests next, or leave afterburn out
     for the initial PR?
+
+---
+
+**Finishing-up #8 Q&A (new)** — Kyle's follow-up on PR #2187 (2026-09-03,
+on the `config_specific_par` thread): he had assumed the echelle archive
+filenames "were kept as parameters that could be set as part of the
+config-specific set"; he notes both the (reverted) `meta_dict` kwarg and the
+current instance attribute "break our established pattern of having
+different spectrograph classes for different detectors", but a class split
+"feels like too much work" — he explicitly isn't sure what to recommend.
+
+58. **Recommended course of action for the era-selection design.**  Three
+    options, my recommendation first:
+
+    **(C) Make the archive filenames wavelength parameters — RECOMMENDED.**
+    Add two `WavelengthSolutionPar` keys (e.g. `ech_angle_fits_file`,
+    `ech_composite_arc_file`, default None); `wavecalib.py` uses them when
+    set, else falls back to `get_echelle_angle_files()` (HIRES/UVES/NIRSPEC
+    untouched).  `shane_hamspec.config_specific_par` then sets the two
+    parameters by era — exactly the sanctioned mechanism Kyle assumed was in
+    use, no bespoke class attribute, and it adds genuinely useful
+    functionality (any user can point the echelle wavecal at a custom
+    archive, like `reid_arxiv`).  Cost: ~2 new pars + a 3-line change in
+    `wavecalib.py` + simplifying `shane_hamspec`; re-verified by the
+    existing 2-setup dev-suite run.  I'd also offer this to Kyle as the
+    resolution of his thread.
+
+    **(A) Split into per-era spectrograph classes** (`shane_hamspec` +
+    e.g. `shane_hamspec_e2v`), the established pattern
+    (keck_lris_red_orig/_mark4, keck_nirspec_high_old, ...).  Cleanest
+    conceptually, but: users must know which era their data is (no
+    auto-selection anywhere else in PypeIt either), it splits the docs and
+    the dev-suite instrument key, touches every hamspec test/pypeit file,
+    and most of `shane_hamspec.py` is already shared logic — the subclass
+    would override only `get_detector_par` defaults and the archive names.
+    More work for less generality than (C); do it only if the team wants
+    the convention strictly upheld.
+
+    **(B) Keep the instance attribute** (status quo, verified working).
+    Zero further churn, but leaves the "one-off structural exception" the
+    maintainer is unhappy about — friction now and at every future review
+    of this file.
+
+    If you approve (C), I'll implement it, re-run both dev-suite setups,
+    and reply to Kyle.
+
+>A. I approve of option (C). Go for it
 
 ### Extraction
 
@@ -1589,3 +1643,62 @@ wiped) **PASSES 2/2** — the config_specific_par era path selects the right
 archives for both eras; hamspec vet tests (2) and PypeIt unit tests
 (findobj/par/wvcalib, 39) pass.  Posted replies to all 9 threads on GitHub
 (as profxj).  No new questions.
+
+### 2026-09-04 (Finishing-up #8: analyzed Kyle's follow-up; recommendation in Q&A 58)
+
+Read Kyle's new comment on PR #2187 (2026-09-03, replying on the
+`config_specific_par` thread).  His points: (i) he had assumed the echelle
+archive filenames were *parameters* settable via the config-specific
+mechanism; (ii) both the reverted `meta_dict` kwarg and the current
+`detector_era` instance attribute break PypeIt's established
+one-class-per-detector pattern; (iii) he stops short of requesting a class
+split ("feels like too much work") and admits he's unsure what to
+recommend.
+
+Analyzed three options and wrote the recommendation as **Q&A 58** (no code
+changed this turn — the task asks for a recommended course of action):
+
+- **(C) — recommended:** promote the two archive filenames to
+  `WavelengthSolutionPar` parameters (default None → fall back to
+  `get_echelle_angle_files()`), set per-era in
+  `shane_hamspec.config_specific_par`.  Matches Kyle's stated expectation,
+  uses the sanctioned parameter flow, removes the bespoke attribute, leaves
+  HIRES/UVES/NIRSPEC untouched, and gives all echelle users a way to point
+  at custom archives (parallel to `reid_arxiv`).  Small, low-risk change,
+  re-verifiable with the existing 2-setup dev-suite run.
+- (A) per-era spectrograph classes: the established pattern, but more work,
+  splits docs/dev-suite keys, forces users to know their era, and the two
+  eras share almost all of `shane_hamspec.py`.
+- (B) status quo: verified working but leaves the structural exception the
+  maintainer dislikes.
+
+Awaiting JXP's choice; if (C) is approved I'll implement, re-run both
+dev-suite setups, and reply on Kyle's thread.  No GitHub replies posted
+this turn.
+
+### 2026-09-05 (Finishing-up #9: implemented option C — archive files as parameters)
+
+JXP approved Q&A 58 option (C).  Implemented, verified, and replied to Kyle.
+
+- **New parameters** `ech_angle_fits_file` / `ech_composite_arc_file` in
+  `WavelengthSolutionPar` (str, default None; must be set together) — the
+  ``echelle``-method archive files, analogous to `reid_arxiv`.
+- **`wavecalib.py`**: uses the parameters when set; falls back to
+  `spectrograph.get_echelle_angle_files()` otherwise (clear PypeItError if
+  only one of the two is set).  HIRES/UVES/NIRSPEC behavior unchanged.
+- **`shane_hamspec.py`**: the Loral-era files are the parameter defaults in
+  `default_pypeit_par`; `config_specific_par` switches both parameters to
+  the e2v files when the frames are from that detector (via the `detector`
+  compound meta).  The bespoke `detector_era` attribute and the
+  `get_echelle_angle_files` override are **deleted** — no structural
+  exception remains (Kyle's original "we can remove this function" is also
+  satisfied).
+- Regenerated `doc/pypeit_par.rst`; added the new parameters to the
+  2.1.0dev release notes.
+- Dev-suite: era unit test now asserts the parameter values returned by
+  `config_specific_par` (instead of calling the removed override).
+
+Verification: PypeIt unit tests (39) and dev-suite unit tests pass; fresh
+`pypeit_test reduce -i shane_hamspec -t 2` (calibrations wiped) **PASSES
+2/2** with the era-matched archives selected via the parameters; hamspec
+vet tests (2) pass.  Replied on Kyle's thread describing the resolution.
