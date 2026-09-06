@@ -96,6 +96,11 @@ all_setups = {
         'J1218+2951_U116Hr_RED_C5_ECH_-0.22_XD_0.21_1x2',
         'Q1009+2956_G10H_BLUE_C5_ECH_-0.00_XD_1.02_1x3',
     ],
+    'keck_hires_orig': [
+        'keck_hires_orig_q0913p0715_red97_c1_ech_0.29_xd_-0.69_2x1.pypeit',
+        'keck_hires_orig_q0913p0715_red_c5_ech_0.00_xd_-0.81_2x1.pypeit',
+        'keck_hires_orig_q0913p0715_uv_c5_ech_0.00_xd_0.53_2x1.pypeit',
+    ],
     'keck_kcwi': [
         'small_bh2_4200',
         'medium_bl',
