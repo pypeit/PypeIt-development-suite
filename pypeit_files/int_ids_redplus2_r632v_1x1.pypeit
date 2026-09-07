@@ -16,7 +16,7 @@ setup end
 
 # Data block 
 data read
- path /Users/rcooke/Software/DataReduction/INT_IDS/Sunny/Raw
+ path /Users/rcooke/Software/DataReduction/INT_IDS/XMPs/Raw
                     filename |                 frametype |                ra |                dec |     target | dispname |   decker | binning |           mjd |  airmass | exptime |  cenwave | detector | slitwid |         lampstat01 | calib
  arc_CuAr+CuNe_040324_5s.fit |                  arc,tilt |               0.0 |                0.0 |        Arc |    R632V | P0 Clear |     1,1 | 60373.7661257 | 1.000271 |    5.01 | 5940.749 | REDPLUS2 |   0.974 | CuAr CuAr CuNe CuN |     0
                 r1720019.fit |                      bias |               0.0 |                0.0 |       Bias |    R632V | P0 Clear |     1,1 | 60373.7642623 | 1.000271 |     0.0 | 5940.749 | REDPLUS2 |   0.974 |                off |     0
