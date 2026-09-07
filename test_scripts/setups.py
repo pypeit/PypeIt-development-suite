@@ -66,6 +66,9 @@ all_setups = {
     'int_ids_eev10': [
         'INT_20201218',
     ],
+    'int_ids_redplus2': [
+        'r632v_1x1',
+    ],
     'keck_esi': [
         'Ech_1x1',
         'Ech_2x1',
