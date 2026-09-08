@@ -63,7 +63,7 @@ def test_dashboard_model_derive(tmp_path):
     # The required MultiSlit calibration steps should be present and flagged
     # as in-pipeline.
     table = model.status_table()
-    in_pipe_steps = set(table[table['in_pipeline']]['step'])
+    in_pipe_steps = set(table[table['in_pipeline'].astype(bool)]['step'])
     assert {'bias', 'arc', 'slits', 'wv_calib', 'tilts', 'flats'} \
         <= in_pipe_steps
     # The single (calib_id, det) pair is enumerated.

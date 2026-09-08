@@ -1,0 +1,27 @@
+# Auto-generated PypeIt input file using PypeIt version: 2.0.2.dev517+ga78a1b2c3
+# UTC 2026-07-03T17:01:27.401+00:00
+
+# User-defined execution parameters
+[rdx]
+    spectrograph = magellan_ldss3
+[reduce]
+    [[findobj]]
+        maxnumber_sci = 2
+        find_trim_edge = 100, 100
+
+# Setup
+setup read
+Setup A:
+  dispname: VPH-All
+setup end
+
+# Data block 
+data read
+ path /Users/yize/Dropbox/research/data_reduc/tutorial_raw_data/test_data/LTT6248
+      filename |                 frametype |                 ra |                 dec |  target | dispname |       decker | binning |           mjd | airmass | exptime | calib | comb_id | bkg_id
+ccd0292c1.fits |                  arc,tilt | 234.75541666666663 |  -28.59286111111111 |  HeNeAr |  VPH-All | 1.0x4_center |     1x1 | 2460555.47093 |   1.082 |     2.0 |     0 |      -1 |     -1
+ccd0293c1.fits | pixelflat,illumflat,trace | 234.75541666666663 |  -28.59286111111111 |  FlatQH |  VPH-All | 1.0x4_center |     1x1 |  2460555.4715 |   1.083 |    10.0 |     0 |      -1 |     -1
+ccd0290c1.fits |                  standard | 234.75541666666663 | -28.592916666666664 | LTT6248 |  VPH-All | 1.0x4_center |     1x1 | 2460555.46737 |   1.074 |    30.0 |     0 |       1 |     -1
+ccd0291c1.fits |                  standard | 234.75541666666663 | -28.592888888888886 | LTT6248 |  VPH-All | 1.0x4_center |     1x1 | 2460555.46811 |   1.075 |    30.0 |     0 |       2 |     -1
+data end
+

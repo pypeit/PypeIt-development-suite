@@ -7,6 +7,16 @@ all_setups = {
     'aat_uhrf': [
         '3875',
     ],
+    'arc_kosmos': [
+        'UT221221_slitmask_galaxies',
+        'UT230909_slitmask_stars',
+        'UT250131_longslit_blue_HeNeAr',
+        'UT250131_longslit_blue_NeKr',
+        'UT250131_longslit_red',
+    ],
+    'arc_tspec': [
+        'UT191026',
+    ],
     'bok_bc': [
         '300',
         'old_832',
@@ -52,6 +62,9 @@ all_setups = {
     'gtc_osiris_plus': [
         'R1000R',
         'R300B',
+    ],
+    'int_ids_eev10': [
+        'INT_20201218',
     ],
     'keck_esi': [
         'Ech_1x1',
@@ -209,6 +222,10 @@ all_setups = {
         'FIRE_Echelle',
         'FIRE_Long',
     ],
+    'magellan_ldss3': [
+        'VPH-ALL_Std',
+        'VPH-ALL_Sci',
+    ],
     'magellan_mage': [
         '1x1',
     ],
@@ -223,6 +240,10 @@ all_setups = {
         'Longslit_G600',
         'Multislit_G270',
         'Longslit_G1000',
+    ],
+    'mmt_binospec_ifu': [
+        'G270',
+        'G270_Sky',
     ],
     'mmt_mmirs': [
         'HK_zJ',

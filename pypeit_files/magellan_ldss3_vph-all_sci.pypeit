@@ -1,0 +1,28 @@
+# Auto-generated PypeIt input file using PypeIt version: 2.0.2.dev517+ga78a1b2c3
+# UTC 2026-07-03T17:01:59.079+00:00
+
+# User-defined execution parameters
+[rdx]
+    spectrograph = magellan_ldss3
+[reduce]
+    [[findobj]]
+        maxnumber_sci = 2
+        find_trim_edge = 100, 100
+
+# Setup
+setup read
+Setup A:
+  dispname: VPH-All
+setup end
+
+# Data block 
+data read
+ path /Users/yize/Dropbox/research/data_reduc/tutorial_raw_data/test_data/2023zkd
+      filename |                 frametype |                 ra |               dec |  target | dispname |       decker | binning |           mjd | airmass | exptime | calib | comb_id | bkg_id
+ccd0300c1.fits |                  arc,tilt | 237.20666666666665 | 9.197277777777778 |  HeNeAr |  VPH-All | 1.0x4_center |     1x1 | 2460555.50235 |   1.578 |     2.0 |     0 |      -1 |     -1
+ccd0301c1.fits | pixelflat,illumflat,trace | 237.20666666666665 | 9.197277777777778 |  FlatQH |  VPH-All | 1.0x4_center |     1x1 | 2460555.50292 |   1.582 |    10.0 |     0 |      -1 |     -1
+ccd0297c1.fits |                   science | 237.20666666666665 |           9.19675 | 2023zkd |  VPH-All | 1.0x4_center |     1x1 | 2460555.48007 |   1.438 |   600.0 |     0 |       1 |     -1
+ccd0298c1.fits |                   science | 237.20666666666665 | 9.197027777777778 | 2023zkd |  VPH-All | 1.0x4_center |     1x1 | 2460555.48741 |   1.478 |   600.0 |     0 |       2 |     -1
+ccd0299c1.fits |                   science | 237.20666666666665 | 9.197277777777778 | 2023zkd |  VPH-All | 1.0x4_center |     1x1 | 2460555.49473 |   1.523 |   600.0 |     0 |       3 |     -1
+data end
+

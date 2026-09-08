@@ -106,6 +106,8 @@ gemini_gmos/GS_HAM_R400_700
 vlt_xshooter/UVB_1x1_Feige110
 keck_lris_red/multi_900_5500_d560
 gemini_gnirs_ifu/LR_IFU_32mm
+mmt_binospec_ifu/G270
+mmt_binospec_ifu/G270_Sky
 keck_lris_blue/multi_600_4000_slitmask
 gemini_gmos/GN_HAM_B480
 keck_lris_red/multi_1200_9000_d680

@@ -1,0 +1,22 @@
+# Auto-generated PypeIt input file using PypeIt version: 2.0.1.dev46+g4db3d28e9
+# UTC 2026-03-04T00:39:03.560+00:00
+
+# User-defined execution parameters
+[rdx]
+    spectrograph = mmt_binospec_ifu
+
+# Setup
+setup read
+Setup A:
+  decker: IFU
+  dispname: x270
+setup end
+
+# Data block
+data read
+ path /Users/tim/MMT/PypeIt-development-suite/RAW_DATA/mmt_binospec_ifu/G270
+                     filename |                 frametype |                 ra |                dec | target | dispname | decker | binning |         mjd | airmass | exptime | calib
+sci_img_2023.1212.091203.fits |                  arc,tilt | 112.29458333333332 | 21.076916666666666 |    IFU |     x270 |    IFU |     1 1 | 60290.37967 |  1.0222 |   300.0 |     0
+sci_img_2023.1212.091339.fits | pixelflat,illumflat,trace | 112.29458333333332 | 21.076916666666666 |    IFU |     x270 |    IFU |     1 1 | 60290.38376 |  1.0202 |    40.0 |     0
+sci_img_2023.1212.085315.fits |                   science | 112.29458333333332 | 21.076916666666666 |    IFU |     x270 |    IFU |     1 1 | 60290.36658 |  1.0323 |   300.0 |     0
+data end
