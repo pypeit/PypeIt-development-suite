@@ -344,3 +344,44 @@ refactor, not addressed here.
 **Verification performed**: `pytest pypeit/tests/test_setup_datacube.py
 pypeit/tests/test_outputfiles.py pypeit/tests/test_inputfiles.py -v` -- 58 tests, all
 pass (57 from Steps 1-2, plus the one new regression test above).
+
+### Follow-up: strip spaces from `target_stub`, not via `target_match_key` (done)
+
+Running the real OMEARA repro (`pypeit_setup_datacube keck_kcwi_D.pypeit "SDSSJ2222
+2745"`) surfaced a usability problem the refactor hadn't addressed: `target_stub` (used
+for the `sources/<stub>/` directory name, the `.coadd3d`/`.extract` filenames, and the
+`output_filename` parameter written into both) was set directly to the literal target
+string from the `.pypeit` file's data table (`target_name`), which for this real target
+contains a space -- producing `sources/SDSSJ2222 2745/SDSSJ2222 2745.coadd3d`, requiring
+shell quoting everywhere.
+
+The natural fix -- reuse `inputfiles.target_match_key` (already in this file's own
+Step 1 additions) -- was assessed and rejected. `target_match_key` is a lossy,
+many-to-one normalization built for *permissive matching* (collapsing intentional
+respellings of the same target so `matching_science_rows` can find them), not for
+*unique naming*. Confirmed empirically that it can collide two distinct, plausible
+target names: `target_match_key('J1000-2000')` and `target_match_key('J1000m2000')`
+both return `'J1000m2000'` (KCWI/DEIMOS-style mask naming commonly pre-encodes sign as
+literal `p`/`m`, so this isn't a contrived edge case). Since the `.coadd3d` file is
+always refreshed on every run, two such targets sharing a reduction directory would
+silently overwrite each other's setup, with no error.
+
+**Fix**: `target_stub = target_name.replace(' ', '')` -- the narrower, already-
+established convention `outputfiles.construct_basename` and `coadd2d.py`'s
+`default_basename` (`pypeit/coadd2d.py:488`) already use for target names in output
+filenames. This is exactly what produced the `SDSSJ22222745` token already present in
+the real reduced spec2d filenames, so `target_stub` now also matches that existing
+convention (more consistent than either the old literal-with-space or a
+`target_match_key`-normalized version would have been), fixes the reported problem, and
+avoids the `+`/`-` collision class entirely since those characters are filesystem-safe
+and don't need touching.
+
+Added `test_setup_datacube_strips_spaces_from_target_stub`, mirroring the real
+`SDSSJ2222 2745` scenario directly (not just a synthetic space), checking the
+`sources/` directory name, both file names, and both `output_filename` parameters.
+
+**Verification performed**:
+- `pytest pypeit/tests/test_setup_datacube.py -v` -- 5 tests, all pass.
+- Re-ran the real-world OMEARA repro again: `sources/SDSSJ22222745/SDSSJ22222745.coadd3d`
+  and `.extract` are now written with no spaces anywhere, confirmed by listing the
+  `sources/` directory directly.
