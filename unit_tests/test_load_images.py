@@ -129,6 +129,14 @@ def test_load_osiris():
     except:
         pytest.fail('GTC OSIRIS test data section failed: {0}'.format(ifile))
 
+def test_load_int_ids():
+    ifile = os.path.join(os.environ['PYPEIT_DEV'], 'RAW_DATA', 'int_ids_eev10',
+                         'INT_20201218', 'science.fits')
+    try:
+        data_img = grab_img('int_ids_eev10', ifile)
+    except:
+        pytest.fail('INT IDS test data section failed: {0}'.format(ifile))
+
 def test_load_bok():
     ifile = os.path.join(os.environ['PYPEIT_DEV'], 'RAW_DATA','bok_bc','600',
                          'g0005.fits')

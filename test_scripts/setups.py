@@ -63,6 +63,9 @@ all_setups = {
         'R1000R',
         'R300B',
     ],
+    'int_ids_eev10': [
+        'INT_20201218',
+    ],
     'keck_esi': [
         'Ech_1x1',
         'Ech_2x1',
