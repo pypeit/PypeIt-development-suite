@@ -33,6 +33,14 @@ If you need to run Python, use the `pypeit` environment
 4. Read this doc.  Perform the 4th task under Profile
 5. Read this doc.  Perform the 5th task under Profile
 
+### Plan
+
+1. Read this doc.  Perform the 1st task under Plan
+2. Read this doc.  Perform the 2nd task under Plan
+3. Read this doc.  Perform the 3rd task under Plan
+4. Read this doc.  Perform the 4th task under Plan
+5. Read this doc.  Perform the 5th task under Plan
+6. Read this doc.  Perform the 6th task under Plan
 
 ## Profile
 
@@ -74,7 +82,69 @@ Then start a new doc named `PypeIt-development-suite/pypeitdev/speed_up/Reports/
 4. I have answered your next round of questions.  Please read those and ask more if you have them.  Log your work.
 5. I have answered your next round of questions.  Please update the doc accordingly.  Log your work.
 
+6. We are happy with the design.  Please now generate a coding doc for implementation.  Call it `PypeIt-development-suite/pypeitdev/speed_up/Reports/speed_up_coding.md`.  Ask questions in the Q&A/Coding section below.  Log your work.  Use Opus 5.
+
 ## Q&A
+
+### Coding
+
+Questions from Claude on the implementation doc (`Reports/speed_up_coding.md`,
+v0.1 — implements design v0.5). These are the few implementation decisions the
+locked design does not already answer; each comes with a recommended default.
+Please answer inline beneath each ">A:".
+
+**Q1 — Does forcing `Agg` have to respect `run_pypeit -s/--show`?** The design
+says force `Agg` unconditionally with no new param, but `--show` deliberately
+raises blocking matplotlib windows that `Agg` would silently turn into no-ops.
+The coding doc guards with `if not args.show:` — no new parameter, but not
+literally unconditional. Recommendation: keep the `--show` guard.
+>A: 
+
+**Q2 — If the QA thread pool turns out to be GIL-bound, what do we do?** The
+dominant QA cost is matplotlib's FreeType text-metrics path (cum 894 s on
+DEIMOS), which may not release the GIL; PIL's PNG encode (276 s) does, so
+threads may recover only the encode half. Options: (a) accept the partial win
+and keep only `Agg` + deferred saves; (b) escalate QA to the PR-B process pool;
+(c) drop QA parallelism. Recommendation: (a) — measure in PR A, keep the
+machinery (free at `ncpu=1`), revisit only if QA is still a top-5 hotspot after
+PR B.
+>A: 
+
+**Q3 — Pure analytic log-parabola, or log-parabola plus a few vectorized
+Gauss–Newton iterations?** Adding 2–3 batched Gauss–Newton steps is still fully
+vectorized and calls no scipy, but refines against the exact `curve_fit`
+objective using all pixels including the negative wings, tracking `curve_fit`
+to ~1e-6 instead of only to the log-space approximation. Cost is negligible;
+benefit is that the dev-suite RMS vet becomes a formality. Recommendation: ship
+with `ARCFIT_GN_ITER = 3` and report both variants' RMS in the PR.
+>A: 
+
+**Q4 — Stage-4 worker returns: pickle the `Spec2DObj`, or write it to disk?**
+A `Spec2DObj` carries ~8 full-frame float arrays (~250 MB for a DEIMOS mosaic)
+that must be pickled back through a pipe — probably 1–3 s per detector against
+a ~700 s stage, but it is the one place the design's "no large objects cross
+the process boundary" principle bends. Recommendation: measure in PR B; if
+marshalling exceeds ~5% of the stage, have the worker `to_file()` into
+`Intermediate/` and return the path.
+>A: 
+
+**Q5 — Nested `ncpu`: how should QA threads and detector processes compose?**
+With `--ncpu 4`, PR A wants 4 QA threads and PR B wants 4 worker processes;
+naively that is 16. The coding doc resolves it by having
+`parallel._worker_init` call `qa.init_qa_pool(1)`, so QA is written in-line
+inside a detector worker and threaded only in the single-process serial stages.
+Recommendation: confirm — QA serial inside detector workers.
+>A: 
+
+**Q6 — Where should the real multi-detector identical-output regression live?**
+`shane_kast_blue` (the only full reduction in `pypeit/tests`) is
+single-detector, so CI can exercise the pool machinery but not multi-detector
+result assembly; the dev suite is the natural home but a duplicate DEIMOS
+reduction costs ~3.5 h of suite time. Recommendation: add the check on a cheap
+2-detector setup (e.g. `keck_lris_blue/multi_600_4000_d560`) as a `reduce`
+variant plus a `vet_tests` comparison, and run DEIMOS at `--ncpu 4` manually
+before merging to `develop`.
+>A: 
 
 ### Planning
 
@@ -734,3 +804,56 @@ Updated `speed_up_design.md` to **v0.5 (locked)**:
 Design is **locked**. Next action (a future task): begin **workstream A** — the QA
 cheap-wins PR on a branch stacked on `speed_up` (force `Agg`, add the
 `ncpu`/`--ncpu` plumbing, parallelize PNG writes), then re-profile Kast + DEIMOS.
+
+### 2026-09-08 (Plan task 6 — wrote the implementation doc `speed_up_coding.md`; Opus 5)
+
+Performed the **6th task under Plan**: generated the coding/implementation doc
+from the locked design (v0.5), authored by an **Opus 5** agent per the prompt's
+instruction, with the code grounding read from the **`speed_up` branch** via
+`git show` (the working tree is currently checked out on `int_ids`; no branch
+switch was made).
+
+Wrote `pypeitdev/speed_up/Reports/speed_up_coding.md` (**v0.1**, 1 842 lines,
+implements design v0.5). Structure and key implementation choices:
+- **§0 Scope**: the branch stack (`speed_up` → `speed_up_qa` → `speed_up_detpar`
+  → `speed_up_arcfit`, each PR targeting the prior), a grounded code map of every
+  file/symbol/line on `speed_up` at `e9ed85c1a`, and the profile numbers used as
+  targets.
+- **§1 PR A (QA cheap wins + `ncpu` plumbing)**: exact `ReduxPar` edits for
+  `ncpu` (`pypeitpar.py:2770` signature, defaults/dtypes/descr, `parkeys`,
+  `validate`), the `--ncpu` CLI flag with its override placed before the `.par`
+  dump in `PypeIt.__init__`, `matplotlib.use('Agg', force=True)` at the top of
+  `RunPypeIt.main` (guarded by `--show` — raised as Q1), and a deferred-QA design
+  (`qa.init_qa_pool`/`save_figure`/`flush_qa`) where figures are created and
+  closed only on the main thread and just `Figure.savefig` goes to worker
+  threads; call-site conversion rules cover essentially all 971 DEIMOS PNGs.
+- **§2 PR B (detector parallelism v1)**: a complete `pypeit/parallel.py` sketch —
+  `map_over_detectors` whose `ncpu<=1` branch is the literal serial loop, `fork`
+  + a `_FORK_PAYLOAD` module global so nothing large pickles *into* workers,
+  `_worker_init` (BLAS env pinning + `threadpoolctl`, detach inherited log
+  handlers, QA pool reset), per-worker `_RecordBuffer` logging replayed in
+  detector order, results reaped `as_completed` but assembled in fixed detector
+  order; before/after code for stages 1/2/4 with the `(det, success,
+  failed_step)` stage-1 contract and an explicit walk-through of the
+  `detectors.remove()`-during-iteration bug (with DEIMOS mosaics it silently
+  skips `(3,7)`); identical-output tests (new `pypeit/tests/test_parallel.py` +
+  an `--ncpu 2` end-to-end path).
+- **§3 PR C (arc-fit vectorization)**: the weighted log-parabola derivation (Guo
+  weighting `w=y` to match `curve_fit`'s linear-space objective),
+  amplitude/center/sigma back-substitution, window-centered coordinates,
+  `centerr` covariance propagation, batched-lstsq code, an optional vectorized
+  Gauss–Newton polish (Q3), a retained `_fit_arcspec_curvefit` fallback, and an
+  edge-case table (saturated/negative/masked pixels).
+- Each PR carries tests, validation/re-profiling steps with Amdahl-derived
+  expectations (DEIMOS ~1.9–2.3× realistic from p≈0.77; PR A 4–7%; PR C ~6%),
+  doc/changelog checklists (`doc/releases/2.1.0dev.rst` + CHANGES.rst), a commit
+  sequence, and a risks/revert table (incl. "be prepared to revert BLAS
+  pinning").
+
+Posed **six questions in Q&A/Coding** (each with a recommended default): (Q1)
+`Agg` vs the `--show` flag; (Q2) fallback if the QA thread pool is GIL-bound;
+(Q3) pure analytic log-parabola vs +3 Gauss–Newton iterations; (Q4) stage-4
+worker returns — pickle `Spec2DObj` vs write-to-disk+path; (Q5) composing QA
+threads inside detector workers (recommend QA serial in workers); (Q6) where the
+multi-detector identical-output regression should live (recommend a cheap
+2-detector setup + manual DEIMOS run). Awaiting answers; no code written.
