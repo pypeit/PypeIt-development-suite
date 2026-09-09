@@ -215,6 +215,20 @@ The shell's default environment shadows it, so use the absolute env binaries:
 Claude poses questions here (as `**Qn — title.** body` followed by a `>A:` line);
 the user answers inline beneath each `>A:`.
 
+**Q1 — The `pypeit` conda env is broken; use `pypeit14b` instead?** This doc
+says to run in the `pypeit` env, but it currently cannot run `run_pypeit` at
+all: it holds numpy 2.4.6 + astropy 7.0.2, and astropy 7.0.2 references the
+removed `np.in1d` during import (`AttributeError: module 'numpy' has no
+attribute 'in1d'`). The `pypeit14b` env (numpy 2.5.0, astropy 8.0.0) is an
+editable install of this same working repo — so it sees the `speed_up_qa`
+checkout — and `run_pypeit -h` works there. Options: (a) use **`pypeit14b`**
+for all PR-A work, including the task-6 re-profiling (note: the June baselines
+were profiled in the old `pypeit` env, so a fresh `--ncpu 1` baseline in task 6
+is needed anyway); (b) you repair the `pypeit` env (e.g. upgrade astropy to
+≥8.0) and I keep using it. I won't modify your env myself. Recommendation:
+**(a)** — use `pypeit14b`.
+>A:  Yes, use pypeit14b for all work.
+
 ## Logging
 
 The "Logs" section will record Claude's work.  Please use the following format:
@@ -226,3 +240,171 @@ The "Logs" section will record Claude's work.  Please use the following format:
 ...
 
 ## Logs
+
+### 2026-09-09 (Task 1 — branched `speed_up_qa`; grounded; found §A.3 already landed + broken env)
+
+Performed the **1st task under Tasks** (prepare; no production code written).
+
+Branch:
+- Working tree was clean (on `int_ids`). Created and checked out **`speed_up_qa`**
+  from `speed_up` at HEAD **`5120b01ea`** ("Merge pull request #2193 …
+  binospec_ifu_comb_group").
+- Note: `speed_up` has moved well past the coding doc's grounding commit
+  `e9ed85c1a` — it has since absorbed `develop`, the `int_ids` PR (#2188), the
+  Binospec IFU comb-group work (#2193), and the mosaic-weights hotfix (#2189).
+
+Read coding-doc §0 + §1 in full, then the target code on the new branch. Two
+**major findings**:
+
+1. **§A.3 (force `Agg`) has already landed** on `speed_up` as commit
+   `bbfe2675a` (2026-08-19, "Force headless backend for noninteractive
+   reductions"): a shared `scriptbase.configure_matplotlib(show)` helper that
+   does `matplotlib.use('Agg', force=True)` unless `--show` — exactly the
+   accepted Q1 behavior — called at the top of `RunPypeIt.main`
+   (`run_pypeit.py:70`) and also wired into `run_to_calibstep` and
+   `reduce_by_step`, with unit tests (`test_scriptbase.py`). Scope impact:
+   task 3 reduces to §A.4 only (the deferred-QA machinery); the commit shipped
+   **without** any doc/release-notes updates (`doc/qa.rst`, `doc/running.rst`,
+   `doc/releases/2.1.0dev.rst` say nothing about `Agg`), so task 5 absorbs that
+   documentation. The task-6 "Agg alone" saving is already in any fresh
+   baseline, so re-profiling must compare against a **new** `--ncpu 1` run, not
+   the June numbers.
+2. **The `pypeit` conda env cannot run `run_pypeit`** (numpy 2.4.6 +
+   astropy 7.0.2; astropy trips on the removed `np.in1d` at import). The
+   `pypeit14b` env (numpy 2.5.0 / astropy 8.0.0, editable install of this same
+   repo) works: `run_pypeit -h` OK. Raised as **Q1** in Q&A (recommend
+   `pypeit14b`); I did not modify either env.
+
+Line-number verification vs coding-doc §0.2/§1 (current branch):
+- `pypeit/qa.py` — **matches exactly**: imports 6–19 (`pyplot` at 13),
+  `set_qa_filename` 27–141, `arc_tilts_2d_qa`/`_spec_`/`_spat_` at 544/610/693
+  with `plt.savefig` at 600/684/750 (each followed by bare `plt.close()` +
+  `plt.rcdefaults()`), `spec_flexure_qa` savefig 843/914, `spat_flexure_qa`
+  (fig-based) savefig 1098. `arc_tilts_2d_qa` already binds
+  `fig, ax = plt.subplots(...)` (line 578) — conversion rule (a) is easy there.
+- `pypeit/core/wavecal/autoid.py` — `arc_fit_qa` at 43 with `plt.close('all')`
+  at **67 and 200** and savefigs at 152/199 (matches). `arc_fwhm_qa` (207) has
+  **grown**: `plt.close('all')` at 242, but its savefig is now at **288**
+  (multi-spatial FWHM plotting added) — the doc's "~245" end is stale.
+- `pypeit/par/pypeitpar.py` — `ReduxPar` shifted **+12**: class 2770, `__init__`
+  2782–2784 (signature ends `chk_version=None`), `quicklook` block ends ~2814,
+  `from_dict`/`parkeys` 2885/2889–2890, `validate` 2902.
+- `pypeit/pypeit.py` — `PypeIt.__init__` 61–145; `redux_path` override at 87–88
+  and `.par` dump at 92–94 (matches); `build_qa` 157–166; `calib_all` 168–210
+  (serial det loop 200–207, `print_end_time()` at 210); `reduce_all` 212–251
+  (ends `print_end_time()` at 251). `qa` already imported at line 18.
+- `pypeit/scripts/run_pypeit.py` — `get_parser` 38–65 (`-c/--calib_only` at
+  62–63, matches); `main` now 67–105: `configure_matplotlib` at 70,
+  `PypeIt(...)` at 90–93, `build_qa()` at 103.
+- `pypeit/exposure.py` — small drift (+1 to +36): `adjust_for_slitmask` 22,
+  `process_exposure` 85, `findobj_on_exposure` 141, `extract_exposure` 267,
+  `reduce_exposure` 351, `save_exposure` 504.
+- `pypeit/pypeit_steps.py` — larger drift: `calib_one` **166**,
+  `process_one_det` **253**, `extract_det` **730**.
+- `pypeit/flatfield.py` — larger drift: `spatillum_finecorr_qa` **2423**,
+  savefigs **2532 and 2600**.
+- `pypeit/core/findobj_skymask.py` — savefigs 1456/1621, each followed by a
+  `plt.close('all')` (1457, 1622) that task 4's rule (b) must also convert.
+- Confirmed still true on current HEAD: **no
+  multiprocessing/ThreadPool/ncpu/nproc anywhere in `pypeit/`** (PR A introduces
+  the first concurrency), and `spat_flexure_qa` is the only already-fig-based
+  writer of the set.
+
+Environment: `run_pypeit -h` **fails** in `pypeit` (see Q1); works in
+`pypeit14b`; both envs import this repo editable
+(`pypeit 2.0.2.dev584+gde3919738`).
+
+Next (task 2, after Q1 is answered): add `ncpu` to `ReduxPar` + the `--ncpu`
+CLI flag + the `PypeIt.__init__` override, with the `test_ncpu_default_and_override`
+test and regenerated parameter docs.
+
+### 2026-09-09 (Task 2 — `[rdx] ncpu` parameter + `run_pypeit --ncpu` flag; committed)
+
+Performed the **2nd task under Tasks** (coding-doc §A.1 + §A.2), on branch
+`speed_up_qa`. Q1 (env) is still unanswered; since only `pypeit14b` can run
+anything, I used it for the test/verification runs — consistent with the Q1
+recommendation. No env was modified.
+
+Code changes (two commits, per the coding doc's §6 commit sequence):
+
+- **`79d3a55c0` — "Add [rdx] ncpu parameter"**
+  - `pypeit/par/pypeitpar.py` (`ReduxPar`): `ncpu=None` added to the `__init__`
+    signature; `defaults['ncpu'] = 1`, `dtypes['ncpu'] = int`, and the §A.1
+    description block (placed after the `quicklook` block); `'ncpu'` added to
+    `parkeys` in `from_dict`; `validate` now raises `ValueError` for
+    `ncpu < 1`.
+  - `pypeit/tests/test_pypeitpar.py`: added `test_ncpu_default_and_override`
+    (default is 1; `from_dict` round-trip gives 4; `ncpu=0` raises).
+  - `doc/pypeit_par.rst` regenerated via `doc/scripts/build_par_rst.py`.
+    **Note:** the diff is larger than one row because the generated file was
+    *stale on the branch* — an unrelated `lamps_wvrng` parameter had landed in
+    code without a doc regen, and the long `ncpu` description reflows the
+    ReduxPar table borders. The regenerated file now matches the code.
+- **`cfeb4007b` — "Add run_pypeit --ncpu; plumb through PypeIt.__init__"**
+  - `pypeit/scripts/run_pypeit.py`: `--ncpu` (type `int`, default `None`) added
+    to `get_parser` after `-c/--calib_only`; `ncpu=args.ncpu` passed to
+    `PypeIt(...)` in `main`.
+  - `pypeit/pypeit.py`: `ncpu=None` added to `PypeIt.__init__`; the override
+    (`self.par['rdx']['ncpu'] = ncpu` when not None) applied immediately after
+    the `redux_path` override and **before** the `_UTC_*.par` dump, so the
+    recorded parameter file reflects what ran; `ncpu` documented in the class
+    docstring `Args:` block.
+
+Verification (all in `pypeit14b`):
+- `pytest pypeit/tests/test_pypeitpar.py` — **34 passed** (incl. the new test).
+- `PypeItPar().to_config()` shows `ncpu = 1` under `[rdx]`.
+- Full config-machinery parse: `PypeItPar.from_cfg_lines(... 'ncpu = 4')`
+  yields `int` 4; `ncpu = 0` is rejected with "ncpu must be a positive
+  integer."
+- `run_pypeit -h` shows the new `--ncpu` option with its help text.
+- `doc/pypeit_par.rst` line 678 carries the new `ncpu` row.
+
+Deferred to task 5 (as planned there): regenerating `doc/help/run_pypeit.rst`
+and the release-notes bullets. No new questions — **Q1 in Q&A still awaits an
+answer** (matters most for task 6 profiling; recommendation stands:
+`pypeit14b`).
+
+### 2026-09-09 (Task 3 — deferred-QA machinery added and wired; §A.3 was already on the branch)
+
+Performed the **3rd task under Tasks** (coding-doc §A.3 + §A.4) on
+`speed_up_qa`. **Q1 answered: use `pypeit14b` for all work** — done so here.
+
+- **§A.3 (force `Agg`): no code change needed.** As found in task 1, it already
+  landed on `speed_up` as commit `bbfe2675a`
+  (`scriptbase.configure_matplotlib(args.show)` at `run_pypeit.py:70`, exactly
+  the accepted `--show`-guarded behavior). Its docs/changelog still land in
+  task 5.
+- **§A.4 machinery** (commit **`31f822c9f`**, "Defer QA figure writes to an
+  optional thread pool"):
+  - `pypeit/qa.py`: added `_QA_POOL` / `_QA_PENDING` / `_QA_MAX_PENDING` (=16)
+    and `init_qa_pool(ncpu)`, `save_figure(fig, outfile, show, close,
+    **kwargs)`, `flush_qa()` exactly as sketched in §A.4 (thread cap
+    `min(ncpu, 8)`; figures created/closed only on the main thread; only
+    `Figure.savefig` goes to workers; `init_qa_pool` re-callable for the PR-B
+    forked-child reset; `flush_qa` re-raises worker exceptions on the main
+    thread). `qa.py` deliberately imports nothing from `pypeit` (module warns
+    it must not import `log`), so no circular-import risk.
+  - Lifecycle wiring: pool created in `PypeIt.__init__` immediately after the
+    `--ncpu` override (`qa.init_qa_pool(self.par['rdx']['ncpu'])`); drains
+    added at the end of `PypeIt.calib_all` and `PypeIt.reduce_all` (both before
+    `print_end_time()`), in `RunPypeIt.main` before `pypeIt.build_qa()` (HTML
+    never races PNGs), at the end of `exposure.reduce_exposure` (before its
+    return), and at the end of `pypeit_steps.calib_one` (before `return
+    caliBrate`) — the last two bound in-flight figures to ~one detector's
+    worth. `exposure.py` and `pypeit_steps.py` gained `from pypeit import qa`.
+  - **No QA call site converted yet** (that is task 4), so at any `ncpu` the
+    pool currently sits idle — behavior is provably unchanged.
+
+Verification (in `pypeit14b`):
+- Functional smoke test: serial path writes in-line with `_QA_POOL is None`;
+  threaded path (`ncpu=4`, 20 figures > `_QA_MAX_PENDING`, exercising the
+  auto-flush) produced 20 PNGs **pixel-identical** to the serial reference
+  (PIL-decoded arrays); no matplotlib figures left open after `flush_qa`;
+  repeated `init_qa_pool(4/1/2)` re-inits clean; `save_figure(fig, None)`
+  closes without writing.
+- `pytest pypeit/tests/test_pypeitpar.py pypeit/tests/test_scriptbase.py` —
+  **36 passed**; `run_pypeit -h` OK.
+
+No new questions. Next: task 4 — convert the high-volume per-slit QA call
+sites to `qa.save_figure` (rules a/b/c), including the two extra
+`plt.close('all')` in `findobj_skymask.py` found in task 1.
