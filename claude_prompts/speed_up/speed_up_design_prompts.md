@@ -41,6 +41,7 @@ If you need to run Python, use the `pypeit` environment
 4. Read this doc.  Perform the 4th task under Plan
 5. Read this doc.  Perform the 5th task under Plan
 6. Read this doc.  Perform the 6th task under Plan
+7. Read this doc.  Perform the 7th task under Plan
 
 ## Profile
 
@@ -84,6 +85,8 @@ Then start a new doc named `PypeIt-development-suite/pypeitdev/speed_up/Reports/
 
 6. We are happy with the design.  Please now generate a coding doc for implementation.  Call it `PypeIt-development-suite/pypeitdev/speed_up/Reports/speed_up_coding.md`.  Ask questions in the Q&A/Coding section below.  Log your work.  Use Opus 5.
 
+7.  I accept your recommendations in the Coding doc.  Now create a series of prompt docs to mirror the A,B,C PRs.  Call them `PypeIt-development-suite/claude_prompts/speed_up/A.md`, `PypeIt-development-suite/claude_prompts/speed_up/B.md`, and `PypeIt-development-suite/claude_prompts/speed_up/C.md`.  Log your work.  Use Opus 5.
+
 ## Q&A
 
 ### Coding
@@ -98,7 +101,7 @@ says force `Agg` unconditionally with no new param, but `--show` deliberately
 raises blocking matplotlib windows that `Agg` would silently turn into no-ops.
 The coding doc guards with `if not args.show:` — no new parameter, but not
 literally unconditional. Recommendation: keep the `--show` guard.
->A: 
+>A: Accepted — follow the recommendation (blanket acceptance, Plan task 7).
 
 **Q2 — If the QA thread pool turns out to be GIL-bound, what do we do?** The
 dominant QA cost is matplotlib's FreeType text-metrics path (cum 894 s on
@@ -108,7 +111,7 @@ and keep only `Agg` + deferred saves; (b) escalate QA to the PR-B process pool;
 (c) drop QA parallelism. Recommendation: (a) — measure in PR A, keep the
 machinery (free at `ncpu=1`), revisit only if QA is still a top-5 hotspot after
 PR B.
->A: 
+>A: Accepted — follow the recommendation (blanket acceptance, Plan task 7).
 
 **Q3 — Pure analytic log-parabola, or log-parabola plus a few vectorized
 Gauss–Newton iterations?** Adding 2–3 batched Gauss–Newton steps is still fully
@@ -117,7 +120,7 @@ objective using all pixels including the negative wings, tracking `curve_fit`
 to ~1e-6 instead of only to the log-space approximation. Cost is negligible;
 benefit is that the dev-suite RMS vet becomes a formality. Recommendation: ship
 with `ARCFIT_GN_ITER = 3` and report both variants' RMS in the PR.
->A: 
+>A: Accepted — follow the recommendation (blanket acceptance, Plan task 7).
 
 **Q4 — Stage-4 worker returns: pickle the `Spec2DObj`, or write it to disk?**
 A `Spec2DObj` carries ~8 full-frame float arrays (~250 MB for a DEIMOS mosaic)
@@ -126,7 +129,7 @@ a ~700 s stage, but it is the one place the design's "no large objects cross
 the process boundary" principle bends. Recommendation: measure in PR B; if
 marshalling exceeds ~5% of the stage, have the worker `to_file()` into
 `Intermediate/` and return the path.
->A: 
+>A: Accepted — follow the recommendation (blanket acceptance, Plan task 7).
 
 **Q5 — Nested `ncpu`: how should QA threads and detector processes compose?**
 With `--ncpu 4`, PR A wants 4 QA threads and PR B wants 4 worker processes;
@@ -134,7 +137,7 @@ naively that is 16. The coding doc resolves it by having
 `parallel._worker_init` call `qa.init_qa_pool(1)`, so QA is written in-line
 inside a detector worker and threaded only in the single-process serial stages.
 Recommendation: confirm — QA serial inside detector workers.
->A: 
+>A: Accepted — follow the recommendation (blanket acceptance, Plan task 7).
 
 **Q6 — Where should the real multi-detector identical-output regression live?**
 `shane_kast_blue` (the only full reduction in `pypeit/tests`) is
@@ -144,7 +147,7 @@ reduction costs ~3.5 h of suite time. Recommendation: add the check on a cheap
 2-detector setup (e.g. `keck_lris_blue/multi_600_4000_d560`) as a `reduce`
 variant plus a `vet_tests` comparison, and run DEIMOS at `--ncpu 4` manually
 before merging to `develop`.
->A: 
+>A: Accepted — follow the recommendation (blanket acceptance, Plan task 7).
 
 ### Planning
 
@@ -857,3 +860,43 @@ worker returns — pickle `Spec2DObj` vs write-to-disk+path; (Q5) composing QA
 threads inside detector workers (recommend QA serial in workers); (Q6) where the
 multi-detector identical-output regression should live (recommend a cheap
 2-detector setup + manual DEIMOS run). Awaiting answers; no code written.
+### 2026-09-09 (Plan task 7 — wrote the A/B/C implementation prompt docs; Opus 5)
+
+Performed the **7th task under Plan**: with all six Coding Q&A questions accepted
+verbatim (blanket acceptance recorded above), created the three prompt docs that
+will drive the implementation session-by-session, mirroring the A/B/C PRs of
+`Reports/speed_up_coding.md`.
+
+Files written (all in `claude_prompts/speed_up/`):
+- **`A.md`** — PR A (QA cheap wins + `ncpu` plumbing), **6 tasks**: prepare/branch
+  → `ncpu` par + `--ncpu` CLI → `Agg` + the `qa.init_qa_pool`/`save_figure`/
+  `flush_qa` machinery → convert the per-slit QA call sites → tests + docs →
+  validate/re-profile.
+- **`B.md`** — PR B (detector parallelism v1), **7 tasks**: prepare/branch →
+  `pypeit/parallel.py` + `test_parallel.py` → detector-first adapters in
+  `pypeit_steps.py` → stage 1 + the `detectors.remove()` bug fix → stages 2 & 4
+  (incl. the Q4 marshalling measurement) → tests + the dev-suite 2-detector
+  regression + docs → validate/re-profile/memory.
+- **`C.md`** — PR C (arc-fit vectorization), **6 tasks**: prepare/branch →
+  vectorized log-parabola core + retained `_fit_arcspec_curvefit` fallback →
+  Gauss–Newton polish + centre variance → tests → dev-suite RMS vetting for both
+  GN variants + docs → validate/re-profile.
+
+Each doc follows this file's template: title, `## Goals`, `## Claude`/`### Skills`,
+`## Context`, `## Running` (absolute `pypeit`-env binaries, per the env-shadowing
+memory), `## Prompts` (one "Read this doc. Perform the Nth task under Tasks."
+line per task), `## Tasks`, an empty `## Q&A`, and `## Logging` + empty `## Logs`.
+
+Structural choices: each doc references `speed_up_coding.md` by section anchor
+(§1/§2/§3 and their §A.n/§B.n/§C.n sub-anchors) rather than duplicating it, but
+restates inline everything a *fresh* session needs to start safely — the branch
+stack (`speed_up` → `speed_up_qa` → `speed_up_detpar` → `speed_up_arcfit`, each
+PR targeting the prior), the `ncpu=1`-is-the-literal-serial-path guarantee, the
+machine-precision identical-output requirement (and that it constrains PR B, not
+PR C, whose noise-level changes are vetted by RMS), the B-spline exclusion, and
+the six accepted Q1–Q6 answers distributed to the PR each one governs (Q1/Q2 and
+the forward-looking Q5 in A; Q4/Q5/Q6 in B; Q3 in C). Every task names the files
+to touch with coding-doc anchors, and ends with "ask questions in Q&A / log your
+work". The last task of each doc carries the expected speedup ranges (A: DEIMOS
+4–7%, Kast 4–9%; B: DEIMOS 1.9–2.3×; C: ~700–800 s off DEIMOS) and writes results
+into a new `Reports/speed_up_results.md` accumulated across the three PRs.
