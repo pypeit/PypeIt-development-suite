@@ -6,15 +6,16 @@ registrations).
 """
 from pathlib import Path
 
-import numpy as np
-import pytest
 from astropy.io import fits
 from astropy.wcs import WCS
 from astropy.coordinates import SkyCoord
-import astropy.units as u
+from astropy import units
+import numpy as np
+import pytest
 
 from pypeit import inputfiles, specobjs
 from pypeit.coadd3d import DataCube
+
 
 _DATASETS = [('keck_kcwi', 'large_bl'), ('keck_kcrm', 'large_rl')]
 _TARGETS = ['SDSSJ2222 2745', 'gd50']
@@ -146,10 +147,10 @@ def test_gd50_coordinates_match_across_datasets(redux_out):
         assert spec1d_file.is_file(), f'{spec1d_file} does not exist'
         sobjs = specobjs.SpecObjs.from_fitsfile(str(spec1d_file))
         assert len(sobjs) == 1, f'expected exactly 1 extracted source in {spec1d_file}'
-        coords[instr] = SkyCoord(ra=sobjs[0].RA * u.deg, dec=sobjs[0].DEC * u.deg)
+        coords[instr] = SkyCoord(ra=sobjs[0].RA * units.deg, dec=sobjs[0].DEC * units.deg)
 
     separation = coords['keck_kcwi'].separation(coords['keck_kcrm'])
-    assert separation < 2 * u.arcsec, (
+    assert separation < 2 * units.arcsec, (
         f'gd50 extracted position differs by {separation.arcsec:.2f} arcsec between '
         'keck_kcwi/large_bl and keck_kcrm/large_rl (empirically ~1.6 arcsec on real data)'
     )
