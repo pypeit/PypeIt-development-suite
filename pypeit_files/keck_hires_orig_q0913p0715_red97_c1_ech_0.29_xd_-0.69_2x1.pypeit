@@ -1,0 +1,40 @@
+# User-defined execution parameters
+[rdx]
+    spectrograph = keck_hires_orig
+[calibrations]
+    [[slitedges]]
+        pad = 8,6
+    [[flatfield]]
+        tweak_slits = False
+        slit_trim = 0.0
+[reduce]
+    [[skysub]]
+        max_mask_frac = 0.9
+
+# Setup
+setup read
+Setup B:
+  binning: 2,1
+  decker: C1
+  dispname: RED97
+  echangle: 0.28799263
+  filter1: clear
+  xdangle: -0.68849999
+setup end
+
+# Data block 
+data read
+ path /Users/name/path/to/data
+                 filename |                 frametype |                 ra |                dec |    target | dispname | decker | binning |           mjd | airmass | exptime | filter1 |    echangle |     xdangle | hatch | lampstat01 | frameno | calib
+HI.19951227.46975.fits.gz |                  arc,tilt | 138.39508333333333 |  7.249777777777778 | 0913+0715 |    RED97 |     C1 |     2,1 | 50078.5436921 |    1.03 |     1.0 |   clear |  0.28803492 | -0.68900001 | False |      ThAr1 |      68 |     1
+HI.19951227.58569.fits.gz |                     trace | 159.17166666666665 |  43.36388888888889 |  Feige 34 |    RED97 |     C1 |     2,1 | 50078.6778819 |    1.17 |   300.0 |   clear |  0.28807721 | -0.68900001 |  True |        off |      85 |     1
+HI.19951227.06759.fits.gz |       pixelflat,illumflat | 14.999999999999998 |               70.0 |           |    RED97 |     C1 |     2,1 | 50078.0782292 |    1.86 |    11.0 |   clear |  0.28803492 | -0.68849999 | False |         on |      22 |     1
+HI.19951227.07028.fits.gz |       pixelflat,illumflat | 14.999999999999998 |               70.0 |           |    RED97 |     C1 |     2,1 | 50078.0813483 |    1.85 |     4.0 |   clear |  0.28803492 | -0.68849999 | False |         on |      23 |     1
+HI.19951227.21427.fits.gz |       pixelflat,illumflat | 18.719291666666667 | -8.955472222222221 | 0114-0856 |    RED97 |     C1 |     2,1 | 50078.2479977 |    1.16 |     4.0 |   clear |  0.28807721 | -0.68900001 |  True |         on |      41 |     1
+HI.19951227.21529.fits.gz |       pixelflat,illumflat | 18.719291666666667 | -8.955472222222221 | 0114-0856 |    RED97 |     C1 |     2,1 | 50078.2491782 |    1.16 |    11.0 |   clear |  0.28807721 | -0.68900001 |  True |         on |      42 |     1
+HI.19951227.47098.fits.gz |       pixelflat,illumflat | 138.39508333333333 |  7.249777777777778 | 0913+0715 |    RED97 |     C1 |     2,1 | 50078.5451157 |    1.03 |     4.0 |   clear |  0.28803492 | -0.68900001 | False |         on |      69 |     1
+HI.19951227.47199.fits.gz |       pixelflat,illumflat | 138.39508333333333 |  7.249777777777778 | 0913+0715 |    RED97 |     C1 |     2,1 | 50078.5462847 |    1.03 |    11.0 |   clear |  0.28803492 | -0.68900001 | False |         on |      70 |     1
+HI.19951227.44179.fits.gz |                   science | 138.39512499999998 |  7.249833333333333 | 0913+0715 |    RED97 |     C1 |     2,1 |  50078.511331 |    1.06 |  2700.0 |   clear |  0.28803492 | -0.68900001 |  True |        off |      67 |     1
+HI.19951227.47368.fits.gz |                   science | 138.39504166666666 | 7.2499722222222225 | 0913+0715 |    RED97 |     C1 |     2,1 | 50078.5482407 |    1.03 |  2700.0 |   clear |  0.28803492 | -0.68900001 |  True |        off |      71 |     1
+data end
+

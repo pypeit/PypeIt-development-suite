@@ -1,0 +1,28 @@
+# User-defined execution parameters
+[rdx]
+    spectrograph = keck_hires_orig
+
+# Setup
+setup read
+Setup E:
+  binning: 2,1
+  decker: C5
+  dispname: UV
+  echangle: 0.0
+  filter1: clear
+  xdangle: 0.53049999
+setup end
+
+# Data block 
+data read
+ path /Users/name/path/to/data
+                 filename |                 frametype |                 ra |                  dec |     target | dispname | decker | binning |          mjd | airmass | exptime | filter1 | echangle |    xdangle | hatch | lampstat01 | frameno | calib
+HI.19990417.08203.fits.gz |                  arc,tilt |                0.0 |                  0.0 |       ThAr |       UV |     C5 |     2,1 | 51285.094954 |    1.41 |     2.0 |   clear |      0.0 | 0.52850002 | False |      ThAr1 |     201 |     4
+HI.19990417.08473.fits.gz | pixelflat,illumflat,trace |                0.0 |                  0.0 |       ThAr |       UV |     C5 |     2,1 | 51285.098077 |    1.41 |    10.0 |   clear |      0.0 | 0.52950001 | False |         on |     202 |     4
+HI.19990417.08621.fits.gz | pixelflat,illumflat,trace |                0.0 |                  0.0 |       ThAr |       UV |     C5 |     2,1 | 51285.099783 |    1.41 |    10.0 |   clear |      0.0 | 0.52999997 | False |         on |     203 |     4
+HI.19990417.08727.fits.gz | pixelflat,illumflat,trace |                0.0 |                  0.0 |       ThAr |       UV |     C5 |     2,1 | 51285.101017 |    1.41 |    10.0 |   clear |      0.0 | 0.52999997 | False |         on |     204 |     4
+HI.19990417.08833.fits.gz | pixelflat,illumflat,trace |                0.0 |                  0.0 |       ThAr |       UV |     C5 |     2,1 |  51285.10224 |    1.41 |    10.0 |   clear |      0.0 | 0.52999997 | False |         on |     205 |     4
+HI.19990417.08940.fits.gz | pixelflat,illumflat,trace |                0.0 |                  0.0 |       ThAr |       UV |     C5 |     2,1 | 51285.103482 |    1.41 |    10.0 |   clear |      0.0 | 0.52999997 | False |         on |     206 |     4
+HI.19990417.20181.fits.gz |                   science | 138.39437499999997 |    7.249666666666667 | q0913p0715 |       UV |     C5 |     2,1 | 51285.233593 |    1.03 |  7200.0 |   clear |      0.0 | 0.52950001 |  True |        off |     242 |     4
+data end
+
