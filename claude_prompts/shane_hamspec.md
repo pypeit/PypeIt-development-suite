@@ -78,6 +78,7 @@ If you need to test the code:
 28. Read this doc.  Perform the 7th task under Finishing up.
 29. Read this doc.  Perform the 8th task under Finishing up.
 30. Read this doc.  Perform the 9th task under Finishing up.
+31. Read this doc.  Perform the 10th task under Finishing up.
 
 ## Prep
 
@@ -615,6 +616,62 @@ Use Opus if you can.  Log your work.
 Put it in the Q&A section below.  Use Opus if you can.  Log your work.
 
 9. I have answered your question.  Please read it and proceed.  Use Opus if you can.  Log your work.
+
+10. Several of the DevSuite tests failed -- see the `westfall-08sep26.report` file in `PypeIt/PypeIt-development-suite/pypeitdev/shane_hamspec`.  Please examine the issues and propose fixes in the Fixes section below.  Use Opus if you can.  Log your work.
+
+### Fixes
+
+**Diagnosis (westfall-08sep26.report):** all seven shane_hamspec failures
+(3 unit, 2 reduce, 2 vet; everything else passed, 308/310) share **one root
+cause: the Google-Drive `RAW_DATA/shane_hamspec/` is out of date** relative
+to the local layout (the Q54/Q56 mirroring that was never done):
+
+- Kyle's `Hamilton/` has the old 9-frame version — it lacks `d143.fits.gz`
+  (the PDS 100 science frame added 2026-08-27 for his own PR-426 comment).
+  → `test_filesearch` (found 9, expected 10), `test_frametype` ("Frame
+  d143.fits.gz not automatically parsed"), and the `Hamilton` reduce crash.
+- `Hamilton_e2v/` does not exist on the Drive at all (the seven e2v frames
+  are still *flat* under `shane_hamspec/`, pre-2026-08-24 layout).
+  → `test_shane_hamspec_era_archives` ("Could not find example file .../
+  Hamilton_e2v/...") and the `Hamilton_e2v` reduce crash.
+- The two vet failures are purely downstream (no reduce products to vet).
+
+The reduce crashes (`TypeError: expected str ... not NoneType` in
+`posixpath.split`, 3 s in) are the missing-file failure mode, reproduced
+locally by hiding `d143.fits.gz`: `inputfiles.get_pypeitpar` only *warns*
+("Unable to define filenames ... d143.fits.gz does not exist in one of the
+provided paths") and returns `config_specific_file=None`, which
+`PypeIt.__init__` (pypeit.py:84) then passes to `os.path.split()` — an
+opaque crash whose real cause scrolls off the log tail kept in the report.
+
+**Fix 1 — sync the Google Drive (required; fixes all 7).**  From
+`$PYPEIT_DEV` (additive `copy`, never `sync`, which mirrors deletions):
+
+```console
+rclone copy RAW_DATA/shane_hamspec/Hamilton \
+    'GDrive:Astronomy/UCO/PypeIt/PypeIt-development-suite/RAW_DATA/shane_hamspec/Hamilton' -v
+rclone copy RAW_DATA/shane_hamspec/Hamilton_e2v \
+    'GDrive:Astronomy/UCO/PypeIt/PypeIt-development-suite/RAW_DATA/shane_hamspec/Hamilton_e2v' -v
+# then retire the old flat copies of the seven e2v frames (dry-run first):
+rclone delete --include 'd2*.fits' --max-depth 1 \
+    'GDrive:Astronomy/UCO/PypeIt/PypeIt-development-suite/RAW_DATA/shane_hamspec' -v --dry-run
+```
+
+Expected final Drive layout: `Hamilton/` = 10 files (d111-113, d133-135,
+d139, d140, d143, d144, all .fits.gz); `Hamilton_e2v/` = 7 files
+(d2000, d2040, d2084, d2085, d2090, d2095, d2100 .fits).  Kyle then
+re-syncs and re-runs.  I can run the rclone commands if you'd like — say
+the word (they touch the shared Drive, so I did not run them unasked).
+
+**Fix 2 — fail loudly on missing raw files (recommended PypeIt change).**
+A raw file listed in the `.pypeit` data block but absent on disk should be
+a clear, immediate error, not a warning followed by an opaque `TypeError`.
+Proposal: in `PypeIt.__init__`, if `get_pypeitpar` returns
+`config_specific_file=None`, raise a `PypeItError` naming the missing
+file(s) (the underlying exception text already identifies them) and telling
+the user to fix the pypeit file or their RAW_DATA; plus a unit test with a
+data block naming a nonexistent file.  Small change, benefits every
+instrument; happy to implement on the `hamspec` branch (or separately).
 
 #### Q&A
 
@@ -1702,3 +1759,30 @@ Verification: PypeIt unit tests (39) and dev-suite unit tests pass; fresh
 `pypeit_test reduce -i shane_hamspec -t 2` (calibrations wiped) **PASSES
 2/2** with the era-matched archives selected via the parameters; hamspec
 vet tests (2) pass.  Replied on Kyle's thread describing the resolution.
+
+### 2026-09-09 (Finishing-up #10: diagnosed Kyle's dev-suite failures; proposals in Fixes)
+
+Examined `pypeitdev/shane_hamspec/westfall-08sep26.report` (Kyle's full
+dev-suite run, 2026-09-08): 308/310 pass; the only failures are the seven
+shane_hamspec entries (unit: test_frametype, test_filesearch,
+test_shane_hamspec_era_archives; reduce: Hamilton + Hamilton_e2v; vet:
+wavelengths + forced-extraction).
+
+**Single root cause — the Google Drive RAW_DATA was never updated** (the
+Q54/Q56 mirroring): his `Hamilton/` is the 9-frame version (no
+`d143.fits.gz`) and `Hamilton_e2v/` does not exist (the seven e2v frames
+are still flat under `shane_hamspec/`).  The 3-second reduce crashes
+(`TypeError ... posixpath.split ... NoneType`) are the missing-file failure
+mode: I reproduced it locally by hiding d143 — `inputfiles.get_pypeitpar`
+only WARNS when a listed raw file is absent and returns
+`config_specific_file=None`, which `PypeIt.__init__` (pypeit.py:84) feeds
+to `os.path.split()`.  The vet failures are downstream (no products).
+
+Wrote the proposals in the new **Fixes** section: (1) the exact `rclone
+copy` commands to mirror `Hamilton/` (10 files) and `Hamilton_e2v/`
+(7 files) to the Drive and retire the flat e2v copies — not executed
+unasked, since they modify the shared Drive; (2) a small PypeIt robustness
+change so a missing raw file raises a clear `PypeItError` instead of the
+opaque TypeError (offering to implement).  No code changed this turn;
+verified d143 restored locally after the reproduction (Hamilton back to
+10 files).
