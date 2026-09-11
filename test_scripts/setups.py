@@ -63,6 +63,9 @@ all_setups = {
         'R1000R',
         'R300B',
     ],
+    'int_ids_eev10': [
+        'INT_20201218',
+    ],
     'keck_esi': [
         'Ech_1x1',
         'Ech_2x1',
@@ -100,10 +103,12 @@ all_setups = {
         'small_bh2_4200',
         'medium_bl',
         'medium_bh3',
+        'large_bl',
     ],
     'keck_kcrm': [
         'medium_rm1',
         'medium_rh3',
+        'large_rl',
     ],
     'keck_nires': [
         'ABBA_wstandard',
