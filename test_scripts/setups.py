@@ -103,10 +103,12 @@ all_setups = {
         'small_bh2_4200',
         'medium_bl',
         'medium_bh3',
+        'large_bl',
     ],
     'keck_kcrm': [
         'medium_rm1',
         'medium_rh3',
+        'large_rl',
     ],
     'keck_nires': [
         'ABBA_wstandard',

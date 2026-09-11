@@ -463,3 +463,40 @@ directories still get created, and re-running with an existing folder still
 doesn't raise); the `folder` variable remains safe to use downstream in the
 existing `'{}/...'.format(folder, ...)` path-joining, since `Path` stringifies
 correctly there. Both modules import cleanly with no `os` references left.
+
+### Follow-up: repo-wide re-sweep found one more instance (`mmt_binospec.py`)
+
+After this `basename` branch was merged into the `kcwi_wcs` series of branches (see
+`kcwi_wcs.md`, `basename_integration.md` in the sibling `kcwi_wcs` prompts directory --
+that work integrated `construct_basename` into that stack's `setup_datacube.py`), a
+follow-up, independent repo-wide grep for the same pattern classes this branch targeted
+(`.split('.fits')`, `io.remove_suffix` on raw files, naive `.stem`/`.with_suffix`/
+`.replace('.fits')` applied to raw filenames) found one instance this branch's original
+sweep missed: `pypeit/spectrographs/mmt_binospec.py:970-971`, in `plot_mask()`:
+
+```python
+basename = Path(filename).name
+save_filename = Path(f"plot_mask_{hdu[1].header['MASK']}_{basename}").with_suffix('.png')
+```
+
+`mmt_binospec.py` does not override `allowed_extensions`, so a `.fits.gz` raw file is
+valid input here. `.with_suffix('.png')` only replaces the *last* suffix, so a `.fits.gz`
+input produces `plot_mask_MASK1_foo.fits.png` (a stray `.fits` left in) instead of
+`plot_mask_MASK1_foo.png`. Same bug class as the rest of this document, but:
+
+- Not yet fixed here -- flagged for a future PR rather than fixed in place, since it
+  surfaced after this document's own scope had already been implemented and verified,
+  and on an unrelated branch.
+- Low severity: it only affects a diagnostic PNG's filename (a stray `.fits` in the name),
+  with no effect on data correctness, and `plot_mask()` is an interactive/diagnostic
+  helper, not part of the core reduction pipeline.
+- The straightforward fix, when addressed, is the same pattern used everywhere else in
+  this document: `outputfiles.strip_raw_extension(filename, self.allowed_extensions)` in
+  place of `Path(filename).name` before building `save_filename`.
+- Separately, and unrelated to basenames: `plot_mask()`'s docstring describes `filename`
+  as "e.g., a JSON file containing slit definitions," but the code calls
+  `io.fits_open(filename)`, treating it as a FITS file -- a pre-existing docstring/code
+  mismatch, noted here for completeness only.
+
+No other new instances were found in this re-sweep; every other call site this document
+already lists was re-confirmed intact (not reverted by any later merge).
