@@ -12,7 +12,7 @@ import shutil
 import os
 import subprocess
 
-from pkg_resources import resource_filename
+from importlib import resources
 
 from IPython import embed
 
@@ -61,7 +61,9 @@ def main():
     if calib_path is not None:
         # Tellurics
         ptell = ['rclone', command, calib_path+'/Telluric', 'Telluric', '-v']
-        tell_path = os.path.join(resource_filename('pypeit', 'data'), 'telluric')
+        # importlib.resources replaces the deprecated pkg_resources API;
+        # files() returns a Traversable pointing at the installed package
+        tell_path = str(resources.files('pypeit') / 'data' / 'telluric')
         ptell2 = ['mv', 'Telluric/*.*', tell_path]
 
     if pargs.dryrun:

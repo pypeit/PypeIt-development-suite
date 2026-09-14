@@ -71,6 +71,9 @@ Attributes:
                             _flexure:           Test setups that run pypeit_deimos_flexure.
                             _coadd1d:           Test setups that run pypeit_coadd_1dspec.
                             _coadd2d:           Test setups that run pypeit_coadd_2dspec.
+                            _setup_datacube:    Test setups that run pypeit_setup_datacube.
+                            _coadd_datacube:    Test setups that run pypeit_coadd_datacube.
+                            _extract_datacube:  Test setups that run pypeit_extract_datacube.
                             _telluric:          Test setups that run pypeit_tellfit.
                             _quick_look:        Test setups that run quick look script. The actual script run is chosen
                                                 based on the instrument.
@@ -99,6 +102,8 @@ class TestPhase(Enum):
 
 # raw data directories for for setups that don't have the normal naming conventions
 _raw_data_dirs = {
+    'p200_ngps_u': 'p200_ngps',
+    'p200_ngps_g': 'p200_ngps',
     'p200_ngps_r': 'p200_ngps',
     'p200_ngps_i': 'p200_ngps',
 }
@@ -114,14 +119,14 @@ for instr in all_setups:
 _pypeit_setup = {
     'shane_kast_blue': {
         '600_4310_d55': [{}]},
+    'p200_ngps_u': {
+        '1.5_2x3': [{}]},
+    'p200_ngps_g': {
+        '1.5_2x3': [{}]},
     'p200_ngps_r': {
-        '1.5_2x3': [{}],
-        '1.0_2x2': [{}],
-        '0.5_2x1': [{}]},
+        '1.5_2x3': [{}]},
     'p200_ngps_i': {
-        '1.5_2x3': [{}],
-        '1.0_2x2': [{}],
-        '0.5_2x1': [{}]},        
+        '1.5_2x3': [{}]},
     }
 
 _calib_step_by_step = {
@@ -276,8 +281,26 @@ _coadd2d = {
         'M1': [dict(coadd_file=True)]}
     }
 
-# TODO: Test the pypeit_coadd_datacube setups!
-_coadd3d = {}
+_setup_datacube = {
+    'keck_kcwi': {
+        'large_bl': [dict(target='SDSSJ2222 2745'), dict(target='gd50')]},
+    'keck_kcrm': {
+        'large_rl': [dict(target='SDSSJ2222 2745'), dict(target='gd50')]},
+    }
+
+_coadd_datacube = {
+    'keck_kcwi': {
+        'large_bl': [dict(target='SDSSJ2222 2745'), dict(target='gd50')]},
+    'keck_kcrm': {
+        'large_rl': [dict(target='SDSSJ2222 2745'), dict(target='gd50')]},
+    }
+
+_extract_datacube = {
+    'keck_kcwi': {
+        'large_bl': [dict(target='gd50')]},
+    'keck_kcrm': {
+        'large_rl': [dict(target='gd50')]},
+    }
 
 _telluric = {
     'gemini_gnirs_echelle': {
@@ -493,6 +516,15 @@ all_tests = [{'factory': pypeit_tests.PypeItSetupTest,
              {'factory': pypeit_tests.PypeItCoadd2DTest,
               'type':    TestPhase.AFTERBURN,
               'setups':  _coadd2d},
+             {'factory': pypeit_tests.PypeItSetupDataCubeTest,
+              'type':    TestPhase.AFTERBURN,
+              'setups':  _setup_datacube},
+             {'factory': pypeit_tests.PypeItCoaddDataCubeTest,
+              'type':    TestPhase.AFTERBURN,
+              'setups':  _coadd_datacube},
+             {'factory': pypeit_tests.PypeItExtractDataCubeTest,
+              'type':    TestPhase.AFTERBURN,
+              'setups':  _extract_datacube},
              {'factory': pypeit_tests.PypeItTelluricTest,
               'type':    TestPhase.AFTERBURN,
               'setups':  _telluric},

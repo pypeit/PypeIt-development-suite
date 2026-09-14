@@ -3,7 +3,11 @@
 
 # User-defined execution parameters
 [rdx]
-spectrograph = mmt_mmirs
+    spectrograph = mmt_mmirs
+[reduce]
+    [[findobj]]
+        maxnumber_sci = 1
+        maxnumber_std = 1
 
 # Setup
 setup read

@@ -1,0 +1,44 @@
+[rdx]
+    spectrograph = arc_tspec
+    
+setup read
+Setup A:
+  dispname: 1.1 Slit
+setup end
+
+# Data block 
+data read
+ path /home/holtz/apo_testdata/TSPEC/UT191026
+                  filename |                 frametype |                 ra |                dec |     target | dispname |  decker | binning |                mjd |         airmass | exptime | calib | comb_id | bkg_id
+    ArielUmbriel.0055.fits |          arc,science,tilt | 32.336458333333326 | 12.505233333333333 |            | 1.1 Slit | default |     1,1 | 58782.265685081016 |  1.075691030327 |   180.0 |     0 |      29 |     301
+    ArielUmbriel.0056.fits |          science,tilt |          32.336375 | 12.505202777777777 |            | 1.1 Slit | default |     1,1 |  58782.26792060185 | 1.0738095766318 |   180.0 |     0 |      30 |     29
+    ArielUmbriel.0057.fits |          science,tilt |  32.33633333333333 | 12.505188888888888 |            | 1.1 Slit | default |     1,1 | 58782.270094224536 | 1.0721525031255 |   180.0 |     0 |      31 |     32
+    ArielUmbriel.0058.fits |          science,tilt |  32.33616666666666 | 12.505141666666667 |            | 1.1 Slit | default |     1,1 | 58782.272348287035 | 1.0706037185808 |   180.0 |     0 |      32 |     31
+     NoIllumFlat.0001.fits | lampoffflats | 19.999999999999996 |               20.0 |            | 1.1 Slit | default |     1,1 |    58782.008044375 | 2.9235550002706 |    60.0 |     0 |       1 |     -1
+     NoIllumFlat.0002.fits |              lampoffflats | 19.999999999999996 |               20.0 |            | 1.1 Slit | default |     1,1 |  58782.00882795139 | 2.9235551404489 |    60.0 |     0 |       2 |     -1
+       BD15_4915.0021.fits |                  standard |  359.4936666666666 | 15.952805555555555 | BD+15_4915 | 1.1 Slit | default |     1,1 | 58782.183357581016 | 1.0479207712159 |    60.0 |     0 |      21 |     -1
+       BD15_4915.0022.fits |                  standard |  359.4936666666666 | 15.952805555555555 | BD+15_4915 | 1.1 Slit | default |     1,1 | 58782.184209756946 | 1.0474847192898 |    60.0 |     0 |      22 |     -1
+       BD15_4915.0023.fits |                  standard |  359.4936666666666 | 15.952805555555555 | BD+15_4915 | 1.1 Slit | default |     1,1 |  58782.18499689815 | 1.0471102188395 |    60.0 |     0 |      23 |     -1
+       BD15_4915.0024.fits |                  standard |  359.4936666666666 | 15.952805555555555 | BD+15_4915 | 1.1 Slit | default |     1,1 |  58782.18585246528 | 1.0467015632999 |    60.0 |     0 |      24 |     -1
+BrightQuartzFlat.0011.fits |                  illumflat,pixelflat,trace | 19.999999999999996 |               20.0 |            | 1.1 Slit | default |     1,1 |  58782.01616150463 |  2.923554719914 |    60.0 |     0 |      11 |     -1
+BrightQuartzFlat.0012.fits |                  illumflat,pixelflat,trace | 19.999999999999996 |               20.0 |            | 1.1 Slit | default |     1,1 |       58782.016945 | 2.9235548600923 |    60.0 |     0 |      12 |     -1
+BrightQuartzFlat.0013.fits |                  illumflat,pixelflat,trace | 19.999999999999996 |               20.0 |            | 1.1 Slit | default |     1,1 |  58782.01772798611 |  2.923554159201 |    60.0 |     0 |      13 |     -1
+BrightQuartzFlat.0014.fits |                  illumflat,pixelflat,trace | 19.999999999999996 |               20.0 |            | 1.1 Slit | default |     1,1 | 58782.018511574075 | 2.9235548600923 |    60.0 |     0 |      14 |     -1
+BrightQuartzFlat.0015.fits |                  illumflat,pixelflat,trace | 19.999999999999996 |               20.0 |            | 1.1 Slit | default |     1,1 |  58782.01929527778 | 2.9235542993792 |    60.0 |     0 |      15 |     -1
+BrightQuartzFlat.0016.fits |                  illumflat,pixelflat,trace | 19.999999999999996 |               20.0 |            | 1.1 Slit | default |     1,1 |  58782.02007835648 |  2.923554159201 |    60.0 |     0 |      16 |     -1
+BrightQuartzFlat.0017.fits |                  illumflat,pixelflat,trace | 19.999999999999996 |               20.0 |            | 1.1 Slit | default |     1,1 | 58782.020863425925 | 2.9235542993792 |    60.0 |     0 |      17 |     -1
+BrightQuartzFlat.0018.fits |                  illumflat,pixelflat,trace | 19.999999999999996 |               20.0 |            | 1.1 Slit | default |     1,1 |  58782.02164709491 |  2.923554159201 |    60.0 |     0 |      18 |     -1
+BrightQuartzFlat.0019.fits |                  illumflat,pixelflat,trace | 19.999999999999996 |               20.0 |            | 1.1 Slit | default |     1,1 | 58782.022430289355 |  2.923554159201 |    60.0 |     0 |      19 |     -1
+BrightQuartzFlat.0020.fits |                  illumflat,pixelflat,trace | 19.999999999999996 |               20.0 |            | 1.1 Slit | default |     1,1 | 58782.023213796296 | 2.9235542993792 |    60.0 |     0 |      20 |     -1
+        HD_19061.0042.fits |                  standard |          46.092875 | 14.858333333333333 |   HD_19061 | 1.1 Slit | default |     1,1 | 58782.237134097224 | 1.2139770741961 |    60.0 |     0 |      25 |     26
+        HD_19061.0043.fits |                  standard |          46.092875 | 14.858333333333333 |   HD_19061 | 1.1 Slit | default |     1,1 |  58782.23797909722 | 1.2105243735541 |    60.0 |     0 |      26 |     25
+     NoIllumFlat.0003.fits |                  lampoffflats | 19.999999999999996 |               20.0 |            | 1.1 Slit | default |     1,1 |  58782.00961208333 |  2.923554719914 |    60.0 |     0 |       3 |     -1
+     NoIllumFlat.0004.fits |                  lampoffflats | 19.999999999999996 |               20.0 |            | 1.1 Slit | default |     1,1 | 58782.010394756944 | 2.9235544395575 |    60.0 |     0 |       4 |     -1
+     NoIllumFlat.0005.fits |                  lampoffflats | 19.999999999999996 |               20.0 |            | 1.1 Slit | default |     1,1 |  58782.01117813658 |  2.923554719914 |    60.0 |     0 |       5 |     -1
+     NoIllumFlat.0006.fits |                  lampoffflats | 19.999999999999996 |               20.0 |            | 1.1 Slit | default |     1,1 |  58782.01196166666 | 2.9235551404489 |    60.0 |     0 |       6 |     -1
+     NoIllumFlat.0007.fits |                  lampoffflats | 19.999999999999996 |               20.0 |            | 1.1 Slit | default |     1,1 |  58782.01274457176 |  2.923554719914 |    60.0 |     0 |       7 |     -1
+     NoIllumFlat.0008.fits |                  lampoffflats | 19.999999999999996 |               20.0 |            | 1.1 Slit | default |     1,1 |    58782.013528125 |  2.923554719914 |    60.0 |     0 |       8 |     -1
+     NoIllumFlat.0009.fits |                  lampoffflats | 19.999999999999996 |               20.0 |            | 1.1 Slit | default |     1,1 | 58782.014311770836 |  2.923554719914 |    60.0 |     0 |       9 |     -1
+     NoIllumFlat.0010.fits |                  lampoffflats | 19.999999999999996 |               20.0 |            | 1.1 Slit | default |     1,1 |  58782.01509498843 |  2.923554719914 |    60.0 |     0 |      10 |     -1
+data end
+

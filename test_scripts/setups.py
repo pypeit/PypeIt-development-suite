@@ -7,6 +7,16 @@ all_setups = {
     'aat_uhrf': [
         '3875',
     ],
+    'arc_kosmos': [
+        'UT221221_slitmask_galaxies',
+        'UT230909_slitmask_stars',
+        'UT250131_longslit_blue_HeNeAr',
+        'UT250131_longslit_blue_NeKr',
+        'UT250131_longslit_red',
+    ],
+    'arc_tspec': [
+        'UT191026',
+    ],
     'bok_bc': [
         '300',
         'old_832',
@@ -53,6 +63,9 @@ all_setups = {
         'R1000R',
         'R300B',
     ],
+    'int_ids_eev10': [
+        'INT_20201218',
+    ],
     'keck_esi': [
         'Ech_1x1',
         'Ech_2x1',
@@ -90,10 +103,12 @@ all_setups = {
         'small_bh2_4200',
         'medium_bl',
         'medium_bh3',
+        'large_bl',
     ],
     'keck_kcrm': [
         'medium_rm1',
         'medium_rh3',
+        'large_rl',
     ],
     'keck_nires': [
         'ABBA_wstandard',
@@ -209,6 +224,10 @@ all_setups = {
         'FIRE_Echelle',
         'FIRE_Long',
     ],
+    'magellan_ldss3': [
+        'VPH-ALL_Std',
+        'VPH-ALL_Sci',
+    ],
     'magellan_mage': [
         '1x1',
     ],
@@ -223,6 +242,10 @@ all_setups = {
         'Longslit_G600',
         'Multislit_G270',
         'Longslit_G1000',
+    ],
+    'mmt_binospec_ifu': [
+        'G270',
+        'G270_Sky',
     ],
     'mmt_mmirs': [
         'HK_zJ',
@@ -269,18 +292,24 @@ all_setups = {
         '1200_7100_d68',
         '1200_9400_d55',
     ],
+    'p200_ngps_u': [
+        '1.5_2x3',
+    ],
+    'p200_ngps_g': [
+        '1.5_2x3',
+    ],
     'p200_ngps_r': [
         '1.5_2x3',
-        '1.0_2x2',
-        '0.5_2x1',
     ],
     'p200_ngps_i': [
         '1.5_2x3',
-        '1.0_2x2',
-        '0.5_2x1',
     ],
     'p200_tspec': [
         'TSPEC',
+    ],
+    'shane_hamspec': [
+        'Hamilton',
+        'Hamilton_e2v',
     ],
     'shane_kast_blue': [
         '452_3306_d57',
@@ -302,6 +331,9 @@ all_setups = {
     'soar_goodman_blue': [
         'M1',
     ],
+    'soar_tspec': [
+        'TSPEC',
+    ],
     'subaru_focas': [
         '300B_None',
         '300R_O58',
@@ -316,6 +348,7 @@ all_setups = {
         '600Z',
         '300I_MOS',
         '1200B',
+        '1200R',
         '1400V',
     ],
     'vlt_sinfoni': [
