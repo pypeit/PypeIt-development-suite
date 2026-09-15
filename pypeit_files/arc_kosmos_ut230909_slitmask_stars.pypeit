@@ -2,7 +2,7 @@
     spectrograph = arc_kosmos
 [calibrations]
  [[wavelengths]]
-   lamps = 'NeI'
+   lamps = NeI
 
 setup read
 Setup G:
