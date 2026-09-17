@@ -13,7 +13,7 @@ import numpy as np
 from configobj import ConfigObj
 
 from pypeit.metadata import PypeItMetaData
-from pypeit.par import PypeItPar
+from pypeit.par import pypeitpar
 from pypeit.scripts.setup import Setup
 from pypeit.scripts.chk_for_calibs import ChkForCalibs
 from pypeit.spectrographs.util import load_spectrograph
@@ -361,8 +361,9 @@ def test_setup_keck_deimos_multiconfig():
         spectrograph_cfg_lines = spectrograph.config_specific_par(
             pypeitFile.filenames[idx]).to_config()
         #  PypeIt parameters
-        par = PypeItPar.from_cfg_lines(cfg_lines=spectrograph_cfg_lines, 
-                                       merge_with=pypeitFile.cfg_lines)
+        par = pypeitpar.PypeItPar.from_cfg_lines(
+            cfg_lines=spectrograph_cfg_lines, merge_with=pypeitFile.cfg_lines
+        )
         #  Metadata
         fitstbl = PypeItMetaData(spectrograph, par, 
                                  files=pypeitFile.filenames, 
@@ -468,8 +469,9 @@ def test_setup_keck_mosfire_multiconfig():
                 config_specific_file = pypeitFile.filenames[idx]
         spectrograph_cfg_lines = spectrograph.config_specific_par(config_specific_file).to_config()
         #  PypeIt parameters
-        par = PypeItPar.from_cfg_lines(cfg_lines=spectrograph_cfg_lines,
-                                       merge_with=pypeitFile.cfg_lines)
+        par = pypeitpar.PypeItPar.from_cfg_lines(
+            cfg_lines=spectrograph_cfg_lines, merge_with=pypeitFile.cfg_lines
+        )
         #  Metadata
         fitstbl = PypeItMetaData(spectrograph, par,
                                  files=pypeitFile.filenames,
@@ -530,8 +532,9 @@ def test_setup_keck_hires_multiconfig():
         spectrograph_cfg_lines = spectrograph.config_specific_par(
             pypeitFile.filenames[idx]).to_config()
         #  PypeIt parameters
-        par = PypeItPar.from_cfg_lines(cfg_lines=spectrograph_cfg_lines,
-                                       merge_with=pypeitFile.cfg_lines)
+        par = pypeitpar.PypeItPar.from_cfg_lines(
+            cfg_lines=spectrograph_cfg_lines, merge_with=pypeitFile.cfg_lines
+        )
         #  Metadata
         fitstbl = PypeItMetaData(spectrograph, par,
                                  files=pypeitFile.filenames,

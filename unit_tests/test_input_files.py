@@ -1,10 +1,12 @@
 """ Tests Reading of PypeIt Input files """
 from pathlib import Path
+import ast
 import os
 import shutil
 import glob
 
 from IPython import embed
+import numpy as np
 
 from pypeit import inputfiles
 from pypeit.scripts.setup import Setup
@@ -103,3 +105,41 @@ def test_get_pypeitpar():
     # Clean-up
     shutil.rmtree(setup_path)
 
+
+def test_get_pypeitpar_baseprocess():
+    """
+    Test setting up the PypeItPar instance when there is a baseprocess
+    configuration key in the pypeit file.
+    """
+
+    # NOTE: This is one of the (few) spectrographs+setups that set use_biasimage
+    # to True by default but uses `baseprocess` to turn it off for this specific
+    # dataset.
+    spec = 'keck_kcwi'
+    setup = 'medium_bl'
+
+    # Get the pypeitfile
+    ifile = (
+        Path(os.environ['PYPEIT_DEV']).resolve() / 'pypeit_files' 
+        / f'{spec}_{setup.lower()}.pypeit'
+    )
+    assert ifile.is_file(), f'PypeIt file does not exist {ifile}'
+
+    pf = inputfiles.PypeItFile.from_file(ifile)
+
+    assert any('baseprocess' in l for l in pf.cfg_lines), \
+        f'{ifile.name} no longer uses baseprocess'
+
+    # WARNING: This assumes that only baseprocess sets use_biasimage
+    indx = np.where(['use_biasimage' in l for l in pf.cfg_lines])[0][0]
+    assert not ast.literal_eval(pf.cfg_lines[indx].split('=')[-1].strip()), (
+        'Expect that use_biasimage should only occure once in the pypeit file and should be used '
+        'to set it to False'
+    )
+    
+    spec, par, csf = pf.get_pypeitpar()
+    def_par = spec.default_pypeit_par()
+    assert def_par['scienceframe']['process']['use_biasimage'], \
+        'Default use_biasimage is expected to be True'
+    assert not par['scienceframe']['process']['use_biasimage'], \
+        'Use of baseprocess should set use_biasimage to False'

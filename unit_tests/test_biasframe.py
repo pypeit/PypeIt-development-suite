@@ -109,5 +109,3 @@ def test_mosaic_io():
 
     # Clean up
     Path(outfile).unlink()
-
-
