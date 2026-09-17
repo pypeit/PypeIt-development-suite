@@ -13,7 +13,7 @@
      minimum_slit_gap = 0.
     [[tiltframe]]
         [[[process]]]
-            spat_flexure_correct = True
+            spat_flexure_method = detector
 [reduce]
  [[slitmask]]
     use_alignbox = True
