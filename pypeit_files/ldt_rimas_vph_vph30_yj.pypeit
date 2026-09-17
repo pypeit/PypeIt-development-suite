@@ -1,0 +1,34 @@
+# Auto-generated PypeIt input file using PypeIt version: 2.0.2.dev176+g8726d2694.d20260401
+# UTC 2026-04-15T22:57:57.360+00:00
+
+# User-defined execution parameters
+[rdx]
+    spectrograph = ldt_rimas_vph
+
+# Setup
+setup read
+Setup 30YJ12l:
+  arm: YJ
+  decker: 1.2'' long
+  dispname: Vph30
+setup end
+
+# Data block 
+data read
+ path RAWDIR
+                   filename |                 frametype |                 ra |                dec |    target | dispname |     decker | binning |                mjd |         airmass | exptime | arm | slitwid | lampstat01 | filter1 | dithpat | dithpos | calib | comb_id | bkg_id
+20260305.rimas.0082.YJ.fits |          arc,science,tilt |  76.37624999999998 |  52.82655555555556 |  G191-B2B |    Vph30 | 1.2'' long |     1,1 | 61104.138676508286 | 1.1044856699032 |   60.06 |  YJ |     1.2 |        off |    open |    ABBA |       A |     0 |       1 |      2
+20260305.rimas.0083.YJ.fits |          arc,science,tilt |  76.37629166666666 |  52.82655555555556 |  G191-B2B |    Vph30 | 1.2'' long |     1,1 |  61104.13960108859 | 1.1055967562294 |   60.06 |  YJ |     1.2 |        off |    open |    ABBA |       B |     0 |       2 |      1
+20260305.rimas.0084.YJ.fits |          arc,science,tilt |  76.37620833333332 |  52.82658333333334 |  G191-B2B |    Vph30 | 1.2'' long |     1,1 | 61104.140493114435 | 1.1070979643116 |   60.06 |  YJ |     1.2 |        off |    open |    ABBA |       B |     0 |       3 |      4
+20260305.rimas.0085.YJ.fits |          arc,science,tilt |  76.37624999999998 |  52.82380555555556 |  G191-B2B |    Vph30 | 1.2'' long |     1,1 |  61104.14138514478 |  1.108415599486 |   60.06 |  YJ |     1.2 |        off |    open |    ABBA |       A |     0 |       4 |      3
+20260306.rimas.0016.YJ.fits |                      dark |                0.0 |                0.0 |      null |    Vph30 | 1.2'' long |     1,1 | 61105.750298907675 |             0.0 |   60.06 |  YJ |     1.2 |        off |   blank |    None |    None |     0 |      -1 |     -1
+20260306.rimas.0018.YJ.fits |                      dark |                0.0 |                0.0 |      null |    Vph30 | 1.2'' long |     1,1 | 61105.752147864085 |             0.0 |   60.06 |  YJ |     1.2 |        off |   blank |    None |    None |     0 |      -1 |     -1
+20260306.rimas.0019.YJ.fits |                      dark |                0.0 |                0.0 |      null |    Vph30 | 1.2'' long |     1,1 |  61105.75300750148 |             0.0 |   60.06 |  YJ |     1.2 |        off |   blank |    None |    None |     0 |      -1 |     -1
+20260305.rimas.0070.YJ.fits |              lampoffflats | 123.35341666666666 |  10.90163888888889 | dome dark |    Vph30 | 1.2'' long |     1,1 | 61104.077072846885 | 1.4611465635881 |    28.6 |  YJ |     1.2 |        off |    open |    None |    None |   all |      -1 |     -1
+20260305.rimas.0071.YJ.fits |              lampoffflats | 123.52895833333329 | 10.902019444444445 | dome dark |    Vph30 | 1.2'' long |     1,1 | 61104.077535592376 | 1.4611465635881 |    28.6 |  YJ |     1.2 |        off |    open |    None |    None |   all |      -1 |     -1
+20260305.rimas.0072.YJ.fits |              lampoffflats | 123.68358333333332 | 10.902352777777779 | dome dark |    Vph30 | 1.2'' long |     1,1 |  61104.07799810046 | 1.4611465635881 |    28.6 |  YJ |     1.2 |        off |    open |    None |    None |   all |      -1 |     -1
+20260305.rimas.0055.YJ.fits | pixelflat,illumflat,trace | 121.21795833333331 | 10.896905555555556 | dome flat |    Vph30 | 1.2'' long |     1,1 |  61104.07126061942 | 1.4611465635881 |    28.6 |  YJ |     1.2 |        off |    open |    None |    None |   all |      -1 |     -1
+20260305.rimas.0056.YJ.fits | pixelflat,illumflat,trace |          121.59825 | 10.897747222222222 | dome flat |    Vph30 | 1.2'' long |     1,1 | 61104.072209836064 | 1.4611465635881 |    28.6 |  YJ |     1.2 |        off |    open |    None |    None |   all |      -1 |     -1
+20260305.rimas.0057.YJ.fits | pixelflat,illumflat,trace | 121.75704166666667 | 10.898097222222221 | dome flat |    Vph30 | 1.2'' long |     1,1 | 61104.072673367176 | 1.4611465635881 |    28.6 |  YJ |     1.2 |        off |    open |    None |    None |   all |      -1 |     -1
+data end
+

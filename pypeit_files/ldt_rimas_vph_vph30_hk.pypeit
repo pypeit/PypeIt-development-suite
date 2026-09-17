@@ -1,0 +1,34 @@
+# Auto-generated PypeIt input file using PypeIt version: 2.0.2.dev176+g8726d2694.d20260401
+# UTC 2026-04-15T22:55:43.666+00:00
+
+# User-defined execution parameters
+[rdx]
+    spectrograph = ldt_rimas_vph
+
+# Setup
+setup read
+Setup 30HK12l:
+  arm: HK
+  decker: 1.2'' long
+  dispname: Vph30
+setup end
+
+# Data block 
+data read
+ path RAWDIR
+                   filename |                 frametype |                 ra |                dec |    target | dispname |     decker | binning |                mjd |         airmass | exptime | arm | slitwid | lampstat01 | filter1 | dithpat | dithpos | calib | comb_id | bkg_id
+20260305.rimas.0082.HK.fits |          arc,science,tilt |  76.37624999999998 |  52.82655555555556 |  G191-B2B |    Vph30 | 1.2'' long |     1,1 | 61104.138676508286 | 1.1044856699032 |   60.06 |  HK |     1.2 |        off |    open |    ABBA |       A |     0 |       1 |      2
+20260305.rimas.0083.HK.fits |          arc,science,tilt |  76.37624999999998 |  52.82655555555556 |  G191-B2B |    Vph30 | 1.2'' long |     1,1 |  61104.13960108859 | 1.1057380057008 |   60.06 |  HK |     1.2 |        off |    open |    ABBA |       B |     0 |       2 |      1
+20260305.rimas.0084.HK.fits |          arc,science,tilt |  76.37624999999998 |  52.82372222222222 |  G191-B2B |    Vph30 | 1.2'' long |     1,1 | 61104.140493114435 | 1.1071814005167 |   60.06 |  HK |     1.2 |        off |    open |    ABBA |       B |     0 |       3 |      4
+20260305.rimas.0085.HK.fits |          arc,science,tilt |  76.37624999999998 |  52.82380555555556 |  G191-B2B |    Vph30 | 1.2'' long |     1,1 |  61104.14138514478 |  1.108415599486 |   60.06 |  HK |     1.2 |        off |    open |    ABBA |       A |     0 |       4 |      3
+20260306.rimas.0016.HK.fits |                      dark |                0.0 |                0.0 |      null |    Vph30 | 1.2'' long |     1,1 | 61105.750298907675 |             0.0 |   60.06 |  HK |     1.2 |        off |   blank |    None |    None |     0 |      -1 |     -1
+20260306.rimas.0018.HK.fits |                      dark |                0.0 |                0.0 |      null |    Vph30 | 1.2'' long |     1,1 | 61105.752147864085 |             0.0 |   60.06 |  HK |     1.2 |        off |   blank |    None |    None |     0 |      -1 |     -1
+20260306.rimas.0019.HK.fits |                      dark |                0.0 |                0.0 |      null |    Vph30 | 1.2'' long |     1,1 |  61105.75300750148 |             0.0 |   60.06 |  HK |     1.2 |        off |   blank |    None |    None |     0 |      -1 |     -1
+20260305.rimas.0060.HK.fits |              lampoffflats | 122.47162499999999 | 10.899666666666667 | dome dark |    Vph30 | 1.2'' long |     1,1 |  61104.07496857548 | 1.4611465635881 |    5.72 |  HK |     1.2 |        off |    open |    None |    None |   all |      -1 |     -1
+20260305.rimas.0061.HK.fits |              lampoffflats | 122.55104166666663 | 10.899841666666665 | dome dark |    Vph30 | 1.2'' long |     1,1 |  61104.07516600866 | 1.4611465635881 |    5.72 |  HK |     1.2 |        off |    open |    None |    None |   all |      -1 |     -1
+20260305.rimas.0062.HK.fits |              lampoffflats | 122.61787499999997 |               10.9 | dome dark |    Vph30 | 1.2'' long |     1,1 |  61104.07536345596 | 1.4611465635881 |    5.72 |  HK |     1.2 |        off |    open |    None |    None |   all |      -1 |     -1
+20260305.rimas.0045.HK.fits | pixelflat,illumflat,trace | 120.26516666666667 | 10.894780555555554 | dome flat |    Vph30 | 1.2'' long |     1,1 |  61104.06886436774 | 1.4611465635881 |    5.72 |  HK |     1.2 |        off |    open |    None |    None |   all |      -1 |     -1
+20260305.rimas.0046.HK.fits | pixelflat,illumflat,trace | 120.34458333333332 | 10.894958333333333 | dome flat |    Vph30 | 1.2'' long |     1,1 | 61104.069061805385 | 1.4611465635881 |    5.72 |  HK |     1.2 |        off |    open |    None |    None |   all |      -1 |     -1
+20260305.rimas.0047.HK.fits | pixelflat,illumflat,trace | 120.41141666666668 | 10.895108333333333 | dome flat |    Vph30 | 1.2'' long |     1,1 |  61104.06925926757 | 1.4611465635881 |    5.72 |  HK |     1.2 |        off |    open |    None |    None |   all |      -1 |     -1
+data end
+
