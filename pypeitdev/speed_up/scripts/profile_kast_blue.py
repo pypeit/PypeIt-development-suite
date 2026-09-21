@@ -30,6 +30,7 @@ import time
 import json
 import glob
 import shutil
+import argparse
 import cProfile
 from pathlib import Path
 
@@ -38,9 +39,7 @@ REDUX = Path("/home/xavier/Projects/PypeIt/PypeIt-development-suite/"
 PYPEIT_FILE = "shane_kast_blue_A.pypeit"
 REPORTS = Path("/home/xavier/Projects/PypeIt/PypeIt-development-suite/"
                "pypeitdev/speed_up/Reports")
-PROF_OUT = REPORTS / "shane_kast_blue_A.prof"
-META_OUT = REPORTS / "shane_kast_blue_A.runmeta.json"
-LOG_COPY = REPORTS / "shane_kast_blue_A.run.log"
+STEM = "shane_kast_blue_A"
 
 
 def clean_cold():
@@ -61,6 +60,18 @@ def clean_cold():
 
 
 def main():
+    ap = argparse.ArgumentParser(description=__doc__)
+    ap.add_argument("--ncpu", type=int, default=None,
+                    help="Pass --ncpu N through to run_pypeit and suffix the "
+                         "output artifact stems with _ncpu{N} so existing "
+                         "baselines are not overwritten.")
+    cli = ap.parse_args()
+
+    stem = STEM + (f"_ncpu{cli.ncpu}" if cli.ncpu is not None else "")
+    prof_out = REPORTS / f"{stem}.prof"
+    meta_out = REPORTS / f"{stem}.runmeta.json"
+    log_copy = REPORTS / f"{stem}.run.log"
+
     REPORTS.mkdir(parents=True, exist_ok=True)
     os.chdir(REDUX)
 
@@ -74,9 +85,12 @@ def main():
     # Import after chdir so PypeIt picks up the right cwd defaults.
     from pypeit.scripts.run_pypeit import RunPypeIt
 
-    args = RunPypeIt.parse_args([PYPEIT_FILE, "-o"])
+    argv = [PYPEIT_FILE, "-o"]
+    if cli.ncpu is not None:
+        argv += ["--ncpu", str(cli.ncpu)]
+    args = RunPypeIt.parse_args(argv)
 
-    print(f"\nRunning (cold) under cProfile: run_pypeit {PYPEIT_FILE} -o")
+    print(f"\nRunning (cold) under cProfile: run_pypeit {' '.join(argv)}")
     pr = cProfile.Profile()
     t0 = time.perf_counter()
     rc = 0
@@ -88,31 +102,32 @@ def main():
     finally:
         pr.disable()
         wall = time.perf_counter() - t0
-        pr.dump_stats(str(PROF_OUT))
+        pr.dump_stats(str(prof_out))
 
     print(f"\nWall-clock (cProfile-instrumented): {wall:.2f} s")
-    print(f"Profile written to: {PROF_OUT}")
+    print(f"Profile written to: {prof_out}")
 
     # Copy the run log (timestamped on this branch) for timeline analysis.
     runlog = REDUX / "shane_kast_blue_A.log"
     if runlog.exists():
-        shutil.copy(str(runlog), str(LOG_COPY))
-        print(f"Run log copied to: {LOG_COPY}")
+        shutil.copy(str(runlog), str(log_copy))
+        print(f"Run log copied to: {log_copy}")
 
     meta = {
         "redux_dir": str(REDUX),
         "pypeit_file": PYPEIT_FILE,
-        "command": f"run_pypeit {PYPEIT_FILE} -o",
+        "command": f"run_pypeit {' '.join(argv)}",
+        "ncpu": cli.ncpu,
         "cold_run": True,
         "removed_before_run": removed,
         "wall_clock_s": round(wall, 3),
         "return_code": rc,
-        "prof": str(PROF_OUT),
-        "run_log": str(LOG_COPY),
+        "prof": str(prof_out),
+        "run_log": str(log_copy),
     }
-    with open(META_OUT, "w") as fp:
+    with open(meta_out, "w") as fp:
         json.dump(meta, fp, indent=2)
-    print(f"Run metadata written to: {META_OUT}")
+    print(f"Run metadata written to: {meta_out}")
     return rc
 
 

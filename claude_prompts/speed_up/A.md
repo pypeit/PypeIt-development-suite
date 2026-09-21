@@ -408,3 +408,128 @@ Verification (in `pypeit14b`):
 No new questions. Next: task 4 — convert the high-volume per-slit QA call
 sites to `qa.save_figure` (rules a/b/c), including the two extra
 `plt.close('all')` in `findobj_skymask.py` found in task 1.
+
+### 2026-09-11 (Task 4 — converted all §A.5 QA writers; found+fixed a pyplot-state contamination bug)
+
+Performed the **4th task under Tasks** (coding-doc §A.5) on `speed_up_qa`;
+commit **`92feaf418`** ("Convert the per-slit QA writers to qa.save_figure").
+No new Q&A answers were pending (Q1 already applied: all runs in `pypeit14b`).
+
+Conversions (all five §A.5 priorities, rules a/b/c obeyed at every site):
+1. `pypeit/qa.py` — `arc_tilts_2d_qa` / `arc_tilts_spec_qa` /
+   `arc_tilts_spat_qa`: identical tails collapsed to
+   `save_figure(fig, outfile, show=show_QA, dpi=400)`; `arc_tilts_spec_qa`
+   now binds `fig = plt.figure(...)` (rule a).
+2. `pypeit/core/wavecal/autoid.py` — `arc_fit_qa` (both the `ids_only` and the
+   full-panel exits, dpi 800/400 preserved) and `arc_fwhm_qa` via
+   `qa.save_figure(fig, outfile, show=…)`; added `from pypeit import qa`
+   (no circular import — `qa.py` imports nothing from pypeit). The two
+   `plt.close('all')` at the *starts* of these functions (lines 67, 242) were
+   **removed** rather than converted — they close nothing the function owns and
+   would destroy queued figures; the one at the end (line 200) became the
+   per-figure close inside `save_figure`.
+3. `pypeit/flatfield.py` — `spatillum_finecorr_qa` and `detector_structure_qa`
+   (the "second writer"): bound `fig`, converted tails (dpi=400,
+   `show=outfile is None` preserving show-vs-save semantics). The
+   "Saved QA" log line became **"Saving QA" before the hand-off** — under
+   deferred writes the file is not yet on disk at log time.
+4. `pypeit/core/findobj_skymask.py` — `objfind_QA` and `objtrace_QA`,
+   including their trailing `plt.close('all')` calls (rule b).
+5. `pypeit/qa.py` — `spec_flexure_qa` (both per-slit figures: correlation +
+   sky-lines; original writers pass **no dpi** and that was preserved) and
+   `spat_flexure_qa` (kept its `debug → plt.show()` branch; save path via
+   `save_figure(fig, outfile, dpi=200)`).
+
+**Bug found by the serial-vs-threaded integration test, and fixed:**
+`arc_tilts_spat_qa` PNGs differed between `ncpu=1` and `ncpu=4` when followed
+by `objfind_QA`. Cause: `objfind_QA` plots via bare pyplot state (`plt.plot`
+with no figure of its own); with closes deferred, `gcf()` returned the still
+*pending* `arc_tilts_spat_qa` figure and `objfind_QA` drew into it before the
+worker rendered it. (The old code was accidentally protected by every writer
+closing everything.) Two-part fix, both in commit `92feaf418`:
+- `qa.save_figure` now **deregisters a queued figure from pyplot immediately**
+  (`plt.close(fig)` before submit, when `close=True`): the `Figure` object
+  stays alive via `_QA_PENDING` and Agg renders a closed figure identically in
+  the worker (verified byte-identical). Pending figures are thereby invisible
+  to any later pyplot-state code — a general defense, not just for
+  `objfind_QA`.
+- `objfind_QA` now creates its own figure (`fig = plt.figure()`) instead of
+  drawing into whatever is current.
+
+Verification (in `pypeit14b`):
+- Integration test: `arc_tilts_{2d,spec,spat}_qa` + `objfind_QA` rendered in
+  one sequence at `ncpu=1` vs `ncpu=4` → all four PNGs **pixel-identical**
+  (PIL-decoded); no figures leaked. (First run flagged `objfind` differing —
+  a test artifact: the random SNR vector was regenerated between runs; fixed
+  data → identical.)
+- `git grep "close('all')"` over the four converted modules → **none remain**;
+  the only remaining `savefig` in them is `autoid.py:358` `pp.savefig` — a
+  `PdfPages` writer, explicitly out of scope.
+- `pytest test_wvcalib/test_flatfield/test_fiberflatfield/test_wavetilts/
+  test_wave/test_wavemodel` — **14 passed**.
+
+Note for task 5: add a regression test for the pyplot-contamination fix (a
+pyplot-state plot after a queued figure must not alter the queued PNG).
+Coadd/sensfunc/telluric/PdfPages writers untouched, per scope.
+
+### 2026-09-11 (Task 5 — tests green (696), docs + changelog written; warnings file empty)
+
+Performed the **5th task under Tasks** (coding-doc §A.6 + §A.8) on
+`speed_up_qa`; commit **`8b6eb3c6f`** ("Add QA-write tests; document ncpu and
+the Agg backend"). No new Q&A answers pending (only Q1, already applied —
+everything run in `pypeit14b`).
+
+Tests (`pypeit/tests/test_qa.py` — the file already existed with
+`test_get_dimen`; extended, not replaced):
+- `test_save_figure_serial` — in-line write at `ncpu=1`, figure closed.
+- `test_save_figure_threaded_matches_serial` — 8 deferred writes at `ncpu=4`
+  pixel-identical to the serial reference (PIL-decoded arrays, per §A.6 — raw
+  bytes differ via matplotlib's `Software` PNG chunk); fixed RNG seed.
+- `test_save_figure_pending_isolated_from_pyplot` — the **task-4 regression
+  test**: a bare `plt.plot` + `plt.close('all')` issued while a figure is
+  queued must not alter the queued PNG.
+- `test_flush_qa_reraises` — a failed background write surfaces on the main
+  thread.
+- Every test restores `qa.init_qa_pool(1)`; module forces `Agg`.
+- **Full CI-safe suite: `pytest pypeit/tests` → 696 passed** (~5.3 min).
+
+Docs (§A.8):
+- `doc/running.rst`: new subsection **"Running on multiple CPUs"**
+  (`.. _run-pypeit-ncpu:`) — states honestly that in this PR `ncpu` only
+  affects QA figure writing, and warns that future detector-level use scales
+  peak memory.
+- `doc/qa.rst`: paragraph on the forced `Agg` backend (with the `--show`
+  exception) and concurrent, output-identical PNG writes; links to
+  `run-pypeit-ncpu`.
+- `doc/releases/2.1.0dev.rst`: two bullets under
+  **Functionality/Performance Improvements and Additions** (the `Agg` change —
+  crediting that it covers `run_to_calibstep`/`reduce_by_step` too, previously
+  undocumented from commit `bbfe2675a` — and the `ncpu` parameter + `--ncpu`
+  flag), plus one under **Testing** for the new QA tests. `CHANGES.rst`
+  untouched (its own header deprecates it, per coding-doc §A.8).
+- Regenerated `doc/help/run_pypeit.rst` (now shows `--ncpu`);
+  `doc/pypeit_par.rst` unchanged since its task-2 regeneration.
+- Doc build (`make htmlnoex` then `htmlonly`, sphinx from `pypeit14b`,
+  `PYPEIT_DEV` set): **build succeeded; `doc/sphinx_warnings.out` is empty.**
+  Two warning classes were fixed along the way: (1) my `qa.py` docstrings
+  referenced `matplotlib.figure.Figure(.savefig)`_ targets missing from
+  `doc/include/links.rst` — added both targets there; (2) a **pre-existing**
+  warning unrelated to PR A: the `int_ids` spectrograph API page (from PR
+  #2188) was never registered in `doc/api/pypeit.spectrographs.rst` — added
+  the toctree line + the generated `pypeit.spectrographs.int_ids.rst`.
+
+Housekeeping notes:
+- The apirst regeneration also showed ~10 *other* stale generated docs on the
+  branch (`doc/help/pypeit_obslog.rst` [-G removal], `pypeit_ql`, `setup`,
+  `trace_edges`, `view_fits`, `chk_for_calibs`, `cache_github_data`,
+  `doc/include/{inst_detector_table,spectrographs_table}.rst`,
+  `doc/api/pypeit.coadd2d.rst`). **Restored, not committed** — unrelated to
+  PR A; worth a separate docs-regen commit on `speed_up` at some point.
+- The full pytest run left untracked test outputs under
+  `pypeit/data/tests/{REDUX_OUT_TEST,shane_kast_blue_A}/` — left untouched
+  (pre-existing suite behavior, not git-ignored).
+
+No new questions. Next: task 6 — add `--ncpu` to the two profiling scripts,
+re-profile Kast + DEIMOS at `--ncpu 1` and `--ncpu 4` (fresh `ncpu=1` baselines;
+the June profiles predate the `Agg` commit and used the old env), and write
+`Reports/speed_up_results.md`.
