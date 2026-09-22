@@ -229,6 +229,25 @@ is needed anyway); (b) you repair the `pypeit` env (e.g. upgrade astropy to
 **(a)** — use `pypeit14b`.
 >A:  Yes, use pypeit14b for all work.
 
+**Q2 — Task-6 finding: worker-thread *rendering* is unsafe; I changed the
+deferred design to render-on-main-thread + encode-in-workers. OK, or revert to
+fully serial writes?** The DEIMOS `--ncpu 4` validation run crashed within
+minutes: matplotlib's mathtext parser is process-global and **not
+thread-safe**, and rendering figures in worker threads races the main thread's
+figure layout (`ParseFatalException: Unknown symbol: \mathdefault` on log-axis
+tick labels). Kast passed at `ncpu=4` only because its 20 figures make the
+race unlikely; DEIMOS's 971 make it near-certain. Fix, already implemented and
+committed (`c39818589`): `qa.save_figure` renders on the main thread
+(`fig.canvas.draw()` at the requested dpi) and defers only the **PIL PNG
+encode** — the thread-safe, GIL-releasing part, i.e. exactly the "encode half"
+your accepted planning answer Q2 anticipated. Verified crash-free (40-figure
+log-axis stress at `ncpu=8`), pixel-identical to serial, all tests green;
+measured wins: DEIMOS −222.9 s, Kast −5.9 s at `--ncpu 4`. Alternative if you
+prefer maximum conservatism: drop threading entirely (deferred writes stay
+serial; `ncpu` remains plumbing-only until PR B). Recommendation: keep the
+implemented encode-in-workers design.
+>A: 
+
 ## Logging
 
 The "Logs" section will record Claude's work.  Please use the following format:
@@ -533,3 +552,71 @@ No new questions. Next: task 6 — add `--ncpu` to the two profiling scripts,
 re-profile Kast + DEIMOS at `--ncpu 1` and `--ncpu 4` (fresh `ncpu=1` baselines;
 the June profiles predate the `Agg` commit and used the old env), and write
 `Reports/speed_up_results.md`.
+
+### 2026-09-21 (Task 6 — re-profiled; found+fixed a matplotlib thread-safety crash; results doc written)
+
+Performed the **6th task under Tasks** (coding-doc §A.7). No new Q&A answers
+were pending at start (Q1 applied throughout: everything in `pypeit14b`).
+**PR A is complete pending the new Q2 answer below.**
+
+Profiling infrastructure:
+- Added `--ncpu N` to `pypeitdev/speed_up/scripts/profile_kast_blue.py` and
+  `profile_deimos.py`: passes `--ncpu N` through to `run_pypeit` and suffixes
+  all artifact stems with `_ncpu{N}` (June baselines untouched); `ncpu`
+  recorded in the runmeta JSON. `analyze_profile.py --stem` handles the
+  suffixed stems unchanged.
+- Runs chained strictly sequentially (each pair shares a redux dir and
+  cold-cleans it); after each run the QA PNG count was recorded and 3 sample
+  PNGs preserved (`Reports/task6_qa_samples/`, `task6_png_counts.txt`) before
+  the next cold-clean.
+
+**Crash found on the first `--ncpu 4` DEIMOS run — matplotlib rendering is not
+thread-safe.** The run died minutes in, on the main thread inside `calib_one`
+QA layout: `ParseFatalException: Unknown symbol: \mathdefault` — matplotlib's
+mathtext parser is process-global; worker-thread renders race main-thread
+`tight_layout` text metrics and corrupt the parser (log-axis tick labels like
+`$10^5$` trigger the parse). Kast had passed at `ncpu=4` only by low volume
+(20 vs 971 figures). **Fix (commit `c39818589`, "Render QA on the main thread;
+hand only the PNG encode to workers")**: `qa.save_figure`'s deferred path now
+renders on the calling thread (`fig.set_dpi(dpi)`; `fig.canvas.draw()`; copy
+`buffer_rgba`) and submits only a PIL PNG encode (`_encode_png`) to the pool —
+the thread-safe, GIL-releasing "encode half" that the accepted planning Q2
+predicted as the recoverable fraction. Non-PNG outputs / `close=False` /
+kwargs beyond `dpi` fall back to synchronous `savefig`; `_QA_MAX_PENDING`
+lowered 16 → 4 (pending items now hold full RGBA rasters, >100 MB for the
+large tilt figures). Docs/release-notes wording updated to match. Verified:
+`test_qa.py` 5 passed; the four converted writers pixel-identical at
+`ncpu=1` vs `ncpu=4`; a 40-figure log-axis mathtext stress at `ncpu=8` (the
+crash trigger) runs clean. Raised as **Q2 in Q&A** (keep vs revert to fully
+serial; recommend keep).
+
+Results (all cold, single runs, `pypeit14b`, branch `speed_up_qa` at
+`c39818589`; full write-up in **`Reports/speed_up_results.md`**, new file with
+baseline / after-A sections):
+- **Kast**: `--ncpu 1` **88.5 s**, `--ncpu 4` **82.6 s** (−5.9 s, −6.7%);
+  20 QA PNGs in both ✓.
+- **DEIMOS**: `--ncpu 1` **10 056.9 s**, `--ncpu 4` **9 834.0 s** (−222.9 s,
+  −2.2%); 971 QA PNGs in both ✓; rc 0.
+- Mechanism confirmed in the profiles: main-thread `ImagingEncoder.encode`
+  self-time is **275.6 s** on DEIMOS at `ncpu=1` and moves to workers at
+  `ncpu=4` — the −222.9 s wall gain matches the Q2 "encode half" expectation
+  (residue = the deliberately-unconverted synchronous writers).
+- vs the June baselines (121.2 s / 12 393.8 s): fresh `ncpu=4` numbers are
+  −31.8% (Kast) and −20.7% (DEIMOS), but that bundles the `Agg` fix with the
+  env change (June's `pypeit` env no longer runs) and 3 months of branch
+  drift — recorded honestly in the results doc; the clean PR-A-isolated
+  measurement is the ncpu4-vs-ncpu1 delta.
+- Sample QA PNGs from all four runs decode correctly (PIL), sizes/modes sane.
+- Per accepted planning-Q2: measurement recorded, machinery kept, no
+  escalation to a process pool.
+
+Branch state: `speed_up_qa` = `5120b01ea` + 6 commits (`79d3a55c0`,
+`cfeb4007b`, `31f822c9f`, `92feaf418`, `8b6eb3c6f`, `c39818589`); PypeIt tree
+clean. Dev-suite artifacts (updated profile scripts, `speed_up_results.md`,
+`*_ncpu{1,4}` profiles/logs/analyses, QA samples) left for your commit, per
+your pattern of committing the dev-suite side.
+
+**PR A work is done.** Remaining: your answer to Q&A **Q2** (keep the
+encode-in-workers design vs revert to fully serial), then open the PR
+(`speed_up_qa` → `speed_up`) and start B.md task 1 (branch `speed_up_detpar`
+from `speed_up_qa`).
