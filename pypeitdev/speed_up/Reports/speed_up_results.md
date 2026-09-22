@@ -68,7 +68,9 @@ labels).  Fix (commit `c39818589`): `qa.save_figure` renders on the main
 thread and defers only the **PIL PNG encode** (thread-safe, releases the
 GIL).  This lands exactly the "encode half" that the accepted planning answer
 Q2 anticipated as the recoverable fraction; per Q2, the machinery is kept and
-QA threading is not escalated further in this PR.
+QA threading is not escalated further in this PR.  **The design change was
+accepted in A.md Q&A (Q2, answered 2026-09-22: "Let's follow your
+recommendation").**
 
 ### Verdict vs the PR-A target
 
