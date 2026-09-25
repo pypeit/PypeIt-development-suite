@@ -101,6 +101,7 @@ The shell's default environment shadows it, so use the absolute env binaries:
 
 9. Read this doc.  Perform the 1st item under PR.
 10. Read this doc.  Perform the 2nd item under PR.
+11. Read this doc.  Perform the 3rd item under PR.
 
 
 ## Tasks
@@ -234,6 +235,9 @@ with the changes.  Put the changes in this PR.  Adopt your recommendations for Q
 If you have more questions, ask them in the Q&A/PR section below.
 Use Opus if you can.  Log your work.
 
+3. Ok, check the rest of the PR comments and respond as needed.  If you have an questions for me
+put them in the Q&A/PR section below.  Use Opus 5.  Log your work.
+
 ## Q&A
 
 ### PR
@@ -323,6 +327,29 @@ DEIMOS numbers predate a pure-refactor change. Alternatively: wait for Kyle's
 answer to Q1 before writing any of it.
 >A: Adopted as recommended: landed in PR A (#2198), Kast pair re-run only,
 DEIMOS caveat noted in `speed_up_results.md`.
+
+**Q6 — Re-trigger Cursor Bugbot on the refactor?** Bugbot last reviewed
+`c3981858` (before the `develop` merge), so the two largest subsequent
+changes — the merge and the whole `QAWriter` refactor — have had no automated
+review. You trigger it by commenting `@cursor review`, which I can do, but it
+costs some comment noise on a PR that is otherwise just waiting on Kyle.
+Recommendation: yes, trigger it once on `b8e5f9321` — the refactor touched 10
+production files and a second pair of eyes is cheap. Say the word (or do it
+yourself) and I'll handle any findings.
+>A: No 
+
+**Q7 — Report develop's duplicated INT/IDS parameter docs separately?** While
+checking the PR diff I found that `doc/pypeit_par.rst` **on `develop`** has
+the `int_ids_eev10` and `int_ids_redplus2` sections duplicated, including
+duplicate Sphinx labels (`.. _instr_par-int_ids_eev10:`), ~179 lines of
+accidental repetition — presumably a bad merge of a generated file. This PR
+silently fixes it, because resolving the merge conflict required regenerating
+the file. I noted it in a PR comment so reviewers aren't puzzled by the diff
+size. Do you want me to also open a short issue against `develop` recording
+it (in case this PR is reworked and the fix is lost), or is the PR comment
+enough? Recommendation: the PR comment is probably enough given this PR
+should merge soon.
+>A: Agreed
 
 ### Tasks
 
@@ -913,3 +940,50 @@ Pushed (`speed_up_qa` at `b8e5f9321`) and replied on the PR summarizing the
 change, the fork/`init()` story, the lazy-import rationale, and the validation.
 No new questions. PR #2198 now carries both review fixes (Bugbot validation +
 Kyle's refactor) and is back with the reviewers.
+
+### 2026-09-25 (PR item 3 — swept the whole PR; CI green; found develop's duplicated parameter docs)
+
+Performed the **3rd item under PR** with **Opus 5**: a full sweep of PR #2198
+— every review, every inline thread, the CI checks, and the diff itself.
+
+**Nothing new had arrived** since my last push. Full inventory, all accounted
+for:
+- 3 inline comments, all on one thread: Bugbot's `--ncpu` finding → Tim's
+  *"this is a fix worth doing"* → my reply (fixed in `611c24cd8`). Resolved.
+- Tim **APPROVED**; Kyle **CHANGES_REQUESTED** (answered by the `b8e5f9321`
+  refactor and my reply, but **not yet re-reviewed**).
+- No new Bugbot review on the refactor — it last ran on `c3981858`, i.e.
+  before both the `develop` merge and the whole `QAWriter` change (raised as
+  **Q6**).
+
+**CI: all 21 checks pass on `b8e5f9321`** (the current head) — python 3.11–3.14
+on macos/windows, the tox matrix incl. `numpydev` and `astropydev`, `codestyle`,
+`conda`, `validate`. PR state is `mergeable=MERGEABLE` but
+`mergeStateStatus=BLOCKED` with `reviewDecision=CHANGES_REQUESTED`: **the only
+thing standing between this PR and merge is Kyle clearing his review.**
+
+**Diff audit** (a reviewer would ask about two things, so I checked both first):
+- *Scope:* clean — exactly **21 files, all QA/`ncpu` related**. The Cursor
+  summary at the top of the PR claims it also registers INT/IDS and changes
+  P200/NGPS wavelength defaults; that is **stale**, written against
+  `c3981858` before the `develop` merge, and those changes dropped out of the
+  diff once develop absorbed them. Noted publicly so nobody re-litigates it.
+- *The one big file:* `doc/pypeit_par.rst`, ~550 changed lines for one new
+  parameter. Two causes, both benign, and I verified the file is reproducible
+  (re-running `build_par_rst.py` on the branch is a no-op): (a) the long
+  `ncpu` description reflows the `ReduxPar` table's column widths, rewrapping
+  every row; (b) **a genuine find — `develop`'s committed `pypeit_par.rst`
+  contains the `int_ids_eev10` and `int_ids_redplus2` sections twice**,
+  including duplicate `.. _instr_par-int_ids_*:` Sphinx labels, ~179 lines of
+  accidental repetition (develop 12 671 lines → 12 492 here). Presumably a bad
+  merge of a generated file. Regenerating to resolve the merge conflict
+  silently fixed it; raised as **Q7** whether to also report it separately.
+
+Posted one PR comment covering all of the above — the two fixes with their
+commits, the green CI, the `pypeit_par.rst` explanation with the duplicate-label
+evidence, the stale-summary note, and a direct ask to Kyle for the re-review.
+
+Two questions for you in **Q&A/PR**: **Q6** (re-trigger Bugbot on the
+refactor? recommend yes) and **Q7** (also file an issue for develop's
+duplicated parameter docs? recommend no, the PR comment suffices). Neither
+blocks anything. No code changes this round; branch unchanged at `b8e5f9321`.
