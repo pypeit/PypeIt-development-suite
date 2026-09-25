@@ -72,6 +72,25 @@ QA threading is not escalated further in this PR.  **The design change was
 accepted in A.md Q&A (Q2, answered 2026-09-22: "Let's follow your
 recommendation").**
 
+### Post-review refactor (2026-09-24) — performance-neutral
+
+Review of PR #2198 asked that the deferred-write machinery follow the
+package's `log`/`dataPaths` convention rather than living in module-level
+globals, so `qa.{init_qa_pool,save_figure,flush_qa}` became
+`pypeit.qaWriter.{init,save_figure,flush}` (a `QAWriter` instance created on
+import; commit `b8e5f9321`).  The write path itself is unchanged, and the
+Kast pair was re-run to confirm it:
+
+| Setup | `--ncpu 1` (s) | `--ncpu 4` (s) | Δ |
+|---|---:|---:|---:|
+| shane_kast_blue, before refactor | 88.5 | 82.6 | −5.9 (−6.7%) |
+| shane_kast_blue, after refactor | 89.8 | 85.2 | −4.6 (−5.2%) |
+
+The ~1 s differences are within the run-to-run scatter of a single cold run;
+20 QA PNGs in every case.  **The DEIMOS numbers above were not re-measured**
+— they predate this pure refactor, which touches no per-figure work beyond an
+attribute lookup.
+
 ### Verdict vs the PR-A target
 
 The coding-doc §A.7 combined target (DEIMOS −4–7%, Kast −4–9% from `Agg` +

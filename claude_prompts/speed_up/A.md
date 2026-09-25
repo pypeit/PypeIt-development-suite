@@ -96,6 +96,12 @@ The shell's default environment shadows it, so use the absolute env binaries:
 4. Read this doc.  Perform the 4th task under Tasks.
 5. Read this doc.  Perform the 5th task under Tasks.
 6. Read this doc.  Perform the 6th task under Tasks.
+7. Read this doc.  Perform the 7th task under Tasks.
+8. Read this doc.  Perform the 8th task under Tasks.
+
+9. Read this doc.  Perform the 1st item under PR.
+10. Read this doc.  Perform the 2nd item under PR.
+
 
 ## Tasks
 
@@ -217,7 +223,108 @@ The shell's default environment shadows it, so use the absolute env binaries:
     Use Opus if you can.  Log your work.  Add to your Memory -- JXP performs all
     git operations.
 
+## PR
+
+1. There are now responses to the PR on GitHub from Tim and Kyle.  Please read them and respond as needed.  
+Provide ideas and questions for Kyle's point about global in the Q&A/PR section below.
+Use Opus if you can.  Log your work.
+
+2. Kyle has responded to your response in the PR and offered his blessing.  Read that and proceed
+with the changes.  Put the changes in this PR.  Adopt your recommendations for Q3-Q5.
+If you have more questions, ask them in the Q&A/PR section below.
+Use Opus if you can.  Log your work.
+
 ## Q&A
+
+### PR
+
+**Kyle's point (PR #2198, CHANGES_REQUESTED):** *"I'm very wary of modifying
+things in the global scope in the way that is done in this PR. We have global
+objects, like `log` and `dataPaths`, but these are class instances that are
+instantiated on import, imported into each module as needed, and then
+accessed/manipulated. Can we do something similar with this QA functionality?"*
+
+He is right about the mismatch: PR A adds module-level `_QA_POOL` /
+`_QA_PENDING` / `_QA_MAX_PENDING` in `pypeit/qa.py`, mutated by module-level
+functions (`init_qa_pool`, `save_figure`, `flush_qa`). Nothing else in the
+package manages process-wide state that way.
+
+**Idea — the `log` precedent maps onto this almost one-to-one**, including the
+part that matters most here (configuration deferred until the parameters are
+known):
+
+| `log` | QA equivalent |
+|---|---|
+| `PypeItLogger` in `pypeit/pkg/logger.py` | `QAWriter` in `pypeit/pkg/qawriter.py` |
+| `log = get_logger(...)` in `pypeit/__init__.py` | `qaWriter = QAWriter()` there |
+| `from pypeit import log` | `from pypeit import qaWriter` |
+| `ScriptBase.init_log()` → `log.init(level=…, log_file=…)` | `PypeIt.__init__` → `qaWriter.init(ncpu=par['rdx']['ncpu'])` |
+| `log.close_file()` | `qaWriter.flush()` |
+
+Pool and pending-encode list become instance attributes; call sites become
+`qaWriter.save_figure(fig, outfile, dpi=400)`; a default-constructed instance
+is fully serial, so a bare `import pypeit` behaves exactly as today and no pool
+is ever created. `init()` stays re-callable (needed anyway for PR B's forked
+workers, and true of `log.init()` too). Bonus: the current tests have to
+save/restore module state; with an instance they can just build an isolated
+`QAWriter(ncpu=4)`.
+
+**Honest caveat to keep in mind:** this *encapsulates* the global state, it
+does not remove it — a module-level singleton is still process-wide mutable
+state. What genuinely improves is convention-matching, discoverability, and
+test isolation. Removing the global entirely means threading a writer instance
+through every QA function signature (`arc_fit_qa(..., qa_writer=...)` and all
+their callers) — a much larger diff. I put that choice to Kyle in the PR reply
+and it is Q1 below.
+
+**Implementation constraint I verified (matters for where the class lives):**
+`import pypeit` today imports **no matplotlib at all**. If `QAWriter` imports
+`pyplot` at module scope and is instantiated in `pypeit/__init__.py`, then
+every `import pypeit` (including scripts that never plot) drags in
+matplotlib+pyplot, and — more seriously — pyplot would be imported *before*
+`scriptbase.configure_matplotlib()` can force `Agg` in `RunPypeIt.main`, which
+is the ordering the Agg fix depends on. Easily avoided by keeping
+`qawriter.py` import-light and importing `pyplot` lazily inside the methods
+that need it (`plt.close`, `plt.show`), but it must be done deliberately.
+
+Questions for you (answer inline beneath each `>A:`):
+
+**Q3 — Which shape: singleton, or instance threaded through call signatures?**
+(a) `qaWriter` singleton in `pypeit/__init__.py` mirroring `log`/`dataPaths` —
+matches convention, small diff, keeps every QA call site a one-line change;
+(b) construct a `QAWriter` in `PypeIt` and pass it down through every QA
+function — genuinely removes the global, but changes the signature of ~10 QA
+functions and all their callers, and the QA functions are called from deep in
+`core/` where nothing else is threaded through. Recommendation: **(a)**, which
+is what I proposed to Kyle; I asked him to confirm since he may want (b).
+>A: Adopted (a), per "Adopt your recommendations for Q3-Q5" + Kyle's blessing
+on the PR ("Yes, I think the singleton approach is preferred").
+
+**Q4 — Where should the class live, and is the lazy-pyplot-import approach
+OK?** I'd put it in `pypeit/pkg/qawriter.py` alongside `logger.py` and
+`pypeitdata.py` (the existing home for package-level service classes), with
+`pyplot` imported inside methods to preserve the "no matplotlib at package
+import" property above. The alternative is defining the class in
+`pypeit/qa.py` and instantiating it there, but then it is not a package-level
+global in the `log`/`dataPaths` sense that Kyle asked for. Recommendation:
+`pypeit/pkg/qawriter.py` + lazy imports. Also: name it `qaWriter` (camelCase,
+matching `dataPaths`)?
+>A: Adopted as recommended: `pypeit/pkg/qawriter.py`, lazy matplotlib imports,
+instance named `qaWriter`.
+
+**Q5 — Land the refactor in this PR, or as a follow-up?** Kyle has
+CHANGES_REQUESTED on #2198, so it probably has to land here to unblock the
+merge; that also avoids PR B inheriting the API that is about to change (B's
+`_worker_init` calls into it). The cost is that PR A grows and the measured
+results in `speed_up_results.md` would be re-verified (cheap: the Kast pair is
+~3 min; I would not re-run DEIMOS unless you want it). Recommendation: land it
+in PR A, re-run the Kast pair only, and note in the results doc that the
+DEIMOS numbers predate a pure-refactor change. Alternatively: wait for Kyle's
+answer to Q1 before writing any of it.
+>A: Adopted as recommended: landed in PR A (#2198), Kast pair re-run only,
+DEIMOS caveat noted in `speed_up_results.md`.
+
+### Tasks
 
 Claude poses questions here (as `**Qn — title.** body` followed by a `>A:` line);
 the user answers inline beneath each `>A:`.
@@ -692,3 +799,117 @@ recorded in `Reports/speed_up_results.md` (Kast −6.7%, DEIMOS −222.9 s at
 The PR on GitHub is conflict-free and ready for review/merge. Next in the
 stack: **B.md task 1** — branch `speed_up_detpar` from `speed_up_qa` for
 detector parallelism v1.
+
+### 2026-09-24 (PR item 1 — answered the PR #2198 reviews; fixed the --ncpu validation bug)
+
+Performed the **1st item under PR** (both Q&A/Tasks questions were already
+answered; nothing new pending there). Work done with **Opus 5**. PR is
+**#2198 "Speed up QA"** — note it targets **`develop`**, not `speed_up` as the
+branch-stack plan assumed.
+
+Three review items found:
+
+1. **Tim (`tepickering`) — APPROVED**: *"looks good! smarter use of matplotlib
+   is long overdue..."* No action needed.
+2. **Cursor Bugbot — inline on `pypeit/pypeit.py:98`, "CLI ncpu skips
+   positivity check"**, with Tim endorsing it (*"this is a fix worth doing. i
+   will let the authors handle it."*). **Real bug**: `--ncpu` was written
+   straight into `par['rdx']['ncpu']` by item assignment, which bypasses the
+   `ReduxPar.validate()` that runs at instantiation — so `--ncpu 0` / `-1` was
+   silently accepted, recorded in the dumped `.par`, and treated as serial by
+   `init_qa_pool`. **Fixed in commit `611c24cd8`**: the override now re-runs
+   `self.par['rdx'].validate()` (reusing the single source of truth rather
+   than duplicating the check). Verified end-to-end — `PypeIt(..., ncpu=0)`
+   and `ncpu=-1` both raise `ValueError: ncpu must be a positive integer.`
+   before anything is written; added `test_ncpu_assignment_revalidates`;
+   `test_pypeitpar` + `test_qa` → 40 passed. Pushed; replied on the Bugbot
+   thread with the diff and behavior.
+3. **Kyle (`kbwestfall`) — CHANGES_REQUESTED** on the module-global QA state
+   (`_QA_POOL`/`_QA_PENDING` mutated by module-level functions), asking for the
+   `log`/`dataPaths` pattern instead (class instance created on import,
+   imported per module). **No code written** — per this task's instruction the
+   ideas and questions went to **Q&A/PR** above (Q3 singleton vs
+   threaded-instance; Q4 location + the lazy-pyplot constraint; Q5 land in this
+   PR vs follow-up), and I posted a substantive reply on the PR: agreed the
+   mismatch is real, gave the one-to-one `log` → `QAWriter` mapping (incl.
+   `log.init()` ↔ `qaWriter.init(ncpu=…)` as the deferred-configuration
+   precedent), flagged honestly that a singleton *encapsulates* rather than
+   removes global state and offered the larger signature-threading alternative
+   if that is what he wants, noted the PR-B fork-reset requirement, and
+   restated why rendering must stay on the main thread (the mathtext crash) so
+   that constraint is not lost in whatever restructure we land.
+
+**Engineering finding worth keeping** (drove Q4): `import pypeit` today imports
+**no matplotlib at all**. A `QAWriter` that imports `pyplot` at module scope
+and is instantiated in `pypeit/__init__.py` would change that — slowing every
+import and, more seriously, importing pyplot *before*
+`scriptbase.configure_matplotlib()` can force `Agg`, which is the ordering the
+Agg fix relies on. Whatever shape we choose must keep the class import-light
+and import `pyplot` lazily inside methods.
+
+Branch: `speed_up_qa` at **`611c24cd8`**, pushed, tree clean. Blocked on your
+answers to **Q&A/PR Q3–Q5** (and ideally Kyle's reply) before writing the
+refactor.
+
+### 2026-09-24 (PR item 2 — QA globals refactored into the `qaWriter` singleton; Kyle's ask satisfied)
+
+Performed the **2nd item under PR** with **Opus 5**: Kyle gave his blessing
+(*"Yes, I think the singleton approach is preferred. It's the path I took in
+#2167, but it's a path I've been wanting to rethink given concerns about how
+it may limit building a processing pool. If the `init()` method gets us around
+that, great."*), and you said to adopt my Q3–Q5 recommendations — both now
+recorded inline above. (#2167 turns out to be his open *issue* "Centralize
+definition of output paths", not a PR.)
+
+**Commit `b8e5f9321` — "Move the QA writing into a QAWriter class instance"**,
+mirroring the `log`/`dataPaths` convention exactly:
+- **New `pypeit/pkg/qawriter.py`** with `class QAWriter` — alongside
+  `logger.py`/`pypeitdata.py`. Pool and queued encodes are instance
+  attributes; `max_threads` class attribute; a `parallel` property; `__repr__`.
+- **`pypeit/__init__.py`** instantiates `qaWriter = QAWriter()` next to `log`
+  and `dataPaths` (default instance is fully serial, so a bare `import pypeit`
+  behaves exactly as before and no pool is ever created).
+- **API migration** across 8 modules: `qa.init_qa_pool(n)` →
+  `qaWriter.init(ncpu=n)`, `qa.save_figure(...)` → `qaWriter.save_figure(...)`,
+  `qa.flush_qa()` → `qaWriter.flush()`. `qa.py` lost 134 lines of module-level
+  state. Modules that only used `qa` for these helpers (`autoid.py`,
+  `findobj_skymask.py`, `exposure.py`, `pypeit_steps.py`) had their import
+  swapped; `flatfield.py` and `pypeit.py` keep `qa` (they also use
+  `set_qa_filename`/`gen_*_html`) and gained `qaWriter`.
+- **`init()` stays re-callable** — the point Kyle flagged about pools. A forked
+  child drops the inherited pool with `qaWriter.init(ncpu=1)`; queued encodes
+  are discarded rather than awaited (they belong to the parent's threads).
+  Documented, and covered by `test_init_is_repeatable`. This is exactly what
+  PR B's `_worker_init` needs.
+- **Lazy matplotlib imports** (the Q4 constraint I had verified): `pyplot` and
+  `PIL` are imported *inside* the methods, so `import pypeit` still pulls in no
+  matplotlib and cannot select a backend before
+  `scriptbase.configure_matplotlib()` forces `Agg`. **Re-verified after the
+  change** — `'matplotlib' in sys.modules` is still `False` after
+  `import pypeit`.
+- **Tests rewritten to use isolated instances** (`QAWriter(ncpu=4)`) instead of
+  mutating/restoring module state — the concrete testability benefit I cited to
+  Kyle — plus `test_package_writer_is_serial` asserting the singleton's default.
+  7 tests in `test_qa.py`.
+- **Docs**: new `doc/api/pypeit.pkg.qawriter.rst` + toctree entry; a
+  `concurrent.futures.ThreadPoolExecutor` link target added to
+  `doc/include/links.rst`; an Under-the-hood release-notes bullet placed
+  beside the existing "restructure globals into `pkg`" bullet.
+
+Validation: integration test of the four converted writers through the
+singleton at `ncpu=1` vs `ncpu=4` → **pixel-identical**, no leaked figures;
+the 40-figure log-axis mathtext stress at `ncpu=8` still clean; **full unit
+suite 744 passed / 4 skipped**; docs build with **no new warnings** (the 8
+remaining are develop's pre-existing `vlt_uves_template` + `keck_hires.rst`
+issues, not mine).
+
+Per Q5, re-ran the **Kast pair only**: `--ncpu 1` 89.8 s, `--ncpu 4` 85.2 s
+(vs 88.5/82.6 before the refactor) — within single-run scatter, so the
+refactor is **performance-neutral**; 20 QA PNGs throughout. Recorded in
+`Reports/speed_up_results.md` as a new "Post-review refactor" section,
+including the explicit caveat that the DEIMOS numbers were not re-measured.
+
+Pushed (`speed_up_qa` at `b8e5f9321`) and replied on the PR summarizing the
+change, the fork/`init()` story, the lazy-import rationale, and the validation.
+No new questions. PR #2198 now carries both review fixes (Bugbot validation +
+Kyle's refactor) and is back with the reviewers.
