@@ -1,0 +1,49 @@
+# Auto-generated PypeIt input file using PypeIt version: 1.14.1.dev49+gfb4b6c969
+# UTC 2024-07-31T13:02:09.723+00:00
+
+# User-defined execution parameters
+[rdx]
+    spectrograph = aat_uhrf
+[baseprocess]
+    use_biasimage = False
+    use_pixelflat = False
+    use_illumflat = False
+    use_darkimage = False
+[calibrations]
+    [[wavelengths]]
+        reid_arxiv = aat_uhrf_3875.fits
+        method = full_template
+        n_first = 2
+        n_final = 2
+        nsnippet = 1
+    [[tilts]]
+        spat_order = 1
+        spec_order = 1
+[reduce]
+    [[extraction]]
+         model_full_slit = True
+         use_2dmodel_mask = True
+    [[findobj]]
+        find_fwhm = 20
+        trace_npoly = 5
+        maxnumber_sci = 1
+    [[skysub]]
+        user_regions = :30,80:
+
+# Setup
+setup read
+Setup A:
+  dispname: UHRF_X2
+setup end
+
+# Data block
+data read
+ path /Users/rcooke/Software/PypeIt-development-suite/RAW_DATA/aat_uhrf/3875
+   filename | frametype |       ra |       dec |      target | dispname |  decker | binning |                mjd |            airmass | exptime | calib
+# RUN0031.FTS |  arc,tilt,trace | 248.5831 | -10.46228 |      ARC CN |  UHRF_X2 | UHRF_X2 |     6,1 |  49118.61071759259 | 1.0866988831827435 |     5.0 |     0
+RUN0037.FTS |  arc,tilt,trace | 252.6156 | -42.28087 |      ARC CN |  UHRF_X2 | UHRF_X2 |     6,1 |  49118.68790509259 | 1.0355393663948464 |     5.0 |     0
+# RUN0032.FTS |   science | 248.5831 | -10.46228 | ZETA OPH CN |  UHRF_X2 | UHRF_X2 |     6,1 |  49118.61225694444 |  1.077530208085892 |  1800.0 |     0
+# RUN0033.FTS |   science | 248.5831 | -10.46228 | ZETA OPH CN |  UHRF_X2 | UHRF_X2 |     6,1 | 49118.633935185186 | 1.0697535521951234 |   472.9 |     0
+RUN0034.FTS |   science | 248.5831 | -10.46228 | ZETA OPH CN |  UHRF_X2 | UHRF_X2 |     6,1 | 49118.639918981484 |  1.073029421587748 |  1800.0 |     0
+data end
+

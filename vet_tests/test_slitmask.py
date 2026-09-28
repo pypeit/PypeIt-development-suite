@@ -14,7 +14,7 @@ from pypeit import edgetrace, slittrace, specobjs
 from pypeit.spectrographs import slitmask
 from pypeit.spectrographs.keck_deimos import KeckDEIMOSSpectrograph
 from pypeit.spectrographs.util import load_spectrograph
-from pypeit.tests.tstutils import data_path
+from pypeit.tests.tstutils import data_output_path
 from pypeit.utils import index_of_x_eq_y
 
 
@@ -47,7 +47,7 @@ def test_assign_maskinfo_add_missing(redux_out):
 
         # Run edge trace
         edges = edgetrace.EdgeTraceSet(traceImage, instrument, par['calibrations']['slitedges'],
-                                       auto=True, debug=False, show_stages=False,qa_path=None)
+                                       auto=True)
 
         slits = edges.get_slits()
 
@@ -141,8 +141,8 @@ def test_assign_maskinfo_add_missing(redux_out):
                 'Wrong object (7) location on the MOSFIRE slit'
 
         # Write sobjs
-        sobjs.write_to_fits({}, data_path('tst_sobjs.fits'))
-        os.remove(data_path('tst_sobjs.fits'))
+        sobjs.write_to_fits({}, data_output_path('tst_sobjs.fits'))
+        os.remove(data_output_path('tst_sobjs.fits'))
 
 
 
@@ -227,7 +227,7 @@ def test_deimosslitmask():
     assert spec.slitmask.nslits == 106, 'Incorrect number of slits read!'
 
 
-def test_lris_slitmask(redux_out):
+def test_lris_blue_slitmask(redux_out):
     # Check that the LRIS slitmask was read in and used!
     file_path = os.path.join(redux_out,
                              'keck_lris_blue', 
@@ -242,23 +242,42 @@ def test_lris_slitmask(redux_out):
     assert 'gal21' in specObjs.MASKDEF_OBJNAME
     assert 'gal49' in specObjs.MASKDEF_OBJNAME # This was "manually" extracted
 
+def test_lris_red_mark4_slitmask(redux_out):
+    # Check that the LRIS slitmask was read in and used!
+    file_path = os.path.join(redux_out,
+                             'keck_lris_red_mark4', 
+                             'multi_600_10000_slitmask',
+                             'Science', 
+                             'spec1d_r230417_01033-frb22022_LRISr_20230417T082242.672.fits')
+    # Load                                
+    specObjs = specobjs.SpecObjs.from_fitsfile(file_path)
+
+    # Test
+    assert len(specObjs.MASKDEF_ID) > 0
+    assert 'gal172' in specObjs.MASKDEF_OBJNAME # Left-most slit
+    assert 'gal124' in specObjs.MASKDEF_OBJNAME # Right-most slit
+    assert 'FRBCoord' in specObjs.MASKDEF_OBJNAME # Forced extraction for faint source.
+
 def test_gmos_slitmask(redux_out):
     # Check we have sensible RA, Dec
     file_path = os.path.join(redux_out,
                              'gemini_gmos', 
                              'GS_HAM_B600_MOS',
                              'Science', 
-                             'spec1d_S20221128S0038-FRB190711_GMOS-S_18640531T214523.954.fits')
+                             'spec1d_S20221128S0038-FRB190711_GMOS-S_20221128T023704.067.fits')
     # Load                                
     specObjs = specobjs.SpecObjs.from_fitsfile(file_path)
 
     # Test
     assert len(specObjs.MASKDEF_ID) > 0
-    assert '10050' in specObjs.MASKDEF_OBJNAME
+    assert '10050' in specObjs.MASKDEF_OBJNAME, "MASKDEF_OBJNAME 10050 not found"
 
     idx = specObjs.MASKDEF_OBJNAME == '10050'
-    assert np.isclose(specObjs.RA[idx][0], 329.2278)
+    assert np.isclose(specObjs.RA[idx][0], 329.2278), "RA for OBJNAME 10050 is incorrect"
 
+    assert 10126 in specObjs.MASKDEF_ID, "MASKDEF_ID 10126 not found"
+    idx = specObjs.MASKDEF_ID == 10126
+    assert specObjs.MASKDEF_OBJNAME[idx][0] == '10126', "MASKDEF_OBJNAME for ID 10126 is incorrect"
 
 def test_deimos_flipped_slitpa(redux_out):
 

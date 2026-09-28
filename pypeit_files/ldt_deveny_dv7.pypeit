@@ -1,13 +1,16 @@
-# Auto-generated PypeIt input file using PypeIt version: 1.12.3.dev393+g03a1f4bde.d20230509
-# UTC 2023-05-11T21:07:06.002
+# Auto-generated PypeIt input file using PypeIt version: 1.14.1.dev203+ge79da3c22.d20231020
+# UTC 2023-10-27T21:43:21.451
 
 # User-defined execution parameters
 [rdx]
     spectrograph = ldt_deveny
 [calibrations]
+    [[arcframe]]
+        [[[process]]]
+            subtract_continuum = True
     [[wavelengths]]
         method = holy-grail
-	lamps = NeI
+        lamps = NeI_DeVeny
 [reduce]
     [[findobj]]
         snr_thresh = 15

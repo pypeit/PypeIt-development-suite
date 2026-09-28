@@ -12,6 +12,11 @@ spectrograph = vlt_xshooter_vis
 #       spat_spec = 1181.8:3820.6
 #       det = 1
 #       fwhm = 3.
+# Because this setup uses the pinhole, we need the follwoing
+[calibrations]
+  [[wavelengths]]
+     fwhm_fromlines = False
+
 
 # Setup
 setup read

@@ -1,0 +1,55 @@
+# Auto-generated PypeIt input file using PypeIt version: 1.13.1.dev843+g3af4c8d27
+# UTC 2023-09-23T11:55:24.335
+
+# User-defined execution parameters
+[rdx]
+    spectrograph = keck_kcrm
+[calibrations]
+    [[tiltframe]]
+        [[[process]]]
+            combine = median  # This is a good choice if you want to use the science frames to determine the tilts
+
+# Setup
+setup read
+Setup A:
+  binning: 2,2
+  decker: Large
+  dispangle: 124.4689331
+  dispname: RM2
+setup end
+
+# Data block 
+data read
+ path //Users/joe/kcrm_redux/commissioning/Raw/J2232/
+             filename |       frametype |                 ra |               dec |     target | dispname | decker | binning |          mjd | airmass |       exptime |   dispangle |   idname | calpos | calib
+  kr230619_00163.fits |           align |  63.99999999999999 |              45.0 | DOME FLATS |      RM2 |  Large |     2,2 | 60114.670076 |    1.41 |      3.100128 | 124.4694901 | CONTBARS | Mirror |  all
+  kr230619_00164.fits |           align |  63.99999999999999 |              45.0 | DOME FLATS |      RM2 |  Large |     2,2 | 60114.670395 |    1.41 |      3.100128 | 124.4694901 | CONTBARS | Mirror |  all
+  kr230619_00165.fits |           align |  63.99999999999999 |              45.0 | DOME FLATS |      RM2 |  Large |     2,2 | 60114.670714 |    1.41 |      3.100128 | 124.4694901 | CONTBARS | Mirror |  all
+  # These are the FeAr arc frames used for wavecal
+  kr230619_00166.fits |             arc |  63.99999999999999 |              45.0 | DOME FLATS |      RM2 |  Large |     2,2 | 60114.671481 |    1.41 |   4.100129024 | 124.4694901 |  ARCLAMP | Mirror |  all
+  kr230619_00167.fits |             arc |  63.99999999999999 |              45.0 | DOME FLATS |      RM2 |  Large |     2,2 | 60114.671812 |    1.41 |    4.10012928 | 124.4694901 |  ARCLAMP | Mirror |  all
+  kr230619_00168.fits |             arc |  63.99999999999999 |              45.0 | DOME FLATS |      RM2 |  Large |     2,2 | 60114.672131 |    1.41 |   4.100129024 | 124.4694901 |  ARCLAMP | Mirror |  all
+  kr230619_00035.fits |            bias |  63.99999999999999 |              45.0 |    unknown |       RL | Medium |     2,2 | 60114.182237 |    1.41 |   0.000125184 | 139.7715912 |     BIAS |    Sky |   all
+  kr230619_00036.fits |            bias |  63.99999999999999 |              45.0 |    unknown |       RL | Medium |     2,2 | 60114.187975 |    1.41 |   0.000124928 | 139.7715912 |     BIAS | Mirror |   all
+  kr230619_00037.fits |            bias |  63.99999999999999 |              45.0 |    unknown |       RL | Medium |     2,2 | 60114.188483 |    1.41 |   0.000124928 | 139.7715912 |     BIAS | Mirror |   all
+  kr230619_00038.fits |            bias |  63.99999999999999 |              45.0 |    unknown |       RL | Medium |     2,2 | 60114.188979 |    1.41 |   0.000124928 | 139.7715912 |     BIAS | Mirror |   all
+  kr230619_00039.fits |            bias |  63.99999999999999 |              45.0 |    unknown |       RL | Medium |     2,2 | 60114.189486 |    1.41 |   0.000125184 | 139.7715912 |     BIAS | Mirror |   all
+  kr230619_00154.fits | illumflat,trace |  63.99999999999999 |              45.0 | DOME FLATS |      RM2 |  Large |     2,2 | 60114.651624 |    1.41 |   13.10013824 | 124.4694901 | DOMEFLAT |    Sky |   all
+  kr230619_00155.fits | illumflat,trace |  63.99999999999999 |              45.0 | DOME FLATS |      RM2 |  Large |     2,2 | 60114.652285 |    1.41 |  13.100137984 | 124.4694901 | DOMEFLAT |    Sky |   all
+  kr230619_00156.fits | illumflat,trace |  63.99999999999999 |              45.0 | DOME FLATS |      RM2 |  Large |     2,2 | 60114.652946 |    1.41 |   13.10013824 | 124.4694901 | DOMEFLAT |    Sky |   all
+  kr230619_00172.fits |       pixelflat |  63.99999999999999 |              45.0 | DOME FLATS |      RM2 |  Large |     2,2 | 60114.673937 |    1.41 |      3.100128 | 124.4694901 | FLATLAMP | Mirror |   all
+  kr230619_00173.fits |       pixelflat |  63.99999999999999 |              45.0 | DOME FLATS |      RM2 |  Large |     2,2 |  60114.67448 |    1.41 |   3.100128256 | 124.4694901 | FLATLAMP | Mirror |   all
+  kr230619_00174.fits |       pixelflat |  63.99999999999999 |              45.0 | DOME FLATS |      RM2 |  Large |     2,2 | 60114.675023 |    1.41 |   3.100128256 | 124.4694901 | FLATLAMP | Mirror |   all
+  kr230619_00139.fits |         science | 308.59116666666665 | 25.06436111111111 |   wolf1346 |      RM2 |  Large |     2,2 | 60114.574256 |    1.02 |  60.430185472 | 124.4689331 |   OBJECT |    Sky |     0
+  kr230619_00140.fits |         science | 308.59116666666665 | 25.06436111111111 |   wolf1346 |      RM2 |  Large |     2,2 | 60114.575472 |    1.02 |  60.100185088 | 124.4689331 |   OBJECT |    Sky |     0
+  kr230619_00141.fits |    science,tilt | 338.22979166666664 | 29.50888888888889 | J2232+2930 |      RM2 |  Large |     2,2 | 60114.586014 |    1.05 | 600.100724736 | 124.4689331 |   OBJECT |    Sky |     0
+  kr230619_00142.fits |    science,tilt | 338.22979166666664 | 29.50888888888889 | J2232+2930 |      RM2 |  Large |     2,2 |  60114.59347 |    1.04 | 600.100724736 | 124.4689331 |   OBJECT |    Sky |     1
+data end
+
+# These are the ThAr frames, can be used for tilts but we use science instead
+#  kr230619_00169.fits |            tilt |  63.99999999999999 |              45.0 | DOME FLATS |      RM2 |  Large |     2,2 | 60114.672697 |    1.41 |    4.10012928 | 124.4694901 |  ARCLAMP | Mirror |  all
+#  kr230619_00170.fits |            tilt |  63.99999999999999 |              45.0 | DOME FLATS |      RM2 |  Large |     2,2 | 60114.673016 |    1.41 |   4.100129024 | 124.4694901 |  ARCLAMP | Mirror |  all
+#  kr230619_00171.fits |            tilt |  63.99999999999999 |              45.0 | DOME FLATS |      RM2 |  Large |     2,2 | 60114.673347 |    1.41 |   4.100129024 | 124.4694901 |  ARCLAMP | Mirror |  all  
+# This is a twilight illumination flat. Not used
+#  kr230619_00148.fits |         science |  89.99999999999999 |              60.0 | J2232+2930 |      RM2 |  Large |     2,2 | 60114.633679 |    1.15 |  300.10042496 | 124.4689331 |   OBJECT |    Sky |   all
+

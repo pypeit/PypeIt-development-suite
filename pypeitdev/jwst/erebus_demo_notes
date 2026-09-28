@@ -1,0 +1,67 @@
+
+
+Fixed Slit -- Reduction of J1007 Quasar Frontier program data for F140H, G235H, G395H
+--------------------------------------------------------------------------------------------
+
+/Users/joe/jwst_redux/redux/NIRSPEC_FS/J1007/calwebb/pypeit
+
+-- Run J1007 fixed slit G140 S200A1 with show option
+
+** inspect output images in ginga
+** demonstrate the optimal background subtraction and optimal extraction
+
+-- Inspect a spec2d file to search for Ly-a emission at the QSO redshift:
+
+   pypeit_show_2dspec Science/spec2d_jw01764006001_0410a_00001_slit_S200A1.fits
+
+-- Inspect a spec1d file to visualize the 1d spectrum for a single exposure:
+
+   pypeit_show_1dspec Science/spec1d_jw01764006001_0410a_00001_slit_S200A1.fits
+
+-- Run the 1d coadd
+
+  pypeit_coadd1d_spec --debug --show
+
+-- Plot the coadded spectrum
+
+lt_xspec J1007_1dcoadd.fits
+
+
+MSA -- J0252 MSA PRISM object 8713 is the companion galaxy
+--------------------------------------------------------------------------------------------
+
+/Users/joe/jwst_redux/redux/NIRSPEC_MSA/NIRSPEC_PRISM/02073_CLEAR_PRISM/J0252/pypeit
+
+-- Run J0252 MSA PRISM with show option
+
+** inspect output images in ginga
+** emphasize that we don't perform background subtraction since we differenced frames
+
+-- Inspect a spec2d file to search for Ly-a emission at the QSO redshift:
+
+pypeit_show_2dspec Science/spec2d_jw02073007001_03101_00001_source_2073_8713.fits
+pypeit_show_2dspec Science/spec2d_jw02073007001_03101_00002_source_2073_8713.fits
+pypeit_show_2dspec Science/spec2d_jw02073007001_03101_00003_source_2073_8713.fits
+
+-- Inspect the J0252_2073_8713.coadd2d file that guides the 2d coadd
+
+-- Run the 2d coadd
+
+pypeit_coadd_2dspec J0252_2073_8713.coadd2d --show
+
+-- Inspect the 2d outputs of the 2d coadd
+
+pypeit_show_2dspec Science_coadd/spec2d_jw02073007001_03101_00001_nrs1_rate-jw02073007001_03101_00003_nrs1_rate-2073_8713.fits
+
+-- Inspect the 1d extracted spectrum
+
+pypeit_show_1dspec Science_coadd/spec1d_jw02073007001_03101_00001_nrs1_rate-jw02073007001_03101_00003_nrs1_rate-2073_8713.fits
+
+
+
+
+
+
+
+
+

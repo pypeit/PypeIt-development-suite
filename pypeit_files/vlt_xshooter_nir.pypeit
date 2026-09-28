@@ -1,6 +1,9 @@
 # User-defined execution parameters
 [rdx]
 spectrograph = vlt_xshooter_nir
+[calibrations]
+    [[wavelengths]]
+        fwhm_fromlines = False
 
 
 # Setup

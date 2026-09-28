@@ -1,0 +1,50 @@
+# Auto-generated PypeIt input file using PypeIt version: 1.17.1
+# UTC 2025-04-09T19:18:10.430+00:00
+
+# User-defined execution parameters
+[rdx]
+    spectrograph = lbt_mods2r_proc
+[calibrations]
+    [[slitedges]]
+      exclude_regions = 1:0:120,1:350:2750,1:3000:3087  # create just one slit, merge the segments
+      edge_thresh = 30
+      minimum_slit_length = 5
+[reduce]
+    [[extraction]]
+      boxcar_radius = 20.
+    [[skysub]]
+      no_local_sky = True
+      mask_by_boxcar = True
+   [[findobj]]
+      find_min_max = 3904,4288
+      snr_thresh = 10.0
+      maxnumber_std = 1
+      maxnumber_sci = 2
+
+
+# Setup
+setup read
+Setup A:
+  binning: 1,1
+  dichroic: Dual
+  dispname: G670L
+  instrument: MODS2R
+setup end
+
+# Data block 
+data read
+ path /Users/olga/Dropbox/Data/MODS_Sample_Datasets/MODS_LS_ext_sample_dataset/RAW_DATA/lbt_mods2r_proc/dual_grating_longslit
+                     filename |                 frametype |                 ra |               dec |                                    target | dispname |     decker | binning |          mjd | airmass | exptime | instrument | dichroic | calib
+mods2r.20190903.0019_otf.fits |                  arc,tilt |                0.0 |               0.0 |                         Ne + Hg[Ar] Lamps |    G670L | LS5x60x0.6 |     1,1 | 58729.275421 |     1.0 |     1.0 |     MODS2R |     Dual |     0
+mods2r.20190903.0020_otf.fits |                  arc,tilt |                0.0 |               0.0 |                             Kr + Xe Lamps |    G670L | LS5x60x0.6 |     1,1 | 58729.276787 |     1.0 |     1.0 |     MODS2R |     Dual |     0
+mods2r.20190903.0021_otf.fits |                  arc,tilt |                0.0 |               0.0 |                                   Ar Lamp |    G670L | LS5x60x0.6 |     1,1 | 58729.278248 |     1.0 |     1.0 |     MODS2R |     Dual |     0
+#mods2r.20190903.0023_otf.fits |                     trace |                0.0 |               0.0 |      VFLAT5.0 Clear Dual LS60x5 Slit Flat |    G670L |     LS60x5 |     1,1 |  58729.29482 |     1.0 |     2.5 |     MODS2R |     Dual |     0
+#mods2r.20190903.0024_otf.fits |                     trace |                0.0 |               0.0 |      VFLAT5.0 Clear Dual LS60x5 Slit Flat |    G670L |     LS60x5 |     1,1 | 58729.296063 |     1.0 |     2.5 |     MODS2R |     Dual |     0
+mods2r.20190903.0065_otf.fits |                     trace |                0.0 |               0.0 |      QTH1 ND1.5 Dual LS5x60x0.6 Slit Flat |    G670L | LS5x60x0.6 |     1,1 | 58730.102044 |     1.0 |     1.5 |     MODS2R |     Dual |     0
+mods2r.20190903.0066_otf.fits |                     trace |                0.0 |               0.0 |      QTH1 ND1.5 Dual LS5x60x0.6 Slit Flat |    G670L | LS5x60x0.6 |     1,1 | 58730.103235 |     1.0 |     1.5 |     MODS2R |     Dual |     0
+mods2r.20190903.0068_otf.fits |                     trace |                0.0 |               0.0 | VFLAT10.0 Clear Dual LS5x60x0.6 Slit Flat |    G670L | LS5x60x0.6 |     1,1 | 58730.110748 |     1.0 |     2.0 |     MODS2R |     Dual |     0
+mods2r.20190903.0069_otf.fits |                     trace |                0.0 |               0.0 | VFLAT10.0 Clear Dual LS5x60x0.6 Slit Flat |    G670L | LS5x60x0.6 |     1,1 |  58730.11195 |     1.0 |     2.0 |     MODS2R |     Dual |     0
+mods2r.20190913.0007_otf.fits |                   science | 3.2542374999999995 | 72.52195277777777 |                                    NGC 40 |    G670L | LS5x60x0.6 |     1,1 | 58739.427871 |    1.38 |    90.0 |     MODS2R |     Dual |     0
+mods2r.20190904.0074_otf.fits |                  standard |  327.7959208333333 | 28.86398888888889 |                   BD+28d4211 dual grating |    G670L |     LS60x5 |     1,1 | 58730.389071 |    1.28 |    60.0 |     MODS2R |     Dual |     0
+data end
+

@@ -6,6 +6,10 @@
 spectrograph = shane_kast_red
 [baseprocess]
   use_biasimage = False
+[scienceframe]
+    [[process]]
+	spat_flexure_correct = True
+
 
 # Setup
 setup read

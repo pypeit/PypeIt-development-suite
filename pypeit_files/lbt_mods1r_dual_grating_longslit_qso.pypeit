@@ -1,0 +1,50 @@
+# Auto-generated PypeIt input file using PypeIt version: 1.17.1
+# UTC 2025-05-14T23:00:01.218+00:00
+
+# User-defined execution parameters
+[rdx]
+    spectrograph = lbt_mods1r
+    slitspatnum = "DET01:1544"
+[calibrations]
+        [[slitedges]]
+           edge_thresh = 30
+           minimum_slit_length = 5
+           fit_niter = 3
+[reduce]
+        [[findobj]]
+           #find_min_max = 1700,6700 #based on standard and quasar (1700=556 nm and 6700=995 nm for mods1r)
+           find_min_max = 3904,4288 #restrict object finding to look at the middle of the spectrum
+                                    #and keep default snr_thresh = 10. Would need to be adjusted
+                                    #for emission line objects.
+           snr_thresh = 10
+           find_numiterfit = 50 #default 9, try to improve profile fit and eliminate masking
+           maxnumber_sci = 1
+           maxnumber_std = 1
+
+
+# Setup
+setup read
+Setup A:
+  binning: 1,1
+  dichroic: Dual
+  dispname: G670L
+  instrument: MODS1R
+setup end
+
+# Data block 
+data read
+ path /Users/olga/Dropbox/Data/MODS_Sample_Datasets/MODS_LS_sample_dataset/RAW_DATA/lbt_mods/lbt_mods1r
+                 filename |                 frametype |                 ra |               dec |                                    target | dispname |     decker | binning |          mjd | airmass | exptime | instrument | dichroic | calib
+mods1r.20230910.0028.fits |                  arc,tilt |                0.0 |               0.0 |                             Ne + Hg Lamps |    G670L | LS5x60x0.6 |     1,1 | 60197.201977 |     1.0 |     1.1 |     MODS1R |     Dual |     0
+mods1r.20230910.0029.fits |                  arc,tilt |                0.0 |               0.0 |                             Kr + Xe Lamps |    G670L | LS5x60x0.6 |     1,1 | 60197.203485 |     1.0 |     1.0 |     MODS1R |     Dual |     0
+mods1r.20230910.0030.fits |                  arc,tilt |                0.0 |               0.0 |                                   Ar Lamp |    G670L | LS5x60x0.6 |     1,1 | 60197.204992 |     1.0 |     1.0 |     MODS1R |     Dual |     0
+mods1r.20230910.0044.fits | pixelflat,illumflat,trace |                0.0 |               0.0 |      QTH1 ND1.5 Dual LS5x60x0.8 Slit Flat |    G670L | LS5x60x0.8 |     1,1 | 60197.253591 |     1.0 |     2.0 |     MODS1R |     Dual |     0
+mods1r.20230910.0047.fits | pixelflat,illumflat,trace |                0.0 |               0.0 | VFLAT10.0 Clear Dual LS5x60x0.8 Slit Flat |    G670L | LS5x60x0.8 |     1,1 | 60197.263073 |     1.0 |     2.0 |     MODS1R |     Dual |     0
+#mods1r.20230910.0080.fits | pixelflat,illumflat,trace |                0.0 |               0.0 |      VFLAT5.0 Clear Dual LS60x5 Slit Flat |    G670L |     LS60x5 |     1,1 | 60197.463963 |     1.0 |     3.0 |     MODS1R |     Dual |     0
+#mods1r.20230910.0081.fits | pixelflat,illumflat,trace |                0.0 |               0.0 |      VFLAT5.0 Clear Dual LS60x5 Slit Flat |    G670L |     LS60x5 |     1,1 | 60197.465071 |     1.0 |     3.0 |     MODS1R |     Dual |     0
+mods1r.20230909.0051.fits |                   science |  296.2285583333333 | 77.09796388888888 |                               HS1946+7658 |    G670L | LS5x60x0.8 |     1,1 | 60196.425804 |    1.96 |   400.0 |     MODS1R |     Dual |     0
+#mods1r.20230910.0034.fits |          slitless_pixflat |                0.0 |               0.0 |     VFLAT5.0 ND1.5 Dual Slitless Pix Flat |    G670L |    Imaging |     1,1 | 60197.213772 |     1.0 |     1.0 |     MODS1R |     Dual |     0
+#mods1r.20230910.0035.fits |          slitless_pixflat |                0.0 |               0.0 |     VFLAT5.0 ND1.5 Dual Slitless Pix Flat |    G670L |    Imaging |     1,1 | 60197.214866 |     1.0 |     1.0 |     MODS1R |     Dual |     0
+mods1r.20230909.0044.fits |                  standard | 349.99332499999997 |           -5.1656 |                    Feige 110 dual grating |    G670L |     LS60x5 |     1,1 | 60196.366277 |    1.35 |    90.0 |     MODS1R |     Dual |     0
+data end
+

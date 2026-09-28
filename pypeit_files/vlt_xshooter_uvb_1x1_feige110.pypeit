@@ -1,0 +1,28 @@
+# Auto-generated PypeIt input file using PypeIt version: 1.8.2.dev1+g0cb9c4cb4
+# UTC 2022-12-22T17:20:33.963
+
+# User-defined execution parameters
+[rdx]
+    spectrograph = vlt_xshooter_uvb
+
+# Setup
+setup read
+Setup B:
+  arm: UVB
+setup end
+
+# Data block 
+data read
+ path /Users/joe/python/PypeIt-development-suite/RAW_DATA/vlt_xshooter/UVB_1x1_Feige110/
+                               filename |                 frametype |         ra |       dec |                 target | dispname |   decker | binning |             mjd | airmass |  exptime | arm | dither | calib
+     XSHOO.2018-06-23T10:03:53.765.fits |                  standard | 349.993694 |  -5.16614 |               STD,FLUX |  default |   5.0x11 |     1,1 | 58292.419372283 |   1.062 |    120.0 | UVB |    2.5 |    0
+     XSHOO.2018-06-23T10:49:51.676.fits |                      bias |       None |      None |                   BIAS |  default | 1.0x12.6 |     1,1 | 58292.451292549 |    None |      0.0 | UVB |   None |    0
+     XSHOO.2018-06-23T10:52:38.731.fits |                      bias |       None |      None |                   BIAS |  default | 1.0x12.6 |     1,1 |  58292.45322605 |    None |      0.0 | UVB |   None |    0
+     XSHOO.2018-06-23T10:55:28.736.fits |                      bias |       None |      None |                   BIAS |  default | 1.0x12.6 |     1,1 | 58292.455193698 |    None |      0.0 | UVB |   None |    0
+     XSHOO.2018-06-23T16:34:44.131.fits | pixelflat,illumflat,trace |       None |      None |             LAMP,QFLAT |  default |   0.9x11 |     1,1 | 58292.690788549 |    None |     1.48 | UVB |   None |    0
+     XSHOO.2018-06-23T16:36:01.737.fits | pixelflat,illumflat,trace |       None |      None |             LAMP,QFLAT |  default |   0.9x11 |     1,1 | 58292.691686775 |    None |     1.48 | UVB |   None |    0
+     XSHOO.2018-06-23T16:37:17.874.fits | pixelflat,illumflat,trace |       None |      None |             LAMP,QFLAT |  default |   0.9x11 |     1,1 | 58292.692567986 |    None |     1.48 | UVB |   None |    0
+     XSHOO.2018-06-22T12:13:41.702.fits |                  arc,tilt |       None |      None |              LAMP,WAVE |  default |   0.4x11 |     1,1 | 58291.509510442 |    None |     45.0 | UVB |   None |    0
+#    XSHOO.2018-06-23T10:08:52.891.fits |                  standard | 349.993631 |  -5.16475 |               STD,FLUX |  default |   5.0x11 |     1,1 | 58292.422834391 |   1.063 |    120.0 | UVB |   -2.5 |    0
+data end
+

@@ -7,9 +7,10 @@ from IPython import embed
 import numpy as np
 from astropy.io import fits
 
+from pypeit import dataPaths
 from pypeit.spectrographs.util import load_spectrograph
 from pypeit.images.rawimage import RawImage
-from pypeit.tests.tstutils import data_path
+from pypeit.tests.tstutils import data_output_path
 from pypeit.core import mosaic
 from pypeit.images.mosaic import Mosaic
 
@@ -41,7 +42,7 @@ def test_io():
     spec = load_spectrograph('gemini_gmos_north_ham')
     msc = spec.get_mosaic_par((1,2,3), hdu=fits.open(file))
 
-    test_file = data_path('tmp_mosaic.fits')
+    test_file = data_output_path('tmp_mosaic.fits')
     msc.to_file(test_file, overwrite=True)
 
     _msc = Mosaic.from_file(test_file)
@@ -61,6 +62,26 @@ def test_io():
 
     os.remove(test_file)
 
+def test_copy():
+    # Test that the Mosaic.copy() method does a deep copy.
+
+    file = os.path.join(os.environ['PYPEIT_DEV'], 'RAW_DATA', 'gemini_gmos', 'GN_HAM_R400_885',
+                        'N20190205S0035.fits')
+
+    # Load the spectrograph
+    spec = load_spectrograph('gemini_gmos_north_ham')
+    msc = spec.get_mosaic_par((1,2,3), hdu=fits.open(file))
+
+    msc_copy = msc.copy()
+
+    assert msc_copy is not msc, "Mosaic deepcopy result is not a different object"
+    assert msc_copy.shift is not msc.shift, "Mosaic deepcopy shift is not a different object"
+    assert np.array_equal(msc_copy.shift, msc.shift), "Mosaic deepcopy shift does not have the same value"
+    assert len(msc_copy.detectors) == len(msc.detectors), "Mosaic deepcopy does not have the same number of detectors"
+    for det_copy, det_orig in zip(msc_copy.detectors, msc.detectors):
+        assert det_copy.det == det_orig.det, "Mosaic deepcopy detector number doesn't match"
+        assert det_copy is not det_orig, "Mosaic deepcopy detector is not a different object"
+        assert det_copy.gain is not det_orig.gain, "Mosaic deepcopy detector gain is not a different object"
 
 def test_gemini_gmos():
     """
@@ -103,7 +124,8 @@ def test_gemini_gmos():
     result leading to significant differences.  We're using exactly the same
     transformations, so I don't understand why this should happen.
     """
-    dragons_file = data_path('GN_HAM_R400_885_N20190205S0035_dragons_mosaic.fits')
+    dragons_file = dataPaths.tests.get_file_path(
+                        'GN_HAM_R400_885_N20190205S0035_dragons_mosaic.fits')
     file = os.path.join(os.environ['PYPEIT_DEV'], 'RAW_DATA', 'gemini_gmos', 'GN_HAM_R400_885',
                         'N20190205S0035.fits')
 

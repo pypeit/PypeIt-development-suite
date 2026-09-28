@@ -1,0 +1,28 @@
+# Auto-generated PypeIt input file using PypeIt version: 1.8.2.dev1+g0cb9c4cb4
+# UTC 2022-12-22T17:20:33.963
+
+# User-defined execution parameters
+[rdx]
+    spectrograph = vlt_xshooter_vis
+
+# Setup
+setup read
+Setup B:
+  arm: VIS
+setup end
+
+# Data block 
+data read
+ path /Users/joe/python/PypeIt-development-suite/RAW_DATA/vlt_xshooter/VIS_1x1_LTT3218/
+                          filename |                 frametype |         ra |       dec |       target | dispname |   decker | binning |             mjd | airmass |  exptime | arm | dither | calib |
+XSHOO.2018-01-29T01:37:11.182.fits |                  standard | 130.377861 |  -32.9361 |     STD,FLUX |  default |   5.0x11 |     1,1 | 58147.067490532 |   1.363 |    240.0 | VIS |    2.5 |     0 |
+#XSHOO.2018-01-29T01:43:01.703.fits |                  standard | 130.379514 | -32.93605 |     STD,FLUX |  default |   5.0x11 |     1,1 | 58147.071547491 |   1.337 |    240.0 | VIS |   -2.5 |     0 |
+XSHOO.2018-01-29T09:31:54.140.fits |                      bias |       None |      None |         BIAS |  default | 1.0x12.6 |     1,1 | 58147.397154398 |    None |      0.0 | VIS |   None |     0 |
+XSHOO.2018-01-29T09:34:42.035.fits |                      bias |       None |      None |         BIAS |  default | 1.0x12.6 |     1,1 | 58147.399097626 |    None |      0.0 | VIS |   None |     0 |
+XSHOO.2018-01-29T09:37:32.840.fits |                      bias |       None |      None |         BIAS |  default | 1.0x12.6 |     1,1 | 58147.401074539 |    None |      0.0 | VIS |   None |     0 |
+XSHOO.2018-01-29T12:39:57.664.fits | pixelflat,illumflat,trace |       None |      None |    LAMP,FLAT |  default |   5.0x11 |     1,1 | 58147.527750741 |    None |   1.8482 | VIS |   None |     0 |
+XSHOO.2018-01-29T12:41:38.153.fits | pixelflat,illumflat,trace |       None |      None |    LAMP,FLAT |  default |   5.0x11 |     1,1 | 58147.528913808 |    None |   1.8482 | VIS |   None |     0 |
+XSHOO.2018-01-29T12:43:17.922.fits | pixelflat,illumflat,trace |       None |      None |    LAMP,FLAT |  default |   5.0x11 |     1,1 |  58147.53006854 |    None |   1.8482 | VIS |   None |     0 |
+XSHOO.2018-01-29T19:54:53.421.fits |                  arc,tilt |       None |      None |    LAMP,WAVE |  default |   0.9x11 |     1,1 | 58147.829784974 |    None |      5.0 | VIS |   None |     0 |
+data end
+

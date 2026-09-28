@@ -7,7 +7,7 @@ spectrograph = keck_nires
 [coadd2d]
    offsets = auto
    weights = auto
-   user_obj = 1
+   user_obj_ids = 355, 576
 
 # Read in the data
 spec2d read

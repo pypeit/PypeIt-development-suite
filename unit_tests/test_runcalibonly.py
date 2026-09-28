@@ -43,7 +43,7 @@ def test_run_pypeit_calib_only():
         for sub_file in sub_files:
             files += all_files[sub_file]
         #
-        testrawdir = os.path.join(rawdir, 'TEST')
+        testrawdir = os.path.join(os.getenv('PYPEIT_DEV'), 'TEST')
         if os.path.isdir(testrawdir):
             shutil.rmtree(testrawdir)
         os.makedirs(testrawdir)

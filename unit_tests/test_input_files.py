@@ -76,11 +76,11 @@ def test_get_pypeitpar():
     setup = '600_4310_d55'
 
     # Define the path with the raw data
-    data_root = Path(os.environ['PYPEIT_DEV']).resolve() / 'RAW_DATA' / spec / setup
+    data_root = Path(os.environ['PYPEIT_DEV']).absolute() / 'RAW_DATA' / spec / setup
     assert data_root.exists(), 'TEST ERROR: Raw data path does not exist'
 
     # Define the output directory and remove it if it already exist
-    setup_path = Path().resolve() / f'{spec}_A'
+    setup_path = Path().absolute() / f'{spec}_A'
     if setup_path.exists():
         shutil.rmtree(setup_path)
 

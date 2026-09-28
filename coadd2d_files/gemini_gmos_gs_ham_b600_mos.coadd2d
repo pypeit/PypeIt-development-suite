@@ -1,0 +1,38 @@
+# Auto-generated Coadd2D input file using PypeIt version: 1.18.2.dev713+gdc88fca84
+# UTC 2026-02-21T09:48:39.556+00:00
+
+# User-defined execution parameters
+[rdx]
+    spectrograph = gemini_gmos_south_ham
+[calibrations]
+    calib_dir = Calibrations
+    [[wavelengths]]
+        refframe = observed
+    [[slitedges]]
+        use_maskdesign = True
+[coadd2d]
+    offsets = maskdef_offsets
+    weights = auto
+    spat_toler = 5
+    only_slits = MSC01:189,MSC01:508,MSC01:1036
+    spec_samp_fact = 1.2
+    spat_samp_fact = 1.2
+[flexure]
+    spec_method = skip
+[reduce]
+    [[findobj]]
+        skip_skysub = True
+    [[slitmask]]
+        use_alignbox = False
+        extract_missing_objs = True
+        assign_obj = True
+
+
+# Data block 
+spec2d read
+ path Science
+                                                       filename
+spec2d_S20221128S0038-FRB190711_GMOS-S_20221128T023704.067.fits
+spec2d_S20221128S0039-FRB190711_GMOS-S_20221128T025231.950.fits
+spec2d end
+

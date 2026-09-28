@@ -37,17 +37,22 @@ def generic_setup_test(spec, setup, cfg=None, prefix=None, extension=None):
     # TODO: Make the path structure of these instruments the same as the rest!!
     if 'vlt_xshooter' in spec:
         spec_dir = 'vlt_xshooter'
-    elif 'keck_nirspec' in spec:
-        spec_dir = 'keck_nirspec'
     else:
         spec_dir = spec
-    data_root = Path(os.environ['PYPEIT_DEV']).resolve() / 'RAW_DATA' / spec_dir / setup
+    data_root = Path(os.environ['PYPEIT_DEV']).absolute() / 'RAW_DATA' / spec_dir / setup
     assert data_root.exists(), 'TEST ERROR: Raw data path does not exist'
     if prefix is not None:
         data_root /= prefix
 
     # Define the output directory and remove it if it already exist
-    setup_path = Path().resolve() / (f'{spec}_A' if cfg else 'setup_files')
+    match cfg:
+        case None:
+            outdir = 'setup_files'
+        case 'all':
+            outdir = f'{spec}_A'
+        case _:
+            outdir = f'{spec}_{cfg}'
+    setup_path = Path().absolute() / outdir
     if setup_path.exists():
         shutil.rmtree(setup_path)
 
@@ -72,16 +77,136 @@ def test_setup_keck_lris_red_mark4():
     generic_setup_test(spec, setup)
 
 
+def test_setup_keck_lris_red_mark4_multiconfig():
+    # Dev suite directory
+    dev_root = Path(os.getenv('PYPEIT_DEV')).absolute()
+    assert dev_root.exists(), f'PypeIt development suite directory does not exist: {dev_root}'
+    # Raw data directory
+    raw_dir = dev_root / 'RAW_DATA' / 'keck_lris_red_mark4'
+    assert raw_dir.exists(), f'Raw data directory does not exist: {raw_dir}'
+
+    # Get the fits files
+    datasets = ['long_400_8500_d560']
+    files = np.concatenate([sorted(raw_dir.glob(f'{s}/*fits*')) for s in datasets]).tolist()
+
+    # Set the output path and remove if it already exists
+    output_path = Path('.').absolute() / 'output'
+    if output_path.exists():
+        shutil.rmtree(output_path)
+
+    # Run pypeit_setup
+    ps = pypeitsetup.PypeItSetup(files, spectrograph_name='keck_lris_red_mark4')
+    ps.run(setup_only=True)
+
+    # Write the automatically generated pypeit data
+    pypeit_files = ps.fitstbl.write_pypeit(output_path, cfg_lines=ps.user_cfg)
+
+    assert len(pypeit_files) == 2, 'Should have created two pypeit files'
+
+    # Test the pypeit files for the correct configuration and
+    # calibration group results
+    for f, s, c in zip(pypeit_files, ['A', 'B'], ['0', '1']):
+        # Read the pypeit file
+        pypeitFile = inputfiles.PypeItFile.from_file(f)
+        # Check setup name
+        assert pypeitFile.setup_name == s, 'Setup is wrong'
+        # check calibration group
+        assert np.all(pypeitFile.data['calib'].astype(str) == c), 'Calibration group is wrong'
+    # Clean-up
+    shutil.rmtree(output_path)
+
+
 def test_setup_keck_lris_red():
     spec = 'keck_lris_red'
     setup = 'multi_400_8500_d560'
     generic_setup_test(spec, setup)
 
 
+def test_setup_keck_lris_red_multiconfig():
+    # Dev suite directory
+    dev_root = Path(os.getenv('PYPEIT_DEV')).absolute()
+    assert dev_root.exists(), f'PypeIt development suite directory does not exist: {dev_root}'
+    # Raw data directory
+    raw_dir = dev_root / 'RAW_DATA' / 'keck_lris_red'
+    assert raw_dir.exists(), f'Raw data directory does not exist: {raw_dir}'
+
+    # Get the fits files
+    datasets = ['long_150_7500_d560', 'long_1200_7500_d560']
+    files = np.concatenate([sorted(raw_dir.glob(f'{s}/*fits*')) for s in datasets]).tolist()
+
+    # Set the output path and remove if it already exists
+    output_path = Path('.').absolute() / 'output'
+    if output_path.exists():
+        shutil.rmtree(output_path)
+
+    # Run pypeit_setup
+    ps = pypeitsetup.PypeItSetup(files, spectrograph_name='keck_lris_red')
+    ps.run(setup_only=True)
+
+    # Write the automatically generated pypeit data
+    pypeit_files = ps.fitstbl.write_pypeit(output_path, cfg_lines=ps.user_cfg)
+
+    assert len(pypeit_files) == 2, 'Should have created two pypeit files'
+
+    # Test the pypeit files for the correct configuration and
+    # calibration group results
+    for d, f, s, c in zip(datasets, pypeit_files, ['A', 'B'], ['0', '1']):
+        # Read the pypeit file
+        pypeitFile = inputfiles.PypeItFile.from_file(f)
+        # Check setup name
+        assert pypeitFile.setup_name == s, 'Setup is wrong'
+        # check calibration group
+        assert np.all(pypeitFile.data['calib'].astype(str) == c), 'Calibration group is wrong'
+        # check that this is the right dataset
+        assert Path(pypeitFile.file_paths[0]).name == d, 'Wrong dataset'
+    # Clean-up
+    shutil.rmtree(output_path)
+
 def test_setup_keck_lris_red_orig():
     spec = 'keck_lris_red_orig'
     setup = 'long_300_5000'
     generic_setup_test(spec, setup)
+
+
+def test_setup_keck_lris_red_orig_multiconfig():
+    # Dev suite directory
+    dev_root = Path(os.getenv('PYPEIT_DEV')).absolute()
+    assert dev_root.exists(), f'PypeIt development suite directory does not exist: {dev_root}'
+    # Raw data directory
+    raw_dir = dev_root / 'RAW_DATA' / 'keck_lris_red_orig'
+    assert raw_dir.exists(), f'Raw data directory does not exist: {raw_dir}'
+
+    # Get the fits files
+    datasets = ['long_900_5500_d560', 'long_831_8200_d460']
+    files = np.concatenate([sorted(raw_dir.glob(f'{s}/*fits*')) for s in datasets]).tolist()
+
+    # Set the output path and remove if it already exists
+    output_path = Path('.').absolute() / 'output'
+    if output_path.exists():
+        shutil.rmtree(output_path)
+
+    # Run pypeit_setup
+    ps = pypeitsetup.PypeItSetup(files, spectrograph_name='keck_lris_red_orig')
+    ps.run(setup_only=True)
+
+    # Write the automatically generated pypeit data
+    pypeit_files = ps.fitstbl.write_pypeit(output_path, cfg_lines=ps.user_cfg)
+
+    assert len(pypeit_files) == 2, 'Should have created two pypeit files'
+
+    # Test the pypeit files for the correct configuration and
+    # calibration group results
+    for d, f, s, c in zip(datasets, pypeit_files, ['A', 'B'], ['0', '1']):
+        # Read the pypeit file
+        pypeitFile = inputfiles.PypeItFile.from_file(f)
+        # Check setup name
+        assert pypeitFile.setup_name == s, 'Setup is wrong'
+        # check calibration group
+        assert np.all(pypeitFile.data['calib'].astype(str) == c), 'Calibration group is wrong'
+        # check that this is the right dataset
+        assert Path(pypeitFile.file_paths[0]).name == d, 'Wrong dataset'
+    # Clean-up
+    shutil.rmtree(output_path)
 
 
 def test_setup_keck_lris_blue():
@@ -90,10 +215,92 @@ def test_setup_keck_lris_blue():
     generic_setup_test(spec, setup)
 
 
+def test_setup_keck_lris_blue_multiconfig():
+    # Dev suite directory
+    dev_root = Path(os.getenv('PYPEIT_DEV')).absolute()
+    assert dev_root.exists(), f'PypeIt development suite directory does not exist: {dev_root}'
+    # Raw data directory
+    raw_dir = dev_root / 'RAW_DATA' / 'keck_lris_blue'
+    assert raw_dir.exists(), f'Raw data directory does not exist: {raw_dir}'
+
+    # Get the fits files
+    datasets = ['multi_300_5000_d680', 'multi_600_4000_slitmask']
+    files = np.concatenate([sorted(raw_dir.glob(f'{s}/*fits*')) for s in datasets]).tolist()
+
+    # Set the output path and remove if it already exists
+    output_path = Path('.').absolute() / 'output'
+    if output_path.exists():
+        shutil.rmtree(output_path)
+
+    # Run pypeit_setup
+    ps = pypeitsetup.PypeItSetup(files, spectrograph_name='keck_lris_blue')
+    ps.run(setup_only=True)
+
+    # Write the automatically generated pypeit data
+    pypeit_files = ps.fitstbl.write_pypeit(output_path, cfg_lines=ps.user_cfg)
+
+    assert len(pypeit_files) == 2, 'Should have created two pypeit files'
+
+    # Test the pypeit files for the correct configuration and
+    # calibration group results
+    for d, f, s, c in zip(datasets, pypeit_files, ['A', 'B'], ['0', '1']):
+        # Read the pypeit file
+        pypeitFile = inputfiles.PypeItFile.from_file(f)
+        # Check setup name
+        assert pypeitFile.setup_name == s, 'Setup is wrong'
+        # check calibration group
+        assert np.all(pypeitFile.data['calib'].astype(str) == c), 'Calibration group is wrong'
+        # check that this is the right dataset
+        assert Path(pypeitFile.file_paths[0]).name == d, 'Wrong dataset'
+    # Clean-up
+    shutil.rmtree(output_path)
+
+
 def test_setup_keck_lris_blue_orig():
     spec = 'keck_lris_blue_orig'
     setup = 'long_600_4000_d500'
     generic_setup_test(spec, setup)
+
+
+def test_setup_keck_lris_blue_orig_multiconfig():
+    # Dev suite directory
+    dev_root = Path(os.getenv('PYPEIT_DEV')).absolute()
+    assert dev_root.exists(), f'PypeIt development suite directory does not exist: {dev_root}'
+    # Raw data directory
+    raw_dir = dev_root / 'RAW_DATA' / 'keck_lris_blue_orig'
+    assert raw_dir.exists(), f'Raw data directory does not exist: {raw_dir}'
+
+    # Get the fits files
+    datasets = ['long_600_4000_d500', 'multi_1200_3400_d460']
+    files = np.concatenate([sorted(raw_dir.glob(f'{s}/*fits*')) for s in datasets]).tolist()
+
+    # Set the output path and remove if it already exists
+    output_path = Path('.').absolute() / 'output'
+    if output_path.exists():
+        shutil.rmtree(output_path)
+
+    # Run pypeit_setup
+    ps = pypeitsetup.PypeItSetup(files, spectrograph_name='keck_lris_blue_orig')
+    ps.run(setup_only=True)
+
+    # Write the automatically generated pypeit data
+    pypeit_files = ps.fitstbl.write_pypeit(output_path, cfg_lines=ps.user_cfg)
+
+    assert len(pypeit_files) == 2, 'Should have created two pypeit files'
+
+    # Test the pypeit files for the correct configuration and
+    # calibration group results
+    for d, f, s, c in zip(datasets, pypeit_files, ['A', 'B'], ['0', '1']):
+        # Read the pypeit file
+        pypeitFile = inputfiles.PypeItFile.from_file(f)
+        # Check setup name
+        assert pypeitFile.setup_name == s, 'Setup is wrong'
+        # check calibration group
+        assert np.all(pypeitFile.data['calib'].astype(str) == c), 'Calibration group is wrong'
+        # check that this is the right dataset
+        assert Path(pypeitFile.file_paths[0]).name == d, 'Wrong dataset'
+    # Clean-up
+    shutil.rmtree(output_path)
 
 
 def test_setup_shane_kast_blue():
@@ -199,7 +406,7 @@ def test_setup_keck_deimos_multiconfig_clean():
 
     # Artificially set the amplifier and mode of two frames to be
     # invalid
-    ps.fitstbl['amp'][0] = 'SINGLE:A'
+    ps.fitstbl['amp'][0] = 'DUAL:A+B'
     ps.fitstbl['mode'][1] = 'Direct'
     ps.fitstbl.clean_configurations()
     # Those two frames should have been removed
@@ -231,7 +438,7 @@ def test_setup_keck_mosfire_multiconfig():
     pypeit_files = ps.fitstbl.write_pypeit(output_path, cfg_lines=ps.user_cfg,
                                            write_bkg_pairs=True)
 
-    assert len(pypeit_files) == 4, 'Should have created two pypeit files'
+    assert len(pypeit_files) == 4, 'Should have created four pypeit files'
 
     # Test the pypeit files for the correct configuration,
     # calibration group and combination group results
@@ -284,19 +491,73 @@ def test_setup_keck_mosfire_multiconfig():
     shutil.rmtree(output_path)
 
 
+def test_setup_keck_hires_multiconfig():
+
+    root = os.path.join(os.environ['PYPEIT_DEV'], 'RAW_DATA', 'keck_hires')
+    files = glob.glob(os.path.join(root, 'J0306+1853_U074_RED_C2_ECH_0.72_XD_1.42_1x3', '*fits*'))
+    files += glob.glob(os.path.join(root, 'J1218+2951_U116Hr_RED_C5_ECH_-0.22_XD_0.21_1x2', '*fits*'))
+
+    output_path = os.path.join(os.getcwd(), 'output')
+    if os.path.isdir(output_path):
+        shutil.rmtree(output_path)
+    os.makedirs(output_path)
+
+    ps = pypeitsetup.PypeItSetup(files, spectrograph_name='keck_hires')
+    ps.run(setup_only=True)
+
+    # Write the automatically generated pypeit data
+    pypeit_files = ps.fitstbl.write_pypeit(output_path, cfg_lines=ps.user_cfg,
+                                           write_bkg_pairs=True)
+
+    assert len(pypeit_files) == 2, 'Should have created two pypeit files'
+
+    # Test the pypeit files for the correct configuration and
+    # calibration group results
+    for f, s, c in zip(pypeit_files, ['A', 'B'], ['0', '1']):
+
+        # TODO: All of this front-end stuff, pulled from pypeit.py, should
+        # be put into a function.
+
+        # Read the pypeit file
+        pypeitFile = inputfiles.PypeItFile.from_file(f)
+        # Spectrograph
+        cfg = ConfigObj(pypeitFile.cfg_lines)
+        spectrograph = load_spectrograph(cfg['rdx']['spectrograph'])
+        # Configuration-specific parameters
+        for idx, row in enumerate(pypeitFile.data):
+            if 'science' in row['frametype'] or 'standard' in row['frametype']:
+                break
+        spectrograph_cfg_lines = spectrograph.config_specific_par(
+            pypeitFile.filenames[idx]).to_config()
+        #  PypeIt parameters
+        par = PypeItPar.from_cfg_lines(cfg_lines=spectrograph_cfg_lines,
+                                       merge_with=pypeitFile.cfg_lines)
+        #  Metadata
+        fitstbl = PypeItMetaData(spectrograph, par,
+                                 files=pypeitFile.filenames,
+                                 usrdata=pypeitFile.data,
+                                 strict=True)
+        fitstbl.finalize_usr_build(pypeitFile.frametypes, pypeitFile.setup_name)
+
+        assert np.all(fitstbl['setup'] == s), 'Setup is wrong'
+        assert np.all(fitstbl['calib'].astype(str) == c), 'Calibration group is wrong'
+
+    # Clean-up
+    shutil.rmtree(output_path)
+
+
 def test_setup_keck_nires():
     spec = 'keck_nires'
     setup = 'ABBA_wstandard'
     generic_setup_test(spec, setup)
 
 
-
 def test_setup_keck_nires_comb():
 
-    dev_root = Path(os.environ['PYPEIT_DEV']).resolve()
+    dev_root = Path(os.environ['PYPEIT_DEV']).absolute()
     data_root = dev_root / 'RAW_DATA' / 'keck_nires'
 
-    output_path = Path().resolve() / 'output'
+    output_path = Path().absolute() / 'output'
     if output_path.exists():
         shutil.rmtree(output_path)
     output_path.mkdir()
@@ -339,6 +600,9 @@ def test_setup_keck_nires_comb():
             assert ps.fitstbl['bkg_id'][where_this].data[0] == int(pypeitFile.data[correct_science]['bkg_id'][i]), \
                 'Background group is wrong'
 
+    if output_path.exists():
+        shutil.rmtree(output_path)
+
 
 def test_setup_keck_nirspec():
     spec = 'keck_nirspec_low'
@@ -351,11 +615,16 @@ def test_setup_magellan_mage():
     setup = '1x1'
     generic_setup_test(spec, setup)
 
+def test_setup_magellan_fire():
+    spec = 'magellan_fire'
+    setup = 'FIRE'
+    generic_setup_test(spec, setup)
+
 
 def test_setup_wht_isis_blue():
     spec = 'wht_isis_blue'
     setup = 'long_R300B_d5300'
-    generic_setup_test(spec, setup, extension='.fit')
+    generic_setup_test(spec, setup)
 
 
 def test_setup_vlt_xshooter_uvb():
@@ -380,7 +649,7 @@ def test_setup_vlt_xshooter_nir():
 
 
 def test_setup_gemini_gnirs():
-    spec = 'gemini_gnirs'
+    spec = 'gemini_gnirs_echelle'
     setup = '32_SB_SXD'
     prefix = 'cN'
     generic_setup_test(spec, setup, prefix=prefix)
@@ -401,10 +670,84 @@ def test_setup_vlt_fors2():
     generic_setup_test(spec, setup, prefix=prefix)
 
     # Now chk calib
-    data_root = Path(os.environ['PYPEIT_DEV']).resolve() / 'RAW_DATA' / spec / setup / prefix
+    data_root = Path(os.environ['PYPEIT_DEV']).absolute() / 'RAW_DATA' / spec / setup / prefix
     pargs = ChkForCalibs.parse_args([str(data_root), '-s', 'vlt_fors2'])
     answers, ps = ChkForCalibs.main(pargs)
     assert answers['pass'][0], 'A must pass!'
+
+def test_setup_apf_levy():
+    spec = 'apf_levy'
+    setup = 'W_decker'
+    generic_setup_test(spec, setup)
+
+def test_setup_ldt_deveny():
+    spec = 'ldt_deveny'
+    # Run through all setups
+    for i in range(1,10):
+        setup = f'DV{i}'
+        generic_setup_test(spec, setup)
+        generic_setup_test(spec, setup, cfg='A')
+
+
+def test_setup_param_block():
+    """This test is for the "-p" option to pypeit_setup
+
+    Use LDT/DeVeny::DV8 as a test case
+    """
+    # Define the output directory and remove it if it already exist
+    setup_path = Path().absolute() / 'ldt_deveny_A'
+    if setup_path.exists():
+        shutil.rmtree(setup_path)
+
+    # Test this with LDT/DeVeny::DV8
+    data_root = Path(os.environ['PYPEIT_DEV']).absolute() / 'RAW_DATA' / 'ldt_deveny' / 'DV8'
+    assert data_root.exists(), 'TEST ERROR: Raw data path does not exist'
+
+    # Create a temp file containing the extra parameters to be read in
+    test_pars = [
+        "[calibrations]",
+        "  [[slitedges]]",
+        "    minimum_slit_length = 45",
+        "  [[flatfield]]",
+        "    pixelflat_min_wave = 4200",
+        "[reduce]",
+        "  [[findobj]]",
+        "    find_fwhm = 6.0",
+        "  [[extraction]]",
+        "    use_user_fwhm = True",
+    ]
+    parblock_fn = Path().absolute() / 'xtra_params.txt'
+    with open(parblock_fn, 'w', encoding='utf-8') as par_fobj:
+        par_fobj.writelines([f"{l}\n" for l in test_pars])
+
+    # Test the ability to read in the extra parameters
+    args = ['-r', str(data_root), '-s', 'ldt_deveny', '-p', str(parblock_fn) , '-c', 'A']
+    pargs = Setup.parse_args(args)
+    Setup.main(pargs)
+
+    # Read in the xtra_pars and the created PypeIt file
+    # NOTE: strip whitespace from both ends because indent size doesn't matter
+    with open(parblock_fn, 'r', encoding='utf-8') as par_fobj:
+        xtra_pars = [l.strip() for l in par_fobj.readlines()]
+    with open(setup_path / 'ldt_deveny_A.pypeit', 'r', encoding='utf-8') as pypeit_fobj:
+        pypeit_file = [l.strip() for l in pypeit_fobj.readlines()]
+
+    # Check that each of the `xtra_pars` is in the created PypeIt file
+    for par in xtra_pars:
+        assert par in pypeit_file, 'TEST ERROR: user-requested parameter not in created PypeIt file'
+
+    # Run a setup WITHOUT the extra parameter block, and make sure the `xtra_pars` are NOT in it
+    args = ['-r', str(data_root), '-s', 'ldt_deveny', '-c', 'A']
+    pargs = Setup.parse_args(args)
+    Setup.main(pargs)
+    with open(setup_path / 'ldt_deveny_A.pypeit', 'r', encoding='utf-8') as pypeit_fobj:
+        pypeit_file = [l.strip() for l in pypeit_fobj.readlines()]
+    for par in xtra_pars:
+        assert par not in pypeit_file, 'TEST ERROR: user-requested parameter found in vanilla PypeIt file'
+
+    # Clean-up
+    shutil.rmtree(setup_path)
+    parblock_fn.unlink()
 
 
 # TODO: Add other instruments!

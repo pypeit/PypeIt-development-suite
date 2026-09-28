@@ -19,7 +19,7 @@ if __name__ == '__main__':
 
     # Check for PYPEIT_DEV
     if 'PYPEIT_DEV' not in os.environ:
-        raise EnvironmentError('Enviroment must include PYPEIT_DEV, which points to the '
+        raise EnvironmentError('Environment must include PYPEIT_DEV, which points to the '
                                'top-level directory with the dev-suite raw data.')
 
     # Giddy up

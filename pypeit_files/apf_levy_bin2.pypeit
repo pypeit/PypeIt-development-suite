@@ -1,0 +1,27 @@
+# Auto-generated PypeIt input file using PypeIt version: 1.17.5.dev999+gd04224936
+# UTC 2025-09-18T19:00:40.412+00:00
+
+# User-defined execution parameters
+[rdx]
+    spectrograph = apf_levy
+
+# Setup
+setup read
+Setup A:
+  binning: 2,2
+  decker: '8.0'
+setup end
+
+# Data block 
+data read
+ path /home/holden/src/PypeIt-development-suite/RAW_DATA/apf_levy/bin2
+           filename |       frametype |                 ra |                dec |                         target | dispname | decker | binning |                mjd |       airmass | exptime | calib
+20250823_18882.fits.gz |        arc,tilt | 105.91958333333332 | -8.855611111111111 |                             |  default |    8.0 |     2,2 | 60911.718099652775 |           1.0 |    10.0 |     0
+20250823_18890.fits.gz | pixelflat,trace | 107.89583333333331 | -8.850833333333332 |                             |  default |    8.0 |     2,2 | 60911.723533449076 |           1.0 |    12.0 |     0
+20250823_18891.fits.gz | pixelflat,trace | 108.01249999999999 | -8.850555555555555 |                             |  default |    8.0 |     2,2 |  60911.72385347222 |           1.0 |    12.0 |     0
+20250823_18892.fits.gz | pixelflat,trace | 108.13083333333333 | -8.850277777777777 |                             |  default |    8.0 |     2,2 |  60911.72417291666 |           1.0 |    12.0 |     0
+20250823_18893.fits.gz | pixelflat,trace | 108.24999999999999 |              -8.85 |                             |  default |    8.0 |     2,2 |  60911.72449201389 |           1.0 |    12.0 |     0
+20250823_18894.fits.gz | pixelflat,trace | 108.33916666666666 | -8.849777777777778 |                             |  default |    8.0 |     2,2 | 60911.724811458334 |           1.0 |    12.0 |     0
+20240430_11395.fits.gz |         science | 250.39791666666662 |  36.45761111111111 | GaiaDR3_1328057871377540224 |  default |    8.0 |     2,2 |   60431.1799443287 | 2.26659989357 |  1200.0 |     0
+data end
+

@@ -1,0 +1,28 @@
+# Auto-generated PypeIt input file using PypeIt version: 1.16.1.dev559+g2b536470c.d20241021
+# UTC 2024-10-31T21:56:17.591+00:00
+
+# User-defined execution parameters
+[rdx]
+    spectrograph = gemini_gmos_south_ham
+[baseprocess]
+    use_biasimage = False
+
+# Setup
+setup read
+Setup A:
+  datasec: '"[1:256,1:2112]"'
+  decker: 1.0arcsec
+  dichroic: open1-6
+  dispangle: 550.0
+  dispname: B480+_G5327
+setup end
+
+# Data block 
+data read
+ path /tank/scratch/PypeIt-development-suite/RAW_DATA/gemini_gmos/GS_HAM_B480_550
+                   filename |                 frametype |        ra |               dec |     target |    dispname |    decker | binning |               mjd |          airmass | exptime | dichroic | dispangle |        datasec | calib
+    S20241012S0081_arc.fits |                  arc,tilt | 36.660375 | -52.7268888888889 |       CuAr | B480+_G5327 | 1.0arcsec |     2,2 | 60595.05673920275 | 1.62323062007523 |    20.0 |  open1-6 |     550.0 | [1:256,1:2112] |     0
+   S20241012S0080_flat.fits | pixelflat,illumflat,trace | 36.660375 | -52.7268888888889 |   GCALflat | B480+_G5327 | 1.0arcsec |     2,2 | 60595.05633565261 | 1.62722025752394 |     3.0 |  open1-6 |     550.0 | [1:256,1:2112] |     0
+S20241012S0079_science.fits |                   science | 36.660375 | -52.7268888888889 | SN 2020yex | B480+_G5327 | 1.0arcsec |     2,2 | 60595.04180768046 | 1.69176430063986 |  1200.0 |  open1-6 |     550.0 | [1:256,1:2112] |     0
+data end
+

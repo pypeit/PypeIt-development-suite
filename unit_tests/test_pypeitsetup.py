@@ -51,7 +51,7 @@ def test_build_fitstbl():
     #
     fitstbl = setupc.build_fitstbl(files)
     assert isinstance(fitstbl, Table)
-    assert setupc.nfiles == 26
+    assert setupc.nfiles == 25
 
 
 def test_image_type():
@@ -67,7 +67,7 @@ def test_image_type():
     assert np.sum(setupc.fitstbl.find_frames('None')) == 0
 
     assert np.sum(setupc.fitstbl.find_frames('pixelflat')
-                    & setupc.fitstbl.find_frames('trace')) == 12
+                    & setupc.fitstbl.find_frames('trace')) == 11
 
 
 def test_type():
@@ -119,7 +119,7 @@ def test_run_on_bad_headers():
     par, spectrograph, fitstbl = setupc.run(setup_only=True)
     # Test
     idx = np.where(setupc.fitstbl['filename'] == 'LR.20160216.05709.fits.gz')[0]
-    assert setupc.fitstbl['ra'][idx][0] is None
+    assert setupc.fitstbl['target'][idx][0] is None
     assert len(setupc.fitstbl) == 23
 
 

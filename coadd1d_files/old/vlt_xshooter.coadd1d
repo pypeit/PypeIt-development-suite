@@ -1,0 +1,18 @@
+# Auto-generated Coadd1D input file using PypeIt version: 1.8.2.dev1+g0cb9c4cb4
+# UTC 2022-12-08T16:55:28.858
+
+# User-defined execution parameters
+[coadd1d]
+  coaddfile = J0100p2802_XShooter_VIS_NIR_coadd.fits  # Please set your output file name
+  chk_version = False
+
+# Data block 
+coadd1d read
+ path /Users/joe/python/PypeIt-development-suite/REDUX_OUT/vlt_xshooter/
+                                                                                           filename   |        obj_id  | sensfile											       |   setup_id  |
+NIR/Science/spec1d_XSHOO.2016-08-02T09:00:56.860-J0100p2802_XShooter_NIR_20160802T090056.860.fits     | OBJ0325-DET01  | NIR_Feige110/sens_XSHOO.2018-06-23T10:04:01.793-STD,FLUX_XShooter_NIR_20180623T100401.793.fits        |     NIR     |
+NIR/Science/spec1d_XSHOO.2016-08-02T09:16:54.772-J0100p2802_XShooter_NIR_20160802T091654.772.fits     | OBJ0681-DET01  | NIR_Feige110/sens_XSHOO.2018-06-23T10:04:01.793-STD,FLUX_XShooter_NIR_20180623T100401.793.fits        |     NIR     |
+VIS_2x1/Science/spec1d_XSHOO.2016-08-02T08:45:46.510-J0100p2802_XShooter_VIS_20160802T084546.509.fits | OBJ0691-DET01  | VIS_1x1_Feige110/sens_XSHOO.2018-06-23T10:03:58.946-STD,FLUX_XShooter_VIS_20180623T100358.946.fits    |     VIS     | 
+VIS_2x1/Science/spec1d_XSHOO.2016-08-02T09:16:51.980-J0100p2802_XShooter_VIS_20160802T091651.980.fits | OBJ0334-DET01  | VIS_1x1_Feige110/sens_XSHOO.2018-06-23T10:03:58.946-STD,FLUX_XShooter_VIS_20180623T100358.946.fits    |     VIS     | 
+coadd1d end
+

@@ -1,0 +1,27 @@
+# Auto-generated PypeIt input file using PypeIt version: 1.17.4.dev301+g5627e5f0c
+# UTC 2025-06-03T22:00:38.599+00:00
+# *** NOTE ***: hand-edited to remove 'decker' from Setup A,
+#   identify FCSA00173404.fits and FCSA00173426.fits as "science,standard"
+
+# User-defined execution parameters
+[rdx]
+    spectrograph = subaru_focas
+
+# Setup
+setup read
+Setup A:
+  detector: '2'
+  dispname: SCFCGRHD52
+setup end
+
+# Data block 
+data read
+ path /home/eric/docs/Interns/2024_Pypeit_for_FOCAS/VPH520_2/RAW_DATA
+         filename |                 frametype |                 ra |                dec |        target |   dispname |     decker | binning |            mjd | airmass | exptime | detector | calib
+FCSA00173628.fits |                  arc,tilt |  96.39245833333334 |  19.84046111111111 |    COMPARISON | SCFCGRHD52 | SCFCSLLC10 |     1,2 | 57288.69396914 |     1.0 |     3.0 |        2 |     0
+FCSA00173540.fits |                      bias |  79.83654166666666 | 19.815208333333334 |          BIAS |       None | SCFCSLLC20 |     1,2 |  57288.6481106 |     1.0 |     0.0 |        2 |     0
+FCSA00173552.fits | pixelflat,illumflat,trace |            82.1571 | 19.818738888888888 |      DOMEFLAT | SCFCGRHD52 | SCFCSLLC10 |     1,2 | 57288.65453728 |     1.0 |    12.0 |        2 |     0
+FCSA00173404.fits |                   science | 27.217254166666663 | 14.209855555555555 | DLA0148+1412b | SCFCGRHD52 | SCFCSLLC10 |     1,2 | 57288.57132588 |   1.098 |  1100.0 |        2 |     0
+#FCSA00173426.fits |                  standard |  76.37904166666665 |  52.80937222222222 |       G191B2B | SCFCGRHD52 | SCFCSLLC20 |     1,2 | 57288.59868041 |   1.218 |    30.0 |        2 |     0
+data end
+

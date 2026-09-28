@@ -3,8 +3,10 @@
 
 # User-defined execution parameters
 [rdx]
-
 spectrograph = p200_dbsp_blue
+[calibrations]
+    [[wavelengths]]
+        fwhm_fromlines = False
 
 
 # Setup

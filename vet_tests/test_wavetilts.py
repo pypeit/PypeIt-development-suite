@@ -15,7 +15,6 @@ from pypeit.images import buildimage
 
 from pypeit.par import pypeitpar
 from pypeit.spectrographs.util import load_spectrograph
-from pypeit.tests.tstutils import data_path
 
 
 

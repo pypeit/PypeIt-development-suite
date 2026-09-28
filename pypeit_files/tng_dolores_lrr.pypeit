@@ -1,0 +1,34 @@
+# User-defined execution parameters
+[rdx]
+    spectrograph = tng_dolores
+
+# Setup
+setup read
+Setup A:
+  decker: Long_Slit_1.0
+  dispname: LR-R
+setup end
+
+# Data block
+data read
+ path /Users/rcooke/Desktop/DATARED/TNG_DOLORES/Raw
+              filename |                 frametype |                 ra |                dec |  target | dispname |        decker | binning |                mjd |            airmass | exptime | calib
+     Ne+Hg_LRR1_1.fits |                  arc,tilt |  218.7438159437468 |   57.3958625793457 | J143455 |     LR-R | Long_Slit_1.0 |     1,1 |  60733.64098365741 |                1.0 |     1.0 |     0
+     Ne+Hg_LRR1_2.fits |                  arc,tilt |  218.7438159437468 |   57.3958625793457 | J143455 |     LR-R | Long_Slit_1.0 |     1,1 | 60733.641288530096 |                1.0 |     1.0 |     0
+           BIAS_1.fits |                      bias | 284.36101982833077 |  53.53333282470703 |      NA |     OPEN |        GIARPS |     1,1 |  60732.67429606481 |                1.0 |     0.0 |     0
+          BIAS_10.fits |                      bias | 284.36101982833077 |  53.53333282470703 |      NA |     OPEN |        GIARPS |     1,1 |  60732.67694128472 | 1.1033642292022705 |     0.0 |     0
+           BIAS_2.fits |                      bias | 284.36101982833077 |  53.53333282470703 |      NA |     OPEN |        GIARPS |     1,1 | 60732.674593090276 | 1.0150352716445923 |     0.0 |     0
+           BIAS_3.fits |                      bias | 284.36101982833077 |  53.53333282470703 |      NA |     OPEN |        GIARPS |     1,1 |  60732.67489040509 | 1.1033508777618408 |     0.0 |     0
+           BIAS_4.fits |                      bias | 284.36101982833077 |  53.53333282470703 |      NA |     OPEN |        GIARPS |     1,1 |  60732.67518002315 |  1.103377103805542 |     0.0 |     0
+           BIAS_5.fits |                      bias | 284.36101982833077 |  53.53333282470703 |      NA |     OPEN |        GIARPS |     1,1 | 60732.675469166665 |  1.103377103805542 |     0.0 |     0
+           BIAS_6.fits |                      bias | 284.36101982833077 |  53.53333282470703 |      NA |     OPEN |        GIARPS |     1,1 | 60732.675765300926 |  1.103375792503357 |     0.0 |     0
+           BIAS_7.fits |                      bias | 284.36101982833077 |  53.53333282470703 |      NA |     OPEN |        GIARPS |     1,1 |  60732.67606262732 | 1.1033748388290405 |     0.0 |     0
+           BIAS_8.fits |                      bias | 284.36101982833077 |  53.53333282470703 |      NA |     OPEN |        GIARPS |     1,1 | 60732.676354710646 | 1.1033624410629272 |     0.0 |     0
+           BIAS_9.fits |                      bias | 284.36101982833077 |  53.53333282470703 |      NA |     OPEN |        GIARPS |     1,1 | 60732.676644756946 |  1.103363037109375 |     0.0 |     0
+      FLAT_LRR1_1.fits | pixelflat,illumflat,trace |  218.7438159437468 |   57.3958625793457 | J143455 |     LR-R | Long_Slit_1.0 |     1,1 |  60733.63770148148 |                1.0 |     1.0 |     0
+      FLAT_LRR1_2.fits | pixelflat,illumflat,trace |  218.7438159437468 |   57.3958625793457 | J143455 |     LR-R | Long_Slit_1.0 |     1,1 |  60733.63800572917 |                1.0 |     1.0 |     0
+      FLAT_LRR1_3.fits | pixelflat,illumflat,trace |  218.7438159437468 |   57.3958625793457 | J143455 |     LR-R | Long_Slit_1.0 |     1,1 |  60733.63831025463 |                1.0 |     1.0 |     0
+      FLAT_LRR1_4.fits | pixelflat,illumflat,trace |  218.7438159437468 |   57.3958625793457 | J143455 |     LR-R | Long_Slit_1.0 |     1,1 |  60733.63861469908 |                1.0 |     1.0 |     0
+      FLAT_LRR1_5.fits | pixelflat,illumflat,trace |  218.7438159437468 |   57.3958625793457 | J143455 |     LR-R | Long_Slit_1.0 |     1,1 |  60733.63891943287 |                1.0 |     1.0 |     0
+FEIGE66-15s-1-LRR.fits |                  standard |  189.3410126990008 | 25.066749572753906 | Feige66 |     LR-R | Long_Slit_1.0 |     1,1 |  60733.09273710648 | 1.0384107828140259 |    15.0 |     0
+data end

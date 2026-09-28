@@ -2,11 +2,23 @@ import os
 
 from IPython import embed
 
+import pytest
+
 import numpy as np
 
+from pypeit import dataPaths
+from pypeit import __version__
 from pypeit.core import telluric
-from pypeit.tests.tstutils import telluric_required, tell_test_grid
-from pypeit import data
+
+# Tests require the Telluric file
+try:
+    tell_test_grid = dataPaths.telgrid.get_file_path(
+            'TellPCA_3000_26000_R25000.fits',
+             to_pkg='move' if ".dev" in __version__ else None)
+except:
+    tell_test_grid = None
+telluric_required = pytest.mark.skipif(tell_test_grid is not None and not tell_test_grid.is_file(),
+                                       reason='no telluric file')
 
 @telluric_required
 def test_telluric_init():

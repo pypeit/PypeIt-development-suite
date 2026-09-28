@@ -21,19 +21,19 @@
 
 # Setup
 setup read
-    Setup J:
-        dispname: 600/4000
-        dichroic: 560
-          decker: frb19071
-         binning: 2,2
+Setup A:
+  binning: 2,2
+  decker: frb19071
+  dichroic: '560'
+  dispname: 600/4000
 setup end
 
-# Read in the data
+# Data block 
 data read
- path b
-|                           filename | frametype |                 ra |                 dec |   target | dispname |   decker | binning |          mjd |    airmass | exptime | dichroic | frameno |
-|          LB.20200129.08144.fits.gz |  arc,tilt | 229.99999999999997 |                45.0 |  unknown | 600/4000 | frb19071 |     2,2 | 58877.094271 | 1.41291034 |     1.0 |      560 |    1019 |
-|          LB.20200129.48812.fits.gz |   science | 183.97574999999998 | -13.041472222222222 | frb19071 | 600/4000 | frb19071 |     2,2 | 58877.564964 | 1.20299202 |   900.0 |      560 |    1136 |
-| LB_test_190714_mask2_trace.fits.gz |  pixelflat,illumflat,trace | 359.16666666666663 |               59.75 |   BLANK6 | 600/4000 | frb19071 |     2,2 | 58877.195379 | 1.56442282 |    20.0 |      560 |    1068 |
+ path /RAW_DATA/keck_lris_blue/multi_600_4000_slitmask
+                          filename |                  frametype |                 ra |                 dec |   target | dispname |   decker | binning |          mjd |    airmass | exptime | dichroic | amp |  hatch |                  lampstat01 |    dateobs | frameno | calib
+         LB.20200129.08144.fits.gz |                   arc,tilt | 229.99999999999997 |                45.0 |  unknown | 600/4000 | frb19071 |     2,2 | 58877.094271 | 1.41291034 |     1.0 |      560 |   4 | closed | HgI NeI ArI CdI ZnI KrI XeI | 2020-01-29 |    1019 |     0
+         LB.20200129.48812.fits.gz |                    science | 183.97574999999998 | -13.041472222222222 | frb19071 | 600/4000 | frb19071 |     2,2 | 58877.564964 | 1.20299202 |   900.0 |      560 |   4 |   open |                         off | 2020-01-29 |    1136 |     0
+LB_test_190714_mask2_trace.fits.gz |  pixelflat,illumflat,trace | 359.16666666666663 |               59.75 |   BLANK6 | 600/4000 | frb19071 |     2,2 | 58877.195379 | 1.56442282 |    20.0 |      560 |   4 |   open |                         off | 2020-01-29 |    1068 |     0
 data end
 

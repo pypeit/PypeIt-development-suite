@@ -49,7 +49,7 @@ def test_load_nires():
         pytest.fail('NIRES test data section failed.')
 
 def test_load_nirspec():
-    ifile = os.path.join(os.getenv('PYPEIT_DEV'), 'RAW_DATA', 'keck_nirspec', 'LOW_NIRSPEC-1',
+    ifile = os.path.join(os.getenv('PYPEIT_DEV'), 'RAW_DATA', 'keck_nirspec_low', 'LOW_NIRSPEC-1',
                          'NS.20160414.02604.fits.gz')
     try:
         # First amplifier
@@ -98,10 +98,10 @@ def test_load_vlt_xshooter_nir():
         pytest.fail('VLT XSHOOTER NIR test data section failed: {0}'.format(ifile))
 
 def test_load_gnirs():
-    ifile = os.path.join(os.environ['PYPEIT_DEV'], 'RAW_DATA','gemini_gnirs','32_SB_SXD',
-                         'cN20170331S0206.fits')
+    ifile = os.path.join(os.environ['PYPEIT_DEV'], 'RAW_DATA', 'gemini_gnirs_echelle',
+                         '32_SB_SXD', 'cN20170331S0206.fits')
     try:
-        data_img = grab_img('gemini_gnirs', ifile)
+        data_img = grab_img('gemini_gnirs_echelle', ifile)
     except:
         pytest.fail('Gemini GNIRS test data section failed: {0}'.format(ifile))
 
@@ -128,6 +128,14 @@ def test_load_osiris():
         data_img = grab_img('gtc_osiris', ifile)
     except:
         pytest.fail('GTC OSIRIS test data section failed: {0}'.format(ifile))
+
+def test_load_int_ids():
+    ifile = os.path.join(os.environ['PYPEIT_DEV'], 'RAW_DATA', 'int_ids_eev10',
+                         'INT_20201218', 'science.fits')
+    try:
+        data_img = grab_img('int_ids_eev10', ifile)
+    except:
+        pytest.fail('INT IDS test data section failed: {0}'.format(ifile))
 
 def test_load_bok():
     ifile = os.path.join(os.environ['PYPEIT_DEV'], 'RAW_DATA','bok_bc','600',
@@ -170,27 +178,28 @@ def test_load_fire():
     except:
         pytest.fail('Magellan/FIRE test data section failed: {0}'.format(ifile))
 
-'''
-@dev_suite_required
-def test_load_hires():
-    files = os.path.join(os.environ['PYPEIT_DEV'], 'RAW_DATA','keck_hires','RED',
-                         'hires0009.fits.gz')
-    proc = ProcessImages('keck_hires_red', par, files)
-    proc.build_image()
+def test_load_modspec():
+    ifile = os.path.join(os.environ['PYPEIT_DEV'], 'RAW_DATA','mdm_modspec',
+                         'Echelle', 'MDM_Dome_Flat_1.fit')
     try:
-        data_img = proc.raw_images[0][proc.datasec[0][0]]
+        data_img = grab_img('mdm_modspec', ifile)
     except:
-        pytest.fail('Keck HIRES test data section failed: {0}'.format(files))
+        pytest.fail('MDM Modspec test data section failed: {0}'.format(ifile))
 
-@dev_suite_required
-def test_load_isis():
-    files = os.path.join(os.getenv('PYPEIT_DEV'), 'RAW_DATA', 'wht_isis_blue', 'long_R300B_d5300',
-                         'r2324566.fit.gz')
-    proc = ProcessImages('wht_isis_blue', par, files)
-    proc.build_image()
+def test_load_apf_levy():
+    ifile = os.path.join(os.environ['PYPEIT_DEV'], 'RAW_DATA','apf_levy',
+                         'W_decker', '20250128_16421.fits.gz')
     try:
-        # First amplifier
-        data_img = grab_img(proc)
+        data_img = grab_img('apf_levy', ifile)
     except:
-        pytest.fail('WHT ISIS test data section failed.')
-'''
+        pytest.fail('APF Levy test data section failed: {0}'.format(ifile))
+
+
+def test_load_mmt_binospec():
+    ifile = os.path.join(os.environ['PYPEIT_DEV'], 'RAW_DATA','mmt_binospec',
+                         'Multislit_G270', 'BOSS1441_350.Science.6785.fits')
+    try:
+        data_img = grab_img('mmt_binospec', ifile)
+    except:
+        pytest.fail('MMT Binospec test data section failed: {0}'.format(ifile))
+

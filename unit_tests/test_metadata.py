@@ -10,7 +10,7 @@ import pytest
 import numpy as np
 
 from pypeit.pypeitsetup import PypeItSetup
-from pypeit.tests.tstutils import data_path
+from pypeit.tests.tstutils import data_output_path
 from pypeit.metadata import PypeItMetaData
 from pypeit.spectrographs.util import load_spectrograph
 from pypeit import inputfiles
@@ -33,7 +33,7 @@ def test_rm_rows():
     ps = PypeItSetup(files, spectrograph_name='shane_kast_blue')
     # Run
     ps.run()
-    assert len(ps.fitstbl) == 26, 'Missing files'
+    assert len(ps.fitstbl) == 25, 'Missing files'
 
     # Find the biases
     is_bias = ps.fitstbl.find_frames('bias', index=True)
@@ -41,11 +41,11 @@ def test_rm_rows():
 
     # Remove them
     ps.fitstbl.remove_rows(is_bias)
-    assert len(ps.fitstbl) == 16, 'Should have removed 10 frames'
+    assert len(ps.fitstbl) == 15, 'Should have removed 10 frames'
     assert not any(ps.fitstbl.find_frames('bias')), 'Should not find any bias frames'
 
     # TODO: Leaving this inconsistency for now.  BEWARE!!
-    assert len(ps.file_list) == 26, \
+    assert len(ps.file_list) == 25, \
             'Direct manipulation of fitstbl means PypeItSetup is not self-consistent'
 
     # Rebuild
@@ -62,7 +62,7 @@ def test_rm_rows():
 
     # Remove the standard, but don't regroup
     ps.fitstbl.remove_rows(is_std)
-    assert len(ps.fitstbl) == 25, 'Should have removed one standard'
+    assert len(ps.fitstbl) == 24, 'Should have removed one standard'
     is_sci = ps.fitstbl.find_frames('science', index=True)
     assert np.array_equal(ps.fitstbl['comb_id'][is_sci].data, [2,3]), 'Combination groups changed'
 
@@ -83,7 +83,7 @@ def test_rm_rows():
     # Use the PypeItSetup wrapper
     is_std = ps.fitstbl.find_frames('standard', index=True)
     ps.remove_table_rows(is_std, regroup=True)
-    assert len(ps.fitstbl) == 25, 'Should have removed one standard'
+    assert len(ps.fitstbl) == 24, 'Should have removed one standard'
     assert len(ps.fitstbl) == len(ps.file_list), 'Length of file list should match metadata table'
     # TODO: Need tests that test propagation of removed rows to frametype and usrdata
 
@@ -128,8 +128,8 @@ def test_lris_red_multi_calib():
     ps.fitstbl.set_configurations(cfgs)
     ps.fitstbl.set_calibration_groups()
 
-    calib_file = data_path('test.calib')
-    caldir = Path(data_path('')).resolve() / ps.par['calibrations']['calib_dir']
+    calib_file = data_output_path('test.calib')
+    caldir = Path(data_output_path('')).absolute() / ps.par['calibrations']['calib_dir']
     Calibrations.association_summary(calib_file, ps.fitstbl, ps.spectrograph, caldir,
                                      overwrite=True)
     with open(calib_file, 'r') as f:
@@ -162,24 +162,23 @@ def test_lris_red_multi_run():
 
 
 def test_lris_blue_pypeit_overwrite():
-    f = os.path.join(os.environ['PYPEIT_DEV'],
-                     'pypeit_files/keck_lris_blue_long_400_3400_d560.pypeit')
-    assert os.path.isfile(f), 'Could not find pypeit file.'
+    pypeit_dev = Path(os.environ['PYPEIT_DEV'])
+    f = pypeit_dev / 'pypeit_files' / 'keck_lris_blue_long_400_3400_d560.pypeit'
+    assert f.is_file(), 'Could not find pypeit file.'
         
     pypeitFile = inputfiles.PypeItFile.from_file(f)
 
     # Reset path
-    istr = pypeitFile.file_paths[0].find('RAW_DATA')
-    pypeitFile.file_paths = [os.path.join(os.environ['PYPEIT_DEV'], 
-                                          pypeitFile.file_paths[0][istr:])]
+    _file_path = str(pypeitFile.file_paths[0])
+    istr = _file_path.find('RAW_DATA')
+    pypeitFile.file_paths = [pypeit_dev / _file_path[istr:]]
     data_files = pypeitFile.filenames
 
     # Read the fits table with and without the user data
     spectrograph = load_spectrograph('keck_lris_blue')
     par = spectrograph.default_pypeit_par()
     fitstbl = PypeItMetaData(spectrograph, par, files=data_files)
-    fitstbl_usr = PypeItMetaData(spectrograph, par, files=data_files, 
-                                 usrdata=pypeitFile.data)
+    fitstbl_usr = PypeItMetaData(spectrograph, par, files=data_files, usrdata=pypeitFile.data)
 
     assert fitstbl['target'][0] == 'unknown', 'Grating name changed in file header'
     assert fitstbl_usr['target'][0] == 'test', 'Grating name changed in pypeit file'

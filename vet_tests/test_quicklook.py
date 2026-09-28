@@ -6,7 +6,6 @@ import glob
 from IPython import embed
 import numpy as np
 
-from pypeit.pypmsgs import PypeItError
 from pypeit.inputfiles import PypeItFile
 from pypeit import specobjs
 
@@ -42,9 +41,9 @@ def test_shane_kast_ql(redux_out):
 
         # Additional
         if test == 'boxcar':
-            assert np.isclose(sobjs.BOX_RADIUS[0], 4.651162790697675)
+            assert np.isclose(sobjs.BOX_R_PIX[0], 4.651162790697675)
         else:
-            assert not np.isclose(sobjs.BOX_RADIUS[0], 4.651162790697675)
+            assert not np.isclose(sobjs.BOX_R_PIX[0], 4.651162790697675)
 
 
 def test_keck_deimos_ql(redux_out):
@@ -73,9 +72,15 @@ def test_keck_deimos_ql(redux_out):
         assert len(spec1d_files) == nfiles
 
         sobjs = specobjs.SpecObjs.from_fitsfile(spec1d_files[0])
-        assert sobjs.nobj == 1
-        assert sobjs.SLITID == 452
-        assert sobjs.MASKDEF_ID == 958454
+        # currently ql does not allow for more than one maskID, but allows for more than one slitspatnum
+        if test == 'maskID':
+            assert sobjs.nobj == 1
+            assert sobjs.SLITID == 452
+            assert sobjs.MASKDEF_ID == 958454
+        if test == 'slitspatnum':
+            assert sobjs.nobj == 2
+            assert np.all(sobjs.SLITID == [368,452])
+            assert np.all(sobjs.MASKDEF_ID == [958474,958454])
 
 def test_keck_lris_red_ql(redux_out):
 

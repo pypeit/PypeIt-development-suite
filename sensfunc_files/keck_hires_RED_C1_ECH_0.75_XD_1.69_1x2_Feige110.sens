@@ -1,0 +1,4 @@
+[sensfunc]
+    algorithm = IR
+    use_flat = True
+
