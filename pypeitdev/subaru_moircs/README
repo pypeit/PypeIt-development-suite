@@ -1,0 +1,21 @@
+The log files from the header information are attached here.
+
+- Science exposure (UDS_PSG1 for LS_J, S20B095_Mask1 for LS_H)
+- Telluric Standard Star data (HIP115119 for LS_J, HIP59174 for LS_H)
+- Dome flats (lamp-on and off)
+- ThAr arclamp data
+- Mask image for ThAr.
+
+The tarball for LS_H also contains some acquisition & count check images.
+Sorry about it.
+
+The data was taken in the repeat of the A-B dithers (not ABBA). For
+standard sta data, we use one of the available slit(s) on MOS for
+standard star observation. We visually check where the continuum is...
+
+You can find the grims information on the LS_J and LS_H from below.
+https://www.naoj.org/Instruments/MOIRCS/spec_sensitivity.html
+
+Please be careful about the handling of the data. Though they are
+already open to public via SMOKA archive, we don't want the data to be
+used beyond our control.
