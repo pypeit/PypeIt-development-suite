@@ -9,6 +9,12 @@
 !pypeitdev/wavelengths/template_files/*/*/*.png
 pypeitdev/int_ids/INT_20201218/*
 pypeitdev/shane_hamspec/Cooke_data/*
+# Subaru MOIRCS
+pypeitdev/subaru_moircs/subaru_moircs_A/*
+pypeitdev/subaru_moircs/subaru_moircs_B/*
+pypeitdev/subaru_moircs/run2/*
+pypeitdev/subaru_moircs/tmpl_A/*
+
 *.json
 *.yaml
 *.obslog

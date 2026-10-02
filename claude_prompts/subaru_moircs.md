@@ -538,3 +538,144 @@ Planned build order, for reference:
   docs/changelog → review.  Each one points to the Q&A items behind it
   and says how to check the result.
 - No PypeIt code was changed.
+
+### 2026-10-02 — Implementation #1–#9 (Claude Opus 5.5)
+
+**#1 Import fix.**  Switched to `log`/`PypeItError`, and changed
+`msgs.warn` to `log.warning`/`log.debug` and `msgs.error` to
+`raise PypeItError`.  `load_spectrograph('subaru_moircs')` and
+`pypeit_setup -h` work, and `test_spectrographs.py` passes.
+
+**#2 Metadata / frame typing / dithering.**
+- Dropped `dispangle`.
+- `binning` is read from `BIN-FCT1` (spec) and `BIN-FCT2` (spat).
+- New compound `idname`: `DATA-TYP`, refined by `OBJECT` into
+  `DOMEFLAT_OFF`/`MASKIMAGE`.  Also added `lampstat01`.
+- Frame types: lamp-off flats are `lampoffflats`; the mask image is
+  untyped; standard vs science is split by exposure time.
+- `dithpat`, `dithpos`, `dithoff` come from `K_DITPAT`, `K_DITCNT`,
+  `K_DITWID`.  For `LINE2`, position 1 is A and 2 is B, at
+  ±`K_DITWID`/2.  The sign convention is not verified.  Other patterns
+  give `P<N>` and are not paired.
+- New `get_comb_group`: each A frame gets the nearest-in-time B frame as
+  background, and vice versa.  Deleted the ESO `parse_dither_pattern`.
+- Added `frameno` (`FRAMEID`), `raw_header_cards`, and
+  `pypeit_file_keys`.
+- `pypeit_setup` gives the expected frame types, and A has `bkg_id` = B
+  and vice versa.
+
+**#3 Two-detector reader.**
+- `ndet = 2`.  The configuration keys are now dispname, decker, and
+  binning.
+- `valid_configuration_values = {'detector': ['1']}` drops the chip-2
+  files in `pypeit_setup` (through `clean_configurations`).
+- `companion_file()` finds the chip-2 file (frame number + 1, same
+  `EXP-ID`, `DET-ID = 2`).  `get_rawimage` reads it for det 2.  A
+  missing file, a mismatch, or a chip-2 file listed in the PypeIt file
+  each raises a clear `PypeItError`.
+- `get_detector_par` chooses the chip by `det` only.
+- `[rdx] detnum = 2` reduces chip 2 alone (checked in
+  `pypeitdev/subaru_moircs/run2/det2only`).
+- The mask image still makes its own untyped setup B, which is harmless.
+
+**#4 Orientation.**  The existing `specflip` values (chip 1 True,
+chip 2 False) are **correct**: on both chips, the holy-grail solutions
+increase in wavelength along the spectral axis.  No change was made.
+The evidence is in `pypeitdev/subaru_moircs/prep_specflip_check.txt`.
+
+**#5 Bad-pixel mask.**
+- `pypeitdev/subaru_moircs/bpm/decode_plio.py` is a PLIO decoder (a port
+  of CFITSIO's `pl_l2pi`, plus the `pl_save` file layout).  It decodes
+  both 2048×2048 masks.
+- About 12–14% of each mask is the beam-splitter shadow (x > ~1810 on
+  chip 1, x < ~240 on chip 2), joined to the border and the corners.
+  The lamp-on flats show real spectra there, so the shadow was
+  **removed**, leaving 0.07% of pixels (~3000 per chip) as true defects.
+- Orientation was checked against the raw flats.  As-is, 86–90% of the
+  masked pixels are flat outliers, compared with ≤1% if flipped or
+  transposed.
+- Written to
+  `pypeit/data/static_calibs/subaru_moircs/bpm_moircs_det{1,2}.fits.gz`
+  in raw orientation, with a line added to the README.  `bpm()` trims
+  and orients the mask like the raw images and was checked in the
+  processed frame.
+- The review figure is `pypeitdev/subaru_moircs/bpm/bpm_review.png`.
+
+**#6 First reduction and tuning** (`pypeitdev/subaru_moircs/run2`):
+- Slit edges: DET01 has 20 slits (17 science + 3 alignment boxes) and
+  DET02 has 19 (15 + 4).  This matches the count from the mask image,
+  so no slits were missed.  The boxes are flagged BOXSLIT.  The edge
+  parameters were kept.
+- Wavelengths (holy-grail first): 12/17 and 11/15 science slits solved,
+  at rms 0.25–0.48 px.  The failures were slits with partial spectral
+  coverage.
+- The HK500 sky ends sharply at about 2.30 µm and starts at about
+  1.3 µm, probably because of the `OC_HK` filter.  The solutions
+  extrapolate only where there is no light.
+- Flexure is now `skip`, as for MOSFIRE, NIRES, MMIRS, and LUCI, since
+  the arcs are the science frames.
+- Raised object finding sensitivity: `findobj snr_thresh` 10 → 5.  This
+  takes the detections from 2 to 5 objects per exposure (3 on DET01, 2
+  on DET02).  They are consistent between A and B (26 px = 3″).  S/N is
+  about 0.5–1.8 per pixel in 180 s.
+- A−B sky residuals are clean (χ std = 1.06).
+- Removed the MOSFIRE TODO and cleaned up `default_pypeit_par`.  Lamp-off
+  subtraction runs.
+- Updated `pypeit_files/subaru_moircs_hk500.pypeit`: it now uses the
+  path `RAW_DATA/subaru_moircs/HK500`, covers both detectors, and types
+  the lamp-off flats.
+
+**#7 HK500 wavelength archive.**
+- A single `full_template` (from DET02 slit 289, which covers
+  1.29–2.31 µm) was **worse**.  It needed padding to 4000 px, then gave
+  rms 0.4–1.0 px and several solutions off by about 1130 Å.  Script:
+  `make_hk500_full_template_REJECTED.py`.
+- Switched HK500 to **`reidentify`** with
+  `reid_arxiv/subaru_moircs_HK500.fits`.  The archive holds 19 good,
+  monotonic holy-grail spectra from both detectors (`make_hk500_reid.py`).
+- In the pipeline, **every science slit is now calibrated**: 17/17 and
+  15/15, rms 0.24–0.43 px, 50–72 lines per slit.  Only the alignment
+  boxes fail.  Holy-grail solved 12/17 and 11/15.
+- Caveat: the archive was built from these same data.  It still needs
+  checking on an independent HK500 mask.
+
+**#8 Unit tests.**  `pypeit/tests/test_subaru_moircs.py` has 9 tests:
+- companion match, missing file, EXP-ID mismatch, chip-2 file listed;
+- frame typing;
+- dither parsing;
+- ABBA pairing;
+- binning;
+- the valid-detector rule.
+
+All pass, as do `test_spectrographs.py` and `test_metadata.py`.
+
+**#9 Docs.**
+- Rewrote `doc/spectrographs/subaru_moircs.rst` and
+  `doc/tutorials/moircs_howto.rst` from the real HK500 run.
+- Added release-note bullets in `doc/releases/2.1.0dev.rst`
+  (instrument, docs, tests).
+- Regenerated `doc/pypeit_par.rst`, which also removes duplicate rows
+  left by an earlier merge, and `doc/include/inst_detector_table.rst`.
+- `make htmlonly` finishes with no MOIRCS warnings.
+
+**#10 Review: not run.**  You declined the code-review tool call.  Run it
+when you're ready.
+
+**Open items for the instrument scientist:**
+- detector gain, read noise (and whether it scales with NDR), dark
+  current, and per-chip saturation/non-linearity;
+- the mask-design files for `MO17A_COSMOS2` (slit/object matching);
+- whether MOIRCS masks allow science slits to overlap in y;
+- the sign convention of the `K_DITCNT` offset;
+- other `K_DITPAT` patterns;
+- the HK500 red cut-off at about 2.3 µm (filter?).
+
+**Other notes:**
+- `pypeitdev/subaru_moircs/README` describes LS_J/LS_H data with ThAr
+  arcs and telluric standards that aren't in `RAW_DATA` yet.  When they
+  arrive, ThAr frames (probably `DATA-TYP = COMPARISON`) will need arc
+  typing.  Today, only `OBJECT` frames are typed as arcs.
+
+**Ready to commit (dev suite):** `pypeit_files/subaru_moircs_hk500.pypeit`
+and the `pypeitdev/subaru_moircs` scripts.  The `run2/` and `tmpl_A/`
+directories hold reduction outputs; ignore them in git if you prefer.
