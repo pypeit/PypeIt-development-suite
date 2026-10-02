@@ -8,7 +8,8 @@ from astropy import convolution
 
 from pkg_resources import resource_filename
 from pypeit import utils
-from pypeit import msgs
+from pypeit import log
+from pypeit import PypeItError
 from pypeit.core import load
 from pypeit.core.wavecal import wvutils
 from pypeit.core import pydl
@@ -70,7 +71,7 @@ def load_1dspec_to_array(fnames,gdobj=None,order=None,ex_value='OPT',flux_value=
             if gdobj[iexp] in spobj.idx:
                 ext = indx
         if ext is None:
-            msgs.error('Can not find extension {:} in {:}.'.format(gdobj[iexp],fnames[iexp]))
+            raise PypeItError('Can not find extension {:} in {:}.'.format(gdobj[iexp],fnames[iexp]))
 
         ## unpack wave/flux/mask
         if ex_value == 'OPT':
@@ -91,7 +92,7 @@ def load_1dspec_to_array(fnames,gdobj=None,order=None,ex_value='OPT',flux_value=
                 flux = specobjs[ext].boxcar['COUNTS']
                 ivar = specobjs[ext].boxcar['COUNTS_IVAR']
         else:
-            msgs.error('{:} is not recognized. Please change to either BOX or OPT.'.format(ex_value))
+            raise PypeItError('{:} is not recognized. Please change to either BOX or OPT.'.format(ex_value))
 
         waves[:, iexp] = wave
         fluxes[:, iexp] = flux
@@ -139,7 +140,7 @@ def load_1dspec_to_array_old(fnames,gdobj=None,order=None,ex_value='OPT',flux_va
             if gdobj[iexp] in spobj.idx:
                 ext = indx
         if ext is None:
-            msgs.error('Can not find extension {:} in {:}.'.format(gdobj[iexp],fnames[iexp]))
+            raise PypeItError('Can not find extension {:} in {:}.'.format(gdobj[iexp],fnames[iexp]))
 
         ## unpack wave/flux/mask
         if ex_value == 'OPT':
@@ -160,7 +161,7 @@ def load_1dspec_to_array_old(fnames,gdobj=None,order=None,ex_value='OPT',flux_va
                 flux = specobjs[ext].boxcar['COUNTS']
                 ivar = specobjs[ext].boxcar['COUNTS_IVAR']
         else:
-            msgs.error('{:} is not recognized. Please change to either BOX or OPT.'.format(ex_value))
+            raise PypeItError('{:} is not recognized. Please change to either BOX or OPT.'.format(ex_value))
 
         waves[iexp,:] = wave
         fluxes[iexp,:] = flux
@@ -276,7 +277,7 @@ def new_wave_grid(waves,wave_method='iref',iref=0,wave_grid_min=None,wave_grid_m
         wave_grid = waves[iref, :].compressed()
 
     else:
-        msgs.error("Bad method for scaling: {:s}".format(wave_method))
+        raise PypeItError("Bad method for scaling: {:s}".format(wave_method))
 
     return wave_grid
 
@@ -317,13 +318,12 @@ def renormalize_errors(chi, mask, clip = 6.0, max_corr = 5.0, title = '', debug=
         chi2_sigrej = np.percentile(chi2[maskchi], 100.0*gauss_prob)
         sigma_corr = np.sqrt(chi2_sigrej)
         if sigma_corr < 1.0:
-            msgs.warn("Error renormalization found correction factor sigma_corr = {:f}".format(sigma_corr) +
-                      " < 1." + msgs.newline() +
-                      " Errors are overestimated so not applying correction")
+            log.warning("Error renormalization found correction factor sigma_corr = {:f}".format(sigma_corr) +
+                      " < 1.\n Errors are overestimated so not applying correction")
             sigma_corr = 1.0
         if sigma_corr > max_corr:
-            msgs.warn("Error renormalization found sigma_corr/sigma = {:f} > {:f}." + msgs.newline() +
-                      "Errors are severely underestimated." + msgs.newline() +
+            log.warning("Error renormalization found sigma_corr/sigma = {:f} > {:f}.\n"
+                      "Errors are severely underestimated.\n"
                       "Setting correction to sigma_corr = {:4.2f}".format(sigma_corr, max_corr, max_corr))
             sigma_corr = max_corr
 
@@ -331,7 +331,7 @@ def renormalize_errors(chi, mask, clip = 6.0, max_corr = 5.0, title = '', debug=
             renormalize_errors_qa(chi, maskchi, sigma_corr, title=title)
 
     else:
-        msgs.warn('No good pixels in error_renormalize. There are probably issues with your data')
+        log.warning('No good pixels in error_renormalize. There are probably issues with your data')
         sigma_corr = 1.0
 
     return sigma_corr, maskchi
@@ -614,7 +614,7 @@ def sn_weights(waves, fluxes, ivars, masks, dv_smooth=10000.0, const_weights=Fal
         sig_stack = sigs
         mask_stack = masks
     else:
-        msgs.error('Unrecognized dimensionality for flux')
+        raise PypeItError('Unrecognized dimensionality for flux')
 
     # if the wave
     if waves.ndim == 1:
@@ -622,7 +622,7 @@ def sn_weights(waves, fluxes, ivars, masks, dv_smooth=10000.0, const_weights=Fal
     elif waves.ndim == 2:
         wave_stack = waves
     else:
-        msgs.error('wavelength array has an invalid size')
+        raise PypeItError('wavelength array has an invalid size')
 
     ivar_stack = utils.calc_ivar(sig_stack**2)
     # Calculate S/N
@@ -636,13 +636,13 @@ def sn_weights(waves, fluxes, ivars, masks, dv_smooth=10000.0, const_weights=Fal
     if rms_sn_stack <= 3.0 or const_weights:
         weights = np.outer(sn2, np.ones(nspec))
         if verbose:
-            msgs.info("Using constant weights for coadding, RMS S/N = {:g}".format(rms_sn_stack))
+            log.info("Using constant weights for coadding, RMS S/N = {:g}".format(rms_sn_stack))
             for iexp in np.arange(nstack):
-                msgs.info('S/N = {:4.2f}, weight = {:4.2f} for {:}th exposure'.format(
+                log.info('S/N = {:4.2f}, weight = {:4.2f} for {:}th exposure'.format(
                     rms_sn[iexp],np.mean(weights[iexp,:]), iexp))
     else:
         if verbose:
-            msgs.info("Using wavelength dependent weights for coadding")
+            log.info("Using wavelength dependent weights for coadding")
         weights = np.ones_like(flux_stack) #((fluxes.shape[0], fluxes.shape[1]))
         spec_vec = np.arange(nspec)
         for iexp in range(nstack):
@@ -662,7 +662,7 @@ def sn_weights(waves, fluxes, ivars, masks, dv_smooth=10000.0, const_weights=Fal
             sn_conv = convolution.convolve(sn_med2, gauss_kernel)
             weights[iexp,:] = sn_conv
             if verbose:
-                msgs.info('S/N = {:4.2f}, averaged weight = {:4.2f} for {:}th exposure'.format(
+                log.info('S/N = {:4.2f}, averaged weight = {:4.2f} for {:}th exposure'.format(
                     rms_sn[iexp],np.mean(weights[iexp,:]), iexp))
     # Finish
     return rms_sn, weights
@@ -705,13 +705,13 @@ def robust_median_ratio(flux,ivar,flux_ref,ivar_ref, ref_percentile=20.0, min_go
             stats.sigma_clipped_stats(flux,np.invert(calc_mask),cenfunc='median', stdfunc=stats.mad_std,
                                       maxiters=maxiters,sigma=sigrej)
         if (flux_ref_median < 0.0) or (flux_dat_mean < 0.0):
-            msgs.warn('Negative median flux found. Not rescaling')
+            log.warning('Negative median flux found. Not rescaling')
             ratio = 1.0
         else:
             ratio = np.fmax(np.fmin(flux_ref_median/flux_dat_median, max_factor), 1.0/max_factor)
     else:
-        msgs.warn('Found only {%d} good pixels for computing median flux ratio.' + msgs.newline() +
-                  'No median rescaling applied'.format(np.sum(calc_mask)))
+        log.warning('Found only {%d} good pixels for computing median flux ratio.\n'
+                    'No median rescaling applied'.format(np.sum(calc_mask)))
         ratio = 1.0
 
     return ratio
@@ -823,7 +823,7 @@ def scale_spec(wave, flux, ivar, flux_ref, ivar_ref, mask=None, mask_ref=None, m
     elif scale_method == 'hand':
         # Input?
         if hand_scale is None:
-            msgs.error("Need to provide hand_scale parameter, single value")
+            raise PypeItError("Need to provide hand_scale parameter, single value")
         flux_scale = flux * hand_scale
         ivar_scale = ivar * 1.0 / hand_scale ** 2
         scale = np.full(flux.size, hand_scale)
@@ -832,7 +832,7 @@ def scale_spec(wave, flux, ivar, flux_ref, ivar_ref, mask=None, mask_ref=None, m
         ivar_scale = ivar.copy()
         scale = np.ones_like(flux)
     else:
-        msgs.error("Scale method not recognized! Check documentation for available options")
+        raise PypeItError("Scale method not recognized! Check documentation for available options")
     # Finish
     if debug:
         scale_spec_qa(wave, flux, ivar, flux_ref, ivar_ref, scale, scale_method, mask = mask, mask_ref=mask_ref,
@@ -930,10 +930,10 @@ def coadd_iexp_qa(wave, flux, ivar, flux_stack, ivar_stack, mask=None, mask_stac
 
     if qafile is not None:
         if len(qafile.split('.'))==1:
-            msgs.info("No fomat given for the qafile, save to PDF format.")
+            log.info("No fomat given for the qafile, save to PDF format.")
             qafile = qafile+'.pdf'
         plt.savefig(qafile,dpi=300)
-        msgs.info("Wrote QA: {:s}".format(qafile))
+        log.info("Wrote QA: {:s}".format(qafile))
     if debug:
         plt.show()
 
@@ -1003,10 +1003,10 @@ def coadd_qa(wave, flux, ivar, nused, mask=None, qafile=None, debug=False):
 
     if qafile is not None:
         if len(qafile.split('.'))==1:
-            msgs.info("No fomat given for the qafile, save to PDF format.")
+            log.info("No fomat given for the qafile, save to PDF format.")
             qafile = qafile+'.pdf'
         plt.savefig(qafile,dpi=300)
-        msgs.info("Wrote QA: {:s}".format(qafile))
+        log.info("Wrote QA: {:s}".format(qafile))
     if debug:
         plt.show()
 
@@ -1062,7 +1062,7 @@ def write_to_fits(wave, flux, ivar, mask, outfil, clobber=True, fill_val=None):
     hdu.append(wvhdu)
 
     hdu.writeto(outfil, overwrite=clobber)
-    msgs.info('Wrote spectrum to {:s}'.format(outfil))
+    log.info('Wrote spectrum to {:s}'.format(outfil))
 
 def update_errors(waves, fluxes, ivars, masks, fluxes_stack, ivars_stack, masks_stack, sn_cap=20.0, debug=False):
 
@@ -1155,12 +1155,12 @@ def combspec(waves, fluxes, ivars, masks, wave_grid_method='pixel', wave_grid_mi
             thisreject = thismask[iexp,:]
             nrej = np.sum(np.invert(thisreject))
             if nrej > 0:
-                msgs.info("Rejecting {:d} pixels in exposure {:d}".format(nrej, iexp))
+                log.info("Rejecting {:d} pixels in exposure {:d}".format(nrej, iexp))
 
         iIter = iIter +1
 
     if (iIter == maxiter_reject) & (maxiter_reject != 0):
-        msgs.warn('Maximum number of iterations maxiter={:}'.format(maxiter_reject) + ' reached in combspec')
+        log.warning('Maximum number of iterations maxiter={:}'.format(maxiter_reject) + ' reached in combspec')
     outmask = np.copy(thismask)
 
     # Compute the final stack using this outmask
@@ -1185,7 +1185,7 @@ def combspec(waves, fluxes, ivars, masks, wave_grid_method='pixel', wave_grid_mi
     # Write to disk?
     if outfile is not None:
         if len(outfile.split('.'))==1:
-            msgs.info("No fomat given for the outfile, save to fits format.")
+            log.info("No fomat given for the outfile, save to fits format.")
             outfile = outfile+'.fits'
         write_to_fits(wave_stack, flux_stack, ivar_stack, mask_stack, outfile, clobber=True)
 
@@ -1276,15 +1276,15 @@ def long_reject(waves, fluxes, ivars, masks, fluxes_stack, ivars_stack, do_offse
         nrej = np.sum(chi_mask)
         # Apply
         if nrej > 0:
-            msgs.info("Rejecting {:d} pixels in exposure {:d}".format(nrej, iexp))
+            log.info("Rejecting {:d} pixels in exposure {:d}".format(nrej, iexp))
             # print(rspec.data['wave'][qq,chi_mask])
             outmasks[iexp, chi_mask] = False
             # rspec.select = qq
             # rspec.add_to_mask(chi_mask)
             # outmask[*, j] = (arrmask[*, j] EQ 1) OR (chi2_cap GT sigrej_eff^2)
 
-        msgs.info('Measured effective rejection from distribution of chi^2')
-        msgs.info('Instead of rejecting sigrej={:}. Use threshold sigrej_eff={:}'\
+        log.info('Measured effective rejection from distribution of chi^2')
+        log.info('Instead of rejecting sigrej={:}. Use threshold sigrej_eff={:}'\
                   .format(sigrej_final,np.round(sigrej_eff,2)))
 
         gdtmp = (outmasks[iexp, :] >0) & (ivar_real>0.)
@@ -1364,7 +1364,7 @@ def long_comb(waves, fluxes, ivars, masks,wave_method='pixel', wave_grid_min=Non
     # Write to disk?
     if outfile is not None:
         if len(outfile.split('.'))==1:
-            msgs.info("No fomat given for the outfile, save to fits format.")
+            log.info("No fomat given for the outfile, save to fits format.")
             outfile = outfile+'.fits'
         write_to_fits(wave_stack, flux_stack, ivar_stack, mask_stack, outfile, clobber=True, fill_val=fill_val)
 

@@ -2,7 +2,7 @@
 
 
 
-from pypeit import msgs
+from pypeit import log
 import numpy as np
 from IPython import embed
 from pypeit import flatfield
@@ -67,7 +67,7 @@ from bisect import insort, bisect_left
     inmask_log_fit = inmask_log[fit_spec][isrt_spec]
     nfit_spec = np.sum(fit_spec)
     logrej = 0.5 # rejectino threshold for spectral fit in log(image)
-    msgs.info('Spectral fit of flatfield for {:}'.format(nfit_spec) + ' pixels')
+    log.info('Spectral fit of flatfield for {:}'.format(nfit_spec) + ' pixels')
 
     # Fit the spectral direction of the blaze
     # ToDo Figure out how to deal with the fits going crazy at the edges of the chip in spec direction
@@ -130,10 +130,10 @@ from bisect import insort, bisect_left
     if(illum_max_quick <= spat_illum_thresh/3.0):
         ximg_in = np.concatenate((-0.2 + 0.2*np.arange(npad)/(npad - 1), ximg_fit, 1.0 + 0.2*np.arange(npad)/(npad - 1)))
         normin = np.ones(2*npad + nfit_spat)
-        #msgs.info('illum_max={:7.3f}'.format(illum_max_quick))
-        msgs.info('Subsampled illum fluctuations = {:7.3f}'.format(illum_max_quick) +
+        #log.info('illum_max={:7.3f}'.format(illum_max_quick))
+        log.info('Subsampled illum fluctuations = {:7.3f}'.format(illum_max_quick) +
                   '% < spat_illum_thresh/3={:4.2f}'.format(100.0*spat_illum_thresh/3.0) +'%')
-        msgs.info('Slit illumination function set to unity for this slit')
+        log.info('Slit illumination function set to unity for this slit')
         no_illum=True
     else:
         illumquick = np.interp(ximg_fit,ximg_fit[isamp],illumquick1)
@@ -157,15 +157,15 @@ from bisect import insort, bisect_left
             rmed = normimg[-1]
         # Bmask regions where illumination function takes on extreme values
         if np.any(~np.isfinite(normimg)):
-            msgs.error('Inifinities in slit illumination function computation normimg')
+            raise PypeItError('Inifinities in slit illumination function computation normimg')
         illum_max = (np.abs(normimg[statinds]/mean - 1.0)).max()
         if (illum_max <= spat_illum_thresh):
             ximg_in = np.concatenate((-0.2 + 0.2*np.arange(npad)/(npad - 1), ximg_fit,1.0 + 0.2*np.arange(npad)/(npad-1)))
             normin = np.ones(2*npad + nfit_spat)
-            #msgs.info('illum_max={:7.3f}'.format(illum_max))
-            msgs.info('Illum fluctuations = {:7.3f}'.format(illum_max*100) +
+            #log.info('illum_max={:7.3f}'.format(illum_max))
+            log.info('Illum fluctuations = {:7.3f}'.format(illum_max*100) +
                       ' < spat_illum_thresh={:4.2f}'.format(100.0*spat_illum_thresh)+'%')
-            msgs.info('Slit illumination function set to unity for this slit%')
+            log.info('Slit illumination function set to unity for this slit%')
             no_illum = True
         else:
             ximg_in = np.concatenate((-0.2 + 0.2*np.arange(npad)/(npad-1), ximg_fit[imed], 1.0 + 0.2*np.arange(npad)/(npad-1)))
@@ -206,7 +206,7 @@ from bisect import insort, bisect_left
     illumflat[thismask], _ = spat_set.value(ximg[thismask])
     norm_spec_spat = np.ones_like(flat)
     norm_spec_spat[thismask] = flat[thismask]/np.fmax(spec_model[thismask], 1.0)/np.fmax(illumflat[thismask],0.01)
-    msgs.info('Performing illumination +scattered light flat field fit')
+    log.info('Performing illumination +scattered light flat field fit')
 
     # Flat field pixels for fitting spectral direction
     isrt_spec = np.argsort(piximg[thismask])
@@ -347,7 +347,7 @@ flat_model = np.zeros_like(flatimg)
 debug = True
 # Loop on slits
 for slit in gdslits:
-    msgs.info("Computing flat field image for slit: {:d}".format(slit + 1))
+    log.info("Computing flat field image for slit: {:d}".format(slit + 1))
     slit_left = tslits_dict['lcen'][:, slit]
     slit_righ = tslits_dict['rcen'][:, slit]
     thismask = (tslits_dict['slitpix'] == slit + 1)
@@ -373,7 +373,7 @@ ginga.show_image(flat_model,chname='flat_model',wcs_match = True)
     norm_spec_ivar = np.ones_like(norm_spec_fit)/(0.03**2)
     sigrej_illum = 3.0
     nfit_spat = np.sum(fit_spat)
-    msgs.info('Fit to flatfield slit illumination function {:}'.format(nfit_spat) + ' pixels')
+    log.info('Fit to flatfield slit illumination function {:}'.format(nfit_spat) + ' pixels')
     # Fit the slit illumination function now
     spat_set, outmask_spat, spatfit, _ = utils.bspline_profile(ximg_fit, norm_spec_fit, norm_spec_ivar,
                                                                np.ones_like(ximg_fit),nord = 4,

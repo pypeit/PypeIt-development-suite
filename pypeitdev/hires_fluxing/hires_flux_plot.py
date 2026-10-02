@@ -7,7 +7,7 @@ import numpy as np
 from astropy.io import fits
 from astropy.time import Time
 
-from pypeit import msgs
+from pypeit import PypeItError
 from pypeit import coadd1d
 from pypeit import specobjs
 from pypeit import inputfiles
@@ -46,7 +46,7 @@ sobjs = specobjs.SpecObjs.from_fitsfile(filenames[iexp])
 
 indx = sobjs.name_indices(objids[iexp])
 if not np.any(indx):
-    msgs.error("No matching objects for {:s}.  Odds are you input the wrong OBJID".format(objids[iexp]))
+    raise PypeItError("No matching objects for {:s}.  Odds are you input the wrong OBJID".format(objids[iexp]))
 wave_iexp, flux_iexp, ivar_iexp, gpm_iexp, blaze_iexp, meta_spec, header = \
     sobjs[indx].unpack_object(ret_flam=par['coadd1d']['flux_value'], extract_type=par['coadd1d']['ex_value'])
 #

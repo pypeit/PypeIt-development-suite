@@ -10,7 +10,8 @@ from astropy import units
 from astropy.io import fits
 from astropy.table import Table
 
-from pypeit import msgs
+from pypeit import log
+from pypeit import PypeItError
 from pypeit.core import flux
 from pypeit.core import load
 from pypeit.core import save
@@ -88,7 +89,7 @@ class EchFluxSpec(masterframe.MasterFrame):
         self.std_header = std_header
         if self.std_spec1d_file is not None:
             self.std_specobjs, self.std_header = load.ech_load_specobj(self.std_spec1d_file)
-            msgs.info('Loaded {0} spectra from the spec1d standard star file: {1}'.format(
+            log.info('Loaded {0} spectra from the spec1d standard star file: {1}'.format(
                 len(self.std_specobjs), self.std_spec1d_file))
             std_spectro = self.std_header['INSTRUME']
 
@@ -112,24 +113,24 @@ class EchFluxSpec(masterframe.MasterFrame):
         self.sci_header = None
         if self.sci_spec1d_file is not None:
             self.sci_specobjs, self.sci_header = load.ech_load_specobj(self.sci_spec1d_file)
-            msgs.info('Loaded {0} spectra from the spec1d science file: {1}'.format(
+            log.info('Loaded {0} spectra from the spec1d science file: {1}'.format(
                 len(self.sci_specobjs), self.sci_spec1d_file))
             sci_spectro = self.sci_header['INSTRUME']
 
         # Compare instruments if they exist
         if std_spectro is not None and sci_spectro is not None and std_spectro != sci_spectro:
-            msgs.error('Standard spectra are not the same instrument as science!!')
+            raise PypeItError('Standard spectra are not the same instrument as science!!')
 
         # Instantiate the spectrograph
         _spectrograph = spectrograph
         if _spectrograph is None:
             _spectrograph = std_spectro
             if _spectrograph is not None:
-                msgs.info("Spectrograph set to {0} from standard file".format(_spectrograph))
+                log.info("Spectrograph set to {0} from standard file".format(_spectrograph))
         if _spectrograph is None:
             _spectrograph = sci_spectro
             if _spectrograph is not None:
-                msgs.info("Spectrograph set to {0} from science file".format(_spectrograph))
+                log.info("Spectrograph set to {0} from science file".format(_spectrograph))
         self.spectrograph = load_spectrograph(_spectrograph)
 
         # MasterFrame
@@ -176,14 +177,14 @@ class EchFluxSpec(masterframe.MasterFrame):
 
         # Does the master file exist?
         if not os.path.isfile(filename):
-            # msgs.warn("No Master frame found of type {:s}: {:s}".format(self.frametype, filename))
-            msgs.warn("No Master frame found of {:s}".format(filename))
+            # log.warning("No Master frame found of type {:s}: {:s}".format(self.frametype, filename))
+            log.warning("No Master frame found of {:s}".format(filename))
             if force:
-                msgs.error("Crashing out because reduce-masters-force=True:" + msgs.newline() + filename)
+                raise PypeItError("Crashing out because reduce-masters-force=True:\n"  + filename)
             return None
         else:
-            # msgs.info("Loading a pre-existing master calibration frame of type: {:}".format(self.frametype) + " from filename: {:}".format(filename))
-            msgs.info("Loading a pre-existing master calibration frame of SENSFUNC from filename: {:}".format(filename))
+            # log.info("Loading a pre-existing master calibration frame of type: {:}".format(self.frametype) + " from filename: {:}".format(filename))
+            log.info("Loading a pre-existing master calibration frame of SENSFUNC from filename: {:}".format(filename))
 
             hdu = fits.open(filename)
             norder = hdu[0].header['NORDER']
@@ -269,7 +270,7 @@ class EchFluxSpec(masterframe.MasterFrame):
         hdulist.writeto(outfile, overwrite=True)
 
         # Finish
-        msgs.info("Wrote sensfunc to MasterFrame: {:s}".format(outfile))
+        log.info("Wrote sensfunc to MasterFrame: {:s}".format(outfile))
 
     def generate_sensfunc(self):
         """
@@ -285,10 +286,10 @@ class EchFluxSpec(masterframe.MasterFrame):
         """
         # Check internals
         # if self.std is None:
-        #    msgs.warn('First identify the star first (with find_standard).')
+        #    log.warning('First identify the star first (with find_standard).')
         #    return None
         if self.std_header is None:
-            msgs.warn('First set std_header with a dict-like object holding RA, DEC, '
+            log.warning('First set std_header with a dict-like object holding RA, DEC, '
                       'AIRMASS, EXPTIME.')
             return None
         ext_final = fits.getheader(self.std_spec1d_file, -1)
@@ -340,7 +341,7 @@ class EchFluxSpec(masterframe.MasterFrame):
         Plot the sensitivity function
         """
         if self.sens_dict is None:
-            msgs.warn("You need to generate the sensfunc first!")
+            log.warning("You need to generate the sensfunc first!")
             return None
         plt.rcdefaults()
         plt.rcParams["xtick.top"] = True
@@ -374,7 +375,7 @@ class EchFluxSpec(masterframe.MasterFrame):
 
         """
         if len(self.sci_specobjs) == 0:
-            msgs.warn("No science spectra to write to disk!")
+            log.warning("No science spectra to write to disk!")
         #
         if 'VEL-TYPE' in self.sci_header.keys():
             helio_dict = dict(refframe=self.sci_header['VEL-TYPE'],
@@ -392,7 +393,7 @@ class EchFluxSpec(masterframe.MasterFrame):
         elif isinstance(self.sci_specobjs, specobjs.SpecObjs):
             specObjs = self.sci_specobjs
         else:
-            msgs.error("BAD INPUT")
+            raise PypeItError("BAD INPUT")
         save.save_1d_spectra_fits(specObjs, self.sci_header, outfile,
                                   helio_dict=helio_dict,
                                   telescope=telescope, overwrite=True)

@@ -15,7 +15,7 @@ DO_NOT_USE = datamodels.dqflags.pixel['DO_NOT_USE']
 from pypeit.display import display
 from pypeit.core import fitting
 from pypeit.utils import inverse
-from pypeit import msgs
+from pypeit import log
 from pypeit.core import flat
 from pypeit.core import procimg
 
@@ -353,12 +353,12 @@ def jwst_extract_subimgs(final_slit, intflat_slit):
                     if final_slit.source_type == 'EXTENDED' else \
                         np.array(final_slit.pathloss_point.T, dtype=float)
     if pathloss.shape == (0,0):
-        msgs.warn('No pathloss for slit {0}'.format(slit_name) + ', setting to 1.0')
+        log.warning('No pathloss for slit {0}'.format(slit_name) + ', setting to 1.0')
         pathloss = np.ones_like(flatfield)
 
     barshadow = np.array(final_slit.barshadow.T, dtype=float)
     if barshadow.shape == (0,0):
-        msgs.warn('No barshadow for slit {0}'.format(slit_name) + ', setting to 1.0')
+        log.warning('No barshadow for slit {0}'.format(slit_name) + ', setting to 1.0')
         barshadow = np.ones_like(flatfield)
 
     photom_conversion = final_slit.meta.photometry.conversion_megajanskys
@@ -556,9 +556,9 @@ def jwst_populate_calibs(nspec, nspat, e2d_multi, final_multi, intflat_multi):
         finitemask_sub = np.isfinite(waveimg_sub)
         if not np.any(finitemask_sub):
             reduce_gpm[islit] = False
-            msgs.warn('All nan wavelengths for Slit={:s}. Not extracting calibrations'.format(slit_name))
+            log.warning('All nan wavelengths for Slit={:s}. Not extracting calibrations'.format(slit_name))
         else:
-            #msgs.info('Extracting calibrations for Slit={:s}'.format(slit_name))
+            #log.info('Extracting calibrations for Slit={:s}'.format(slit_name))
 
             ########################
             # The image segment being used for each slit
@@ -630,7 +630,7 @@ def jwst_proc_old(e2d_slit, final_slit, intflat_slit=None, kludge_err=1.0):
     pathloss = np.array(final_slit.pathloss_uniform.T, dtype=float) if final_slit.source_type == 'EXTENDED' else \
         np.array(final_slit.pathloss_point.T, dtype=float)
     if pathloss.shape == (0,0):
-        msgs.warn('No pathloss for slit {0}'.format(slit_name) + ', setting to 1.0')
+        log.warning('No pathloss for slit {0}'.format(slit_name) + ', setting to 1.0')
         pathloss = np.ones_like(raw_data_counts)
     flatfield = np.array(intflat_slit.data.T, dtype=float) if intflat_slit is not None else np.ones_like(raw_data_counts)
     barshadow = np.array(final_slit.barshadow.T, dtype=float)
@@ -744,12 +744,12 @@ def jwst_extract_subimgs_old(e2d_slit, final_slit, intflat_slit):
     pathloss = np.array(final_slit.pathloss_uniform.T, dtype=float) if final_slit.source_type == 'EXTENDED' else \
         np.array(final_slit.pathloss_point.T, dtype=float)
     if pathloss.shape == (0,0):
-        msgs.warn('No pathloss for slit {0}'.format(slit_name) + ', setting to 1.0')
+        log.warning('No pathloss for slit {0}'.format(slit_name) + ', setting to 1.0')
         pathloss = np.ones_like(flatfield)
 
     barshadow = np.array(final_slit.barshadow.T, dtype=float)
     if barshadow.shape == (0,0):
-        msgs.warn('No barshadow for slit {0}'.format(slit_name) + ', setting to 1.0')
+        log.warning('No barshadow for slit {0}'.format(slit_name) + ', setting to 1.0')
         barshadow = np.ones_like(flatfield)
 
     photom_conversion = final_slit.meta.photometry.conversion_megajanskys

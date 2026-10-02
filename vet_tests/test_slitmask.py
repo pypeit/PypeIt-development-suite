@@ -264,17 +264,20 @@ def test_gmos_slitmask(redux_out):
                              'gemini_gmos', 
                              'GS_HAM_B600_MOS',
                              'Science', 
-                             'spec1d_S20221128S0038-FRB190711_GMOS-S_18640531T214523.954.fits')
+                             'spec1d_S20221128S0038-FRB190711_GMOS-S_20221128T023704.067.fits')
     # Load                                
     specObjs = specobjs.SpecObjs.from_fitsfile(file_path)
 
     # Test
     assert len(specObjs.MASKDEF_ID) > 0
-    assert '10050' in specObjs.MASKDEF_OBJNAME
+    assert '10050' in specObjs.MASKDEF_OBJNAME, "MASKDEF_OBJNAME 10050 not found"
 
     idx = specObjs.MASKDEF_OBJNAME == '10050'
-    assert np.isclose(specObjs.RA[idx][0], 329.2278)
+    assert np.isclose(specObjs.RA[idx][0], 329.2278), "RA for OBJNAME 10050 is incorrect"
 
+    assert 10126 in specObjs.MASKDEF_ID, "MASKDEF_ID 10126 not found"
+    idx = specObjs.MASKDEF_ID == 10126
+    assert specObjs.MASKDEF_OBJNAME[idx][0] == '10126', "MASKDEF_OBJNAME for ID 10126 is incorrect"
 
 def test_deimos_flipped_slitpa(redux_out):
 

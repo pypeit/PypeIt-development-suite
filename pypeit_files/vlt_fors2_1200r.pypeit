@@ -1,0 +1,37 @@
+# Auto-generated PypeIt input file using PypeIt version: 2.0.1
+# UTC 2026-06-02T02:52:44.960+00:00
+
+# User-defined execution parameters
+[rdx]
+    spectrograph = vlt_fors2
+[calibrations]
+    [[wavelengths]]
+      ech_2dfit = False
+
+# Setup
+setup read
+Setup A:
+  decker: lSlit0_7arcsec
+  detector: CHIP1
+  dispangle: 653.0
+  dispname: GRIS_1200R
+setup end
+
+# Data block 
+data read
+ path /Users/westfall/Work/pypeit/vlt_fors2/github_data/raw
+                            filename | frametype |         ra |       dec | target |   dispname |         decker | binning |            mjd | airmass |   exptime | dispangle | detector | calib
+  FORS2.2004-05-15T11:11:51.241.fits | pixelflat,illumflat,trace |       None |      None |   None | GRIS_1200R | lSlit0_7arcsec |     2,2 | 53140.46656529 |    None |   16.4249 |     653.0 |    CHIP1 |     0
+  FORS2.2004-05-15T11:12:52.325.fits | pixelflat,illumflat,trace |       None |      None |   None | GRIS_1200R | lSlit0_7arcsec |     2,2 | 53140.46727228 |    None |   16.4252 |     653.0 |    CHIP1 |     0
+  FORS2.2004-05-15T11:13:52.579.fits | pixelflat,illumflat,trace |       None |      None |   None | GRIS_1200R | lSlit0_7arcsec |     2,2 | 53140.46796967 |    None |   16.4269 |     653.0 |    CHIP1 |     0
+  FORS2.2004-05-15T11:14:53.233.fits | pixelflat,illumflat,trace |       None |      None |   None | GRIS_1200R | lSlit0_7arcsec |     2,2 | 53140.46867168 |    None |    16.425 |     653.0 |    CHIP1 |     0
+  FORS2.2004-05-15T11:15:51.617.fits | pixelflat,illumflat,trace |       None |      None |   None | GRIS_1200R | lSlit0_7arcsec |     2,2 | 53140.46934742 |    None |   16.4275 |     653.0 |    CHIP1 |     0
+  FORS2.2004-05-15T11:18:01.326.fits |  arc,tilt |       None |      None |   None | GRIS_1200R | lSlit0_7arcsec |     2,2 | 53140.47084868 |    None |   74.9984 |     653.0 |    CHIP1 |     0
+  FORS2.2004-05-14T23:16:36.225.fits |   science | 209.553938 | -64.73814 |   BWCir | GRIS_1200R | lSlit0_7arcsec |     2,2 | 53139.96986372 |   1.711 | 1799.9428 |     653.0 |    CHIP1 |     0
+  FORS2.2004-05-15T11:20:41.696.fits |      bias | None | None |   None |     None |   None |     2,2 | 53140.47270482 |    None |  0.0607 |      None |    CHIP1 |     0
+  FORS2.2004-05-15T11:21:21.969.fits |      bias | None | None |   None |     None |   None |     2,2 | 53140.47317094 |    None |  0.0607 |      None |    CHIP1 |     0
+  FORS2.2004-05-15T11:22:02.252.fits |      bias | None | None |   None |     None |   None |     2,2 | 53140.47363718 |    None |  0.0606 |      None |    CHIP1 |     0
+  FORS2.2004-05-15T11:22:43.765.fits |      bias | None | None |   None |     None |   None |     2,2 | 53140.47411765 |    None |  0.0606 |      None |    CHIP1 |     0
+  FORS2.2004-05-15T11:23:25.568.fits |      bias | None | None |   None |     None |   None |     2,2 | 53140.47460148 |    None |  0.0607 |      None |    CHIP1 |     0
+data end
+

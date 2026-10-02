@@ -54,7 +54,7 @@ def global_skysub(sciimg, sciivar, piximg, slitmask, edgmask,
         isky = sky_slitmask == slitid
         debugger.set_trace() # The 2 lines above seem a bit wrong
         if (np.sum(isky) < 10):
-            msgs.warn('Not enough sky pixels found in slit ', slitid,
+            log.warning('Not enough sky pixels found in slit ', slitid,
                       np.sum(isky), np.sum(all))
             continue
 

@@ -2,7 +2,7 @@
 import numpy as np
 from pypeit.core.telluric import read_telluric_grid
 from pypeit import utils
-from pypeit import msgs
+from pypeit import log
 from pypeit.core.wavecal import wvutils
 
 from matplotlib import pyplot as plot
@@ -51,7 +51,7 @@ def truncate_sf(sf, min_wave=None, max_wave=None):
     Returns (dict):  A dictionary with the truncated sensfunc data.
     """
     if min_wave is None and max_wave is None:
-        msgs.warn("Truncate called with none wavelengths, returning original sensfunc")
+        log.warning("Truncate called with none wavelengths, returning original sensfunc")
         return sf
     
     if min_wave is not None:
@@ -283,7 +283,7 @@ def stitch_sf_polyfit(sf1,sf2,
     if gen_wave_grid:
         wave_grid_min = sf1['SENS_WAVE'][-1]
         wave_grid_max = sf2['SENS_WAVE'][0]
-        msgs.info(f"Generating wave grid between: {wave_grid_min} and {wave_grid_max}")
+        log.info(f"Generating wave grid between: {wave_grid_min} and {wave_grid_max}")
         tell_dict = read_telluric_grid(telgrid_file, wave_min=wave_grid_min, wave_max=wave_grid_max)
         # Sometimes read_telluric grid returns a larger grid
         grid_mask = (tell_dict['wave_grid'] > wave_grid_min) & (tell_dict['wave_grid'] < wave_grid_max)

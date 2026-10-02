@@ -7,6 +7,16 @@ all_setups = {
     'aat_uhrf': [
         '3875',
     ],
+    'arc_kosmos': [
+        'UT221221_slitmask_galaxies',
+        'UT230909_slitmask_stars',
+        'UT250131_longslit_blue_HeNeAr',
+        'UT250131_longslit_blue_NeKr',
+        'UT250131_longslit_red',
+    ],
+    'arc_tspec': [
+        'UT191026',
+    ],
     'bok_bc': [
         '300',
         'old_832',
@@ -36,6 +46,7 @@ all_setups = {
         'GS_HAM_B480_550',
         'GS_HAM_R400_TILTED',
         'GS_HAM_R150_869',
+        'GS_HAM_R400_795_SENS',
     ],
     'gemini_flamingos2': [
         'HK_HK',
@@ -51,6 +62,12 @@ all_setups = {
     'gtc_osiris_plus': [
         'R1000R',
         'R300B',
+    ],
+    'int_ids_eev10': [
+        'INT_20201218',
+    ],
+    'int_ids_redplus2': [
+        'r632v_1x1',
     ],
     'keck_esi': [
         'Ech_1x1',
@@ -85,14 +102,21 @@ all_setups = {
         'J1218+2951_U116Hr_RED_C5_ECH_-0.22_XD_0.21_1x2',
         'Q1009+2956_G10H_BLUE_C5_ECH_-0.00_XD_1.02_1x3',
     ],
+    'keck_hires_orig': [
+        'q0913p0715_red97_c1_ech_0.29_xd_-0.69_2x1',
+        'q0913p0715_red_c5_ech_0.00_xd_-0.81_2x1',
+        'q0913p0715_uv_c5_ech_0.00_xd_0.53_2x1',
+    ],
     'keck_kcwi': [
         'small_bh2_4200',
         'medium_bl',
         'medium_bh3',
+        'large_bl',
     ],
     'keck_kcrm': [
         'medium_rm1',
         'medium_rh3',
+        'large_rl',
     ],
     'keck_nires': [
         'ABBA_wstandard',
@@ -165,6 +189,7 @@ all_setups = {
     'lbt_luci': [
         'LUCI-I',
         'LUCI-II',
+        'luci2_G210K',
     ],
     'lbt_mods1b': [
         'dual_grating_longslit_qso',
@@ -207,6 +232,10 @@ all_setups = {
         'FIRE_Echelle',
         'FIRE_Long',
     ],
+    'magellan_ldss3': [
+        'VPH-ALL_Std',
+        'VPH-ALL_Sci',
+    ],
     'magellan_mage': [
         '1x1',
     ],
@@ -221,6 +250,10 @@ all_setups = {
         'Longslit_G600',
         'Multislit_G270',
         'Longslit_G1000',
+    ],
+    'mmt_binospec_ifu': [
+        'G270',
+        'G270_Sky',
     ],
     'mmt_mmirs': [
         'HK_zJ',
@@ -267,18 +300,24 @@ all_setups = {
         '1200_7100_d68',
         '1200_9400_d55',
     ],
+    'p200_ngps_u': [
+        '1.5_2x3',
+    ],
+    'p200_ngps_g': [
+        '1.5_2x3',
+    ],
     'p200_ngps_r': [
         '1.5_2x3',
-        '1.0_2x2',
-        '0.5_2x1',
     ],
     'p200_ngps_i': [
         '1.5_2x3',
-        '1.0_2x2',
-        '0.5_2x1',
     ],
     'p200_tspec': [
         'TSPEC',
+    ],
+    'shane_hamspec': [
+        'Hamilton',
+        'Hamilton_e2v',
     ],
     'shane_kast_blue': [
         '452_3306_d57',
@@ -300,6 +339,9 @@ all_setups = {
     'soar_goodman_blue': [
         'M1',
     ],
+    'soar_tspec': [
+        'TSPEC',
+    ],
     'subaru_focas': [
         '300B_None',
         '300R_O58',
@@ -313,9 +355,22 @@ all_setups = {
         '300I',
         '600Z',
         '300I_MOS',
+        '1200B',
+        '1200R',
+        '1400V',
     ],
     'vlt_sinfoni': [
         'K_0.8',
+    ],
+    'vlt_uves_blue': [
+        '346',
+        '437',
+    ],
+    'vlt_uves_red': [
+        '564',
+        '580',
+        '760',
+        '860',
     ],
     'vlt_xshooter': [
         'VIS_1x1',

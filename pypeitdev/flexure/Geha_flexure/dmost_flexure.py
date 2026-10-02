@@ -12,7 +12,7 @@ from scipy.interpolate import interp1d
 
 from pypeit.core import fitting as pypeit_fitting
 from pypeit.core.wavecal import wvutils
-from pypeit import msgs
+from pypeit import log
 
 from astropy.modeling import models, fitting
 
@@ -451,28 +451,28 @@ def flexure_correct(hdu, data_dir,clobber=0, orig=True):
     if (not os.path.isfile(slit_table_file)) | (clobber == 1):
 
         # CREATE SLIT TABLE
-        msgs.info("Generating slit table")
+        log.info("Generating slit table")
         slits, nslits = dmost_slit_matching.create_slit_table(hdu,data_dir,txt)
 
         # INITIAL SKY LINE STUFF
-        msgs.info("Measuring sky lines")
+        log.info("Measuring sky lines")
         slits = measure_sky_lines(slits, nslits,hdu, orig=orig)
 
         # FIT SURFACES
-        msgs.info("Fitting the surface")
+        log.info("Fitting the surface")
         pmodel_m, pmodel_b,pmodel_los = fit_mask_surfaces(slits)
 
      
         # ADD TO TABLE
-        msgs.info("Table time")
+        log.info("Table time")
         fslits = update_flexure_fit(slits,nslits, hdu, pmodel_m, pmodel_b,pmodel_los,
                                     orig=orig)
 
         # REFIT FOR QA PLOTS
-        msgs.info("Generate QA")
+        log.info("Generate QA")
         qa_flexure_plots(data_dir,nslits,slits,fslits,hdu)
 
-        msgs.info("Write to table")
+        log.info("Write to table")
         fslits.write(slit_table_file,overwrite=True)
 
     # ELSE READ IT IN

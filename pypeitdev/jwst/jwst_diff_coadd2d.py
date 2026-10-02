@@ -53,7 +53,7 @@ from pypeit.images import pypeitimage
 from pypeit import calibrations
 from pypeit import find_objects
 from pypeit import extraction
-from pypeit import msgs
+from pypeit import log
 from pypeit import spec2dobj
 from pypeit import coadd2d
 from pypeit.images.pypeitimage import PypeItImage
@@ -205,7 +205,7 @@ nexp = len(scifiles_1)
 # TODO: This needs to be defined by the user
 scipath = os.path.join(pypeit_output_dir, 'Science')
 if not os.path.isdir(scipath):
-    msgs.info('Creating directory for Science output: {0}'.format(scipath))
+    log.info('Creating directory for Science output: {0}'.format(scipath))
     os.makedirs(scipath)
 
 
@@ -223,7 +223,7 @@ qa_dir = os.path.join(pypeit_output_dir, 'QA')
 par['rdx']['qadir'] = 'QA'
 png_dir = os.path.join(qa_dir, 'PNGs')
 if not os.path.isdir(qa_dir):
-    msgs.info('Creating directory for QA output: {0}'.format(qa_dir))
+    log.info('Creating directory for QA output: {0}'.format(qa_dir))
     os.makedirs(qa_dir)
 if not os.path.isdir(png_dir):
     os.makedirs(png_dir)
@@ -642,7 +642,7 @@ for ii, islit in enumerate(gdslits):
         # THE FOLLOWING MIMICS THE CODE IN pypeit.save_exposure()
         scipath = os.path.join(pypeit_output_dir, 'Science')
         if not os.path.isdir(scipath):
-            msgs.info('Creating directory for Science output: {0}'.format(scipath))
+            log.info('Creating directory for Science output: {0}'.format(scipath))
 
         # Write out specobjs
         # Build header for spec2d

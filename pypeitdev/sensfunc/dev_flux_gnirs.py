@@ -7,7 +7,7 @@ import numpy as np
 import telluric
 from pypeit.core.flux_calib import apply_sensfunc
 from pypeit.core import coadd1d
-from pypeit import msgs
+from pypeit import PypeItError
 
 debug = False
 show = True
@@ -42,7 +42,7 @@ telgridfile = os.path.join(os.getenv('HOME'),'Dropbox/PypeIt_Redux/TelFit_MaunaK
 sensfile = os.path.join(os.getenv('HOME'), 'Dropbox/PypeIt_Redux/GNIRS/HIP56736_sens_tell_gnirs.fits')
 if do_sens:
     if std1dfile is None:
-        msgs.error('You need either give a std1dfile to derive sensfunc')
+        raise PypeItError('You need either give a std1dfile to derive sensfunc')
     else:
         # run telluric.sensfunc_telluric to get the sensfile
         TelSens = telluric.sensfunc_telluric(std1dfile, telgridfile, sensfile, star_type='A0', star_mag=8.78,

@@ -1,0 +1,23 @@
+# Auto-generated PypeIt input file using PypeIt version: 1.17.3
+# UTC 2025-06-06T13:41:30.951+00:00
+
+# User-defined execution parameters
+[rdx]
+    spectrograph = soar_tspec
+
+# Setup
+setup read
+Setup A: {}
+setup end
+
+# Data block
+data read
+ path ../soar_tspec/TSPEC
+                                filename |       frametype |                 ra |                 dec |    target | dispname |  decker | binning |               mjd | airmass | exptime | calib | comb_id | bkg_id
+         SPEC_DFLAT_04-02-2025_0088.fits |             dark | 290.42207083333335 |  -17.80505611111111 | DFLAT_OFF |     spec | default |     1,1 | 60710.78592460648 |    1.66 |     2.0 |     0 |      -1 |     -1
+         SPEC_DFLAT_04-02-2025_0042.fits |  pixelflat,trace |  288.8740458333333 | -17.801515555555557 |  DFLAT_ON |     spec | default |     1,1 | 60710.78163409722 |    1.66 |     2.0 |     0 |      -1 |     -1
+        SPEC_2025cy_05-02-2025_0116.fits | arc,tilt,science |  200.3033958333333 | -43.681286388888886 |    2025cy |     spec | default |     1,1 | 60711.17312774306 |    1.92 |   300.0 |     0 |       1 |     -1
+        SPEC_2025cy_05-02-2025_0117.fits | arc,tilt,science | 200.30346666666665 |  -43.67772222222222 |    2025cy |     spec | default |     1,1 | 60711.17696800926 |    1.86 |   300.0 |     0 |       2 |     -1
+SPEC_2025cy_05-02-2025_standard0120.fits |         standard | 201.50677916666663 |  -43.87497111111111 | HD_116699 |     spec | default |     1,1 | 60711.18996337963 |    1.75 |    9.25 |     0 |       3 |     -1
+SPEC_2025cy_05-02-2025_standard0121.fits |         standard |  201.5068333333333 |  -43.87135527777778 | HD_116699 |     spec | default |     1,1 | 60711.19014104167 |    1.74 |    9.25 |     0 |       4 |     -1
+data end

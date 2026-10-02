@@ -226,17 +226,17 @@ while i1 < nobj:
     obj_profiles = np.zeros((nspec,nspat,objwork), dtype=float)
     sigrej_eff = sigrej
     for iiter in range(1,niter):
-        msgs.info("Iteration # " + "{:2d}".format(iiter) + " of " + "{:2d}".format(niter))
+        log.info("Iteration # " + "{:2d}".format(iiter) + " of " + "{:2d}".format(niter))
         img_minsky = sciimg - skyimage
         for ii in range(objwork):
             iobj = group[ii]
             if iiter == 1:
                 # If this is the first iteration, print status message. Initiate profile fitting with a simple
                 # boxcar extraction.
-                msgs.info("-------------------REDUCING-------------------")
-                msgs.info("Fitting profile for obj #: " + "{:d}".format(specobjs[iobj].objid) + " of {:d}".format(nobj))
-                msgs.info("At x = {:5.2f}".format(specobjs[iobj].spat_medpos) + " on slit # {:d}".format(specobjs[iobj].slitid))
-                msgs.info("----------------------------------------------")
+                log.info("-------------------REDUCING-------------------")
+                log.info("Fitting profile for obj #: " + "{:d}".format(specobjs[iobj].objid) + " of {:d}".format(nobj))
+                log.info("At x = {:5.2f}".format(specobjs[iobj].spat_medpos) + " on slit # {:d}".format(specobjs[iobj].slitid))
+                log.info("----------------------------------------------")
                 flux = extract_boxcar(img_minsky*outmask, specobjs[iobj].trace_spat, box_rad, ycen = specobjs[iobj].trace_spec)
                 mvarimg = 1.0/(modelivar + (modelivar == 0))
                 mvar_box = extract_boxcar(mvarimg*outmask, specobjs[iobj].trace_spat, box_rad, ycen = specobjs[iobj].trace_spec)
@@ -278,8 +278,8 @@ while i1 < nobj:
                     specobjs[iobj].maskwidth = specobjs[iobj].prof_nsigma*(specobjs[iobj].fwhm/2.3548)
 
             else:
-                msgs.warn("Bad extracted wavelengths in local_skysub")
-                msgs.warn("Skipping this profile fit and continuing.....")
+                log.warning("Bad extracted wavelengths in local_skysub")
+                log.warning("Skipping this profile fit and continuing.....")
 
         sky_bmodel = np.array(0.0)
         iterbsp = 0
@@ -313,11 +313,11 @@ while i1 < nobj:
                                                                fullbkpt=fullbkpt, sigrej=sigrej_eff, npoly=npoly)
             iterbsp = iterbsp + 1
             if (sky_bmodel.any() is False) & (iterbsp <= 4):
-                msgs.warn('***************************************')
-                msgs.warn('WARNING: bspline sky-subtraction failed')
-                msgs.warn('Increasing bkpt spacing by 20%. Retry')
-                msgs.warn('Old bsp = {:5.2f}'.format(bsp_now) + '; New bsp = {:5.2f}'.format(1.2**(iterbsp)*bsp))
-                msgs.warn('***************************************')
+                log.warning('***************************************')
+                log.warning('WARNING: bspline sky-subtraction failed')
+                log.warning('Increasing bkpt spacing by 20%. Retry')
+                log.warning('Old bsp = {:5.2f}'.format(bsp_now) + '; New bsp = {:5.2f}'.format(1.2**(iterbsp)*bsp))
+                log.warning('***************************************')
 
         if(sky_bmodel.any() == True):
             skyimage.flat[isub] = sky_bmodel
@@ -346,18 +346,18 @@ while i1 < nobj:
                 sigrej_eff = np.fmax(np.sqrt(chi2_sigrej), sigrej)
                 #  Maximum sigrej is sigrej_ceil (unless this is a standard)
                 sigrej_eff = np.fmin(sigrej_eff, sigrej_ceil)
-                msgs.info('Measured effective rejection from distribution of chi^2')
-                msgs.info('Instead of rejecting sigrej = {:5.2f}'.format(sigrej) +
+                log.info('Measured effective rejection from distribution of chi^2')
+                log.info('Instead of rejecting sigrej = {:5.2f}'.format(sigrej) +
                 ', use threshold sigrej_eff = {:5.2f}'.format(sigrej_eff))
                 # Explicitly mask > sigrej outliers using the distribution of chi2 but only in the region that was actually fit.
                 # This prevents e.g. excessive masking of slit edges
                 outmask.flat[isub[igood1]] = outmask.flat[isub[igood1]] & (chi2[igood1] < chi2_sigrej) & (sciivar.flat[isub[igood1]] > 0.0)
                 nrej = outmask.flat[isub[igood1]].sum()
-                msgs.info('Iteration = {:d}'.format(iiter) + ', rejected {:d}'.format(nrej) + ' of ' + '{:d}'.format(igood1.sum()) + 'fit pixels')
+                log.info('Iteration = {:d}'.format(iiter) + ', rejected {:d}'.format(nrej) + ' of ' + '{:d}'.format(igood1.sum()) + 'fit pixels')
 
         else:
-            msgs.warn('ERROR: Bspline sky subtraction failed after 4 iterations of bkpt spacing')
-            msgs.warn('       Moving on......')
+            log.warning('ERROR: Bspline sky subtraction failed after 4 iterations of bkpt spacing')
+            log.warning('       Moving on......')
             obj_profiles= np.zeros_like(obj_profiles)
 
 
@@ -365,7 +365,7 @@ while i1 < nobj:
     # loop over the objwork objects in this grouping and perform the final extractions.
     for ii in range(objwork):
         iobj = group[ii]
-        msgs.info('Extracting for obj # {:d}'.format(iobj+1) + ' of {:d}'.format(nobj) +
+        log.info('Extracting for obj # {:d}'.format(iobj+1) + ' of {:d}'.format(nobj) +
                   ' on slit # {:d}'.format(specobjs[iobj].slitid) + ' at x = {:5.2f}'.format(np.median(specobjs[iobj].trace_spat)))
         this_profile = obj_profiles[:,:,ii]
         trace = np.outer(specobjs[iobj].trace_spat, np.ones(nspat))

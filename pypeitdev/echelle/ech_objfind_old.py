@@ -3,12 +3,13 @@
 
 import numpy as np
 from pypeit.core import extract
-from pypeit import msgs
+from pypeit import log
 from astropy.io import fits
 from astropy.table import Table
 from astropy.stats import sigma_clipped_stats
 from matplotlib import pyplot as plt
 
+from pypeit import PypeItError
 from pypeit import ginga
 from pypeit.core import pydl
 from pypeit import utils
@@ -43,8 +44,8 @@ def pca_trace(xcen, usepca = None, npca = 2, npoly_cen = 3, debug=True):
     use_order = np.invert(usepca)
     ngood = np.sum(use_order)
     if ngood < npca:
-        msgs.warn('Not enough good traces for a PCA fit: ngood = {:d}'.format(ngood) + ' is < npca = {:d}'.format(npca))
-        msgs.warn('Using the input trace for now')
+        log.warning('Not enough good traces for a PCA fit: ngood = {:d}'.format(ngood) + ' is < npca = {:d}'.format(npca))
+        log.warning('Using the input trace for now')
         return xcen
 
     pca = PCA(n_components=npca)
@@ -134,9 +135,9 @@ def ech_objfind(image, ivar, ordermask, slit_left, slit_righ,inmask=None,plate_s
         elif len(plate_scale) == 1:
             plate_scale_ord = np.full(norders, plate_scale[0])
         else:
-            msgs.error('Invalid size for plate_scale. It must either have one element or norders elements')
+            raise PypeItError('Invalid size for plate_scale. It must either have one element or norders elements')
     else:
-        msgs.error('Invalid type for plate scale')
+        raise PypeItError('Invalid type for plate scale')
 
     specmid = nspec // 2
     slit_width = slit_righ - slit_left
@@ -152,7 +153,7 @@ def ech_objfind(image, ivar, ordermask, slit_left, slit_righ,inmask=None,plate_s
     show_fits=True
     # ToDo replace orderindx with the true order number here? Maybe not. Clean up slitid and orderindx!
     for iord  in range(norders):
-        msgs.info('Finding objects on slit # {:d}'.format(iord + 1))
+        log.info('Finding objects on slit # {:d}'.format(iord + 1))
         thismask = ordermask == (iord + 1)
         inmask_iord = inmask & thismask
         specobj_dict = {'setup': 'HIRES', 'slitid': iord + 1, 'scidx': 0,'det': 1, 'objtype': 'science'}
@@ -181,12 +182,12 @@ def ech_objfind(image, ivar, ordermask, slit_left, slit_righ,inmask=None,plate_s
         group = ingroup.copy()
         uni_group, uni_ind = np.unique(group, return_index=True)
         nobj = len(uni_group)
-        msgs.info('FOF matching found {:d}'.format(nobj) + ' unique objects')
+        log.info('FOF matching found {:d}'.format(nobj) + ' unique objects')
     elif nfound==1:
         group = np.zeros(1,dtype='int')
         uni_group, uni_ind = np.unique(group, return_index=True)
         nobj = len(group)
-        msgs.warn('Only find one object no FOF matching is needed')
+        log.warning('Only find one object no FOF matching is needed')
 
     gfrac = np.zeros(nfound)
     for jj in range(nobj):
@@ -279,7 +280,7 @@ def ech_objfind(image, ivar, ordermask, slit_left, slit_righ,inmask=None,plate_s
             uni_group_trim = np.append(uni_group_trim, uni_group[iobj])
             uni_frac_trim = np.append(uni_frac_trim, uni_frac[iobj])
         else:
-            msgs.info('Purging object #{:d}'.format(iobj) + ' which does not satisfy min_snr > {:5.2f}'.format(min_snr) +
+            log.info('Purging object #{:d}'.format(iobj) + ' which does not satisfy min_snr > {:5.2f}'.format(min_snr) +
                       ' on at least nabove_min_snr >= {:d}'.format(nabove_min_snr) + ' orders')
 
     nobj_trim = np.sum(keep_obj)
@@ -301,7 +302,7 @@ def ech_objfind(image, ivar, ordermask, slit_left, slit_righ,inmask=None,plate_s
         for iord, spec in enumerate(sobjs_trim[indx]):
             spec.ech_usepca = usepca[iord]
             if usepca[iord]:
-                msgs.info('Using PCA to predict trace for object #{:d}'.format(iobj) + ' on order #{:d}'.format(iord))
+                log.info('Using PCA to predict trace for object #{:d}'.format(iobj) + ' on order #{:d}'.format(iord))
 
     sobjs_final = sobjs_trim.copy()
     # Loop over the objects one by one and adjust/predict the traces

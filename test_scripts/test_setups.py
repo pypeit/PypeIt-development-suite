@@ -71,6 +71,9 @@ Attributes:
                             _flexure:           Test setups that run pypeit_deimos_flexure.
                             _coadd1d:           Test setups that run pypeit_coadd_1dspec.
                             _coadd2d:           Test setups that run pypeit_coadd_2dspec.
+                            _setup_datacube:    Test setups that run pypeit_setup_datacube.
+                            _coadd_datacube:    Test setups that run pypeit_coadd_datacube.
+                            _extract_datacube:  Test setups that run pypeit_extract_datacube.
                             _telluric:          Test setups that run pypeit_tellfit.
                             _quick_look:        Test setups that run quick look script. The actual script run is chosen
                                                 based on the instrument.
@@ -79,8 +82,7 @@ Attributes:
 
 from . import pypeit_tests
 from .setups import all_setups 
-from enum import Enum, IntEnum, auto
-import copy
+from enum import Enum, auto
 
 class TestPhase(Enum):
     """Enumeration for specifying the test phase that a test runs in.
@@ -100,6 +102,8 @@ class TestPhase(Enum):
 
 # raw data directories for for setups that don't have the normal naming conventions
 _raw_data_dirs = {
+    'p200_ngps_u': 'p200_ngps',
+    'p200_ngps_g': 'p200_ngps',
     'p200_ngps_r': 'p200_ngps',
     'p200_ngps_i': 'p200_ngps',
 }
@@ -115,15 +119,41 @@ for instr in all_setups:
 _pypeit_setup = {
     'shane_kast_blue': {
         '600_4310_d55': [{}]},
+    'p200_ngps_u': {
+        '1.5_2x3': [{}]},
+    'p200_ngps_g': {
+        '1.5_2x3': [{}]},
     'p200_ngps_r': {
-        '1.5_2x3': [{}],
-        '1.0_2x2': [{}],
-        '0.5_2x1': [{}]},
+        '1.5_2x3': [{}]},
     'p200_ngps_i': {
-        '1.5_2x3': [{}],
-        '1.0_2x2': [{}],
-        '0.5_2x1': [{}]},        
+        '1.5_2x3': [{}]},
     }
+
+_calib_step_by_step = {
+    'shane_kast_blue': {
+        '600_4310_d55': [{"files": ["b24.fits.gz"], "detectors": ["1"],}],
+    }
+}
+
+_step_by_step = {
+    'shane_kast_blue': {
+        '600_4310_d55': [{"files": ["b24.fits.gz", "b27.fits.gz"],
+                          "detectors": ["1"]}],
+    },
+    'keck_mosfire': {
+        'Y_long': [{"files": ["m191118_0064.fits", "m191120_0043.fits"],
+                              "detectors": ["1"]}],
+    },
+    'keck_deimos': {
+        '600ZD_tilted': [{"files": ["d0225_0054.fits"],
+                          "detectors": ["(1,5)"] }],
+    },
+}
+
+_calib_only = {
+        'keck_deimos': {
+            '600ZD_M_6500': [dict(calib_only=True)]},
+}
 
 _additional_reduce = {
     'keck_lris_red': {
@@ -134,26 +164,28 @@ _additional_reduce = {
 
 _sensfunc = {
     'shane_kast_blue': {
-        '600_4310_d55': [dict(std_file='spec1d_*Feige66*.fits')]},
+        '600_4310_d55': [dict(std_file='spec1d_*b24-Feige66*.fits')]},
     'shane_kast_red': {
-        '600_7500_d55_ret': [dict(std_file='spec1d_*G191b2b*.fits',
+        '600_7500_d55_ret': [dict(std_file='spec1d_*r136-G191b2b*.fits',
                                   sens_file="shane_kast_red_600_7500_d55_ret.sens")]},
     'gemini_gnirs_echelle': {
         '32_SB_SXD': [dict(std_file='spec1d_*S0206-HIP62745*.fits',
                            sens_file='gemini_gnirs_echelle_32_sb_sxd.sens')]},
     'gemini_gmos': {
-        'GS_HAM_R400_860': [dict(std_file='spec1d_**GD71*.fits',
+        'GS_HAM_R400_860': [dict(std_file='spec1d_*S0316-GD71*.fits',
                                  sens_file='gemini_gmos_gs_ham_r400_860.sens')],
-        'GS_HAM_R400_700': [dict(std_file='spec1d_**LTT7379*.fits',
-                                 sens_file='gemini_gmos_gs_ham_r400_700.sens')]},
+        'GS_HAM_R400_700': [dict(std_file='spec1d_*S0029-LTT7379*.fits',
+                                 sens_file='gemini_gmos_gs_ham_r400_700.sens')],
+    'GS_HAM_R400_795_SENS': [dict(std_file='spec1d_*LTT3218*.fits',
+                             sens_file='gemini_gmos_gs_ham_r400_795_sens.sens')]},
     'keck_deimos': {
-        '900ZD_LVM_5500': [dict(std_file='spec1d_*Feige110*.fits',
+        '900ZD_LVM_5500': [dict(std_file='spec1d_*20110729.54545-Feige110*.fits',
                                 sens_file='keck_deimos_900zd_lvm_5500.sens')]},
 
     'keck_hires': {
-        'J0100+2802_H204Hr_RED_C1_ECH_0.75_XD_1.69_1x2': [dict(std_file='spec1d_*20151214.16343*.fits',
+        'J0100+2802_H204Hr_RED_C1_ECH_0.75_XD_1.69_1x2': [dict(std_file='spec1d_*20151214.16343-Feige110*.fits',
                                                           sens_file='keck_hires_RED_C1_ECH_0.75_XD_1.69_1x2_Feige110.sens')],
-        'J0100+2802_H204Hr_RED_C1_ECH_-0.82_XD_1.62_1x2': [dict(std_file='spec1d_*20151214.16715*.fits',
+        'J0100+2802_H204Hr_RED_C1_ECH_-0.82_XD_1.62_1x2': [dict(std_file='spec1d_*20151214.16715-Feige110*.fits',
                                                            sens_file='keck_hires_RED_C1_ECH_-0.82_XD_1.62_1x2_Feige110.sens')],
                      },
     'keck_mosfire': {
@@ -164,9 +196,9 @@ _sensfunc = {
                                      sens_file='keck_lris_red_mark4_long_600_10000_d680.sens')]
         },
     'ldt_deveny': {
-        'DV2': [dict(std_file='spec1d_**BD+33d2642**.fits',
+        'DV2': [dict(std_file='spec1d_*20230423.0018-BD+33d2642*.fits',
                      sens_file='ldt_deveny_dv2.sens')],
-        'DV6': [dict(std_file='spec1d**G191-B2B**.fits',
+        'DV6': [dict(std_file='spec1d*20220221.0066-G191-B2B*.fits',
                      sens_file='ldt_deveny_dv6.sens')]
         },
     'vlt_xshooter': {'UVB_1x1_Feige110': [dict(std_file='spec1d_*2018-06-23T10:03:53.765*.fits',
@@ -229,6 +261,8 @@ _coadd1d = {
 _coadd2d = {
     'gemini_gnirs_echelle': {
         '32_SB_SXD': [dict(coadd_file=True)]},
+    'gemini_gmos': {
+        'GS_HAM_B600_MOS': [dict(coadd_file=True)]},
     'keck_lris_blue': {
         'multi_600_4000_d560': [dict(coadd_file=True)]},
     'vlt_xshooter': {
@@ -240,7 +274,32 @@ _coadd2d = {
     'keck_nires': {
         'ABBA_wstandard': [dict(coadd_file=True)]},
     'keck_nires': {
-        'ABBA_nostandard_faint': [dict(coadd_file=True)]}
+        'ABBA_nostandard_faint': [dict(coadd_file=True)]},
+    'ldt_deveny': {
+        'DV1': [dict(coadd_file=True)]},
+    'soar_goodman_blue': {
+        'M1': [dict(coadd_file=True)]}
+    }
+
+_setup_datacube = {
+    'keck_kcwi': {
+        'large_bl': [dict(target='SDSSJ2222 2745'), dict(target='gd50')]},
+    'keck_kcrm': {
+        'large_rl': [dict(target='SDSSJ2222 2745'), dict(target='gd50')]},
+    }
+
+_coadd_datacube = {
+    'keck_kcwi': {
+        'large_bl': [dict(target='SDSSJ2222 2745'), dict(target='gd50')]},
+    'keck_kcrm': {
+        'large_rl': [dict(target='SDSSJ2222 2745'), dict(target='gd50')]},
+    }
+
+_extract_datacube = {
+    'keck_kcwi': {
+        'large_bl': [dict(target='gd50')]},
+    'keck_kcrm': {
+        'large_rl': [dict(target='gd50')]},
     }
 
 _telluric = {
@@ -421,12 +480,21 @@ _quick_look = {
 all_tests = [{'factory': pypeit_tests.PypeItSetupTest,
               'type':    TestPhase.PREP,
               'setups':  _pypeit_setup},
+             {'factory': pypeit_tests.PypeItCalibStepByStep,
+              'type':    TestPhase.REDUCE,
+              'setups':  _calib_step_by_step},
+             {'factory': pypeit_tests.PypeItReduceTest,
+              'type':    TestPhase.REDUCE,
+              'setups':  _calib_only},
              {'factory': pypeit_tests.PypeItReduceTest,
               'type':    TestPhase.REDUCE,
               'setups':  _reduce_setups},
              {'factory': pypeit_tests.PypeItReduceTest,
               'type':    TestPhase.REDUCE,
               'setups':  _additional_reduce},
+             {'factory': pypeit_tests.PypeItReduceStepByStepTest,
+              'type':    TestPhase.REDUCE,
+              'setups':  _step_by_step},
              {'factory': pypeit_tests.PypeItSensFuncTest,
               'type':    TestPhase.AFTERBURN,
               'setups':  _sensfunc},
@@ -448,6 +516,15 @@ all_tests = [{'factory': pypeit_tests.PypeItSetupTest,
              {'factory': pypeit_tests.PypeItCoadd2DTest,
               'type':    TestPhase.AFTERBURN,
               'setups':  _coadd2d},
+             {'factory': pypeit_tests.PypeItSetupDataCubeTest,
+              'type':    TestPhase.AFTERBURN,
+              'setups':  _setup_datacube},
+             {'factory': pypeit_tests.PypeItCoaddDataCubeTest,
+              'type':    TestPhase.AFTERBURN,
+              'setups':  _coadd_datacube},
+             {'factory': pypeit_tests.PypeItExtractDataCubeTest,
+              'type':    TestPhase.AFTERBURN,
+              'setups':  _extract_datacube},
              {'factory': pypeit_tests.PypeItTelluricTest,
               'type':    TestPhase.AFTERBURN,
               'setups':  _telluric},

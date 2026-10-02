@@ -14,7 +14,7 @@ import scipy
 from scipy.optimize import curve_fit
 from astropy.io import fits
 from matplotlib import pyplot as plt
-from pypeit import msgs
+from pypeit import log
 from pypeit.core import arc
 
 
@@ -129,7 +129,7 @@ def xcorr_shift_stretch(inspec1, inspec2, smooth = 5.0, shift_mnmx = (-0.05,0.05
     #corr = scipy.signal.correlate(y1, y2, mode='same')
 
     if not result.success:
-        msgs.warn('Fit for shift and stretch did not converge!')
+        log.warning('Fit for shift and stretch did not converge!')
 
     if debug:
         x1 = np.arange(nspec)

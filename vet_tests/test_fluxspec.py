@@ -44,7 +44,7 @@ def test_sensfunc(kast_blue_files, request):
     par = spectrograph.default_pypeit_par()
     std_file, sci_file = kast_blue_files
     # Instantiate
-    sensFunc = sensfunc.UVISSensFunc(std_file, sens_file, par['sensfunc'])
+    sensFunc = sensfunc.UVISSensFunc([std_file], sens_file, par['sensfunc'])
     # Test the standard loaded
     assert sensFunc.meta_spec['BINNING'] == '1,1'
     assert sensFunc.meta_spec['TARGET'] == 'Feige 66'

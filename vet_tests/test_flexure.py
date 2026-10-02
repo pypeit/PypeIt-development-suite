@@ -3,7 +3,7 @@ import numpy as np
 from pypeit import spec2dobj
 from pypeit.wavetilts import WaveTilts
 from pypeit.images.buildimage import TiltImage
-from pypeit.core import flexure
+from pypeit import multislit_flexure
 from pypeit.spectrographs.util import load_spectrograph
 from pypeit import inputfiles
 
@@ -39,7 +39,7 @@ def test_spat_flexure_science(redux_out):
     for spec, setup, det, sigdet, maxlag, flex in zip(specs, setups, detnames, flexure_sigdet, flexure_maxlag, spat_flexure):
 
         # Define the path with the raw data
-        data_redux = Path(redux_out).resolve() / spec / setup
+        data_redux = Path(redux_out).absolute() / spec / setup
         assert data_redux.exists(), f'TEST ERROR: REDUX data path does not exist for {spec}/{setup}'
 
         # find pypeit file
@@ -71,7 +71,7 @@ def test_spat_flexure_tilts(redux_out):
     setup = 'long_600_10000_d680'
 
     # Define the path with the raw data
-    data_redux = Path(redux_out).resolve() / spec / setup
+    data_redux = Path(redux_out).absolute() / spec / setup
     assert data_redux.exists(), f'TEST ERROR: REDUX data path does not exist for {spec}/{setup}'
 
     # find pypeit file
@@ -113,7 +113,7 @@ def test_flex_multi(redux_out):
                              'Science', 
                              'spec1d_DE.20100913.22358-CFHQS1_DEIMOS_20100913T061231.334.fits')
 
-    msFlex = flexure.MultiSlitFlexure(s1dfile=spec1d_file) 
+    msFlex = multislit_flexure.MultiSlitFlexure(s1dfile=spec1d_file) 
     # Parameters
     keck_deimos = load_spectrograph('keck_deimos')
     par = keck_deimos.default_pypeit_par()
@@ -135,7 +135,7 @@ def test_flex_multi(redux_out):
     msFlex.to_file(outfile, overwrite=True)
 
     # Read
-    msFlex2 = flexure.MultiSlitFlexure.from_file(outfile)
+    msFlex2 = multislit_flexure.MultiSlitFlexure.from_file(outfile)
     # Check
     assert np.array_equal(msFlex2.fit_b, msFlex.fit_b), 'Bad read'
 

@@ -14,7 +14,7 @@ from astropy.stats import sigma_clip
 
 # PYPEIT imports
 from pypeit.core import pydl
-from pypeit import msgs
+from pypeit import log
 
 def prettyplot():
     # set some plotting parameters
@@ -94,7 +94,7 @@ def fit2darc(all_wv,
         # set some plotting parameters
         prettyplot()
         plt.figure(figsize=(7,5))
-        msgs.info("Plot identified lines")
+        log.info("Plot identified lines")
         cm = plt.cm.get_cmap('RdYlBu_r')
         sc = plt.scatter(t_nrm, pix_nrm,
                          c=all_wv/10000., cmap=cm)
@@ -106,7 +106,7 @@ def fit2darc(all_wv,
         plt.title(r'Location of the identified lines')
         plt.show()
 
-    msgs.info("First iteration")
+    log.info("First iteration")
     # all lines have the same weight
     invvar = np.ones(len(all_wv), dtype=np.float64)
     all_wv_order = all_wv * t
@@ -157,12 +157,12 @@ def fit2darc(all_wv,
         plt.ylabel(r'Residuals [$\AA$]')
         plt.show()
 
-    msgs.info("Second iteration")
+    log.info("Second iteration")
     # Mask Values
     # msk = True means a bad value
     msk = sigma_clip(wv_mod-all_wv_order, sigma=sigmarjct, cenfunc=np.ma.mean).mask
     if np.any(msk):
-        msgs.info("Rejecting: {} of {} lines.".format(len(msk[np.where(msk == True)]),len(msk)))
+        log.info("Rejecting: {} of {} lines.".format(len(msk[np.where(msk == True)]),len(msk)))
         invvar[msk] = 0.
         work2di = np.transpose(work2d * np.outer(np.ones(nocoeff*nycoeff,
                                                  dtype=np.float64),
@@ -210,13 +210,13 @@ def fit2darc(all_wv,
             plt.ylabel(r'Residuals [$\AA$]')
             plt.show()
     else:
-        msgs.info("No line rejected")
+        log.info("No line rejected")
 
     # Check quality
     gd_wv = invvar > 0.
     resid = (wv_mod[gd_wv]-all_wv_order[gd_wv])
     fin_rms = np.sqrt(np.mean(resid**2))
-    msgs.info("RMS: {0:.5f} Ang*Order#".format(fin_rms))
+    log.info("RMS: {0:.5f} Ang*Order#".format(fin_rms))
 
     # Plot QA
 

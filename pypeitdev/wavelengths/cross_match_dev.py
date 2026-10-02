@@ -5,6 +5,8 @@ import numpy as np
 from pypeit import wavecalib
 from pypeit.core.wavecal import autoid, waveio
 from pypeit import utils
+from pypeit import log
+from pypeit import PypeItError
 
 
 
@@ -150,7 +152,7 @@ def reidentify_old(spec, wv_calib_arxiv, lamps, nreid_min, detections=None, cc_t
     narxiv = len(wv_calib_arxiv)
     nspec_arxiv = wv_calib_arxiv['0']['spec'].size
     if nspec_arxiv != nspec:
-        msgs.error('Different spectral binning is not supported yet but it will be soon')
+        raise PypeItError('Different spectral binning is not supported yet but it will be soon')
 
     # If the detections were not passed in find the lines in each spectrum
     if detections is None:
@@ -160,7 +162,7 @@ def reidentify_old(spec, wv_calib_arxiv, lamps, nreid_min, detections=None, cc_t
             detections[str(islit)] = [tcent[icut].copy(), ecent[icut].copy()]
     else:
         if len(detections) != nslits:
-            msgs.error('Detections must be a dictionary with nslit elements')
+            raise PypeItError('Detections must be a dictionary with nslit elements')
 
     # For convenience pull out all the spectra from the wv_calib_arxiv archive
     spec_arxiv = np.zeros((nspec, narxiv))
@@ -199,7 +201,7 @@ def reidentify_old(spec, wv_calib_arxiv, lamps, nreid_min, detections=None, cc_t
         stretch_vec = np.zeros(narxiv)
         ccorr_vec = np.zeros(narxiv)
         for iarxiv in range(narxiv):
-            msgs.info('Cross-correlating slit # {:d}'.format(islit + 1) + ' with arxiv slit # {:d}'.format(iarxiv + 1))
+            log.info('Cross-correlating slit # {:d}'.format(islit + 1) + ' with arxiv slit # {:d}'.format(iarxiv + 1))
             # Match the peaks between the two spectra. This code attempts to compute the stretch if cc > cc_thresh
             success, shift_vec[iarxiv], stretch_vec[iarxiv], ccorr_vec[iarxiv], _, _ = \
                 wvutils.xcorr_shift_stretch(spec[:, islit], spec_arxiv[:, iarxiv], cc_thresh=cc_thresh, seed = random_state,
@@ -338,9 +340,9 @@ def reidentify_old(spec, wv_calib_arxiv, lamps, nreid_min, detections=None, cc_t
             continue
         # Is the RMS below the threshold?
         if final_fit['rms'] > rms_threshold:
-            msgs.warn('---------------------------------------------------' + msgs.newline() +
-                      'Reidentify report for slit {0:d}/{1:d}:'.format(islit + 1, nslits) + msgs.newline() +
-                      '  Poor RMS ({0:.3f})! Need to add additional spectra to arxiv to improve fits'.format(final_fit['rms']) + msgs.newline() +
+            log.warning('---------------------------------------------------\n' +
+                      'Reidentify report for slit {0:d}/{1:d}:\n'.format(islit + 1, nslits) +
+                      '  Poor RMS ({0:.3f})! Need to add additional spectra to arxiv to improve fits\n'.format(final_fit['rms']) +
                       '---------------------------------------------------')
             bad_slits = np.append(bad_slits, islit)
             # Note this result in new_bad_slits, but store the solution since this might be the best possible

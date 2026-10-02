@@ -1,0 +1,50 @@
+# Auto-generated PypeIt input file using PypeIt version: 1.18.2.dev109+gf825e22d5
+# UTC 2025-10-31T23:12:19.959+00:00
+
+# User-defined execution parameters
+[rdx]
+    spectrograph = gemini_gmos_south_ham
+[calibrations]
+    [[slitedges]]
+        bound_detector = True
+    [[flatfield]]
+        slit_illum_finecorr = False
+[reduce]
+    [[findobj]]
+        snr_thresh = 50.0 
+        maxnumber_sci = 1
+    [[extraction]]
+        use_2dmodel_mask = False
+        boxcar_radius = 3.
+        model_full_slit = True
+    [[skysub]]
+       mask_by_boxcar = True
+
+# Setup
+setup read
+Setup A:
+  binning: 2,2
+  datasec: '"[1:256,1:512]"'
+  decker: 1.5arcsec
+  dichroic: GG455_G0329
+  dispangle: 795.0
+  dispname: R400+_G5325
+setup end
+
+# Data block 
+data read
+ path PypeIt-development-suite/RAW_DATA/gemini_gmos/GS_HAM_R400_795_SENS
+               filename |                 frametype |               ra |        dec |   target |    dispname |    decker | binning |                mjd |          airmass | exptime |    dichroic | dispangle |       datasec | dithoff | calib
+S20221207S0324.fits.bz2 |                      bias |          -9999.0 |    -9999.0 |     Bias | R400+_G5325 | 1.5arcsec |     2,2 |  59920.41719733977 |   1.000000367394 |     0.0 | GG455_G0329 |     795.0 | [1:256,1:512] |     0.0 |   0,1
+S20221207S0325.fits.bz2 |                      bias |          -9999.0 |    -9999.0 |     Bias | R400+_G5325 | 1.5arcsec |     2,2 | 59920.417368444796 |   1.000000367394 |     0.0 | GG455_G0329 |     795.0 | [1:256,1:512] |     0.0 |   0,1
+S20221207S0326.fits.bz2 |                      bias |          -9999.0 |    -9999.0 |     Bias | R400+_G5325 | 1.5arcsec |     2,2 |  59920.41753973975 |   1.000000367394 |     0.0 | GG455_G0329 |     795.0 | [1:256,1:512] |     0.0 |   0,1
+
+S20221207S0233.fits.bz2 |                  arc,tilt |          -9999.0 |    -9999.0 |     CuAr | R400+_G5325 | 1.5arcsec |     2,2 |  59920.37599672341 | 1.00000036726324 |    16.0 | GG455_G0329 |     795.0 | [1:256,1:512] |     0.0 |     0
+S20221207S0184.fits.bz2 | pixelflat,illumflat,trace | 130.387129166667 | -32.945275 | GCALflat | R400+_G5325 | 1.5arcsec |     2,2 |  59920.31386072945 | 1.01785441389718 |     1.0 | GG455_G0329 |     795.0 | [1:256,1:512] |     0.0 |     0
+S20221207S0183.fits.bz2 |                   science | 130.387129166667 | -32.945275 |  LTT3218 | R400+_G5325 | 1.5arcsec |     2,2 |   59920.3128165527 | 1.01856807488637 |    60.0 | GG455_G0329 |     795.0 | [1:256,1:512] |  -10.82 |     0
+
+S20221208S0010.fits.bz2 |                  arc,tilt |          -9999.0 |    -9999.0 |     CuAr | R400+_G5325 | 1.5arcsec |     2,2 |  59920.80988657799 | 1.00000036504643 |    16.0 | GG455_G0329 |     750.0 | [1:256,1:512] |     0.0 |     1
+S20221207S0186.fits.bz2 | pixelflat,illumflat,trace | 130.387129166667 | -32.945275 | GCALflat | R400+_G5325 | 1.5arcsec |     2,2 |  59920.31605961111 | 1.01573407241058 |     1.0 | GG455_G0329 |     750.0 | [1:256,1:512] |     0.0 |     1
+S20221207S0185.fits.bz2 |                   science | 130.387129166667 | -32.945275 |  LTT3218 | R400+_G5325 | 1.5arcsec |     2,2 | 59920.315009261714 | 1.01640555460197 |    60.0 | GG455_G0329 |     750.0 | [1:256,1:512] |  -10.82 |     1
+data end
+

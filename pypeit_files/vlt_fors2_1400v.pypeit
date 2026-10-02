@@ -1,0 +1,34 @@
+# Auto-generated PypeIt input file using PypeIt version: 1.17.4.dev311+gd85e4da7b
+# UTC 2025-10-22T07:31:54.875+00:00
+
+# User-defined execution parameters
+[rdx]
+    spectrograph = vlt_fors2
+
+# Setup
+setup read
+Setup C:
+  decker: lSlit1_0arcsec
+  detector: CHIP1
+  dispangle: 520.3
+  dispname: GRIS_1400V
+setup end
+
+# Data block 
+data read
+ path /Users/djones/Downloads/1400V
+                          filename |                 frametype |        ra |     dec |      target |   dispname |         decker | binning |            mjd | airmass |  exptime | dispangle | detector | calib
+FORS2.2010-07-22T11:24:07.773.fits |                  arc,tilt |      None |    None |   WAVE,LAMP | GRIS_1400V | lSlit1_0arcsec |     2,2 | 55399.47508996 |    None | 199.9923 |     520.3 |    CHIP1 |     2
+FORS2.2010-07-22T13:41:24.497.fits |                      bias |      None |    None |        BIAS |       None |           None |     2,2 | 55399.57042242 |    None |      0.0 |      None |    CHIP1 |     2
+FORS2.2010-07-22T13:41:57.920.fits |                      bias |      None |    None |        BIAS |       None |           None |     2,2 | 55399.57080926 |    None |      0.0 |      None |    CHIP1 |     2
+FORS2.2010-07-22T13:42:31.924.fits |                      bias |      None |    None |        BIAS |       None |           None |     2,2 | 55399.57120282 |    None |      0.0 |      None |    CHIP1 |     2
+FORS2.2010-07-22T13:43:05.906.fits |                      bias |      None |    None |        BIAS |       None |           None |     2,2 | 55399.57159614 |    None |      0.0 |      None |    CHIP1 |     2
+FORS2.2010-07-22T13:43:39.929.fits |                      bias |      None |    None |        BIAS |       None |           None |     2,2 | 55399.57198992 |    None |      0.0 |      None |    CHIP1 |     2
+FORS2.2010-07-22T11:15:38.777.fits | pixelflat,illumflat,trace |      None |    None |   FLAT,LAMP | GRIS_1400V | lSlit1_0arcsec |     2,2 | 55399.46919881 |    None |  44.9898 |     520.3 |    CHIP1 |     2
+FORS2.2010-07-22T11:17:09.115.fits | pixelflat,illumflat,trace |      None |    None |   FLAT,LAMP | GRIS_1400V | lSlit1_0arcsec |     2,2 | 55399.47024439 |    None |  45.0052 |     520.3 |    CHIP1 |     2
+FORS2.2010-07-22T11:18:39.134.fits | pixelflat,illumflat,trace |      None |    None |   FLAT,LAMP | GRIS_1400V | lSlit1_0arcsec |     2,2 | 55399.47128627 |    None |  45.0024 |     520.3 |    CHIP1 |     2
+FORS2.2010-07-22T11:20:09.151.fits | pixelflat,illumflat,trace |      None |    None |   FLAT,LAMP | GRIS_1400V | lSlit1_0arcsec |     2,2 | 55399.47232814 |    None |  44.9898 |     520.3 |    CHIP1 |     2
+FORS2.2010-07-22T11:21:39.170.fits | pixelflat,illumflat,trace |      None |    None |   FLAT,LAMP | GRIS_1400V | lSlit1_0arcsec |     2,2 | 55399.47337002 |    None |  45.0026 |     520.3 |    CHIP1 |     2
+FORS2.2010-07-22T09:37:14.361.fits |                   science | 10.077456 | 0.91609 | J00403+0055 | GRIS_1400V | lSlit1_0arcsec |     2,2 | 55399.40086066 |   1.111 | 699.9731 |     520.3 |    CHIP1 |     2
+data end
+

@@ -15,7 +15,8 @@ import copy
 from astropy.io import fits
 
 from pypeit import pypeit
-from pypeit import par, msgs
+from pypeit import par, log
+from pypeit import PypeItError
 from pypeit import pypeitsetup
 from pypeit import wavecalib
 from pypeit import wavetilts
@@ -256,7 +257,7 @@ def main(args):
 
     # Calibration Master directory
     if args.master_dir is None:
-        msgs.error("You need to set an Environmental variable MOSFIRE_MASTERS that points at the Master Calibs")
+        raise PypeItError("You need to set an Environmental variable MOSFIRE_MASTERS that points at the Master Calibs")
 
     # Define some hard wired master files here to be later parsed out of the directory
     slit_masterframe_name = os.path.join(args.master_dir, 'MasterSlits_D_1_01.fits.gz')
@@ -312,7 +313,7 @@ def main(args):
         spec2d_list = [spec2DObj_A, spec2DObj_B]
     elif mode == 'stack':
         if len(A_files) != len(B_files):
-            msgs.error('For mode == stack, the number of A and B images must be equal')
+            raise PypeItError('For mode == stack, the number of A and B images must be equal')
 
         spec2d_list =[]
         for iimg, (A_img, B_img) in enumerate(zip(A_files, B_files)):
@@ -321,31 +322,31 @@ def main(args):
             spec2d_list += [spec2DObj_A, spec2DObj_B]
 
     else:
-        msgs.error('Unrecognized mode')
+        raise PypeItError('Unrecognized mode')
 
     # Parse the offset information out of the headers. TODO in the future get this out of fitstable
     dither_pattern_A, dither_id_A, offset_arcsec_A = parse_dither_pattern(A_files, spectrograph.primary_hdrext)
     dither_pattern_B, dither_id_B, offset_arcsec_B = parse_dither_pattern(B_files, spectrograph.primary_hdrext)
     # Print out a report on the offsets
-    msg_string = msgs.newline()  +     '****************************************************'
-    msg_string += msgs.newline() +     ' Summary of offsets for dither pattern:   {:s}'.format(dither_pattern_A[0])
-    msg_string += msgs.newline() +     '****************************************************'
-    msg_string += msgs.newline() +     'Position     filename         arcsec    pixels    '
-    msg_string += msgs.newline() +     '----------------------------------------------------'
+    msg_string = '\n****************************************************'
+    msg_string += '\n Summary of offsets for dither pattern:   {:s}'.format(dither_pattern_A[0])
+    msg_string += '\n****************************************************'
+    msg_string += '\nPosition     filename         arcsec    pixels    '
+    msg_string += '\n----------------------------------------------------'
     for iexp, file in enumerate(A_files):
-        msg_string += msgs.newline() + '    A    {:s}   {:6.2f}    {:6.2f}'.format(
+        msg_string += '\n    A    {:s}   {:6.2f}    {:6.2f}'.format(
             os.path.basename(file), offset_arcsec_A[iexp], offset_arcsec_A[iexp]/sciImg.detector.platescale)
     for iexp, file in enumerate(B_files):
-        msg_string += msgs.newline() + '    B    {:s}   {:6.2f}    {:6.2f}'.format(
+        msg_string += '\n    B    {:s}   {:6.2f}    {:6.2f}'.format(
             os.path.basename(file), offset_arcsec_B[iexp], offset_arcsec_B[iexp]/sciImg.detector.platescale)
-    msg_string += msgs.newline() +     '****************************************************'
-    msgs.info(msg_string)
+    msg_string += '\n****************************************************'
+    log.info(msg_string)
 
     #offset_dith_pix = offset_dith_pix = offset_arcsec_A[0]/sciImg.detector.platescale
     offsets_dith_pix = (np.array([0.0,np.mean(offset_arcsec_B) - np.mean(offset_arcsec_A)]))/sciImg.detector.platescale
     if args.offset is not None:
         offsets_pixels = np.array([0.0, args.offset])
-        msgs.info('Using user specified offsets instead: {:5.2f}'.format(args.offset))
+        log.info('Using user specified offsets instead: {:5.2f}'.format(args.offset))
     else:
         offsets_pixels = offsets_dith_pix
 

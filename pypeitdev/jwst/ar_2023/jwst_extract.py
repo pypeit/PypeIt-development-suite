@@ -23,7 +23,8 @@ from pypeit.utils import inverse
 from pypeit.core import coadd, combine
 
 from pypeit.spectrographs.util import load_spectrograph
-from pypeit import msgs
+from pypeit import log
+from pypeit import PypeItError
 from pypeit import spec2dobj
 from pypeit import coadd2d
 from pypeit.images.pypeitimage import PypeItImage
@@ -43,15 +44,15 @@ if not jwst_rdx_dir.exists():
 pypeit_rdx_dir = raw_dir.parent / 'pypeit_rdx_2'
 pypeit_sci_dir = pypeit_rdx_dir / 'Science'
 if not pypeit_sci_dir.exists():
-    msgs.info(f'Creating directory for Science output: {pypeit_sci_dir}')
+    log.info(f'Creating directory for Science output: {pypeit_sci_dir}')
     pypeit_sci_dir.mkdir(parents=True)
 pypeit_qa_dir = pypeit_rdx_dir / 'QA'
 if not pypeit_qa_dir.exists():
-    msgs.info(f'Creating directory for QA output: {pypeit_qa_dir}')
+    log.info(f'Creating directory for QA output: {pypeit_qa_dir}')
     pypeit_qa_dir.mkdir(parents=True)
 pypeit_png_dir = pypeit_qa_dir / 'PNGs'
 if not pypeit_png_dir.exists():
-    msgs.info(f'Creating directory for QA output: {pypeit_qa_dir}')
+    log.info(f'Creating directory for QA output: {pypeit_qa_dir}')
     pypeit_png_dir.mkdir(parents=True)
 
 # PypeIt spectrograph and parameters
@@ -167,14 +168,14 @@ out_root = f'{exp_seq}_{dither[0][0]}-{dither[0][-1]}'
 msa_files = np.array([jwst_rdx_dir / f'{b}_msa_flagging.fits' for b in basenames.flat]
                      ).reshape(ndet,nexp)
 if not all([f.exists for f in msa_files.flat]):
-    msgs.error('Missing msa_flagging files.')
+    raise PypeItError('Missing msa_flagging files.')
 flat_files = np.array([jwst_rdx_dir / f'{b}_interpolatedflat.fits' for b in basenames.flat]
                       ).reshape(ndet,nexp)
 if not all([f.exists for f in flat_files.flat]):
-    msgs.error('Missing interpolatedflat files.')
+    raise PypeItError('Missing interpolatedflat files.')
 cal_files = np.array([jwst_rdx_dir / f'{b}_cal.fits' for b in basenames.flat]).reshape(ndet,nexp)
 if not all([f.exists for f in cal_files.flat]):
-    msgs.error('Missing cal files.')
+    raise PypeItError('Missing cal files.')
 
 # Create arrays to hold JWST spec2, but only load the files when they're needed
 msa_data = np.empty((ndet, nexp), dtype=object)
@@ -183,7 +184,7 @@ cal_data = np.empty((ndet, nexp), dtype=object)
 
 # Connect to the ginga window
 if show:
-    msgs.info('Connecting to ginga')
+    log.info('Connecting to ginga')
     display.connect_to_ginga(raise_err=True, allow_new=True)
 
 # Loop over all slits, create a list of spec2d objects and run 2d coadd
@@ -191,25 +192,25 @@ for ii, source in enumerate(sources):
     spec2d_list = []
     offsets_pixels = []
     if show:
-        msgs.info('Clearing ginga')
+        log.info('Clearing ginga')
         display.clear_all()
     # Loop over detectors, and exposures
     for idet in range(ndet):
         for iexp in range(nexp):
             if cal_data[idet,iexp] is None:
-                msgs.info(f'Loading {cal_files[idet,iexp]}')
+                log.info(f'Loading {cal_files[idet,iexp]}')
                 cal_data[idet,iexp] = datamodels.open(cal_files[idet,iexp])
             indx = np.where([s.source_name == source for s in cal_data[idet,iexp].slits])[0]
             if indx.size == 0:
-                msgs.info(f'Source {source} is not observed by {basenames[idet,iexp]}.')
+                log.info(f'Source {source} is not observed by {basenames[idet,iexp]}.')
                 continue
 
             # Load the rest of the needed JWST spec2 data
             if msa_data[idet,iexp] is None:
-                msgs.info(f'Loading {msa_files[idet,iexp]}')
+                log.info(f'Loading {msa_files[idet,iexp]}')
                 msa_data[idet,iexp] = datamodels.open(msa_files[idet,iexp])
             if flat_data[idet,iexp] is None:
-                msgs.info(f'Loading {flat_files[idet,iexp]}')
+                log.info(f'Loading {flat_files[idet,iexp]}')
                 flat_data[idet,iexp] = datamodels.open(flat_files[idet,iexp])
 
             jj = indx[0]
@@ -234,7 +235,7 @@ for ii, source in enumerate(sources):
 
             # If there are not good pixels continue
             if not np.any(gpm):
-                msgs.info(f'No good pixels for {source} in exposure {basenames[idet,iexp]}')
+                log.info(f'No good pixels for {source} in exposure {basenames[idet,iexp]}')
                 continue
 
             # Instantiate
@@ -254,10 +255,10 @@ for ii, source in enumerate(sources):
                 bkg_count_scale = [None]*len(ibkg)
                 for i, _ibkg in enumerate(ibkg):
                     if cal_data[idet,_ibkg] is None:
-                        msgs.info(f'Loading {cal_files[idet,_ibkg]}')
+                        log.info(f'Loading {cal_files[idet,_ibkg]}')
                         cal_data[idet,_ibkg] = datamodels.open(cal_files[idet,_ibkg])
                     if msa_data[idet,_ibkg] is None:
-                        msgs.info(f'Loading {msa_files[idet,_ibkg]}')
+                        log.info(f'Loading {msa_files[idet,_ibkg]}')
                         msa_data[idet,_ibkg] = datamodels.open(msa_files[idet,_ibkg])
                     # Process the background image using the same calibrations as the science
                     t_eff = cal_data[idet,_ibkg].meta.exposure.effective_exposure_time
@@ -269,7 +270,7 @@ for ii, source in enumerate(sources):
                 if len(ibkg) > 1:
                     _bkg = np.array(bkg)
                     if _bkg.ndim != 3:
-                        msgs.error('bad shape')
+                        raise PypeItError('bad shape')
                     weights = np.ones(_bkg.shape[0], dtype=float)/_bkg.shape[0]
                     img_list_out, var_list_out, gpm, nstack \
                         = combine.weighted_combine(weights,
@@ -292,7 +293,7 @@ for ii, source in enumerate(sources):
 
                 # If there are not good pixels continue
                 if not np.any(bkg_gpm):
-                    msgs.info(f'No good pixels for {source} in background exposure '
+                    log.info(f'No good pixels for {source} in background exposure '
                               f'{basenames[idet,_ibkg]}')
                     continue
 
@@ -385,7 +386,7 @@ for ii, source in enumerate(sources):
                                                  chname=f'barshadow_{detectors[idet]}')
 
     if len(spec2d_list) == 0:
-        msgs.info(f'No data found for {source}.')
+        log.info(f'No data found for {source}.')
         continue
 
     basename = f'{out_root}_{source}'

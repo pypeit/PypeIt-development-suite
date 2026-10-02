@@ -6,7 +6,8 @@ from astropy.io import fits
 from pypeit.core import telluric, save, load
 from pypeit.core.flux_calib import apply_sensfunc
 from pypeit.core import coadd1d
-from pypeit import msgs
+from pypeit import log
+from pypeit import PypeItError
 
 basedir = os.getenv('HOME')
 #basedir = '/d2/Feige'
@@ -34,8 +35,8 @@ def get_sens_from_file(std1dfile=None, instrument='GNIRS', star_type=None, star_
                                    'Dropbox/PypeIt_Redux/XSHOOTER/TelFit_Paranal_NIR_9800_25000_R25000.fits')
     else:
         telgridfile = os.path.join(basedir, 'Dropbox/PypeIt_Redux/TelFit_MaunaKea_3100_26100_R20000.fits')
-        msgs.warn('No telluric grid is found. Using MaunaKea!')
-    msgs.info('Using {:}'.format(telgridfile))
+        log.warning('No telluric grid is found. Using MaunaKea!')
+    log.info('Using {:}'.format(telgridfile))
 
     # run telluric.sensfunc_telluric to get the sensfile
     TelSens = telluric.sensfunc_telluric(std1dfile, telgridfile, sensfile, star_type=star_type, star_mag=star_mag,
@@ -80,7 +81,7 @@ def flux_coadd_telluric(spec1dfiles, sensfile, tell_function, telloutfile, outfi
     if objids is None:
         objids = ['OBJ0001'] * nfiles
     elif len(objids) != nfiles:
-        msgs.error('The length of objids should be exactly the same as the number of spec1d files.')
+        raise PypeItError('The length of objids should be exactly the same as the number of spec1d files.')
     #fnames = np.sort(fnames)
 
     ### Apply the sensfunc to all spectra (only sensfunc but not tellluric)
@@ -88,7 +89,7 @@ def flux_coadd_telluric(spec1dfiles, sensfile, tell_function, telloutfile, outfi
         apply_sensfunc(spec1dfiles, sensfile, extinct_correct=False, tell_correct=False, debug=debug, show=show)
         # fnames_flux = [f.replace('.fits', '_flux.fits') for f in fnames]
     else:
-        msgs.warn('You skiped the fluxing step, make sure you have applied sensfunction to your 1D spectra.')
+        log.warning('You skiped the fluxing step, make sure you have applied sensfunction to your 1D spectra.')
 
     # The name of the final stacked 1d spectrum
     if len(outroot.split('.')) == 1:
@@ -115,9 +116,9 @@ def flux_coadd_telluric(spec1dfiles, sensfile, tell_function, telloutfile, outfi
                                                                 scale_method=scale_method, hand_scale=hand_scale,
                                                                 const_weights=const_weights, debug=debug, debug_scale=debug)
     elif os.path.exists(stackfile):
-        msgs.info('Loading stacked 1d spectrum {:}'.format(stackfile))
+        log.info('Loading stacked 1d spectrum {:}'.format(stackfile))
     else:
-        msgs.warn('No stacked 1d spectrum was found. Please set do_stack=True!')
+        log.warning('No stacked 1d spectrum was found. Please set do_stack=True!')
 
     ### Telluric correction
     if do_tell:
@@ -171,7 +172,7 @@ def stack_multinight(sci_path,fileroot, outroot=None, spec1dfiles=None, objids=N
         # This is the effective good number of spectral pixels in the stack
         nspec_eff = np.sum(waves > 1.0)/nexp
         sn_smooth_npix = int(np.round(0.1*nspec_eff))
-        msgs.info('Using a sn_smooth_npix={:d} to decide how to scale and weight your spectra'.format(sn_smooth_npix))
+        log.info('Using a sn_smooth_npix={:d} to decide how to scale and weight your spectra'.format(sn_smooth_npix))
 
     wave_stack, flux_stack, ivar_stack, mask_stack = coadd1d.combspec(waves, fluxes, ivars, masks, sn_smooth_npix,
              wave_method=wave_method, scale_method=scale_method, const_weights=const_weights,ref_percentile=ref_percentile,
@@ -229,7 +230,7 @@ def merge_vis_nir(outfile, spec1dvis, spec1dnir, sci_path='./',stack_region = [1
         # This is the effective good number of spectral pixels in the stack
         nspec_eff = np.sum(waves > 1.0)/nexp
         sn_smooth_npix = int(np.round(0.1*nspec_eff))
-        msgs.info('Using a sn_smooth_npix={:d} to decide how to scale and weight your spectra'.format(sn_smooth_npix))
+        log.info('Using a sn_smooth_npix={:d} to decide how to scale and weight your spectra'.format(sn_smooth_npix))
 
     # merge VIS and NIR
     wave_grid, _, _ = coadd1d.get_wave_grid(waves, masks=masks, wave_method=wave_method, wave_grid_min=wave_grid_min,
@@ -303,7 +304,7 @@ def flux_tell(sci_path, stdfile, spec1dfiles=None, std_path=None, fileroot=None,
     if objids is None:
         objids = ['OBJ0001'] * nfiles
     elif len(objids) != nfiles:
-        msgs.error('The length of objids should be exactly the same with the number of spec1d files.')
+        raise PypeItError('The length of objids should be exactly the same with the number of spec1d files.')
     #fnames = np.sort(fnames)
 
     ### get sensfunc
@@ -315,14 +316,14 @@ def flux_tell(sci_path, stdfile, spec1dfiles=None, std_path=None, fileroot=None,
     telgridfile = None # value it to None
     if do_sens:
         if os.path.exists(sensfile) and (use_exist_sens):
-            msgs.warn('{:} is already exists. Skip doing sensfunc.'.format(sensfile))
+            log.warning('{:} is already exists. Skip doing sensfunc.'.format(sensfile))
         else:
             sensfile, telgridfile = get_sens_from_file(std1dfile=std1dfile, instrument=instrument, star_type=star_type,
                                                        star_mag=star_mag, star_ra=star_ra, star_dec=star_dec,
                                                        sens_polyorder = sens_polyorder,
                                                        mask_abs_lines=mask_abs_lines, show=show, debug=debug)
     if telgridfile is None:
-        msgs.info('Loading sensfile {:}'.format(sensfile))
+        log.info('Loading sensfile {:}'.format(sensfile))
 
         if (instrument=='GNIRS') or (instrument=='NIRES'):
             telgridfile = os.path.join(basedir, 'Dropbox/PypeIt_Redux/TelFit_MaunaKea_3100_26100_R20000.fits')
@@ -334,14 +335,14 @@ def flux_tell(sci_path, stdfile, spec1dfiles=None, std_path=None, fileroot=None,
                                        'Dropbox/PypeIt_Redux/XSHOOTER/TelFit_Paranal_NIR_9800_25000_R25000.fits')
         else:
             telgridfile = os.path.join(basedir, 'Dropbox/PypeIt_Redux/TelFit_MaunaKea_3100_26100_R20000.fits')
-            msgs.warn('No telluric grid is found. Using MaunaKea!')
+            log.warning('No telluric grid is found. Using MaunaKea!')
 
     ### Apply the sensfunc to all spectra (only sensfunc but not tellluric)
     if do_flux:
         apply_sensfunc(fnames, sensfile, extinct_correct=False, tell_correct=False, debug=debug, show=show)
         # fnames_flux = [f.replace('.fits', '_flux.fits') for f in fnames]
     else:
-        msgs.warn('You skiped the fluxing step, make sure you have applied sensfunction to your 1D spectra.')
+        log.warning('You skiped the fluxing step, make sure you have applied sensfunction to your 1D spectra.')
 
     # The name of the final stacked 1d spectrum
     if len(outroot.split('.')) == 1:
@@ -368,9 +369,9 @@ def flux_tell(sci_path, stdfile, spec1dfiles=None, std_path=None, fileroot=None,
                                                                 scale_method=scale_method, hand_scale=hand_scale,
                                                                 const_weights=const_weights, debug=debug, debug_scale=debug)
     elif os.path.exists(stackfile):
-        msgs.info('Loading stacked 1d spectrum {:}'.format(stackfile))
+        log.info('Loading stacked 1d spectrum {:}'.format(stackfile))
     else:
-        msgs.warn('No stacked 1d spectrum was found. Please set do_stack=True!')
+        log.warning('No stacked 1d spectrum was found. Please set do_stack=True!')
 
     ### Telluric correction
     if do_tell:

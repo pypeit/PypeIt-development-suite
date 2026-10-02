@@ -9,7 +9,6 @@ from pypeit.core import coadd
 from scipy import interpolate
 from coadd1d import interp_spec
 from scipy import stats
-from pypeit import msgs
 import IPython
 from coadd1d import solve_poly_ratio
 from astropy.table import Table

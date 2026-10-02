@@ -1,4 +1,4 @@
-
+from pypeit import PypeItError
 
 def sort_telluric(wave, wave_mask, tell_dict):
 
@@ -48,7 +48,7 @@ def interpolate_inmask(wave_grid, mask, wave_inmask, inmask):
 
     if inmask is not None:
         if wave_inmask is None:
-            msgs.error('If you are specifying a mask you need to pass in the corresponding wavelength grid')
+            raise PypeItError('If you are specifying a mask you need to pass in the corresponding wavelength grid')
         # TODO we shoudld consider refactoring the interpolator to take a list of images and masks to remove the
         # the fake zero images in the call below
         _, _, inmask_int = coadd1d.interp_spec(wave_grid, wave_inmask, np.ones_like(wave_inmask), np.ones_like(wave_inmask), inmask)
@@ -58,7 +58,7 @@ def interpolate_inmask(wave_grid, mask, wave_inmask, inmask):
         elif mask.ndim == 1:
             inmask_out = inmask_int
         else:
-            msgs.error('Unrecognized shape for data mask')
+            raise PypeItError('Unrecognized shape for data mask')
         return (mask & inmask_out)
     else:
         return mask
@@ -276,7 +276,7 @@ def sensfunc_telluric_joint(wave, counts_ps, counts_ps_ivar, flam_true, tell_dic
     # This presumes that the telluric model grid is evaluated on the exact same grid as the star.
     ngrid = ind_upper-ind_lower + 1
     if ngrid != wave.size:
-        msgs.error('size of tell_wave_grid={:d} != wave = {:d}. '
+        raise PypeItError('size of tell_wave_grid={:d} != wave = {:d}. '
                    'Something is wrong with your telluric grid'.format(ngrid, wave.size))
     ind_lower_pad = np.fmax(ind_lower - tell_pad, 0)
     ind_upper_pad = np.fmin(ind_upper + tell_pad, tell_dict['wave_grid'].size-1)
@@ -408,7 +408,7 @@ def ech_sensfunc_telluric(spec1dfile, telgridfile, star_type=None, star_mag=None
     nspec, norders = wave.shape
     if np.size(polyorder) > 1:
         if np.size(polyorder) != norders:
-            msgs.error('polyorder must have either have norder elements or be a scalar')
+            raise PypeItError('polyorder must have either have norder elements or be a scalar')
         polyorder_vec = np.array(polyorder)
     else:
         polyorder_vec = np.full(norders, polyorder)
@@ -424,7 +424,7 @@ def ech_sensfunc_telluric(spec1dfile, telgridfile, star_type=None, star_mag=None
     wave_all_max=-np.inf
     for iord in srt_order_tell:
         IPython.embed()
-        msgs.info("Fitting sensitiity function for order: {:d}/{:d}".format(iord, norders))
+        log.info("Fitting sensitiity function for order: {:d}/{:d}".format(iord, norders))
         # Interpolate the data onto the fixed telluric grid
         wave_mask_iord = wave_mask[:,iord]
         wave_iord = wave[wave_mask_iord, iord]
@@ -485,7 +485,7 @@ def populate_orders(quantity, ind):
     norders = ind.shape[0]
     nspec_ord = ind[:,1] - ind[:, 0] + 1
     if len(set(nspec_ord.tolist()))!= 1:
-        msgs.error('There is a problem with your upper and lower indices. They do not all imply spectrum of the same length')
+        raise PypeItError('There is a problem with your upper and lower indices. They do not all imply spectrum of the same length')
     nspec = nspec_ord[0]
     quantity_orders = np.zeros((nspec, norders), dtype=quantity.dtype)
     for iord in range(norders):
@@ -758,7 +758,7 @@ def ech_telluric(wave, wave_mask, flam, flam_ivar, flam_mask, flam_true, airmass
     wave_all_min=np.inf
     wave_all_max=-np.inf
     for iord in srt_order_tell:
-        msgs.info("Fitting telluric absorption for order: {:d}/{:d}".format(iord, norders))
+        log.info("Fitting telluric absorption for order: {:d}/{:d}".format(iord, norders))
         wave_mask_iord = wave_mask[:,iord]
         wave_iord = wave[wave_mask_iord, iord]
         wave_all_min = np.fmin(wave_iord.min(),wave_all_min)
@@ -1056,7 +1056,7 @@ def sensfunc_telluric(spec1dfile, telgridfile, outfile, star_type=None, star_mag
                                                           np.ones_like(std_dict['flux'].value, dtype=bool))
     if np.size(polyorder) > 1:
         if np.size(polyorder) != norders:
-            msgs.error('polyorder must have either have norder elements or be a scalar')
+            raise PypeItError('polyorder must have either have norder elements or be a scalar')
         polyorder_vec = np.array(polyorder)
     else:
         polyorder_vec = np.full(norders, polyorder)
@@ -1112,7 +1112,7 @@ def sensfunc_telluric(spec1dfile, telgridfile, outfile, star_type=None, star_mag
     wave_all_min = np.inf
     wave_all_max = -np.inf
     for iord in srt_order_tell:
-        msgs.info("Fitting sensitivity function for order: {:d}/{:d}".format(iord, norders))
+        log.info("Fitting sensitivity function for order: {:d}/{:d}".format(iord, norders))
 
         # Slice out the parts of the data that are not masked, this deals with wavelenghts that are zero
         wave_fit, counts_ps_fit, counts_ps_ivar_fit, counts_ps_mask_fit, ind_lower, ind_upper = \
@@ -1190,7 +1190,7 @@ def sensfunc_telluric(spec1dfile, telgridfile, outfile, star_type=None, star_mag
     meta_table['WAVE_MIN'] = wave_all_min
     meta_table['WAVE_MAX'] = wave_all_max
     # Write to outfile
-    msgs.info('Writing sensitivity function and telluric to file: {:}'.format(outfile))
+    log.info('Writing sensitivity function and telluric to file: {:}'.format(outfile))
     hdu_param = fits.table_to_hdu(meta_table)
     hdu_table = fits.table_to_hdu(out_table)
     hdulist = fits.HDUList()
@@ -1358,7 +1358,7 @@ def telluric_qso(spec1dfile, telgridfile, pcafile, npca, z_qso, inmask=None, wav
     # Write the telluric and pca models to fits file,.
     tellfile = spec1dfile.replace('.fits', '_tell_model.fits') # Telluric and PCA model
 
-    msgs.info('Writing telluric and PCA models to file: {:}'.format(tellfile))
+    log.info('Writing telluric and PCA models to file: {:}'.format(tellfile))
     hdu_param = fits.table_to_hdu(meta_table)
     hdu_table = fits.table_to_hdu(out_table)
     hdulist = fits.HDUList()

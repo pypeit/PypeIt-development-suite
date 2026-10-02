@@ -7,7 +7,8 @@ os.environ["OPENBLAS_NUM_THREADS"] = "1"
 os.environ["MKL_NUM_THREADS"] = "1"
 import traceback
 import configparser
-from pypeit import msgs
+from pypeit import log
+from pypeit import PypeItError
 from IPython import embed
 import sys 
 from multiprocessing import Pool
@@ -75,13 +76,13 @@ def run_det1(uncal_file, output_dir):
         det1 = Detector1Pipeline()
         det1.call(uncal_file, output_dir=output_dir, logcfg="pipeline-log.cfg", save_results=True)
         pipe_success = True
-        msgs.info('\n * Pipeline finished for file: ', uncal_file, ' \n')
+        log.info('\n * Pipeline finished for file: ', uncal_file, ' \n')
     except Exception:
-        msgs.warn('\n *** OH NO! The detector1 pipeline crashed! *** \n')
+        log.warning('\n *** OH NO! The detector1 pipeline crashed! *** \n')
         pipe_crash_msg = traceback.print_exc()
     if not pipe_success:
         crashfile = open(log_name+'_pipecrash.txt', 'w')
-        msgs.info('Printing file with full traceback')
+        log.info('Printing file with full traceback')
         print(pipe_crash_msg, file=crashfile)
 
 def run_calwebb_detector1(uncalfiles, output_dir, cores2use=1, overwrite=False):
@@ -116,7 +117,7 @@ def run_calwebb_detector1(uncalfiles, output_dir, cores2use=1, overwrite=False):
     if isinstance(cores2use, int):
         system_cores = cores2use
         if system_cores > os.cpu_count():
-            msgs.warn('The number of cores to use is larger than the available cores {}. '
+            log.warning('The number of cores to use is larger than the available cores {}. '
                     'Using all available cores instead.'.format(os.cpu_count()))
             system_cores = os.cpu_count()
     elif isinstance(cores2use, str):
@@ -127,25 +128,25 @@ def run_calwebb_detector1(uncalfiles, output_dir, cores2use=1, overwrite=False):
         elif cores2use == 'all':
             system_cores = os.cpu_count()
         else:
-            msgs.error('Invalid value for cores2use. Please use one of: quarter, half, all')
+            raise PypeItError('Invalid value for cores2use. Please use one of: quarter, half, all')
     
     files_to_run = []
     # Run the stage1 pipeline
     for uncal in uncalfiles:
         ratefile = os.path.join(output_dir,  os.path.basename(uncal).replace('_uncal', '_rate'))
         if os.path.isfile(ratefile) and not overwrite:
-            msgs.info('Using existing rate file: {0}'.format(ratefile))
+            log.info('Using existing rate file: {0}'.format(ratefile))
         else: 
             files_to_run.append(uncal)
     
-    msgs.info('Runing the calwebb Detector1 pipeline on {} files'.format(len(files_to_run)))
+    log.info('Runing the calwebb Detector1 pipeline on {} files'.format(len(files_to_run)))
     for file in files_to_run:
         print(' **** ', file)
 
     # the output list should be the same length as the files to run
     outptd = [output_dir for _ in range(len(files_to_run))]
 
-    msgs.info('**** Using {} cores for multiprocessing.'.format(system_cores))
+    log.info('**** Using {} cores for multiprocessing.'.format(system_cores))
     # set the pool and run multiprocess
     args = [(file, out) for file in files_to_run for out in outptd]
     #with multiprocessing.Pool(system_cores) as pool:
