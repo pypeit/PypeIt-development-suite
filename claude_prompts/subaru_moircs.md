@@ -192,6 +192,10 @@ Rules for every prompt below:
     whatever is still open for the instrument scientist (detector
     values, mask design files, overlapping slits).
 
+11. **Report** Write a report named `subaru_moircs_report_HK500.md` in the `pypeitdev/subaru_moircs/` directory.  Have it briefly describe the development 
+and more importantly the quality of the reduction.  Show QA figures, etc. 
+Use Opus 5.5.  Log your work in Logs below.
+
 ## Q&A
 
 ### Prep
@@ -679,3 +683,27 @@ when you're ready.
 **Ready to commit (dev suite):** `pypeit_files/subaru_moircs_hk500.pypeit`
 and the `pypeitdev/subaru_moircs` scripts.  The `run2/` and `tmpl_A/`
 directories hold reduction outputs; ignore them in git if you prefer.
+
+### 2026-10-02 — Implementation #11 (Claude Opus 5.5)
+
+- Wrote `pypeitdev/subaru_moircs/subaru_moircs_report_HK500.md`.
+  - Figures are in `pypeitdev/subaru_moircs/report_HK500/`.
+  - Numbers are in `report_HK500/summary.json`.
+  - Both are made by `make_report_figs.py` from the final `run2`
+    reduction.  Some of PypeIt's own QA PNGs were copied in.
+- New quality measurements in the report:
+  - The wavelength fit residuals (2.5 Å) are dominated by a **per-line
+    offset that all slits share** (2.3 Å; blends of OH lines at R~500).
+    The **slit-to-slit precision is 0.9 Å** (0.12 px).  Three isolated
+    OH lines sit +0.9 ± 0.5 Å (~13 km/s) from the line list.
+  - Sky subtraction: χ robust std 0.91–0.94, so the noise model is ~7%
+    high, and 0.03–0.04% of pixels have |χ| > 5.
+  - Pixel flat: 1.2–1.3% scatter inside the slits.
+- New concerns flagged in the report:
+  - (1) ±5% pixel-flat artefacts where each slit's spectral coverage
+    starts or ends, plus residual striping;
+  - (2) emission at pixels ~1500–2040 beyond the 2.3 µm cut-off,
+    possibly second-order J-band OH;
+  - (3) the HK500 wavelength archive is self-referential.
+- The dataviz palette validator could not be run (no `node`).  The
+  figures use the reference palette's first three slots and neutral inks.
