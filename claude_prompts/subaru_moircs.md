@@ -51,6 +51,147 @@ Use Opus 5.5.  Log your work in Logs below.
 3. I have answered your second round of questions.  Please read those and then ask another round if you need more information.
 Use Opus 5.5.  Log your work in Logs below.
 
+4. Ok, read my new round of answers and then write a series of prompts in the Implementation section below that I will use to implement the code.
+Use Opus 5.5.  Log your work in Logs below.
+
+### Implementation
+
+Rules for every prompt below:
+- Read the Q&A first.  Decisions there are final unless a prompt says
+  otherwise.
+- Follow the Coding and Testing sections, and work in `pypeit14`.
+- Do **not** run git commands that change the repo (no commit, push,
+  or branch).  When a step is done, list the files that are ready to
+  commit.
+- Put scratch work and reduction outputs in
+  `PypeIt-development-suite/pypeitdev/subaru_moircs/`.
+- Log your work in Logs below, under a heading "Implementation #N".
+- Use Opus 5.5.
+
+1. **Fix the import.**  In `pypeit/spectrographs/subaru_moircs.py`,
+   replace `from pypeit import msgs` with
+   `from pypeit import log, PypeItError`, following
+   `keck_mosfire.py`.  Change `msgs.warn` to `log.warning` (or
+   `log.debug` for the frame-type fallthrough, as MOSFIRE does) and
+   `msgs.error` to `raise PypeItError(...)`.  Remove unused imports.
+   Check that `load_spectrograph('subaru_moircs')` works and that
+   `pypeit_setup -h` runs.  Run `pytest pypeit/tests/test_spectrographs.py`.
+
+2. **Metadata, frame typing, and dithering (Q2–7).**
+   - Drop `dispangle`.
+   - Read `binning` from `BIN-FCT1/2` in `compound_meta`, using
+     `parse.binning2string` and getting the spectral/spatial order
+     right for `specaxis = 1`.
+   - Add a `lampstat01` (or similar) meta from `OBJECT`.  Type
+     `DOMEFLAT_OFF` frames as `lampoffflats`.  Type `MASKIMAGE` frames
+     as nothing (ignored).  Lamp-on `DOMEFLAT` frames stay
+     `pixelflat,illumflat,trace`.
+   - Keep standards versus science split by exposure time.
+   - Add `dithpat`, `dithpos`, and `dithoff` metas from `K_DITPAT`,
+     `K_DITCNT`, and `K_DITWID`.  `dithoff` is the signed offset along
+     the slit; for `LINE2` that is ±`K_DITWID`/2.  Note in a comment
+     what was assumed for other patterns.
+   - Implement `get_comb_group` following `keck_mosfire.py`, and
+     delete the ESO `parse_dither_pattern`.
+   - Update `pypeit_file_keys`/`raw_header_cards` as needed.
+   - Check with `pypeit_setup -s subaru_moircs -r <RAW_DATA>/HK500 -b`
+     in `pypeitdev`.  The chip-2 files may still appear at this stage,
+     which is fine until prompt 3.  Confirm the frame types and the
+     `comb_id`/`bkg_id` values (A↔B) are right.
+
+3. **Two-detector reader (Q8, Q17, Q18, Q24).**
+   - Set `ndet = 2` and remove `detector` from `configuration_keys`
+     and `config_independent_frames`, using `binning` instead, as in
+     the base class.
+   - Keep chip-2 files out of the metadata table, for example through
+     `valid_configuration_values` or another clean mechanism.  Check
+     which one `pypeit_setup` respects.
+   - Override `get_rawimage(raw_file, det)`.  For `det = 1`, read the
+     file itself.  For `det = 2`, find the companion file in the same
+     directory (chip-1 frame number + 1) and check that its `EXP-ID`
+     matches and `DET-ID == 2`.  If the companion is missing or does
+     not match, raise `PypeItError` with a clear message.
+   - `get_detector_par(det, hdu)` must return the chip-2 parameters
+     for `det = 2`, even though the HDU passed in is the chip-1 file.
+   - Check that `get_headarr` and the metadata handling are not
+     affected (they should only ever see the chip-1 header).
+   - Check that `[rdx] detnum = 2` reduces chip 2 alone.
+   - Rerun `pypeit_setup` and check that only the chip-1 files are
+     listed.
+
+4. **Detector orientation (Q22).**  Using the A-B science frames and
+   OH lines (and the `OH_NIRES` line list), find `specflip` (and check
+   `spatflip`) per chip so that wavelength increases along PypeIt's
+   spectral axis.  Change `get_detector_par` to match and log the
+   evidence (e.g. a short plot in `pypeitdev`).  Keep all other
+   detector values unchanged (Q9).
+
+5. **Bad-pixel mask (Q10, Q21, Q23).**
+   - Download `mcsbadpix_oct2016.tar.gz` from the MOIRCS detector page
+     into `pypeitdev`.
+   - Write a one-off Python IRAF PLIO (`.pl`) decoder, kept in
+     `pypeitdev`, not PypeIt, and decode `mask1_oct16.pl` and
+     `mask2_oct16.pl`.  Check the result: 2048×2048, sensible
+     bad-pixel fraction, bad columns/pixels that line up with the raw
+     frames.
+   - Find the beam-splitter shadow.  If it is a separate contiguous
+     region, drop it and keep only the true bad pixels.  Save a figure
+     of both versions to `pypeitdev` for review.
+   - Write
+     `pypeit/data/static_calibs/subaru_moircs/bpm_moircs_det{1,2}.fits.gz`
+     in raw orientation.  Add a line to `static_calibs/README`.
+   - Implement `bpm()` following `mmt_binospec.py`, applying the same
+     orientation/trim as the raw image.  Check that the mask lands on
+     the bad pixels in a processed frame.
+
+6. **First reduction (Q11).**  In `pypeitdev/subaru_moircs`, run
+   `pypeit_setup` and `run_pypeit` on HK500 (both detectors).  Use the
+   `diagnose-reduction` skill to triage.  Tune `default_pypeit_par` for
+   MOIRCS, replacing the MOSFIRE copies and removing the TODO:
+   - slit edges (`edge_thresh`, minimum slit lengths, sync/PCA;
+     overlapping and alignment-star slits may be lost, per Q19);
+   - lamp-off subtraction;
+   - tilts;
+   - holy-grail wavelength calibration on `OH_NIRES` (rms per slit);
+   - A-B sky subtraction and extraction.
+
+   Iterate until both detectors reduce end to end.  Record the number
+   of slits found versus expected, the wavelength rms, and the
+   remaining problems.  Write a working `subaru_moircs_hk500.pypeit`
+   with a path relative to `$PYPEIT_DEV`.  Put grism-specific values in
+   `config_specific_par`, keyed on `dispname == 'HK500'`.
+
+7. **HK500 wavelength template (Q11).**  Use the
+   `wavelength-calibration` skill to build an HK500 `reid_arxiv`
+   template from the best slit solutions (one template covering the
+   grism's full range, if possible).  Switch HK500 to
+   `full_template`/`reidentify` in `config_specific_par`.  Rerun prompt
+   6's reduction and compare the rms and the number of slits that
+   solve against holy-grail.
+
+8. **Unit tests.**  Add plain-function tests to `pypeit/tests`, with
+   no large data and synthetic headers/files written to `tmp_path`:
+   - companion-file pairing (match, missing file, EXP-ID mismatch);
+   - frame typing of DOMEFLAT, DOMEFLAT_OFF, MASKIMAGE, and OBJECT;
+   - `get_comb_group` for an ABBA set;
+   - `binning` parsing.
+
+   Run them with pytest, plus `test_spectrographs.py` and
+   `test_metadata.py`.
+
+9. **Docs and changelog (Q15).**  Rewrite
+   `doc/spectrographs/subaru_moircs.rst` and
+   `doc/tutorials/moircs_howto.rst` from the real HK500 reduction:
+   real file names, data block, frame types, and parameters.  Remove
+   the made-up VPH and `long2pos` material, and describe the
+   two-detector handling and `detnum`.  Use the `update-changelog`
+   skill, then the `build-docs` skill (`make htmlonly` is fine).
+
+10. **Review.**  Run the `code-review` skill (high) on the branch's
+    changes against `develop`.  Fix what is confirmed, and list for me
+    whatever is still open for the instrument scientist (detector
+    values, mask design files, overlapping slits).
+
 ## Q&A
 
 ### Prep
@@ -382,4 +523,18 @@ Planned build order, for reference:
 - Asked three small questions (Q23–25), each with a default, and wrote
   down the build order.  Prep is done unless you want changes; the next
   step is the code.
+- No PypeIt code was changed.
+
+### 2026-10-02 — Prep #4 (Claude Opus 5.5)
+
+- Read your answers to Q23–25:
+  - the shadow default is OK;
+  - support case (i) only, so `detnum = 2` covers chip 2 alone;
+  - you do the git commands.  Every Implementation prompt now says so,
+    and I saved it as a lasting preference.
+- Wrote 10 Implementation prompts, in this order: import fix →
+  metadata/dithering → two-detector reader → orientation → bad-pixel
+  mask → first reduction and tuning → HK500 template → unit tests →
+  docs/changelog → review.  Each one points to the Q&A items behind it
+  and says how to check the result.
 - No PypeIt code was changed.

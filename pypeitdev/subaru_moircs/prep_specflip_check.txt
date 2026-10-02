@@ -1,0 +1,41 @@
+Calibrations/WaveCalib_A_0_DET01.fits nslits 20
+  slit    59 rms=0.322 nlin= 53 wave(0,mid,end)=[16854. 24389. 23761.]
+  slit   159 no fit
+  slit   260 rms=0.318 nlin= 61 wave(0,mid,end)=[14832. 22659. 27699.]
+  slit   375 no fit
+  slit   499 rms=0.484 nlin= 55 wave(0,mid,end)=[16084. 23930. 18895.]
+  slit   589 rms=0.329 nlin= 64 wave(0,mid,end)=[12612. 20503. 28079.]
+  slit   761 rms=0.343 nlin= 68 wave(0,mid,end)=[12189. 20109. 27755.]
+  slit   852 rms=0.329 nlin= 66 wave(0,mid,end)=[13271. 21160. 28509.]
+  slit   950 rms=0.398 nlin= 65 wave(0,mid,end)=[11583. 19651. 27141.]
+  slit  1050 rms=0.355 nlin= 63 wave(0,mid,end)=[15097. 22910. 30615.]
+  slit  1127 no fit
+  slit  1188 no fit
+  slit  1245 rms=0.372 nlin= 70 wave(0,mid,end)=[12347. 20263. 28067.]
+  slit  1323 rms=0.396 nlin= 68 wave(0,mid,end)=[13031. 20907. 28379.]
+  slit  1418 rms=0.378 nlin= 58 wave(0,mid,end)=[15541. 23330. 32205.]
+  slit  1577 no fit
+  slit  1630 no fit
+  slit  1678 no fit
+  slit  1744 rms=0.333 nlin= 63 wave(0,mid,end)=[14989. 22747. 30131.]
+  slit  1898 no fit
+Calibrations/WaveCalib_A_0_DET02.fits nslits 19
+  slit    87 rms=0.391 nlin= 64 wave(0,mid,end)=[13800. 21638. 28804.]
+  slit   208 rms=0.301 nlin= 57 wave(0,mid,end)=[14752. 22573. 30366.]
+  slit   289 rms=0.297 nlin= 71 wave(0,mid,end)=[ 8746. 17043. 25055.]
+  slit   413 rms=0.373 nlin= 62 wave(0,mid,end)=[12735. 20710. 27750.]
+  slit   585 no fit
+  slit   671 rms=0.349 nlin= 63 wave(0,mid,end)=[13747. 21640. 29667.]
+  slit   774 rms=0.341 nlin= 56 wave(0,mid,end)=[16407. 24237. 31027.]
+  slit   873 no fit
+  slit   933 no fit
+  slit  1014 rms=0.398 nlin= 54 wave(0,mid,end)=[16321. 24184. 33486.]
+  slit  1117 rms=0.252 nlin= 50 wave(0,mid,end)=[16527. 24285. 26339.]
+  slit  1274 no fit
+  slit  1356 no fit
+  slit  1442 no fit
+  slit  1566 no fit
+  slit  1671 no fit
+  slit  1798 rms=0.446 nlin= 73 wave(0,mid,end)=[ 8775. 17441. 25392.]
+  slit  1916 rms=0.295 nlin= 60 wave(0,mid,end)=[14577. 22382. 29947.]
+  slit  1990 rms=0.367 nlin= 66 wave(0,mid,end)=[12366. 20242. 27914.]
