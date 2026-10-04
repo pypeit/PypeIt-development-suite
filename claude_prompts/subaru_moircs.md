@@ -196,7 +196,164 @@ Rules for every prompt below:
 and more importantly the quality of the reduction.  Show QA figures, etc. 
 Use Opus 5.5.  Log your work in Logs below.
 
+12. **Masks** I have downloaded two files in to the `pypeitdev/subaru_moircs/` directory:
+    - `cosmos2_z3eelg_v01.mdp` -- the mask file for our HK500 dataset
+    - `MOIRCS_Mask_Builder.py` -- code to generate MOIRCS mask design files
+We now wish to develop code for MOIRCS so that the user can provide a mask file and the code will:  (1) extract at the object locations, whether or not a source is detected, (2) assign RA/Dec to each extracted object.  We wish to mimic either the Keck/LRIS approach.  Examine these files and the code for Keck/LRIS and then propose a plan for how to implement this in PypeIt.  Put questions in the Q&A/Masks sub-section below.
+Use Opus 5.5.  Log your work in Logs below.
+
 ## Q&A
+
+### Masks
+
+Plan and questions from Claude (2026-10-04).  Answer inline after each
+`A:`.
+
+**What I found**
+
+- **The `.mdp` file** (`cosmos2_z3eelg_v01.mdp`) has one line per
+  opening:
+  - the x and y position, in pixels of the image the mask was designed
+    on (~0.117″/px);
+  - the length along x (e.g. 85.47 px ≈ 10″), the width (6.84 px ≈
+    0.8″), and the PA (all 0 here);
+  - the type: `B` = slit (32), `C` = 30 px alignment hole (7);
+  - a JSON blob with the catalogue `id`, `kmag`, `photoz`, and a
+    comment.
+
+  **There is no RA/Dec, and no field-centre or pointing information.**
+- **`MOIRCS_Mask_Builder.py`** is a ginga plugin.  It places slits on a
+  FITS image with a WCS, and that image's WCS is what ties the mask to
+  the sky.
+  - It can also save an `.ecsv` file with the image name, field centre,
+    grism, and PA (the docstring says ECSV is the preferred format), and
+    an `.sbr` file (laser-cutting coordinates relative to the field
+    centre).
+  - It splits the two channels at the field-centre y: channel 1 is below
+    it and channel 2 above.
+  - It imports `naoj.moircs.mdp` and `naoj.moircs.grism_info`, which we
+    don't have.
+- **Geometry check** (`pypeitdev/subaru_moircs/mask_map_test.py`).  I
+  matched the `.mdp` positions to the openings in the undispersed mask
+  image (MCSP00237201/202).
+  - Mask x maps to detector y (spatial, flipped), and mask y maps to
+    detector x (spectral).
+  - Scale ≈ 1.01–1.02, rotation ≈ 0.3°.
+  - An affine fit per chip has **rms 1.7 px (chip 1) and 1.2 px
+    (chip 2)**, from 15–16 matched openings including the holes.
+  - The zero point depends on the mask (it is not the builder's default
+    field centre).
+  - Chip 1 sees mask y ≈ 580–2100 and chip 2 sees ≈ 1740–3430.  Slits
+    near the beam-splitter edge can therefore appear on **both** chips.
+- **How Keck/LRIS (and MOSFIRE) do it in PypeIt:**
+  1. `get_slitmask()` builds a `SlitMask` holding, per slit, the RA/Dec,
+     length, width, and PA, plus an object table (id, RA/Dec, name, mag,
+     and distance from the slit edges).
+  2. `get_maskdef_slitedges()` predicts each slit's left/right spatial
+     edges on the detector.
+  3. With `use_maskdesign = True`, `EdgeTraceSet.maskdesign_matching()`
+     matches the predicted edges to the traced ones.  The match is in
+     the spatial direction only, fitting an offset and a scale.  It then
+     records `MASKDEF_ID` per slit and can add missing slits.
+  4. With `reduce.slitmask.assign_obj` and `extract_missing_objs`,
+     PypeIt places each object at its expected position.  For A-B data
+     it adds the `dithoff` offset (`use_dither_offset`, as for MOSFIRE).
+     It force-extracts undetected objects, and gives every object
+     `MASKDEF_ID`, `MASKDEF_OBJNAME`, and RA/Dec computed from the
+     slit's RA/Dec and PA.
+
+**Proposed plan (Keck/LRIS-style)**
+
+1. **Reader.**  Add a small `.mdp` reader to `pypeit/spectrographs/`
+   (and an `.ecsv` reader if you can send one).  It parses the columns
+   and the JSON, without depending on ginga or `naoj`.  Holes become
+   `align` slits; slits are `science`.  Objects are assumed to be at the
+   slit centre (top distance = bottom distance = length/2), since the
+   `.mdp` has no offsets.
+2. **`get_slitmask(filename, det)`** builds the `SlitMask` for the slits
+   on that channel.  RA/Dec per slit comes from one of the options in
+   Q26.  Names come from the JSON `id`, mags from `kmag` (band `K`).
+3. **`get_maskdef_slitedges(det)`** predicts the left/right edges from
+   the `.mdp` x position and length.  It uses the flip and scale above
+   and a per-chip zero point from the field centre, if known (Q27).
+   Otherwise it relies on `maskdesign_matching` with a large
+   `maskdesign_maxsep`.  It returns -1 for slits not on that chip.
+4. **Default parameters**, applied in `config_specific_par` when a mask
+   file is given:
+   - `use_maskdesign = True`, `assign_obj = True`,
+     `extract_missing_objs = True`, `use_dither_offset = True`;
+   - MOSFIRE-like `missing_objs_fwhm` and `obj_toler`.
+
+   The user sets `maskdesign_filename` in the PypeIt file, because the
+   raw headers (`SLIT = MO17A_COSMOS2`) don't name the `.mdp` file.
+5. **A-B.**  Check the sign of `dithoff` against the data.  In slit
+   1245, frame A's trace (dithoff +1.5″) is at +19 px from the slit
+   centre and frame B's (−1.5″) at −7 px.  That is 26 px = 3″ apart, as
+   expected, and suggests positive `dithoff` means higher spatial
+   pixels, plus a ~+0.7″ object or mask offset that `maskdef_offset`
+   should absorb.
+6. **Tests and docs.**  Unit tests for the `.mdp` parser and the edge
+   prediction (synthetic `.mdp`).  A dev-suite run on HK500 with the
+   mask, checked for:
+   - every science slit getting its `MASKDEF_ID`;
+   - an extraction for each of the 32 targets, detected or not;
+   - sensible RA/Dec;
+   - a doc section on how to supply the mask file.
+
+**Questions**
+
+26. **RA/Dec source.**  The `.mdp` has no sky coordinates.  Which can
+    you supply?
+    - (a) The **pre-image FITS** used to design the mask, whose WCS
+      converts `.mdp` x/y to RA/Dec exactly (like GMOS's `wcs_file`).
+      Preferred.
+    - (b) The **`.ecsv`** version of the mask.  It has the image name
+      and field centre, but I still need the WCS (or the `naoj.moircs`
+      code, if its table includes RA/Dec).
+    - (c) A **target catalogue** (`id`, RA, Dec), e.g. COSMOS2020,
+      matched on the JSON `id`.  That gives object coordinates, but slit
+      RA/Dec/PA would still need (a), or need to be derived.
+    - (d) The **science-frame header WCS** (`CRVAL`/`CD`) plus the
+      fitted mask→detector transform.  No extra files, but the accuracy
+      is unknown (maybe ~1″).
+    A:
+27. **Field centre / zero point.**  The `.mdp` lacks the field centre.
+    Is it always the same pixel in the pre-image (the builder's default
+    is 1084, 1786), or does it change per mask?  If it changes, I'll
+    solve the zero point by matching the traced edges, or from the mask
+    image (Q28).
+    A:
+28. **Use the mask image?**  MOIRCS takes an undispersed mask image
+    (`OBJECT = MASKIMAGE`) with each mask.  It pins the mask→detector
+    transform to ~1.5 px (above).  Should PypeIt use it when present
+    (new frame type, e.g. typed as `align`), or keep it ignored and rely
+    on edge matching?  Edge matching is simpler and is how LRIS works.
+    A:
+29. **Object position in the slit.**  Is it safe to assume every target
+    is at its slit centre?  One `.mdp` comment says "monitoring star;
+    not centered", and some slits have companions (e.g. id 345915:
+    "3 objects in the slit at 2.85 and 3.58 arcsec").  If off-centre
+    targets matter, can the offsets come from the pre-image/catalogue
+    (Q26a/c)?
+    A:
+30. **Slits seen by both channels.**  Slits near the channel split
+    (mask y ≈ 1740–2100) may fall on both chips, inside the
+    beam-splitter shadow.  Should such a slit be assigned to one chip
+    (the builder's rule: y ≤ centre → chip 1), or allowed on both, with
+    a forced extraction on each?
+    A:
+31. **Alignment holes.**  Should the 30 px holes be treated as `align`
+    slits (traced, matched, never reduced as science, as now), or
+    removed from the matching?
+    A:
+32. **Names.**  Is `MASKDEF_OBJNAME` = the JSON `id` (e.g. `312786`)
+    OK?  Should the JSON `comment` be stored anywhere?
+    A:
+33. **Missing code.**  Can you get `naoj/moircs/mdp.py` (and
+    `grism_info.py`) from the instrument team?  Their table format would
+    tell us the official column definitions (e.g. what the 5th and 6th
+    `.mdp` columns mean: 0.0/1 for slits, 0.0/0.0 for holes).
+    A:
 
 ### Prep
 
@@ -707,3 +864,22 @@ directories hold reduction outputs; ignore them in git if you prefer.
   - (3) the HK500 wavelength archive is self-referential.
 - The dataviz palette validator could not be run (no `node`).  The
   figures use the reference palette's first three slots and neutral inks.
+
+### 2026-10-04 — Implementation #12 (Claude Opus 5.5)
+
+- Read `cosmos2_z3eelg_v01.mdp` (32 slits and 7 alignment holes, in
+  pre-image pixels, with JSON metadata and no RA/Dec) and
+  `MOIRCS_Mask_Builder.py` (a ginga plugin; channel split at the field
+  centre; `.ecsv`/`.sbr` outputs).
+- Read the PypeIt slit-mask machinery: the Keck/LRIS and Keck/MOSFIRE
+  `get_slitmask`/`get_maskdef_slitedges`, the `SlitMask` class,
+  `EdgeTraceSet.maskdesign_matching`, `SlitTraceSet.get_maskdef_objpos`
+  and `assign_maskinfo`, and `use_dither_offset` in `exposure.py`.
+- Feasibility test (`pypeitdev/subaru_moircs/mask_map_test.py`): mapped
+  the `.mdp` positions onto the undispersed mask image.  Mask x maps to
+  −detector y and mask y to +detector x.  Affine fit rms 1.7 / 1.2 px
+  (chip 1 / chip 2).  The zero point depends on the mask, and the two
+  channels overlap near the split.
+- Wrote the proposed plan and questions Q26–33 in Q&A → Masks.  The
+  main blocker is the source of RA/Dec (Q26).
+- No PypeIt code was changed.
