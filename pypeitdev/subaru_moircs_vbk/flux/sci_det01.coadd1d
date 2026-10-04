@@ -1,0 +1,11 @@
+# Fluxed science A and B (split DET01 files): check that coadd1d accepts
+# single-detector spec1d files written by transfer_sensfunc.py split
+[coadd1d]
+  coaddfile = coadd1d_CC0958_DET01_fluxed.fits
+
+coadd1d read
+  path /mnt/s1data01/work/research/pypeit-development/PypeIt-development-suite/pypeitdev/subaru_moircs_vbk/flux/fluxed
+  filename | obj_id
+  spec1d_MCSA00352031-CC0958_PA200_1_MOIRCS_20260529T060511.128_DET01.fits | SPAT0484-SLIT0469-DET01
+  spec1d_MCSA00352033-CC0958_PA200_1_MOIRCS_20260529T060843.130_DET01.fits | SPAT0457-SLIT0469-DET01
+coadd1d end
