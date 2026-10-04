@@ -1,0 +1,58 @@
+Proposed release-note bullets for PypeIt/doc/releases/2.1.0dev.rst
+(Subaru/MOIRCS VB_K; drafted in Implementation #9, not applied)
+=====================================================================
+
+Notes for whoever applies them:
+
+- Add the bullets below to the named sections of 2.1.0dev.rst, after the
+  existing MOIRCS bullets from the HK500 work, which stay as they are.
+- The existing HK500 bullet says "Updated Subaru/MOIRCS".  MOIRCS is not on
+  develop (it was never released; it is new on the subaru_moircs branch), so
+  "Added support for Subaru/MOIRCS" may be more accurate.  Left for the team.
+- CHANGES.rst is deprecated (its header says to use doc/releases), so it
+  gets no entry.
+
+----------------------------------------------------------------------
+Instrument-specific Updates
+----------------------------------------------------------------------
+
+- Subaru/MOIRCS: added the ``VB_K`` grism (MOS mode).  The multi-extension
+  raw files (e.g. ``MCSA*.fits``) are read from their primary HDU, the
+  processed image.  Standard stars with ``DATA-TYP = STANDARD_STAR`` are
+  typed by exposure time, as for ``OBJECT`` frames (standard <= 20 s);
+  ThAr arcs (``DATA-TYP = INSTFLAT``, ``OBJECT = TH-AR``) are left untyped.
+  Wavelengths are calibrated on the OH lines (``OH_MOSFIRE_K``) with the
+  ``reidentify`` method, a new ``subaru_moircs_VB_K.fits`` reid archive
+  (28 slits, 1.90--2.54 µm) and ``match_toler = 0.75``.  Standard-star
+  frames keep one object per slit (``maxnumber_std = 1``).  See
+  :ref:`moircs`.
+- Subaru/MOIRCS: the read noise now scales with the number of Fowler
+  samples, ``17.5/sqrt(DET-NSMP)`` e- (it was fixed at 5.53 e-, the value
+  for ``DET-NSMP = 10``).
+- Subaru/MOIRCS: the ``IR`` sensitivity function now uses the PCA
+  telluric model (``TellPCA_3000_26000_R10000.fits``), as the other
+  near-IR spectrographs do.  The previous default, the TelFit Mauna Kea
+  grid, also needed ``teltype = grid`` and could not run.  This applies to
+  all grisms; it has been tested with ``VB_K`` standards.
+
+----------------------------------------------------------------------
+Documentation Updates
+----------------------------------------------------------------------
+
+- Extended the Subaru/MOIRCS :ref:`spectrograph page <moircs>` and
+  :ref:`tutorial <moircs_howto>` with the ``VB_K`` grism: multi-extension
+  raw files, the read-noise scaling, the ``VB_K`` wavelength archive,
+  standard stars observed in two mask slits and the spliced sensitivity
+  function, why the ThAr arcs are not used by default (and how to use
+  them), an optional calibration group for the standards, and the
+  experimental transfer of a sensitivity function between the two
+  detectors.
+
+----------------------------------------------------------------------
+Testing
+----------------------------------------------------------------------
+
+- Added tests for Subaru/MOIRCS ``VB_K`` data: typing of standard-star,
+  ThAr and mask-image frames, read noise versus ``DET-NSMP``, A-B pairing
+  with two standard-star sets, multi-extension raw files, and the
+  grism-specific parameters.
