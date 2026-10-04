@@ -21,13 +21,11 @@ python regen_doc_tables.py <scratch dir>
    changes: the VB_K values are in config_specific_par, which this
    listing does not show.
 
-2. doc/include/inst_detector_table.rst (build_detector_table.py), the two
-   subaru_moircs rows: the read noise is printed as 5.533985905294664
-   instead of 5.534.  Same value (17.5/sqrt(10), from get_detector_par
-   with hdu=None); only the formatting changes, because the value is now
-   computed instead of hard-coded.  Possible cosmetic fix for prompt 10, in
-   subaru_moircs.py: round the read noise (e.g. to 3 decimals) so the
-   table keeps 5.534.
+2. doc/include/inst_detector_table.rst (build_detector_table.py):
+   unchanged since Implementation #10, which rounds the read noise to 3
+   decimals.  Before that, the two subaru_moircs rows printed it as
+   5.533985905294664 instead of 5.534 (the same value, computed instead of
+   hard-coded).
 
 3. doc/include/spectrographs_table.rst (build_spectbl_rst.py): a
    subaru_moircs row would be added.  It is missing now (the HK500 work did
