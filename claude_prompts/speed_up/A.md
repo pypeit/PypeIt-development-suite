@@ -238,6 +238,9 @@ Use Opus if you can.  Log your work.
 3. Ok, check the rest of the PR comments and respond as needed.  If you have an questions for me
 put them in the Q&A/PR section below.  Use Opus 5.  Log your work.
 
+4. Kyle has provided another set of PR comments. Read these and respond accordingly.
+If you have any questions, put them in the Q&A/PR section below.  Use Opus 5.  Log your work.
+
 ## Q&A
 
 ### PR
