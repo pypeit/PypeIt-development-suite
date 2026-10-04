@@ -354,6 +354,31 @@ enough? Recommendation: the PR comment is probably enough given this PR
 should merge soon.
 >A: Agreed
 
+**Q8 — Fix the `objtrace_QA` y-limit bug here, separately, or not at all?**
+Converting `pypeit/core/findobj_skymask.py:objtrace_QA` to explicit Axes
+(Kyle's request) exposed a latent bug: `plt.ylim(...)` is called inside the
+per-trace loop, so it always acted on the *last* (current) axes, and only the
+bottom panel ever received the `0.995*min(fit)…1.005*max(fit)` limits. The
+obvious per-panel fix visibly changes the output — on the Kast standard (3
+traces) it clips the scatter in the top panel, because 0.5% of a spatial
+position of ~60 px is only ~0.3 px of margin. I kept the existing output
+(explicitly: `axis.set_ylim(...)` on the last panel after the loop, with a
+`TODO`) so this refactor stays pixel-identical. Options: (a) leave it — the
+TODO records it; (b) a small follow-up PR that drops the explicit limits and
+lets every panel autoscale (simplest, probably the best-looking); (c) a
+follow-up with per-panel limits based on the data as well as the fit.
+Recommendation: **(b)**, separately from PR A.
+>A:
+
+**Q9 — Add `--ncpu` to the other reduction scripts?** Kyle asked whether
+`ncpu` is limited to `run_pypeit`. The *parameter* applies to every script
+that builds a `PypeIt` object (`run_pypeit`, `pypeit_ql`, `run_to_calibstep`,
+`reduce_by_step`, `pypeit_trace_edges`), but only `run_pypeit` has the
+`--ncpu` override. I offered him the flag on the others. Recommendation: wait
+for PR B — that is when `ncpu` starts to matter for the reduction, and
+`pypeit_ql` is the obvious candidate.
+>A:
+
 ### Tasks
 
 Claude poses questions here (as `**Qn — title.** body` followed by a `>A:` line);
@@ -990,3 +1015,74 @@ Two questions for you in **Q&A/PR**: **Q6** (re-trigger Bugbot on the
 refactor? recommend yes) and **Q7** (also file an issue for develop's
 duplicated parameter docs? recommend no, the PR comment suffices). Neither
 blocks anything. No code changes this round; branch unchanged at `b8e5f9321`.
+
+### 2026-10-04 (PR item 4 — answered Kyle's full review (20 threads); synced dev-suite with develop)
+
+Performed the **4th item under PR** with **Opus 5**. Kyle submitted a second
+CHANGES_REQUESTED review on 2026-09-28 (*"After a full review, here are some
+more (mostly minor) requests"*): 19 inline comments (plus a 09-25 one on `links.rst`), plus a 09-29 comment with
+a full dev-suite run (309/309 reduce tests pass; 1 vet failure, `KeyError:
+'align'` in `test_datacube.py`, asking whether both branches are up to date
+with `develop`).
+
+**PypeIt commit `952705d5c` "Address Kyle's review of the QA writer"**
+(pushed to `speed_up_qa`):
+- **Explicit `Figure`/`Axes`** (his findobj + flatfield comments,
+  generalized): every QA writer this PR touches now draws on `fig`/`ax` —
+  `plt.subplot(gs[..])`→`fig.add_subplot`, `plt.colorbar`→`fig.colorbar`,
+  `plt.tight_layout/subplots_adjust/suptitle`→`fig.*`, `plt.plot/legend`→
+  `ax.*`, redundant `plt.clf()` removed — in `objfind_QA`, `objtrace_QA`,
+  `spatillum_finecorr_qa`, `detector_structure_qa`, `arc_fit_qa`,
+  `arc_fwhm_qa`, `arc_tilts_spec/spat_qa`, `spec_flexure_qa`,
+  `spat_flexure_qa`.
+- **Latent bug found in `objtrace_QA`:** `plt.ylim` in the per-trace loop
+  only ever applied to the bottom panel. The per-panel version changed the
+  Kast standard's trace QA (top panel clipped), so I reproduced the old output
+  explicitly with a `TODO` — raised as **Q8**.
+- **`QAWriter`:** `save_figure(fig, outfile=None, dpi=None, show=False)` —
+  `close` and `**kwargs` dropped (no caller used them), always closes; the
+  deferred-path eligibility moved into a documented `_can_defer()` (PNG output
+  and default `savefig.*` rcParams — which also makes the deferred path robust
+  to a non-default `savefig.bbox`/`facecolor` rc); `init()` reordered per
+  Kyle; `flush()` is now `try/finally: self.pending = []` (the old swap
+  existed so a failed encode is not re-raised forever — now commented and
+  tested); attributes doc rewritten (`pending` = list of `Future`s); class
+  docstring now says **when to call `flush()`** (wherever later code needs the
+  PNGs or a (worker) process may end).
+- **Top-level matplotlib/PIL imports** (reversing my Q4 lazy-import choice):
+  measured the cost — pyplot adds **0.34 s to a bare `import pypeit`**
+  (0.65→~1.0 s) and nothing to a reduction (`pypeit.pypeit` imports pyplot
+  anyway) — and verified `matplotlib.use('Agg', force=True)` still switches
+  the backend after pyplot is imported, so the Agg ordering concern was moot.
+- **`ncpu`:** `< 1` now warns and resets to 1 (Kyle's preference over the
+  Bugbot-motivated `ValueError`); the parameter description and `--ncpu` help
+  rewritten to say what `ncpu` does *in PR A* (QA threads, capped at 8) —
+  the old text described PR B's detector parallelism and an `os.cpu_count()`
+  cap that does not exist yet. **PR B must update these.**
+- Intersphinx roles instead of the 3 new `links.rst` entries; **`pillow>=9`
+  made explicit** in `pyproject.toml`/`environment.yml` (dependency table
+  regenerated, release-notes bullet); `qaWriter` import at top of
+  `RunPypeIt.main`; assert messages throughout; 2 new tests.
+
+**Validation:** `pytest pypeit/tests` **750 passed**; cold `shane_kast_blue`
+reduction at `--ncpu 4` vs the pre-change commit (git worktree, serial) →
+**20/20 QA PNGs pixel-identical**; `objfind_QA`/`detector_structure_qa`/
+`spat_flexure_qa` (not exercised by Kast) checked with synthetic inputs →
+identical; docs build has only develop's 8 pre-existing warnings.
+
+**Kyle's vet failure:** PypeIt `speed_up_qa` already contained develop's tip
+(`f3a1f1d27`), but the dev-suite companion branch **`dev_speed_up`** (dev-suite
+PR #432) was **95 commits behind** dev-suite `develop`, whose
+`test_datacube.py` uses the new `alignment_method` instead of `align`.
+Merged dev-suite `develop` into `dev_speed_up` (**`1f1d1cd6`**, pushed); the
+only conflict was a trailing newline in
+`claude_prompts/dashboard/dashboard_dev_stage_6.md` (took develop's). Could
+not run `test_coadd_datacube` locally (no KCWI products in `REDUX_OUT`), but
+checked the new parset assignments succeed. Noted that develop's
+`test_residuals` still sets `['cube']['align']`, but it returns early (dead
+code, issue #1951).
+
+Replied on all 20 threads and posted a summary comment asking Kyle to
+re-review. New questions: **Q8** (`objtrace_QA` y-limit bug) and **Q9**
+(`--ncpu` on other scripts); neither blocks the merge.
+
