@@ -1,0 +1,15 @@
+# VB_K science A-B pair (run5), 2D coadd test: header offsets with the opposite sign (sign check), both detectors
+[rdx]
+  spectrograph = subaru_moircs
+
+[coadd2d]
+  offsets = 0., 26.72
+  weights = uniform
+
+
+spec2d read
+  path /mnt/s1data01/work/research/pypeit-development/PypeIt-development-suite/pypeitdev/subaru_moircs_vbk/run5/Science
+  filename
+  spec2d_MCSA00352031-CC0958_PA200_1_MOIRCS_20260529T060511.128.fits
+  spec2d_MCSA00352033-CC0958_PA200_1_MOIRCS_20260529T060843.130.fits
+spec2d end

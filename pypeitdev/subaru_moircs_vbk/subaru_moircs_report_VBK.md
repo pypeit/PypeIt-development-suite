@@ -1,16 +1,22 @@
 # Subaru/MOIRCS `VB_K` in PypeIt: development and reduction quality
 
 Report on adding the MOIRCS `VB_K` grism (MOS mode) to PypeIt, tested
-on one mask observed on 2026-05-29. It summarizes the development log in
-`subaru_moircs_mo_vbk.md` (Implementations #1-#10). Figures are in
+on one mask observed on 2026-05-29. It uses two example data sets from
+that night: a **minimum** set (one A-B pair with all calibrations, to
+share with the team) and the **full night** (32 science frames). It
+summarizes the development log in `subaru_moircs_mo_vbk.md`
+(Implementations #1-#11 and the full-night work). Figures are in
 `report_vbk/`; `make_report_vbk.py` regenerates the ones made from the
-final reduction (`run5`) and copies the others from the check scripts.
+reductions and copies the others from the check scripts.
 
 ## Summary
 
+Minimum set (sections 3 and 4):
+
 - **Reduction.** All 14 science slits on each detector are traced,
   flat-fielded, wavelength-calibrated and sky-subtracted with the MOIRCS
-  defaults. Nothing has to be set by hand in the PypeIt file.
+  defaults. `pypeit_setup` on the data directory gives a PypeIt file
+  that needs no hand edits.
 - **Wavelengths.** OH lines with `reidentify` against a new 28-slit
   archive (1.90-2.54 um). The rms is 0.06-0.24 px (median 0.16 / 0.12 px
   on DET01 / DET02, at 1.94 A/px). The ThAr arcs agree to ~0.1 px per
@@ -29,25 +35,61 @@ final reduction (`run5`) and copies the others from the check scripts.
   (F2/F1 = 1.21 +- 3%) or a constant scale corrects this. Both are
   experimental; the default is for the team and the instrument scientist
   to decide (see the integration proposal).
-- **Main caveats.** The archive is built from the same mask it was
-  tested on. Frames at other pointings (standards, arcs) are offset by
-  ~1 px from the science frames. The noise model gives chi < 1. The
-  detector values are still to be confirmed.
+
+Full night (section 5):
+
+- **Drift.** The slit drifts along the slit by up to +/- 2 px over the
+  two hours, which the header dither offsets do not record. The frames
+  are aligned on the DET01 continuum target, detected in every frame at
+  S/N ~1; DET02, with no bright object, uses the same offsets.
+- **2D coadd.** The target reaches S/N 5.7 (one A-B pair: 1.4).
+- **Emission lines.** Five slits show a single line each at
+  23070-23116 A (S/N 4.7-8.8), where the sky has no line. If Halpha:
+  z = 2.514-2.521; if [O III] 5008: z = 3.606-3.616.
+
+Main caveats: the archive is built from the same mask it was tested on;
+frames at other pointings (standards, arcs) are offset by ~1 px from the
+science frames; the noise model gives chi < 1; the detector values are
+still to be confirmed.
 
 ## 1. Data
 
 Mask `MO_CC0958PA200_1`, `VB_K` grism, both detectors (raw files
-`MCSA*.fits`, multi-HDU).
+`MCSA*.fits`, multi-HDU), all taken on 2026-05-29. The two example sets
+are flat directories (no subdirectories), like the dev-suite
+`RAW_DATA/<instrument>/<setup>/` directories. The calibration files of
+the full-night set are hard links to the same files as in the minimum
+set.
 
-| frames | number | exposure | `DET-NSMP` | PypeIt type |
+| set | directory (`test_data_moircs/VB_K/`) | files (chips 1 + 2) | size | use |
 |---|---|---|---|---|
-| lamp-on dome flats | 7 | 7 s | 1 | `pixelflat,illumflat,trace` |
-| lamp-off dome flats | 7 | 7 s | 1 | `lampoffflats` |
-| science (A-B, 3.1") | 2 | 180 s | 10 | `arc,science,tilt` |
-| standard HIP59174, set 1 (A-B) | 2 | 15 s | 1 | `standard` |
-| standard HIP59174, set 2 (A-B) | 2 | 15 s | 1 | `standard` |
-| ThAr arcs (evening) | 4 | 3 s | 1 | untyped (rows commented out) |
-| mask image | 1 | 5 s | 1 | untyped (own setup) |
+| minimum | `MO_CC0958PA200_1_minimum/` | 50 | 3.0 GB | to share; development and reduction quality |
+| full night | `MO_CC0958PA200_1_20260529/` | 110 | 15 GB | 2D coadd and emission lines |
+
+| frames | minimum | full night | exposure | `DET-NSMP` | PypeIt type |
+|---|---|---|---|---|---|
+| lamp-on dome flats | 7 | 7 | 7 s | 1 | `pixelflat,illumflat,trace` |
+| lamp-off dome flats | 7 | 7 | 7 s | 1 | `lampoffflats` |
+| science (A-B pairs) | 2 | 32 | 180 s | 10 | `arc,science,tilt` |
+| standard HIP59174, set 1 (A-B) | 2 | 2 | 15 s | 1 | `standard` |
+| standard HIP59174, set 2 (A-B) | 2 | 2 | 15 s | 1 | `standard` |
+| ThAr arcs (evening) | 4 | 4 | 3 s | 1 | untyped (rows commented out) |
+| mask image | 1 | 1 | 5 s | 1 | untyped (own setup) |
+
+The minimum set's science pair (frames 031/033, 06:03-06:07 UT) is the
+first pair of the night. The full night has 16 pairs from 06:03 to
+08:02 UT (airmass 1.25-2.23), with dither widths cycling through 3.1,
+3.0 and 2.9"; frames 067-075 are not included.
+
+Each set is reduced with
+
+```
+pypeit_setup -s subaru_moircs -r <set directory> -b -c A
+run_pypeit subaru_moircs_A/subaru_moircs_A.pypeit
+```
+
+The PypeIt file needs no edits: the ThAr rows are written commented out,
+and the mask image forms its own setup (not written with `-c A`).
 
 `VB_K` (nominally 1.8-2.5 um, 1.94 A/px) disperses past the detector
 edges, so each slit sees about 0.4 um, set by its position in the mask.
@@ -60,7 +102,7 @@ All PypeIt changes are in `pypeit/spectrographs/subaru_moircs.py`,
 `pypeit/tests/test_subaru_moircs.py` and the new archive
 `pypeit/data/arc_lines/reid_arxiv/subaru_moircs_VB_K.fits`. They come on
 top of the HK500 work, and HK500 behaviour is unchanged except for the
-two instrument-wide items marked below.
+instrument-wide items marked below.
 
 | PypeIt commit | change |
 |---|---|
@@ -71,14 +113,24 @@ two instrument-wide items marked below.
 | `13edd3533` | IR sensfunc with the PCA telluric model (instrument-wide; the old TelFit default could not run) |
 | `c08189b76` | unit tests (typing, read noise, `MCSA` files, pairing, grism parameters) |
 | `33f81e0ba` | review fixes (dither offset, explicit `teltype`, rounded read noise, lighter tests) |
+| `d25588cfb` | dither offsets (`dithoff`) in PypeIt's convention for 2D coadds: A = -`K_DITWID`/2, B = +`K_DITWID`/2 (instrument-wide; section 5.4) |
 
 The unit tests (`test_subaru_moircs.py`, 18 tests) pass, as do
 `test_spectrographs.py` and `test_metadata.py` (37 in all). Doc and
 release-note drafts are in `docs/` (Implementation #9). PypeIt's doc
 files and core code were not changed. Problems found in the core code
-are listed in section 4.
+are listed in section 6.
 
-## 3. Reduction quality
+## 3. Reduction quality: minimum set
+
+The numbers and figures in this section come from the development
+reduction `run5`. A rerun from the minimum data directory with the
+current code (`minimum/subaru_moircs_A/`) reproduces it: the slit edges,
+tilts and wavelength solutions are identical, the flats differ by
+< 1e-7 (relative), the same objects are found in every frame, and the
+extracted counts agree to within 0.22 sigma per pixel for the standard
+star (relative difference <= 2e-3) and to 1e-7 for the other objects.
+Only the `dithoff` values differ, by their sign (section 5.4).
 
 ### 3.1 Slits
 
@@ -100,7 +152,7 @@ the apertures in the mask image.
 
 ### 3.2 Flat field and bad pixels
 
-- Pixel flat (`run5`, central 80% of each science slit): scatter 0.80%
+- Pixel flat (central 80% of each science slit): scatter 0.80%
   (DET01) and 0.69% (DET02). The median along each spectral row is
   0.998-1.003. Unlike `HK500`, there are no +-5% artefacts at the ends
   of the spectra, since `VB_K` spectra fill the chip.
@@ -115,8 +167,8 @@ the apertures in the mask image.
 
 ### 3.3 Wavelength calibration
 
-Final setup (`run5`): `reidentify` against `subaru_moircs_VB_K.fits`
-(the 28 holy-grail solutions of this mask), `OH_MOSFIRE_K`,
+Setup: `reidentify` against `subaru_moircs_VB_K.fits` (the 28
+holy-grail solutions of this mask), `OH_MOSFIRE_K`,
 `match_toler = 0.75 px`.
 
 | | DET01 | DET02 |
@@ -136,7 +188,7 @@ region has little light.*
 
 How the archive was chosen and tested (Implementation #5):
 
-- Each run5 solution agrees with the holy-grail solution it replaces to
+- Each solution agrees with the holy-grail solution it replaces to
   <= 0.12 A.
 - The archive is **self-referential**. As independent proxies, every
   slit was reidentified against the archive without itself
@@ -197,11 +249,11 @@ leave-one-out failure above.
 ### 3.5 Tilts and sky subtraction
 
 - Tilts: 19-33 OH lines per slit, fit rms 0.02-0.03 px.
-- Science A-B (`run5`): chi robust std 0.92 on both chips, with
-  |chi| > 5 in 0.034% (DET01) and 0.057% (DET02) of the pixels. Above
-  2.3 um (thermal): 0.88 / 0.86. On the bright OH lines: 0.80 / 0.78,
-  with no excess of outliers. Column pattern (std of the per-column
-  median of chi): 0.04-0.11, against ~0.025 for white noise.
+- Science A-B: chi robust std 0.92 on both chips, with |chi| > 5 in
+  0.034% (DET01) and 0.057% (DET02) of the pixels. Above 2.3 um
+  (thermal): 0.88 / 0.86. On the bright OH lines: 0.80 / 0.78, with no
+  excess of outliers. Column pattern (std of the per-column median of
+  chi): 0.04-0.11, against ~0.025 for white noise.
 - Chip-2 raw A-B frames show ~64-column bands from the detector
   readout channels. Each band covers a fixed wavelength across the whole
   slit, so the sky fit removes it.
@@ -226,7 +278,9 @@ leave-one-out failure above.
   higher S/N than the star in one frame and would have been chosen as
   the standard.
 
-### 3.7 Standard star and sensitivity function
+## 4. Fluxing: minimum set
+
+### 4.1 Standard star and sensitivity function
 
 HIP59174 is A2IV, V = 7.45, Ks = 7.36. The A and B frames of each set
 were coadded unfluxed on equal-length linear grids; `pypeit_sensfunc`
@@ -262,7 +316,7 @@ the two zeropoints and the spliced one.*
 
 ![telluric offset](report_vbk/sens_telluric_offset.png)
 
-### 3.8 Chip 2: F2/F1 and the two fluxing modes
+### 4.2 Chip 2: F2/F1 and the two fluxing modes
 
 The raw (lamp-on minus lamp-off) dome flat of each science slit,
 collapsed along the slit and converted to counts per Angstrom, gives
@@ -303,7 +357,7 @@ So for `VB_K`, a constant scale of 1.21 (flats) or 1.25 (sky) matches
 the flat ratio to ~3%. Applying the chip-1 sensfunc unchanged (s = 1) is
 21-25% off. **Not tested on a real chip-2 source.**
 
-### 3.9 Noise model
+### 4.3 Noise model
 
 chi is below 1 everywhere: 0.92 (science), 0.87 (single-read
 standards), 0.78-0.80 on bright OH lines. The reference pixels give a
@@ -313,20 +367,161 @@ assumed 17.5 and 5.53 e-. The measured noise also does not scale as
 photon-noise term (gain, or Fowler sampling). The detector values are
 for the instrument scientist.
 
-## 4. Open issues
+## 5. The full night: 2D coadd and emission lines
+
+Work in `sci_all/` (the reduction was run before the full-night
+directory existed, from the original subdirectories; the PypeIt file
+written from `MO_CC0958PA200_1_20260529/`, in `night_20260529/`, has
+the same science rows and adds the standards and the commented ThAr
+rows).
+
+### 5.1 Reduction
+
+The 32 science frames and the dome flats were reduced with the MOIRCS
+defaults (one `run_pypeit` per detector). The OH arc is now the
+combination of the 32 frames: 14/14 slits per chip with median rms 0.112
+/ 0.113 px (DET01 / DET02; minimum set 0.159 / 0.116), and every solution
+agrees with the minimum set's to <= 1.1 A.
+
+### 5.2 Drift and alignment on the target
+
+The continuum target in DET01 slit 469 is detected in all 32 frames
+(S/N 0.5-1.2 per frame). Its position along the slit drifts by up to
++/- 2 px over the two hours, with A and B frames moving together. The
+header dither offsets do not record this: between 06:45 and 07:05 UT
+they are off by up to 2.8 px, about half the width of the target's
+profile (FWHM 5-6 px).
+
+![drift](report_vbk/night_drift.png)
+
+*Top: target position in each frame, relative to the median for A (blue)
+and B (orange) frames. Bottom: coadd offset measured on the target minus
+the offset from the header dither cards.*
+
+The 2D coadd (`pypeit_coadd_2dspec`) therefore aligns the frames on the
+target:
+
+- DET01: `offsets = auto` with the target named in each frame
+  (`user_obj_ids`). PypeIt then also requires `weights = auto`, which
+  gives constant weights from the target's S/N (0.27-1.60; the last,
+  high-airmass frames weigh least).
+- DET02 has no bright object. It uses the DET01 offsets and weights as
+  lists, on the assumption that both detectors move together
+  (`make_coadd2d_bright.py`).
+
+| | header offsets, uniform weights | target offsets and weights |
+|---|---|---|
+| DET01 target, continuum S/N | 5.33 | 5.73 |
+| DET01 lines (23097, 23070, 23266 A) | 8.9, 6.8, 5.3 | 8.8, 6.7, 5.0 |
+| DET02 lines (23075, 23111, 23116, 20703 A) | 7.1, 6.3, 5.2, 5.6 | 6.1, 6.0, 4.7, 6.7 |
+
+The target gains 7% (one A-B pair: S/N 1.41; x sqrt(16) would be 5.6).
+The line S/N values change by about +/- 1 either way, within their own
+uncertainty, so these data cannot confirm or rule out that DET02 shares
+the DET01 offsets, and the change of weights is mixed in.
+
+![target spectrum](report_vbk/night_target_1d.png)
+
+*The coadded target (counts, not fluxed, no telluric correction).*
+
+### 5.3 Emission lines
+
+Search (`find_emission_lines.py`): the continuum is removed with a 51-px
+running median along the spectrum; a matched filter (Gaussian, sigma 2.5
+px) gives an S/N map; peaks with S/N > 5 are kept if their negative
+images (+/- 26 px) are present and no sky line lies within 8 A. The sky
+lines come from the OH spectra of the night's own wavelength
+calibration. Of 34 peaks, the visual check keeps these (run5 slit
+numbers; vacuum wavelengths, no heliocentric correction):
+
+| detector | slit | lambda (A) | S/N | z (Halpha) | z ([O III] 5008) | note |
+|---|---|---|---|---|---|---|
+| DET01 | 1855 | 23097.4 | 8.8 | 2.5185 | 3.6119 | 2.31 um group |
+| DET01 | 1003 | 23069.9 | 6.7 | 2.5143 | 3.6064 | 2.31 um group |
+| DET02 | 314 | 23073.2 | 6.1 | 2.5148 | 3.6070 | 2.31 um group |
+| DET02 | 787 | 23111.2 | 6.0 | 2.5206 | 3.6146 | 2.31 um group |
+| DET02 | 1017 | 23115.6 | 4.7 | 2.5212 | 3.6155 | 2.31 um group; below the threshold here (5.2 with header offsets) |
+| DET02 | 1179 | 20704.1 | 6.7 | 2.1539 | 3.1340 | uncertain: negative images stronger than the line |
+| DET01 | 98 | 23265.5 | 5.0 | 2.5441 | 3.6454 | single |
+
+![line candidates](report_vbk/night_lines.png)
+
+*Matched-filter S/N stamps (left; dotted: expected negative images) and
+boxcar spectra (right) of the candidates.*
+
+**The 2.31 um group.** Five slits, one line each, spanning 46 A (593
+km/s; rms 245 km/s around 23094 A). The OH spectra of all slits have no
+sky line between 23000 and 23200 A, even at 3 sigma. A sky residual
+would also appear along the full length of every slit; averaged over
+each slit with the candidates masked, the S/N near these wavelengths
+stays within +/- 0.5 in every slit. So these look like five sources at
+nearly the same redshift. No second line ([N II], [S II], or [O III] 4960
+and Hbeta) is seen at this S/N; which interpretation applies depends on
+how the mask targets were selected.
+
+![2.31 um group](report_vbk/night_group.png)
+
+Rejected: peaks within 8 A of sky lines (24184, 24354, 24620, 24722-24728
+A); a run of peaks in the target slit at 1.90-1.98 um and one at 20088 A
+(the target's continuum through the water and CO2 telluric bands); one
+at the target slit's end; striping at a slit edge (run5 slit 1520,
+22673 A); sky-line residuals (DET02 slit 1179, 20367 A); two thermal-
+region peaks next to the 24724 A sky line.
+
+A summary page with the same content:
+https://claude.ai/artifact/1Sfg6Y2thrkYrfspneJ3jy.
+
+### 5.4 Header offsets and the `dithoff` sign
+
+PypeIt can also align frames with the dither offsets in the headers
+(`offsets = header`). PypeIt's `dithoff` is the offset of the slit with
+respect to the object, so an object moves by -`dithoff` along the
+spatial axis. The object sits 27 px higher in A than in B, so A =
+-`K_DITWID`/2 and B = +`K_DITWID`/2. `subaru_moircs.py` had the opposite
+sign, which made the coadd stack the negative traces; it is now fixed.
+The direction was checked on both detectors (alignment-box stars) and at
+two position angles (standards at 90 deg, science at 200 deg), and the
+header WCS predicts the same direction. Spectra reduced before the fix
+keep the old sign in their headers until the PypeIt file is regenerated
+with `pypeit_setup` and the science frames are reduced again.
+
+![dithoff sign](report_vbk/coadd2d_sign.png)
+
+*One A-B pair, target slit, spatial profile collapsed along the
+spectrum. With the corrected sign (red) the positive traces add up;
+with the old sign (green) the negative ones do.*
+
+Header offsets cannot follow the drift in 5.2, so a bright object in one
+slit is the better reference whenever there is one.
+
+## 6. Open issues
 
 For the instrument scientist:
 
-- Detector values and the noise model (section 3.9).
+- Detector values and the noise model (section 4.3).
 - Flexure of ~1 px between pointings (a shift plus 0.3-0.6 px per
-  1000 px of rotation). Is it known? Should standards get their own
-  calibration group? The PypeIt-file recipe is in the doc draft; it is
-  untested.
+  1000 px of rotation), and the +/- 2 px drift along the slit during the
+  science sequence (section 5.2). Are they known? Should standards get
+  their own calibration group? The PypeIt-file recipe is in the doc
+  draft; it is untested.
 - Flats saturating in the alignment boxes; a refreshed bad-pixel mask.
 - Standard-star strategy for `VB_K` (two slits, the splice step), and the
   stellar template (A0 vs A2).
 - The chip-2 transfer default (with the team).
 - Mask-design files (objects are not matched to targets); touching slits.
+
+For the science (full night):
+
+- Compare the 2.31 um group with the target catalogue to tell Halpha
+  from [O III]; look for second lines in deeper data or a stack.
+- The DET02 alignment assumes the DET01 offsets. A bright object on
+  DET02 in future masks would test this; the effect of the weights can
+  be separated by a coadd with the target offsets and uniform weights.
+- Data from other nights: reduce each night with its own calibrations
+  (separate PypeIt files, or calibration groups by hand; `pypeit_setup`
+  puts all frames of one mask in one group), align each night on the
+  target, then measure the shift between nights the same way.
+- Telluric correction of the target before using 1.90-2.06 um.
 
 For the PypeIt team:
 
@@ -342,19 +537,38 @@ For the PypeIt team:
   - `SensFunc.unpack_std` fails on spliced inputs of different lengths;
   - two runs that first download a telluric grid at the same time race
     on moving the file (`io.load_telluric_grid`);
-  - the splice takes the overlap from the redder spectrum's edge.
+  - the splice takes the overlap from the redder spectrum's edge;
+  - `pypeit_coadd_2dspec` accepts `user_obj_ids` only with
+    `weights = auto`, so a reference object cannot set the offsets alone.
 - A *K*-band Th line list for full ThAr solutions (`Ar_IR_MOSFIRE`
   21041.57 A looks blended).
 - Validation:
   - a second `VB_K` mask, including slits below 1.90 um;
   - an HK500 regression run, including its `reidentify` `match_toler`;
-  - dev-suite integration (`RAW_DATA`, `pypeit_files`).
+  - dev-suite integration: the minimum set is laid out as a `RAW_DATA`
+    directory and needs a `pypeit_files` entry.
 
-## 5. Integration proposal
+For the HK500 developer (HK500 is developed separately):
+
+- Since 2026-10-04, `dithoff` follows PypeIt's convention for 2D coadds
+  (`offsets = header`): A = -`K_DITWID`/2, B = +`K_DITWID`/2 (it was the
+  other way round). In the VB_K data the old sign stacked the negative
+  traces instead of the positive ones. The A-B pairing (`comb_id`,
+  `bkg_id`) does not change.
+- The dev-suite file `pypeit_files/subaru_moircs_hk500.pypeit` still has
+  the old values in its `dithoff` column (A 1.5, B -1.5), and so would
+  any HK500 spec2d reduced from it. That matters only for 2D coadds with
+  `offsets = header`; rerunning `pypeit_setup` (or flipping the column)
+  fixes it. Not changed here.
+
+## 7. Integration proposal
 
 Only PypeIt code should be needed for reductions, so the chip-transfer
 workaround (`transfer_sensfunc.py` here) should move into PypeIt. The
-proposal has three independent parts. None of it is implemented.
+proposal has three independent parts. None of it is implemented. (A
+MOIRCS-only alternative, with the transfer code in `subaru_moircs.py`,
+is discussed in VB_K Q11 of the development log; it is pending with the
+PypeIt core members.)
 
 ### (i) Per-detector sensitivity functions in fluxing (not MOIRCS-specific)
 
@@ -391,7 +605,7 @@ detector (e.g. a spectral mosaic where the standard falls on one chip).
   a missing detector is reported. Add a `FluxFile` parsing test with and
   without `det`. Dev suite: a `fluxing_files` entry for a MOIRCS setup.
 - Evidence: without it, MOIRCS chip-2 fluxes are 21-25% off (section
-  3.8). With split files, the mechanics already work through today's
+  4.2). With split files, the mechanics already work through today's
   `pypeit_flux_calib` and `pypeit_coadd_1dspec`.
 
 ### (ii) A transfer script, e.g. `pypeit_sensfunc_transfer`
@@ -453,19 +667,25 @@ pypeit_sensfunc_transfer sens_std.fits Calibrations/ --from-det 1 --to-det 2 \
   flat (dome illumination) and the sky (same light path as the science)
   as the reference.
 
-## 6. Reproducing
+## 8. Reproducing
 
-In `pypeitdev/subaru_moircs_vbk/` (scripts are committed; outputs are
-git-ignored):
+In `pypeitdev/subaru_moircs_vbk/` (scripts and input files are
+committed; outputs are git-ignored). Data directories are under
+`test_data_moircs/VB_K/`.
 
 | step | command or script |
 |---|---|
-| reduction | `run_pypeit subaru_moircs_vbk.pypeit` (final run: `run5/`) |
-| slits, sky, OH residuals | `plot_slits.py run5 <det>`, `skysub_check.py run5`, `ohline_resid.py run5` |
+| minimum set: setup and reduction | `pypeit_setup ... -r MO_CC0958PA200_1_minimum -b -c A`, `run_pypeit` (in `minimum/`; the development reduction is `run5/`) |
+| slits, sky, OH residuals | `plot_slits.py <redux> <det>`, `skysub_check.py <redux>`, `ohline_resid.py <redux>` |
 | archive | `make_vbk_reid.py run3`, `test_reid.py`, `plot_vbk_reid.py` |
 | ThAr and mask checks | `arc_check.py run5 wavecheck`, `mask_wave_check.py run5 wavecheck` |
 | standards and sensfunc | `flux/std{1,2}.coadd1d`, `flux/HIP59174*.sens`, `sensfunc_check.py` |
 | F2/F1, sky ratio, transfer | `transfer_sensfunc.py sens ...`, `sky_ratio_check.py`, `flux_check.py flux` |
+| full night: setup | `pypeit_setup ... -r MO_CC0958PA200_1_20260529 -b -c A` (in `night_20260529/`) |
+| full night: reduction | `sci_all/det{1,2}/vbk_sci_all_det{1,2}.pypeit` |
+| full night: 2D coadd on the target | `sci_all/make_coadd2d_bright.py det1`, `pypeit_coadd_2dspec`, `make_coadd2d_bright.py det2`, `pypeit_coadd_2dspec` (in `sci_all/coadd2d_bright/`) |
+| full night: lines | `sci_all/find_emission_lines.py`, `plot_line_group.py --variant bright`, `make_summary_figs.py --variant bright` |
+| `dithoff` sign check | `coadd2d/*/vbk_sci.coadd2d`, `coadd2d/plot_coadd2d_test.py` |
 | this report's figures | `make_report_vbk.py` |
 
 Earlier, more detailed HTML reports (private artifacts):
@@ -474,3 +694,4 @@ Earlier, more detailed HTML reports (private artifacts):
 - holy-grail bug: https://claude.ai/artifact/HspeLfoxgxiTBvQzZaXio1
 - wavelength checks: https://claude.ai/artifact/2PjurjEckAyzH4EBnudRcJ
 - fluxing: https://claude.ai/artifact/2StF7ED14sHbXKiQUZmdF2
+- full night, emission lines: https://claude.ai/artifact/1Sfg6Y2thrkYrfspneJ3jy

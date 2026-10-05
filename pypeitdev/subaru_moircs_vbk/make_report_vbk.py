@@ -1,8 +1,11 @@
 """
 Figures and numbers for the VB_K report (``subaru_moircs_report_VBK.md``).
 
-Uses the final reduction (``run5``: reidentify, ``maxnumber_std = 1``)
-and the outputs of the earlier check scripts.  Writes to ``report_vbk/``:
+Uses the final reduction of the minimum set (``run5``: reidentify,
+``maxnumber_std = 1``; the rerun from the minimum data directory,
+``minimum/subaru_moircs_A``, gives the same results), the full-night
+products in ``sci_all/`` and the outputs of the earlier check scripts.
+Writes to ``report_vbk/``:
 
 - ``wave_run5.png``: wavelength rms, number of lines and coverage per
   slit;
@@ -51,6 +54,12 @@ COPIES = {
     'flat_ratio.png': Path('flux/flat_ratio_det1_to_det2.png'),
     'sky_ratio.png': Path('flux/sky_ratio.png'),
     'det2_modes.png': Path('flux/det2_modes.png'),
+    # Full night (sci_all/): coadd aligned on the target
+    'night_drift.png': Path('sci_all/lines_bright/drift.png'),
+    'night_lines.png': Path('sci_all/lines_bright/stamps_selected.png'),
+    'night_group.png': Path('sci_all/lines_bright/line_group_2p31.png'),
+    'night_target_1d.png': Path('sci_all/lines_bright/target_1d.png'),
+    'coadd2d_sign.png': Path('coadd2d/coadd2d_test_profiles.png'),
 }
 
 

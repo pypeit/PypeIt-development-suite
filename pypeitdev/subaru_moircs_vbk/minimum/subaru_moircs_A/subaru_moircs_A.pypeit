@@ -1,0 +1,45 @@
+# Auto-generated PypeIt input file using PypeIt version: 1.3.1.dev10245+ga22dc39ef
+# UTC 2026-10-04T23:16:27.915+00:00
+
+# User-defined execution parameters
+[rdx]
+    spectrograph = subaru_moircs
+
+# Setup
+setup read
+Setup A:
+  binning: 1,1
+  decker: MO_CC0958PA200_1
+  dispname: VB_K
+setup end
+
+# Data block 
+data read
+ path /mnt/s1data01/work/research/pypeit-development/test_data_moircs/VB_K/MO_CC0958PA200_1_minimum
+           filename |                 frametype |                 ra |                dec |         target | dispname |           decker | binning |            mjd | airmass | exptime | lampstat01 | dithpat | dithpos | dithoff |      frameno | calib | comb_id | bkg_id
+# MCSA00351935.fits |                      None | 163.98204166666665 |  19.96889722222222 |          TH-AR |     VB_K | MO_CC0958PA200_1 |     1,1 | 61189.20286967 |     1.0 |     3.0 |        off |    none |    none |     0.0 | MCSA00351935 |     0 |      -1 |     -1
+# MCSA00351937.fits |                      None | 164.40059999999997 | 19.969205555555554 |          TH-AR |     VB_K | MO_CC0958PA200_1 |     1,1 | 61189.20400394 |     1.0 |     3.0 |        off |    none |    none |     0.0 | MCSA00351937 |     0 |      -1 |     -1
+# MCSA00351939.fits |                      None |  164.5264583333333 |  19.96929722222222 |          TH-AR |     VB_K | MO_CC0958PA200_1 |     1,1 | 61189.20436275 |     1.0 |     3.0 |        off |    none |    none |     0.0 | MCSA00351939 |     0 |      -1 |     -1
+# MCSA00351941.fits |                      None |        164.6510625 |  19.96938611111111 |          TH-AR |     VB_K | MO_CC0958PA200_1 |     1,1 |  61189.2046984 |     1.0 |     3.0 |        off |    none |    none |     0.0 | MCSA00351941 |     0 |      -1 |     -1
+  MCSA00352031.fits |          arc,science,tilt |  149.6809833333333 | 1.9310194444444444 | CC0958_PA200_1 |     VB_K | MO_CC0958PA200_1 |     1,1 | 61189.25360102 |   1.245 |   180.0 |        off |   LINE2 |       A |   -1.55 | MCSA00352031 |     0 |       1 |      2
+  MCSA00352033.fits |          arc,science,tilt | 149.68012916666666 | 1.9312833333333332 | CC0958_PA200_1 |     VB_K | MO_CC0958PA200_1 |     1,1 | 61189.25605475 |   1.257 |   180.0 |        off |   LINE2 |       B |    1.55 | MCSA00352033 |     0 |       2 |      1
+  MCSA00351909.fits |              lampoffflats | 161.65762916666668 | 19.967055555555554 |   DOMEFLAT_OFF |     VB_K | MO_CC0958PA200_1 |     1,1 | 61189.19643442 |     1.0 |     7.0 |        off |    none |    none |     0.0 | MCSA00351909 |     0 |      -1 |     -1
+  MCSA00351911.fits |              lampoffflats | 161.71992916666667 | 19.967108333333332 |   DOMEFLAT_OFF |     VB_K | MO_CC0958PA200_1 |     1,1 | 61189.19660803 |     1.0 |     7.0 |        off |    none |    none |     0.0 | MCSA00351911 |     0 |      -1 |     -1
+  MCSA00351913.fits |              lampoffflats | 161.79937499999997 | 19.967174999999997 |   DOMEFLAT_OFF |     VB_K | MO_CC0958PA200_1 |     1,1 | 61189.19682794 |     1.0 |     7.0 |        off |    none |    none |     0.0 | MCSA00351913 |     0 |      -1 |     -1
+  MCSA00351915.fits |              lampoffflats |         161.866275 | 19.967230555555552 |   DOMEFLAT_OFF |     VB_K | MO_CC0958PA200_1 |     1,1 | 61189.19701312 |     1.0 |     7.0 |        off |    none |    none |     0.0 | MCSA00351915 |     0 |      -1 |     -1
+  MCSA00351917.fits |              lampoffflats |        161.9340125 |  19.96728611111111 |   DOMEFLAT_OFF |     VB_K | MO_CC0958PA200_1 |     1,1 | 61189.19720989 |     1.0 |     7.0 |        off |    none |    none |     0.0 | MCSA00351917 |     0 |      -1 |     -1
+  MCSA00351919.fits |              lampoffflats | 162.01387916666667 | 19.967352777777776 |   DOMEFLAT_OFF |     VB_K | MO_CC0958PA200_1 |     1,1 | 61189.19744137 |     1.0 |     7.0 |        off |    none |    none |     0.0 | MCSA00351919 |     0 |      -1 |     -1
+  MCSA00351921.fits |              lampoffflats | 162.08328749999998 | 19.967411111111108 |   DOMEFLAT_OFF |     VB_K | MO_CC0958PA200_1 |     1,1 | 61189.19761498 |     1.0 |     7.0 |        off |    none |    none |     0.0 | MCSA00351921 |     0 |      -1 |     -1
+  MCSA00351895.fits | pixelflat,illumflat,trace | 160.79669166666665 | 19.966316666666668 |       DOMEFLAT |     VB_K | MO_CC0958PA200_1 |     1,1 | 61189.19408486 |     1.0 |     7.0 |         on |    none |    none |     0.0 | MCSA00351895 |     0 |      -1 |     -1
+  MCSA00351897.fits | pixelflat,illumflat,trace | 160.92046249999999 |          19.966425 |       DOMEFLAT |     VB_K | MO_CC0958PA200_1 |     1,1 | 61189.19439736 |     1.0 |     7.0 |         on |    none |    none |     0.0 | MCSA00351897 |     0 |      -1 |     -1
+  MCSA00351899.fits | pixelflat,illumflat,trace | 160.98777916666666 | 19.966483333333333 |       DOMEFLAT |     VB_K | MO_CC0958PA200_1 |     1,1 | 61189.19458254 |     1.0 |     7.0 |         on |    none |    none |     0.0 | MCSA00351899 |     0 |      -1 |     -1
+  MCSA00351901.fits | pixelflat,illumflat,trace | 161.05927916666664 | 19.966544444444445 |       DOMEFLAT |     VB_K | MO_CC0958PA200_1 |     1,1 | 61189.19479088 |     1.0 |     7.0 |         on |    none |    none |     0.0 | MCSA00351901 |     0 |      -1 |     -1
+  MCSA00351903.fits | pixelflat,illumflat,trace | 161.12576666666664 | 19.966602777777776 |       DOMEFLAT |     VB_K | MO_CC0958PA200_1 |     1,1 | 61189.19496449 |     1.0 |     7.0 |         on |    none |    none |     0.0 | MCSA00351903 |     0 |      -1 |     -1
+  MCSA00351905.fits | pixelflat,illumflat,trace | 161.20228333333333 |  19.96666944444444 |       DOMEFLAT |     VB_K | MO_CC0958PA200_1 |     1,1 | 61189.19518441 |     1.0 |     7.0 |         on |    none |    none |     0.0 | MCSA00351905 |     0 |      -1 |     -1
+  MCSA00351907.fits | pixelflat,illumflat,trace | 161.26792916666665 | 19.966724999999997 |       DOMEFLAT |     VB_K | MO_CC0958PA200_1 |     1,1 | 61189.19536959 |     1.0 |     7.0 |         on |    none |    none |     0.0 | MCSA00351907 |     0 |      -1 |     -1
+  MCSA00352125.fits |                  standard | 182.02551249999996 | 31.030408333333334 |       HIP59174 |     VB_K | MO_CC0958PA200_1 |     1,1 | 61189.35092694 |   1.201 |    15.0 |        off |   LINE2 |       A |    -2.4 | MCSA00352125 |     0 |       3 |      4
+  MCSA00352127.fits |                  standard | 182.02552916666664 | 31.029013888888887 |       HIP59174 |     VB_K | MO_CC0958PA200_1 |     1,1 | 61189.35133204 |   1.203 |    15.0 |        off |   LINE2 |       B |     2.4 | MCSA00352127 |     0 |       4 |      3
+  MCSA00352141.fits |                  standard | 182.07179999999997 |  31.03474166666667 |       HIP59174 |     VB_K | MO_CC0958PA200_1 |     1,1 | 61189.35845018 |   1.234 |    15.0 |        off |   LINE2 |       A |    -2.5 | MCSA00352141 |     0 |       5 |      6
+  MCSA00352143.fits |                  standard | 182.07180833333328 | 31.033244444444442 |       HIP59174 |     VB_K | MO_CC0958PA200_1 |     1,1 | 61189.35904046 |   1.237 |    15.0 |        off |   LINE2 |       B |     2.5 | MCSA00352143 |     0 |       6 |      5
+data end
+
