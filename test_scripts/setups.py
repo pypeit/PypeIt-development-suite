@@ -63,6 +63,12 @@ all_setups = {
         'R1000R',
         'R300B',
     ],
+    'int_ids_eev10': [
+        'INT_20201218',
+    ],
+    'int_ids_redplus2': [
+        'r632v_1x1',
+    ],
     'keck_esi': [
         'Ech_1x1',
         'Ech_2x1',
@@ -96,14 +102,21 @@ all_setups = {
         'J1218+2951_U116Hr_RED_C5_ECH_-0.22_XD_0.21_1x2',
         'Q1009+2956_G10H_BLUE_C5_ECH_-0.00_XD_1.02_1x3',
     ],
+    'keck_hires_orig': [
+        'q0913p0715_red97_c1_ech_0.29_xd_-0.69_2x1',
+        'q0913p0715_red_c5_ech_0.00_xd_-0.81_2x1',
+        'q0913p0715_uv_c5_ech_0.00_xd_0.53_2x1',
+    ],
     'keck_kcwi': [
         'small_bh2_4200',
         'medium_bl',
         'medium_bh3',
+        'large_bl',
     ],
     'keck_kcrm': [
         'medium_rm1',
         'medium_rh3',
+        'large_rl',
     ],
     'keck_nires': [
         'ABBA_wstandard',
@@ -219,6 +232,10 @@ all_setups = {
         'FIRE_Echelle',
         'FIRE_Long',
     ],
+    'magellan_ldss3': [
+        'VPH-ALL_Std',
+        'VPH-ALL_Sci',
+    ],
     'magellan_mage': [
         '1x1',
     ],
@@ -233,6 +250,10 @@ all_setups = {
         'Longslit_G600',
         'Multislit_G270',
         'Longslit_G1000',
+    ],
+    'mmt_binospec_ifu': [
+        'G270',
+        'G270_Sky',
     ],
     'mmt_mmirs': [
         'HK_zJ',
@@ -293,6 +314,10 @@ all_setups = {
     ],
     'p200_tspec': [
         'TSPEC',
+    ],
+    'shane_hamspec': [
+        'Hamilton',
+        'Hamilton_e2v',
     ],
     'shane_kast_blue': [
         '452_3306_d57',

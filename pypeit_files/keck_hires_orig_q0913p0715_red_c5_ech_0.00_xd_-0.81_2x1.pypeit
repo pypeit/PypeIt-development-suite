@@ -1,0 +1,39 @@
+# User-defined execution parameters
+[rdx]
+    spectrograph = keck_hires_orig
+[calibrations]
+    [[slitedges]]
+        pad = 8,6
+    [[flatfield]]
+        tweak_slits = False
+        slit_trim = 0.0
+[reduce]
+    [[skysub]]
+        max_mask_frac = 0.9
+
+# Setup
+setup read
+Setup D:
+  binning: 2,1
+  decker: C5
+  dispname: RED
+  echangle: 0.0
+  filter1: clear
+  xdangle: -0.81300002
+setup end
+
+# Data block 
+data read
+ path /Users/name/path/to/data
+                 filename |           frametype |                 ra |                  dec |     target | dispname | decker | binning |          mjd | airmass | exptime | filter1 |    echangle |     xdangle | hatch | lampstat01 | frameno | calib
+HI.19990416.24217.fits.gz |            arc,tilt | 138.39429166666665 |    7.248916666666667 |       ThAr |      RED |     C5 |     2,1 |   51284.2803 |    1.04 |     1.0 |   clear |         0.0 | -0.81400001 |  True |      ThAr1 |     152 |     3
+HI.19990416.18881.fits.gz |               trace |  159.1699583333333 |             43.36375 |   feige_34 |      RED |     C5 |     2,1 | 51284.218548 |    1.23 |   150.0 |   clear |         0.0 | -0.81300002 |  True |        off |     147 |     3
+HI.19990416.08963.fits.gz | pixelflat,illumflat |                0.0 |                  0.0 |            |      RED |     C5 |     2,1 | 51284.103749 |    1.41 |    10.0 |   clear |  -4.228e-05 |     -0.8125 | False |         on |     110 |     3
+HI.19990416.09241.fits.gz | pixelflat,illumflat |                0.0 |                  0.0 |            |      RED |     C5 |     2,1 | 51284.106963 |    1.41 |    10.0 |   clear |  -4.228e-05 |     -0.8125 | False |         on |     110 |     3
+HI.19990416.09347.fits.gz | pixelflat,illumflat |                0.0 |                  0.0 |            |      RED |     C5 |     2,1 | 51284.108196 |    1.41 |    10.0 |   clear |  -4.228e-05 |     -0.8125 | False |         on |     111 |     3
+HI.19990416.09455.fits.gz | pixelflat,illumflat |                0.0 |                  0.0 |            |      RED |     C5 |     2,1 | 51284.109436 |    1.41 |    10.0 |   clear |  -4.228e-05 |     -0.8125 | False |         on |     112 |     3
+HI.19990416.09562.fits.gz | pixelflat,illumflat |                0.0 |                  0.0 |            |      RED |     C5 |     2,1 | 51284.110674 |    1.41 |    10.0 |   clear |  -4.228e-05 |     -0.8125 | False |         on |     113 |     3
+HI.19990416.09667.fits.gz | pixelflat,illumflat |                0.0 |                  0.0 |            |      RED |     C5 |     2,1 | 51284.111892 |    1.41 |    10.0 |   clear |  -4.228e-05 |     -0.8125 | False |         on |     114 |     3
+HI.19990416.20492.fits.gz |             science | 138.39445833333332 |    7.249138888888889 | q0913p0715 |      RED |     C5 |     2,1 | 51284.237187 |    1.03 |  3600.0 |   clear |         0.0 | -0.81400001 |  True |        off |     151 |     3
+data end
+
