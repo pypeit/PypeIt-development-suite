@@ -1,3 +1,5 @@
+# Paths are relative to the directory of this file; run the
+# command from there.
 # VB_K mask MO_CC0958PA200_1: 2D coadd of the 32 science frames, DET02.
 # DET02 has no bright object: the offsets and weights are those
 # measured on the DET01 target (coadd2d_bright/det1), assuming that
@@ -12,7 +14,7 @@
   weights = 1.5590, 0.6352, 0.9680, 0.9826, 0.8412, 1.1388, 1.0780, 1.1267, 1.2537, 0.4951, 1.0202, 0.9968, 1.2199, 1.1131, 0.9147, 1.1495, 1.3146, 1.1061, 1.3723, 1.3143, 1.3216, 1.2313, 1.0772, 1.4946, 1.5964, 1.2737, 0.6090, 0.8726, 0.6689, 0.6822, 0.2706, 0.5547
 
 spec2d read
-  path /mnt/s1data01/work/research/pypeit-development/PypeIt-development-suite/pypeitdev/subaru_moircs_vbk/sci_all/det2/Science
+  path ../../det2/Science
   filename
   spec2d_MCSA00352031-CC0958_PA200_1_MOIRCS_20260529T060511.128.fits
   spec2d_MCSA00352033-CC0958_PA200_1_MOIRCS_20260529T060843.130.fits

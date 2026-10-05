@@ -106,11 +106,15 @@ def write_coadd2d(det, coadd2d_lines, header):
         `Path`_: The file written.
     """
     sci, files = spec2d_files(det)
-    lines = header + ['[rdx]', '  spectrograph = subaru_moircs',
-                      f'  detnum = {det}', '', '[coadd2d]'] \
-        + coadd2d_lines + ['', 'spec2d read', f'  path {sci}', '  filename'] \
-        + [f'  {f}' for f in files] + ['spec2d end', '']
     out = OUT / f'det{det}' / f'vbk_sci_all_det{det}.coadd2d'
+    # The path is relative to the file's directory, where the coadd is run
+    rel = Path('..', '..', sci.parent.name, sci.name)
+    lines = ['# Paths are relative to the directory of this file; run the',
+             '# command from there.'] + header \
+        + ['[rdx]', '  spectrograph = subaru_moircs', f'  detnum = {det}', '',
+           '[coadd2d]'] + coadd2d_lines \
+        + ['', 'spec2d read', f'  path {rel}', '  filename'] \
+        + [f'  {f}' for f in files] + ['spec2d end', '']
     out.parent.mkdir(parents=True, exist_ok=True)
     out.write_text('\n'.join(lines))
     return out

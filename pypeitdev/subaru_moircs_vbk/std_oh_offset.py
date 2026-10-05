@@ -23,11 +23,12 @@ from pypeit.par import pypeitpar
 from pypeit.slittrace import SlitTraceSet
 from pypeit.spectrographs.util import load_spectrograph
 
-RAW = Path('/mnt/s1data01/work/research/pypeit-development/'
-           'test_data_moircs/VB_K/example_MO_CC0958PA200_1')
-SCI = RAW / 'sci' / 'MCSA00352031.fits'
-STDS = [RAW / 'std1' / 'MCSA00352125.fits', RAW / 'std1' / 'MCSA00352127.fits',
-        RAW / 'std2' / 'MCSA00352141.fits', RAW / 'std2' / 'MCSA00352143.fits']
+import vbk_paths
+
+# Raw data: the minimum example set (environment variable MOIRCS_VBK_DATA)
+SCI = vbk_paths.raw_file(352031)
+STDS = [vbk_paths.raw_file(n)
+        for n in vbk_paths.GROUPS['std1'] + vbk_paths.GROUPS['std2']]
 
 
 def sky_spectra(img, slits):

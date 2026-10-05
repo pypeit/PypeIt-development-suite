@@ -20,8 +20,9 @@ the PypeIt file, so no arc products are made from them.  Instead:
    (continuum from PypeIt's ``detect_lines``).  The lines (Ar and OH)
    are flat-topped (the image of the ~6 px slit), so a Gaussian fit to
    the top (``detect_lines``) is unstable on the bright ThAr lines and
-   often splits a line into two peaks.  Each line is measured instead by its first moment within
-   +-7 px, iterated from the highest pixel near the prediction.  A
+   often splits a line into two peaks.  Each line is measured instead
+   by its first moment within +-7 px, iterated from the highest pixel
+   near the prediction.  A
    first pass (+-4 px) gives the median offset per chip; the second
    pass searches +-1.5 px around it.  A line is kept if its peak is
    >= 8 sigma and no other line within 10-18 px exceeds 15% of its peak
@@ -56,14 +57,15 @@ from pypeit.core.wavecal import waveio
 from pypeit.images import buildimage
 from pypeit.slittrace import SlitTraceSet
 from pypeit.spectrographs.util import load_spectrograph
+
+import vbk_paths
 from pypeit.wavecalib import WaveCalib
 from pypeit.wavetilts import WaveTilts
 
-RAW = Path('/mnt/s1data01/work/research/pypeit-development/'
-           'test_data_moircs/VB_K/example_MO_CC0958PA200_1')
+# Raw data: the minimum example set (environment variable MOIRCS_VBK_DATA).
 # Chip-1 names; the MOIRCS reader opens the chip-2 companion for det 2
-ARCS = [RAW / 'arc' / f'MCSA0035{n}.fits' for n in (1935, 1937, 1939, 1941)]
-SCI = RAW / 'sci' / 'MCSA00352031.fits'
+ARCS = [vbk_paths.raw_file(n) for n in vbk_paths.GROUPS['arc']]
+SCI = vbk_paths.raw_file(352031)
 WMIN, WMAX = 18000., 25000.  # Ar_IR_MOSFIRE lines used (25 lines)
 FWHM = 6.0  # measured OH line FWHM (Implementation #4)
 HW = 7  # half-width (px) of the first-moment window

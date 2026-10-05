@@ -55,13 +55,15 @@ still to be confirmed.
 ## 1. Data
 
 Mask `MO_CC0958PA200_1`, `VB_K` grism, both detectors (raw files
-`MCSA*.fits`, multi-HDU), all taken on 2026-05-29. The two example sets
-are flat directories (no subdirectories), like the dev-suite
-`RAW_DATA/<instrument>/<setup>/` directories. The calibration files of
-the full-night set are hard links to the same files as in the minimum
-set.
+`MCSA*.fits`, multi-HDU), all taken on 2026-05-29. The raw data are not
+in the repository: for now both example sets are on the NAOJ disk, and
+the minimum set is meant to become the dev-suite `VB_K` setup
+(`RAW_DATA/subaru_moircs/VB_K/`). Both are flat directories (no
+subdirectories), like the dev-suite `RAW_DATA/<instrument>/<setup>/`
+directories, and the full-night set holds the same calibration files as
+the minimum set.
 
-| set | directory (`test_data_moircs/VB_K/`) | files (chips 1 + 2) | size | use |
+| set | directory | files (chips 1 + 2) | size | use |
 |---|---|---|---|---|
 | minimum | `MO_CC0958PA200_1_minimum/` | 50 | 3.0 GB | to share; development and reduction quality |
 | full night | `MO_CC0958PA200_1_20260529/` | 110 | 15 GB | 2D coadd and emission lines |
@@ -670,8 +672,16 @@ pypeit_sensfunc_transfer sens_std.fits Calibrations/ --from-det 1 --to-det 2 \
 ## 8. Reproducing
 
 In `pypeitdev/subaru_moircs_vbk/` (scripts and input files are
-committed; outputs are git-ignored). Data directories are under
-`test_data_moircs/VB_K/`.
+committed; outputs are git-ignored). Put the two example sets in one
+directory, then:
+
+- in the PypeIt files, replace the placeholder `PATH_TO_VBK_DATA` with
+  that directory, e.g.
+  `sed -i 's|PATH_TO_VBK_DATA|/path/to/VB_K|' <file>`;
+- for the scripts, set `export MOIRCS_VBK_DATA=/path/to/VB_K`
+  (`vbk_paths.py`);
+- the coadd and flux files use paths relative to their own directory, so
+  run them from there.
 
 | step | command or script |
 |---|---|

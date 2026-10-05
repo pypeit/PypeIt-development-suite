@@ -1,3 +1,5 @@
+# Paths are relative to the directory of this file; run the
+# command from there.
 # HIP59174 std1 (star in DET01 slit 337), A and B positions, unfluxed
 [coadd1d]
   coaddfile = coadd1d_std1_HIP59174.fits
@@ -11,7 +13,7 @@
   wave_grid_max = 25368.2
 
 coadd1d read
-  path /mnt/s1data01/work/research/pypeit-development/PypeIt-development-suite/pypeitdev/subaru_moircs_vbk/run5/Science
+  path ../run5/Science
   filename | obj_id
   spec1d_MCSA00352125-HIP59174_MOIRCS_20260529T082520.088.fits | SPAT0360-SLIT0337-DET01
   spec1d_MCSA00352127-HIP59174_MOIRCS_20260529T082555.088.fits | SPAT0318-SLIT0337-DET01

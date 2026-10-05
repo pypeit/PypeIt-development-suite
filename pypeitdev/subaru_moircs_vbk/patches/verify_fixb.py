@@ -20,11 +20,12 @@ import numpy as np
 DEV = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(DEV))
 import holy_rms_check as H  # noqa: E402
+import vbk_paths  # noqa: E402
 from pypeit.core.wavecal import autoid  # noqa: E402
 from pypeit.wavecalib import WaveCalib  # noqa: E402
 
-RAW = ('/mnt/s1data01/work/research/pypeit-development/test_data_moircs/'
-       'VB_K/example_MO_CC0958PA200_1/sci/MCSA00352031.fits')
+# A raw science frame, for the VB_K parameters (MOIRCS_VBK_DATA)
+RAW = str(vbk_paths.raw_file(352031))
 
 
 def job(det):

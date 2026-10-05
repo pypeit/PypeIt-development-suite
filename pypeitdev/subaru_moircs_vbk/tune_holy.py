@@ -22,10 +22,11 @@ from pypeit.wavecalib import WaveCalib
 from pypeit.core.wavecal import autoid
 from pypeit.spectrographs.util import load_spectrograph
 
+import vbk_paths
+
 logging.disable(logging.WARNING)
-RAW = Path('/mnt/s1data01/work/research/pypeit-development/'
-           'test_data_moircs/VB_K/example_MO_CC0958PA200_1/sci/'
-           'MCSA00352031.fits')
+# A raw science frame, for the VB_K parameters (MOIRCS_VBK_DATA)
+RAW = vbk_paths.raw_file(352031)
 kw = eval(f"dict({sys.argv[1] if len(sys.argv) > 1 else ''})")
 ref_dir = Path(sys.argv[2] if len(sys.argv) > 2 else 'run1')
 spec = load_spectrograph('subaru_moircs')

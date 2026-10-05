@@ -1,3 +1,6 @@
+# PATH_TO_VBK_DATA: the directory that holds the VB_K example sets
+# (MO_CC0958PA200_1_minimum, MO_CC0958PA200_1_20260529).  Replace it
+# before use, e.g. sed -i 's|PATH_TO_VBK_DATA|/path/to/VB_K|' <file>
 # Auto-generated PypeIt input file using PypeIt version: 1.3.1.dev10245+ga22dc39ef
 # UTC 2026-10-04T23:16:37.683+00:00
 
@@ -15,7 +18,7 @@ setup end
 
 # Data block 
 data read
- path /mnt/s1data01/work/research/pypeit-development/test_data_moircs/VB_K/MO_CC0958PA200_1_20260529
+ path PATH_TO_VBK_DATA/MO_CC0958PA200_1_20260529
            filename |                 frametype |                 ra |                dec |         target | dispname |           decker | binning |            mjd | airmass | exptime | lampstat01 | dithpat | dithpos | dithoff |      frameno | calib | comb_id | bkg_id
 # MCSA00351935.fits |                      None | 163.98204166666665 |  19.96889722222222 |          TH-AR |     VB_K | MO_CC0958PA200_1 |     1,1 | 61189.20286967 |     1.0 |     3.0 |        off |    none |    none |     0.0 | MCSA00351935 |     0 |      -1 |     -1
 # MCSA00351937.fits |                      None | 164.40059999999997 | 19.969205555555554 |          TH-AR |     VB_K | MO_CC0958PA200_1 |     1,1 | 61189.20400394 |     1.0 |     3.0 |        off |    none |    none |     0.0 | MCSA00351937 |     0 |      -1 |     -1

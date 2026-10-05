@@ -23,7 +23,7 @@ def stack(subdir, det_id, idx):
 
     Args:
         subdir (:obj:`str`):
-            Raw-data subdirectory.
+            Frame group of ``vbk_paths.GROUPS``.
         det_id (:obj:`int`):
             MOIRCS chip (``DET-ID``).
         idx (:obj:`slice`):
@@ -32,8 +32,7 @@ def stack(subdir, det_id, idx):
     Returns:
         `numpy.ndarray`_: Median image (ADU).
     """
-    files = [f for f in sorted((cb.RAW / subdir).glob('*.fits'))
-             if fits.getheader(f)['DET-ID'] == det_id][idx]
+    files = cb.vbk_paths.group_files(subdir, det_id=det_id)[idx]
     return np.median([fits.getdata(f, 0).astype(float) for f in files],
                      axis=0)
 

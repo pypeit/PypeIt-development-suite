@@ -1,3 +1,6 @@
+# PATH_TO_VBK_DATA: the directory that holds the VB_K example sets
+# (MO_CC0958PA200_1_minimum, MO_CC0958PA200_1_20260529).  Replace it
+# before use, e.g. sed -i 's|PATH_TO_VBK_DATA|/path/to/VB_K|' <file>
 # VB_K, mask MO_CC0958PA200_1: 32 science frames (16 A-B pairs,
 # 2026-05-29 06:03-08:02 UT) and the dome flats; DET02 only.
 # Auto-generated PypeIt input file using PypeIt version: 1.3.1.dev10245+ga22dc39ef
@@ -18,9 +21,7 @@ setup end
 
 # Data block 
 data read
- path /mnt/s1data01/work/research/pypeit-development/test_data_moircs/VB_K/example_MO_CC0958PA200_1/domeflat_off
- path /mnt/s1data01/work/research/pypeit-development/test_data_moircs/VB_K/example_MO_CC0958PA200_1/domeflat_on
- path /mnt/s1data01/work/research/pypeit-development/test_data_moircs/VB_K/example_MO_CC0958PA200_1/sci_all
+ path PATH_TO_VBK_DATA/MO_CC0958PA200_1_20260529
          filename |                 frametype |                 ra |                dec |         target | dispname |           decker | binning |            mjd | airmass | exptime | lampstat01 | dithpat | dithpos | dithoff |      frameno | calib | comb_id | bkg_id
 MCSA00352031.fits |          arc,science,tilt |  149.6809833333333 | 1.9310194444444444 | CC0958_PA200_1 |     VB_K | MO_CC0958PA200_1 |     1,1 | 61189.25360102 |   1.245 |   180.0 |        off |   LINE2 |       A |   -1.55 | MCSA00352031 |     0 |       1 |      2
 MCSA00352033.fits |          arc,science,tilt | 149.68012916666666 | 1.9312833333333332 | CC0958_PA200_1 |     VB_K | MO_CC0958PA200_1 |     1,1 | 61189.25605475 |   1.257 |   180.0 |        off |   LINE2 |       B |    1.55 | MCSA00352033 |     0 |       2 |      1

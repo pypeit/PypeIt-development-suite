@@ -24,8 +24,10 @@ from pypeit.core.wavecal import autoid
 from pypeit.spectrographs.util import load_spectrograph
 from pypeit.wavecalib import WaveCalib
 
-RAW = ('/mnt/s1data01/work/research/pypeit-development/test_data_moircs/'
-       'VB_K/example_MO_CC0958PA200_1/sci/MCSA00352031.fits')
+import vbk_paths
+
+# A raw science frame, for the VB_K parameters (MOIRCS_VBK_DATA)
+RAW = str(vbk_paths.raw_file(352031))
 
 
 def main():
