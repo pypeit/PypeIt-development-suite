@@ -34,6 +34,12 @@ Instrument-specific Updates
   near-IR spectrographs do.  The previous default, the TelFit Mauna Kea
   grid, also needed ``teltype = grid`` and could not run.  This applies to
   all grisms; it has been tested with ``VB_K`` standards.
+- Subaru/MOIRCS: the dither offsets (``dithoff``) now follow PypeIt's
+  convention (A = -``K_DITWID``/2, B = +``K_DITWID``/2; the sign was
+  reversed before), so A-B frames can be coadded with
+  :ref:`coadd2d` ``offsets = header``, without a bright object in the
+  slit.  PypeIt files written by :ref:`pypeit_setup` before this change
+  carry the old sign in their ``dithoff`` column.
 
 ----------------------------------------------------------------------
 Documentation Updates

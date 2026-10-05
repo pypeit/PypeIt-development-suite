@@ -101,8 +101,8 @@ Here is the :ref:`data_block` for the development-suite ``HK500`` data
 .. code-block:: console
 
              filename |                 frametype |       target | dispname |        decker | exptime | lampstat01 | dithpat | dithpos | dithoff | calib | comb_id | bkg_id
-    MCSP00237323.fits |          arc,science,tilt |      COSMOS2 |    HK500 | MO17A_COSMOS2 |   180.0 |        off |   LINE2 |       A |     1.5 |     0 |       1 |      2
-    MCSP00237325.fits |          arc,science,tilt |      COSMOS2 |    HK500 | MO17A_COSMOS2 |   180.0 |        off |   LINE2 |       B |    -1.5 |     0 |       2 |      1
+    MCSP00237323.fits |          arc,science,tilt |      COSMOS2 |    HK500 | MO17A_COSMOS2 |   180.0 |        off |   LINE2 |       A |    -1.5 |     0 |       1 |      2
+    MCSP00237325.fits |          arc,science,tilt |      COSMOS2 |    HK500 | MO17A_COSMOS2 |   180.0 |        off |   LINE2 |       B |     1.5 |     0 |       2 |      1
     MCSP00237177.fits |              lampoffflats | DOMEFLAT_OFF |    HK500 | MO17A_COSMOS2 |     5.0 |        off |    none |    none |     0.0 |     0 |      -1 |     -1
     MCSP00237179.fits |              lampoffflats | DOMEFLAT_OFF |    HK500 | MO17A_COSMOS2 |     5.0 |        off |    none |    none |     0.0 |     0 |      -1 |     -1
     MCSP00237181.fits |              lampoffflats | DOMEFLAT_OFF |    HK500 | MO17A_COSMOS2 |     5.0 |        off |    none |    none |     0.0 |     0 |      -1 |     -1
@@ -270,9 +270,17 @@ Background Subtraction
 
 The science frames are taken with the ``K_DITPAT``/``K_DITCNT``/
 ``K_DITWID`` dither cards.  For the two-position ``LINE2`` pattern,
-position 1 is A and position 2 is B, with offsets of ±``K_DITWID``/2.
-Each A frame is paired with the closest-in-time B frame for background
-subtraction, and vice versa.  See :doc:`../A-B_differencing`.
+position 1 is A and position 2 is B, with offsets (``dithoff``) of
+-``K_DITWID``/2 and +``K_DITWID``/2.  Each A frame is paired with the
+closest-in-time B frame for background subtraction, and vice versa.  See
+:doc:`../A-B_differencing`.
+
+The ``dithoff`` values follow PypeIt's convention (the offset of the slit
+with respect to the object), so the A-B frames can be coadded in 2D with
+``offsets = header`` (see :ref:`coadd2d`), which needs no bright object in
+the slit.  For faint targets, use ``weights = uniform``.  This was tested
+on one ``VB_K`` A-B pair; with more frames, a brighter object in one slit
+lets you check the offsets (``offsets = auto``) and any spatial drift.
 
 Science and standard frames are paired separately, so several A-B
 standard-star sets (e.g. one per slit position) are each paired within

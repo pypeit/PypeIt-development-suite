@@ -58,8 +58,8 @@ removed from the table; this is expected.  The resulting
 .. code-block:: console
 
              filename |                 frametype |       target | dispname |        decker | exptime | dithpat | dithpos | dithoff | calib | comb_id | bkg_id
-    MCSP00237323.fits |          arc,science,tilt |      COSMOS2 |    HK500 | MO17A_COSMOS2 |   180.0 |   LINE2 |       A |     1.5 |     0 |       1 |      2
-    MCSP00237325.fits |          arc,science,tilt |      COSMOS2 |    HK500 | MO17A_COSMOS2 |   180.0 |   LINE2 |       B |    -1.5 |     0 |       2 |      1
+    MCSP00237323.fits |          arc,science,tilt |      COSMOS2 |    HK500 | MO17A_COSMOS2 |   180.0 |   LINE2 |       A |    -1.5 |     0 |       1 |      2
+    MCSP00237325.fits |          arc,science,tilt |      COSMOS2 |    HK500 | MO17A_COSMOS2 |   180.0 |   LINE2 |       B |     1.5 |     0 |       2 |      1
     MCSP00237177.fits |              lampoffflats | DOMEFLAT_OFF |    HK500 | MO17A_COSMOS2 |     5.0 |    none |    none |     0.0 |     0 |      -1 |     -1
     MCSP00237179.fits |              lampoffflats | DOMEFLAT_OFF |    HK500 | MO17A_COSMOS2 |     5.0 |    none |    none |     0.0 |     0 |      -1 |     -1
     MCSP00237181.fits |              lampoffflats | DOMEFLAT_OFF |    HK500 | MO17A_COSMOS2 |     5.0 |    none |    none |     0.0 |     0 |      -1 |     -1
@@ -197,18 +197,18 @@ clarity):
     # MCSA00351937.fits |                      None |          TH-AR |     VB_K | MO_CC0958PA200_1 |     3.0 |    none |    none |     0.0 |     0 |      -1 |     -1
     # MCSA00351939.fits |                      None |          TH-AR |     VB_K | MO_CC0958PA200_1 |     3.0 |    none |    none |     0.0 |     0 |      -1 |     -1
     # MCSA00351941.fits |                      None |          TH-AR |     VB_K | MO_CC0958PA200_1 |     3.0 |    none |    none |     0.0 |     0 |      -1 |     -1
-      MCSA00352031.fits |          arc,science,tilt | CC0958_PA200_1 |     VB_K | MO_CC0958PA200_1 |   180.0 |   LINE2 |       A |    1.55 |     0 |       1 |      2
-      MCSA00352033.fits |          arc,science,tilt | CC0958_PA200_1 |     VB_K | MO_CC0958PA200_1 |   180.0 |   LINE2 |       B |   -1.55 |     0 |       2 |      1
+      MCSA00352031.fits |          arc,science,tilt | CC0958_PA200_1 |     VB_K | MO_CC0958PA200_1 |   180.0 |   LINE2 |       A |   -1.55 |     0 |       1 |      2
+      MCSA00352033.fits |          arc,science,tilt | CC0958_PA200_1 |     VB_K | MO_CC0958PA200_1 |   180.0 |   LINE2 |       B |    1.55 |     0 |       2 |      1
       MCSA00351909.fits |              lampoffflats |   DOMEFLAT_OFF |     VB_K | MO_CC0958PA200_1 |     7.0 |    none |    none |     0.0 |     0 |      -1 |     -1
       ...
       MCSA00351921.fits |              lampoffflats |   DOMEFLAT_OFF |     VB_K | MO_CC0958PA200_1 |     7.0 |    none |    none |     0.0 |     0 |      -1 |     -1
       MCSA00351895.fits | pixelflat,illumflat,trace |       DOMEFLAT |     VB_K | MO_CC0958PA200_1 |     7.0 |    none |    none |     0.0 |     0 |      -1 |     -1
       ...
       MCSA00351907.fits | pixelflat,illumflat,trace |       DOMEFLAT |     VB_K | MO_CC0958PA200_1 |     7.0 |    none |    none |     0.0 |     0 |      -1 |     -1
-      MCSA00352125.fits |                  standard |       HIP59174 |     VB_K | MO_CC0958PA200_1 |    15.0 |   LINE2 |       A |     2.4 |     0 |       3 |      4
-      MCSA00352127.fits |                  standard |       HIP59174 |     VB_K | MO_CC0958PA200_1 |    15.0 |   LINE2 |       B |    -2.4 |     0 |       4 |      3
-      MCSA00352141.fits |                  standard |       HIP59174 |     VB_K | MO_CC0958PA200_1 |    15.0 |   LINE2 |       A |     2.5 |     0 |       5 |      6
-      MCSA00352143.fits |                  standard |       HIP59174 |     VB_K | MO_CC0958PA200_1 |    15.0 |   LINE2 |       B |    -2.5 |     0 |       6 |      5
+      MCSA00352125.fits |                  standard |       HIP59174 |     VB_K | MO_CC0958PA200_1 |    15.0 |   LINE2 |       A |    -2.4 |     0 |       3 |      4
+      MCSA00352127.fits |                  standard |       HIP59174 |     VB_K | MO_CC0958PA200_1 |    15.0 |   LINE2 |       B |     2.4 |     0 |       4 |      3
+      MCSA00352141.fits |                  standard |       HIP59174 |     VB_K | MO_CC0958PA200_1 |    15.0 |   LINE2 |       A |    -2.5 |     0 |       5 |      6
+      MCSA00352143.fits |                  standard |       HIP59174 |     VB_K | MO_CC0958PA200_1 |    15.0 |   LINE2 |       B |     2.5 |     0 |       6 |      5
 
 Check that:
 
