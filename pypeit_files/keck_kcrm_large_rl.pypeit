@@ -1,0 +1,54 @@
+[rdx]
+    spectrograph = keck_kcrm
+[reduce]
+    [[skysub]]
+        joint_fit = False
+[baseprocess]
+    use_biasimage = True
+[scienceframe]
+    [[process]]
+        use_specillum = False
+
+setup read
+Setup E:
+  binning: 2,2
+  cenwave: 6562.9916992
+  decker: Large
+  dispname: RL
+setup end
+
+# Data block 
+data read
+ path /Users/westfall/Work/pypeit/kcwi_wcs/omeara/raw/red
+                      filename |            frametype |                 ra |                  dec |         target | dispname | decker | binning |          mjd | airmass |       exptime |      cenwave | posang | ra_off | dec_off |   idname | calpos |     calib | comb_id | bkg_id
+  KR.20230916.08148.40.fits.gz |                 bias |  63.99999999999999 |                 45.0 |        unknown |      RM1 | Medium |     2,2 |  60203.09431 |    1.41 |           0.0 | 6562.9916992 |    0.0 |    0.0 |     0.0 |     BIAS | Mirror |         0 |      -1 |     -1
+  KR.20230916.08192.26.fits.gz |                 bias |  63.99999999999999 |                 45.0 |        unknown |      RM1 | Medium |     2,2 | 60203.094818 |    1.41 |           0.0 | 6562.9916992 |    0.0 |    0.0 |     0.0 |     BIAS | Mirror |         0 |      -1 |     -1
+  KR.20230916.08236.12.fits.gz |                 bias |  63.99999999999999 |                 45.0 |        unknown |      RM1 | Medium |     2,2 | 60203.095326 |    1.41 |           0.0 | 6562.9916992 |    0.0 |    0.0 |     0.0 |     BIAS | Mirror |         0 |      -1 |     -1
+  KR.20230916.08279.98.fits.gz |                 bias |  63.99999999999999 |                 45.0 |        unknown |      RM1 | Medium |     2,2 | 60203.095833 |    1.41 |           0.0 | 6562.9916992 |    0.0 |    0.0 |     0.0 |     BIAS | Mirror |         0 |      -1 |     -1
+  KR.20230916.08323.84.fits.gz |                 bias |  63.99999999999999 |                 45.0 |        unknown |      RM1 | Medium |     2,2 | 60203.096341 |    1.41 |           0.0 | 6562.9916992 |    0.0 |    0.0 |     0.0 |     BIAS | Mirror |         0 |      -1 |     -1
+  KR.20230916.08367.70.fits.gz |                 bias |  63.99999999999999 |                 45.0 |        unknown |      RM1 | Medium |     2,2 | 60203.096848 |    1.41 |           0.0 | 6562.9916992 |    0.0 |    0.0 |     0.0 |     BIAS | Mirror |         0 |      -1 |     -1
+  KR.20230916.08410.54.fits.gz |                 bias |  63.99999999999999 |                 45.0 |        unknown |      RM1 | Medium |     2,2 | 60203.097344 |    1.41 |           0.0 | 6562.9916992 |    0.0 |    0.0 |     0.0 |     BIAS | Mirror |         0 |      -1 |     -1
+  KR.20230916.11745.99.fits.gz |                align |  63.99999999999999 |                 45.0 |        unknown |       RL |  Large |     2,2 | 60203.135949 |    1.41 |    2.50000256 | 7149.8920898 |    0.0 |    0.0 |     0.0 | CONTBARS | Mirror |         0 |      -1 |     -1
+  KR.20230916.11865.33.fits.gz |                  arc |  63.99999999999999 |                 45.0 |        unknown |       RL |  Large |     2,2 |  60203.13733 |    1.41 |    2.50000256 | 7149.8920898 |    0.0 |    0.0 |     0.0 |  ARCLAMP | Mirror |         0 |      -1 |     -1
+  KR.20230916.11891.85.fits.gz |                  arc |  63.99999999999999 |                 45.0 |        unknown |       RL |  Large |     2,2 | 60203.137637 |    1.41 |    2.50000256 | 7149.8920898 |    0.0 |    0.0 |     0.0 |  ARCLAMP | Mirror |         0 |      -1 |     -1
+  KR.20230916.11918.37.fits.gz |                  arc |  63.99999999999999 |                 45.0 |        unknown |       RL |  Large |     2,2 | 60203.137944 |    1.41 |    2.50000256 | 7149.8920898 |    0.0 |    0.0 |     0.0 |  ARCLAMP | Mirror |         0 |      -1 |     -1
+  KR.20230916.11964.27.fits.gz |                 tilt |  63.99999999999999 |                 45.0 |        unknown |       RL |  Large |     2,2 | 60203.138475 |    1.41 |    2.50000256 | 7149.8920898 |    0.0 |    0.0 |     0.0 |  ARCLAMP | Mirror |         0 |      -1 |     -1
+  KR.20230916.11990.79.fits.gz |                 tilt |  63.99999999999999 |                 45.0 |        unknown |       RL |  Large |     2,2 | 60203.138782 |    1.41 |    2.50000256 | 7149.8920898 |    0.0 |    0.0 |     0.0 |  ARCLAMP | Mirror |         0 |      -1 |     -1
+  KR.20230916.12017.31.fits.gz |                 tilt |  63.99999999999999 |                 45.0 |        unknown |       RL |  Large |     2,2 | 60203.139089 |    1.41 |    2.50000256 | 7149.8920898 |    0.0 |    0.0 |     0.0 |  ARCLAMP | Mirror |         0 |      -1 |     -1
+  KR.20230916.12516.90.fits.gz |      illumflat,trace |  63.99999999999999 |                 45.0 |        unknown |       RL |  Large |     2,2 | 60203.144862 |    1.41 |  10.000009984 | 7149.8920898 |    0.0 |    0.0 |     0.0 | DOMEFLAT |    Sky |         0 |      -1 |     -1
+  KR.20230916.12570.15.fits.gz |      illumflat,trace |  63.99999999999999 |                 45.0 |        unknown |       RL |  Large |     2,2 | 60203.145488 |    1.41 |  10.000009984 | 7149.8920898 |    0.0 |    0.0 |     0.0 | DOMEFLAT |    Sky |         0 |      -1 |     -1
+  KR.20230916.12624.21.fits.gz |      illumflat,trace |  63.99999999999999 |                 45.0 |        unknown |       RL |  Large |     2,2 | 60203.146114 |    1.41 |  10.000009984 | 7149.8920898 |    0.0 |    0.0 |     0.0 | DOMEFLAT |    Sky |         0 |      -1 |     -1
+  KR.20230916.12068.31.fits.gz | pixelflat,scattlight |  63.99999999999999 |                 45.0 |        unknown |       RL |  Large |     2,2 |  60203.13968 |    1.41 |    2.50000256 | 7149.8920898 |    0.0 |    0.0 |     0.0 | FLATLAMP | Mirror |         0 |      -1 |     -1
+  KR.20230916.12115.23.fits.gz | pixelflat,scattlight |  63.99999999999999 |                 45.0 |        unknown |       RL |  Large |     2,2 | 60203.140223 |    1.41 |    2.50000256 | 7149.8920898 |    0.0 |    0.0 |     0.0 | FLATLAMP | Mirror |         0 |      -1 |     -1
+  KR.20230916.12162.15.fits.gz | pixelflat,scattlight |  63.99999999999999 |                 45.0 |        unknown |       RL |  Large |     2,2 | 60203.140766 |    1.41 |    2.50000256 | 7149.8920898 |    0.0 |    0.0 |     0.0 | FLATLAMP | Mirror |         0 |      -1 |     -1
+  KR.20230916.12208.50.fits.gz | pixelflat,scattlight |  63.99999999999999 |                 45.0 |        unknown |       RL |  Large |     2,2 | 60203.141297 |    1.41 |    2.50000256 | 7149.8920898 |    0.0 |    0.0 |     0.0 | FLATLAMP | Mirror |         0 |      -1 |     -1
+  KR.20230916.12254.97.fits.gz | pixelflat,scattlight |  63.99999999999999 |                 45.0 |        unknown |       RL |  Large |     2,2 |  60203.14184 |    1.41 |    2.50000256 | 7149.8920898 |    0.0 |    0.0 |     0.0 | FLATLAMP | Mirror |         0 |      -1 |     -1
+  KR.20230916.12301.89.fits.gz | pixelflat,scattlight |  63.99999999999999 |                 45.0 |        unknown |       RL |  Large |     2,2 | 60203.142383 |    1.41 |    2.50000256 | 7149.8920898 |    0.0 |    0.0 |     0.0 | FLATLAMP | Mirror |         0 |      -1 |     -1
+  KR.20230916.27180.64.fits.gz |              science |  335.5357083333333 |              27.7585 | SDSSJ2222 2745 |       RL |  Large |     2,2 | 60203.314591 |    1.08 | 300.000300032 | 7149.8920898 |    0.0 |    0.0 |     0.0 |   OBJECT |    Sky |         0 |      26 |     -1
+  KR.20230916.27524.38.fits.gz |              science |  335.5357083333333 |              27.7585 | SDSSJ2222 2745 |       RL |  Large |     2,2 | 60203.318569 |    1.07 | 300.000300032 | 7149.8920898 |    0.0 |    0.0 |     0.0 |   OBJECT |    Sky |         0 |      27 |     -1
+  KR.20230916.27868.12.fits.gz |              science |  335.5357083333333 |              27.7585 | SDSSJ2222 2745 |       RL |  Large |     2,2 | 60203.322548 |    1.06 | 300.000300288 | 7149.8920898 |    0.0 |    0.0 |     0.0 |   OBJECT |    Sky |         0 |      28 |     -1
+  KR.20230916.53596.21.fits.gz |              science |  57.20858333333332 |  -0.9751111111111112 |           gd50 |       RL |  Large |     2,2 | 60203.620327 |    1.07 |  90.000090112 | 7149.8920898 |    0.0 |    0.0 |     0.0 |   OBJECT |    Sky |         0 |      94 |     -1
+  KR.20230916.53739.10.fits.gz |              science |  57.20858333333332 |  -0.9751111111111112 |           gd50 |       RL |  Large |     2,2 | 60203.621979 |    1.08 |  90.000090112 | 7149.8920898 |    0.0 |    0.0 |     0.0 |   OBJECT |    Sky |         0 |      95 |     -1
+  KR.20230916.53873.65.fits.gz |              science |  57.20858333333332 |  -0.9751111111111112 |           gd50 |       RL |  Large |     2,2 | 60203.623538 |    1.08 |  90.000090112 | 7149.8920898 |    0.0 |    0.0 |     0.0 |   OBJECT |    Sky |         0 |      96 |     -1
+data end
+
