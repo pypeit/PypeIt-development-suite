@@ -1,0 +1,32 @@
+# Auto-generated PypeIt file
+# MMIRS multi-object (MOS) mask "nep.as1": exercises .msk mask-design ingest
+# (maskdef object assignment is auto-enabled by the nep.as1.msk file that sits
+# next to the frames) together with the geometry-driven A-B nod pairing.  This
+# is a subset (one ABA'B' cycle) of the full nep.as1 sequence; the two 300.957s
+# darks calibrate the up-the-ramp read noise at the science exposure time.
+
+# User-defined execution parameters
+[rdx]
+    spectrograph = mmt_mmirs
+
+# Setup
+setup read
+Setup A:
+  decker: nep.as1
+  dichroic: zJ
+  dispname: J
+setup end
+
+# Data block
+data read
+ path /Users/tim/MMT/PypeIt-development-suite/RAW_DATA/mmt_mmirs/nep_as1_MOS
+             filename |                 frametype |          ra |         dec |  target | dispname |  decker | binning |                mjd | airmass | exptime | dichroic | dithpat | dithpos |                 dithoff | frameno | calib
+nep.as1_mos.1822.fits |          arc,science,tilt | 17.37428881 | 65.88261431 | nep.as1 |        J | nep.as1 |     1,1 |   58739.1016087963 |   1.231 | 300.957 |       zJ |  ABA'B' |       A |      1.7999350315011449 |    1822 |     0
+nep.as1_mos.1823.fits |          arc,science,tilt | 17.37425438 | 65.88347776 | nep.as1 |        J | nep.as1 |     1,1 |  58739.10528935185 |   1.235 | 300.957 |       zJ |  ABA'B' |       B |     -1.3999629081282063 |    1823 |     0
+nep.as1_mos.1824.fits |          arc,science,tilt | 17.37428451 | 65.88272224 | nep.as1 |        J | nep.as1 |     1,1 | 58739.108935185184 |   1.239 | 300.957 |       zJ |  ABA'B' |      A' |      1.3999709854953284 |    1824 |     0
+nep.as1_mos.1825.fits |          arc,science,tilt | 17.37425008 | 65.88358569 | nep.as1 |        J | nep.as1 |     1,1 |  58739.11258101852 |   1.243 | 300.957 |       zJ |  ABA'B' |      B' |     -1.7999254494805157 |    1825 |     0
+       dark.2145.fits |                      dark |        -1.0 |      -100.0 |    Dark |     open |    dark |     1,1 |  58739.54199074074 |     1.0 | 300.957 |     dark |    None |    None |                     0.0 |    2145 |     0
+       dark.2146.fits |                      dark |        -1.0 |      -100.0 |    Dark |     open |    dark |     1,1 |       58739.545625 |     1.0 | 300.957 |     dark |    None |    None |                     0.0 |    2146 |     0
+       flat.1848.fits | pixelflat,illumflat,trace | 17.37426944 |     65.8831 |    flat |        J | nep.as1 |     1,1 |  58739.18989583333 |   1.411 |  10.327 |       zJ |    None |    None | -2.3088913330677472e-05 |    1848 |     0
+       flat.1849.fits | pixelflat,illumflat,trace | 17.37426944 |     65.8831 |    flat |        J | nep.as1 |     1,1 |  58739.19012731482 |   1.411 |  10.327 |       zJ |    None |    None | -2.3088913330677472e-05 |    1849 |     0
+data end
