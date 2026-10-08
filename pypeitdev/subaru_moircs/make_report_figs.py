@@ -7,6 +7,7 @@ from pathlib import Path
 import glob
 import json
 import logging
+import os
 import shutil
 
 import numpy as np
@@ -23,9 +24,12 @@ from pypeit.flatfield import FlatImages
 logging.disable(logging.INFO)
 
 HERE = Path(__file__).parent
-RUN = HERE / 'run2' / 'subaru_moircs_A'      # final reduction
+# The reduction and output directories can be changed with the
+# MOIRCS_RUN and MOIRCS_OUT environment variables
+RUN = Path(os.environ.get('MOIRCS_RUN',
+                          HERE / 'run2' / 'subaru_moircs_A'))
 HG = HERE / 'subaru_moircs_A'                # holy-grail calibrations
-OUT = HERE / 'report_HK500'
+OUT = Path(os.environ.get('MOIRCS_OUT', HERE / 'report_HK500'))
 OUT.mkdir(exist_ok=True)
 DETS = ['DET01', 'DET02']
 LINELIST = Path('/Users/xavier/Projects/PypeIt/PypeIt/pypeit/data/'

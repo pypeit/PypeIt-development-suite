@@ -202,6 +202,9 @@ Use Opus 5.5.  Log your work in Logs below.
 We now wish to develop code for MOIRCS so that the user can provide a mask file and the code will:  (1) extract at the object locations, whether or not a source is detected, (2) assign RA/Dec to each extracted object.  We wish to mimic either the Keck/LRIS approach.  Examine these files and the code for Keck/LRIS and then propose a plan for how to implement this in PypeIt.  Put questions in the Q&A/Masks sub-section below.
 Use Opus 5.5.  Log your work in Logs below.
 
+13. **More masks.** Debora writes: "I think at this stage we can implement the slitmask matching where every slits gets its MASKDEF_ID, but assigning the source names to each detected speec1d and force extracting the non detected sources is not really possible right now without the info about the souces, e.g., RA/Dec and pixel distance from the slit edges."  Given what you have found, do you think this is feasible?  Let's discuss in the Q&A/Masks sub-section below.
+Use Opus 5.5.  Log your work in Logs below.
+
 ## Q&A
 
 ### Masks
@@ -299,6 +302,17 @@ Plan and questions from Claude (2026-10-04).  Answer inline after each
    - an extraction for each of the 32 targets, detected or not;
    - sensible RA/Dec;
    - a doc section on how to supply the mask file.
+
+### Docs
+
+1. Let us build out the docs for Subaru MOIRCS.  Model it after Keck/MOSFIRE and Subaru/FOCAS.  Build out a Tutorial like the ones found here:
+`https://pypeit.readthedocs.io/en/stable/tutorials/tutorials.html`
+Be sure to emphasize that the auto-typing by PypeIt is not fool-proof and that the user should be careful to check the frame types and metadata.  And then update their PypeIt file.  Do not include any docs on using mask design files.  
+Use Opus 5.5.  Log your work in Logs below.
+
+### PR
+
+1. I think we are ready to issue a PR.  But please 
 
 **Questions**
 
@@ -883,3 +897,47 @@ directories hold reduction outputs; ignore them in git if you prefer.
 - Wrote the proposed plan and questions Q26–33 in Q&A → Masks.  The
   main blocker is the source of RA/Dec (Q26).
 - No PypeIt code was changed.
+
+### 2026-10-05 — Docs #1 (Claude Opus 5.5)
+
+- Brought the docs up to date with the merged VB_K PR (#2203): VB_K
+  archive and parameters, `STANDARD_STAR` typing, ThAr arcs (untyped by
+  design), read noise vs `DET-NSMP`, the dither sign convention
+  (A = −K_DITWID/2), and the PCA telluric model.
+- Reran `pypeit_setup` and `run_pypeit` on HK500 with the current code
+  (`pypeitdev/subaru_moircs/run_docs`).  The results are identical to
+  `run2`: 17/17 and 15/15 science slits calibrated, rms 0.24–0.43 px,
+  and 5 objects per exposure.
+- Rewrote `doc/spectrographs/subaru_moircs.rst`, following MOSFIRE and
+  FOCAS:
+  - detectors and files (chip-2 companion, `detnum`), detector
+    parameters, and the bad-pixel mask;
+  - the PypeIt file, with a **warning to check the frame types**;
+  - a frame-typing table, a list of things to check, configuration,
+    and dithering/A-B pairing;
+  - calibrations: edges, lamp-off flats, a per-grism wavelength table,
+    how to use ThAr arcs, and flexure;
+  - object finding, fluxing, and references.
+  - Mask-design files are not documented; one line says they are not
+    used.
+- Rewrote `doc/tutorials/moircs_howto.rst` in the style of the FOCAS and
+  MOSFIRE tutorials:
+  - organizing the data (keep both chip files);
+  - `pypeit_setup` (the chip-2 warning, the `.sorted` file with setup B
+    for the mask image), and the generated PypeIt file;
+  - a **"Check the PypeIt file" section**: a warning that auto-typing is
+    not fool-proof, a column-by-column checklist, and how to update the
+    PypeIt file;
+  - the main run, calibrations (edges, wavelengths, flat), Spec2D,
+    Spec1D, and next steps.
+- New figures in `doc/figures/`: `moircs_slits.png`,
+  `moircs_arcfit.png`, `moircs_spec2d.png`, `moircs_spec1d.png`.  They
+  are made from `run_docs` by `make_report_figs.py` (which now takes the
+  `MOIRCS_RUN`/`MOIRCS_OUT` environment variables) plus a Spec2D zoom.
+- Updated the docs bullet in `doc/releases/2.1.0dev.rst`.  `make
+  htmlonly` finishes with no MOIRCS warnings.  I fixed a malformed table
+  and replaced a multi-line simple table with a `list-table`.
+- The instrument bullet in the release notes still doesn't mention VB_K
+  (monodera's changes); left for you or the PR author.
+- Note: in this file, the `### Docs` and `### PR` prompts sit inside the
+  `## Q&A` section, and PR #1 ends mid-sentence ("But please").
