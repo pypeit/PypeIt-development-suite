@@ -624,6 +624,61 @@ class PypeItCoadd2DTest(PypeItTest):
             return []
 
 
+class PypeItSetupDataCubeTest(PypeItTest):
+    """Test subclass that runs pypeit_setup_datacube"""
+    def __init__(self, setup, pargs, target):
+        target_stub = target.replace(' ', '')
+        super().__init__(setup, pargs, f"pypeit_setup_datacube ({target})",
+                         f"test_setup_datacube_{target_stub}")
+        self.target = target
+        self.target_stub = target_stub
+
+    def build_command_line(self):
+        pyp_file = self.setup.rdxdir / pypeit_file_name(self.setup.instr, self.setup.name)
+        return ['pypeit_setup_datacube', str(pyp_file), self.target, '-o']
+
+
+class PypeItCoaddDataCubeTest(PypeItTest):
+    """Test subclass that runs pypeit_coadd_datacube"""
+    def __init__(self, setup, pargs, target):
+        target_stub = target.replace(' ', '')
+        super().__init__(setup, pargs, f"pypeit_coadd_datacube ({target})",
+                         f"test_coadd_datacube_{target_stub}")
+        self.target = target
+        self.target_stub = target_stub
+
+    def build_command_line(self):
+        coadd3d_file = self.setup.rdxdir / 'sources' / self.target_stub / f'{self.target_stub}.coadd3d'
+        if not coadd3d_file.is_file():
+            raise FileNotFoundError(
+                f"{coadd3d_file} not found; pypeit_setup_datacube must run first for "
+                f"target={self.target}")
+        return ['pypeit_coadd_datacube', str(coadd3d_file), '-o']
+
+
+class PypeItExtractDataCubeTest(PypeItTest):
+    """Test subclass that runs pypeit_extract_datacube"""
+    def __init__(self, setup, pargs, target):
+        target_stub = target.replace(' ', '')
+        super().__init__(setup, pargs, f"pypeit_extract_datacube ({target})",
+                         f"test_extract_datacube_{target_stub}")
+        self.target = target
+        self.target_stub = target_stub
+
+    def build_command_line(self):
+        spec3d_file = self.setup.rdxdir / 'Science_cube' / f'{self.target_stub}.fits'
+        extract_file = self.setup.rdxdir / 'sources' / self.target_stub / f'{self.target_stub}.extract'
+        if not spec3d_file.is_file():
+            raise FileNotFoundError(
+                f"{spec3d_file} not found; pypeit_coadd_datacube must run first for "
+                f"target={self.target}")
+        if not extract_file.is_file():
+            raise FileNotFoundError(
+                f"{extract_file} not found; pypeit_setup_datacube must run first for "
+                f"target={self.target}")
+        return ['pypeit_extract_datacube', str(spec3d_file), '-e', str(extract_file), '-o']
+
+
 class PypeItTelluricTest(PypeItTest):
     """Test subclass that runs pypeit_tellfit"""
 

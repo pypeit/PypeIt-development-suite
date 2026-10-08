@@ -1,0 +1,46 @@
+# Auto-generated PypeIt input file using PypeIt version: 2.0.2.dev183+g10bc07e23
+# UTC 2026-09-06T21:17:40.603+00:00
+
+# User-defined execution parameters
+[rdx]
+    spectrograph = int_ids_redplus2
+
+# Setup
+setup read
+Setup A:
+  binning: 1,1
+  cenwave: 5940.749
+  detector: REDPLUS2
+  dispname: R632V
+setup end
+
+# Data block 
+data read
+ path /Users/rcooke/Software/DataReduction/INT_IDS/XMPs/Raw
+                    filename |                 frametype |                ra |                dec |     target | dispname |   decker | binning |           mjd |  airmass | exptime |  cenwave | detector | slitwid |         lampstat01 | calib
+ arc_CuAr+CuNe_040324_5s.fit |                  arc,tilt |               0.0 |                0.0 |        Arc |    R632V | P0 Clear |     1,1 | 60373.7661257 | 1.000271 |    5.01 | 5940.749 | REDPLUS2 |   0.974 | CuAr CuAr CuNe CuN |     0
+                r1720019.fit |                      bias |               0.0 |                0.0 |       Bias |    R632V | P0 Clear |     1,1 | 60373.7642623 | 1.000271 |     0.0 | 5940.749 | REDPLUS2 |   0.974 |                off |     0
+                r1720020.fit |                      bias |               0.0 |                0.0 |       Bias |    R632V | P0 Clear |     1,1 | 60373.7644011 | 1.000271 |     0.0 | 5940.749 | REDPLUS2 |   0.974 |                off |     0
+                r1720021.fit |                      bias |               0.0 |                0.0 |       Bias |    R632V | P0 Clear |     1,1 |   60373.76454 | 1.000271 |     0.0 | 5940.749 | REDPLUS2 |   0.974 |                off |     0
+                r1720022.fit |                      bias |               0.0 |                0.0 |       Bias |    R632V | P0 Clear |     1,1 | 60373.7646789 | 1.000271 |     0.0 | 5940.749 | REDPLUS2 |   0.974 |                off |     0
+                r1720023.fit |                      bias |               0.0 |                0.0 |       Bias |    R632V | P0 Clear |     1,1 | 60373.7648178 | 1.000271 |     0.0 | 5940.749 | REDPLUS2 |   0.974 |                off |     0
+                r1720024.fit |                      bias |               0.0 |                0.0 |       Bias |    R632V | P0 Clear |     1,1 | 60373.7649683 | 1.000271 |     0.0 | 5940.749 | REDPLUS2 |   0.974 |                off |     0
+                r1720025.fit |                      bias |               0.0 |                0.0 |       Bias |    R632V | P0 Clear |     1,1 | 60373.7651072 | 1.000271 |     0.0 | 5940.749 | REDPLUS2 |   0.974 |                off |     0
+                r1720026.fit |                      bias |               0.0 |                0.0 |       Bias |    R632V | P0 Clear |     1,1 | 60373.7652461 | 1.000271 |     0.0 | 5940.749 | REDPLUS2 |   0.974 |                off |     0
+                r1720027.fit |                      bias |               0.0 |                0.0 |       Bias |    R632V | P0 Clear |     1,1 | 60373.7653849 | 1.000271 |     0.0 | 5940.749 | REDPLUS2 |   0.974 |                off |     0
+                r1720028.fit |                      bias |               0.0 |                0.0 |       Bias |    R632V | P0 Clear |     1,1 | 60373.7655238 | 1.000271 |     0.0 | 5940.749 | REDPLUS2 |   0.974 |                off |     0
+                r1720029.fit |                      bias |               0.0 |                0.0 |       Bias |    R632V | P0 Clear |     1,1 | 60373.7656627 | 1.000271 |     0.0 | 5940.749 | REDPLUS2 |   0.974 |                off |     0
+                r1720032.fit | pixelflat,illumflat,trace |               0.0 |                0.0 | Flat field |    R632V | P0 Clear |     1,1 | 60373.7669011 | 1.000271 |    1.51 | 5940.749 | REDPLUS2 |   0.974 |                  W |     0
+                r1720033.fit | pixelflat,illumflat,trace |               0.0 |                0.0 | Flat field |    R632V | P0 Clear |     1,1 | 60373.7670516 | 1.000271 |    1.51 | 5940.749 | REDPLUS2 |   0.974 |                  W |     0
+                r1720034.fit | pixelflat,illumflat,trace |               0.0 |                0.0 | Flat field |    R632V | P0 Clear |     1,1 | 60373.7672136 | 1.000271 |    1.51 | 5940.749 | REDPLUS2 |   0.974 |                  W |     0
+                r1720035.fit | pixelflat,illumflat,trace |               0.0 |                0.0 | Flat field |    R632V | P0 Clear |     1,1 | 60373.7673641 | 1.000271 |    1.51 | 5940.749 | REDPLUS2 |   0.974 |                  W |     0
+                r1720036.fit | pixelflat,illumflat,trace |               0.0 |                0.0 | Flat field |    R632V | P0 Clear |     1,1 | 60373.7675146 | 1.000271 |    1.51 | 5940.749 | REDPLUS2 |   0.974 |                  W |     0
+                r1720037.fit | pixelflat,illumflat,trace |               0.0 |                0.0 | Flat field |    R632V | P0 Clear |     1,1 | 60373.7676766 | 1.000271 |    1.51 | 5940.749 | REDPLUS2 |   0.974 |                  W |     0
+                r1720038.fit | pixelflat,illumflat,trace |               0.0 |                0.0 | Flat field |    R632V | P0 Clear |     1,1 | 60373.7678271 | 1.000271 |    1.51 | 5940.749 | REDPLUS2 |   0.974 |                  W |     0
+                r1720039.fit | pixelflat,illumflat,trace |               0.0 |                0.0 | Flat field |    R632V | P0 Clear |     1,1 | 60373.7679775 | 1.000271 |    1.51 | 5940.749 | REDPLUS2 |   0.974 |                  W |     0
+                r1720040.fit | pixelflat,illumflat,trace |               0.0 |                0.0 | Flat field |    R632V | P0 Clear |     1,1 |  60373.768128 | 1.000271 |    1.51 | 5940.749 | REDPLUS2 |   0.974 |                  W |     0
+                r1720041.fit | pixelflat,illumflat,trace |               0.0 |                0.0 | Flat field |    R632V | P0 Clear |     1,1 |   60373.76829 | 1.000271 |    1.51 | 5940.749 | REDPLUS2 |   0.974 |                  W |     0
+                r1720042.fit | pixelflat,illumflat,trace |               0.0 |                0.0 | Flat field |    R632V | P0 Clear |     1,1 | 60373.7684405 | 1.000271 |    1.51 | 5940.749 | REDPLUS2 |   0.974 |                  W |     0
+     G191-B2B_040324_std.fit |                   science | 76.37765416666666 | 52.830375000000004 |   STDSTAR1 |    R632V | P0 Clear |     1,1 |   60373.83079 | 1.100996 |  120.01 | 5940.749 | REDPLUS2 |   1.001 |                off |     0
+data end
+
