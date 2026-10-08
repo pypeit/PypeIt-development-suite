@@ -303,6 +303,76 @@ Plan and questions from Claude (2026-10-04).  Answer inline after each
    - sensible RA/Dec;
    - a doc section on how to supply the mask file.
 
+**Discussion of Debora's comment (Implementation #13, Claude,
+2026-10-07)**
+
+> "I think at this stage we can implement the slitmask matching where every
+> slit gets its MASKDEF_ID, but assigning the source names to each detected
+> spec1d and force extracting the non-detected sources is not really
+> possible right now without the info about the sources, e.g., RA/Dec and
+> pixel distance from the slit edges."
+
+**My view: she is right about RA/Dec, but names and forced extraction
+*are* feasible now.**  PypeIt's code and two tests on the HK500 data
+(`pypeitdev/subaru_moircs/mask_match_test.py`) support this.
+
+1. **MASKDEF_ID: yes, demonstrated.**  I predicted each `.mdp` opening's
+   spatial centre with the instrument flip and scale (from the mask-image
+   fit) and found the zero point per chip by a 1D scan against the
+   traced slits.  This matches **20/20 traced slits on DET01 and 19/19 on
+   DET02** within 6 px.
+   - The alignment holes match holes, and the slit lengths agree.
+   - PypeIt's `maskdesign_matching` also fits a scale, which will reduce
+     the ≤6 px residuals.
+   - No mask image or field centre is needed.
+2. **What PypeIt needs for names and forced extraction is not RA/Dec.**
+   In `SlitTraceSet.assign_maskinfo` and `mask_add_missing_obj`,
+   detected objects are matched to targets **in pixel space**.  The
+   expected position is `OBJ_TOPDIST` (the distance from the slit edge)
+   plus `maskdef_offset` (from the dither cards or a bright object).
+   - For a matched object, RA/Dec are only *copied* from the design table.
+   - Sky coordinates are used only to give RA/Dec to `SERENDIP` objects.
+   - The design table accepts `onsky = None`.
+3. **The distance from the slit edges can be inferred.**  The `.mdp`
+   x/y is the slit centre, and the builder places slits on the target
+   (by click or FWHM centroid), so `OBJ_TOPDIST = OBJ_BOTDIST =
+   length/2`.  Tested on the 5 detected objects, averaging A and B to
+   cancel the dither:
+   - 4 of 5 are within **0.3″** (≤2.5 px) of their slit centre.
+   - The 5th (+0.76″, slit 1245) is the 7″ slit whose `.mdp` comment
+     reads "monitoring star; not centered", so the one outlier is the one
+     the mask file itself flags.
+   - A−B = 25–27 px, consistent with the 3″ dither and the A/B sign
+     convention in the code.
+
+   PypeIt's default `obj_toler` (1″) plus the edge-matching rms easily
+   covers 0.3″.
+4. **Names: yes.**  Each `.mdp` line carries the target's catalogue `id`
+   in its JSON (e.g. `312786`; the holes have the alignment-star ids).
+   That can be `MASKDEF_OBJNAME`, and `kmag` can be `MASKDEF_OBJMAG`
+   (band `K`).
+5. **RA/Dec: not from the `.mdp` alone.**  Here Debora is right.  The
+   options are still Q26 (a)–(d).  Meanwhile, objects can be written with
+   RA/Dec = NaN (or 0, as PypeIt does for `maskdef_id = -99`), and the
+   coordinates added later from a catalogue matched on the `id` (option
+   c), with no change to the matching.
+
+**Proposal.**  Implement the full chain now: MASKDEF_ID, names, magnitudes,
+and forced extraction, with RA/Dec left empty.  Add RA/Dec as a follow-up
+once a WCS or catalogue is available.
+
+Caveats to agree on:
+- **Off-centre targets.**  The `.mdp` cannot encode them; they would be
+  matched within `obj_toler`, or force-extracted at the slit centre.
+  Users could fix individual ones with `bright_maskdef_id`, or with
+  manual extraction.
+- **Slits on both chips.**  Slit 334942 (y = 1801) is traced on both
+  DET01 (partially, at the detector edge) and DET02.  It would get the
+  same `MASKDEF_ID` on both chips (Q30).
+- **Untested pieces.**  These tests use one mask and only 5 detected
+  objects.  The `.mdp` JSON is not strictly valid (e.g. `"sfr": 43.43",
+  comment"`), so the reader must be tolerant.  A second mask would help.
+
 ### Docs
 
 1. Let us build out the docs for Subaru MOIRCS.  Model it after Keck/MOSFIRE and Subaru/FOCAS.  Build out a Tutorial like the ones found here:
@@ -330,7 +400,7 @@ Use Opus 5.5.  Log your work in Logs below.
     - (d) The **science-frame header WCS** (`CRVAL`/`CD`) plus the
       fitted mask→detector transform.  No extra files, but the accuracy
       is unknown (maybe ~1″).
-    A:
+    A: We are going to give up on RA/Dec for now.
 27. **Field centre / zero point.**  The `.mdp` lacks the field centre.
     Is it always the same pixel in the pre-image (the builder's default
     is 1084, 1786), or does it change per mask?  If it changes, I'll
@@ -941,3 +1011,22 @@ directories hold reduction outputs; ignore them in git if you prefer.
   (monodera's changes); left for you or the PR author.
 - Note: in this file, the `### Docs` and `### PR` prompts sit inside the
   `## Q&A` section, and PR #1 ends mid-sentence ("But please").
+
+### 2026-10-07 — Implementation #13 (Claude Opus 5.5)
+
+- Assessed Debora's comment, that MASKDEF_ID is feasible but names and
+  forced extraction need RA/Dec and object positions.
+  - Read `SlitTraceSet.assign_maskinfo`, `mask_add_missing_obj`, and
+    `EdgeTraceSet._fill_design_table`/`_fill_objects_table`.  Objects are
+    matched to targets in pixel space (`OBJ_TOPDIST` + `maskdef_offset`).
+    RA/Dec are only copied, or used for SERENDIP objects, and `onsky` is
+    optional.
+- New `pypeitdev/subaru_moircs/mask_match_test.py`:
+  - (1) The `.mdp` slit prediction (flip/scale, 1D zero-point scan)
+    matches 20/20 (DET01) and 19/19 (DET02) traced slits within 6 px.
+  - (2) Detected objects sit at their slit centres within 0.3″ (4/5).
+    The exception is the slit the `.mdp` flags "not centered".
+- Conclusion, written in Q&A → Masks: MASKDEF_ID, names (JSON `id`),
+  and forced extraction (target at slit centre) are feasible now.  RA/Dec
+  needs a WCS or catalogue (Q26) and can be added later.
+- No PypeIt code was changed.
