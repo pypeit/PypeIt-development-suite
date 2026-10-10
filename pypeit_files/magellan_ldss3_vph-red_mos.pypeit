@@ -1,0 +1,26 @@
+# Auto-generated PypeIt input file using PypeIt version: 1.11.1.dev357+gaa9a42e92.d20221207
+# UTC 2023-06-22T13:35:34.144
+
+# User-defined execution parameters
+[rdx]
+    spectrograph = magellan_ldss3
+
+# Setup
+setup read
+Setup A:
+  dispname: VPH-Red
+setup end
+
+# Data block 
+data read
+ path /scratch/PypeIt-development-suite/RAW_DATA/magellan_ldss3/mos
+      filename |                 frametype |                 ra |                 dec |        target | dispname | decker | binning |           mjd | airmass | exptime | calib
+ccd0073c1.fits |                  arc,tilt |  9.207083333333332 |  -42.13183333333333 | ES1_34 HeNeAr |  VPH-Red |  ES134 |     1x1 | 2459490.58324 |   1.195 |     1.0 |     0
+ccd0046c1.fits | pixelflat,illumflat,trace |  236.2958333333333 | -29.011583333333334 |   ES1_34_QlQh |  VPH-Red |  ES134 |     1x1 | 2459490.32009 |     1.0 |     4.0 |     0
+ccd0047c1.fits | pixelflat,illumflat,trace | 236.45416666666662 | -29.011583333333334 |   ES1_34_QlQh |  VPH-Red |  ES134 |     1x1 | 2459490.32053 |     1.0 |     4.0 |     0
+ccd0048c1.fits | pixelflat,illumflat,trace | 236.61374999999998 | -29.011583333333334 |   ES1_34_QlQh |  VPH-Red |  ES134 |     1x1 | 2459490.32097 |     1.0 |     4.0 |     0
+ccd0049c1.fits | pixelflat,illumflat,trace | 236.78833333333333 | -29.011583333333334 |   ES1_34_QlQh |  VPH-Red |  ES134 |     1x1 | 2459490.32146 |     1.0 |     4.0 |     0
+ccd0069c1.fits |                   science |  9.206666666666665 |  -42.13097222222222 |        ES1_34 |  VPH-Red |  ES134 |     1x1 | 2459490.51812 |   1.572 |  1200.0 |     0
+ccd0070c1.fits |                   science |  9.205416666666665 | -42.131277777777775 |      ES1_34 B |  VPH-Red |  ES134 |     1x1 | 2459490.53398 |   1.447 |  1200.0 |     0
+data end
+
