@@ -400,7 +400,7 @@ Use Opus 5.5.  Log your work in Logs below.
     - (d) The **science-frame header WCS** (`CRVAL`/`CD`) plus the
       fitted mask→detector transform.  No extra files, but the accuracy
       is unknown (maybe ~1″).
-    A: We are going to give up on RA/Dec for now.
+    >A: We are going to give up on RA/Dec for now.
 27. **Field centre / zero point.**  The `.mdp` lacks the field centre.
     Is it always the same pixel in the pre-image (the builder's default
     is 1084, 1786), or does it change per mask?  If it changes, I'll
