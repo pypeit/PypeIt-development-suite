@@ -3,7 +3,7 @@
 Date: 2026-10-10.  Authors: JXP and Claude (Fable 5.1).
 Status: draft 2, accepted by JXP on 2026-10-10 with the answers to Q&A
 18-22 folded in.  Decisions come from the Q&A in
-`claude_prompts/keck_osiris.md` (questions 1-22).  The staged build plan
+`claude_prompts/keck_osiris/keck_osiris.md` (questions 1-25).  The staged build plan
 is in `keck_osiris_implementation.md`.
 
 Companion report: `Reports/01_test_data_inventory.md` (file inventory,
@@ -61,6 +61,9 @@ model.
 | 19 | Rectification runs as a new generic `RawImage` step (`rectify`) calling a spectrograph-provided transform; solvers live in `pypeit/core/lenslet_rectify.py`. |
 | 20 | Identity tilts via a new `Spectrograph.get_fixed_tilts` hook; **plus** an OH-line tilt measurement on the rectified sky frame as a test that the rectification is working (Section 8, test 3). |
 | 21 | One slit per 64-lenslet block with per-lenslet wavelength shifts from the Keck coefficients. |
+| 23 | No dark subtraction when A-B (or A-sky) subtraction is used; darks only for unpaired frames, grouped by ITIME. |
+| 24 | A generic `pypeit_fiber_cube` script dispatching on the spectrograph's fiber hooks; the Binospec scripts become thin aliases; no OSIRIS-specific cube script. |
+| 25 | Keep all 73 KOA frames for now; trim the dev-suite copy later. |
 | 22 | KOA 2024-02-03 night (NGC 3245 + HD101060/HD89239 A0V + darks, Kbb/050) adopted as the science-mode setup; frames downloaded to `RAW_DATA/keck_osiris/Kbb_050/`; Kbb/050 matrix to be requested from Keck (`Reports/02_koa_dataset_and_matrix_request.md`). |
 
 ## 3. Processing flow
@@ -241,7 +244,9 @@ par['calibrations']['osiris_rectmat_dir'] = None   # NEW: directory of rect matr
 par['calibrations']['osiris_rect_niter'] = 40      # NEW
 par['calibrations']['osiris_rect_relax'] = 1.0     # NEW (DRP 'relaxation')
 par['scienceframe']['process'] : use_biasimage=False, use_overscan=False,
-      use_darkimage=True (optional), use_pixelflat=False, use_illumflat=False,
+      use_darkimage=False (no dark subtraction for A-B pairs, Q&A 23;
+      darks grouped by ITIME only for unpaired frames), use_pixelflat=False,
+      use_illumflat=False,
       mask_cr=False (the DRP recommends against LACosmic on >=2016 data;
       cosmic rays are removed by frame combination)
 par['reduce']['findobj']  -> fiber mode (no peak finding)
@@ -477,12 +482,14 @@ Keck; the draft request is in `Reports/02_koa_dataset_and_matrix_request.md`.
 4. One slit per block, per-lenslet shifts.
 5. KOA 2024-02-03 set downloaded; matrix request drafted.
 
-### Still open (Q&A 23-25)
+### Resolved (Q&A 23-25, 2026-10-10)
 
-- Dark subtraction policy when A-B pairs are used (Q23).
-- Whether the Binospec cube/extract scripts become generic fiber-IFU
-  scripts or OSIRIS gets its own (Q24).
-- Size of the Kbb/050 dev-suite set on the shared Google Drive (Q25).
+- No dark subtraction with A-B pairs (Q23).
+- Generic `pypeit_fiber_cube` script; Binospec names kept as aliases (Q24).
+- All 73 KOA frames kept for now; dev-suite copy trimmed later (Q25).
+
+The implementation is driven by the milestone prompts in
+`claude_prompts/keck_osiris/M1_*.md` ... `M5_*.md`.
 
 ### Phases
 

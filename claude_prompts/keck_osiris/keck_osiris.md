@@ -68,9 +68,32 @@ It should be a staged plan with milestones.
 If you have any additional questions, put them in the Q&A section below.  
 Use Fable if you can.  Log your work in Logs below.
 
-5. Please read your implementation plan, `pypeitdev/keck_osiris/keck_osiris_implementation.md`.
+5.  See my answers to the fourth round of Q&A questions below.  Act accordingly.  
+Please read your implementation plan, `pypeitdev/keck_osiris/keck_osiris_implementation.md`.
 Then generate a series of prompts to implement the implementation plan.
 Each prompt should be a single milestone.
+
+## Implementation prompts
+
+One prompt per milestone of `pypeitdev/keck_osiris/keck_osiris_implementation.md`,
+each a self-contained file in this folder with its own Tasks, Acceptance,
+Q&A and Logs sections.  Run them in order; each milestone's report feeds
+the next.  M0 (sending the matrix request in Report 02) is yours.
+
+1. `M1_skeleton.md` - spectrograph module, static files, unit tests,
+   dev-suite registration; `pypeit_setup` correct on all three raw sets.
+2. `M2_rectification.md` - `pypeit/core/lenslet_rectify.py` (DRP port and
+   least-squares solvers), parameters, `pypeit_osiris_rectify` script,
+   vet test against the DRP reference cube.
+3. `M3_pypeit_flow.md` - generic `RawImage.rectify` step, Fiber hooks,
+   identity tilts, Keck-coefficient wavelengths; spec1d from Hn3/100;
+   OH-line tilt test.
+4. `M4_science_mode.md` - NGC 3245 Kbb/050 end to end: A-B and
+   Davies OH-scaled sky subtraction, OH wavelength refinement, generic
+   `pypeit_fiber_cube`, telluric correction, dev-suite tests.  Needs the
+   Keck matrix.
+5. `M5_release.md` - other modes, robustness, documentation, release
+   notes, dev-suite data, PR text; `supported = True`.
 
 ### Q&A
 
@@ -502,6 +525,8 @@ Questions from Design task 4 (2026-10-10), raised while writing
    (PypeIt does not rescale darks).*  Why: subtracting a dark and then
    a sky frame adds noise without removing anything.  OK?
 
+>A. No need to subtract the dark when doing A-B subtraction.
+
 **24. Cube/extract scripts.**  `pypeit_binospec_ifu_cube` and
    `pypeit_binospec_ifu_extract` are Binospec-named but the code behind
    them (`core/datacube.build_cube_from_spec1d`) is generic.
@@ -512,6 +537,8 @@ Questions from Design task 4 (2026-10-10), raised while writing
    script.*  Why: it avoids a third copy of the same code.  OK, or keep
    the Binospec scripts untouched and add `pypeit_osiris_cube`?
 
+>A. This sounds good,
+
 **25. Dev-suite data volume.**  The Kbb/050 set is 2.6 GB (73 frames);
    with the matrix it will be ~2.8 GB, and Hn3/100 adds 0.3 GB.
 
@@ -519,6 +546,19 @@ Questions from Design task 4 (2026-10-10), raised while writing
    HD89239 and the 45 s frames: 10 frames, 0.4 GB) when copying to the
    shared Google Drive.*  Why: the A-B pairs and the darks are needed;
    the second standard is redundant.  OK?
+
+>A. It is ok to have 73 frames for now, but we will trim it down
+for the Dev-Suite
+
+Question from Design task 5 (2026-10-10).
+
+**26. The "Pull Request" section.**  Prompt 6 says "Perform the 1st task
+   under Pull Request", but no such section exists in this file.  Milestone
+   M5 ends with the PR text prepared (not opened).
+
+   *Recommendation: treat M5 as the Pull Request task, or add a short
+   "Pull Request" section here listing what you want in it (reviewers,
+   dev-suite PR link, anything beyond the M5 checklist).*  Which?
 
 ## Logs
 
@@ -640,3 +680,21 @@ Questions from Design task 4 (2026-10-10), raised while writing
   wait for the Keck matrix).
 - Added Q&A 23-25 (dark policy, generic fiber-cube script, dev-suite
   data volume).
+
+### 2026-10-10 - Design task 5 (act on Q23-25; milestone prompts; model: Claude Fable 5.1)
+
+- Prompt file moved to `claude_prompts/keck_osiris/keck_osiris.md`; read
+  the answers to Q23-Q25 (no dark subtraction with A-B pairs; generic
+  fiber-cube script; keep all 73 KOA frames for now).
+- Applied them to `keck_osiris_design.md` (decision table 23-25,
+  default parameters, Section 10 resolved) and to
+  `keck_osiris_implementation.md` (Stage 4 tasks 1 and 4, Stage 5 task 4,
+  basis paths).
+- Re-read the implementation plan and wrote one self-contained prompt
+  file per milestone in this folder: `M1_skeleton.md`,
+  `M2_rectification.md`, `M3_pypeit_flow.md`, `M4_science_mode.md`,
+  `M5_release.md`, each with Goals, Skills, Context, Coding, Testing,
+  a single Prompt, Tasks, Acceptance (with the report name), Q&A and
+  Logs.  Added an "Implementation prompts" index to this file.
+- Added Q&A 26 (the missing "Pull Request" section referenced by
+  prompt 6).

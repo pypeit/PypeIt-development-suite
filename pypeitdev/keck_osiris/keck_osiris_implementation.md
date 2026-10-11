@@ -1,8 +1,9 @@
 # Keck/OSIRIS in PypeIt: implementation plan
 
 Date: 2026-10-10.  Authors: JXP and Claude (Fable 5.1).
-Basis: `keck_osiris_design.md` (draft 2) and Q&A 1-22 in
-`claude_prompts/keck_osiris.md`.  Branch: `osiris_port` (PypeIt) off
+Basis: `keck_osiris_design.md` (draft 2) and Q&A 1-25 in
+`claude_prompts/keck_osiris/keck_osiris.md`.  One prompt per milestone
+lives in `claude_prompts/keck_osiris/M1_*.md` to `M5_*.md`.  Branch: `osiris_port` (PypeIt) off
 `develop`; dev-suite work on the matching branch.
 
 Conventions for all code: Python, `pathlib`, `from pypeit import log`
@@ -170,8 +171,10 @@ Goal: a full reduction of the KOA Kbb/050 set (needs the Keck matrix).
 
 Tasks
 
-1. A-B / A-sky subtraction through `bkg_id` (already supported); confirm
-   dark handling policy (Q&A 23).
+1. A-B / A-sky subtraction through `bkg_id` (already supported).  Dark
+   policy (Q&A 23): no dark subtraction for frames that have a `bkg_id`;
+   for unpaired frames use darks of the same ITIME (PypeIt does not
+   rescale darks), selected through calibration groups.
 2. Davies (2007) OH-scaled sky subtraction: new option in `SkySubPar`
    (`osiris_oh_scaling`), implemented in `pypeit/core/skysub.py` as a
    function that groups OH lines, fits per-group scale factors between
@@ -180,9 +183,11 @@ Tasks
 3. OH wavelength refinement (`reference = 'sky'`, OSIRIS OH list in
    `pypeit/data/arc_lines/lists/`): per-lenslet zero-point correction
    with QA of the shift statistics.
-4. Datacube: generalise `pypeit/scripts/binospec_ifu_cube.py` to a
-   fiber-IFU cube script usable by OSIRIS (Q&A 24), with the lenslet
-   grid, `SSCALE` and position angle WCS; compare the NGC 3245 cube with
+4. Datacube (Q&A 24): new generic `pypeit_fiber_cube` script
+   (`new-script` skill) built on `core/datacube.build_cube_from_spec1d`
+   and the spectrograph's fiber hooks; `pypeit_binospec_ifu_cube` kept
+   as a thin alias.  OSIRIS supplies the lenslet grid, `SSCALE` and the
+   position-angle WCS through its hooks.  Compare the NGC 3245 cube with
    any DRP reduction available.
 5. Telluric correction and flux calibration with the A0V standards using
    PypeIt's IR sensfunc/telluric tools; check the K-band grid choice.
@@ -212,8 +217,9 @@ Tasks
    parameters), link from `spectrographs.rst`, a tutorial, release note
    in `doc/releases/2.1.0dev.rst` (`update-changelog` skill), rebuilt
    parameter and datamodel docs (`build-docs` skill).
-4. Set `supported = True`; add the Google-Drive copy of the raw data
-   and the pypeit files to the dev suite (Q&A 25).
+4. Set `supported = True`; copy the raw data (all 73 Kbb/050 frames
+   for now, to be trimmed later per Q&A 25) and the pypeit files to the
+   dev-suite Google Drive.
 5. Pull request to `develop` with the dev-suite PR cross-referenced;
    credit the OSIRIS DRP authors.
 
