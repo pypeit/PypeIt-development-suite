@@ -68,7 +68,18 @@ If you need to test the code:
    `image`, `rn2img`, `proc_var`, `datasec_img` and the BPM with the
    rectified versions.  Default off; existing tests must still pass.
    `KeckOSIRISSpectrograph.rectify` selects and caches the matrix and
-   calls `lenslet_rectify`.
+   calls `lenslet_rectify`.  Inside the step, per the M2 decisions
+   (design 5.3, M2 Q&A 2-4; implementation Stage 3 task 1): un-orient
+   the image (transpose + flip; the solvers work in the raw orientation
+   and return `(2048, nslice)` in raw column order), subtract the
+   reference rows (`lenslet_rectify.subtract_reference_rows`) from
+   every raw frame before A-B, flag cosmic rays on the raw (A-B) frame
+   into the BPM (PypeIt LACosmic with conservative settings; fall back
+   to the 2016-DRP strip rule ported in `vet_tests/
+   test_keck_osiris_rectify.py` if OH lines are eaten), solve, compute
+   the `ivar` from the least-squares normal matrix for *either*
+   method, and flip the spectral axis of the result.  Keep `mask_cr`
+   off after rectification.
 2. Fiber hooks in `keck_osiris.py` (design 4.7): `get_fiber_blocks`,
    `get_block_slit_edges` (fixed block boundaries every 64 slices),
    `identify_fibers_in_block`, `get_fiber_metadata`, `load_sky_layout`,
@@ -96,6 +107,13 @@ If you need to test the code:
 7. Run `run_pypeit` on `keck_osiris_hn3_100.pypeit`; iterate until it
    completes; then run the OH-line tilt test (design Section 8, test 3)
    on the rectified sky frame and add it to the dev-suite vet tests.
+8. Production `lstsq` weighting (M2 Q&A 1): solve with flux-independent
+   weights (read noise + a smoothed sky/background variance, not the
+   object's own shot noise) and propagate the true pixel variance with
+   the sandwich formula `(A^T W A)^-1 A^T W V W A (A^T W A)^-1`
+   (diagonal only, same block-tridiagonal machinery).  Re-run the M2
+   vet test: the quasar spaxel must agree with `drp` to < 1 %.  Leave
+   `osiris_rect_method = 'drp'` as the default until it does.
 
 ## Acceptance
 

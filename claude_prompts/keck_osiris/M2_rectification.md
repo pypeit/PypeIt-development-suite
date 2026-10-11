@@ -55,7 +55,7 @@ If you need to test the code:
 
 1. Read this doc.  Complete the milestone described under Tasks.  Write
    the report named under Acceptance.  If you have any questions, put
-   them in the Q&A section below.  Use Fable if you can.  Log your work
+   them in the Q&A section below.  Use Opus 5.5.  Log your work
    in Logs below.
 
 ## Tasks
@@ -115,6 +115,118 @@ deviates from the design document, and update
 
 ### Q&A
 
+Questions from Prompt 1 (2026-10-11; details in Report 04).
+
+**1. Weighting of the `lstsq` solver.**  With PypeIt's Poisson + read
+   noise weights the quasar spaxel comes out 2.1 % below the DRP (6 % at
+   the red end of Hn3); unweighted it agrees to 0.02 %.  The cause is
+   PSF-model error: at the quasar the Keck matrix leaves residuals of up
+   to ~40 sigma, so down-weighting the bright core moves flux.  Faint
+   spaxels are unaffected (median agreement 0.7 % either way).
+
+   *Recommendation: in M3 solve `lstsq` with flux-independent weights
+   (read noise + a smoothed background/sky variance, not the object's
+   own shot noise) and propagate the true pixel variance with the
+   sandwich formula `(A^T W A)^-1 A^T W V W A (A^T W A)^-1` (diagonal
+   only, same block-tridiagonal machinery); keep `drp` as the default
+   until then.*  Why: it keeps the DRP-like flux behaviour on bright
+   sources while giving PypeIt a correct ivar.  OK?
+
+>A. Ok, this is fine.  Update the design document to reflect this.
+
+**2. Cosmic rays before rectification.**  The 2016 DRP that made the
+   reference cube flagged 13 295 cosmic-ray pixels (its
+   `cleancosmic_000.pro`, since disabled for the H2RG).  Without such
+   masking a single hit moves a faint spaxel by 5-20 %; this is all of
+   the 0.7 % median / 6 % 90th-percentile difference to the DRP.  The
+   OSIRIS defaults have `mask_cr = False`.
+
+   *Recommendation: in M3, flag cosmic rays on the raw (A-B) frame
+   before the `rectify` step and pass them in the BPM (the solvers then
+   ignore those pixels); start with PypeIt's LACosmic on the raw
+   difference with conservative settings, and fall back to the
+   2016-DRP strip rule (already ported in the vet test) if LACosmic
+   eats OH lines.*  Why: the solver handles masked pixels gracefully,
+   whereas cosmic rays cannot be found after rectification (they are
+   spread over neighbouring slices).  OK?
+
+>A. Ok, this is fine.  Update the design document to reflect this.
+
+**3. Variance from the `drp` solver.**  The DRP rule
+   `sigma = sum fblame * sigma_pix` is a linear (fully correlated) sum and
+   is not divided by 1.28; it is 0.53x the `lstsq` sigma for the same
+   input.  It is kept in `rectify_drp` for fidelity.
+
+   *Recommendation: for the M3 `rectify` step, compute the ivar from the
+   least-squares normal matrix (the `lstsq` machinery) whichever solver
+   produced the image.*  Why: the `drp` solution converges to the
+   unweighted least-squares solution, so that variance applies to it,
+   and PypeIt needs a statistically meaningful ivar.  OK?
+
+>A. Ok, this is fine.  Update the design document to reflect this.
+
+**4. Missing `DTMP7` and the reference-row correction.**  For the
+   truncated header (frame 010) the DRP reads `DTMP7 = 0 K` and
+   extrapolates the CTE table (a ~1.5 px wavelength shift); I reproduce
+   that only in `resample_to_drp_grid`.  The DRP also subtracts, for the
+   H2RG, the per-column median of rows 2032-2044 (60 Hz pattern), which
+   `pypeit_osiris_rectify` now does by default.
+
+   *Recommendation: keep M1's `grating_expansion(None) = 1` (no
+   correction, with a warning) for PypeIt wavelengths, and apply
+   `subtract_reference_rows` to every raw frame in the M3 `rectify`
+   step (before A-B).*  Why: the 0 K extrapolation is a DRP bug, while
+   the reference-row correction removes real column offsets that the
+   solver would otherwise assign to lenslets.  OK?
+
+>A. Ok, this is fine.  Update the design document to reflect this.
 
 ## Logs
 
+### 2026-10-11 - Prompt 1 (M2 rectification; model: Claude Opus 5.5)
+
+- Read the design (5, 6.1, 7, 8), implementation plan (Stage 2), Reports
+  01-03, `keck_osiris.md` Q&A 1-26 and M1 Q&A, `spatrectif_000.c`,
+  `drp_structs.h`, `spatrectif_000.pro`, `assembcube_000.pro`, the
+  `add-parameter` and `new-script` skills.  Traced the provenance of the
+  reference cube (DRF in its header; 2016 DRP with `cleancosmic`,
+  H2RG branch of `adjchan`, `corrtilt`, `DTMP7` read as 0 K).
+- Wrote `pypeit/core/lenslet_rectify.py`: `RectMatrix`,
+  `parse_matrix_filename`, `select_matrix`, `rectify_drp` (vectorised
+  port), `rectify_lstsq` (exact block-tridiagonal WLS with variance),
+  `narrowband_split`, `resample_to_drp_grid` and DRP-emulation helpers.
+- Added the five `osiris_rect*` parameters to `CalibrationsPar`;
+  regenerated `doc/pypeit_par.rst` and the script help.
+- New script `pypeit_osiris_rectify` (registered in `__init__.py` and
+  `pyproject.toml`; reinstalled with `pip install -e .`).
+- `pypeit/tests/test_lenslet_rectify.py` (13 tests, synthetic 32-row
+  band etc.): pass.  `test_keck_osiris.py`, `test_pypeitpar.py`,
+  `test_calibrations.py`, `test_spectrographs.py`: pass.  Full
+  `pypeit/tests` (without `test_pkgdata.py`): 873 passed.
+- `vet_tests/test_keck_osiris_rectify.py` (5 tests): pass.  DRP
+  emulation reproduces the reference cube to 6.6e-3 ADU/s max; PypeIt
+  input: median spaxel difference 0.74 % (`drp`) / 0.77 % (`lstsq`) on
+  3024 spaxels with S/N > 10, quasar +0.04 % / -2.1 %; `lstsq` vs `drp`
+  0.67 %.  Timing 2.0 s (`drp`) and 2.3 s (`lstsq`) on the M5 Max laptop.
+- Figures and `make_m2_figures.py` in `pypeitdev/keck_osiris/Reports/
+  figures/`; wrote Report 04; added the M2 status note to
+  `keck_osiris_implementation.md`; added Q&A 1-4 above.
+
+### 2026-10-11 - Prompt 1 follow-up (act on Q&A 1-4; model: Claude Fable 5.1)
+
+- All four recommendations accepted.  Recorded in
+  `keck_osiris_design.md`: decision rows M2-1 to M2-4 (and M1-4 reworded
+  to the un-orient-the-image approach); Section 5.2 option (c) now
+  describes the block-tridiagonal solve, the flux-independent weighting
+  and the sandwich variance, with `drp` the default meanwhile; Section
+  5.3 gains the in-step pre-processing (orientation, reference rows,
+  cosmic rays on the raw A-B frame into the BPM); Section 4.8 lists
+  `osiris_rect_method` / `osiris_rect_use_var` and the new `mask_cr`
+  rationale; Section 6.1 forbids the DRP's 0 K `DTMP7` extrapolation.
+- `keck_osiris_implementation.md`: M2 status note rewritten as decisions;
+  Stage 3 task 1 lists the in-step pre-processing and the normal-matrix
+  `ivar`; new Stage 3 task 8 (production `lstsq` weighting).
+- `M3_pypeit_flow.md`: task 1 extended accordingly; new task 8 for the
+  weighted `lstsq` solver (quasar spaxel within 1 % of `drp`).
+- No code changes: M2 code already matches these decisions (`drp`
+  default, `subtract_reference_rows` and the DRP strip rule available).

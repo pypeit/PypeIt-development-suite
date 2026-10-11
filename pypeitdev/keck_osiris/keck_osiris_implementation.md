@@ -136,6 +136,32 @@ with difference images and a per-lenslet comparison plot.
 Estimated effort: 1-2 weeks (the schedule-faithful port is fiddly; the
 least-squares solver is short).
 
+**Status (2026-10-11): M2 done** (Report 04).  Changes that affect later
+stages:
+
+- Both solvers work on the raw orientation and return `(2048, nslice)`
+  in the raw column order.  The M3 `rectify` step (after `orient`)
+  un-orients the image (transpose + flip), solves, and flips the
+  spectral axis of the output, rather than transforming the matrix.
+- `lstsq` is an exact block-tridiagonal solve (adjacent lenslet-row
+  bands are coupled; independent bands are wrong at band edges).
+  Weighting by the Poisson noise lowers bright point sources by ~2 %
+  (PSF-model error).  Decided (M2 Q&A 1): production `lstsq` uses
+  flux-independent weights (read noise + smoothed sky variance) and the
+  sandwich variance; `drp` stays the default until that exists (Stage 3
+  task 8).
+- DRP preprocessing reproduced in the Stage 3 `rectify` step (M2 Q&A 2,
+  4): the per-column reference-row correction
+  (`lenslet_rectify.subtract_reference_rows`) on every raw frame before
+  A-B, and cosmic-ray flagging on the raw (A-B) frame (LACosmic,
+  conservative; 2016-DRP strip rule as fallback) passed in the BPM.
+- Variance (M2 Q&A 3): the rectified `ivar` always comes from the
+  least-squares normal matrix, whichever solver produced the image; the
+  DRP noise rule is kept in `rectify_drp` for fidelity only.
+- Missing `DTMP7` (M2 Q&A 4): keep `grating_expansion(None) = 1` with a
+  warning; never the DRP's 0 K extrapolation.
+- Timing is not an issue: ~2 s per frame for either solver.
+
 ---
 
 ## Stage 3 - Rectification inside PypeIt and Fiber-pypeline calibrations
@@ -152,7 +178,12 @@ Tasks
    `image`, `rn2img`, `proc_var`, `datasec_img` and the BPM with their
    rectified counterparts.  `KeckOSIRISSpectrograph.rectify` loads and
    caches the matrix (by filter/scale/epoch) and dispatches to
-   `lenslet_rectify`.
+   `lenslet_rectify`.  Inside the step (design 5.3, M2 Q&A 2-4):
+   un-orient the image, subtract the reference rows
+   (`subtract_reference_rows`), flag cosmic rays on the raw (A-B)
+   frame into the BPM (LACosmic, conservative; DRP strip rule as
+   fallback), solve, take the `ivar` from the least-squares normal
+   matrix for either method, and flip the spectral axis of the result.
 2. Fiber hooks in `keck_osiris.py`: `get_fiber_blocks`,
    `get_block_slit_edges` (fixed block boundaries),
    `identify_fibers_in_block`, `get_fiber_metadata`, `load_sky_layout`,
@@ -175,6 +206,11 @@ Tasks
    assumption that fibers are several pixels wide.
 7. Unit tests for the tilt hook, the wavelength inversion round trip and
    the block/lenslet mapping.
+8. Production `lstsq` weighting (M2 Q&A 1): flux-independent weights
+   (read noise + smoothed sky/background variance) with the sandwich
+   variance `(A^T W A)^-1 A^T W V W A (A^T W A)^-1` (diagonal only);
+   re-run the M2 vet test to confirm the quasar spaxel is within 1 % of
+   `drp`.  `drp` remains the default until this passes.
 
 **Milestone M3**: `run_pypeit` on `Hn3_100` completes; spec1d contains
 ~1000 lenslet spectra with `MASKDEF_ID` = lenslet id; the OH-line tilt

@@ -67,7 +67,11 @@ model.
 | M1-1 | Standards are typed from the target name (spectral-type tag such as `(A0V)`, or a bright-star catalogue name with exptime <= 60 s); science and standard are exclusive. |
 | M1-2 | `exptime = TRUITIME x COADDS` when `TRUITIME` (actual per-coadd integration, seconds) is present; `ITIME` rules otherwise. |
 | M1-3 | In the dev-suite pypeit files, `ISSKY=1` frames are typed `sky` only (not `science`), so they serve as backgrounds and are not reduced on their own; `pypeit_setup` still types them `science,sky`. |
-| M1-4 | `specflip = True`; the M3 `rectify` step transposes and flips the matrix. |
+| M1-4 | `specflip = True`; the M3 `rectify` step un-orients the image (transpose + flip), solves in the raw orientation, and flips the spectral axis of the output (M2 finding). |
+| M2-1 | Production `lstsq` uses flux-independent weights (read noise + smoothed sky/background variance, not the object's shot noise) and propagates the true pixel variance with the sandwich formula; `drp` remains the default until this is in place. |
+| M2-2 | Cosmic rays are flagged on the raw (A-B) frame *before* `rectify` and passed in the BPM: PypeIt's LACosmic with conservative settings first, the 2016-DRP strip rule as a fallback if OH lines are eaten. |
+| M2-3 | The rectified `ivar` is always computed from the least-squares normal matrix, whichever solver produced the image; the DRP noise rule is kept in `rectify_drp` for fidelity only. |
+| M2-4 | Missing `DTMP7`: no grating-temperature correction (warning), never the DRP's 0 K extrapolation; the per-column reference-row correction (rows 2032-2044) is applied to every raw frame in the `rectify` step, before A-B. |
 | 22 | KOA 2024-02-03 night (NGC 3245 + HD101060/HD89239 A0V + darks, Kbb/050) adopted as the science-mode setup; frames downloaded to `RAW_DATA/keck_osiris/Kbb_050/`; Kbb/050 matrix to be requested from Keck (`Reports/02_koa_dataset_and_matrix_request.md`). |
 
 ## 3. Processing flow
@@ -246,14 +250,17 @@ par['calibrations']['wavelengths']['reference'] = 'sky'
 par['calibrations']['wavelengths']['fwhm'] = 2.0
 par['calibrations']['flatfield']['method'] = 'skip'
 par['calibrations']['osiris_rectmat_dir'] = None   # NEW: directory of rect matrices
+par['calibrations']['osiris_rect_method'] = 'drp'  # NEW: 'drp' | 'lstsq' (M2)
 par['calibrations']['osiris_rect_niter'] = 40      # NEW
 par['calibrations']['osiris_rect_relax'] = 1.0     # NEW (DRP 'relaxation')
+par['calibrations']['osiris_rect_use_var'] = False # NEW: weight 'lstsq' by VAR (M2)
 par['scienceframe']['process'] : use_biasimage=False, use_overscan=False,
       use_darkimage=False (no dark subtraction for A-B pairs, Q&A 23;
       darks grouped by ITIME only for unpaired frames), use_pixelflat=False,
       use_illumflat=False,
-      mask_cr=False (the DRP recommends against LACosmic on >=2016 data;
-      cosmic rays are removed by frame combination)
+      mask_cr=False (post-rectification LACosmic is useless: cosmic rays
+      are flagged on the raw A-B frame inside the `rectify` step and
+      passed in the BPM, M2 Q&A 2 / Section 5.3)
 par['reduce']['findobj']  -> fiber mode (no peak finding)
 par['reduce']['skysub']['joint_fit'] = False
 par['reduce']['skysub']['osiris_oh_scaling'] = True   # NEW (Davies 2007), phase 2
@@ -289,10 +296,26 @@ strongly, which is why the DRP damps and smooths.
 |---|---|---|
 | **(a) Faithful port of `spatrectif_000.c`** (damped blame iteration: 15 sharpened iterations with +/-64-slice coupling, then plain back-projection; 5-tap spectral smoothing at iterations 12-17; divide by 1.28; 40 iterations) | reproduces the DRP exactly, so the reference cube is a direct test; vectorises cleanly over all 2048 columns at once (arrays of shape `(nslice, 16, ncol)`) | hand-tuned schedule with no noise model; the 1.28 factor and smoothing are empirical |
 | (b) Weighted linear least squares per column (`scipy.sparse.linalg.lsqr`/`lsmr`, weights from VAR or PypeIt variance, non-negativity optional) | principled; propagates ivar; converges in ~20 iterations | will not match the DRP cube bit-for-bit; needs regularisation where PSFs overlap |
-| (c) Dense per-band solve: within each 32-row band only ~16-19 slices contribute, so each column splits into 64 independent 32 x 19 systems solvable with `numpy.linalg.lstsq` in one batched call | fastest and exact; natural ivar propagation | assumes no cross-band leakage (true by construction of the matrix, `BASESIZE = 15 < 32`) |
+| (c) Batched per-band solve: within each 32-row band only ~16-19 slices contribute, but adjacent bands are coupled through the slice profiles, so each column is an exact **block-tridiagonal** system (64 blocks of <= 19 unknowns) solved in one batched call | fast and exact; natural ivar propagation from the normal matrix | independent bands are wrong by up to 5x at band edges (M2 finding); Poisson weighting biases bright sources (see below) |
 
 **Recommendation:** implement (a) first as the validation reference,
-then (c) as the production solver, keeping both behind a parameter.
+then (c) as the production solver, keeping both behind a parameter
+(`osiris_rect_method`, M2).
+
+**Weighting and variance (M2 Q&A 1, 3).**  With Poisson + read-noise
+weights, (c) under-estimates bright point sources by ~2 % (6 % at the
+red end of Hn3) because the Keck PSF model leaves residuals of up to
+~40 sigma at the core and down-weighting the core moves flux.  The
+production solver therefore uses *flux-independent* weights (read noise
+plus a smoothed sky/background variance, not the object's own shot
+noise) and propagates the true pixel variance with the sandwich formula
+`(A^T W A)^-1 A^T W V W A (A^T W A)^-1` (diagonal only, same
+block-tridiagonal machinery).  The rectified `ivar` is always taken from
+this least-squares machinery, whichever solver produced the image: the
+DRP noise rule (linear sum of `fblame * sigma`, not divided by 1.28) is
+0.53x the least-squares sigma and is kept in `rectify_drp` only for
+fidelity.  `drp` stays the default method until the weighted solver is
+in place (M3).
 Both are pure numpy; the per-column work is ~1216 x 16 multiply-adds per
 iteration, i.e. ~40 x 2048 x 20k = 1.6 Gflop for (a), seconds in numpy.
 
@@ -314,6 +337,24 @@ Two candidate hooks:
    processed `PypeItImage` objects, so it works on rectified frames;
    because the solver is linear this is equivalent to rectifying the
    difference (up to the DQ mask).
+
+   Pre-processing inside the step (M2 Q&A 2, 4):
+
+   - *Orientation*: both solvers work in the raw orientation and return
+     `(2048, nslice)` in raw column order; the step un-orients the
+     image (transpose + flip, undoing `specflip`), solves, and flips the
+     spectral axis of the result rather than transforming the matrix.
+   - *Reference rows*: subtract the per-column median of rows 2032-2044
+     (`lenslet_rectify.subtract_reference_rows`, the DRP's H2RG
+     `adjchan` behaviour) from every raw frame, before A-B; otherwise
+     the solver assigns the column offsets to lenslets.
+   - *Cosmic rays*: flag them on the raw (A-B) frame before solving and
+     pass them in the BPM (masked pixels are handled gracefully by both
+     solvers; after rectification a hit is spread over neighbouring
+     slices and cannot be found).  Use PypeIt's LACosmic on the raw
+     difference with conservative settings; fall back to the 2016-DRP
+     strip rule (ported in the M2 vet test) if LACosmic eats OH lines.
+     The post-rectification `mask_cr` stays off.
 
 **Recommendation:** option 2.  It touches `rawimage.py` once (a generic
 "spectrograph-provided transform" step, which other lenslet or
@@ -374,7 +415,10 @@ along the 2048-px rectified row.  Implementation:
    how Binospec handles fibers.
 3. The science header's `DTMP7` applies the grating-temperature scaling;
    when absent (truncated header) use the epoch default (no scaling) and
-   warn.
+   warn.  Do **not** copy the DRP, which reads a missing `DTMP7` as 0 K
+   and extrapolates the CTE table (a ~1.5 px shift in the 2016
+   reference cube; M2 Q&A 4).  `resample_to_drp_grid` reproduces that
+   behaviour only for the comparison with DRP cubes.
 
 ### 6.2 OH refinement (phase 2)
 
