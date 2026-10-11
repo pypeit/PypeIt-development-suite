@@ -1,5 +1,5 @@
-# Auto-generated PypeIt input file using PypeIt version: 1.11.1.dev357+gaa9a42e92.d20221207
-# UTC 2023-06-22T13:35:34.144
+# Auto-generated PypeIt input file using PypeIt version: 2.0.2.dev1223+ge2a4ff8c5.d20261010
+# UTC 2026-10-11T01:51:18.413+00:00
 
 # User-defined execution parameters
 [rdx]
@@ -8,19 +8,21 @@
 # Setup
 setup read
 Setup A:
+  binning: 1,1
+  decker: ES134
   dispname: VPH-Red
+  filter1: OG590
 setup end
 
 # Data block 
 data read
- path /scratch/PypeIt-development-suite/RAW_DATA/magellan_ldss3/mos
-      filename |                 frametype |                 ra |                 dec |        target | dispname | decker | binning |           mjd | airmass | exptime | calib
-ccd0073c1.fits |                  arc,tilt |  9.207083333333332 |  -42.13183333333333 | ES1_34 HeNeAr |  VPH-Red |  ES134 |     1x1 | 2459490.58324 |   1.195 |     1.0 |     0
-ccd0046c1.fits | pixelflat,illumflat,trace |  236.2958333333333 | -29.011583333333334 |   ES1_34_QlQh |  VPH-Red |  ES134 |     1x1 | 2459490.32009 |     1.0 |     4.0 |     0
-ccd0047c1.fits | pixelflat,illumflat,trace | 236.45416666666662 | -29.011583333333334 |   ES1_34_QlQh |  VPH-Red |  ES134 |     1x1 | 2459490.32053 |     1.0 |     4.0 |     0
-ccd0048c1.fits | pixelflat,illumflat,trace | 236.61374999999998 | -29.011583333333334 |   ES1_34_QlQh |  VPH-Red |  ES134 |     1x1 | 2459490.32097 |     1.0 |     4.0 |     0
-ccd0049c1.fits | pixelflat,illumflat,trace | 236.78833333333333 | -29.011583333333334 |   ES1_34_QlQh |  VPH-Red |  ES134 |     1x1 | 2459490.32146 |     1.0 |     4.0 |     0
-ccd0069c1.fits |                   science |  9.206666666666665 |  -42.13097222222222 |        ES1_34 |  VPH-Red |  ES134 |     1x1 | 2459490.51812 |   1.572 |  1200.0 |     0
-ccd0070c1.fits |                   science |  9.205416666666665 | -42.131277777777775 |      ES1_34 B |  VPH-Red |  ES134 |     1x1 | 2459490.53398 |   1.447 |  1200.0 |     0
+ path /scratch/PypeIt-development-suite/RAW_DATA/magellan_ldss3/VPH-RED_mos
+      filename |                 frametype |                 ra |                 dec |        target | dispname | decker | binning |                mjd | airmass | exptime | filter1 | calib
+ccd0073c1.fits |                  arc,tilt |  9.207083333333332 |  -42.13183333333333 | ES1_34 HeNeAr |  VPH-Red |  ES134 |     1,1 |  59490.08324074074 |   1.195 |     1.0 |   OG590 |    1
+ccd0046c1.fits | pixelflat,illumflat,trace |  236.2958333333333 | -29.011583333333334 |   ES1_34_QlQh |  VPH-Red |  ES134 |     1,1 |  59489.82009259259 |     1.0 |     4.0 |   OG590 |    1
+ccd0047c1.fits | pixelflat,illumflat,trace | 236.45416666666662 | -29.011583333333334 |   ES1_34_QlQh |  VPH-Red |  ES134 |     1,1 |  59489.82053240741 |     1.0 |     4.0 |   OG590 |    1
+ccd0048c1.fits | pixelflat,illumflat,trace | 236.61374999999998 | -29.011583333333334 |   ES1_34_QlQh |  VPH-Red |  ES134 |     1,1 | 59489.820972222224 |     1.0 |     4.0 |   OG590 |    1
+ccd0049c1.fits | pixelflat,illumflat,trace | 236.78833333333333 | -29.011583333333334 |   ES1_34_QlQh |  VPH-Red |  ES134 |     1,1 |  59489.82145833333 |     1.0 |     4.0 |   OG590 |    1
+ccd0069c1.fits |                   science |  9.206666666666665 |  -42.13097222222222 |        ES1_34 |  VPH-Red |  ES134 |     1,1 |       59490.018125 |   1.572 |  1200.0 |   OG590 |    1
+ccd0070c1.fits |                   science |  9.205416666666665 | -42.131277777777775 |      ES1_34 B |  VPH-Red |  ES134 |     1,1 |  59490.03398148148 |   1.447 |  1200.0 |   OG590 |    1
 data end
-
