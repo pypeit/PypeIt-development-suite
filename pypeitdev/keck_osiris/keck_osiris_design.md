@@ -1,9 +1,10 @@
-# Keck/OSIRIS in PypeIt: design document (DRAFT 1)
+# Keck/OSIRIS in PypeIt: design document (DRAFT 2)
 
 Date: 2026-10-10.  Authors: JXP and Claude (Fable 5.1).
-Status: draft for discussion.  Decisions recorded here come from the Q&A
-in `claude_prompts/keck_osiris.md` (questions 1-17); open points are
-listed in Section 10 and mirrored as new Q&A items.
+Status: draft 2, accepted by JXP on 2026-10-10 with the answers to Q&A
+18-22 folded in.  Decisions come from the Q&A in
+`claude_prompts/keck_osiris.md` (questions 1-22).  The staged build plan
+is in `keck_osiris_implementation.md`.
 
 Companion report: `Reports/01_test_data_inventory.md` (file inventory,
 header tables, measured geometry, rectification-matrix format).
@@ -56,6 +57,11 @@ model.
 | 15 | Sky: A-B subtraction **and** Davies (2007) OH-scaled sky subtraction. |
 | 16 | Acceptance test: rectified spectra agree with the DRP reference cube. |
 | 17 | This outline. |
+| 18 | Implement the narrowband three-block split in phase 1 (needed for the Hn3 acceptance test); Kbb/050 is the first "supported" mode. |
+| 19 | Rectification runs as a new generic `RawImage` step (`rectify`) calling a spectrograph-provided transform; solvers live in `pypeit/core/lenslet_rectify.py`. |
+| 20 | Identity tilts via a new `Spectrograph.get_fixed_tilts` hook; **plus** an OH-line tilt measurement on the rectified sky frame as a test that the rectification is working (Section 8, test 3). |
+| 21 | One slit per 64-lenslet block with per-lenslet wavelength shifts from the Keck coefficients. |
+| 22 | KOA 2024-02-03 night (NGC 3245 + HD101060/HD89239 A0V + darks, Kbb/050) adopted as the science-mode setup; frames downloaded to `RAW_DATA/keck_osiris/Kbb_050/`; Kbb/050 matrix to be requested from Keck (`Reports/02_koa_dataset_and_matrix_request.md`). |
 
 ## 3. Processing flow
 
@@ -404,12 +410,24 @@ matrices if Keck agrees to host them with stable URLs.
    (spaxel-by-spaxel, after the narrowband split).  Target: median
    absolute fractional difference < 2 % on spaxels with S/N > 10;
    quasar spaxel flux within 5 %.
-3. **Dev-suite reduce test** `keck_osiris/Hn3_100` (pypeit file with the
-   pair, `bkg_id` set), then a Kbb/050 science set from KOA (Section 9)
-   with its A0V telluric for the full flow including cube and telluric
-   correction.
-4. **Load-images unit test** entry in `unit_tests/test_load_images.py`.
-5. **Header-era test**: the 2015 Kn5 files are read by `pypeit_setup`
+3. **OH-line tilt test (rectification check, requested in Q&A 20)**:
+   run PypeIt's standard tilt tracing (`tracewave`) on the rectified
+   sky-only frame (frame B of the Hn3 pair, and an `ISSKY=1` NGC 3245
+   frame) with the OH lines as the tilt source.  If the rectification is
+   correct every OH line must be a straight, vertical feature across all
+   64 lenslets of a block: the fitted tilt slope must be < 0.05 px over
+   the block and the per-lenslet line-centroid scatter < 0.1 px after
+   removing the Keck per-lenslet shift.  Any residual tilt or saw-tooth
+   pattern points at a wrong `hilo` offset, a slice/lenslet mis-mapping
+   or an unconverged solver.  This test is part of the dev-suite vet
+   tests and its QA plot (line centroid vs lenslet row) is kept in the
+   Reports folder.
+4. **Dev-suite reduce tests** `keck_osiris/Hn3_100` (pypeit file with
+   the pair, `bkg_id` set) and `keck_osiris/Kbb_050` (NGC 3245 with its
+   A0V telluric and darks; needs the Keck matrix) for the full flow
+   including cube and telluric correction.
+5. **Load-images unit test** entry in `unit_tests/test_load_images.py`.
+6. **Header-era test**: the 2015 Kn5 files are read by `pypeit_setup`
    and produce a clear "pre-2016 data not supported" error.
 
 ## 9. Data search (KOA)
@@ -429,25 +447,42 @@ flagged, include:
 | 2021-07-28 | HR 8799 | Kbb/035 | 191 | 9720 | 0 | bright planet host, many short frames |
 | 2019-06-04 | ZTF19aalypsi etc. | Kn3/050 | 26-108 | 100-430 | 0 | transients, 4 s frames |
 
-**Recommendation:** adopt the 2024-02-03 NGC 3245 + HD101060 set
-(Kbb/050) as the science-mode dev-suite setup, together with the darks
-from that night (`SFILTER='Drk'`), and request the matching Kbb/050
-rectification matrix (2023-2024 epoch) from Keck.  Download via PyKOA or
-the KOA TAP `filehand` column once JXP confirms.
+**Decision (Q&A 22):** the 2024-02-03 NGC 3245 + HD101060 set
+(Kbb/050) is the science-mode dev-suite setup.  The night's spectrograph
+frames (117 in total) were listed through the KOA TAP service; 73 were
+downloaded through the KOA `getKOA` endpoint into
+`RAW_DATA/keck_osiris/Kbb_050/` (file list kept beside the data):
+
+| Target | Frames | ITIME | ISSKY=1 | Role |
+|---|---|---|---|---|
+| NGC 3245 | 19 + 4 | 600 s (19), 45 s (4) | 8 | science, 20-min A-B pairs |
+| HD101060 (A0V) | 24 | 10 s (18), 3 s (6) | 3 | telluric standard, nodded |
+| HD89239 (A0V) | 7 | 2 s | 3 | second telluric standard |
+| darks | 15 | 600, 10, 3, 2 s (matched to the above) | - | `SFILTER='Drk'`, 20 mas scale |
+
+The 2024 headers are complete (526 cards; `INSTRUME`, `ISSKY`,
+`PA_SPEC`, `DTMP7`, `WXPRESS` all present; `DQ` all 9).  The matching
+Kbb/050 rectification matrix (epoch 2023-2024) must be requested from
+Keck; the draft request is in `Reports/02_koa_dataset_and_matrix_request.md`.
 
 ## 10. Open issues and phases
 
-### Open issues (new Q&A 18-22)
+### Resolved (Q&A 18-22, 2026-10-10)
 
-1. Narrowband support is needed for the only test set we have (Hn3);
-   implement the DRP's three-block split in phase 1 or obtain a
-   broadband set first?
-2. Where to put the rectification: new generic `RawImage` step (proposed)
-   vs a spectrograph-only hook.
-3. Tilts: add an "identity tilts" option to PypeIt vs fit OH lines.
-4. Wavelength bookkeeping: one slit per 64-lenslet block with per-lenslet
-   shifts (proposed) vs one slit per lenslet.
-5. KOA dataset choice (Section 9) and who requests the matrix from Keck.
+1. Narrowband split in phase 1; Kbb/050 first supported mode.
+2. Rectification as a generic `RawImage` step with solvers in
+   `pypeit/core/lenslet_rectify.py`.
+3. Identity tilts through a `get_fixed_tilts` hook, verified by the
+   OH-line tilt test.
+4. One slit per block, per-lenslet shifts.
+5. KOA 2024-02-03 set downloaded; matrix request drafted.
+
+### Still open (Q&A 23-25)
+
+- Dark subtraction policy when A-B pairs are used (Q23).
+- Whether the Binospec cube/extract scripts become generic fiber-IFU
+  scripts or OSIRIS gets its own (Q24).
+- Size of the Kbb/050 dev-suite set on the shared Google Drive (Q25).
 
 ### Phases
 

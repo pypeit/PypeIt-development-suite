@@ -56,10 +56,21 @@ after we are done conversing.
 If you have any additional questions, put them in the Q&A section below.  
 Use Fable if you can.  Log your work in Logs below.
 
-3. See my answers to the second round of Q&A questions below.  Act accordingly.  
+3.  See my answers to the second round of Q&A questions below.  Act accordingly.  
 Write a draft of the design document, `pypeitdev/keck_osiris/keck_osiris_design.md`.
 If you have any additional questions, put them in the Q&A section below.  
 Use Fable if you can.  Log your work in Logs below.
+
+4.  The design document `pypeitdev/keck_osiris/keck_osiris_design.md` looks good.
+See my answers to the third round of Q&A questions below.  Act accordingly.  
+Then generate an implementation plan, `pypeitdev/keck_osiris/keck_osiris_implementation.md`.
+It should be a staged plan with milestones.
+If you have any additional questions, put them in the Q&A section below.  
+Use Fable if you can.  Log your work in Logs below.
+
+5. Please read your implementation plan, `pypeitdev/keck_osiris/keck_osiris_implementation.md`.
+Then generate a series of prompts to implement the implementation plan.
+Each prompt should be a single milestone.
 
 ### Q&A
 
@@ -426,6 +437,8 @@ Questions from Design task 3 (2026-10-10), raised while drafting
    anyway for 18 of the 23 filters, and we cannot validate the solver
    without Hn3.  OK?
 
+>A. Yes, that is a good recommendation
+
 **19. Where the rectification runs.**  Design Section 5.3 proposes a new
    generic `RawImage` processing step (`rectify`) that calls a
    spectrograph-provided transform after dark/BPM and before cosmic-ray
@@ -435,6 +448,8 @@ Questions from Design task 3 (2026-10-10), raised while drafting
    masks and variance consistent, and other lenslet/slicer instruments
    could reuse it.  It is a small change to `rawimage.py`.  Agree, or do
    you prefer to keep every change inside `keck_osiris.py`?
+
+>A. Use your Recommendation
 
 **20. Tilts.**  Rectified spectra are exactly horizontal.  Options:
    (a) add an "identity tilts" option (new `Spectrograph.get_fixed_tilts`
@@ -446,6 +461,9 @@ Questions from Design task 3 (2026-10-10), raised while drafting
    dependence on sky brightness; the hook is also useful for any
    pre-rectified input.  OK?
 
+>A. That is ok, but add to the Design doc a test of the tilts with OH lines to
+confirm the Rectification is working.
+
 **21. Wavelength bookkeeping.**  (a) One slit per 64-lenslet block with
    per-lenslet wavelength shifts from the Keck coefficients, reusing
    the Fiber pypeline's per-fiber shift machinery; (b) one slit per
@@ -455,6 +473,8 @@ Questions from Design task 3 (2026-10-10), raised while drafting
    objects small, and the Keck coefficients differ between neighbouring
    lenslets mainly by a shift (Table in Report 01 shows ~0.5 px steps
    between adjacent rows).  OK?
+
+>A. Ok, try your recommendation.
 
 **22. KOA science-mode dataset.**  Section 9 lists candidates; I propose
    the 2024-02-03 night (NGC 3245, Kbb/050, 23 frames with 8 skies, plus
@@ -466,6 +486,39 @@ Questions from Design task 3 (2026-10-10), raised while drafting
    drafting an email) ask Jim Lyke for the 2023-2024 Kbb/050 matrix.*
    Why: it is a complete set on the current detector in the most common
    science mode.  OK, or do you have a preferred target/program?
+
+>A. Ok, try your recommendation.
+
+Questions from Design task 4 (2026-10-10), raised while writing
+`pypeitdev/keck_osiris/keck_osiris_implementation.md`.
+
+**23. Dark subtraction policy.**  The KOA night has darks matched to the
+   science ITIMEs (600, 10, 2 s), but A-B pairs cancel the dark and the
+   detector glow anyway; darks matter only for frames without a pair
+   (and for the DRP-style "subtract dark then rectify" path).
+
+   *Recommendation: default `use_darkimage = False` for science frames
+   with a `bkg_id`, True otherwise, with darks grouped by exposure time
+   (PypeIt does not rescale darks).*  Why: subtracting a dark and then
+   a sky frame adds noise without removing anything.  OK?
+
+**24. Cube/extract scripts.**  `pypeit_binospec_ifu_cube` and
+   `pypeit_binospec_ifu_extract` are Binospec-named but the code behind
+   them (`core/datacube.build_cube_from_spec1d`) is generic.
+
+   *Recommendation: add a generic `pypeit_fiber_cube` script that
+   dispatches on the spectrograph's fiber hooks, keep the Binospec
+   names as thin aliases, and give OSIRIS no instrument-specific
+   script.*  Why: it avoids a third copy of the same code.  OK, or keep
+   the Binospec scripts untouched and add `pypeit_osiris_cube`?
+
+**25. Dev-suite data volume.**  The Kbb/050 set is 2.6 GB (73 frames);
+   with the matrix it will be ~2.8 GB, and Hn3/100 adds 0.3 GB.
+
+   *Recommendation: keep the full NGC 3245 + HD101060 set (drop
+   HD89239 and the 45 s frames: 10 frames, 0.4 GB) when copying to the
+   shared Google Drive.*  Why: the A-B pairs and the darks are needed;
+   the second standard is redundant.  OK?
 
 ## Logs
 
@@ -558,3 +611,32 @@ Questions from Design task 3 (2026-10-10), raised while drafting
   handling, tests, KOA data search, open issues and phases.
 - Added Q&A 18-22 (narrowband split timing, where rectification runs,
   identity tilts, wavelength bookkeeping, KOA dataset choice).
+
+### 2026-10-10 - Design task 4 (act on Q18-22; implementation plan; model: Claude Fable 5.1)
+
+- Read the answers to Q18-Q22 (all recommendations accepted; Q20 adds an
+  OH-line tilt test; Q22 approves fetching the KOA set).
+- Updated `keck_osiris_design.md` to draft 2: decisions 18-22 added, the
+  OH-line tilt test written into Section 8 (test 3), Section 9 replaced
+  with the actual 2024-02-03 inventory, Section 10 marks 18-22 resolved
+  and lists the new open items.
+- KOA: listed the night's 117 spectrograph frames through the TAP
+  service, verified the `getKOA` download endpoint on one frame, and
+  downloaded 73 frames (NGC 3245, HD101060, HD89239, matched darks;
+  2.6 GB, all valid FITS) into `RAW_DATA/keck_osiris/Kbb_050/` with the
+  file list and full listing kept beside the data.  The 2024 header is
+  complete (526 cards, DQ all 9).
+- Wrote `Reports/02_koa_dataset_and_matrix_request.md` (why this night,
+  download details, full night listing, a draft email to Jim Lyke
+  requesting the Kbb/050 matrix; not sent).
+- Checked the remaining PypeIt internals the plan relies on:
+  `RawImage.process` step order and `steps` dict, the `WaveTilts`
+  datamodel, `dataPaths` registry, `subtract_dark` (no exposure
+  rescaling), the Binospec cube script, the dev-suite `setups.py`,
+  test types and vet-test pattern.
+- Wrote `pypeitdev/keck_osiris/keck_osiris_implementation.md`: five
+  stages with milestones M0-M5, tasks, tests, acceptance criteria,
+  effort estimates, risks and a summary timeline (~8 weeks plus the
+  wait for the Keck matrix).
+- Added Q&A 23-25 (dark policy, generic fiber-cube script, dev-suite
+  data volume).
