@@ -54,7 +54,7 @@ If you need to test the code:
 
 1. Read this doc.  Complete the milestone described under Tasks.  Write
    the report named under Acceptance.  If you have any questions, put
-   them in the Q&A section below.  Use Fable if you can.  Log your work
+   them in the Q&A section below.  Use Opus 5.5.  Log your work
    in Logs below.
 
 ## Tasks
