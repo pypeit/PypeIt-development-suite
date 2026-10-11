@@ -114,27 +114,29 @@ global sky) stays serial behind its cross-detector slitmask barrier.
 
 ### Wall-clock
 
+All DEIMOS numbers below are **uninstrumented** wall-clock, so the ratio is
+like-for-like.  Kast is cProfile-instrumented on both sides (also like-for-like).
+
 | Setup | `--ncpu 1` | `--ncpu 4` | speedup |
 |---|---:|---:|---:|
-| keck_deimos 600ZD_M_6500 (4 mosaics) | 10 515.5 s | **4 123.6 s** | **2.55x** |
-| keck_deimos, repeat at `--ncpu 4` | — | 4 244.5 s | 2.48x |
+| keck_deimos 600ZD_M_6500 (4 mosaics) | **9 360.0 s** | **4 123.6 s** | **2.27x** |
+| keck_deimos, repeat at `--ncpu 4` | — | 4 244.5 s | 2.21x |
+| keck_deimos, mean of the two `--ncpu 4` runs | 9 360.0 s | 4 184.0 s | **2.24x** |
 | keck_lris_blue multi_600_4000_slitmask (2 det) | 389.0 s | 250.7 s (`--ncpu 2`) | **1.55x** |
 | shane_kast_blue (1 det) | 109.7 s | 102.5 s (`--ncpu 2`) | 1.07x |
 
-Run-to-run scatter at `--ncpu 4` on DEIMOS is 120.9 s (2.9%).  The implied
-parallel fraction is p = 0.81, slightly above the 0.77 assumed in coding-doc
-§B.7.  The §B.7 target was 1.9-2.3x against an assumed 11 700 s post-A baseline;
-the actual post-A baseline is 10 056.9 s, so the equivalent target range is
-4 373-5 293 s, and the measured 4 123.6 s is at or just beyond the optimistic
-end of it.
+For reference, the same DEIMOS `--ncpu 1` reduction **under cProfile** takes
+10 515.5 s, i.e. the instrumentation costs **+1 155 s (+12.3%)**.  An earlier
+version of this section compared that instrumented baseline against the
+uninstrumented parallel runs and reported **2.55x**; that was inflated, and the
+tell was that it exceeded the Amdahl ideal.  The corrected figure is **2.24x**.
 
-**Caveat on the ratio (open question Q12).**  Per §B.7 the `--ncpu 1` baseline
-is cProfile-instrumented and the `--ncpu > 1` runs are not, so the ratio is
-apples-to-oranges and the baseline is inflated.  That the measured 2.55x exceeds
-the 2.37x Amdahl ideal for p = 0.77 is a symptom of this, not of beating Amdahl.
-On Kast the same instrumentation costs ~27% (86.3 s uninstrumented vs 109.7 s
-instrumented); if DEIMOS is comparable the honest speedup is nearer 2.0x.  An
-uninstrumented `--ncpu 1` DEIMOS baseline is needed to settle it.
+Run-to-run scatter at `--ncpu 4` on DEIMOS is 120.9 s (2.9%).  The implied
+parallel fraction is **p = 0.737**, close to the 0.77 assumed in coding-doc
+§B.7, and the measured 2.24x sits just below the 2.37x Amdahl ideal for that p
+— which is the physically sensible ordering, and a useful check that the
+measurement is now self-consistent.  **The §B.7 expectation was a realistic
+1.9-2.3x, so this lands inside the predicted band.**
 
 `shane_kast_blue` is single-detector and gains nothing by design; §B.7 only
 required that it not regress, and it does not — it is 6.6% *faster* at
@@ -235,7 +237,8 @@ should be filed as its own issue, with "two identical serial runs of the same
 
 ### Verdict vs the PR-B target
 
-Wall-clock: **met**, with the Q12 caveat on how the ratio was measured.
+Wall-clock: **met** — 2.24x on DEIMOS at `--ncpu 4`, inside the 1.9-2.3x band
+§B.7 predicted, measured uninstrumented on both sides.
 Memory: measured and documented, and better than the linear scaling the design
 assumed.  Identical output: **not met, and not attainable** — but the
 parallelism is exonerated by the serial-versus-serial control, and is exact on

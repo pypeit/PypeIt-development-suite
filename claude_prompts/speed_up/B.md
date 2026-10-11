@@ -1454,3 +1454,132 @@ DEIMOS baseline so the headline speedup is apples-to-apples) remains unanswered,
 and the two Task 7 follow-ups that depend on **Q11(1)** are still outstanding —
 rewriting `vet_tests/test_ncpu.py` to assert scientific equivalence rather than
 exact equality, and the full `./pypeit_test reduce` + `pytest vet_tests` run.
+
+### 2026-10-11 (Task 9 — Q11(1) implemented, PRs opened; clean DEIMOS baseline running)
+
+**Q12 answered "yes, run it"**, so the uninstrumented `--ncpu 1` DEIMOS baseline
+was launched first and is still running (started 07:42, ETA ~10:35).  Everything
+below was done while it ran.  **The speedup table in both
+`speed_up_results.md` and PR #2209 still carries the inflated,
+cProfile-instrumented ratio and a note saying so; I will update both with the
+honest figure when the run lands.**
+
+#### Q11(1) implemented: `vet_tests/test_ncpu.py` rewritten
+
+Your answer was option (1) — keep PR B, assert scientific equivalence, keep the
+structural checks exact.  Implementing it honestly took some measurement,
+because my first attempt failed: I picked a 1e-3 relative tolerance out of the
+air and the test failed immediately, with the Issue-2208 noise reaching **26%**
+at the 95th percentile on `OBJMODEL`.  So I measured the noise floor instead of
+guessing again.
+
+The flux-like arrays turn out to be **untestable numerically**, and by a wide
+margin.  Between two *identical serial* runs:
+
+- `OPT_COUNTS` differs by up to **350 sigma** (serial vs `--ncpu 2`: 407 sigma)
+- `OBJMODEL` 95th-percentile relative difference 9.4e-02 (parallel: 2.6e-01)
+
+Any threshold loose enough to pass that would be far too loose to catch a real
+bug, so "agreement well within the noise" — the phrasing in option (1) — is not
+achievable for them.  But other quantities are perfectly robust, and the
+serial/parallel difference in them is *the same size as the serial/serial
+difference*:
+
+| quantity | serial vs serial | serial vs `ncpu 2` |
+|---|---|---|
+| `spec1d` `OPT_WAVE` | 2.103e-05 | **2.103e-05** |
+| `spec2d` `WAVEIMG` | 1.114e-10 | 1.318e-10 |
+| `spec2d` `TILTS` | 2.129e-05 | 1.702e-05 |
+| `spec2d` `SCIIMG` | 3.687e-07 | 1.192e-07 |
+
+So the test now asserts: structure exactly (both detectors present, same objects
+on the same detectors in the same order, same extensions); the robust
+quantities to 1e-3, which is clear of the ~2e-5 noise while a misrouted payload
+would show at order unity; and the exact flux comparison as a **`xfail`** keyed
+to #2208, so it flips to passing on its own once that is fixed.  The measured
+table is in the module docstring, so the thresholds are justified in place
+rather than being magic numbers.
+
+**I then checked the test can actually fail**, since one that only ever passes
+proves nothing.  Two injected faults: reordering the detector extensions (caught
+by `test_ncpu_same_structure`), and the subtler one of swapping the two
+detectors' `WAVEIMG` payloads while leaving the extension *names* correct —
+exactly a misrouted-payload bug — which `test_ncpu_spec2d_geometry_agrees`
+catches at relative difference **1.0**, three orders above the threshold.
+4 passed, 1 xfailed on the real products.
+
+Docs corrected to match: `doc/running.rst` and the release note no longer claim
+unqualified bit-identical output, and `running.rst` gained a warning that
+multi-slit data is non-reproducible run-to-run independently of `ncpu`, so
+nobody misreads #2208 as a parallelism defect.
+
+#### PRs opened
+
+- **pypeit/PypeIt#2209** -> `develop`, from `speed_up_B`.  14 files, +954/-55, in
+  five logical commits (`pypeit.parallel`; the adapters; the unpickling fix; the
+  three stage conversions plus the `detectors.remove()` fix; tests and docs).
+  `speed_up_B` was exactly at `origin/develop`, so the branch stack note about
+  targeting `speed_up_qa` is moot — PR A is already in `develop` via #2198 and
+  `develop` is the correct base.
+- **pypeit/PypeIt-development-suite#435** -> `develop`, from `dev_speed_up`.  The
+  `--ncpu` dev-suite regression, the two tooling scripts, and the measurements.
+
+Both descriptions lead with the result, state the thread-pinning trade-off
+explicitly as a user-visible cost that is reversible in one place, and carry the
+#2208 evidence table so a reviewer is not left wondering why the
+identical-output check fails.  #2209 cross-references #2208 and #1986.
+
+Verified before pushing: 32 targeted unit tests green on the committed state,
+and the full `pytest pypeit/tests` run from Task 6 (857 passed) still stands.
+
+#### Still outstanding
+
+1. The clean DEIMOS baseline, and the resulting correction to the speedup number
+   in `speed_up_results.md` and in #2209.
+2. The full `./pypeit_test reduce -i shane_kast_blue keck_deimos keck_lris_blue`
+   plus `pytest vet_tests` run.  The DEIMOS leg duplicates ~3 h of what Task 7
+   measured directly; worth doing before merge, but it should wait until the
+   baseline run finishes rather than competing with it for the machine.
+
+### 2026-10-11 (Q12 follow-up — clean DEIMOS baseline; the headline is 2.24x, not 2.55x)
+
+The uninstrumented `--ncpu 1` DEIMOS baseline finished: **9 360.0 s** (peak PSS
+11.64 GB, rc 0).  The same reduction *under cProfile* took 10 515.5 s, so the
+instrumentation costs **+1 155 s (+12.3%)** — which is what was inflating the
+ratio.
+
+| | `--ncpu 1` | `--ncpu 4` | speedup |
+|---|---:|---:|---:|
+| run A | 9 360.0 s | 4 123.6 s | **2.27x** |
+| run B | 9 360.0 s | 4 244.5 s | 2.21x |
+| **mean** | **9 360.0 s** | **4 184.0 s** | **2.24x** |
+
+**Corrected: 2.24x, not the 2.55x reported in Task 7.**  Two things now line up
+that did not before.  The implied parallel fraction is **p = 0.737**, close to
+the 0.77 the design assumed rather than the 0.81 the inflated baseline implied;
+and 2.24x sits *just below* the 2.37x Amdahl ideal for that p instead of above
+it, which is the physically sensible ordering.  A measurement that beats Amdahl
+is a measurement that is wrong, and that was the tell I flagged in Q12 — worth
+having chased, because it was a 14% overstatement of the headline result.
+
+It also lands **inside the §B.7 predicted band of 1.9-2.3x**, which the inflated
+number did not.
+
+Updated `speed_up_results.md` (table, the implied-p discussion, the verdict) and
+the #2209 description.  Both now say explicitly that the DEIMOS figures are
+uninstrumented on both sides, and the results doc keeps a short note recording
+that an earlier version reported 2.55x and why that was wrong, so the change is
+not silent.
+
+One mechanical note: `gh pr edit --body-file` reported success while leaving the
+body untouched — a GraphQL projects-deprecation warning masked the failure.  I
+caught it by reading the body back, and used `gh api -X PATCH` instead.  Worth
+verifying rather than trusting the exit status if you use `gh pr edit` elsewhere.
+
+The pinning-cost figures are unchanged and still correct: that comparison is
+instrumented-against-instrumented (post-A 10 056.9 s vs 10 515.5 s, +4.6%), so
+the clean baseline does not affect it.
+
+**Remaining:** the full `./pypeit_test reduce -i shane_kast_blue keck_deimos
+keck_lris_blue` plus `pytest vet_tests` run, which is the last item of Task 7's
+checklist.  Nothing blocks it now that the machine is free.
