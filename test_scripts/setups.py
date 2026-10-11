@@ -131,6 +131,10 @@ all_setups = {
     'keck_nirspec_high': [
         'Jband',
     ],
+    'keck_osiris': [
+        'Hn3_100',
+        'Kbb_050',
+    ],
     'keck_mosfire': [
         'Y_long',
         'J_multi',

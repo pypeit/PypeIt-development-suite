@@ -8,6 +8,7 @@ from IPython import embed
 
 import pytest
 
+from pypeit import PypeItError
 from pypeit.images.rawimage import RawImage
 from pypeit.par import pypeitpar
 from pypeit.spectrographs.util import load_spectrograph
@@ -203,3 +204,24 @@ def test_load_mmt_binospec():
     except:
         pytest.fail('MMT Binospec test data section failed: {0}'.format(ifile))
 
+
+
+def test_load_keck_osiris():
+    # H2RG-era frames load; SCI (ADU/s/coadd) is converted to ADU
+    for setup, raw in [('Hn3_100', 's160321_a002010.fits'),
+                       ('Kbb_050', 'OS.20240203.41442.14.fits')]:
+        ifile = os.path.join(os.environ['PYPEIT_DEV'], 'RAW_DATA',
+                             'keck_osiris', setup, raw)
+        try:
+            data_img = grab_img('keck_osiris', ifile)
+        except:
+            pytest.fail('Keck OSIRIS test data section failed: '
+                        '{0}'.format(ifile))
+        assert data_img.image.shape == (1, 2048, 2048)
+        # Hn3 2016: ITIME 240000 ms; Kbb 2024: TRUITIME 1.475 s
+        assert data_img.exptime in [240., 1.475]
+    # Pre-2016 (Hawaii-2) frames are rejected with a clear error
+    ifile = os.path.join(os.environ['PYPEIT_DEV'], 'RAW_DATA',
+                         'keck_osiris', 'Kn5_035', 's150531_a025001.fits')
+    with pytest.raises(PypeItError, match='H2RG'):
+        grab_img('keck_osiris', ifile)

@@ -69,6 +69,27 @@ pre-2016 error at `run_pypeit`.  Report 03.
 
 Estimated effort: 2-3 days.
 
+**Status (2026-10-11): M1 done** (Report 03).  Changes that affect later
+stages:
+
+- `specflip = True` (the Keck wavelength runs right to left on the
+  detector); the Stage 3 `rectify` step runs after `orient`, so the
+  matrix (raw orientation) must be transposed *and* flipped.
+- Standards are typed from the target name (`OBSTYPE` is `'a'` for all
+  KOA frames); the A0V stars are `standard`, their `ISSKY=1` offsets
+  `standard,sky`.
+- `exptime = TRUITIME x COADDS` when `TRUITIME` is present (2024
+  headers; seconds per coadd), else the `ITIME` rules.  The DN
+  conversion and the metadata use the same value, so the 2-s
+  standards are 1.475 s, the 600-s frames 598.963 s.
+- `ISSKY=1` frames in the dev-suite pypeit files are typed `sky` only
+  (backgrounds, not reduced on their own); document in Stage 5.
+- New metadata keys `issky`, `sampmode`, `numreads`, `tmatemp` live in
+  `pypeit/core/meta.py`; `tmatemp` (`DTMP7`) feeds the Stage 3
+  wavelength step through `KeckOSIRISSpectrograph.grating_expansion`.
+- Loaders for the wavelength coefficients (epoch selection), the CTE
+  table and the Kbb slice/lenslet maps already exist on the class.
+
 ---
 
 ## Stage 2 - Rectification core and acceptance test

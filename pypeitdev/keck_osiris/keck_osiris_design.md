@@ -43,8 +43,8 @@ model.
 | 1 | Port the DRP rectification (PSF deconvolution) to numpy; run PypeIt's **Fiber** pypeline on the rectified frame (one row per lenslet). |
 | 2 | Test data: OsirisDRP Hn3/100 (2016) pair + matrix as the first setup; a KOA science-mode set (Kbb/Kn3 at 35/50 mas) to follow (Section 9). |
 | 3 | Support the H2RG era only (MJD >= 57388); raise a clear error otherwise.  2015 frames are kept only as a header-era test. |
-| 4 | `get_rawimage` returns DN (`SCI x ITIME[s] x COADDS`); BPM = (`DQ != 9`) OR Keck hot mask OR Keck dead mask. |
-| 5 | Frame types: dark (`SFILTER=='Drk'`), science/sky/standard from `OBSTYPE`/`ISSKY`; pairing via `comb_id`/`bkg_id`; `configuration_keys = ['dispname','decker']`. |
+| 4 | `get_rawimage` returns DN (`SCI x exptime[s]`, with `exptime = TRUITIME x COADDS` when `TRUITIME` is present, else `ITIME x COADDS`; M1 Q&A 2); BPM = (`DQ != 9`) OR Keck hot mask OR Keck dead mask. |
+| 5 | Frame types: dark (`SFILTER=='Drk'`), science/sky from `OBSTYPE`/`ISSKY`, standard from `OBSTYPE=='s'` **or the target name** (M1 Q&A 1); pairing via `comb_id`/`bkg_id`; `configuration_keys = ['dispname','decker']`. |
 | 6 | Wavelengths: Keck coefficients (epoch-matched) as the template, refined on OH sky lines where available; vacuum. |
 | 7 | Rectification matrices supplied by the user through a directory parameter with automatic selection by filter/scale/date; test matrices live beside the raw data in the dev suite. |
 | 8 | Names: `keck_osiris.py`, `KeckOSIRISSpectrograph`, `name='keck_osiris'`, `camera='OSIRIS'`. |
@@ -64,6 +64,10 @@ model.
 | 23 | No dark subtraction when A-B (or A-sky) subtraction is used; darks only for unpaired frames, grouped by ITIME. |
 | 24 | A generic `pypeit_fiber_cube` script dispatching on the spectrograph's fiber hooks; the Binospec scripts become thin aliases; no OSIRIS-specific cube script. |
 | 25 | Keep all 73 KOA frames for now; trim the dev-suite copy later. |
+| M1-1 | Standards are typed from the target name (spectral-type tag such as `(A0V)`, or a bright-star catalogue name with exptime <= 60 s); science and standard are exclusive. |
+| M1-2 | `exptime = TRUITIME x COADDS` when `TRUITIME` (actual per-coadd integration, seconds) is present; `ITIME` rules otherwise. |
+| M1-3 | In the dev-suite pypeit files, `ISSKY=1` frames are typed `sky` only (not `science`), so they serve as backgrounds and are not reduced on their own; `pypeit_setup` still types them `science,sky`. |
+| M1-4 | `specflip = True`; the M3 `rectify` step transposes and flips the matrix. |
 | 22 | KOA 2024-02-03 night (NGC 3245 + HD101060/HD89239 A0V + darks, Kbb/050) adopted as the science-mode setup; frames downloaded to `RAW_DATA/keck_osiris/Kbb_050/`; Kbb/050 matrix to be requested from Keck (`Reports/02_koa_dataset_and_matrix_request.md`). |
 
 ## 3. Processing flow
@@ -142,7 +146,7 @@ class KeckOSIRISSpectrograph(spectrograph.Spectrograph):
 | `decker` | `SSCALE` | configuration key; string `'0.100'`, compared as string |
 | `binning` | default `'1,1'` | |
 | `mjd` | `MJD-OBS` | |
-| `exptime` | compound: `ITIME x COADDS`, ITIME/1000 if `ITIME > 2000` | TRUITIME never present |
+| `exptime` | compound: `TRUITIME x COADDS` when `TRUITIME` is present (s per coadd; 2024 headers); else `ITIME x COADDS`, ITIME/1000 when `MJD-OBS >= 57388` (fallback: `ITIME > 2000`) | `TRUITIME` absent in 2015/2016; `ITIME` overstates short 2024 frames by up to 36 % (M1 Q&A 2) |
 | `airmass` | `AIRMASS` | |
 | `dithoff`/`ra_off`/`dec_off` | `RAOFF`, `DECOFF` | informational only |
 | `posang` | compound: `ROTPOSN - INSTANGL` (+ `ROTREFAN`) | `PA_SPEC` may be absent; Keck I cube is flipped (DRP HISTORY) |
@@ -165,9 +169,9 @@ class KeckOSIRISSpectrograph(spectrograph.Spectrograph):
 | Type | Rule |
 |---|---|
 | `dark` | `dispname == 'Drk'` |
-| `science` | `idname == 'a'` and `dispname != 'Drk'` (all on-sky frames; pairing via `bkg_id`) |
-| `sky` | as science **and** `issky == 1` (helps the user fill `bkg_id`) |
-| `standard` | `idname == 's'` |
+| `science` | `idname == 'a'` and `dispname != 'Drk'` and not `standard` (all on-sky frames; pairing via `bkg_id`) |
+| `sky` | on-sky **and** `issky == 1` (helps the user fill `bkg_id`); in the dev-suite pypeit files the `science` type is removed from these frames so they are only used as backgrounds (M1 Q&A 3) |
+| `standard` | `idname == 's'` **or** target name with a spectral-type tag (`HD101060(A0V)`) or a bright-star catalogue name (HD, HIP, HR, BD, ...) with `exptime <= 60 s`; exclusive with `science` (M1 Q&A 1; `OBSTYPE` is `'a'` for every KOA frame) |
 | `trace` | same as science (needed so `IFUCalibrations.get_slits` has a frame to build block-slits from; see 5.4) |
 | `arc`, `tilt` | same as science (sky frame if available) - the OH lines are the wavelength reference for the optional refinement |
 | `bias`, `pixelflat`, `illumflat`, `align`, `pinhole`, `scattlight` | never |
@@ -177,7 +181,8 @@ An era check in `get_rawimage` raises `PypeItError` for `mjd < 57388`.
 ### 4.4 Detector (`get_detector_par`)
 
 ```python
-dict(det=1, binning='1,1', dataext=0, specaxis=1, specflip=False,
+dict(det=1, binning='1,1', dataext=0, specaxis=1,
+     specflip=True,   # Keck coefficients: wavelength decreases with column
      spatflip=False, platescale=<SSCALE from header; 0.05 default>,
      darkcurr=90.0,            # e-/pix/hr (0.025 e-/s)
      saturation=65535., nonlinear=0.80,   # 80 % full well, per DRP practice
@@ -195,7 +200,7 @@ the "spatial" axis is the slice index.
 ### 4.5 Raw image reading (`get_rawimage`)
 
 1. Open the file; read `SCI`, `VAR` (optional), `DQ` (optional).
-2. Era check; compute `exptime`; multiply `SCI` by `exptime` to get DN.
+2. Era check; compute `exptime` (`TRUITIME x COADDS` if present, else `ITIME`); multiply `SCI` by `exptime` to get DN.
 3. Build `rawdatasec_img = 1` everywhere, `oscansec_img = 0`.
 4. Stash `VAR` and `DQ` on the returned `hdu` (or as attributes) so the
    rectification step and `bpm()` can use them without re-reading.

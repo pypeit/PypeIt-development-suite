@@ -377,6 +377,11 @@ we will search KOA for useful Raw data.
 
 >A. Your recommendation is OK
 
+   *Update (M1, 2026-10-11): `TRUITIME` does exist in the 2024 KOA headers
+   (seconds per coadd) and is now preferred over `ITIME` when present;
+   the `ITIME` ms/s rule is decided by `MJD-OBS` with `ITIME > 2000` as
+   the fallback.  See `M1_skeleton.md` Q&A 2.*
+
 **13. VAR and DQ extensions.**  In 2016 files ext1 is `VAR` ("ADU squared
    per coadd") and ext2 is `DQ` (bitmap; 9 = good).  VAR does not follow
    a simple Poisson/(t x gain) relation and DQ is all 9 in the test

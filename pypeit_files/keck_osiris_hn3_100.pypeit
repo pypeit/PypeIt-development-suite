@@ -1,0 +1,22 @@
+# Auto-generated PypeIt input file using PypeIt version: 2.0.2.dev1217+g017bece06
+# UTC 2026-10-11T12:19:02.585+00:00
+
+# User-defined execution parameters
+[rdx]
+    spectrograph = keck_osiris
+
+# Setup
+setup read
+Setup A:
+  decker: '0.100'
+  dispname: Hn3
+setup end
+
+# Data block 
+data read
+ path /Users/xavier/Projects/PypeIt/PypeIt-development-suite/RAW_DATA/keck_osiris/Hn3_100
+            filename |              frametype |           ra |        dec | target | dispname | decker | binning |            mjd |    airmass | exptime | issky | idname | calib | comb_id | bkg_id
+s160321_a002010.fits | arc,science,trace,tilt | 187.27791667 | 2.05241667 | 3C 273 |      Hn3 |  0.100 |     1,1 | 57468.42896322 | 1.06576796 |   240.0 |     0 |      a |     0 |       1 |      2
+s160321_a002011.fits |     arc,sky,tilt,trace | 187.27652689 | 2.05241668 | 3C 273 |      Hn3 |  0.100 |     1,1 | 57468.44310444 | 1.05312081 |   240.0 |     0 |      a |     0 |       2 |     -1
+data end
+
