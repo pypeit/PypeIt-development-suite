@@ -326,6 +326,50 @@ class PypeItReduceTest(PypeItTest):
         else:
             return []
 
+#: Subdirectory of a setup's redux directory that holds the ``--ncpu`` reduction
+#: produced by :class:`PypeItReduceNcpuTest`, alongside the serial one.
+NCPU_SUBDIR = 'ncpu'
+
+
+class PypeItReduceNcpuTest(PypeItReduceTest):
+    """
+    Test subclass that re-runs ``run_pypeit`` with ``--ncpu`` greater than one.
+
+    PypeIt reduces detectors concurrently when ``[rdx] ncpu > 1``, and its
+    products are required to be identical to the serial ones to machine
+    precision.  This test produces the parallel half of that comparison; the
+    serial half is the ordinary reduce test on the same setup, which must
+    therefore run first.  The two are kept apart by reducing into the
+    :data:`NCPU_SUBDIR` subdirectory of the setup's redux directory rather than
+    into the directory itself, so neither overwrites the other.
+
+    ``vet_tests/test_ncpu.py`` compares the two.
+
+    Args:
+        setup (:class:`~test_scripts.test_main.TestSetup`):
+            The setup to reduce.
+        pargs (:class:`argparse.Namespace`):
+            The parsed command-line arguments.
+        ncpu (:obj:`int`, optional):
+            Number of CPUs to pass to ``run_pypeit --ncpu``.
+    """
+
+    def __init__(self, setup, pargs, ncpu=2):
+        super().__init__(setup, pargs)
+        self.ncpu = ncpu
+        self.description = f'pypeit (--ncpu {ncpu})'
+
+    @property
+    def ncpu_dir(self):
+        """`Path`_ to the directory holding this test's reduction."""
+        return Path(self.setup.rdxdir, NCPU_SUBDIR)
+
+    def build_command_line(self):
+        self.ncpu_dir.mkdir(parents=True, exist_ok=True)
+        return super().build_command_line() \
+                    + ['-r', str(self.ncpu_dir), '--ncpu', str(self.ncpu)]
+
+
 class PypeItReduceStepByStepTest(PypeItTest):
     """Test subclass that runs pypeit_reduce_by_steps"""
 

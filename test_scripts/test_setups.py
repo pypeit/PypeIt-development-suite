@@ -65,6 +65,7 @@ Attributes:
 
                             _pypeit_setup:      Test setups that run pypeit_setup to generate a .pypeit file.
                             _additional_reduce: Test setups that run additional reduce tests beyond the default test.
+                            _ncpu_reduce:       Test setups that are reduced again with --ncpu > 1.
                             _sensfunc:          Test setups that run pypeit_sensfunc.
                             _flux_setup:        Test setups that run pypeit_flux_setup.
                             _flux:              Test setups that run pypeit_flux_calib.
@@ -161,6 +162,18 @@ _additional_reduce = {
     'gemini_gmos': {
         'GS_HAM_R400_860': [dict(std=True)]},
     }
+
+_ncpu_reduce = {
+    'keck_lris_blue': {
+        'multi_600_4000_slitmask': [dict(ncpu=2)]},
+    }
+"""
+Setups that are reduced a second time with ``run_pypeit --ncpu 2``, so that the
+serial and parallel products can be compared.  Deliberately a cheap
+*two-detector* setup: the point is to exercise genuine multi-detector
+concurrency, and duplicating a DEIMOS reduction would add hours to the suite.
+See vet_tests/test_ncpu.py.
+"""
 
 _sensfunc = {
     'shane_kast_blue': {
@@ -492,6 +505,11 @@ all_tests = [{'factory': pypeit_tests.PypeItSetupTest,
              {'factory': pypeit_tests.PypeItReduceTest,
               'type':    TestPhase.REDUCE,
               'setups':  _additional_reduce},
+             # NOTE: must come after the default reduce test above, which
+             # produces the serial products this one is compared against.
+             {'factory': pypeit_tests.PypeItReduceNcpuTest,
+              'type':    TestPhase.REDUCE,
+              'setups':  _ncpu_reduce},
              {'factory': pypeit_tests.PypeItReduceStepByStepTest,
               'type':    TestPhase.REDUCE,
               'setups':  _step_by_step},
