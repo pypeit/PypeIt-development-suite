@@ -290,6 +290,9 @@ The shell's default environment shadows it, so use the absolute env binaries:
      Describe what was done and why in the PR description.
      Use Opus 5.5. Log your work.
 
+10. **CI Tests** It looks like the CI have failed or aren't firing.  Please explore and suggest a fix.
+     Use Opus 5.5. Log your work.
+
 ## Q&A
 
 Claude poses questions here (as `**Qn — title.** body` followed by a `>A:` line);
@@ -1583,3 +1586,64 @@ the clean baseline does not affect it.
 **Remaining:** the full `./pypeit_test reduce -i shane_kast_blue keck_deimos
 keck_lris_blue` plus `pytest vet_tests` run, which is the last item of Task 7's
 checklist.  Nothing blocks it now that the machine is free.
+
+### 2026-10-12 (Task 10 — CI was gated, not broken; and it surfaced two real platform bugs)
+
+**The CI was not failing.  It was reporting `completed/success` while running
+almost nothing**, which is the more dangerous failure mode: four of the five
+jobs showed `skipping` and only `validate` actually ran.
+
+**Cause: the label gate, working as designed.**  `.github/workflows/ci_tests.yml`
+runs every real job behind `if: needs.validate.outputs.success == 'true'`, and
+`validate` sets that only when the PR carries **at least one label**
+(`LABEL_COUNT -gt 0`).  PR #2209 had none.  Cross-checking the other open PRs
+confirmed the pattern — every one that gets CI has a label (`Spectrograph
+Specific`, `testing`, `bug`, …) and #2207, which also has none, is in the same
+position.  So this is a deliberate cost control on Actions minutes, not a defect,
+and the fix is simply to label the PR; the workflow's `labeled` trigger then
+fires it.
+
+Added the `enhancement` label and CI went from 1 job to the **full matrix** —
+Windows/macOS x python 3.11-3.14, the tox envs, codestyle and conda.
+
+**Mechanical note, second time today:** `gh pr edit --add-label` reported
+success and did nothing, exactly as `gh pr edit --body-file` did yesterday; a
+GraphQL projects-deprecation warning masks the failure and the exit status is
+still 0.  Used `gh api -X POST .../labels` instead.  **If you script against
+`gh pr edit`, read the result back** — it is silently a no-op on this repo.
+
+#### The gate was hiding two real bugs in my own code
+
+With the matrix actually running, I checked what it would do *before* waiting
+for it to tell me, and found the Windows/macOS job runs the full test suite:
+
+1. **`can_fork` was wrong on macOS.**  My guard tested only
+   `'fork' in mp.get_all_start_methods()`.  macOS *has* fork, so the guard
+   passed and the reduction would fork a process that already holds the QA
+   encoder threads and the BLAS runtime's threads — the unsafe case CPython
+   stopped defaulting to, and precisely what §7 and my own `doc/running.rst`
+   said must fall back.  The docs were right and the code was wrong.
+   `can_fork()` now also requires a Linux platform.
+2. **Two unit tests assumed the worker path** and would have failed anywhere it
+   is not taken.  `test_worker_threads_are_pinned` asserts `OMP_NUM_THREADS ==
+   '1'`, which only `_worker_init` sets; on the serial fallback it is unset.
+   `test_worker_exception_names_the_detector` expects the per-detector
+   `PypeItError` wrapper, but the serial path propagates the original
+   `RuntimeError`.  Both now `skipif(not parallel.can_fork())`, and a new
+   `test_serial_exception_propagates` covers the serial behaviour that was
+   previously untested.
+
+Verified rather than assumed, by simulating a fork-less platform with a pytest
+plugin that patches `can_fork` to False before collection: **8 passed, 2
+skipped, 0 failed**, against 2 hard failures before the change.  On Linux the
+file is 10 passed.
+
+Pushed as `e47ac6d04`; CI re-fired on the `synchronize` event.
+
+The dev-suite repo has no workflows at all, so "no checks reported" on
+PR #435 is expected, not a second instance of this.
+
+**Reflection worth recording:** the label gate meant a green tick on #2209 was
+meaningless, and had I trusted it I would have shipped code that forks unsafely
+on macOS and fails two tests on Windows.  A "success" that ran four skipped jobs
+should be read as *no information*, not as a pass.
