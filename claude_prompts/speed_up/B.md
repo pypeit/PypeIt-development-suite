@@ -1718,3 +1718,86 @@ about the test machine, and it was mine.
 
 Both fixes are pushed; CI re-fired on `synchronize`.  I have not waited for the
 new run to go green, so that remains to be confirmed.
+
+### 2026-10-12 (Task 7 closeout — dev-suite reduce and vet_tests)
+
+The last outstanding item of Task 7.  `./pypeit_test reduce -i shane_kast_blue
+keck_deimos keck_lris_blue -t 6`, 2h53m wall: **27 passed, 2 failed of 29**,
+and both failures were stale dev-suite state rather than regressions.  Also
+re-confirmed that CI on `f228e6c2d` is **21/21 green** across Linux, Windows and
+macOS.
+
+#### The `--ncpu 2` dev-suite regression ran for the first time, and works
+
+`PypeItReduceNcpuTest` started immediately after the serial
+`keck_lris_blue/multi_600_4000_slitmask` finished — the registration ordering
+behaved as intended — and reduced into the `ncpu/` subdirectory without
+disturbing the serial products.  Both reductions cover `DET01` and `DET02`.
+
+I checked that it genuinely used workers rather than silently falling back,
+because a passing test that quietly ran serially would be worthless:
+
+```
+INFO | parallel.py:map_over_detectors:300 | Processing 2 detector(s) using 2 worker process(es).   (x3)
+```
+
+Three markers, one for each parallelised stage (calibration build,
+`process_exposure`, `extract_exposure`), on genuinely multi-detector data; the
+serial run's log has **zero**.  `vet_tests/test_ncpu.py` then gave
+**4 passed, 1 xfailed** against those real products — the xfail being the exact
+flux comparison keyed to #2208, as designed.
+
+#### The two failures: stale products, and my first diagnosis was too narrow
+
+`shane_kast_blue/452_3306_d57` and `830_3460_d46` failed with
+`PypeItDataModelError: Current version of SlitTraceSet object in code (1.1.6)
+does not match version used to write your HDU(s)`.
+
+First diagnosis — stale **calibrations** — was right in kind but incomplete.
+Re-running with `-m` (ignore existing calibrations) still failed, now on
+`Spec2DObj` instead, which disproved the narrow version of the claim.  The
+actual state was broader: those setups' `Science/` directories held a *mix* of
+June-2025 and current files, and the June ones carry old datamodel versions
+(`DMODVER` 1.0.1 / 1.1.0 / 1.1.5).  `-o` and `-m` do not help because
+`save_exposure` opens the existing spec2d to merge detectors into it.
+
+Moving `Science/`, `Calibrations/` and `QA/` aside (to
+`scratchpad/stale_backup/`, reversibly rather than deleting) and clearing the
+stale `*_state.json` gave **2 passed / 0 failed**.  So the failures are
+regenerable dev-suite state predating a `SlitTraceSet` datamodel bump that
+landed on `develop` in `5d5e5d75d "Fix pad in slits"` — a commit PR B does not
+contain and `pypeit/slittrace.py` is not in PR B's diff at all.  Any branch,
+including `develop`, would fail these two identically.
+
+#### `pytest vet_tests` — 71 failures, and why that number is uninformative
+
+Run against the full `REDUX_OUT`: 31 passed, 71 failed.  That looks alarming and
+is almost entirely an artefact of scope: `vet_tests` is designed to run after
+`./pypeit_test all`, and I ran only the **reduce** phase for **3 of the 8
+instruments present**, with no `afterburn` and no `ql`.  The failure
+distribution matches that exactly — the largest blocks are
+`test_datacube_afterburn` (15, needs keck_kcwi/keck_kcrm),
+`test_binospec_ifu` (4, needs mmt_binospec_ifu), `test_coadd2d` (5, needs
+gemini_gmos/keck_mosfire), `test_scattlight` (2, keck_esi/keck_kcwi).
+
+Rather than assert that, I scoped a run to the modules that vet the products I
+actually produced — `test_ncpu`, `test_edgetrace`, `test_wavetilts`,
+`test_skysub`, `test_extraction` — giving **10 passed, 1 xfailed, 3 failed**,
+and then checked each of the three:
+
+- `test_extraction::test_bok_bc_manual` — needs `bok_bc`, not reduced
+- `test_extraction::test_ech_manual` — needs an echelle setup, not reduced
+- `test_edgetrace::test_addrm_slit` — needs **`keck_lris_red`**; I reduced
+  `keck_lris_blue`
+
+All three are missing-product failures for instruments outside the run.  **Zero
+genuine failures in scope.**  I also checked `test_specutils`, whose 5 failures
+I initially suspected because the file mentions `shane_kast_blue`; the failing
+tests actually read `gemini_gnirs_echelle`, so that suspicion was wrong and the
+grep that raised it was too loose.
+
+**Honest limitation:** a conclusive vet result needs `./pypeit_test all`
+(~10+ hours) so that every product exists, and ideally the same on `develop` for
+a baseline.  What is established is narrower but real: everything PR B touches,
+reduced and vetted, passes — including the first genuine multi-detector parallel
+reduction.

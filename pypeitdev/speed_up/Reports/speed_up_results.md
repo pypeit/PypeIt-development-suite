@@ -235,6 +235,34 @@ property this PR can deliver or restore.  See **Q11** in
 should be filed as its own issue, with "two identical serial runs of the same
 `.pypeit` file disagree" as the reproducer.
 
+### Dev-suite validation (2026-10-12)
+
+`./pypeit_test reduce -i shane_kast_blue keck_deimos keck_lris_blue -t 6`:
+**27 passed, 2 failed of 29**, 2h53m.
+
+The `--ncpu 2` regression on `keck_lris_blue/multi_600_4000_slitmask` ran for
+the first time and passed, and its log confirms it genuinely used workers rather
+than falling back — `Processing 2 detector(s) using 2 worker process(es)` three
+times, once per parallelised stage, against zero such lines in the serial run.
+`vet_tests/test_ncpu.py` gives 4 passed, 1 xfailed (the exact flux comparison
+keyed to Issue #2208) against those products.
+
+The 2 failures, `shane_kast_blue/452_3306_d57` and `830_3460_d46`, are stale
+dev-suite state and not regressions: their `Science/` directories held
+June-2025 products carrying superseded datamodel versions (`DMODVER` 1.0.1 /
+1.1.0 / 1.1.5), written before the `SlitTraceSet` bump to 1.1.6 that landed on
+`develop` in `5d5e5d75d`.  Neither `-o` nor `-m` clears them, because
+`save_exposure` opens the existing spec2d to merge detectors into it.  With
+those directories moved aside the two setups pass **2/2**.  `pypeit/slittrace.py`
+is not in PR B's diff.
+
+`pytest vet_tests` over the whole `REDUX_OUT` reports 71 failures, which is an
+artefact of scope rather than a result: that suite expects `./pypeit_test all`,
+whereas only the **reduce** phase for **3 of the 8** instruments present was
+run.  Scoped to the modules vetting those products, the result is 10 passed,
+1 xfailed and 3 failed, and all three failures need instruments outside the run
+(`bok_bc`, an echelle setup, and `keck_lris_red`).
+
 ### Verdict vs the PR-B target
 
 Wall-clock: **met** — 2.24x on DEIMOS at `--ncpu 4`, inside the 1.9-2.3x band
