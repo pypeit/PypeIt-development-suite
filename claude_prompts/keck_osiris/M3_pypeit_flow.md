@@ -151,6 +151,8 @@ Questions from Prompt 1 (2026-10-11; details in Report 05).
    which would be ~2 px or a saw-tooth; the 0.1-px-level trend is a
    wavelength-calibration effect that only OH lines can fix.  OK?
 
+>A. Ok
+
 **2. Lenslets within a block are staggered by 1.92 px per lenslet row.**
    The design assumed "small" per-lenslet shifts; in fact OH lines run at
    1.92 px per lenslet across a block (~120 px over 64 lenslets) and a pure
@@ -164,6 +166,7 @@ Questions from Prompt 1 (2026-10-11; details in Report 05).
    keep the per-lenslet offsets for the residual.*  Why: the spec2d
    wavelength image and any 2D sky model (Davies scaling on the rectified
    frame) then work without special cases.  Shall I?
+   >A. Ok
 
 **3. Narrowband: one spectrum per lenslet (3040), not ~1000.**  Hn3 packs
    three lenslets per slice, so I re-lay the rectified frame as a lenslet
@@ -175,6 +178,8 @@ Questions from Prompt 1 (2026-10-11; details in Report 05).
    spectrum has one wavelength solution and one sky position; broadband
    filters reduce to the identity (1216 pixels).  OK?
 
+>A. Ok
+
 **4. The `DTMP7` grating-temperature term worsens the 2016 solution.**  On
    frame 011 (`DTMP7 = 55.3 K`) the OH lines are +0.40 A off the vacuum
    `OH_NIRES` list with the DRP term, -0.01 A without it.
@@ -185,6 +190,8 @@ Questions from Prompt 1 (2026-10-11; details in Report 05).
    at one epoch is not enough to override the DRP's documented correction.
    OK?
 
+>A. Ok
+
 **5. Default rectification method.**  With the flux-independent weights
    the `lstsq` quasar spaxel agrees with `drp` to 0.03 % (task 8), so I
    switched the default of `osiris_rect_method` to `lstsq`.
@@ -192,6 +199,8 @@ Questions from Prompt 1 (2026-10-11; details in Report 05).
    *Recommendation: keep `lstsq`.*  Why: exact solution, no DRP spectral
    smoothing, statistically correct variance, same run time.  OK, or revert
    to `drp`?
+
+>A. Ok
 
 **6. Reference rows and cosmic rays per raw frame.**  PypeIt processes A
    and B separately, so the reference-row correction and L.A.Cosmic run on
@@ -202,6 +211,8 @@ Questions from Prompt 1 (2026-10-11; details in Report 05).
    (a different realisation of the 13-row median noise).
 
    *Recommendation: keep the per-frame processing.*  OK?
+
+>A. Ok
 
 **7. Shared-code changes.**  Generic, gated additions: `rectify` step in
    `rawimage.py` (+ shot-noise/saturation rules after it, also in
@@ -215,6 +226,8 @@ Questions from Prompt 1 (2026-10-11; details in Report 05).
 
    *Recommendation: accept; flag the `runtime_par` mechanism and the
    `FiberExtract` speed-up for the PR reviewers.*  OK?
+
+>A. Ok
 
 ## Logs
 
