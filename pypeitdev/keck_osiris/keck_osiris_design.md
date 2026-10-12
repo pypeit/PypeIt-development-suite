@@ -72,6 +72,13 @@ model.
 | M2-2 | Cosmic rays are flagged on the raw (A-B) frame *before* `rectify` and passed in the BPM: PypeIt's LACosmic with conservative settings first, the 2016-DRP strip rule as a fallback if OH lines are eaten. |
 | M2-3 | The rectified `ivar` is always computed from the least-squares normal matrix, whichever solver produced the image; the DRP noise rule is kept in `rectify_drp` for fidelity only. |
 | M2-4 | Missing `DTMP7`: no grating-temperature correction (warning), never the DRP's 0 K extrapolation; the per-column reference-row correction (rows 2032-2044) is applied to every raw frame in the `rectify` step, before A-B. |
+| M3-1 | The OH-line tilt criterion (< 0.05 px over a block) is accepted open at M3 (0.073 px median, a smooth trend of the Keck per-lenslet coefficients, not a rectification error); it is closed in M4 by the OH refinement (per-lenslet zero point or per-block linear term) and re-run on the refined solution. |
+| M3-2 | Lenslets within a block are staggered by 1.92 px per lenslet row; every lenslet carries its exact Keck solution through the `get_fiber_wavelengths` hook (spec1d exact).  In M4 `get_fixed_tilts` returns Keck-derived tilts (2D Legendre per block, 0.02-0.03 px rms) so the spec2d wavelength image and 2D sky models are exact too; per-lenslet offsets keep the residual. |
+| M3-3 | Narrowband filters: the rectified frame is re-laid out as a *lenslet image* with one spatial pixel per lenslet (one block per Keck lenslet column: 19 broadband, 51 narrowband); one spec1d spectrum per lenslet (3040 for Hn3), `MASKDEF_ID = row * 51 + col`. |
+| M3-4 | The `DTMP7` grating-temperature term is kept (it worsens the 2016 Hn3 solution by +0.4 A); it is re-tested on the 2024 Kbb/050 frames in M4 and, if it also degrades them, made switchable by a parameter or absorbed by the OH refinement. |
+| M3-5 | `osiris_rect_method` defaults to `lstsq` (flux-independent weights, sandwich variance; quasar within 0.03 % of `drp`). |
+| M3-6 | Reference-row correction and L.A.Cosmic run on each raw frame (A and B separately), not on the raw A-B difference; the DRP strip rule is an option only. |
+| M3-7 | The generic shared-code additions of M3 (the `rectify` step, base hooks `rectify`/`get_fixed_tilts`/`get_fixed_wavecalib`/`get_fiber_wavelengths`/`set_runtime_par`, `method = 'fixed'`, per-fiber wavelengths and the column-window boxcar in the Fiber pypeline) are accepted; the `runtime_par` mechanism and the `FiberExtract` speed-up are flagged for the PR reviewers. |
 | 22 | KOA 2024-02-03 night (NGC 3245 + HD101060/HD89239 A0V + darks, Kbb/050) adopted as the science-mode setup; frames downloaded to `RAW_DATA/keck_osiris/Kbb_050/`; Kbb/050 matrix to be requested from Keck (`Reports/02_koa_dataset_and_matrix_request.md`). |
 
 ## 3. Processing flow
@@ -83,20 +90,23 @@ raw SCI/VAR/DQ (ADU/s)                       Keck calibrations
 [A] get_rawimage: -> DN, exptime, BPM        - static hot/dead masks (pypeit/data)
       |
       v
-[B] RawImage.process: dark subtraction (optional), BPM, cosmic-ray mask
-      |                 (no bias, no overscan, no flat)
+[B] RawImage.process: dark subtraction (optional), BPM; inside the
+      |               `rectify` step, per raw frame: reference-row
+      |               correction, L.A.Cosmic (no bias, overscan, flat)
       v
 [C] A-B / A-sky frame subtraction (PypeIt bkg_id machinery, raw-frame level)
       |
       v
-[D] Rectification: (2048 x 2048 detector) -> (2048 spec x 1216 slices)
+[D] Rectification: (2048 x 2048 detector) -> (2048 spec x nslice)
       |            per-column linear solve with the influence matrix;
-      |            output image, ivar and mask; "detector" image for the
+      |            output image, ivar and mask, re-laid out as a
+      |            *lenslet image* (one spatial pixel per lenslet;
+      |            identity for broadband); "detector" image for the
       |            rest of PypeIt is this rectified frame
       v
 [E] Fiber pypeline calibrations:
       slits  = block-slits defined geometrically (64 slices per block)
-      tilts  = identity (spectra are already straight)
+      tilts  = identity (M3); Keck-derived 2D Legendre per block (M4)
       wvcalib= Keck coefficients -> WaveCalib, optional OH refinement
       flats  = none (uniform fiber profile) or a Keck white-light scan
       |
@@ -220,7 +230,7 @@ residual) and by PypeIt.
 
 | Method | Returns | OSIRIS implementation |
 |---|---|---|
-| `get_fiber_blocks(det)` | list of dicts (`block_id`, `nfibers`, `type`, `fiber_positions`, `fiber_names`, `fiber_ids`, `min_pix`, `max_pix`) | 19 blocks (broadband) of 64 slices each; positions = slice index + 0.5 within the rectified frame; names `L<col>_<row>`; type `'science'` for all (no sky fibers) |
+| `get_fiber_blocks(det)` | list of dicts (`block_id`, `nfibers`, `type`, `fiber_positions`, `fiber_names`, `fiber_ids`, `min_pix`, `max_pix`) | one block per Keck lenslet column present for the filter (19 broadband, 51 narrowband) of up to 64 lenslets each; positions = lenslet pixel + 0.5 within the lenslet image (`pos = 64 * block + slice % 64`); names `L<col>_<row>`, ids `row * 51 + col`; type `'science'` for all (no sky fibers) |
 | `get_block_slit_edges(traceimg, det)` | `(left, right)` arrays `(nspec, nblocks)` | constant edges at `64*k - 0.5` and `64*(k+1) - 0.5`; no cross-correlation needed because the rectified geometry is exact |
 | `identify_fibers_in_block(det, block_idx, detected_positions)` | ids/names/types aligned with detections | nearest-integer match to slice index |
 | `get_fiber_metadata(det, slit_spat_ids, slit_centers)` | ids/names/types per slit | same mapping, applied after extraction |
@@ -230,11 +240,14 @@ residual) and by PypeIt.
 | `get_wcs`, `get_datacube_bins` | 3-D WCS and bins | as KCWI but with lenslet grid (66 x 51 or the filter's subset) |
 
 Narrowband filters: the DRP packs up to three lenslet-column blocks head
-to tail along the same 2048-px slice.  Phase 1 supports broadband only;
-narrowband needs the split rule from `assembcube_000.pro` (column
-offsets 0, +16, +32 and the `sp > 831` remainder) applied when building
-`get_fiber_blocks` and the layout.  Hn3/100 (our only test set) is
-narrowband, so the split must be implemented early (Section 10).
+to tail along the same 2048-px slice.  M3 implements the split rule from
+`assembcube_000.pro` (column offsets 0, +16, +32 and the `sp > 831`
+remainder) by re-laying the rectified frame out as a *lenslet image*:
+one spatial pixel per lenslet, one block per Keck lenslet column, so
+every spectrum has one wavelength solution and one sky position (M3
+Q&A 3).  Broadband filters reduce to the identity (1216 pixels).  The
+hooks need the filter/date, recorded on the spectrograph by `rectify` or
+`set_lenslet_state` (cube scripts must call the latter).
 
 ### 4.8 Parameters (`default_pypeit_par`)
 
@@ -250,10 +263,12 @@ par['calibrations']['wavelengths']['reference'] = 'sky'
 par['calibrations']['wavelengths']['fwhm'] = 2.0
 par['calibrations']['flatfield']['method'] = 'skip'
 par['calibrations']['osiris_rectmat_dir'] = None   # NEW: directory of rect matrices
-par['calibrations']['osiris_rect_method'] = 'drp'  # NEW: 'drp' | 'lstsq' (M2)
+par['calibrations']['osiris_rect_method'] = 'lstsq' # NEW: 'drp' | 'lstsq'; default lstsq (M3)
 par['calibrations']['osiris_rect_niter'] = 40      # NEW
 par['calibrations']['osiris_rect_relax'] = 1.0     # NEW (DRP 'relaxation')
 par['calibrations']['osiris_rect_use_var'] = False # NEW: weight 'lstsq' by VAR (M2)
+par['calibrations']['osiris_rect_crmask'] = 'lacosmic'  # NEW: CR flagging per raw frame (M3)
+par['calibrations']['wavelengths']['method'] = 'fixed'  # NEW option: spectrograph-provided WaveCalib (M3)
 par['scienceframe']['process'] : use_biasimage=False, use_overscan=False,
       use_darkimage=False (no dark subtraction for A-B pairs, Q&A 23;
       darks grouped by ITIME only for unpaired frames), use_pixelflat=False,
@@ -376,6 +391,12 @@ holding the solvers.
   `tilts` par with `['calibrations']['tilts']['method'] = 'identity'`
   if such an option is added).  Phase-1 fallback: let PypeIt fit tilts
   on OH lines of the rectified sky frame (they will come out ~0).
+  *M3 status:* `get_fixed_tilts` exists and returns the identity; but
+  lenslets within a block are staggered by 1.92 px per lenslet row, so
+  in M4 the hook returns Keck-derived tilts (a 2D Legendre per block,
+  0.02-0.03 px rms) and the per-lenslet offsets carry only the residual
+  (M3 Q&A 2).  This makes the spec2d wavelength image exact and lets a
+  2D sky model (Davies scaling) work without special cases.
 - **Wavelengths**: see Section 6.
 - **Flats**: none.  `FiberExtract` falls back to a uniform profile when
   no flat image exists, and each lenslet occupies exactly one rectified
@@ -405,19 +426,23 @@ along the 2048-px rectified row.  Implementation:
    `WaveFit` whose `pypeitfit` is a polynomial fit of lambda(x) derived
    by inverting the Keck relation on a fine grid (the inverse is smooth
    and monotonic), with `wave_soln` on the 2048 pixels.  Per-lenslet
-   offsets within a block are small but nonzero; since the Fiber
-   pypeline evaluates wavelengths per fiber from the block solution plus
-   tilts, the per-lenslet term is encoded either as a per-fiber shift
-   (there is already `_refine_fiber_wavelengths`/`_solve_fiber_shift`
-   machinery in `FiberFindObjects`) or by making every lenslet its own
-   "slit" (1216 slits; heavier but exact).  **Proposal:** one slit per
-   block, per-lenslet shifts from the Keck coefficients, consistent with
-   how Binospec handles fibers.
+   offsets within a block are **not** small: OH lines run at 1.92 px
+   per lenslet row (~120 px across a 64-lenslet block) and a pure shift
+   leaves up to 0.6 px (M3 finding).  One slit per block is kept, but
+   every lenslet receives its exact Keck solution through the
+   `Spectrograph.get_fiber_wavelengths` hook (applied as per-fiber
+   wavelength arrays by the Fiber pypeline), so the spec1d wavelengths
+   are exact.  From M4 the block tilts are Keck-derived (Section 5.4)
+   so the spec2d wavelength image is exact as well.
 3. The science header's `DTMP7` applies the grating-temperature scaling;
    when absent (truncated header) use the epoch default (no scaling) and
    warn.  Do **not** copy the DRP, which reads a missing `DTMP7` as 0 K
    and extrapolates the CTE table (a ~1.5 px shift in the 2016
-   reference cube; M2 Q&A 4).  `resample_to_drp_grid` reproduces that
+   reference cube; M2 Q&A 4).  On the 2016 Hn3 frame the term *worsens*
+   the OH-line agreement (+0.40 A with it, -0.01 A without); it is kept
+   for now and re-tested on the 2024 Kbb/050 frames in M4, after which
+   it becomes switchable or is absorbed by the OH refinement (M3 Q&A
+   4).  `resample_to_drp_grid` reproduces that
    behaviour only for the comparison with DRP cubes.
 
 ### 6.2 OH refinement (phase 2)
@@ -475,7 +500,12 @@ matrices if Keck agrees to host them with stable URLs.
    pattern points at a wrong `hilo` offset, a slice/lenslet mis-mapping
    or an unconverged solver.  This test is part of the dev-suite vet
    tests and its QA plot (line centroid vs lenslet row) is kept in the
-   Reports folder.
+   Reports folder.  *M3 result:* scatter 0.034 px (passes); slope
+   0.073 px median (fails), a smooth signed trend of the Keck
+   coefficients identical for both solvers and frames.  Accepted open
+   with the strict assertion as `xfail` plus a regression guard (median
+   < 0.2 px, offset < 0.1 px); to be closed in M4 on the OH-refined
+   solution (M3 Q&A 1).
 4. **Dev-suite reduce tests** `keck_osiris/Hn3_100` (pypeit file with
    the pair, `bkg_id` set) and `keck_osiris/Kbb_050` (NGC 3245 with its
    A0V telluric and darks; needs the Keck matrix) for the full flow

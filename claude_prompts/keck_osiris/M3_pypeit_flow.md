@@ -261,3 +261,27 @@ Questions from Prompt 1 (2026-10-11; details in Report 05).
   (`make_m3_figures.py`); M3 status note in `keck_osiris_implementation.md`;
   Q&A 1-7 above.
 
+### 2026-10-12 - Prompt 1 follow-up (act on Q&A 1-7; model: Claude Fable 5.1)
+
+- All seven recommendations accepted; no code changes needed (the M3
+  code already implements them: `lstsq` default, per-frame reference
+  rows and L.A.Cosmic, lenslet image, `get_fiber_wavelengths`).
+- `keck_osiris_design.md`: decision rows M3-1 to M3-7; processing-flow
+  diagram (per-frame pre-processing, lenslet image, tilts identity ->
+  Keck-derived in M4); Section 4.7 (`get_fiber_blocks` row and the
+  narrowband paragraph rewritten for the lenslet image); Section 4.8
+  (`osiris_rect_method = 'lstsq'`, `osiris_rect_crmask`, wavelengths
+  `method = 'fixed'`); Section 5.4 tilts (M3 status, M4 Keck-derived
+  tilts); Section 6.1 (1.92 px stagger, exact per-lenslet solutions via
+  the hook, `DTMP7` re-test); Section 8 test 3 (M3 result and the
+  accepted-open disposition).
+- `keck_osiris_implementation.md`: M3 status note cross-references the
+  decisions; Stage 4 gains task 7 (Keck-derived fixed tilts) and task 8
+  (`DTMP7` re-test), task 3 closes the tilt criterion, and the M4
+  milestone includes it; Stage 5 task 5 flags `runtime_par` and the
+  `FiberExtract` speed-up for the reviewers.
+- `M4_science_mode.md`: task 4 extended (re-run the tilt test, drop the
+  `xfail`); new tasks 8 (Keck-derived tilts), 9 (`DTMP7` re-test) and 10
+  (M3 context to respect); acceptance extended accordingly.
+- `M5_release.md`: task 6 lists the shared-code changes to flag for the
+  PR reviewers.

@@ -76,7 +76,12 @@ If you need to test the code:
 5. Run the full dev suite for both OSIRIS setups (`run-dev-suite`).
 6. Prepare the pull request text (PypeIt and dev-suite PRs
    cross-referenced; credit Lyke et al. 2017 and Lockhart et al. 2019;
-   end with the required attribution line).  Do not open the PR; I will.
+   end with the required attribution line).  Flag for the reviewers
+   the generic shared-code changes (M3 Q&A 7): the `runtime_par`
+   mechanism (`Spectrograph.set_runtime_par`, set by `PypeIt.__init__`)
+   and the column-window boxcar speed-up in `FiberExtract`, plus the
+   `rectify` step and the fixed-tilts/fixed-wavelength hooks.  Do not
+   open the PR; I will.
 
 ## Acceptance
 

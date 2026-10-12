@@ -72,8 +72,12 @@ If you need to test the code:
    before subtraction); call it from `FiberFindObjects` when set.
 4. OH wavelength refinement: an OSIRIS OH line list in
    `pypeit/data/arc_lines/lists/`, `reference = 'sky'`, per-lenslet
-   zero-point correction with a QA plot of the shift statistics;
-   keep the Keck solution where fewer than 3 lines are usable.
+   zero-point correction (or a per-block linear term) with a QA plot
+   of the shift statistics; keep the Keck solution where fewer than 3
+   lines are usable.  Then re-run the OH-line tilt test
+   (`vet_tests/test_keck_osiris_flow.py`) on the refined solution and
+   remove the `xfail`: this closes the M3 criterion (slope < 0.05 px
+   over a block; M3 Q&A 1, design decision M3-1).
 5. Generic `pypeit_fiber_cube` script (`new-script`) on
    `core/datacube.build_cube_from_spec1d` and the spectrograph's fiber
    hooks; make `pypeit_binospec_ifu_cube` a thin alias (Q&A 24).  Build
@@ -83,6 +87,26 @@ If you need to test the code:
    PypeIt's IR sensfunc/telluric tools; check the K-band telluric grid.
 7. Dev suite: `keck_osiris/Kbb_050` reduce test, telluric test, vet
    tests (cube structure, OH-line tilt test on an ISSKY=1 frame).
+8. Keck-derived fixed tilts (M3 Q&A 2, design 5.4): make
+   `KeckOSIRISSpectrograph.get_fixed_tilts` return a `WaveTilts` with a
+   2D Legendre per block reproducing the 1.92 px per lenslet-row
+   stagger (target 0.02-0.03 px rms against the Keck coefficients), and
+   reduce the `get_fiber_wavelengths` per-lenslet offsets to the
+   residual, so the spec2d wavelength image is exact.  Do this before
+   task 3 if the Davies scaling is applied on the 2D rectified frame.
+   Add a unit test comparing the tilt-based wavelength image with the
+   per-lenslet Keck solutions.
+9. `DTMP7` re-test (M3 Q&A 4): on the 2024 Kbb/050 frames measure the
+   OH-line offset against the vacuum list with and without the
+   grating-temperature term (on 2016 Hn3 it is +0.40 A with, -0.01 A
+   without).  If it also degrades the 2024 data, add a parameter to
+   switch it off (`add-parameter`) or let the OH refinement absorb it;
+   record the decision in the report and the design document.
+10. Context from M3 you must respect (design decisions M3-1 to M3-7):
+   one spec1d spectrum per lenslet via the lenslet image (3040 for
+   narrowband Hn3); `osiris_rect_method = 'lstsq'` is the default;
+   reference rows and L.A.Cosmic run per raw frame; the cube script
+   must call `set_lenslet_state` before using the fiber hooks.
 
 ## Acceptance
 
@@ -90,7 +114,10 @@ NGC 3245 reduced end to end: emission-line map and continuum image
 look physical; sky residuals at OH lines are reduced by the scaling
 step relative to plain A-B (quantify); telluric-corrected A0V spectrum
 flat to a few percent; dev-suite reduce, afterburn and vet tests for
-`Kbb_050` pass.
+`Kbb_050` pass; the OH-line tilt test passes on the refined solution
+(slope < 0.05 px over a block, no `xfail`) for both `Hn3_100` and an
+`ISSKY=1` Kbb frame; the Keck-derived tilts reproduce the per-lenslet
+solutions to < 0.05 px rms.
 
 Write `pypeitdev/keck_osiris/Reports/06_m4_science_mode.md` describing what was
 built, how it was verified (commands and outputs), and anything that

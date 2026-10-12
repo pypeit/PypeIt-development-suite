@@ -221,7 +221,8 @@ Report 05.
 Estimated effort: 2 weeks.
 
 **Status (2026-10-11): M3 done** (Report 05), with the OH-line tilt
-criterion open (Q&A 1 of `M3_pypeit_flow.md`).  Changes that affect later
+criterion open (Q&A 1 of `M3_pypeit_flow.md`; all seven M3 Q&A accepted
+on 2026-10-12, design decisions M3-1 to M3-7).  Changes that affect later
 stages:
 
 - The rectified frame is re-laid out as a *lenslet image*: one spatial
@@ -235,8 +236,8 @@ stages:
   per-lenslet "shifts" are full wavelength solutions
   (`get_fiber_wavelengths`, applied as offsets by the Fiber pypeline); the
   identity tilts make the spec2d wavelength image exact only for the block
-  reference lenslets.  Stage 4 should consider Keck-derived fixed tilts
-  (Q&A 2) before building 2D sky models.
+  reference lenslets.  Stage 4 task 8 replaces them with Keck-derived
+  fixed tilts (Q&A 2) before building 2D sky models.
 - `osiris_rect_method` defaults to `lstsq` (flux-independent weights,
   sandwich variance; quasar within 0.03 % of `drp`).  Cosmic rays
   (L.A.Cosmic) and reference rows are handled per raw frame.
@@ -244,7 +245,8 @@ stages:
   OH scaling (Stage 4 task 2) will plug in there.
 - OH lines vs the Keck coefficients: 0.03-0.15 px trends across the blocks
   and a +0.4 A offset when the `DTMP7` term is applied (none without it);
-  Stage 4 task 3 (OH refinement) should absorb both.
+  Stage 4 task 3 (OH refinement) closes the tilt criterion and task 9
+  re-tests the `DTMP7` term on Kbb/050.
 - Run time on Hn3/100: 2 min 45 s (13 s per rectified frame).
 
 ---
@@ -266,7 +268,9 @@ Tasks
    them before subtraction; used by `FiberFindObjects` when set.
 3. OH wavelength refinement (`reference = 'sky'`, OSIRIS OH list in
    `pypeit/data/arc_lines/lists/`): per-lenslet zero-point correction
-   with QA of the shift statistics.
+   (or a per-block linear term) with QA of the shift statistics.  Re-run
+   the OH-line tilt test on the refined solution: this closes the open
+   M3 criterion (slope < 0.05 px over a block; M3 Q&A 1).
 4. Datacube (Q&A 24): new generic `pypeit_fiber_cube` script
    (`new-script` skill) built on `core/datacube.build_cube_from_spec1d`
    and the spectrograph's fiber hooks; `pypeit_binospec_ifu_cube` kept
@@ -277,10 +281,21 @@ Tasks
    PypeIt's IR sensfunc/telluric tools; check the K-band grid choice.
 6. Dev-suite: `keck_osiris/Kbb_050` reduce test, telluric test, and vet
    tests (cube structure, OH-line tilt test on an `ISSKY=1` frame).
+7. (moved from Stage 3) Keck-derived fixed tilts: `get_fixed_tilts`
+   returns a `WaveTilts` with a 2D Legendre per block that reproduces
+   the 1.92 px per lenslet-row stagger (0.02-0.03 px rms); the
+   per-lenslet `get_fiber_wavelengths` offsets keep only the residual,
+   so the spec2d wavelength image is exact (M3 Q&A 2).  Do this before
+   task 2 if the Davies scaling works on the 2D frame.
+8. `DTMP7` re-test (M3 Q&A 4): measure the OH-line offset on the 2024
+   Kbb/050 frames with and without the grating-temperature term; if it
+   degrades them too, add a parameter to switch it off (or let the OH
+   refinement absorb it) and record the decision.
 
 **Milestone M4**: NGC 3245 reduced end to end; emission-line map and
 continuum image look physical; sky residuals at OH lines reduced by the
-scaling step; telluric-corrected A0V spectrum flat to a few percent.
+scaling step; telluric-corrected A0V spectrum flat to a few percent; the
+OH-line tilt test passes on the refined solution (closes M3).
 Report 06.
 
 Estimated effort: 2-3 weeks, gated on the matrix from Keck.
@@ -305,7 +320,10 @@ Tasks
    for now, to be trimmed later per Q&A 25) and the pypeit files to the
    dev-suite Google Drive.
 5. Pull request to `develop` with the dev-suite PR cross-referenced;
-   credit the OSIRIS DRP authors.
+   credit the OSIRIS DRP authors.  Flag for the reviewers the generic
+   shared-code changes of M3: the `runtime_par` mechanism
+   (`Spectrograph.set_runtime_par`, set by `PypeIt.__init__`) and the
+   column-window boxcar speed-up in `FiberExtract` (M3 Q&A 7).
 
 **Milestone M5**: dev-suite `reduce`, `afterburn` and `vet` pass for
 both OSIRIS setups; docs build clean; PR opened.
