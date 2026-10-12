@@ -293,6 +293,9 @@ The shell's default environment shadows it, so use the absolute env binaries:
 10. **CI Tests** It looks like the CI have failed or aren't firing.  Please explore and suggest a fix.
      Use Opus 5.5. Log your work.
 
+11. **CI Tests 2** Now it appears all of the CI tests are failing. Please explore and suggest a fix.
+     Use Opus 5.5. Log your work.
+
 ## Q&A
 
 Claude poses questions here (as `**Qn — title.** body` followed by a `>A:` line);
@@ -1647,3 +1650,71 @@ PR #435 is expected, not a second instance of this.
 meaningless, and had I trusted it I would have shipped code that forks unsafely
 on macOS and fails two tests on Windows.  A "success" that ran four skipped jobs
 should be read as *no information*, not as a pass.
+
+### 2026-10-12 (Task 11 — CI Tests 2: all four failures were mine, and all four were real)
+
+Labelling the PR in Task 10 turned the CI on, and it immediately failed.  Every
+failure was in code I wrote, and none of them was a false alarm — the gate had
+simply been hiding them.  **The Linux side was green throughout**: tox 3.11-3.14
+across `test`, `test-alldeps`, `astropydev` and `numpydev`, plus `codestyle` and
+`conda`.  All failures were Windows/macOS.
+
+Worth stating plainly: the "all tests failing" appearance was partly an artefact
+of reading a stale run.  `gh pr checks` reports the newest *completed* result
+per check, and the first full run (commit `94eee1c81`) predates the Task 10 fix.
+I mapped each run to its head SHA before drawing conclusions, which is what kept
+me from "fixing" things that were already fixed.
+
+#### Four distinct bugs, in two rounds
+
+Round 1 — found in Task 10 by reading the workflow rather than waiting for it,
+fixed in `e47ac6d04`, and confirmed by this run:
+
+1. `test_worker_threads_are_pinned` — `assert None == '1'`.  `OMP_NUM_THREADS`
+   is set by `_worker_init`, so on the serial fallback it is unset.
+2. `test_worker_exception_names_the_detector` — `RuntimeError: boom` instead of
+   the per-detector `PypeItError`; the serial path propagates the original.
+
+That fix landed exactly as intended: Windows went from 3 failures to
+**1 failed, 867 passed, 2 skipped**.
+
+Round 2 — the two that remained, fixed in `f228e6c2d`:
+
+3. **`test_run_pypeit_ncpu` on Windows:** `PermissionError: [WinError 32] ...
+   shane_kast_blue_A.log`.  The reduction leaves its log file open and Windows
+   will not delete a held file, so my `shutil.rmtree(outdir)` clean-up failed.
+   The logger already has `close_file()`; the test now calls it first.  I also
+   skipped the test off Linux — where `--ncpu 2` falls back to serial it spends
+   seven minutes comparing a serial reduction against itself, which on a repo
+   that gates CI to save Actions minutes is not a reasonable thing to add.
+4. **`test_nworkers` on macOS:** `number of workers must be capped by the item
+   count`.  This one was a genuine test defect, not a platform quirk: I had
+   hard-coded `nworkers(8, 3) == 3`, which only holds with at least four cores.
+   GitHub's macOS runners report **three**, so `cpu_count()-1` caps the result
+   at 2 and the assertion failed for a reason that had nothing to do with the
+   behaviour under test.  Expectations are now derived from `os.cpu_count()`,
+   plus two new cases for the single-item and never-below-one paths.
+
+#### Verification
+
+I reproduced both remaining failures locally rather than pushing and hoping, via
+a pytest plugin that patches `can_fork()` to False and `os.cpu_count()` to 3
+before collection — i.e., a simulated three-core fork-less runner:
+
+| | before | after |
+|---|---|---|
+| simulated 3-core, no fork | 1 failed | **8 passed, 2 skipped** |
+| Linux, 24 cores | 10 passed | 10 passed |
+| `test_run_pypeit_ncpu` on Linux (`--remote-data`) | passes | **still passes** (269 s) |
+
+#### What I'd take from this
+
+Three of the four bugs existed the whole time and were invisible because the
+label gate skipped the jobs that would have caught them; the fourth
+(`test_nworkers`) would have failed on any small machine, including a
+contributor's laptop.  The macOS one is the sort that is easy to wave away as
+"CI being flaky" — it is not, it is an assertion that encodes an assumption
+about the test machine, and it was mine.
+
+Both fixes are pushed; CI re-fired on `synchronize`.  I have not waited for the
+new run to go green, so that remains to be confirmed.
