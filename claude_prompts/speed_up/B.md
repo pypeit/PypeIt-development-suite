@@ -296,6 +296,12 @@ The shell's default environment shadows it, so use the absolute env binaries:
 11. **CI Tests 2** Now it appears all of the CI tests are failing. Please explore and suggest a fix.
      Use Opus 5.5. Log your work.
 
+12. **Dev Suite**  Please generate 3 new tests to add to the dev suite to test the new functionality 
+     with `--ncpu 2`. One each from keck_deimos, keck_lris_blue, and mmt_binospec.
+     Create the new files and run on this workstation.
+     Once things work ok, I will launch a full test in the cloud.
+     Use Opus 5.5. Log your work.
+
 ## Q&A
 
 Claude poses questions here (as `**Qn — title.** body` followed by a `>A:` line);
