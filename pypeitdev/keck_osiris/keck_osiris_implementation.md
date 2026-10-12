@@ -220,6 +220,33 @@ Report 05.
 
 Estimated effort: 2 weeks.
 
+**Status (2026-10-11): M3 done** (Report 05), with the OH-line tilt
+criterion open (Q&A 1 of `M3_pypeit_flow.md`).  Changes that affect later
+stages:
+
+- The rectified frame is re-laid out as a *lenslet image*: one spatial
+  pixel per lenslet (`pos = 64 * block + slice % 64`, one block per Keck
+  lenslet column present for the filter: 19 broadband, 51 narrowband).  The
+  Hn3 spec1d holds 3040 spectra (one per lenslet), `MASKDEF_ID = row * 51 +
+  col` of the Keck grid.  The fiber hooks need the filter/date, recorded on
+  the spectrograph by `rectify` or `set_lenslet_state` (cube scripts must
+  call the latter).
+- Lenslets within a block are staggered by 1.92 px per lenslet row, so the
+  per-lenslet "shifts" are full wavelength solutions
+  (`get_fiber_wavelengths`, applied as offsets by the Fiber pypeline); the
+  identity tilts make the spec2d wavelength image exact only for the block
+  reference lenslets.  Stage 4 should consider Keck-derived fixed tilts
+  (Q&A 2) before building 2D sky models.
+- `osiris_rect_method` defaults to `lstsq` (flux-independent weights,
+  sandwich variance; quasar within 0.03 % of `drp`).  Cosmic rays
+  (L.A.Cosmic) and reference rows are handled per raw frame.
+- With A-B pairs no fiber sky model is fit (`joint_fit = False`); Davies
+  OH scaling (Stage 4 task 2) will plug in there.
+- OH lines vs the Keck coefficients: 0.03-0.15 px trends across the blocks
+  and a +0.4 A offset when the `DTMP7` term is applied (none without it);
+  Stage 4 task 3 (OH refinement) should absorb both.
+- Run time on Hn3/100: 2 min 45 s (13 s per rectified frame).
+
 ---
 
 ## Stage 4 - Science-mode run: sky subtraction, cube, telluric
