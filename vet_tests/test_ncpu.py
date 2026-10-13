@@ -64,12 +64,71 @@ from astropy.io import fits
 from pypeit import specobjs
 
 
-#: Setup used for the comparison: cheap, and genuinely two-detector.
-#: NOTE: most dev-suite LRIS-blue setups pin ``detnum`` to a single detector in
-#: their .pypeit file, which would defeat the point of this test; this one does
-#: not, so it reduces both DET01 and DET02.
-INSTRUMENT = 'keck_lris_blue'
-SETUP = 'multi_600_4000_slitmask'
+#: Fallback registration, used only if the dev-suite one cannot be loaded.
+#: Kept in step by :func:`test_ncpu_registration_matches_dev_suite`.
+_FALLBACK_SETUPS = [('keck_deimos', '830G_M_8500'),
+                    ('keck_lris_blue', 'multi_600_4000_slitmask'),
+                    ('mmt_binospec', 'Longslit_G1000')]
+
+
+def _load_ncpu_reduce():
+    """
+    Load ``_ncpu_reduce`` from the dev suite's ``test_scripts/test_setups.py``.
+
+    ``test_scripts`` cannot simply be imported from here: it has no
+    ``__init__.py``, so it is a *namespace* package, and ``vet_tests`` contains
+    a regular module also called ``test_scripts`` -- which wins the import
+    regardless of ``sys.path`` order.  The file is therefore loaded directly,
+    under a private name, with a synthetic parent package so that its relative
+    imports still resolve.
+
+    Returns
+    -------
+    :obj:`dict` or None
+        The ``_ncpu_reduce`` mapping, or None if it could not be loaded.
+    """
+    import importlib.util
+    import sys
+    import types
+
+    pkg_dir = Path(__file__).resolve().parent.parent / 'test_scripts'
+    name = '_devsuite_test_scripts'
+    try:
+        if name not in sys.modules:
+            pkg = types.ModuleType(name)
+            pkg.__path__ = [str(pkg_dir)]
+            sys.modules[name] = pkg
+        spec = importlib.util.spec_from_file_location(f'{name}.test_setups',
+                                                      pkg_dir / 'test_setups.py')
+        mod = importlib.util.module_from_spec(spec)
+        sys.modules[spec.name] = mod
+        spec.loader.exec_module(mod)
+        return mod._ncpu_reduce
+    except Exception:
+        return None
+
+
+def _registered_setups():
+    """
+    The ``(instrument, setup)`` pairs reduced with ``--ncpu``.
+
+    Taken from the dev-suite registration where possible, so this module cannot
+    drift out of step with what the suite actually runs; see
+    :func:`_load_ncpu_reduce`.
+
+    Returns
+    -------
+    :obj:`list`
+        The ``(instrument, setup)`` tuples, sorted.
+    """
+    reg = _load_ncpu_reduce()
+    if reg is None:
+        return sorted(_FALLBACK_SETUPS)
+    return sorted((instr, setup) for instr, setups in reg.items() for setup in setups)
+
+
+#: The setups compared by this module; see :func:`_registered_setups`.
+NCPU_SETUPS = _registered_setups()
 
 #: Subdirectory holding the parallel reduction; see
 #: ``test_scripts.pypeit_tests.NCPU_SUBDIR``.
@@ -85,37 +144,64 @@ SPEC2D_ROBUST_EXT = ('WAVEIMG', 'TILTS', 'SCIIMG', 'IVARRAW')
 FLUX_KEYS = ('OPT_COUNTS', 'BOX_COUNTS')
 FLUX_EXT = ('SKYMODEL', 'OBJMODEL')
 
-#: Relative tolerance for the robust quantities.  The measured run-to-run
-#: scatter in these is ~2e-5 (see the module note), and a genuine misrouting
-#: bug would show up at order unity, so 1e-3 is comfortably clear of the noise
-#: while still catching anything real.
+#: Quantile of the relative-difference distribution that is compared; see
+#: :func:`_rel_quantile` for why this is not a maximum.
+QUANTILE = 0.999
+
+#: Tolerance on that quantile.  The largest value measured across all three
+#: setups is 8.2e-05 (``DET07-IVARRAW`` on ``keck_deimos/830G_M_8500``), and a
+#: genuine misrouting bug would show up at order unity, so 1e-3 sits an order of
+#: magnitude above the noise and four below a real failure.
 RTOL = 1e-3
 
+#: Permitted change in an array's non-zero count; see :func:`_nonzero_delta`.
+#: A handful of slit-edge pixels may move (Issue 2208); a zeroed slit would not
+#: be anywhere near this small.
+MAX_NONZERO_DELTA = 64
 
-def _science_dirs(redux_out):
+
+def _science_dirs(redux_out, instrument, setup):
     """
-    Return the serial and parallel ``Science/`` directories for the setup.
+    Return the serial and parallel ``Science/`` directories for a setup.
 
     Args:
         redux_out (:obj:`str`): The dev-suite ``REDUX_OUT`` directory.
+        instrument (:obj:`str`): Instrument name.
+        setup (:obj:`str`): Setup name.
 
     Returns:
         :obj:`tuple`: The serial and parallel `Path`_ objects.
     """
-    root = Path(redux_out).absolute() / INSTRUMENT / SETUP
+    root = Path(redux_out).absolute() / instrument / setup
     return root / 'Science', root / NCPU_SUBDIR / 'Science'
 
 
-def _max_rel(a, b):
+def _rel_quantile(a, b, q=QUANTILE):
     """
-    Maximum relative difference between two arrays, ignoring non-finite values.
+    A high quantile of the relative difference between two arrays.
+
+    A *maximum* is the wrong statistic for these comparisons.  Issue 2208 can
+    shift a slit edge by a fraction of a pixel, which moves a single pixel in or
+    out of the illuminated region; that pixel is then zero in one reduction and
+    finite in the other, giving a relative difference of exactly 1.0 and
+    dominating the maximum no matter how well the other eight million pixels
+    agree.  Measured on ``keck_deimos/830G_M_8500``, DET07 has exactly one such
+    pixel in ``WAVEIMG`` and ``TILTS``, while DET03 has none.
+
+    A high quantile ignores that handful of boundary pixels and still catches
+    anything real: a detector reduced with the wrong calibrations, or a payload
+    delivered to the wrong worker, disagrees across essentially the whole array,
+    so its quantile is of order unity rather than the 1e-4 seen here.
+    :func:`_nonzero_delta` covers the complementary case of a region being
+    zeroed wholesale.
 
     Args:
         a, b (`numpy.ndarray`_): Arrays to compare.
+        q (:obj:`float`, optional): Quantile to report.
 
     Returns:
-        :obj:`float`: The maximum relative difference, or ``inf`` if the shapes
-        differ.
+        :obj:`float`: The quantile of the relative difference, or ``inf`` if the
+        shapes differ.
     """
     a = np.asarray(a, dtype=float)
     b = np.asarray(b, dtype=float)
@@ -125,20 +211,45 @@ def _max_rel(a, b):
     good = np.isfinite(a) & np.isfinite(b) & (scale > 0)
     if not np.any(good):
         return 0.0
-    return float(np.max(np.abs(a[good] - b[good]) / scale[good]))
+    return float(np.quantile(np.abs(a[good] - b[good]) / scale[good], q))
 
 
-def test_ncpu_same_detectors(redux_out):
+def _nonzero_delta(a, b):
+    """
+    Difference in the number of non-zero elements between two arrays.
+
+    Guards the blind spot of :func:`_rel_quantile`: if a whole slit or detector
+    were zeroed out, most pixels would agree trivially (zero against zero) and
+    the quantile would stay small, but the non-zero count would move sharply.
+
+    Args:
+        a, b (`numpy.ndarray`_): Arrays to compare.
+
+    Returns:
+        :obj:`int`: The absolute difference in non-zero counts.
+    """
+    return int(abs(np.count_nonzero(np.asarray(a)) - np.count_nonzero(np.asarray(b))))
+
+
+@pytest.mark.parametrize('instrument,setup', NCPU_SETUPS)
+def test_ncpu_same_detectors(redux_out, instrument, setup):
     """
     Both reductions must cover every detector.
 
     This is the regression for the bug where a detector whose calibrations
     failed was removed from the detector list *while that list was being
-    iterated*, so the following detector was silently skipped.  With two
-    detectors, that bug would leave one of them missing here.  Asserted
-    exactly: it does not depend on floating-point noise.
+    iterated*, so the following detector was silently skipped; that bug would
+    leave one missing here.  Asserted exactly: it does not depend on
+    floating-point noise.
+
+    It also guards against the test itself going vacuous.  A setup whose
+    ``.pypeit`` file selects a single detector or a single mosaic -- note that
+    ``detnum = (3,7)`` is one *mosaic* while ``detnum = 3,7`` is two detectors
+    -- gives the reduction nothing to distribute, so ``--ncpu 2`` would quietly
+    be a no-op and every other test in this module would pass without testing
+    anything.  Requiring at least two therefore keeps the registration honest.
     """
-    serial_dir, par_dir = _science_dirs(redux_out)
+    serial_dir, par_dir = _science_dirs(redux_out, instrument, setup)
     assert serial_dir.is_dir(), f'serial Science directory missing: {serial_dir}'
     assert par_dir.is_dir(), f'--ncpu Science directory missing: {par_dir}'
 
@@ -148,14 +259,17 @@ def test_ncpu_same_detectors(redux_out):
         assert len(spec2d) > 0, f'{tag} reduction produced no spec2d files'
         with fits.open(spec2d[0]) as hdu:
             dets[tag] = {h.name.split('-')[0] for h in hdu if '-' in h.name}
-        assert len(dets[tag]) == 2, \
-                f'{tag} reduction covered detectors {sorted(dets[tag])}; expected both of them'
+        assert len(dets[tag]) > 1, \
+                f'{tag} reduction of {instrument}/{setup} covered only ' \
+                f'{sorted(dets[tag])}; a single detector means --ncpu has nothing to ' \
+                f'distribute and this comparison is vacuous'
     assert dets['serial'] == dets['--ncpu'], \
-            f"detectors differ: serial {sorted(dets['serial'])} vs " \
-            f"--ncpu {sorted(dets['--ncpu'])}"
+            f"{instrument}/{setup}: detectors differ between the reductions -- serial " \
+            f"{sorted(dets['serial'])} vs --ncpu {sorted(dets['--ncpu'])}"
 
 
-def test_ncpu_same_structure(redux_out):
+@pytest.mark.parametrize('instrument,setup', NCPU_SETUPS)
+def test_ncpu_same_structure(redux_out, instrument, setup):
     """
     The two reductions must produce the same files, objects and extensions.
 
@@ -164,7 +278,7 @@ def test_ncpu_same_structure(redux_out):
     order would reorder the objects, and a payload routed to the wrong worker
     would put objects on the wrong detector.
     """
-    serial_dir, par_dir = _science_dirs(redux_out)
+    serial_dir, par_dir = _science_dirs(redux_out, instrument, setup)
 
     serial_1d = sorted(serial_dir.glob('spec1d_*.fits'))
     assert len(serial_1d) > 0, f'no serial spec1d files in {serial_dir}'
@@ -175,6 +289,24 @@ def test_ncpu_same_structure(redux_out):
 
         s = specobjs.SpecObjs.from_fitsfile(str(sfile), chk_version=False)
         p = specobjs.SpecObjs.from_fitsfile(str(pfile), chk_version=False)
+
+        # Catch stale accumulation before reporting a count mismatch.
+        # save_exposure merges detectors into an existing spec1d rather than
+        # replacing it, so reducing into a directory that already holds
+        # products duplicates every object.  That is leftover state, not a
+        # parallelism defect, and saying so saves the next person the hour it
+        # cost to work out the first time.
+        for tag, obj, path in (('serial', s, sfile), ('--ncpu', p, pfile)):
+            if obj.nobj == 0:
+                continue
+            names = list(obj.NAME)
+            assert len(names) == len(set(names)), \
+                    f'{path.name}: the {tag} reduction contains {len(names)} objects but only ' \
+                    f'{len(set(names))} distinct names, i.e. every object appears more than ' \
+                    f'once.  This is stale state, not a parallelism failure: the reduction ' \
+                    f'was run into a directory that already held products.  Remove ' \
+                    f'{path.parent} and reduce again.'
+
         assert s.nobj == p.nobj, \
                 f'{sfile.name}: serial found {s.nobj} objects, --ncpu found {p.nobj}'
         if s.nobj == 0:
@@ -193,7 +325,8 @@ def test_ncpu_same_structure(redux_out):
                     f'{sfile.name}: the two reductions wrote different extensions'
 
 
-def test_ncpu_wavelengths_agree(redux_out):
+@pytest.mark.parametrize('instrument,setup', NCPU_SETUPS)
+def test_ncpu_wavelengths_agree(redux_out, instrument, setup):
     """
     The wavelength solution must agree between the two reductions.
 
@@ -203,7 +336,7 @@ def test_ncpu_wavelengths_agree(redux_out):
     significant figures), while a payload routed to the wrong worker would
     change them by order unity.
     """
-    serial_dir, par_dir = _science_dirs(redux_out)
+    serial_dir, par_dir = _science_dirs(redux_out, instrument, setup)
 
     bad = []
     ncompared = 0
@@ -221,16 +354,17 @@ def test_ncpu_wavelengths_agree(redux_out):
                             f'{sfile.name} object {i}: {key} present in only one reduction'
                     continue
                 ncompared += 1
-                rel = _max_rel(a, b)
+                rel = _rel_quantile(a, b)
                 if rel > RTOL:
-                    bad.append(f'{sfile.name} object {i} {key}: max relative difference '
-                               f'{rel:.3e} (> {RTOL:.0e})')
+                    bad.append(f'{sfile.name} object {i} {key}: {QUANTILE:.1%} quantile of '
+                               f'relative difference is {rel:.3e} (> {RTOL:.0e})')
 
     assert ncompared > 0, 'no spec1d wavelength arrays were actually compared'
     assert len(bad) == 0, 'serial and --ncpu wavelengths disagree:\n  ' + '\n  '.join(bad[:20])
 
 
-def test_ncpu_spec2d_geometry_agrees(redux_out):
+@pytest.mark.parametrize('instrument,setup', NCPU_SETUPS)
+def test_ncpu_spec2d_geometry_agrees(redux_out, instrument, setup):
     """
     The spec2d calibration and input images must agree between the reductions.
 
@@ -239,7 +373,7 @@ def test_ncpu_spec2d_geometry_agrees(redux_out):
     parallelised reduction.  All four are robust against Issue 2208, so this
     checks those two stages directly.
     """
-    serial_dir, par_dir = _science_dirs(redux_out)
+    serial_dir, par_dir = _science_dirs(redux_out, instrument, setup)
 
     bad = []
     ncompared = 0
@@ -252,10 +386,15 @@ def test_ncpu_spec2d_geometry_agrees(redux_out):
                 if not any(sext.name.endswith(e) for e in SPEC2D_ROBUST_EXT):
                     continue
                 ncompared += 1
-                rel = _max_rel(sext.data, pext.data)
+                rel = _rel_quantile(sext.data, pext.data)
                 if rel > RTOL:
-                    bad.append(f'{sfile.name} {sext.name}: max relative difference '
-                               f'{rel:.3e} (> {RTOL:.0e})')
+                    bad.append(f'{sfile.name} {sext.name}: {QUANTILE:.1%} quantile of '
+                               f'relative difference is {rel:.3e} (> {RTOL:.0e})')
+                nzd = _nonzero_delta(sext.data, pext.data)
+                if nzd > MAX_NONZERO_DELTA:
+                    bad.append(f'{sfile.name} {sext.name}: non-zero element count differs by '
+                               f'{nzd} (> {MAX_NONZERO_DELTA}), suggesting a region was '
+                               f'zeroed rather than merely perturbed')
 
     assert ncompared > 0, 'no spec2d geometry extensions were actually compared'
     assert len(bad) == 0, \
@@ -266,7 +405,8 @@ def test_ncpu_spec2d_geometry_agrees(redux_out):
 @pytest.mark.xfail(reason='PypeIt is not reproducible run-to-run on multi-slit data; '
                           'see https://github.com/pypeit/PypeIt/issues/2208',
                    strict=False)
-def test_ncpu_flux_arrays_identical(redux_out):
+@pytest.mark.parametrize('instrument,setup', NCPU_SETUPS)
+def test_ncpu_flux_arrays_identical(redux_out, instrument, setup):
     """
     The extracted fluxes and sky/object models must be identical.
 
@@ -276,7 +416,7 @@ def test_ncpu_flux_arrays_identical(redux_out):
     stands, so this is marked ``xfail``; when that issue is fixed this test
     should start passing and the marker should be removed.
     """
-    serial_dir, par_dir = _science_dirs(redux_out)
+    serial_dir, par_dir = _science_dirs(redux_out, instrument, setup)
 
     for sfile in sorted(serial_dir.glob('spec1d_*.fits')):
         s = specobjs.SpecObjs.from_fitsfile(str(sfile), chk_version=False)
@@ -302,3 +442,20 @@ def test_ncpu_flux_arrays_identical(redux_out):
                 np.testing.assert_array_equal(
                         sext.data, pext.data,
                         err_msg=f'{sfile.name} {sext.name} differs')
+
+
+def test_ncpu_registration_matches_dev_suite():
+    """
+    The fallback list must match the dev suite's actual registration.
+
+    If someone adds an ``--ncpu`` setup to ``_ncpu_reduce`` the parametrisation
+    picks it up automatically, but the fallback would silently go stale; this
+    catches that.
+    """
+    reg = _load_ncpu_reduce()
+    if reg is None:
+        pytest.skip('dev-suite registration could not be loaded')
+    registered = sorted((instr, setup) for instr, setups in reg.items() for setup in setups)
+    assert registered == sorted(_FALLBACK_SETUPS), \
+            f'vet_tests/test_ncpu.py fallback list is stale: dev suite registers ' \
+            f'{registered}, fallback has {sorted(_FALLBACK_SETUPS)}'

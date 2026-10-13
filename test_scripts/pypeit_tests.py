@@ -365,7 +365,14 @@ class PypeItReduceNcpuTest(PypeItReduceTest):
         return Path(self.setup.rdxdir, NCPU_SUBDIR)
 
     def build_command_line(self):
-        self.ncpu_dir.mkdir(parents=True, exist_ok=True)
+        # Start from an empty directory.  save_exposure *merges* detectors into
+        # an existing spec1d/spec2d rather than replacing it, so re-running into
+        # a directory that already holds products duplicates every object --
+        # which would then show up as a bogus serial/parallel mismatch in
+        # vet_tests/test_ncpu.py rather than as the stale state it is.
+        if self.ncpu_dir.is_dir():
+            shutil.rmtree(self.ncpu_dir)
+        self.ncpu_dir.mkdir(parents=True)
         return super().build_command_line() \
                     + ['-r', str(self.ncpu_dir), '--ncpu', str(self.ncpu)]
 

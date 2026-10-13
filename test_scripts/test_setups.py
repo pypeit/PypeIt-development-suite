@@ -164,15 +164,36 @@ _additional_reduce = {
     }
 
 _ncpu_reduce = {
+    'keck_deimos': {
+        '830G_M_8500': [dict(ncpu=2)]},
     'keck_lris_blue': {
         'multi_600_4000_slitmask': [dict(ncpu=2)]},
+    'mmt_binospec': {
+        'Longslit_G1000': [dict(ncpu=2)]},
     }
 """
 Setups that are reduced a second time with ``run_pypeit --ncpu 2``, so that the
-serial and parallel products can be compared.  Deliberately a cheap
-*two-detector* setup: the point is to exercise genuine multi-detector
-concurrency, and duplicating a DEIMOS reduction would add hours to the suite.
-See vet_tests/test_ncpu.py.
+serial and parallel products can be compared.  See vet_tests/test_ncpu.py.
+
+Every setup here must produce **more than one** detector/mosaic, or the
+reduction has nothing to distribute and the test is vacuous.  That rules out
+most of the dev suite: a ``.pypeit`` file with ``detnum = (3,7)`` selects a
+single *mosaic* and so yields one work item, whereas ``detnum = 3,7`` selects
+two detectors.  The three chosen here cover the distinct cases:
+
+- ``keck_deimos/830G_M_8500`` -- ``detnum = 3,7``, i.e., two *detectors*
+  (contrast ``detnum = (3,7)``, which is a single mosaic), and only four frames.
+  The unrestricted ``600ZD_M_6500`` would be the richer test, since its four
+  mosaics make work items outnumber workers, but at ``--ncpu 2`` it peaks around
+  21 GB against roughly 12 GB for the serial run it sits beside; that extra
+  ~9 GB takes a ``-t 6`` suite to about 87 GiB against the 100 Gi limit in
+  ``nautilus/full_dev_suite_6cpu.yaml``, where a breach is an immediate pod
+  OOMKill.  The cheaper setup keeps the suite inside its documented memory
+  budget.
+- ``keck_lris_blue/multi_600_4000_slitmask`` -- two detectors, slitmask, and the
+  cheapest genuine multi-detector reduction in the suite.
+- ``mmt_binospec/Longslit_G1000`` -- two detectors on a third spectrograph, to
+  check the behaviour is not specific to Keck instruments.
 """
 
 _sensfunc = {
