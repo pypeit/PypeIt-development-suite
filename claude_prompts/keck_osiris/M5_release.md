@@ -65,8 +65,15 @@ If you need to test the code:
 2. Robustness: truncated-header and header-era tests; a clear error for
    a missing matrix that lists what the directory contains.
 3. Documentation: `doc/spectrographs/keck_osiris.rst` (data
-   requirements, obtaining matrices, the `bkg_id` convention, the new
-   parameters, limitations), link from `doc/spectrographs/spectrographs.rst`,
+   requirements, obtaining matrices -- Keck's public listing by
+   validity epoch at http://tkserver.keck.hawaii.edu/osiris/ (plain HTTP,
+   `.fits.gz` files) and PypeIt's epoch rule (M4 task 11: the matrix whose
+   file date lies inside the validity epoch of the observation, which may
+   be *after* the observation; latest-before fallback with a warning) --,
+   the `bkg_id` convention and dark grouping by ITIME, the new
+   parameters (incl. M4: `fiber_sky_refine`, `osiris_oh_scaling`,
+   `osiris_grating_temp`), `pypeit_fiber_cube` and the telluric recipe,
+   limitations), link from `doc/spectrographs/spectrographs.rst`,
    a tutorial in `doc/tutorials/`, release note in
    `doc/releases/2.1.0dev.rst` (`update-changelog`), rebuilt parameter
    and datamodel docs (`build-docs`).
@@ -80,7 +87,11 @@ If you need to test the code:
    the generic shared-code changes (M3 Q&A 7): the `runtime_par`
    mechanism (`Spectrograph.set_runtime_par`, set by `PypeIt.__init__`)
    and the column-window boxcar speed-up in `FiberExtract`, plus the
-   `rectify` step and the fixed-tilts/fixed-wavelength hooks.  Do not
+   `rectify` step and the fixed-tilts/fixed-wavelength hooks; and those
+   of M4 (Report 06, section 2): `raw_header` of `get_fixed_tilts`, the
+   un-subtracted frame passed to `FindObjects`, `fiber_sky_refine` and
+   `osiris_oh_scaling` in `FiberFindObjects`, `rectify=False` for
+   bias/dark frames, `fiber_cube_setup` and `pypeit_fiber_cube`.  Do not
    open the PR; I will.
 
 ## Acceptance

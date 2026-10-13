@@ -57,7 +57,7 @@ If you need to test the code:
 
 1. Read this doc.  Complete the milestone described under Tasks.  Write
    the report named under Acceptance.  If you have any questions, put
-   them in the Q&A section below.  Use Fable if you can.  Log your work
+   them in the Q&A section below.  Use Opus 5.5.  Log your work
    in Logs below.
 
 ## Tasks
@@ -107,6 +107,32 @@ If you need to test the code:
    narrowband Hn3); `osiris_rect_method = 'lstsq'` is the default;
    reference rows and L.A.Cosmic run per raw frame; the cube script
    must call `set_lenslet_state` before using the fiber hooks.
+11. Matrix selection by validity epoch (do this first; it blocks
+   everything on Kbb_050).  The Kbb/050 matrix in `Kbb_050/calib/` is
+   dated 2024-05-24, *after* the 2024-02-03 observations, yet it is the
+   right one: Keck builds one matrix per *validity epoch* and the file
+   date is merely when the calibration scan was taken.  The M2 rule in
+   `lenslet_rectify.select_matrix` ("latest matrix dated on or before
+   MJD-OBS") therefore raises `PypeItError` on this file.  Replace it
+   with epoch-window selection: ship a small table
+   `pypeit/data/spectrographs/keck_osiris/rectmat_epochs.ecsv` with the
+   validity windows from http://tkserver.keck.hawaii.edu/osiris/ (UT start/end,
+   YYMMDD; the current list is 050530-060207, 060208-081207,
+   091004-120102, 120103-121108, 121109-151231, 160101-170131,
+   170201-171105, 171106-180106, 180107-180920, 181021-200110,
+   200111-201106, 201217-220904, 221010-230520, 230701-250310,
+   250414-260421, 260422-260603, 260604-open; note the gaps between
+   epochs), pick the epoch containing MJD-OBS (nearest epoch with a
+   warning if the date falls in a gap), and among the matrices in the
+   directory for that filter/scale prefer one whose file date lies
+   inside the epoch; fall back to the old latest-before rule only when
+   no matrix lies inside the epoch, with a warning.  Also accept
+   `.fits.gz` files (tkserver serves them gzipped) in
+   `parse_matrix_filename`/`RectMatrix`.  Add unit tests (the
+   2024-02-03 / 2024-05-24 case must select; a 2016 Hn3 frame must
+   still select `s160318_c005`).  Record the tkserver URL and the
+   epoch rule in design Section 7 and in the M5 user documentation
+   task.
 
 ## Acceptance
 
@@ -126,6 +152,169 @@ deviates from the design document, and update
 
 ### Q&A
 
+Questions from Prompt 1 (2026-10-12).
+
+**1. The Kbb/050 rectification matrix is not present (task 1).**
+   `RAW_DATA/keck_osiris/Kbb_050/calib/` and `ref/` are both empty; the
+   only matrices on disk are `Hn3_100/calib/s160318_c005___infl_Hn3_100.fits`
+   and `Kn5_035/calib/s150901_c008___infl_Kn5_035.fits`.  Report 02
+   Section 4 holds the draft request to Keck (milestone M0); nothing has
+   arrived.  Per task 1, M4 stops here.
+
+   *Recommendation: while the matrix is awaited, run the
+   matrix-independent part of M4 on `Hn3_100` (frame B is a sky frame,
+   so A-B, the Davies OH scaling and the OH refinement can all be
+   exercised): tasks 3, 4, 5 (build and test `pypeit_fiber_cube` on the
+   Hn3 spec1d), 8 and the Hn3 half of the acceptance (tilt test without
+   `xfail`, Keck-derived tilts < 0.05 px rms).  Defer tasks 2, 6, 7, 9
+   and the Kbb acceptance items to a second M4 prompt once the matrix is
+   in `Kbb_050/calib/`.*  Which do you want: (a) wait for the matrix,
+   or (b) proceed now with the Hn3-only subset?
+
+   *Resolved 2026-10-12:* the matrix is public.  Keck lists every
+   rectification matrix by validity epoch at http://tkserver.keck.hawaii.edu/osiris/
+   (plain HTTP only; the server's TLS is too old for modern clients).
+   The epoch covering 2024-02-03 is 2023-07-01 to 2025-03-10 and its
+   Kbb/050 file, `s240524_c006___infl_Kbb_050.fits.gz` (32 MB gz,
+   152 MB unpacked), was downloaded, verified (gzip integrity; loads
+   with `RectMatrix`: hilo (1216, 2), effective (1216,), influence
+   (1216, 16, 2048)) and placed, gunzipped, in
+   `RAW_DATA/keck_osiris/Kbb_050/calib/`.  `keck_osiris_kbb_050.pypeit`
+   now sets `osiris_rectmat_dir`.  M4 can proceed in full; see task 11
+   for the selection fix this file exposes.
+
+Questions from Prompt 1 (Opus 5.5, 2026-10-12; details in Report 06).
+
+**2. The Davies OH scaling worsens the two 44-s NGC 3245 frames.**  On the
+   13 600-s A-B frames the median |OH-line residual| / sky-line flux drops
+   from 0.053 to 0.037 (12 improve, 1 unchanged); on the sky-sky pair from
+   0.082 to 0.030; on Hn3 the line-pixel rms from 225 to 62 counts.  On the
+   44-s frames (fitted r - 1 = -8 to -10 %) it rises from 0.040 to 0.068
+   and from 0.074 to 0.081: the weak lines are dominated by the galaxy and
+   noise, and the "keep only if it lowers the residual" guard (rms of the
+   line pixels) does not catch it.
+
+   *Recommendation: in M5 judge each group factor on the integrated line
+   residual (the metric of Report 06, section 5.3) and/or skip the scaling
+   below a minimum sky-line S/N (e.g. EXPTIME < 100 s); keep `global` as the
+   default.*  OK?
+
+>A. Ok
+
+**3. Non-physical step in the line maps.**  The continuum image and the CO
+   index look physical, and H2 1-0 S(1) is detected on the nucleus, but the
+   H2 and Br gamma maps show a horizontal step at flipped lenslet row ~37.
+   Hypothesis (untested): the 1.92 px/row stagger moves the line or its side
+   bands across a raw-detector boundary (column 1024 / a readout channel)
+   at that row and an additive offset biases the continuum subtraction.
+
+   *Recommendation: diagnose in M5 (map the raw column of the line per
+   lenslet; compare the same map from a DRP reduction of one frame).*  OK?
+
+>A. Ok
+
+**4. No OH refinement on the 1.5-s HD89239 frames.**  No sky line is
+   detected even in the stacked spectrum, so their Keck solution is kept,
+   which is +1.5 A (+0.54 px) off on this epoch.  The 3-s and 8.85-s
+   HD101060 frames are refined from their stacked spectrum (+0.53 to +0.63
+   px).
+
+   *Recommendation: when nothing is measured, apply the median shift of the
+   science frames of the same night/configuration (stored by the run), with
+   a warning.*  OK, or leave as is (HD101060 is the telluric standard)?
+
+>A. Ok.  Better might be to use a science frame as the "Arc" for short exposure frames 
+
+**5. Telluric standard frame.**  The 8.85-s frames `56998.98` and
+   `57040.80` chosen for the dev suite in this prompt contain no star
+   (brightest lenslet 9-13 counts).  I switched the dev-suite point-source,
+   sensfunc and telluric tests to `OS.20240203.59407.32` (nodded pair with
+   59447): corrected/model flat to 1.5 % rms in 50-A bins (3-s frames:
+   2.5-2.7 %).
+
+   *Recommendation: keep 59407.32.*  OK?
+
+>A. Ok
+
+**6. Keck-derived tilts are close to the 0.05 px limit.**  The tilt-based
+   wavelength image reproduces the per-lenslet solutions to 0.044 px (Kbb)
+   and 0.048 px (Hn3) rms, 0.021-0.022 px robust; the rms is dominated by a
+   few lenslets with peculiar coefficients (up to 1-4 px), which keep their
+   exact solution through the per-lenslet offsets (spec1d unaffected).
+
+   *Recommendation: accept; the unit test asserts rms < 0.05 and robust <
+   0.03 px.*  OK?
+
+>A. Ok
+
+**7. Shared-code changes to flag for the PR reviewers.**  `fiber_sky_refine`
+   (wvutils + `FiberFindObjects`), `osiris_oh_scaling` (skysub +
+   `FiberFindObjects`), the un-subtracted A frame passed to object finding
+   (`bkg_redux_sciimg`), `rectify=False` for bias/dark frames, `raw_header`
+   of `get_fixed_tilts`, the `fiber_cube_setup` hook, `wcs_ref` and
+   `extract_fiber_point_source` in `core/datacube.py`, and
+   `pypeit_fiber_cube` with `pypeit_binospec_ifu_cube` as an alias.
+
+   *Recommendation: accept; listed in Report 06 section 2.1 and in M5 task
+   6.*  OK?
+
+>A. Ok
 
 ## Logs
 
+### 2026-10-12 - Prompt 1 (M4 science mode; model: Claude Fable 5.1)
+
+- Task 1: checked `RAW_DATA/keck_osiris/Kbb_050/calib/` and `ref/`
+  (empty) and searched both repositories for `*___infl_*` files (only
+  the Hn3/100 and Kn5/035 matrices exist).  The Kbb/050 matrix has not
+  arrived, so the milestone was stopped before any code was written, as
+  task 1 instructs.  Q&A 1 above proposes an Hn3-only subset to run in
+  the meantime.
+
+### 2026-10-12 - Prompt 1 follow-up (matrix obtained; model: Claude Fable 5.1)
+
+- Found the public Keck listing of rectification matrices by validity
+  epoch (http://tkserver.keck.hawaii.edu/osiris/; HTTP only) and the
+  Kbb/050 file for the 2023-07-01 to 2025-03-10 epoch,
+  `s240524_c006___infl_Kbb_050.fits.gz`.  Downloaded (32 MB), verified
+  the gzip, gunzipped (152 MB) and copied to
+  `RAW_DATA/keck_osiris/Kbb_050/calib/`; `RectMatrix` loads it with the
+  same shapes as the Hn3 matrix.
+- `select_matrix` rejects it (file date 2024-05-24 > MJD-OBS): added
+  task 11 (epoch-window selection, `.fits.gz` support) and resolved
+  Q&A 1.  Added `osiris_rectmat_dir` to `keck_osiris_kbb_050.pypeit`.
+  Updated design Section 7, the implementation plan (M0) and Report 02
+  Section 5.
+
+### 2026-10-12 - Prompt 1 (M4 science mode; model: Claude Opus 5.5)
+
+- Read the prompt, design (4.8, 5.4, 6.2, 7, 8, 9, decision table),
+  implementation Stage 4, Reports 01-05, M1-M3 Q&A/logs, the sky,
+  find-objects, cube and wavelength code, the Davies DRP module and the
+  skills.  Resumed from an interrupted session of this prompt: the code
+  for tasks 2-11 was already in the working trees (not logged); this
+  session verified, fixed and documented it.
+- Task 11: epoch-window `select_matrix` (`rectmat_epochs.ecsv`, `.fits.gz`);
+  unit tests (2024-02-03 -> `s240524_c006`, 2016 Hn3 -> `s160318_c005`).
+- Task 8: Keck-derived tilts (2D Legendre (6, 4) per block): 0.044 px rms
+  Kbb, 0.048 px Hn3; unit test of the tilt-based wavelength image.
+- Tasks 2, 3, 4, 9: darks unrectified (A-B pairs without darks); Davies
+  scaling `osiris_oh_scaling`; per-lenslet OH zero points
+  `fiber_sky_refine` with `OH_OSIRIS`; `DTMP7` +0.40 A on both epochs ->
+  `osiris_grating_temp = False`.
+- Task 5: `pypeit_fiber_cube` (hook `fiber_cube_setup`, `--point_source`);
+  Binospec script is an alias.  Task 6: sensfunc + tellfit on the
+  point-source spec1d.  Task 7: dev-suite reduce/fiber-cube/sensfunc/
+  telluric tests and vet tests.
+- Dev suite `keck_osiris/Kbb_050` reduce + afterburn 5/5 PASSED (reduce 39.5
+  min); Hn3 reduce PASSED (3.5 min).  Found and fixed: the telluric
+  standard frame of the dev suite (56998.98) has no star -> 59407.32
+  (flatness 1.5 %); the vet test looked for the Davies model in the spec1d
+  sky column (it is in the spec2d `SKYMODEL`); OH figure rebuilt on the
+  spec2d.  Vet tests: Kbb 3/3, flow 9/9 + 2/2, rectify 5/5 passed.
+- Tilt test without `xfail`: 0.023 px Hn3, 0.020 px Kbb (`ISSKY=1`).
+  OH residuals: 0.053 -> 0.037 (600 s), 0.082 -> 0.030 (sky-sky), worse
+  on the 44-s frames (Q&A 2).  `pypeit/tests`: 900 passed
+  (`test_pkgdata.py` excluded).
+- Wrote Report 06 and figures (`make_m4_figures.py`); updated the design
+  table (M4-9) and the implementation Stage 4 status; Q&A 2-7 above.

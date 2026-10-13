@@ -187,5 +187,12 @@ Xavier Prochaska
 
 - When the matrix arrives: put it in `RAW_DATA/keck_osiris/Kbb_050/calib/`
   and run the OH-line tilt test (design document, Section 8, test 3).
+  *2026-10-12: the request was not needed.*  Keck publishes every
+  matrix by validity epoch at http://tkserver.keck.hawaii.edu/osiris/ (HTTP only);
+  the 2023-07-01 to 2025-03-10 epoch's Kbb/050 file,
+  http://tkserver.keck.hawaii.edu/osiris/data/230701-250310/s240524_c006___infl_Kbb_050.fits.gz,
+  was downloaded, gunzipped and placed in `Kbb_050/calib/`.  Its file
+  date (2024-05-24) is later than the observations, which the M2
+  latest-before selection rule does not handle (M4 task 11).
 - Reduce the NGC 3245 A-B pairs with the DRP as well, if IDL is
   available, to obtain a second reference cube for the vet test.

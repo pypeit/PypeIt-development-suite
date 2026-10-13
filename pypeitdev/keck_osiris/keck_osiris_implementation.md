@@ -29,7 +29,11 @@ criterion and a report in `pypeitdev/keck_osiris/Reports/`.
 | 2015 Kn5 pair (header-era test only) | downloaded |
 
 **Milestone M0**: JXP sends the matrix request.  Stages 1-2 do not
-depend on its arrival; Stage 4 does.
+depend on its arrival; Stage 4 does.  *Done 2026-10-12 without a
+request:* all matrices are public at http://tkserver.keck.hawaii.edu/osiris/
+(by validity epoch); `s240524_c006___infl_Kbb_050.fits` is in
+`RAW_DATA/keck_osiris/Kbb_050/calib/`.  Selection must be by epoch,
+not file date (M4 task 11).
 
 ---
 
@@ -299,6 +303,36 @@ OH-line tilt test passes on the refined solution (closes M3).
 Report 06.
 
 Estimated effort: 2-3 weeks, gated on the matrix from Keck.
+
+**Status (2026-10-12): M4 done** (Report 06; Q&A in `M4_science_mode.md`;
+design decisions M4-1 to M4-9).  Changes that affect Stage 5:
+
+- Matrix selection is by Keck validity epoch (`rectmat_epochs.ecsv`, task
+  11); the user documentation must explain the tkserver listing.
+- Tilts are Keck-derived (Stage 4 task 7, M4 task 8); broadband lenslet windows are the filter
+  band (out-of-band pixels masked).
+- Per-lenslet OH zero points on every science frame (`fiber_sky_refine`),
+  the `DTMP7` term off by default (`osiris_grating_temp`), Davies OH
+  scaling (`osiris_oh_scaling = global`) on A-B frames.
+- Darks are processed unrectified so they can be subtracted from unpaired
+  frames; the dev-suite file keeps them in ITIME calibration groups 1-3, and
+  only one A/B pair carries the `arc,tilt,trace` types (the fixed
+  calibrations need one frame; combining 23 rectified frames cost ~15 min).
+- `pypeit_fiber_cube` (generic, with `--point_source`) replaces the
+  Binospec cube script (now an alias); telluric correction runs on the
+  point-source spec1d of the A0V star (`pypeit_sensfunc`, `pypeit_tellfit
+  --objmodel star`, response polynomial order 7), frame
+  `OS.20240203.59407.32` (the 8.85-s frames 56998/57040 hold no star).
+- Dev suite: `keck_osiris/Kbb_050` reduce, fiber-cube (`PypeItFiberCubeTest`,
+  new test type), sensfunc and telluric tests; vet tests
+  `test_keck_osiris_flow.py` (tilt test on Hn3 and Kbb, no `xfail`) and
+  `test_keck_osiris_kbb.py` (spec1d, cube, telluric flatness).
+- Open for Stage 5 (Q&A 2-7 of M4): the Davies scaling worsens the 44-s
+  frames (improves 12/13 600-s frames); a non-physical step in the line
+  maps at lenslet row ~37; no OH refinement possible on the 1.5-s HD89239
+  frames; residual cosmic rays that L.A.Cosmic misses on single raw frames;
+  `get_fixed_tilts` is recomputed for every frame (cache it); the generic
+  shared-code changes listed in Report 06 to flag for the PR reviewers.
 
 ---
 

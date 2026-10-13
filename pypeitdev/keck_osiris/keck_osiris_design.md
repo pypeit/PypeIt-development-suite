@@ -79,6 +79,15 @@ model.
 | M3-5 | `osiris_rect_method` defaults to `lstsq` (flux-independent weights, sandwich variance; quasar within 0.03 % of `drp`). |
 | M3-6 | Reference-row correction and L.A.Cosmic run on each raw frame (A and B separately), not on the raw A-B difference; the DRP strip rule is an option only. |
 | M3-7 | The generic shared-code additions of M3 (the `rectify` step, base hooks `rectify`/`get_fixed_tilts`/`get_fixed_wavecalib`/`get_fiber_wavelengths`/`set_runtime_par`, `method = 'fixed'`, per-fiber wavelengths and the column-window boxcar in the Fiber pypeline) are accepted; the `runtime_par` mechanism and the `FiberExtract` speed-up are flagged for the PR reviewers. |
+| M4-1 | Rectification matrices are selected by Keck **validity epoch** (`rectmat_epochs.ecsv`, from http://tkserver.keck.hawaii.edu/osiris/): a matrix whose file date lies inside the epoch of MJD-OBS, else latest-before with a warning; `.fits.gz` accepted. |
+| M4-2 | `get_fixed_tilts` returns Keck-derived tilts (2D Legendre (6, 4) per block, fit inside the filter band); residual to the per-lenslet Keck solutions 0.044 px rms Kbb, 0.048 px Hn3 (0.021 px robust); the per-lenslet offsets carry the rest. The base hook gains an optional `raw_header`. |
+| M4-3 | Broadband lenslet windows are the filter band (DRP cube range); pixels outside it are masked in the lenslet image. |
+| M4-4 | Per-lenslet OH zero points on every science frame (`[calibrations][wavelengths] fiber_sky_refine = zeropoint`, list `OH_OSIRIS` in K, `OH_NIRES` otherwise); unmeasured lenslets get the frame median, very short frames the shift of the median-stacked spectrum.  Closes the M3 tilt criterion (0.023 px Hn3, 0.020 px Kbb). |
+| M4-5 | The `DTMP7` term moves the OH lines by +0.40 A on both epochs (2016 Hn3, 2024 Kbb): new `osiris_grating_temp` parameter, default False; the refinement absorbs the remaining epoch offset (+1.5 A on 2024 Kbb). |
+| M4-6 | Davies (2007) OH scaling: `[reduce][skysub] osiris_oh_scaling` (`global` default for OSIRIS, `block`, `fiber`), generic `skysub.oh_scaled_sky`, applied in `FiberFindObjects` on A-B frames (the un-subtracted A frame is passed to object finding); not applied to standards. |
+| M4-7 | Darks are never rectified (`buildimage` passes `rectify=False` for bias/dark frames), so they can be subtracted from unpaired raw frames; the dev-suite file groups darks by ITIME in calibration groups 1-3. |
+| M4-8 | Generic `pypeit_fiber_cube` (hook `fiber_cube_setup`, WCS referenced to the layout origin, optional point-source extraction to a single-object spec1d); `pypeit_binospec_ifu_cube` is a thin alias. |
+| M4-9 | Telluric/flux with the IR algorithm on the point-source spectrum of the A0V star (`pypeit_fiber_cube --point_source 0.4`; dev suite: HD101060 frame `OS.20240203.59407.32`, 1.5 % rms flatness); instrument-response polynomial order 7 (`sensfunc` and `telluric` `polyorder`) for the Kbb filter ripples. |
 | 22 | KOA 2024-02-03 night (NGC 3245 + HD101060/HD89239 A0V + darks, Kbb/050) adopted as the science-mode setup; frames downloaded to `RAW_DATA/keck_osiris/Kbb_050/`; Kbb/050 matrix to be requested from Keck (`Reports/02_koa_dataset_and_matrix_request.md`). |
 
 ## 3. Processing flow
@@ -257,9 +266,10 @@ par['calibrations']['darkframe']['exprng'] = [None, None]
 par['calibrations']['biasframe']   -> never used
 par['calibrations']['slitedges']   -> bypassed by get_block_slit_edges
 par['calibrations']['tilts']       -> see 5.4 (identity tilts)
-par['calibrations']['wavelengths']['method'] = 'full_template'   # phase 2
-par['calibrations']['wavelengths']['lamps'] = ['OH_NIRES'] (or an OSIRIS OH list)
+par['calibrations']['wavelengths']['lamps'] = ['OH_NIRES']  # 'OH_OSIRIS' in K (M4)
 par['calibrations']['wavelengths']['reference'] = 'sky'
+par['calibrations']['wavelengths']['fiber_sky_refine'] = 'zeropoint'  # NEW (M4)
+par['calibrations']['osiris_grating_temp'] = False  # NEW (M4): DTMP7 term off
 par['calibrations']['wavelengths']['fwhm'] = 2.0
 par['calibrations']['flatfield']['method'] = 'skip'
 par['calibrations']['osiris_rectmat_dir'] = None   # NEW: directory of rect matrices
@@ -278,12 +288,13 @@ par['scienceframe']['process'] : use_biasimage=False, use_overscan=False,
       passed in the BPM, M2 Q&A 2 / Section 5.3)
 par['reduce']['findobj']  -> fiber mode (no peak finding)
 par['reduce']['skysub']['joint_fit'] = False
-par['reduce']['skysub']['osiris_oh_scaling'] = True   # NEW (Davies 2007), phase 2
+par['reduce']['skysub']['osiris_oh_scaling'] = 'global'  # NEW (Davies 2007, M4)
 par['reduce']['extraction']['boxcar_radius'] = 0.5 * platescale (one slice)
 par['reduce']['cube']['slit_spec'] = False
 par['flexure']['spec_method'] = 'skip'
 par['sensfunc']['algorithm'] = 'IR'
 par['sensfunc']['IR']['telgridfile'] = 'TellPCA_3000_26000_R10000.fits'
+par['sensfunc']['polyorder'] = 7 ; par['telluric']['polyorder'] = 7   # M4
 ```
 
 New parameters go through the `add-parameter` skill (names are
@@ -397,6 +408,13 @@ holding the solvers.
   0.02-0.03 px rms) and the per-lenslet offsets carry only the residual
   (M3 Q&A 2).  This makes the spec2d wavelength image exact and lets a
   2D sky model (Davies scaling) work without special cases.
+  *M4 status:* done.  The tilts map every pixel of a block onto the
+  spectral pixel of the reference lenslet at the same wavelength (fit
+  inside the filter band, Legendre orders (6, 4)); the wavelength image
+  reproduces the per-lenslet Keck solutions to 0.044 px rms (Kbb) and
+  0.048 px (Hn3), 0.021 px robust; a handful of lenslets with peculiar
+  coefficients dominate the tail and keep their exact solution through
+  the per-lenslet offsets.
 - **Wavelengths**: see Section 6.
 - **Flats**: none.  `FiberExtract` falls back to a uniform profile when
   no flat image exists, and each lenslet occupies exactly one rectified
@@ -442,7 +460,11 @@ along the 2048-px rectified row.  Implementation:
    the OH-line agreement (+0.40 A with it, -0.01 A without); it is kept
    for now and re-tested on the 2024 Kbb/050 frames in M4, after which
    it becomes switchable or is absorbed by the OH refinement (M3 Q&A
-   4).  `resample_to_drp_grid` reproduces that
+   4).  *M4 decision:* on the 2024 Kbb/050 frames the term also moves the
+   OH lines by +0.40 A (+1.92 A with, +1.52 A without, against the
+   vacuum `OH_OSIRIS` list), so it is now off by default
+   (`osiris_grating_temp = False`) and the per-lenslet OH refinement
+   absorbs the remaining epoch offset.  `resample_to_drp_grid` reproduces that
    behaviour only for the comparison with DRP cubes.
 
 ### 6.2 OH refinement (phase 2)
@@ -455,6 +477,17 @@ DRP documents 0.3-0.6 A offsets depending on scale and epoch.  Where
 fewer than 3 lines are available (long-K, narrowband) keep the Keck
 solution.  Report the per-lenslet shift statistics in QA.
 
+*M4 status:* implemented as a generic Fiber-pypeline step
+(`[calibrations][wavelengths] fiber_sky_refine`; `wvutils.fiber_sky_refinement`):
+isolated lines of the list (no neighbour within three FWHM) are centroided
+in each lenslet of the un-subtracted science frame and the median offset
+from the prediction is applied as a pixel zero point (or, `block`, a linear
+fit across each block).  Lenslets with < 3 lines get the frame median;
+frames with < 10 measured lenslets (short standards) the shift of the
+median-stacked spectrum.  The per-lenslet shifts are reproducible between
+frames (r = 0.97 Hn3, 0.90 Kbb; 0.014-0.024 px difference), i.e. they are
+real structure of the Keck coefficients; QA `QA/PNGs/*_fiber_sky_refine.png`.
+
 ### 6.3 Vacuum
 
 Keck solutions are vacuum.  Set the PypeIt wavelength frame accordingly
@@ -464,7 +497,7 @@ Keck solutions are vacuum.  Set the PypeIt wavelength frame accordingly
 
 | File | Size | Location | Selection |
 |---|---|---|---|
-| Rectification matrix | ~160 MB per (filter, scale, epoch) | user directory via `osiris_rectmat_dir` (new parameter); dev-suite copies in `RAW_DATA/keck_osiris/<setup>/calib/` | parse `sYYMMDD_cNNN___infl_<filt>_<scale>.fits`; choose the latest matrix with date <= MJD-OBS matching filter and scale; error listing what was found otherwise |
+| Rectification matrix | ~160 MB per (filter, scale, epoch); 30-90 MB gzipped | **Source:** Keck's public listing by validity epoch, http://tkserver.keck.hawaii.edu/osiris/ (plain HTTP; files are `.fits.gz`).  User directory via `osiris_rectmat_dir`; dev-suite copies in `RAW_DATA/keck_osiris/<setup>/calib/` | parse `sYYMMDD_cNNN___infl_<filt>_<scale>.fits[.gz]`; select by **validity epoch** (shipped `rectmat_epochs.ecsv` copied from the tkserver table): the epoch containing MJD-OBS, then a matrix of that filter/scale whose file date lies inside the epoch (the file date can be *after* the observation, e.g. `s240524` serves 2024-02-03); fall back to latest-before with a warning; error listing what was found otherwise (M4 task 11) |
 | Wavelength coefficients (11 epochs) + CTE table | 0.6 MB total | `pypeit/data/spectrographs/keck_osiris/` | epoch table copied from `calibrations.xml` |
 | Hot/dead pixel masks | ~100 kB gz | `pypeit/data/static_calibs/keck_osiris/` | always |
 | Slice-to-lenslet maps | text | `pypeit/data/spectrographs/keck_osiris/` | per filter family (bb / nb) |
@@ -473,7 +506,8 @@ Keck solutions are vacuum.  Set the PypeIt wavelength frame accordingly
 The matrix loader caches the parsed `(hilo, effective, influence)`
 tuple in memory for the run (one matrix per configuration).  A later
 convenience could add a PypeIt-cache download of the common-mode
-matrices if Keck agrees to host them with stable URLs.
+matrices from the tkserver URLs above (they are stable and public, so
+the hosting question in Report 02 is moot).
 
 ## 8. Tests and validation
 
@@ -505,7 +539,10 @@ matrices if Keck agrees to host them with stable URLs.
    coefficients identical for both solvers and frames.  Accepted open
    with the strict assertion as `xfail` plus a regression guard (median
    < 0.2 px, offset < 0.1 px); to be closed in M4 on the OH-refined
-   solution (M3 Q&A 1).
+   solution (M3 Q&A 1).  *M4 result:* on the solution refined on the
+   paired science frame the median tilt is 0.023 px (Hn3, sky frame 011)
+   and 0.020 px (Kbb, `ISSKY=1` frame `OS.20240203.43383.79`); the
+   `xfail` is removed.
 4. **Dev-suite reduce tests** `keck_osiris/Hn3_100` (pypeit file with
    the pair, `bkg_id` set) and `keck_osiris/Kbb_050` (NGC 3245 with its
    A0V telluric and darks; needs the Keck matrix) for the full flow
