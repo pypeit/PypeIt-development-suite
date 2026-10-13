@@ -644,6 +644,102 @@ worse than a slightly smaller defensible one, but it is another three hours of
 machine time and the decision is yours.
 >A:  Yes, run it.
 
+
+**Q13 — The workstation crash was almost certainly caused by my dev-suite runs, via `systemd-oomd`, and the same thing will happen again unless we change how these tests are run. How do you want to handle it?**
+The machine did not run out of RAM in the usual sense.  `systemd-oomd` — the
+*userspace* OOM killer, not the kernel one — tore down your whole desktop
+session at **Oct 12 13:02:39**, about 20 minutes after I launched the binospec
+and DEIMOS `--ncpu 2` dev-suite runs concurrently:
+
+```
+Killed /user.slice/user-1000.slice/user@1000.service/app.slice/vte-spawn-...scope
+due to memory pressure for /user.slice/user-1000.slice/user@1000.service
+being 52.55% > 50.00% for > 20s with reclaim activity
+```
+
+dbus, gnome-shell, Chrome, Slack, Spotify, terminator and every `vte-spawn`
+scope were killed in the same second, which is why it looked like a crash.  The
+kernel OOM killer never fired — there are no `Out of memory: Killed process`
+lines at all.
+
+Three things make this mine rather than bad luck:
+
+1. **`systemd-oomd` kills on PSI memory *pressure*, not on absolute usage**, at
+   `>50%` sustained for 20s.  With 755 GB of RAM but only **7 GB of swap**,
+   sustained reclaim churn from several multi-GB FITS reductions can cross that
+   threshold without ever exhausting memory.
+2. **Everything I launch lives in `user@1000.service`**, the very slice oomd was
+   measuring, so my background jobs counted against your desktop's pressure
+   budget and the kill took them down with it.
+3. I had **two suites running at once** — binospec at `-t 1` and DEIMOS
+   `600ZD_M_6500` at `-t 2` — and the DEIMOS one includes both the serial
+   reduction and my new `--ncpu 2` reduction, which can overlap.
+
+**Why this is not just a workstation nuisance.**  It bears directly on the cloud
+run you were about to launch.  Using the peak-PSS numbers I measured on
+`600ZD_M_6500`:
+
+| | peak PSS |
+|---|---:|
+| `--ncpu 1` (measured) | 11.7 GB |
+| `--ncpu 4` (measured) | 39.4 GB |
+| implied cost per extra worker | ~9.2 GB |
+| **`--ncpu 2` (estimated)** | **~21 GB** |
+
+The dev suite's own README budgets **78 GiB for `-t 6`**, and
+`nautilus/full_dev_suite_6cpu.yaml` sets `memory: 100Gi` with `cpu: '7'`.
+Adding the DEIMOS `--ncpu 2` test replaces a ~12 GB slot with a ~21 GB one, so
+peak goes to roughly **87 GiB against a 100 Gi hard limit** — and in Kubernetes
+exceeding a memory limit is an immediate OOMKill of the pod, not throttling.
+Separately, `-t 6` plus a test that itself wants 2 cores can ask for 7+ CPUs
+against a `cpu: '7'` limit, which throttles rather than kills but will distort
+any timing.
+
+So the options, as I see them:
+
+1. **Keep `keck_deimos/600ZD_M_6500` but reduce `-t` when `--ncpu` tests are
+   included** (e.g. `-t 4`), and raise the pod's `memory` limit with headroom.
+   Keeps the only setup that tests *more work items than workers*.
+2. **Swap the DEIMOS setup for `830G_M_8500`** (`detnum = 3,7`, so 2 detectors
+   rather than 4 mosaics, and 4 frames).  Roughly halves the extra memory and
+   still exercises genuine concurrency, but loses the queueing path.
+3. **Drop the DEIMOS `--ncpu` test entirely** and keep only `keck_lris_blue`
+   and `mmt_binospec`, which are both small two-detector reductions.
+
+**My recommendation is (1) for the cloud and (2) if you want the suite to stay
+within its current documented memory budget.**  I would also suggest running the
+suite with `--csv`, which records per-test memory, so the README's
+threads-vs-memory table can be updated with real numbers for the `--ncpu` tests
+rather than my extrapolation.
+
+For re-running on *this* workstation, I would avoid the user slice entirely —
+`systemd-run --scope -p MemoryMax=...` or simply running one suite at a time at
+`-t 1` — rather than launching two suites side by side as I did.  **I have not
+re-launched anything, because doing it the same way would likely crash the
+machine again.  Tell me which option you want and I will proceed.**
+>A:  For the cloude, let's go with (2). Please run with `-t 1` on this machine.
+Hopefully we don't crash again..
+
+**Q14 — Should the `--ncpu` dev-suite tests be gated so they do not run by default?**
+Related but separable.  Every `--ncpu` test *doubles* its setup's reduction: the
+suite reduces the setup serially, then again in parallel.  For
+`keck_lris_blue/multi_600_4000_slitmask` that is +7.5 minutes and nobody will
+notice; for `keck_deimos/600ZD_M_6500` it is roughly +1-1.5 hours and ~9 GB of
+additional peak memory.
+
+Right now they are registered in `all_tests` unconditionally, so
+`./pypeit_test reduce` and `./pypeit_test all` always pay that cost.  An
+alternative is a dedicated test *type* (e.g. `./pypeit_test ncpu`) or a CLI flag,
+so the full suite stays at its current cost and the parallelism tests are run
+deliberately — which also matches how they are actually useful: as a check
+before merging changes to `pypeit/parallel.py`, not on every run.
+
+The counter-argument is that a test nobody runs by default is a test that rots,
+and detector parallelism is exactly the kind of thing that breaks silently.
+I lean towards **keeping them in the default suite but using the cheap setups**
+(option 2 above), so the cost stays small enough that gating is unnecessary.
+>A: Keep them in the default suite but use the cheap setups.
+
 ## Logging
 
 The "Logs" section will record Claude's work.  Please use the following format:
@@ -1807,3 +1903,152 @@ grep that raised it was too loose.
 a baseline.  What is established is narrower but real: everything PR B touches,
 reduced and vetted, passes — including the first genuine multi-detector parallel
 reduction.
+
+### 2026-10-13 (Task 12 interrupted by the workstation crash — state, cause, and what is left)
+
+**Nothing was lost.**  Both repositories are intact, every commit survived and
+is pushed, and the Task 12 edits were staged before the crash and are still
+staged, with the working tree matching them exactly.
+
+| | state |
+|---|---|
+| PypeIt repo | clean at `f228e6c2d`, pushed; PR #2209 unaffected |
+| dev-suite repo | on `dev_speed_up`, my `56b52da3` pushed (you have since added `f90cb60e`, `ee5fd1c0`) |
+| Task 12 edits | **staged, intact**: `test_scripts/test_setups.py`, `vet_tests/test_ncpu.py` |
+| binospec `Longslit_G1000` | serial products present; **`ncpu/` empty** |
+| keck_deimos `600ZD_M_6500` | serial products present; **`ncpu/` empty** |
+
+#### The crash was mine, and the mechanism is worth knowing
+
+It was not a kernel OOM — there is no `Out of memory: Killed process` line in
+the journal at all.  It was **`systemd-oomd`**, the userspace OOM killer, at
+`Oct 12 13:02:39`:
+
+```
+Killed .../app.slice/vte-spawn-...scope due to memory pressure for
+/user.slice/user-1000.slice/user@1000.service being 52.55% > 50.00%
+for > 20s with reclaim activity
+```
+
+dbus, gnome-shell, Chrome, Slack, Spotify, terminator and every `vte-spawn`
+scope died in the same second, which is why it presented as a crash; the reboot
+followed at 15:47.
+
+The mechanism matters because it is counter-intuitive on a 755 GB machine:
+**oomd kills on PSI memory *pressure*, not absolute usage**, at >50% sustained
+for 20 s, and the box has only **7 GB of swap**.  Several concurrent multi-GB
+FITS reductions generate enough reclaim churn to cross that line with hundreds
+of GB still nominally free.  And because anything I launch lives inside
+`user@1000.service` — the exact slice oomd was measuring — my jobs were charged
+against your desktop's pressure budget and were killed along with it.
+
+What I did wrong, specifically: I launched **two suites concurrently**
+(binospec at `-t 1`, DEIMOS at `-t 2`), and the DEIMOS one contains both the
+serial and the new `--ncpu 2` reduction of a 4-mosaic setup, which can overlap.
+I had just finished saying timing no longer mattered so concurrency was free —
+it was free for *timing*, but not for memory pressure, and I did not think about
+the second axis.
+
+#### Why this is a real obstacle and not just a mishap — see Q13
+
+It changes the arithmetic for the cloud run.  From the peak-PSS figures I
+measured on `600ZD_M_6500`: `--ncpu 1` is 11.7 GB, `--ncpu 4` is 39.4 GB, so
+~9.2 GB per extra worker and **~21 GB at `--ncpu 2`**.  The dev suite's README
+budgets **78 GiB for `-t 6`** and `nautilus/full_dev_suite_6cpu.yaml` sets
+`memory: 100Gi`, `cpu: '7'`.  Adding this one test swaps a ~12 GB slot for a
+~21 GB one, taking the peak to roughly **87 GiB against a 100 Gi hard limit** —
+and a Kubernetes memory-limit breach is an instant pod OOMKill, not throttling.
+`-t 6` alongside a test that itself claims 2 cores also exceeds the `cpu: '7'`
+limit, which throttles and would distort timings.
+
+**Q13** lays out three options (keep the 4-mosaic setup but lower `-t` and raise
+the pod limit; swap to the cheaper 2-detector `830G_M_8500`; or drop the DEIMOS
+`--ncpu` test).  **Q14** asks the separable question of whether these tests
+should run in the default suite at all, given each one doubles its setup's
+reduction.
+
+#### Deliberately not done
+
+I have **not** re-launched the two outstanding `--ncpu 2` reductions.  Repeating
+them the way I did would very likely take the machine down again, and the right
+configuration depends on your answer to Q13.  When we do re-run on this
+workstation I would keep them out of the user slice (`systemd-run --scope` with
+an explicit `MemoryMax`) or simply run one suite at a time at `-t 1`, rather
+than two side by side.
+
+Remaining for Task 12: the binospec and DEIMOS `--ncpu 2` reductions, then the
+16-test `vet_tests/test_ncpu.py` run, then commit.  The code side is finished
+and staged.
+
+### 2026-10-13 (Task 12 complete — three `--ncpu` dev-suite tests, re-run safely after the crash)
+
+Per **Q13(2)** and **Q14**: the DEIMOS setup is the cheap two-detector one, the
+tests stay in the default suite, and everything ran at `-t 1`.  Committed as
+`5550104d` and pushed.  **No crash this time.**
+
+#### Running it safely
+
+Three changes from the configuration that took the machine down: one suite at a
+time rather than two concurrently (which was the actual mistake), `-t 1`, and
+each run inside `systemd-run --user --scope -p MemoryMax=80G -p MemorySwapMax=0`
+so a blow-up is contained to the job instead of pressuring
+`user@1000.service`.  I also armed a watchdog on the slice's PSI pressure at
+avg10=25, half of oomd's kill threshold; it never fired.  Conditions helped too
+— 711 GB available against 258 GB last time.
+
+#### Results: 13 passed, 3 xfailed
+
+| setup | work items | result |
+|---|---|---|
+| `keck_deimos/830G_M_8500` | 2 detectors (`detnum = 3,7`) | 2/2 reduce, vet green |
+| `keck_lris_blue/multi_600_4000_slitmask` | 2 detectors | vet green |
+| `mmt_binospec/Longslit_G1000` | 2 detectors | 2/2 reduce, vet green |
+
+Each parallel reduction was checked to have *actually* used workers rather than
+falling back — three `Processing 2 detector(s) using 2 worker process(es)` lines
+per run, one per parallelised stage, against zero in the serial logs.  Binospec
+is the first confirmation outside the Keck instruments the work was developed
+against.
+
+#### Setup choice was the hard part
+
+Most of the suite cannot test this at all.  `detnum = (3,7)` selects a single
+*mosaic* — one work item, so `--ncpu 2` is a silent no-op and every assertion
+passes while testing nothing — whereas `detnum = 3,7` selects two detectors.  I
+checked this against `select_detectors` rather than reading it off the file.  Of
+20 DEIMOS setups, exactly **two** survive that filter.  `test_ncpu_same_detectors`
+now asserts `> 1` detector explicitly, so a future registration that quietly
+picks a single-detector setup fails loudly instead of passing vacuously.
+
+#### Three defects found in my own work, all while chasing a failure
+
+1. **The vet test would have broken on any second suite run.**  The first vet
+   run showed DEIMOS serial with 104 objects against 52 parallel — exactly 2x,
+   and 52 of the 104 names duplicated.  The *parallel* run was the correct one:
+   `save_exposure` merges detectors into an existing spec1d rather than
+   replacing it, so the serial reduction, run into a directory still holding
+   Oct-12 products, duplicated every object.  My `PypeItReduceNcpuTest` used
+   `mkdir(exist_ok=True)`, so the `ncpu/` side would have accumulated the same
+   way on a second run — and on a fresh cloud `REDUX_OUT` it would have passed
+   and hidden the flaw entirely.  It now clears the directory first, and the vet
+   test detects duplication and reports it as stale state with the remedy, which
+   is worth more than the bare count mismatch it replaces.
+2. **`max` was the wrong statistic.**  After the clean re-run one failure
+   survived: DET07 `WAVEIMG`/`TILTS` at relative difference exactly **1.0**,
+   while DET03 was clean at 1e-10.  The cause was **a single pixel** — non-zero
+   counts of 7,110,678 against 7,110,677.  Issue #2208 moved a slit edge by a
+   fraction of a pixel, putting one pixel inside the illuminated region in one
+   reduction and outside in the other; that pixel pins the maximum at 1.0 no
+   matter how well the other eight million agree.  Switched to the **99.9th
+   percentile**, chosen from measurement rather than guesswork: the largest
+   value across all three setups is 8.2e-05 against a 1e-3 threshold.
+3. **Loosening the metric needed proving, not asserting.**  Re-ran the injected
+   misrouting fault — DET03/DET07 `WAVEIMG` payloads swapped with extension
+   names left correct — and the quantile still reports **1.000e+00**, four
+   orders above the threshold.  A `_nonzero_delta` check was added for the
+   complementary blind spot, a region zeroed wholesale, which a quantile would
+   not see.
+
+All three thresholds and their measured justifications are written into the
+module docstring, so nobody has to re-derive why 1e-3 and 99.9% rather than
+`assert_array_equal`.
