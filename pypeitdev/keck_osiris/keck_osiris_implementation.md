@@ -327,12 +327,13 @@ design decisions M4-1 to M4-9).  Changes that affect Stage 5:
   new test type), sensfunc and telluric tests; vet tests
   `test_keck_osiris_flow.py` (tilt test on Hn3 and Kbb, no `xfail`) and
   `test_keck_osiris_kbb.py` (spec1d, cube, telluric flatness).
-- Open for Stage 5 (Q&A 2-7 of M4): the Davies scaling worsens the 44-s
-  frames (improves 12/13 600-s frames); a non-physical step in the line
-  maps at lenslet row ~37; no OH refinement possible on the 1.5-s HD89239
-  frames; residual cosmic rays that L.A.Cosmic misses on single raw frames;
-  `get_fixed_tilts` is recomputed for every frame (cache it); the generic
-  shared-code changes listed in Report 06 to flag for the PR reviewers.
+- Carried into Stage 5 (Q&A 2-7 of M4, accepted 2026-10-13; design
+  decisions M4-10 to M4-13): the Davies-scaling guard for short frames
+  (task 6), the line-map step diagnosis (task 7), the science-frame-as-arc
+  OH fallback for very short frames (task 8), residual cosmic rays that
+  L.A.Cosmic misses on single raw frames and the per-frame recomputation
+  of `get_fixed_tilts` (task 9); the shared-code changes of Report 06 are
+  flagged for the reviewers in task 5.
 
 ---
 
@@ -357,7 +358,26 @@ Tasks
    credit the OSIRIS DRP authors.  Flag for the reviewers the generic
    shared-code changes of M3: the `runtime_par` mechanism
    (`Spectrograph.set_runtime_par`, set by `PypeIt.__init__`) and the
-   column-window boxcar speed-up in `FiberExtract` (M3 Q&A 7).
+   column-window boxcar speed-up in `FiberExtract` (M3 Q&A 7), and the
+   M4 ones listed in Report 06 section 2 (M4 Q&A 7).
+6. Davies-scaling guard (M4-10): judge each group factor on the
+   integrated line residual (Report 06, 5.3) and/or skip the scaling
+   below a minimum sky-line S/N (e.g. `EXPTIME < 100 s`, parameter);
+   the 44-s NGC 3245 frames must no longer get worse; `global` stays the
+   default.
+7. Line-map step (M4-11): map the raw detector column of H2 1-0 S(1) and
+   Br gamma (and their side bands) per lenslet, test the column-1024 /
+   readout-channel hypothesis, compare with a DRP reduction of one frame
+   if IDL is available, and fix or document the cause.
+8. OH refinement for very short frames (M4-12): when a frame yields no
+   measurable sky line, use a science frame of the same night and
+   configuration as the arc (apply its per-lenslet shifts; fallback the
+   night median) with a warning; the 1.5-s HD89239 frames must end up
+   within ~0.1 px of the refined science frames.
+9. Performance and robustness: cache `get_fixed_tilts` per configuration
+   (168 recomputations in the Kbb run); a second cosmic-ray pass on the
+   rectified A-B frame or frame-combination rejection for the residual
+   hits L.A.Cosmic misses on single raw frames.
 
 **Milestone M5**: dev-suite `reduce`, `afterburn` and `vet` pass for
 both OSIRIS setups; docs build clean; PR opened.

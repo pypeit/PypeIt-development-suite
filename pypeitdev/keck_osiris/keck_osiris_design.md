@@ -88,6 +88,10 @@ model.
 | M4-7 | Darks are never rectified (`buildimage` passes `rectify=False` for bias/dark frames), so they can be subtracted from unpaired raw frames; the dev-suite file groups darks by ITIME in calibration groups 1-3. |
 | M4-8 | Generic `pypeit_fiber_cube` (hook `fiber_cube_setup`, WCS referenced to the layout origin, optional point-source extraction to a single-object spec1d); `pypeit_binospec_ifu_cube` is a thin alias. |
 | M4-9 | Telluric/flux with the IR algorithm on the point-source spectrum of the A0V star (`pypeit_fiber_cube --point_source 0.4`; dev suite: HD101060 frame `OS.20240203.59407.32`, 1.5 % rms flatness); instrument-response polynomial order 7 (`sensfunc` and `telluric` `polyorder`) for the Kbb filter ripples. |
+| M4-10 | Davies OH scaling guard (M5): each group factor is judged on the *integrated* line residual (Report 06, 5.3) rather than the line-pixel rms, and/or the scaling is skipped below a minimum sky-line S/N (e.g. `EXPTIME < 100 s`); `global` stays the default.  Motivation: the scaling improves 12/13 600-s frames but worsens the two 44-s frames. |
+| M4-11 | The non-physical horizontal step at flipped lenslet row ~37 in the H2 and Br gamma maps (continuum and CO index are fine) is diagnosed in M5: map the raw detector column of the line per lenslet (hypothesis: the 1.92 px/row stagger carries the line or a side band across column 1024 / a readout channel and an additive offset biases the continuum subtraction) and compare with a DRP reduction of one frame. |
+| M4-12 | OH refinement for frames too short to show sky lines (1.5-s HD89239; no line even in the stack): use a science frame of the same night and configuration as the "arc", i.e. apply its per-lenslet OH shifts (fallback: the median shift of the night's science frames), with a warning; never leave the raw Keck solution (+1.5 A off on this epoch).  M5. |
+| M4-13 | Accepted as is: the Keck-derived tilt rms close to the 0.05 px limit (dominated by a few lenslets with peculiar coefficients, which keep their exact per-lenslet solution; unit test asserts rms < 0.05, robust < 0.03 px); the telluric standard frame `OS.20240203.59407.32`; and the M4 shared-code changes (listed in M5 task 6 for the reviewers). |
 | 22 | KOA 2024-02-03 night (NGC 3245 + HD101060/HD89239 A0V + darks, Kbb/050) adopted as the science-mode setup; frames downloaded to `RAW_DATA/keck_osiris/Kbb_050/`; Kbb/050 matrix to be requested from Keck (`Reports/02_koa_dataset_and_matrix_request.md`). |
 
 ## 3. Processing flow
@@ -288,7 +292,9 @@ par['scienceframe']['process'] : use_biasimage=False, use_overscan=False,
       passed in the BPM, M2 Q&A 2 / Section 5.3)
 par['reduce']['findobj']  -> fiber mode (no peak finding)
 par['reduce']['skysub']['joint_fit'] = False
-par['reduce']['skysub']['osiris_oh_scaling'] = 'global'  # NEW (Davies 2007, M4)
+par['reduce']['skysub']['osiris_oh_scaling'] = 'global'  # NEW (Davies 2007, M4);
+      # M5: factors judged on the integrated line residual and/or skipped
+      # below a minimum sky-line S/N (short frames), decision M4-10
 par['reduce']['extraction']['boxcar_radius'] = 0.5 * platescale (one slice)
 par['reduce']['cube']['slit_spec'] = False
 par['flexure']['spec_method'] = 'skip'
@@ -487,6 +493,10 @@ frames with < 10 measured lenslets (short standards) the shift of the
 median-stacked spectrum.  The per-lenslet shifts are reproducible between
 frames (r = 0.97 Hn3, 0.90 Kbb; 0.014-0.024 px difference), i.e. they are
 real structure of the Keck coefficients; QA `QA/PNGs/*_fiber_sky_refine.png`.
+Frames with no measurable line at all (the 1.5-s HD89239 standards)
+currently keep the Keck solution (+1.5 A off); M5 makes a science frame
+of the same night/configuration the "arc" for such frames (its
+per-lenslet shifts, else the night median) with a warning (M4-12).
 
 ### 6.3 Vacuum
 

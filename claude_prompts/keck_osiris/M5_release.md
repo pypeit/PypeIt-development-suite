@@ -93,12 +93,49 @@ If you need to test the code:
    `osiris_oh_scaling` in `FiberFindObjects`, `rectify=False` for
    bias/dark frames, `fiber_cube_setup` and `pypeit_fiber_cube`.  Do not
    open the PR; I will.
+7. Davies-scaling guard (M4 Q&A 2, design M4-10): judge each OH-group
+   scale factor on the integrated line residual (the metric of Report
+   06, section 5.3) instead of the line-pixel rms, and/or skip the
+   scaling below a minimum sky-line S/N (e.g. `EXPTIME < 100 s`; add a
+   parameter with `add-parameter`).  Keep `global` as the default.
+   Re-measure the OH residual metric on all NGC 3245 frames: the 44-s
+   frames (0.040 -> 0.068 and 0.074 -> 0.081 in M4) must no longer get
+   worse and the 600-s frames must keep their improvement.
+8. Line-map step (M4 Q&A 3, design M4-11): the H2 1-0 S(1) and Br gamma
+   maps show a horizontal step at flipped lenslet row ~37 while the
+   continuum image and CO index look physical.  Map the raw detector
+   column of each line and of its continuum side bands per lenslet and
+   test the hypothesis that the 1.92 px/row stagger carries them across
+   column 1024 / a readout-channel boundary where an additive offset
+   biases the continuum subtraction; compare with a DRP reduction of
+   one frame if IDL is available.  Fix the cause if it is in PypeIt;
+   otherwise document it in the report and the user docs.
+9. OH refinement for very short frames (M4 Q&A 4, design M4-12): when a
+   frame yields no measurable sky line (the 1.5-s HD89239 standards),
+   use a science frame of the same night and configuration as the
+   "arc": apply its per-lenslet `fiber_sky_refine` shifts (fallback:
+   the median shift of the night's science frames), with a warning.
+   Acceptance: the HD89239 wavelengths agree with the refined NGC 3245
+   frames to ~0.1 px (they are +0.54 px off now).
+10. Performance and residual cosmic rays: cache `get_fixed_tilts` per
+   configuration (it was recomputed 168 times in the Kbb run) and add
+   a second cosmic-ray pass on the rectified A-B frame (or rely on
+   frame-combination rejection) for the hits L.A.Cosmic misses on
+   single raw frames; quantify the remaining hits on one frame.
+11. Context from M4 you must respect (design decisions M4-1 to M4-13):
+   matrices selected by validity epoch; Keck-derived tilts (rms close
+   to the 0.05 px limit is accepted); `osiris_grating_temp = False`;
+   telluric standard frame `OS.20240203.59407.32`; darks unrectified
+   and grouped by ITIME; the spec1d sky columns are zero for A-B frames
+   (the Davies model lives in the spec2d `SKYMODEL`).
 
 ## Acceptance
 
 Dev-suite `reduce`, `afterburn` and `vet` pass for both OSIRIS setups;
 `cd doc; make htmlonly` builds without new warnings; the PR description
-is ready in the report.
+is ready in the report; the Davies scaling no longer degrades any NGC
+3245 frame; the line-map step is fixed or its cause documented; the
+1.5-s standards carry the science-frame OH refinement.
 
 Write `pypeitdev/keck_osiris/Reports/07_m5_release.md` describing what was
 built, how it was verified (commands and outputs), and anything that

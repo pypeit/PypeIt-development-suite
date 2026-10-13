@@ -318,3 +318,23 @@ Questions from Prompt 1 (Opus 5.5, 2026-10-12; details in Report 06).
   (`test_pkgdata.py` excluded).
 - Wrote Report 06 and figures (`make_m4_figures.py`); updated the design
   table (M4-9) and the implementation Stage 4 status; Q&A 2-7 above.
+
+### 2026-10-13 - Prompt 1 follow-up (act on Q&A 2-7; model: Claude Fable 5.1)
+
+- All six answers accepted (Q&A 4 with the refinement that a science
+  frame of the same night/configuration serves as the "arc" for frames
+  too short to show sky lines).  No code changes now; the work goes to
+  M5.
+- `keck_osiris_design.md`: decision rows M4-10 (Davies guard for short
+  frames), M4-11 (line-map step diagnosis), M4-12 (science-frame-as-arc
+  OH fallback) and M4-13 (tilt rms, telluric frame and shared-code
+  changes accepted); Section 6.2 and the 4.8 `osiris_oh_scaling` entry
+  annotated.
+- `keck_osiris_implementation.md`: Stage 4 "open" bullet turned into
+  decisions; Stage 5 gains tasks 6-9 (Davies guard, line-map step, OH
+  fallback, tilt caching + residual cosmic rays) and task 5 lists the
+  M4 shared-code changes.
+- `M5_release.md`: new tasks 7-11 mirroring the above plus the M4
+  context to respect; acceptance extended (no frame degraded by the
+  scaling, line-map step resolved or documented, short standards
+  refined).
