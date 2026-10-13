@@ -235,6 +235,8 @@ all_setups = {
     'magellan_ldss3': [
         'VPH-ALL_Std',
         'VPH-ALL_Sci',
+        'VPH-RED_longslit',
+        'VPH-RED_mos',
     ],
     'magellan_mage': [
         '1x1',
