@@ -75,6 +75,8 @@ Attributes:
                             _coadd_datacube:    Test setups that run pypeit_coadd_datacube.
                             _extract_datacube:  Test setups that run pypeit_extract_datacube.
                             _telluric:          Test setups that run pypeit_tellfit.
+                            _fiber_cube:        Test setups that run pypeit_fiber_cube (Fiber
+                                                pypeline datacubes and point-source spectra).
                             _quick_look:        Test setups that run quick look script. The actual script run is chosen
                                                 based on the instrument.
 
@@ -162,6 +164,23 @@ _additional_reduce = {
         'GS_HAM_R400_860': [dict(std=True)]},
     }
 
+# Keck/OSIRIS Kbb/050: A0V standard HD101060 (8.85-s nodded pair 59407/59447;
+# the 56998/57040 frames hold no star) used for the
+# point-source extraction, the sensitivity function and the telluric test
+KECK_OSIRIS_KBB_STD = \
+    'Science/spec1d_OS.20240203.59407.32-HD101060(A0V)_OSIRIS_20240203T163007.324.fits'
+
+# Fiber-pypeline datacubes and point-source spectra (pypeit_fiber_cube);
+# must run before the sensfunc and telluric tests that use the *_ps files
+_fiber_cube = {
+    'keck_osiris': {
+        'Kbb_050': [dict(files=['Science/spec1d_OS.20240203.42705.45-NGC3245*.fits'],
+                         test_name='NGC3245'),
+                    dict(files=[KECK_OSIRIS_KBB_STD],
+                         test_name='HD101060', **{'--point_source': 0.4,
+                                                  '--no_cube': None})]},
+    }
+
 _sensfunc = {
     'shane_kast_blue': {
         '600_4310_d55': [dict(std_file='spec1d_*b24-Feige66*.fits')]},
@@ -191,6 +210,9 @@ _sensfunc = {
     'keck_mosfire': {
         'Y_long': [dict(std_file='spec1d_*0064-GD71*.fits',
                         sens_file='keck_mosfire_Y_long.sens')]},
+    'keck_osiris': {
+        'Kbb_050': [dict(std_file='spec1d_*59407.32-HD101060*_ps.fits',
+                         sens_file='keck_osiris_kbb_050.sens')]},
     'keck_lris_red_mark4': {
         'long_600_10000_d680': [dict(std_file='spec1d_*00127-GD153*.fits',
                                      sens_file='keck_lris_red_mark4_long_600_10000_d680.sens')]
@@ -305,6 +327,9 @@ _extract_datacube = {
 _telluric = {
     'gemini_gnirs_echelle': {
         '32_SB_SXD': [dict(coadd_file='pisco_coadd.fits', tell_file=True)]},
+    'keck_osiris': {
+        'Kbb_050': [dict(coadd_file=KECK_OSIRIS_KBB_STD.replace('.fits', '_ps.fits'),
+                         tell_file=True)]},
     'gemini_gmos': {
         'GS_HAM_R400_700': [dict(coadd_file='FRB180924_opt.fits',
                                  tell_file=True)]},
@@ -495,6 +520,9 @@ all_tests = [{'factory': pypeit_tests.PypeItSetupTest,
              {'factory': pypeit_tests.PypeItReduceStepByStepTest,
               'type':    TestPhase.REDUCE,
               'setups':  _step_by_step},
+             {'factory': pypeit_tests.PypeItFiberCubeTest,
+              'type':    TestPhase.AFTERBURN,
+              'setups':  _fiber_cube},
              {'factory': pypeit_tests.PypeItSensFuncTest,
               'type':    TestPhase.AFTERBURN,
               'setups':  _sensfunc},

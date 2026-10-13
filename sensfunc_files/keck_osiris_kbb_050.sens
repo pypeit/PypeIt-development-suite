@@ -1,0 +1,7 @@
+# Keck/OSIRIS Kbb/050: IR sensitivity function and telluric model from the
+# A0V standard HD101060 (V = 8.78, Simbad), point-source spectrum extracted
+# from the lenslet spec1d by pypeit_fiber_cube --point_source.
+[sensfunc]
+    algorithm = IR
+    star_type = A0
+    star_mag = 8.78

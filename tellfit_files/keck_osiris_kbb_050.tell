@@ -1,0 +1,6 @@
+# Keck/OSIRIS Kbb/050: telluric correction of the A0V standard HD101060
+# (V = 8.78) with the stellar model (M4 acceptance: flat to a few percent).
+[telluric]
+    objmodel = star
+    star_type = A0
+    star_mag = 8.78
