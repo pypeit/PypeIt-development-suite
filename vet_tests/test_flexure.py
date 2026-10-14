@@ -84,23 +84,28 @@ def test_spat_flexure_tilts(redux_out):
     _, par, _ = pypeitFile.get_pypeitpar()
     # check flexure parameters
     assert par['calibrations']['tiltframe']['process']['spat_flexure_method'] == 'detector', 'Spat flexure should be set to detector'
-    assert par['calibrations']['tiltframe']['process']['spat_flexure_maxlag'] == 20, 'Spat flexure maxlag should be 10'
+    assert par['calibrations']['tiltframe']['process']['spat_flexure_maxlag'] == 20, 'Spat flexure maxlag should be 20'
     # read the tiltimg file
+    # NOTE: The spatial flexure is an array with shape (nslits, 2), providing
+    # the flexure of the left and right edge of each slit.
     tiltimg_file = list(data_redux.glob('Calibrations/Tiltimg_A_0_DET01.fits'))
     assert len(tiltimg_file) == 1, 'No tiltimg files found'
     tiltimg = TiltImage.from_file(tiltimg_file[0])
     assert tiltimg.spat_flexure is not None, 'Spat flexure should not be None'
-    assert tiltimg.spat_flexure < par['calibrations']['tiltframe']['process']['spat_flexure_maxlag'], \
+    assert np.all(tiltimg.spat_flexure < par['calibrations']['tiltframe']['process']['spat_flexure_maxlag']), \
         'Spat flexure should be less than maxlag'
-    assert np.isclose(tiltimg.spat_flexure, 6., atol=1.5), 'Spat flexure should be close to 6 pixels'
+    assert np.all(np.isclose(tiltimg.spat_flexure, 6., atol=1.5)), 'Spat flexure should be close to 6 pixels'
     # read the wavetilts file
     tilts_file = list(data_redux.glob('Calibrations/Tilts_A_0_DET01.fits'))
     assert len(tilts_file) == 1, 'No tilts files found'
     tilts = WaveTilts.from_file(tilts_file[0])
     assert tilts.spat_flexure is not None, 'Spat flexure should not be None'
-    assert tilts.spat_flexure < par['calibrations']['tiltframe']['process']['spat_flexure_maxlag'], \
+    assert np.all(tilts.spat_flexure < par['calibrations']['tiltframe']['process']['spat_flexure_maxlag']), \
         'Spat flexure should be less than maxlag'
-    assert np.isclose(tilts.spat_flexure, 6., atol=1.5), 'Spat flexure should be close to 6 pixels'
+    assert np.all(np.isclose(tilts.spat_flexure, 6., atol=1.5)), 'Spat flexure should be close to 6 pixels'
+    # The tilts and the tilt image must have the same spatial flexure
+    assert np.allclose(tilts.spat_flexure, tiltimg.spat_flexure, atol=1e-4), \
+        'Spatial flexure of the tilts and the tilt image should be the same'
 
 def test_flex_multi(redux_out):
 
