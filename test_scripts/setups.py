@@ -134,6 +134,7 @@ all_setups = {
     'keck_osiris': [
         'Hn3_100',
         'Kbb_050',
+        'Kn3_035',
     ],
     'keck_mosfire': [
         'Y_long',
