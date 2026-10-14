@@ -384,6 +384,30 @@ both OSIRIS setups; docs build clean; PR opened.
 
 Estimated effort: 1 week.
 
+**Status (2026-10-13): M5 done** (Report 07; Q&A in `M5_release.md`).
+Changes to the plan:
+
+- Task 1: a third setup, `keck_osiris/Kn3_035` (KOA 2024-08-13, nova V1405
+  Cas, two 300-s A/B pairs; matrix `s240523_c002___infl_Kn3_035.fits.gz` of
+  epoch 230701-250310 kept gzipped), reduces without code changes for the
+  narrowband layout (3040 lenslets, every lenslet >= 394 usable pixels);
+  dev-suite reduce test and vet test `test_keck_osiris_kn3.py` added.  Its
+  Keck-derived tilts reach 0.065 px rms (0.025 px robust; 40 lenslets with
+  peculiar coefficients), above the 0.05 px of Kbb/Hn3 (Q&A).
+- Task 6 (Davies guard): implemented as an integrated-residual guard inside
+  `skysub.oh_scaled_sky` (always on) plus an optional exposure-time floor
+  `osiris_oh_min_exptime` (default None).
+- Task 7 (line-map step): not instrumental; the fixed +-8 A window misses
+  the H2 line where the rotation of the NGC 3245 nuclear gas exceeds
+  ~110 km/s, and the remainder is an intrinsic H2 surface-brightness edge.
+  Documented; no code change.  No DRP comparison (IDL not available).
+- Task 8: the "arc" of short frames is the `Arc` calibration image of the
+  calibration group (the 600-s A/B pair in the dev-suite file).
+- Task 9: tilt cache per configuration; second cosmic-ray pass
+  `fiber_cr_nsig` on the A-B lenslet spectra.
+- `supported = True`; the Google Drive copy is a staging list in Report 07
+  (nothing uploaded).
+
 ---
 
 ## Dependencies and risks

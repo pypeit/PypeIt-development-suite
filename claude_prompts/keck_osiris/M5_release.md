@@ -54,7 +54,7 @@ If you need to test the code:
 
 1. Read this doc.  Complete the milestone described under Tasks.  Write
    the report named under Acceptance.  If you have any questions, put
-   them in the Q&A section below.  Use Fable if you can.  Log your work
+   them in the Q&A section below.  Use Opus 5.5.  Log your work
    in Logs below.
 
 ## Tasks
@@ -144,6 +144,97 @@ deviates from the design document, and update
 
 ### Q&A
 
+Questions from Prompt 1 (Opus 5.5, 2026-10-13; details in Report 07).
+
+**1. Davies guard: three 600-s frames are now unchanged instead of
+   improved.**  No NGC 3245 frame gets worse any more (44-s frames 0.0402 ->
+   0.0402 and 0.0735 -> 0.0735), and the 600-s median goes 0.0528 -> 0.0369
+   (M4 0.0362).  On the M4 metric (spec2d `WAVEIMG`) 10/13 600-s frames
+   improve and 44064, 50226, 52965 are unchanged; with the per-lenslet
+   refined wavelengths 11/13 improve, and M4's "improvements" of 44064 and
+   52965 were in fact small degradations (0.0322 -> 0.0354, 0.0300 ->
+   0.0302).  The guard keeps the subset of group factors that most lowers
+   the median integrated residual (none if it does not decrease);
+   `osiris_oh_min_exptime` exists but defaults to None.
+
+   *Recommendation: accept the subset guard and treat the refined-wavelength
+   metric as the reference from now on (the `WAVEIMG` lacks the +0.54 px
+   per-lenslet refinement).*  OK?
+
+**2. Line-map step: astrophysical, not instrumental.**  The step does not
+   follow any raw column (H2 lies at raw columns 1011-1273 across the
+   blocks where the step is at the same lenslet row), a sky-sky A-B pair
+   and the sky continuum show nothing at those rows, and the H2 velocity
+   runs from +230 to -200 km/s across the nucleus so the fixed +-8 A window
+   loses the line exactly there (contrast 3.6 -> 1.5 with +-25 A); the
+   remaining edge is in the H2 emission itself.  No DRP comparison (no IDL).
+
+   *Recommendation: close M4-11 as documented (user-page limitation);
+   velocity-aware line maps and a registered cube co-add are future work.*
+   OK?
+
+**3. Kn3/035 Keck-derived tilts exceed 0.05 px rms.**  0.065 px rms (robust
+   0.025 px) on the 2024 Kn3 coefficients, dominated by 40 interior lenslets
+   with peculiar coefficients (0.035 px without them); they keep their exact
+   solution in the spec1d.  The Kn3 reduction and vet tests pass.
+
+   *Recommendation: accept (as M4-13); optionally later refit the block
+   polynomials with those lenslets rejected.*  OK?
+
+**4. Google Drive staging.**  Nothing was uploaded; the list (~3.4 GB) is
+   in Report 07 section 5.  The Kbb matrix is stored unzipped (159 MB);
+   the tkserver `.fits.gz` (32 MB) works equally (`select_matrix` reads
+   gzip).  `Kn5_035/calib/s150901_c008___infl_Kn5_035.fits` is a 254-byte
+   stub and should not be copied.
+
+   *Recommendation: stage the gzipped Kbb matrix, skip the stub and the
+   empty `Kbb_050/ref/`, and trim `Kbb_050` (Q&A 25) in a follow-up (e.g.
+   drop HD89239 except one pair, the 45-s frames and unused darks).*  OK?
+
+**5. Short-frame OH fallback order.**  Own lenslets -> own stacked spectrum
+   -> arc frame.  The HD89239 frames now agree with the science frames to
+   +0.001 px (std 0.014).  The 3/8.85-s HD101060 frames keep their own
+   stack shift (common zero point, no per-lenslet structure, ~0.05 px
+   rms).
+
+   *Recommendation: keep; a later option could use the arc per-lenslet
+   shifts plus the frame's own stack zero point for stack-only frames.*  OK?
+
+**6. Second cosmic-ray pass defaults.**  `fiber_cr_nsig = 8` for OSIRIS
+   science A-B frames only (not standards); it also masks a raw-column
+   artefact (spectral row 80, ~70 pixels per 600-s frame).
+
+   *Recommendation: keep 8 sigma and the standard-star exclusion.*  OK?
 
 ## Logs
+
+### 2026-10-13 - Prompt 1 (M5 release; model: Claude Opus 5.5)
+
+- Read the prompt, design (sections 8, 10, decision table), implementation
+  Stage 5, Reports 03-06, M1-M4 Q&A/logs, keck_osiris.md Q&A 22-26, the doc
+  examples and the skills (`build-docs`, `update-changelog`,
+  `add-devsuite-setup`, `run-dev-suite`, `add-parameter`).
+- Task 7: integrated-residual guard in `skysub.oh_scaled_sky` (final
+  form: subset search on the median integrated residual) and
+  `osiris_oh_min_exptime`; no NGC 3245 frame worse; 600-s median 0.0528 ->
+  0.0369 (Q&A 1).
+- Task 9: arc-frame fallback of `fiber_sky_refine`; HD89239 offset +0.538 ->
+  +0.001 px.
+- Task 10: tilt cache (168 fits -> 1); second CR pass `fiber_cr_nsig`
+  (44064: 260 -> 3 spikes at 8 sigma); silenced per-line fit warnings.
+- Task 8: line-map step diagnosed as H2 kinematics plus an intrinsic edge;
+  column/channel hypothesis rejected; documented (Q&A 2).
+- Task 2: clearer matrix/header errors; 5 robustness unit tests.
+- Task 1: KOA TAP query; downloaded 2 Kn3/035 pairs of V1405 Cas
+  (2024-08-13) and the epoch matrix to `RAW_DATA/keck_osiris/Kn3_035/`;
+  reduces unchanged (3040 lenslets); new pypeit file, setup, load-image
+  entry and vet test; tilt rms 0.065 px (Q&A 3).
+- Task 3: `doc/spectrographs/keck_osiris.rst`, tutorial, links, release
+  notes, regenerated parameters and spectrograph table; doc warnings 2 -> 0.
+- Task 4: `supported = True`; staging list in Report 07 (Q&A 4).
+- Task 5: dev suite 7/7 reduce+afterburn PASSED, 21/21 OSIRIS vet tests;
+  `pypeit/tests` 908 passed (`test_pkgdata.py` excluded).
+- Task 6: `pypeitdev/keck_osiris/pr_description.md`.
+- Wrote Report 07 and `make_m5_figures.py` (5 figures); updated the design
+  document and the implementation plan.  No git operations.
 

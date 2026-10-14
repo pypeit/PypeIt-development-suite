@@ -1,0 +1,27 @@
+# Keck/OSIRIS Kn3 / 0.035" (narrowband): nova V1405 Cas, KOA 2024-08-13,
+# two 300-s object/sky (A/B) pairs.  Rectification matrix of the
+# 230701-250310 validity epoch (s240523_c002___infl_Kn3_035.fits.gz) from
+# http://tkserver.keck.hawaii.edu/osiris/ in calib/.  M5 task 1.
+
+# User-defined execution parameters
+[rdx]
+    spectrograph = keck_osiris
+[calibrations]
+    osiris_rectmat_dir = ${PYPEIT_DEV}/RAW_DATA/keck_osiris/Kn3_035/calib
+
+# Setup
+setup read
+Setup A:
+  decker: '0.035'
+  dispname: Kn3
+setup end
+
+# Data block 
+data read
+ path /Users/xavier/Projects/PypeIt/PypeIt-development-suite/RAW_DATA/keck_osiris/Kn3_035
+                 filename |              frametype |           ra |         dec |    target | dispname | decker | binning |            mjd |    airmass | exptime | issky | idname | calib | comb_id | bkg_id
+OS.20240813.45703.90.fits | arc,science,trace,tilt | 351.19886316 |  61.1875125 | v1405 cas |      Kn3 |  0.035 |     1,1 | 60535.52897103 | 1.33775117 | 299.481 |     0 |      a |     0 |       1 |      2
+OS.20240813.46043.26.fits |     arc,sky,trace,tilt | 351.19886316 | 61.18723472 | v1405 cas |      Kn3 |  0.035 |     1,1 | 60535.53290818 | 1.34008621 | 299.481 |     1 |      a |     0 |       2 |     -1
+OS.20240813.46751.14.fits |                science | 351.19878247 | 61.18762917 | v1405 cas |      Kn3 |  0.035 |     1,1 | 60535.54110123 | 1.34644849 | 299.481 |     0 |      a |     0 |       3 |      4
+OS.20240813.47096.41.fits |                    sky | 351.19878247 | 61.18735139 | v1405 cas |      Kn3 |  0.035 |     1,1 | 60535.54509742 | 1.35041797 | 299.481 |     1 |      a |     0 |       4 |     -1
+data end

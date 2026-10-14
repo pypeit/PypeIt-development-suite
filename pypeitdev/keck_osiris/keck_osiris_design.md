@@ -92,6 +92,7 @@ model.
 | M4-11 | The non-physical horizontal step at flipped lenslet row ~37 in the H2 and Br gamma maps (continuum and CO index are fine) is diagnosed in M5: map the raw detector column of the line per lenslet (hypothesis: the 1.92 px/row stagger carries the line or a side band across column 1024 / a readout channel and an additive offset biases the continuum subtraction) and compare with a DRP reduction of one frame. |
 | M4-12 | OH refinement for frames too short to show sky lines (1.5-s HD89239; no line even in the stack): use a science frame of the same night and configuration as the "arc", i.e. apply its per-lenslet OH shifts (fallback: the median shift of the night's science frames), with a warning; never leave the raw Keck solution (+1.5 A off on this epoch).  M5. |
 | M4-13 | Accepted as is: the Keck-derived tilt rms close to the 0.05 px limit (dominated by a few lenslets with peculiar coefficients, which keep their exact per-lenslet solution; unit test asserts rms < 0.05, robust < 0.03 px); the telluric standard frame `OS.20240203.59407.32`; and the M4 shared-code changes (listed in M5 task 6 for the reviewers). |
+| M5 | Done in M5 (Report 07): M4-10 as an integrated-residual guard in `oh_scaled_sky` plus the optional `osiris_oh_min_exptime` (default None); M4-11 diagnosed as astrophysical (H2 kinematics with a fixed window, plus an intrinsic H2 edge), no instrumental feature; M4-12 via the `Arc` calibration image of the calibration group; tilt cache and the `fiber_cr_nsig` second cosmic-ray pass; third setup Kn3/035 (KOA 2024-08-13); `supported = True`.  Pending answers in `M5_release.md` Q&A. |
 | 22 | KOA 2024-02-03 night (NGC 3245 + HD101060/HD89239 A0V + darks, Kbb/050) adopted as the science-mode setup; frames downloaded to `RAW_DATA/keck_osiris/Kbb_050/`; Kbb/050 matrix to be requested from Keck (`Reports/02_koa_dataset_and_matrix_request.md`). |
 
 ## 3. Processing flow
@@ -293,8 +294,9 @@ par['scienceframe']['process'] : use_biasimage=False, use_overscan=False,
 par['reduce']['findobj']  -> fiber mode (no peak finding)
 par['reduce']['skysub']['joint_fit'] = False
 par['reduce']['skysub']['osiris_oh_scaling'] = 'global'  # NEW (Davies 2007, M4);
-      # M5: factors judged on the integrated line residual and/or skipped
-      # below a minimum sky-line S/N (short frames), decision M4-10
+      # M5: factors judged on the integrated line residual (always), and
+      # par['reduce']['skysub']['osiris_oh_min_exptime'] = None (optional floor)
+par['reduce']['skysub']['fiber_cr_nsig'] = 8.0   # NEW (M5): 2nd CR pass on A-B
 par['reduce']['extraction']['boxcar_radius'] = 0.5 * platescale (one slice)
 par['reduce']['cube']['slit_spec'] = False
 par['flexure']['spec_method'] = 'skip'
@@ -497,6 +499,10 @@ Frames with no measurable line at all (the 1.5-s HD89239 standards)
 currently keep the Keck solution (+1.5 A off); M5 makes a science frame
 of the same night/configuration the "arc" for such frames (its
 per-lenslet shifts, else the night median) with a warning (M4-12).
+*M5 status:* such frames adopt the per-lenslet shifts measured on the
+`Arc` calibration image of their calibration group (the long A/B pair that
+carries the `arc` type), with a warning; Report 07 gives the agreement.
+The fallback order is: own lenslets, own stacked spectrum, arc frame.
 
 ### 6.3 Vacuum
 
@@ -560,6 +566,10 @@ the hosting question in Report 02 is moot).
 5. **Load-images unit test** entry in `unit_tests/test_load_images.py`.
 6. **Header-era test**: the 2015 Kn5 files are read by `pypeit_setup`
    and produce a clear "pre-2016 data not supported" error.
+7. **Kn3/035 narrowband setup (M5)**: `keck_osiris/Kn3_035` (KOA
+   2024-08-13, nova V1405 Cas): vet test `test_keck_osiris_kn3.py`
+   (3040 lenslets with usable windows, nova continuum peak and Br gamma
+   emission).
 
 ## 9. Data search (KOA)
 
