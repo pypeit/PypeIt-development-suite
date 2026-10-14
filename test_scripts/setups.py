@@ -235,6 +235,8 @@ all_setups = {
     'magellan_ldss3': [
         'VPH-ALL_Std',
         'VPH-ALL_Sci',
+        'VPH-RED_longslit',
+        'VPH-RED_mos',
     ],
     'magellan_mage': [
         '1x1',
@@ -256,9 +258,12 @@ all_setups = {
         'G270_Sky',
     ],
     'mmt_mmirs': [
+        'H3000_H',
+        'HK_HK3',
         'HK_zJ',
         'J_zJ',
         'K_K',
+        'nep_as1_MOS',
     ],
     'mmt_bluechannel': [
         '300l',
