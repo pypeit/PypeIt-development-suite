@@ -57,6 +57,8 @@ If you need to test the code:
    them in the Q&A section below.  Use Opus 5.5.  Log your work
    in Logs below.
 
+2. Execute the first task under Report.
+
 ## Tasks
 
 1. Run on at least one more mode from KOA (Kn3/035 or Kn3/050) once
@@ -129,6 +131,17 @@ If you need to test the code:
    and grouped by ITIME; the spec1d sky columns are zero for A-B frames
    (the Davies model lives in the spec2d `SKYMODEL`).
 
+## Report
+
+1. I have answered the 6 questions in the Q&A section.  Please read and react.
+Then write a detailed report on all that you have accomplished in M1-M5 in
+`pypeitdev/keck_osiris/Reports/keck_osiris_report.md`.  
+Include figures and tables as needed.  It is ok to re-use figures and text from
+your previous reports.  Be sure to detail any outstanding issues and all
+key decisions made.  I will share this report with the original OSIRIS
+developers and WMKO.
+Use Opus 5.5.  Log your work
+
 ## Acceptance
 
 Dev-suite `reduce`, `afterburn` and `vet` pass for both OSIRIS setups;
@@ -161,6 +174,26 @@ Questions from Prompt 1 (Opus 5.5, 2026-10-13; details in Report 07).
    metric as the reference from now on (the `WAVEIMG` lacks the +0.54 px
    per-lenslet refinement).*  OK?
 
+>A. Ok, but make sure the docs describe these trade-offs in detail and especially how to turn off the Davies approach.
+
+*Reaction (Prompt 2):* done.  `doc/spectrographs/keck_osiris.rst` has a new
+section "OH-line scaling (Davies 2007)" (label `keck_osiris_ohscaling`): what
+the scaling does, the significance test and the subset guard on the
+integrated residual (and why the M4 line-pixel rms rule was dropped), the
+log lines to look at, when it helps (600-s median 0.053 -> 0.037, sky-sky
+pair 0.082 -> 0.030, Hn3 0.29 -> 0.05), when it is neutral or harmful (short
+frames, small sky variations, bright line emitters, spatially variable sky,
+standards and spec1d sky columns), the `osiris_oh_min_exptime` floor, and
+how to turn it off, verified in `pypeitpar.py` and by parsing a config with
+the OSIRIS defaults (`None` disables it; `none` is rejected):
+
+    [reduce]
+        [[skysub]]
+            osiris_oh_scaling = None
+
+The overview, the parameter table ("None: off") and the tutorial link to it.
+`make htmlonly`: 0 warnings.
+
 **2. Line-map step: astrophysical, not instrumental.**  The step does not
    follow any raw column (H2 lies at raw columns 1011-1273 across the
    blocks where the step is at the same lenslet row), a sky-sky A-B pair
@@ -173,6 +206,12 @@ Questions from Prompt 1 (Opus 5.5, 2026-10-13; details in Report 07).
    velocity-aware line maps and a registered cube co-add are future work.*
    OK?
 
+>A. Ok
+
+*Reaction (Prompt 2):* noted; M4-11 closed as documented (user page,
+Limitations); velocity-aware maps and the cube co-add are listed as future
+work in the final report.
+
 **3. Kn3/035 Keck-derived tilts exceed 0.05 px rms.**  0.065 px rms (robust
    0.025 px) on the 2024 Kn3 coefficients, dominated by 40 interior lenslets
    with peculiar coefficients (0.035 px without them); they keep their exact
@@ -180,6 +219,21 @@ Questions from Prompt 1 (Opus 5.5, 2026-10-13; details in Report 07).
 
    *Recommendation: accept (as M4-13); optionally later refit the block
    polynomials with those lenslets rejected.*  OK?
+
+>A. Ok.  Make sure the final report describes this issue in detail.  With figures
+
+*Reaction (Prompt 2):* done: section 5.5 of
+`pypeitdev/keck_osiris/Reports/keck_osiris_report.md`, with four new figures
+from `Reports/figures/make_final_figures.py` (`final_tilt_hist.png`,
+`final_tilt_map.png`, `final_tilt_lenslets.png`, `final_tilt_redux.png`).
+New finding: the 40 lenslets are not at block edges (block positions 1-61)
+but scattered, with a cluster at Keck columns 47-49; 20 of them were already
+peculiar in the 2016 Kn3 coefficients.  Their OH zero points pull back about
+70 % of their offset from their neighbours (slope -0.71 and -0.68 on the two
+frames), i.e. their Keck coefficients are mostly wrong by a near-constant
+shift that the per-lenslet OH refinement already corrects in the spec1d
+(median offset 0.28 -> 0.08 px); the worst lenslet (L46_58, 1.4 px) has no
+measurable OH line and keeps its error.
 
 **4. Google Drive staging.**  Nothing was uploaded; the list (~3.4 GB) is
    in Report 07 section 5.  The Kbb matrix is stored unzipped (159 MB);
@@ -191,6 +245,33 @@ Questions from Prompt 1 (Opus 5.5, 2026-10-13; details in Report 07).
    empty `Kbb_050/ref/`, and trim `Kbb_050` (Q&A 25) in a follow-up (e.g.
    drop HD89239 except one pair, the 45-s frames and unused darks).*  OK?
 
+>A. I have uploaded all the files from PypeIt/PypeIt-development-suite/RAW_DATA/keck_osiris/ into the Drive.  Were there others elsewhere?
+
+*Reaction (Prompt 2):* **No - nothing outside `RAW_DATA/keck_osiris/` has to
+go on the Drive.**  Checked: `test_scripts/setups.py` (Hn3_100, Kbb_050,
+Kn3_035) and `test_setups.py` (fiber-cube, sensfunc and telluric afterburns,
+which read the reductions only); the pypeit files
+`pypeit_files/keck_osiris_{hn3_100,kbb_050,kn3_035}.pypeit` (matrices via
+`osiris_rectmat_dir = ${PYPEIT_DEV}/RAW_DATA/keck_osiris/<setup>/calib`; the
+`path` line is rewritten by `pypeit_test`); `sensfunc_files/keck_osiris_kbb_050.sens`
+and `tellfit_files/keck_osiris_kbb_050.tell`; the four
+`vet_tests/test_keck_osiris_*.py` (raw frames, matrix and DRP cube under
+`RAW_DATA/keck_osiris/Hn3_100/{,calib,ref}` and `Kbb_050`, otherwise the
+reduction outputs); `unit_tests/test_load_images.py` (Hn3, Kbb, Kn3 and the
+2015 Kn5 frame).  All of those are in the dev-suite git tree.  The Kn3
+matrix (`Kn3_035/calib/s240523_c002___infl_Kn3_035.fits.gz`) is inside
+`RAW_DATA/keck_osiris/`, so it is already uploaded.  The Keck wavelength
+coefficients and their epoch table, the matrix epoch table
+(`rectmat_epochs.ecsv`), the `OH_OSIRIS` line list, the CTE table, the
+lenslet maps and the hot/dead masks are committed in the PypeIt repo
+(`pypeit/data/...`, verified with `git ls-files`).  The only other external
+file, the telluric grid `TellPCA_3000_26000_R10000.fits`, is not in git but
+is fetched automatically by PypeIt from its S3 cache (`telgrid` data path),
+as for every other instrument.  Harmless extras in the upload: the 254-byte
+Kn5 matrix stub, the empty `Kbb_050/ref/` and the 2015 DRP cube in
+`Kn5_035/ref/` (14 MB) are not used by any test.  Trimming `Kbb_050` remains a
+follow-up.
+
 **5. Short-frame OH fallback order.**  Own lenslets -> own stacked spectrum
    -> arc frame.  The HD89239 frames now agree with the science frames to
    +0.001 px (std 0.014).  The 3/8.85-s HD101060 frames keep their own
@@ -200,11 +281,21 @@ Questions from Prompt 1 (Opus 5.5, 2026-10-13; details in Report 07).
    *Recommendation: keep; a later option could use the arc per-lenslet
    shifts plus the frame's own stack zero point for stack-only frames.*  OK?
 
+>A. Ok
+
+*Reaction (Prompt 2):* noted; the combined arc + own-stack option is listed
+as future work in the final report.
+
 **6. Second cosmic-ray pass defaults.**  `fiber_cr_nsig = 8` for OSIRIS
    science A-B frames only (not standards); it also masks a raw-column
    artefact (spectral row 80, ~70 pixels per 600-s frame).
 
    *Recommendation: keep 8 sigma and the standard-star exclusion.*  OK?
+
+>A. Ok
+
+*Reaction (Prompt 2):* noted; defaults unchanged (`fiber_cr_nsig = 8`,
+science A-B frames only).
 
 ## Logs
 
@@ -238,3 +329,30 @@ Questions from Prompt 1 (Opus 5.5, 2026-10-13; details in Report 07).
 - Wrote Report 07 and `make_m5_figures.py` (5 figures); updated the design
   document and the implementation plan.  No git operations.
 
+
+### 2026-10-14 - Prompt 2 (reactions to Q&A 1-6; consolidated report; model: Claude Opus 5.5)
+
+- Read the prompt, Reports 01-07, the design document (decision table,
+  sections 3-8), the implementation plan, the PR text, the Q&A of
+  `keck_osiris.md` and M1-M5, the user page and the tutorial.
+- Q&A 1: verified in `pypeitpar.py` and by parsing a config with the OSIRIS
+  defaults that `osiris_oh_scaling = None` turns the Davies scaling off
+  (`none` is rejected) and that `osiris_oh_min_exptime` defaults to None.
+  New section "OH-line scaling (Davies 2007)" in
+  `doc/spectrographs/keck_osiris.rst` (what it does, guard and metrics,
+  when it helps or not, the floor, how to turn it off with the pypeit-file
+  snippet), links from the overview, the parameter table and the tutorial.
+  `cd doc; make htmlonly`: 0 warnings (`sphinx_warnings.out` empty).
+- Q&A 3: new `Reports/figures/make_final_figures.py` (4 figures
+  `final_tilt_{hist,map,lenslets,redux}.png`) from the shipped coefficients
+  and `REDUX_M5B/keck_osiris/Kn3_035` (no re-run needed).  Finding: the 40
+  lenslets deviate from their row neighbours; the OH zero points pull back
+  ~70 % of that (slope -0.71 / -0.68), so the coefficients are mostly wrong
+  by a constant that the refinement already corrects in the spec1d;
+  L46_58 has no OH line and keeps ~1.4 px.
+- Q&A 4: checked setups, test_setups, pypeit/sens/tell files, vet and
+  load-image tests, and `git ls-files` of the PypeIt data: nothing outside
+  `RAW_DATA/keck_osiris/` must go on the Drive (telluric grid comes from
+  PypeIt's S3 cache).  Q&A 2, 5, 6: noted.
+- Wrote `pypeitdev/keck_osiris/Reports/keck_osiris_report.md` (sections
+  1-12, appendices A-C).  No code behaviour changed; no git operations.
