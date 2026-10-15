@@ -1,0 +1,13 @@
+# HIP59174 = HD 105388 (SIMBAD 2026-10-03): A2IV (2023ApJS..264...17Z),
+# V = 7.45, K(2MASS) = 7.359.  star_mag is the V (Vega) magnitude:
+# sensfunc.py passes it as V_mag to standard.get_standard_spectrum.
+# star_type A0: TSpecTool Vega (A0V) spectrum
+[sensfunc]
+  algorithm = IR
+  star_type = A0
+  star_mag = 7.45
+  [[IR]]
+    # TelFit grid, for comparison with the MOIRCS default (PCA); a grid
+    # file needs teltype = grid.
+    telgridfile = TelFit_MaunaKea_3100_26100_R20000.fits
+    teltype = grid

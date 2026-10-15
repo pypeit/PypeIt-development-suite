@@ -1,0 +1,768 @@
+<title>MOIRCS VB_K Fluxing</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans:ital,wght@0,400;0,500;0,600;1,400&family=Spectral:wght@500;600&display=swap">
+<style>
+/* Layout: one reading column (~70ch) with figures running the full
+   980px measure; facts first, then the standard, the sensitivity
+   function, the splice, F2/F1 and the transfer.  Same tokens and
+   chart helpers as the Implementation #5 and #6 reports. */
+:root {
+  --bg: #f6f7f8;
+  --surface: #ffffff;
+  --ink: #15191e;
+  --ink2: #47505c;
+  --muted: #737b87;
+  --rule: #dfe3e8;
+  --grid: #eceff2;
+  --accent: #4a3aa7;      /* plain-mean combine / model with the spatial term */
+  --neutral: #8d949e;     /* OH lines / single frames / linear model */
+  --det1: #2a78d6;
+  --det2: #eb6834;
+  --bad: #e34948;
+  --good: #0a8a0a;
+  --good-bg: #e6f4e6;
+  --bad-bg: #fbe9e9;
+  --font-display: "Spectral", Georgia, "Times New Roman", serif;
+  --font-body: "IBM Plex Sans", "Helvetica Neue", Arial, sans-serif;
+  --font-mono: "IBM Plex Mono", ui-monospace, "SFMono-Regular", Menlo, monospace;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --bg: #121417; --surface: #1a1d21; --ink: #eef0f3; --ink2: #b9c0ca;
+    --muted: #8d95a0; --rule: #2d3239; --grid: #23272d;
+    --accent: #9085e9; --neutral: #7f8690; --det1: #3987e5;
+    --det2: #d95926; --bad: #e66767; --good: #4cc35a;
+    --good-bg: #17301b; --bad-bg: #3a1d1f;
+    color-scheme: dark;
+  }
+}
+:root[data-theme="dark"] {
+  --bg: #121417; --surface: #1a1d21; --ink: #eef0f3; --ink2: #b9c0ca;
+  --muted: #8d95a0; --rule: #2d3239; --grid: #23272d;
+  --accent: #9085e9; --neutral: #7f8690; --det1: #3987e5;
+  --det2: #d95926; --bad: #e66767; --good: #4cc35a;
+  --good-bg: #17301b; --bad-bg: #3a1d1f;
+  color-scheme: dark;
+}
+* { box-sizing: border-box; }
+body {
+  background: var(--bg); color: var(--ink);
+  font: 15px/1.6 var(--font-body);
+  padding-inline: 20px; padding-block: 40px 72px;
+}
+main { max-width: 980px; margin: 0 auto; display: grid; gap: 56px; }
+section { display: grid; gap: 18px; min-width: 0; }
+h1, h2, h3 { font-family: var(--font-display); text-wrap: balance;
+  margin: 0; line-height: 1.2; font-weight: 600; }
+h1 { font-size: clamp(30px, 5vw, 42px); letter-spacing: -0.01em; }
+h2 { font-size: 26px; padding-top: 22px; border-top: 1px solid var(--rule); }
+h3 { font-size: 18px; font-weight: 500; }
+p, ul { margin: 0; max-width: 70ch; color: var(--ink2); }
+p strong, li strong { color: var(--ink); font-weight: 600; }
+ul { padding-left: 1.2em; display: grid; gap: 6px; }
+code, .mono { font-family: var(--font-mono); font-size: 0.88em; }
+code { background: var(--grid); padding: 1px 5px; border-radius: 3px;
+  color: var(--ink); overflow-wrap: anywhere; }
+a { color: var(--accent); }
+.eyebrow { font: 500 12px/1.4 var(--font-mono); letter-spacing: 0.08em;
+  text-transform: uppercase; color: var(--muted); }
+header { display: grid; gap: 14px; }
+.lede { font-size: 17px; color: var(--ink2); }
+
+/* Key results */
+.facts { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 1px; background: var(--rule); border: 1px solid var(--rule);
+  border-radius: 6px; overflow: hidden; }
+.fact { background: var(--surface); padding: 16px 18px; display: grid;
+  gap: 4px; align-content: start; }
+.fact .v { font: 500 26px/1.1 var(--font-mono); color: var(--ink);
+  font-variant-numeric: tabular-nums; }
+.fact .l { font-size: 13px; color: var(--ink2); line-height: 1.4; }
+@media (max-width: 760px) {
+  .facts { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+}
+
+/* Figures */
+figure { margin: 0; display: grid; gap: 10px; min-width: 0; }
+.plot { position: relative; background: var(--surface);
+  border: 1px solid var(--rule); border-radius: 6px; padding: 12px 8px 6px;
+  min-width: 0; }
+.plot svg { display: block; width: 100%; overflow: visible; }
+figcaption { font-size: 13.5px; color: var(--ink2); max-width: 78ch; }
+figcaption b { color: var(--ink); font-weight: 600; }
+.legend { display: flex; flex-wrap: wrap; gap: 6px 18px; padding: 0 8px 6px;
+  font-size: 12.5px; color: var(--ink2); }
+.legend span { display: inline-flex; align-items: center; gap: 7px; }
+.sw { width: 18px; height: 3px; border-radius: 2px; display: inline-block; }
+.dot { width: 9px; height: 9px; border-radius: 50%; display: inline-block; }
+.ring { width: 9px; height: 9px; border-radius: 50%; display: inline-block;
+  border: 2px solid var(--neutral); }
+.tip { position: absolute; pointer-events: none; background: var(--ink);
+  color: var(--bg); font: 12px/1.45 var(--font-mono); padding: 6px 9px;
+  border-radius: 4px; white-space: nowrap; z-index: 2;
+  font-variant-numeric: tabular-nums; }
+.pair { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 16px; }
+@media (max-width: 760px) { .pair { grid-template-columns: 1fr; } }
+svg text { font-family: var(--font-body); }
+svg .tick { font: 11px var(--font-mono); fill: var(--muted); }
+svg .axl { font-size: 12px; fill: var(--ink2); }
+svg .lab { font-size: 11.5px; fill: var(--ink2); }
+svg .gl { stroke: var(--grid); stroke-width: 1; }
+svg .ax { stroke: var(--rule); stroke-width: 1; }
+
+/* Tables */
+.tw { overflow-x: auto; border: 1px solid var(--rule); border-radius: 6px;
+  background: var(--surface); }
+table { border-collapse: collapse; width: 100%; font-size: 13.5px;
+  font-variant-numeric: tabular-nums; }
+th, td { padding: 8px 12px; text-align: right; border-bottom: 1px solid var(--grid);
+  white-space: nowrap; }
+th { font-weight: 500; color: var(--muted); font-size: 12px;
+  letter-spacing: 0.03em; background: var(--bg); }
+td:first-child, th:first-child { text-align: left; }
+tr:last-child td { border-bottom: 0; }
+td.mono { font-family: var(--font-mono); font-size: 12.5px; }
+.chip { display: inline-flex; align-items: center; gap: 5px;
+  font: 500 12px/1 var(--font-mono); padding: 4px 7px; border-radius: 4px; }
+.chip.ok { color: var(--good); background: var(--good-bg); }
+.chip.no { color: var(--bad); background: var(--bad-bg); }
+.chosen td { background: color-mix(in srgb, var(--accent) 7%, transparent); }
+details { border: 1px solid var(--rule); border-radius: 6px;
+  background: var(--surface); }
+summary { cursor: pointer; padding: 10px 14px; font-weight: 500; }
+summary:focus-visible, a:focus-visible { outline: 2px solid var(--accent);
+  outline-offset: 2px; }
+details .tw { border: 0; border-top: 1px solid var(--rule); border-radius: 0; }
+.files { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 16px; }
+@media (max-width: 760px) { .files { grid-template-columns: 1fr; } }
+.files > div { background: var(--surface); border: 1px solid var(--rule);
+  border-radius: 6px; padding: 14px 16px; display: grid; gap: 8px;
+  align-content: start; min-width: 0; }
+.files ul { font: 12.5px/1.6 var(--font-mono); color: var(--ink); }
+.files .msg { font: 12.5px/1.5 var(--font-mono); color: var(--ink2); }
+footer { font-size: 13px; color: var(--muted); }
+
+/* Implementation #7 additions */
+:root { --s1: #b5487a; --s2: #0f8a8a; --band: rgba(115, 123, 135, 0.13); }
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) { --s1: #e07aa8; --s2: #3cc0bd;
+    --band: rgba(141, 149, 160, 0.16); }
+}
+:root[data-theme="dark"] { --s1: #e07aa8; --s2: #3cc0bd;
+  --band: rgba(141, 149, 160, 0.16); }
+.ctl { display: flex; flex-wrap: wrap; align-items: center; gap: 8px 12px;
+  padding: 0 8px 8px; font-size: 13px; color: var(--ink2); }
+.ctl label { font-weight: 500; }
+select { font: 13px var(--font-mono); color: var(--ink); background: var(--bg);
+  border: 1px solid var(--rule); border-radius: 4px; padding: 4px 8px;
+  max-width: 100%; }
+select:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+.sq { width: 9px; height: 9px; display: inline-block;
+  border: 1.5px solid var(--ink2); }
+.bandkey { width: 18px; height: 10px; display: inline-block;
+  background: var(--band); border-radius: 2px; }
+.note { border-left: 3px solid var(--accent); padding: 4px 0 4px 14px;
+  max-width: 72ch; color: var(--ink2); }
+.note strong { color: var(--ink); }
+.issues { display: grid; gap: 12px; }
+.issue { background: var(--surface); border: 1px solid var(--rule);
+  border-radius: 6px; padding: 12px 16px; display: grid; gap: 6px;
+  min-width: 0; }
+.issue h3 { font-size: 16px; display: flex; flex-wrap: wrap; gap: 8px;
+  align-items: center; }
+.issue p { font-size: 14px; }
+.tag { font: 500 11px/1 var(--font-mono); letter-spacing: 0.05em;
+  text-transform: uppercase; padding: 4px 6px; border-radius: 3px; }
+.tag.fixed { color: var(--good); background: var(--good-bg); }
+.tag.open { color: var(--bad); background: var(--bad-bg); }
+.tag.info { color: var(--ink2); background: var(--grid); }
+</style>
+
+<main>
+<header>
+  <div class="eyebrow">Subaru / MOIRCS · VB_K grism · mask MO_CC0958PA200_1 · PypeIt</div>
+  <h1>Standards, sensitivity function and the chip-2 transfer</h1>
+  <p class="lede">Two exposures of the A2IV star HIP59174, taken through two
+  slits of the science mask on detector 1, give one spliced sensitivity
+  function over 1.90–2.54 µm. Detector 2 has no standard, so its
+  sensitivity is transferred from detector 1 with the ratio of the dome
+  flats of the two channels, checked against the night sky.</p>
+  <p class="eyebrow">Implementation #7 · 2026-10-03 · baseline run5 (reidentify) · one PypeIt change</p>
+</header>
+
+<div class="facts" id="facts"></div>
+
+<section>
+  <h2>The standard star</h2>
+  <p>HIP59174 is HD 105388 in SIMBAD: spectral type <strong>A2IV</strong>,
+  <strong>V = 7.45</strong>, 2MASS J/H/Ks = 7.343 / 7.39 / 7.359. The sensitivity
+  function takes the V magnitude (<code>star_mag</code>), which PypeIt passes to
+  the stellar model as <code>V_mag</code>. Each set has an A and a B position 15 s
+  apart; the star is the highest-S/N object in all four frames
+  (<code>maxnumber_std = 1</code>, S/N 200–226). A and B were coadded per set.</p>
+  <figure>
+    <div class="plot">
+      <div class="legend"><span><i class="sw" style="background:var(--s2)"></i>std2 · DET01 slit 469</span><span><i class="sw" style="background:var(--s1)"></i>std1 · DET01 slit 337</span><span><i class="bandkey"></i>overlap</span></div>
+      <div id="c-coadd"></div>
+    </div>
+    <figcaption><b>Coadded standard spectra in counts</b> (15 s). The two
+    slits sit at different x positions in the mask, so each records a
+    different 0.39 µm window of the VB_K spectrum. They overlap at
+    2.143–2.293 µm, where std1 is up to 11% fainter: it sits at the blue edge
+    of the chip there.</figcaption>
+  </figure>
+</section>
+
+<section>
+  <h2>Sensitivity function</h2>
+  <p>The IR algorithm fits a stellar model, a telluric model and a
+  13th-order polynomial zeropoint to each standard, then splices the two.
+  Two stellar models and two telluric models were tried. The adopted
+  combination is the <strong>Vega spectrum (A0) with the PCA telluric
+  model</strong>, now the MOIRCS default.</p>
+  <div class="tw"><table id="t-var"></table></div>
+  <figure>
+    <div class="plot">
+      <div class="ctl"><label for="varsel">Variant</label><select id="varsel"></select></div>
+      <div class="legend"><span><i class="sw" style="background:var(--s2)"></i>std2</span><span><i class="sw" style="background:var(--s1)"></i>std1</span><span><i class="bandkey"></i>telluric transmission &lt; 0.8</span></div>
+      <div id="c-resid"></div>
+    </div>
+    <figcaption><b>Fluxed standard divided by the stellar model.</b> Outside
+    the telluric bands the Vega spectrum leaves 0.7% scatter, against 1.4%
+    for the Kurucz A2 model, which is sampled every ~120 Å and misses the
+    shape of Br-γ at 2.166 µm. The TelFit grid leaves a +15% bump in the CO₂
+    bands at 2.00–2.03 µm, which the PCA model removes.</figcaption>
+  </figure>
+  <p>The stellar model also sets the flux scale. Scaled to V, the Vega
+  spectrum assumes V−K = 0, but this star has V−Ks = 0.09. At 2.13–2.19 µm
+  the Vega model is <strong id="m-a0"></strong> of the 2MASS Ks flux and the
+  Kurucz A2 model <strong id="m-a2"></strong>, so the two zeropoints differ
+  by 0.12 mag at every wavelength. The ~7% low scale of the adopted model
+  is within the ~5% A-to-B slit-loss differences of these exposures, but
+  the choice belongs to the instrument scientist.</p>
+  <figure>
+    <div class="plot">
+      <div class="legend"><span><i class="sw" style="background:var(--s2)"></i>std2 fit</span><span><i class="sw" style="background:var(--s1)"></i>std1 fit</span><span><i class="sw" style="background:var(--ink)"></i>spliced (used for fluxing)</span></div>
+      <div id="c-zp"></div>
+    </div>
+    <figcaption><b>Zeropoints</b> (adopted variant). 18.3–18.55 mag over
+    1.95–2.45 µm, a throughput of 16–19% for telescope, instrument and
+    detector, falling to 17.9 mag at 2.50 µm at the red cut-off of the
+    filter.</figcaption>
+  </figure>
+</section>
+
+<section>
+  <h2>A 13% step at the splice</h2>
+  <p>In the overlap the two standards disagree by up to 0.135 mag. PypeIt
+  splices by giving the overlap to the redder spectrum, starting at its
+  blue edge, which is exactly where std1 is weakest. The spliced zeropoint
+  therefore drops by <strong>0.14 mag at 2.143 µm</strong>.</p>
+  <figure>
+    <div class="plot">
+      <div class="legend"><span><i class="sw" style="background:var(--accent)"></i>zeropoint std1 − std2</span><span><i class="sw" style="background:var(--neutral)"></i>raw dome flat, slit 337 / slit 469 (mag)</span></div>
+      <div id="c-ovl"></div>
+    </div>
+    <figcaption><b>The difference follows the dome flat.</b> PypeIt's pixel
+    flat is normalised per slit, so a slit's spectral throughput stays in the
+    counts. The raw flat of slit 337 is 0.906× that of slit 469 at 2.15 µm,
+    which accounts for all but ≤ 0.023 mag of the zeropoint difference.</figcaption>
+  </figure>
+  <p class="note"><strong>Consequence:</strong> one sensitivity function for
+  all slits carries ~10% slit-to-slit errors near the chip edges. Dividing
+  each slit by its raw flat relative to the chip mean would make std1 and
+  std2 agree to ~2% and remove the step. Not done here: it changes the
+  fluxing model.</p>
+</section>
+
+<section>
+  <h2>The standards' wavelength offset</h2>
+  <p>The standards use the OH solution of the science frames, taken 2.3 h
+  earlier. Their own OH lines sit 0.8–1.2 px lower in the two star slits
+  (Implementation #4), so their features appear ~2 Å to the blue. The IR fit
+  shifts and stretches the telluric model; converted to detector pixels, it
+  absorbs that offset at the blue end of each spectrum.</p>
+  <figure>
+    <div class="plot">
+      <div class="legend"><span><i class="sw" style="background:var(--s2)"></i>std2 telluric offset</span><span><i class="sw" style="background:var(--s1)"></i>std1 telluric offset</span><span><i class="bandkey"></i>from the OH lines: std2 +0.89 to +1.21 px, std1 +0.83 to +1.01 px</span></div>
+      <div id="c-off"></div>
+    </div>
+    <figcaption><b>Fitted telluric-model offset</b> (positive moves the bands
+    to the blue). It matches the OH measurement at the blue ends, then grows
+    to +2.5 px at the red ends (stretch 5–7×10⁻⁴), with the PCA and the grid
+    model alike. The ThAr and OH checks show no such trend along a slit, so
+    the cause is open. Residuals of ±3–5% remain in the CO₂ bands; they hardly
+    affect the zeropoint, but would matter for a telluric correction of
+    science spectra.</figcaption>
+  </figure>
+</section>
+
+<section>
+  <h2>F2/F1: how much more detector 2 records</h2>
+  <p>The two channels see the same dome lamp. For each science slit, the
+  lamp-on minus lamp-off flat is collapsed along the slit (median per
+  spatial pixel), turned into counts per Å with that detector's wavelength
+  solution, and averaged over slits with a fitted scale per slit. The ratio
+  is smoothed over 200 Å.</p>
+  <figure>
+    <div class="plot">
+      <div class="legend"><span><i class="sw" style="background:var(--det1)"></i>DET01 flat</span><span><i class="sw" style="background:var(--det2)"></i>DET02 flat</span></div>
+      <div id="c-flat"></div>
+    </div>
+    <figcaption><b>Mean dome-flat spectra</b> (counts per Å per spatial
+    pixel). The narrow dips common to both are absorption in the dome air;
+    they cancel in the ratio.</figcaption>
+  </figure>
+  <figure>
+    <div class="plot">
+      <div class="legend"><span><i class="sw" style="background:var(--neutral)"></i>flat, raw</span><span><i class="sw" style="background:var(--ink)"></i>flat, smoothed (used)</span><span><i class="sq"></i>flat, 100 Å bins</span><span><i class="dot" style="background:var(--accent)"></i>night sky, 100 Å bins</span><span><i class="ring"></i>sky, &lt; 3 slits per chip</span></div>
+      <div id="c-ratio"></div>
+      <div id="c-nslit"></div>
+    </div>
+    <figcaption><b>R = F2/F1 = 1.21, flat to ±3% over 1.95–2.50 µm</b>
+    (1.20–1.23 where ≥ 10 slits per chip overlap). The night sky, recorded by
+    both channels at the same moment through the telescope, gives the same
+    shape to 1.1% but a level 3% higher (1.25). The dome screen probably
+    lights the two halves of the field slightly differently. Above 2.50 µm,
+    with 1–3 slits at the red cut-off, R rises to 1.43, and the sky shows the
+    same rise. Lower panel: slits per detector.</figcaption>
+  </figure>
+  <p class="note"><strong>Answer:</strong> a constant scale is enough to ~3%
+  (1.21 from the flats, 1.25 from the sky). Applying the detector-1
+  sensitivity function to detector 2 unchanged makes detector-2 fluxes
+  21–25% too bright.</p>
+</section>
+
+<section>
+  <h2>Transfer and fluxing</h2>
+  <p><code>transfer_sensfunc.py</code> builds the detector-2 sensitivity
+  function in two modes: <code>direct</code> (the detector-1 zeropoint, times
+  an optional constant scale) and <code>flatratio</code> (plus 2.5 log₁₀ R).
+  Where R is undefined the zeropoint is left empty, and fluxing masks those
+  pixels instead of extrapolating. Each science spec1d is then split into
+  one file per detector, and the standard <code>pypeit_flux_calib</code> pairs
+  each file with its own sensitivity function.</p>
+  <figure>
+    <div class="plot">
+      <div class="legend"><span><i class="sw" style="background:var(--det1)"></i>direct (detector 1 as it is)</span><span><i class="sw" style="background:var(--det2)"></i>flatratio</span></div>
+      <div id="c-xfer"></div>
+    </div>
+    <figcaption><b>Detector-2 zeropoints in the two modes.</b> The flatratio
+    zeropoint is 0.18–0.26 mag higher over 1.95–2.50 µm (detector 2 records
+    more counts per unit flux), and up to 0.39 mag at the red end. Both carry
+    the splice step at 2.143 µm.</figcaption>
+  </figure>
+  <div class="tw"><table id="t-flux"></table></div>
+  <ul>
+    <li><code>pypeit_flux_calib</code> and <code>pypeit_coadd_1dspec</code>
+    accept the split single-detector files, so the in-script fallback
+    (option A) is not needed.</li>
+    <li><strong>The science pair has no object on detector 2</strong> (only
+    DET01 slit 469). The detector-2 test therefore uses the 12 sky-only
+    detections of std1 A. In both copies the flux ratio equals 1/R to
+    7×10⁻¹⁵, so the mechanics work; a real detector-2 source is still needed
+    to test the transfer against data.</li>
+    <li>The spliced sensitivity function ends at 2.537 µm, so the reddest
+    detector-1 slit (98, to 2.544 µm) loses 37 pixels.</li>
+  </ul>
+</section>
+
+<section>
+  <h2>PypeIt changes and problems found</h2>
+  <div class="issues">
+    <div class="issue">
+      <h3><span class="tag fixed">changed</span> MOIRCS telluric model</h3>
+      <p><code>subaru_moircs.py</code> set the TelFit_MaunaKea grid without
+      <code>teltype = grid</code>, so <code>pypeit_sensfunc</code> stopped for every
+      MOIRCS grism ("Could NOT read the number of PCA components"). The default
+      is now <code>TellPCA_3000_26000_R10000.fits</code> (6 MB, PCA), as for the
+      other near-IR spectrographs. With no overrides it reproduces the adopted
+      zeropoint exactly. This also applies to HK500, which had no working
+      standard processing.</p>
+    </div>
+    <div class="issue">
+      <h3><span class="tag open">open</span> Splicing spectra of different lengths</h3>
+      <p><code>SensFunc.unpack_std</code> takes <code>np.max(…, axis=1)</code> over
+      the stacked spectra and fails when they differ in length, as OneSpec
+      coadds do (2024 vs 2021 px). Worked around by coadding both sets onto
+      2031-px grids.</p>
+    </div>
+    <div class="issue">
+      <h3><span class="tag open">open</span> Splice rule</h3>
+      <p>The redder spectrum takes the whole overlap from its blue edge, the
+      worst place for a slit spectrum at the chip edge. Splicing at the middle
+      of the overlap, or weighting by S/N, would be gentler.</p>
+    </div>
+    <div class="issue">
+      <h3><span class="tag info">note</span> Telluric files are moved, not copied</h3>
+      <p>For development versions, a downloaded telluric file is moved from the
+      cache into <code>pypeit/data/telluric/atm_grids/</code>. Two sensfunc runs
+      started together after the 8.3 GB TelFit download raced on the move and
+      one failed. Run one job first.</p>
+    </div>
+  </div>
+</section>
+
+<section>
+  <h2>For the instrument scientist and the team</h2>
+  <ul>
+    <li><strong>Transfer default:</strong> flatratio and a constant scale agree
+    to ~3%; flat and sky differ by 3% in level.</li>
+    <li><strong>Slit throughput:</strong> ~10% differences between slits near
+    the chip edges, the cause of the splice step.</li>
+    <li><strong>Stellar model:</strong> the Vega spectrum scaled to V (−7% at Ks)
+    or the Kurucz A2 model (+3%, coarse).</li>
+    <li><strong>Telluric stretch:</strong> the standards' telluric offset grows
+    from ~1 px to +2.5 px across each spectrum.</li>
+    <li><strong>A detector-2 source:</strong> needed to test the transfer on
+    real data.</li>
+  </ul>
+</section>
+
+<section>
+  <h2>Files</h2>
+  <div class="files">
+    <div>
+      <div class="eyebrow">PypeIt</div>
+      <ul><li>pypeit/spectrographs/subaru_moircs.py</li></ul>
+      <div class="msg">MOIRCS: use the PCA telluric model for the IR sensfunc</div>
+    </div>
+    <div>
+      <div class="eyebrow">Dev suite · pypeitdev/subaru_moircs_vbk</div>
+      <ul>
+        <li>transfer_sensfunc.py</li>
+        <li>sky_ratio_check.py · sensfunc_check.py · flux_check.py</li>
+        <li>flux/inspect_std.py</li>
+        <li>flux/*.sens · flux/*.coadd1d · flux/vbk_chip_transfer.flux</li>
+        <li>make_report_impl7.py · report_impl7/template.html</li>
+      </ul>
+      <div class="msg">MOIRCS VB_K: standards, spliced sensfunc and chip-transfer script</div>
+    </div>
+  </div>
+</section>
+
+<footer>Generated by JXP and Claude from <code>report_impl7/data.json</code>
+(<code>make_report_impl7.py</code>, after the sensfunc, transfer and fluxing
+runs in <code>flux/</code>).</footer>
+</main>
+
+<script id="data" type="application/json">__DATA__</script>
+<script>
+(function () {
+  const D = JSON.parse(document.getElementById('data').textContent);
+  const NS = 'http://www.w3.org/2000/svg';
+
+  function mk(tag, attrs, parent) {
+    const e = document.createElementNS(NS, tag);
+    for (const k in attrs) {
+      if (k === 'text') e.textContent = attrs[k];
+      else e.setAttribute(k, attrs[k]);
+    }
+    if (parent) parent.appendChild(e);
+    return e;
+  }
+  function lin(d0, d1, r0, r1) {
+    const f = v => r0 + (v - d0) / (d1 - d0) * (r1 - r0);
+    f.inv = p => d0 + (p - r0) / (r1 - r0) * (d1 - d0);
+    return f;
+  }
+  function frame(id, height, m) {
+    const host = document.getElementById(id);
+    host.innerHTML = '';
+    const W = Math.max(280, host.clientWidth);
+    const svg = mk('svg', {viewBox: `0 0 ${W} ${height}`, height: height,
+      role: 'img'}, host);
+    const plot = host.closest('.plot');
+    let tip = plot.querySelector('.tip');
+    if (!tip) { tip = document.createElement('div'); tip.className = 'tip';
+      tip.hidden = true; plot.appendChild(tip); }
+    return {host, svg, W, H: height, x0: m.l, x1: W - m.r, y0: m.t,
+      y1: height - m.b, tip, plot};
+  }
+  function showTip(f, html, px, py) {
+    f.tip.innerHTML = html; f.tip.hidden = false;
+    const hb = f.host.getBoundingClientRect(), pb = f.plot.getBoundingClientRect();
+    const sx = hb.width / f.W;
+    let left = hb.left - pb.left + px * sx + 12;
+    const top = hb.top - pb.top + py * sx - 10;
+    const tw = f.tip.offsetWidth;
+    if (left + tw > pb.width - 4) left = hb.left - pb.left + px * sx - tw - 12;
+    f.tip.style.left = Math.max(4, left) + 'px';
+    f.tip.style.top = Math.max(4, top) + 'px';
+  }
+  function gridY(f, y, ticks, fmtf, label) {
+    ticks.forEach(t => {
+      mk('line', {x1: f.x0, x2: f.x1, y1: y(t), y2: y(t), class: 'gl'}, f.svg);
+      mk('text', {x: f.x0 - 6, y: y(t) + 3.5, 'text-anchor': 'end',
+        class: 'tick', text: fmtf(t)}, f.svg);
+    });
+    if (label) mk('text', {x: 12, y: (f.y0 + f.y1) / 2, class: 'axl',
+      'text-anchor': 'middle',
+      transform: `rotate(-90 12 ${(f.y0 + f.y1) / 2})`, text: label}, f.svg);
+  }
+  function axisX(f, x, ticks, fmtf, label) {
+    mk('line', {x1: f.x0, x2: f.x1, y1: f.y1, y2: f.y1, class: 'ax'}, f.svg);
+    let last = -1e9;
+    ticks.forEach(t => {
+      const px = x(t);
+      mk('line', {x1: px, x2: px, y1: f.y1, y2: f.y1 + 4, class: 'ax'}, f.svg);
+      if (px - last >= 38) {
+        mk('text', {x: px, y: f.y1 + 17, 'text-anchor': 'middle',
+          class: 'tick', text: fmtf(t)}, f.svg);
+        last = px;
+      }
+    });
+    if (label) mk('text', {x: (f.x0 + f.x1) / 2, y: f.H - 4,
+      'text-anchor': 'middle', class: 'axl', text: label}, f.svg);
+  }
+  const range = (a, b, s) => { const r = []; for (let v = a; v <= b + 1e-9; v += s) r.push(+v.toFixed(6)); return r; };
+  const um = v => (v / 10000).toFixed(2);
+  const sgn = (v, n) => (v >= 0 ? '+' : '−') + Math.abs(v).toFixed(n);
+
+  // Polyline through finite points; breaks the line at gaps (null)
+  function path(f, x, y, xs, ys, style, clip) {
+    let d = '', pen = false;
+    for (let i = 0; i < xs.length; i++) {
+      const v = ys[i];
+      if (v == null || xs[i] == null || (clip && (v < clip[0] || v > clip[1]))) { pen = false; continue; }
+      d += (pen ? 'L' : 'M') + x(xs[i]).toFixed(1) + ',' + y(v).toFixed(1);
+      pen = true;
+    }
+    return mk('path', {d, style: 'fill:none;' + style}, f.svg);
+  }
+  // Shaded x-intervals where maskf(i) is true
+  function bands(f, x, xs, maskf) {
+    let a = null;
+    for (let i = 0; i <= xs.length; i++) {
+      const on = i < xs.length && maskf(i);
+      if (on && a === null) a = xs[i];
+      if (!on && a !== null) {
+        const b = xs[i - 1];
+        mk('rect', {x: x(a), y: f.y0, width: Math.max(1, x(b) - x(a)),
+          height: f.y1 - f.y0, style: 'fill:var(--band)'}, f.svg);
+        a = null;
+      }
+    }
+  }
+  function nearest(xs, v) {
+    let lo = 0, hi = xs.length - 1;
+    if (v <= xs[lo]) return lo;
+    if (v >= xs[hi]) return hi;
+    while (hi - lo > 1) { const m = (lo + hi) >> 1; if (xs[m] <= v) lo = m; else hi = m; }
+    return v - xs[lo] < xs[hi] - v ? lo : hi;
+  }
+  // Crosshair read-out: series = [{name, xs, ys, fmt}]
+  function crosshair(f, x, series) {
+    const vl = mk('line', {x1: 0, x2: 0, y1: f.y0, y2: f.y1,
+      style: 'stroke:var(--muted);stroke-width:1;stroke-dasharray:3 3', visibility: 'hidden'}, f.svg);
+    const hit = mk('rect', {x: f.x0, y: f.y0, width: f.x1 - f.x0,
+      height: f.y1 - f.y0, fill: 'transparent'}, f.svg);
+    hit.addEventListener('mousemove', e => {
+      const r = f.host.getBoundingClientRect();
+      const px = (e.clientX - r.left) * f.W / r.width;
+      const py = (e.clientY - r.top) * f.W / r.width;
+      const w = x.inv(px);
+      const rows = [`${um(w)} µm`];
+      series.forEach(s => {
+        if (!s.xs.length || w < s.xs[0] - 20 || w > s.xs[s.xs.length - 1] + 20) return;
+        const v = s.ys[nearest(s.xs, w)];
+        if (v != null) rows.push(`${s.name} ${s.fmt(v)}`);
+      });
+      vl.setAttribute('x1', px); vl.setAttribute('x2', px);
+      vl.setAttribute('visibility', 'visible');
+      showTip(f, rows.join('<br>'), px, py);
+    });
+    hit.addEventListener('mouseleave', () => {
+      vl.setAttribute('visibility', 'hidden'); f.tip.hidden = true;
+    });
+  }
+  const WX = [18900, 25500];
+  function waveAxis(f, label) {
+    const x = lin(WX[0], WX[1], f.x0, f.x1);
+    axisX(f, x, range(19000, 25400, 500), um, label === false ? null : 'wavelength (µm)');
+    return x;
+  }
+  const M = {l: 58, r: 14, t: 10, b: 38};
+  const V = D.variants, A = V.A0_pca;
+
+  // ---------- facts ----------
+  function facts() {
+    const items = [
+      ['18.3–18.55', 'zeropoint (mag) over 1.95–2.45 µm; throughput 16–19%'],
+      ['0.14 mag', 'step in the spliced zeropoint at 2.143 µm (slit throughput)'],
+      ['1.21 ± 3%', 'F2/F1 from the dome flats, 1.95–2.50 µm'],
+      ['+3%', 'night-sky ratio over the flat ratio (1.25 vs 1.21)'],
+    ];
+    document.getElementById('facts').innerHTML = items.map(
+      ([v, l]) => `<div class="fact"><div class="v">${v}</div><div class="l">${l}</div></div>`).join('');
+    document.getElementById('m-a0').textContent = D.models.A0.ratio.toFixed(3) + '×';
+    document.getElementById('m-a2').textContent = D.models.A2.ratio.toFixed(3) + '×';
+  }
+
+  // ---------- coadds ----------
+  function coadd() {
+    const f = frame('c-coadd', 260, M);
+    const x = waveAxis(f);
+    const y = lin(0, 160000, f.y1, f.y0);
+    gridY(f, y, range(0, 160000, 40000), v => (v / 1000).toFixed(0) + 'k', 'counts / px');
+    mk('rect', {x: x(21432), y: f.y0, width: x(22933) - x(21432), height: f.y1 - f.y0,
+      style: 'fill:var(--band)'}, f.svg);
+    const c = D.coadds;
+    path(f, x, y, c.std2.w, c.std2.c, 'stroke:var(--s2);stroke-width:1');
+    path(f, x, y, c.std1.w, c.std1.c, 'stroke:var(--s1);stroke-width:1');
+    crosshair(f, x, [
+      {name: 'std2', xs: c.std2.w, ys: c.std2.c, fmt: v => v.toFixed(0)},
+      {name: 'std1', xs: c.std1.w, ys: c.std1.c, fmt: v => v.toFixed(0)}]);
+  }
+
+  // ---------- variants ----------
+  const ORDER = ['A0_pca', 'A2_pca', 'A0', 'A2'];
+  function table() {
+    const pct = v => (100 * v).toFixed(1) + '%';
+    document.getElementById('t-var').innerHTML =
+      '<thead><tr><th>telluric model</th><th>stellar model</th><th>χ² std2 / std1</th><th>scatter, clear sky</th><th>scatter, deep bands</th><th>Br-γ mean</th></tr></thead><tbody>' +
+      ORDER.map(k => {
+        const v = V[k], a = v.std[0], b = v.std[1];
+        return `<tr class="${k === 'A0_pca' ? 'chosen' : ''}"><td>${v.tel}${k === 'A0_pca' ? ' <span class="chip ok">adopted</span>' : ''}</td><td>${v.star}</td><td class="mono">${a.chi2} / ${b.chi2}</td><td class="mono">${pct(a.clear)} / ${pct(b.clear)}</td><td class="mono">${pct(a.deep)} / ${pct(b.deep)}</td><td class="mono">${a.brg.toFixed(3)} / ${b.brg.toFixed(3)}</td></tr>`;
+      }).join('') + '</tbody>';
+    const sel = document.getElementById('varsel');
+    sel.innerHTML = ORDER.map(k => `<option value="${k}">${V[k].tel} · ${V[k].star}</option>`).join('');
+    sel.addEventListener('change', () => resid(sel.value));
+  }
+  function resid(key) {
+    const v = V[key];
+    const f = frame('c-resid', 280, M);
+    const x = waveAxis(f);
+    const y = lin(0.8, 1.2, f.y1, f.y0);
+    v.std.forEach(s => bands(f, x, s.rw, i => s.tell[i] != null && s.tell[i] < 0.8));
+    gridY(f, y, range(0.8, 1.2, 0.1), t => t.toFixed(1), 'fluxed / model');
+    mk('line', {x1: f.x0, x2: f.x1, y1: y(1), y2: y(1), style: 'stroke:var(--ink2);stroke-width:1'}, f.svg);
+    const col = ['var(--s2)', 'var(--s1)'];
+    v.std.forEach((s, k) => path(f, x, y, s.rw, s.r, `stroke:${col[k]};stroke-width:0.9`, [0.8, 1.2]));
+    crosshair(f, x, v.std.map((s, k) => ({name: k ? 'std1' : 'std2', xs: s.rw, ys: s.r, fmt: t => t.toFixed(3)})));
+  }
+  function zp() {
+    const f = frame('c-zp', 240, M);
+    const x = waveAxis(f);
+    const y = lin(17.0, 18.8, f.y1, f.y0);
+    gridY(f, y, range(17.0, 18.8, 0.3), t => t.toFixed(1), 'zeropoint (mag)');
+    const col = ['var(--s2)', 'var(--s1)'];
+    A.std.forEach((s, k) => path(f, x, y, s.zw, s.zp, `stroke:${col[k]};stroke-width:3;opacity:0.55`));
+    path(f, x, y, A.splice.w, A.splice.zp, 'stroke:var(--ink);stroke-width:1.2;stroke-dasharray:5 3');
+    crosshair(f, x, [{name: 'spliced', xs: A.splice.w, ys: A.splice.zp, fmt: t => t.toFixed(3)},
+      {name: 'std2', xs: A.std[0].zw, ys: A.std[0].zp, fmt: t => t.toFixed(3)},
+      {name: 'std1', xs: A.std[1].zw, ys: A.std[1].zp, fmt: t => t.toFixed(3)}]);
+  }
+
+  // ---------- overlap ----------
+  function ovl() {
+    const o = D.overlap;
+    const f = frame('c-ovl', 240, M);
+    const x = lin(21400, 22950, f.x0, f.x1);
+    axisX(f, x, range(21500, 22900, 100), um, 'wavelength (µm)');
+    const y = lin(-0.16, 0.02, f.y1, f.y0);
+    gridY(f, y, range(-0.16, 0.02, 0.04), t => sgn(t, 2), 'mag');
+    mk('line', {x1: f.x0, x2: f.x1, y1: y(0), y2: y(0), style: 'stroke:var(--ink2);stroke-width:1'}, f.svg);
+    path(f, x, y, o.w, o.flat, 'stroke:var(--neutral);stroke-width:2');
+    path(f, x, y, o.w, o.dzp, 'stroke:var(--accent);stroke-width:2');
+    crosshair(f, x, [{name: 'zp std1−std2', xs: o.w, ys: o.dzp, fmt: t => sgn(t, 3)},
+      {name: 'flat 337/469', xs: o.w, ys: o.flat, fmt: t => sgn(t, 3)}]);
+  }
+
+  // ---------- telluric offsets ----------
+  function off() {
+    const f = frame('c-off', 240, M);
+    const x = waveAxis(f);
+    const y = lin(0, 3, f.y1, f.y0);
+    // Expected offsets from the OH lines, over each spectrum's range
+    const exp = [[0.89, 1.21], [0.83, 1.01]];
+    const col = ['var(--s2)', 'var(--s1)'];
+    D.offsets.forEach((s, k) => {
+      const a = s.w[0], b = s.w[s.w.length - 1];
+      mk('rect', {x: x(a), y: y(exp[k][1]), width: x(b) - x(a),
+        height: y(exp[k][0]) - y(exp[k][1]), style: 'fill:var(--band)'}, f.svg);
+    });
+    gridY(f, y, range(0, 3, 0.5), t => t.toFixed(1), 'offset (px)');
+    D.offsets.forEach((s, k) => path(f, x, y, s.w, s.px, `stroke:${col[k]};stroke-width:2`));
+    crosshair(f, x, D.offsets.map((s, k) => ({name: k ? 'std1' : 'std2', xs: s.w, ys: s.px, fmt: t => sgn(t, 2) + ' px'})));
+  }
+
+  // ---------- flats and ratio ----------
+  const R = D.ratios;
+  function flat() {
+    const f = frame('c-flat', 230, M);
+    const x = waveAxis(f);
+    const y = lin(0, 22000, f.y1, f.y0);
+    gridY(f, y, range(0, 20000, 5000), t => (t / 1000).toFixed(0) + 'k', 'counts / Å / px');
+    path(f, x, y, R.w, R.f1, 'stroke:var(--det1);stroke-width:1.3');
+    path(f, x, y, R.w, R.f2, 'stroke:var(--det2);stroke-width:1.3');
+    crosshair(f, x, [{name: 'DET01', xs: R.w, ys: R.f1, fmt: t => t.toFixed(0)},
+      {name: 'DET02', xs: R.w, ys: R.f2, fmt: t => t.toFixed(0)}]);
+  }
+  function ratio() {
+    const f = frame('c-ratio', 270, {l: 58, r: 14, t: 10, b: 22});
+    const x = waveAxis(f, false);
+    const y = lin(1.05, 1.45, f.y1, f.y0);
+    gridY(f, y, range(1.1, 1.45, 0.05), t => t.toFixed(2), 'DET02 / DET01');
+    path(f, x, y, R.w, R.rraw, 'stroke:var(--neutral);stroke-width:0.7', [1.05, 1.45]);
+    path(f, x, y, R.w, R.r, 'stroke:var(--ink);stroke-width:1.8', [1.05, 1.45]);
+    const B = R.bins;
+    B.w.forEach((w, i) => {
+      if (B.flat[i] != null && B.flat[i] >= 1.05 && B.flat[i] <= 1.45)
+        mk('rect', {x: x(w) - 3.5, y: y(B.flat[i]) - 3.5, width: 7, height: 7,
+          style: 'fill:var(--surface);stroke:var(--ink2);stroke-width:1.3'}, f.svg);
+      if (B.sky[i] != null && B.sky[i] >= 1.05 && B.sky[i] <= 1.45) {
+        const few = B.nmin[i] < 3;
+        mk('circle', {cx: x(w), cy: y(B.sky[i]), r: 4,
+          style: few ? 'fill:var(--surface);stroke:var(--neutral);stroke-width:1.5'
+                     : 'fill:var(--accent);stroke:var(--surface);stroke-width:1'}, f.svg);
+      }
+    });
+    crosshair(f, x, [{name: 'R (smoothed)', xs: R.w, ys: R.r, fmt: t => t.toFixed(3)},
+      {name: 'flat bin', xs: B.w, ys: B.flat, fmt: t => t.toFixed(3)},
+      {name: 'sky bin', xs: B.w, ys: B.sky, fmt: t => t.toFixed(3)}]);
+    // Slit counts
+    const g = frame('c-nslit', 110, {l: 58, r: 14, t: 6, b: 38});
+    const xg = waveAxis(g);
+    const yg = lin(0, 14, g.y1, g.y0);
+    gridY(g, yg, [0, 7, 14], t => t.toFixed(0), 'slits');
+    path(g, xg, yg, R.w, R.n1, 'stroke:var(--det1);stroke-width:1.5');
+    path(g, xg, yg, R.w, R.n2, 'stroke:var(--det2);stroke-width:1.5');
+    crosshair(g, xg, [{name: 'DET01', xs: R.w, ys: R.n1, fmt: t => t.toFixed(0)},
+      {name: 'DET02', xs: R.w, ys: R.n2, fmt: t => t.toFixed(0)}]);
+  }
+
+  // ---------- transfer ----------
+  const T = D.transfer;
+  function xfer() {
+    const f = frame('c-xfer', 240, M);
+    const x = waveAxis(f);
+    const y = lin(17.0, 19.0, f.y1, f.y0);
+    gridY(f, y, range(17.0, 19.0, 0.5), t => t.toFixed(1), 'zeropoint (mag)');
+    path(f, x, y, T.w, T.direct, 'stroke:var(--det1);stroke-width:2');
+    path(f, x, y, T.w, T.flatratio, 'stroke:var(--det2);stroke-width:2');
+    crosshair(f, x, [{name: 'direct', xs: T.w, ys: T.direct, fmt: t => t.toFixed(3)},
+      {name: 'flatratio', xs: T.w, ys: T.flatratio, fmt: t => t.toFixed(3)}]);
+  }
+  function fluxTable() {
+    const what = n => n.includes('DET02_direct') ? 'DET02 sky detections · direct'
+      : n.includes('DET02_flatratio') ? 'DET02 sky detections · flatratio'
+      : n.includes('HIP59174') ? 'std1 A, DET01 (star + 7 faint)' : 'science, DET01 slit 469';
+    document.getElementById('t-flux').innerHTML =
+      '<thead><tr><th>split spec1d file</th><th>content</th><th>objects</th><th>pixels masked by fluxing</th></tr></thead><tbody>' +
+      T.files.map(r => `<tr><td class="mono">${r.name.split('_MOIRCS')[0]}…${r.name.slice(r.name.indexOf('DET'))}</td><td>${what(r.name)}</td><td>${r.nobj}</td><td class="mono">${r.masked}</td></tr>`).join('') +
+      '</tbody>';
+  }
+
+  function drawAll() {
+    coadd(); resid(document.getElementById('varsel').value || 'A0_pca');
+    zp(); ovl(); off(); flat(); ratio(); xfer();
+  }
+  facts(); table(); fluxTable(); drawAll();
+  let rt;
+  window.addEventListener('resize', () => { clearTimeout(rt); rt = setTimeout(drawAll, 150); });
+})();
+</script>

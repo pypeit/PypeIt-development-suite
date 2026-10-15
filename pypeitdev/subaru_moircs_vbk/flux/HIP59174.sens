@@ -1,0 +1,8 @@
+# HIP59174 = HD 105388 (SIMBAD 2026-10-03): A2IV, V = 7.45, Ks = 7.359.
+# star_mag is the V (Vega) magnitude (sensfunc.py passes it as V_mag).
+# A0: TSpecTool Vega spectrum (better line and telluric residuals than
+# the Kurucz A2 model; ~7% low against 2MASS Ks, see the VB_K log).
+# Telluric model: the MOIRCS default (PCA).
+[sensfunc]
+  star_type = A0
+  star_mag = 7.45

@@ -1,0 +1,18 @@
+# Paths are relative to the directory of this file; run the
+# command from there.
+# VB_K science A-B pair (run5), 2D coadd test: header offsets, with the
+# DITHOFF cards of copies of the run5 spec2d files rewritten to the fixed
+# sign (A -1.55, B +1.55; spec2d files keep the PypeIt-file value)
+[rdx]
+  spectrograph = subaru_moircs
+
+[coadd2d]
+  offsets = header
+  weights = uniform
+
+spec2d read
+  path spec2d_newsign
+  filename
+  spec2d_MCSA00352031-CC0958_PA200_1_MOIRCS_20260529T060511.128.fits
+  spec2d_MCSA00352033-CC0958_PA200_1_MOIRCS_20260529T060843.130.fits
+spec2d end

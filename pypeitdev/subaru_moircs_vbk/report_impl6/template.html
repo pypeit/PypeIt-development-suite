@@ -1,0 +1,845 @@
+<title>MOIRCS VB_K Wavelength Checks</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans:ital,wght@0,400;0,500;0,600;1,400&family=Spectral:wght@500;600&display=swap">
+<style>
+/* Layout: one reading column (~70ch) with figures running the full
+   980px measure; facts first, then the two checks, then what they mean.
+   Same tokens and chart helpers as the Implementation #5 report. */
+:root {
+  --bg: #f6f7f8;
+  --surface: #ffffff;
+  --ink: #15191e;
+  --ink2: #47505c;
+  --muted: #737b87;
+  --rule: #dfe3e8;
+  --grid: #eceff2;
+  --accent: #4a3aa7;      /* plain-mean combine / model with the spatial term */
+  --neutral: #8d949e;     /* OH lines / single frames / linear model */
+  --det1: #2a78d6;
+  --det2: #eb6834;
+  --bad: #e34948;
+  --good: #0a8a0a;
+  --good-bg: #e6f4e6;
+  --bad-bg: #fbe9e9;
+  --font-display: "Spectral", Georgia, "Times New Roman", serif;
+  --font-body: "IBM Plex Sans", "Helvetica Neue", Arial, sans-serif;
+  --font-mono: "IBM Plex Mono", ui-monospace, "SFMono-Regular", Menlo, monospace;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --bg: #121417; --surface: #1a1d21; --ink: #eef0f3; --ink2: #b9c0ca;
+    --muted: #8d95a0; --rule: #2d3239; --grid: #23272d;
+    --accent: #9085e9; --neutral: #7f8690; --det1: #3987e5;
+    --det2: #d95926; --bad: #e66767; --good: #4cc35a;
+    --good-bg: #17301b; --bad-bg: #3a1d1f;
+    color-scheme: dark;
+  }
+}
+:root[data-theme="dark"] {
+  --bg: #121417; --surface: #1a1d21; --ink: #eef0f3; --ink2: #b9c0ca;
+  --muted: #8d95a0; --rule: #2d3239; --grid: #23272d;
+  --accent: #9085e9; --neutral: #7f8690; --det1: #3987e5;
+  --det2: #d95926; --bad: #e66767; --good: #4cc35a;
+  --good-bg: #17301b; --bad-bg: #3a1d1f;
+  color-scheme: dark;
+}
+* { box-sizing: border-box; }
+body {
+  background: var(--bg); color: var(--ink);
+  font: 15px/1.6 var(--font-body);
+  padding-inline: 20px; padding-block: 40px 72px;
+}
+main { max-width: 980px; margin: 0 auto; display: grid; gap: 56px; }
+section { display: grid; gap: 18px; min-width: 0; }
+h1, h2, h3 { font-family: var(--font-display); text-wrap: balance;
+  margin: 0; line-height: 1.2; font-weight: 600; }
+h1 { font-size: clamp(30px, 5vw, 42px); letter-spacing: -0.01em; }
+h2 { font-size: 26px; padding-top: 22px; border-top: 1px solid var(--rule); }
+h3 { font-size: 18px; font-weight: 500; }
+p, ul { margin: 0; max-width: 70ch; color: var(--ink2); }
+p strong, li strong { color: var(--ink); font-weight: 600; }
+ul { padding-left: 1.2em; display: grid; gap: 6px; }
+code, .mono { font-family: var(--font-mono); font-size: 0.88em; }
+code { background: var(--grid); padding: 1px 5px; border-radius: 3px;
+  color: var(--ink); overflow-wrap: anywhere; }
+a { color: var(--accent); }
+.eyebrow { font: 500 12px/1.4 var(--font-mono); letter-spacing: 0.08em;
+  text-transform: uppercase; color: var(--muted); }
+header { display: grid; gap: 14px; }
+.lede { font-size: 17px; color: var(--ink2); }
+
+/* Key results */
+.facts { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 1px; background: var(--rule); border: 1px solid var(--rule);
+  border-radius: 6px; overflow: hidden; }
+.fact { background: var(--surface); padding: 16px 18px; display: grid;
+  gap: 4px; align-content: start; }
+.fact .v { font: 500 26px/1.1 var(--font-mono); color: var(--ink);
+  font-variant-numeric: tabular-nums; }
+.fact .l { font-size: 13px; color: var(--ink2); line-height: 1.4; }
+@media (max-width: 760px) {
+  .facts { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+}
+
+/* Figures */
+figure { margin: 0; display: grid; gap: 10px; min-width: 0; }
+.plot { position: relative; background: var(--surface);
+  border: 1px solid var(--rule); border-radius: 6px; padding: 12px 8px 6px;
+  min-width: 0; }
+.plot svg { display: block; width: 100%; overflow: visible; }
+figcaption { font-size: 13.5px; color: var(--ink2); max-width: 78ch; }
+figcaption b { color: var(--ink); font-weight: 600; }
+.legend { display: flex; flex-wrap: wrap; gap: 6px 18px; padding: 0 8px 6px;
+  font-size: 12.5px; color: var(--ink2); }
+.legend span { display: inline-flex; align-items: center; gap: 7px; }
+.sw { width: 18px; height: 3px; border-radius: 2px; display: inline-block; }
+.dot { width: 9px; height: 9px; border-radius: 50%; display: inline-block; }
+.ring { width: 9px; height: 9px; border-radius: 50%; display: inline-block;
+  border: 2px solid var(--neutral); }
+.tip { position: absolute; pointer-events: none; background: var(--ink);
+  color: var(--bg); font: 12px/1.45 var(--font-mono); padding: 6px 9px;
+  border-radius: 4px; white-space: nowrap; z-index: 2;
+  font-variant-numeric: tabular-nums; }
+.pair { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 16px; }
+@media (max-width: 760px) { .pair { grid-template-columns: 1fr; } }
+svg text { font-family: var(--font-body); }
+svg .tick { font: 11px var(--font-mono); fill: var(--muted); }
+svg .axl { font-size: 12px; fill: var(--ink2); }
+svg .lab { font-size: 11.5px; fill: var(--ink2); }
+svg .gl { stroke: var(--grid); stroke-width: 1; }
+svg .ax { stroke: var(--rule); stroke-width: 1; }
+
+/* Tables */
+.tw { overflow-x: auto; border: 1px solid var(--rule); border-radius: 6px;
+  background: var(--surface); }
+table { border-collapse: collapse; width: 100%; font-size: 13.5px;
+  font-variant-numeric: tabular-nums; }
+th, td { padding: 8px 12px; text-align: right; border-bottom: 1px solid var(--grid);
+  white-space: nowrap; }
+th { font-weight: 500; color: var(--muted); font-size: 12px;
+  letter-spacing: 0.03em; background: var(--bg); }
+td:first-child, th:first-child { text-align: left; }
+tr:last-child td { border-bottom: 0; }
+td.mono { font-family: var(--font-mono); font-size: 12.5px; }
+.chip { display: inline-flex; align-items: center; gap: 5px;
+  font: 500 12px/1 var(--font-mono); padding: 4px 7px; border-radius: 4px; }
+.chip.ok { color: var(--good); background: var(--good-bg); }
+.chip.no { color: var(--bad); background: var(--bad-bg); }
+.chosen td { background: color-mix(in srgb, var(--accent) 7%, transparent); }
+details { border: 1px solid var(--rule); border-radius: 6px;
+  background: var(--surface); }
+summary { cursor: pointer; padding: 10px 14px; font-weight: 500; }
+summary:focus-visible, a:focus-visible { outline: 2px solid var(--accent);
+  outline-offset: 2px; }
+details .tw { border: 0; border-top: 1px solid var(--rule); border-radius: 0; }
+.files { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 16px; }
+@media (max-width: 760px) { .files { grid-template-columns: 1fr; } }
+.files > div { background: var(--surface); border: 1px solid var(--rule);
+  border-radius: 6px; padding: 14px 16px; display: grid; gap: 8px;
+  align-content: start; min-width: 0; }
+.files ul { font: 12.5px/1.6 var(--font-mono); color: var(--ink); }
+.files .msg { font: 12.5px/1.5 var(--font-mono); color: var(--ink2); }
+footer { font-size: 13px; color: var(--muted); }
+
+/* Implementation #6 additions */
+.ctl { display: flex; flex-wrap: wrap; align-items: center; gap: 8px 12px;
+  padding: 0 8px 8px; font-size: 13px; color: var(--ink2); }
+.ctl label { font-weight: 500; }
+select { font: 13px var(--font-mono); color: var(--ink); background: var(--bg);
+  border: 1px solid var(--rule); border-radius: 4px; padding: 4px 8px;
+  max-width: 100%; }
+select:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+.tri { width: 0; height: 0; display: inline-block;
+  border-left: 5px solid transparent; border-right: 5px solid transparent;
+  border-top: 8px solid var(--det1); }
+.tri.open { border-top-color: var(--muted); }
+.sq { width: 9px; height: 9px; display: inline-block;
+  border: 1.5px solid var(--ink2); }
+.note { border-left: 3px solid var(--accent); padding: 4px 0 4px 14px;
+  max-width: 72ch; color: var(--ink2); }
+.note strong { color: var(--ink); }
+</style>
+
+<main>
+<header>
+  <div class="eyebrow">Subaru / MOIRCS · VB_K grism · mask MO_CC0958PA200_1 · PypeIt</div>
+  <h1>VB_K wavelength checks</h1>
+  <p class="lede">The OH sky-line wavelength solutions of run5 were tested
+  against two references that do not use the OH lines: the Ar lines in the
+  evening ThAr arcs, and the slit positions in the mask image. Both agree
+  with the solutions. The arcs show a shift of about one pixel plus a small
+  rotation between the arc and science pointings. Once that is removed,
+  every slit matches to about 0.1 px.</p>
+  <p class="eyebrow">Implementation #6 · 2026-10-03 · baseline run5 (reidentify) · no PypeIt change</p>
+</header>
+
+<div class="facts" id="facts"></div>
+
+<section>
+  <h2>Ar lines in the ThAr arcs</h2>
+  <p>PypeIt has no K-band thorium line list, and the ThAr frames are left
+  untyped in the PypeIt file, so the pipeline makes nothing from them. The
+  check script builds the arc image from the four frames (04:52–04:55 UT)
+  and uses the run5 slit edges, tilts and OH solution. It collapses the
+  central 60% of each slit along the tilts and predicts where the 25
+  <code>Ar_IR_MOSFIRE</code> lines between 1.8 and 2.5 µm should fall. It
+  then measures each line by its first moment. The ThAr lamp is bright only
+  in parts of the K band, so a slit typically shows 4–11 clean Ar lines.</p>
+  <figure>
+    <div class="plot">
+      <div class="ctl"><label for="slitsel">Slit</label><select id="slitsel"></select>
+        <span><i class="tri" id="tri-m"></i> measured Ar line</span>
+        <span><i class="tri open"></i> not used (weak, blended or off the slit)</span></div>
+      <div id="c-spec"></div>
+    </div>
+    <figcaption><b>ThAr spectrum of one slit</b> after removing the lamp
+    continuum, on the slit's OH wavelength scale. Triangles mark where the
+    OH solution puts the Ar lines. Pick another slit to compare; hover a
+    triangle for its offset.</figcaption>
+  </figure>
+  <div class="pair">
+    <figure>
+      <div class="plot">
+        <div class="legend"><span><i class="sw" style="background:var(--det1)"></i>Ar (ThAr arc)</span><span><i class="sw" style="background:var(--neutral)"></i>OH (science sky)</span></div>
+        <div id="c-prof1"></div>
+      </div>
+      <figcaption id="cap-prof1"></figcaption>
+    </figure>
+    <figure>
+      <div class="plot">
+        <div class="legend"><span><i class="sw" style="background:var(--det2)"></i>Ar (ThAr arc)</span><span><i class="sw" style="background:var(--neutral)"></i>OH (science sky)</span></div>
+        <div id="c-prof2"></div>
+      </div>
+      <figcaption id="cap-prof2"></figcaption>
+    </figure>
+  </div>
+  <p>Both kinds of line are flat-topped: they are images of the ~6 px slit,
+  not Gaussians. PypeIt's line finder fits a Gaussian to the top, which
+  splits a bright ThAr line into two peaks, so the check uses the first
+  moment within ±7 px instead. As a control, the OH lines of each fit are
+  measured the same way in the science sky. They give
+  <strong id="ohctl"></strong>, so the method adds no offset of its own.</p>
+</section>
+
+<section>
+  <h2>Combining the ThAr frames</h2>
+  <p>The lamp does not light the whole mask in any one frame. The lit
+  region moves across the mask from the first frame to the last. A slit is
+  therefore bright in one or two frames and dark in the others.</p>
+  <figure>
+    <div class="plot"><div id="c-illum"></div></div>
+    <figcaption><b>Ar line flux per frame</b>, for each slit relative to its
+    brightest frame. Frames f0–f3 are MCSA00351935, …937, …939 and …941
+    (chip 1) with their chip-2 companions.</figcaption>
+  </figure>
+  <p id="clip-text"></p>
+  <div class="pair">
+    <figure>
+      <div class="plot">
+        <div class="legend"><span><i class="sw" style="background:var(--bad)"></i>sigma-clipped mean (PypeIt default)</span><span><i class="sw" style="background:var(--accent)"></i>plain mean</span><span><i class="sw" style="background:var(--neutral)"></i>frames f1, f2</span></div>
+        <div id="c-clip1"></div>
+      </div>
+      <figcaption id="cap-clip1"></figcaption>
+    </figure>
+    <figure>
+      <div class="plot">
+        <div class="legend"><span><i class="sw" style="background:var(--bad)"></i>sigma-clipped mean</span><span><i class="sw" style="background:var(--accent)"></i>plain mean</span><span><i class="sw" style="background:var(--neutral)"></i>frames f1, f2</span></div>
+        <div id="c-clip2"></div>
+      </div>
+      <figcaption id="cap-clip2"></figcaption>
+    </figure>
+  </div>
+  <p class="note"><strong>For the docs:</strong> a user who types these ThAr
+  frames as <code>arc</code> by hand should also set
+  <code>[calibrations][arcframe][process] clip = False</code>. MOIRCS's
+  defaults are not changed, because the arcs are untyped by default and the
+  OH (science) frames are also typed <code>arc</code>.</p>
+</section>
+
+<section>
+  <h2>Offsets against the OH solution</h2>
+  <p>Every science slit on both chips has at least four measured Ar lines.
+  Within a slit the offsets are flat with wavelength, so the shape of each
+  OH solution agrees with the arcs. The offsets are shifts. They are
+  negative on DET01 and positive on DET02.</p>
+  <div class="tw"><table id="t-chip"></table></div>
+  <figure>
+    <div class="plot">
+      <div class="legend"><span><i class="dot" style="background:var(--det1)"></i>Ar line, DET01</span><span><i class="dot" style="background:var(--det2)"></i>Ar line, DET02</span><span><i class="dot" style="background:var(--neutral);opacity:.6"></i>OH line, science sky (control)</span><span><i class="sw" style="background:var(--ink2);height:1px"></i>chip median</span></div>
+      <div id="c-off1"></div>
+      <div id="c-off2"></div>
+    </div>
+    <figcaption><b>Measured minus predicted position</b> of each line, in
+    spectral pixels (1 px ≈ 1.95 Å). Thin lines join the lines of one slit.
+    The OH control points repeat the same pattern in every slit; that comes
+    from blended lines in the <code>OH_MOSFIRE_K</code> list at this
+    resolution, which the fit averages over.</figcaption>
+  </figure>
+</section>
+
+<section>
+  <h2>Shift plus rotation</h2>
+  <p>The slit-to-slit differences are not random. Each slit's offset is a
+  linear function of its position across the chip, so the arc spectra are
+  shifted and slightly rotated relative to the science spectra. After that
+  line is removed, the slits scatter by <strong id="rotrms"></strong>. The
+  standard stars, taken 2.3 hours after the science frames, showed a
+  similar pattern against the science frames in Implementation #4. On
+  DET02 the two patterns nearly coincide.</p>
+  <div class="pair">
+    <figure>
+      <div class="plot">
+        <div class="legend"><span><i class="dot" style="background:var(--det1)"></i>ThAr Ar lines − OH solution</span><span><i class="sq"></i>standards' OH − science OH</span></div>
+        <div id="c-rot1"></div>
+      </div>
+      <figcaption id="cap-rot1"></figcaption>
+    </figure>
+    <figure>
+      <div class="plot">
+        <div class="legend"><span><i class="dot" style="background:var(--det2)"></i>ThAr Ar lines − OH solution</span><span><i class="sq"></i>standards' OH − science OH</span></div>
+        <div id="c-rot2"></div>
+      </div>
+      <figcaption id="cap-rot2"></figcaption>
+    </figure>
+  </div>
+  <p>The arcs (04:52 UT, header airmass 1.0), the science (06:05 UT,
+  airmass 1.25) and the standards (08:25 UT, airmass 1.2) were all taken
+  at different telescope positions. A shift of about one pixel with a rotation of
+  0.3–0.6 px per 1000 px between pointings is consistent with flexure. It
+  does not affect the science spectra, which are calibrated on their own
+  OH lines. It does affect the standards (VB_K Q9). DET01 slit 469 lies
+  0.30 px below its line here and 0.20 px below in the standards.</p>
+</section>
+
+<section>
+  <h2>Slit positions in the mask image</h2>
+  <p>A slit's position along the dispersion direction in the mask shifts
+  its spectrum on the detector. At a fixed detector row, the wavelength
+  should therefore change linearly with the slit's row in the mask image.
+  The slope comes out at <strong id="mslope"></strong> at every detector
+  row, while the dispersion along the chip varies from 1.84 to 1.98 Å/px.
+  Moving a slit by one pixel in the mask shifts its spectrum by a constant
+  ~1.96 Å.</p>
+  <div class="pair">
+    <figure>
+      <div class="plot"><div id="c-mrow1"></div></div>
+      <figcaption><b>DET01:</b> wavelength at detector row 1150 (slit centre)
+      against the slit's row in the mask image.</figcaption>
+    </figure>
+    <figure>
+      <div class="plot"><div id="c-mrow2"></div></div>
+      <figcaption><b>DET02:</b> the same.</figcaption>
+    </figure>
+  </div>
+  <p>Fitting the mask row alone, as specified, leaves residuals of
+  <strong id="mlin"></strong>. They follow the slit's spatial position,
+  which is the curvature of the spectra across the field. A quadratic in
+  the spatial position brings them down to <strong id="mspat"></strong>.
+  What remains is a constant offset for each slit: along the detector the
+  residuals change by at most <strong id="mshape"></strong>.</p>
+  <figure>
+    <div class="plot">
+      <div class="legend"><span><i class="ring"></i>linear in mask row</span><span><i class="dot" style="background:var(--accent)"></i>with the spatial term</span></div>
+      <div id="c-zp"></div>
+    </div>
+    <figcaption><b>Median residual per slit</b>, in pixels, for the two
+    models.</figcaption>
+  </figure>
+  <div class="pair">
+    <figure>
+      <div class="plot">
+        <div class="legend"><span><i class="dot" style="background:var(--det1)"></i>DET01</span><span><i class="dot" style="background:var(--det2)"></i>DET02</span></div>
+        <div id="c-cmp"></div>
+      </div>
+      <figcaption id="cap-cmp"></figcaption>
+    </figure>
+    <div style="display:grid;gap:12px;align-content:start;min-width:0">
+      <p>If a slit's OH solution were wrong, both references would see the
+      error. They do not agree: DET01 slit 758 is 2.35 px off in the mask
+      check but on the line in the arc check. So the mask-image residuals
+      come from the mapping between imaging and grism mode, which the
+      model does not capture. DET01 is worse, and there the traced slits are
+      also shifted more (7–23 px) from the mask apertures.</p>
+      <p>No slit is flagged. This check catches errors of about 3 px
+      (6 Å) or more in a zero point and about 0.5 px in the shape. That is
+      enough for gross failures such as the leave-one-out slit 758 in
+      Implementation #5 (12–37 Å at its red end); the arcs cover the
+      sub-pixel level.</p>
+    </div>
+  </div>
+</section>
+
+<section>
+  <h2>What this means</h2>
+  <ul>
+    <li><strong>The run5 OH solutions pass both independent checks.</strong>
+    The arcs fix every slit's zero point to ~0.1 px after a flexure term and
+    show no error in the solution shape (≤ 0.04 px per 1000 Å). The mask
+    image confirms the relative zero points of all slits to its ~1 px
+    limit.</li>
+    <li><strong>Flexure between pointings is now seen twice:</strong> arcs
+    against science here, and standards against science in Implementation
+    #4. Spectra move by ~1 px and rotate by 0.3–0.6 px per 1000 px. This
+    goes to the instrument scientist (prompt 10).</li>
+    <li><strong>ThAr frames typed by hand</strong> need
+    <code>clip = False</code> when combined (prompt 9 docs).</li>
+    <li><strong>The Ar line at 21041.57 Å</strong> sits 0.3–0.6 px off the
+    other lines in four DET01 slits, probably blended with a thorium line.
+    Leaving it out moves no slit by more than 0.015 px. A K-band ThAr list
+    should check it.</li>
+    <li><strong>Still open:</strong> the archive is built from this mask
+    and needs a second VB_K mask to validate it. Coverage below 1.90 µm
+    is untested.</li>
+  </ul>
+</section>
+
+<section>
+  <h2>Files</h2>
+  <div class="files">
+    <div>
+      <div class="eyebrow">PypeIt</div>
+      <ul><li>no change</li></ul>
+    </div>
+    <div>
+      <div class="eyebrow">Dev suite · pypeitdev/subaru_moircs_vbk</div>
+      <ul>
+        <li>arc_check.py</li>
+        <li>mask_wave_check.py</li>
+        <li>make_report_impl6.py · report_impl6/template.html</li>
+      </ul>
+      <div class="msg">MOIRCS VB_K: independent wavelength checks with ThAr arcs and the mask image</div>
+    </div>
+  </div>
+  <details>
+    <summary>Per-slit table</summary>
+    <div class="tw"><table id="t-slits"></table></div>
+  </details>
+</section>
+
+<footer>Generated by JXP and Claude from <code>report_impl6/data.json</code>
+(<code>make_report_impl6.py</code>, after <code>arc_check.py run5 wavecheck</code>
+and <code>mask_wave_check.py run5 wavecheck</code>).</footer>
+</main>
+
+<script id="data" type="application/json">__DATA__</script>
+<script>
+(function () {
+  const D = JSON.parse(document.getElementById('data').textContent);
+  const NS = 'http://www.w3.org/2000/svg';
+  const fmt = (v, n) => (v == null ? '–' : v.toFixed(n));
+
+  // ---------- small SVG helpers ----------
+  function mk(tag, attrs, parent) {
+    const e = document.createElementNS(NS, tag);
+    for (const k in attrs) {
+      if (k === 'text') e.textContent = attrs[k];
+      else e.setAttribute(k, attrs[k]);
+    }
+    if (parent) parent.appendChild(e);
+    return e;
+  }
+  function lin(d0, d1, r0, r1) {
+    const f = v => r0 + (v - d0) / (d1 - d0) * (r1 - r0);
+    f.inv = p => d0 + (p - r0) / (r1 - r0) * (d1 - d0);
+    return f;
+  }
+  function logsc(d0, d1, r0, r1) {
+    const a = Math.log10(d0), b = Math.log10(d1);
+    return v => r0 + (Math.log10(Math.max(v, d0)) - a) / (b - a) * (r1 - r0);
+  }
+  // Frame: svg sized to the container width; returns plot area info
+  function frame(id, height, m) {
+    const host = document.getElementById(id);
+    host.innerHTML = '';
+    const W = Math.max(280, host.clientWidth);
+    const svg = mk('svg', {viewBox: `0 0 ${W} ${height}`, height: height,
+      role: 'img'}, host);
+    const plot = host.closest('.plot');
+    let tip = plot.querySelector('.tip');
+    if (!tip) { tip = document.createElement('div'); tip.className = 'tip';
+      tip.hidden = true; plot.appendChild(tip); }
+    return {host, svg, W, H: height, x0: m.l, x1: W - m.r, y0: m.t,
+      y1: height - m.b, tip, plot};
+  }
+  function showTip(f, html, px, py) {
+    f.tip.innerHTML = html; f.tip.hidden = false;
+    const hb = f.host.getBoundingClientRect(), pb = f.plot.getBoundingClientRect();
+    const sx = hb.width / f.W;
+    let left = hb.left - pb.left + px * sx + 12;
+    const top = hb.top - pb.top + py * sx - 10;
+    const tw = f.tip.offsetWidth;
+    if (left + tw > pb.width - 4) left = hb.left - pb.left + px * sx - tw - 12;
+    f.tip.style.left = Math.max(4, left) + 'px';
+    f.tip.style.top = Math.max(4, top) + 'px';
+  }
+  function hideTip(f) { f.tip.hidden = true; }
+  function gridY(f, y, ticks, fmtf, label) {
+    ticks.forEach(t => {
+      mk('line', {x1: f.x0, x2: f.x1, y1: y(t), y2: y(t), class: 'gl'}, f.svg);
+      mk('text', {x: f.x0 - 6, y: y(t) + 3.5, 'text-anchor': 'end',
+        class: 'tick', text: fmtf(t)}, f.svg);
+    });
+    if (label) mk('text', {x: 12, y: (f.y0 + f.y1) / 2, class: 'axl',
+      'text-anchor': 'middle',
+      transform: `rotate(-90 12 ${(f.y0 + f.y1) / 2})`, text: label}, f.svg);
+  }
+  function axisX(f, x, ticks, fmtf, label, grid) {
+    mk('line', {x1: f.x0, x2: f.x1, y1: f.y1, y2: f.y1, class: 'ax'}, f.svg);
+    const minGap = 38;
+    let last = -1e9;
+    ticks.forEach(t => {
+      const px = x(t);
+      if (grid) mk('line', {x1: px, x2: px, y1: f.y0, y2: f.y1, class: 'gl'}, f.svg);
+      mk('line', {x1: px, x2: px, y1: f.y1, y2: f.y1 + 4, class: 'ax'}, f.svg);
+      if (px - last >= minGap) {
+        mk('text', {x: px, y: f.y1 + 17, 'text-anchor': 'middle',
+          class: 'tick', text: fmtf(t)}, f.svg);
+        last = px;
+      }
+    });
+    if (label) mk('text', {x: (f.x0 + f.x1) / 2, y: f.H - 4,
+      'text-anchor': 'middle', class: 'axl', text: label}, f.svg);
+  }
+  const range = (a, b, s) => { const r = []; for (let v = a; v <= b + 1e-9; v += s) r.push(+v.toFixed(6)); return r; };
+  const um = v => (v / 10000).toFixed(2);
+  const detVar = d => d === 1 ? 'var(--det1)' : 'var(--det2)';
+  // Hover on marks that carry a data-tip attribute
+  function markTips(f) {
+    f.svg.addEventListener('mousemove', e => {
+      const t = e.target.closest('[data-tip]');
+      if (!t) { hideTip(f); return; }
+      const r = f.host.getBoundingClientRect();
+      showTip(f, t.getAttribute('data-tip'), (e.clientX - r.left) * f.W / r.width,
+        (e.clientY - r.top) * f.W / r.width);
+    });
+    f.svg.addEventListener('mouseleave', () => hideTip(f));
+  }
+
+
+  // ---------- per-slit categorical layout ----------
+  function slitX(f, list) {
+    // DET01 slits, a gap, then DET02 slits
+    const n1 = list.filter(r => r.det === 1).length, n = list.length;
+    const step = (f.x1 - f.x0) / (n + 1);
+    return list.map((r, i) => f.x0 + step * (i + 0.5 + (r.det === 2 ? 1 : 0)));
+  }
+  function slitAxis(f, list, xs) {
+    mk('line', {x1: f.x0, x2: f.x1, y1: f.y1, y2: f.y1, class: 'ax'}, f.svg);
+    const wide = (f.x1 - f.x0) / list.length > 26;
+    list.forEach((r, i) => {
+      mk('line', {x1: xs[i], x2: xs[i], y1: f.y1, y2: f.y1 + 4, class: 'ax'}, f.svg);
+      if (wide) mk('text', {x: xs[i], y: f.y1 + 16, 'text-anchor': 'middle',
+        class: 'tick', text: r.spat}, f.svg);
+    });
+    [1, 2].forEach(d => {
+      const idx = list.map((r, i) => r.det === d ? i : -1).filter(i => i >= 0);
+      const a = xs[idx[0]], b = xs[idx[idx.length - 1]];
+      mk('text', {x: (a + b) / 2, y: f.y1 + (wide ? 34 : 18), 'text-anchor': 'middle',
+        class: 'lab', text: `DET0${d} slits`}, f.svg);
+    });
+  }
+  function dotMark(f, cx, cy, kind, tip) {
+    if (kind === 'ring') mk('circle', {cx, cy, r: 4.5, style: 'fill:var(--surface);stroke:var(--neutral);stroke-width:2'}, f.svg);
+    else mk('circle', {cx, cy, r: 4.5, style: `fill:${kind};stroke:var(--surface);stroke-width:1.5`}, f.svg);
+    mk('circle', {cx, cy, r: 10, fill: 'transparent', 'data-tip': tip}, f.svg);
+  }
+
+  // ===================== Implementation #6 charts =====================
+  const S = D.stats, SL = D.slits;
+  const sgn = (v, n) => (v >= 0 ? '+' : '−') + Math.abs(v).toFixed(n);
+  const cssv = n => getComputedStyle(document.documentElement).getPropertyValue(n).trim();
+  const byDet = d => SL.filter(r => r.det === d);
+
+  // ---------- key facts ----------
+  function facts() {
+    const n = S['1'].nslit2 + S['2'].nslit2;
+    const nmin = Math.min(S['1'].nmin, S['2'].nmin), nmax = Math.max(S['1'].nmax, S['2'].nmax);
+    const rot = Math.max(S['1'].rot_rms, S['2'].rot_rms);
+    const tr = Math.max(Math.abs(S['1'].trend), Math.abs(S['2'].trend));
+    const items = [
+      [`${n}/${SL.length}`, `science slits with ${nmin}–${nmax} measured Ar lines`],
+      [`${sgn(S['1'].median, 2)} · ${sgn(S['2'].median, 2)} px`, 'median Ar offset, DET01 · DET02'],
+      [`≤ ${rot.toFixed(2)} px`, 'slit scatter after a shift plus rotation'],
+      [`≤ ${tr.toFixed(2)} px`, 'trend per 1000 Å within a slit'],
+    ];
+    document.getElementById('facts').innerHTML = items.map(
+      ([v, l]) => `<div class="fact"><div class="v">${v}</div><div class="l">${l}</div></div>`).join('');
+    document.getElementById('ohctl').textContent =
+      `${sgn(S['1'].oh_median, 2)} and ${sgn(S['2'].oh_median, 2)} px (DET01, DET02), with ${S['1'].oh_slit_std.toFixed(2)} and ${S['2'].oh_slit_std.toFixed(2)} px scatter between slits`;
+    document.getElementById('rotrms').textContent =
+      `${S['1'].rot_rms.toFixed(2)} px on DET01 and ${S['2'].rot_rms.toFixed(2)} px on DET02`;
+    const c = D.clipstats;
+    document.getElementById('clip-text').innerHTML =
+      `PypeIt's default combine is a sigma-clipped mean. With frames this uneven it ` +
+      `rejects the bright frames on the lines: on pixels above 400 e<sup>−</sup> in the ` +
+      `science slits, <strong>${Math.round(100 * c['1'].frac_bright)}%</strong> differ from a plain ` +
+      `mean by more than 5σ, and the clipped value is only ` +
+      `<strong>${Math.round(100 * Math.min(c['1'].ratio, c['2'].ratio))}–${Math.round(100 * Math.max(c['1'].ratio, c['2'].ratio))}%</strong> of the plain mean ` +
+      `(on faint pixels, only ${(100 * Math.max(c['1'].frac_faint, c['2'].frac_faint)).toFixed(1)}% differ). The line profiles ` +
+      `are distorted and single-line centroids move by up to 2.7 px. The check uses a plain mean, ` +
+      `which agrees with the single frames: for lines seen in two or more frames, the frames ` +
+      `agree to ${S['1'].frame_std.toFixed(2)} px (DET01) and ${S['2'].frame_std.toFixed(2)} px (DET02) rms.`;
+  }
+
+  // ---------- one slit's ThAr spectrum ----------
+  const SP = D.spectra;
+  function waveAt(s, p) {
+    const k = p / 8, i = Math.max(0, Math.min(s.wave.length - 2, Math.floor(k)));
+    return s.wave[i] + (s.wave[i + 1] - s.wave[i]) * (k - i);
+  }
+  function arOffset(det, spat, w) {
+    const r = D.ar.find(a => a[0] === det && a[1] === spat && Math.abs(a[2] - w) < 0.01);
+    return r ? r : null;
+  }
+  function spec() {
+    const sel = document.getElementById('slitsel');
+    const s = SP[+sel.value];
+    document.getElementById('tri-m').style.borderTopColor = detVar(s.det);
+    const f = frame('c-spec', 300, {t: 26, r: 14, b: 40, l: 52});
+    const n = s.flux.length;
+    const w0 = waveAt(s, 0), w1 = waveAt(s, n - 1);
+    const x = lin(w0, w1, f.x0, f.x1);
+    const sorted = [...s.flux].sort((a, b) => a - b);
+    const top = Math.max(10, sorted[Math.floor(0.999 * n)] * 1.1);
+    const y = lin(-0.05 * top, top, f.y1, f.y0);
+    const step = top > 2000 ? 1000 : top > 800 ? 200 : top > 300 ? 100 : 25;
+    gridY(f, y, range(0, top, step), v => v.toFixed(0), 'e⁻ per pixel');
+    const ticks = range(Math.ceil(w0 / 500) * 500, w1, 500);
+    axisX(f, x, ticks, um, 'Wavelength (µm), OH solution', true);
+    let d = '';
+    for (let j = 0; j < n; j++) {
+      d += (j ? 'L' : 'M') + x(waveAt(s, j)).toFixed(1) + ' ' + y(Math.min(s.flux[j], top)).toFixed(1);
+    }
+    mk('path', {d, style: `fill:none;stroke:${detVar(s.det)};stroke-width:1`}, f.svg);
+    s.lines.forEach(l => {
+      const px = x(l.w);
+      const a = arOffset(s.det, s.spat, l.w);
+      const pts = `${px - 5},${f.y0 - 14} ${px + 5},${f.y0 - 14} ${px},${f.y0 - 6}`;
+      mk('polygon', {points: pts, style: l.m ? `fill:${detVar(s.det)}` : 'fill:var(--surface);stroke:var(--muted);stroke-width:1.2'}, f.svg);
+      if (l.m) mk('line', {x1: px, x2: px, y1: f.y0 - 4, y2: f.y1, style: `stroke:${detVar(s.det)};stroke-width:1;opacity:.25`}, f.svg);
+      const tip = `Ar ${l.w.toFixed(2)} Å<br>predicted pixel ${l.p.toFixed(1)}<br>` +
+        (a ? `offset ${sgn(a[3], 2)} ± ${a[4].toFixed(2)} px` : 'not measured');
+      mk('rect', {x: px - 7, y: f.y0 - 18, width: 14, height: 16, fill: 'transparent', 'data-tip': tip}, f.svg);
+    });
+    markTips(f);
+  }
+  function initSelect() {
+    const sel = document.getElementById('slitsel');
+    sel.innerHTML = SP.map((s, i) => `<option value="${i}">DET0${s.det} · slit ${s.spat} · ${um(s.wave[0])}–${um(s.wave[s.wave.length - 1])} µm</option>`).join('');
+    let def = SP.findIndex(s => s.det === 1 && s.spat === 758);
+    try { const v = localStorage.getItem('vbk6-slit'); if (v !== null && SP[+v]) def = +v; } catch (e) { /* storage blocked */ }
+    sel.value = String(Math.max(0, def));
+    sel.addEventListener('change', () => {
+      try { localStorage.setItem('vbk6-slit', sel.value); } catch (e) { /* ignore */ }
+      spec();
+    });
+  }
+
+  // ---------- profiles ----------
+  function prof(k) {
+    const p = D.profiles[k];
+    const f = frame(`c-prof${k + 1}`, 220, {t: 10, r: 12, b: 40, l: 40});
+    const x = lin(-15, 15, f.x0, f.x1), y = lin(-0.05, 1.1, f.y1, f.y0);
+    gridY(f, y, [0, 0.5, 1], v => v.toFixed(1), 'normalized');
+    axisX(f, x, range(-15, 15, 5), v => v.toFixed(0), 'pixels from the centroid', false);
+    mk('line', {x1: x(0), x2: x(0), y1: f.y0, y2: f.y1, style: 'stroke:var(--ink2);stroke-width:1;opacity:.4'}, f.svg);
+    [[p.oh, 'var(--neutral)'], [p.ar, detVar(p.det)]].forEach(([c, col]) => {
+      mk('path', {d: c.x.map((v, j) => (j ? 'L' : 'M') + x(v).toFixed(1) + ' ' + y(c.y[j]).toFixed(1)).join(''),
+        style: `fill:none;stroke:${col};stroke-width:1.8`}, f.svg);
+      c.x.forEach((v, j) => mk('circle', {cx: x(v), cy: y(c.y[j]), r: 2.2, style: `fill:${col}`}, f.svg));
+    });
+    document.getElementById(`cap-prof${k + 1}`).innerHTML =
+      `<b>DET0${p.det} slit ${p.spat}:</b> Ar ${p.ar_wave.toFixed(0)} Å and the OH line at ${p.oh_wave.toFixed(0)} Å, each normalized to its peak.`;
+  }
+
+  // ---------- frame illumination ----------
+  function illum() {
+    const L = D.illum;
+    const f = frame('c-illum', 4 * 26 + 76, {t: 8, r: 10, b: 52, l: 34});
+    const xs = slitX(f, L);
+    slitAxis(f, L, xs);
+    const cw = Math.max(6, (xs[1] - xs[0]) * 0.86), rh = 22;
+    ['f0', 'f1', 'f2', 'f3'].forEach((lab, k) => {
+      const yy = f.y0 + k * 26;
+      mk('text', {x: f.x0 - 8, y: yy + rh / 2 + 4, 'text-anchor': 'end', class: 'tick', text: lab}, f.svg);
+      L.forEach((r, i) => {
+        mk('rect', {x: xs[i] - cw / 2, y: yy, width: cw, height: rh, rx: 2,
+          style: 'fill:var(--grid)'}, f.svg);
+        mk('rect', {x: xs[i] - cw / 2, y: yy, width: cw, height: rh, rx: 2,
+          style: `fill:${detVar(r.det)};opacity:${Math.max(0, r.f[k]).toFixed(3)}`,
+          'data-tip': `DET0${r.det} · slit ${r.spat} · ${lab}<br>${Math.round(100 * r.f[k])}% of its brightest frame`}, f.svg);
+      });
+    });
+    markTips(f);
+  }
+
+  // ---------- clipped vs plain mean ----------
+  function clip(k) {
+    const c = D.clip.lines[k];
+    const f = frame(`c-clip${k + 1}`, 230, {t: 10, r: 12, b: 40, l: 52});
+    const all = [...c.clipped, ...c.mean, ...c.f1, ...c.f2];
+    const top = Math.max(...all) * 1.08;
+    const x = lin(-15, 15, f.x0, f.x1), y = lin(-0.05 * top, top, f.y1, f.y0);
+    const step = top > 2000 ? 1000 : 500;
+    gridY(f, y, range(0, top, step), v => v.toFixed(0), 'e⁻ per pixel');
+    axisX(f, x, range(-15, 15, 5), v => v.toFixed(0), 'pixels from the OH prediction', false);
+    mk('line', {x1: x(0), x2: x(0), y1: f.y0, y2: f.y1, style: 'stroke:var(--ink2);stroke-width:1;opacity:.4'}, f.svg);
+    const path = (v, col, w, dash) => mk('path', {d: c.x.map((p, j) => (j ? 'L' : 'M') + x(p).toFixed(1) + ' ' + y(v[j]).toFixed(1)).join(''),
+      style: `fill:none;stroke:${col};stroke-width:${w}${dash ? ';stroke-dasharray:3 3' : ''}`}, f.svg);
+    path(c.f1, 'var(--neutral)', 1.2, true);
+    path(c.f2, 'var(--neutral)', 1.2, true);
+    path(c.mean, 'var(--accent)', 2);
+    path(c.clipped, 'var(--bad)', 2);
+    const o = c.off;
+    document.getElementById(`cap-clip${k + 1}`).innerHTML =
+      `<b>DET01 slit ${D.clip.spat}, Ar ${c.wave.toFixed(0)} Å.</b> Measured offset: clipped ${o.clipped == null ? '–' : sgn(o.clipped, 2)} px, ` +
+      `plain mean ${sgn(o.mean, 2)} px, f1 ${sgn(o.f1, 2)} px, f2 ${sgn(o.f2, 2)} px.`;
+  }
+
+  // ---------- offsets vs wavelength ----------
+  function off(det) {
+    const f = frame(`c-off${det}`, 250, {t: 22, r: 14, b: det === 2 ? 40 : 18, l: 46});
+    const x = lin(18900, 25000, f.x0, f.x1), y = lin(-2, 1.5, f.y1, f.y0);
+    mk('text', {x: f.x0, y: 12, class: 'lab', text: `DET0${det}`}, f.svg);
+    gridY(f, y, range(-2, 1.5, 0.5), v => v.toFixed(1), 'px');
+    if (det === 2) axisX(f, x, range(19000, 25000, 500), um, 'Wavelength (µm)', false);
+    else mk('line', {x1: f.x0, x2: f.x1, y1: f.y1, y2: f.y1, class: 'ax'}, f.svg);
+    mk('line', {x1: f.x0, x2: f.x1, y1: y(0), y2: y(0), style: 'stroke:var(--ink2);stroke-width:1;opacity:.6'}, f.svg);
+    D.oh.filter(o => o[0] === det).forEach(o => mk('circle', {cx: x(o[2]), cy: y(Math.max(-2, Math.min(1.5, o[3]))), r: 1.8,
+      style: 'fill:var(--neutral);opacity:.45'}, f.svg));
+    const ar = D.ar.filter(a => a[0] === det);
+    const sl = [...new Set(ar.map(a => a[1]))];
+    sl.forEach(s => {
+      const pts = ar.filter(a => a[1] === s).sort((a, b) => a[2] - b[2]);
+      mk('path', {d: pts.map((a, j) => (j ? 'L' : 'M') + x(a[2]).toFixed(1) + ' ' + y(a[3]).toFixed(1)).join(''),
+        style: `fill:none;stroke:${detVar(det)};stroke-width:0.8;opacity:.35`}, f.svg);
+    });
+    const med = S[String(det)].median;
+    mk('line', {x1: f.x0, x2: f.x1, y1: y(med), y2: y(med), style: 'stroke:var(--ink2);stroke-width:1;stroke-dasharray:5 4'}, f.svg);
+    mk('text', {x: f.x1 - 2, y: y(med) - 6, 'text-anchor': 'end', class: 'lab', text: `median ${sgn(med, 2)} px`}, f.svg);
+    ar.forEach(a => {
+      const tip = `DET0${det} · slit ${a[1]}<br>Ar ${a[2].toFixed(2)} Å<br>${sgn(a[3], 2)} ± ${a[4].toFixed(2)} px`;
+      dotMark(f, x(a[2]), y(Math.max(-2, Math.min(1.5, a[3]))), detVar(det), tip);
+    });
+    markTips(f);
+  }
+
+  // ---------- slit medians vs spatial position ----------
+  function rot(det) {
+    const st = S[String(det)], rows = byDet(det);
+    const f = frame(`c-rot${det}`, 260, {t: 10, r: 14, b: 40, l: 46});
+    const x = lin(0, 2048, f.x0, f.x1), y = lin(-1.5, 1, f.y1, f.y0);
+    gridY(f, y, range(-1.5, 1, 0.5), v => v.toFixed(1), 'median offset (px)');
+    axisX(f, x, range(0, 2000, 500), v => v.toFixed(0), 'slit spatial position (px)', false);
+    mk('line', {x1: f.x0, x2: f.x1, y1: y(0), y2: y(0), style: 'stroke:var(--ink2);stroke-width:1;opacity:.6'}, f.svg);
+    const fy = s => st.rot_c + st.rot_s / 1000 * (s - 1024);
+    mk('line', {x1: x(0), x2: x(2048), y1: y(fy(0)), y2: y(fy(2048)), style: `stroke:${detVar(det)};stroke-width:1.2;opacity:.8`}, f.svg);
+    rows.forEach(r => {
+      if (r.std != null) mk('rect', {x: x(r.spat) - 4.5, y: y(r.std) - 4.5, width: 9, height: 9,
+        style: 'fill:none;stroke:var(--ink2);stroke-width:1.5'}, f.svg);
+    });
+    rows.forEach(r => dotMark(f, x(r.spat), y(r.arc), detVar(det),
+      `DET0${det} · slit ${r.spat}<br>arc ${sgn(r.arc, 2)} px (${r.n} lines)<br>from the line ${sgn(r.arc_res, 2)} px` +
+      (r.std != null ? `<br>standards ${sgn(r.std, 2)} px` : '')));
+    markTips(f);
+    document.getElementById(`cap-rot${det}`).innerHTML =
+      `<b>DET0${det}:</b> ${sgn(st.rot_c, 2)} px at the chip centre, slope ${sgn(st.rot_s, 2)} ± ${st.rot_se.toFixed(2)} px per 1000 px; slits scatter ${st.rot_rms.toFixed(2)} px about the line.`;
+  }
+
+  // ---------- mask image ----------
+  function mrow(det) {
+    const rows = byDet(det);
+    const f = frame(`c-mrow${det}`, 240, {t: 10, r: 14, b: 40, l: 46});
+    const xr = [150, 1650], yr = [21000, 24000];
+    const x = lin(xr[0], xr[1], f.x0, f.x1), y = lin(yr[0], yr[1], f.y1, f.y0);
+    gridY(f, y, range(21000, 24000, 500), um, 'µm at row 1150');
+    axisX(f, x, range(200, 1600, 200), v => v.toFixed(0), 'slit row in the mask image (px)', true);
+    // Least-squares line through the points
+    const n = rows.length, mx = rows.reduce((a, r) => a + r.mrow, 0) / n, my = rows.reduce((a, r) => a + r.w1150, 0) / n;
+    const b = rows.reduce((a, r) => a + (r.mrow - mx) * (r.w1150 - my), 0) / rows.reduce((a, r) => a + (r.mrow - mx) ** 2, 0);
+    mk('line', {x1: x(xr[0]), x2: x(xr[1]), y1: y(my + b * (xr[0] - mx)), y2: y(my + b * (xr[1] - mx)),
+      style: 'stroke:var(--ink2);stroke-width:1;opacity:.7'}, f.svg);
+    mk('text', {x: f.x1 - 4, y: f.y0 + 14, 'text-anchor': 'end', class: 'lab', text: `slope ${b.toFixed(3)} Å per mask px`}, f.svg);
+    rows.forEach(r => dotMark(f, x(r.mrow), y(r.w1150), detVar(det),
+      `DET0${det} · slit ${r.spat}<br>mask row ${r.mrow.toFixed(1)}<br>${r.w1150.toFixed(1)} Å at row 1150`));
+    markTips(f);
+    return b;
+  }
+  function zp() {
+    const f = frame('c-zp', 270, {t: 10, r: 10, b: 52, l: 46});
+    const y = lin(-4, 7, f.y1, f.y0);
+    gridY(f, y, range(-4, 6, 2), v => v.toFixed(0), 'residual (px)');
+    const xs = slitX(f, SL);
+    slitAxis(f, SL, xs);
+    mk('line', {x1: f.x0, x2: f.x1, y1: y(0), y2: y(0), style: 'stroke:var(--ink2);stroke-width:1;opacity:.6'}, f.svg);
+    SL.forEach((r, i) => {
+      const tip = `DET0${r.det} · slit ${r.spat}<br>linear ${sgn(r.lin, 2)} px<br>with spatial term ${sgn(r.zp, 2)} px<br>shape range ${r.shape.toFixed(2)} px`;
+      dotMark(f, xs[i] - 3, y(r.lin), 'ring', tip);
+      dotMark(f, xs[i] + 3, y(r.zp), 'var(--accent)', tip);
+    });
+    markTips(f);
+  }
+  function cmp() {
+    const f = frame('c-cmp', 260, {t: 10, r: 14, b: 40, l: 50});
+    const x = lin(-3, 2.5, f.x0, f.x1), y = lin(-0.4, 0.3, f.y1, f.y0);
+    gridY(f, y, range(-0.4, 0.3, 0.1), v => v.toFixed(1), 'arc residual (px)');
+    axisX(f, x, range(-3, 2, 1), v => v.toFixed(0), 'mask-image zero point (px)', true);
+    SL.forEach(r => dotMark(f, x(r.zp), y(r.arc_res), detVar(r.det),
+      `DET0${r.det} · slit ${r.spat}<br>mask ${sgn(r.zp, 2)} px<br>arc ${sgn(r.arc_res, 2)} px`));
+    markTips(f);
+    const corr = d => { const a = byDet(d), n = a.length;
+      const mx = a.reduce((s, r) => s + r.zp, 0) / n, my = a.reduce((s, r) => s + r.arc_res, 0) / n;
+      const sxy = a.reduce((s, r) => s + (r.zp - mx) * (r.arc_res - my), 0);
+      const sxx = a.reduce((s, r) => s + (r.zp - mx) ** 2, 0), syy = a.reduce((s, r) => s + (r.arc_res - my) ** 2, 0);
+      return sxy / Math.sqrt(sxx * syy); };
+    document.getElementById('cap-cmp').innerHTML =
+      `<b>The two references against each other:</b> each slit's residual in the mask check (with the spatial term) and in the arc check (after the shift plus rotation). Correlation ${sgn(corr(1), 2)} (DET01) and ${sgn(corr(2), 2)} (DET02).`;
+  }
+  function maskText(b1, b2) {
+    const rms = (key, d) => { const v = [];
+      D.mask.slits.filter(s => s.det === d).forEach(s => s[key].forEach((r, j) => { if (s.fit[j] && r != null) v.push(r); }));
+      return Math.sqrt(v.reduce((a, r) => a + r * r, 0) / v.length); };
+    const sr = d => { const v = D.mask.slopes[String(d)]; return `${Math.max(...v).toFixed(3)} to ${Math.min(...v).toFixed(3)}`.replace(/-/g, '−'); };
+    document.getElementById('mslope').textContent = `${sr(1)} Å (DET01) and ${sr(2)} Å (DET02) per mask pixel`;
+    document.getElementById('mlin').textContent = `${rms('lin', 1).toFixed(1)} and ${rms('lin', 2).toFixed(1)} px rms`;
+    document.getElementById('mspat').textContent = `${rms('spat_res', 1).toFixed(2)} and ${rms('spat_res', 2).toFixed(2)} px rms`;
+    const sh = Math.max(...SL.map(r => r.shape));
+    document.getElementById('mshape').textContent = `${sh.toFixed(2)} px`;
+  }
+
+  // ---------- tables ----------
+  function tables() {
+    const s1 = S['1'], s2 = S['2'];
+    const tr = (lab, a, b) => `<tr><td>${lab}</td><td class="mono">${a}</td><td class="mono">${b}</td></tr>`;
+    document.getElementById('t-chip').innerHTML =
+      '<thead><tr><th></th><th>DET01</th><th>DET02</th></tr></thead><tbody>' +
+      tr('slits with ≥ 2 Ar lines', `${s1.nslit2}/${s1.nslit} (${s1.nmin}–${s1.nmax} lines)`, `${s2.nslit2}/${s2.nslit} (${s2.nmin}–${s2.nmax} lines)`) +
+      tr('Ar lines measured', s1.nline, s2.nline) +
+      tr('median offset, all lines (px)', `${sgn(s1.median, 2)} (robust σ ${s1.robust.toFixed(2)})`, `${sgn(s2.median, 2)} (robust σ ${s2.robust.toFixed(2)})`) +
+      tr('median of slit medians (px)', `${sgn(s1.slit_median, 2)}, scatter ${s1.slit_std.toFixed(2)}`, `${sgn(s2.slit_median, 2)}, scatter ${s2.slit_std.toFixed(2)}`) +
+      tr('shift + rotation: offset at chip centre', `${sgn(s1.rot_c, 2)} px`, `${sgn(s2.rot_c, 2)} px`) +
+      tr('shift + rotation: slope (px per 1000 px)', `${sgn(s1.rot_s, 2)} ± ${s1.rot_se.toFixed(2)}`, `${sgn(s2.rot_s, 2)} ± ${s2.rot_se.toFixed(2)}`) +
+      tr('slit scatter about that line (px)', s1.rot_rms.toFixed(2), s2.rot_rms.toFixed(2)) +
+      tr('trend within slits (px per 1000 Å)', `${sgn(s1.trend, 3)} ± ${s1.trend_se.toFixed(3)}`, `${sgn(s2.trend, 3)} ± ${s2.trend_se.toFixed(3)}`) +
+      tr('line scatter about the slit median (px)', s1.scatter.toFixed(2), s2.scatter.toFixed(2)) +
+      tr('single frames: agreement (px rms)', `${s1.frame_std.toFixed(2)} (max ${s1.frame_max.toFixed(2)})`, `${s2.frame_std.toFixed(2)} (max ${s2.frame_max.toFixed(2)})`) +
+      tr('OH control (px)', `${sgn(s1.oh_median, 2)}, slit scatter ${s1.oh_slit_std.toFixed(2)}`, `${sgn(s2.oh_median, 2)}, slit scatter ${s2.oh_slit_std.toFixed(2)}`) +
+      '</tbody>';
+    document.getElementById('t-slits').innerHTML =
+      '<thead><tr><th>slit</th><th>range (Å)</th><th>Ar lines</th><th>arc offset</th><th>from line</th><th>standards</th><th>mask row</th><th>mask, linear</th><th>mask, spatial</th><th>shape</th></tr></thead><tbody>' +
+      SL.map(r => `<tr><td class="mono">DET0${r.det} ${r.spat}</td><td class="mono">${r.w0.toFixed(0)}–${r.w1.toFixed(0)}</td><td>${r.n}</td><td>${sgn(r.arc, 2)}</td><td>${sgn(r.arc_res, 2)}</td><td>${r.std == null ? '–' : sgn(r.std, 2)}</td><td>${r.mrow.toFixed(1)}</td><td>${sgn(r.lin, 2)}</td><td>${sgn(r.zp, 2)}</td><td>${r.shape.toFixed(2)}</td></tr>`).join('') +
+      '</tbody>';
+  }
+
+  function drawAll() {
+    spec(); prof(0); prof(1); illum(); clip(0); clip(1); off(1); off(2);
+    rot(1); rot(2); const b1 = mrow(1), b2 = mrow(2); zp(); cmp(); maskText(b1, b2);
+  }
+  initSelect(); facts(); tables(); drawAll();
+  let rt;
+  window.addEventListener('resize', () => { clearTimeout(rt); rt = setTimeout(drawAll, 150); });
+})();
+</script>

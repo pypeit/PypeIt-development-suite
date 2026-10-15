@@ -1,0 +1,721 @@
+<title>MOIRCS VB_K Wavelength Archive</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans:ital,wght@0,400;0,500;0,600;1,400&family=Spectral:wght@500;600&display=swap">
+<style>
+/* Layout: one reading column (~70ch) with figures running the full
+   980px measure; facts first, then the evidence, then the caveats. */
+:root {
+  --bg: #f6f7f8;
+  --surface: #ffffff;
+  --ink: #15191e;
+  --ink2: #47505c;
+  --muted: #737b87;
+  --rule: #dfe3e8;
+  --grid: #eceff2;
+  --accent: #4a3aa7;      /* reidentify / match_toler 0.75 */
+  --neutral: #8d949e;     /* holy-grail / default tolerance */
+  --det1: #2a78d6;
+  --det2: #eb6834;
+  --bad: #e34948;
+  --good: #0a8a0a;
+  --good-bg: #e6f4e6;
+  --bad-bg: #fbe9e9;
+  --font-display: "Spectral", Georgia, "Times New Roman", serif;
+  --font-body: "IBM Plex Sans", "Helvetica Neue", Arial, sans-serif;
+  --font-mono: "IBM Plex Mono", ui-monospace, "SFMono-Regular", Menlo, monospace;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --bg: #121417; --surface: #1a1d21; --ink: #eef0f3; --ink2: #b9c0ca;
+    --muted: #8d95a0; --rule: #2d3239; --grid: #23272d;
+    --accent: #9085e9; --neutral: #7f8690; --det1: #3987e5;
+    --det2: #d95926; --bad: #e66767; --good: #4cc35a;
+    --good-bg: #17301b; --bad-bg: #3a1d1f;
+    color-scheme: dark;
+  }
+}
+:root[data-theme="dark"] {
+  --bg: #121417; --surface: #1a1d21; --ink: #eef0f3; --ink2: #b9c0ca;
+  --muted: #8d95a0; --rule: #2d3239; --grid: #23272d;
+  --accent: #9085e9; --neutral: #7f8690; --det1: #3987e5;
+  --det2: #d95926; --bad: #e66767; --good: #4cc35a;
+  --good-bg: #17301b; --bad-bg: #3a1d1f;
+  color-scheme: dark;
+}
+* { box-sizing: border-box; }
+body {
+  background: var(--bg); color: var(--ink);
+  font: 15px/1.6 var(--font-body);
+  padding-inline: 20px; padding-block: 40px 72px;
+}
+main { max-width: 980px; margin: 0 auto; display: grid; gap: 56px; }
+section { display: grid; gap: 18px; min-width: 0; }
+h1, h2, h3 { font-family: var(--font-display); text-wrap: balance;
+  margin: 0; line-height: 1.2; font-weight: 600; }
+h1 { font-size: clamp(30px, 5vw, 42px); letter-spacing: -0.01em; }
+h2 { font-size: 26px; padding-top: 22px; border-top: 1px solid var(--rule); }
+h3 { font-size: 18px; font-weight: 500; }
+p, ul { margin: 0; max-width: 70ch; color: var(--ink2); }
+p strong, li strong { color: var(--ink); font-weight: 600; }
+ul { padding-left: 1.2em; display: grid; gap: 6px; }
+code, .mono { font-family: var(--font-mono); font-size: 0.88em; }
+code { background: var(--grid); padding: 1px 5px; border-radius: 3px;
+  color: var(--ink); overflow-wrap: anywhere; }
+a { color: var(--accent); }
+.eyebrow { font: 500 12px/1.4 var(--font-mono); letter-spacing: 0.08em;
+  text-transform: uppercase; color: var(--muted); }
+header { display: grid; gap: 14px; }
+.lede { font-size: 17px; color: var(--ink2); }
+
+/* Key results */
+.facts { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 1px; background: var(--rule); border: 1px solid var(--rule);
+  border-radius: 6px; overflow: hidden; }
+.fact { background: var(--surface); padding: 16px 18px; display: grid;
+  gap: 4px; align-content: start; }
+.fact .v { font: 500 26px/1.1 var(--font-mono); color: var(--ink);
+  font-variant-numeric: tabular-nums; }
+.fact .l { font-size: 13px; color: var(--ink2); line-height: 1.4; }
+@media (max-width: 760px) {
+  .facts { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+}
+
+/* Figures */
+figure { margin: 0; display: grid; gap: 10px; min-width: 0; }
+.plot { position: relative; background: var(--surface);
+  border: 1px solid var(--rule); border-radius: 6px; padding: 12px 8px 6px;
+  min-width: 0; }
+.plot svg { display: block; width: 100%; overflow: visible; }
+figcaption { font-size: 13.5px; color: var(--ink2); max-width: 78ch; }
+figcaption b { color: var(--ink); font-weight: 600; }
+.legend { display: flex; flex-wrap: wrap; gap: 6px 18px; padding: 0 8px 6px;
+  font-size: 12.5px; color: var(--ink2); }
+.legend span { display: inline-flex; align-items: center; gap: 7px; }
+.sw { width: 18px; height: 3px; border-radius: 2px; display: inline-block; }
+.dot { width: 9px; height: 9px; border-radius: 50%; display: inline-block; }
+.ring { width: 9px; height: 9px; border-radius: 50%; display: inline-block;
+  border: 2px solid var(--neutral); }
+.tip { position: absolute; pointer-events: none; background: var(--ink);
+  color: var(--bg); font: 12px/1.45 var(--font-mono); padding: 6px 9px;
+  border-radius: 4px; white-space: nowrap; z-index: 2;
+  font-variant-numeric: tabular-nums; }
+.pair { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 16px; }
+@media (max-width: 760px) { .pair { grid-template-columns: 1fr; } }
+svg text { font-family: var(--font-body); }
+svg .tick { font: 11px var(--font-mono); fill: var(--muted); }
+svg .axl { font-size: 12px; fill: var(--ink2); }
+svg .lab { font-size: 11.5px; fill: var(--ink2); }
+svg .gl { stroke: var(--grid); stroke-width: 1; }
+svg .ax { stroke: var(--rule); stroke-width: 1; }
+
+/* Tables */
+.tw { overflow-x: auto; border: 1px solid var(--rule); border-radius: 6px;
+  background: var(--surface); }
+table { border-collapse: collapse; width: 100%; font-size: 13.5px;
+  font-variant-numeric: tabular-nums; }
+th, td { padding: 8px 12px; text-align: right; border-bottom: 1px solid var(--grid);
+  white-space: nowrap; }
+th { font-weight: 500; color: var(--muted); font-size: 12px;
+  letter-spacing: 0.03em; background: var(--bg); }
+td:first-child, th:first-child { text-align: left; }
+tr:last-child td { border-bottom: 0; }
+td.mono { font-family: var(--font-mono); font-size: 12.5px; }
+.chip { display: inline-flex; align-items: center; gap: 5px;
+  font: 500 12px/1 var(--font-mono); padding: 4px 7px; border-radius: 4px; }
+.chip.ok { color: var(--good); background: var(--good-bg); }
+.chip.no { color: var(--bad); background: var(--bad-bg); }
+.chosen td { background: color-mix(in srgb, var(--accent) 7%, transparent); }
+details { border: 1px solid var(--rule); border-radius: 6px;
+  background: var(--surface); }
+summary { cursor: pointer; padding: 10px 14px; font-weight: 500; }
+summary:focus-visible, a:focus-visible { outline: 2px solid var(--accent);
+  outline-offset: 2px; }
+details .tw { border: 0; border-top: 1px solid var(--rule); border-radius: 0; }
+.files { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 16px; }
+@media (max-width: 760px) { .files { grid-template-columns: 1fr; } }
+.files > div { background: var(--surface); border: 1px solid var(--rule);
+  border-radius: 6px; padding: 14px 16px; display: grid; gap: 8px;
+  align-content: start; min-width: 0; }
+.files ul { font: 12.5px/1.6 var(--font-mono); color: var(--ink); }
+.files .msg { font: 12.5px/1.5 var(--font-mono); color: var(--ink2); }
+footer { font-size: 13px; color: var(--muted); }
+</style>
+
+<main>
+<header>
+  <div class="eyebrow">Subaru / MOIRCS · VB_K grism · mask MO_CC0958PA200_1 · PypeIt</div>
+  <h1>VB_K wavelength archive</h1>
+  <p class="lede">VB_K now uses <code>reidentify</code> with a 28-slit OH archive.
+  On the test mask it solves every science slit with the same solution as
+  holy-grail. Leave-one-out and cross-detector tests found one slit that the
+  default line-matching tolerance gets wrong, so VB_K sets
+  <code>match_toler = 0.75</code>.</p>
+  <p class="eyebrow">Implementation #5 · 2026-10-03 · baseline run3 (holy-grail) · rerun run5 (reidentify)</p>
+</header>
+
+<div class="facts" id="facts"></div>
+
+<section>
+  <h2>The archive</h2>
+  <p>All 28 holy-grail solutions from run3 pass the HK500 selection (rms &lt;
+  0.5 px, at least 40 lines, monotonic) and go into
+  <code>reid_arxiv/subaru_moircs_VB_K.fits</code>, 14 per chip. VB_K
+  disperses past the detector edges, so each slit sees a 0.39 µm window set
+  by its position in the mask. Together they cover <strong>1.90–2.54
+  µm</strong>. No slit in this mask reaches 1.8 µm, and OH lines stop at
+  2.499 µm, so the reddest ~250 px are extrapolated.</p>
+  <figure>
+    <div class="plot">
+      <div class="legend"><span><i class="sw" style="background:var(--det1)"></i>DET01</span><span><i class="sw" style="background:var(--det2)"></i>DET02</span><span><i class="sw" style="background:var(--muted);width:2px;height:10px"></i>OH_MOSFIRE_K line</span></div>
+      <div id="c-cover"></div>
+    </div>
+    <figcaption><b>Wavelength range of each archive spectrum</b>, sorted by
+    blue end and labelled with the slit's spatial ID. Ticks above: the
+    lines of the <code>OH_MOSFIRE_K</code> list.</figcaption>
+  </figure>
+  <figure>
+    <div class="plot"><div id="c-spec"></div></div>
+    <figcaption><b>The 28 archive sky spectra</b> on their holy-grail
+    wavelength scales, in the same order as above. The same OH lines line up
+    vertically across slits and chips; the thermal continuum rises
+    above ~2.3 µm.</figcaption>
+  </figure>
+</section>
+
+<section>
+  <h2>Pipeline rerun</h2>
+  <p>run5 is a full reduction from scratch with the new defaults. It solves
+  the same slits as holy-grail, and every solution agrees with run3 to
+  0.12 Å or better (median ≤ 0.05 Å) over the fitted range. The
+  extracted science and standard spectra are unchanged: same objects, same
+  S/N, wavelengths within 0.054 Å. The rms below is recomputed from the fit
+  residuals and each solution's own dispersion; see the last section for why
+  holy-grail's stored value is not used.</p>
+  <div class="tw"><table id="t-run"></table></div>
+  <figure>
+    <div class="plot">
+      <div class="legend"><span><i class="ring"></i>run3 holy-grail</span><span><i class="dot" style="background:var(--accent)"></i>run5 reidentify</span></div>
+      <div id="c-rms"></div>
+    </div>
+    <figcaption><b>Fit rms per science slit</b>, in pixels. The two methods
+    agree or reidentify is lower; reidentify keeps 41–56 lines per slit
+    against 46–60 for holy-grail, because of the tighter matching
+    tolerance.</figcaption>
+  </figure>
+</section>
+
+<section>
+  <h2>Robustness tests</h2>
+  <p>run5 reidentifies each slit against its own spectrum, which is
+  trivially right. To see how the archive behaves on a new mask, each run3
+  sky spectrum was also solved against an archive <strong>without that
+  slit</strong> (leave-one-out) and against an archive made from the
+  <strong>other chip only</strong> (cross-detector). A slit passes when
+  rms &lt; 0.5 px, at least 30 lines are fitted, and the solution stays within
+  2 Å (~1 px) of holy-grail everywhere in the fitted range.</p>
+  <div class="tw"><table id="t-tests"></table></div>
+  <div class="pair">
+    <figure>
+      <div class="plot">
+        <div class="legend"><span><i class="ring"></i>match_toler 2.0 (default)</span><span><i class="dot" style="background:var(--accent)"></i>0.75</span></div>
+        <div id="c-loo"></div>
+      </div>
+      <figcaption><b>Leave-one-out:</b> largest offset from holy-grail per slit.
+      Values below 0.01 Å are drawn at 0.01.</figcaption>
+    </figure>
+    <figure>
+      <div class="plot">
+        <div class="legend"><span><i class="ring"></i>match_toler 2.0 (default)</span><span><i class="dot" style="background:var(--accent)"></i>0.75</span></div>
+        <div id="c-xdet"></div>
+      </div>
+      <figcaption><b>Cross-detector:</b> DET01 slits against a DET02-only
+      archive and vice versa.</figcaption>
+    </figure>
+  </div>
+  <p>Other settings were tried on the failing slit and did not help:
+  <code>nreid_min</code> 2–4 (3–4 also lose slits at the ends of the
+  coverage), <code>cc_thresh</code> 0.8–0.88 (still 23 Å off),
+  <code>cc_local_thresh</code>, <code>nlocal_cc</code>, a linear stretch,
+  <code>n_final</code> 3 or 5, <code>sigdetect</code> 3 or 10,
+  <code>reid_cont_sub</code>, and <code>cc_percent_ceil</code>.</p>
+</section>
+
+<section>
+  <h2>The failing slit: DET01 slit 758</h2>
+  <p>With the default tolerance the leave-one-out solution of slit 758 has
+  rms 0.36 px, which passes PypeIt's rms test, but it is off by 12–37 Å
+  beyond pixel ~1700, where two different lines were both identified as
+  23713 Å. The cause is the cross-correlation step: each archive spectrum
+  overlaps the slit only in part (shifts up to ~1100 px), and the fitted
+  stretches come out at 0.97–1.05, while the real dispersions differ by
+  only ±1% (1.928–1.963 Å/px). The stretch limits are fixed in PypeIt's core
+  code (<code>wvutils.xcorr_shift_stretch</code>), so they cannot be set
+  from the spectrograph file. A tighter <code>match_toler</code> keeps the
+  iterative fit from absorbing the misidentified lines.</p>
+  <figure>
+    <div class="plot">
+      <div class="legend"><span><i class="sw" style="background:var(--bad)"></i>match_toler 2.0 (default)</span><span><i class="sw" style="background:var(--accent)"></i>0.75</span></div>
+      <div id="c-dl"></div>
+    </div>
+    <figcaption><b>Reidentified minus holy-grail wavelength</b> along slit
+    758 (leave-one-out archive).</figcaption>
+  </figure>
+  <figure>
+    <div class="plot">
+      <div class="legend"><span><i class="sw" style="background:var(--neutral);height:5px"></i>median of <span id="nref"></span> other slits</span><span><i class="sw" style="background:var(--accent)"></i>slit 758, holy-grail scale</span><span><i class="sw" style="background:var(--bad)"></i>slit 758, reidentify scale (2.0)</span></div>
+      <div id="c-win"></div>
+    </div>
+    <figcaption><b>Which solution is right?</b> Slit 758's sky spectrum near
+    its red end, on each wavelength scale, against the median of the other
+    slits. On the holy-grail scale it matches at 0.0–1.0 Å (cc 0.99); on the
+    default reidentify scale it is 10.5 Å off at 2.30–2.335 µm and does not
+    match at all above 2.335 µm (cc 0.59).</figcaption>
+  </figure>
+</section>
+
+<section>
+  <h2>Holy-grail's stored rms is too large for some slits</h2>
+  <p>For 15 of the 28 run3 slits, the stored "rms in pixels" equals the rms in
+  ångström, about twice the true value. Holy-grail divides by its own rough
+  dispersion estimate, which came out at 0.999 Å/px for these slits instead
+  of ~1.94 Å/px, because <code>patterns.quadrangles</code> stores pattern
+  dispersions as unsigned integers. The solutions are correct; the reported
+  rms, the <code>rms_thresh_frac_fwhm</code> test and the line-matching
+  tolerance are affected. The fix belongs in PypeIt's core code, outside this
+  project's files; it is written up for the team in a separate bug report.</p>
+  <figure>
+    <div class="plot">
+      <div class="legend"><span><i class="dot" style="background:var(--det1)"></i>DET01</span><span><i class="dot" style="background:var(--det2)"></i>DET02</span></div>
+      <div id="c-bug"></div>
+    </div>
+    <figcaption><b>Stored against recomputed rms</b> for the run3 holy-grail
+    fits. Points fall on one of two lines: 1× (correct) or ~2× (rms in Å
+    reported as pixels).</figcaption>
+  </figure>
+</section>
+
+<section>
+  <h2>Caveats</h2>
+  <ul>
+    <li><strong>Self-referential.</strong> The archive comes from the same
+    mask it is tested on. The leave-one-out and cross-detector tests are the
+    best check possible here; a second VB_K mask, with other slit positions
+    and another night, is still needed.</li>
+    <li><strong>What to watch on a new mask:</strong> a red or blue end that
+    is wrong while the rms looks normal. Holy-grail solved all 28 slits of
+    this mask and is the fallback.</li>
+    <li><strong>Coverage:</strong> 1.90–2.54 µm. Slits that reach below 1.90
+    µm on another mask have no archive match there.</li>
+    <li><strong>HK500</strong> also uses <code>reidentify</code> with the
+    default tolerance. It was not changed (the HK500 data are not on this
+    machine), but the same failure could occur.</li>
+    <li><strong>Speed:</strong> each slit is cross-correlated with all 28
+    archive spectra, about 5–6 minutes per chip.</li>
+  </ul>
+</section>
+
+<section>
+  <h2>Files</h2>
+  <div class="files">
+    <div>
+      <div class="eyebrow">PypeIt</div>
+      <ul>
+        <li>pypeit/spectrographs/subaru_moircs.py</li>
+        <li>pypeit/data/arc_lines/reid_arxiv/subaru_moircs_VB_K.fits</li>
+      </ul>
+      <div class="msg">MOIRCS VB_K: reidentify with a 28-slit OH archive</div>
+    </div>
+    <div>
+      <div class="eyebrow">Dev suite · pypeitdev/subaru_moircs_vbk</div>
+      <ul>
+        <li>make_vbk_reid.py</li>
+        <li>test_reid.py · tune_reid_758.py · tune/summarize_reid.sh</li>
+        <li>compare_wave_runs.py · plot_vbk_reid.py</li>
+        <li>make_report_impl5.py · report_impl5/template.html</li>
+      </ul>
+      <div class="msg">MOIRCS VB_K: build and test the reidentify archive</div>
+    </div>
+  </div>
+  <details>
+    <summary>Per-slit table (run3 holy-grail vs run5 reidentify)</summary>
+    <div class="tw"><table id="t-slits"></table></div>
+  </details>
+</section>
+
+<footer>Generated by JXP and Claude from <code>report_impl5/data.json</code>
+(<code>make_report_impl5.py</code>). Tests: <code>test_subaru_moircs.py</code>,
+<code>test_spectrographs.py</code>, <code>test_metadata.py</code>, 28 passed.</footer>
+</main>
+
+<script id="data" type="application/json">__DATA__</script>
+<script>
+(function () {
+  const D = JSON.parse(document.getElementById('data').textContent);
+  const NS = 'http://www.w3.org/2000/svg';
+  const fmt = (v, n) => (v == null ? '–' : v.toFixed(n));
+
+  // ---------- small SVG helpers ----------
+  function mk(tag, attrs, parent) {
+    const e = document.createElementNS(NS, tag);
+    for (const k in attrs) {
+      if (k === 'text') e.textContent = attrs[k];
+      else e.setAttribute(k, attrs[k]);
+    }
+    if (parent) parent.appendChild(e);
+    return e;
+  }
+  function lin(d0, d1, r0, r1) {
+    const f = v => r0 + (v - d0) / (d1 - d0) * (r1 - r0);
+    f.inv = p => d0 + (p - r0) / (r1 - r0) * (d1 - d0);
+    return f;
+  }
+  function logsc(d0, d1, r0, r1) {
+    const a = Math.log10(d0), b = Math.log10(d1);
+    return v => r0 + (Math.log10(Math.max(v, d0)) - a) / (b - a) * (r1 - r0);
+  }
+  // Frame: svg sized to the container width; returns plot area info
+  function frame(id, height, m) {
+    const host = document.getElementById(id);
+    host.innerHTML = '';
+    const W = Math.max(280, host.clientWidth);
+    const svg = mk('svg', {viewBox: `0 0 ${W} ${height}`, height: height,
+      role: 'img'}, host);
+    const plot = host.closest('.plot');
+    let tip = plot.querySelector('.tip');
+    if (!tip) { tip = document.createElement('div'); tip.className = 'tip';
+      tip.hidden = true; plot.appendChild(tip); }
+    return {host, svg, W, H: height, x0: m.l, x1: W - m.r, y0: m.t,
+      y1: height - m.b, tip, plot};
+  }
+  function showTip(f, html, px, py) {
+    f.tip.innerHTML = html; f.tip.hidden = false;
+    const hb = f.host.getBoundingClientRect(), pb = f.plot.getBoundingClientRect();
+    const sx = hb.width / f.W;
+    let left = hb.left - pb.left + px * sx + 12;
+    const top = hb.top - pb.top + py * sx - 10;
+    const tw = f.tip.offsetWidth;
+    if (left + tw > pb.width - 4) left = hb.left - pb.left + px * sx - tw - 12;
+    f.tip.style.left = Math.max(4, left) + 'px';
+    f.tip.style.top = Math.max(4, top) + 'px';
+  }
+  function hideTip(f) { f.tip.hidden = true; }
+  function gridY(f, y, ticks, fmtf, label) {
+    ticks.forEach(t => {
+      mk('line', {x1: f.x0, x2: f.x1, y1: y(t), y2: y(t), class: 'gl'}, f.svg);
+      mk('text', {x: f.x0 - 6, y: y(t) + 3.5, 'text-anchor': 'end',
+        class: 'tick', text: fmtf(t)}, f.svg);
+    });
+    if (label) mk('text', {x: 12, y: (f.y0 + f.y1) / 2, class: 'axl',
+      'text-anchor': 'middle',
+      transform: `rotate(-90 12 ${(f.y0 + f.y1) / 2})`, text: label}, f.svg);
+  }
+  function axisX(f, x, ticks, fmtf, label, grid) {
+    mk('line', {x1: f.x0, x2: f.x1, y1: f.y1, y2: f.y1, class: 'ax'}, f.svg);
+    const minGap = 38;
+    let last = -1e9;
+    ticks.forEach(t => {
+      const px = x(t);
+      if (grid) mk('line', {x1: px, x2: px, y1: f.y0, y2: f.y1, class: 'gl'}, f.svg);
+      mk('line', {x1: px, x2: px, y1: f.y1, y2: f.y1 + 4, class: 'ax'}, f.svg);
+      if (px - last >= minGap) {
+        mk('text', {x: px, y: f.y1 + 17, 'text-anchor': 'middle',
+          class: 'tick', text: fmtf(t)}, f.svg);
+        last = px;
+      }
+    });
+    if (label) mk('text', {x: (f.x0 + f.x1) / 2, y: f.H - 4,
+      'text-anchor': 'middle', class: 'axl', text: label}, f.svg);
+  }
+  const range = (a, b, s) => { const r = []; for (let v = a; v <= b + 1e-9; v += s) r.push(+v.toFixed(6)); return r; };
+  const um = v => (v / 10000).toFixed(2);
+  const detVar = d => d === 1 ? 'var(--det1)' : 'var(--det2)';
+  // Hover on marks that carry a data-tip attribute
+  function markTips(f) {
+    f.svg.addEventListener('mousemove', e => {
+      const t = e.target.closest('[data-tip]');
+      if (!t) { hideTip(f); return; }
+      const r = f.host.getBoundingClientRect();
+      showTip(f, t.getAttribute('data-tip'), (e.clientX - r.left) * f.W / r.width,
+        (e.clientY - r.top) * f.W / r.width);
+    });
+    f.svg.addEventListener('mouseleave', () => hideTip(f));
+  }
+
+  const rows = D.archive.rows;
+  const WL = [18900, 25600];
+
+  // ---------- key facts ----------
+  function facts() {
+    const s = D.slits;
+    const solved = s.filter(r => r.re_n > 0).length;
+    const dmax = Math.max(...s.map(r => r.dmax));
+    const t = D.tests;
+    const pass = k => t[k].filter(r => r.rms != null && r.rms < 0.5 && r.n >= 30 && r.dmax < 2).length;
+    const items = [
+      [`${solved}/${s.length}`, 'science slits solved in run5, as with holy-grail'],
+      [`≤ ${dmax.toFixed(2)} Å`, 'largest difference from the holy-grail solutions'],
+      [`${pass('loo_0.75')}/28 · ${pass('xdet_0.75')}/28`, 'leave-one-out · cross-detector passes with match_toler 0.75'],
+      [`${pass('loo_2.0')}/28`, 'leave-one-out passes with the default tolerance'],
+    ];
+    document.getElementById('facts').innerHTML = items.map(
+      ([v, l]) => `<div class="fact"><div class="v">${v}</div><div class="l">${l}</div></div>`).join('');
+  }
+
+  // ---------- archive coverage ----------
+  function cover() {
+    const n = rows.length, bh = 13;
+    const f = frame('c-cover', n * bh + 70, {t: 22, r: 44, b: 40, l: 14});
+    const x = lin(WL[0], WL[1], f.x0, f.x1);
+    axisX(f, x, range(19000, 25500, 500), um, 'Wavelength (µm)', true);
+    D.archive.lines.forEach(l => { if (l > WL[0] && l < WL[1])
+      mk('line', {x1: x(l), x2: x(l), y1: 4, y2: 14,
+        style: 'stroke:var(--muted);stroke-width:1;opacity:.7'}, f.svg); });
+    rows.forEach((r, i) => {
+      const y = f.y0 + i * bh + bh / 2;
+      mk('line', {x1: x(r.w0), x2: x(r.w1), y1: y, y2: y,
+        style: `stroke:${detVar(r.det)};stroke-width:7;stroke-linecap:round`}, f.svg);
+      mk('line', {x1: x(r.w0), x2: x(r.w1), y1: y, y2: y, stroke: 'transparent',
+        'stroke-width': bh, 'data-tip':
+        `DET0${r.det} · slit ${r.spat}<br>${r.w0.toFixed(0)}–${r.w1.toFixed(0)} Å`}, f.svg);
+      mk('text', {x: x(r.w1) + 7, y: y + 3.5, class: 'tick', text: r.spat}, f.svg);
+    });
+    markTips(f);
+  }
+
+  // ---------- stacked spectra ----------
+  function spectra() {
+    const n = rows.length;
+    const f = frame('c-spec', 600, {t: 8, r: 14, b: 40, l: 14});
+    const x = lin(WL[0], WL[1], f.x0, f.x1);
+    const y = lin(-0.6, n + 0.4, f.y1, f.y0);
+    axisX(f, x, range(19000, 25500, 500), um, 'Wavelength (µm)', true);
+    // Earlier rows (bluer) at the bottom, as in the coverage chart order
+    rows.forEach((r, i) => {
+      const k = n - 1 - i;
+      let d = '';
+      for (let j = 0; j < r.wave.length; j++) {
+        d += (j ? 'L' : 'M') + x(r.wave[j]).toFixed(1) + ' ' +
+          y(Math.min(r.flux[j], 1.3) * 0.9 + k).toFixed(1);
+      }
+      mk('path', {d, style: `fill:none;stroke:${detVar(r.det)};stroke-width:0.9`}, f.svg);
+    });
+    const cross = mk('line', {y1: f.y0, y2: f.y1, style: 'stroke:var(--ink2);stroke-width:1;opacity:.5', visibility: 'hidden'}, f.svg);
+    f.svg.addEventListener('mousemove', e => {
+      const b = f.host.getBoundingClientRect();
+      const px = (e.clientX - b.left) * f.W / b.width, py = (e.clientY - b.top) * f.W / b.width;
+      if (px < f.x0 || px > f.x1) { hideTip(f); cross.setAttribute('visibility', 'hidden'); return; }
+      const wl = x.inv(px);
+      const k = Math.max(0, Math.min(n - 1, Math.round(y.inv(py) - 0.4)));
+      const r = rows[n - 1 - k];
+      cross.setAttribute('x1', px); cross.setAttribute('x2', px);
+      cross.setAttribute('visibility', 'visible');
+      const inside = wl >= r.w0 && wl <= r.w1;
+      showTip(f, `${wl.toFixed(0)} Å<br>DET0${r.det} · slit ${r.spat}${inside ? '' : ' (no data)'}`, px, py);
+    });
+    f.svg.addEventListener('mouseleave', () => { hideTip(f); cross.setAttribute('visibility', 'hidden'); });
+  }
+
+  // ---------- per-slit categorical layout ----------
+  function slitX(f, list) {
+    // DET01 slits, a gap, then DET02 slits
+    const n1 = list.filter(r => r.det === 1).length, n = list.length;
+    const step = (f.x1 - f.x0) / (n + 1);
+    return list.map((r, i) => f.x0 + step * (i + 0.5 + (r.det === 2 ? 1 : 0)));
+  }
+  function slitAxis(f, list, xs) {
+    mk('line', {x1: f.x0, x2: f.x1, y1: f.y1, y2: f.y1, class: 'ax'}, f.svg);
+    const wide = (f.x1 - f.x0) / list.length > 26;
+    list.forEach((r, i) => {
+      mk('line', {x1: xs[i], x2: xs[i], y1: f.y1, y2: f.y1 + 4, class: 'ax'}, f.svg);
+      if (wide) mk('text', {x: xs[i], y: f.y1 + 16, 'text-anchor': 'middle',
+        class: 'tick', text: r.spat}, f.svg);
+    });
+    [1, 2].forEach(d => {
+      const idx = list.map((r, i) => r.det === d ? i : -1).filter(i => i >= 0);
+      const a = xs[idx[0]], b = xs[idx[idx.length - 1]];
+      mk('text', {x: (a + b) / 2, y: f.y1 + (wide ? 34 : 18), 'text-anchor': 'middle',
+        class: 'lab', text: `DET0${d} slits`}, f.svg);
+    });
+  }
+  function dotMark(f, cx, cy, kind, tip) {
+    if (kind === 'ring') mk('circle', {cx, cy, r: 4.5, style: 'fill:var(--surface);stroke:var(--neutral);stroke-width:2'}, f.svg);
+    else mk('circle', {cx, cy, r: 4.5, style: `fill:${kind};stroke:var(--surface);stroke-width:1.5`}, f.svg);
+    mk('circle', {cx, cy, r: 10, fill: 'transparent', 'data-tip': tip}, f.svg);
+  }
+
+  // ---------- rms per slit ----------
+  function rms() {
+    const s = D.slits;
+    const f = frame('c-rms', 260, {t: 10, r: 10, b: 52, l: 46});
+    const y = lin(0, 0.3, f.y1, f.y0);
+    gridY(f, y, range(0, 0.3, 0.05), v => v.toFixed(2), 'rms (px)');
+    const xs = slitX(f, s);
+    slitAxis(f, s, xs);
+    s.forEach((r, i) => {
+      const tip = `DET0${r.det} · slit ${r.spat}<br>holy-grail ${fmt(r.hg_true, 3)} px, ${r.hg_n} lines<br>reidentify ${fmt(r.re_true, 3)} px, ${r.re_n} lines`;
+      dotMark(f, xs[i] - 3, y(r.hg_true), 'ring', tip);
+      dotMark(f, xs[i] + 3, y(r.re_true), 'var(--accent)', tip);
+    });
+    markTips(f);
+  }
+
+  // ---------- robustness: max |dlambda| per slit ----------
+  function robust(id, mode) {
+    const a = D.tests[`${mode}_2.0`], b = D.tests[`${mode}_0.75`];
+    const f = frame(id, 270, {t: 10, r: 10, b: 52, l: 46});
+    const y = logsc(0.01, 100, f.y1, f.y0);
+    gridY(f, y, [0.01, 0.1, 1, 10, 100], v => v >= 1 ? v.toFixed(0) : String(v), 'max |Δλ| (Å)');
+    const xs = slitX(f, a);
+    slitAxis(f, a, xs);
+    // Pass threshold at 2 A
+    mk('line', {x1: f.x0, x2: f.x1, y1: y(2), y2: y(2), style: 'stroke:var(--bad);stroke-width:1;stroke-dasharray:4 4'}, f.svg);
+    mk('text', {x: f.x1 - 2, y: y(2) - 5, 'text-anchor': 'end', class: 'lab', text: 'pass < 2 Å'}, f.svg);
+    const v = d => d == null ? null : Math.max(d, 0.01);
+    const lab = d => d == null ? 'no fit' : (d < 0.01 ? '< 0.01 Å' : d.toFixed(2) + ' Å');
+    a.forEach((r, i) => {
+      const q = b[i];
+      const tip = `DET0${r.det} · slit ${r.spat}<br>default: max ${lab(r.dmax)}, rms ${fmt(r.rms, 3)} px<br>0.75: max ${lab(q.dmax)}, rms ${fmt(q.rms, 3)} px`;
+      if (r.dmax != null) dotMark(f, xs[i] - 3, y(v(r.dmax)), 'ring', tip);
+      if (q.dmax != null) dotMark(f, xs[i] + 3, y(v(q.dmax)), 'var(--accent)', tip);
+    });
+    // Direct label on the outlier
+    a.forEach((r, i) => { if (r.dmax != null && r.dmax >= 2)
+      mk('text', {x: xs[i] + 9, y: y(r.dmax) + 4, class: 'lab', text: `slit ${r.spat}: ${r.dmax.toFixed(0)} Å`}, f.svg); });
+    markTips(f);
+  }
+
+  // ---------- slit 758: dlambda along the slit ----------
+  function dl() {
+    const s = D.s758;
+    const f = frame('c-dl', 280, {t: 12, r: 16, b: 40, l: 46});
+    const x = lin(0, 2040, f.x0, f.x1);
+    const y = lin(-5, 40, f.y1, f.y0);
+    gridY(f, y, range(0, 40, 10), v => v.toFixed(0), 'Δλ (Å)');
+    axisX(f, x, range(0, 2000, 250), v => v.toFixed(0), 'Spectral pixel', false);
+    const path = (vals, col, w) => mk('path', {d: s.pix.map((p, j) => (j ? 'L' : 'M') + x(p).toFixed(1) + ' ' + y(vals[j]).toFixed(1)).join(''),
+      style: `fill:none;stroke:${col};stroke-width:${w}`}, f.svg);
+    mk('line', {x1: f.x0, x2: f.x1, y1: y(0), y2: y(0), style: 'stroke:var(--ink2);stroke-width:1;opacity:.6'}, f.svg);
+    path(s.dl_default, 'var(--bad)', 2);
+    path(s.dl_075, 'var(--accent)', 2);
+    const last = s.pix.length - 1;
+    mk('text', {x: x(s.pix[last]) - 4, y: y(s.dl_default[last]) - 8, 'text-anchor': 'end', class: 'lab', text: 'default: +' + s.dl_default[last].toFixed(0) + ' Å at the red end'}, f.svg);
+    const cross = mk('line', {y1: f.y0, y2: f.y1, style: 'stroke:var(--ink2);stroke-width:1;opacity:.5', visibility: 'hidden'}, f.svg);
+    f.svg.addEventListener('mousemove', e => {
+      const b = f.host.getBoundingClientRect();
+      const px = (e.clientX - b.left) * f.W / b.width, py = (e.clientY - b.top) * f.W / b.width;
+      if (px < f.x0 || px > f.x1) { hideTip(f); cross.setAttribute('visibility', 'hidden'); return; }
+      const j = Math.max(0, Math.min(last, Math.round(x.inv(px) / 5)));
+      cross.setAttribute('x1', x(s.pix[j])); cross.setAttribute('x2', x(s.pix[j]));
+      cross.setAttribute('visibility', 'visible');
+      showTip(f, `pixel ${s.pix[j]}<br>default ${s.dl_default[j].toFixed(2)} Å<br>0.75 ${s.dl_075[j].toFixed(2)} Å`, px, py);
+    });
+    f.svg.addEventListener('mouseleave', () => { hideTip(f); cross.setAttribute('visibility', 'hidden'); });
+  }
+
+  // ---------- slit 758: spectrum window, two panels ----------
+  function win() {
+    const s = D.s758;
+    document.getElementById('nref').textContent = s.nref;
+    const ph = 150, gap = 34;
+    const f = frame('c-win', 2 * ph + gap + 52, {t: 20, r: 12, b: 40, l: 14});
+    const x = lin(s.grid[0], s.grid[s.grid.length - 1], f.x0, f.x1);
+    const panels = [[s.hg, 'var(--accent)', 'holy-grail scale'], [s.reid, 'var(--bad)', 'reidentify scale, match_toler 2.0']];
+    const ys = [];
+    panels.forEach(([vals, col, title], k) => {
+      const top = f.y0 + k * (ph + gap), bot = top + ph;
+      const y = lin(-0.05, 1.15, bot, top);
+      ys.push(y);
+      mk('text', {x: f.x0, y: top - 6, class: 'lab', text: title}, f.svg);
+      mk('line', {x1: f.x0, x2: f.x1, y1: bot, y2: bot, class: 'ax'}, f.svg);
+      const line = (v, c, w) => mk('path', {d: s.grid.map((g, j) => (j ? 'L' : 'M') + x(g).toFixed(1) + ' ' + y(Math.min(v[j], 1.15)).toFixed(1)).join(''),
+        style: `fill:none;stroke:${c};stroke-width:${w};stroke-linejoin:round`}, f.svg);
+      line(s.ref, 'var(--neutral)', 4);
+      line(vals, col, 1.4);
+    });
+    axisX(f, x, range(22600, 23700, 100), um, 'Wavelength (µm)', false);
+    const cross = mk('line', {y1: f.y0, y2: f.y1, style: 'stroke:var(--ink2);stroke-width:1;opacity:.5', visibility: 'hidden'}, f.svg);
+    f.svg.addEventListener('mousemove', e => {
+      const b = f.host.getBoundingClientRect();
+      const px = (e.clientX - b.left) * f.W / b.width, py = (e.clientY - b.top) * f.W / b.width;
+      if (px < f.x0 || px > f.x1) { hideTip(f); cross.setAttribute('visibility', 'hidden'); return; }
+      const wl = x.inv(px);
+      cross.setAttribute('x1', px); cross.setAttribute('x2', px); cross.setAttribute('visibility', 'visible');
+      showTip(f, `${wl.toFixed(0)} Å`, px, py);
+    });
+    f.svg.addEventListener('mouseleave', () => { hideTip(f); cross.setAttribute('visibility', 'hidden'); });
+  }
+
+  // ---------- stored vs true rms ----------
+  function bug() {
+    const s = D.slits;
+    const f = frame('c-bug', 300, {t: 12, r: 18, b: 42, l: 46});
+    const x = lin(0, 0.25, f.x0, f.x1), y = lin(0, 0.4, f.y1, f.y0);
+    gridY(f, y, range(0, 0.4, 0.1), v => v.toFixed(1), 'stored rms (px)');
+    axisX(f, x, range(0, 0.25, 0.05), v => v.toFixed(2), 'recomputed rms (px)', true);
+    [[1, '1×'], [2, '2×']].forEach(([k, t]) => {
+      const xe = Math.min(0.25, 0.4 / k);
+      mk('line', {x1: x(0), y1: y(0), x2: x(xe), y2: y(xe * k), style: 'stroke:var(--muted);stroke-width:1;stroke-dasharray:4 4'}, f.svg);
+      mk('text', {x: x(xe) - 4, y: y(xe * k) + (k === 1 ? -6 : 14), 'text-anchor': 'end', class: 'lab', text: t}, f.svg);
+    });
+    s.forEach(r => {
+      const tip = `DET0${r.det} · slit ${r.spat}<br>stored ${r.hg_rms.toFixed(3)} px<br>recomputed ${r.hg_true.toFixed(3)} px`;
+      dotMark(f, x(r.hg_true), y(r.hg_rms), detVar(r.det), tip);
+    });
+    markTips(f);
+  }
+
+  // ---------- tables ----------
+  function tables() {
+    const s = D.slits;
+    const med = a => { const b = [...a].sort((p, q) => p - q), n = b.length;
+      return n % 2 ? b[(n - 1) / 2] : (b[n / 2 - 1] + b[n / 2]) / 2; };
+    const by = d => s.filter(r => r.det === d);
+    const row = (lab, f3, f5) => `<tr><td>${lab}</td><td class="mono">${f3}</td><td class="mono">${f5}</td></tr>`;
+    const both = fn => [1, 2].map(d => fn(by(d))).join(' / ');
+    document.getElementById('t-run').innerHTML =
+      '<thead><tr><th>DET01 / DET02</th><th>run3 holy-grail</th><th>run5 reidentify</th></tr></thead><tbody>' +
+      row('science slits solved', both(a => `${a.length}/${a.length}`), both(a => `${a.filter(r => r.re_n > 0).length}/${a.length}`)) +
+      row('rms, median (px)', both(a => med(a.map(r => r.hg_true)).toFixed(3)), both(a => med(a.map(r => r.re_true)).toFixed(3))) +
+      row('rms, max (px)', both(a => Math.max(...a.map(r => r.hg_true)).toFixed(3)), both(a => Math.max(...a.map(r => r.re_true)).toFixed(3))) +
+      row('stored rms, median (px)', both(a => med(a.map(r => r.hg_rms)).toFixed(3)), both(a => med(a.map(r => r.re_rms)).toFixed(3))) +
+      row('lines per slit', both(a => `${Math.min(...a.map(r => r.hg_n))}–${Math.max(...a.map(r => r.hg_n))}`), both(a => `${Math.min(...a.map(r => r.re_n))}–${Math.max(...a.map(r => r.re_n))}`)) +
+      row('max |Δλ| from run3 (Å)', '–', both(a => Math.max(...a.map(r => r.dmax)).toFixed(2))) +
+      '</tbody>';
+
+    const t = D.tests;
+    const ok = r => r.rms != null && r.rms < 0.5 && r.n >= 30 && r.dmax < 2;
+    const cell = k => {
+      if (!t[k]) return '<td>–</td>';
+      const n = t[k].filter(ok).length, fail = t[k].filter(r => !ok(r)).map(r => `${r.det}:${r.spat}`);
+      const cls = n === t[k].length ? 'ok' : 'no';
+      return `<td><span class="chip ${cls}">${cls === 'ok' ? '✓' : '✕'} ${n}/${t[k].length}</span>${fail.length ? `<div class="mono" style="font-size:11.5px;color:var(--muted);margin-top:3px">fail ${fail.join(' ')}</div>` : ''}</td>`;
+    };
+    const tr = (lab, keys, cls) => `<tr${cls ? ` class="${cls}"` : ''}><td>${lab}</td>${keys.map(cell).join('')}</tr>`;
+    document.getElementById('t-tests').innerHTML =
+      '<thead><tr><th>setting</th><th>self (full archive)</th><th>leave-one-out</th><th>cross-detector</th></tr></thead><tbody>' +
+      tr('match_toler 2.0 (default)', ['self_2.0', 'loo_2.0', 'xdet_2.0']) +
+      tr('match_toler 0.75 · adopted', ['self_0.75', 'loo_0.75', 'xdet_0.75'], 'chosen') +
+      tr('match_toler 0.5', ['self_0.5', 'loo_0.5', 'xdet_0.5']) +
+      tr('nreid_min 2', ['-', '-', 'xdet_nreid2']) +
+      tr('nreid_min 3', ['-', '-', 'xdet_nreid3']) +
+      tr('nreid_min 4', ['-', '-', 'xdet_nreid4']) +
+      '</tbody>';
+
+    document.getElementById('t-slits').innerHTML =
+      '<thead><tr><th>slit</th><th>range (Å)</th><th>holy-grail lines</th><th>rms (px)</th><th>stored rms</th><th>reidentify lines</th><th>rms (px)</th><th>median |Δλ| (Å)</th><th>max |Δλ| (Å)</th></tr></thead><tbody>' +
+      s.map(r => `<tr><td class="mono">DET0${r.det} ${r.spat}</td><td class="mono">${r.w0}–${r.w1}</td><td>${r.hg_n}</td><td>${r.hg_true.toFixed(3)}</td><td>${r.hg_rms.toFixed(3)}</td><td>${r.re_n}</td><td>${r.re_true.toFixed(3)}</td><td>${r.dmed.toFixed(2)}</td><td>${r.dmax.toFixed(2)}</td></tr>`).join('') +
+      '</tbody>';
+  }
+
+  function drawAll() {
+    cover(); spectra(); rms(); robust('c-loo', 'loo'); robust('c-xdet', 'xdet');
+    dl(); win(); bug();
+  }
+  facts(); tables(); drawAll();
+  let rt;
+  window.addEventListener('resize', () => { clearTimeout(rt); rt = setTimeout(drawAll, 150); });
+})();
+</script>

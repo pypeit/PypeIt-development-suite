@@ -1,0 +1,974 @@
+<title>Holy-grail Dispersion Truncation</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans:ital,wght@0,400;0,500;0,600;1,400&family=Spectral:wght@500;600&display=swap">
+<style>
+/* Layout: a bug report read top to bottom: what is wrong, how it
+   propagates, evidence, what each fix does, then what to do. One
+   ~70ch reading column; code and figures use the full 980px. */
+:root {
+  --bg: #f6f7f8;
+  --surface: #ffffff;
+  --code-bg: #f0f2f4;
+  --ink: #15191e;
+  --ink2: #47505c;
+  --muted: #737b87;
+  --rule: #dfe3e8;
+  --grid: #eceff2;
+  --accent: #4a3aa7;      /* fix B / recommended */
+  --neutral: #8d949e;     /* current code */
+  --tri: #2a78d6;         /* triangles, correct dispersion */
+  --quad: #eb6834;        /* quadrangles, truncated dispersion */
+  --bad: #e34948;         /* fix A */
+  --good: #0a8a0a;
+  --good-bg: #e6f4e6;
+  --bad-bg: #fbe9e9;
+  --warn-bg: #fdf3dc;
+  --warn: #8a5a00;
+  --add: #0a7a2f;
+  --del: #b42318;
+  --font-display: "Spectral", Georgia, "Times New Roman", serif;
+  --font-body: "IBM Plex Sans", "Helvetica Neue", Arial, sans-serif;
+  --font-mono: "IBM Plex Mono", ui-monospace, "SFMono-Regular", Menlo, monospace;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --bg: #121417; --surface: #1a1d21; --code-bg: #20242a; --ink: #eef0f3;
+    --ink2: #b9c0ca; --muted: #8d95a0; --rule: #2d3239; --grid: #23272d;
+    --accent: #9085e9; --neutral: #7f8690; --tri: #3987e5; --quad: #d95926;
+    --bad: #e66767; --good: #4cc35a; --good-bg: #17301b; --bad-bg: #3a1d1f;
+    --warn-bg: #33290f; --warn: #e5b45a; --add: #5fd38a; --del: #ff8a80;
+    color-scheme: dark;
+  }
+}
+:root[data-theme="dark"] {
+  --bg: #121417; --surface: #1a1d21; --code-bg: #20242a; --ink: #eef0f3;
+  --ink2: #b9c0ca; --muted: #8d95a0; --rule: #2d3239; --grid: #23272d;
+  --accent: #9085e9; --neutral: #7f8690; --tri: #3987e5; --quad: #d95926;
+  --bad: #e66767; --good: #4cc35a; --good-bg: #17301b; --bad-bg: #3a1d1f;
+  --warn-bg: #33290f; --warn: #e5b45a; --add: #5fd38a; --del: #ff8a80;
+  color-scheme: dark;
+}
+* { box-sizing: border-box; }
+body { background: var(--bg); color: var(--ink);
+  font: 15px/1.6 var(--font-body);
+  padding-inline: 20px; padding-block: 40px 72px; }
+main { max-width: 980px; margin: 0 auto; display: grid; gap: 52px; }
+section { display: grid; gap: 16px; min-width: 0; }
+h1, h2, h3 { font-family: var(--font-display); text-wrap: balance;
+  margin: 0; line-height: 1.2; font-weight: 600; }
+h1 { font-size: clamp(30px, 5vw, 42px); letter-spacing: -0.01em; }
+h2 { font-size: 26px; padding-top: 22px; border-top: 1px solid var(--rule); }
+h3 { font-size: 18px; font-weight: 500; }
+p, ul, ol { margin: 0; max-width: 72ch; color: var(--ink2); }
+p strong, li strong { color: var(--ink); font-weight: 600; }
+ul, ol { padding-left: 1.3em; display: grid; gap: 8px; }
+code { font-family: var(--font-mono); font-size: 0.87em;
+  background: var(--code-bg); padding: 1px 5px; border-radius: 3px;
+  color: var(--ink); overflow-wrap: anywhere; }
+.eyebrow { font: 500 12px/1.5 var(--font-mono); letter-spacing: 0.07em;
+  text-transform: uppercase; color: var(--muted); }
+header { display: grid; gap: 14px; }
+.lede { font-size: 17px; color: var(--ink2); }
+.callout { background: var(--warn-bg); border-radius: 6px;
+  padding: 14px 18px; color: var(--ink); max-width: none; }
+.callout strong { color: var(--warn); }
+
+.facts { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 1px; background: var(--rule); border: 1px solid var(--rule);
+  border-radius: 6px; overflow: hidden; }
+.fact { background: var(--surface); padding: 16px 18px; display: grid;
+  gap: 4px; align-content: start; }
+.fact .v { font: 500 22px/1.15 var(--font-mono); color: var(--ink); }
+.fact .l { font-size: 13px; color: var(--ink2); line-height: 1.4; }
+@media (max-width: 760px) {
+  .facts { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+}
+
+pre { margin: 0; background: var(--code-bg); border-radius: 6px;
+  padding: 14px 16px; overflow-x: auto; font: 12.5px/1.55 var(--font-mono);
+  color: var(--ink); }
+pre .c { color: var(--muted); }
+pre .add { color: var(--add); }
+pre .del { color: var(--del); }
+pre .hl { background: color-mix(in srgb, var(--quad) 22%, transparent);
+  border-radius: 2px; }
+.codehead { font: 500 12px/1.4 var(--font-mono); color: var(--muted);
+  margin-bottom: -10px; }
+
+.chain { list-style: none; padding: 0; display: grid; gap: 0;
+  max-width: none; counter-reset: step; }
+.chain li { display: grid; grid-template-columns: 34px minmax(0, 1fr);
+  gap: 14px; padding: 12px 0; border-top: 1px solid var(--rule);
+  counter-increment: step; }
+.chain li:last-child { border-bottom: 1px solid var(--rule); }
+.chain li::before { content: counter(step); font: 500 15px/1 var(--font-mono);
+  color: var(--surface); background: var(--ink2); width: 26px; height: 26px;
+  border-radius: 50%; display: grid; place-items: center; margin-top: 1px; }
+.chain .where { font: 12px/1.5 var(--font-mono); color: var(--muted); }
+.chain p { max-width: 80ch; }
+
+figure { margin: 0; display: grid; gap: 10px; min-width: 0; }
+.plot { position: relative; background: var(--surface);
+  border: 1px solid var(--rule); border-radius: 6px; padding: 12px 8px 6px;
+  min-width: 0; }
+.plot svg { display: block; width: 100%; overflow: visible; }
+figcaption { font-size: 13.5px; color: var(--ink2); max-width: 80ch; }
+figcaption b { color: var(--ink); font-weight: 600; }
+.legend { display: flex; flex-wrap: wrap; gap: 6px 18px; padding: 0 8px 6px;
+  font-size: 12.5px; color: var(--ink2); }
+.legend span { display: inline-flex; align-items: center; gap: 7px; }
+.dot { width: 9px; height: 9px; border-radius: 50%; display: inline-block; }
+.ring { width: 9px; height: 9px; border-radius: 50%; display: inline-block;
+  border: 2px solid var(--neutral); }
+.sw { width: 18px; height: 0; border-top: 2px dashed var(--ink2);
+  display: inline-block; }
+.tip { position: absolute; pointer-events: none; background: var(--ink);
+  color: var(--bg); font: 12px/1.45 var(--font-mono); padding: 6px 9px;
+  border-radius: 4px; white-space: nowrap; z-index: 2; }
+.pair { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 16px; }
+@media (max-width: 760px) { .pair { grid-template-columns: 1fr; } }
+svg text { font-family: var(--font-body); }
+svg .tick { font: 11px var(--font-mono); fill: var(--muted); }
+svg .axl { font-size: 12px; fill: var(--ink2); }
+svg .lab { font-size: 11.5px; fill: var(--ink2); }
+svg .gl { stroke: var(--grid); stroke-width: 1; }
+svg .ax { stroke: var(--rule); stroke-width: 1; }
+
+.tw { overflow-x: auto; border: 1px solid var(--rule); border-radius: 6px;
+  background: var(--surface); }
+table { border-collapse: collapse; width: 100%; font-size: 13.5px;
+  font-variant-numeric: tabular-nums; }
+th, td { padding: 8px 12px; text-align: right;
+  border-bottom: 1px solid var(--grid); white-space: nowrap; }
+th { font-weight: 500; color: var(--muted); font-size: 12px;
+  letter-spacing: 0.03em; background: var(--bg); }
+td:first-child, th:first-child { text-align: left; }
+tr:last-child td { border-bottom: 0; }
+td.mono { font-family: var(--font-mono); font-size: 12.5px; }
+.chip { display: inline-flex; align-items: center; gap: 5px;
+  font: 500 12px/1 var(--font-mono); padding: 4px 7px; border-radius: 4px; }
+.chip.ok { color: var(--good); background: var(--good-bg); }
+.chip.no { color: var(--bad); background: var(--bad-bg); }
+.chosen td { background: color-mix(in srgb, var(--accent) 8%, transparent); }
+details { border: 1px solid var(--rule); border-radius: 6px;
+  background: var(--surface); }
+summary { cursor: pointer; padding: 10px 14px; font-weight: 500; }
+summary:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+details .tw { border: 0; border-top: 1px solid var(--rule); border-radius: 0; }
+footer { font-size: 13px; color: var(--muted); }
+a { color: var(--accent); }
+a:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+.gloss td { white-space: normal; text-align: left; vertical-align: top; }
+.gloss td:first-child { white-space: nowrap; font-family: var(--font-mono);
+  font-size: 12.5px; color: var(--ink); }
+.gloss td:last-child { color: var(--ink2); min-width: 280px; }
+</style>
+
+<main>
+<header>
+  <div class="eyebrow">PypeIt bug report · pypeit/core/wavecal · holy-grail</div>
+  <h1>Holy-grail dispersion truncation</h1>
+  <p class="lede"><code>patterns.quadrangles</code> stores the dispersion and
+  central wavelength of every 4-line pattern in unsigned-integer arrays, so
+  1.94 Å/px becomes 1 and anything below 1 Å/px becomes 0. Holy-grail then
+  uses that truncated dispersion to report the fit rms in pixels and to
+  convert the line-matching tolerance to ångström.</p>
+  <p class="callout"><strong>Fixing the dtype alone is not safe.</strong> On
+  the data where this was found, the truncation is what makes holy-grail
+  work: it lets 4-line patterns from the whole slit vote on the line IDs.
+  With float dispersions, 13 of the 15 affected slits fall back to 3-line
+  fits that are wrong by up to 29–112 Å towards the blue end, still passing
+  the rms test, and one slit fails. The underlying problem is the line-ID
+  vote in <code>solve_slit</code>, which only uses patterns within ±0.8 % of
+  the peak dispersion, while the dispersion of these spectra changes by 7–8 %
+  along the slit. A smaller fix (B, patch ready) corrects the reported rms
+  and on this data changes no solution by more than 0.14 Å; it has been
+  tested on one dataset only.</p>
+  <p>The defect and the fixes are generic. The evidence comes from
+  Subaru/MOIRCS data; if you have not worked with MOIRCS, read
+  <a href="#background">Background</a> first.</p>
+  <p class="eyebrow">Found 2026-10-03 while adding Subaru/MOIRCS VB_K · PypeIt develop f3a1f1d27 · numpy 2.5.3</p>
+</header>
+
+<div class="facts" id="facts"></div>
+
+<section>
+  <h2>The defect</h2>
+  <p>In <code>quadrangles</code> (and the unused <code>curved_quadrangles</code>)
+  the output arrays for the pattern central wavelength and dispersion are
+  created and appended with <code>dtype=np.ulonglong</code>. The dispersion
+  <code>tst</code> is a float ratio, so it is truncated toward zero. The
+  integer type is original: the 2018 numba version already declared these
+  arrays <code>nb.types.ulong</code> (<code>da90239b6</code>, 2018-08-16). The
+  numba removal (<code>d92c50c8d</code>, 2020-12-05) briefly made them float64,
+  and <code>1fbb5e18b</code> (2021-01-03, "Fixed a bug I introduced when I
+  removed the numba dependency") restored the unsigned type, as the trailing
+  comments show. So the truncation has very likely been there since 2018,
+  apart from that month (the numba-era code was not run here). The
+  <code>uint64</code> index arrays on the neighbouring lines are fine.</p>
+  <div class="codehead">pypeit/core/wavecal/patterns.py · quadrangles()</div>
+  <pre><span class="c">446</span>    wvcen = np.zeros((1,), <span class="hl">dtype=np.ulonglong</span>) <span class="c">#, dtype=nb.types.ulong)</span>
+<span class="c">447</span>    disps = np.zeros((1,), <span class="hl">dtype=np.ulonglong</span>) <span class="c">#, dtype=nb.types.ulong)</span>
+<span class="c">...</span>
+<span class="c">489</span>        tst = (linelist[lr] - linelist[ll]) / (detlines[dr] - detlines[dl])
+<span class="c">490</span>        wvl = (npixels/2.)*tst + (linelist[lr]-tst*detlines[dr])
+<span class="c">491</span>        wvcen = np.hstack((wvcen, np.array([wvl], <span class="hl">dtype=np.ulonglong</span>)))
+<span class="c">492</span>        disps = np.hstack((disps, np.array([tst], <span class="hl">dtype=np.ulonglong</span>)))</pre>
+  <p>Same four lines in <code>curved_quadrangles</code> (554–555, 601–602),
+  which has no callers and would not run anyway (it calls
+  <code>np.linalg.lstsq</code> on a scalar and uses an undefined
+  <code>dbval</code>, l.569–586). <code>triangles</code> uses float arrays and
+  is not affected.</p>
+  <h3>Minimal reproduction</h3>
+  <p>Twelve lines on a linear wavelength solution, passed to both pattern
+  generators (<code>holy_rms_repro.py</code>):</p>
+  <pre id="repro"></pre>
+</section>
+
+<section>
+  <h2>How it reaches the results</h2>
+  <p>Holy-grail runs <code>run_brute_loop</code> over triangles
+  (<code>poly=3</code>) and then quadrangles (<code>poly=4</code>). It keeps the
+  first fit it finds, replaces it only with a fit that has an rms below the
+  threshold and more lines, and stops early once more than half of the lines
+  on both halves of the spectrum are identified (autoid.py:2076–2093).</p>
+  <ol class="chain">
+    <li><div><p><strong>Truncation.</strong> <code>results_brute(poly=4)</code>
+      calls <code>quadrangles</code>; every pattern dispersion is an integer.</p>
+      <div class="where">autoid.py:2696 → patterns.py:446–492</div></div></li>
+    <li><div><p><strong>Histogram.</strong> <code>solve_slit</code> bins
+      (central wavelength, log10 dispersion) on a grid from −1.5 to 2.0 and
+      first drops values outside it (the lowest allowed dispersion is
+      10<sup>−1.5</sup> Å/px). A truncated 0 is dropped by that cut, so below
+      1 Å/px <strong>no 4-line pattern survives</strong> and the quadrangle pass
+      contributes nothing. Between 1 and 2 Å/px every pattern piles into the
+      bin that contains log10 = 0.</p>
+      <div class="where">autoid.py:2791–2822</div></div></li>
+    <li><div><p><strong>Dispersion estimate.</strong> <code>solve_patterns</code>
+      sets <code>patt_dict['bdisp'] = 10.0 ** dcen</code> = 0.9992 Å/px. The
+      line IDs come from the pattern indices, so they can still be right.</p>
+      <div class="where">autoid.py:2961</div></div></li>
+    <li><div><p><strong>Fit.</strong> <code>fit_slit</code> passes
+      <code>bdisp</code> to <code>iterative_fitting</code> as
+      <code>dispersion</code>, which uses it for <code>rms_pixels =
+      rms_angstrom/dispersion</code> and for matching new lines,
+      <code>mn/dispersion &lt; match_toler</code>. The same function computes
+      the correct <code>cen_disp</code> from the fit (l.455) and stores it in
+      the <code>WaveFit</code>, but does not use it for the rms or the
+      matching.</p>
+      <div class="where">wv_fitting.py:297 → 393, 404, 447</div></div></li>
+    <li><div><p><strong>Outputs.</strong> The inflated rms is compared with
+      <code>rms_thresh</code> where a quadrangle fit would replace an earlier
+      fit (l.2082) and where the preliminary solution is accepted or sent to
+      cross-matching (l.3051), and is stored as <code>WaveFit.rms</code>
+      (WaveCalib files, logs, QA). The
+      matching tolerance is effectively <code>match_toler × 0.999</code> Å
+      instead of <code>match_toler × 1.94</code> Å.</p>
+      <div class="where">autoid.py:2082, 3051</div></div></li>
+  </ol>
+</section>
+
+<section id="background">
+  <h2>Background: the MOIRCS data</h2>
+  <p><strong>MOIRCS</strong> is the near-infrared imager and multi-object
+  spectrograph of the Subaru Telescope (0.9–2.5 µm). The beam is split into
+  two optically independent channels, each with its own camera, grism and
+  2048×2048 Hawaii-2RG detector. PypeIt reduces the two as
+  <strong>DET01</strong> and <strong>DET02</strong> of one exposure, with
+  separate slit edges, tilts and wavelength solutions. Support is being added
+  on the branch <code>u/monodera/subaru_moircs_vbk</code> (HK500 grism first,
+  now VB_K).</p>
+  <p><strong>The data.</strong> One multi-object mask
+  (<code>MO_CC0958PA200_1</code>) observed with the <strong>VB_K</strong>
+  grism, a K-band grism with about 1.94 Å per pixel. Each detector has 14
+  science slits and 5 square boxes for alignment stars; the boxes are flagged
+  <code>BOXSLIT</code> and skipped, which leaves the <strong>28 science
+  slits</strong> used here. The VB_K spectrum is longer than the detector, so
+  every slit records a 0.39 µm window (2040 pixels × 1.94 Å) whose position
+  depends on where the slit sits in the mask. Together the slits of this mask
+  cover 1.90–2.54 µm.</p>
+  <p><strong>Wavelength calibration from the sky.</strong> PypeIt has no
+  usable lamp line list in the K band (its Th and Ar lists stop near 1.1 µm
+  or are sparse), so the two 180 s science exposures, taken in an A–B
+  dither, are typed <code>arc,tilt,science</code> and the night-sky OH
+  emission lines are used (line list <code>OH_MOSFIRE_K</code>). OH lines are
+  dense: holy-grail fits 46–60 lines per slit. The holy-grail run used
+  <code>fwhm = 6</code> px (measured 5.6–6.2 px), <code>n_final = 4</code> and
+  <code>rms_thresh_frac_fwhm = 0.11</code>, which gives per-slit rms
+  thresholds of 0.60–0.68 px. The branch now uses <code>reidentify</code>
+  with an archive built from these holy-grail solutions; everything in this
+  report is from the earlier holy-grail run.</p>
+  <p><strong>Why this data shows the bug.</strong> A dispersion of 1.94 Å/px
+  sits between 1 and 2, so the truncation halves it (to 1) and the stored rms
+  nearly doubles. The dense OH line list also gives the quadrangle search
+  many patterns to match, so a quadrangle fit wins on about half of the
+  slits. At dispersions below 1 Å/px the same bug has a different effect (the
+  quadrangle pass is silently dropped) and the rms is not affected.</p>
+  <figure>
+    <div class="plot">
+      <div class="legend"><span><i class="dot" style="background:var(--quad)"></i>quadrangle fit won (bdisp 0.9992)</span><span><i class="dot" style="background:var(--tri)"></i>triangle fit won</span></div>
+      <div id="c-cover"></div>
+    </div>
+    <figcaption><b>Wavelength window of each science slit</b>, from its
+    holy-grail solution, sorted by blue end and labelled
+    <code>DET0n slit</code>. Which pattern type won follows the window: the 4
+    bluest slits (starting at 1.90–1.98 µm) are quadrangle fits, all 8
+    starting at 2.01–2.07 µm are triangle fits, and 11 of the 16 starting at
+    2.08–2.15 µm are quadrangle fits. Slits on both detectors behave the
+    same way.</figcaption>
+  </figure>
+  <h3>Terms used in this report</h3>
+  <div class="tw"><table class="gloss">
+    <tbody>
+      <tr><td>DET01, DET02</td><td>The two MOIRCS channels and their detectors.</td></tr>
+      <tr><td>slit 337</td><td>A slit's PypeIt <code>spat_id</code>: the spatial pixel of its centre on that detector. Slit numbers repeat between detectors.</td></tr>
+      <tr><td>pattern</td><td>Three (triangle, <code>poly=3</code>) or four (quadrangle, <code>poly=4</code>) detected lines whose relative spacings holy-grail matches against the line list. Each match implies a central wavelength and a dispersion.</td></tr>
+      <tr><td>bdisp</td><td><code>patt_dict['bdisp']</code>: the dispersion (Å/px) at the peak of holy-grail's pattern histogram, passed on to the fit.</td></tr>
+      <tr><td>stored rms</td><td><code>WaveFit.rms</code> as written to the WaveCalib file: the fit rms in Å divided by <code>bdisp</code>.</td></tr>
+      <tr><td>recomputed (true) rms</td><td>The fit rms in Å divided by the solution's own median dispersion; what the stored rms should be.</td></tr>
+      <tr><td>run2, run3</td><td>The holy-grail reduction of this mask (run3 reused run2's calibrations unchanged).</td></tr>
+      <tr><td>current code, fix A, fix B</td><td>Holy-grail as in <code>develop</code>, and the two candidate fixes described below, run offline on the same sky spectra.</td></tr>
+      <tr><td>triangles only</td><td>Holy-grail with the quadrangle pass switched off (<code>rng_poly = [3]</code> in <code>run_brute_loop</code>), run offline like the fixes.</td></tr>
+      <tr><td>vote window</td><td>The pattern solutions within ±3 central-wavelength bins and ±3 log-dispersion bins (<code>nselw</code>, <code>nseld</code>) of the histogram peak; only these vote on the line IDs.</td></tr>
+      <tr><td>max |Δλ|</td><td>Largest difference between two wavelength solutions of a slit, anywhere along it.</td></tr>
+      <tr><td>cc</td><td>Correlation of a slit's sky spectrum, on a given wavelength scale, with the median sky spectrum of the other slits. Near 1 when the solution agrees with the others.</td></tr>
+    </tbody>
+  </table></div>
+</section>
+
+<section>
+  <h2>Evidence on real data</h2>
+  <p>Subaru/MOIRCS, VB_K grism, mask MO_CC0958PA200_1: 28 slits on two
+  detectors, wavelengths from OH sky lines (<code>OH_MOSFIRE_K</code>), true
+  dispersion 1.93–1.96 Å/px. The calibrations are from one holy-grail
+  pipeline run (<code>run2</code>; <code>run3</code> reused them unchanged).
+  Holy-grail solves all 28 without cross-matching. For 15 slits the
+  winning pattern came from the quadrangle pass, <code>bdisp</code> is 0.9992,
+  and the stored rms is 1.93–1.96 times the rms recomputed from the fit
+  residuals and the solution's own dispersion. For the other 13 it came from
+  triangles, <code>bdisp</code> is 1.91–1.97, and the stored rms is right.</p>
+  <figure>
+    <div class="plot">
+      <div class="legend"><span><i class="dot" style="background:var(--quad)"></i>bdisp 0.9992 Å/px (quadrangle pattern)</span><span><i class="dot" style="background:var(--tri)"></i>bdisp 1.91–1.97 Å/px (triangle pattern)</span></div>
+      <div id="c-rms"></div>
+    </div>
+    <figcaption><b>Stored against recomputed rms</b> for the 28 holy-grail
+    fits (current code). Points sit on 1× or ~2×, nothing in between.</figcaption>
+  </figure>
+  <figure>
+    <div class="plot">
+      <div class="legend"><span><i class="dot" style="background:var(--tri)"></i>triangles</span><span><i class="dot" style="background:var(--quad)"></i>quadrangles</span><span><i class="sw"></i>true dispersion</span></div>
+      <div id="c-hist"></div>
+    </div>
+    <figcaption><b>Where the pattern histogram peaks</b>, for each
+    <code>solve_slit</code> call on one slit (DET01 slit 337). Labels give the
+    peak height. Triangle calls peak at 1.66–1.97 Å/px. Quadrangle calls
+    either find no patterns or peak in the bin that contains 1.0 Å/px
+    (reported as 0.9992), where about half of their solutions sit (44–59 %;
+    297 of 580 in the last call). A quadrangle fit wins, so
+    <code>bdisp</code> = 0.9992.</figcaption>
+  </figure>
+</section>
+
+<section>
+  <h2>Two fixes, tested</h2>
+  <p>Both were applied at run time to an offline rerun of holy-grail on the
+  same 28 sky spectra (<code>holy_rms_check.py rerun</code>); no PypeIt file was
+  edited. The as-is rerun reproduces the pipeline's stored rms exactly. In
+  that test fix B replaced <code>bdisp</code> on its way into
+  <code>fit_slit</code>. The patch below makes the same change where
+  <code>bdisp</code> is set, in <code>HolyGrail.solve_patterns</code>, because
+  <code>fit_slit</code> is shared with <code>reidentify</code>,
+  <code>full_template</code> and the echelle calibration, which the fix should
+  not touch. Rerun with the patched package, all 28 slits give results
+  identical to the tested fix B, and <code>bdisp</code> (and the "Patt match
+  dispersion" log line) now reads 1.92–1.97 Å/px. A solution can be accepted
+  with a single matched pattern line (patterns.py:800), hence the guard.</p>
+  <div class="pair">
+    <div style="display:grid;gap:10px;min-width:0">
+      <div class="codehead">Fix A · patterns.py, quadrangles() and curved_quadrangles()</div>
+      <pre><span class="del">-    wvcen = np.zeros((1,), dtype=np.ulonglong)</span>
+<span class="del">-    disps = np.zeros((1,), dtype=np.ulonglong)</span>
+<span class="add">+    wvcen = np.zeros((1,), dtype=float)</span>
+<span class="add">+    disps = np.zeros((1,), dtype=float)</span>
+ ...
+<span class="del">-    ... np.array([wvl], dtype=np.ulonglong)</span>
+<span class="del">-    ... np.array([tst], dtype=np.ulonglong)</span>
+<span class="add">+    ... np.array([wvl], dtype=float)</span>
+<span class="add">+    ... np.array([tst], dtype=float)</span></pre>
+    </div>
+    <div style="display:grid;gap:10px;min-width:0">
+      <div class="codehead">Fix B · autoid.py, HolyGrail.solve_patterns() (patch)</div>
+      <pre>         patt_dict['sign'] = sign
+         patt_dict['bwv'] = wcen
+         patt_dict['bdisp'] = 10.0 ** dcen
+<span class="add">+        # The histogram estimate above can be far off ...</span>
+<span class="add">+        ok = np.where(patt_dict['mask'])[0]</span>
+<span class="add">+        if ok.size >= 2:</span>
+<span class="add">+            ids = np.asarray(patt_dict['IDs'], dtype=float)[ok]</span>
+<span class="add">+            slope = np.polyfit(use_tcent[ok], ids, 1)[0]</span>
+<span class="add">+            patt_dict['bdisp'] = float(np.abs(slope))</span></pre>
+    </div>
+  </div>
+  <div class="tw"><table id="t-fix"></table></div>
+  <div class="pair">
+    <figure>
+      <div class="plot">
+        <div class="legend"><span><i class="dot" style="background:var(--bad)"></i>fix A</span><span><i class="dot" style="background:var(--accent)"></i>fix B</span></div>
+        <div id="c-dl"></div>
+      </div>
+      <figcaption><b>Change of each solution</b> from the current code: the
+      largest |Δλ| anywhere along the slit, which can sit at a detector edge.
+      Values below 0.01 Å are drawn at 0.01; ✕ marks the slit where fix A
+      finds no solution.</figcaption>
+    </figure>
+    <figure>
+      <div class="plot">
+        <div class="legend"><span><i class="ring"></i>current code (fix B identical)</span><span><i class="dot" style="background:var(--bad)"></i>fix A</span></div>
+        <div id="c-cc"></div>
+      </div>
+      <figcaption><b>Which solutions are right?</b> Correlation of each
+      slit's sky spectrum, on the solution's wavelength scale, with the median
+      sky spectrum of the other 27 slits. A wrong solution lowers it.</figcaption>
+    </figure>
+  </div>
+  <p>Three things point the same way. (1) The current solutions agree with
+  each other everywhere (cc 0.945–0.994 at zero shift), and every solution
+  that fix A changes correlates worse than the one it replaces. The reference
+  is built from the current solutions of the other slits, but 13 of them come
+  from triangle patterns that neither fix changes, so it is not simply
+  circular. (2) Without reference to other slits, the fix-A fits of the
+  changed slits keep fewer OH lines (36–51 against 46–60) and their true rms
+  is 1.6–4.3 times higher (0.22–0.57 px against 0.075–0.19 px). (3) On DET01
+  the current solutions follow a linear relation between the wavelength at
+  the middle pixel and the slit position in the mask image, with residuals
+  ≤ 10 Å; the fix-A solutions were not run through this check. The fix-A
+  fits still reach rms 0.22–0.57 px, under the per-slit thresholds of
+  0.60–0.68 px, so holy-grail would accept them. The next section shows why
+  they are wrong.</p>
+</section>
+
+<section id="why">
+  <h2>Why the dtype fix makes it worse</h2>
+  <p>Two further experiments, run the same way, explain the result: holy-grail
+  with triangles only (<code>holy_rms_check.py</code> variant T, which runs
+  <code>run_brute_loop</code> with <code>rng_poly = [3]</code>), and a look at
+  where along the slit each solution goes wrong
+  (<code>holy_rms_where.py</code>).</p>
+  <h3>Without quadrangles, the same slits fail</h3>
+  <p>With triangles only, the 13 slits won by triangle fits are unchanged and
+  all 15 others are lost: 14 are off by 29–191 Å and DET02 909 finds no
+  solution. Fix A gives exactly the triangles-only result on 14 of these 15
+  (the same max |Δλ| to 0.01 Å; 909 fails in both); only DET01 337 is still
+  won by a correct quadrangle fit. So with float dispersions the quadrangle
+  pass does not produce wrong fits of its own: it no longer replaces the wrong
+  triangle fits. On this data the quadrangle pass is needed, but only in its
+  truncated form.</p>
+  <h3>The pattern search finds the right answer; the vote uses only part of it</h3>
+  <p>The histogram peak is at the stored solution: for all three slits probed
+  with triangles, and with float quadrangles for two of them (on DET01 469
+  it is 4 % low). The votes in the window around the peak match the votes
+  around the stored solution.</p>
+  <div class="tw"><table id="t-probe"></table></div>
+  <p>The problem is the next step. <code>solve_slit</code> lets only the
+  pattern solutions within ±3 log-dispersion bins (<code>nseld = 3</code>,
+  ±0.81 %) of the peak vote on the line IDs (<code>nseld</code> in the signature at autoid.py:2752, used at 2852–2870). The
+  dispersion of every VB_K slit changes by 7.1–8.3 % along the slit, mostly
+  towards the blue end, so only patterns from the part of the slit where the
+  local dispersion is close to the peak value take part. For DET01 slit 1855
+  the 25 lines identified by triangles are all correct, but they lie at
+  pixels 1240–1987; the fit is right there and drifts to −111 Å at pixel 0.
+  The truncated quadrangles put every dispersion between 1 and 2 Å/px into
+  one bin, so patterns from the whole slit vote: 43 correct IDs over pixels
+  1–1987, and the fit is right everywhere.</p>
+  <figure>
+    <div class="plot">
+      <div class="legend"><span><i class="sw" style="border-top:2px solid var(--neutral)"></i>one slit (28 slits)</span><span><i class="sw" style="border-top:8px solid color-mix(in srgb, var(--accent) 22%, transparent)"></i>vote window ±0.81 %</span></div>
+      <div id="c-disp"></div>
+    </div>
+    <figcaption><b>Local dispersion along each slit</b>, relative to its value
+    at the central pixel, from the run3 solutions. Only patterns whose lines
+    sit inside the shaded band can join the vote around a peak at the central
+    dispersion.</figcaption>
+  </figure>
+  <figure>
+    <div class="plot">
+      <div class="legend"><span><i class="sw" style="border-top:2px solid var(--quad)"></i>current code (truncated quadrangles)</span><span><i class="sw" style="border-top:2px solid var(--bad)"></i>triangles only, ±0.81 %</span><span><i class="sw" style="border-top:2px dashed var(--accent)"></i>triangles only, ±4 %</span></div>
+      <div id="c-where"></div>
+    </div>
+    <figcaption><b>DET01 slit 1855: wavelength difference from the stored
+    solution along the slit</b> (top), and the pixels of the lines identified
+    by the pattern vote in each case (ticks below). With the default window
+    the identified lines cover only the red part of the slit and the fit
+    drifts outside it.</figcaption>
+  </figure>
+  <h3>Widening the window helps, but is not enough</h3>
+  <p>With triangles only and the window widened to ±15 bins (±4 %), DET01 1855
+  and 469 become correct everywhere (51 and 29 identified lines; three wrong
+  IDs on 469 are rejected by the fit). DET02 1665 improves but is still −37 Å
+  at pixel 0, with six wrong IDs at the blue end. So the narrow vote window
+  is the cause, and a wider window alone is only a partial remedy.</p>
+</section>
+
+<section>
+  <h2>Who is affected</h2>
+  <ul>
+    <li><strong>Every holy-grail user.</strong> <code>holy-grail</code> is the
+    default <code>method</code> of <code>WavelengthSolutionPar</code>, and 14
+    spectrograph files in <code>develop</code> also set it explicitly, some only
+    for particular setups or as a fallback: <span id="spec-list"></span>. (The
+    new <code>subaru_moircs</code> on this branch uses it for grisms without an
+    archive.)</li>
+    <li><strong>Below 1 Å/px</strong> (many optical gratings): the quadrangle
+    pass has very likely never returned a usable pattern (apart from one
+    month in 2020–21), so these setups have been solved by triangles alone. Their dispersion estimates and rms are not
+    affected, but fix A would switch the quadrangle search back on for all of
+    them.</li>
+    <li><strong>1 Å/px and above</strong> (low-resolution and near-IR modes):
+    when a quadrangle pattern wins, the stored rms is too large by
+    dispersion / floor(dispersion), up to 2×. The inflated value is also what
+    <code>rms_thresh_frac_fwhm</code> is compared with, so good solutions can be
+    rejected and sent to cross-matching, and the line-matching tolerance is
+    tighter than <code>match_toler</code> says.</li>
+    <li><strong>Spectra whose dispersion varies along the detector</strong>
+    by more than about ±0.8 % around its central value: the line-ID vote uses
+    only part of the spectrum, and the fit can drift outside that part
+    (see <a href="#why">Why the dtype fix makes it worse</a>). On VB_K this is
+    hidden wherever a truncated quadrangle fit wins. How common such setups
+    are, and whether their holy-grail solutions suffer, was not checked.</li>
+    <li>Only MOIRCS VB_K was measured. Other instruments were not tested
+    here.</li>
+  </ul>
+</section>
+
+<section>
+  <h2>Suggested next steps</h2>
+  <ol>
+    <li><strong>Prefer fix B, and run it through the development suite's
+    holy-grail setups before merging.</strong> It fixes the reported rms, the
+    <code>rms_thresh</code> test and the matching tolerance, and on this data
+    changes no solution by more than 0.14 Å, but only 15 affected slits from
+    one instrument were tested. Wherever a quadrangle pattern wins, it makes
+    holy-grail more permissive: the rms roughly halves and the matching
+    tolerance roughly doubles, back to what <code>match_toler</code> says. Fits
+    that are now rejected or sent to cross-matching may then be accepted, and
+    more lines get matched, which could admit wrong lines on sparse or
+    blended spectra. Where triangle patterns win (expected for most setups
+    below 1 Å/px), the estimate it replaces is already close, so the change
+    should be negligible; that is expected, not measured. Computing the
+    dispersion from the fit inside <code>iterative_fitting</code> is an
+    alternative (not tested here); it would also change the rms reported by
+    <code>reidentify</code> (autoid.py:1325) and <code>pypeit_identify</code>
+    (gui/identify.py:704 and 1352). A patch is ready:
+    <code>pypeitdev/subaru_moircs_vbk/patches/holygrail_bdisp_from_matched_lines.patch</code>,
+    with a new unit test, <code>pypeit/tests/test_holygrail_dispersion.py</code>,
+    that fails on the current code.</li>
+    <li><strong>Recheck parameters tuned under the bug.</strong> Any
+    <code>rms_thresh_frac_fwhm</code> or <code>match_toler</code> value chosen
+    while looking at the inflated rms may be stricter than intended once the
+    rms is right. This includes the MOIRCS VB_K tuning that led to this
+    report.</li>
+    <li><strong>Do not apply fix A on its own.</strong> It removes the
+    accidental widening of the vote: on this data 13 of the 15 affected
+    slits fall back to wrong triangle fits and one fails.</li>
+    <li><strong>Fix the line-ID vote for dispersions that vary along the
+    detector.</strong> Options, of which only the first was tried: widen the
+    dispersion window (<code>nseld</code>; fixes 2 of 3 test slits here); vote
+    with a looser dispersion constraint, which is what the truncation does by
+    accident; or refit with the identified lines and re-identify across the
+    whole spectrum before the final fit. Any of these needs the development
+    suite. Only after this is fix A safe, and only then is it worth deciding
+    whether the quadrangle search is needed at all: below 1 Å/px it has very
+    likely contributed nothing since 2018, and on VB_K its value comes from
+    the truncation, not from the 4-line design.</li>
+    <li><strong>Add unit tests:</strong> <code>quadrangles</code> returns float
+    dispersions equal to the input (the reproduction above), and the rms
+    returned by <code>iterative_fitting</code> does not depend on the
+    dispersion estimate passed in.</li>
+    <li>Fix or remove <code>curved_quadrangles</code>, which has the same dtype
+    and no callers.</li>
+  </ol>
+</section>
+
+<section>
+  <h2>Reproduce</h2>
+  <p>Scripts are in the development suite under
+  <code>pypeitdev/subaru_moircs_vbk/</code>. The reproduction needs no data;
+  the reruns need the MOIRCS VB_K test frames, which are not in
+  <code>RAW_DATA</code> yet, and a holy-grail reduction (here
+  <code>run3</code>).</p>
+  <pre><span class="c"># No data needed</span>
+python holy_rms_repro.py
+
+<span class="c"># Stored vs recomputed rms from any WaveCalib file</span>
+python holy_rms_check.py check run3/Calibrations/WaveCalib_A_0_DET0*.fits
+
+<span class="c"># Pattern-histogram peaks for one slit</span>
+python holy_rms_check.py hist run3 &lt;raw science file&gt; 1 337
+
+<span class="c"># Holy-grail as-is, fix A, fix B, A+B, triangles only (T),</span>
+<span class="c"># with the alignment check</span>
+python holy_rms_check.py rerun run3 &lt;raw science file&gt;
+
+<span class="c"># Histogram peak and votes, current code or fix A</span>
+python holy_rms_check.py hist run3 &lt;raw science file&gt; 1 1855 A
+
+<span class="c"># Where a slit's solution goes wrong; T = triangles only,</span>
+<span class="c"># last number = half-width of the dispersion vote window in bins</span>
+python holy_rms_where.py 1 1855 T 3
+python holy_rms_where.py 1 1855 T 15
+
+<span class="c"># Fix B as a patch, with its unit test</span>
+cd PypeIt
+git apply ../PypeIt-development-suite/pypeitdev/subaru_moircs_vbk/patches/holygrail_bdisp_from_matched_lines.patch
+pytest pypeit/tests/test_holygrail_dispersion.py</pre>
+  <details>
+    <summary>Per-slit results (28 slits)</summary>
+    <div class="tw"><table id="t-slits"></table></div>
+  </details>
+</section>
+
+<footer>Generated by JXP and Claude from <code>report_holy_bug/data.json</code>
+(<code>make_report_holy_bug.py</code>). Branch u/monodera/subaru_moircs_vbk
+at d9e07e884; its core wavelength code is identical to develop f3a1f1d27.</footer>
+</main>
+
+<script id="data" type="application/json">__DATA__</script>
+<script>
+(function () {
+  const D = JSON.parse(document.getElementById('data').textContent);
+  const NS = 'http://www.w3.org/2000/svg';
+  const S = D.slits;
+  const affected = r => r.asis_bdisp < 1.5;
+  const fmt = (v, n) => (v == null ? '–' : v.toFixed(n));
+
+  function mk(tag, attrs, parent) {
+    const e = document.createElementNS(NS, tag);
+    for (const k in attrs) {
+      if (k === 'text') e.textContent = attrs[k];
+      else e.setAttribute(k, attrs[k]);
+    }
+    if (parent) parent.appendChild(e);
+    return e;
+  }
+  function lin(d0, d1, r0, r1) {
+    const f = v => r0 + (v - d0) / (d1 - d0) * (r1 - r0);
+    f.inv = p => d0 + (p - r0) / (r1 - r0) * (d1 - d0);
+    return f;
+  }
+  function logsc(d0, d1, r0, r1) {
+    const a = Math.log10(d0), b = Math.log10(d1);
+    return v => r0 + (Math.log10(Math.max(v, d0)) - a) / (b - a) * (r1 - r0);
+  }
+  function frame(id, height, m) {
+    const host = document.getElementById(id);
+    host.innerHTML = '';
+    const W = Math.max(280, host.clientWidth);
+    const svg = mk('svg', {viewBox: `0 0 ${W} ${height}`, height: height, role: 'img'}, host);
+    const plot = host.closest('.plot');
+    let tip = plot.querySelector('.tip');
+    if (!tip) { tip = document.createElement('div'); tip.className = 'tip';
+      tip.hidden = true; plot.appendChild(tip); }
+    return {host, svg, W, H: height, x0: m.l, x1: W - m.r, y0: m.t, y1: height - m.b, tip, plot};
+  }
+  function showTip(f, html, px, py) {
+    f.tip.innerHTML = html; f.tip.hidden = false;
+    const hb = f.host.getBoundingClientRect(), pb = f.plot.getBoundingClientRect();
+    const sx = hb.width / f.W;
+    let left = hb.left - pb.left + px * sx + 12;
+    const top = hb.top - pb.top + py * sx - 10;
+    const tw = f.tip.offsetWidth;
+    if (left + tw > pb.width - 4) left = hb.left - pb.left + px * sx - tw - 12;
+    f.tip.style.left = Math.max(4, left) + 'px';
+    f.tip.style.top = Math.max(4, top) + 'px';
+  }
+  function markTips(f) {
+    f.svg.addEventListener('mousemove', e => {
+      const t = e.target.closest('[data-tip]');
+      if (!t) { f.tip.hidden = true; return; }
+      const r = f.host.getBoundingClientRect();
+      showTip(f, t.getAttribute('data-tip'), (e.clientX - r.left) * f.W / r.width,
+        (e.clientY - r.top) * f.W / r.width);
+    });
+    f.svg.addEventListener('mouseleave', () => { f.tip.hidden = true; });
+  }
+  function gridY(f, y, ticks, fmtf, label) {
+    ticks.forEach(t => {
+      mk('line', {x1: f.x0, x2: f.x1, y1: y(t), y2: y(t), class: 'gl'}, f.svg);
+      mk('text', {x: f.x0 - 6, y: y(t) + 3.5, 'text-anchor': 'end', class: 'tick', text: fmtf(t)}, f.svg);
+    });
+    if (label) mk('text', {x: 12, y: (f.y0 + f.y1) / 2, class: 'axl', 'text-anchor': 'middle',
+      transform: `rotate(-90 12 ${(f.y0 + f.y1) / 2})`, text: label}, f.svg);
+  }
+  function axisX(f, x, ticks, fmtf, label, grid) {
+    mk('line', {x1: f.x0, x2: f.x1, y1: f.y1, y2: f.y1, class: 'ax'}, f.svg);
+    let last = -1e9;
+    ticks.forEach(t => {
+      const px = x(t);
+      if (grid) mk('line', {x1: px, x2: px, y1: f.y0, y2: f.y1, class: 'gl'}, f.svg);
+      mk('line', {x1: px, x2: px, y1: f.y1, y2: f.y1 + 4, class: 'ax'}, f.svg);
+      if (px - last >= 34) { mk('text', {x: px, y: f.y1 + 17, 'text-anchor': 'middle', class: 'tick', text: fmtf(t)}, f.svg); last = px; }
+    });
+    if (label) mk('text', {x: (f.x0 + f.x1) / 2, y: f.H - 4, 'text-anchor': 'middle', class: 'axl', text: label}, f.svg);
+  }
+  const range = (a, b, s) => { const r = []; for (let v = a; v <= b + 1e-9; v += s) r.push(+v.toFixed(6)); return r; };
+  function dotMark(f, cx, cy, kind, tip) {
+    if (kind === 'ring') mk('circle', {cx, cy, r: 4.5, style: 'fill:var(--surface);stroke:var(--neutral);stroke-width:2'}, f.svg);
+    else mk('circle', {cx, cy, r: 4.5, style: `fill:${kind};stroke:var(--surface);stroke-width:1.5`}, f.svg);
+    mk('circle', {cx, cy, r: 10, fill: 'transparent', 'data-tip': tip}, f.svg);
+  }
+  function slitX(f, list) {
+    const n = list.length, step = (f.x1 - f.x0) / (n + 1);
+    return list.map((r, i) => f.x0 + step * (i + 0.5 + (r.det === 2 ? 1 : 0)));
+  }
+  function slitAxis(f, list, xs) {
+    mk('line', {x1: f.x0, x2: f.x1, y1: f.y1, y2: f.y1, class: 'ax'}, f.svg);
+    list.forEach((r, i) => mk('line', {x1: xs[i], x2: xs[i], y1: f.y1, y2: f.y1 + 4,
+      style: `stroke:${affected(r) ? 'var(--quad)' : 'var(--rule)'};stroke-width:${affected(r) ? 2 : 1}`}, f.svg));
+    [1, 2].forEach(d => {
+      const idx = list.map((r, i) => r.det === d ? i : -1).filter(i => i >= 0);
+      mk('text', {x: (xs[idx[0]] + xs[idx[idx.length - 1]]) / 2, y: f.y1 + 18, 'text-anchor': 'middle',
+        class: 'lab', text: `DET0${d} slits`}, f.svg);
+    });
+  }
+  const sname = r => `DET0${r.det} · slit ${r.spat}`;
+
+  // ---------- facts ----------
+  function facts() {
+    const aff = S.filter(affected);
+    const ratio = aff.map(r => r.asis_rms / r.asis_true_rms);
+    const chA = aff.filter(r => r.dl_A != null && r.dl_A > 1).length;
+    const dB = Math.max(...S.map(r => r.dl_B));
+    const items = [
+      ['since 2018', 'integer dtype of the numba version, restored by 1fbb5e18b (2021-01-03)'],
+      [`${aff.length} / ${S.length}`, `MOIRCS VB_K slits with stored rms ${Math.min(...ratio).toFixed(2)}–${Math.max(...ratio).toFixed(2)}× too large`],
+      [`${chA} / ${aff.length}`, `of those change by more than 1 Å with the dtype fix alone; ${aff.filter(r => r.dl_A == null).length} more gets no solution`],
+      [`≤ ${dB.toFixed(2)} Å`, 'largest change from fix B, which corrects the rms'],
+    ];
+    document.getElementById('facts').innerHTML = items.map(([v, l]) =>
+      `<div class="fact"><div class="v">${v}</div><div class="l">${l}</div></div>`).join('');
+    document.getElementById('repro').textContent = D.repro.trim();
+    document.getElementById('spec-list').innerHTML = ['bok_bc', 'gemini_gnirs', 'gtc_osiris', 'int_ids', 'keck_kcwi', 'keck_mosfire',
+      'keck_nirspec', 'lbt_luci', 'ldt_deveny', 'magellan_ldss3', 'mmt_bluechannel', 'soar_goodman',
+      'tng_dolores', 'vlt_fors'].map(s => `<code>${s}</code>`).join(', ');
+  }
+
+  // ---------- stored vs recomputed rms ----------
+  function rmsChart() {
+    const f = frame('c-rms', 300, {t: 12, r: 18, b: 42, l: 50});
+    const x = lin(0, 0.25, f.x0, f.x1), y = lin(0, 0.4, f.y1, f.y0);
+    gridY(f, y, range(0, 0.4, 0.1), v => v.toFixed(1), 'stored rms (px)');
+    axisX(f, x, range(0, 0.25, 0.05), v => v.toFixed(2), 'recomputed rms (px)', true);
+    [[1, '1×'], [2, '2×']].forEach(([k, t]) => {
+      const xe = Math.min(0.25, 0.4 / k);
+      mk('line', {x1: x(0), y1: y(0), x2: x(xe), y2: y(xe * k), style: 'stroke:var(--muted);stroke-width:1;stroke-dasharray:4 4'}, f.svg);
+      mk('text', {x: x(xe) - 4, y: y(xe * k) + (k === 1 ? -6 : 14), 'text-anchor': 'end', class: 'lab', text: t}, f.svg);
+    });
+    S.forEach(r => dotMark(f, x(r.asis_true_rms), y(r.asis_rms), affected(r) ? 'var(--quad)' : 'var(--tri)',
+      `${sname(r)}<br>bdisp ${r.asis_bdisp.toFixed(4)} Å/px<br>stored ${r.asis_rms.toFixed(3)} px<br>recomputed ${r.asis_true_rms.toFixed(3)} px`));
+    markTips(f);
+  }
+
+  // ---------- histogram peaks per solve_slit call ----------
+  function histChart() {
+    const c = D.hist.calls;
+    const f = frame('c-hist', 280, {t: 16, r: 14, b: 44, l: 50});
+    const step = (f.x1 - f.x0) / (c.length + 1);
+    const xs = c.map((r, i) => f.x0 + step * (i + 0.5 + (r.kind === 'quadrangles' ? 1 : 0)));
+    const y = lin(0, 2.2, f.y1, f.y0);
+    gridY(f, y, range(0, 2.0, 0.5), v => v.toFixed(1), 'peak dispersion (Å/px)');
+    mk('line', {x1: f.x0, x2: f.x1, y1: f.y1, y2: f.y1, class: 'ax'}, f.svg);
+    mk('line', {x1: f.x0, x2: f.x1, y1: y(1.94), y2: y(1.94), style: 'stroke:var(--ink2);stroke-width:1;stroke-dasharray:5 4'}, f.svg);
+    mk('text', {x: f.x1 - 2, y: y(1.94) - 6, 'text-anchor': 'end', class: 'lab', text: 'true 1.94 Å/px'}, f.svg);
+    ['triangles', 'quadrangles'].forEach(k => {
+      const idx = c.map((r, i) => r.kind === k ? i : -1).filter(i => i >= 0);
+      mk('text', {x: (xs[idx[0]] + xs[idx[idx.length - 1]]) / 2, y: f.y1 + 20, 'text-anchor': 'middle',
+        class: 'lab', text: `${k} (poly=${k === 'triangles' ? 3 : 4})`}, f.svg);
+    });
+    c.forEach((r, i) => {
+      const col = r.kind === 'triangles' ? 'var(--tri)' : 'var(--quad)';
+      if (r.ntot === 0) {
+        mk('text', {x: xs[i], y: f.y1 - 6, 'text-anchor': 'middle', class: 'tick', text: '–'}, f.svg);
+        mk('rect', {x: xs[i] - 8, y: f.y1 - 20, width: 16, height: 20, fill: 'transparent',
+          'data-tip': `call ${r.call}, ${r.kind}<br>no patterns found`}, f.svg);
+        return;
+      }
+      dotMark(f, xs[i], y(r.disp), col, `call ${r.call}, ${r.kind}<br>peak ${r.disp.toFixed(4)} Å/px, height ${r.count}<br>${r.n1} of ${r.ntot} solutions at exactly 1`);
+      mk('text', {x: xs[i], y: y(r.disp) - 9, 'text-anchor': 'middle', class: 'tick', text: r.count}, f.svg);
+    });
+    markTips(f);
+  }
+
+  // ---------- change of each solution ----------
+  function dlChart() {
+    const f = frame('c-dl', 280, {t: 14, r: 10, b: 40, l: 50});
+    const y = logsc(0.01, 300, f.y1, f.y0);
+    gridY(f, y, [0.01, 0.1, 1, 10, 100], v => v >= 1 ? v.toFixed(0) : String(v), 'max |Δλ| (Å)');
+    const xs = slitX(f, S);
+    slitAxis(f, S, xs);
+    S.forEach((r, i) => {
+      const tip = `${sname(r)}${affected(r) ? ' (affected)' : ''}<br>fix A: ${r.dl_A == null ? 'no solution' : r.dl_A.toFixed(2) + ' Å'}<br>fix B: ${r.dl_B.toFixed(2)} Å`;
+      if (r.dl_A == null) {
+        mk('text', {x: xs[i] - 3, y: f.y0 + 8, 'text-anchor': 'middle', style: 'fill:var(--bad);font:600 13px var(--font-mono)', text: '✕'}, f.svg);
+        mk('rect', {x: xs[i] - 10, y: f.y0 - 4, width: 20, height: 18, fill: 'transparent', 'data-tip': tip}, f.svg);
+      } else dotMark(f, xs[i] - 3, y(r.dl_A), 'var(--bad)', tip);
+      dotMark(f, xs[i] + 3, y(r.dl_B), 'var(--accent)', tip);
+    });
+    markTips(f);
+  }
+
+  // ---------- alignment correlation ----------
+  function ccChart() {
+    const f = frame('c-cc', 280, {t: 14, r: 10, b: 40, l: 50});
+    const y = lin(0.45, 1.0, f.y1, f.y0);
+    gridY(f, y, range(0.5, 1.0, 0.1), v => v.toFixed(1), 'correlation');
+    const xs = slitX(f, S);
+    slitAxis(f, S, xs);
+    S.forEach((r, i) => {
+      const a = r.asis_align, A = r.A_align;
+      const tip = `${sname(r)}<br>current: cc ${a[2].toFixed(3)} at 0 shift<br>fix A: ${A ? 'cc ' + A[2].toFixed(3) : 'no solution'}`;
+      dotMark(f, xs[i] - 3, y(a[2]), 'ring', tip);
+      if (A) dotMark(f, xs[i] + 3, y(A[2]), 'var(--bad)', tip);
+    });
+    markTips(f);
+  }
+
+  // ---------- tables ----------
+  function tables() {
+    const med = a => { const b = a.filter(v => v != null).sort((p, q) => p - q), n = b.length;
+      return n % 2 ? b[(n - 1) / 2] : (b[n / 2 - 1] + b[n / 2]) / 2; };
+    const aff = S.filter(affected);
+    const row = (lab, v, cls) => {
+      const solved = S.filter(r => r[`${v}_rms`] != null).length;
+      const changed = v === 'asis' ? '–' : S.filter(r => r[`dl_${v}`] != null && r[`dl_${v}`] > 1).length;
+      const ratio = aff.filter(r => r[`${v}_rms`] != null).map(r => r[`${v}_rms`] / r[`${v}_true_rms`]);
+      const minCC = Math.min(...S.filter(r => r[`${v}_align`]).map(r => r[`${v}_align`][2]));
+      const maxRms = Math.max(...S.filter(r => r[`${v}_true_rms`] != null).map(r => r[`${v}_true_rms`]));
+      const okSolved = solved === S.length;
+      return `<tr${cls ? ` class="${cls}"` : ''}><td>${lab}</td>` +
+        `<td><span class="chip ${okSolved ? 'ok' : 'no'}">${solved}/${S.length}</span></td>` +
+        `<td>${changed === '–' ? '–' : `<span class="chip ${changed ? 'no' : 'ok'}">${changed}</span>`}</td>` +
+        `<td class="mono">${Math.min(...ratio).toFixed(2)}–${Math.max(...ratio).toFixed(2)}</td>` +
+        `<td class="mono">${maxRms.toFixed(3)}</td>` +
+        `<td class="mono">${med(aff.map(r => r[`${v}_nlin`]))}</td>` +
+        `<td class="mono">${minCC.toFixed(3)}</td></tr>`;
+    };
+    document.getElementById('t-fix').innerHTML =
+      '<thead><tr><th>variant</th><th>slits solved</th><th>solutions changed &gt; 1 Å</th><th>stored / true rms (affected)</th><th>max true rms (px)</th><th>median lines (affected)</th><th>lowest cc</th></tr></thead><tbody>' +
+      row('current code', 'asis') + row('fix A (float dtype)', 'A') +
+      row('fix B (dispersion from lines)', 'B', 'chosen') + row('fix A + B', 'AB') +
+      row('triangles only', 'T') + '</tbody>';
+
+    document.getElementById('t-slits').innerHTML =
+      '<thead><tr><th>slit</th><th>bdisp</th><th>stored rms</th><th>true rms</th><th>lines</th><th>cc</th><th>A: max|Δλ|</th><th>A: stored rms</th><th>A: lines</th><th>A: cc</th><th>B: max|Δλ|</th><th>B: stored rms</th><th>B: lines</th></tr></thead><tbody>' +
+      S.map(r => `<tr><td class="mono">DET0${r.det} ${r.spat}</td><td>${r.asis_bdisp.toFixed(3)}</td><td>${r.asis_rms.toFixed(3)}</td><td>${r.asis_true_rms.toFixed(3)}</td><td>${r.asis_nlin}</td><td>${r.asis_align[2].toFixed(3)}</td>` +
+        `<td>${r.dl_A == null ? 'fail' : r.dl_A.toFixed(1)}</td><td>${fmt(r.A_rms, 3)}</td><td>${r.A_nlin ?? '–'}</td><td>${r.A_align ? r.A_align[2].toFixed(3) : '–'}</td>` +
+        `<td>${r.dl_B.toFixed(2)}</td><td>${r.B_rms.toFixed(3)}</td><td>${r.B_nlin}</td></tr>`).join('') + '</tbody>';
+  }
+
+  // ---------- slit wavelength windows ----------
+  function coverChart() {
+    const bd = {};
+    S.forEach(r => { bd[`${r.det}_${r.spat}`] = r.asis_bdisp; });
+    const rows = [...D.cover].sort((a, b) => a.w0 - b.w0);
+    const bh = 13;
+    const f = frame('c-cover', rows.length * bh + 56, {t: 6, r: 78, b: 40, l: 14});
+    const x = lin(18900, 25600, f.x0, f.x1);
+    axisX(f, x, range(19000, 25500, 500), v => (v / 10000).toFixed(2), 'Wavelength (µm)', true);
+    rows.forEach((r, i) => {
+      const y = f.y0 + i * bh + bh / 2;
+      const quad = bd[`${r.det}_${r.spat}`] < 1.5;
+      const col = quad ? 'var(--quad)' : 'var(--tri)';
+      mk('line', {x1: x(r.w0), x2: x(r.w1), y1: y, y2: y,
+        style: `stroke:${col};stroke-width:7;stroke-linecap:round`}, f.svg);
+      mk('line', {x1: x(r.w0), x2: x(r.w1), y1: y, y2: y, stroke: 'transparent', 'stroke-width': bh,
+        'data-tip': `DET0${r.det} · slit ${r.spat}<br>${r.w0}–${r.w1} Å<br>bdisp ${bd[`${r.det}_${r.spat}`].toFixed(4)} Å/px`}, f.svg);
+      mk('text', {x: x(r.w1) + 7, y: y + 3.5, class: 'tick', text: `DET0${r.det} ${r.spat}`}, f.svg);
+    });
+    markTips(f);
+  }
+
+  // ---------- dispersion along each slit ----------
+  function dispChart() {
+    const dd = D.disp, px = dd.pix;
+    const f = frame('c-disp', 280, {t: 12, r: 16, b: 40, l: 50});
+    const x = lin(0, 2040, f.x0, f.x1), y = lin(0.92, 1.02, f.y1, f.y0);
+    gridY(f, y, [0.92, 0.94, 0.96, 0.98, 1.0, 1.02], v => v.toFixed(2), 'dispersion / central');
+    axisX(f, x, range(0, 2000, 250), v => v.toFixed(0), 'Spectral pixel', false);
+    const w = 10 ** (3 * (3.5 / 2999)) - 1;
+    mk('rect', {x: f.x0, y: y(1 + w), width: f.x1 - f.x0, height: y(1 - w) - y(1 + w),
+      style: 'fill:color-mix(in srgb, var(--accent) 22%, transparent)'}, f.svg);
+    dd.curves.forEach(c => {
+      const pts = c.ratio.map((r, j) => [px[j], r]).filter(([p]) => p >= 20 && p <= 2020);
+      mk('path', {d: pts.map(([p, r], j) => (j ? 'L' : 'M') + x(p).toFixed(1) + ' ' + y(Math.max(r, 0.92)).toFixed(1)).join(''),
+        style: 'fill:none;stroke:var(--neutral);stroke-width:1.2;opacity:.75'}, f.svg);
+      const last = pts[0];
+      mk('path', {d: pts.map(([p, r], j) => (j ? 'L' : 'M') + x(p).toFixed(1) + ' ' + y(Math.max(r, 0.92)).toFixed(1)).join(''),
+        style: 'fill:none;stroke:transparent;stroke-width:8', 'data-tip':
+        `DET0${c.det} · slit ${c.spat}<br>${(Math.min(...c.ratio.slice(1, -1)) * 100 - 100).toFixed(1)} % to ${(Math.max(...c.ratio.slice(1, -1)) * 100 - 100).toFixed(1)} %`}, f.svg);
+    });
+    markTips(f);
+  }
+
+  // ---------- slit 1855: where the solution goes wrong ----------
+  function whereChart() {
+    const W = D.where;
+    const ser = [['asis', 'var(--quad)', '', 'current code'], ['T', 'var(--bad)', '', 'triangles only, ±0.81 %'],
+                 ['T15', 'var(--accent)', '6 4', 'triangles only, ±4 %']];
+    const rug = 16;
+    const f = frame('c-where', 300 + ser.length * rug, {t: 12, r: 16, b: 40 + ser.length * rug, l: 50});
+    const x = lin(0, 2040, f.x0, f.x1), y = lin(-120, 10, f.y1, f.y0);
+    gridY(f, y, [-120, -90, -60, -30, 0], v => v.toFixed(0), 'Δλ (Å)');
+    mk('line', {x1: f.x0, x2: f.x1, y1: y(0), y2: y(0), style: 'stroke:var(--ink2);stroke-width:1;opacity:.5'}, f.svg);
+    ser.forEach(([k, col, dash]) => {
+      const d = W[k];
+      mk('path', {d: d.pix.map((p, j) => (j ? 'L' : 'M') + x(p).toFixed(1) + ' ' + y(d.dl[j]).toFixed(1)).join(''),
+        style: `fill:none;stroke:${col};stroke-width:2;${dash ? 'stroke-dasharray:' + dash : ''}`}, f.svg);
+    });
+    // Rugs of identified lines below the axis
+    const base = f.y1 + 8;
+    ser.forEach(([k, col, , lab], r) => {
+      const yy = base + r * rug;
+      W[k].ident.forEach(p => mk('line', {x1: x(p), x2: x(p), y1: yy, y2: yy + rug - 5, style: `stroke:${col};stroke-width:1.5`}, f.svg));
+      mk('rect', {x: f.x0, y: yy - 1, width: f.x1 - f.x0, height: rug, fill: 'transparent',
+        'data-tip': `${lab}<br>${W[k].ident.length} identified lines, px ${Math.min(...W[k].ident).toFixed(0)}–${Math.max(...W[k].ident).toFixed(0)}<br>${W[k].nfit} lines in the final fit`}, f.svg);
+    });
+    // Pixel axis below the rugs
+    const yAx = base + ser.length * rug + 2;
+    mk('line', {x1: f.x0, x2: f.x1, y1: yAx, y2: yAx, class: 'ax'}, f.svg);
+    range(0, 2000, 250).forEach(t => mk('text', {x: x(t), y: yAx + 15, 'text-anchor': 'middle', class: 'tick', text: t}, f.svg));
+    mk('text', {x: (f.x0 + f.x1) / 2, y: f.H - 2, 'text-anchor': 'middle', class: 'axl', text: 'Spectral pixel'}, f.svg);
+    // Hover: values at a pixel
+    const cross = mk('line', {y1: f.y0, y2: f.y1, style: 'stroke:var(--ink2);stroke-width:1;opacity:.5', visibility: 'hidden'}, f.svg);
+    f.svg.addEventListener('mousemove', e => {
+      if (e.target.closest('[data-tip]')) return;
+      const b = f.host.getBoundingClientRect();
+      const px = (e.clientX - b.left) * f.W / b.width, py = (e.clientY - b.top) * f.W / b.width;
+      if (px < f.x0 || px > f.x1 || py > f.y1) { f.tip.hidden = true; cross.setAttribute('visibility', 'hidden'); return; }
+      const j = Math.max(0, Math.min(W.asis.pix.length - 1, Math.round(x.inv(px) / 10)));
+      cross.setAttribute('x1', x(W.asis.pix[j])); cross.setAttribute('x2', x(W.asis.pix[j])); cross.setAttribute('visibility', 'visible');
+      showTip(f, `pixel ${W.asis.pix[j]}<br>current ${W.asis.dl[j].toFixed(1)} Å<br>triangles ±0.81 % ${W.T.dl[j].toFixed(1)} Å<br>triangles ±4 % ${W.T15.dl[j].toFixed(1)} Å`, px, py);
+    });
+    f.svg.addEventListener('mouseleave', () => cross.setAttribute('visibility', 'hidden'));
+    markTips(f);
+  }
+
+  function probeTable() {
+    const cell = (q, wt, dt) => q == null ? '<td>–</td><td>–</td>' :
+      `<td class="mono">${q.wcen.toFixed(0)} Å, ${q.disp.toFixed(3)}</td><td class="mono">${q.win_peak} / ${q.win_true}</td>`;
+    const rows = D.probes.filter(p => p.variant === 'A').map(p =>
+      `<tr><td class="mono">DET0${p.det} ${p.spat}</td><td class="mono">${p.wtrue.toFixed(0)} Å, ${p.dtrue.toFixed(3)}</td>` +
+      cell(p.tri) + cell(p.quad) + `</tr>`).join('');
+    document.getElementById('t-probe').innerHTML =
+      '<thead><tr><th>slit</th><th>stored solution (centre)</th><th>triangle peak</th><th>votes: peak / stored</th><th>float-quadrangle peak</th><th>votes: peak / stored</th></tr></thead><tbody>' +
+      rows + '</tbody>';
+  }
+
+  function drawAll() { coverChart(); rmsChart(); histChart(); dlChart(); ccChart(); dispChart(); whereChart(); }
+  facts(); tables(); probeTable(); drawAll();
+  let rt;
+  window.addEventListener('resize', () => { clearTimeout(rt); rt = setTimeout(drawAll, 150); });
+})();
+</script>
