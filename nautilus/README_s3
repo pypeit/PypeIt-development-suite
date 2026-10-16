@@ -17,7 +17,7 @@ aws s3api  get-bucket-acl --bucket pypeit --endpoint https://s3-west.nrp-nautilu
 
 1. Add Grantee, keeping all previous: 
 #aws s3api put-bucket-acl --profile default --bucket pypeit --grant-full-control id=profx,id=bradpholden,id=rcooke  --endpoint https://s3-west.nrp-nautilus.io
-aws s3api put-bucket-acl --profile default --bucket pypeit --grant-full-control id=profx,id=bradpholden,id=westfall,id=dpellicc,id=tbowerslowelledu  --endpoint https://s3-west.nrp-nautilus.io
+aws s3api put-bucket-acl --profile default --bucket pypeit --grant-full-control id=profx,id=bradpholden,id=westfall,id=aHR0cDovL2NpbG9nb24ub3JnL3NlcnZlckEvdXNlcnMvNTE1MTAyMzE=,id=tbowerslowelledu --endpoint https://s3-west.nrp-nautilus.io
 # rcooke failed
 # jreichew failed
 #aws s3api put-bucket-acl --profile default --bucket pypeit --grant-full-control id=profx,id=jreichwe,id=bradpholden,id=mgeha,id=rcooke,id=westfall,id=tbowerslowelledu --endpoint https://s3-west.nrp-nautilus.io
