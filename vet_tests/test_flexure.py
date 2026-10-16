@@ -34,7 +34,7 @@ def test_spat_flexure_science(redux_out):
     detnames = ['DET01', 'MSC01', 'DET01', 'MSC03', 'DET01']
     flexure_sigdet = [5., 1., 0.1, 5., 5.]
     flexure_maxlag = [10, 5, 10, 10, 20]
-    spat_flexure = [3.3, 1.3, 0.1, 0.2, None]  # TODO :: Check this before merging... "detector" flexure is requested. Why did this fail (and should it be zero)?
+    spat_flexure = [3.3, 1.3, 0.1, 0.2, 0.]
 
     for spec, setup, det, sigdet, maxlag, flex in zip(specs, setups, detnames, flexure_sigdet, flexure_maxlag, spat_flexure):
 
