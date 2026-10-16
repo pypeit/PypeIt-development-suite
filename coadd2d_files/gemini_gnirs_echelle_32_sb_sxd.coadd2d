@@ -7,7 +7,7 @@ spectrograph = gemini_gnirs_echelle
 [coadd2d]
    offsets = auto
    weights = auto
-   user_obj_ids = 652, 205, 659, 212
+   user_obj_ids = 652, 205, 658, 212
 
 # Read in the data
 spec2d read
