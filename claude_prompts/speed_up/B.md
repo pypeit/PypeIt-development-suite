@@ -433,6 +433,92 @@ with the skip reason changed from "no fork" to "not reproducible on this BLAS"?
 or do it in this PR?**  I recommend deferring.
 >A: I think we can avoid this for now as I have pulled in the code that reduces the memory usage by 40%.  Defer to v2
 
+#### Follow-up to QP1 (PR prompt 2): can we go ahead without Tim's push?
+
+**Yes, and I now think that is better than taking his commit.**  He showed the
+part that matters: the executor call (`initializer=_worker_init`,
+`initargs=(func, tuple(args), _kwargs, log.level)`, and `submit(_run_one, det,
+_payload.get(det, {}))`).  He described the other two functions in a sentence
+each, and the result path does not change.  What is left is mechanical, and
+there are three reasons to write it ourselves:
+
+1. **His commit would be reworked heavily anyway.**  On top of his port we
+   are adding the `cfg` re-application (`fit2d_chunk`), `forkserver` on Linux
+   with preload, the `PYPEIT_MP_START` override, setting the thread environment
+   variables before the pool starts, and the test changes.  That touches nearly
+   every line he would push.  Writing it once makes a cleaner history than
+   merging his version and then rewriting it.
+2. **His sketch has a gap I have now confirmed.**  He says `_worker_init` "sets
+   the log level", which is necessary but not enough.  When a spawned child
+   re-imports `pypeit`, it gets a fresh `log` that already has a stderr
+   `StreamHandler` at DEBUG, and the same goes for `py.warnings`.  I checked in
+   the `pypeit` env: `log.level == 5` and one `StreamHandler <stderr>` on each.
+   If those handlers stay attached, every worker writes to the terminal directly,
+   unbuffered and interleaved, as well as through our replay buffer, so each line
+   appears twice.  Our current `_worker_init` already detaches both and must keep
+   doing so.  (He may well handle this in his local code; it just is not in what
+   he posted.)
+3. **The common arguments are small, so `initargs` costs little.**  All three
+   stages pass `(spectrograph, fitstbl, par, [frames,] calib_ID,
+   calibrations_path)` plus a few flags, which Tim measured at under 0.5 MB and
+   about 10 ms each.  They are pickled once per worker, not once per detector.
+   The only large transfer is the per-detector extraction payload, and we have
+   to measure that on DEIMOS whoever writes the code.
+
+**What we lose: his macOS testing.**  We have no Mac.  Two mitigations:
+(a) once the `can_fork` skips are gone, the macOS and Windows CI jobs actually
+run the pool path, which they do not today; (b) ask Tim to repeat his
+`mmt_binospec/Longslit_G600` `--ncpu 2` check on the branch once it is pushed.
+
+**What we owe him: a heads-up before starting, and credit.**  He offered
+eight days ago and may have a local branch.  If we say nothing, he may push a
+competing commit onto `speed_up_B` that conflicts with ours.  I propose
+posting the comment below on #2209 first.  The port commit would then carry
+`Co-authored-by: Tim Pickering <2481822+tepickering@users.noreply.github.com>`
+(his GitHub noreply address; his user id is 2481822).  This comment also answers his
+reproducibility question, so it does double duty.
+
+Draft PR comment (not yet posted):
+
+> Thanks, Tim, this is a very helpful review, and I agree with all five points.
+> Plan:
+>
+> 1. **Port to `initargs` delivery, following your sketch**: `forkserver` on
+>    Linux (with the pipeline preloaded) and `spawn` elsewhere, with a
+>    `PYPEIT_MP_START` override.  `can_fork()` and the serial fallback go away,
+>    and the pool tests are un-skipped, so macOS/Windows CI exercise the real
+>    pool path.  We'll write it here from your sketch, so no need to push yours,
+>    and the commit will credit you as co-author.  One addition: parent-side
+>    module globals (e.g. `fit2d_chunk` from #2211) are re-applied in
+>    `_worker_init`, because spawned workers would otherwise silently use the
+>    defaults.
+> 2. Superseded by 1; the macOS wording in the docs is being fixed regardless.
+> 3. The thread environment variables are set in the parent before the pool is
+>    created, and the docs will note the Accelerate caveat.
+> 4. Yes, we checked serial-vs-serial on Linux: long-slit (Kast) is
+>    bit-identical run to run and across `ncpu`, but multi-slit is not
+>    reproducible even serially.  We traced that to `EDGE_CEN` differing by
+>    1 float32 ULP from identical input (#2208; the B-spline turned out to be
+>    innocent).  Your list of identical calibration files doesn't include
+>    `Edges_*.fits.gz`/`Slits_*.fits.gz`.  Could you check whether `EDGE_CEN`
+>    already differs in your two serial Binospec runs?  If so it is #2208
+>    rather than anything Accelerate-specific.  The "bit-identical" claims will
+>    be scoped accordingly.
+> 5. Deferred to a v2.  #2211 (now merged into this branch) takes a good bite
+>    out of the per-worker peak, and Binospec gets named next to DEIMOS in the
+>    memory note.
+>
+> Once it's pushed, would you be willing to rerun your Binospec `--ncpu 2` check
+> on macOS?
+
+**QP5 — OK to post that comment on #2209 as `profxj` (edits welcome), and
+then implement the port as the next prompt?**  Once you say yes, the work is:
+port `parallel.py` (P1+P2), un-skip and extend the tests, the docs, docstring
+and changelog wording (P3, P4), `pytest pypeit/tests`, then the Linux
+measurements on DEIMOS and LRIS (wall-clock, PSS, payload marshalling) and the
+three Task 12 `--ncpu` dev-suite setups.
+>A:
+
 ### Tasks
 
 Claude poses questions here (as `**Qn — title.** body` followed by a `>A:` line);
@@ -2214,3 +2300,25 @@ The useful findings beyond restating his review:
 **Model note:** the prompt says "Use Fable 5.5".  There is no Fable 5.5 (the
 current Fable is 5.1), and I cannot switch models from inside the session, so
 this was done on Opus 5.5.
+
+### 2026-10-18 (PR prompt 2 — going ahead without Tim's push)
+
+Read your answers to QP1–QP4 (we go with `forkserver` on Linux and `spawn`
+elsewhere, exact equality on Linux and a tolerance elsewhere, and the memory cap
+deferred to v2).  On QP1 I agree that we should write the port ourselves, and
+the reasoning is in "Follow-up to QP1".  Checked first that nothing had changed
+on GitHub: no new commits on `origin/speed_up_B`, no comments on #2209 since
+Tim's of 10-13, no formal reviews, and no spawn/port branch of his on the
+upstream repo.
+
+One concrete finding: a freshly imported `pypeit` (as in a spawned child) has
+`log.level == 5` (DEBUG) with a stderr `StreamHandler` attached, and so does
+`py.warnings`.  Tim's description of `_worker_init` mentions only setting the
+log level.  Without our existing handler detach, every spawned worker would
+write straight to stderr as well as into the replay buffer, so each line would
+appear twice.
+
+Drafted a PR comment for #2209 that tells Tim we will implement it from his
+sketch (avoiding a conflicting push), credits him as co-author, answers his
+reproducibility question with #2208, and asks him to check `EDGE_CEN` in his
+macOS runs.  **Not posted**; it waits for your OK in **QP5**.  No code changed.
