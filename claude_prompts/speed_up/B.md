@@ -2658,3 +2658,29 @@ reduction is serial.
 
 Co-Authored-By: Claude Opus 5.5 (1M context) <noreply@anthropic.com>
 ```
+
+### 2026-10-18 (PR prompt 5 — in progress: batch moved to a systemd user service)
+
+The prompt 5 runs are in `REDUX_OUT/_port_validation/` (git-ignored), with one
+directory per run, each holding `run.log`, `stdout.txt`, `stderr.txt` and
+`rss.json`.  Each run uses `instr_run_pypeit.py`, a `run_pypeit` wrapper that
+logs `STAGE-TIMING` (the wall time of each `map_over_detectors` stage) and
+`PAYLOAD-TIMING` (the size of each stage-4 payload and its pickle
+dumps/loads time).
+
+The batch was first started from the Claude session over SSH.  So that you
+could log out, it was moved to a transient unit, `pypeit-port-validation.service`.
+Check on it with:
+
+- `systemctl --user status pypeit-port-validation`
+- `REDUX_OUT/_port_validation/progress.txt`
+
+Done before the move (all rc 0): `lris_ncpu1`, `lris_ncpu2_fs`,
+`lris_ncpu2_spawn`, `bino_ncpu1`, `bino_ncpu2_fs`.  `bino_ncpu2_spawn` was
+killed partway through the move and restarted at 08:12 under the service.
+After it come `deimos_ncpu4_fs`, the dev-suite reduce of the three `--ncpu`
+setups (with `-m`), and `vet_tests/test_ncpu.py`.  The script is
+`REDUX_OUT/_port_validation/port_validation.sh`.
+
+Still to do once it finishes: product comparisons, the duplicate-log check,
+the "after-B port" section of `speed_up_results.md`, and the full prompt 5 log.
