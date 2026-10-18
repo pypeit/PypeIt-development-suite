@@ -686,7 +686,7 @@ removes the cost under any method.  Apple's frameworks are not guaranteed
 fork-safe, and the forkserver forks from a process that has loaded
 numpy/Accelerate.  The Mac test saw no problem, but that is one machine and
 one OS version.  **I recommend (a) now plus (c) in v2.**
->A:
+>A: (a)
 
 **QP7 — clear stale serial products in the dev-suite harness?**  The DEIMOS
 830G vet failure in prompt 5 was stale products again.  The *serial* reduce
@@ -696,10 +696,10 @@ Task 12 fixed this for the `ncpu/` directory only.  Clearing `Science/`
 before the serial reduce in `test_scripts/pypeit_tests.py` would stop it
 recurring, but it changes a harness that every setup uses.  Do it in this PR,
 or file it separately?
->A:
+>A: We will leave it for now
 
 **QP8 — OK to post the reply to Tim above (edits welcome)?**
->A:
+>A: Yes, looks good
 
 ### Tasks
 
