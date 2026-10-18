@@ -2587,3 +2587,74 @@ on every platform under both start methods.
 Co-authored-by: Tim Pickering <2481822+tepickering@users.noreply.github.com>
 Co-Authored-By: Claude Opus 5.5 (1M context) <noreply@anthropic.com>
 ```
+
+### 2026-10-18 (PR prompt 4 — docs, docstrings and changelog for the port)
+
+Did P3 and P4.  As before, **no git commands were run**: the changes are
+uncommitted, and `./update_docs` was not used, because it runs `git add`.  I
+ran its build step instead (`cd doc; make clean; make html`, using the
+`pypeit14b` env, with `PYPEIT_DEV` set so the example docs were built too).
+Result: **rc 0, `doc/sphinx_warnings.out` empty (0 lines).**
+
+#### Changes
+
+- **`doc/running.rst`, "Running on multiple CPUs":**
+  - The fork/Linux-only note is deleted.
+  - New subsection **"How the workers are started"**.  It covers
+    `forkserver` on Linux and `spawn` elsewhere, why `fork` is avoided on every
+    platform (the parent is already multi-threaded), how the inputs reach a
+    worker, and the `PYPEIT_MP_START` override with an example.
+  - **"Reproducibility"** is now scoped.  On Linux, the products are
+    bit-identical provided the reduction is reproducible run-to-run (verified
+    on long-slit).  Elsewhere, they are scientifically equivalent.  The
+    Accelerate caveat is spelled out: threadpoolctl cannot see that BLAS, so
+    the serial path is unpinned while the workers are pinned through the
+    environment.  The caveat also notes Tim's serial-vs-serial differences on
+    macOS long-slit.  The #2208 multi-slit warning is kept.
+  - The trade-off paragraph now opens with "Making the products independent of
+    `ncpu`…" (its old antecedent had moved), and it ends "where the pinning
+    takes effect".
+  - Memory note: MMT/Binospec (close to 9 GB per detector) is now named next to
+    DEIMOS, with a pointer to #2211 (about 40% lower single-detector peak).
+- **`doc/releases/2.1.0dev.rst`:**
+  - The concurrency bullet now gives the start methods, `PYPEIT_MP_START`
+    and the scoped reproducibility statement, with DEIMOS and Binospec named
+    in the memory sentence.  The "fork-capable platform (Linux)" sentence is
+    gone.
+  - The pinning bullet is scoped to "where the pinning takes effect".
+  - The Testing bullet says exact on Linux, a tolerance elsewhere, and that the
+    pool tests run on every platform under both start methods.
+  - The Under-the-hood `pypeit.parallel` bullet describes the delivery, the
+    re-applied parent configuration and the replayed warnings.
+- **Stale text found in prompt 3, now fixed:**
+  - the `run_pypeit --ncpu` help (`pypeit/scripts/run_pypeit.py`);
+  - the `[rdx] ncpu` parameter description (`pypeit/par/pypeitpar.py`).
+
+  Both still said the reduction "is still serial".  The regenerated
+  `doc/pypeit_par.rst` and `doc/help/run_pypeit.rst` carry the new text.
+
+#### For you to stage
+
+In `PypeIt/`:
+
+- `doc/running.rst`
+- `doc/releases/2.1.0dev.rst`
+- `pypeit/scripts/run_pypeit.py`
+- `pypeit/par/pypeitpar.py`
+- the regenerated `doc/api`, `doc/pypeit_par.rst` and `doc/help/run_pypeit.rst`
+
+`update_docs` would do `git add api` and `git add pypeit_par.rst`.
+
+Suggested commit:
+
+```
+Document the forkserver/spawn port of detector parallelism
+
+Describe the start methods and PYPEIT_MP_START, drop the Linux-only
+note, scope the bit-identical claim to Linux and reproducible data,
+add the Accelerate caveat, and name Binospec in the memory guidance.
+Fix the --ncpu help and [rdx] ncpu description, which still said the
+reduction is serial.
+
+Co-Authored-By: Claude Opus 5.5 (1M context) <noreply@anthropic.com>
+```
