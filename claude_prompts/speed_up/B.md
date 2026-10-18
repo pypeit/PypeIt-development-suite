@@ -2472,3 +2472,118 @@ session to stop and ask if `GDrive:` is not configured there, rather than
 handle credentials itself.  It also warns that the dev-suite `.pypeit` files
 carry workstation data paths, and gates the Binospec `--ncpu 2` run on the
 laptop having at least 24 GB of RAM.
+
+### 2026-10-18 (PR prompt 3 — `parallel.py` ported to `forkserver`/`spawn`)
+
+Implemented P1 + P2 from Tim's sketch in `pypeit/parallel.py`, and updated
+`pypeit/tests/test_parallel.py` and `pypeit/tests/test_runpypeit.py` to match.
+No other files changed.  **No git commands were run** (per your instruction,
+now in my memory).  The changes are uncommitted in `PypeIt/`; a suggested
+commit message is at the end of this entry.
+
+#### What changed
+
+- **Delivery.**  `func`/`args`/`kwargs` and a `cfg` dict go to each worker
+  once, through `initargs`; `_worker_init` stores them in `_WORKER_STATE`.
+  Each detector's `payload` slice goes with its `submit`.  `_FORK_PAYLOAD`,
+  `can_fork()`, the serial fallback and its warning are gone.
+- **Start method.**  The new `start_method()` returns `forkserver` on Linux
+  (preloading `pypeit.pypeit_steps`) and `spawn` elsewhere.
+  `PYPEIT_MP_START` overrides it, and an unavailable method raises
+  `PypeItError`.  The "Processing N detector(s)…" log line now also names the
+  start method.  I checked that nothing in the dev suite parses that line.
+- **Parent-side state, audited.**  `_parent_config()` captures two things:
+  - `fitting.POLYFIT2D_CHUNK`, which `PypeIt.__init__` sets from #2211's
+    `fit2d_chunk`, and is re-applied in the worker.
+  - **The matplotlib backend.**  I found this one in the audit; it was not in
+    the plan.  `run_pypeit` forces `Agg` through
+    `scriptbase.configure_matplotlib`.  A spawned worker re-imports
+    matplotlib with the platform default, which on macOS is the GUI `macosx`
+    backend, in a child process.  The backend is now passed through
+    `MPLBACKEND` and `matplotlib.use(..., force=True)`.
+
+  Nothing else needs carrying over:
+  - The `pypeit` logger always sits at level STEP, and filtering happens in
+    the handlers, which the worker removes anyway.  So Tim's "set the log
+    level" step is not needed.
+  - `qaWriter` is re-initialised to 1 in the worker.
+  - The package's warnings filters are set on import.
+- **Logging.**  `_worker_init` still detaches the handlers on `pypeit` and
+  `py.warnings`.  One addition: the replay buffer is now also attached to
+  `py.warnings`.  Before, a Python warning raised in a worker went to
+  `logging.lastResort` (bare stderr, out of order); now it is replayed in
+  detector order like every other line.  That was already true under `fork`;
+  it is fixed here.
+- **Thread pinning.**  The new `_worker_environment()` sets the five thread
+  variables, plus `MPLBACKEND`, in the parent for the **whole life** of the
+  executor, then restores them.  It has to be the whole life, not just
+  construction: `ProcessPoolExecutor` starts workers on demand as work is
+  submitted.  `threadpool_limits(1)` is kept in both paths.
+- **Docstrings.**  The module docstring no longer promises bit-identical output
+  unconditionally.  It is scoped to where the pinning takes effect and the data
+  are reproducible run-to-run (#2208).
+
+#### Tests
+
+- `test_parallel.py`:
+  - Every pool test is parametrized over `forkserver` and `spawn`, through a
+    fixture that sets `PYPEIT_MP_START`.  All `can_fork` skips are gone, as is
+    `test_fork_unavailable_falls_back_to_serial`.
+  - New: `test_start_method`, `test_parent_config_reaches_worker`,
+    `test_worker_logs_appear_once` and `test_worker_warnings_replayed`.
+  - `test_worker_threads_are_pinned` now checks all five variables in the
+    worker, which works even where threadpoolctl sees no runtime (Accelerate).
+    It also checks that the parent's environment is restored.
+- **Each new guard was checked against a negative control.**  I disabled the
+  production line under test and confirmed the test then fails:
+  - with no handler detach, `appear_once` fails 2/2;
+  - with no `set_polyfit2d_chunk`, `config_reaches_worker` fails 2/2;
+  - with no environment export, `threads_are_pinned` fails 2/2.
+
+  My first version of `appear_once` was wrong: it counted 0 occurrences
+  because the parent's stderr handler writes to pytest's stale capture object,
+  not to fd 2.  It now redirects the parent's stream handlers and asserts that
+  fd 2 (which the workers inherit) contains nothing, and that `caplog` has each
+  line exactly once.
+- `test_run_pypeit_ncpu`: no longer skipped.  It requires exact equality on
+  Linux; elsewhere the 99.9th percentile of the difference relative to the
+  maximum must be below 1e-3, and `WAVE_RMS` must agree to `rtol=1e-3`
+  (QP3).  Prompt 6 should check that this tolerance is right on the Mac.
+
+#### Results (`pypeit14b` env, Python 3.14.6)
+
+- `pytest pypeit/tests`: **916 passed**, in 302 s.  This includes
+  `test_run_pypeit_ncpu` under the default `forkserver`, bit-identical.
+- `PYPEIT_MP_START=spawn pytest test_runpypeit.py -k ncpu`: **passed**, also
+  bit-identical on Linux.
+- `test_parallel.py`: 22 passed.
+
+**The `pypeit` env named in "Running" is broken.**  On Python 3.13, astropy
+fails to import against its numpy (`np.in1d`), and 18 of the 22 parallel tests
+error before running.  I used `pypeit14b` instead, as my memory notes from
+PR A recommend.  The "Running" section of this doc should probably be updated.
+
+#### For prompt 4
+
+The `run_pypeit --ncpu` help text (`pypeit/scripts/run_pypeit.py`) still says
+`--ncpu` "only sets the number of threads used to write the QA figures; the
+reduction itself is still serial", which has been wrong since PR B.  Prompt 4
+should fix it.
+
+#### Suggested commit (in `PypeIt/`, branch `speed_up_B`)
+
+```
+Port detector parallelism from fork to forkserver/spawn
+
+Deliver the common arguments once per worker through initargs and each
+detector's payload with its submit, following Tim Pickering's sketch in
+the #2209 review.  forkserver on Linux, spawn elsewhere, overridable
+with PYPEIT_MP_START; can_fork() and the serial fallback are removed.
+Re-apply fit2d_chunk and the matplotlib backend in each worker, set the
+BLAS thread variables in the parent for the life of the pool, and replay
+worker warnings with the rest of the worker log.  The pool tests now run
+on every platform under both start methods.
+
+Co-authored-by: Tim Pickering <2481822+tepickering@users.noreply.github.com>
+Co-Authored-By: Claude Opus 5.5 (1M context) <noreply@anthropic.com>
+```
