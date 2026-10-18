@@ -272,6 +272,114 @@ assumed.  Identical output: **not met, and not attainable** — but the
 parallelism is exonerated by the serial-versus-serial control, and is exact on
 the setup where PypeIt itself is exact.
 
+## After the B port (`forkserver`/`spawn`, per Tim Pickering's review) — 2026-10-18
+
+Branch `speed_up_B` with the port to `initargs` delivery (`forkserver` on
+Linux, `spawn` elsewhere), on top of #2211's memory reductions, which were
+merged into the branch after the `fork` measurements above.  Env `pypeit14b`
+(Python 3.14.6), same 24-core / 755 GB workstation.  Every run is cold, into
+its own directory, inside `systemd-run --scope -p MemoryMax=80G`.  Artifacts
+are in `REDUX_OUT/_port_validation/` (one directory per run, with `rss.json`,
+`run.log`, `stderr.txt`).  The runs used `instr_run_pypeit.py`, a `run_pypeit`
+wrapper that logs each stage's wall time and the size and pickle cost of each
+stage-4 payload; it adds about 1 s per detector.
+
+### Wall-clock and peak memory
+
+Peak PSS is summed over the whole process tree (`scripts/run_with_rss.py`).
+
+| Setup | run | wall | speedup | peak PSS |
+|---|---|---:|---:|---:|
+| keck_lris_blue multi_600_4000_slitmask (2 det) | `--ncpu 1` | 377.8 s | — | 1.25 GB |
+| | `--ncpu 1`, repeat | 375.7 s | — | — |
+| | `--ncpu 2` forkserver | 240.0 s | 1.57x | 3.08 GB |
+| | `--ncpu 2` spawn | 247.6 s | 1.53x | 3.07 GB |
+| mmt_binospec Longslit_G1000 (2 det) | `--ncpu 1` | 1 162.3 s | — | 10.05 GB |
+| | `--ncpu 2` forkserver | 647.1 s | 1.80x | 20.12 GB |
+| | `--ncpu 2` spawn | 656.3 s | 1.77x | 19.43 GB |
+| keck_deimos 600ZD_M_6500 (4 mosaics) | `--ncpu 4` forkserver | **3 391.2 s** | 2.76x\* | **36.48 GB** |
+
+\*Against the 9 360.0 s serial baseline above, which predates #2211.  The
+`fork` mean on the same data was 4 184.0 s (39.38 GB), so the port is 19%
+faster and 7% lighter.  **That gain should not be credited to the start
+method**: #2211 (memory and B-spline/fit changes) landed in between, and no
+serial DEIMOS run was repeated on the current code.  The like-for-like
+comparison of start methods is Binospec and LRIS, where `forkserver` and
+`spawn` agree to within 1.5-3% in wall-clock and memory, `spawn` being slightly
+slower because each worker imports PypeIt afresh.
+
+Peak memory did **not** rise as feared when copy-on-write sharing was given up.
+On the two-detector setups the parallel peak is about 2x the serial one, i.e.
+linear in workers; on DEIMOS it is 3.1x serial for 4 workers.
+
+DEIMOS stage times at `--ncpu 4`: calibration build 1 483.2 s, image
+processing 78.1 s, extraction 654.6 s; the remaining ~1 175 s is the serial
+object finding / global sky stage and I/O.
+
+### Cost of sending the payload (Q4 revisited)
+
+Under `fork` the stage-4 payload was shared copy-on-write; now it is pickled on
+submit.  Measured in the parent:
+
+| Setup | payload per detector | `dumps` | `loads` | stage-4 wall |
+|---|---:|---:|---:|---:|
+| Binospec (2 det) | 977 MB | 0.43-0.46 s | 0.44-0.48 s | 88.6-92.4 s |
+| DEIMOS (4 mosaics) | 1 122-1 130 MB | 0.53-0.55 s | 0.31 s | 654.6 s |
+
+That is about 1% of the stage on Binospec and under 0.15% on DEIMOS, far below
+the 5% threshold, so there is still no case for writing payloads to disk.
+
+### Workers ran, and nothing was logged twice
+
+Every parallel run logged `Processing N detector(s) using N worker process(es)
+(start method: …)` exactly three times (one per parallel stage) with the
+expected start method.  For each per-detector line a worker emits
+(`Calibrating detector`, `Reducing detector`, `begin log for detector`), the
+count on the console equals the count in the log file and equals the serial
+run's count: no worker wrote to the inherited stderr.
+
+### Products
+
+`compare_products.py` on the `Science` directories:
+
+| Setup | comparison | arrays differing | worst 99.9th-pct rel. diff (spec1d) |
+|---|---|---:|---:|
+| LRIS | serial vs serial (control) | **638 / 842** | **0.61** |
+| | serial vs `--ncpu 2` forkserver | 638 / 842 | 0.61 |
+| | serial vs `--ncpu 2` spawn | 638 / 842 | 0.61 |
+| | forkserver vs spawn | 637 / 842 | 0.58 |
+| Binospec | serial vs `--ncpu 2` forkserver | 235 / 392 | 3.9e-6 |
+| | serial vs `--ncpu 2` spawn | 236 / 392 | 3.0e-7 |
+| | forkserver vs spawn | 234 / 392 | 3.8e-6 |
+| shane_kast_blue | serial vs `--ncpu 2`, both start methods (`test_run_pypeit_ncpu`) | **0** (bit-identical) | 0 |
+
+The LRIS control is decisive: two identical serial runs differ by exactly as
+much as serial vs parallel, so the differences are #2208 (edge centroiding), not
+the parallelism.  The large LRIS figure comes from a few pixels of a handful of
+low-S/N objects (median S/N 2-3) and is the downstream amplification already
+documented in #2208.  `WAVE_RMS` is identical in every comparison.  On the Mac
+(PR prompt 6 in B.md) the same LRIS comparisons give only 3e-7, though
+`EDGE_CEN` still differs by 1 ULP there; how far #2208 propagates evidently
+depends on the platform.
+
+### Dev suite
+
+`./pypeit_test reduce -t 1 -m` on the three `--ncpu` setups (`keck_deimos/830G_M_8500`,
+`keck_lris_blue/multi_600_4000_slitmask`, `mmt_binospec/Longslit_G1000`): **6/6
+reductions passed**, all under the default start method (`forkserver`).
+`vet_tests/test_ncpu.py`: **13 passed, 3 xfailed** (the xfails are the exact-flux
+comparisons tied to #2208).  The first vet run had two failures on DEIMOS 830G,
+caused by stale state, not the port: the *serial* spec1d had been written into a
+`Science/` left over from Task 12, so every object appeared twice.  After that
+directory was cleared and the setup re-reduced, both passed.
+
+### Verdict
+
+The port changes no result that the `fork` version did not, works under both
+start methods with the same speed-up (to within 3%), keeps memory linear in
+workers, and costs about 1% or less to ship payloads.  Like-for-like speed-ups at
+`--ncpu 2`: LRIS 1.57x, Binospec 1.80x.
+
 ## After workstream C (arc-fit vectorization)
 
 *(pending)*

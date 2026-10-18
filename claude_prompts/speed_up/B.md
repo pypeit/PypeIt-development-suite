@@ -639,6 +639,68 @@ measurements on DEIMOS and LRIS (wall-clock, PSS, payload marshalling) and the
 three Task 12 `--ncpu` dev-suite setups.
 >A:  Yes, please do.  But, I have a Mac laptop where we can test.  So no need to ask him to do so for us.  Please create a set of prompts under Prompts/PR to perform the work.  Include at least one to download the necessary files on my Mac laptop (with `rclone`) and test the port.
 
+#### PR prompt 7 — draft reply to Tim (not posted; awaiting QP8)
+
+> Thanks again for the review.  The port is in (`47c5be456`), following your
+> sketch: common arguments through `initargs`, each detector's inputs with its
+> `submit`; `forkserver` on Linux, `spawn` elsewhere, `PYPEIT_MP_START` to
+> override.  `can_fork()` and the serial fallback are gone, and CI now runs the
+> pool tests everywhere: all 916 tests on macOS, 907 on Windows (no
+> `forkserver` there), nothing skipped.  Two things beyond your sketch turned
+> out to matter: a fresh import attaches its own stderr handler to `pypeit`
+> and `py.warnings`, so workers must detach them (otherwise every line
+> printed twice); and parent-side globals set after import (`fit2d_chunk` from
+> #2211, and the forced `Agg` backend, without which a macOS worker would pick
+> the GUI backend) have to be re-applied in `_worker_init`.
+>
+> Numbers (Linux): Binospec G1000 `--ncpu 2` 1.80x under forkserver and 1.77x
+> under spawn; LRIS slitmask 1.57x / 1.53x.  Sending ~1 GB of extraction inputs
+> per detector costs ~0.9 s, about 1% of that stage on Binospec and under 0.15%
+> on DEIMOS.  Memory is linear in workers (Binospec 10.0 GB serial, 20.1 GB at
+> `--ncpu 2`).  DEIMOS 600ZD at `--ncpu 4` is now 3 391 s, but most of the
+> gain over the `fork` version is #2211's, not the start method's.
+>
+> Reproducibility: on an M5 Max, Kast is bit-identical serial-vs-serial and
+> across `ncpu` and both start methods.  LRIS first diverges in `EDGE_CEN` by
+> 1 ULP, i.e. #2208, same as Linux.  For Binospec G1000, `EDGE_CEN` is
+> identical; the first difference is in the tilt tracing (`Tilts`, ~1e-6 px),
+> with the Flat B-spline one step downstream, so your "first divergence in the
+> Flat" was one step after the origin.  It is a second entry point of the same
+> kind.  Accelerate itself is single-threaded on the matrix unit and
+> bit-reproducible across processes there, so it is not the cause.  The docs
+> now promise bit-identical output only on Linux, for data that reproduce
+> run-to-run.
+>
+> On memory, we deferred the memory-aware `nworkers()` to a v2 and updated the
+> numbers in `doc/running.rst` (Binospec 10-14 GB per detector).  Would you take
+> another look when you have a moment?
+
+**QP6 — `forkserver` on macOS too?**  On the Mac, Kast `--ncpu 2` took 55.3 s
+under `spawn` against 40.8 s under `forkserver` and 41 s serially.  Each pool
+entry spawns fresh interpreters that import PypeIt, and a 4-exposure reduction
+enters the pool 9 times.  The products are bit-identical either way.  Options:
+(a) keep `spawn` as the macOS default and document `PYPEIT_MP_START=forkserver`
+(what the code does now); (b) default to `forkserver` wherever it exists, so
+only Windows uses `spawn`; (c) a v2 that reuses one pool across stages, which
+removes the cost under any method.  Apple's frameworks are not guaranteed
+fork-safe, and the forkserver forks from a process that has loaded
+numpy/Accelerate.  The Mac test saw no problem, but that is one machine and
+one OS version.  **I recommend (a) now plus (c) in v2.**
+>A:
+
+**QP7 — clear stale serial products in the dev-suite harness?**  The DEIMOS
+830G vet failure in prompt 5 was stale products again.  The *serial* reduce
+merged new objects into a `Science/` left from an earlier run, so its spec1d
+held every object twice.  `-m` rebuilds calibrations but not science products.
+Task 12 fixed this for the `ncpu/` directory only.  Clearing `Science/`
+before the serial reduce in `test_scripts/pypeit_tests.py` would stop it
+recurring, but it changes a harness that every setup uses.  Do it in this PR,
+or file it separately?
+>A:
+
+**QP8 — OK to post the reply to Tim above (edits welcome)?**
+>A:
+
 ### Tasks
 
 Claude poses questions here (as `**Qn — title.** body` followed by a `>A:` line);
@@ -2911,3 +2973,108 @@ Accelerate is single-threaded and bit-reproducible on this chip.
 Co-Authored-By: Claude Fable 5.1 <noreply@anthropic.com>
 ```
 
+
+### 2026-10-18 (PR prompt 5 — Linux validation of the port: results)
+
+Full write-up: the new section "After the B port" in
+`pypeitdev/speed_up/Reports/speed_up_results.md`; its dev-suite line still
+needs filling in (see the end of this entry).  Raw artifacts are in
+`REDUX_OUT/_port_validation/`.  Headlines:
+
+| Setup | run | wall | speedup | peak PSS |
+|---|---|---:|---:|---:|
+| LRIS slitmask (2 det) | serial / serial repeat | 377.8 / 375.7 s | — | 1.25 GB |
+| | `--ncpu 2` forkserver / spawn | 240.0 / 247.6 s | 1.57x / 1.53x | 3.08 / 3.07 GB |
+| Binospec G1000 (2 det) | serial | 1 162.3 s | — | 10.05 GB |
+| | `--ncpu 2` forkserver / spawn | 647.1 / 656.3 s | 1.80x / 1.77x | 20.12 / 19.43 GB |
+| DEIMOS 600ZD (4 mosaics) | `--ncpu 4` forkserver | **3 391.2 s** | — | **36.48 GB** |
+
+- **DEIMOS vs `fork`:** 3 391 s against the 4 184 s `fork` mean, and 36.5 GB
+  against 39.4 GB.  The improvement is confounded with #2211, which was merged
+  into the branch after the `fork` runs, and no serial DEIMOS run was repeated
+  on the current code.  I have not credited the start method.  Like for like,
+  `forkserver` and `spawn` agree within 1.5–3%.
+- **Payload cost (Q4 revisited):** about 1 GB per detector, 0.9 s to pickle and
+  unpickle.  That is about 1% of stage 4 on Binospec and under 0.15% on DEIMOS,
+  so there is no need for an `Intermediate/` fallback.
+- **The workers ran, and nothing was printed twice.**  Each parallel run logged
+  "Processing N detector(s) using N worker process(es) (start method: …)" three
+  times.  For each per-detector line, the count on the console equals the count
+  in the log equals the serial count.
+- **Products:**
+  - Kast: bit-identical under both start methods.  This is covered by
+    `test_run_pypeit_ncpu`, which passed in prompt 3; Kast was not re-run.
+  - LRIS: 638/842 arrays differ.  **The serial-vs-serial control I added gives
+    the same 638/842**, with the same worst 99.9th-percentile spec1d relative
+    difference (0.61), so the differences are #2208.  The large value comes
+    from a few pixels of low-S/N objects.  Interesting contrast: the Mac gets
+    only 3e-7 for the same comparison.
+  - Binospec: 235/392 arrays differ, 4e-6 at worst; forkserver vs spawn gives
+    the same.
+- **Dev suite:** all 6 reductions passed.  `vet_tests/test_ncpu.py`:
+  11 passed, 3 xfailed, **2 failed**, both on DEIMOS 830G.  The cause is stale
+  state, not the port: the *serial* spec1d held 104 objects but only 52
+  distinct names, because it was written into a `Science/` left over from
+  Task 12, and `-m` does not clear science products.  The vet test said so
+  itself.  I removed that `Science/` and started a rerun of the setup plus the
+  vet tests as `pypeit-rerun-830g.service` at 12:37
+  (`REDUX_OUT/_port_validation/rerun_830g.sh`).  See QP7 about fixing the
+  harness.
+- **Also changed:** `doc/running.rst`'s memory paragraph, which now uses the
+  measured numbers (DEIMOS about 36 GB at `--ncpu 4`, Binospec 10–14 GB per
+  detector).  The old "predates #2211" remark was wrong, since these
+  measurements are post-#2211.  The docs have not been rebuilt since this
+  one-paragraph edit.
+
+**To finish (next session):** when `progress.txt` shows `END rerun_830g vet`,
+replace `DEVSUITE_PLACEHOLDER` in `speed_up_results.md` and `DEVSUITE_RESULT`
+in the PR-description draft with the vet result.
+
+### 2026-10-18 (PR prompt 7 — in progress: CI checked, PR description and reply to Tim drafted)
+
+Confirmed first that **prompt 6 succeeded on the Mac** (its log is above).
+Prompt 5's runs had finished, but not its analysis, which I completed (entry
+above), apart from the 830G rerun.
+
+- **CI on #2209 at `47c5be456` (the port): all 21 jobs green.**  I read the
+  job logs through `gh api …/jobs/<id>/logs`, because `gh run view --log`
+  returns nothing on this repo.  Nothing was skipped:
+  - every macOS job ran all 916 tests, as on Linux, with `test_parallel.py` at
+    22 dots;
+  - every Windows job ran 907, with `test_parallel.py` at 13 dots.  The
+    difference is the 9 `forkserver` cases, since Windows has no forkserver.
+
+  So the pool path and `test_run_pypeit_ncpu` really ran on both platforms
+  this time.
+- **New PR description** drafted, not yet PATCHed.  It covers the start
+  methods, the parent configuration, the scoped reproducibility statement
+  (including the Mac findings), the CI counts, and a measurement table with the
+  `fork` → port comparison and its #2211 caveat.  It replaces the stale "Linux
+  only", "9 unit tests" and "857 passed" lines and the p = 0.81 figure.  The
+  draft is at `REDUX_OUT/_port_validation/pr_body_new.md`; I will
+  PATCH it once the 830G vet result is in, and read it back.
+- **Reply to Tim** drafted in Q&A → PR, waiting for **QP8**.
+- New questions: **QP6** (make `forkserver` the macOS default?) and **QP7**
+  (fix stale serial products in the harness?).
+
+**For you to commit:**
+
+- `PypeIt/`: `doc/running.rst` (the memory paragraph).
+- Dev suite: `claude_prompts/speed_up/B.md`,
+  `pypeitdev/speed_up/Reports/speed_up_results.md`, and the Mac's prompt 6
+  entry if it is not already committed.
+
+### 2026-10-18 (PR prompts 5 and 7 — the 830G rerun is green; PR description updated)
+
+- **The 830G rerun passed.**  With the stale `Science/` removed, the serial and
+  `--ncpu 2` reductions of `keck_deimos/830G_M_8500` both passed, finishing at
+  13:28.  `vet_tests/test_ncpu.py` now gives **13 passed, 3 xfailed,
+  0 failed**.  **Prompt 5 is complete.**  The dev-suite paragraph of
+  `speed_up_results.md` is filled in.
+- **The #2209 description is updated**, via `gh api -X PATCH`, and I read it
+  back: it is identical to the draft
+  (`REDUX_OUT/_port_validation/pr_body_new.md`) apart from a trailing
+  newline.
+- **Prompt 7 still waits on you:** the reply to Tim (**QP8**), plus **QP6**
+  (`forkserver` as the macOS default) and **QP7** (clearing stale serial
+  products in the harness).
