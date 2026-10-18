@@ -517,7 +517,7 @@ port `parallel.py` (P1+P2), un-skip and extend the tests, the docs, docstring
 and changelog wording (P3, P4), `pytest pypeit/tests`, then the Linux
 measurements on DEIMOS and LRIS (wall-clock, PSS, payload marshalling) and the
 three Task 12 `--ncpu` dev-suite setups.
->A:
+>A:  Yes, please do.  But, I have a Mac laptop where we can test.  So no need to ask him to do so for us.  Please create a set of prompts under Prompts/PR to perform the work.  Include at least one to download the necessary files on my Mac laptop (with `rclone`) and test the port.
 
 ### Tasks
 
