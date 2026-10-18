@@ -306,7 +306,13 @@ The shell's default environment shadows it, so use the absolute env binaries:
 
 1. I have issued a PR for this work.  It is here: `https://github.com/pypeit/PypeIt/pull/2209`.  Tim Pickering has issued an excellent review.  Please read his review and suggest a plan to implement what he has suggested.  
 Discuss it with me in Q&A/PR.
-Use Fable 5.5. Log your work.
+Use Opus 5.5. Log your work.
+
+2. I have answered your questions in Q&A/PR below.  Read them and discuss
+further with me whether we can move ahead without Tim's push of the port code.
+Discuss it further with me in Q&A/PR.
+Use Opus 5.5. Log your work.
+
 
 ## Q&A
 
@@ -409,23 +415,23 @@ then do the Linux side (the `cfg`/globals fix, `forkserver`, P2–P4, the DEIMOS
 timing and PSS measurements, docs and changelog).  Alternatively I write all of
 it.  A follow-up PR is the option I'd avoid: it would merge a Linux-only v1 into
 `develop` only to replace its core mechanism immediately.
->A:
+>A: Do we agree that he showed the lines of code needed for the port?  If so, let's just use them and not trouble him to push it onto the branch?
 
 **QP2 — `forkserver` on Linux, or `spawn` everywhere?**  `forkserver` is cheaper
 per worker and is CPython 3.14's Linux default; `spawn` everywhere means one code
 path tested identically on all CI platforms.  I recommend `forkserver` on Linux,
 `spawn` elsewhere, with a hidden override (e.g. env var `PYPEIT_MP_START`) so
 either can be forced for debugging.
->A:
+>A: Ok, let's try that.
 
 **QP3 — `test_run_pypeit_ncpu` off Linux.**  Keep exact equality on Linux and
 compare with a tolerance elsewhere (recommended), or keep the test Linux-only
 with the skip reason changed from "no fork" to "not reproducible on this BLAS"?
->A:
+>A: Ok, that's fine
 
 **QP4 — Memory-aware `nworkers()`: defer to v2 (with a low-memory warning now),
 or do it in this PR?**  I recommend deferring.
->A:
+>A: I think we can avoid this for now as I have pulled in the code that reduces the memory usage by 40%.  Defer to v2
 
 ### Tasks
 
