@@ -313,6 +313,126 @@ further with me whether we can move ahead without Tim's push of the port code.
 Discuss it further with me in Q&A/PR.
 Use Opus 5.5. Log your work.
 
+3. **Port `parallel.py` to `forkserver`/`spawn` (plan P1 + P2).**  Work in
+   `PypeIt/` on `speed_up_B` (pull first).  Read the Q&A/PR plan, the QP1–QP5
+   answers and Tim's review comment on #2209.  Implement it from his sketch:
+    - `_worker_init(func, args, kwargs, log_level, cfg)` stores the common
+      arguments in a module global, sets the log level, **keeps** the existing
+      detach of the `log` and `py.warnings` handlers (a freshly imported
+      `pypeit` already has a DEBUG stderr handler on both), re-applies `cfg`
+      (at least `fitting.set_polyfit2d_chunk`; audit `pypeit/pypeit.py` and
+      `run_pypeit` for any other parent-side module globals and add them), and
+      calls `qaWriter.init(ncpu=1)`.  `_run_one(det, det_kwargs)` gets its slice
+      of `payload` through `submit`.
+    - Start method: `forkserver` on Linux with
+      `set_forkserver_preload(['pypeit.pypeit_steps'])`, `spawn` elsewhere;
+      `PYPEIT_MP_START` env var overrides (validate it against
+      `mp.get_all_start_methods()`).
+    - Set `THREAD_ENV_VARS` to `'1'` in the parent with a context manager around
+      executor creation and restore them afterwards; keep `threadpool_limits(1)`
+      in both paths.
+    - Remove `_FORK_PAYLOAD`, `can_fork()`, the serial fallback and its warning,
+      and update the module docstring (no unconditional "bit-identical").
+    - Tests: drop every `can_fork` skip in `test_parallel.py` and
+      `test_runpypeit.py`; parametrize the pool tests over the available start
+      methods; add tests that a `cfg` global reaches a worker and that a worker's
+      log lines appear exactly once.  `test_run_pypeit_ncpu`: exact equality on
+      Linux, a tolerance elsewhere (QP3).
+    - Run `pytest pypeit/tests` in the `pypeit` env (and under
+      `PYPEIT_MP_START=spawn` for `test_parallel.py`); must be green.
+    - Commit with `Co-authored-by: Tim Pickering
+      <2481822+tepickering@users.noreply.github.com>` and push.
+    Use Opus 5.5. Log your work.
+
+4. **Docs, docstrings and changelog (plan P3 + P4).**  In `doc/running.rst`:
+   delete the fork/Linux-only note, describe the start methods and
+   `PYPEIT_MP_START`, scope the reproducibility claim (bit-identical on Linux
+   where `threadpoolctl` controls the BLAS and the data are reproducible
+   run-to-run; otherwise scientifically equivalent; #2208), add the Accelerate
+   caveat, and name Binospec next to DEIMOS in the memory note (mention #2211).
+   Update the matching bullets in `doc/releases/2.1.0dev.rst`.  Regenerate
+   `doc/api` (`./update_docs`, `git add doc/api`) and check
+   `doc/sphinx_warnings.out` is empty.  Commit and push.
+   Use Opus 5.5. Log your work.
+
+5. **Linux validation of the port.**  Run everything inside the safe recipe from
+   Task 12 (`systemd-run --user --scope -p MemoryMax=80G -p MemorySwapMax=0`,
+   one job at a time).
+    - `keck_lris_blue/multi_600_4000_slitmask` and `mmt_binospec/Longslit_G1000`:
+      `--ncpu 1` vs `--ncpu 2` under both `forkserver` and `spawn`
+      (`PYPEIT_MP_START`); compare with `pypeitdev/speed_up/scripts/compare_products.py`;
+      confirm the workers really ran (`Processing N detector(s) using N worker
+      process(es)`) and that no log line appears twice.
+    - `shane_kast_blue`: `--ncpu 1` vs `--ncpu 2` must still be bit-identical.
+    - DEIMOS `600ZD_M_6500` `--ncpu 4` under `forkserver`: wall-clock against
+      the 4 184 s `fork` mean, peak PSS with `scripts/run_with_rss.py` against
+      39.38 GB, and the time spent pickling the stage-4 payload on submit (as in
+      Q4).
+    - Re-run the three Task 12 `--ncpu` dev-suite setups and their vet tests.
+    - Append an "after-B port" section to `Reports/speed_up_results.md`.
+    Use Opus 5.5. Log your work.
+
+6. **macOS test on the laptop (run this prompt in a Claude Code session on the
+   Mac).**  This session does not share the workstation's context, so start by
+   reading this doc in full, especially Q&A/PR and the logs for PR prompts 1–5.
+    - **Setup.**  Find or create a conda env with PypeIt installed editable from
+      `PypeIt/` on `speed_up_B` (`git pull`; `pip install -e ".[dev]"`), and the
+      dev-suite repo on `dev_speed_up` (`git pull`).  Record the macOS version,
+      the chip, the RAM, Python, numpy and its BLAS (`numpy.show_config()`), and
+      `threadpoolctl.threadpool_info()`.  Export `PYPEIT_DEV`.
+    - **Download with `rclone`.**  Check `rclone listremotes` shows a Google
+      Drive remote with access to the dev-suite Team Drive (on the workstation it
+      is `GDrive:`, path
+      `GDrive:Astronomy/UCO/PypeIt/PypeIt-development-suite/RAW_DATA`).  If it
+      is missing, stop and ask me to run `rclone config`; do not try to set up
+      credentials yourself.  Then copy into `$PYPEIT_DEV/RAW_DATA/`:
+      ```bash
+      R=GDrive:Astronomy/UCO/PypeIt/PypeIt-development-suite/RAW_DATA
+      for s in shane_kast_blue/600_4310_d55 \
+               keck_lris_blue/multi_600_4000_slitmask \
+               mmt_binospec/Longslit_G1000; do
+          rclone copy "$R/$s" "$PYPEIT_DEV/RAW_DATA/$s" -v
+      done
+      ```
+      (about 21 MiB, 15 MiB and 201 MiB respectively).  Check that the file
+      counts are 26, 3 and 3.
+    - **Unit tests.**  `pytest pypeit/tests/test_parallel.py` (it must now run
+      the pool path, not skip it) and `test_runpypeit.py::test_run_pypeit_ncpu`,
+      under the default `spawn` and under `PYPEIT_MP_START=forkserver`.
+    - **Reductions.**  The dev-suite `.pypeit` files carry workstation data
+      paths, so either use `./pypeit_test reduce -s <instrument>/<setup>` or
+      write local copies with the `path` line fixed, in a scratch directory.
+      For each of the three setups, run `run_pypeit` at `--ncpu 1` twice and at
+      `--ncpu 2` once, into separate output directories.  Run Binospec last, and
+      only at `--ncpu 2` if the laptop has at least 24 GB of RAM (Tim saw 8.8 GB
+      per detector before #2211).  For each run record the wall-clock and peak
+      memory (`/usr/bin/time -l`; note that macOS memory compression makes RSS
+      understate the footprint), confirm the worker pool really ran, and check
+      that no log line appears twice.
+    - **Comparisons** with `pypeitdev/speed_up/scripts/compare_products.py`:
+      serial vs serial (run-to-run reproducibility on Accelerate) and serial vs
+      `--ncpu 2`.  For any setup that is not reproducible serially, walk the
+      calibration chain in dependency order, including `Edges_*.fits.gz` and
+      `Slits_*.fits.gz`, and report where it first diverges, in particular
+      whether `EDGE_CEN` already differs (#2208).
+    - **Thread pinning.**  Confirm that `VECLIB_MAXIMUM_THREADS=1` reaches the
+      spawned workers (print `os.environ` from inside a worker, or check the
+      thread count of a worker process with `ps -M`).
+    - Write the results into the Logs section of this doc, commit and push on
+      `dev_speed_up` (pull first).  Do not push to `PypeIt/` from the Mac unless
+      a fix is needed; if one is, describe it in Q&A/PR first.
+    Use Opus 5.5. Log your work.
+
+7. **Close the review loop.**  Back on the workstation (pull `dev_speed_up` to
+   get the Mac log).  Check that CI on #2209 is green on every platform and
+   that the macOS and Windows jobs actually ran the pool tests rather than
+   skipping them (read the job logs; do not trust the green tick, see
+   Task 10).  Update the #2209 description (the start methods, the Linux and
+   macOS results, the scoped reproducibility statement) with `gh api -X PATCH`
+   and read it back.  Draft a reply to Tim summarizing the port and the results
+   in Q&A/PR, and post it only after I approve it.
+   Use Opus 5.5. Log your work.
+
 
 ## Q&A
 
@@ -2322,3 +2442,33 @@ Drafted a PR comment for #2209 that tells Tim we will implement it from his
 sketch (avoiding a conflicting push), credits him as co-author, answers his
 reproducibility question with #2208, and asks him to check `EDGE_CEN` in his
 macOS runs.  **Not posted**; it waits for your OK in **QP5**.  No code changed.
+
+### 2026-10-18 (PR prompt 3 setup — QP5 answered: comment posted, prompts written)
+
+**Posted the reply to Tim on #2209 as `profxj`**
+(https://github.com/pypeit/PypeIt/pull/2209#issuecomment-6250663985), using the
+draft from "Follow-up to QP1" with one change, per your QP5 answer: the closing
+request for him to rerun his Binospec check on macOS is replaced by "We'll also
+test the port on macOS ourselves before asking for another look."  The
+`EDGE_CEN` question to him is unchanged.
+
+**Wrote PR prompts 3–7** in the PR section:
+
+- 3: the `parallel.py` port and its tests.
+- 4: docs, docstrings and changelog.
+- 5: Linux validation (`forkserver` and `spawn`, DEIMOS wall-clock and PSS,
+  payload marshalling, the Task 12 dev-suite setups).
+- 6: the Mac laptop.  It downloads the data with `rclone` and tests the port.
+- 7: CI check, PR description, and a reply to Tim held for your approval.
+
+Prompt 6 is written to stand on its own, because the Mac session will not have
+this context.  Its `rclone` source is the workstation's remote and path
+(`GDrive:Astronomy/UCO/PypeIt/PypeIt-development-suite/RAW_DATA`, from
+`pypeit_syncraw`).  The three setups are checked to exist there:
+`shane_kast_blue/600_4310_d55` (26 files, 21 MiB),
+`keck_lris_blue/multi_600_4000_slitmask` (3 files, 15 MiB) and
+`mmt_binospec/Longslit_G1000` (3 files, 201 MiB).  The prompt tells the Mac
+session to stop and ask if `GDrive:` is not configured there, rather than
+handle credentials itself.  It also warns that the dev-suite `.pypeit` files
+carry workstation data paths, and gates the Binospec `--ncpu 2` run on the
+laptop having at least 24 GB of RAM.
