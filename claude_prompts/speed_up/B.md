@@ -302,7 +302,17 @@ The shell's default environment shadows it, so use the absolute env binaries:
      Once things work ok, I will launch a full test in the cloud.
      Use Opus 5.5. Log your work.
 
+## PR
+
+1. I have issued a PR for this work.  It is here: `https://github.com/pypeit/PypeIt/pull/2209`.  Tim Pickering has issued an excellent review.  Please read his review and suggest a plan to implement what he has suggested.  
+Discuss it with me in Q&A/PR.
+Use Fable 5.5. Log your work.
+
 ## Q&A
+
+### PR
+
+### Tasks
 
 Claude poses questions here (as `**Qn — title.** body` followed by a `>A:` line);
 the user answers inline beneath each `>A:`.
