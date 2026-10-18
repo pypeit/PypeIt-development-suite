@@ -2658,3 +2658,229 @@ reduction is serial.
 
 Co-Authored-By: Claude Opus 5.5 (1M context) <noreply@anthropic.com>
 ```
+
+### 2026-10-18 (PR prompt 6 — macOS test of the port on the laptop)
+
+Run in a Claude Code session on the Mac, on `speed_up_B` at `47c5be456` and
+`dev_speed_up` at `98514d65`; both were already at their remote heads, so no
+pull was needed.  **No git commands that change state were run** (your
+standing instruction); what to commit is listed at the end.  **No change to
+`PypeIt/` is needed**: the port works on macOS under both start methods.
+
+**Model note:** the prompt says "Use Opus 5.5"; this session ran on Fable 5.1,
+which cannot switch models from inside the session.
+
+#### Setup
+
+| item | value |
+|---|---|
+| machine | macOS 26.6.2 (25G83), Apple M5 Max (18 cores: 6 P + 12 E), 128 GB |
+| env | `/Users/xavier/miniforge3/envs/pypeit14`, Python 3.14.6, PypeIt editable from `PypeIt/` (`pip check` clean) |
+| numpy | 2.5.3, BLAS/LAPACK = **Accelerate** (`numpy.show_config()`) |
+| scipy / astropy / matplotlib | 1.18.1 / 8.0.1 / 3.11.2 |
+| threadpoolctl | 3.6.0; `threadpool_info()` is **empty** after importing numpy and scipy (Accelerate is invisible to it).  Once the pipeline is imported it sees exactly one runtime: scikit-learn's bundled `libomp` at 18 threads. |
+| start methods | `get_all_start_methods()` = spawn, fork, forkserver; platform default spawn; `parallel.start_method()` returns spawn |
+| `PYPEIT_DEV` | the shell had the workstation path in it; set to `/Users/xavier/Projects/PypeIt/PypeIt-development-suite` for all commands |
+
+#### Download
+
+`rclone listremotes` already had `GDrive:`.  Copied the three setups from
+`GDrive:Astronomy/UCO/PypeIt/PypeIt-development-suite/RAW_DATA`:
+`shane_kast_blue/600_4310_d55` 26 files / 21.1 MiB (one is a dot-file, so plain
+`ls` shows 25; `rclone check` reports 26 matching, 0 differences),
+`keck_lris_blue/multi_600_4000_slitmask` 3 / 14.7 MiB,
+`mmt_binospec/Longslit_G1000` 3 / 200.9 MiB.
+
+#### Unit tests (all in the pool path; nothing skipped)
+
+| command | result |
+|---|---|
+| `pytest pypeit/tests/test_parallel.py` (default, spawn) | 22 passed, 16.1 s |
+| `PYPEIT_MP_START=forkserver pytest pypeit/tests/test_parallel.py` | 22 passed, 15.0 s |
+| `pytest test_runpypeit.py::test_run_pypeit_ncpu` (spawn) | 1 passed, 67.7 s |
+| `PYPEIT_MP_START=forkserver pytest test_runpypeit.py::test_run_pypeit_ncpu` | 1 passed, 65.5 s |
+
+`test_worker_threads_are_pinned` **passes rather than skips** on the Mac: the
+skip is only taken when threadpoolctl sees no runtime at all, and in the test
+process it sees scikit-learn's `libomp`, which the workers do pin to 1.  The
+environment assertions are what cover Accelerate.
+
+#### Reductions
+
+All ten ran to completion (rc 0) under the default `spawn`, one at a time,
+each with `/usr/bin/time -l` plus a 1 Hz `ps` sampler of the whole process
+tree (`scratchpad/tools/run_with_tree_rss.py`, summed RSS and per-process
+`ps -M` thread counts).  Outputs are in
+`$PYPEIT_DEV/REDUX_OUT/mac_port/<setup>/{serial1,serial2,ncpu2}` (gitignored),
+with `<run>.console`, `<run>.time` and `<run>.tree.json` beside each.  The
+`.pypeit` files are local copies with the `path` line fixed; Kast's was
+generated with `pypeit_setup -c all`.  Kast was also run `--ncpu 2` under
+`forkserver`.
+
+| setup | run | wall | `time -l` max RSS | tree peak RSS | processes (peak RSS / threads) |
+|---|---|---|---|---|---|
+| Kast 600_4310_d55 (1 det, 4 exposures) | serial1 | 41.5 s | 3.69 GB | 3.40 GB | parent 3.4 GB / 19 thr |
+| | serial2 | 40.5 s | 3.34 GB | 3.09 GB | parent 3.1 / 19 |
+| | ncpu2 (spawn) | **55.3 s** | 3.28 GB | 3.32 GB | parent 1.1 / 4; 9 workers 0.2–3.0 GB / **1 thr** |
+| | ncpu2 (forkserver) | 40.8 s | 1.28 GB | 3.39 GB | parent 1.2 / 4; 7 workers 0.3–2.8 GB / 1 thr |
+| LRIS multi_600_4000_slitmask (2 det) | serial1 | 219.9 s | 3.59 GB | 3.30 GB | parent 3.3 / 36 |
+| | serial2 | 249.1 s | 3.58 GB | 3.28 GB | parent 3.3 / 36 |
+| | ncpu2 (spawn) | **158.3 s** | 2.73 GB | **5.07 GB** | parent 2.0 / 4; 6 workers 1.4–2.5 GB / 1 thr |
+| Binospec Longslit_G1000 (2 det) | serial1 | 640.3 s | 14.64 GB | 13.63 GB | parent 13.6 / 36 |
+| | serial2 | 638.3 s | 14.66 GB | 13.66 GB | parent 13.7 / 36 |
+| | ncpu2 (spawn) | **366.9 s** | 14.70 GB | **27.62 GB** | parent 8.2 / 4; 6 workers 7.5–13.7 GB / 1 thr |
+
+Notes on the table:
+
+- **Speed-up at `--ncpu 2`**: Binospec 1.74x, LRIS 1.4–1.6x.  Kast (one
+  detector) is 14 s *slower* under `spawn`: with four exposures it enters the
+  pool nine times (1 calibration + 2 per exposure), and each entry spawns a
+  fresh interpreter that imports PypeIt (~1.5 s).  Under `forkserver`, which
+  preloads `pypeit.pypeit_steps` once, the same run takes 40.8 s, i.e. no
+  penalty.  See "Observations" below.
+- **Memory**: `/usr/bin/time -l` reports the largest single process, so for
+  the parallel runs it understates the footprint; the tree total is the number
+  to read.  Binospec peaks at **13.7 GB per detector worker** here (RSS, with
+  macOS memory compression it is a lower bound), roughly the serial peak, so
+  `--ncpu 2` doubles the footprint to 27.6 GB.  That is above Tim's 8.8 GB per
+  detector (different grating and measure), so the "about 9 GB" in the memory
+  note of `doc/running.rst` is on the low side for this setup; prompt 7 may
+  want to say "9–14 GB".
+- Six or seven worker PIDs per two-detector run is expected: a fresh executor
+  per stage, three stages, two workers each; the small extra child is the
+  multiprocessing resource tracker.
+
+#### The pool really ran, and no line is emitted twice
+
+`run_pypeit` runs at verbosity 1 by default, so the console carries only
+warnings; the INFO stream is in the `.log` next to the `.pypeit` file (which
+each run overwrites, so only the last run's log per setup survived: the
+`forkserver` run for Kast, the `ncpu2` runs for LRIS and Binospec).  In those:
+
+- `Processing 2 detector(s) using 2 worker process(es) (start method: spawn)`
+  appears exactly 3 times for LRIS and Binospec (one per parallel stage) and
+  `Processing 1 detector(s) using 1 worker process(es) (start method:
+  forkserver)` 9 times for Kast; `begin/end log for detector` blocks are
+  balanced (6/6, 6/6, 9/9) and the `Started/Finished detector` lines count
+  12/12/18.
+- The parallel consoles contain **zero** INFO lines, i.e. no worker wrote to
+  the inherited stderr; the only extra console lines are the sampler's own.
+- `sort | uniq -d` on the logs finds repeated lines, but every one is a message
+  that legitimately repeats with identical text within the same second
+  (B-spline iteration headers, "Applying heliocentric correction to OPT
+  extraction for object:", per-slit profile-fit banners); no stage marker or
+  per-detector line is doubled.  The unit test `test_worker_logs_appear_once`
+  is the exact check, and it passes under both start methods.
+
+#### Comparisons (`compare_products.py`, Science dirs)
+
+| setup | serial1 vs serial2 | serial1 vs ncpu2 |
+|---|---|---|
+| Kast | **bit-identical** (0/328 arrays) | **bit-identical** (0/328); also 0/328 for ncpu2-forkserver, and spawn vs forkserver |
+| LRIS | 635/842 differ | 635/842 differ |
+| Binospec | 237/392 differ | 235/392 differ |
+
+So on this Mac, as on Linux, **Kast long-slit is reproducible and bit-identical
+across `ncpu` and across start methods**, and where products differ they differ
+serial-vs-serial by the same amount as serial-vs-parallel, i.e. `ncpu` is not
+the cause.  Applying the off-Linux tolerance of `test_run_pypeit_ncpu` (99.9th
+percentile of |Δ|/max over `OPT_COUNTS`, `OPT_COUNTS_IVAR`, `OPT_WAVE`,
+`BOX_COUNTS`, `TRACE_SPAT`, every object) to the LRIS and Binospec spec1d
+files gives a worst case of **3.0e-7** (LRIS, serial vs ncpu2) and **2.9e-6**
+(Binospec, serial vs serial); `WAVE_RMS` is identical in all cases.  The
+`1e-3` threshold is therefore generous by about 300x and is safe; it could be
+tightened to `1e-4` if wanted.
+
+**Where the serial runs first diverge** (`scratchpad/tools/compare_calibs.py`,
+every `Calibrations/*.fits*` including the `.fits.gz` ones, in PypeIt's
+processing order Arc → Tiltimg → Edges/Slits → WaveCalib → Tilts → Flat):
+
+- **LRIS: `Edges_*.fits.gz`, `EDGE_CEN`**, 137/45 056 elements on DET01 and
+  2 068/57 344 on DET02, max |Δ| = 6.1e-5 = **1 float32 ULP** at values in
+  [512, 1024), with `EDGE_FIT` and the PCA following; Arc, Tiltimg and
+  WaveCalib identical.  This is **#2208 on macOS** — the same signature as on
+  Linux, so it is not Accelerate-specific.
+- **Binospec: `Edges` and `EDGE_CEN` are identical** (this answers the question
+  put to Tim).  The first file to differ in processing order is
+  **`Tilts_*.fits`**: the traced tilt positions (`TILT_TRACES:goodpix_tilt`
+  etc.) by up to 9e-7 pixel and the 2D fit coefficients by 3e-10, with
+  WaveCalib identical.  `Flat` then differs (B-spline coefficients at 1e-10,
+  `PIXELFLAT_MODEL` at 1e-5 counts), and the only `Slits` difference is the
+  flat-written `left_tweak`/`right_tweak` (1e-10 pixel).  So Tim's "first
+  divergence is the Flat B-spline" was one step downstream of the origin; on
+  this data the origin is the **tilt tracing**.  It is a different entry
+  point from #2208, but of the same kind (last-ulp, run-to-run, data
+  dependent), and it is present identically in serial-vs-serial.
+
+#### Thread pinning
+
+- `VECLIB_MAXIMUM_THREADS=1` (and the other four variables, plus
+  `MPLBACKEND`) **reach the workers under both `spawn` and `forkserver`**:
+  printed from inside a worker via `map_over_detectors` (scratch module
+  `envprobe.py`), and the parent's environment is clean before and after.
+  `test_worker_threads_are_pinned` checks the same thing.
+- Every worker process shows **1 thread** in `ps -M` throughout the real
+  reductions (the parent shows 19–36).
+- **Accelerate does not thread BLAS on this chip at all**: a 6000x6000 float64
+  matmul runs at 379 GFLOP/s with the variable unset, at 1, and at 4, with
+  `ps -M` showing 2 threads (main + the timer) in every case.  Apple Silicon
+  runs it on the AMX/SME matrix unit from the calling thread, so the pin is
+  moot here rather than effective.
+- **Accelerate is bit-reproducible across processes**: matmul, `lstsq`,
+  `polyfit`, SVD, sum and dot on fixed inputs at n = 64…4096 give identical
+  hashes in five separate interpreters, pinned or not.  The run-to-run
+  differences above are therefore **not** coming from the BLAS, which removes
+  the "Accelerate is non-deterministic" hypothesis for #2208 and for the
+  Binospec tilt divergence.
+
+#### Observations (no action taken; for prompt 7 / Q&A)
+
+1. **`forkserver` works on macOS and removes the per-stage spawn cost.**  Kast
+   `--ncpu 2`: 55.3 s under spawn vs 40.8 s under forkserver vs 41 s serial,
+   with bit-identical products.  For a single-detector or many-exposure
+   reduction the default `spawn` makes `--ncpu 2` slower than serial on
+   macOS.  Options: keep `spawn` as the safe macOS default and document
+   `PYPEIT_MP_START=forkserver` as the faster choice, or default to
+   `forkserver` wherever it is available (then Windows alone uses spawn).  I
+   did not test forkserver on the two-detector setups.  The classic macOS
+   fork hazard (Objective-C runtime after fork) did not show up with the
+   `Agg` backend preloaded.
+2. The `doc/running.rst` reproducibility wording ("the serial path is unpinned
+   while the workers are pinned" on Accelerate) is true but, on Apple Silicon,
+   irrelevant: both paths run BLAS single-threaded on the matrix unit, and the
+   non-reproducibility is upstream of the BLAS.  Prompt 7's reply to Tim can
+   say that macOS long-slit is reproducible on Kast and not on Binospec, with
+   the origin in the tilt tracing, and that `EDGE_CEN` is identical there.
+3. Memory note: Binospec G1000 is ~13.7 GB per detector worker on this Mac,
+   not ~9 GB.
+4. The run log is written next to the `.pypeit` file, not under `-r`, so
+   repeated runs of one file into different `-r` directories overwrite it.
+   Worth knowing for the dev suite's `ncpu/` runs too.
+
+#### Tooling written (scratchpad, not committed)
+
+`tools/run_with_tree_rss.py` (tree RSS + `ps -M` sampler, macOS equivalent of
+`run_with_rss.py`), `tools/run_all.sh`, `tools/post_checks.sh`,
+`tools/compare_calibs.py` (dependency-ordered chain walk incl. `.fits.gz` and
+an `EDGE_CEN` detail), `tools/tolerance_check.py`,
+`probe/envprobe.py`, `probe/blas_timing.py`, `probe/accel_determinism.py`.
+If any should live in `pypeitdev/speed_up/scripts/`, say which.
+
+#### For you to commit (in `PypeIt-development-suite/`, branch `dev_speed_up`)
+
+- `claude_prompts/speed_up/B.md` (this entry)
+
+Suggested message:
+
+```
+Log the macOS test of the forkserver/spawn port (PR prompt 6)
+
+Apple M5 Max, Python 3.14, numpy on Accelerate.  Pool tests pass under
+spawn and forkserver; Kast is bit-identical across ncpu and start
+methods; LRIS and Binospec differ serial-vs-serial by the same amount
+as serial-vs-parallel.  LRIS diverges first in EDGE_CEN (#2208);
+Binospec's EDGE_CEN is identical and the origin is the tilt tracing.
+Accelerate is single-threaded and bit-reproducible on this chip.
+
+Co-Authored-By: Claude Fable 5.1 <noreply@anthropic.com>
+```
