@@ -312,6 +312,121 @@ Use Fable 5.5. Log your work.
 
 ### PR
 
+Plan for Tim Pickering's review of #2209 (his comment of 2026-10-12, five
+suggestions).  Short version: **he is right on every point, and suggestion 1
+(drop `fork`) makes suggestion 2 moot and most of 3 easy.**  Proposed order:
+P1 → P2 → P3 → P4, with P5 deferred.  Questions for you are QP1–QP4 at the end.
+
+**P1 — Replace `fork` with `initargs` delivery; `forkserver` on Linux, `spawn`
+elsewhere (his #1).**
+- `parallel.py` only, as he sketched: `_worker_init(func, args, kwargs,
+  log_level, cfg)` stores the common arguments in a module global; `_run_one(det,
+  det_kwargs)` gets its slice of `payload` through `submit`.  `_FORK_PAYLOAD`,
+  `can_fork()`, the serial fallback and its warning all go away.
+- Start method: `forkserver` on Linux (no threads-at-fork hazard, and with
+  `set_forkserver_preload(['pypeit.pypeit_steps'])` each worker forks from a
+  process that has already imported the pipeline, so we avoid his ~2.7 s /
+  350 MB import per worker), `spawn` on macOS and Windows.  Open question QP2.
+- **One hazard he did not mention, and it is already live on our branch:**
+  anything `run_pypeit` configures as a *module global* in the parent is not
+  seen by a spawned worker.  `speed_up_B` already merged #2211, whose
+  `PypeIt.__init__` calls `fitting.set_polyfit2d_chunk(par['rdx']['fit2d_chunk'])`
+  (`pypeit/pypeit.py:105`).  Under `fork` workers inherit it; under
+  `spawn`/`forkserver` they silently use the default.  Results would not change
+  (it is a memory/speed knob), but a user who lowered it to save memory would
+  lose that saving exactly where memory matters — in the workers.  Fix: pass a
+  small `cfg` dict through `initargs` and re-apply it in `_worker_init`; then
+  audit for any other parent-side globals (the log level, `qaWriter`, warning
+  filters) and add a unit test that a configured global reaches a worker.
+- Costs to measure on Linux, since Tim's numbers are macOS-only:
+  (a) the extraction payload (`sciImg`, `final_sky`, `sobjs_obj`, …) is now
+  pickled on submit instead of shared copy-on-write — time it on DEIMOS as in
+  Q4; (b) **peak PSS** will rise, because the 3.4x-for-4-workers figure from
+  Task 7 came partly from copy-on-write sharing.  Re-run `run_with_rss.py` on
+  DEIMOS `--ncpu 4` and on `keck_lris_blue/multi_600_4000_slitmask`;
+  (c) wall-clock on DEIMOS `--ncpu 4` against the 4 184 s `fork` mean.
+- Tests: remove the `can_fork` skips in `test_parallel.py` and
+  `test_runpypeit.py`, so the pool path runs on macOS and Windows CI (today
+  macOS compares serial with serial, as he noticed).  Replace the
+  "fork-less platform" test with one per start method.  Risk: the test
+  functions must be importable by name in a spawned child; they live in
+  `pypeit.tests.test_parallel`, so this should hold, but it is the first thing
+  to check if Windows CI fails.
+
+**P2 — Thread env vars set in the parent before the pool is created (his #3).**
+- Under `spawn`/`forkserver` the child's environment is read before numpy loads
+  its BLAS, so this finally pins Accelerate (`VECLIB_MAXIMUM_THREADS`), which
+  `threadpoolctl` cannot see.  Set them in a context manager around executor
+  creation and restore afterwards, so the parent is not altered.
+  Subtlety: the forkserver process starts once and is reused, so the variables
+  must be set by the time it first starts — which, done this way, they always
+  are.
+- Keep `threadpool_limits(1)` in both paths for the runtimes it can see.
+
+**P3 — Scope the reproducibility claims to what we can prove (his #2 wording
+and #4).**
+- His question "did you confirm run-to-run reproducibility on Linux separately
+  from the ncpu comparison?" — **yes, we did, in Tasks 7–8**: Kast long-slit is
+  bit-identical serial-vs-serial and serial-vs-`--ncpu 2` (0/328, three times);
+  multi-slit is not reproducible even serial-vs-serial, traced to `EDGE_CEN`
+  differing by 1 float32 ULP (#2208), with the B-spline exonerated.  The reply
+  to Tim should say so and point at #2208.
+- His macOS result is **new information**: there even *long-slit* (Binospec) is
+  not reproducible serial-vs-serial.  His first divergence is the Flat B-spline,
+  but he lists Arc/Tiltimg/WaveCalib as identical and not `Edges`/`Slits` —
+  which are `.fits.gz`, exactly the files I missed in Task 7.  Ask him to check
+  `Edges_*.fits.gz` `EDGE_CEN`; it may be #2208 again rather than something
+  Accelerate-specific.
+- Wording changes: `doc/running.rst` (the macOS sentence — `fork` is available,
+  only the default changed — becomes moot after P1 and is deleted; the
+  "Reproducibility" section says bit-identical *on Linux where threadpoolctl
+  controls the BLAS and the data are reproducible run-to-run*, otherwise
+  scientifically equivalent), the `parallel.py` module docstring (still says
+  "built to produce *bit-identical* products" without that qualifier), and the
+  changelog bullets at `2.1.0dev.rst` lines ~36–56 and ~308–311.
+- `test_run_pypeit_ncpu` uses `assert_array_equal` on Kast.  Once un-skipped it
+  will run on macOS, where that may not hold.  QP3.
+
+**P4 — Memory guidance (his #5, partly).**
+- Docs only for now: name Binospec (8.8 GB per detector on his laptop) next to
+  DEIMOS in `doc/running.rst`, and note that #2211 lowers that by ~40%.
+- A memory-aware cap in `nworkers()` is the right idea but I suggest deferring
+  it (QP4): we have no per-detector memory estimate to divide by, it varies 2–3x
+  between instruments, and `psutil` is only in the `dev`/`devsuite` extras, so a
+  core dependency would be added for a heuristic.  A cheaper middle step is a
+  one-time warning when `ncpu > 1` and available memory is below some threshold
+  (readable from `/proc/meminfo`/`os.sysconf` without psutil).
+
+**Validation after P1–P3:** `pytest pypeit/tests` (pypeit env); the three
+dev-suite `--ncpu` setups from Task 12 under the safe `systemd-run` recipe;
+DEIMOS `--ncpu 4` wall + PSS; CI on all platforms with the pool path now really
+exercised.  Changelog and `doc/api` regenerated.
+
+**QP1 — Who writes the port?**  Tim offered to push it as a commit on
+`speed_up_B` or as a follow-up PR.  My recommendation: **accept his offer to
+push it onto `speed_up_B`** — he has written and tested it on macOS — and I
+then do the Linux side (the `cfg`/globals fix, `forkserver`, P2–P4, the DEIMOS
+timing and PSS measurements, docs and changelog).  Alternatively I write all of
+it.  A follow-up PR is the option I'd avoid: it would merge a Linux-only v1 into
+`develop` only to replace its core mechanism immediately.
+>A:
+
+**QP2 — `forkserver` on Linux, or `spawn` everywhere?**  `forkserver` is cheaper
+per worker and is CPython 3.14's Linux default; `spawn` everywhere means one code
+path tested identically on all CI platforms.  I recommend `forkserver` on Linux,
+`spawn` elsewhere, with a hidden override (e.g. env var `PYPEIT_MP_START`) so
+either can be forced for debugging.
+>A:
+
+**QP3 — `test_run_pypeit_ncpu` off Linux.**  Keep exact equality on Linux and
+compare with a tolerance elsewhere (recommended), or keep the test Linux-only
+with the skip reason changed from "no fork" to "not reproducible on this BLAS"?
+>A:
+
+**QP4 — Memory-aware `nworkers()`: defer to v2 (with a low-memory warning now),
+or do it in this PR?**  I recommend deferring.
+>A:
+
 ### Tasks
 
 Claude poses questions here (as `**Qn — title.** body` followed by a `>A:` line);
@@ -2062,3 +2177,34 @@ picks a single-detector setup fails loudly instead of passing vacuously.
 All three thresholds and their measured justifications are written into the
 module docstring, so nobody has to re-derive why 1e-3 and 99.9% rather than
 `assert_array_equal`.
+
+### 2026-10-18 (PR prompt 1 — plan for Tim Pickering's review of #2209)
+
+Read Tim's review comment on #2209 (no inline review comments exist; the
+review is a single PR comment), his #2211 description, and the current
+`parallel.py`, `doc/running.rst` and changelog on `speed_up_B`.  Wrote the plan
+into **Q&A → PR** (P1–P4) with four decisions for you (**QP1–QP4**).  No code
+changed.
+
+The useful findings beyond restating his review:
+
+- **Spawn hazard already live on our branch.**  `speed_up_B` has merged #2211,
+  whose `PypeIt.__init__` sets the module global `fitting.POLYFIT2D_CHUNK` from
+  `[rdx] fit2d_chunk`.  `fork` workers inherit it; `spawn`/`forkserver` workers
+  would silently use the default.  Harmless to results, but it defeats the
+  memory knob exactly in the workers.  The port must carry parent-side
+  configuration through `initargs`.
+- **His question 4 is already answered** by Tasks 7–8 and #2208 (Kast long-slit
+  reproducible, multi-slit not, origin `EDGE_CEN`).  His macOS long-slit
+  non-reproducibility is new, but his list of identical calibration files omits
+  `Edges`/`Slits` (`.fits.gz`) — the same blind spot I had in Task 7 — so it is
+  worth asking him to check `EDGE_CEN` before blaming Accelerate.
+- The `parallel.py` docstring and the changelog still claim bit-identical
+  output unconditionally; `doc/running.rst` is already qualified but has the
+  inaccurate macOS sentence he flagged.
+- `psutil` is only in the `dev`/`devsuite` extras, which is part of why I
+  suggest deferring the memory-aware `nworkers()` cap.
+
+**Model note:** the prompt says "Use Fable 5.5".  There is no Fable 5.5 (the
+current Fable is 5.1), and I cannot switch models from inside the session, so
+this was done on Opus 5.5.
