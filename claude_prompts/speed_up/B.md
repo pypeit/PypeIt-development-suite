@@ -3078,3 +3078,30 @@ above), apart from the 830G rerun.
 - **Prompt 7 still waits on you:** the reply to Tim (**QP8**), plus **QP6**
   (`forkserver` as the macOS default) and **QP7** (clearing stale serial
   products in the harness).
+
+### 2026-10-18 (PR prompt 7 — acted on QP6–QP8)
+
+- **QP8 (yes): reply to Tim posted** on #2209 as `profxj`
+  (https://github.com/pypeit/PypeIt/pull/2209#issuecomment-6256706608).  The
+  text is the Q&A draft verbatim, reflowed.  Before posting I checked that the
+  `doc/running.rst` memory edit it mentions is on `origin/speed_up_B` (head
+  `f77b572`).
+- **QP6 (a): `spawn` stays the macOS default.**  No code change was needed,
+  since `start_method()` already does this.  I added a paragraph to the "How
+  the workers are started" section of `doc/running.rst`:
+  - under `spawn` each worker re-imports PypeIt, once for the calibrations and
+    twice per exposure;
+  - so `--ncpu 2` can be slower than serial for single-detector or
+    many-exposure reductions;
+  - on macOS, `PYPEIT_MP_START=forkserver` avoids that cost;
+  - it is not the default because Apple's libraries are not guaranteed
+    fork-safe.
+
+  `make html`: rc 0, `sphinx_warnings.out` empty.  Reusing one pool across
+  stages remains a v2 idea and is not recorded anywhere else.
+- **QP7: harness left as is.**  Re-running a setup into an existing directory
+  can still double the serial spec1d objects; `vet_tests/test_ncpu.py`
+  detects this and says to remove `Science/`.
+
+**For you to commit:** `PypeIt/doc/running.rst` and the dev-suite `B.md`.
+With that, PR prompts 1–7 are done.
