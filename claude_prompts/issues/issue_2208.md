@@ -366,7 +366,7 @@ from my laption into my workstation and have it keep running.  The workstation w
 - Added an empty Q&A/Testing section.  Nothing run yet.
 
 
-### 2026-10-18 — Testing #1 (in progress: runs launched, comparison pending)
+### 2026-10-18 — Testing #1 (baseline: #2208 reproduced; Haswell kernels do not help)
 
 **Environment (profx).**
 - CPU: Intel Xeon w5-2455X (Sapphire Rapids), 12 cores / 24 threads, full
@@ -428,11 +428,173 @@ tmux new-session -d -s i2208_t1 "bash -c './run_calib.sh base_a; ./run_calib.sh 
   SkylakeX for both OpenBLAS libraries.  The other three runs were still
   going when the session ended (~4 min each, ~15 min total).
 
-**Remaining for Testing #1** (resume by re-running this prompt):
-1. Check that `testing1.log` ends with `ALLDONE` and that every run has
-   status 0.  Check that `hsw_*/blas_info.txt` shows Haswell.
-2. Run `compare_calibs.py` on `base_a`/`base_b`, `hsw_a`/`hsw_b` and
-   `hsw_a`/`base_a`, and `edge_cen_diff.py` on both detectors for each pair.
-3. Record the numbers here and update the summary.
+**Run results** (all status 0; every `blas_info.txt` shows 1 thread, and
+`hsw_*` show **Haswell** for both OpenBLAS libraries):
+
+| run | env | wall |
+|---|---|---:|
+| base_a | default (SkylakeX) | 220.7 s |
+| base_b | default (SkylakeX) | 217.2 s |
+| hsw_a | `OPENBLAS_CORETYPE=Haswell` | 217.2 s |
+| hsw_b | `OPENBLAS_CORETYPE=Haswell` | 213.1 s |
+
+Comparison outputs are saved in `/mnt/tank/Astronomy/PypeIt/REDUX/issue_2208/`:
+`cmp_<a>_<b>.txt` (compare_calibs.py) and `edgecen_<a>_<b>_DET0N.txt`
+(edge_cen_diff.py).
+
+**File-level summary (number of arrays that differ):**
+
+| file | base_a vs base_b | hsw_a vs hsw_b | hsw_a vs base_a |
+|---|---|---|---|
+| Arc DET01/02 | identical | identical | 1 / 1 (`ARC_IMAGE`, ~all px, ≤9e-8) |
+| Tiltimg DET01/02 | identical | identical | 1 / 1 |
+| WaveCalib DET01/02 | identical | identical | 82 / 118 |
+| Edges DET01/02 | **13 / 16** | **13 / 16** | 15 / 18 |
+| Slits DET01/02 | 7 / 7 | 7 / 7 | 7 / 7 |
+| Flat DET01/02 | 30 / 42 | 30 / 42 | 31 / 43 |
+| Tilts DET01/02 | 3 / 3 | 3 / 3 | 5 / 5 |
+
+**Edges, base_a vs base_b:**
+
+| | DET01 | DET02 |
+|---|---|---|
+| SOBELSIG, TRACE_IMAGE, TRACEID, MASKDEF_ID, EDGE_MSK | identical | identical |
+| `EDGE_CEN` differing / total | **66 / 45 056** (17 of 22 traces), max 1 ULP | **1 393 / 57 344** (20 of 28 traces), max **14 ULP** |
+| `EDGE_FIT` | 236, max 1 ULP | 2 406, max 128 ULP |
+| `EDGE_ERR` | 4 103, max 18 ULP | 5 787, max 24 ULP |
+| `PCA:*`, `PCA_MODEL_*` | all differ (trace_coo up to 1.3e-6 px) | all differ (trace_coo up to 2.9e-6 px) |
+
+**Edges, hsw_a vs hsw_b:** the same picture.  DET01 `EDGE_CEN` 102 / 45 056
+(14 traces, max 1 ULP); DET02 1 788 / 57 344 (22 traces, max 20 ULP).
+SOBELSIG and the other inputs are identical.
+
+**Per-trace `EDGE_CEN` pattern (both pairs):**
+- No differing trace is inserted (no `*INSERT` flags).  All of them are
+  slitmask-matched (`MASKDEF_ID` set), and left and right edges are affected
+  alike.
+- Almost every trace shows a handful of **scattered single rows**, each
+  exactly 1 ULP.  If the float64 values in memory differ by a small,
+  roughly uniform δ, the chance that a value crosses a float32 rounding
+  boundary is about δ/ULP.  With DET01's 66/45 056 ≈ 1.5e-3 and 1 ULP =
+  6.1e-5 px, that gives **δ of order 1e-7 px** (an estimate, not a
+  measurement).
+- **Exception: DET02 column 0** (TRACEID −1, a left edge, MASKDEF_ID 7)
+  differs on **1 342 / 2 048 rows** (base pair) and 1 680 rows (hsw pair).
+  Its max is 14–20 ULP (≈1e-3 px), and its `EDGE_FIT` differs on 2 034–2 048
+  rows.  This trace has a real, trace-wide difference, so it is a good
+  first target for Testing #2/#3.
+- The same rows recur across pairs (e.g. DET01 trace −2 rows 7, 41, 43, 87,
+  147, ...).  The values there sit close to a float32 rounding boundary.
+
+**Haswell discriminator (recorded, no conclusion beyond this):**
+- `hsw_a` vs `hsw_b`: still **not reproducible**, with the same structure and
+  magnitude as the SkylakeX pair.  Arc/Tiltimg/WaveCalib are identical; the
+  first difference is again in Edges, from an identical SOBELSIG.  So
+  swapping OpenBLAS's AVX-512 kernels for AVX2 ones does **not** remove the
+  run-to-run difference.
+- `hsw_a` vs `base_a`: the kernel choice changes the processed images
+  themselves (`ARC_IMAGE`, `TRACE_IMAGE` at ≤9e-8, so SOBELSIG differs too),
+  and everything downstream.  This comparison therefore cannot be used to
+  study Edges.  It does confirm that image processing is
+  **deterministic for a fixed kernel** but kernel-dependent.
+
+**Tool note.** In `compare_calibs.py`, a ULP of `9223372036854775807`
+(INT64_MAX) means the two values have opposite signs (SOBELSIG near 0); it is
+not a real distance.
+
+**Status:** Testing #1 is complete.  Next is Testing #2 (stepwise harness),
+with DET02 trace 0 as the primary target.
 
 Commit point (for the user): `pypeitdev/issue_2208/{compare_calibs.py,edge_cen_diff.py,run_calib.sh}`.
+
+### 2026-10-19 — Testing #2 (harness: first divergence is `build_pca` in `pca_refine`, not centroiding)
+
+**Harness:** `pypeitdev/issue_2208/edge_harness.py`
+- `run`: rebuilds the spectrograph and `EdgeTracePar` from the `.pypeit`
+  file with `PypeItFile.get_pypeitpar()`, as `run_pypeit` does.  It loads the
+  `TraceImage` from a saved Edges file (fresh for every repetition) and sets
+  `traceimg.files` to the raw trace frame (needed by `maskdesign_matching`).
+  It then runs `EdgeTraceSet(..., auto=True)`.
+  - Every method defined on `EdgeTraceSet` is wrapped.  After each call
+    returns, a SHA-256 is taken of the **in-memory** `edge_img/cen/err/msk/fit`,
+    `traceid`, `maskdef_id`, `sobelsig` and every PCA array (including the
+    coefficient-model `xval/yval/fitc/gpm`).  Data-pointer alignment mod 64 is
+    also recorded.
+  - Writes `<tag>_repN.json` (the call sequence and hashes), `_steps.npz`
+    (the full state after each top-level `auto_trace` step) and `_final.npz`.
+  - It refuses to run unless the three `*_NUM_THREADS=1` variables are
+    exported.
+- `compare`: reports the first differing call and the status of each
+  top-level step.  `check`: compares a final state with Edges files.
+- `copy.deepcopy(TraceImage)` hits the `BitMaskArray.__getattr__` recursion
+  on `develop` (fixed in #2209), so the image is re-read from FITS instead.
+- About 10 s per repetition for DET02 and 6 s for DET01; 96 / 110 wrapped
+  calls.
+
+**Faithfulness check** (float32 cast of the harness `edge_cen` vs the
+`run_pypeit` files; SOBELSIG identical in every case):
+
+| det | harness vs base_a | harness vs base_b | base_a vs base_b (Testing #1) |
+|---|---:|---:|---:|
+| DET01 | 88 | 78 | 66 |
+| DET02 | 1 965 | 1 809 | 1 393 |
+
+The per-trace pattern on DET02 is the same as in Testing #1 (trace 0 on most
+rows, up to 19–24 ULP; scattered 1-ULP rows elsewhere).  The harness
+therefore reproduces the same kind of run-to-run difference.
+
+**Runs** (DET02, `REDUX/issue_2208/harness/det02/`): 5 repetitions in one
+process (`inproc`, 86 s total), then 5 fresh processes (`proc0..4`).  All
+10 final `edge_cen` hashes are **different**, including the 5 repetitions
+within one process.  DET01 (`harness/det01/`, 2 in-process plus 1 fresh) is
+the same.
+
+**First diverging call** (identical for all 9 comparisons on DET02 and both
+on DET01): **call #25, `build_pca` (depth 2, inside `pca_refine`)**.
+- Differing: `pca_coeffs`, `pca_components`, and the coefficient models'
+  `yval`/`fitc`.
+- **Identical: its inputs `trace_coo` and `pca_mean`, and all of `edge_cen`
+  and `edge_fit`.**
+
+Top-level steps, inproc rep0 vs rep1 (DET02), with float64 max |diff| from
+`_steps.npz`:
+
+| step | status | size |
+|---|---|---|
+| `initial_trace` | identical | |
+| `centroid_refine` | identical | |
+| `fit_refine` | identical | |
+| `merge_traces` | identical | |
+| `pca_refine` | **differs** | `edge_fit` 1.1e-13, `pca_coeffs` 1.9e-13, `pca_components` 7.8e-16 |
+| `peak_refine` | differs (amplified) | `edge_cen` 8.8e-7 px, `edge_fit` 4.3e-6, `pca_coeffs` 1.1e-5 |
+| `maskdesign_matching`, `sync` | differ (inherited) | same as `peak_refine` |
+
+- **`masked_centroid`/`centroid_refine` and `fit_trace` are deterministic.**
+  The issue's "Where to look" is off by two steps.  The saved `EDGE_CEN`
+  differs only because `peak_refine` re-measures the edges from PCA-
+  predicted positions.
+- `peak_refine` turns a 1e-13 difference into 1e-6 px.  After it, **87 % of
+  the float64 `edge_cen` elements differ** (median |d| ≈ 1.8e-8 px, max
+  8.3e-7 px).  The float32 file shows only the elements that cross a
+  rounding boundary, consistent with the Testing #1 estimate.
+- **The DET02 trace 0 "outlier" is not a separate mechanism.**  That left
+  edge lies at x ≈ 0.48–11.1 px, where the float32 ULP is 6e-8 to 1e-6 px,
+  so a ~1e-7 px difference shows up as many ULPs on every row.
+
+**Lead for Testing #3 (not yet confirmed on the real arrays):**
+- Variation *within* one process rules out the "fresh process / allocator
+  alignment" explanation; it points to a random number generator.
+- `pypeit/core/pca.py:120` calls `PCA(n_components=npca)` with no `svd_solver` and no
+  `random_state`.  On a synthetic array of PypeIt's shape (28 × 2048,
+  sklearn 1.9.0), `svd_solver='auto'` resolves to **`full`** for
+  `n_components=None` (line 92) but to **`randomized`** for
+  `n_components=3` (line 120).  Two unseeded fits differ (max 3.1e-5), and
+  two fits with `random_state=0` are bit-identical.
+- If this holds on the real arrays, #2208's ruled-out item 5 ("sklearn's
+  randomized SVD … resolves to `full` or `covariance_eigh`") is wrong for
+  the line-120 call.  It would also explain why pinning threads and
+  `PYTHONHASHSEED` changed nothing, and why `OPENBLAS_CORETYPE` did not help.
+- Testing #3 will confirm this with a replay of the real `build_pca` inputs,
+  then stop for review as planned.
+
+Commit point (for the user): `pypeitdev/issue_2208/edge_harness.py`.
