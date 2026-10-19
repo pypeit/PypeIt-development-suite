@@ -115,35 +115,58 @@ These rules apply to every prompt below:
       site, or a shared helper).  Wait for my choice in Q&A/Testing.  A
       rounding/quantization fix needs my explicit approval.
 
-4. **Implement the fix and the CI unit test (Q5a).**
-    - Implement the chosen fix on `edge_2208`, matching the surrounding code
-      style.  Keep the change minimal and do not change the algorithm's
-      results beyond rounding level.
-    - Add a test to the relevant `pypeit/tests/test_*.py`.  On a small,
-      deterministic synthetic input (fixed seed) that exercises the same
-      path, call the function on inputs at several byte offsets and assert
-      bit-identical outputs.  Show that the test **fails** on the unfixed code
-      (temporarily revert the fix by hand, without git) and passes with the fix.
-    - Rerun the harness from Testing #2 (5 processes) and `replay.py`: they
-      must now be identical.
-    - Run the PypeIt unit tests that touch the changed modules, plus the
-      edge/trace/tilt tests (`pytest pypeit/tests -k "trace or edge or tilt or
-      fit or moment or pca"`), and then the full `pypeit/tests` suite.
-    - Add a changelog entry with the `update-changelog` skill.  Log the
-      commit point.
+4. **Implement the fix (Q7 = A) and the CI unit test (Q5a).**
+    - In `pypeit/core/pca.py:pca_decomposition`, pass `svd_solver='full'`
+      to **both** `PCA(...)` calls (line 92, the unconstrained `PCA()`, and
+      line 120, `PCA(n_components=npca)`).  Add a short comment explaining
+      why: with `'auto'`, sklearn chooses an unseeded randomized solver at
+      PypeIt's shapes, which makes reductions irreproducible (#2208).  Update
+      the docstring if it describes the solver.  Change nothing else.
+    - Per Q8, results will move by up to ~4e-6 px in the edges (the size of
+      today's run-to-run scatter).  That is accepted; do not try to reproduce
+      the old values.
+    - Add a test to `pypeit/tests/test_pca.py`.  Build a fixed-seed synthetic
+      `(28, 2048)` array that sklearn's `'auto'` sends to `randomized` with
+      `n_components=2` (check this explicitly in the test, so the test keeps
+      its meaning if sklearn's policy changes).  Call `pca_decomposition`
+      several times, with the input copied to several byte offsets, and
+      assert bit-identical coefficients, components and mean.  Show that the
+      test **fails** with the fix reverted by hand (no git) and passes with it.
+    - Without the runtime patch (no `--pca_fix`, no `site/` on `PYTHONPATH`):
+      rerun the harness on both detectors (3 in-process + 2 fresh processes).
+      All calls must be identical, and the final `edge_cen` must equal the
+      `fix_full` harness result from Testing #3.  Also rerun `replay.py`
+      (no `--fix`): 1 distinct output.
+    - Grep the tests and docs for anything that depends on the PCA solver or
+      on exact PCA values.  Run `pytest pypeit/tests -k "trace or edge or tilt
+      or fit or moment or pca"`, then the full `pypeit/tests` suite, and
+      report the counts.
+    - Add a changelog entry with the `update-changelog` skill (a bug fix;
+      mention that edge/tilt/echelle-object PCA results change at the ~1e-6
+      px level).  Log the commit point (PypeIt repo files and dev-suite
+      files separately).
 
 5. **Validate end to end (detached).**
-    - Write `pypeitdev/issue_2208/run_pairs.sh`.  It runs, sequentially and
-      cold, **two full serial reductions** each of
-      `keck_lris_blue/multi_600_4000_slitmask`, `keck_deimos/830G_M_8500`
-      and `mmt_binospec/Longslit_G1000`, then runs `compare_calibs.py` on each
-      pair and writes a summary file.  Launch it detached and report the
-      session and log paths.
+    - Write `pypeitdev/issue_2208/run_pairs.sh`, generalizing `run_calib.sh`
+      (any setup; a full `run_pypeit -o`, not `-c`).  It runs, sequentially
+      and cold, **two full serial reductions** each of
+      `keck_lris_blue/multi_600_4000_slitmask`, `keck_deimos/830G_M_8500` and
+      `mmt_binospec/Longslit_G1000`, with threads pinned as usual.  After each
+      pair, `compare_calibs.py` (Calibrations **and** Science) writes to a
+      summary file.  Record per-run wall time and peak memory
+      (`/usr/bin/time -v`).  Launch it detached (tmux + log on disk), report
+      the session and log paths, and estimate the wall time (LRIS ≈ 2 × 6 min;
+      Binospec ≈ 2 × 20 min; DEIMOS 830G: estimate from earlier logs).
     - When it finishes (a later invocation of this prompt may just collect
       the results), report for each setup the first differing array, if any.
-      Goal: LRIS and DEIMOS are fully bit-identical.  If Binospec still
-      differs in `Tilts`, report whether it is the same mechanism.  Per Q1,
-      fix it here only if it is; otherwise draft a new issue in the log and do
+    - **Expected:** all three are fully bit-identical, Science included.
+      Binospec is expected too, because its tilts PCA used the same
+      randomized solver (Testing #3 §6).
+    - If anything still differs, locate the first differing calibration or
+      array with the same approach as Testing #2/#3: capture with
+      `pca_patch` if the PCA is involved, otherwise a targeted
+      harness/replay.  Report the mechanism.  Per Q1, fix it here only if it
+      is the same mechanism; otherwise draft a new issue in the log and do
       not post it.
 
 6. **DevSuite `reduce` + `vet` on an edge-tracing subset (detached).**
@@ -159,6 +182,12 @@ These rules apply to every prompt below:
       report file (`-r`).  Launch it detached (named `tmux` session plus
       `nohup`), so the user can log out.  Report the commands, session and log
       paths, and the expected wall time.
+    - Include at least one echelle setup that goes through the echelle
+      object-finding PCA (`findobj_skymask.py:980`), which the fix also
+      changes.
+    - This may be launched while Testing #5 is still running (755 GB RAM,
+      24 cores); just leave Testing #5's timings out of any performance
+      claims.
 
 7. **Collect, summarize, and draft the GitHub text.**
     - Collect the results of Testing #5 and #6.  Triage any vet failure
@@ -167,7 +196,11 @@ These rules apply to every prompt below:
     - Write `pypeitdev/issue_2208/Reports/issue_2208_results.md`: mechanism,
       evidence, fix, test, and validation numbers.
     - Draft (in the log, **not posted**) a comment for #2208 and a PR
-      description for `edge_2208` → `develop`.  I will review them, and do the
+      description for `edge_2208` → `develop`.  The #2208 comment must state
+      the corrections listed in Testing #3 (item 5 of "What it is not", the
+      `masked_centroid` pointer, the alignment hypothesis).  Also draft a
+      short note for #2209 on what this means for its reproducibility
+      claims and xfailed vet tests.  I will review all of them, and do the
       git work, before anything is posted with `gh`.
 
 ## Q&A
@@ -351,7 +384,7 @@ the unseeded randomized SVD in `pypeit/core/pca.py:120`.  Options:
   No benefit over (A) for this issue.
 >A: (A)
 
-**Q8 — Size of the result change (revisits Q3).**  Any of these fixes
+**Q8 — Size of the result change (revisits Q3; supersedes the 1e-12 px in Q3).**  Any of these fixes
 moves the edges by up to **~4e-6 px** (median ~3e-8 px) relative to
 current `develop`, not ~1e-12 px.  That is the **same size as the
 difference between two unpatched runs today** (max 3.3e-6, median 3e-8
@@ -768,3 +801,219 @@ the current code).
 
 Commit point (for the user): `pypeitdev/issue_2208/{edge_harness.py,pca_patch.py,replay.py,site/sitecustomize.py}`.
 
+### 2026-10-19 — Answers to Q7/Q8; remaining prompts updated
+
+- Q7 = **(A)** `svd_solver='full'`.  Q8 = the ~1e-6 px result change is
+  acceptable, with the vet tests as the gate (this supersedes Q3's
+  "1e-12 px").
+- Updated the Testing prompts:
+  - **#4** now names the exact change (both `PCA` calls in
+    `pca_decomposition`) and the test design (fixed-seed (28, 2048) input;
+    assert that `'auto'` would pick `randomized`; repeated calls at several
+    byte offsets).  The validation runs without the runtime patch and must
+    match the Testing #3 `fix_full` harness result.  It also searches tests
+    and docs for anything that depends on the PCA solver, and adds a
+    changelog note on the size of the result change.
+  - **#5** runs full reductions, Science included, with timing and peak
+    memory.  It now expects all three setups (Binospec included) to be
+    bit-identical, and says how to diagnose any remaining difference.
+  - **#6** must include an echelle setup that goes through the echelle
+    object-finding PCA, and may run concurrently with #5.
+  - **#7** adds the corrections to #2208's text and a draft note for #2209.
+
+
+### 2026-10-19 — Testing #4 (fix implemented: `svd_solver='full'`; CI test added; all tests pass)
+
+**Fix** (`PypeIt`, branch `edge_2208`), `pypeit/core/pca.py:pca_decomposition`:
+- `PCA()` → `PCA(svd_solver='full')` (unconstrained PCA, line 100), and
+  `PCA(n_components=npca)` → `PCA(n_components=npca, svd_solver='full')`
+  (line 128).
+- Added a code comment, and a paragraph in the docstring's `.. note::`,
+  explaining that `'auto'` selects sklearn's unseeded randomized solver at
+  PypeIt's shapes (#2208).  Nothing else changed.
+
+**CI test** (`pypeit/tests/test_pca.py::test_decomposition_reproducible`):
+- Input: fixed-seed (`default_rng(2208)`) smooth, edge-like traces of shape
+  (28, 2048), with `npca=2`.
+- It first asserts that `PCA(n_components=2)` with `'auto'` resolves to
+  `'randomized'` for this input, so the test fails loudly, rather than
+  passing trivially, if a future sklearn changes its policy.
+- It then calls `pca_decomposition` with the input copied to byte offsets
+  0, 8, 24, 40 (3 calls each) and asserts that coefficients, components and
+  both means are bit-identical to a reference call.
+- **With the fix reverted by hand** (backup copied to the scratchpad, `sed`,
+  then restored; no git): `1 failed` — "PCA decomposition is not
+  reproducible".  **With the fix:** `1 passed`.
+
+**Harness and replay without any runtime patch** (no `--pca_fix`, `PYTHONPATH`
+unset; `harness/fixed_det0N/`):
+- DET01 and DET02, 3 in-process + 2 fresh processes: **all calls
+  identical**.  Both also compare as "all calls identical" with the Testing
+  #3 `fix_full` harness runs.  Final `edge_cen` hashes: DET01
+  `6cbcbfe65f3dbee5`, DET02 `4a2e36b235acc8b5` (the same as `fix_full`).  Every
+  PCA call reports solver `full`.
+- `replay.py` (no `--fix`) on the 5 captured calls: 1 / 24 distinct at all 8
+  offsets, with the same hashes as Testing #3's `--fix full` replay.
+
+**Solver dependence in tests/docs:** a grep of `doc/` and `pypeit/tests/`
+for `svd_solver|randomized|pca_decomposition|PCA(` finds nothing besides
+`test_pca.py`.  Its `bogus_vectors` fixture (50 × 1000, `npca=2`) also used
+to go through the randomized solver, but those tests check only structure,
+I/O round-trips, or (`test_rms`, real DEIMOS data) a loose RMS threshold.
+All still pass.
+
+**Unit tests** (threads pinned to 1):
+- `pytest pypeit/tests -k "trace or edge or tilt or fit or moment or pca"`:
+  **115 passed**, 762 deselected (28 s).
+- Full `pytest pypeit/tests`: **877 passed**, 0 failed, 0 skipped
+  (168.8 s).  The log is
+  `/mnt/tank/Astronomy/PypeIt/REDUX/issue_2208/testing4_pytest.log`.
+  pytest-xdist is not installed in `pypeit14b`, so the run was serial.
+
+**Changelog** (`update-changelog` skill):
+- `doc/releases/2.1.0dev.rst`, **Bug Fixes**: a new first bullet ("Make
+  reductions reproducible run to run (Issue #2208) …"), naming the solver
+  change, the affected PCAs (slit edges, wide-slit tilts, echelle objects),
+  the downstream amplification, and the expected ~1e-6 px change.
+- **Testing**: a bullet for the new reproducibility test.
+- `CHANGES.rst` is marked deprecated in its header, so it was not edited.
+- The RST parses cleanly with docutils (apart from the Sphinx-only roles);
+  no full Sphinx build was run.
+
+**Commit points (for the user):**
+- PypeIt (`edge_2208`): `pypeit/core/pca.py`, `pypeit/tests/test_pca.py`,
+  `doc/releases/2.1.0dev.rst`.
+- Dev suite (`dev_edge_2208`): `pypeitdev/issue_2208/` (all scripts, including
+  `site/sitecustomize.py`) and `claude_prompts/issues/issue_2208.md`.
+
+**Next:** Testing #5 (end-to-end pairs, detached) and #6 (DevSuite subset,
+detached); they can run concurrently.
+
+### 2026-10-19 — Testing #5 and #6 (launched detached; results pending)
+
+Both runs use the **fixed** PypeIt (`edge_2208` working tree with the
+`svd_solver='full'` change), with no runtime patch (`PYTHONPATH` and the
+`I2208_*` variables unset) and BLAS/OpenMP pinned to one thread.  They were
+launched one after the other and run concurrently (755 GB RAM, 24 cores),
+so neither's timings should be used for performance claims.
+
+**Testing #5 — end-to-end pairs** (`pypeitdev/issue_2208/run_pairs.sh`):
+- What it does, for each setup: two sequential, cold, full `run_pypeit -o`
+  reductions under `/usr/bin/time -v` (wall time and max RSS), with the
+  data path rewritten as `fix_pypeit_file_directory` does.  Then
+  `compare_calibs.py` (Calibrations and Science) on the pair.
+- Setups: `keck_lris_blue/multi_600_4000_slitmask`, `keck_deimos/830G_M_8500`,
+  `mmt_binospec/Longslit_G1000`.
+- Command: `tmux new-session -d -s i2208_t5 "nohup ./run_pairs.sh fixed > \
+  /mnt/tank/Astronomy/PypeIt/REDUX/issue_2208/testing5.log 2>&1"`, started
+  2026-10-18 19:56 PDT.
+- Outputs: `/mnt/tank/Astronomy/PypeIt/REDUX/issue_2208/pairs_fixed/`.
+  `summary.txt` holds one line per run (status/wall/maxrss), one per pair
+  (number of differing files and the first one), and `ALLDONE`; the full
+  comparisons are in `cmp_<instr>_<setup>.txt`.
+- Expected wall time ≈ 2 × (6 + 20–35 + 11–24) min ≈ **1.5–2.2 h**, from
+  earlier logs (LRIS 4–7 min, DEIMOS 830G 19–32 min, Binospec G1000
+  11–24 min).
+
+**Testing #6 — DevSuite subset** (`pypeitdev/issue_2208/run_devsuite_2208.sh`):
+- 16 setups, chosen to exercise every PCA path the fix touches and to cover
+  completely the inputs of the vet tests that check edges, slits, tilts and
+  objects:
+
+  | group | setups | why |
+  |---|---|---|
+  | multi-slit / slit-mask | lris_blue `multi_600_4000_slitmask`, `long_600_4000_d560`; lris_red `multi_400_8500_d560`; lris_red_mark4 `multi_600_10000_slitmask`; deimos `600ZD_M_6500`, `830G_M_8500`, `830G_M_9000_dither`; mosfire `J_multi`; gmos `GS_HAM_B600_MOS`; binospec `Multislit_G270` | edge-tracing PCA; every setup read by `test_slitmask.py` and `test_edgetrace.py` (`600ZD_M_6500` is the #2208 DEIMOS case) |
+  | wide long slit | binospec `Longslit_G1000` | tilt-tracing PCA (randomized before the fix) |
+  | echelle | esi `Ech_1x1`, mage `1x1`, xshooter `VIS_1x1`, nires `ABBA_wstandard` | edge PCA plus echelle object-finding PCA (`findobj_skymask.py:980`); `test_findobj.py` (ESI) and `test_echelles` (MagE) |
+  | long-slit control | kast_blue `600_4310_d55` | `test_wavetilts.py`, `test_skysub.py`, `test_fluxspec.py` |
+
+- Vet selection (only tests whose inputs come from this subset):
+  `test_slitmask.py`, `test_edgetrace.py::{test_addrm_slit,test_sobel_enhance}`,
+  `test_findobj.py`, `test_wavetilts.py`, `test_skysub.py`, `test_fluxspec.py`,
+  `test_collate1d.py`, `test_echelles.py::test_magellan_mage_orders`.
+- Excluded: `test_edgetrace.py::test_chk_*_slits`, which read
+  `$PYPEIT_DEV/Cooked/Trace`, a directory not present on this machine.  The
+  other `test_echelles` tests loop over *every* setup of an instrument
+  (e.g. all 11 X-Shooter setups).
+- `-t 4`: README gives ~58 GiB for 4 threads, and 391 GB were free at launch.
+- Command: `tmux new-session -d -s i2208_t6 "nohup ./run_devsuite_2208.sh \
+  fixed 4 > /mnt/tank/Astronomy/PypeIt/REDUX/issue_2208/testing6.log 2>&1"`,
+  started 2026-10-18 19:59 PDT.  The script runs `pypeit_test reduce
+  afterburn -t 4 -o <out> -s <16 setups> -r pypeit_test_report.txt -c
+  performance.csv`, then `pytest <vet selection> --redux_out <out> -ra`.
+- Outputs: `/mnt/tank/Astronomy/PypeIt/REDUX/issue_2208/devsuite_fixed/`
+  (`pypeit_test_report.txt`, `performance.csv`, `pypeit_test.done`,
+  `vet_report.txt`, `vet.done`); progress in `testing6.log`.
+- Expected wall time **≈ 3–4 h**, set by the two ~2.3 h DEIMOS setups
+  (`600ZD_M_6500` 2h19m, `830G_M_9000_dither` 2h17m in earlier logs).
+
+**Collecting the results:** re-run "Execute prompts #5 and #6 under
+Prompts/Testing".  The first step checks for `ALLDONE` in
+`pairs_fixed/summary.txt` and for `vet.done` in `devsuite_fixed/`.
+
+Commit point (for the user): `pypeitdev/issue_2208/{run_pairs.sh,run_devsuite_2208.sh}`.
+
+### 2026-10-18 — Testing #5 results (all three setups bit-identical end to end)
+
+`run_pairs.sh fixed` finished at 22:08 PDT (2 h 11 min in total).  Every
+run exited with status 0.  Source:
+`/mnt/tank/Astronomy/PypeIt/REDUX/issue_2208/pairs_fixed/summary.txt` and
+the `cmp_*.txt` files.
+
+| setup | run a wall / max RSS | run b wall / max RSS | files differing (Calibrations + Science) | arrays compared |
+|---|---|---|---|---|
+| keck_lris_blue/multi_600_4000_slitmask | 6:25 / 1.86 GB | 6:14 / 1.81 GB | **0 / 16** | 14 calib files + spec2d 148 + spec1d 704 |
+| keck_deimos/830G_M_8500 (DET03, DET07) | 34:04 / 7.71 GB | 34:24 / 7.73 GB | **0 / 16** | 14 calib files + spec2d 148 + spec1d 1 380 |
+| mmt_binospec/Longslit_G1000 | 24:58 / 19.41 GB | 24:07 / 19.39 GB | **0 / 16** | 14 calib files + spec2d 104 + spec1d 294 |
+
+- **LRIS:** before the fix, 637 of 842 spec1d/spec2d arrays differed
+  between two identical serial runs (#2208).  Now 0 of 852.
+- **Binospec:** this confirms the second entry point (tilt tracing) had the
+  same mechanism.  `Tilts`, `Flat` and the Science products are now
+  bit-identical, against 235 of 392 arrays differing between serial and
+  `--ncpu 2` in #2209 (which matched the serial-vs-serial scatter).  No
+  other source was found, so no new issue is needed (Q1).
+- Timings ran concurrently with the Testing #6 DevSuite run (`-t 4`), so
+  they are not for performance claims.
+- Binospec peaked at ~19.4 GB in serial here, against 10.0 GB serial in
+  #2209's measurement.  The earlier figure was PSS on a different branch
+  (`speed_up_B`, with #2211); this is max RSS on `develop` plus the fix.  So
+  the two are not comparable.  It is noted only because #2209's memory
+  guidance cites Binospec.
+
+### 2026-10-18 — Testing #6 results (DevSuite subset: 29/29 reduce+afterburn, 18/18 vet)
+
+`run_devsuite_2208.sh fixed 4` finished at 22:40 PDT (161 min in total;
+`pypeit_test` took 159 min).  Source:
+`/mnt/tank/Astronomy/PypeIt/REDUX/issue_2208/devsuite_fixed/`
+(`pypeit_test_report.txt`, `performance.csv`, `vet_report.txt`) and
+`testing6.log`.
+
+- **`pypeit_test reduce afterburn` on the 16 setups: PASSED 29/29**, with 0
+  failed and 0 skipped.  That covers every setup's `run_pypeit`, plus DEIMOS
+  `600ZD_M_6500` calib-only and flux; `830G_M_8500` multislit flexure and
+  collate; the GMOS and DEIMOS dither 2D coadds; and the Kast setup,
+  step-by-step, sensfunc, flux setup, flux and 1D coadd.
+- **Vet: 18 passed**, 0 failed/xfailed/skipped (101.7 s):
+  - `test_slitmask.py` (6): `assign_maskinfo_add_missing`, `deimosslitmask`,
+    `lris_blue_slitmask`, `lris_red_mark4_slitmask`, `gmos_slitmask`,
+    `deimos_flipped_slitpa`
+  - `test_edgetrace.py` (2): `addrm_slit`, `sobel_enhance`
+  - `test_findobj.py` (2): `fill_in_orders_plate_scale_conversion`,
+    `ech_findobj_ineach_order_maxshift`
+  - `test_wavetilts.py` (3): `instantiate_from_master`, `flexure`, `run`
+  - `test_skysub.py` (1), `test_fluxspec.py` (2: `sensfunc`, `flux`),
+    `test_collate1d.py` (1), `test_echelles.py::test_magellan_mage_orders` (1)
+- **Not run** (inputs not in the subset, or not on this machine):
+  `test_edgetrace.py::test_chk_*_slits` (needs `$PYPEIT_DEV/Cooked`); the
+  other `test_echelles` tests (they loop over every setup of an
+  instrument); and all other vet files.
+- **Q8 gate met:** the edge/tilt/echelle-object PCA changes (~1e-6 px)
+  break no reduction, afterburn step or selected vet test.  No triage is
+  needed for Testing #7.
+
+**Testing #5 and #6 are complete.**  Next is Testing #7 (results report and
+draft GitHub text, not posted).
+
+Commit points (for the user): unchanged from the Testing #4 list, plus
+`pypeitdev/issue_2208/{run_pairs.sh,run_devsuite_2208.sh}`.
