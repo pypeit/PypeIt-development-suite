@@ -31,6 +31,145 @@ Use Opus 5.5. Log your work.
 
 ### Testing
 
+These rules apply to every prompt below:
+
+- **Env and repos:** env `pypeit14b`, called by absolute path
+  (`/home/xavier/miniconda3/envs/pypeit14b/bin/...`).  PypeIt is at
+  `/mnt/tank/Astronomy/PypeIt/PypeIt` (branch `edge_2208`); the dev suite is
+  this repo (branch `dev_edge_2208`).
+- **No git:** run no git commands.  When a step reaches a natural commit point,
+  say so in the log and list the files to commit.
+- **Where things go:** scripts go in `pypeitdev/issue_2208/` (committed).
+  Reduction outputs go in `/mnt/tank/Astronomy/PypeIt/REDUX/issue_2208/<name>/`,
+  never in the repo.
+- **Thread pinning:** unless a step says otherwise, export
+  `OMP_NUM_THREADS=OPENBLAS_NUM_THREADS=MKL_NUM_THREADS=1` for every
+  reduction and harness run, so that thread count is never a confounder (#2208
+  showed it is not the cause).
+- **Long runs:** anything over ~10 min is launched detached
+  (`setsid nohup ... &` or a named `tmux` session), with its log on disk, so
+  the user can leave the Claude session and log out.  Report the command,
+  session name and log path.
+- **Logging:** log each prompt in Logs as `### <date> — Testing #N (summary)`,
+  with exact commands, timings and numbers.  Put questions in Q&A/Testing.
+
+1. **Baseline and reproduce.**
+    - Record `np.show_config()`, `threadpoolctl.threadpool_info()`, the CPU
+      model and flags (`lscpu`), and the glibc version.
+    - Write `pypeitdev/issue_2208/compare_calibs.py`.  Given two output
+      directories, it walks every FITS file in `Calibrations/` (and, when
+      present, `Science/`), and for every extension/array reports: identical
+      or not, number of differing elements, max |diff|, and max float32/float64
+      ULP distance.  It also lists files in dependency order (Arc, Tiltimg,
+      WaveCalib, Edges, Slits, Flat, Tilts, ...).  It works on `.fits.gz`.
+    - Run `keck_lris_blue/multi_600_4000_slitmask` **calibrations only**
+      (`run_pypeit -c -o`) cold, twice (`base_a`, `base_b`), and time each run.
+      Compare them.  For `EDGE_CEN` on both detectors, report how many elements
+      differ, in which traces (columns), and at which rows, and whether those
+      traces are left or right edges, inserted, or slitmask-matched.
+    - Cheap discriminator: two more cold `-c` runs with
+      `OPENBLAS_CORETYPE=Haswell` (`hsw_a`, `hsw_b`; first check in the log
+      that the core type actually took effect).  Compare `hsw_a` with `hsw_b`,
+      and `hsw_a` with `base_a`.  Record the result; do not draw conclusions
+      beyond it yet.
+
+2. **Stepwise harness; find the first diverging step.**
+    - Write `pypeitdev/issue_2208/edge_harness.py`.  It rebuilds the
+      `EdgeTraceSet` for one detector of the LRIS setup from **saved inputs**
+      (the `TraceImage`/BPM saved in an Edges file from Testing #1, or rebuilt
+      from the calibration frames if that is not faithful).  It needs the same
+      spectrograph, par and slitmask information as `run_pypeit`.  It then runs
+      the `auto_trace` sequence step by step (wrap each method `auto_trace`
+      calls, including the nested ones such as `fit_refine` inside `sync`).
+      After every call it writes a SHA-256 of `edge_cen`, `edge_err`,
+      `edge_msk`, `edge_fit`, and the PCA arrays to a JSON trace.
+    - First check that the harness reproduces `run_pypeit`: its final
+      `EDGE_CEN` must be bit-identical to that of one of the Testing #1 runs, or
+      it must show the same kind of run-to-run difference.  If it does not,
+      stop and report.
+    - Run it 5× within one process (fresh `EdgeTraceSet` each time), and once
+      in each of 5 fresh processes.  Report the first step whose hash
+      differs, and whether the within-process runs differ at all.  A
+      difference across processes but not within one points to allocation or
+      alignment.
+
+3. **Pinpoint the operation and the mechanism; then stop for review.**
+    - Inside the first diverging step, record the inputs to each numeric call
+      and recursively narrow down to the **single function call** whose output
+      differs for bit-identical inputs (candidates: `moment.moment1d`, the
+      fitting inside `trace.fit_trace` / `fitting.robust_fit` / `legfit` /
+      `np.linalg.lstsq`, the PCA, a `np.sum`/`np.dot`).  Save its inputs with
+      `np.save`.  Write `pypeitdev/issue_2208/replay.py`, which calls it alone.
+    - Alignment test: replay with copies of the inputs placed at byte offsets
+      0, 8, 16, ..., 56 (and 64) within an over-allocated buffer.  Report the
+      distinct outputs per offset.
+    - BLAS test: replay under `OPENBLAS_CORETYPE=Haswell`, `=Prescott` and the
+      default.  If needed, create a throwaway env `pypeit14b_mkl` (a clone with
+      MKL-backed numpy; Q4 approved) and replay with and without
+      `MKL_CBWR=COMPATIBLE`.  Never modify `pypeit14b`.
+    - Check whether the same call also explains the Binospec tilt-tracing
+      entry point (`wavetilts`/`core/tracewave.py`).  A code read is enough;
+      run something only if it is cheap.
+    - **Stop.**  Write up the mechanism, with evidence, and 1–3 candidate fixes
+      with their expected cost, numerical impact and scope (only the call
+      site, or a shared helper).  Wait for my choice in Q&A/Testing.  A
+      rounding/quantization fix needs my explicit approval.
+
+4. **Implement the fix and the CI unit test (Q5a).**
+    - Implement the chosen fix on `edge_2208`, matching the surrounding code
+      style.  Keep the change minimal and do not change the algorithm's
+      results beyond rounding level.
+    - Add a test to the relevant `pypeit/tests/test_*.py`.  On a small,
+      deterministic synthetic input (fixed seed) that exercises the same
+      path, call the function on inputs at several byte offsets and assert
+      bit-identical outputs.  Show that the test **fails** on the unfixed code
+      (temporarily revert the fix by hand, without git) and passes with the fix.
+    - Rerun the harness from Testing #2 (5 processes) and `replay.py`: they
+      must now be identical.
+    - Run the PypeIt unit tests that touch the changed modules, plus the
+      edge/trace/tilt tests (`pytest pypeit/tests -k "trace or edge or tilt or
+      fit or moment or pca"`), and then the full `pypeit/tests` suite.
+    - Add a changelog entry with the `update-changelog` skill.  Log the
+      commit point.
+
+5. **Validate end to end (detached).**
+    - Write `pypeitdev/issue_2208/run_pairs.sh`.  It runs, sequentially and
+      cold, **two full serial reductions** each of
+      `keck_lris_blue/multi_600_4000_slitmask`, `keck_deimos/830G_M_8500`
+      and `mmt_binospec/Longslit_G1000`, then runs `compare_calibs.py` on each
+      pair and writes a summary file.  Launch it detached and report the
+      session and log paths.
+    - When it finishes (a later invocation of this prompt may just collect
+      the results), report for each setup the first differing array, if any.
+      Goal: LRIS and DEIMOS are fully bit-identical.  If Binospec still
+      differs in `Tilts`, report whether it is the same mechanism.  Per Q1,
+      fix it here only if it is; otherwise draft a new issue in the log and do
+      not post it.
+
+6. **DevSuite `reduce` + `vet` on an edge-tracing subset (detached).**
+    - From `./pypeit_test list` and `test_setups.py`, choose about 15–20
+      setups that exercise edge tracing hard: multislit (LRIS blue/red,
+      DEIMOS, MOSFIRE, GMOS, Binospec, ...), echelle (e.g. X-Shooter, NIRES,
+      HIRES, MagE) and one or two long-slit controls.  Check the memory
+      table in `README.rst` before choosing `-t 4`.  Record the list and why in
+      the log.
+    - Write `pypeitdev/issue_2208/run_devsuite_2208.sh`.  It runs
+      `pypeit_test reduce afterburn -t 4 -s <setups>` into a dedicated
+      `--outdir`, then `pytest vet_tests --redux_out <that dir>`, each with a
+      report file (`-r`).  Launch it detached (named `tmux` session plus
+      `nohup`), so the user can log out.  Report the commands, session and log
+      paths, and the expected wall time.
+
+7. **Collect, summarize, and draft the GitHub text.**
+    - Collect the results of Testing #5 and #6.  Triage any vet failure
+      (`diagnose-reduction` skill): is it caused by the fix, or pre-existing
+      on `develop`?
+    - Write `pypeitdev/issue_2208/Reports/issue_2208_results.md`: mechanism,
+      evidence, fix, test, and validation numbers.
+    - Draft (in the log, **not posted**) a comment for #2208 and a PR
+      description for `edge_2208` → `develop`.  I will review them, and do the
+      git work, before anything is posted with `gh`.
+
 ## Q&A
 
 ### Plan
@@ -185,6 +324,10 @@ time?
 >A: Yes, that is fine.  But set it up so I can leave my Claude session and log out 
 from my laption into my workstation and have it keep running.  The workstation will remain on.
 
+### Testing
+
+(Questions and answers for the Testing prompts go here.)
+
 ## Logs
 
 ### 2026-10-18 — Prompt Plan #1
@@ -202,3 +345,23 @@ from my laption into my workstation and have it keep running.  The workstation w
   default.  `RAW_DATA/keck_lris_blue/multi_600_4000_slitmask` is present.
   `$PYPEIT_DEV` (`/home/xavier/Projects/...`) resolves to this repo.
 - Wrote the plan and Q1–Q6 above.  Nothing run yet.
+
+### 2026-10-18 — Prompt Plan #2 (answers reviewed; Testing prompts written)
+
+- Read the answers to Q1–Q6.  Decisions: fix the `EDGE_CEN` entry point, and
+  the Binospec tilts entry point only if it is the same mechanism (Q1).  Stay
+  on `edge_2208` off `develop`, with no #2209 pinning; the harness exports
+  the thread variables itself (Q2).  ~1e-12 px changes are fine if the vet
+  tests pass (Q3).  A throwaway MKL clone env is OK (Q4).  The regression test
+  is a PypeIt CI unit test (Q5a).  `reduce`+`vet` on a subset at `-t 4`,
+  detached so the user can log out (Q6).
+- One gap: Q3's question on rounding/quantization was not answered
+  explicitly, so Testing #3 requires explicit approval before any
+  quantization fix.  No other open questions.
+- Wrote 7 prompts under Prompts/Testing: (1) baseline/reproduce and the
+  `compare_calibs.py` tool; (2) stepwise `auto_trace` harness;
+  (3) pinpoint the call and mechanism, then **stop for review**; (4) fix and
+  CI unit test; (5) end-to-end pairs, detached; (6) DevSuite subset,
+  detached; (7) results report and draft GitHub text (not posted).
+- Added an empty Q&A/Testing section.  Nothing run yet.
+
