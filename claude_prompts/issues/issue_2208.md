@@ -326,7 +326,40 @@ from my laption into my workstation and have it keep running.  The workstation w
 
 ### Testing
 
-(Questions and answers for the Testing prompts go here.)
+**Q7 — Which fix?** (Testing #3; details in its log entry.)  The cause is
+the unseeded randomized SVD in `pypeit/core/pca.py:120`.  Options:
+
+- **(A) `svd_solver='full'` in both `PCA(...)` calls of
+  `pca_decomposition` — my recommendation.**
+  - An exact LAPACK SVD.  It is bit-reproducible in and across processes,
+    at every memory offset, under all three OpenBLAS kernel types, and even
+    with unpinned (24) threads.
+  - Same cost (~4 ms per call at edge shapes; the tilt shapes are smaller).
+  - It removes the dependence on sklearn's `'auto'` policy, which has
+    changed between versions (`covariance_eigh` was added in 1.5).
+  - Two-line change, in one function.  It covers edge tracing, tilt
+    tracing (the Binospec entry point) and the echelle object PCA
+    (`findobj_skymask`).
+- **(B) `random_state=0`, keeping `'auto'`.**  Also deterministic in all of
+  the same tests.  But it keeps an approximate solver, and the result still
+  depends on sklearn's solver policy and on how the randomized algorithm is
+  implemented, both of which can change across sklearn versions.  The same
+  one-function scope.
+- **(C) Replace sklearn with `np.linalg.svd` plus sklearn's sign
+  convention (`svd_flip`).**  Deterministic, and it drops sklearn from
+  PCA.  More code, and it has to match sklearn's sign/centering exactly.
+  No benefit over (A) for this issue.
+>A:
+
+**Q8 — Size of the result change (revisits Q3).**  Any of these fixes
+moves the edges by up to **~4e-6 px** (median ~3e-8 px) relative to
+current `develop`, not ~1e-12 px.  That is the **same size as the
+difference between two unpatched runs today** (max 3.3e-6, median 3e-8
+px), because the current output is one random draw from that scatter.
+Downstream products (Flat, Tilts, spec1d/spec2d) will change by about as
+much as they already do between two identical runs.  Is that acceptable,
+with the vet tests as the gate?
+>A:
 
 ## Logs
 
@@ -598,3 +631,140 @@ Top-level steps, inproc rep0 vs rep1 (DET02), with float64 max |diff| from
   then stop for review as planned.
 
 Commit point (for the user): `pypeitdev/issue_2208/edge_harness.py`.
+
+### 2026-10-19 — Testing #3 (mechanism: unseeded randomized SVD in `pca_decomposition`; STOP for review)
+
+**Summary.**  The run-to-run irreproducibility in multi-slit edge tracing
+comes from an unseeded random number generator.  It is not floating-point
+or SIMD/BLAS nondeterminism.
+
+`pypeit.core.pca.pca_decomposition` calls `sklearn.decomposition.PCA` twice:
+- `PCA()` (line 92) to choose the number of components.  sklearn's
+  `'auto'` resolves this to the deterministic `full` solver.
+- `PCA(n_components=npca)` (line 120) for the actual decomposition.  At
+  PypeIt's edge-tracing shapes, `'auto'` resolves this to **`randomized`**,
+  and PypeIt passes no `random_state`, so sklearn seeds it from global
+  entropy on every call.  This is also against the dev suite's fixed-seed
+  rule.
+
+sklearn 1.9.0's rule (`_pca.py:524-536`) picks `randomized` when the array
+is not tall-and-skinny, `max(shape) > 500`, and `1 ≤ n_components <
+0.8·min(shape)`.
+
+**New tools** (`pypeitdev/issue_2208/`):
+- `pca_patch.py` patches PypeIt at runtime, without editing it.  It replaces
+  `pypeit.core.pca.PCA` with a factory (`fix=None|'full'|'seed'`) and wraps
+  `pca_decomposition` to record its inputs, the solver sklearn actually used,
+  and the caller.  It can also save each call to `pca_call_<pid>_<n>.npz`.
+- `site/sitecustomize.py` applies the patch to any process started with
+  `PYTHONPATH=site` and `I2208_PCA_FIX`/`I2208_PCA_CAPTURE` set.  That
+  covers `run_pypeit`.
+- `edge_harness.py run` gained `--pca_fix {full,seed}` and `--capture <dir>`.
+- `replay.py` replays captured calls `--nrep` times at each of `--offsets`
+  byte offsets from 64-byte alignment.  It reports the distinct outputs,
+  max |d|, an output hash comparable across processes, and ms per call.
+
+**1. The real calls** (capture from the unpatched harness, `harness/capture_det0N/`):
+
+| det | call | shape (vectors) | npca → used | solvers (`PCA()`, `PCA(n)`) | caller |
+|---|---|---|---|---|---|
+| 01 | 0 | 21 × 2048 | None → 2 | full, **randomized** | `pca_refine` → `build_pca` |
+| 01 | 1, 2 | 21 × 2048 | None → 2 | full, **randomized** | `_reset_pca` → `build_pca` |
+| 02 | 0 | 28 × 2048 | None → 2 | full, **randomized** | `pca_refine` → `build_pca` |
+| 02 | 1 | 28 × 2048 | None → 3 | full, **randomized** | `_reset_pca` → `build_pca` |
+
+`pca_decomposition` is the **only** sklearn use in PypeIt (`grep sklearn`).
+It is reached from `EdgeTraceSet.build_pca`, from
+`tracepca.pca_trace_object` in tilt tracing (`core/tracewave.py:642`, which
+always runs it, with `npca=2`), and from the echelle object PCA
+(`core/findobj_skymask.py:980`).
+
+**2. Replay of the real inputs** (SkylakeX, 1 thread; 3 repetitions × 8
+offsets {0,8,...,56} = 24 calls each, run in 2 separate processes):
+
+| fix | distinct outputs | per offset | across the 2 processes | max |d| | ms/call |
+|---|---|---|---|---|---|
+| none | **24 / 24** (every call) | 3 / 3 | different | 1.9e-13 – 2.0e-12 | 3.3–4.3 |
+| `svd_solver='full'` | **1 / 24** | 1 | **same hash** | 0 | 3.1–4.3 |
+| `random_state=0` | **1 / 24** | 1 | **same hash** | 0 | 3.5–4.3 |
+
+- **Memory alignment:** it plays no part.  Unpatched, every call differs
+  at every offset; fixed, every offset gives the same output.
+- **BLAS kernel** (`OPENBLAS_CORETYPE=Haswell` and `=Prescott`; the latter
+  reports `Katmai`): the same pattern under every kernel.  Unpatched
+  varies, fixed is deterministic.  Only the fixed *values* change with the
+  kernel, which explains the `hsw_a` vs `base_a` image differences in
+  Testing #1 but is not a reproducibility problem on one machine.
+- **Threads:** with `full` and **unpinned** BLAS (24 threads) the hash
+  equals the pinned one, so at these shapes it is also independent of the
+  thread count.
+- An MKL clone env (Q4) was **not needed**: the mechanism is an RNG, not
+  BLAS, and every OpenBLAS kernel type behaves the same way.
+
+**3. Edge tracing with each fix** (harness; 3 in-process repetitions + 2
+fresh processes per detector; `harness/fix_{full,seed}_det0N/`):
+- With either fix, on both detectors, **"all calls identical"**: every one
+  of the 110 (DET01) / 96 (DET02) wrapped `EdgeTraceSet` calls has an
+  identical hash in all 5 runs.  So there is **no second nondeterministic
+  source** in edge tracing.
+
+**4. Full LRIS calibrations with the `full` patch** (cold `run_pypeit -c`
+pair `full_a`/`full_b` through `site/sitecustomize.py`; 225.1 s and 226.9 s;
+tmux `i2208_t3`; `cmp_full_a_full_b.txt`):
+- **Every file is bit-identical** on both detectors: Arc, Tiltimg,
+  WaveCalib, **Edges, Slits, Flat, Tilts**.  The unpatched pair differed in
+  every file from Edges on.
+- Patch-active check: the patched harness `edge_cen` equals `full_a`'s
+  `EDGE_CEN` exactly (0 differing elements on both detectors), against
+  127 / 1 050 differences from unpatched `base_a`.
+- Cost: none measurable (225–227 s against 213–221 s unpatched, within
+  run-to-run timing noise).
+
+**5. Size of the change** (float64 harness finals, max / median |d| in px):
+
+| | DET01 `edge_cen` | DET02 `edge_cen` |
+|---|---|---|
+| unpatched rep0 vs rep1 (today's scatter) | 3.3e-6 / 3.0e-8 | 8.8e-7 / 1.5e-8 |
+| `full` vs unpatched | 4.3e-6 / 2.7e-8 | 1.2e-6 / 2.8e-8 |
+| `seed` vs unpatched | 2.5e-6 / 3.0e-8 | 3.4e-6 / 2.2e-8 |
+| `full` vs `seed` | 4.3e-6 / 2.1e-8 | 2.4e-6 / 2.0e-8 |
+
+`edge_fit` shows the same picture (≤5e-6 px).  Any fix changes the
+results by the size of the existing scatter, **not** ~1e-12 px; see Q8.
+
+**6. Binospec tilt-tracing entry point** (#2209; code read plus shapes, not
+run):
+- `trace_tilts` always calls `pca_trace_object(..., npca=2)`, which leads
+  to `pca_decomposition(vectors=(n_lines, nsub))`.
+- Binospec Longslit_G1000 has one slit per detector spanning ~2 460
+  spatial px (DET01 832–3292, DET02 820–3282, from the existing
+  `REDUX_OUT` Tilts files).  So `max(shape) > 500`, and with ≥3 lines
+  `2 < 0.8·n_lines`: the solver is **randomized**, the same mechanism.
+- LRIS slits are tens of pixels wide, so its tilts PCA stays at
+  `max(shape) ≤ 500` and uses `full`.  That is why LRIS Tilts only
+  inherited the Edges differences, and why Binospec's first difference is
+  in Tilts with `EDGE_CEN` identical (Binospec long-slit edges cannot use
+  the PCA).
+- Per Q1, the same fix covers it.  Testing #5 checks it end to end.
+
+**Corrections to #2208's text** (for the eventual comment):
+- "What it is not" item 5 is wrong for line 120.  `svd_solver='auto'`
+  resolves there to `randomized`, not `full`/`covariance_eigh`, for every
+  PCA in this data set.
+- "Where to look" (`masked_centroid`) is two steps too early.
+  `centroid_refine` and `fit_refine` are deterministic; `EDGE_CEN`
+  differs because `peak_refine` re-measures from PCA-predicted positions.
+- The alignment hypothesis is ruled out: outputs differ even between
+  repetitions inside one process, and are independent of byte offset.
+
+**Candidate fixes:** see **Q7** and **Q8** in Q&A/Testing.  My
+recommendation is (A), `svd_solver='full'`.  The test for Testing #4:
+in `pypeit/tests/test_pca.py`, call `pca_decomposition` repeatedly, at
+several byte offsets, on a fixed-seed synthetic (28, 2048) array that
+`'auto'` sends to `randomized`, and assert bit-identical outputs (it fails on
+the current code).
+
+**STOPPED here as Testing #3 requires**; waiting for the answers to Q7/Q8.
+
+Commit point (for the user): `pypeitdev/issue_2208/{edge_harness.py,pca_patch.py,replay.py,site/sitecustomize.py}`.
+

@@ -20,7 +20,7 @@ Each repetition writes:
 Usage::
 
     python edge_harness.py run --pypeit <file.pypeit> --edges <Edges_*.fits.gz> \\
-        --out <dir> --tag <tag> [--nrep 5]
+        --out <dir> --tag <tag> [--nrep 5] [--pca_fix full|seed] [--capture <dir>]
     python edge_harness.py compare <json_a> <json_b> [...]
     python edge_harness.py check --final <..._final.npz> --edges <Edges_*.fits.gz> [...]
 
@@ -152,6 +152,9 @@ def run(args):
 
     log.setLevel('WARNING')
 
+    import pca_patch
+    pca_patch.install(fix=args.pca_fix, capture_dir=args.capture)
+
     pf = PypeItFile.from_file(args.pypeit)
     spectrograph, par, _ = pf.get_pypeitpar()
     epar = par['calibrations']['slitedges']
@@ -176,6 +179,7 @@ def run(args):
     out.mkdir(parents=True, exist_ok=True)
     for rep in range(args.nrep):
         rec.reset()
+        pca_patch.CALLS.clear()
         traceimg = load_traceimg()
         t0 = time.perf_counter()
         ets = edgetrace.EdgeTraceSet(traceimg, spectrograph, epar, qa_path=None, auto=True)
@@ -183,7 +187,8 @@ def run(args):
         stem = out / f'{args.tag}_rep{rep}'
         with open(f'{stem}.json', 'w') as f:
             json.dump(dict(tag=args.tag, rep=rep, pid=os.getpid(), wall=dt,
-                           success=bool(ets.success), calls=rec.calls), f)
+                           success=bool(ets.success), pca_fix=args.pca_fix,
+                           pca_calls=pca_patch.CALLS, calls=rec.calls), f)
         np.savez_compressed(f'{stem}_steps.npz',
                             **{f'{s}|{k}': v for s, d in rec.steps.items() for k, v in d.items()})
         np.savez_compressed(f'{stem}_final.npz', **state_arrays(ets))
@@ -256,6 +261,10 @@ def main():
     p.add_argument('--out', required=True)
     p.add_argument('--tag', required=True)
     p.add_argument('--nrep', type=int, default=1)
+    p.add_argument('--pca_fix', default=None, choices=['full', 'seed'],
+                   help='Force the PCA SVD solver or seed (see pca_patch.py)')
+    p.add_argument('--capture', default=None,
+                   help='Directory in which to save the inputs of every pca_decomposition call')
     p.set_defaults(func=run)
     p = sub.add_parser('compare')
     p.add_argument('json', nargs='+')
