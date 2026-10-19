@@ -365,3 +365,74 @@ from my laption into my workstation and have it keep running.  The workstation w
   detached; (7) results report and draft GitHub text (not posted).
 - Added an empty Q&A/Testing section.  Nothing run yet.
 
+
+### 2026-10-18 — Testing #1 (in progress: runs launched, comparison pending)
+
+**Environment (profx).**
+- CPU: Intel Xeon w5-2455X (Sapphire Rapids), 12 cores / 24 threads, full
+  AVX-512 (incl. fp16, bf16, vnni).  755 GB RAM.  glibc 2.39 (Ubuntu).
+- `pypeit14b`: Python 3.14.6, numpy 2.5.0 (SIMD baseline X86_V2; found X86_V3,
+  X86_V4, AVX512_ICL, AVX512_SPR), scipy 1.18.0.
+- **Two OpenBLAS libraries are loaded**, both DYNAMIC_ARCH and both
+  selecting the **SkylakeX** kernels:
+  - numpy's `libscipy_openblas64_` 0.3.33.112.0
+  - scipy's `libscipy_openblas` 0.3.31.dev
+
+  sklearn also brings in `libgomp` (OpenMP).
+- `OPENBLAS_CORETYPE=Haswell` switches **both** libraries to Haswell
+  (checked with `threadpoolctl`).
+- `pypeit.__file__` is `/mnt/tank/Astronomy/PypeIt/PypeIt/pypeit` (the
+  `edge_2208` tree).  The reported version, `2.0.2.dev1216+gf3a1f1d27`, is
+  stale install metadata from `speed_up_B`, not the code that runs.
+
+**Scripts written** (`pypeitdev/issue_2208/`):
+- `compare_calibs.py <dir_a> <dir_b> [--all] [--files ...]`: compares every
+  image HDU and table column in `Calibrations/` and `Science/`, in dependency
+  order.  It reports the count of differing elements, max |diff|, and max ULP
+  in the native dtype; floats are compared bitwise, NaN==NaN.  It takes ~7 s
+  for the LRIS calibrations.
+- `edge_cen_diff.py <Edges_a> <Edges_b>`: for each trace with differences,
+  lists side, MASKDEF_ID, insertion flags, differing rows and max ULP, and
+  how many EDGE_FIT rows differ.
+- `run_calib.sh <name> [VAR=val ...]`: a cold `run_pypeit -c -o` of LRIS
+  slitmask into `REDUX/issue_2208/<name>`, with threads pinned to 1.  It
+  writes `blas_info.txt` (the threadpoolctl view under that environment),
+  `run.log` and `timing.txt`.
+
+**Smoke test on existing outputs** (`REDUX_OUT/.../multi_600_4000_slitmask`
+serial vs its `ncpu/` run, both older than this branch).  It reproduces
+#2208:
+- Arc, Tiltimg and WaveCalib are identical.  In Edges DET01, 13 arrays
+  differ.  `SOBELSIG`, `TRACE_IMAGE`, `TRACEID`, `MASKDEF_ID` and
+  `EDGE_MSK` are identical.
+- `EDGE_CEN` differs in **93 / 45 056** elements (DET01) and 1 041 / 57 344
+  (DET02, max 9 ULP there).  In DET01 the differences are spread over 14 of
+  the 22 traces, both left and right, all slitmask-matched, none inserted,
+  at scattered rows.
+- `EDGE_ERR` differs in many more elements (4 125), and so does `EDGE_FIT`
+  (217).
+- Reading: the in-memory float64 values probably differ almost everywhere
+  by a tiny amount, and only occasionally cross a float32 rounding
+  boundary on output.  This is not yet tested.
+
+**Runs launched**, detached, in tmux session `i2208_t1`:
+```
+cd pypeitdev/issue_2208
+tmux new-session -d -s i2208_t1 "bash -c './run_calib.sh base_a; ./run_calib.sh base_b; \
+  ./run_calib.sh hsw_a OPENBLAS_CORETYPE=Haswell; ./run_calib.sh hsw_b OPENBLAS_CORETYPE=Haswell; \
+  echo ALLDONE' > /mnt/tank/Astronomy/PypeIt/REDUX/issue_2208/testing1.log 2>&1"
+```
+- Progress log: `/mnt/tank/Astronomy/PypeIt/REDUX/issue_2208/testing1.log`
+  (one `status=/wall=` line per run, then `ALLDONE`).
+- `base_a`: status 0, **220.7 s**.  `blas_info.txt` confirms 1 thread and
+  SkylakeX for both OpenBLAS libraries.  The other three runs were still
+  going when the session ended (~4 min each, ~15 min total).
+
+**Remaining for Testing #1** (resume by re-running this prompt):
+1. Check that `testing1.log` ends with `ALLDONE` and that every run has
+   status 0.  Check that `hsw_*/blas_info.txt` shows Haswell.
+2. Run `compare_calibs.py` on `base_a`/`base_b`, `hsw_a`/`hsw_b` and
+   `hsw_a`/`base_a`, and `edge_cen_diff.py` on both detectors for each pair.
+3. Record the numbers here and update the summary.
+
+Commit point (for the user): `pypeitdev/issue_2208/{compare_calibs.py,edge_cen_diff.py,run_calib.sh}`.
