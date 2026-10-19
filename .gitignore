@@ -16,6 +16,9 @@ pypeitdev/shane_hamspec/Cooke_data/*
 *.zip
 *.txt
 
+# Python
+ __pycache__/
+
 # Notebooks
 *.ipynb
 RAW_DATA/

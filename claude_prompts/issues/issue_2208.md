@@ -1017,3 +1017,153 @@ draft GitHub text, not posted).
 
 Commit points (for the user): unchanged from the Testing #4 list, plus
 `pypeitdev/issue_2208/{run_pairs.sh,run_devsuite_2208.sh}`.
+
+### 2026-10-19 — Testing #7 (results report and drafts for GitHub; nothing posted)
+
+- **Triage:** none needed.  Testing #5 had 0 differing files and Testing #6
+  had 29/29 reduce/afterburn and 18/18 vet passing.
+- **Report written:** `pypeitdev/issue_2208/Reports/issue_2208_results.md`.
+  It covers the summary, the corrections to #2208, the evidence (Testing
+  #1–#3), the size of the change, the fix and test, the validation (Testing
+  #5–#6), what is not covered, and the tools.
+- **Drafts below:** for review only.  Nothing has been posted.  Once the
+  user has committed and pushed `edge_2208` and opened the PR, the user
+  decides what gets posted with `gh`.
+
+#### Draft 1 — comment on #2208
+
+> **Found it: an unseeded randomized SVD in the trace PCA, not floating-point
+> nondeterminism.**  Fix in #XXXX.
+>
+> `pypeit.core.pca.pca_decomposition` calls
+> `sklearn.decomposition.PCA(n_components=npca)` with the default
+> `svd_solver='auto'` and no `random_state`.  At the shapes PypeIt uses
+> (e.g. 28 traces × 2048 rows, `npca=2–3`), sklearn resolves `'auto'` to its
+> **randomized** solver (`max(shape) > 500` and `n_components < 0.8·min(shape)`).
+> That solver draws a fresh random seed on every call, so each PCA differs
+> at the ~1e-13 level from run to run.
+>
+> **Corrections to my original report:**
+> - "What it is not", item 5, is **wrong** for the second `PCA` call
+>   (`pca.py:120`).  The first, `PCA()`, does resolve to `full`; the
+>   second resolves to `randomized` for every edge PCA in the LRIS slitmask
+>   data.
+> - "Where to look" (`masked_centroid`) was two steps too early.  A
+>   harness that hashes the in-memory state after every `EdgeTraceSet`
+>   call shows that `centroid_refine` and `fit_refine` are deterministic.
+>   The first divergence is `build_pca` inside `pca_refine`; its inputs
+>   are identical and its outputs are not.  `peak_refine` then re-measures
+>   the edges from PCA-predicted positions, which amplifies ~1e-13 into
+>   ~1e-6 px.  ~87 % of the float64 `EDGE_CEN` values differ, but only
+>   the few that cross a float32 rounding boundary show up in the file
+>   as "1 ULP".
+> - The alignment hypothesis is **ruled out**.  Results differ even
+>   between repetitions within one process, and they do not depend on the
+>   input's byte offset or on the OpenBLAS kernel (SkylakeX, Haswell,
+>   Prescott).
+>
+> **The same mechanism is the Binospec entry point** seen in #2209.  Tilt
+> tracing always runs this PCA, and a slit wider than 500 px (Binospec long
+> slit is ~2 460 px) also hits the randomized solver.  It also covers the
+> echelle object PCA.
+>
+> **The fix:** `svd_solver='full'` (an exact LAPACK SVD) in both `PCA` calls.
+> It costs nothing measurable (~4 ms per call either way).  With it, two
+> cold, full, serial reductions are **bit-identical in every calibration
+> and science file** for:
+> - `keck_lris_blue/multi_600_4000_slitmask` (previously 637 / 842 science
+>   arrays differed): now 0 / 852;
+> - `keck_deimos/830G_M_8500`: 0 / 1 528;
+> - `mmt_binospec/Longslit_G1000` (previously 235 / 392): now 0 / 398.
+>
+> Edge positions move by up to ~4e-6 px relative to `develop`, which is the
+> size of the previous run-to-run scatter.  A 16-setup DevSuite subset
+> (multi-slit, slit-mask, wide long slit, echelle) passes 29/29
+> reduce/afterburn and 18/18 vet tests.  Not yet checked: macOS/Windows
+> (the mechanism is platform-independent) and `--ncpu` (#2209 is not on
+> this branch).
+>
+> This also violates our own rule that RNGs must be seeded; the new unit
+> test guards against a regression.  cc @tbowers7
+
+#### Draft 2 — PR description (`edge_2208` → `develop`)
+
+> **Make reductions reproducible: use the exact SVD solver in
+> `pca_decomposition` (fixes #2208)**
+>
+> Repeated reductions of the same data gave different results for
+> multi-slit, wide long-slit and echelle data.  The cause is
+> `pypeit.core.pca.pca_decomposition`: it called
+> `sklearn.decomposition.PCA(n_components=npca)` with `svd_solver='auto'`
+> and no `random_state`.  At PypeIt's array shapes, `'auto'` selects
+> sklearn's unseeded randomized solver.  The tiny run-to-run differences
+> in the PCA are amplified by `EdgeTraceSet.peak_refine` (and by the tilt
+> re-tracing) into ~1e-6 px edge differences, and from there into large
+> differences in low-S/N extracted pixels.  See #2208 for the investigation.
+>
+> **Changes**
+> - `pypeit/core/pca.py`: both `PCA` calls in `pca_decomposition` now pass
+>   `svd_solver='full'`, with a comment and a docstring note.  This affects
+>   slit-edge tracing, tilt tracing (slits > 500 px wide) and echelle object
+>   tracing.
+> - `pypeit/tests/test_pca.py`: `test_decomposition_reproducible`.
+>   - It asserts that a fixed-seed (28, 2048) input would hit the
+>     randomized solver under `'auto'`, so it cannot pass vacuously if
+>     sklearn changes policy.
+>   - It then asserts bit-identical output across repeated calls and input
+>     memory alignments.
+>   - It fails without the fix.
+> - `doc/releases/2.1.0dev.rst`: a Bug Fixes entry and a Testing entry.
+>
+> **Effect on results.**  Edge traces move by up to ~4e-6 px (median ~3e-8 px)
+> relative to `develop`.  That is the same size as the difference between two
+> runs of `develop` itself, since the old output was one random draw.
+> Downstream products change accordingly, once.
+>
+> **Testing**
+> - `pypeit/tests`: 877 passed (Linux, Python 3.14, numpy 2.5.0, sklearn 1.9.0).
+> - Two cold, full, serial reductions are bit-identical in all Calibrations
+>   and Science files:
+>   - LRIS-blue slitmask: 0 / 16 files differ (852 science arrays);
+>   - DEIMOS 830G_M_8500: 0 / 16 (1 528);
+>   - Binospec Longslit_G1000: 0 / 16 (398).
+> - DevSuite subset (16 setups: multi-slit/slit-mask including DEIMOS
+>   600ZD_M_6500, Binospec long slit, ESI/MagE/X-Shooter/NIRES echelle, Kast
+>   control): 29/29 reduce+afterburn, 18/18 vet (`test_slitmask`,
+>   `test_edgetrace`, `test_findobj`, `test_wavetilts`, `test_skysub`,
+>   `test_fluxspec`, `test_collate1d`, MagE orders).
+> - No measurable runtime change (~4 ms per PCA call either way).
+>
+> The diagnostic tools and full report are in the dev suite under
+> `pypeitdev/issue_2208/`.
+>
+> 🤖 Generated with [Claude Code](https://claude.com/claude-code)
+
+#### Draft 3 — note for #2209
+
+> Update from #2208: the run-to-run irreproducibility was an unseeded
+> randomized SVD in `pca_decomposition`.  It is fixed in #XXXX
+> (`svd_solver='full'`).  With that fix, two serial reductions are
+> bit-identical end to end for LRIS slitmask, DEIMOS 830G and Binospec
+> G1000 (the last including the `Tilts` entry point we saw here).
+>
+> Consequences for this PR, once #XXXX is merged and this branch is
+> updated:
+> - The three `xfail`ed exact-flux comparisons in the dev-suite
+>   `vet_tests/test_ncpu.py` should become exact checks, and should pass
+>   for serial vs `--ncpu 2`.  To be re-measured; not yet tested, since
+>   `edge_2208` does not contain the parallelism.
+> - The docs' reproducibility wording ("bit-identical only on Linux, for
+>   data that reproduce run-to-run") can be broadened to multi-slit,
+>   wide-slit and echelle data, still scoped to one machine and BLAS stack.
+> - The BLAS thread-pinning rationale (Kast `SKYMODEL` changing with thread
+>   count) is a separate effect and still stands.
+> - On macOS, LRIS should now reproduce too: the mechanism was the RNG, not
+>   Accelerate.  This is unverified.
+
+**Commit points (for the user):**
+- PypeIt (`edge_2208`): `pypeit/core/pca.py`, `pypeit/tests/test_pca.py`,
+  `doc/releases/2.1.0dev.rst`.
+- Dev suite (`dev_edge_2208`): `pypeitdev/issue_2208/` (scripts, `site/`,
+  `Reports/issue_2208_results.md`; not `__pycache__/`) and
+  `claude_prompts/issues/issue_2208.md`.
