@@ -24,6 +24,13 @@ to examine this Issue in depth on my workstation using the DevSuite.
 Put your questions in the Q&A/Plan section below.
 Use Opus 5.5. Log your work.
 
+2. I answered your questions in Q&A/Plan below.  Read them and discuss further with me whether we can move ahead.    If you have no further questions, 
+generate a series of prompts in the Testing section below to perform the work
+and I will have you execute them.
+Use Opus 5.5. Log your work.
+
+### Testing
+
 ## Q&A
 
 ### Plan
@@ -142,14 +149,14 @@ the way), with full spec1d/spec2d run-to-run reproducibility as the goal?
 I propose: fix `EDGE_CEN` here; if the cause turns out to be the same
 mechanism (e.g. the same BLAS call), fix the tilts too, otherwise file it
 separately.
->A:
+>A: Use your proposal
 
 **Q2 — Base branch.** `edge_2208` is off `develop`, without #2209's thread
 pinning.  The issue says pinning makes no difference to `EDGE_CEN`, so I
 plan to stay on `develop` and export the `*_NUM_THREADS=1` variables
 myself in the harness, which keeps the fix independent of #2209.  Is that OK,
 or do you want it stacked on `speed_up_B`?
->A:
+>A: Yes, stay on `edge_2208` which is off `develop` without #2209's thread pinning.
 
 **Q3 — Acceptable result changes.** A determinism fix will change edge
 positions at the ~1e-12 px level relative to `develop`, and that can still
@@ -158,24 +165,25 @@ amplification, just once).  Is that acceptable as long as the vet tests
 pass?  Also, is a quantization-style fix (e.g. rounding centroids to
 1e-6 px at a checkpoint) off the table?  I would only use it as a last
 resort, since it only makes divergence less likely.
->A:
+>A: 1e-12 px is acceptable as long as the vet tests pass. 
 
 **Q4 — Diagnostic environments.** Am I OK to create a throwaway clone of
 `pypeit14b` (e.g. `pypeit14b_mkl`) to try an MKL- or reference-BLAS-backed
 numpy as a control?  `pypeit14b` itself would not be touched.
->A:
+>A: Yes, that is fine.
 
 **Q5 — Where the regression test lives.** Options: (a) a PypeIt CI unit
 test on the culprit function with misaligned inputs (cheap, my
 preference); (b) a dev-suite `unit_tests/` test that runs LRIS edge tracing
 twice in separate subprocesses (~minutes, needs RAW_DATA); (c) both.
->A:
+>A: (a) 
 
 **Q6 — DevSuite budget.** For Phase 4, is running `reduce`+`vet` on a
 multislit/echelle subset at `-t 4` overnight fine, or do you want the full
 `all` run?  And should I run anything else on the workstation at the same
 time?
->A:
+>A: Yes, that is fine.  But set it up so I can leave my Claude session and log out 
+from my laption into my workstation and have it keep running.  The workstation will remain on.
 
 ## Logs
 
