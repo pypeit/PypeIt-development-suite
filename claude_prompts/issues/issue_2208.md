@@ -1167,3 +1167,38 @@ Commit points (for the user): unchanged from the Testing #4 list, plus
 - Dev suite (`dev_edge_2208`): `pypeitdev/issue_2208/` (scripts, `site/`,
   `Reports/issue_2208_results.md`; not `__pycache__/`) and
   `claude_prompts/issues/issue_2208.md`.
+
+### 2026-10-19 — PR descriptions posted
+
+The user opened pypeit/PypeIt#2215 (`edge_2208` → `develop`, commit
+`e7b71d82b`, the three expected files) and
+pypeit/PypeIt-development-suite#438 (`dev_edge_2208` → `develop`).
+
+- **#2215:** the body was replaced with the user's two opening lines, then
+  Draft 2 (the reviewed PR description, with the pair results as a table
+  and a link to #438), then the existing Cursor Bugbot
+  `<!-- CURSOR_SUMMARY -->` block, kept unchanged at the end.
+- **#438:** the user's opening line, then a new description: the PR's
+  contents, a statement that no test-suite configuration changed, a list of
+  the tools, and the validation summary.
+- `gh pr edit` fails on the Projects-classic GraphQL deprecation, so both
+  were set with `gh api -X PATCH repos/<repo>/pulls/<n> -F body=@<file>`.
+  Both were verified by re-reading the bodies.
+- Noted for the user: #438's `.gitignore` adds ` __pycache__/` with a
+  **leading space**, which git treats as part of the pattern, so it likely
+  matches nothing.  No `__pycache__` files are in the PR.
+- **Not posted yet:** Draft 1 (the #2208 comment) and Draft 3 (the #2209
+  note).  Their `#XXXX` should become #2215.
+
+### 2026-10-19 — #2208 / #2209 comments posted; `.gitignore` fixed
+
+- Posted Draft 1 on #2208
+  (https://github.com/pypeit/PypeIt/issues/2208#issuecomment-6269209187)
+  and Draft 3 on #2209
+  (https://github.com/pypeit/PypeIt/pull/2209#issuecomment-6269209604).
+  Both are verbatim from the log, with `#XXXX` replaced by #2215, and were
+  posted with `gh api -X POST repos/pypeit/PypeIt/issues/<n>/comments`.
+- `.gitignore` line 20: ` __pycache__/` → `__pycache__/` (leading space
+  removed).  Checked with `git check-ignore -v` (read-only; an unintended
+  exception to the no-git rule).  The user will commit and push it to
+  `dev_edge_2208` (#438).
