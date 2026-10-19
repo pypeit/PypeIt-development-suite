@@ -349,7 +349,7 @@ the unseeded randomized SVD in `pypeit/core/pca.py:120`.  Options:
   convention (`svd_flip`).**  Deterministic, and it drops sklearn from
   PCA.  More code, and it has to match sklearn's sign/centering exactly.
   No benefit over (A) for this issue.
->A:
+>A: (A)
 
 **Q8 — Size of the result change (revisits Q3).**  Any of these fixes
 moves the edges by up to **~4e-6 px** (median ~3e-8 px) relative to
@@ -359,7 +359,7 @@ px), because the current output is one random draw from that scatter.
 Downstream products (Flat, Tilts, spec1d/spec2d) will change by about as
 much as they already do between two identical runs.  Is that acceptable,
 with the vet tests as the gate?
->A:
+>A: Yes, that is acceptable.
 
 ## Logs
 
