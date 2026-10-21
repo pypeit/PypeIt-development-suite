@@ -433,6 +433,9 @@ Use Opus 5.5. Log your work.
    in Q&A/PR, and post it only after I approve it.
    Use Opus 5.5. Log your work.
 
+8. **One test is failing** There is one test failing in the Dev Suite.  
+   Kyle has discussed it as a PR comment.  Read that, investigate and fix it.
+   Use Opus 5.5. Log your work.
 
 ## Q&A
 
@@ -3105,3 +3108,78 @@ above), apart from the 830G rerun.
 
 **For you to commit:** `PypeIt/doc/running.rst` and the dev-suite `B.md`.
 With that, PR prompts 1–7 are done.
+
+### 2026-10-21 (PR prompt 8 — the `test_nworkers` failure in Kyle's dev-suite run)
+
+Kyle's full run was otherwise clean: **335/335 dev-suite tests**, 169 unit tests
+with data, 113 vet tests, and one unit-test failure — mine:
+
+```
+FAILED pypeit/tests/test_parallel.py::test_nworkers
+  AssertionError: number of workers must be capped by the available CPUs
+```
+
+#### Cause: the assertion was only ever valid on a mid-sized machine
+
+`nworkers` returns `min(ncpu, nitem, cpu_count()-1)`.  The failing line asserted
+`nworkers(1000, 100) == cpu_count()-1`, which holds only while
+`cpu_count()-1 <= 100`.  Above 101 cores the **item count** of 100 becomes the
+binding cap, the function correctly returns 100, and the assertion fails.
+Kyle's machine is evidently larger than that.  Reproduced by faking the core
+count:
+
+| `cpu_count` | old assertion | new assertion |
+|---|---|---|
+| 24 | pass | pass |
+| 102 | **FAIL** | pass |
+| 256 | **FAIL** | pass |
+
+**This is the second time this one assertion has broken, from opposite ends.**
+In Task 11 it failed on a 3-core macOS CI runner, where `nworkers(8, 3)` is 2
+rather than 3.  I fixed that by deriving the expectations from
+`os.cpu_count()` — which cured the small end but left the host's core count
+inside the expectation, so the large end stayed broken and simply had not been
+run on a big enough machine yet.  The underlying defect was the same both times
+and I only half-saw it: **each assertion exercised whichever cap happened to
+bind on the test machine**, so two of the three caps were never really checked
+anywhere, and the one that was checked changed identity with the hardware.
+
+#### Fix
+
+`test_nworkers_formula` now fakes `os.cpu_count` over
+`[1, 2, 3, 4, 24, 101, 102, 256]` — 101 and 102 straddling the threshold where
+an item count of 100 stops binding — and tests **each cap in isolation**, with
+the other two limits set to `10**6` so they cannot mask it:
+
+- capped by the request: `nworkers(2, 10**6) == min(2, ncores)`
+- capped by the item count: `nworkers(10**6, 3) == min(3, ncores)`
+- capped by the cores: `nworkers(10**6, 10**6) == ncores`
+
+The last of these cannot be masked on any machine, which is the property the
+old line lacked.  A short `test_nworkers` remains as a sanity check against the
+real host.  The docstring records *both* historical failure modes, so the next
+person is less likely to re-break it from either direction.
+
+#### Verification
+
+- `test_parallel.py`: **30 passed**, and **30 again under
+  `PYPEIT_MP_START=spawn`**, so the fix holds under both start methods the port
+  supports.
+- Full unit suite: **913 passed, 0 failed** (excluding `test_pkgdata.py`, whose
+  3 GitHub-fetch failures are pre-existing and network-dependent; Kyle's 916
+  includes them).
+- Checked directly that the *old* assertion fails at 102 and 256 cores while
+  the new one passes, so the replacement genuinely covers the case that broke
+  rather than merely avoiding it.
+
+#### Also noticed, not acted on
+
+Kyle's vet run reports **3 xpassed**.  Those are the `xfail`-marked exact-flux
+comparisons in `vet_tests/test_ncpu.py`, now passing because #2215 fixed the
+unseeded randomized SVD behind #2208 — exactly what the 2026-10-19 comment on
+#2209 predicted.  The markers should come off and the comparisons become
+unconditional, but that is a dev-suite change rather than part of this fix, so
+it is left for a decision.
+
+**Nothing has been committed**: per the standing instruction, no `git` commands
+were run.  The change is confined to `pypeit/tests/test_parallel.py`.
