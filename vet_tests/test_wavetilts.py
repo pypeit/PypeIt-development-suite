@@ -34,6 +34,7 @@ def test_instantiate_from_master(redux_out):
     slit_master_file = os.path.join(redux_out, kastb_dir, 'Calibrations',
                                     'Slits_A_0_DET01.fits.gz')
     slits = slittrace.SlitTraceSet.from_file(slit_master_file)
+    slits_left, slits_right, _ = slits.select_edges()
     waveTilts = wavetilts.WaveTilts.from_file(master_file)
     tilts = waveTilts.fit2tiltimg(slits.slit_img())
     assert isinstance(tilts, np.ndarray)
@@ -41,7 +42,8 @@ def test_instantiate_from_master(redux_out):
 
 # Test rebuild tilts with a flexure offset
 def test_flexure(redux_out):
-    flexure = 1.
+    nslits = 1
+    spat_flexure = np.ones((nslits, 2), dtype=float)  # A flexure of 1 pixel
     master_file = os.path.join(redux_out, kastb_dir, 'Calibrations',
                                'Tilts_A_0_DET01.fits')
     waveTilts = wavetilts.WaveTilts.from_file(master_file)
@@ -49,10 +51,12 @@ def test_flexure(redux_out):
     slit_file = os.path.join(redux_out, kastb_dir, 'Calibrations',
                              'Slits_A_0_DET01.fits.gz')
     slits = slittrace.SlitTraceSet.from_file(slit_file)
-    slitmask = slits.slit_img(flexure=flexure)
+    slits_left, slits_right, _ = slits.select_edges(spat_flexure=spat_flexure)
+    slitmask = slits.slit_img(spat_flexure=spat_flexure)
     # Do it
-    new_tilts = waveTilts.fit2tiltimg(slitmask, flexure=flexure)
+    new_tilts = waveTilts.fit2tiltimg(slitmask, spat_flexure=spat_flexure)
     # Test?
+
 
 def test_run(redux_out):
     # Masters
@@ -69,6 +73,7 @@ def test_run(redux_out):
     par = pypeitpar.WaveTiltsPar()
     wavepar = pypeitpar.WavelengthSolutionPar()
     slits = slittrace.SlitTraceSet.from_file(slit_file)
+    slits_left, slits_right, _ = slits.select_edges()
     buildwaveTilts = wavetilts.BuildWaveTilts(mstilt, slits, spectrograph, par, wavepar, det=1)
     # Run
     waveTilts = buildwaveTilts.run(doqa=False)
