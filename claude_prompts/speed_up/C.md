@@ -349,7 +349,7 @@ Task 1 started, at the `speed_up_B` tip `72e448f75`, so I only checked it out.
 A second local branch, `speed_up_C`, points at the same commit and has no
 upstream.  My default is to **leave it alone**.  Tell me if you want it
 deleted (`git branch -d speed_up_C`).
->A:
+>A: Leave it alone
 
 **Q2 — Fix the sketch's fallback mask?**  As written in §C.3, a line with fewer
 than `ARCFIT_MIN_GOODPIX = 4` positive pixels is neither fit analytically nor
@@ -362,7 +362,7 @@ back to `curve_fit`, matching the old behaviour").  On the Paranal sky that is
 
 The old code attempted every line that the vectorized code attempts, so no
 line loses its fit.
->A:
+>A: Use your default
 
 **Q3 — Lines where legacy `curve_fit` converged to a negative σ.**  The model
 uses only σ², so the sign `curve_fit` lands on depends on the optimizer path.
@@ -375,7 +375,7 @@ optimizer artefact, and I do not think we should.  My default is to accept the
 gain.  I would read Task 4's "if the count changes, stop and investigate" as
 "stop if it **drops**, or rises by more than these ~50 lines", and record the
 new count.  Agree?
->A:
+>A: I agree
 
 **Q4 — The fallback rate is 13%, not <1%.**  With the analytic seed alone,
 13.2% of sky lines fall back to `curve_fit`:
@@ -396,7 +396,7 @@ delivers roughly 85% of the 840 s, not ~95%.  Options for the
 
 My default is **(a) now**, then measure the fallback rate on a DEIMOS arc in
 Task 2 and revisit (b) in Task 3 only if it is well above a few percent.
->A:
+>A: I agree, use your default
 
 **Q5 — `centerr` from the Gauss–Newton Jacobian rather than the log-parabola?**
 `centerr` is never used numerically (see Key facts), so this is about fidelity,
@@ -408,7 +408,7 @@ nearly free, because `JᵀJ` is already built in the last iteration.  My default
 - `GN_ITER = 0`: use §C.2's `_center_variance` propagation.
 
 Both are implemented and tested against legacy `fitcov[1,1]`.
->A:
+>A: I agree, use your default
 
 ## Logging
 
