@@ -491,6 +491,67 @@ on DEIMOS, the extra 0.06 s per 92 spectra is negligible.
 `test_fit_arcspec_matches_curve_fit` (0.02 px) far more comfortable.
 >A: Ok, increase it to 10
 
+**Q8 — Fidelity or speed?  The dev suite shows that shipped `gn10` changes
+some DEIMOS wavelength *identifications*.**  Every vet test that ran gives the
+same outcome for legacy and `gn10`, and every vetted RMS is within its
+tolerance (table in the Task 5 log).  Underneath, though:
+- on 28 of 38 WaveCalib files the solutions agree to ~1e-6 px;
+- on a handful of DEIMOS slits the **line identification flips**, and the
+  solution moves by tens of pixels inside the range both variants' lines
+  cover.  `600ZD_M_6500` MSC01 slit 2: the blue end is misidentified, with
+  4359.56 Å put on the line legacy calls 4377.35 Å, ~30 px off, while the RMS
+  only moves 0.588 → 0.617.  Similar flips occur on MSC01 slit 11 and MSC03
+  slits 0, 14 and 15;
+- `830G_L_8100`'s single slit goes from RMS 0.051 to 0.27 px;
+- one case improves: `1200G_M_7750` max RMS 0.42 → 0.13.
+
+The triggers are **discrete changes in which lines are detected**, not
+centroid noise (shared lines agree to ~1e-6 px).  Over all 370 arc spectra of
+the run (33 354 legacy lines):
+- **83 lines gained**, all sub-resolution spikes (σ < 0.5 of the expected
+  width, median 0.33).  Legacy `curve_fit` happened to *fail* on these;
+- **56 lines lost**, the saturated plateaus.  Q6(b) assumed they were not
+  useful, but **they anchor the pattern match**: losing one or two is the
+  only difference on the misidentified 600ZD slits.  So Q6's premise looks
+  wrong;
+- a few lines where both fits converge to different minima (17 DEIMOS lines
+  > 0.02 px).
+
+Options, each measured on the 92 DEIMOS 600ZD arcs and the Paranal sky
+(`fit_arcspec` time against legacy):
+- **(A) Defer to `curve_fit` whenever the vectorized fit is not confident**:
+  a line that has not converged within the iteration cap, or a fit narrower
+  than 0.35× the window half-width.  The prototype is saved as
+  `scripts/arcfit/prototype_defer_to_curvefit.patch`.
+    - Result: **identical line lists on all 370 spectra** (0 gained, 0 lost,
+      shared centroids within 1e-3 px).  This is legacy behaviour by
+      construction.
+    - Cost: **only 2.0× on DEIMOS arcs and 1.4× on the sky**.  About 500
+      DEIMOS lines (5%) go to `curve_fit`, and 432 of those end in
+      `RuntimeError` (legacy's −999) after `curve_fit`'s full 800
+      evaluations, which is 1.75 of the 1.83 s.
+    - The expensive lines cannot be predicted or capped: some lines that
+      legacy accepts need over 700 evaluations.  The patch also needs a test
+      tweak, because a noise-free test line with a negative pedestal hits the
+      convergence cap.
+- **(B) Ship `gn10` as run: 13×.**  The vet tolerances pass, but the
+  per-slit identification flips above remain.
+- **(C) A hybrid: the width rule, plus deferring only non-converged
+  *flat-topped* windows.**
+    - DEIMOS: 2.7×, nearly exact (2 lines lost);
+    - sky: 4.1×, but 113 shared lines move by more than 0.02 px and 20 are
+      lost.
+
+**My recommendation is (A).**  Wrong wavelength identifications are a worse
+outcome than a smaller speedup.  (A) still removes about half of the
+`fit_gauss` cost, and it keeps the whole cascade, tests and kill switch.  If
+you agree, I will apply the patch with the test fix and re-run only the
+shipped variant through the dev suite (~2.5 h; the legacy baseline in
+`REDUX_OUT_C/legacy` is reused).  If you prefer (B), Task 5 is complete as it
+stands.
+>A:  Yes, let us ship A but allow B as an option.  The report and docs should 
+discuss this at length.
+
 ## Logging
 
 The "Logs" section will record Claude's work.  Please use the following format:
@@ -869,3 +930,170 @@ The DEIMOS figure at `GN = 10` / rescue 20 is 13.3× (Task 3).
 **For you to commit:** `PypeIt/pypeit/tests/test_arc.py`; in the dev suite,
 `claude_prompts/speed_up/C.md` and
 `pypeitdev/speed_up/scripts/arcfit/arcfit_microbench.py`.  No new questions.
+
+### 2026-10-22 (Task 5 — in progress: dev-suite vetting running as a systemd service; changelog and docs done)
+
+**Variants.**  Q7 changed the shipped value to `GN_ITER = 10`, so the
+variants are:
+- `legacy` (`USE_VECTORIZED_ARCFIT = False`, i.e. the pre-PR-C code path,
+  which serves as the baseline);
+- `gn10` (shipped);
+- `gn0` (analytic seed, plus the rescue).
+
+Each is reduced into its **own fresh output directory**,
+`REDUX_OUT_C/<variant>/`.  That avoids the stale-`Science/` problem (B.md
+QP7), and the legacy baseline stays on disk next to the new runs.  The
+existing `REDUX_OUT/` is not touched.
+
+**Variant switch without editing `arc.py`.**
+`pypeitdev/speed_up/scripts/arcfit/variant_hook/sitecustomize.py`, on
+`PYTHONPATH`, reads `PYPEIT_ARCFIT_VARIANT` and sets the module constants in
+every interpreter.  I checked that it reaches the parent, `forkserver`
+workers and `spawn` workers (`hookcheck.py`).  A Kast blue 600 smoke reduction
+under `legacy` and `gn10` confirmed that it reaches `run_pypeit`: the fitted
+pixel positions differ, and the RMS agrees to 5 digits (0.07390).
+`pypeit_test` hands `os.environ` to `run_pypeit`, and it has to be run as
+`python ./pypeit_test`: its shebang resolves to the broken `pypeit` env.
+
+**Batch.**  `pypeitdev/speed_up/scripts/arcfit/arcfit_vet.sh` runs as the user
+service `pypeit-arcfit-vet` (`MemoryMax=120G`, `MemorySwapMax=0`).  Started
+2026-10-22 17:25 on PypeIt HEAD `88337631c`, with a clean `pypeit/` tree.
+For each variant, in the order legacy → gn10 → gn0:
+- `pypeit_test reduce -i shane_kast_blue shane_kast_red keck_deimos
+  keck_lris_blue -t 4 -o REDUX_OUT_C/<v>`;
+- then `pytest vet_tests/test_{wavelengths,wavetilts,extraction,skysub}.py
+  --redux_out REDUX_OUT_C/<v>`.
+
+This is about 45 setups per variant, 22 of them DEIMOS.  `-t 4` alone, rather
+than B's `-t 1`, is a deliberate trade: the crash came from *two concurrent*
+suites, and the memory cap contains a blow-up.  Check on it with:
+- `systemctl --user status pypeit-arcfit-vet`
+- `REDUX_OUT_C/progress.txt`
+
+**Do not edit `pypeit/` while it runs**: the editable install means the
+variants would see different code.
+
+**Metrics.**  `scripts/arcfit/arcfit_metrics.py REDUX_OUT_C legacy gn10 gn0`
+writes Markdown tables:
+- per WaveCalib file: median and maximum slit RMS (what `test_wavelengths`
+  asserts on), lines in the final fits, the maximum change of the wavelength
+  solution in pixels, and the number of slits whose RMS is >10% worse than
+  legacy;
+- per Tilts file: tilt lines and 2D-fit points, and the median and maximum
+  change of the tilt image in pixels.
+
+The tilt-fit RMS is not stored, and the main reduction log does not record
+it.  `test_wavetilts::test_run` asserts no RMS (it only evaluates the tilts),
+so the tilt-image difference is the tilt metric.
+
+**Changelog/docs (done):**
+- `doc/releases/2.1.0dev.rst`: a §C.8 bullet under **Under-the-hood
+  Improvements**, extended to cover the rescue, the saturated-line behaviour,
+  the NaN → −999 change and the kill switch, plus a **Testing** bullet for the
+  new `test_arc.py` tests.  `CHANGES.rst` is deprecated per its header and was
+  not touched;
+- `make clean; make htmlnoex` (`apirst` plus the build; examples skipped): rc 0,
+  **`sphinx_warnings.out` empty**;
+- `doc/api` needs no change for PR C, because `pypeit.core.arc` already had
+  its page and the new private functions render in it.  The only diff was a
+  blank line in `doc/api/pypeit.coadd2d.rst` from the apidoc patch script,
+  unrelated, and I reverted it;
+- `doc/pypeit_par.rst` is unchanged, since no parameter was added.
+
+### 2026-10-23 (Task 5 — dev-suite results: vet tolerances pass, but DEIMOS identifications flip; Q8)
+
+**The batch finished** at 01:09 after 7 h 44 m, with each variant's reduce
+taking ~2.5 h at `-t 4` (peak memory well under the 120 G cap).
+- **The reduce passed 35/35 setups for every variant** (`legacy`, `gn10`,
+  `gn0`).
+- **Vet tests: `legacy` and `gn10` have identical outcomes** (8 passed,
+  13 failed).  All 13 failures are missing products for instruments outside
+  the four reduced (not_alfosc, mdm, lris_red, hires, hamspec, gmos, focas,
+  bok, echelle), raising "Calibration directory does not exist" or
+  `FileNotFoundError`.
+- **`gn0` additionally fails `test_shane_kast_red`**: `600_7500_d57` RMS
+  0.0633 against a tolerance of 0.05.  This confirms that the pure analytic
+  fit is not shippable.
+
+**RMS on the vetted setups** (the exact slit or quantity each test asserts
+on):
+
+| vet test / setup | slit | tolerance | legacy | gn10 | gn0 |
+|---|---|---|---|---|---|
+| shane_kast_red 300_7500_Ne | 1 | 0.05 | 0.0308 | 0.0308 | 0.0413 |
+| shane_kast_red 600_7500_d57 | 0 | 0.05 | 0.0369 | 0.0369 | 0.0633 **FAIL** |
+| shane_kast_red 1200_5000_d57 | 0 | 0.055 | 0.0512 | 0.0512 | 0.0496 |
+| keck_deimos 1200B_LVM_5200 | 3 | 0.15 | 0.1234 | 0.1234 | 0.1242 |
+| keck_deimos 600ZD_M_6500 | 1 | 0.35 | 0.3356 | 0.3350 | 0.3100 |
+| keck_deimos 900ZD_LVM_5500 | 1 | 0.1 | 0.0687 | 0.0687 | 0.0685 |
+| keck_lris_blue multi_300_5000_d680 | max | 0.32 | 0.2970 | 0.2969 | 0.2877 |
+| keck_lris_blue long_400_3400_d560 | max | 0.21 | 0.1947 | 0.1947 | 0.1853 |
+| keck_lris_blue long_600_4000_d560 | max | 0.08 | 0.0621 | 0.0621 | 0.0772 |
+
+**Full comparison** (`REDUX_OUT_C/arcfit_metrics.md`, from
+`arcfit_metrics.py`; 38 WaveCalib and 38 Tilts files, `ncpu/` and
+`step_by_step/` duplicates excluded):
+- **Wavelength solutions.**  Median max |Δλ| over the common line range:
+  **gn10 2.2e-6 px**, gn0 0.29 px.  For gn10, 10 files exceed 0.05 px and 7
+  exceed 0.5 px, all on multi-slit DEIMOS (1200B_M, 1200G_M_5500/7750, the
+  four 600ZD mosaics, 830G_L/LVM) plus LRIS `multi_300` at 0.096 px.
+- **Lines in the final fits:** legacy 21 702, gn10 21 681, gn0 21 700.
+- **Tilts.**  gn10 matches to median |Δtilt| ≤ 3e-4 px everywhere, with max
+  ≤ 0.04 px except `600ZD` MSC02 (0.54 px) and `1200G_M_5500` (0.88 px).
+  The traced-line counts are within ±5.  gn0 is noisier (max up to 62 px on
+  `1200G_M_5500`).
+- **Serial and `--ncpu 2` products are identical within each variant**
+  (`830G_M_8500`, `multi_600_4000_slitmask`), and the hook reached the
+  workers.
+
+**Comparison method.**  The first |Δλ| metric was taken over the whole
+detector, so it mostly measured extrapolation where one variant has extra lines
+at the ends.  For example, `1200G_M_5500` slit 3 showed 1 408 px although the
+two variants share all 22 of gn10's lines.  I restricted it to the pixel range
+covered by **both** variants' lines.
+
+**Root cause of the large gn10 differences** (`arcfit_slitdiff.py`, the
+`trig.py` scratch probe, and `arcfit_gained_lost.py` over all 370 arc
+spectra).  They are **identification flips**, triggered by discrete changes
+in the detected line list:
+- **lines gained:** 83, all sub-resolution spikes on which legacy `curve_fit`
+  failed (`830G_L_8100`: 5 spikes with σ ≈ 0.45–0.55 px, where 1.43 px is
+  expected);
+- **lines lost:** 56 saturated plateaus (`600ZD` MSC01 slit 11, MSC03 slits 0,
+  14 and 15);
+- **shared lines converging to a different minimum:** MSC01 slit 2 (3.2 px).
+
+Example: `600ZD` MSC01 slit 2 is misidentified at the blue end by ~30 px.
+See **Q8**.
+
+**Fidelity prototype** (Q8(A); saved as
+`scripts/arcfit/prototype_defer_to_curvefit.patch`; **`arc.py` is restored
+to `88337631c`**, and `test_arc.py` passes 8/8):
+- the GN routine returns a `converged` flag (with a parameter-step `xtol`
+  besides the χ² `tol`);
+- non-converged polish and rescue lines are deferred to `curve_fit`;
+- so are fits with σ < `ARCFIT_MIN_WIDTH = 0.35` × the window half-width.
+
+Measured (`rules.py`, `tolsweep.py`, `xtolsweep.py`, `deferred.py`, `nfev.py`
+in the scratchpad):
+- **0 gained / 0 lost over all 370 spectra**, at 2.0× on the DEIMOS arcs and
+  1.4× on the sky;
+- the convergence rule carries the cost: ~500 DEIMOS lines, insensitive to
+  `tol` (1e-10 to 1e-6), `xtol` (1e-6 to 1e-4) and the cap (10/30);
+- **432 of the 517 deferred lines end in `curve_fit` `RuntimeError`**, after
+  its full 800 evaluations (1.75 of 1.83 s);
+- capping `maxfev` is not safe.  Over 7 505 fallback fits, successful ones
+  reach 799 evaluations, and 22 plausible lines need more than 400.
+
+**Changelog/docs** (done earlier today; see the in-progress entry).  If Q8 is
+(A), the bullet will need its "more than 10 times faster" claim and its
+saturated-line sentence revised.
+
+**Disk:** `REDUX_OUT_C/` holds ~27 GB per variant (~80 GB).  Keep `legacy/`
+as the baseline for the next run; `gn0/` can be deleted.
+
+**For you to commit:** `PypeIt/doc/releases/2.1.0dev.rst`; in the dev suite,
+`claude_prompts/speed_up/C.md` and `pypeitdev/speed_up/scripts/arcfit/`
+(`arcfit_vet.sh`, `variant_hook/`, `arcfit_metrics.py`, `arcfit_slitdiff.py`,
+`arcfit_gained_lost.py`, `prototype_defer_to_curvefit.patch`).
+**Task 5 waits on Q8.**
