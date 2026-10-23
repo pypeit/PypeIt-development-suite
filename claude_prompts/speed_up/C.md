@@ -202,6 +202,7 @@ the old spec1d (B.md QP7, left unfixed in the harness).
 4. Read this doc.  Perform the 4th task under Tasks.
 5. Read this doc.  Perform the 5th task under Tasks.
 6. Read this doc.  Perform the 6th task under Tasks.
+7. Read this doc.  Perform the 7th task under Tasks.
 
 ## Tasks
 
@@ -339,6 +340,31 @@ the old spec1d (B.md QP7, left unfixed in the harness).
       using the safe recipe under Running) at the tip of `speed_up_arcfit`
       before merging.  Ask any remaining questions in Q&A.
 
+7. **Write the final report, `Speed_Up_Arcfit_Report.md`** (added per Q6; the
+   last item before the Pull Request).  Create it in
+   `PypeIt-development-suite/pypeitdev/speed_up/Reports/`.  It is the
+   standalone record of workstream C, for readers who have not followed these
+   logs.  It should cover:
+    - what was replaced and why, with the profile numbers;
+    - the method: the weighted log-parabola, the Gauss–Newton polish, the
+      moment-seeded rescue (if adopted), and the `curve_fit` fallback;
+    - how faithful the new fit is to legacy `curve_fit`, on the Paranal sky and
+      on DEIMOS arcs;
+    - the line-count changes, with the reasons: negative σ (Q3) and the
+      saturated lines (Q6);
+    - **worked examples, with figures, of the saturated, flat-topped DEIMOS
+      lines that the new fit rejects**: the window pixels, the legacy and new
+      fits overplotted, and why the legacy fit is an artefact.  Also an example
+      of a negative-σ line;
+    - the fallback rate and where the remaining time goes;
+    - the dev-suite RMS table for both `GN_ITER` variants;
+    - the re-profiling numbers, and the A+B+C totals;
+    - the kill switch, and the remaining risks.
+
+   Use the `dataviz` skill for the figures, and keep the plotting scripts
+   under `pypeitdev/speed_up/scripts/` so the figures can be regenerated.
+   Ask questions in Q&A.  Log your work in the Logs section.
+
 ## Q&A
 
 Claude poses questions here (as `**Qn — title.** body` followed by a `>A:` line);
@@ -409,6 +435,61 @@ nearly free, because `JᵀJ` is already built in the last iteration.  My default
 
 Both are implemented and tested against legacy `fitcov[1,1]`.
 >A: I agree, use your default
+
+**Q6 — Saturated lines on DEIMOS: the analytic fit drops 129 of them.**
+On the 92 DEIMOS 600ZD arc spectra (`GN_ITER = 0`), the good-line count falls
+from **7 887 to 7 763**, and 67 slits lose lines.  This breaks the "no setup
+loses arc lines" acceptance criterion.
+- **All 129 lost lines fail the width cut** (`twid < fwhm_max/2.35`).
+- **They are saturated.**  99% have raw peaks above 30k counts (median 39k,
+  against 8.6k for all lines), and their windows are flat-topped
+  (3rd-highest/max = 0.999).  A plateau makes the log-parabola nearly flat,
+  so σ blows up (example: σ = 16.2 against `curve_fit`'s 2.17).
+- **`nonlinear_counts` does not remove them**, contrary to §C.4.  The cut is
+  0.95×65 535 ≈ 62k, but the extracted arc plateaus near 39k.
+- **Saturated lines also dominate the fallback cost.**  They are 376 of the
+  678 `curve_fit` fallbacks and 54% of the fallback time.  Each fallback line
+  averages ~540 `gauss_3deg` evaluations, against ~36 for a typical line.
+  The fallback is now ~99% of `fit_arcspec`'s run time, so the speedup is
+  only **2.1×**.
+
+Task 3's Gauss–Newton polish minimises the same linear-space objective as
+`curve_fit`, so it may pull these widths back.  That is the first thing I
+will measure.  If it does not:
+- (a) send lines whose analytic σ exceeds `fwhm_max/2.35`-ish (or plateau-shaped
+  windows) to the `curve_fit` fallback.  Exact legacy behaviour, but it keeps
+  the slow path for exactly the slowest lines;
+- (b) accept the loss: legacy's narrow σ on a plateau is itself an artefact,
+  and dropping saturated lines arguably improves the centroids;
+- (c) start Gauss–Newton for plateau lines from a moment-based seed (Q4(b)).
+
+**My default: measure GN first, then (c) if GN alone does not recover them,
+falling back to (a).**  I would only choose (b) with your agreement, because
+it changes which lines the HolyGrail/reidentify sees.
+>A:  It appears these lines are not useful.  Let's adopt (b) for now and be sure
+to inculde examples in the final report that we create on this effort.
+That report should be named `Speed_Up_Arcfit_Report.md` in 
+`PypeIt/PypeIt-development-suite/pypeitdev/speed_up/Reports`.  Please add 
+a new prompt to create this report as the last item before the Pull Request.
+
+**Q7 — Raise `ARCFIT_GN_ITER` from 3 to 10?**  The locked Q3 decision is 3,
+and that is what is set.  Gauss–Newton now stops each line once it converges,
+so the setting is a *cap*, and raising it is cheap.  On DEIMOS 600ZD arcs
+(92 spectra, 10 170 lines; rescue at 20):
+
+| `GN_ITER` | `fit_arcspec` | speedup | lines lost vs legacy | median / p99 \|Δc\| vs `curve_fit` | lines with \|Δc\| > 0.02 px |
+|---|---|---|---|---|---|
+| 3 | 0.29 s | 16.1× | 122 | 1.4e-6 / 0.14 px | 174 |
+| 10 | 0.35 s | 13.3× | 51 | 1.4e-7 / 4.4e-4 px | 17 |
+
+On the Paranal sky, `GN = 10` takes the p99 from 0.87 to 0.33 px.  The lost
+lines are the saturated plateaus (Q6(b)), whose flat valley converges slowly;
+10 iterations recover more than half of them.  Against 840 s of `fit_gauss`
+on DEIMOS, the extra 0.06 s per 92 spectra is negligible.
+**I recommend 10**, and I would report both in Task 5's RMS table as planned
+(`GN = 0` vs the shipped value).  It also makes
+`test_fit_arcspec_matches_curve_fit` (0.02 px) far more comfortable.
+>A: Ok, increase it to 10
 
 ## Logging
 
@@ -532,3 +613,197 @@ NaN.  Legacy has the same weakness.  The test (or a finiteness guard on the
 fallback output) has to account for it.
 
 Questions Q1–Q5 posed.  None blocks Task 2, and each has a stated default.
+
+### 2026-10-22 (Task 2 — vectorized log-parabola core and the legacy fallback, `GN_ITER = 0`)
+
+**Q&A applied.**  Q1: `speed_up_C` left alone.  Q2: two masks.  Q3: the line
+gain is accepted.  Q4(a): the `curve_fit` fallback is kept for every line the
+analytic fit rejects.  Q5: noted for Task 3.
+
+**Code (`pypeit/core/arc.py`, uncommitted on `speed_up_arcfit`):**
+- **Module constants** after the imports: `USE_VECTORIZED_ARCFIT = True`,
+  `ARCFIT_GN_ITER = 0` (for now) and `ARCFIT_MIN_GOODPIX = 4`, each with a
+  docstring.
+- **`_fit_arcspec_curvefit(xarray, yarray, pixt, fit_interval, sz_a, which,
+  ampl, cent, widt, centerr)`**: the legacy loop, moved verbatim (including the
+  JFH comment), with `range(sz_p)` replaced by `which`.  I did *not* add the
+  sketch's `int()`.  It has a Numpy docstring.
+- **`fit_arcspec`, rewritten.**  It returns early for `sz_p == 0`, and when
+  `USE_VECTORIZED_ARCFIT` is False it calls `_fit_arcspec_curvefit` for every
+  line.  Otherwise:
+    - windows `idx = pixt[:,None] + off`, with an `inb` mask, clipped
+      indices, and `u = x − x[pixt]` (0 outside the window);
+    - `gpm = inb & isfinite(y) & (y > 0)`;
+    - `attempt = (nwin > 0) & (nwin >= fit_interval)` and
+      `analytic = attempt & (ngood >= 4)` (Q2);
+    - moments `S_k = Σ w² u^k`, `T_k = Σ w² u^k ln y`, from one
+      `(nline, nwin, 5)` power array;
+    - `A` assembled by fancy indexing of `S` (Hankel), and a stacked
+      `np.linalg.solve(A, T[..., None])[..., 0]` (NumPy-2 shape);
+    - back-substitution to `amp`/`u0`/`sig`, with `ok` requiring `a2 < 0`,
+      all values finite, and `|u0| <= umax`.  `umax` is the largest |u| in the
+      window, which equals `fit_interval` in pixel units and stays correct if
+      `xarray` is ever normalised, as the docstring allows;
+    - the fallback on `attempt & ~ok`, with a warning above 25%.
+
+  The `-999` sentinels and the return signature are unchanged.  The docstring
+  describes the new method, and `centerr` is now documented as a *variance*.
+  The unused legacy array `b` was dropped.
+- **Two deviations from the sketch.**
+  1. The singular-matrix guard is scaled by the product of `A`'s diagonal,
+     not by `S0³`.  `S0³` has the wrong dimensions once `u` is not O(1).
+  2. **`_center_variance` is already implemented** (the §C.2 propagation).
+     Task 3 lists it, but the `GN_ITER = 0` path cannot fill `centerr`
+     without it.  A non-finite variance (e.g. `ngood = 3` after the guards)
+     also sends the line to the fallback, so no NaN reaches the caller.
+
+**Validation, Paranal sky** (`test_detect_lines` input; 4 259 lines):
+- the fallback is 563 lines (13.2%, as the Task 1 probe predicted);
+- 0 NaN in any output;
+- all 563 fallback lines are **bit-identical** to legacy;
+- the sentinels drop from 248 to 218;
+- against legacy where both fit: |Δc| median 0.040 px, p99 2.0 px;
+- **good lines 3 748 → 3 803** (+55, as Q3 predicted; the test threshold of
+  3 275 still passes);
+- `fit_arcspec` 2.87 s → 1.35 s.
+
+**Validation, DEIMOS 600ZD arcs** (`WaveCalib_A_0_MSC0[1-4].fits`
+`arc_spectra`; 92 slits, 10 170 lines; `detect_lines(sigdetect=5, fwhm=4)`):
+- the fallback is **6.7%** (678 lines);
+- against legacy: |Δc| median **0.009 px**, p90 0.038, p99 0.25;
+  |Δσ/σ| median 0.9%;
+- **`fit_arcspec` 4.24 s → 2.04 s, only 2.1×.**  cProfile shows the vectorized
+  work at ~0.02 s for all 92 spectra; the rest is the 678 fallback lines at
+  ~540 `gauss_3deg` evaluations each;
+- **good lines 7 887 → 7 763 (−124; 67 slits lose lines).**  All 129 lost
+  lines fail the width cut, and they are saturated, flat-topped lines that the
+  `nonlinear_counts` cut does not catch on DEIMOS.  The same lines are 54% of
+  the fallback time.  This is **Q6**, and it is what Task 3 has to settle,
+  starting with whether GN recovers them.
+
+**Tests:**
+- `pytest pypeit/tests` (`pypeit14b`): **917 passed** in 303 s, including
+  `test_detect_lines`;
+- the arc, findobj, flexure, trace, wave and wavetilts subsets were also run
+  separately: 12 passed.
+
+The kill switch was checked: with `USE_VECTORIZED_ARCFIT = False`, the output
+is the legacy code path.
+
+**For you to commit:** `PypeIt/pypeit/core/arc.py` (or tell me to commit it as
+"Vectorize fit_arcspec with an analytic weighted log-parabola fit"), and
+`claude_prompts/speed_up/C.md`.  The scratch scripts (`val2.py`,
+`deimos_arcs.py`, `why_lost.py`, `lost_stats.py`, `fb_stats.py`) are in the
+session scratchpad.  `deimos_arcs.py` is the harness to reuse in Task 3.
+
+### 2026-10-22 (Task 3 — Gauss–Newton polish, moment-seeded rescue, `curve_fit`-style variance; edge cases)
+
+**Q&A applied.**
+- **Q6(b): saturated lines may be lost.**  Added **prompt 7 / Task 7**, the
+  final `Speed_Up_Arcfit_Report.md` in `pypeitdev/speed_up/Reports/`, as the
+  last item before the PR, with worked figures of the saturated and
+  negative-σ lines.
+- **Q4(b) adopted**, which Task 2's measurement triggered.  With `GN_ITER = 3`
+  alone, `fit_arcspec` was still only 2.4× faster on DEIMOS: the 679
+  `curve_fit` fallback lines (6.7%) were ~99% of its time.
+- **Q5** implemented as stated.
+
+**Code (`pypeit/core/arc.py`, uncommitted):**
+- **`_gauss_newton_refine(u, y, gpm, amp, u0, sig, ok, niter, lam=1e-3,
+  tol=1e-10)`.**  Batched Levenberg–Marquardt on the exact `curve_fit`
+  objective, over `fpm = inb & isfinite(y)`, i.e. *including the negative
+  wings*.
+    - The step is accepted only if χ² does not rise, and each line has its own
+      damping factor (÷10 on acceptance, ×10 on rejection).
+    - Lines stop once their χ² changes by less than `tol·χ²` or their damping
+      exceeds 1e10, so `niter` is a **cap**.  Converged lines drop out of the
+      arrays.
+    - σ is returned as |σ|.
+- **Helpers:** `_gauss_model` (model and analytic Jacobian), `_solve3`
+  (guarded, NumPy-2-safe batched 3×3 solve), and `_moment_seed` (a
+  vectorized `fitting.guess_gauss`, i.e. the seed `curve_fit` itself starts
+  from).
+- **`_gauss_center_variance`** (Q5): `s²·[(JᵀJ)⁻¹]₁₁` with
+  `s² = Σr²/(n−3)`, which is `curve_fit`'s own `pcov` definition.  It is used
+  whenever GN runs.  §C.2's `_center_variance` (written in Task 2) is used when
+  `GN_ITER = 0`.  The median ratio to legacy `fitcov[1,1]` is 1.000 on both
+  data sets.
+- **Rescue** (`ARCFIT_RESCUE_ITER = 20`, a new constant; 0 restores Q4(a)).
+  Lines that `attempt` but are not `ok` after the analytic fit and polish, and
+  that have more than 3 finite pixels, get the moment seed plus up to 20 GN
+  iterations.  Only lines that also fail this go to `curve_fit`.
+- **Post-GN centroids are not restricted to the window**, just as `curve_fit`
+  does not restrict them.  The `|u0| <= umax` guard now applies only to the
+  analytic seed, where it stops extrapolation.  Keeping it after GN had pushed
+  ~90 converged lines back to `curve_fit`.
+- **Fallback hardening.**
+    - Lines whose window has a non-finite pixel are kept out of `curve_fit`:
+      legacy raised an uncaught `ValueError` on them.
+    - If `curve_fit` returns non-finite parameters, all four outputs become
+      **−999**.  Legacy leaked NaN there, which slips past `flexure.py:90`'s
+      `== -999.0` check.
+    - A non-finite `centerr` on a finite fit becomes `inf`, legacy's
+      "covariance could not be estimated" value.
+- **`ARCFIT_GN_ITER = 3`**, per the accepted Q3 (see Q7).  The docstrings
+  describe the analytic → polish → rescue → `curve_fit` cascade.
+
+**Measured** (`scripts/arcfit/arcfit_sweep.py`; best of 3; the "accepted"
+column applies `detect_lines`' cuts):
+
+| data | config | `fit_arcspec` | speedup | `curve_fit` calls | accepted (legacy) | median \|Δc\| |
+|---|---|---|---|---|---|---|
+| sky, 4 259 lines | legacy | 2.35 s | 1× | 4 259 | 3 748 | — |
+| | GN 0, no rescue | 1.09 s | 2.1× | 563 | 3 803 | 4e-2 |
+| | GN 3, no rescue | 1.12 s | 2.1× | 569 | 3 735 | 3e-4 |
+| | **GN 3, rescue 20** | **0.097 s** | **24.1×** | **36 (0.8%)** | **3 762** | 5e-4 |
+| | GN 10, rescue 20 | 0.112 s | 20.9× | 36 | 3 766 | 8e-6 |
+| DEIMOS, 10 170 lines | legacy | 4.68 s | 1× | 10 170 | 7 887 | — |
+| | GN 0, no rescue | 1.95 s | 2.4× | 678 | 7 763 | 1e-2 |
+| | GN 3, no rescue | 1.93 s | 2.4× | 679 | 7 765 | 1e-6 |
+| | **GN 3, rescue 20** | **0.29 s** | **16.1×** | **5 (0.05%)** | **7 767** | 1e-6 |
+| | GN 10, rescue 20 | 0.35 s | 13.3× | 5 | 7 838 | 1e-7 |
+
+Notes on the table:
+- **Rescue fidelity.**  At 100 iterations with no early stop, every one of the
+  678 DEIMOS rescue lines agreed with legacy after the cuts: 66 kept by both
+  and within 0.02 px, 612 rejected by both.  The accepted set is the same at
+  20 iterations.  On the blended sky, 26 of 563 converged to a different local
+  minimum than `curve_fit` (i.e. disagree by more than 0.02 px).
+- **Rescue cap.**  At 100 the rescue cost 0.85 s on DEIMOS, because a few
+  slow-converging saturated lines keep every call iterating at ~110 µs per
+  iteration.  20 gives 16× with the same accepted lines.
+- **Lost DEIMOS lines (shipped config): 122.**  98% have peaks above 30k and
+  86% are flat-topped, the same population as in Task 2.  This is Q6(b),
+  accepted.  `GN = 10` recovers 71 of them (Q7).
+- **`test_detect_lines` count: 3 762** (legacy 3 748, +14), within Q3's
+  agreed band.
+
+**§C.4 edge cases walked** (`scripts/arcfit/arcfit_edge_cases.py`, new
+against legacy):
+
+| case | result |
+|---|---|
+| negative wings | vectorized, matches legacy |
+| zero-flux, all-negative and constant windows | legacy NaN → now −999 |
+| NaN pixel | vectorized; legacy *raised* |
+| peaks at index 0/1/N−2/N−1 | vectorized, exact |
+| too few positive pixels | rescued |
+| upward parabola | `curve_fit` fallback (legacy result) |
+| singular matrix | guarded, then fallback |
+| `exp()` overflow (1e300) | fallback; `centerr` NaN → inf |
+| saturated plateau | vectorized |
+| centre 4 px outside the window | vectorized, 34.5 |
+| `sz_p == 0` | empty arrays |
+
+No case raises, and no NaN is returned anywhere.
+
+**Tests:** `pytest pypeit/tests` (`pypeit14b`): **917 passed** (303 s).
+
+**Scripts saved** to `pypeitdev/speed_up/scripts/arcfit/`: `arcfit_load.py`,
+`arcfit_sweep.py`, `arcfit_edge_cases.py` and `arcfit_lost_lines.py`.  They
+need `REDUX_OUT/keck_deimos/600ZD_M_6500/Calibrations/WaveCalib_*`.
+
+**For you to commit:** `PypeIt/pypeit/core/arc.py`, and in the dev suite
+`claude_prompts/speed_up/C.md` and `pypeitdev/speed_up/scripts/arcfit/`.
+Q7 is open.  Task 4's tests will pin down the cascade, including a test that
+no `curve_fit` call happens on clean data, which now holds with the rescue.
