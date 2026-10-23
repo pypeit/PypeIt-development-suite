@@ -807,3 +807,65 @@ need `REDUX_OUT/keck_deimos/600ZD_M_6500/Calibrations/WaveCalib_*`.
 `claude_prompts/speed_up/C.md` and `pypeitdev/speed_up/scripts/arcfit/`.
 Q7 is open.  Task 4's tests will pin down the cascade, including a test that
 no `curve_fit` call happens on clean data, which now holds with the rescue.
+
+### 2026-10-22 (Task 4 — tests, micro-benchmark; `ARCFIT_GN_ITER = 10` per Q7)
+
+**Q7 → `ARCFIT_GN_ITER = 10`.**  You committed `arc.py` with it as
+`f1cef0d11` ("3") while this task ran.  With it, **`test_detect_lines` gives
+`len(arx_w)` = 3 766**: legacy 3 748, +18, inside Q3's agreed band, and above
+the 3 275 threshold.  No investigation needed.
+
+**`pypeit/tests/test_arc.py`** (module-level functions, fixed seeds).  Two
+helpers:
+- `_synthetic_arc(nspec=4096, spacing=20, fwhm=4, noise=1, seed=42)` puts
+  lines on a regular grid with ±2 px jitter, amplitudes 10^1.5–10^3.5, and
+  σ = fwhm/2.355 × U(0.9, 1.1).  §C.5's generator kept only 36 of 200 lines
+  after its spacing cut; this one gives 203;
+- `_legacy_fit` flips `USE_VECTORIZED_ARCFIT` through `monkeypatch.context`,
+  not the sketch's try/finally.
+
+Tests:
+- `test_fit_arcspec_recovers_truth`.  The tolerances are relaxed from the
+  sketch's 0.05 px / 5% max to medians of < 0.01 px and < 2%, and maxima of
+  < 0.1 px and 10%.  The faintest lines (S/N ~ 30) reach 0.058 px, which is
+  the noise and is the same for legacy.
+- `test_fit_arcspec_matches_curve_fit`: centroid < 0.02 px, and width,
+  amplitude and **`centerr`** within 2%.  The measured maximum is 2e-7 px, and
+  the `centerr` ratio is 1.0000.
+- `test_fit_arcspec_analytic_only` (new): `GN = 0`, rescue 0, median |Δc| vs
+  legacy < 0.005 px (measured 2e-5).
+- `test_fit_arcspec_kill_switch` (new): with the switch off, the output is
+  bit-identical to `_fit_arcspec_curvefit`.
+- `test_fit_arcspec_edge_cases`:
+    - the sketch's case: the all-negative and zero windows return −999, the
+      delta spike returns 32, and there is no NaN;
+    - lines at index 0, 1, N−2 and N−1, recovered to 1e-4;
+    - a NaN pixel (legacy raised);
+    - empty `pixt`.
+- `test_fit_arcspec_negative_wings` (new): a −30 offset puts the outer window
+  pixels below zero.  The fit must not call `curve_fit`, and must equal it to
+  1e-6.
+- `test_fit_arcspec_no_curve_fit_on_clean_data`: `fitting.fit_gauss` is
+  monkeypatched to raise.
+
+**Mutation check.**  I made GN use only the positive pixels (`fpm = gpm`).
+At first only `edge_cases` failed, because a −8 offset left every window
+pixel positive.  The offset is now −30, with an assertion that two pixels are
+negative, and the mutation fails both tests.  `arc.py` was restored from a
+copy; it is identical to `f1cef0d11`.
+
+**`pytest pypeit/tests` (`pypeit14b`): 924 passed** (917 + 7 new), 305 s.
+
+**Micro-benchmark** (`scripts/arcfit/arcfit_microbench.py`; best of 5
+vectorized, best of 2 legacy; for the PR description):
+
+| input | lines | legacy | vectorized | speedup | per line |
+|---|---|---|---|---|---|
+| synthetic (`_synthetic_arc`, nspec 40 960) | 2 046 | 437 ms | 16.6 ms | **26×** | 214 → 8.1 µs |
+| Paranal sky | 4 259 | 2 279 ms | 111 ms | **21×** | 535 → 26 µs |
+
+The DEIMOS figure at `GN = 10` / rescue 20 is 13.3× (Task 3).
+
+**For you to commit:** `PypeIt/pypeit/tests/test_arc.py`; in the dev suite,
+`claude_prompts/speed_up/C.md` and
+`pypeitdev/speed_up/scripts/arcfit/arcfit_microbench.py`.  No new questions.
