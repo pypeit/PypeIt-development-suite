@@ -613,7 +613,7 @@ mention the fragility in the report and release notes as a known limitation,
 and open a GitHub issue on `pypeit/PypeIt` (with the slit-11 numbers and the
 slit-9 suspicion) once you have had a look.  Say if you want the issue filed
 now, or want me to dig into slit 9 first.
->A:
+>A:  Leave the pipeline alone in PR C.  Mention the fragility in the report and release notes as a known limitation.  But do not file an Issue on GitHub.
 
 ## Logging
 
