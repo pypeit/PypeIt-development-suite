@@ -360,6 +360,7 @@ the old spec1d (B.md QP7, left unfixed in the harness).
     - the dev-suite RMS table for both `GN_ITER` variants;
     - the re-profiling numbers, and the A+B+C totals;
     - the kill switch, and the remaining risks.
+    - A discussion of how including saturated lines can improve the fit (by more IDs)
 
    Use the `dataviz` skill for the figures, and keep the plotting scripts
    under `pypeitdev/speed_up/scripts/` so the figures can be regenerated.
@@ -551,6 +552,50 @@ shipped variant through the dev suite (~2.5 h; the legacy baseline in
 stands.
 >A:  Yes, let us ship A but allow B as an option.  The report and docs should 
 discuss this at length.
+
+**Q9 — Expose option (B) as a user parameter?**  Per Q8, (B) is available
+through the module constant `pypeit.core.arc.ARCFIT_MATCH_CURVEFIT = False`.
+That is reachable from Python (and from the dev-suite hook), but **not from a
+`.pypeit` file**.  Making it a real option would mean:
+- a new `[rdx]` parameter, e.g. `arcfit_match_curvefit = True`, applied in
+  `PypeIt.__init__` the way #2211 applies `fit2d_chunk`;
+- adding it to the `cfg` that `parallel._worker_init` re-applies in
+  `forkserver`/`spawn` workers;
+- `doc/pypeit_par.rst` regenerated, plus a test.
+
+`detect_lines` has many callers (wavelength calibration, tilts, object
+finding, flexure), so a single global switch is the natural granularity.
+**My default is to leave it as a module constant**, documented in the
+release notes and the API docs, because (B) is an expert/speed option whose
+caveat (identification flips) users should not stumble into.  Say if you want
+the parameter.
+>A: Yes, I want a new user parameter. It should be an item in `WavelengthSolutionPar`
+
+**Q10 — Cache the archive-sky FWHM in spectral flexure?**  The DEIMOS (A)
+profile (`--ncpu 1`, 10 094 s) shows that **571 s of the 655 s spent in
+`detect_lines`** comes from a single caller: `autoid.measure_fwhm`, called
+**170 times** by `flexure.get_archive_spectrum` (`flexure.py:944`).  Each call
+measures the FWHM of the **same archived sky spectrum** (`sky_file`), once per
+slit, at 3.4 s each.  The code's own comment at that line says it is meant to
+"avoid the performance hit from calling it on the archive sky spectrum
+multiple times", but it does not.  This is also most of the residual
+`curve_fit` load under (A): 319 k calls, 494 s.  Blended sky lines often fail
+to converge and are handed off.
+- **Fix:** memoize the archive FWHM per `sky_file`, e.g. a small
+  `functools.lru_cache` helper around `load_sky_spectrum` + `measure_fwhm`.
+  The output is **bit-identical**, since it is the same deterministic
+  computation on the same file.  It should remove ~560 s from (A), more from
+  legacy, and make (A) versus (B) nearly moot for DEIMOS.
+- **Scope:** it is outside the original PR C plan, but one function and
+  directly motivated by PR C's profiling.  One caveat for Q9: because this
+  cost sits in *flexure*, the wavelength-only `fast_line_fit` parameter would
+  not have touched it.
+
+**My recommendation: add the cache in PR C**, with a unit test that a second
+call does not re-measure, and record its gain separately from the arc-fit
+gain.  It would go in after the current batch, which must not have
+`pypeit/` changed under it, and would need one extra DEIMOS profile (~3 h).
+>A: Yes, let's do this
 
 ## Logging
 
@@ -1097,3 +1142,217 @@ as the baseline for the next run; `gn0/` can be deleted.
 (`arcfit_vet.sh`, `variant_hook/`, `arcfit_metrics.py`, `arcfit_slitdiff.py`,
 `arcfit_gained_lost.py`, `prototype_defer_to_curvefit.patch`).
 **Task 5 waits on Q8.**
+
+### 2026-10-23 (Task 6 — in progress: option A applied with B as a switch; profiling batch running)
+
+**Q8 → ship (A), keep (B) as an option.**
+- The prototype patch was applied to `pypeit/core/arc.py`, with the three
+  hand-off rules gated by the new module constant
+  **`ARCFIT_MATCH_CURVEFIT = True`**: non-converged polish lines,
+  non-converged rescue lines, and fits with σ < `ARCFIT_MIN_WIDTH` (0.35) ×
+  the window half-width.  False gives (B).
+- `_gauss_newton_refine` now also returns a per-line `converged` flag, and
+  takes `xtol` alongside `tol`.  The docstrings of `fit_arcspec` and both
+  constants describe the trade-off.
+- **Tests:**
+    - `test_fit_arcspec_negative_wings` now runs with
+      `ARCFIT_MATCH_CURVEFIT = False`, since it tests the vectorized path
+      itself.  Its noise-free, pedestal-offset line converges only linearly
+      and hits the cap;
+    - new `test_fit_arcspec_narrow_features`: under (A) a hot pixel goes to
+      `curve_fit` and gets exactly its result; under (B) it does not, and
+      comes back narrow;
+    - new `test_detect_lines_matches_curve_fit`: on the Paranal sky, (A)
+      accepts exactly legacy's lines, with centroids within 0.02 px.
+
+  `pytest pypeit/tests`: **926 passed**.
+- **Changelog** rewritten for (A)/(B) ("about twice as fast"; the
+  `ARCFIT_MATCH_CURVEFIT = False` option and its caveat), and the Testing
+  bullet extended.  `make clean; make htmlnoex`: rc 0, **0 warnings**, and the
+  `:data:` cross-references resolve.  The stray `doc/api/pypeit.coadd2d.rst`
+  blank-line change was reverted again.
+- **Q9** posed: expose (B) as an `[rdx]` parameter?
+
+**Batch** `scripts/arcfit/arcfit_task6.sh`, as the user service
+`pypeit-arcfit-task6` (`MemoryMax=120G`).  Started 2026-10-23 07:08 on HEAD
+`88337631c`, plus the uncommitted (A) changes (2 dirty files).  Progress is
+logged to `REDUX_OUT_C/task6_progress.txt`.  In order:
+1. the dev suite for variant **A** (`REDUX_OUT_C/A`; completes Task 5 for the
+   shipped code);
+2. cProfile `--ncpu 1` of Kast under legacy, A and B;
+3. cProfile `--ncpu 1` of DEIMOS 600ZD under A, then legacy;
+4. uninstrumented DEIMOS `--ncpu 4` (B's `run_with_rss.py` +
+   `instr_run_pypeit.py` recipe) under A, then legacy;
+5. cProfile DEIMOS under B.
+
+Notes:
+- The variant hook now accepts `A`/`B`.  The earlier `gn10` run equals `B`.
+- The profile scripts take `--tag`, and the artifacts are
+  `Reports/<stem>_C_<variant>.*`.
+- Legacy is re-profiled at the current HEAD because no serial DEIMOS profile
+  exists on the current code (see "After the B port").
+- The profile scripts reduce in place in `REDUX_OUT/<setup>`, so the main
+  `REDUX_OUT` DEIMOS and Kast products will be those of the last run, B.
+
+The expected duration is ~13 h.  **Do not edit `pypeit/` while it runs**;
+committing is fine.
+
+### 2026-10-23 (Q9 → `[calibrations][wavelengths] fast_line_fit`, built in a worktree; port waits for the batch)
+
+**Q9 answered: a user parameter in `WavelengthSolutionPar`.**  The batch was
+running on the editable `pypeit/` tree, so the work is in a **separate git
+worktree, `/mnt/tank/Astronomy/PypeIt/PypeIt_C_par`** (detached at
+`88337631c`).  It holds copies of the uncommitted (A) changes, plus the
+ignored `pypeit/pkg/version.py` and `pypeit/version.py`, and is tested with
+`PYTHONPATH` pointing at it.
+
+**Design.**
+- **`fast_line_fit`** (bool, default **False**, meaning option A) is a new
+  `WavelengthSolutionPar` key.  It has a description, an `__init__` argument
+  and a `from_dict` key.
+- It is applied by **`BuildWaveCalib.run`**, whose whole body now runs inside
+  a new context manager, **`arc.arcfit_options(match_curvefit=not
+  fast_line_fit)`**.  The context manager sets `arc.ARCFIT_MATCH_CURVEFIT`
+  temporarily and restores it in a `finally`.  `git diff -w` on
+  `wavecalib.py` is just the two added lines.
+- Why a context manager rather than threading a keyword through
+  `detect_lines`: ~15 wavelength-calibration call sites reach `fit_arcspec`,
+  several without `par` at hand (`autoid.py:527/541/783/792/1140`,
+  `wvutils.py:347/502/625`).
+- Consequences:
+    - the parameter affects **only the wavelength calibration**, as its
+      location suggests; tilts, object finding and flexure keep the default
+      (A);
+    - it works unchanged in `--ncpu` workers, because each worker runs
+      `BuildWaveCalib.run` itself.  No `parallel._worker_init` `cfg` entry is
+      needed, unlike `fit2d_chunk`;
+    - `ARCFIT_MATCH_CURVEFIT` remains the all-callers switch.
+
+**Tests** (in `test_arc.py`):
+- `test_arcfit_options`: sets and restores the option, including on an
+  exception, and a `None` argument is a no-op;
+- `test_fast_line_fit_par`: the default is False, and
+  `[calibrations] [[wavelengths]] fast_line_fit = True` parses through
+  `PypeItPar.from_cfg_lines`;
+- `test_wavecalib_applies_fast_line_fit`: a stubbed `extract_arcs` records the
+  option seen inside `run` (False for `fast_line_fit=True`, and vice versa),
+  and the default is restored afterwards.
+
+Worktree `pytest pypeit/tests`: **929 passed**.
+
+**Docs.**  `doc/scripts/build_par_rst.py` adds one row, for
+`fast_line_fit`, to `doc/pypeit_par.rst`.  Release notes:
+- a new **Functionality** bullet (vectorized line fitting; `fast_line_fit`);
+- the Under-the-hood bullet now points to the parameter;
+- the Testing bullet is extended.
+
+The "roughly halves its cost" and "more than 10 times faster" wording is
+provisional until the Task 6 profiles are in.
+
+**Port plan, once `pypeit-arcfit-task6` finishes.**  I am deliberately not
+porting now:
+- it would change the code under the running dev-suite and profiles;
+- with the new wrapper, the hook's `B` variant would be overridden to (A)
+  inside the wavelength calibration, which would invalidate the B profile.
+
+Once it finishes:
+1. copy the worktree's `pypeit/core/arc.py`, `pypeit/par/pypeitpar.py`,
+   `pypeit/wavecalib.py`, `pypeit/tests/test_arc.py`, `doc/pypeit_par.rst` and
+   `doc/releases/2.1.0dev.rst` over the main tree (the main tree's copies are
+   unchanged since the worktree was made);
+2. run `pytest` and `make htmlnoex`;
+3. `git worktree remove`.
+
+The batch's B profile is therefore the all-callers B
+(`ARCFIT_MATCH_CURVEFIT = False`), and its A profile equals the default of
+the final code.
+
+### 2026-10-23 (Task 6 — batch complete: Task 5 for A, DEIMOS/Kast profiles, `--ncpu 4`; `fast_line_fit` ported)
+
+The batch `pypeit-arcfit-task6` ran 07:08–20:10, and every step returned
+rc 0.  Progress log: `REDUX_OUT_C/task6_progress.txt`.
+
+**Task 5 for the shipped (A).**  The dev suite for variant A
+(`REDUX_OUT_C/A`) passed **35/35**, and its **vet outcomes are identical to
+legacy**.  `arcfit_metrics.py legacy A gn10` is in
+`REDUX_OUT_C/arcfit_metrics_A.md`:
+- 37 of 38 WaveCalib files match legacy (median max |Δλ| 1.4e-6 px), with
+  the same line counts and RMS;
+- the one exception is `600ZD_M_6500` MSC03.  It has 1 812 lines against
+  1 804, its median RMS improves from 0.2656 to 0.2579, and one slit moves by
+  up to 31 px.  This remains to be traced;
+- for comparison, B (`gn10`) had 10 files above 0.05 px.
+
+**DEIMOS 600ZD, `--ncpu 1`, cProfile, current HEAD** (`Reports/
+keck_deimos_600zd_m_6500_C_{legacy,A,B}.*`):
+
+| variant | wall | `fit_arcspec` | `fit_gauss` calls / cum | `measure_fwhm` (flexure) |
+|---|---|---|---|---|
+| legacy | 10 420 s | 851 s | 1 114 679 / 846 s | 801 s |
+| **A (shipped)** | **10 095 s (−326 s, −3.1%)** | 526 s | 319 275 / 494 s | 571 s |
+| B | 9 554 s (−867 s, −8.3%) | 44 s | 10 013 / 20 s | 126 s |
+
+- **The baseline is reproduced:** legacy's 1.11 M `fit_gauss` calls and 846 s
+  match the June profile (1.11 M, 840 s).
+- **The vectorized work itself costs very little:** `_gauss_newton_refine`
+  is 24 s under (A) and 19 s under (B).
+- **(B)'s fit is 19× faster than legacy's.**  (A)'s is only 1.6× faster,
+  because its hand-off goes to `curve_fit`, which is mostly spent on lines
+  that then fail.
+- **94% of legacy's arc-fit cost is `measure_fwhm` inside spectral
+  flexure:** the archive-sky FWHM, recomputed 170 times.  That is **Q10**,
+  still open.  A cache would remove ~800 s from legacy and ~560 s from (A),
+  i.e. more than PR C's change to the fit itself.
+
+**DEIMOS `--ncpu 4`, uninstrumented** (`REDUX_OUT_C/_ncpu4/{A,legacy}`, B's
+`run_with_rss` recipe):
+
+| | legacy | A |
+|---|---|---|
+| wall | 3 400.2 s | 3 368.6 s (−32 s, −0.9%) |
+| calibrations | 1 480.1 s | 1 487.9 s |
+| image processing | 76.7 s | 78.2 s |
+| extraction | 660.7 s | 624.7 s |
+| peak PSS | 36.7 GB | 36.6 GB |
+
+At `--ncpu 4`, C's gain is within run-to-run noise (B measured 2.9% of
+scatter).  As anticipated, it is a serial-time gain.  B's 3 391 s on older
+code matches legacy here.
+
+**Kast, `--ncpu 1`, cProfile** (`Reports/shane_kast_blue_A_C_*`):
+
+| | legacy | A | B |
+|---|---|---|---|
+| wall | 88.5 s | 88.4 s | 100.7 s |
+| `fit_arcspec` | 0.75 s | 0.47 s | 0.22 s |
+| `curve_fit` calls | 1 297 | 109 | 5 |
+
+The wall differences are machine noise (B is slower despite the fastest fit).
+§C.7's "~1–3 s off Kast" is in fact 0.3–0.5 s.
+
+**`fast_line_fit` ported to the main tree** after the batch:
+- the main tree's six files were checked as unchanged, and the worktree's as
+  pure supersets (except the intended release-note rewrites);
+- copied over; `pytest pypeit/tests` **929 passed**; `make clean; make
+  htmlnoex` rc 0, **0 warnings**;
+- `doc/api/pypeit.coadd2d.rst` reverted again; worktree removed.
+
+The uncommitted files are `pypeit/core/arc.py`, `pypeit/par/pypeitpar.py`,
+`pypeit/wavecalib.py`, `pypeit/tests/test_arc.py`, `doc/pypeit_par.rst` and
+`doc/releases/2.1.0dev.rst`.
+
+**Release-note wording to fix:** "about twice as fast" stands (fit 1.6×), but
+"more than 10 times faster" for `fast_line_fit` overstates the
+wavelength-only case.  B's 19× applies to all callers, and most of the cost
+is in flexure, which the wavelength-only parameter does not reach.  I will
+rephrase this once Q10 is settled.
+
+**Still to do for Task 6:**
+- trace the `600ZD` MSC03 slit;
+- check the spec1d `WAVE_RMS` and the QA arc-fit PNGs;
+- the "after-C" section of `speed_up_results.md` (A+B+C totals: serial
+  12 390 → 10 095 s, i.e. B's #2211 and A's merges plus C; `--ncpu 4`
+  3 369 s);
+- the pre-merge notes.
+
+These wait on **Q10**, because the cache would change every number above.
