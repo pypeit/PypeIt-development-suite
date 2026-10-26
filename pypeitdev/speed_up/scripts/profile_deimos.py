@@ -72,9 +72,14 @@ def main():
                     help="Pass --ncpu N through to run_pypeit and suffix the "
                          "output artifact stems with _ncpu{N} so existing "
                          "baselines are not overwritten.")
+    ap.add_argument("--tag", default=None,
+                    help="Suffix for the output artifact stems (e.g. C_A), so "
+                         "runs of different code variants do not overwrite "
+                         "each other.")
     cli = ap.parse_args()
 
-    stem = STEM + (f"_ncpu{cli.ncpu}" if cli.ncpu is not None else "")
+    stem = STEM + (f"_ncpu{cli.ncpu}" if cli.ncpu is not None else "") \
+                + (f"_{cli.tag}" if cli.tag else "")
     prof_out = REPORTS / f"{stem}.prof"
     meta_out = REPORTS / f"{stem}.runmeta.json"
     log_copy = REPORTS / f"{stem}.run.log"
