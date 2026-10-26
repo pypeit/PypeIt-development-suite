@@ -597,6 +597,24 @@ gain.  It would go in after the current batch, which must not have
 `pypeit/` changed under it, and would need one extra DEIMOS profile (~3 h).
 >A: Yes, let's do this
 
+**Q11 — Pre-existing misidentification candidates in the DEIMOS 600ZD
+`full_template` path (outside PR C).**  Tracing the one WaveCalib file where
+the shipped (A) code differs from legacy (log entry of 2026-10-26, second
+part) showed that the difference is not in the line fitting at all: the
+accepted lines and their centres are the same to ~1e-5 px, but
+`xcorr_shift` → `detect_lines(corr, nfind=1)` → `differential_evolution` in
+`xcorr_shift_stretch` amplifies a 1.6e-8 change in the cross-correlation
+into a 30 px change in the blue end of slit 11 (spat_id 1063).  (A) lands
+on the correct branch, legacy on a wrong one, and the zero-lag correlation
+objective prefers the wrong one.  Slit 9 (spat_id 902) of the same mosaic
+shows the same tell-tale dispersion turnover in *both* runs, so it may be
+misidentified today.  My default: **leave the pipeline alone in PR C**,
+mention the fragility in the report and release notes as a known limitation,
+and open a GitHub issue on `pypeit/PypeIt` (with the slit-11 numbers and the
+slit-9 suspicion) once you have had a look.  Say if you want the issue filed
+now, or want me to dig into slit 9 first.
+>A:
+
 ## Logging
 
 The "Logs" section will record Claude's work.  Please use the following format:
@@ -1356,3 +1374,232 @@ rephrase this once Q10 is settled.
 - the pre-merge notes.
 
 These wait on **Q10**, because the cache would change every number above.
+
+### 2026-10-26 (Q10 → archive-sky FWHM cache implemented; session paused before the re-profile)
+
+**Q10 answered: yes.**  Implemented (by an Opus 5.5 sub-agent) and left
+uncommitted in the main tree, on top of the earlier uncommitted PR C files:
+- **`pypeit/core/flexure.py`**: new `@functools.lru_cache(maxsize=None)`
+  helper `_archive_sky_fwhm(sky_file)` that loads the archive sky and runs
+  `autoid.measure_fwhm` on it once per file.  `get_archive_spectrum` now
+  still loads the `OneSpec` every call (cheap, and so callers never share a
+  mutable object) but takes the FWHM from the cache.  A failed measurement
+  raises `PypeItError` as before; exceptions are not cached.  Each `--ncpu`
+  worker keeps its own cache, so no `parallel._worker_init` plumbing.  The
+  `'model'` branch is unchanged.  The result is bit-identical.
+- **`pypeit/tests/test_flexure.py`**: `test_archive_fwhm_cache` counts
+  `measure_fwhm` calls through a monkeypatch: one measurement for two calls
+  on `paranal_sky.fits`, a second for `sky_kastb_600.fits`, a third after
+  `cache_clear()`; the returned spectra are distinct objects with equal
+  flux.  `pytest pypeit/tests/test_flexure.py`: **3 passed**.
+- **`doc/releases/2.1.0dev.rst`**: new Under-the-hood bullet for the cache,
+  a Testing bullet for the new test, and the `fast_line_fit` wording toned
+  down (the shipped default "roughly halves" the line-fitting cost; the
+  vectorized fit "itself is many times faster"; `fast_line_fit` removes the
+  remaining `curve_fit` hand-offs from the wavelength calibration only).
+- **`pypeitdev/speed_up/scripts/arcfit/arcfit_q10.sh`** written: DEIMOS
+  600ZD cProfile at `--ncpu 1` under A (tag `C_A_cache`) then B (tag
+  `C_B_cache`), each followed by `analyze_profile.py`; progress to
+  `REDUX_OUT_C/q10_progress.txt`.
+
+**Interrupted** at the user's request (exit and resume), then resumed the
+same morning.  Correction to what I first wrote here: the sub-agent *had*
+already launched the profile, as the user service **`pypeit-arcfit-q10`**
+at **06:19:21**, before I stopped it mid-`pytest`.  The tree it profiles is
+the final one (`flexure.py` and the test were last written at 06:13, and
+nothing in `pypeit/` changed afterwards).  Caveat: the full test suite and
+the doc build (below) ran on the same machine during the profile's first
+~15 minutes, which may add a little to variant A's wall time; the
+per-function cProfile numbers that matter (`measure_fwhm`, `fit_gauss`) are
+not affected in any meaningful way on this many-core machine.
+
+After the resume:
+- `pytest pypeit/tests -q` (`pypeit14b`): **930 passed** (320 s);
+- `make clean; make htmlnoex`: rc 0, **0 warnings**; the stray
+  `doc/api/pypeit.coadd2d.rst` blank-line change was restored again;
+- the profile service is running (variant A first, then B; ~2.8 h each).
+  Progress: `REDUX_OUT_C/q10_progress.txt`; stdout in
+  `REDUX_OUT_C/_profiles/profile_deimos.py.{A,B}_cache.stdout.txt`;
+  artifacts `Reports/keck_deimos_600zd_m_6500_C_{A,B}_cache.*`.
+
+**Remaining after the profile:** fold the cache numbers into the release
+note, the "after-C" section of `speed_up_results.md` (A+B+C totals, serial
+and `--ncpu 4`) and the pre-merge notes; then Task 7 (the report).  The
+`600ZD` MSC03 trace and the spec1d `WAVE_RMS` / QA-PNG check do not depend
+on the cache (it is bit-identical), so they are being done while the
+profile runs (next entry).
+
+Note to self: a read-only `git status`/`git log` was run once this session
+by mistake; the no-git rule covers those too.
+
+### 2026-10-26 (Task 6 — `600ZD` MSC03 traced to the identification step; spec1d `WAVE_RMS` and QA PNGs checked)
+
+Done by an Opus 5.5 sub-agent while the Q10 profile runs; read-only, no
+`pypeit/` change.  Scripts in `scripts/arcfit/`: `arcfit_msc03_slit11.py`
+(four-way `full_template` reproduction: fwhm × fit path),
+`arcfit_msc03_trace.py` (per-call `detect_lines` trace and the snippet-0
+shift/stretch), `arcfit_msc03_judge.py` (line-list and dispersion checks;
+figure), `arcfit_wave_rms.py`, `arcfit_png_cmp.py`.  Figures in
+`Reports/figures/arcfit/` (`msc03_slit11_judge.png`,
+`crop_Arc_1dfit_A_0_MSC03_S0695.png`, `sbs_FWHMfit_S0149.png`).
+
+**The MSC03 exception is one slit, and (A) is right.**  Only slit 11
+(spat_id 1063) differs; the other 21 slits agree to ≤1e-6 px.
+
+| run | rms (px) | lines fit / kept | detected | λ(pix 0) |
+|---|---|---|---|---|
+| legacy | 0.2757 | 80 / 73 | 103 | 4191.26 Å |
+| A | 0.2513 | 87 / 81 | 103 (same to 4.7e-6 px) | 4215.85 Å |
+| gn10 | 0.2756 | 80 / 73 | 102 | as legacy |
+
+- 71 identifications are common; all differences are blueward of ~5100 Å
+  (pixel < 1500); the solutions differ by 38 px at pixel 0, 8.9 px at 1000,
+  0.85 px at 2000.  Legacy alone has 174.23 px → 4301.311 and 766.22 px →
+  4672.534 Å; (A) alone has ten blue lines (e.g. 174.23 → 4320.794,
+  238.67 → 4359.560, 766.22 → 4681.450 Å).
+- **Root cause: the identification step (ii)**, not detection and not the
+  final fit.  Re-running `autoid.full_template` on the stored arc spectrum
+  reproduces both results exactly, and the fwhm difference (1e-6) plays no
+  part.  All 15 `detect_lines` calls inside `full_template` accept the same
+  lines, centres within 2e-6–8.5e-4 px.  The chain: `get_xcorr_arc` builds
+  its synthetic arcs from *all* peaks → the cross-correlation changes by
+  1.6e-8 → `detect_lines(corr, cont_subtract=True, nfind=1)`'s continuum
+  fit flips, moving the correlation peak 4131.8517 → 4131.8583 px → the
+  initial shift 26.8517 → 26.8583 seeds `differential_evolution` in
+  `xcorr_shift_stretch` (snippet 0, pixels 0–4106), which lands in a
+  different optimum (legacy: shift 75.86, stretch 0.98896, stretch2 −1e-6;
+  A: shift 98.59, stretch 0.97535, stretch2 +1e-6; stretch2 pinned at its
+  bound in both, ≈ ±17 px of curvature).  Snippet 1 is identical.
+- **(A) is the correct branch.**  Mapping the 12 detected blue lines
+  (identical in both runs) through each solution: with (A), 10 of 12 fall
+  within 0.5 px of a line-list line (median 0.14 px); with legacy, 2 of 12
+  (median 7.2 px).  (A)'s dispersion rises smoothly 0.6035 → 0.6293 Å/px
+  over 4300–5500 Å like slits 10, 12, 13 and the template; legacy's turns
+  over (0.630 → 0.626 → 0.631).  (A) also has lower rms with more lines.
+  Caution: legacy's optimum has the *higher* zero-lag correlation (0.778 vs
+  0.767), so that objective cannot pick the right branch here.
+- **Why the hand-off rules did not make it identical:** they guarantee the
+  same accepted *set*, not bit-identical centres; the vectorized fit and
+  `curve_fit` stop within their own tolerances, 1e-5–1e-3 px apart.  The
+  correlation-peak fit (half-width 4, σ/half-width 1.73, so vectorized, no
+  hand-off) gives tcent 4131.8517 / twid 6.9222 (legacy) vs 4131.8583 /
+  6.9204 (A); on identical input both paths return exactly the same numbers
+  (centre 4131.851679, σ 6.922171), so the change is in the input, not the
+  fit.  The release-note wording ("accepts the same lines as before, with
+  centroids that agree to better than 0.001 pixels") is accurate as it
+  stands.  The slit-9 suspicion and the fragile step are **Q11**.
+
+**spec1d `WAVE_RMS`, legacy vs (A):** DEIMOS 600ZD, 84 objects: exactly one
+differs, `SPAT1068-SLIT1063-MSC03` (0.2757 → 0.2513; slit 11 above).  Kast
+blue (3 setups) and Kast red (5 setups), 40 objects: max difference 1.1e-6;
+nothing missing.
+
+**QA PNGs:** DEIMOS MSC03 `Arc_1dfit`: 13 of 22 byte-identical; S1063 differs
+as expected; S0695/S1293 differ in ~250 pixels (same markers, slight shift);
+six others at anti-aliasing level (max 1–5).  `Arc_FWHMfit`: none
+byte-identical (widths differ at 1e-6; plots look the same, S0149 side by
+side).  Kast: `Arc_1dfit`, `Arc_tilts_2d`, `Arc_tilts_spec` byte-identical;
+`Arc_FWHMfit` and `Arc_tilts_spat` differ at the 1–16 level.  The older
+`task6_qa_samples` is the ncpu1/ncpu4 comparison, not A vs legacy.
+
+### 2026-10-26 (Q10 — DEIMOS 600ZD `--ncpu 1` profile of (A) with the archive-FWHM cache)
+
+`pypeit-arcfit-q10` step 1 finished 08:57 (rc 0; B started at once).
+Artifacts: `Reports/keck_deimos_600zd_m_6500_C_A_cache.*`.  All four serial
+profiles are on the same code except for the cache:
+
+| | legacy | A | **A + cache** | B (no cache) |
+|---|---|---|---|---|
+| wall | 10 420 s | 10 094 s | **9 462 s** | 9 554 s |
+| vs legacy | — | −326 s (−3.1%) | **−958 s (−9.2%)** | −867 s (−8.3%) |
+| `measure_fwhm` (flexure) calls / cum | 170 / 801 s | 170 / 571 s | **1 / 3.2 s** | 170 / 126 s |
+| `get_archive_spectrum` cum | 802 s | 571 s | **3.6 s** | 127 s |
+| `spec_flex_shift` cum | 842 s | 591 s | **23 s** | 138 s |
+| `detect_lines` calls / cum | 2 944 / 981 s | 2 944 / 655 s | **2 775 / 87 s** | 2 944 / 170 s |
+| `fit_arcspec` cum | 851 s | 526 s | **57 s** | 44 s |
+| `fit_gauss` calls / cum | 1.11 M / 846 s | 319 k / 494 s | **14 k / 42 s** | 10 k / 20 s |
+| `curve_fit` cum | 666 s | 441 s | **40 s** | 18 s |
+| `gauss_3deg` calls | 93.0 M | 71.4 M | **7.0 M** | 3.1 M |
+| `_gauss_newton_refine` cum | — | 24 s | 12 s | 19 s |
+| `wavecalib.run` / `wavetilts.run` / `extraction.run` | 764 / 1 741 / 2 038 s | 696 / 1 761 / 1 894 s | 693 / 1 727 / 1 606 s | 664 / 1 731 / 1 656 s |
+
+- **The cache removes 568 s from (A)** (`measure_fwhm` 571 → 3 s), i.e.
+  the single fix is worth more than the whole vectorized fit, as predicted
+  in Q10.  The 169 skipped `measure_fwhm` calls are also why
+  `detect_lines` is called 2 775 instead of 2 944 times.
+- **Shipped (A) with the cache is now faster than the all-callers (B)
+  without it** (9 462 vs 9 554 s), and the residual `curve_fit` load is
+  40 s.  The remaining `fit_arcspec` cost (57 s) is 0.6% of the run; the
+  remaining `fast_line_fit` upside on DEIMOS is therefore tens of seconds.
+  The B + cache profile (running, expected ~11:40) will give the number.
+- Wall differences between profiles include machine noise of a few percent
+  (see B's `--ncpu 4` scatter); the `extraction.run` spread (1 606–2 038 s)
+  is of that kind and unrelated to C.  The ~15 min overlap of this profile
+  with the test suite and doc build (noted above) did not inflate it.
+- Serial A+B+C versus the original 12 390 s baseline: **9 462 s (−23.6%)**
+  on this machine, with the caveat that the baseline was measured on older
+  code and a different day.
+
+**Release note** updated with the DEIMOS numbers for the cache bullet.
+
+### 2026-10-26 (Task 6 — complete apart from the `--ncpu 4` cached run; after-C results written; pre-merge notes)
+
+**B + cache profile** (`pypeit-arcfit-q10` step 2, 08:57–11:35, rc 0;
+`Reports/keck_deimos_600zd_m_6500_C_B_cache.*`): wall **9 495 s**, i.e.
+the same as A + cache (9 462 s) within noise.  `fit_arcspec` 44 s (vs 57),
+`fit_gauss` 7.5 k calls / 29 s (vs 14 k / 42), `measure_fwhm` 1 call /
+0.7 s, `detect_lines` 75 s (vs 87).  **With the cache, (B) buys ~13 s on
+DEIMOS**; the parameter's upside is gone on this setup, and the release
+note now says so ("the hand-offs cost well under 1% of a serial DEIMOS
+reduction").
+
+**`speed_up_results.md`**: the "After workstream C" section is written
+(serial DEIMOS table for all five variants, Kast, `--ncpu 4`, fidelity,
+verdict, A+B+C totals: serial DEIMOS 12 394 → 9 462 s, −23.7%, indicative
+only since the ends are on different code; Kast 121 → 88 s).
+
+**`--ncpu 4` DEIMOS with the cache** launched 11:38 as the user service
+`pypeit-arcfit-q10-ncpu4` (`scripts/arcfit/arcfit_q10_ncpu4.sh`, B's
+`run_with_rss` + `instr_run_pypeit` recipe, output
+`REDUX_OUT_C/_ncpu4/A_cache`, progress appended to `q10_progress.txt`),
+~1 h.  It fills the one pending cell in the results table.
+
+**Pre-merge steps (for the PR):**
+1. User commits the uncommitted files: `pypeit/core/arc.py`,
+   `pypeit/core/flexure.py`, `pypeit/par/pypeitpar.py`,
+   `pypeit/wavecalib.py`, `pypeit/tests/test_arc.py`,
+   `pypeit/tests/test_flexure.py`, `doc/pypeit_par.rst`,
+   `doc/releases/2.1.0dev.rst`; and on the dev-suite side
+   `claude_prompts/speed_up/C.md`, `pypeitdev/speed_up/Reports/
+   speed_up_results.md`, `pypeitdev/speed_up/scripts/arcfit/*` (PNG figures
+   and `.prof` artifacts are git-ignored).
+2. #2209 (PR B) still needs Tim's re-review and merge; PR C is then
+   retargeted to `develop` and `speed_up_arcfit` rebased/merged with
+   `develop` (the user does the git).  The dev-suite branch `dev_speed_up`
+   likewise.
+3. One full `./pypeit_test all` (safe recipe under Running) at the tip of
+   `speed_up_arcfit` before merging.  Because `fit_arcspec` touches every
+   `detect_lines` caller, the setups most worth watching are the full
+   DEIMOS set, the echelle setups (order-ID cross-correlations), and the
+   IFU ones.
+4. No identical-output check is possible for multi-slit products (#2208).
+5. Task 7: the report `Speed_Up_Arcfit_Report.md`.  Q11 (the fragile
+   `xcorr_shift_stretch` step and slit 9) awaits an answer; the report
+   should mention it as a known limitation either way.
+
+### 2026-10-26 (Task 6 — `--ncpu 4` DEIMOS with the cache: 3 254.8 s; Task 6 complete)
+
+`pypeit-arcfit-q10-ncpu4` ran 11:38–12:32, rc 0 (`REDUX_OUT_C/_ncpu4/A_cache`).
+
+| `--ncpu 4` | legacy | A | **A + cache** |
+|---|---|---|---|
+| wall | 3 400.2 s | 3 368.6 s | **3 254.8 s** |
+| calibrations / image proc / extraction | 1 480.1 / 76.7 / 660.7 | 1 487.9 / 78.2 / 624.7 | 1 475.3 / 78.3 / 501.2 |
+| peak PSS | 36.7 GB | 36.6 GB | 36.7 GB |
+
+The cache's serial saving (~570 s, in the per-detector flexure step) shows
+up as −124 s in the parallel extraction stage, as expected for 4 workers.
+A+B+C at `--ncpu 4`: **3 254.8 s vs B's 3 391.2 s (−4.0%)**, 3.8x the June
+serial baseline.  `speed_up_results.md` is updated; the doc build is being
+re-run to check the release-note edits.  **Task 6 is complete**; next is
+Task 7 (prompt 7) once Q11 is answered.

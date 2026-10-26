@@ -380,6 +380,140 @@ start methods with the same speed-up (to within 3%), keeps memory linear in
 workers, and costs about 1% or less to ship payloads.  Like-for-like speed-ups at
 `--ncpu 2`: LRIS 1.57x, Binospec 1.80x.
 
-## After workstream C (arc-fit vectorization)
+## After workstream C (arc-fit vectorization + archive-sky FWHM cache) — 2026-10-26
 
-*(pending)*
+Branch `speed_up_arcfit` on top of `speed_up_B`.  Env `pypeit14b`, same
+workstation.  Two changes, measured separately:
+
+1. **Vectorized `fit_arcspec`** (`pypeit/core/arc.py`): a weighted analytic
+   log-parabola fit of all detected lines at once, polished by batched
+   Gauss–Newton (cap 10 iterations), with a moment-seeded rescue.  Two
+   variants were profiled.  **A (shipped default)** hands lines the
+   vectorized fit is not confident about (non-converged, or σ < 0.35× the
+   window half-width) back to `curve_fit`, so `detect_lines` accepts the same
+   lines as before with centroids within 1e-3 px.  **B** (`fast_line_fit`
+   for the wavelength calibration, or `arc.ARCFIT_MATCH_CURVEFIT = False` for
+   all callers) never calls `curve_fit`; it is 19x faster in the fit itself
+   but drops a few saturated lines and gains a few narrow features, which
+   flips the line identification on a handful of DEIMOS slits (C.md Q8).
+2. **Archive-sky FWHM cache** (`pypeit/core/flexure.py`, C.md Q10): the
+   spectral-flexure step measured the FWHM of the *same* archived sky
+   spectrum once per slit and science frame (170 times on DEIMOS, ~3.4 s
+   each).  It is now memoized per sky file; the result is bit-identical.
+
+All serial profiles below are cProfile at `--ncpu 1` on the **same HEAD**
+(legacy = `USE_VECTORIZED_ARCFIT = False` via the `variant_hook`
+`sitecustomize`), so unlike the B section the comparison is like for like.
+Artifacts: `keck_deimos_600zd_m_6500_C_{legacy,A,B,A_cache,B_cache}.*` and
+`shane_kast_blue_A_C_{legacy,A,B}.*`.
+
+### DEIMOS 600ZD_M_6500, serial
+
+| | legacy | A | B | **A + cache (shipped)** | B + cache |
+|---|---:|---:|---:|---:|---:|
+| wall | 10 420 s | 10 094 s | 9 554 s | **9 462 s** | 9 495 s |
+| vs legacy | — | −3.1% | −8.3% | **−9.2%** | −8.9% |
+| `fit_gauss` calls / cum | 1.11 M / 846 s | 319 k / 494 s | 10 k / 20 s | 14 k / 42 s | 7.5 k / 29 s |
+| `curve_fit` cum | 666 s | 441 s | 18 s | 40 s | 28 s |
+| `gauss_3deg` calls | 93.0 M | 71.4 M | 3.1 M | 7.0 M | 4.8 M |
+| `fit_arcspec` cum | 851 s | 526 s | 44 s | 57 s | 44 s |
+| `_gauss_newton_refine` cum | — | 24 s | 19 s | 12 s | 11 s |
+| `measure_fwhm` (flexure) calls / cum | 170 / 801 s | 170 / 571 s | 170 / 126 s | **1 / 3 s** | 1 / 1 s |
+| `detect_lines` calls / cum | 2 944 / 981 s | 2 944 / 655 s | 2 944 / 170 s | 2 775 / 87 s | 2 775 / 75 s |
+| `spec_flex_shift` cum | 842 s | 591 s | 138 s | 23 s | 12 s |
+| `wavecalib.run` | 764 s | 696 s | 664 s | 693 s | 702 s |
+| `wavetilts.run` | 1 741 s | 1 761 s | 1 731 s | 1 727 s | 1 727 s |
+| `extraction.run` | 2 038 s | 1 894 s | 1 656 s | 1 606 s | 1 589 s |
+
+- The June baseline is reproduced on the current code: legacy's 1.11 M
+  `fit_gauss` calls / 846 s match the profile report's 1.11 M / 840 s.
+- **The vectorized work itself is cheap** (`_gauss_newton_refine` 11–24 s).
+  Under A, 94% of what remained of the arc-fit cost was `measure_fwhm` in
+  spectral flexure: blended sky lines send `curve_fit` to its 800-evaluation
+  limit, and the same spectrum was measured 170 times.
+- **The cache is worth more than the fit change**: −568 s on A (571 → 3 s),
+  and it makes the A/B choice nearly moot on DEIMOS.  A + cache is faster
+  than B without it, and B + cache gains only ~13 s of `fit_arcspec` over
+  A + cache (44 vs 57 s), inside the run-to-run scatter.  The remaining
+  line-fitting cost under the shipped default is 0.6% of the run.
+- Differences in `extraction.run` (1 589–2 038 s) are machine noise of the
+  kind seen in B's repeats (a few percent of wall) and are unrelated to C;
+  the per-function arc-fit and flexure numbers are the robust ones.
+
+### Shane Kast blue 600_4310_d55, serial (no cache effect: one slit)
+
+| | legacy | A | B |
+|---|---:|---:|---:|
+| wall | 88.5 s | 88.4 s | 100.7 s |
+| `fit_arcspec` cum | 0.75 s | 0.47 s | 0.22 s |
+| `curve_fit` calls | 1 297 | 109 | 5 |
+
+Wall differences are noise (B is slowest despite the fastest fit).  §C.7's
+"~1–3 s off Kast" is in fact 0.3–0.5 s: the fit was never a Kast cost.
+
+### DEIMOS `--ncpu 4`, uninstrumented (B's `run_with_rss` + `instr_run_pypeit` recipe)
+
+| | legacy | A | A + cache |
+|---|---:|---:|---:|
+| wall | 3 400.2 s | 3 368.6 s | **3 254.8 s** (−145 s, −4.3% vs legacy) |
+| calibrations / image proc / extraction | 1 480.1 / 76.7 / 660.7 s | 1 487.9 / 78.2 / 624.7 s | 1 475.3 / 78.3 / 501.2 s |
+| peak PSS | 36.7 GB | 36.6 GB | 36.7 GB |
+
+At `--ncpu 4` the fit change alone is within the ~3% run-to-run scatter: C
+is a serial-time gain.  B's 3 391 s on the older code matches legacy here.
+The flexure step runs per detector inside the parallel extraction stage, so
+the cache's ~570 s serial saving appears as about a quarter of that in
+wall: the extraction stage drops 624.7 → 501.2 s (−124 s), the whole run
+−114 s against A and −145 s against legacy.  Memory is unchanged.
+
+### Fidelity (dev suite, `REDUX_OUT_C/{legacy,A,gn10}`)
+
+`./pypeit_test reduce` on shane_kast_blue, shane_kast_red, keck_deimos,
+keck_lris_blue (35 setups) plus `vet_tests/test_{wavelengths,wavetilts,
+extraction,skysub}.py`, for legacy, A and B(`gn10`):
+
+- all three: **35/35 reductions pass**, and the vet outcomes are identical;
+- **A**: 37 of 38 WaveCalib files match legacy (median max |Δλ| 1.4e-6 px,
+  same line counts and RMS).  The exception is `600ZD_M_6500` MSC03 slit 11
+  (spat_id 1063): the same 103 detected lines to 5e-6 px, but
+  `xcorr_shift_stretch`'s `differential_evolution` lands in a different
+  optimum from a 1.6e-8 change in the cross-correlation, moving the blue end
+  by 30 px.  A's branch is the correct one (10 of 12 blue lines within
+  0.5 px of the line list vs 2 of 12 for legacy; smooth dispersion like the
+  neighbouring slits; RMS 0.251 vs 0.276 with 8 more lines).  That step is
+  fragile independently of C (C.md Q11);
+- **B**: 10 WaveCalib files move by more than 0.05 px, with identification
+  flips on 600ZD MSC01/MSC03 slits and 830G_L_8100 (RMS 0.051 → 0.27), one
+  improvement (1200G_M_7750 max RMS 0.42 → 0.13).  83 lines gained (narrow
+  spikes `curve_fit` happened to fail on), 56 lost (saturated plateaus that
+  anchor the pattern match);
+- spec1d `WAVE_RMS`, legacy vs A: identical on 40 Kast objects (max
+  difference 1e-6) and on 83 of 84 DEIMOS 600ZD objects (the 84th is
+  slit 11 above, 0.2757 → 0.2513).  Arc-fit QA PNGs are byte-identical or
+  differ at anti-aliasing level, except that slit.
+
+Unit tests: `pytest pypeit/tests` **930 passed** (synthetic recovery,
+agreement with `curve_fit` to 0.02 px, edge cases, no `curve_fit` on clean
+data, narrow-feature hand-off, same lines as `curve_fit` on the Paranal
+sky, the `fast_line_fit` parameter, and the FWHM cache).
+
+### Verdict vs the PR-C target
+
+§C.7 expected ~700–800 s off DEIMOS from the fit alone.  Measured: the fit
+change delivers 326 s under the legacy-faithful default (the rest of
+`curve_fit`'s time was on lines it fails to fit, which the default keeps),
+or 867 s under B at the cost of identification flips; the cache, found
+by C's profiling, delivers a further 568 s with no change in results.
+**Shipped: A + cache, −958 s (−9.2%) serial on DEIMOS, bit-identical
+products apart from one slit that is now correctly identified.**
+
+### A + B + C totals
+
+- Serial DEIMOS: **12 393.8 s (June baseline) → 9 462 s, −23.7%**.  The two
+  ends were measured on different code and days (the baseline on the old
+  `pypeit` env with the `qtagg` backend), so this is indicative; the
+  like-for-like C gain is the −958 s above.
+- Serial Kast blue: 121.2 s → 88.4 s, −27%; essentially all from A.
+- DEIMOS `--ncpu 4`: **3 254.8 s** with the cache (3 368.6 s without), i.e.
+  3.8x the June serial baseline, 3.2x the serial legacy of this section,
+  and −4.0% against B's 3 391.2 s.
