@@ -8,6 +8,13 @@
     [[findobj]]
         snr_thresh = 20.0    
 [calibrations]
+    [[slitedges]]
+        # The trace flat is brighter just inside the right end of the slit.
+        # With the default threshold (20), the rise of this bright rim is
+        # detected as a left edge, and the real right edge is replaced by an
+        # edge inserted 7.4 pixels inside the slit.  The spurious edge has a
+        # significance of 45-200; the real edges have 560-5600.
+        edge_thresh = 300
     [[tiltframe]]
         [[[process]]]
             spat_flexure_method = detector
