@@ -615,6 +615,31 @@ slit-9 suspicion) once you have had a look.  Say if you want the issue filed
 now, or want me to dig into slit 9 first.
 >A:  Leave the pipeline alone in PR C.  Mention the fragility in the report and release notes as a known limitation.  But do not file an Issue on GitHub.
 
+**Q12 — The "saturated lines" are mostly plateau edges; reword anything?**
+Task 7 looked at the DEIMOS 600ZD features that option B rejects and legacy
+keeps.  With the pipeline's own inputs (per-slit `wv_fits[i].spec` and
+measured fwhm ≈ 7.2 px, 86 spectra) there are 46 of them:
+- 45 have raw peaks above 30k;
+- 39 of those 45 sit on a vertical edge (an adjacent-pixel jump of 88–98% of
+  the peak);
+- 6 sit on a flat top.
+
+In the 2D arc frame these are ~60-pixel regions at ~39 900 counts, around
+cores that are hard-saturated at 79 503 counts.  That is consistent with
+charge bleeding along the CCD columns.  Legacy's fit puts a narrow Gaussian
+2–4 px inside the edge.  Its centroid is therefore an edge marker, not a line
+wavelength.  None of the 46 is in any final wavelength fit; nearest
+`pixel_fit` ≥ 7.2 px away.
+
+The report says this plainly, and it corrects the "centroid is nevertheless
+usable" premise of the Task 7 brief: usable as a pattern anchor, not as a
+line position.  The release note calls them "saturated, flat-topped lines",
+which is still accurate enough.  **My default: leave the release note as it
+is**, and keep the plateau-model idea (report §6, item 5) as a possible
+follow-up outside PR C.  Say if you want the wording changed or a follow-up
+recorded.
+>A:
+
 ## Logging
 
 The "Logs" section will record Claude's work.  Please use the following format:
@@ -1603,3 +1628,115 @@ A+B+C at `--ncpu 4`: **3 254.8 s vs B's 3 391.2 s (−4.0%)**, 3.8x the June
 serial baseline.  `speed_up_results.md` is updated; the doc build is being
 re-run to check the release-note edits.  **Task 6 is complete**; next is
 Task 7 (prompt 7) once Q11 is answered.
+
+### 2026-10-26 (Q11 → known limitation only; no GitHub issue)
+
+**Q11 answered: leave the pipeline alone in PR C, mention the fragility in
+the report and the release notes, no GitHub issue.**  Applied:
+- `doc/releases/2.1.0dev.rst`: a "Known limitation, not introduced by this
+  change" sentence appended to the Under-the-hood `fit_arcspec` bullet,
+  naming `wvutils.xcorr_shift_stretch` and the one 600ZD slit that moved
+  30 px from a wrong to the correct solution.  Doc build re-run.
+- The report (Task 7) will carry the full trace (slit 11 numbers, the
+  amplification chain, the slit-9 suspicion) as a known limitation.
+- No issue filed; the slit-9 question stays in this log only.
+
+**Task 6 is complete.  Next: prompt 7** ("Read this doc.  Perform the 7th
+task under Tasks"): the report `Speed_Up_Arcfit_Report.md` in
+`pypeitdev/speed_up/Reports/`, with figures from scripts under
+`pypeitdev/speed_up/scripts/`.
+
+### 2026-10-26 (Task 7 — final report written)
+
+**Report:** `pypeitdev/speed_up/Reports/Speed_Up_Arcfit_Report.md`.  It
+has a table of contents, ~7 400 words including tables, and these sections:
+- 0 Executive summary;
+- 1 What was replaced, and why (June 840 s / 1.11 M; legacy re-profile
+  846 s);
+- 2 Method (log-parabola math, guards, GN polish with cap 10, rescue,
+  fallback and the three hand-off rules, `centerr`, controls including
+  `fast_line_fit` / `arcfit_options`);
+- 3 Fidelity (sky and DEIMOS; the GN 3 vs 10 table; A identical on 370
+  spectra);
+- 4 Line-count changes under B, and why A ships;
+- 5 Worked examples (Fig. 1 saturated, Fig. 2 negative σ);
+- 6 Saturated features and identification (the requested discussion,
+  including the future plateau model);
+- 7 Fallback rate, where the time goes, and the Q10 cache;
+- 8 Dev-suite vetting (vetted RMS table with legacy / A / gn10 / gn0, and a
+  per-family summary of all 38 WaveCalib files plus tilts);
+- 9 Re-profiling (Fig. 3, five-variant table, Kast, `--ncpu 4`, A+B+C
+  totals with caveats);
+- 10 Known limitation: MSC03 slit 11 (Fig. 4 = `msc03_slit11_judge.png`,
+  slit 9, the Q11 decision);
+- 11 Switches, options and risks;
+- appendices: files changed, tests, scripts and figure regeneration.
+
+**Scripts** (`pypeitdev/speed_up/scripts/arcfit/`, each with a run header):
+- `report_fig_saturated.py` (`--list` prints the candidates);
+- `report_fig_negsigma.py` (`--list` prints the statistics);
+- `report_fig_profile.py`.
+
+**Figures** (`Reports/figures/arcfit/`, PNGs git-ignored): `sat_examples.png`,
+`negsigma_example.png`, `profile_deimos.png`.  The dataviz skill was loaded
+and its palette used (blue for legacy, orange for B, ink points, grey
+context).
+
+**Examples chosen** (600ZD, legacy dev-suite WaveCalib `wv_fits[i].spec`,
+pipeline fwhm ≈ 7.3 px, 11-px window):
+
+| line | raw peak | legacy c / σ | B c / σ |
+|---|---:|---|---|
+| MSC04 slit 4, pix 6573 (edge) | 40 219 | 6570.46 / 3.03 | 6410.24 / 153.1 |
+| MSC03 slit 11, pix 5407 (edge) | 39 129 | 5409.97 / 2.59 | 5478.88 / 66.5 |
+| MSC03 slit 14, pix 5895 (flat top) | 39 538 | 5893.59 / 5.38 | 5819.00 / 176.1 |
+| Paranal pix 6479 | — | 6477.605 / −2.166 | 6477.618 / +2.436 |
+| Paranal pix 16750 | — | 16750.179 / −0.557 | 16750.179 / +0.557 |
+
+A equals legacy on all of them.
+
+**Numbers computed fresh** (pypeit14b, read-only, in-process toggles of
+`USE_VECTORIZED_ARCFIT` and `ARCFIT_MATCH_CURVEFIT`):
+- **600ZD stored `arc_spectra`, fwhm 4, 92 spectra:** legacy 7 887, A 7 887,
+  B 7 838 accepted (Q7's 51 reproduced).  Of the 50 lost lines with peaks
+  above 30k, all have an adjacent-pixel jump > 50% of the peak (median 96%),
+  and none is in a final wavelength fit;
+- **pipeline inputs, 86 spectra:** legacy 10 132, A 10 132, B 10 093.  46 are
+  lost: 45 with peaks above 30k (39 edges, 6 flat tops) and 1 faint.  None is
+  in a final fit (nearest `pixel_fit` ≥ 7.2 px, median 26 px);
+- **2D `Arc_A_0_MSC04.fits`, slit 4:** ~39 900 counts across the slit over
+  spectral pixels ~6505–6574, with cores at 79 503 (the frame maximum),
+  dropping to ~1 250 at 6576;
+- **Paranal sky:** legacy 3 748, A 3 748, B 3 766.  56 negative-σ fits, 49
+  of which would pass the other cuts; **B keeps 38** of the 49 and A keeps
+  none.  37 of the 38 have σ between 0.25 and 0.66 px (sub-resolution).
+  B-vs-legacy |Δc| over the 38: median 0.031 px, max 3.4 px;
+- **the per-family summary of `arcfit_metrics*.md`** (the gn0 extremes,
+  e.g. 104 px on 1200G_M_5500 and 10 px on Kast 600_5000_d46; A tilts median
+  ≤ 1.3e-7 px, max 0.005 px).
+
+**Inconsistencies with the earlier logs and the brief:**
+1. **What the "saturated lines" are.**  They are mostly *edges* of extended
+   saturated plateaus (likely charge bleeding), not saturated Gaussian lines.
+   The legacy centroid sits 2–4 px inside the edge, so it is not a line
+   wavelength.  The brief's "centroid is nevertheless usable" holds only in
+   the sense of a reproducible pattern anchor.  The report says so (§5.1,
+   §6); see Q12.
+2. **Negative σ.**  Q3 / the brief expected the new fit to keep these lines
+   with "the same |σ|".  That is true only for option B, which keeps 38 of
+   49.  Most are sub-resolution spikes, and only some have exactly the same
+   |σ| (e.g. pixel 6479 differs by 12%).  Under the shipped A none is kept,
+   consistent with `test_detect_lines_matches_curve_fit`.
+3. **`arcfit_lost_lines.py` / `arcfit_load.py` read
+   `REDUX_OUT/keck_deimos/600ZD_M_6500`,** which now holds the products of
+   the last profile run.  The new scripts read `REDUX_OUT_C/legacy` instead.
+
+**Not done:**
+- the report is longer than the 2 500–4 000-word target, mostly because of
+  the tables;
+- the cause of the plateaus (bleeding) and the slit-9 suspicion were not
+  verified further;
+- which hand-off rule catches Paranal pixel 6479 under A was inferred, not
+  instrumented.
+
+Q12 added (default: leave the release note unchanged).
