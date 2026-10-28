@@ -366,6 +366,25 @@ the old spec1d (B.md QP7, left unfixed in the harness).
    under `pypeitdev/speed_up/scripts/` so the figures can be regenerated.
    Ask questions in Q&A.  Log your work in the Logs section.
 
+8. **Slide deck** Please create a slide deck for the PR description.  It should be named `Speed_Up_Arcfit_Slide_Deck.pptx` in `PypeIt-development-suite/pypeitdev/speed_up/Slides/`.  It should cover:
+    - what was replaced and why, with the profile numbers;
+    - the method: the weighted log-parabola, the Gauss–Newton polish, the
+      moment-seeded rescue (if adopted), and the `curve_fit` fallback;
+    - how faithful the new fit is to legacy `curve_fit`, on the Paranal sky and
+      on DEIMOS arcs;
+    - the line-count changes, with the reasons: negative σ (Q3) and the
+      saturated lines (Q6);
+    - the fallback rate and where the remaining time goes;
+    - the dev-suite RMS table for both `GN_ITER` variants;
+    - the re-profiling numbers, and the A+B+C totals;
+    - the kill switch, and the remaining risks.
+    - A discussion of how including saturated lines can improve the fit (by more IDs)
+
+Libreoffice is installed on the workstation. 
+Be sure to use fonts no smaller than 20pt.
+Make sure each slide has a one sentence summary of its contents.
+Use Opus 5.5. Log your work.
+
 ## Q&A
 
 Claude poses questions here (as `**Qn — title.** body` followed by a `>A:` line);
