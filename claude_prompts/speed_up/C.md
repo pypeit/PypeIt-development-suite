@@ -204,6 +204,7 @@ the old spec1d (B.md QP7, left unfixed in the harness).
 6. Read this doc.  Perform the 6th task under Tasks.
 7. Read this doc.  Perform the 7th task under Tasks.
 8. Read this doc.  Perform the 8th task under Tasks.
+9. Read this doc.  Perform the 9th task under Tasks.
 
 ## Tasks
 
@@ -385,6 +386,22 @@ Libreoffice is installed on the workstation.
 Be sure to use fonts no smaller than 20pt.
 Make sure each slide has a one sentence summary of its contents.
 Use Opus 5.5. Log your work.
+
+9. **Additional figures for the Report.**  I have read the report and the slides.  
+I would like additional figures to be inluded in the Report to further examine
+some of the changes.  These are: 
+    - A figure showing the degradation of the "830G_L_8100: RMS 0.051 → 0.27 px" solution; ideally like the usual `Arc_1dfit` PNG
+    - A figure showing the "blue-end misidentification on 600ZD MSC01 slit 2".  Also like the usual `Arc_1dfit` PNG
+    - A figure showing the sigma values for several instruments+configurations.  Maybe plot as a function of wavelength; highlight those that were kept by option B but would have been rejected by option A.
+
+After making the figures, add them and a discussion to the Report.
+Do not edit the Slides yet.
+Use Opus 5.5. Log your work.
+
+
+10. **Extra tests.** 
+    - Coverage
+
 
 ## Q&A
 
