@@ -1,0 +1,20 @@
+# Paths are relative to the directory of this file; run the
+# command from there.
+# HIP59174 std1 (star in DET01 slit 337), A and B positions, unfluxed
+[coadd1d]
+  coaddfile = coadd1d_std1_HIP59174.fits
+  flux_value = False
+  # Same step and length for both sets: pypeit_sensfunc cannot splice
+  # OneSpec inputs of different lengths (np.max(..., axis=1) in
+  # SensFunc.unpack_std fails on the ragged array).
+  wave_method = linear
+  dwave = 1.94
+  wave_grid_min = 21430.0
+  wave_grid_max = 25368.2
+
+coadd1d read
+  path ../run5/Science
+  filename | obj_id
+  spec1d_MCSA00352125-HIP59174_MOIRCS_20260529T082520.088.fits | SPAT0360-SLIT0337-DET01
+  spec1d_MCSA00352127-HIP59174_MOIRCS_20260529T082555.088.fits | SPAT0318-SLIT0337-DET01
+coadd1d end

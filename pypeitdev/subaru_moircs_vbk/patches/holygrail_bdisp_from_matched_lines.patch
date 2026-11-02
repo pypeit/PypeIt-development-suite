@@ -1,0 +1,113 @@
+Subject: [PATCH] holy-grail: take bdisp from the pattern-matched lines
+
+HolyGrail.solve_patterns set patt_dict['bdisp'] to the dispersion at the
+peak of the pattern histogram.  For quadrangle patterns that value is
+truncated to an integer (patterns.quadrangles stores dispersions in
+np.ulonglong arrays), e.g. 1.94 A/pix -> 1.  bdisp is passed by
+wv_fitting.fit_slit to iterative_fitting, which uses it to convert the fit
+rms to pixels and the line-matching tolerance to Angstroms, so the stored
+rms, the rms_thresh test, and match_toler were wrong by the same factor
+(about 2x on Subaru/MOIRCS VB_K, 1.94 A/pix).
+
+solve_patterns now takes bdisp from a linear fit to the lines matched by
+the patterns (at least two), falling back to the histogram value.  Only
+holy-grail is affected: fit_slit and iterative_fitting are unchanged, so
+reidentify, full_template and echelle calibrations are not.  cross_match
+already takes its dispersion from good solutions.
+
+The quadrangles dtype itself is not changed here: on the MOIRCS VB_K test
+mask, making it float changes 13 of 15 affected solutions by 29-112 A to
+worse solutions.  See the bug report in pypeitdev/subaru_moircs_vbk.
+
+Verified on the MOIRCS VB_K test mask (28 slits): same result as the
+fix-B test in holy_rms_check.py; stored rms = recomputed rms; no
+solution changes by more than 0.14 A; 0-2 more lines on affected slits.
+Not yet run through the development suite.
+
+New test: pypeit/tests/test_holygrail_dispersion.py (fails on the
+current code for the quadrangle cases).
+
+---
+--- a/pypeit/core/wavecal/autoid.py
++++ b/pypeit/core/wavecal/autoid.py
+@@ -2959,6 +2959,16 @@
+         patt_dict['sign'] = sign
+         patt_dict['bwv'] = wcen
+         patt_dict['bdisp'] = 10.0 ** dcen
++        # The histogram estimate above can be far off: patterns.quadrangles
++        # stores pattern dispersions as unsigned integers, so e.g. 1.94 A/pix
++        # becomes 1.  bdisp is used by wv_fitting.iterative_fitting to
++        # convert the fit rms and the line-matching tolerance between pixels
++        # and Angstroms, so take it from the pattern-matched lines instead.
++        ok = np.where(patt_dict['mask'])[0]
++        if ok.size >= 2:
++            ids = np.asarray(patt_dict['IDs'], dtype=float)[ok]
++            slope = np.polyfit(use_tcent[ok], ids, 1)[0]
++            patt_dict['bdisp'] = float(np.abs(slope))
+ 
+         # Check that a solution has been found
+         if patt_dict['nmatch'] == 0 and self._verbose:
+--- /dev/null
++++ b/pypeit/tests/test_holygrail_dispersion.py
+@@ -0,0 +1,61 @@
++"""
++Tests for the dispersion estimate that holy-grail passes to the
++wavelength fit.
++"""
++import numpy as np
++import pytest
++
++from pypeit.core.wavecal import autoid, patterns
++from pypeit.par import pypeitpar
++
++# Twelve lines with irregular spacing on a linear wavelength solution
++TCENT = np.array([10., 31., 55., 92., 140., 171., 230., 266., 333., 370.,
++                  425., 490.])
++NPIX = 2048
++
++
++def _holygrail_stub(wave):
++    """
++    A HolyGrail instance with only the attributes solve_patterns uses, so
++    that the brute-force search in __init__ does not run.
++    """
++    hg = autoid.HolyGrail.__new__(autoid.HolyGrail)
++    hg._par = pypeitpar.WavelengthSolutionPar()
++    hg._wvdata = wave
++    hg._npix = NPIX
++    hg._verbose = False
++    return hg
++
++
++@pytest.mark.parametrize('disp_true', [0.5, 1.94, 3.3])
++def test_quadrangle_bdisp(disp_true):
++    # Patterns as holy-grail builds them for poly=4
++    wave = 20000. + disp_true * (TCENT - TCENT[0])
++    dindex, lindex, wvcen, disps = patterns.quadrangles(
++        TCENT, wave, NPIX, detsrch=5, lstsrch=5, pixtol=1.0)
++    assert disps.size > 0
++    # The histogram peak that solve_slit would pass on: the dispersion of
++    # the first pattern (possibly truncated), and all pattern indices
++    dcen = np.log10(max(float(disps[0]), 10**-1.5))
++    bestlist = [float(wvcen[0]), dcen, 1, +1, dindex.flatten(),
++                lindex.flatten()]
++    hg = _holygrail_stub(wave)
++    patt = hg.solve_patterns(0, bestlist, [TCENT, np.zeros_like(TCENT)])
++    assert patt is not None
++    # bdisp comes from the matched lines, not from the histogram bin
++    assert np.isclose(patt['bdisp'], disp_true, rtol=1e-6)
++
++
++def test_triangle_bdisp_unchanged():
++    # Triangle patterns already carry the right dispersion
++    disp_true = 1.94
++    wave = 20000. + disp_true * (TCENT - TCENT[0])
++    dindex, lindex, wvcen, disps = patterns.triangles(
++        TCENT, wave, NPIX, detsrch=5, lstsrch=5, pixtol=1.0)
++    good = np.abs(disps / disp_true - 1) < 1e-6
++    bestlist = [float(np.median(wvcen[good])), np.log10(disp_true), 1, +1,
++                dindex[good].flatten(), lindex[good].flatten()]
++    hg = _holygrail_stub(wave)
++    patt = hg.solve_patterns(0, bestlist, [TCENT, np.zeros_like(TCENT)])
++    assert patt is not None
++    assert np.isclose(patt['bdisp'], disp_true, rtol=1e-6)

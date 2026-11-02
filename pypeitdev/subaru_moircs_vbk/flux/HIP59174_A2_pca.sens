@@ -1,0 +1,12 @@
+# HIP59174 = HD 105388 (SIMBAD 2026-10-03): A2IV (2023ApJS..264...17Z),
+# V = 7.45, K(2MASS) = 7.359.  star_mag is the V (Vega) magnitude:
+# sensfunc.py passes it as V_mag to standard.get_standard_spectrum.
+# star_type A2: Kurucz model (Schmidt-Kaler A2, Teff 8970 K)
+[sensfunc]
+  algorithm = IR
+  star_type = A2
+  star_mag = 7.45
+  [[IR]]
+    # PCA telluric model (now also the MOIRCS default)
+    telgridfile = TellPCA_3000_26000_R10000.fits
+    teltype = pca
