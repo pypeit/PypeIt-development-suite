@@ -203,6 +203,7 @@ the old spec1d (B.md QP7, left unfixed in the harness).
 5. Read this doc.  Perform the 5th task under Tasks.
 6. Read this doc.  Perform the 6th task under Tasks.
 7. Read this doc.  Perform the 7th task under Tasks.
+8. Read this doc.  Perform the 8th task under Tasks.
 
 ## Tasks
 
@@ -1759,3 +1760,61 @@ A equals legacy on all of them.
   instrumented.
 
 Q12 added (default: leave the release note unchanged).
+
+### 2026-10-28 (Task 8 — slide deck)
+
+**Deck:** `pypeitdev/speed_up/Slides/Speed_Up_Arcfit_Slide_Deck.pptx`, 18
+slides, 16:9, built with python-pptx by
+`pypeitdev/speed_up/scripts/arcfit/slide_deck_build.py` (re-run it to
+rebuild; python-pptx is not in pypeit14b, so it was installed with
+`pip install --target <scratchpad>/pylib` and used via `PYTHONPATH`, leaving
+the env untouched).  Each content slide has a one-sentence summary in a
+highlighted band under the title (same position and style on every slide);
+speaker notes carry the secondary numbers.
+
+**Slides and number sources** (report = `Reports/Speed_Up_Arcfit_Report.md`):
+1. Title (workstream C, PR C, `speed_up_arcfit` on `speed_up_B`/#2209, 2026-10-28).
+2. What was replaced, and why: 1.11 M / 840 s / 93 M, 332 s; 12 393.8 s; 1 114 679 / 846 s (report §1).
+3. The new fit, four-step cascade (report §2.1–2.4).
+4. Shipped default A and option B: the three hand-off rules, `fast_line_fit`, 13.3× fit speed-up on 92 arcs (report §2.4, §2.6, §3).
+5. Fidelity: GN 0/3/10 table, 0/0 lines under A over 370 spectra/33 354 lines, < 1e-3 px, Paranal p99 0.87 → 0.33 px (report §3).
+6. Line-count changes under B: negative σ 56/49/38, saturated 51 (129 at GN 0), spikes +83; +83/−56 (report §4).
+7. "Saturated lines" are plateau edges: 46 = 39 edges + 6 flat tops + 1 faint, none in a final fit (report §5.1; figure).
+8. Negative σ (report §5.2; figure).
+9. Why A ships (Q8): ~30 px MSC01 slit 2, RMS 0.588 → 0.617, 10 of 38 files, 830G_L_8100 0.051 → 0.27, 1200G_M_7750 0.42 → 0.13, ~13 s (report §4).
+10. Discussion: saturated features buy identifications, incl. the future plateau model (report §6).
+11. Fallback rate and the archive-sky cache (Q10): 0.05%, ~5%, 432 of 517, before/after cache table, 799 evaluations (report §7).
+12. Dev-suite vetted RMS, legacy/A/gn10/gn0, 9 rows (report §8 table).
+13. WaveCalib by setup family, condensed (report §8 family table; Tilts in notes).
+14. Re-profiling serial DEIMOS 600ZD (report §9 table / `speed_up_results.md` "After workstream C"; figure).
+15. A+B+C totals: −23.7% (12 394 → 9 462 s), −9.2% (10 420 → 9 462 s), −4.3% at `--ncpu 4` (3 400 → 3 255 s, legacy vs A + cache, from `speed_up_results.md`; −4.0% vs B's 3 391.2 s in the notes), Kast blue −27% (121 → 88 s); caveats (report §9).
+16. Known limitation, MSC03 slit 11 (report §10, Q11; figure).
+17. Switches, options and remaining risks (report §11).
+18. What ships and what remains before merge: PR B merge, retarget to `develop`, one full `./pypeit_test all` (Task 6 pre-merge notes).
+
+**Figures** (slide variants, drawn at their placed size so 20 pt in
+matplotlib is 20 pt on the slide; all text ≥ 20 pt), PNGs in
+`pypeitdev/speed_up/Slides/figures/`, scripts in `pypeitdev/speed_up/scripts/arcfit/`:
+- `slide_fig_style.py` (shared style);
+- `slide_fig_saturated.py` → `slide_sat_examples.png` (re-uses `report_fig_saturated.py`'s data functions; same three examples);
+- `slide_fig_negsigma.py` → `slide_negsigma_example.png` (re-uses `report_fig_negsigma.run()`);
+- `slide_fig_profile.py` → `slide_profile_deimos.png` (numbers hard-coded from `speed_up_results.md`, as in the report script);
+- `slide_fig_msc03.py` → `slide_msc03_slit11.png` (same checks as `arcfit_msc03_judge.py`; re-run gives 10/12 vs 2/12 within 0.5 px, medians 0.14 / 7.24 px, matching the report).
+The report PNGs were not reused directly because their text is ~9–10 pt at slide width.
+
+**Font check:** the build script reopens the saved deck with python-pptx and
+asserts every non-empty run has an explicit size ≥ 20 pt: 348 runs, minimum
+20 pt, 0 runs without a size.  The skill's `validate.py` passes.
+
+**Render QA:** LibreOffice → PDF → JPEG, every slide inspected; fixed a
+wrapped stat label (slide 2), overflowing step cards (slide 3) and stat
+cards (slide 11), a clipped Gaussian peak and an overflowing panel title in
+the figures, a legend collision in the profile figure, numbers splitting
+across lines (non-breaking spaces in digit groups), and two-line footers on
+slides 14/16.  Final render clean.  LibreOffice renders Calibri with its
+metric-compatible substitute, so the fit should carry over to PowerPoint.
+
+**Not done / notes:** no new chart beyond the slide variants of existing
+figures.  The report's "19× faster" for B (whole-run `fit_arcspec`, 851 vs
+44 s) and the micro-benchmark's 13.3× are both correct; the deck quotes
+13.3× with its context.  No new questions.
