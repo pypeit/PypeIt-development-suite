@@ -52,7 +52,7 @@ Run Python in a local environment (no Docker). PYPEIT_DEV points to <PATH>.
 
 ## Workflow doc
 
-1. Read the Context items. Generate dev_hostsub/design/hostsub_workflow.md:
+1. Read the Context items. Generate `pypeitdev/hostsub_gp/hostsub_workflow.md`:
    - The current two-pipeline workflow, end to end: run_pypeit settings
      HostSub_GP needs, hostsub_setup, hostsub.txt, hostsub, coadd_2dspec
    - Every PypeIt API HostSub_GP imports, and how stable each is on develop
@@ -71,7 +71,7 @@ Run Python in a local environment (no Docker). PYPEIT_DEV points to <PATH>.
 
 ## Design document
 
-1. Generate dev_hostsub/design/hostsub_design.md:
+1. Generate `pypeitdev/hostsub_gp/hostsub_design.md`:
    - Preamble: purpose, scope, relationship to other docs
    - Requirements with IDs (H1, H2, ...), sorted into Pending /
      Implemented / Deferred
@@ -102,7 +102,7 @@ Run Python in a local environment (no Docker). PYPEIT_DEV points to <PATH>.
 
 ## Logs
 
-### 2026-10-18 (Workflow doc v0.1: dev_hostsub/design/hostsub_workflow.md)
+### 2026-10-18 (Workflow doc v0.1: pypeitdev/hostsub_gp/hostsub_workflow.md)
 
 Prompt 1 (1st task under Workflow doc). Read the HostSub_GP sources
 (README, cookbook, input_file.rst, pyproject, inputfiles.py, spec_proc.py,
