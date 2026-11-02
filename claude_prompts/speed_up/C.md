@@ -399,11 +399,39 @@ Do not edit the Slides yet.
 Use Opus 5.5. Log your work.
 
 
-10. **Extra tests.** 
-    - Coverage
+10. **Reject on sigma.** I wish to consider adding a constraint on the sigma values, in particular to reject
+very narrow lines.  In general, we expect no line to be more narrow than FWHM=2 pixels, so sigma should be greater
+than 0.85 pixels.  Read your report on this point and also check whether PypeIt already has a a constraint on sigma
+in the code.  Then discuss it with me in the "Q&A/Reject on sigma" section below.
+Use Opus 5.5. Log your work.
+
+11. **Extra tests.**  Ok, before I issue a PR, I wish to understand how much the current wavelength
+solutions change when we run on the `develop` branch vs. the `speed_up_arcfit` branch.  The primary
+metrics to focus on are:
+    - IDs_Wave_cov(%) :: as provided by the `pypeit_chk_wavecalib` script
+    - The number of lines Nlin used in the final solution
+    - The RMS of the wavelength solution
+    - The measured_FWHM of the arc lines
+
+To do this, run the full DevSuite on the `develop` branch and the `speed_up_arcfit` branch.
+Then compare the results in a new report named `Speed_Up_Arcfit_DevSuite_Comparison.md` in `PypeIt-development-suite/pypeitdev/speed_up/Reports/`.
+It should cover:
+    - The metrics mentioned above for the `develop` branch and the `speed_up_arcfit` branch
+    - A discussion of the changes in the metrics
+    - A discussion of the changes in the wavelength solutions
+    - A discussion of the changes in the arc line measurements
+    - A discussion of the changes in the arc line fits
+    - A discussion of the changes in the arc line fits
+
+Inlucde figures frequently.
+Use Opus 5.5. Log your work.
 
 
 ## Q&A
+
+### Reject on sigma
+
+### Original
 
 Claude poses questions here (as `**Qn — title.** body` followed by a `>A:` line);
 the user answers inline beneath each `>A:`.
@@ -1835,3 +1863,66 @@ metric-compatible substitute, so the fit should carry over to PowerPoint.
 figures.  The report's "19× faster" for B (whole-run `fit_arcspec`, 851 vs
 44 s) and the micro-benchmark's 13.3× are both correct; the deck quotes
 13.3× with its context.  No new questions.
+
+### 2026-11-02 (Task 9 — three additional figures and sections 5.3–5.5 in the report)
+
+Session note: this run used Fable 5.1, not Opus 5.5 as the prompt asks; the
+work was done directly, not delegated.  The PypeIt checkout had to be switched
+to `speed_up_arcfit` first (it was on `etc-fixes`).
+
+**Figures** (PNGs in `Reports/figures/arcfit/`, git-ignored; scripts in
+`scripts/arcfit/`, run with `pypeit14b` and `PYPEIT_DEV` set):
+- `report_fig_arc1dfit.py 830g` → `arc1dfit_830g.png` (**Figure 3**) and
+  `report_fig_arc1dfit.py msc01s2` → `arc1dfit_msc01s2.png` (**Figure 4**).
+  Rows 1–2 re-draw PypeIt's `Arc_1dfit` panels (spectrum + IDs, fit,
+  residuals) from the stored legacy and `REDUX_OUT_C/gn10` WaveCalib files,
+  with the identifications unique to each variant in orange.  Row 3 re-runs
+  `detect_lines` on the stored arc under A and B (re-using
+  `report_fig_saturated.run_slit`) and plots the B − legacy solution in
+  pixels.  For `msc01s2` the left row-3 panel is the fit window of the one
+  line whose centre differs.
+- `report_fig_sigma.py` → `sigma_vs_wave.png` (**Figure 5**): fitted σ
+  against wavelength for Kast blue 600/4310, Kast red 600/7500, LRIS blue
+  multi_300 DET01, DEIMOS 600ZD MSC01 (16 slits), 830G_L_8100 and
+  1200G_M_7750 MSC03 (34 slits), with the B-only lines in orange and the
+  A-only lines as blue circles; reference lines for the expected σ, the
+  width cut and A's hand-off threshold.  `--list` prints every A/B-only line.
+- The previous Figures 3 and 4 (profile, MSC03 slit 11) are now 6 and 7;
+  Appendix C's table and the §4 bullets point to the new sections.
+
+**What the figures showed** (all in the report; the numbers were checked
+against the WaveCalib products):
+- **830G_L_8100 (§5.3).**  B's detected-line list has five extra
+  sub-resolution spikes (σ 0.43–0.55 px, 140–1 300 counts; A hands them to
+  `curve_fit`, which fails).  `full_template` assigns wavelengths to all
+  five; the final fit rejects three but keeps Kr I 7856.98 at pixel 3526.65
+  (−1.29 px) and Ar I 8016.99 at 3865.69 (−1.42 px, a duplicate of the real
+  line 1.7 px away).  The larger RMS loosens the rejection and re-admits three
+  lines legacy had rejected (8105.92, 8282.39, 8649.42 Å).  69 → 74 lines,
+  RMS 0.051 → 0.270; the solution itself moves ≤ 0.23 px.
+- **600ZD MSC01 slit 2 (§5.4).**  The blue-end `tcent` lists are identical.
+  The only `detect_lines` difference is the 38 390-count plateau edge at
+  pixel 7088 (A: c 7085.78, σ 3.48; B: c 7082.62, σ 6.06; the dev-suite B
+  run drops it, its centre being 5.4 px from the peak at the 0.75·fwhm
+  limit).  That one red-end feature flips the blue end: legacy puts
+  Hg I 4047.71 and 4359.56 Å on the two brightest blue peaks (614.9 and
+  1127.4, 8 700 counts); B leaves the bright peak unidentified and puts
+  Hg I 4359.56 on a 180-count line 28.7 px to the red.  Legacy identifies
+  14 lines below pixel 2400, B 3 (two with wrong wavelengths); the solution
+  differs by −99 px at pixel 0, −33.7 at 1000, −7.5 at 2000, and the 67
+  shared red lines agree within 1.6 px.  Legacy is the correct branch.  This
+  is the Q8 "anchor" mechanism made concrete.
+- **σ across setups (§5.5).**  Kast and LRIS: A and B accept identical lines.
+  All differences are DEIMOS, in the two known populations: spikes at
+  σ ≈ 0.5 px (830G: 5; 1200G_M_7750: 63, nine wavelengths recurring in 4–7 of
+  34 slits, so lamp features, not defects) and plateau edges (600ZD: 6 A-only,
+  B's σ ≈ 8.6 px).  1200G_M_7750 also has 4 A-only lines where `curve_fit`
+  itself gives σ = 0.11–0.20 px.  Grey points below the hand-off line are
+  lines `curve_fit` fits narrow and all three variants accept.
+
+**Not done:** slides untouched (per the prompt).  Task 10 (extra tests /
+coverage) is next.  No new questions; Q12 is still unanswered.
+
+**For you to commit:** `pypeitdev/speed_up/Reports/Speed_Up_Arcfit_Report.md`,
+`pypeitdev/speed_up/scripts/arcfit/report_fig_arc1dfit.py`,
+`pypeitdev/speed_up/scripts/arcfit/report_fig_sigma.py`, and this file.

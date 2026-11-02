@@ -339,9 +339,10 @@ though, it **changed line identifications**:
   plus LRIS `multi_300` at 0.096 px;
 - `600ZD_M_6500` MSC01 slit 2 is misidentified at the blue end: 4359.56 Å is
   placed on the line legacy calls 4377.35 Å, about 30 px off, while the slit
-  RMS moves only from 0.588 to 0.617.  Similar flips occur on MSC01 slit 11
-  and MSC03 slits 0, 14 and 15;
-- `830G_L_8100` (single slit) goes from RMS 0.051 to 0.27 px;
+  RMS moves only from 0.588 to 0.617 (§5.4, Figure 4).  Similar flips occur
+  on MSC01 slit 11 and MSC03 slits 0, 14 and 15;
+- `830G_L_8100` (single slit) goes from RMS 0.051 to 0.27 px (§5.3,
+  Figure 3);
 - one case improves: `1200G_M_7750` max RMS 0.42 → 0.13.
 
 On the misidentified 600ZD slits, the only difference in the input to the
@@ -453,6 +454,145 @@ layout is as in Figure 1, with a 7-pixel window (`fwhm = 4`).
   (pixel 6479, σ = 2.4 px) is above the width threshold, so it is presumably
   handed off by the convergence rules (not checked separately).  All of them go to `curve_fit`, receive its
   negative σ, and are rejected exactly as before.
+
+### 5.3 `830G_L_8100` under B: five spikes, RMS 0.051 → 0.27 px
+
+![830G_L_8100 legacy vs B](figures/arcfit/arc1dfit_830g.png)
+
+**Figure 3** (`report_fig_arc1dfit.py 830g`).  The single slit of
+`830G_L_8100` (spat_id 762; fwhm 3.37 px, 5-pixel fit window) in the legacy
+dev-suite reduction and in the option-B reduction (`REDUX_OUT_C/gn10`).
+
+- **Rows 1–2** reproduce the three panels of PypeIt's `Arc_1dfit` QA from the
+  stored WaveCalib products: the arc with every detected line ticked in grey
+  and every identified line labelled in green, the wavelength fit, and the
+  residuals of the lines kept by the fit.  Lines identified in one variant
+  only are drawn in orange.
+- **Row 3, left** re-runs `detect_lines` on the stored arc under A and B
+  (pixels 1 900–5 400).  **Row 3, right** is the B − legacy wavelength
+  solution in pixels, with the identified lines of each variant ticked.
+
+What happens, step by step:
+
+1. **Five sub-resolution spikes enter the detected-line list.**  Re-running
+   `detect_lines` on the stored spectrum, B accepts five lines that A does
+   not, with σ = 0.43–0.55 px against an expected σ of 1.43 px and raw peaks of
+   140–1 300 counts (orange ticks in row 3; the three at pixels 3 866, 3 961
+   and 4 079 coincide with entries of the dev-suite list, which has five extra
+   entries at pixels 3 527, 3 848, 3 866, 3 961 and 4 079).  Under A, the width
+   rule (σ < 0.35 × 2 px = 0.7 px) hands all five to `curve_fit`, which raises
+   `RuntimeError` on each, so A's list equals legacy's.
+2. **`full_template` assigns a wavelength to all five.**  The final
+   sigma-clipped fit rejects three of them (8 008.36, 8 061.72 and 8 117.54 Å)
+   but keeps two: Kr I 7 856.98 Å at pixel 3 526.65 (residual −1.29 px) and
+   Ar I 8 016.99 Å at pixel 3 865.69 (residual −1.42 px).  The second is a
+   duplicate: the real Ar I 8 016.99 line sits at pixel 3 864.02 and is kept
+   by both variants; the spike 1.7 px away receives the same wavelength.
+3. **The rejection threshold rises with the RMS, and three marginal lines come
+   back.**  Legacy rejects 8 105.92, 8 282.39 and 8 649.42 Å (their pixels are
+   in its line list, with `gpm = False`).  In B they survive, with residuals
+   of −0.72, −0.33 and −0.23 px.  The kept-line count goes from 69 to 74 and
+   the RMS from 0.051 to 0.270 px.  The five orange points in B's residual
+   panel are exactly these five lines.
+
+The solution itself moves by at most 0.23 px over the range covered by both
+line lists (row 3, right): the main effect here is a five-fold RMS inflation
+with two wrong line positions in the fit, not a misidentification of the
+spectrum.  This setup is not one of the vetted slits, so no tolerance would
+have caught it.
+
+### 5.4 `600ZD_M_6500` MSC01 slit 2 under B: one plateau edge, and the blue end flips
+
+![600ZD MSC01 slit 2 legacy vs B](figures/arcfit/arc1dfit_msc01s2.png)
+
+**Figure 4** (`report_fig_arc1dfit.py msc01s2`).  Same layout as Figure 3
+for MSC01 slit 2 (spat_id 442; fwhm 7.42 px, 11-pixel window).  Row 3, left,
+shows the fit window of the one line on which A and B differ.
+
+- **The blue end.**  Legacy identifies 14 lines blueward of pixel 2 400
+  (4 047.71–5 087.24 Å), including the two strongest Hg lines: Hg I 4 047.71 Å
+  on the peak at pixel 614.9 and Hg I 4 359.56 Å on the 8 700-count peak at
+  pixel 1 127.4, the brightest line in the blue.  B identifies three lines
+  there, and two of them are the wrong wavelength on the right pixel: pixel
+  1 063.8 is Kr I 4 320.79 Å in legacy and Ar I 4 301.31 Å in B, and Hg I
+  4 359.56 Å is placed on the 180-count line at pixel 1 156.2, 28.7 px to the
+  red of the bright peak, which B leaves unidentified.  The B solution departs
+  from legacy's blueward of pixel ~2 900: −7.5 px at pixel 2 000, −33.7 px at
+  pixel 1 000, −99 px at pixel 0 (row 3, right).  Redward of pixel 2 900 the
+  two share all 67 lines and agree to within 1.6 px (0.7 px at pixel 8 000),
+  which is why the RMS moves only from 0.588 to 0.617 px.  Legacy is the
+  correct branch.
+- **The detected lines are the same in the blue.**  Both variants' stored
+  `tcent` lists contain the same 15 entries below pixel 2 400.  Re-running
+  `detect_lines` on the stored arc, A and B accept the same 88 lines, and
+  exactly one centroid differs: the plateau edge at pixel 7 088 (raw peak
+  38 390 counts), at the *red* end of the spectrum.  A / legacy fits
+  c = 7 085.78, σ = 3.48 px; B fits c = 7 082.62, σ = 6.06 px, 3.2 px to the
+  blue, with the Gaussian centred on the flat top rather than on the step.
+  In the dev-suite B run this line is dropped altogether (B's centre is
+  5.4 px from the peak pixel, at the 0.75 × fwhm = 5.6 px limit of
+  `detect_lines`, and the pipeline's call differs slightly from the re-run);
+  in legacy it is detected (tcent 7 085.78) but not used in the final fit.
+- **So one saturated feature at the red end flips the identification at the
+  blue end.**  The blue lines are weak (10²–10⁴ counts against 10⁵ in the
+  red), and their wavelengths are set by `full_template`'s shift-and-stretch
+  of a synthetic arc built from *all* detected peaks (§10).  Removing one
+  bright peak changes that cross-correlation enough to land on the wrong
+  branch at the blue end, with the characteristic signature of §10: a
+  smoothly diverging solution where the lines run out.  This is the
+  mechanism behind Q8's finding that the saturated features "anchor the
+  pattern match", and it is why A defers these lines to `curve_fit`.
+
+### 5.5 Fitted σ across instruments and configurations
+
+![sigma vs wavelength](figures/arcfit/sigma_vs_wave.png)
+
+**Figure 5** (`report_fig_sigma.py`).  Fitted Gaussian σ of every line
+`detect_lines` accepts, against wavelength, for six dev-suite setups.
+`detect_lines` is re-run on the arc spectra stored in the legacy WaveCalib
+files with each slit's measured fwhm, and every line is fit under A and B.
+Grey: accepted by both (σ from B).  **Orange: accepted by B but rejected by
+A** (A hands the line to `curve_fit`, which fails).  Blue circles: accepted
+by A but rejected by B (plotted at A's σ).  The dotted line is the expected
+σ = fwhm/2.355, the dashed line the width cut 3 × fwhm/2.35, and the orange
+dash-dot line A's narrow-width hand-off, 0.35 × the window half-width.
+
+| setup | slits | lines accepted by both | only B | only A |
+|---|---:|---:|---:|---:|
+| Kast blue 600/4310 d55 | 1 | 32 | 0 | 0 |
+| Kast red 600/7500 d57 | 1 | 72 | 0 | 0 |
+| LRIS blue multi_300_5000_d680 DET01 | 9 | 416 | 0 | 0 |
+| DEIMOS 600ZD_M_6500 MSC01 | 16 | 1 775 | 0 | 6 |
+| DEIMOS 830G_L_8100 | 1 | 142 | 5 | 0 |
+| DEIMOS 1200G_M_7750 MSC03 | 34 | 4 294 | 63 | 4 |
+
+What to see:
+
+- **On Kast and LRIS, A and B accept the same lines.**  The σ distributions
+  sit on the expected value and vary smoothly with wavelength (Kast red rises
+  towards both ends of its range).  Nothing comes near the hand-off threshold.
+- **Every difference is a DEIMOS feature, in one of the two populations of
+  §4.**  The B-only lines (orange) form a tight band at σ ≈ 0.5 px, a third of
+  the expected 1.5 px, well below A's hand-off line at 0.7 px.  The A-only
+  lines (blue) on 600ZD are the plateau edges of §5.1: A / legacy returns
+  σ ≈ expected on them, B's fit wanders to σ ≈ 8.6 px with a centre several
+  pixels from the peak and fails the cuts.
+- **The 1200G_M_7750 spikes recur at the same wavelengths across slits.**
+  The 63 B-only lines cluster at 6 970–7 730 Å, and nine wavelengths account
+  for 51 of them, each recurring in four to seven of the 34 slits (6 968,
+  7 035, 7 248, 7 387, 7 441, 7 491, 7 517, 7 538 and 7 638 Å, with peaks of
+  150–2 400 counts).  They are therefore features of the lamp spectrum seen
+  through a 5-pixel window, not detector defects.  This is the setup on which B *improved* the maximum RMS
+  (0.42 → 0.13 px, §4), so admitting them is not uniformly harmful; the point
+  is that B changes which features reach the identification, and the sign of
+  the effect depends on the setup (compare §5.3).  The four A-only lines at
+  7 035 Å are cases where `curve_fit` itself converges to σ = 0.11–0.20 px and
+  passes the cuts, while B's σ = 0.78 px fit fails them.
+- **Grey points below the hand-off line** (830G and 1200G at σ ≈ 0.2 px,
+  600ZD at 0.5–1 px) are lines that A hands off and on which `curve_fit`
+  returns a narrow σ that passes the cuts.  Legacy, A and B all accept them.
+  The hand-off does not remove narrow features; it only defers the decision
+  to `curve_fit`, which is what makes A's line lists identical to legacy's.
 
 ## 6. Saturated features and line identification
 
@@ -636,7 +776,7 @@ are copied from `speed_up_results.md`; the artifacts are
 
 ![profile](figures/arcfit/profile_deimos.png)
 
-**Figure 3.**  Serial DEIMOS 600ZD_M_6500 profiles of the five variants.
+**Figure 6.**  Serial DEIMOS 600ZD_M_6500 profiles of the five variants.
 - **Left:** whole-run wall.
 - **Right:** cumulative time in `fit_arcspec` (all callers) and in flexure's
   `measure_fwhm` of the archive sky.  The two overlap, because
@@ -734,7 +874,7 @@ The amplification chain:
 
 ![MSC03 slit 11](figures/arcfit/msc03_slit11_judge.png)
 
-**Figure 4** (from `arcfit_msc03_judge.py`).
+**Figure 7** (from `arcfit_msc03_judge.py`).
 - **Left:** dispersion dλ/dpix against wavelength for slit 11 (legacy red, A
   blue), its neighbours (grey) and the template (dotted).  A's dispersion
   rises smoothly, like the neighbours'; legacy's turns over in the blue.
@@ -865,8 +1005,11 @@ regenerate them into `pypeitdev/speed_up/Reports/figures/arcfit/`.
 |---|---|---|
 | `sat_examples.png` (Fig. 1) | `report_fig_saturated.py` | `--list` prints all 46 legacy-kept / B-rejected 600ZD lines and the accepted-line totals per variant |
 | `negsigma_example.png` (Fig. 2) | `report_fig_negsigma.py` | `--list` prints the negative-σ statistics and every such line |
-| `profile_deimos.png` (Fig. 3) | `report_fig_profile.py` | numbers hard-coded from `speed_up_results.md` |
-| `msc03_slit11_judge.png` (Fig. 4) | `arcfit_msc03_judge.py` | Task 6 trace |
+| `arc1dfit_830g.png` (Fig. 3) | `report_fig_arc1dfit.py 830g` | legacy vs `REDUX_OUT_C/gn10`; prints the lines unique to each final fit and their residuals |
+| `arc1dfit_msc01s2.png` (Fig. 4) | `report_fig_arc1dfit.py msc01s2` | same, plus the fit window of the one line whose centre differs |
+| `sigma_vs_wave.png` (Fig. 5) | `report_fig_sigma.py` | `--list` prints every line accepted by only one of A and B, for the six setups |
+| `profile_deimos.png` (Fig. 6) | `report_fig_profile.py` | numbers hard-coded from `speed_up_results.md` |
+| `msc03_slit11_judge.png` (Fig. 7) | `arcfit_msc03_judge.py` | Task 6 trace |
 
 Other analysis scripts used for the numbers in this report:
 - `arcfit_sweep.py` (GN / rescue sweep);
