@@ -5,8 +5,8 @@ pypeit/core/arc.py.  Put this directory on PYTHONPATH and set
 PYPEIT_ARCFIT_VARIANT to one of:
 
     legacy  -> USE_VECTORIZED_ARCFIT = False   (the pre-PR-C code path)
-    A       -> the shipped defaults (ARCFIT_MATCH_CURVEFIT = True)
-    B       -> ARCFIT_MATCH_CURVEFIT = False    (the fast option)
+    A       -> ARCFIT_MATCH_CURVEFIT = True     (curve_fit hand-offs, no width floor)
+    B       -> ARCFIT_MATCH_CURVEFIT = False    (no hand-off + width floor; the default since Task 11)
     gnN     -> ARCFIT_GN_ITER = N               (e.g. gn0: analytic seed + rescue)
 
 Note: the 2026-10-22 Task 5 run labelled ``gn10`` predates
@@ -32,3 +32,15 @@ if _v:
         _arc.ARCFIT_GN_ITER = int(_v[2:])
     else:
         raise ValueError(f'Unknown PYPEIT_ARCFIT_VARIANT={_v!r}')
+
+    # Since Task 11 (2026-11-03), BuildWaveCalib and BuildWaveTilts set
+    # ARCFIT_MATCH_CURVEFIT from [calibrations][wavelengths] fast_line_fit via
+    # arc.arcfit_options, which would override the variant there.  Make that
+    # context manager a no-op so the variant applies to every caller.
+    if _v in ('A', 'B'):
+        from contextlib import contextmanager as _cm
+
+        @_cm
+        def _fixed_options(match_curvefit=None):
+            yield
+        _arc.arcfit_options = _fixed_options

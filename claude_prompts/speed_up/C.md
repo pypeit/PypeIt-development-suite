@@ -205,6 +205,8 @@ the old spec1d (B.md QP7, left unfixed in the harness).
 7. Read this doc.  Perform the 7th task under Tasks.
 8. Read this doc.  Perform the 8th task under Tasks.
 9. Read this doc.  Perform the 9th task under Tasks.
+10. Read this doc.  Perform the 10th task under Tasks.
+11. Read this doc.  Perform the 11th task under Tasks.
 
 ## Tasks
 
@@ -402,10 +404,19 @@ Use Opus 5.5. Log your work.
 10. **Reject on sigma.** I wish to consider adding a constraint on the sigma values, in particular to reject
 very narrow lines.  In general, we expect no line to be more narrow than FWHM=2 pixels, so sigma should be greater
 than 0.85 pixels.  Read your report on this point and also check whether PypeIt already has a a constraint on sigma
-in the code.  Then discuss it with me in the "Q&A/Reject on sigma" section below.
+in the code.  Examining the figure you just made on sigma, I belive the cut used to "hand off" B lines to A will successfully remove bad lines.  That is, we should stick with B and do no hand off for such features.
+Discuss this with me in the "Q&A/Reject on sigma" section below.
 Use Opus 5.5. Log your work.
 
-11. **Extra tests.**  Ok, before I issue a PR, I wish to understand how much the current wavelength
+11. **Implement the Rule.** Read my answers in Q&A/Reject on sigma.  Implement the new
+rule in the code and remove the hand-off to A.
+Add new vet tests for this rule.
+Use Opus 5.5. Log your work.
+
+## PR
+
+
+1. **Extra tests.**  Ok, before I issue a PR, I wish to understand how much the current wavelength
 solutions change when we run on the `develop` branch vs. the `speed_up_arcfit` branch.  The primary
 metrics to focus on are:
     - IDs_Wave_cov(%) :: as provided by the `pypeit_chk_wavecalib` script
@@ -426,10 +437,123 @@ It should cover:
 Inlucde figures frequently.
 Use Opus 5.5. Log your work.
 
+2. **Docs.** 
+
 
 ## Q&A
 
 ### Reject on sigma
+
+Measured on the 370 arc spectra stored in the 38 legacy dev-suite WaveCalib
+files, re-running `detect_lines` with the fwhm the pipeline used and fitting
+every line under A and B (`scripts/arcfit/arcfit_sigma_floor.py`, summary
+`arcfit_sigma_floor_summary.py`; per-line table
+`REDUX_OUT_C/arcfit_sigma_floor.npz`).  Legacy (= A) accepts 33 368 lines,
+17 559 of which are in the final wavelength fits; B adds 83 and loses 56.
+
+**What the code constrains today.**
+- `detect_lines` keeps a line only if `twid > 0` and
+  `twid < max_frac_fwhm × fwhm / 2.35` (`max_frac_fwhm` = 3 by default, 2 in
+  `tilts_find_lines` and `wvutils.arc_lines_from_spec`, 10 in
+  `findobj_skymask`), plus the centre cuts.  **There is no lower bound on σ
+  anywhere in PypeIt** other than σ > 0.
+- The fitted width is otherwise barely used: `get_xcorr_arc` builds the
+  cross-correlation arc with `fwhm/2.35` for every line (the line's own σ is
+  commented out), `measure_fwhm`/`map_fwhm` take a sigma-clipped mean of the
+  widths of the most significant lines.  So a narrow feature enters the
+  identification with the *nominal* width and full weight.
+- PR C's rule 3 (`ARCFIT_MIN_WIDTH = 0.35` × window half-width) is a
+  **hand-off, not a cut**: the line goes to `curve_fit`, and legacy's verdict
+  stands.  Over the suite, 539 B-accepted lines fall below it: the 83 spikes
+  B adds, and **456 features of the same width (median 0.33 σ_expected) that
+  `curve_fit` happens to converge on and legacy keeps**, 73 of them in final
+  fits.  The two fits agree on these to 0.000 px in σ; the only difference is
+  whether `curve_fit` raised `RuntimeError`.  So legacy already keeps the
+  population a floor would remove, at random.
+
+**What each candidate floor removes** (all remove all 83 B-only spikes;
+"legacy" = legacy-accepted lines also removed; "fit" = of those, lines in a
+final wavelength fit):
+
+| floor | legacy lines removed | in final fits | where the final-fit lines are |
+|---|---:|---:|---|
+| **σ > 0.85 px** (FWHM > 2 px) | 341 (1.0%) | **84** | **Kast red: 82** (300_7500_Ne 20 of 122, 600_5000_d46 10 of 32, 600_7500_d55_ret **38 of 41**, 600_7500_d57 14 of 53); DEIMOS 2 |
+| σ > 0.5 × fwhm_par/2.355 | 381 | 18 | Kast red 600_7500_d57 11 (runs with `fwhm_fromlines = False`, `fwhm = 4`); DEIMOS 7 |
+| rule 3 as a cut (σ > 0.35 × half-window) | 473 | **73** | **Kast red 600_7500_d57 43 of 53, 1200_5000_d57 20 of 31** (both `fwhm_fromlines = False`); DEIMOS 10 |
+| **σ > 0.5 × median σ of the accepted lines in the same spectrum** | 325 | **6** | DEIMOS only (600ZD MSC01 3, MSC02 2, 1200G_M_5500 1); nothing on Kast or LRIS |
+| same, 0.4 × median | 244 | 2 | DEIMOS; misses one spike (1200G_M_7750, σ 0.63) |
+
+Why the absolute floor fails: the Kast red setups are unbinned with measured
+FWHM **1.71–2.53 px** (600_7500_d55_ret 1.71, 600_5000_d46 2.14,
+600_7500_d57 2.15, 300_7500_Ne 2.15–2.26, 1200_5000_d57 2.53), so the
+expected σ is 0.73–1.07 px and 28% of all Kast red lines have σ < 0.85.  The
+premise "no line is narrower than FWHM = 2 px" does not hold for them.  Why
+the rule-3 threshold fails as a cut: it scales with the fwhm the *caller*
+passes, and two Kast red setups pass `fwhm = 4` for 2.2-px lines
+(`fwhm_fromlines = False`), so the threshold (1.05 px) sits above almost all
+their real lines (σ ≈ 0.9; report §5.5, Figure 5).  Under A that is harmless,
+because `curve_fit` accepts them; as a cut it would delete 63 of their 84
+final-fit lines.  The self-calibrated floor has neither problem.
+
+**Where B's identification changes actually come from.**  The sigma floor
+addresses only one of B's two differences from legacy:
+- the **83 spikes** (σ ≈ 0.33 σ_expected, all DEIMOS, all removed by any
+  floor).  They are behind `830G_L_8100` (report §5.3): with a floor, B would
+  reproduce legacy there;
+- the **56 plateau edges** B loses through non-convergence (rules 1–2).  They
+  are behind `600ZD` MSC01 slit 2 (report §5.4: the blue-end tcent lists are
+  identical; the one lost line is a 38 000-count edge at the red end), MSC01
+  slit 11, and MSC03 slits 0/14/15.  **A floor does nothing for these.**  "B
+  plus a floor" therefore keeps the 600ZD misidentifications of Q8; "A minus
+  rule 3 plus a floor" does not.
+
+Cost is not the deciding factor: rule 3 is cheap (its 83 failures cost
+~800 evaluations each, ~0.1 s over the suite); rules 1–2 carry the hand-off
+cost (432 `RuntimeError`s, 1.75 of 1.83 s on the DEIMOS arcs), and after the
+archive-FWHM cache A and B differ by ~13 s on serial DEIMOS 600ZD.
+
+**Q13 — Floor the fitted σ, and which floor?**  Yes to a floor in principle:
+it makes the treatment of sub-resolution features deterministic (today legacy
+keeps 456 of them because `curve_fit` happened to converge and drops 83
+because it did not).  But not the absolute 0.85 px (deletes 38 of 41 final
+lines on Kast red 600_7500_d55_ret), and not the rule-3 threshold as a cut
+(deletes 63 Kast red final-fit lines).  **My default: σ < 0.5 × median σ of
+the lines in the same spectrum that pass the other cuts**, implemented in
+`detect_lines` as a new `min_frac_med_width`-style argument next to
+`max_frac_fwhm`, applied to every line regardless of which fit produced it.
+Over the suite it removes the 83 spikes plus 325 same-width legacy features
+(1%), of which 6 are in final fits, all DEIMOS; nothing changes on Kast or
+LRIS.  It would need a vet run.  Agree with the rule, or do you prefer a
+floor tied to the `fwhm` argument (only safe once the `fwhm_fromlines = False`
+setups are fixed)?
+
+>A: Yes, I agree with the proposed rule, sigma < 0.5 x median sigma
+
+**Q14 — B without hand-off, or A without rule 3?**  I read your note as "B
+plus the floor".  The evidence says the floor fixes the spike cases
+(`830G_L_8100`, the 1200G changes) but not the plateau-edge cases (`600ZD`
+MSC01 slit 2 and the other four 600ZD slits), because those come from rules
+1–2, not from narrow lines.  **My default: keep the non-convergence hand-off
+(rules 1–2) and drop rule 3 in favour of the floor** — i.e. A with the floor,
+which removes the `curve_fit` lottery on narrow features while keeping the
+plateau edges that anchor `full_template`.  If you want B outright, the
+600ZD flips of Q8 come with it (unless the plateau edges are handled another
+way, e.g. the plateau model of report §6, which is outside PR C).
+
+>A: I want B without hand-off.  Those plateau-edge cases are junk and only
+improve the 600ZD solution because it too is already problematic.
+
+**Q15 — In PR C, or a follow-up?**  Either way the floor changes line lists
+relative to `develop` (−1% of lines, 6 final-fit lines on DEIMOS), so it needs
+its own vet run and release note.  **My default: a separate, small PR after
+C** (`detect_lines` gains one argument and one cut; `ARCFIT_MIN_WIDTH`/rule 3
+are removed from `fit_arcspec` at the same time), so that PR C stays
+output-identical to legacy and the behaviour change is reviewed on its own.
+If you prefer it inside PR C, I will implement it, re-run the vet suite
+(~2.5 h) and update the report and release notes.
+
+>A: I wish to implement it in this PR.  I wish to maintain legacy by allowing
+the user to choose between A and B.  I wish to make B the default.
 
 ### Original
 
@@ -1926,3 +2050,109 @@ coverage) is next.  No new questions; Q12 is still unanswered.
 **For you to commit:** `pypeitdev/speed_up/Reports/Speed_Up_Arcfit_Report.md`,
 `pypeitdev/speed_up/scripts/arcfit/report_fig_arc1dfit.py`,
 `pypeitdev/speed_up/scripts/arcfit/report_fig_sigma.py`, and this file.
+
+### 2026-11-02 (Task 10 — reject on sigma: measurement and Q&A)
+
+Session note: Fable 5.1 again, not Opus 5.5.
+
+**Code check.**  The only width constraints in PypeIt are `detect_lines`'
+`twid > 0` and `twid < max_frac_fwhm × fwhm/2.35` (3 by default; 2 in
+`tilts_find_lines` and `arc_lines_from_spec`; 10 in `findobj_skymask`).  No
+lower bound exists apart from PR C's rule 3, which is a hand-off, not a cut.
+`get_xcorr_arc` ignores the fitted width (uses `fwhm/2.35` for every line).
+
+**Measurement** (`scripts/arcfit/arcfit_sigma_floor.py` →
+`REDUX_OUT_C/arcfit_sigma_floor.npz`; `arcfit_sigma_floor_summary.py`;
+~10 min).  All 370 spectra of the 38 legacy WaveCalib files, A and B fits,
+lines matched to the stored `pixel_fit` to know which enter the final fits.
+Candidate floors: absolute 0.85 px, 0.5 × fwhm_par/2.355, rule 3 as a cut,
+and 0.4/0.5/0.6 × the per-spectrum median σ.  Results are tabulated in the
+new Q&A section "Reject on sigma".  Headline: the absolute floor deletes 82
+Kast red final-fit lines (measured FWHM 1.7–2.5 px there); rule 3 as a cut
+deletes 63 (two Kast red setups run with `fwhm_fromlines = False`,
+`fwhm = 4`); the self-calibrated 0.5 × median floor removes all 83 spikes and
+only 6 final-fit lines, all DEIMOS.  Legacy already keeps 456 features of the
+same width as the spikes (73 in final fits), so a floor is a behaviour change
+relative to legacy too.
+
+**Correction to Task 9.**  `report_fig_sigma.py` (and the new script) now use
+the fwhm the pipeline used — the measured value, or the `fwhm` parameter when
+`fwhm_fromlines = False` — via the new helper
+`scripts/arcfit/arcfit_pipeline_fwhm.py` (parses the setup's `.par`).  Only
+Kast red 600_7500_d57 and 1200_5000_d57 are affected.  Figure 5's Kast red
+panel was regenerated (79 lines, fwhm 4.0; its real lines at σ ≈ 0.9 px sit
+below A's hand-off line and are all fit by `curve_fit` under A), and report
+§5.5 was reworded accordingly.  No other figure or number changed.
+
+**Questions posed:** Q13 (which floor; default: 0.5 × per-spectrum median σ,
+as a `detect_lines` cut), Q14 (B + floor vs A − rule 3 + floor; default: the
+latter, because the 600ZD flips come from the plateau edges, not the spikes),
+Q15 (in PR C or a follow-up; default: follow-up PR).
+
+**For you to commit:** `claude_prompts/speed_up/C.md`,
+`pypeitdev/speed_up/Reports/Speed_Up_Arcfit_Report.md`,
+`pypeitdev/speed_up/scripts/arcfit/{arcfit_sigma_floor.py,arcfit_sigma_floor_summary.py,arcfit_pipeline_fwhm.py,report_fig_sigma.py}`.
+
+### 2026-11-03 (Task 11 — rule implemented: B is the default, σ floor in detect_lines; new vet tests; dev suite vetted)
+
+Model: Opus 5.5.  Decisions applied: Q13 (σ < 0.5 × median σ rejected),
+Q14 (B without hand-off), Q15 (in this PR; A kept selectable; B default).
+
+**Code (PypeIt, uncommitted on `speed_up_arcfit`):**
+- `pypeit/core/arc.py`: `ARCFIT_MATCH_CURVEFIT = False`; new
+  `ARCFIT_MIN_FRAC_MED_WIDTH = 0.5` and `ARCFIT_MIN_NLINES_MED_WIDTH = 5`;
+  `detect_lines(..., min_frac_med_width=None)` (None → 0.5 under B, no floor
+  under A or the kill switch, so A still reproduces legacy line lists; 0
+  disables; skipped below 5 lines).  Docstrings updated.
+- Floor disabled (`min_frac_med_width=0.`) for the non-arc callers:
+  `trace.py` (edge peaks), `findobj_skymask.py` (object peaks), `flexure.py`
+  (slitmask x-corr peak), `wvutils.xcorr_shift` (x-corr peak).  Flexure's
+  sky cross-correlation uses all peaks' amplitudes, so it is unaffected.
+- `[calibrations][wavelengths] fast_line_fit`: default **True**, description
+  rewritten; now also applied in `BuildWaveTilts.run` (body moved to `_run`),
+  so `False` gives A for both wavelengths and tilts.
+- Tests: `pypeit/tests/test_arc.py` updated and extended (17 tests; full suite
+  **934 passed**).  `doc/pypeit_par.rst` regenerated; release notes
+  (`doc/releases/2.1.0dev.rst`) rewritten for the new default, the floor, the
+  tests and the vet tests.
+
+**Dev suite:**
+- New `vet_tests/test_arcfit.py`: `test_arcfit_width_floor` (every final-fit
+  line re-measured on the stored arc must have σ ≥ 0.8 × the floor) and
+  `test_arcfit_deimos_830g_l_8100` (RMS < 0.1, ≥ 65 lines, no duplicate ID).
+  Checked to discriminate: legacy fails the first (2 lines), B-without-floor
+  fails both; the new default passes both.  A general duplicate-ID test was
+  dropped because legacy 600ZD MSC01 already has duplicate IDs.
+- `scripts/arcfit/arcfit_floor_vet.sh` → `REDUX_OUT_C/Bfloor` (service
+  `pypeit-arcfit-floor`, 08:37–11:16): **35/35 reduced; vet 10 passed,
+  13 failed = the usual missing-product failures**; new tests pass.
+- `variant_hook/sitecustomize.py`: variants A/B now also neutralise
+  `arc.arcfit_options`, otherwise the new `fast_line_fit` default would
+  override them in wavecal/tilts.
+
+**Results** (`REDUX_OUT_C/arcfit_metrics_Bfloor.md`; report §12): final-fit
+lines 21 702 → 21 644.  Kast and LRIS blue unchanged (RMS within 2e-4,
+|Δλ| ≤ 5e-4 px).  DEIMOS: 830G_L_8100 0.051 → **0.034**; 830G_LVM_8400
+median 0.141 → 0.078; 1200G_M_7750 max 0.42 → 0.11; 600ZD flips as B (by
+design).  **New difference vs B:** 1200G_M_5500 slits 2 and 11 change
+identification at one end (~19 px) with lower RMS; a dispersion check
+against the unchanged slits is inconclusive.  Tilts: 1200G_M_5500 slit 0
+differs by up to 62 px at the extrapolated spectral end; the floor removed
+one of 22 tilt lines, the new fit has lower RMS and no inversion rejections
+(legacy 12 417), and equals gn0 to 0.01 px.
+
+**Floor side effects noted:** `paranal_sky.fits` loses 437/3 766 lines
+(broad σ distribution in a 0.05 Å/pix spectrum; only `test_detect_lines`
+and the archive FWHM use it); archive-sky FWHM unchanged for Paranal and
+Kast, 6.23 → 6.87 px for `sky_LRISb_600.fits` (18 marginal lines).
+
+**Report:** `Speed_Up_Arcfit_Report.md` has an update banner and a new §12.
+§0–§11 still describe A as "shipped"; the banner says so.  The slides are
+not updated.
+
+**For you to commit:** PypeIt — `pypeit/core/{arc,trace,findobj_skymask,flexure}.py`,
+`pypeit/core/wavecal/wvutils.py`, `pypeit/wavetilts.py`,
+`pypeit/par/pypeitpar.py`, `pypeit/tests/test_arc.py`, `doc/pypeit_par.rst`,
+`doc/releases/2.1.0dev.rst`.  Dev suite — `vet_tests/test_arcfit.py`,
+`pypeitdev/speed_up/scripts/arcfit/{arcfit_floor_vet.sh,variant_hook/sitecustomize.py}`,
+the report and this file.  `REDUX_OUT_C/` now holds ~26 GB more (`Bfloor/`).

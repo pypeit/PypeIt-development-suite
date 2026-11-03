@@ -7,6 +7,16 @@ with every intermediate number and decision, is
 are also in `speed_up_results.md`, section "After workstream C".  This report
 stands alone.
 
+> **Update, 2026-11-03 (Task 11): the default has changed.**  Following Q13–Q15
+> in `C.md`, the shipped default is now **option B with a median-width
+> floor**: `ARCFIT_MATCH_CURVEFIT = False`, `fast_line_fit = True`, and
+> `detect_lines` rejects lines whose σ is below 0.5 × the median σ of the
+> lines in the same spectrum.  Option A (the curve_fit hand-offs, no floor)
+> remains available as `fast_line_fit = False` and reproduces the legacy
+> line lists.  Sections 0–11 describe the work as it stood on 2026-10-26,
+> when A was the default; where they say "shipped default", read "option A".
+> **§12 describes the change and its dev-suite vetting.**
+
 ## Contents
 
 0. [Executive summary](#0-executive-summary)
@@ -21,6 +31,7 @@ stands alone.
 9. [Re-profiling and the A+B+C totals](#9-re-profiling-and-the-abc-totals)
 10. [Known limitation: the `full_template` shift-and-stretch step](#10-known-limitation-the-full_template-shift-and-stretch-step)
 11. [Switches, options and remaining risks](#11-switches-options-and-remaining-risks)
+12. [Update: option B with a median-width floor is the default](#12-update-option-b-with-a-median-width-floor-is-the-default)
 - [Appendix A: files changed](#appendix-a-files-changed)
 - [Appendix B: tests](#appendix-b-tests)
 - [Appendix C: scripts and how to regenerate the figures](#appendix-c-scripts-and-how-to-regenerate-the-figures)
@@ -950,6 +961,157 @@ such a slit.  This applies to PR C's tolerance-level differences, to
    (§6) while their legacy fit parameters are artefacts (§5.1).  A dedicated
    plateau model would be more principled.
 
+## 12. Update: option B with a median-width floor is the default
+
+**Decision (C.md, Q13–Q15, 2026-11-03).**
+- Reject lines narrower than **0.5 × the median σ of the lines in the same
+  spectrum** (Q13).
+- Ship **option B without any `curve_fit` hand-off**.  The plateau edges B
+  loses are judged junk: they only helped 600ZD because that setup's
+  `full_template` identification is fragile already (Q14).
+- Do it **in this PR**, keep legacy behaviour selectable, and make B the
+  default (Q15).
+
+### 12.1 Why a relative floor
+
+Task 10 measured candidate floors on all 370 dev-suite arc spectra (C.md,
+"Reject on sigma"; `arcfit_sigma_floor.py`).  PypeIt had **no lower bound on
+σ** other than σ > 0, and legacy kept 456 sub-resolution features simply
+because `curve_fit` happened to converge on them.
+
+| floor | legacy lines removed | of those in final fits |
+|---|---:|---:|
+| σ > 0.85 px (FWHM > 2 px) | 341 | 84 (82 on Kast red, whose lines are 1.7–2.5 px FWHM) |
+| σ > 0.35 × window half-width (A's hand-off rule used as a cut) | 473 | 73 (two Kast red setups pass `fwhm = 4` for 2.2-px lines) |
+| **σ > 0.5 × median σ of the spectrum** | **325** | **6, all DEIMOS** |
+
+All three remove every one of the 83 spikes that B adds.  Only the relative
+floor leaves Kast and LRIS untouched.
+
+### 12.2 Implementation
+
+| item | change |
+|---|---|
+| `ARCFIT_MATCH_CURVEFIT` | default **False** (B): no hand-off to `curve_fit` for any line the vectorized fit handles |
+| `ARCFIT_MIN_FRAC_MED_WIDTH = 0.5`, `ARCFIT_MIN_NLINES_MED_WIDTH = 5` | new module constants |
+| `detect_lines(..., min_frac_med_width=None)` | new argument.  `None`: the floor (0.5) under B, no floor under A or the kill switch.  A number sets the floor; 0 disables it.  Skipped when fewer than 5 lines pass the other cuts |
+| non-arc callers | pass `min_frac_med_width=0`: slit-edge peaks (`trace.py`), object peaks (`findobj_skymask.py`), the slitmask cross-correlation peak (`flexure.py`) and the arc cross-correlation peak (`wvutils.xcorr_shift`) |
+| `[calibrations][wavelengths] fast_line_fit` | default **True**; now applied to **both** `BuildWaveCalib.run` and `BuildWaveTilts.run` (the latter split into `run` / `_run`).  `False` gives A (legacy line lists) for both |
+| `ARCFIT_MIN_WIDTH` (0.35) | kept; used only under A |
+
+Spectral flexure's cross-correlation uses the amplitudes of *all* peaks, so
+the floor does not affect it.  The archived-sky FWHM measurement
+(`measure_fwhm`) does use the accepted lines.  On `paranal_sky.fits` and
+`sky_kastb_600.fits` it is unchanged.  On `sky_LRISb_600.fits`, which has
+only 18 lines at 4–7σ, removing one 4σ line moves it from 6.23 to 6.87 px.
+That measurement is fragile either way.
+
+On the 140 000-pixel, 0.05 Å/pixel `paranal_sky.fits` used by
+`test_detect_lines`, the floor removes 437 of 3 766 lines (11.6%), many of
+them significant.  That spectrum has a broad, continuous σ distribution
+rather than a narrow arc-line peak, so a relative floor is a much stronger
+cut there than on arc spectra.  No pipeline step fits lines in that spectrum
+other than the FWHM measurement above.
+
+### 12.3 Tests
+
+**Unit tests** (`pypeit/tests/test_arc.py`, 17 tests, all pass; full suite
+934 passed):
+- `test_detect_lines`: default count on the Paranal sky (3 300–3 360) and the
+  legacy count (> 3 700); every accepted σ above the floor;
+- `test_detect_lines_rejects_narrow_features`: on a synthetic arc with
+  single-pixel spikes, every arc line is kept and no spike survives; without
+  the floor the spikes are accepted; under A the line list equals legacy's;
+  an explicit floor works under A;
+- `test_detect_lines_floor_needs_enough_lines`: no floor below 5 lines;
+- `test_detect_lines_floor_explicit_value`: the cut equals
+  `σ > frac × median` for several fractions;
+- `test_wavetilts_applies_fast_line_fit`: `BuildWaveTilts.run` applies the
+  parameter (and B when `wavepar` is None);
+- updated: the defaults in `test_arcfit_options`, `test_fast_line_fit_par`
+  and `test_wavecalib_applies_fast_line_fit`; the narrow-feature and
+  match-legacy tests now set A explicitly.
+
+**Vet tests** (new `vet_tests/test_arcfit.py` in the dev suite):
+- `test_arcfit_width_floor`: re-measures every line of every final
+  wavelength fit (Kast, DEIMOS, LRIS blue; > 1 000 lines) on the stored arc
+  spectrum, with the pipeline's `sigdetect`, `fwhm` and `max_frac_fwhm = 2`,
+  and requires σ ≥ 0.8 × the floor;
+- `test_arcfit_deimos_830g_l_8100`: RMS < 0.1 px, ≥ 65 lines, and no
+  wavelength assigned twice.
+
+The vet tests discriminate as intended:
+
+| reduction | `test_arcfit_width_floor` | `test_arcfit_deimos_830g_l_8100` |
+|---|---|---|
+| legacy (`REDUX_OUT_C/legacy`) | **fails**: 2 lines (1200G_M_5500 slit 9, σ 0.36 px; 600ZD MSC01 slit 12, σ 0.54 px) | passes (0.051 px) |
+| B without floor (`REDUX_OUT_C/gn10`) | **fails**: the same 2 + the 830G spike (σ 0.45 px) | **fails** (0.270 px) |
+| **new default (`REDUX_OUT_C/Bfloor`)** | **passes** | **passes** (0.034 px) |
+
+A general "no duplicate identification" test was tried and dropped: legacy
+600ZD MSC01 already assigns one wavelength to two detections 1.5–2 px apart
+on several slits.
+
+### 12.4 Dev-suite vetting of the new default
+
+`scripts/arcfit/arcfit_floor_vet.sh`, user service `pypeit-arcfit-floor`
+(`MemoryMax=120G`), 2026-11-03 08:37–11:16, PypeIt `a49e8678f` plus the
+uncommitted Task 11 changes, no variant hook.  The comparison is
+`REDUX_OUT_C/arcfit_metrics_Bfloor.md` (`arcfit_metrics.py ... legacy Bfloor gn10`).
+
+- **Reduce: 35/35 setups.**  **Vet: 10 passed, 13 failed**; the 13 are the
+  same missing-product failures as legacy (instruments not reduced).  Every
+  vetted RMS passes.
+- **Lines in the final fits:** legacy 21 702, **new default 21 644**
+  (−0.27%), B without floor 21 681.
+- **Kast and LRIS blue are unchanged:** every RMS within 2e-4 px of legacy and
+  |Δλ| ≤ 5e-4 px, except LRIS `multi_300` DET01 (1.8e-4 px; it was 0.096 px
+  under B without the floor).
+
+Where the new default differs from legacy (DEIMOS only):
+
+| setup | legacy RMS med / max | new default | B without floor | comment |
+|---|---|---|---|---|
+| 830G_L_8100 | 0.051 | **0.034** | 0.270 | spikes removed; 66 lines (69) |
+| 830G_LVM_8400 | 0.141 / 0.161 | **0.078 / 0.161** | 0.141 / 0.172 | 311 lines (328) |
+| 1200G_M_7750 | 0.043 / 0.422 | **0.041 / 0.111** | 0.041 / 0.128 | the improvement of §4, kept |
+| 1200G_M_5500 | 0.283 / 0.436 | 0.302 / 0.409 | 0.283 / 0.436 | slits 2 and 11 move ~19 px; see below |
+| 1200B_M_5200 | 0.101 / 0.287 | 0.101 / 0.287 | same | 625 lines (629); 2 slits' RMS +10% |
+| 600ZD_M_6500 MSC01–04 | — | as B without floor | — | the identification flips of §4 and §5.4, accepted per Q14 |
+| 900ZD_LVM_5500 | 0.071 / 0.109 | 0.071 / 0.099 | 0.071 / 0.099 | |
+
+**1200G_M_5500, slits 2 and 11** (spat_id 493 and 1825) change
+identification at one end (2 and 3 lines swapped; |Δλ| ≈ 19 px), with lower
+RMS (0.210 → 0.171, 0.240 → 0.188).  Comparing each solution's dispersion
+curve with those of the eight unchanged slits does not settle which is
+right: the unchanged slits themselves spread by up to 0.1 Å/pixel, and both
+variants stay within that.  These are `full_template` slits, i.e. the
+fragility of §10.
+
+**Tilts.**  Median |Δtilt| ≤ 0.013 px on every file.  The maxima of note:
+- **1200G_M_5500 slit 0, 61.7 px at spectral pixel 0.**  The floor removes
+  one of the 22 tilt lines (legacy could use only 21 of them).  The new 2D
+  fit has a slightly lower RMS (0.216 vs 0.221 px), and its tilt-image
+  inversion rejects no pixels, against 12 417 in legacy.  The difference is
+  confined to the extrapolated ends of the slit (median 0.34 px in the
+  central 3 100 pixels, 9 px in the first 100).  The new tilts equal those of
+  the pure analytic fit (`gn0`) to 0.01 px.
+- 1200B_M_5200 slit 8: 3.3 px max (p99 1.7 px); LRIS
+  `long_600_4000_d560_slitless` DET01: 1.4 px max, one tilt line fewer
+  (12 vs 13).  Both are edge effects of a changed tilt-line list; they were
+  not investigated further.
+
+### 12.5 What this means for the earlier sections
+
+- §0's "products unchanged except one slit" applies to option A only.  The
+  default now changes DEIMOS identifications on the slits listed in §4 and
+  above, by design (Q14).
+- The speed numbers for B in §3, §7 and §9 apply to the new default: the
+  floor is a single vectorized comparison.
+- The variant hook (`variant_hook/sitecustomize.py`) now also neutralises
+  `arcfit_options`, so `PYPEIT_ARCFIT_VARIANT=A` / `B` still apply to every
+  caller despite the `fast_line_fit` parameter.
+
 ---
 
 ## Appendix A: files changed
@@ -1031,6 +1193,7 @@ Other analysis scripts used for the numbers in this report:
 - `arcfit_wave_rms.py`, `arcfit_png_cmp.py`;
 - `arcfit_sigma_floor.py`, `arcfit_sigma_floor_summary.py` (Task 10: what a lower bound on σ would remove, suite-wide);
 - `arcfit_pipeline_fwhm.py` (the fwhm the pipeline used per slit: measured, or the parameter when `fwhm_fromlines = False`);
+- `arcfit_floor_vet.sh` (Task 11: dev-suite reduction and vet tests of the new default into `REDUX_OUT_C/Bfloor`);
 - the batch drivers `arcfit_vet.sh`, `arcfit_task6.sh`, `arcfit_q10.sh`,
   `arcfit_q10_ncpu4.sh`;
 - the variant switch `variant_hook/sitecustomize.py` (`PYPEIT_ARCFIT_VARIANT`
