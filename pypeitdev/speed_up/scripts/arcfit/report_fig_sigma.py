@@ -6,7 +6,8 @@ configurations, under the shipped default (A) and option B
 highlighted; so are the lines A keeps and B rejects.
 
 As in report_fig_saturated.py, detect_lines is re-run on the arc spectra stored
-in the legacy dev-suite WaveCalib files (per-slit spectrum and measured fwhm),
+in the legacy dev-suite WaveCalib files (per-slit spectrum, and the fwhm the
+pipeline used: the measured one, or the parameter when fwhm_fromlines is False),
 the fit_arcspec inputs are captured, and each line is fit under A and B.  The
 wavelength of a line is its B (or A) centroid mapped through the slit's stored
 wavelength solution.
@@ -24,6 +25,7 @@ from pypeit import log
 log.setLevel('ERROR')
 from pypeit.core import arc
 from pypeit.wavecalib import WaveCalib
+from arcfit_pipeline_fwhm import pipeline_fwhm
 
 DEV = os.environ.get('PYPEIT_DEV', '/mnt/tank/Astronomy/PypeIt/PypeIt-development-suite')
 ROOT = f'{DEV}/REDUX_OUT_C/legacy/'
@@ -66,7 +68,7 @@ def collect(rel):
     for i, w in enumerate(wc.wv_fits):
         if w is None or w.spec is None or w.fwhm is None or w.wave_soln is None:
             continue
-        spec, fw = np.asarray(w.spec), float(w.fwhm)
+        spec, fw = np.asarray(w.spec), pipeline_fwhm(ROOT + rel, w)
         pixt, res, good, fi = fit_slit(spec, fw)
         pix = np.arange(spec.size)
         for j in range(pixt.size):

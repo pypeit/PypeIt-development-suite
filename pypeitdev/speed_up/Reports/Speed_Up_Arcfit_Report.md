@@ -550,7 +550,9 @@ shows the fit window of the one line on which A and B differ.
 **Figure 5** (`report_fig_sigma.py`).  Fitted Gaussian σ of every line
 `detect_lines` accepts, against wavelength, for six dev-suite setups.
 `detect_lines` is re-run on the arc spectra stored in the legacy WaveCalib
-files with each slit's measured fwhm, and every line is fit under A and B.
+files with the fwhm the pipeline used (each slit's measured fwhm, or the
+`fwhm` parameter where `fwhm_fromlines = False`), and every line is fit under
+A and B.
 Grey: accepted by both (σ from B).  **Orange: accepted by B but rejected by
 A** (A hands the line to `curve_fit`, which fails).  Blue circles: accepted
 by A but rejected by B (plotted at A's σ).  The dotted line is the expected
@@ -560,7 +562,7 @@ dash-dot line A's narrow-width hand-off, 0.35 × the window half-width.
 | setup | slits | lines accepted by both | only B | only A |
 |---|---:|---:|---:|---:|
 | Kast blue 600/4310 d55 | 1 | 32 | 0 | 0 |
-| Kast red 600/7500 d57 | 1 | 72 | 0 | 0 |
+| Kast red 600/7500 d57 | 1 | 79 | 0 | 0 |
 | LRIS blue multi_300_5000_d680 DET01 | 9 | 416 | 0 | 0 |
 | DEIMOS 600ZD_M_6500 MSC01 | 16 | 1 775 | 0 | 6 |
 | DEIMOS 830G_L_8100 | 1 | 142 | 5 | 0 |
@@ -568,9 +570,15 @@ dash-dot line A's narrow-width hand-off, 0.35 × the window half-width.
 
 What to see:
 
-- **On Kast and LRIS, A and B accept the same lines.**  The σ distributions
-  sit on the expected value and vary smoothly with wavelength (Kast red rises
-  towards both ends of its range).  Nothing comes near the hand-off threshold.
+- **On Kast and LRIS, A and B accept the same lines.**  On Kast blue and
+  LRIS the σ distributions sit on the expected value and vary smoothly with
+  wavelength.  Kast red 600/7500 is the exception that proves the mechanism:
+  it runs with `fwhm_fromlines = False` and `fwhm = 4`, while its lines are
+  really 2.15 px wide (measured), so almost all of them (σ ≈ 0.85–0.95 px,
+  rising to 1.6 px at both ends of the range) fall *below* A's hand-off line
+  at 1.05 px.  A hands them all to `curve_fit`, which accepts them, and the
+  two variants end with the same 79 lines.  The hand-off threshold scales
+  with the fwhm the caller passes in, not with the true line width.
 - **Every difference is a DEIMOS feature, in one of the two populations of
   §4.**  The B-only lines (orange) form a tight band at σ ≈ 0.5 px, a third of
   the expected 1.5 px, well below A's hand-off line at 0.7 px.  The A-only
@@ -1021,6 +1029,8 @@ Other analysis scripts used for the numbers in this report:
 - `arcfit_edge_cases.py`;
 - `arcfit_msc03_slit11.py`, `arcfit_msc03_trace.py`;
 - `arcfit_wave_rms.py`, `arcfit_png_cmp.py`;
+- `arcfit_sigma_floor.py`, `arcfit_sigma_floor_summary.py` (Task 10: what a lower bound on σ would remove, suite-wide);
+- `arcfit_pipeline_fwhm.py` (the fwhm the pipeline used per slit: measured, or the parameter when `fwhm_fromlines = False`);
 - the batch drivers `arcfit_vet.sh`, `arcfit_task6.sh`, `arcfit_q10.sh`,
   `arcfit_q10_ncpu4.sh`;
 - the variant switch `variant_hook/sitecustomize.py` (`PYPEIT_ARCFIT_VARIANT`
