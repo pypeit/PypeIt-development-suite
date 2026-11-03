@@ -20,7 +20,7 @@ from pypeit.tests.tstutils import dummy_fitstbl, data_output_path
 @pytest.fixture
 def fitstbl():
     # Check for files
-    root = Path(os.getenv('PYPEIT_DEV'), 'RAW_DATA/shane_kast_blue/600_4310_d55').resolve()
+    root = Path(os.getenv('PYPEIT_DEV'), 'RAW_DATA/shane_kast_blue/600_4310_d55').absolute()
     files = [ 
         root / 'b1.fits.gz',    # arc
         root / 'b11.fits.gz',   # trace
@@ -70,7 +70,7 @@ def reset_calib(calib):
 def test_it_all(multi_caliBrate):
 
     # Remove any pre-existing directory
-    calib_dir = Path(multi_caliBrate.calib_dir).resolve()
+    calib_dir = Path(multi_caliBrate.calib_dir).absolute()
     if calib_dir.exists():
         shutil.rmtree(calib_dir)
 
@@ -116,7 +116,7 @@ def test_reuse(multi_caliBrate, fitstbl):
     Test that Calibrations appropriately reuses existing calibrations frames.
     """
     # In case of previous data or failures
-    calib_dir = Path(multi_caliBrate.calib_dir).resolve()
+    calib_dir = Path(multi_caliBrate.calib_dir).absolute()
     if calib_dir.exists():
         shutil.rmtree(calib_dir)
 

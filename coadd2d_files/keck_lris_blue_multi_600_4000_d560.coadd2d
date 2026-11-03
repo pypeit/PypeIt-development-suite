@@ -12,6 +12,8 @@
 [coadd2d]
    offsets = auto
    weights = auto
+   spat_samp_fact = 1.2
+   spec_samp_fact = 1.2
 
 
 

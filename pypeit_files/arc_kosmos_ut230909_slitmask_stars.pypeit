@@ -1,0 +1,31 @@
+[rdx]
+    spectrograph = arc_kosmos
+[calibrations]
+ [[wavelengths]]
+   lamps = 'NeI'
+
+setup read
+Setup G:
+  binning: 1,1
+  decker: Empty
+  dispname: blue
+setup end
+
+
+
+# Data block 
+data read
+ path /home/holtz/apo_testdata/KOSMOS/UT230909_slitmask_stars
+                filename |                 frametype |                 ra |                dec |      target | dispname | decker | binning |                mjd |         airmass | exptime |             calib | comb_id | bkg_id
+Ne_120s_SEG3G2.0023.fits |                  arc,tilt |  320.3910833333333 | 19.152602777777776 | Seg3G2-Mask |      red | Seg3G2 |     1,1 | 60196.181602674515 | 1.0529856449468 |   120.0 |                 6 |      -1 |     -1
+Ne_360s_SEG3G2.0024.fits |                  arc,tilt |  320.3910833333333 | 19.152602777777776 | Seg3G2-Mask |      red | Seg3G2 |     1,1 |  60196.18373425123 | 1.0529853358166 |   360.0 |                 6 |      -1 |     -1
+          Bias.0074.fits |                      bias | 103.99999999999999 |               70.0 |             |     blue |  Empty |     1,1 | 60196.570006513575 | 1.0639614681002 |     0.0 | 0,1,2,3,4,5,6,7,8 |      -1 |     -1
+          Bias.0075.fits |                      bias | 103.99999999999999 |               70.0 |             |     blue |  Empty |     1,1 |  60196.57063218781 | 1.0639614073768 |     0.0 | 0,1,2,3,4,5,6,7,8 |      -1 |     -1
+          Bias.0076.fits |                      bias | 103.99999999999999 |               70.0 |             |     blue |  Empty |     1,1 |  60196.57125372827 | 1.0639614073768 |     0.0 | 0,1,2,3,4,5,6,7,8 |      -1 |     -1
+          Bias.0077.fits |                      bias | 103.99999999999999 |               70.0 |             |     blue |  Empty |     1,1 |  60196.57188914074 | 1.0639613871357 |     0.0 | 0,1,2,3,4,5,6,7,8 |      -1 |     -1
+          Bias.0078.fits |                      bias | 103.99999999999999 |               70.0 |             |     blue |  Empty |     1,1 |  60196.57251174398 | 1.0639613466535 |     0.0 | 0,1,2,3,4,5,6,7,8 |      -1 |     -1
+   Flat_SEG3G2.0021.fits | pixelflat,illumflat,trace |  320.3910833333333 | 19.152602777777776 | Seg3G2-Mask |      red | Seg3G2 |     1,1 |  60196.17750171406 | 1.0561506639329 |     2.0 |                 6 |      -1 |     -1
+   Flat_SEG3G2.0022.fits | pixelflat,illumflat,trace |  320.3910833333333 | 19.152602777777776 | Seg3G2-Mask |      red | Seg3G2 |     1,1 | 60196.178526972246 | 1.0547867213325 |     2.0 |                 6 |      -1 |     -1
+        SEG3G2.0020.fits |                   science |  320.3910833333333 | 19.152602777777776 | Seg3G2-Mask |      red | Seg3G2 |     1,1 |  60196.16290460083 | 1.0808991622036 |  1200.0 |                 6 |      11 |     -1
+data end
+

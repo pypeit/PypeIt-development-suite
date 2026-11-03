@@ -8,6 +8,8 @@ spectrograph = keck_mosfire
 [coadd2d]
   offsets = maskdef_offsets
   weights = 1.,1.
+  spat_samp_fact = 1.2
+  spec_samp_fact = 1.2
 
 spec2d read
 filename

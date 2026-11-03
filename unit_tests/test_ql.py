@@ -17,7 +17,7 @@ from pypeit.scripts import ql
 
 def test_dither_parse():
 
-    dev_root = Path(os.environ['PYPEIT_DEV']).resolve()
+    dev_root = Path(os.environ['PYPEIT_DEV']).absolute()
     data_root = dev_root / 'RAW_DATA' / 'keck_nires'
 
     files = sorted(list((data_root / 'ABBA_nostandard').glob('*fits*')))
@@ -75,9 +75,9 @@ def test_run_ql():
     Test a basic execution of QL that only requires raw files.  This could also
     go in test_scripts.py ...
     """
-    rawpath = Path(os.environ['PYPEIT_DEV']).resolve() \
+    rawpath = Path(os.environ['PYPEIT_DEV']).absolute() \
                     / 'RAW_DATA' / 'shane_kast_blue' / '600_4310_d55'
-    rdxpath = Path().resolve() / 'test_ql'
+    rdxpath = Path().absolute() / 'test_ql'
 
     if rdxpath.is_dir():
         shutil.rmtree(rdxpath)
