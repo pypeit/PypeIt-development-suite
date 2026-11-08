@@ -1,9 +1,20 @@
-# Auto-generated PypeIt input file using PypeIt version: 1.12.3.dev180+g27b766ced
-# UTC 2023-05-09T18:53:00.689
+# Auto-generated PypeIt input file using PypeIt version: 2.0.1.dev139+gcfc66e3e2
+# UTC 2026-03-24T19:28:23.584+00:00
 
 # User-defined execution parameters
 [rdx]
     spectrograph = ldt_deveny
+[calibrations]
+    [[flatfield]]
+        slit_illum_finecorr = True
+[reduce]
+    [[findobj]]
+        find_numiterfit = 100
+        find_min_max = 400,1200
+        trace_min_max = 250,1650
+        maxnumber_sci = 5
+        maxnumber_std = 1
+        snr_thresh = 30.0
 
 # Setup
 setup read
@@ -17,16 +28,18 @@ setup end
 # Data block 
 data read
  path RAWDIR
-          filename |       frametype |                 ra |                dec |      target |       dispname | decker | binning |                mjd | airmass | exptime | cenwave | filter1 | dispangle | slitwid | lampstat01 | calib
-20230430.0032.fits |        arc,tilt | 119.50762499999999 |  34.79008333333333 | HgCdAr Arcs | DV1 (150/5000) |   None |     1,1 |  60064.08386400463 |     1.0 |    15.0 |  7220.0 |   CLEAR |      21.0 |     1.0 | Cd, Ar, Hg |     0
-20230430.0033.fits |        arc,tilt | 119.50762499999999 |  34.79008333333333 | HgCdAr Arcs | DV1 (150/5000) |   None |     1,1 | 60064.084133449076 |     1.0 |    15.0 |  7220.0 |   CLEAR |      21.0 |     1.0 | Cd, Ar, Hg |     0
-20230430.0034.fits |        arc,tilt | 119.50762499999999 |  34.79008333333333 | HgCdAr Arcs | DV1 (150/5000) |   None |     1,1 |  60064.08440289352 |     1.0 |    15.0 |  7220.0 |   CLEAR |      21.0 |     1.0 | Cd, Ar, Hg |     0
-20230430.0001.fits |            bias | 119.50762499999999 |  34.79008333333333 |        Bias | DV1 (150/5000) |   None |     1,1 |  60064.07537326389 |     1.0 |     0.0 |  7220.0 |   CLEAR |      21.0 |     1.0 |        off |     0
-20230430.0002.fits |            bias | 119.50762499999999 |  34.79008333333333 |        Bias | DV1 (150/5000) |   None |     1,1 |  60064.07547152778 |     1.0 |     0.0 |  7220.0 |   CLEAR |      21.0 |     1.0 |        off |     0
-20230430.0003.fits |            bias | 119.50762499999999 |  34.79008333333333 |        Bias | DV1 (150/5000) |   None |     1,1 |  60064.07556736111 |     1.0 |     0.0 |  7220.0 |   CLEAR |      21.0 |     1.0 |        off |     0
-20230430.0042.fits | pixelflat,trace | 119.50762499999999 |  34.79008333333333 |   Dome Flat | DV1 (150/5000) |   None |     1,1 |  60064.09051134259 |    1.47 |    10.0 |  7220.0 |   CLEAR |      21.0 |     1.0 |        off |     0
-20230430.0043.fits | pixelflat,trace | 119.50762499999999 |  34.79008333333333 |   Dome Flat | DV1 (150/5000) |   None |     1,1 |  60064.09072291667 |    1.47 |    10.0 |  7220.0 |   CLEAR |      21.0 |     1.0 |        off |     0
-20230430.0044.fits | pixelflat,trace | 119.50762499999999 |  34.79008333333333 |   Dome Flat | DV1 (150/5000) |   None |     1,1 |  60064.09093449074 |    1.47 |    10.0 |  7220.0 |   CLEAR |      21.0 |     1.0 |        off |     0
-20230430.0071.fits |         science | 159.90141666666665 | 43.102833333333336 |    Feige 34 | DV1 (150/5000) |   None |     1,1 |  60064.14414837963 |    1.01 |    30.0 |  7220.0 |   CLEAR |      21.0 |     5.0 |        off |     0
+          filename |       frametype |                 ra |                  dec |             target |       dispname | binning |                mjd | airmass | exptime | filter1 | dispangle | slitwid | lampstat01 | calib | manual
+20251027.0060.fits |        arc,tilt |  280.6160833333333 |    34.64416666666666 | Focused Comparison | DV1 (150/5000) |     1,1 | 60975.071240509256 |     1.0 |     5.0 |   CLEAR |      21.0 |     1.0 | Cd, Ar, Hg |     0 |       
+20251027.0061.fits |        arc,tilt |  280.6160833333333 |    34.64416666666666 | Focused Comparison | DV1 (150/5000) |     1,1 | 60975.071394212966 |     1.0 |     5.0 |   CLEAR |      21.0 |     1.0 | Cd, Ar, Hg |     0 |       
+20251027.0062.fits |        arc,tilt |  280.6160833333333 |    34.64416666666666 | Focused Comparison | DV1 (150/5000) |     1,1 |  60975.07154791667 |     1.0 |     5.0 |   CLEAR |      21.0 |     1.0 | Cd, Ar, Hg |     0 |       
+20251027.0237.fits |            bias | 102.88945833333331 | -0.19291666666666665 |                    | DVxx (UNKNOWN) |     1,1 |  60975.70684074074 |     1.0 |     0.0 |   CLEAR |      21.0 |     1.0 |        off |     0 |       
+20251027.0238.fits |            bias | 102.88945833333331 | -0.19291666666666665 |                    | DVxx (UNKNOWN) |     1,1 | 60975.706936574075 |     1.0 |     0.0 |   CLEAR |      21.0 |     1.0 |        off |     0 |       
+20251027.0239.fits |            bias | 102.88945833333331 | -0.19291666666666665 |                    | DVxx (UNKNOWN) |     1,1 |  60975.70703240741 |     1.0 |     0.0 |   CLEAR |      21.0 |     1.0 |        off |     0 |       
+20251027.0065.fits | pixelflat,trace |  280.6160833333333 |    34.64416666666666 | Focused Dome Flats | DV1 (150/5000) |     1,1 |  60975.07520358796 |    1.47 |    20.0 |   CLEAR |      21.0 |     1.0 |        off |     0 |       
+20251027.0066.fits | pixelflat,trace |  280.6160833333333 |    34.64416666666666 | Focused Dome Flats | DV1 (150/5000) |     1,1 |  60975.07553090278 |    1.47 |    20.0 |   CLEAR |      21.0 |     1.0 |        off |     0 |       
+20251027.0067.fits | pixelflat,trace |  280.6160833333333 |    34.64416666666666 | Focused Dome Flats | DV1 (150/5000) |     1,1 |  60975.07585821759 |    1.47 |    20.0 |   CLEAR |      21.0 |     1.0 |        off |     0 |       
+20251027.0210.fits |         science |         107.622875 |  -13.529250000000001 |             2009HC | DV1 (150/5000) |     1,1 |  60975.49431539352 |    1.51 |   300.0 |   CLEAR |      21.0 |     1.0 |        off |     0 | 1:244:1015:3.4
+20251027.0211.fits |         science | 107.63912499999999 |  -13.542777777777777 |             2009HC | DV1 (150/5000) |     1,1 |  60975.49788553241 |    1.51 |   300.0 |   CLEAR |      21.0 |     1.0 |        off |     0 |       
+20251027.0212.fits |         science | 107.65558333333333 |  -13.556444444444445 |             2009HC | DV1 (150/5000) |     1,1 |  60975.50150162037 |     1.5 |   300.0 |   CLEAR |      21.0 |     1.0 |        off |     0 |       
 data end
 

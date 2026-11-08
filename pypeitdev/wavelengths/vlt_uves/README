@@ -1,0 +1,56 @@
+The wavelength calibration required making some template solutions first from esorex data.
+This was done using the esorex_to_pypeit script. Then, the wavelength calibration was performed using the
+reidentify method and ech_fixed_format=True. Then, the wavelength calibration was generated for each setup
+and the resulting WaveCalib Calibration frame was placed in the PypeIt_Templates directory. For detailed
+instructions of this procedure, see the description at the bottom of this README file. You will also need
+to review the code in README_vlt_uves.code to see the additions that need to be made to the:
+   spectrographs/vlt_uves.py
+file in the main PypeIt repo.
+
+The relevant information was collected in the uves_templ_pypeit.dat file, and these were all combined using
+the ingest_archive script.
+
+The following files generated here are now in the main Repo:
+
+vlt_uves_blue_angle_fits.fits
+vlt_uves_blue_composite_arc.fits
+vlt_uves_red_angle_fits.fits
+vlt_uves_red_composite_arc.fits
+
+This command will copy the angle fits and composite arc fits to the PypeIt data directory
+cp vlt_uves_blue_*_*.fits ~/Software/PypeIt/pypeit/data/arc_lines/reid_arxiv/
+cp vlt_uves_red_*_*.fits ~/Software/PypeIt/pypeit/data/arc_lines/reid_arxiv/
+
+###################
+Instructions for generating the wavelength calibration frames:
+
+Change the params in the default_pypeit_par
+
+Set ech_fixed_format = False
+
+uncomment the norders and orders parameters
+
+make sure order_spat_pos is commented
+
+run the reduction to get the edges file
+
+Calculate the edges (see docstring in order_spat_pos and order_spat_width) and update:
+   order_spat_pos
+   order_spat_width
+   spec_min_max
+For spec_min_max, you will need to open up the Calibrations/Edges_BLAH.fits.gz file and manually see where the minimum and maximum parts of the spectrum are located for the leftmost and rightmost orders.
+
+Set ech_fixed_format = True
+
+Remove all files in the Calibrations folder, and then run the reduction to get a new edges file.
+
+Copy this to the dev-suite folder
+cp Calibrations/Edges_C_2_DET01.fits.gz ~/Software/PypeIt-development-suite/pypeitdev/wavelengths/vlt_uves/580/Edges_l.fits.gz
+
+Run the esorex_to_pypeit script
+
+Copy the resulting reidentify script over to PypeIt
+cp vlt_uves_580l_1x1.fits ~/Software/PypeIt/pypeit/data/arc_lines/reid_arxiv/
+
+Run the reduction again to get the Calibrations wavecal file and copy this to the PypeIt_Templates
+cp Calibrations/WaveCalib_C_2_DET01.fits ~/Software/PypeIt-development-suite/pypeitdev/wavelengths/vlt_uves/PypeIt_Templates/WaveCalib_580l.fits

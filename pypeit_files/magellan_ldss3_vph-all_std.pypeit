@@ -1,0 +1,30 @@
+# Auto-generated PypeIt input file using PypeIt version: 2.0.2.dev1223+ge2a4ff8c5.d20261010
+# UTC 2026-10-11T01:50:17.644+00:00
+
+# User-defined execution parameters
+[rdx]
+    spectrograph = magellan_ldss3
+[reduce]
+    [[findobj]]
+        maxnumber_sci = 2
+        find_trim_edge = 100, 100
+
+# Setup
+setup read
+Setup A:
+  binning: 1,1
+  decker: 1.0x4_center
+  dispname: VPH-All
+  filter1: Open
+setup end
+
+# Data block 
+data read
+ path /scratch/PypeIt-development-suite/RAW_DATA/magellan_ldss3/VPH-ALL_Std
+      filename |                 frametype |                 ra |                 dec |  target | dispname |       decker | binning |                mjd | airmass | exptime | filter1 | calib
+ccd0292c1.fits |                  arc,tilt | 234.75541666666663 |  -28.59286111111111 |  HeNeAr |  VPH-All | 1.0x4_center |     1,1 | 60554.970925925925 |   1.082 |     2.0 |    Open |     0
+ccd0293c1.fits | pixelflat,illumflat,trace | 234.75541666666663 |  -28.59286111111111 |  FlatQH |  VPH-All | 1.0x4_center |     1,1 | 60554.971504629626 |   1.083 |    10.0 |    Open |     0
+ccd0290c1.fits |                  standard | 234.75541666666663 | -28.592916666666664 | LTT6248 |  VPH-All | 1.0x4_center |     1,1 |  60554.96737268518 |   1.074 |    30.0 |    Open |     0
+ccd0291c1.fits |                  standard | 234.75541666666663 | -28.592888888888886 | LTT6248 |  VPH-All | 1.0x4_center |     1,1 |  60554.96811342592 |   1.075 |    30.0 |    Open |     0
+data end
+

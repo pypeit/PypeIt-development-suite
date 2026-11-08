@@ -65,12 +65,16 @@ Attributes:
 
                             _pypeit_setup:      Test setups that run pypeit_setup to generate a .pypeit file.
                             _additional_reduce: Test setups that run additional reduce tests beyond the default test.
+                            _ncpu_reduce:       Test setups that are reduced again with --ncpu > 1.
                             _sensfunc:          Test setups that run pypeit_sensfunc.
                             _flux_setup:        Test setups that run pypeit_flux_setup.
                             _flux:              Test setups that run pypeit_flux_calib.
                             _flexure:           Test setups that run pypeit_deimos_flexure.
                             _coadd1d:           Test setups that run pypeit_coadd_1dspec.
                             _coadd2d:           Test setups that run pypeit_coadd_2dspec.
+                            _setup_datacube:    Test setups that run pypeit_setup_datacube.
+                            _coadd_datacube:    Test setups that run pypeit_coadd_datacube.
+                            _extract_datacube:  Test setups that run pypeit_extract_datacube.
                             _telluric:          Test setups that run pypeit_tellfit.
                             _quick_look:        Test setups that run quick look script. The actual script run is chosen
                                                 based on the instrument.
@@ -99,6 +103,8 @@ class TestPhase(Enum):
 
 # raw data directories for for setups that don't have the normal naming conventions
 _raw_data_dirs = {
+    'p200_ngps_u': 'p200_ngps',
+    'p200_ngps_g': 'p200_ngps',
     'p200_ngps_r': 'p200_ngps',
     'p200_ngps_i': 'p200_ngps',
 }
@@ -114,14 +120,14 @@ for instr in all_setups:
 _pypeit_setup = {
     'shane_kast_blue': {
         '600_4310_d55': [{}]},
+    'p200_ngps_u': {
+        '1.5_2x3': [{}]},
+    'p200_ngps_g': {
+        '1.5_2x3': [{}]},
     'p200_ngps_r': {
-        '1.5_2x3': [{}],
-        '1.0_2x2': [{}],
-        '0.5_2x1': [{}]},
+        '1.5_2x3': [{}]},
     'p200_ngps_i': {
-        '1.5_2x3': [{}],
-        '1.0_2x2': [{}],
-        '0.5_2x1': [{}]},        
+        '1.5_2x3': [{}]},
     }
 
 _calib_step_by_step = {
@@ -156,6 +162,39 @@ _additional_reduce = {
     'gemini_gmos': {
         'GS_HAM_R400_860': [dict(std=True)]},
     }
+
+_ncpu_reduce = {
+    'keck_deimos': {
+        '830G_M_8500': [dict(ncpu=2)]},
+    'keck_lris_blue': {
+        'multi_600_4000_slitmask': [dict(ncpu=2)]},
+    'mmt_binospec': {
+        'Longslit_G1000': [dict(ncpu=2)]},
+    }
+"""
+Setups that are reduced a second time with ``run_pypeit --ncpu 2``, so that the
+serial and parallel products can be compared.  See vet_tests/test_ncpu.py.
+
+Every setup here must produce **more than one** detector/mosaic, or the
+reduction has nothing to distribute and the test is vacuous.  That rules out
+most of the dev suite: a ``.pypeit`` file with ``detnum = (3,7)`` selects a
+single *mosaic* and so yields one work item, whereas ``detnum = 3,7`` selects
+two detectors.  The three chosen here cover the distinct cases:
+
+- ``keck_deimos/830G_M_8500`` -- ``detnum = 3,7``, i.e., two *detectors*
+  (contrast ``detnum = (3,7)``, which is a single mosaic), and only four frames.
+  The unrestricted ``600ZD_M_6500`` would be the richer test, since its four
+  mosaics make work items outnumber workers, but at ``--ncpu 2`` it peaks around
+  21 GB against roughly 12 GB for the serial run it sits beside; that extra
+  ~9 GB takes a ``-t 6`` suite to about 87 GiB against the 100 Gi limit in
+  ``nautilus/full_dev_suite_6cpu.yaml``, where a breach is an immediate pod
+  OOMKill.  The cheaper setup keeps the suite inside its documented memory
+  budget.
+- ``keck_lris_blue/multi_600_4000_slitmask`` -- two detectors, slitmask, and the
+  cheapest genuine multi-detector reduction in the suite.
+- ``mmt_binospec/Longslit_G1000`` -- two detectors on a third spectrograph, to
+  check the behaviour is not specific to Keck instruments.
+"""
 
 _sensfunc = {
     'shane_kast_blue': {
@@ -256,6 +295,8 @@ _coadd1d = {
 _coadd2d = {
     'gemini_gnirs_echelle': {
         '32_SB_SXD': [dict(coadd_file=True)]},
+    'gemini_gmos': {
+        'GS_HAM_B600_MOS': [dict(coadd_file=True)]},
     'keck_lris_blue': {
         'multi_600_4000_d560': [dict(coadd_file=True)]},
     'vlt_xshooter': {
@@ -268,12 +309,32 @@ _coadd2d = {
         'ABBA_wstandard': [dict(coadd_file=True)]},
     'keck_nires': {
         'ABBA_nostandard_faint': [dict(coadd_file=True)]},
+    'ldt_deveny': {
+        'DV1': [dict(coadd_file=True)]},
     'soar_goodman_blue': {
         'M1': [dict(coadd_file=True)]}
     }
 
-# TODO: Test the pypeit_coadd_datacube setups!
-_coadd3d = {}
+_setup_datacube = {
+    'keck_kcwi': {
+        'large_bl': [dict(target='SDSSJ2222 2745'), dict(target='gd50')]},
+    'keck_kcrm': {
+        'large_rl': [dict(target='SDSSJ2222 2745'), dict(target='gd50')]},
+    }
+
+_coadd_datacube = {
+    'keck_kcwi': {
+        'large_bl': [dict(target='SDSSJ2222 2745'), dict(target='gd50')]},
+    'keck_kcrm': {
+        'large_rl': [dict(target='SDSSJ2222 2745'), dict(target='gd50')]},
+    }
+
+_extract_datacube = {
+    'keck_kcwi': {
+        'large_bl': [dict(target='gd50')]},
+    'keck_kcrm': {
+        'large_rl': [dict(target='gd50')]},
+    }
 
 _telluric = {
     'gemini_gnirs_echelle': {
@@ -465,6 +526,11 @@ all_tests = [{'factory': pypeit_tests.PypeItSetupTest,
              {'factory': pypeit_tests.PypeItReduceTest,
               'type':    TestPhase.REDUCE,
               'setups':  _additional_reduce},
+             # NOTE: must come after the default reduce test above, which
+             # produces the serial products this one is compared against.
+             {'factory': pypeit_tests.PypeItReduceNcpuTest,
+              'type':    TestPhase.REDUCE,
+              'setups':  _ncpu_reduce},
              {'factory': pypeit_tests.PypeItReduceStepByStepTest,
               'type':    TestPhase.REDUCE,
               'setups':  _step_by_step},
@@ -489,6 +555,15 @@ all_tests = [{'factory': pypeit_tests.PypeItSetupTest,
              {'factory': pypeit_tests.PypeItCoadd2DTest,
               'type':    TestPhase.AFTERBURN,
               'setups':  _coadd2d},
+             {'factory': pypeit_tests.PypeItSetupDataCubeTest,
+              'type':    TestPhase.AFTERBURN,
+              'setups':  _setup_datacube},
+             {'factory': pypeit_tests.PypeItCoaddDataCubeTest,
+              'type':    TestPhase.AFTERBURN,
+              'setups':  _coadd_datacube},
+             {'factory': pypeit_tests.PypeItExtractDataCubeTest,
+              'type':    TestPhase.AFTERBURN,
+              'setups':  _extract_datacube},
              {'factory': pypeit_tests.PypeItTelluricTest,
               'type':    TestPhase.AFTERBURN,
               'setups':  _telluric},

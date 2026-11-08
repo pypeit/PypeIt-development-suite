@@ -326,6 +326,57 @@ class PypeItReduceTest(PypeItTest):
         else:
             return []
 
+#: Subdirectory of a setup's redux directory that holds the ``--ncpu`` reduction
+#: produced by :class:`PypeItReduceNcpuTest`, alongside the serial one.
+NCPU_SUBDIR = 'ncpu'
+
+
+class PypeItReduceNcpuTest(PypeItReduceTest):
+    """
+    Test subclass that re-runs ``run_pypeit`` with ``--ncpu`` greater than one.
+
+    PypeIt reduces detectors concurrently when ``[rdx] ncpu > 1``, and its
+    products are required to be identical to the serial ones to machine
+    precision.  This test produces the parallel half of that comparison; the
+    serial half is the ordinary reduce test on the same setup, which must
+    therefore run first.  The two are kept apart by reducing into the
+    :data:`NCPU_SUBDIR` subdirectory of the setup's redux directory rather than
+    into the directory itself, so neither overwrites the other.
+
+    ``vet_tests/test_ncpu.py`` compares the two.
+
+    Args:
+        setup (:class:`~test_scripts.test_main.TestSetup`):
+            The setup to reduce.
+        pargs (:class:`argparse.Namespace`):
+            The parsed command-line arguments.
+        ncpu (:obj:`int`, optional):
+            Number of CPUs to pass to ``run_pypeit --ncpu``.
+    """
+
+    def __init__(self, setup, pargs, ncpu=2):
+        super().__init__(setup, pargs)
+        self.ncpu = ncpu
+        self.description = f'pypeit (--ncpu {ncpu})'
+
+    @property
+    def ncpu_dir(self):
+        """`Path`_ to the directory holding this test's reduction."""
+        return Path(self.setup.rdxdir, NCPU_SUBDIR)
+
+    def build_command_line(self):
+        # Start from an empty directory.  save_exposure *merges* detectors into
+        # an existing spec1d/spec2d rather than replacing it, so re-running into
+        # a directory that already holds products duplicates every object --
+        # which would then show up as a bogus serial/parallel mismatch in
+        # vet_tests/test_ncpu.py rather than as the stale state it is.
+        if self.ncpu_dir.is_dir():
+            shutil.rmtree(self.ncpu_dir)
+        self.ncpu_dir.mkdir(parents=True)
+        return super().build_command_line() \
+                    + ['-r', str(self.ncpu_dir), '--ncpu', str(self.ncpu)]
+
+
 class PypeItReduceStepByStepTest(PypeItTest):
     """Test subclass that runs pypeit_reduce_by_steps"""
 
@@ -622,6 +673,61 @@ class PypeItCoadd2DTest(PypeItTest):
             return [self.coadd_file]
         else:
             return []
+
+
+class PypeItSetupDataCubeTest(PypeItTest):
+    """Test subclass that runs pypeit_setup_datacube"""
+    def __init__(self, setup, pargs, target):
+        target_stub = target.replace(' ', '')
+        super().__init__(setup, pargs, f"pypeit_setup_datacube ({target})",
+                         f"test_setup_datacube_{target_stub}")
+        self.target = target
+        self.target_stub = target_stub
+
+    def build_command_line(self):
+        pyp_file = self.setup.rdxdir / pypeit_file_name(self.setup.instr, self.setup.name)
+        return ['pypeit_setup_datacube', str(pyp_file), self.target, '-o']
+
+
+class PypeItCoaddDataCubeTest(PypeItTest):
+    """Test subclass that runs pypeit_coadd_datacube"""
+    def __init__(self, setup, pargs, target):
+        target_stub = target.replace(' ', '')
+        super().__init__(setup, pargs, f"pypeit_coadd_datacube ({target})",
+                         f"test_coadd_datacube_{target_stub}")
+        self.target = target
+        self.target_stub = target_stub
+
+    def build_command_line(self):
+        coadd3d_file = self.setup.rdxdir / 'sources' / self.target_stub / f'{self.target_stub}.coadd3d'
+        if not coadd3d_file.is_file():
+            raise FileNotFoundError(
+                f"{coadd3d_file} not found; pypeit_setup_datacube must run first for "
+                f"target={self.target}")
+        return ['pypeit_coadd_datacube', str(coadd3d_file), '-o']
+
+
+class PypeItExtractDataCubeTest(PypeItTest):
+    """Test subclass that runs pypeit_extract_datacube"""
+    def __init__(self, setup, pargs, target):
+        target_stub = target.replace(' ', '')
+        super().__init__(setup, pargs, f"pypeit_extract_datacube ({target})",
+                         f"test_extract_datacube_{target_stub}")
+        self.target = target
+        self.target_stub = target_stub
+
+    def build_command_line(self):
+        spec3d_file = self.setup.rdxdir / 'Science_cube' / f'{self.target_stub}.fits'
+        extract_file = self.setup.rdxdir / 'sources' / self.target_stub / f'{self.target_stub}.extract'
+        if not spec3d_file.is_file():
+            raise FileNotFoundError(
+                f"{spec3d_file} not found; pypeit_coadd_datacube must run first for "
+                f"target={self.target}")
+        if not extract_file.is_file():
+            raise FileNotFoundError(
+                f"{extract_file} not found; pypeit_setup_datacube must run first for "
+                f"target={self.target}")
+        return ['pypeit_extract_datacube', str(spec3d_file), '-e', str(extract_file), '-o']
 
 
 class PypeItTelluricTest(PypeItTest):
