@@ -23,7 +23,7 @@ def test_spat_flexure(redux_out):
     # Load                                
     spec2dObj = spec2dobj.Spec2DObj.from_file(file_path, 'DET01')
     assert spec2dObj.sci_spat_flexure is not None
-    assert spec2dObj.sci_spat_flexure > 0.
+    assert np.all(spec2dObj.sci_spat_flexure > 0.)
 
 
 def test_spat_flexure_science(redux_out):
@@ -48,7 +48,7 @@ def test_spat_flexure_science(redux_out):
         pypeitFile = inputfiles.PypeItFile.from_file(pypeit_file)
         _, par, _ = pypeitFile.get_pypeitpar()
         # check flexure parameters
-        assert par['scienceframe']['process']['spat_flexure_correct'] == True, 'Spat flexure should be set to True'
+        assert par['scienceframe']['process']['spat_flexure_method'] == 'detector', 'Spat flexure method should be set to detector'
         assert par['scienceframe']['process']['spat_flexure_sigdetect'] == sigdet, f'Spat flexure sigdetect should be {sigdet}'
         assert par['scienceframe']['process']['spat_flexure_maxlag'] == maxlag, f'Spat flexure maxlag should be {maxlag}'
 
@@ -60,10 +60,13 @@ def test_spat_flexure_science(redux_out):
             spec2dObj = spec2dobj.Spec2DObj.from_file(spec2d_file, det)
             spat_flex_list.append(spec2dObj.sci_spat_flexure)
         spat_flex_list = np.array(spat_flex_list)
-        assert np.all(spat_flex_list != None), 'Spat flexure should not be None'
-        assert np.all(spat_flex_list < par['scienceframe']['process']['spat_flexure_maxlag']), \
-            'Spat flexure should be less than maxlag'
-        assert np.all(np.isclose(spat_flex_list, flex, atol=1.5)), f'Spat flexure should be close to {flex} pixels'
+        if flex is None:
+            assert np.all(spat_flex_list == None), 'Spat flexure should be None'
+        else:
+            assert np.all(spat_flex_list != None), 'Spat flexure should not be None'
+            assert np.all(spat_flex_list < par['scienceframe']['process']['spat_flexure_maxlag']), \
+                'Spat flexure should be less than maxlag'
+            assert np.all(np.isclose(spat_flex_list, flex, atol=1.5)), f'Spat flexure should be close to {flex} pixels'
 
 
 def test_spat_flexure_tilts(redux_out):
@@ -80,24 +83,35 @@ def test_spat_flexure_tilts(redux_out):
     pypeitFile = inputfiles.PypeItFile.from_file(pypeit_file)
     _, par, _ = pypeitFile.get_pypeitpar()
     # check flexure parameters
-    assert par['calibrations']['tiltframe']['process']['spat_flexure_correct'] == True, 'Spat flexure should be set to True'
-    assert par['calibrations']['tiltframe']['process']['spat_flexure_maxlag'] == 20, 'Spat flexure maxlag should be 10'
+    assert par['calibrations']['tiltframe']['process']['spat_flexure_method'] == 'detector', 'Spat flexure should be set to detector'
+    assert par['calibrations']['tiltframe']['process']['spat_flexure_maxlag'] == 20, 'Spat flexure maxlag should be 20'
     # read the tiltimg file
+    # NOTE: The spatial flexure is an array with shape (nslits, 2), providing
+    # the flexure of the left and right edge of each slit.
+    # NOTE: Both slit ends move by -0.6 to -0.8 pixels between the trace flat
+    # and the tilt frames (measured from the half-maximum crossings of the slit
+    # ends).  The value of about 6 pixels expected previously came from matching
+    # the real right end of the slit to an edge that was inserted 7.4 pixels
+    # inside the slit (see edge_thresh in the pypeit file).
+    maxlag = par['calibrations']['tiltframe']['process']['spat_flexure_maxlag']
     tiltimg_file = list(data_redux.glob('Calibrations/Tiltimg_A_0_DET01.fits'))
     assert len(tiltimg_file) == 1, 'No tiltimg files found'
     tiltimg = TiltImage.from_file(tiltimg_file[0])
     assert tiltimg.spat_flexure is not None, 'Spat flexure should not be None'
-    assert tiltimg.spat_flexure < par['calibrations']['tiltframe']['process']['spat_flexure_maxlag'], \
-        'Spat flexure should be less than maxlag'
-    assert np.isclose(tiltimg.spat_flexure, 6., atol=1.5), 'Spat flexure should be close to 6 pixels'
+    assert np.all(np.abs(tiltimg.spat_flexure) < maxlag), 'Spat flexure should be less than maxlag'
+    assert np.all(np.isclose(tiltimg.spat_flexure, -0.7, atol=0.5)), \
+        'Spat flexure should be close to -0.7 pixels'
     # read the wavetilts file
     tilts_file = list(data_redux.glob('Calibrations/Tilts_A_0_DET01.fits'))
     assert len(tilts_file) == 1, 'No tilts files found'
     tilts = WaveTilts.from_file(tilts_file[0])
     assert tilts.spat_flexure is not None, 'Spat flexure should not be None'
-    assert tilts.spat_flexure < par['calibrations']['tiltframe']['process']['spat_flexure_maxlag'], \
-        'Spat flexure should be less than maxlag'
-    assert np.isclose(tilts.spat_flexure, 6., atol=1.5), 'Spat flexure should be close to 6 pixels'
+    assert np.all(np.abs(tilts.spat_flexure) < maxlag), 'Spat flexure should be less than maxlag'
+    assert np.all(np.isclose(tilts.spat_flexure, -0.7, atol=0.5)), \
+        'Spat flexure should be close to -0.7 pixels'
+    # The tilts and the tilt image must have the same spatial flexure
+    assert np.allclose(tilts.spat_flexure, tiltimg.spat_flexure, atol=1e-4), \
+        'Spatial flexure of the tilts and the tilt image should be the same'
 
 def test_flex_multi(redux_out):
 

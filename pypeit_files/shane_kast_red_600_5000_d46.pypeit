@@ -8,7 +8,7 @@ spectrograph = shane_kast_red
   use_biasimage = False
 [scienceframe]
     [[process]]
-	spat_flexure_correct = True
+	    spat_flexure_method = detector
 
 
 # Setup

@@ -10,6 +10,7 @@
 [scienceframe]
     [[process]]
         use_specillum = False
+        spat_flexure_method = skip
 
 setup read
 Setup D:
