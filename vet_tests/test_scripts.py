@@ -413,15 +413,14 @@ def test_parse_slits(redux_out):
     parse_slits.ParseSlits.main(pargs)
 
 
-def test_setup_coadd2d(redux_out):
+def test_setup_coadd2d(redux_out, monkeypatch):
 
     # Set the pypeit file
     _redux_out = Path(redux_out).absolute() / 'gemini_gnirs_echelle' / '32_SB_SXD'
     pypeit_file = _redux_out / 'gemini_gnirs_echelle_32_sb_sxd.pypeit'
 
     # move to the redux_out directory
-    cdir = os.getcwd()
-    os.chdir(_redux_out)
+    monkeypatch.chdir(_redux_out)
 
     # Run the setup
     setup_coadd2d.SetupCoAdd2D.main(
@@ -451,6 +450,7 @@ def test_setup_coadd2d(redux_out):
 
     # Check the number of files
     coadd_files = sorted(_redux_out.glob('gemini_gnirs_echelle_32_sb_sxd*.coadd2d'))
+    assert len(coadd_files) == 2, 'Wrong number of coadd2d files after changing offsets and weights'
     # Try to read one of the files
     coadd = inputfiles.Coadd2DFile.from_file(str(coadd_files[0]))
 
@@ -488,7 +488,7 @@ def test_setup_coadd2d(redux_out):
     pypeit_file = _redux_out / 'keck_mosfire_mask1_k_with_continuum.pypeit'
 
     # move to the redux_out directory
-    os.chdir(_redux_out)
+    monkeypatch.chdir(_redux_out)
 
     # Run the setup
     setup_coadd2d.SetupCoAdd2D.main(setup_coadd2d.SetupCoAdd2D.parse_args([
@@ -515,6 +515,7 @@ def test_setup_coadd2d(redux_out):
 
     # Check the number of files
     coadd_files = sorted(_redux_out.glob('keck_mosfire_mask1_k_with_continuum*.coadd2d'))
+    assert len(coadd_files) == 1, 'Wrong number of coadd2d files after setting exclude_slits'
     coadd = inputfiles.Coadd2DFile.from_file(str(coadd_files[0]))
     # get par
     _, par, _ = coadd.get_pypeitpar()
@@ -525,8 +526,6 @@ def test_setup_coadd2d(redux_out):
     for f in coadd_files:
         f.unlink()
 
-    # Go back
-    os.chdir(cdir)
 
 def test_run_to_calibstep(redux_out):
     cdir = os.getcwd()
