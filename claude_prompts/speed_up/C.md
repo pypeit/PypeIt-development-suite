@@ -208,6 +208,8 @@ the old spec1d (B.md QP7, left unfixed in the harness).
 10. Read this doc.  Perform the 10th task under Tasks.
 11. Read this doc.  Perform the 11th task under Tasks.
 
+12. Read this doc.  Perform the 1st task under PR
+
 ## Tasks
 
 1. **Prepare.** Create the branch and ground yourself; write no production code
@@ -413,8 +415,16 @@ rule in the code and remove the hand-off to A.
 Add new vet tests for this rule.
 Use Opus 5.5. Log your work.
 
-## PR
+12. **OOM issues.** When running the devsuite to perform the "Extra tests" step in the PR section below,
+I am encountering OOM issues.  These are described in some detail in the Logs section of the 
+`/home/xavier/bin/claude_prompts/profx_issues.md` file.  Please read that file, examine our 
+modifications to PypeIt for speed-up and suggest a solution to the OOM issues.
+Put your findings, suggestions and questions in the "Q&A/OOM" section below.
+You are welcome to do some isolated testing to help you understand the issues.
+I am not yet convinced that it is a PypeIt issue as I was running other tasks at the same time.
+Use Opus 5.5. Log your work.
 
+## PR
 
 1. **Extra tests.**  Ok, before I issue a PR, I wish to understand how much the current wavelength
 solutions change when we run on the `develop` branch vs. the `speed_up_arcfit` branch.  The primary
@@ -424,7 +434,7 @@ metrics to focus on are:
     - The RMS of the wavelength solution
     - The measured_FWHM of the arc lines
 
-To do this, run the full DevSuite on the `develop` branch and the `speed_up_arcfit` branch.
+   To do this, run the full DevSuite on the `develop` branch and the `speed_up_arcfit` branch.
 Then compare the results in a new report named `Speed_Up_Arcfit_DevSuite_Comparison.md` in `PypeIt-development-suite/pypeitdev/speed_up/Reports/`.
 It should cover:
     - The metrics mentioned above for the `develop` branch and the `speed_up_arcfit` branch
@@ -434,15 +444,253 @@ It should cover:
     - A discussion of the changes in the arc line fits
     - A discussion of the changes in the arc line fits
 
-Inlucde figures frequently.
+Include figures throuhgout the report.
 Use Opus 5.5. Log your work.
 
-2. **Docs.** 
+2. **Report me**  Prompt 1 has been executed and you have identified a number of potential problems.
+Please read my answer to Q17 and then proceed.
+Use Opus 5.5. Log your work.
+
+
+99. **Docs.** 
+Now that we are ready to issue a PR, please make a final pass on the PypeIt docs to
+ensure they are up to date and correct with the changes in this PR.
+
+
+100. **Issue PR**
 
 
 ## Q&A
 
-### Reject on sigma
+### OOM
+
+### PR comparison (develop vs `speed_up_arcfit`)
+
+Interim numbers.  23 setups are still being re-run after the oomd kill.
+Slits are paired by spat_id or order.  Of 2 547 slits, **60 slits in 29
+setups move by more than 1 px**.  Their RMS improves for 26 of them and
+worsens for 25.  Every other slit agrees to within 1 px.  The large moves
+are all in `full_template` setups or in echelle orders that are already
+poor.
+
+Real regressions, i.e. a good develop solution that is wrong in the PR:
+
+| Setup and slit | develop | PR |
+|---|---|---|
+| KOSMOS `UT221221_slitmask_galaxies` C_2, slit 1 | RMS 0.159 px, 53 lines | RMS 0.578 px, 31 lines; 320 px off at the blue end |
+| FOCAS `300B_None`, slit 1 | 45 lines | 26 lines; about 300 px off, strong red ThAr lines lost |
+| GMOS `GS_HAM_MULTI_R400_700`, slit 18 | RMS 0.26 px | RMS 0.96 px; 1 675 px off |
+
+These still need the control runs before they count as real; the controls
+check whether slit 18 is the same slit in both runs.
+
+The PR also fixes bad develop solutions:
+
+| Setup and slit | develop RMS (px) | PR RMS (px) |
+|---|---|---|
+| DEIMOS `1200G_M_7750` slit 3 | 0.42 | 0.037 |
+| DEIMOS `900ZD` slit 9 | 0.48 | 0.068 |
+| GMOS `GN_HAM_B480` slit 0 | 1.06 | 0.27 |
+| DEIMOS `600ZD` MSC02 slit 20 | 21 | 3.8 |
+| OSIRIS `R1000RMOS` DET02 slit 2 | 1.78 | 1.17 |
+
+**Cause, traced on KOSMOS and FOCAS.**  The cause is
+`wvutils.get_xcorr_arc`, which builds the synthetic arc that `full_template`
+cross-correlates against the template.  The σ floor is not involved.
+- In develop (A), lines whose `curve_fit` fails come back as −999 and are
+  left out of the synthetic arc.
+- B returns a centroid for almost every peak.  An extra 5–11 blended or weak
+  lines therefore enter the synthetic arc, including one strong line moved by
+  16 px.  This changes the shift and stretch.
+- Forcing A only inside `get_xcorr_arc` restores develop exactly.
+
+I re-ran `full_template` on 13 affected setups, from the stored arc spectra
+(scratch harness `ftall.py`), under four variants:
+- **B:** the PR.
+- **Bconv:** B, but non-converged fits fail (−999) instead of going to
+  `curve_fit`.
+- **Bgood:** B, but the synthetic arc uses only lines that pass the
+  `detect_lines` cuts.
+- **Agood:** develop-style A with the same `get_xcorr_arc` change as Bgood.
+
+Results:
+- **Bconv** restores KOSMOS and FOCAS exactly.  It fixes 4 of the 5 moved
+  600ZD MSC01 slits and keeps the 830G, 830G_LVM and 900ZD gains.  It loses
+  the 1200G slit 3 fix, moves 5 of 23 OSIRIS R1000R slits instead of 1, and
+  MOSFIRE `J_multi` is still chaotic.
+- **Bgood** fixes neither KOSMOS nor FOCAS.
+- Under every variant except A itself, all 10 MOSFIRE `J_multi` slits move by
+  tens to hundreds of px.
+
+None of the variants is a clean win.  The real problem is that
+`full_template` depends chaotically on which lines enter its cross-correlation
+(report §10).  Any change to the line fitter reshuffles the winners and
+losers.
+
+**Q16 — What to do about the `full_template` reshuffle?**
+- (a) Ship B as is.  Document that about 2% of slits change by more than
+  1 px, roughly as many improving as worsening, with `fast_line_fit = False`
+  as the way back to the old behaviour.  Make `full_template` robust in a
+  follow-up PR.
+- (b) Switch to Bconv: non-converged fits fail rather than being handed to
+  `curve_fit`.  This is still fast and fixes the three regressions above, but
+  it trades away other gains and is equally untested suite-wide.  It would
+  need another full run, about 20 h.
+- (c) **"Bxa":** B everywhere except inside `get_xcorr_arc`, which runs
+  `detect_lines` under A (`arc.arcfit_options(match_curvefit=True)`).  The
+  cross-correlation then sees the same synthetic arc as develop.  The cost is
+  small: A is vectorized too and hands only a few lines per call to
+  `curve_fit`.
+
+  I tested Bxa on the same 13 setups (moved slits are those > 1 px from
+  develop):
+
+  | Setup | B | Bxa |
+  |---|---|---|
+  | KOSMOS slit 1 | 325 px, RMS 0.578 | **identical to develop** |
+  | FOCAS slit 1 | 210 px | **identical** |
+  | GMOS `GS_HAM_MULTI` slits 18 / 37 | 1 682 / 220 px | **0.0 / 0.0 px** |
+  | DEIMOS 600ZD MSC01 4/6/7/10, MSC02 2 | 32–98 px | **≤ 0.6 px** |
+  | OSIRIS R1000B slit 12 | 86 px | 0.7 px |
+  | MOSFIRE `J_multi` | 9 of 10 move | 3 of 10 move, and **slit 2 fails** (develop: RMS 0.57, 16 lines) |
+  | DEIMOS 830G_L_8100 / 830G_LVM | 0.034 / 0.053 | **kept** (0.034 / 0.053) |
+  | DEIMOS 1200G slit 3, 900ZD slit 9, OSIRIS R1000R slit 2 | fixed | back to develop (bad) |
+
+  Bxa keeps the gains that come from better line measurements (830G).  It
+  gives back the gains that were cross-correlation luck (1200G slit 3, 900ZD
+  slit 9), together with the regressions, which were also luck.
+
+**My default is now (c), Bxa.** It confines the PR's changes to line
+measurement, which is what the PR is about.  The remaining diff against
+develop becomes explainable, and the `full_template` lottery is left for a
+follow-up.  The MOSFIRE slit 2 failure needs a look, and a full-suite run
+(about 20 h) would confirm it.  If you choose (c), I will implement it, add a
+unit test, and re-run the suite.
+
+>A: Yes, let us go with (c) "Bxa"
+
+**Bxa full-suite results (Nov 16).**  Run in `REDUX_OUT_PR/arcfitBxa`;
+metrics in `REDUX_OUT_PR/cmp_bxa/pr_metrics.csv`.  Slits are paired by
+spat_id or order.
+
+| | develop | Bxa |
+|---|---|---|
+| Reduction tests | 332/334 | 332/334 (the same 2 GNIRS failures) |
+| Vet tests | 109 passed / 6 failed | 108 passed / 7 failed |
+| Final-fit lines (Nlin, sum) | 149 525 | 148 465 (−0.7%) |
+| Median RMS (px) | 0.133 | 0.131 |
+| Median IDs_Wave_cov | 93.6% | 93.5% |
+| Median measured FWHM (px) | 3.82 | 3.86 |
+
+- Of 2 970 slits, 2 138 agree with develop to < 0.01 px and 2 556 to < 0.1 px.
+- **37 slits in 24 setups move by more than 1 px**, against 60 slits under B.
+  RMS improves for 20 of them and worsens for 17.
+- All the B regressions are gone: KOSMOS C_2 slit 1, FOCAS 300B slit 1 and
+  GMOS GS_HAM_MULTI slit 18.  The 830G gains are kept.
+- **Controls.**  develop2 moves 0 of 75 slits relative to develop.  arcfitA
+  (the PR's code with A forced) moves 1: GN_E2V_MULTI slit 19, by 137 px.
+  On these three setups, run-to-run noise is nil.
+
+**New regressions under Bxa:**
+- **MMIRS `nep_as1_MOS` slit 18:** RMS 0.13 → **23.1**, moved by 2 290 px.
+  Under B it was 0.11, unchanged from develop.  Bxa's synthetic arc
+  cross-correlates worse here, the reverse of KOSMOS.
+- **LDSS3 `VPH-RED_mos` A_1 slit 21:** IDs_Wave_cov 102% → **1.7%**, 2 615 px
+  off, with a lower RMS (10 lines fitted into the wrong place).  This slit
+  was not compared under B.
+- **UVES red 860 B_1 slit 11:** cov 85% → 27%, 19 fewer lines.  It also
+  failed under B.
+- **GNIRS `32_SB_SXD` order 8:** the solution turns over at the blue end.
+  14 non-monotonic pixels near 8 433 Å make the vet test
+  `test_specutils::test_load_spec1d` fail, which passes on develop.
+- **`test_gmos`:** GS_HAM_R150_869 RMS is 0.234 → 0.272 against a tolerance
+  of 0.25, with a shift of only 0.1 px.  This is the line-measurement change
+  (identical under B).
+- **Dev-suite unit test `test_maskdesign_matching::test_add_missing_slits`**
+  ("wrong DEIMOS left trace position") fails under both B and Bxa, and passes
+  on develop.  Not yet traced; probably the `trace.py` peak-fit change.
+
+**Gains under Bxa:**
+- GMOS GN_HAM_B480 slit 0: RMS 1.07 → 0.25.
+- Hamilton_e2v order 78: 0.70 → 0.24.
+- HIRES HS1700 order 53: 0.30 → 0.035.
+- LDSS3 slit 21: RMS lower, but see above; it is wrong.
+
+**Q17 — How to treat the remaining Bxa regressions before the report and
+PR?**  They look like the same `full_template` / `reidentify` chaos as Q16,
+seen in the other direction: MMIRS slit 18 was fine under B and breaks under
+Bxa.  The exceptions are GNIRS order 8, the R150_869 RMS and the maskdesign
+unit test, which are independent of Q16.
+- (a) Write the comparison report now, documenting the regressions
+  alongside the gains.  Loosen nothing; leave the vet failures visible for
+  review.
+- (b) First trace MMIRS slit 18, LDSS3 slit 21, GNIRS order 8 and
+  `test_add_missing_slits` with the stored-arc harness (about half a day),
+  then write the report.
+- (c) As (b), and also fix what can be fixed in this PR, e.g. the
+  `trace.py` change if it is the cause of the maskdesign failure.  Then
+  re-run the affected setups only.
+
+**My default: (b).**  The maskdesign failure and GNIRS order 8 may be real
+bugs and are cheap to trace.  The two full_template flips need a sentence
+of cause in the report either way.
+
+>A. Agreed, let's do (b).  See if you can deterimine the root cause. 
+Either way, be sure to include figures in the report that show the problem and,
+as relevant, the proposed solution. 
+
+**Q17 traces, done (Nov 18).**  The details and figures are in
+`Reports/Speed_Up_Arcfit_DevSuite_Comparison.md` §5.  All four regressions
+have a root cause outside PR C's line fit: PR C changes which lines are kept,
+and that exposes a weakness that was already in develop.
+- **`test_add_missing_slits`.**
+  - A narrow Sobel spike next to a deep trough is rejected on develop only
+    because `curve_fit` returns σ = −0.66, which fails `twid > 0`.  B keeps
+    it, which adds one intermediate edge and shifts the test's hard-coded
+    indices.
+  - The final DEIMOS slits are identical.
+  - Finding the edges by position makes the test pass on both branches.
+- **GNIRS order 8.**
+  - The tilts break, not the wavelength fit.  The order's FWHM is evaluated
+    at row 511, which is off the order: 3.73 px on develop (held down by 7
+    spikes that A keeps) and 4.16 px on PR C (the spikes are floored).
+  - Tilt tracing has a cliff at 4.03 px.  Above it the bluest tilt line is
+    rejected, and the 4th-order fit curls by 62 px.  Develop sits 0.3 px from
+    the cliff.
+  - With `spec_order = 2` for order 8, the tilt error is ≤ 1.3 px for any
+    FWHM from 3.5 to 4.5 px.
+- **MMIRS slit 18.**
+  - `mmt_mmirs_J_zJ.fits` is three bit-identical copies of one spectrum
+    (`HK_zJ` and `K3000_Kspec` too).  The global cross-correlation therefore
+    has two exactly tied peaks, broken by noise at 1e-5.
+  - With one-copy templates, slit 18 is fixed on PR C, and develop is
+    unchanged on all 31 MMIRS slits.
+- **LDSS3 slit 21.**  It is a 27-px box slit.  **Develop's solution is wrong
+  too**: it is not monotonic and starts about 1 100 Å too red.  Its 102%
+  coverage hides this.  No PR C fix.
+- **Multislit `full_template` has no RMS or monotonicity check.**  Adding
+  them would flag 54 develop slits and 47 PR C slits out of about 1 390.
+  That belongs in a follow-up.
+
+**Q18 — What to fix in this PR?**
+- (a) Fix the three that are cheap and verified, then re-run MMIRS (6
+  setups), GNIRS 32_SB_SXD and the vet tests:
+  - one-copy MMIRS templates (a data change in `reid_arxiv`; it needs the
+    cache/upload path you use for template files);
+  - GNIRS 32_SB_SXD tilts `spec_order = 2, 4, 4, 4, 4, 4` in the
+    spectrograph's config;
+  - the dev-suite test `test_add_missing_slits` finding edges by position.
+
+  Also relax the `test_gmos` R150_869 tolerance from 0.25 to 0.30 px, or
+  leave it failing and documented.
+- (b) As (a), and also add the `full_template` RMS and monotonicity
+  safeguard in this PR.
+- (c) Fix nothing in PR C.  Document the issues and open follow-up issues.
+
+**My default: (a).**  The three fixes are small and tested.  The MMIRS and
+maskdesign fixes leave develop's results unchanged.  The safeguard (b)
+changes 54 develop slits, so it deserves its own PR.
+
 
 Measured on the 370 arc spectra stored in the 38 legacy dev-suite WaveCalib
 files, re-running `detect_lines` with the fwhm the pipeline used and fitting
@@ -2156,3 +2404,202 @@ not updated.
 `doc/releases/2.1.0dev.rst`.  Dev suite — `vet_tests/test_arcfit.py`,
 `pypeitdev/speed_up/scripts/arcfit/{arcfit_floor_vet.sh,variant_hook/sitecustomize.py}`,
 the report and this file.  `REDUX_OUT_C/` now holds ~26 GB more (`Bfloor/`).
+
+### 2026-11-04/05 ("PR" task 1 — full dev suite develop vs develop + PR C; in progress; the PR C run was killed by systemd-oomd)
+
+Model: Opus 5.5.  The run is in progress; this is an interim record.
+
+**Set-up.**  PR B (#2209) was merged into `develop` on 2026-11-03, and
+`origin/develop` (90c41e1a9) had 50 commits that `speed_up_arcfit` lacked.
+To isolate PR C, two git worktrees in `/mnt/tank/Astronomy/PypeIt/worktrees`:
+`develop` (origin/develop, detached) and `arcfit` (origin/develop +
+`git merge --squash --no-commit speed_up_arcfit`; the only conflict was the
+generated `doc/pypeit_par.rst`; the squash touches exactly PR C's files).
+No commit was made, and your branch is untouched.  The pypeit14b editable
+install points at the main checkout, so each run selects its worktree with
+`PYTHONPATH` (verified from a neutral cwd; `resources.files('pypeit')` puts
+the unit tests in the worktree too).  Ignored build files (`version.py`,
+`pkg/version.py`, a telluric grid, the unused cp313 bspline `.so`) were
+copied in, so both report the main checkout's version string.
+
+**develop: 332/334 reduction/afterburn tests passed** (12:57 → 05:46, ~15.5 h
+of reductions + 1 h 9 m of vet tests at `-t 4`, `MemoryMax=200G`).  Failures:
+`gemini_gnirs_echelle/32_SB_SXD` `pypeit_coadd_2dspec` ("Object with
+user_obj_id 659 does not exist in file 3 for order 8") and its `pypeit_tellfit`.
+Unit tests 950 passed; dev-suite unit tests 168 passed, 1 failed (ginga
+timeout, headless).  Vet: 109 passed, 6 failed (`test_arcfit_width_floor`
+— by design on develop; 4 × `test_specutils` "Output file does not exist";
+`test_keck_hires` RMS), 3 xpassed.
+
+**develop + PR C** (05:46 →): unit tests 967 passed, dev-suite unit tests the
+same 1 failure; reductions identical in outcome to develop up to 304/334 (the
+same two GNIRS failures) when, **at 21:38, systemd-oomd killed the service**:
+the unit had reached its 200 G cap ("Current Memory Usage: 199.9G", memory
+pressure avg60 60%), and oomd also killed Chrome, Cursor, Slack, Spotify and
+terminal scopes — the apparent "crash".  The machine did not reboot.  Per-test
+peaks on develop are ≤ 9 GB, so the cap was reached by four concurrent tests
+plus page cache; which in-flight test (KOSMOS HeNeAr, LDSS3 VPH-RED_mos, UVES
+564, MMIRS H3000_H) ballooned is not known.  **Lesson: I should have used the
+documented safe recipe (`-t 1`, `MemoryMax=80G`) for a full suite.**
+
+**Resume (2026-11-05 10:50):** the 23 unfinished setups' partial outputs were
+removed and `scripts/arcfit/arcfit_pr_resume.sh` (service
+`pypeit-arcfit-pr-resume`, `-t 1`, `MemoryMax=80G`) re-runs their reduce /
+afterburn / ql tests (~8.7 h), then the vet tests, then the controls:
+`develop2` (develop again) and `arcfitA` (PR C with option A forced via the
+variant hook) for GMOS GN_E2V_MULTI_R400_600, GS_HAM_MULTI_R400_700 and MOSFIRE
+J_multi.
+
+**Interim findings** (partial comparison, `scripts/arcfit/arcfit_pr_metrics.py`):
+- the first pass paired slits by index; GMOS GN_E2V_MULTI traces 20 slits on
+  develop and 21 with PR C (and GS_HAM_MULTI 3 slits at different positions),
+  so pairing must be by spat_id (fixed; paired by spat_id, GMOS slit 7 is
+  unchanged to 0.01 px).  The GMOS slit-edge difference is what the controls
+  will explain (noise, or PR C's B fit reaching `trace.py`'s peak fits);
+- MOSFIRE J_multi (OH sky lines, many flat-topped) has the same slits but
+  solutions that move by tens to hundreds of px on most slits;
+- DEIMOS shows the expected changes; HIRES, X-Shooter, Binospec, FIRE, APF
+  move by < ~4 px on a few orders.
+
+### 2026-11-05/14 ("PR" task 1 — resume finished; `full_template` reshuffle traced (Q16); Q16 → Bxa implemented; full suite re-run)
+
+**Resume run (Nov 5).**  All 29 tests in the 23 setups passed (`arcfit/report_resume.txt`).
+The vet tests reached about 10% (`test_arcfit.py` passed) before the
+service was killed in the second crash.  The controls never started.
+
+**Interim comparison of develop vs B** (`pr_metrics.csv`, slits paired by
+spat_id or order):
+- Of 2 547 slits, 60 in 29 setups move by more than 1 px.  Their RMS
+  improves for 26 and worsens for 25.
+- Real regressions: KOSMOS C_2 slit 1, FOCAS 300B slit 1, GMOS
+  GS_HAM_MULTI slits 18 and 37.
+- Gains: DEIMOS 1200G slit 3, 900ZD slit 9, GN_HAM_B480 slit 0, 600ZD
+  MSC02 slit 20.
+- Per-slit figures are in `Reports/figures/pr_compare/slit_*.png`.
+
+**Cause** (scratch harness `scratchpad/ftall.py`, which re-runs
+`full_template` on stored arc spectra; variant A reproduces develop exactly):
+- Forcing A inside `wvutils.get_xcorr_arc` alone restores develop on
+  KOSMOS.
+- Under A, lines whose `curve_fit` fails return −999 and are left out of
+  the synthetic cross-correlation arc.  B returns centroids for 5–11 more
+  lines per call, which reshuffles `full_template`'s shift and stretch.
+- I tested the Bconv, Bgood and Bxa variants on 13 setups (Q16).  Bxa
+  matched develop on every regression and kept the 830G gains.
+
+**Q16 answered: (c) Bxa.**  Implemented in `speed_up_arcfit`, uncommitted:
+- `wvutils.get_xcorr_arc` now runs `detect_lines` inside
+  `arc.arcfit_options(match_curvefit=True)`, with a docstring note.
+- `ARCFIT_MATCH_CURVEFIT` docstring updated.
+- New test `test_get_xcorr_arc_uses_legacy_fit`.  On the Paranal sky, A and
+  B disagree on which fits fail, but the synthetic arc is identical under
+  both and the option is restored afterwards.  `test_arc.py`: 18 passed.
+- Release notes: Under-the-hood and tests bullets updated.
+
+The same patch is applied to the `worktrees/arcfit` worktree, which keeps the
+develop base 90c41e1a9 so the existing develop run stays the reference.
+
+**Full suite re-run (Nov 14 14:46).**
+- Script `scripts/arcfit/arcfit_pr_bxa.sh`, service
+  `pypeit-arcfit-pr-bxa`, safe recipe (`-t 1`, `MemoryMax=80G`).
+- Runs `pypeit_test all` (which includes the vet tests) into
+  `REDUX_OUT_PR/arcfitBxa`, then the develop2 and arcfitA controls.
+- The develop run's summed test time is 60 h, so expect 1.5–2 days.
+- The B run stays in `REDUX_OUT_PR/arcfit` for the report.
+
+### 2026-11-14 (Task 12 — OOM, stopped at your request; "PR" task 1 — Bxa full suite relaunched after the reboot)
+
+Model: Opus 5.5.
+
+**OOM (Task 12, cut short).**  The systemd-oomd journal attributes the three events as follows:
+- **Nov 4:** the `-t 4` service sat at its own 200 G cap, which created the pressure.
+- **Nov 5:** the in-flight test was the vet test `test_datacube.py::test_coadd_datacube`.
+- **Nov 14:** Cursor's scope was at 74 G and 78% pressure; PypeIt was at 5.4 G.
+
+Per-test peak memory is unchanged between develop and PR C (ratios 0.8–1.15).
+The datacube code is untouched by PRs A, B and C.
+
+Run in isolation on plain develop, `test_coadd_datacube` reaches **≥ 50 GB**
+inside `datacube.subpixellate` (I stopped it there).  The final cube is
+(4751, 2489, 24), and its 2489-spaxel axis spans about 850″, roughly 40× the
+KCWI slice length.  That is a possible develop issue, unrelated to this PR.
+**Conclusion: PypeIt's speed-up work is not the cause.**
+
+**Relaunch (16:47, after the reboot).**
+- The reboot leaves oomd off for the user session (`90-no-oomd.conf`) and
+  `zfs_arc_max` set to 128 G.
+- The partial `REDUX_OUT_PR/arcfitBxa` was removed.  It came from the run
+  killed on Nov 14 at 15:14, which got as far as DEIMOS 600ZD calibrations.
+- `arcfit_pr_bxa.sh` was restarted unchanged, as service `pypeit-arcfit-pr-bxa`
+  at `-t 1`.
+- **`MemoryMax` is 150 G instead of 80 G**, because `test_coadd_datacube`
+  needs at least 50 GB (develop's reference run had a 200 G cap).
+- Expect 1.5–2 days, then the develop2/arcfitA controls.  Then I will write
+  `Speed_Up_Arcfit_DevSuite_Comparison.md`.
+
+### 2026-11-16/17 ("PR" task 1 — Bxa full suite finished; metrics; Q17)
+
+Model: Opus 5.5.
+
+**Run.**
+- `pypeit-arcfit-pr-bxa` ran 16:47 Nov 14 → 21:41 Nov 16 at `-t 1` with
+  `MemoryMax=150G`.
+- It finished with no OOM kills and memory pressure at 0.  The cgroup sat
+  at the cap from about 13:00 Nov 16, almost all of it page cache
+  (anon ≤ 7 GB).
+- `test_coadd_datacube` passed.
+- The controls finished at 23:30 (develop2 at 22:38, arcfitA at 23:30).
+
+**Metrics.**  `arcfit_pr_metrics.py` was run for three pairs, with output in
+`REDUX_OUT_PR/cmp_{bxa,dev2,A}/`:
+- develop vs arcfitBxa;
+- develop vs develop2;
+- develop vs arcfitA.
+
+The results and the new regressions are in Q&A ("Bxa full-suite results")
+and **Q17**.
+
+The GNIRS order-8 cause of `test_load_spec1d` was checked directly in the
+spec1d files: under Bxa, order 8 spans 8 433–9 464 Å with 14 non-monotonic
+pixels; develop spans 8 239–9 463 Å and is monotonic.
+
+**Waiting on Q17** before I write `Speed_Up_Arcfit_DevSuite_Comparison.md`.
+
+### 2026-11-18 ("PR" task 2 — Q17 (b): four regressions traced; comparison report written; Q18)
+
+Model: Opus 5.5.
+
+**Traces.**  The harnesses are in `pypeitdev/speed_up/scripts/arcfit/q17/`
+and their outputs in `REDUX_OUT_PR/q17/`.  The scratch `ftall.py` from Q16
+was lost in the reboot and was rebuilt as `ft.py` (one slit) and
+`ftall.py` (all slits).  Both reproduce the pipeline's `full_template`
+results exactly.
+- `mdm*.py`, `mos.py`, `tmm_pos.py`: the DEIMOS/MOSFIRE edge tracing, and the
+  position-based test (passes on both branches).
+- `gn6.py`: re-runs `BuildWaveTilts` on order 8 with chosen fit, FWHM and
+  `spec_order`.  `gn6_scan.txt` holds the FWHM scan.
+- `gn7.py`: `map_fwhm` under A and B; it reproduces 3.730 and 4.162 px.
+- `ft.py` and `ftall.py`, with `FIXTPL=1` for the one-copy template;
+  `capcorr.py` and `evcorr.py` for the tied correlation peaks.
+- `guard.py`: counts the slits an RMS + monotonicity check on
+  `full_template` would flag.
+
+**Report.**
+- `Reports/Speed_Up_Arcfit_DevSuite_Comparison.md`: metrics, solutions,
+  line measurements and line fits; a table of the 37 slits that move by
+  ≥ 1 px; and §5 with the four traces, each with a figure of the problem
+  and the proposed fix.
+- Figures:
+  - `figures/pr_compare_bxa/`: 6 figures, from `arcfit_pr_figs.py` (titles
+    wrapped);
+  - `figures/q17/`: 5 figures, from the new `arcfit_q17_figs.py`.
+
+**Findings beyond Q17.**
+- Multislit `full_template` applies no RMS threshold.  `wavecalib.py:793`
+  applies it only in the echelle redo path.
+- GMOS GS_HAM_B480_550 MSC01 slit 0 now gets a 5-line junk fit, where
+  develop had none.
+- FIRE echelle orders 1, 2 and 6 lose 28–47% coverage although their
+  solutions move by < 0.6 px.
+
+No PypeIt code was changed.  **Waiting on Q18.**
