@@ -13,6 +13,7 @@ import subprocess
 import datetime
 import traceback
 import os
+import importlib.util
 from abc import ABC, abstractmethod
 
 import psutil
@@ -198,6 +199,45 @@ class PypeItSetupTest(PypeItTest):
     def build_command_line(self):
         return ['pypeit_setup', '-r', str(self.setup.rawdir), '-s',
                 self.setup.instr, '-c all', '-o', '--output_path', str(self.setup.rdxdir)]
+
+class PypeItPreprocessJWSTTest(PypeItTest):
+    """
+    Test subclass that runs pypeit_preprocess_jwst, which processes the raw
+    (``*_uncal.fits``) JWST files through the JWST pipeline (Stage 1 and Stage
+    2).  The products are written to the ``jwst_output`` directory of the test
+    setup.  This requires the ``jwst`` package and the ``CRDS_PATH``
+    environment variable to be set.
+    """
+    output_subdir = 'jwst_output'
+
+    def __init__(self, setup, pargs, options=None):
+        """
+        Args:
+            setup (:obj:`TestSetup`): Test setup containing the test.
+            pargs (:obj:`argparse.Namespace`): The command line arguments to pypeit_test.
+            options (:obj:`list`, optional): Additional command-line options for
+                pypeit_preprocess_jwst (e.g., ``['--source_type', 'POINT']``).
+        """
+        super().__init__(setup, pargs, "pypeit_preprocess_jwst", "preprocess_jwst")
+        self.options = [] if options is None else list(options)
+
+    def build_command_line(self):
+        # Always overwrite, so that the products are created by this run
+        return ['pypeit_preprocess_jwst', str(self.setup.rawdir),
+                '-o', str(Path(self.setup.rdxdir) / self.output_subdir),
+                '--overwrite_stage1', '--overwrite_stage2'] + self.options
+
+    def check_for_missing_files(self):
+        missing = []
+        if importlib.util.find_spec('jwst') is None:
+            missing.append("jwst package (needed by pypeit_preprocess_jwst; "
+                           "install it with: pip install 'pypeit[jwst]')")
+        if 'CRDS_PATH' not in os.environ:
+            missing.append('CRDS_PATH environment variable (needed by pypeit_preprocess_jwst)')
+        if not any(Path(self.setup.rawdir).glob('*_uncal.fits')):
+            missing.append(str(Path(self.setup.rawdir) / '*_uncal.fits'))
+        return missing
+
 
 class PypeItCalibStepByStep(PypeItTest):
     """Test subclass that runs pypeit_run_to_calibstep"""

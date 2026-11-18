@@ -64,6 +64,8 @@ Attributes:
                             The 'setups' values are taken from the following private attributes of this module:
 
                             _pypeit_setup:      Test setups that run pypeit_setup to generate a .pypeit file.
+                            _no_reduce:         Test setups excluded from the default reduce test.
+                            _preprocess_jwst:   Test setups that run pypeit_preprocess_jwst.
                             _additional_reduce: Test setups that run additional reduce tests beyond the default test.
                             _ncpu_reduce:       Test setups that are reduced again with --ncpu > 1.
                             _sensfunc:          Test setups that run pypeit_sensfunc.
@@ -110,12 +112,30 @@ _raw_data_dirs = {
 }
 
 
+# Setups that are not reduced with run_pypeit (e.g., setups used only to test a
+# preprocessing script)
+_no_reduce = {
+    'jwst_nirspec': ['S200A2_G395M_F290LP_preprocess'],
+}
+
 # Tests for full reductions
 _reduce_setups = {}
 for instr in all_setups:
     _reduce_setups[instr] = {}
     for setup in all_setups[instr]:
+        if setup in _no_reduce.get(instr, []):
+            continue
         _reduce_setups[instr][setup] = [{}]
+
+# Setups that run pypeit_preprocess_jwst on raw (*_uncal.fits) JWST files.  Only
+# the first exposure of the NRS1 detector of the S200A2_G395M_F290LP data is
+# used to keep the run time short (~2 minutes).  The source type is POINT, as
+# used to produce the input files of the S200A2_G395M_F290LP setup, so that the
+# products can be compared with those (see vet_tests/test_preprocess_jwst.py).
+_preprocess_jwst = {
+    'jwst_nirspec': {
+        'S200A2_G395M_F290LP_preprocess': [dict(options=['--source_type', 'POINT'])]},
+}
 
 _pypeit_setup = {
     'shane_kast_blue': {
@@ -518,6 +538,9 @@ _quick_look = {
 all_tests = [{'factory': pypeit_tests.PypeItSetupTest,
               'type':    TestPhase.PREP,
               'setups':  _pypeit_setup},
+             {'factory': pypeit_tests.PypeItPreprocessJWSTTest,
+              'type':    TestPhase.REDUCE,
+              'setups':  _preprocess_jwst},
              {'factory': pypeit_tests.PypeItCalibStepByStep,
               'type':    TestPhase.REDUCE,
               'setups':  _calib_step_by_step},
