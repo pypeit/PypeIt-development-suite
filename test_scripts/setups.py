@@ -71,6 +71,7 @@ all_setups = {
     ],
     'jwst_nirspec': [
         'MSA_PRISM_nomosaic',
+        'MSA_PRISM_2visits',
         'S200A2_G395M_F290LP',
         'MSA_G395M_F290LP_mosaic',
     ],

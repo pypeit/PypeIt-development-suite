@@ -1,0 +1,47 @@
+# 2D coadd of the bright source 178562, observed in two different visits of PID 1287:
+# in slit 258 in visit 001 (jw01287001001_*) and in slit 260 in visit 003
+# (jw01287001003_*).  The offsets between the exposures are computed from the
+# dither offsets recorded in the spec2d headers, which, for JWST/NIRSpec, are
+# measured from the center of the slit in each exposure, so that exposures from
+# different visits (i.e., different MSA slitlets) can be combined.
+
+# User-defined execution parameters
+[rdx]
+    spectrograph = jwst_nirspec
+    redux_path = ./
+    scidir = Science
+    qadir = QA
+    detnum = 1
+[calibrations]
+    calib_dir = Calibrations
+    [[wavelengths]]
+        refframe = observed
+[coadd2d]
+    offsets = header
+    weights = auto
+    spat_toler = 5
+    spec_samp_fact = 1.0
+    spat_samp_fact = 1.0
+[flexure]
+    spec_method = skip
+[reduce]
+    [[findobj]]
+        skip_skysub = True
+        snr_thresh = 2.
+        maxnumber_sci = 4
+        find_trim_edge = 2,2
+    [[extraction]]
+        boxcar_radius = 0.3
+    [[skysub]]
+        local_maskwidth = 3.
+
+# Data block
+spec2d read
+                                                                                     filename
+Science/spec2d_jw01287001001_11101_00001-GOODS-South_NIRSPEC_20240111T113834.041_slit258.fits
+Science/spec2d_jw01287001001_11101_00002-GOODS-South_NIRSPEC_20240111T122628.024_slit258.fits
+Science/spec2d_jw01287001001_11101_00003-GOODS-South_NIRSPEC_20240111T131436.661_slit258.fits
+Science/spec2d_jw01287001003_11101_00001-GOODS-South_NIRSPEC_20240112T093634.181_slit260.fits
+Science/spec2d_jw01287001003_11101_00002-GOODS-South_NIRSPEC_20240112T102442.753_slit260.fits
+Science/spec2d_jw01287001003_11101_00003-GOODS-South_NIRSPEC_20240112T111251.391_slit260.fits
+spec2d end

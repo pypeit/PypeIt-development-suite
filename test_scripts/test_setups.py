@@ -287,8 +287,7 @@ _coadd1d = {
     'gemini_gnirs_echelle': {
         '32_SB_SXD': [{}]},
     'gemini_gmos': {
-        'GS_HAM_R400_860': [{}]},
-    'gemini_gmos': {
+        'GS_HAM_R400_860': [{}],
         'GS_HAM_R400_700': [{}]},
     'jwst_nirspec': {
         'S200A2_G395M_F290LP': [{}]},
@@ -304,16 +303,15 @@ _coadd2d = {
     'vlt_xshooter': {
         'VIS_manual': [dict(coadd_file=True)]},
     'jwst_nirspec': {
-        'MSA_PRISM_nomosaic': [dict(coadd_file=True)]},
-    'jwst_nirspec': {
+        'MSA_PRISM_nomosaic': [dict(coadd_file=True)],
+        'MSA_PRISM_2visits': [dict(coadd_file=True)],
         'MSA_G395M_F290LP_mosaic': [dict(coadd_file=True)]},
     'keck_deimos': {
         '830G_M_9000_dither': [dict(coadd_file=True)]},
     'keck_mosfire': {
         'long2pos1_H': [dict(coadd_file=True)]},
     'keck_nires': {
-        'ABBA_wstandard': [dict(coadd_file=True)]},
-    'keck_nires': {
+        'ABBA_wstandard': [dict(coadd_file=True)],
         'ABBA_nostandard_faint': [dict(coadd_file=True)]},
     'ldt_deveny': {
         'DV1': [dict(coadd_file=True)]},
