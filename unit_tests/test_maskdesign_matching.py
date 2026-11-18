@@ -59,6 +59,25 @@ def test_maskdef_id():
             # The expected values are determined by visual inspection.
 
 
+def _trace_at(edges, pos):
+    """
+    Return the index of the edge trace nearest ``pos`` at the PCA reference row.
+
+    Parameters
+    ----------
+    edges : :class:`~pypeit.edgetrace.EdgeTraceSet`
+        Edge traces with a PCA decomposition.
+    pos : :obj:`float`
+        Spatial position (pixels) at the PCA reference row.
+
+    Returns
+    -------
+    :obj:`int`
+        Index of the nearest trace.
+    """
+    return int(np.argmin(np.abs(edges.edge_fit[edges.pca.reference_row, :] - pos)))
+
+
 def test_add_missing_slits():
     instr_names = ['keck_deimos', 'keck_mosfire']
     for name in instr_names:
@@ -110,47 +129,20 @@ def test_add_missing_slits():
             # refine the edge traces
             edges.peak_refine(rebuild_pca=True)
 
-        # Check the values of the traces that will be removed
-        if name == 'keck_deimos':
-            # Two traces NOT from the same slit
-            assert round(edges.edge_fit[edges.pca.reference_row, :][7]) == 458, \
-                        'wrong DEIMOS left trace position'
-            assert round(edges.edge_fit[edges.pca.reference_row, :][-11]) == 1736, \
-                        'wrong DEIMOS right trace position'
-            # Two traces from the same slit
-            assert round(edges.edge_fit[edges.pca.reference_row, :][9]) == 496, \
-                        'wrong DEIMOS left trace position'
-            assert round(edges.edge_fit[edges.pca.reference_row, :][10]) == 561, \
-                        'wrong DEIMOS right trace position'
-
-            # Remove two left traces and two right traces
-            # NOT form the same slit
-            indx = np.zeros(edges.ntrace, dtype=bool)
-            indx[7] = True
-            indx[-11] = True
-            # Form the same slit
-            indx[9] = True
-            indx[10] = True
-        elif name == 'keck_mosfire':
-            # Two traces NOT from the same slit
-            assert round(edges.edge_fit[edges.pca.reference_row, :][0]) == 349, \
-                        'wrong MOSFIRE left trace position'
-            assert round(edges.edge_fit[edges.pca.reference_row, :][-1]) == 2032, \
-                        'wrong MOSFIRE right trace position'
-            # Two traces from the same slit
-            assert round(edges.edge_fit[edges.pca.reference_row, :][9]) == 973, \
-                        'wrong MOSFIRE left trace position'
-            assert round(edges.edge_fit[edges.pca.reference_row, :][10]) == 1100, \
-                        'wrong MOSFIRE right trace position'
-
-            # Remove two left traces and two right traces
-            # NOT form the same slit
-            indx = np.zeros(edges.ntrace, dtype=bool)
-            indx[0] = True
-            indx[-1] = True
-            # Form the same slit
-            indx[9] = True
-            indx[10] = True
+        # Traces to remove, identified by their position at the PCA reference
+        # row.  Two traces NOT from the same slit, then a left/right pair
+        # from the same slit.  The traces are located by position rather than
+        # by index because the number of intermediate traces found by the
+        # edge detection (and hence the index of a given edge) can change
+        # with small changes in the Sobel-image peak fitting.
+        removed = {'keck_deimos': [458, 1736, 496, 561],
+                   'keck_mosfire': [349, 2032, 973, 1100]}
+        indx = np.zeros(edges.ntrace, dtype=bool)
+        for pos in removed[name]:
+            i = _trace_at(edges, pos)
+            assert round(edges.edge_fit[edges.pca.reference_row, i]) == pos, \
+                        f'wrong {name} trace position; expected {pos}'
+            indx[i] = True
         edges.remove_traces(edges.synced_selection(indx, mode='ignore'), rebuild_pca=True)
 
         # Run slitmask matching algorithm
@@ -159,32 +151,17 @@ def test_add_missing_slits():
         # Sync left and right edges
         edges.sync()
 
-        # Check the values of the traces that have been recovered
-        if name == 'keck_deimos':
-            # Two traces NOT from the same slit
-            assert round(edges.edge_fit[edges.pca.reference_row, :][8]) == 459, \
-                        'DEIMOS left trace position not recovered'
-            assert round(edges.edge_fit[edges.pca.reference_row, :][-11]) == 1737, \
-                        'DEIMOS right trace position not recovered'
-            # Two traces from the same slit
-            assert round(edges.edge_fit[edges.pca.reference_row, :][10]) == 497, \
-                        'DEIMOS left trace position not recovered'
-            assert round(edges.edge_fit[edges.pca.reference_row, :][11]) == 561, \
-                        'DEIMOS right trace position not recovered'
-            # These values are obtained by running PypeIt with the "adding missing traces" functionality.
-            # These are within a few pixels (max 4 pixels) from their original values. The correctness of these values
-            # was also tested by visual inspection of the EdgeTraceSet image.
-        elif name == 'keck_mosfire':
-            # Two traces NOT from the same slit
-            assert round(edges.edge_fit[edges.pca.reference_row, :][1]) == 348, \
-                        'MOSFIRE left trace position not recovered'
-            assert round(edges.edge_fit[edges.pca.reference_row, :][-1]) == 2032, \
-                        'MOSFIRE right trace position not recovered'
-            # Two traces from the same slit
-            assert round(edges.edge_fit[edges.pca.reference_row, :][10]) == 973, \
-                        'MOSFIRE left trace position not recovered'
-            assert round(edges.edge_fit[edges.pca.reference_row, :][11]) == 1101, \
-                        'MOSFIRE right trace position not recovered'
+        # Check the values of the traces that have been recovered.  These
+        # values are obtained by running PypeIt with the "adding missing
+        # traces" functionality.  These are within a few pixels (max 4
+        # pixels) from their original values. The correctness of these values
+        # was also tested by visual inspection of the EdgeTraceSet image.
+        recovered = {'keck_deimos': [459, 1737, 497, 561],
+                     'keck_mosfire': [348, 2032, 973, 1101]}
+        for pos in recovered[name]:
+            i = _trace_at(edges, pos)
+            assert round(edges.edge_fit[edges.pca.reference_row, i]) == pos, \
+                        f'{name} trace position {pos} not recovered'
 
 
 def test_overlapped_slits():

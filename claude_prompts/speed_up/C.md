@@ -451,6 +451,12 @@ Use Opus 5.5. Log your work.
 Please read my answer to Q17 and then proceed.
 Use Opus 5.5. Log your work.
 
+3. **Fixes**  Please read my answer to Q18 which indicates which fixes to make to the
+code and the DevSuite to address the issues you identified in the previous prompts.
+Proceed with those fixes and report back.
+If you have any new questions, ask them in the "Q&A/Fixes" section below.
+Use Opus 5.5. Log your work.
+
 
 99. **Docs.** 
 Now that we are ready to issue a PR, please make a final pass on the PypeIt docs to
@@ -461,6 +467,8 @@ ensure they are up to date and correct with the changes in this PR.
 
 
 ## Q&A
+
+### Fixes
 
 ### OOM
 
@@ -690,6 +698,8 @@ and that exposes a weakness that was already in develop.
 **My default: (a).**  The three fixes are small and tested.  The MMIRS and
 maskdesign fixes leave develop's results unchanged.  The safeguard (b)
 changes 54 develop slits, so it deserves its own PR.
+
+>A. Yes, go with (a).
 
 
 Measured on the 370 arc spectra stored in the 38 legacy dev-suite WaveCalib
@@ -2603,3 +2613,40 @@ results exactly.
   solutions move by < 0.6 px.
 
 No PypeIt code was changed.  **Waiting on Q18.**
+
+### 2026-11-18 ("PR" task 3 — Q18 (a): fixes applied and verified)
+
+Model: Opus 5.5.
+
+**PypeIt (`speed_up_arcfit`, uncommitted; copied to `worktrees/arcfit`):**
+- `pypeit/data/arc_lines/reid_arxiv/mmt_mmirs_{J_zJ,HK_zJ,K3000_Kspec}.fits`
+  truncated to the first of their three identical copies (2040, 998 and 2040
+  rows; headers kept, wavelengths monotonic).  The `.json` siblings are
+  untouched.
+- `pypeit/spectrographs/gemini_gnirs.py` (echelle, 32/mm):
+  `tilts spec_order = [2, 4, 4, 4, 4, 4]`.
+- `doc/releases/2.1.0dev.rst`: two Instrument-specific bullets.
+
+**Dev suite (`dev_speed_up_C`, uncommitted):**
+- `unit_tests/test_maskdesign_matching.py`: `test_add_missing_slits` finds
+  the traces by position via a new `_trace_at` helper.
+- `vet_tests/test_wavelengths.py`: `test_gmos` R150_869 tolerance 0.25 → 0.30.
+
+**Verification** (`scripts/arcfit/arcfit_q18_fix.sh`, service
+`pypeit-arcfit-q18`, 13:10–15:03):
+- 6 MMIRS setups + GNIRS 32_SB_SXD re-reduced into
+  `REDUX_OUT_PR/arcfitBxaFix`: 10/12 pass; the GNIRS `coadd_2dspec` failure and
+  `tellfit` skip are develop's too.
+- MMIRS nep_as1_MOS slit 18: RMS 0.114 px, 110 lines, within 0.08 Å of
+  develop; the other 27 slits are unchanged from the unfixed run.
+- GNIRS order 8 monotonic, 8 233–9 466 Å.
+- Vet tests on `REDUX_OUT_PR/bxafix_merged`: 107 passed / 7 failed.  Five are
+  develop's own failures.  `test_spat_flexure_science` fails because the
+  earlier vet pass's Kast red `redoslit` test had overwritten the linked
+  Kast red 600_5000_d46 spec2d files (no setup this test reads was re-run);
+  `test_show_2dspec` is a ginga start-up timeout.
+- `test_maskdesign_matching.py`: 3 passed.  PypeIt unit tests
+  (`-k "spectrograph or gnirs or template or wavecal or arc"`): 58 passed.
+- Report: new §7 in `Speed_Up_Arcfit_DevSuite_Comparison.md`.
+
+No new questions.  Nothing is committed.

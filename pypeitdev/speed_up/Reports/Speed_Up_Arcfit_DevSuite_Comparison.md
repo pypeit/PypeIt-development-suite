@@ -483,3 +483,36 @@ in its own right and needs its own review, so I recommend a separate PR.
    - the multislit `full_template` RMS and monotonicity safeguard (§5.5);
    - evaluating `map_fwhm` at each order's own spectral midpoint (§5.2, item 7);
    - a guard against extrapolation in the tilt fit.
+
+## 7. Fixes applied (Q18 = (a), 2026-11-18)
+
+Three fixes went into PR C, plus the `test_gmos` tolerance:
+
+| Fix | Where | Result |
+|---|---|---|
+| One copy per MMIRS template (`J_zJ`, `HK_zJ`, `K3000_Kspec`) | PypeIt `pypeit/data/arc_lines/reid_arxiv/` | nep_as1_MOS slit 18: RMS 23.1 → **0.114 px**, 110 lines (develop 0.129 px, 111 lines); within 0.08 Å of develop.  The other 27 slits and the 5 longslit setups are unchanged from the unfixed PR C run. |
+| GNIRS 32_SB_SXD tilts `spec_order = [2, 4, 4, 4, 4, 4]` | PypeIt `gemini_gnirs.py` | Order 8 is monotonic in both standard-star spec1d files (unfixed PR C: 14 and 1 non-monotonic pixels), spanning 8 233–9 466 Å (develop 8 238–9 463 Å).  `test_load_spec1d` passes. |
+| `test_add_missing_slits` finds edges by position | dev suite `unit_tests/test_maskdesign_matching.py` | Passes (3/3 in the module). |
+| `test_gmos` R150_869 tolerance 0.25 → 0.30 px | dev suite `vet_tests/test_wavelengths.py` | Passes (RMS 0.272 px). |
+
+**Re-run.**  The 6 MMIRS setups and GNIRS 32_SB_SXD were re-reduced with the
+fixes (`scripts/arcfit/arcfit_q18_fix.sh`, output
+`REDUX_OUT_PR/arcfitBxaFix`).  The vet tests were run on
+`REDUX_OUT_PR/bxafix_merged`, which links every other setup to the unfixed
+PR C run.
+- Reductions: 10/12 pass.  The two failures (GNIRS `pypeit_coadd_2dspec`
+  failed, `pypeit_tellfit` skipped) are the same on develop.
+- Vet tests: 107 passed, 7 failed.  Five failures are the same as on
+  develop (`test_specutils` × 4, `test_keck_hires`).  The other two are
+  artefacts of re-running the vet tests on an already-vetted tree, not of
+  the fixes:
+  - `test_spat_flexure_science`: an earlier vet test (Kast red `redoslit`)
+    re-reduces Kast red 600_5000_d46 into the same directory without
+    spatial flexure.  It ran during the unfixed run's vet pass, after
+    `test_spat_flexure_science` had passed, so the linked spec2d files no
+    longer carry a flexure value.  None of the five setups this test reads
+    was re-run.
+  - `test_show_2dspec`: ginga failed to start (display timeout), like
+    `test_view_fits_proc` in the earlier runs.
+- PR C's three regressions in the vet and unit tests
+  (`test_add_missing_slits`, `test_load_spec1d`, `test_gmos`) now pass.

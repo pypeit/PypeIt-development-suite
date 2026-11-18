@@ -311,7 +311,9 @@ def test_gmos(redux_out):
     for setup, index, rms, mosaic, setupID in zip(
         ['GS_HAM_B480_550', 'GS_HAM_R150_869'],
         [1, 0],
-        [0.30, 0.25],
+        # R150_869 raised from 0.25: the fast arc-line fit (PR C) gives
+        # 0.27 px, against 0.23 px before, for a solution shift of 0.1 px.
+        [0.30, 0.30],
         ['MSC01', 'MSC01'],
         ['A_0', 'LTT7379_0']
         ):
