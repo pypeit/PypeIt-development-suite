@@ -14,8 +14,8 @@
   [[flatfield]]
      tweak_slits=False     
   [[wavelengths]]
-    lamps=['OH_GMOS']
-    method = 'holy-grail'
+    lamps = OH_GMOS
+    method = holy-grail
 [reduce]
   [[findobj]]
     snr_thresh = 10.0 
