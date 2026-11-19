@@ -129,12 +129,16 @@ for instr in all_setups:
 
 # Setups that run pypeit_preprocess_jwst on raw (*_uncal.fits) JWST files.  Only
 # the first exposure of the NRS1 detector of the S200A2_G395M_F290LP data is
-# used to keep the run time short (~2 minutes).  The source type is POINT, as
-# used to produce the input files of the S200A2_G395M_F290LP setup, so that the
-# products can be compared with those (see vet_tests/test_preprocess_jwst.py).
+# used to keep the run time short (~2 minutes).  The source type and the CRDS
+# context are those used to produce the input files of the S200A2_G395M_F290LP
+# setup, so that the products can be compared with those (see
+# vet_tests/test_preprocess_jwst.py).  The CRDS reference files are read from
+# the CRDS cache in the raw-data directory, which must contain the files of this
+# context (see PypeItPreprocessJWSTTest).
 _preprocess_jwst = {
     'jwst_nirspec': {
-        'S200A2_G395M_F290LP_preprocess': [dict(options=['--source_type', 'POINT'])]},
+        'S200A2_G395M_F290LP_preprocess': [dict(crds_context='jwst_1584.pmap',
+                                                options=['--source_type', 'POINT'])]},
 }
 
 _pypeit_setup = {

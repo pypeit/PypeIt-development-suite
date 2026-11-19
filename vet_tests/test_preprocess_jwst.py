@@ -4,8 +4,10 @@ Vet the products of pypeit_preprocess_jwst.
 The pypeit_preprocess_jwst dev-suite test (see PypeItPreprocessJWSTTest in
 test_scripts/pypeit_tests.py) runs the JWST pipeline (Stage 1 and Stage 2) on
 the first NRS1 exposure of the JWST/NIRSpec fixed-slit S200A2 data, with
-``--source_type POINT``.  The input files of the S200A2_G395M_F290LP setup were
-produced in the same way, so they are used as reference.
+``--source_type POINT`` and the reference files of a fixed CRDS context, read
+from the CRDS cache distributed with the raw data.  The input files of the
+S200A2_G395M_F290LP setup were produced in the same way, so they are used as
+reference.
 """
 from pathlib import Path
 import importlib.util
