@@ -43,71 +43,28 @@ many supported spectrographs.
   data, FITS files, or reduction outputs to the repo.
 
 - Git-ignored working directories: `REDUX_OUT/` (the default output directory
-  for reductions), `CALIBS/`, `QL_MASTERS/` (Quick-Look calibrations; see
-  `build_ql_calibs`), and `Telluric`.
+  for reductions) and `QL_CALIB/` (the default output directory of
+  `build_ql_calibs`).
 
 - For headless/GUI tests, `source source_headless_test.sh` to set
-  `QT_QPA_PLATFORM=offscreen` (QT5/QT6 must be installed).
+  `QT_QPA_PLATFORM=offscreen` (a Qt backend must be installed; PypeIt installs
+  `pyqt6` by default).
 
 ## Running the tests
 
-The primary entry point is the `pypeit_test` script (a thin wrapper around
-`test_scripts/test_main.py`).  It requires `run_pypeit` on `PATH` and `PYPEIT_DEV`
-set.
+**`README.rst` is the authority on how to run the tests**: the `pypeit_test`
+script (`test_scripts/test_main.py`), its test types and options, running the
+`unit_tests` and `vet_tests` directly with pytest, reports, coverage,
+performance statistics, parallel and headless testing, and running on
+Nautilus.  Read it before running or changing the tests.
 
-```console
-# Run everything (in order: pypeit_tests, unit, reduce, afterburn, ql, vet)
-$PYPEIT_DEV/pypeit_test all
-
-# Run only specific test types
-$PYPEIT_DEV/pypeit_test reduce afterburn ql
-
-# Restrict to instruments and/or setups
-./pypeit_test reduce -i shane_kast_blue shane_kast_red
-./pypeit_test reduce -s shane_kast_blue/600_4310_d55 shane_kast_red/600_7500_d57
-
-# List every supported instrument/setup
-./pypeit_test list
-
-# Parallelism, reports, performance, coverage
-./pypeit_test -t 2 all
-./pypeit_test all -r test_report.txt
-./pypeit_test all --csv performance.csv
-./pypeit_test all --coverage coverage_report_file.txt
-```
-
-Other useful options (see `./pypeit_test -h`):
-
-- `-o/--outputdir`: output directory (default `REDUX_OUT`).
-- `-p/--prep_only`: only run the setup (PREP) phase.
-- `-m/--do_not_reuse_calibs`: do not reuse existing calibrations.
-- `--debug`: debug mode.
-
-`all` rewrites `test_priority_list` only when none of `-i`, `-s`, or `--debug`
-are given.
-
-### Test types
-
-| Test type      | What it does |
-|----------------|--------------|
-| `pypeit_tests` | The pytest unit tests bundled with PypeIt (the main repo's `pypeit/tests/`). Self-contained; CI-safe. |
-| `unit`         | Pytest tests in `unit_tests/` that **require** `RAW_DATA`. |
-| `reduce`       | Full reductions that call `run_pypeit` directly on the `.pypeit` files. |
-| `afterburn`    | Post-reduction tools: flux calibration, 1D/2D coadd, telluric, sensfunc, collate, etc.  `after` is accepted as an alias. |
-| `ql`           | Quick-Look reduction tests. |
-| `vet`          | Pytest tests in `vet_tests/` that verify the products created by `reduce`/`afterburn`. |
-| `all`          | Runs all of the above, in the listed order (later phases depend on earlier ones). |
-| `list`         | Lists supported instruments/setups; runs nothing. |
-
-The `unit_tests` and `vet_tests` directories can also be driven directly with
-pytest; `vet_tests` expects a `--redux_out` option (defaults to
-`$PYPEIT_DEV/REDUX_OUT`, see `vet_tests/conftest.py`).
-
-```console
-cd $PYPEIT_DEV
-pytest unit_tests
-pytest vet_tests --redux_out /path/to/REDUX_OUT
-```
+**Keep `README.rst` consistent with the code.**  Any change to the test
+framework (`pypeit_test`, `test_scripts/`, `vet_tests/conftest.py`,
+`nautilus/gen_kube_devsuite`, `source_headless_test.sh`, etc.) must be
+verified against `README.rst`, and the README updated in the same change if it
+no longer matches; e.g., the `pypeit_test -h` listing must match the current
+output of `./pypeit_test -h`.  Note that `README.rst` is also included in the
+PypeIt documentation on ReadTheDocs.
 
 ## Repository layout
 
@@ -154,7 +111,9 @@ pytest vet_tests --redux_out /path/to/REDUX_OUT
   and planning documents, kept as a historical record of agent-aided
   development activity.  Documents are grouped in subdirectories named for the
   topic or the git branch the work is on (e.g. `claude_prompts/bspline_refactor/`).
-- **Helper scripts**: `build_ql_calibs` (build Quick-Look calibrations),
+- **Helper scripts**: `build_ql_calibs` (build Quick-Look calibrations; writes to the
+  directory given by the `QL_CALIB` environment variable, or `./QL_CALIB` if it
+  is not set),
   `test_priority_list` (slowest→fastest setup ordering for parallel scheduling;
   regenerated on a full passing run), `fix_xshooter_names.py`, and
   `pypeit_syncraw` (syncs `RAW_DATA` via rclone; its remotes are hard-coded per
@@ -246,10 +205,8 @@ with these exceptions:
   added with `git add -f`.
 - **Naming**: setup-specific input files follow `<instrument>_<setup>.<ext>`; this
   mapping is relied on by the test framework.
-- The full suite takes many hours and a large amount of RAM; use `-t` for
-  parallelism, with the number of threads limited by available memory (see the
-  runtime and memory table in `README.rst`).  The pytest phases cannot run in
-  parallel.
+- **Runtime and memory**: the full suite is long-running and memory-intensive;
+  see `README.rst` before running it.
 
 ## Documentation
 

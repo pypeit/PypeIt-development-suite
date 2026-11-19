@@ -34,6 +34,7 @@ NIRES_MASTERS
 Telluric
 DEIMOS_QL_TST
 QL_MASTERS/
+QL_CALIB/
 .idea/
 nautilus/yaml_files/*.yaml
 nautilus/*.yaml

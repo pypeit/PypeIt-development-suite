@@ -24,55 +24,59 @@ variable that points to this directory.  For example,
    
     setenv PYPEIT_DEV ${HOME}/PypeIt-development-suite
 
- - If you use bash, add the following to your ``~/.bashrc`` or
+ - If you use zsh (the default shell on macOS) or bash, add the following to
+   your ``~/.zshrc`` for zsh or, for bash, your ``~/.bashrc`` or
    ``~/.bash_profile``:
 
    .. code-block:: console
-   
+
     export PYPEIT_DEV=${HOME}/PypeIt-development-suite
+
 
 Data Access
 -----------
 
 Given its volume, this repo does not contain the raw data.  Instead the
-raw test data are hosted by in a 
+raw test data are hosted in a
 `Google Drive <https://drive.google.com/drive/folders/1oh19siB1-F0jjmY-F_jr73eA-TQYEiFW?usp=sharing>`__.
 
 The easiest way to access the
-development suite data is download and use `Google Drive
-for desktop <https://support.google.com/googleone/answer/10838124?visit_id=637915333936129509-3533094830&rd=1>`__.  Google
+development suite data is to download and use `Google Drive
+for desktop <https://support.google.com/googleone/answer/10838124>`__.  Google
 Drive for desktop is a Dropbox-like application that syncs your Google Drive
-with a local directory on your machine.  
+with a local directory on your machine.
 
-Using Google Drive for desktop, the you will be able to
-access the development suite data at the path:
+Using Google Drive for desktop, you will be able to access the development
+suite data under your local Google Drive mount point, at a path like:
 
-``/Volumes/GoogleDrive/My\ Drive/PypeIt-development-suite/``
+``<Google Drive mount point>/My Drive/PypeIt-development-suite/``
+
+The location of the mount point depends on your operating system and the
+version of Google Drive for desktop; check the application's preferences if
+you are unsure.
 
 If ``PypeIt-development-suite`` does not appear under ``My Drive``, go to the Google Drive web interface, find it under ``Shared with me``,
 right click it, and select ``Add shortcut to drive``.
 
 If you cannot or would rather
-not use Google Drive for desktop, you can simply download the appropriate files directly using the Google Drive web interface (although this can be a bit onerous and does not keep in sync with the remote Team Drive). Alternately you can use `rclone <https://rclone.org/>`__ to manually copy or sync with the Google Drive.
+not use Google Drive for desktop, you can simply download the appropriate files directly using the Google Drive web interface (although this can be a bit onerous and does not keep in sync with the remote Google Drive). Alternately you can use `rclone <https://rclone.org/>`__ to manually copy or sync with the Google Drive.
 
 
-The Google Drive contains two directories that should be accessible for
-testing PypeIt (see below): ``RAW_DATA``, and ``CALIBS``.
+The Google Drive contains the ``RAW_DATA`` directory that must be accessible
+for testing PypeIt (see below).
 
-  - If you download the data directly from the Google Drive, place them in
+  - If you download the data directly from the Google Drive, place it in
     your ``PypeIt-development-suite`` directory.  **Make sure that you *do
-    not* add these directories to the repo!**
+    not* add this directory to the repo!**
 
-  - If you're using Google File Stream, add symlinks to your
-    ``PypeIt-development-suite`` directory as follows (be sure to include
-    the \ in the My\ Drive otherwise the space in "My Drive" will
-    cause problems):
+  - If you're using Google Drive for desktop, add a symlink to your
+    ``PypeIt-development-suite`` directory as follows (be sure to quote the
+    path, otherwise the space in "My Drive" will cause problems):
 
     .. code-block:: console
 
         cd $PYPEIT_DEV
-        ln -s /Volumes/GoogleDrive/My\ Drive/PypeIt-development-suite/RAW_DATA  RAW_DATA
-        ln -s /Volumes/GoogleDrive/My\ Drive/PypeIt-development-suite/CALIBS  CALIBS
+        ln -s "<Google Drive mount point>/My Drive/PypeIt-development-suite/RAW_DATA" RAW_DATA
 
 Testing PypeIt
 --------------
@@ -82,7 +86,9 @@ for some of the supported instruments.
 
 If you have `PypeIt <https://github.com/pypeit/PypeIt>`__ installed, you
 should be able to run the tests in this directory using the
-``pypeit_test`` script. It has one required argument, the type of tests to run.
+``pypeit_test`` script. It requires the PypeIt ``run_pypeit`` script to be on
+your ``PATH`` and the ``PYPEIT_DEV`` environment variable to be set (see
+above). It has one required argument, the type of tests to run.
 
 .. code-block:: console
 
@@ -105,12 +111,12 @@ All of the supported test test types are shown in the table below.
 Test Type     Description
 ============= ==============================================================================================================
 pypeit_tests  Runs the pytest tests installed with PypeIt in pypeit/tests. These tests are self contained and can run in CI.
-unit          Runs the pytest tests installed in $PYPEIT_DEV/unit. These tests require the RAW_DATA directory.
+unit          Runs the pytest tests in $PYPEIT_DEV/unit_tests. These tests require the RAW_DATA directory.
 reduce        Runs the reduction tests that call run_pypeit directly.
-afterburn     Runs the PypeIt tests that directly call PypeIt post-reduction  tools (e.g. flux calibration, coadding, etc).
+afterburn     Runs the PypeIt tests that directly call PypeIt post-reduction tools (e.g. flux calibration, coadding, etc). ``after`` is accepted as an alias.
 ql            Runs the Quick Look tests.
 vet           Runs the pytest tests that verify the results from earlier PypeIt tests.
-all           Runs all of the above, in the order listed above.
+all           Runs all of the above, in the order listed above; later test types depend on the results of earlier ones.
 list          This does not run any tests, instead it lists all of the supported instruments and setups. (See below).
 ============= ==============================================================================================================
 
@@ -131,6 +137,14 @@ The unit and vet tests can also be run directly using pytest. For example:
 
     # Run the script tests in both unit_tests and vet_tests
     $ pytest unit_tests/test_scripts.py vet_tests/test_scripts.py
+
+The vet tests check the products of earlier ``reduce`` and ``afterburn`` runs.
+By default they look for them in ``$PYPEIT_DEV/REDUX_OUT``; use the
+``--redux_out`` option to point them elsewhere:
+
+.. code-block:: console
+
+    $ pytest vet_tests --redux_out /path/to/REDUX_OUT
 
 See the `pytest docs <https://docs.pytest.org/>`__ for more information on running pytest.
 
@@ -249,7 +263,7 @@ The dev suite can also collect coverage data for ``PypeIt`` using
     $ ./pypeit_test all --coverage coverage_report_file.txt
 
 The coverage report contains a file by file list of the coverage information, including missed lines. It ends with a summary of the total code coverage.
-The unit tests, and deprecated sections of the ``PypeIt`` code base are omitted.
+The ``PypeIt`` unit tests are omitted.
 For example:
 
 .. code-block:: console
@@ -268,7 +282,7 @@ Performance Statistics
 
 The dev suite collects performance information about how fast each test
 runs and how much memory it uses. This can be output to a CSV file using
-the ``-csv`` option.
+the ``-c`` or ``--csv`` option.
 
 .. code-block:: console
 
@@ -326,8 +340,9 @@ threads compete for resources.
 To keep all cpus active as long as possible ``pypeit_test`` runs the
 slowest tests first. To do this it needs the ``test_priority_list`` file
 which contains a list of all the test setups ordered from slowest to
-fastest. This file is re-written everytime a run of the full test suite
-passes, and should be kept up to date by periodically pushing it to git.
+fastest. This file is re-written every time a run of the full test suite
+passes (i.e., ``pypeit_test all`` without the ``-i``, ``-s``, or ``--debug``
+options), and should be kept up to date by periodically pushing it to git.
 
 The pytest portion of the dev-suite currently cannot be run in parallel.
 
@@ -335,21 +350,12 @@ Headless Testing
 ----------------
 
 Some of the tests in the dev-suite will start GUI applications. To run
-in a headless environment where this isn't possible, QT must still be
-installed.  To do so, first install ``PypeIt`` with QT5 support, as
-documented `here
-<https://pypeit.readthedocs.io/en/latest/installing.html>`__. Next
-install the correct QT package for the OS.
+in a headless environment where this isn't possible, a Qt backend must still
+be installed.  By default, ``PypeIt`` installs ``pyqt6``, whose wheels bundle
+the Qt libraries; see the `installation documentation
+<https://pypeit.readthedocs.io/en/latest/installing.html>`__.
 
-=================  ================
-OS Distribution    Package name
-=================  ================
-Ubuntu 21.04       qt5-default
-Ubuntu 22.04       qtbase5-dev
-Centos 7           qt5-qtbase-devel
-=================  ================
-
-Finally, set the ``QT_QPA_PLATFORM`` environment variable to
+Then set the ``QT_QPA_PLATFORM`` environment variable to
 ``offscreen``. There is a convenience file named
 ``source_headless_test.sh`` that will do this. For example:
 
@@ -362,16 +368,16 @@ Running in Nautilus
 
 The dev-suite can be run in the `Nautilus cluster <https://docs.nationalresearchplatform.org/>`__.
 To generate the YAML for a dev-suite job, use ``gen_kube_devsuite``.  If needed,
-a specific branch of both the PypeIt repository and the Pypeit-development-suite
+a specific branch of both the PypeIt repository and the PypeIt-development-suite
 repository can be chosen using ``-p`` and ``-d`` respectively.  These default to
-``develop`` if not specified. The YAML file can then be ran using ``kubectl``.
+``develop`` if not specified. The YAML file can then be run using ``kubectl``.
 
 For example to run using the pypeit_branch on the PypeIt repo and the
 devsuite_branch on the PypeIt-development-suite repo:
 
 .. code-block:: console
 
-    $ cd $PYPEIT_DEV/nauitilus
+    $ cd $PYPEIT_DEV/nautilus
     $ ./gen_kube_devsuite devsuite-job-name devsuite_job_file.yml -p pypeit_branch -d devsuite_branch
     $ kubectl create -f devsuite_job_file.yml
 
@@ -383,7 +389,11 @@ follows:
 
     aws --endpoint  https://s3-west.nrp-nautilus.io s3 cp s3://pypeit/Reports/devsuite-job-name.report .
 
-``rclone`` can also be used access the Nautilus S3 storage. When
+The job also uploads the performance statistics to
+``s3://pypeit/Reports/devsuite-job-name_performance.csv`` and a tarball of the
+test logs to ``s3://pypeit/Logs/devsuite-job-name.logs.tgz``.
+
+``rclone`` can also be used to access the Nautilus S3 storage. When
 configuring use ``https://s3-west.nrp-nautilus.io`` as the endpoint.
 
 The default job created by ``gen_kube_devsuite``  runs directly from git. However it can be changed to run
@@ -402,7 +412,7 @@ information and the test priority list. If ``--coverage`` and
     $ kubectl create -f priority_job_file.yml
     $ # Wait several hours 
     $ export ENDPOINT=https://s3-west.nrp-nautilus.io 
-    $ aws --endpoint $ENDPOINT s3 cp s3://pypeit/Reports coverage-job-name.report .
+    $ aws --endpoint $ENDPOINT s3 cp s3://pypeit/Reports/coverage-job-name.report .
     $ aws --endpoint $ENDPOINT s3 cp s3://pypeit/Reports/priority-job-name.report .
     $ aws --endpoint $ENDPOINT s3 cp s3://pypeit/Reports/coverage-job-name.coverage.report .
     $ aws --endpoint $ENDPOINT s3 cp s3://pypeit/Reports/priority-job-name.test_priority_list .
@@ -423,8 +433,8 @@ To monitor a test in Nautilus as it is running, the logs can be tailed:
 
 Additionally they can be monitored with the `Nautilus Grafana page <https://grafana.nrp-nautilus.io/?orgId=1>`__.
 
-By default ``gen_kube_devsuite`` creates a job using a the latest Python container 
-available on Docker Hub. It also supports running with different python versions by
+By default ``gen_kube_devsuite`` creates a job using the Python 3.12 container
+from Docker Hub (``--container python3.12``). It also supports running with different python versions by
 selecting a different container. For example:
 
 .. code-block:: console
@@ -460,43 +470,42 @@ Additional Options
     'afterburn''. Use 'list' to view all supported setups.
 
     positional arguments:
-    tests                 Which test types to run. Options are: pypeit_tests,
+      tests                 Which test types to run. Options are: pypeit_tests,
                             unit, reduce, afterburn, ql, vet, or all. Use list to
                             show all supported instruments and setups.
 
-    optional arguments:
-    -h, --help            show this help message and exit
-    -o OUTPUTDIR, --outputdir OUTPUTDIR
+    options:
+      -h, --help            show this help message and exit
+      -o, --outputdir OUTPUTDIR
                             Output folder. (default: REDUX_OUT)
-    -i INSTRUMENTS [INSTRUMENTS ...], --instruments INSTRUMENTS [INSTRUMENTS ...]
+      -i, --instruments INSTRUMENTS [INSTRUMENTS ...]
                             One or more instruments to run tests for. Use
                             "pypeit_test list" to see all supported instruments.
                             (default: None)
-    -s SETUPS [SETUPS ...], --setups SETUPS [SETUPS ...]
+      -s, --setups SETUPS [SETUPS ...]
                             One or more setups to run tests for. Use "pypeit_test
                             list" to see all supported setups. (default: None)
-    --debug               Debug using only blue setups (default: False)
-    -p, --prep_only       Only prepare to execute run_pypeit, but do not
+      --debug               Debug using only blue setups (default: False)
+      -p, --prep_only       Only prepare to execute run_pypeit, but do not
                             actually run it. (default: False)
-    -m, --do_not_reuse_calibs
-                            run pypeit without using any existing calibrations
-                            (default: False)
-    -t THREADS, --threads THREADS
+      -m, --do_not_reuse_calibs
+                            run pypeit without using any existing processed
+                            calibration frames (default: False)
+      -t, --threads THREADS
                             Run THREADS number of parallel tests. (default: 1)
-    -q, --quiet           Supress all output to stdout. If -r is not a given, a
+      -q, --quiet           Supress all output to stdout. If -r is not a given, a
                             report file will be written to
                             <outputdir>/pypeit_test_results.txt (default: False)
-    -v, --verbose         Output additional detailed information while running
+      -v, --verbose         Output additional detailed information while running
                             the tests and output a detailed report at the end of
                             testing. This has no effect if -q is given (default:
                             False)
-    --coverage COVERAGE   Collect code coverage information. and write it to the
+      --coverage COVERAGE   Collect code coverage information. and write it to the
                             given file. (default: None)
-    -r REPORT, --report REPORT
-                            Write a detailed test report to REPORT. (default:
+      -r, --report REPORT   Write a detailed test report to REPORT. (default:
                             None)
-    -c CSV, --csv CSV     Write performance numbers to a CSV file. (default:
+      -c, --csv CSV         Write performance numbers to a CSV file. (default:
                             None)
-    -w, --show_warnings   Show warnings when running unit tests and vet tests.
+      -w, --show_warnings   Show warnings when running unit tests and vet tests.
                             (default: False)
 
