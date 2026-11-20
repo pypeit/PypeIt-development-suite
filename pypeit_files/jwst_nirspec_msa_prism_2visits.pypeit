@@ -7,12 +7,11 @@
     maskIDs = 178562
 [reduce]
     [[findobj]]
-      snr_thresh = 1.2
       skip_skysub = True
     [[extraction]]
       boxcar_radius = 0.3
     [[skysub]]
-      local_maskwidth = 3.
+      no_local_sky = True
 
 # Setup
 setup read
