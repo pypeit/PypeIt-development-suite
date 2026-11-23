@@ -141,7 +141,7 @@ All seven bugs were confirmed there on 2026-11-23.
 |---|---|---|
 | 1 | Duplicate dict keys | fixed; reductions pending |
 | 2 | `test_datacube` asserts | fixed; KCWI reduction pending |
-| 3 | `test_hires` typo | open |
+| 3 | `test_hires` typo | fixed |
 | 4 | `PypeItSensFuncTest` `NameError` | open |
 | 5 | pytest exit code | open |
 | 6 | `build_ql_calibs` fallback | open |
