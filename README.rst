@@ -120,6 +120,11 @@ all           Runs all of the above, in the order listed above; later test types
 list          This does not run any tests, instead it lists all of the supported instruments and setups. (See below).
 ============= ==============================================================================================================
 
+``pypeit_test`` exits with status 0 only if every requested test passed.
+Otherwise the exit status is the number of failed PypeIt tests plus the number
+of failed pytest runs (``pypeit_tests``, ``unit``, ``vet``), capped at 255.  A
+pytest run that collects no tests counts as failed.
+
 Running Unit and Vet tests separately
 -------------------------------------
 

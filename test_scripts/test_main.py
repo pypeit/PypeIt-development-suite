@@ -227,6 +227,9 @@ class TestReport(object):
     testing_complete (bool): Whether testing has completed.
     lock (:obj:`threading.Lock`): Lock used to synchronize access when multiple threads are reporting status. This
                                   prevents scrambled output being sent to stdout.
+
+    pytest_results (dict):     The summary line of each pytest run, keyed by its description.
+    pytest_returncodes (dict): The exit status of each pytest run, keyed by its description.
     """
     def __init__(self, pargs):
         self.pargs = pargs
@@ -245,6 +248,7 @@ class TestReport(object):
         self.start_time = datetime.datetime.now()
         self.total_usage = 0.0
         self.pytest_results=dict()
+        self.pytest_returncodes = dict()
 
         if pargs.report is not None and Path(pargs.report).exists():
             # Remove any old report files if we've been asked to overwrite it
@@ -370,6 +374,29 @@ class TestReport(object):
                 print(f"{test_descr} Results:", file=report_file)
                 print ("-------------------------", file=report_file)                
 
+    def pytest_completed(self, test_descr, returncode):
+        """
+        Called when a set of pytest tests has finished.
+
+        Parameters
+        ----------
+        test_descr : str
+            The description of the pytest test suite, as passed to
+            :meth:`pytest_started`.
+        returncode : int
+            The exit status of the pytest process.  Any non-zero value is a
+            failure, including 5, which pytest returns when it collects no
+            tests.
+        """
+        self.pytest_returncodes[test_descr] = returncode
+
+    @property
+    def num_pytest_failed(self):
+        """
+        The number of pytest runs that ended with a non-zero exit status.
+        """
+        return len([rc for rc in self.pytest_returncodes.values() if rc != 0])
+
     def pytest_line(self, test_descr, line):
         """Called for each line ouptut from a pytest run. Each line is echoed to
         stdout and, if requested, a report file.
@@ -391,7 +418,10 @@ class TestReport(object):
                 print(line, file=report_file)
         
         # Save any summary lines found for reporting later.
-        if "warnings" in line or "passed" in line or "failed" in line:
+        if (
+            "warnings" in line or "passed" in line or "failed" in line or "error" in line
+            or "no tests ran" in line
+        ):
             self.pytest_results[test_descr] = line.replace("=", "")
 
 
@@ -440,11 +470,16 @@ class TestReport(object):
 
     def summarize_pytest_results(self, test_descr, output=sys.stdout):
         """Display a summary of a pytest run."""
-        if test_descr not in self.pytest_results:
+        if test_descr not in self.pytest_returncodes:
             # The tests weren't run, so no results
             return
-        results = self.pytest_results[test_descr]
-        if "failed" in results:
+        results = self.pytest_results.get(test_descr, "")
+        returncode = self.pytest_returncodes[test_descr]
+        if returncode == 5:
+            results += " (no tests collected)"
+        elif returncode != 0 and "failed" not in results and "error" not in results:
+            results += f" (pytest exit status {returncode})"
+        if returncode != 0:
             print("\x1B[" + "1;31m" + f"--- PYTEST {test_descr.upper()} FAILED " + "\x1B[" + "0m"
                   + results +  "\x1B[" + "1;32m" + "---" + "\x1B[" + "0m" + "\r", file=output)
         else:
@@ -587,9 +622,9 @@ def run_pytest(pargs, test_descr : str, test_dir : Path, test_report : TestRepor
         test_dir (str): 
             The directory where the pytest tests to run are stored.
 
-        test_report (:obj:`TestReport`): 
-            The test report object for this test run. Output from the pytest run
-            will be passed to this object.
+        test_report (:obj:`TestReport`):
+            The test report object for this test run. Output from the pytest run,
+            and its exit status, will be passed to this object.
 
         redux_out (str):
             The location of the output of this dev-suite run. Optional, only required
@@ -619,8 +654,12 @@ def run_pytest(pargs, test_descr : str, test_dir : Path, test_report : TestRepor
     # Run pytest, sending the outpu to the test report.
     # We change the current directory so that the coverage output goes to the outputdir
     with subprocess.Popen(args,stderr=subprocess.STDOUT, stdout=subprocess.PIPE,cwd=pargs.outputdir) as p:
-        while(p.poll() is None):
-            test_report.pytest_line(test_descr, p.stdout.readline().decode().strip())
+        # Read until pytest closes its output, rather than until the process exits, so that
+        # lines still buffered at exit (including the final summary line) are not lost.
+        for line in p.stdout:
+            test_report.pytest_line(test_descr, line.decode().strip())
+        p.wait()
+    test_report.pytest_completed(test_descr, p.returncode)
 
 def generate_coverage_report(pargs):
 
@@ -1033,7 +1072,8 @@ def main():
         else:
             test_report.summary_report()
 
-    return test_report.num_failed
+    # The number of failed PypeIt tests plus the number of failed pytest runs
+    return test_report.num_failed + test_report.num_pytest_failed
 
 
 def build_test_setup(pargs, instr, setup_name, flg_reduce, flg_after, flg_ql):

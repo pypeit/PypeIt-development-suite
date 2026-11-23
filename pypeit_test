@@ -22,7 +22,8 @@ if __name__ == '__main__':
         raise EnvironmentError('Environment must include PYPEIT_DEV, which points to the '
                                'top-level directory with the dev-suite raw data.')
 
-    # Giddy up
-    sys.exit(main())
+    # Giddy up.  main() returns the number of failures; the shell keeps only the exit status
+    # modulo 256, so cap it at 255 to keep any number of failures non-zero.
+    sys.exit(min(main(), 255))
 
 

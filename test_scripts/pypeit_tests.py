@@ -499,8 +499,9 @@ class PypeItSensFuncTest(PypeItTest):
         files = list(search_path.glob(self.std_file))
 
         if len(files) == 0:
-            self.error_msgs.append(f"Could not find std file matching!: {search_pattern}")
+            self.error_msgs.append(f"Could not find std file matching {search_path / self.std_file}")
             self.passed = False
+            return self.passed
         else:
             self.std_file = [str(f) for f in files]
             return super().run()

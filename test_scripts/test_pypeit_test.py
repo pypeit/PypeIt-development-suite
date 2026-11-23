@@ -30,8 +30,9 @@ import sys
 import os
 from io import BytesIO
 import random
+from types import SimpleNamespace
 from test_scripts import test_main
-from test_scripts.pypeit_tests import PypeItReduceTest
+from test_scripts.pypeit_tests import PypeItReduceTest, PypeItSensFuncTest
 import time
 
 
@@ -185,6 +186,24 @@ def test_main_with_missing_file_failures(monkeypatch, tmp_path):
 
         # Make sure the test_priority_list doesn't exist if there's a failure
         assert not os.path.exists(tmp_path / "test_priority_list")
+
+
+def test_sensfunc_missing_std_file(tmp_path):
+    """
+    Test that PypeItSensFuncTest.run reports a failure, rather than raising, when no standard
+    file matches its pattern.
+    """
+    (tmp_path / 'Science').mkdir()
+    setup = test_main.TestSetup('shane_kast_blue', '600_4310_d55', tmp_path, tmp_path, tmp_path)
+    std_file = 'spec1d_*no_such_std*.fits'
+    sens_test = PypeItSensFuncTest(setup, SimpleNamespace(coverage=None), std_file)
+
+    assert sens_test.run() is False, 'run should return False when no std file matches'
+    assert sens_test.passed is False, 'The test should be marked as failed'
+    expected = str(tmp_path / 'Science' / std_file)
+    assert any(expected in msg for msg in sens_test.error_msgs), (
+        f'The error messages should name the searched pattern {expected}: {sens_test.error_msgs}'
+    )
 
 
 def test_main_with_build_command_failure(monkeypatch, tmp_path):

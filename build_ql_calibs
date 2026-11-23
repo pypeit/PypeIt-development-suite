@@ -231,10 +231,12 @@ def run_devsuite(instrument, setup, redux_dir):
     # The parameters to simulate the command line arguments to pypeit_test
     DevSuiteParams = namedtuple("DevSuiteParams", ["tests", "prep_only", "do_not_reuse_calibs", 
                                                    "outputdir", "coverage"])
-    absolute_outputdir = os.path.abspath(redux_dir)
-    pargs = DevSuiteParams(tests=["reduce", "afterburn"], prep_only=False,
-                           do_not_reuse_calibs=False, outputdir=absolute_outputdir,
-                           coverage=False)
+    # pypeit_test's main() converts outputdir to a Path, and a coverage of None
+    # means coverage is off; match both here.
+    pargs = DevSuiteParams(
+        tests=["reduce", "afterburn"], prep_only=False, do_not_reuse_calibs=False,
+        outputdir=Path(redux_dir).absolute(), coverage=None
+    )
     test_setup = build_test_setup(pargs, instrument, setup, True, True, False)
     for test in test_setup.tests:
         # A quick look test will run build_ql_calibs, potentially creating an 

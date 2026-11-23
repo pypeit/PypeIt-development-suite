@@ -75,7 +75,7 @@ def test_coadd_datacube(redux_out):
     cube_dirc = "Science_cube/"
     qa_dirc = "QA_cube/"
     # Check the file exists
-    assert(os.path.exists(cube_dirc + output_filename), f"{output_filename} does not exist")
+    assert os.path.exists(cube_dirc + output_filename), f"{output_filename} does not exist"
     ######################################
     # Test the extraction of a 1D spectrum from the datacube
     # Prepare the output filename
@@ -83,8 +83,12 @@ def test_coadd_datacube(redux_out):
     pargs = ExtractDataCube.parse_args(["-o", "-s", output1d_filename, cube_dirc + output_filename])
     ExtractDataCube.main(pargs)
     # Check the files exist
-    assert(os.path.exists(cube_dirc + "spec1d_" + output1d_filename), f"spec1d_{output1d_filename} does not exist")
-    assert(os.path.exists(cube_dirc + "spec2d_" + output1d_filename), f"spec2d_{output1d_filename} does not exist")
+    assert os.path.exists(cube_dirc + "spec1d_" + output1d_filename), (
+        f"spec1d_{output1d_filename} does not exist"
+    )
+    assert os.path.exists(cube_dirc + "spec2d_" + output1d_filename), (
+        f"spec2d_{output1d_filename} does not exist"
+    )
     ######################################
     # Using the 1D spectrum, generate a sensitivity function to flux the datacube
     # Prepare the output filename
@@ -93,7 +97,7 @@ def test_coadd_datacube(redux_out):
     pargs = SensFunc.parse_args(["-o", outfile_sens, "-s", input_senspar, cube_dirc+"spec1d_"+output1d_filename])
     SensFunc.main(pargs)
     # Check the files exist
-    assert(os.path.exists(outfile_sens), f"{outfile_sens} does not exist")
+    assert os.path.exists(outfile_sens), f"{outfile_sens} does not exist"
     ######################################
     # Now test the fluxing of the datacube
     output_fileflux = "BB1245p4238_KCWI_20191219_fluxing.fits"
@@ -113,7 +117,9 @@ def test_coadd_datacube(redux_out):
     coadd.run()
 
     # Check the files exist
-    assert(os.path.exists(cube_dirc + output_fileflux), f"{cube_dirc + output_fileflux} does not exist")
+    assert os.path.exists(cube_dirc + output_fileflux), (
+        f"{cube_dirc + output_fileflux} does not exist"
+    )
     ######################################
     # Finally, test the extraction of a 1D fluxed spectrum from the datacube
     # Prepare the output filename
@@ -121,8 +127,12 @@ def test_coadd_datacube(redux_out):
     pargs = ExtractDataCube.parse_args(["-o", "-s", output1d_fileflux, cube_dirc + output_fileflux])
     ExtractDataCube.main(pargs)
     # Check the files exist
-    assert(os.path.exists(cube_dirc + "spec1d_" + output1d_fileflux), f"spec1d_{output1d_fileflux} does not exist")
-    assert(os.path.exists(cube_dirc + "spec2d_" + output1d_fileflux), f"spec2d_{output1d_fileflux} does not exist")
+    assert os.path.exists(cube_dirc + "spec1d_" + output1d_fileflux), (
+        f"spec1d_{output1d_fileflux} does not exist"
+    )
+    assert os.path.exists(cube_dirc + "spec2d_" + output1d_fileflux), (
+        f"spec2d_{output1d_fileflux} does not exist"
+    )
     ######################################
     # Load in the extracted spec1d file, and compare it to the expected values
     spec1d = specobjs.SpecObjs.from_fitsfile(cube_dirc + "spec1d_" + output1d_fileflux)
@@ -137,7 +147,7 @@ def test_coadd_datacube(redux_out):
     # Compare the extracted spectrum to the standard star spectrum, and make sure that the residuals are small
     resid = (spec1d[0].OPT_FLAM-flux_std_interp)*utils.inverse(spec1d[0].OPT_FLAM_SIG)
     med, std = np.median(resid), 1.4826*np.median(np.abs(np.median(resid) - resid))
-    assert(np.abs(med) < 0.2*std, "Residuals of the optimal spectrum are greater than 0.2*std")
+    assert np.abs(med) < 0.2*std, "Residuals of the optimal spectrum are greater than 0.2*std"
     # Test the boxcar extraction
     # Interpolate the standard star spectrum to the same wavelength grid as the spec1d
     flux_std_interp = np.interp(spec1d[0].BOX_WAVE, wave_std, flux_std)
@@ -146,7 +156,9 @@ def test_coadd_datacube(redux_out):
     med, std = np.median(resid), 1.4826*np.median(np.abs(np.median(resid) - resid))
     # The sensitivity function is based on the optimal extraction, so the optimal should be spot on.
     # The boxcar will be worse, so allow a larger tolerance
-    assert(np.abs(med) < std, "Residuals of the boxcar spectrum are greater than 1 standard deviation")
+    assert np.abs(med) < std, (
+        "Residuals of the boxcar spectrum are greater than 1 standard deviation"
+    )
     ######################################
     # Remove all of the created files
     # First remove the files in the Science folder

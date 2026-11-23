@@ -473,9 +473,15 @@ def test_hires():
     assert raw_dir.exists(), f'Raw data directory does not exist: {raw_dir}'
 
     # Get the list of setup directories
-    setups_names = ['lJ0306+1853_U074_RED_C2_ECH_0.72_XD_1.42_1x3',
+    setups_names = ['J0306+1853_U074_RED_C2_ECH_0.72_XD_1.42_1x3',
                     'J1218+2951_U116Hr_RED_C5_ECH_-0.22_XD_0.21_1x2']
-    setups = np.concatenate([sorted(raw_dir.glob(s)) for s in setups_names]).tolist()
+    setups = []
+    for s in setups_names:
+        matches = sorted(raw_dir.glob(s))
+        assert len(matches) == 1, (
+            f'Setup name {s} should match exactly one directory in {raw_dir}; found {len(matches)}'
+        )
+        setups += matches
 
     # Set the output path and *remove if it already exists
     output_path = Path('.').absolute() / 'output'
