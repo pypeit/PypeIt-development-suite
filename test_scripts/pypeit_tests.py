@@ -7,6 +7,7 @@ Classes and utility functions for running individual pypeit tests.
 """
 
 
+from importlib import resources
 from pathlib import Path
 import shutil
 import subprocess
@@ -26,7 +27,13 @@ from pypeit import calibrations
 
 from IPython import embed
 
-_COVERAGE_ARGS = ["--source", "pypeit", "--omit", "*PypeIt/pypeit/tests/*,*PypeIt/pypeit/deprecated/*", "--parallel-mode"] 
+# Omit PypeIt's own unit tests from the coverage report.  The path is taken from
+# the installed package so that it does not depend on the name of the directory
+# holding the PypeIt clone.
+_COVERAGE_ARGS = [
+    "--source", "pypeit", "--omit", str(resources.files('pypeit') / 'tests' / '*'),
+    "--parallel-mode"
+]
 
 class PypeItTest(ABC):
     """Abstract base class for classes that run pypeit tests and hold the results from those tests."""
