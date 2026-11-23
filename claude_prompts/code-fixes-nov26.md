@@ -156,6 +156,6 @@ All seven bugs were confirmed there on 2026-11-23.
 | 2 | `test_datacube` asserts | fixed; KCWI reduction pending |
 | 3 | `test_hires` typo | fixed |
 | 4 | `PypeItSensFuncTest` `NameError` | fixed |
-| 5 | pytest exit code | open |
+| 5 | pytest exit code | fixed |
 | 6 | `build_ql_calibs` fallback | open |
 | 7 | `wavecalib/` (optional) | open |
