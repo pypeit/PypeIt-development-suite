@@ -287,8 +287,7 @@ _coadd1d = {
     'gemini_gnirs_echelle': {
         '32_SB_SXD': [{}]},
     'gemini_gmos': {
-        'GS_HAM_R400_860': [{}]},
-    'gemini_gmos': {
+        'GS_HAM_R400_860': [{}],
         'GS_HAM_R400_700': [{}]},
     }
 
@@ -306,8 +305,7 @@ _coadd2d = {
     'keck_mosfire': {
         'long2pos1_H': [dict(coadd_file=True)]},
     'keck_nires': {
-        'ABBA_wstandard': [dict(coadd_file=True)]},
-    'keck_nires': {
+        'ABBA_wstandard': [dict(coadd_file=True)],
         'ABBA_nostandard_faint': [dict(coadd_file=True)]},
     'ldt_deveny': {
         'DV1': [dict(coadd_file=True)]},

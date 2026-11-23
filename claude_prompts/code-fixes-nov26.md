@@ -139,7 +139,7 @@ All seven bugs were confirmed there on 2026-11-23.
 
 | # | Fix | Status |
 |---|---|---|
-| 1 | Duplicate dict keys | open |
+| 1 | Duplicate dict keys | fixed; reductions pending |
 | 2 | `test_datacube` asserts | open |
 | 3 | `test_hires` typo | open |
 | 4 | `PypeItSensFuncTest` `NameError` | open |
