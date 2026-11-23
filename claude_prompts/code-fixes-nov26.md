@@ -128,6 +128,19 @@ All seven bugs were confirmed there on 2026-11-23.
   and nothing else depends on it.
 - **Check:** `pytest wavecalib` collects and runs.
 
+## Known failures (record in the PR)
+
+- **`test_scripts/test_pypeit_test.py`:** all 10 tests that predate fix 4 fail on `develop`
+  (checked 2026-11-23); only fix 4's new `test_sensfunc_missing_std_file` passes.  The module
+  has not been part of the development workflow and has drifted:
+  - Hard-coded `main()` return values no longer match, e.g. `test_main_with_test_failure`
+    expects 3 and gets 6, because `shane_kast_blue` has gained setups.
+  - The mocked `subprocess.run` output reaches the space-usage code, which fails to parse
+    it as an integer.
+
+  Out of scope: `pypeit_test` is due to be refactored.  Fix 5 changes `main`'s return value
+  to 1 on any failure, so these return-value assertions will be out of date in a new way.
+
 ## Related, out of scope
 
 - **`construct_template.rst`, in the main PypeIt repo**, points at
@@ -142,7 +155,7 @@ All seven bugs were confirmed there on 2026-11-23.
 | 1 | Duplicate dict keys | fixed; reductions pending |
 | 2 | `test_datacube` asserts | fixed; KCWI reduction pending |
 | 3 | `test_hires` typo | fixed |
-| 4 | `PypeItSensFuncTest` `NameError` | open |
+| 4 | `PypeItSensFuncTest` `NameError` | fixed |
 | 5 | pytest exit code | open |
 | 6 | `build_ql_calibs` fallback | open |
 | 7 | `wavecalib/` (optional) | open |
