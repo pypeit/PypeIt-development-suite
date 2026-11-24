@@ -3,6 +3,14 @@
 *2026-11-18.  Model: Opus 5.5.  Companion to `Speed_Up_Arcfit_Report.md`
 (the design and performance report of PR C).*
 
+> **Note (2026-11-24).**  This comparison is of the *vectorized* version of
+> PR C.  PR C has since been reverted to develop's per-line `curve_fit`,
+> keeping the σ floor, the archive-sky FWHM cache and the §7 fixes (C.md Q20;
+> `Speed_Up_Arcfit_Report.md` §0–§8).  The floor's effects described here
+> carry over; the effects of the vectorized fit itself (e.g. dropped plateau
+> edges, gained lines on which `curve_fit` gave up) do not.  The revert is
+> validated in `Speed_Up_Arcfit_Report.md` §5.
+
 ## Summary
 
 The dev suite ran end to end on `develop` (90c41e1a9) and on `develop` plus

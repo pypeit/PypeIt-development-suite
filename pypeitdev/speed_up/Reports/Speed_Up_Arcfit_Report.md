@@ -1,44 +1,376 @@
-# Speed-up workstream C: vectorized arc-line Gaussian fitting
+# Speed-up workstream C: arc-line fitting and the archive-sky FWHM cache
 
-**Final report, 2026-10-26.**  PypeIt branch `speed_up_arcfit` (on top of
-`speed_up_B`, PR #2209); dev-suite branch `dev_speed_up`.  The working record,
-with every intermediate number and decision, is
-`claude_prompts/speed_up/C.md` (Q1–Q11 and the Logs).  The measured tables
-are also in `speed_up_results.md`, section "After workstream C".  This report
-stands alone.
+**Report of 2026-10-26, rewritten 2026-11-24 after the revert to
+`curve_fit` (C.md, "Revert to CurveFit?", Q20).**  PypeIt branch
+`speed_up_arcfit`; dev-suite branch `dev_speed_up_C`.  The working record,
+with every intermediate number and decision, is `claude_prompts/speed_up/C.md`
+(Q1–Q20 and the Logs).
 
-> **Update, 2026-11-03 (Task 11): the default has changed.**  Following Q13–Q15
-> in `C.md`, the shipped default is now **option B with a median-width
-> floor**: `ARCFIT_MATCH_CURVEFIT = False`, `fast_line_fit = True`, and
-> `detect_lines` rejects lines whose σ is below 0.5 × the median σ of the
-> lines in the same spectrum.  Option A (the curve_fit hand-offs, no floor)
-> remains available as `fast_line_fit = False` and reproduces the legacy
-> line lists.  Sections 0–11 describe the work as it stood on 2026-10-26,
-> when A was the default; where they say "shipped default", read "option A".
-> **§12 describes the change and its dev-suite vetting.**
+> **How to read this report.**  §0–§8 describe PR C as it will be submitted
+> ("R"): the per-line `scipy.optimize.curve_fit` Gaussian fit of develop, plus
+> a median-width floor on the accepted lines and a cache of the archived-sky
+> FWHM in spectral flexure.  The vectorized Gaussian fit that this workstream
+> built and shipped as its default until 2026-11-24 was evaluated and **not
+> adopted**; that study is kept in full as
+> [Appendix D](#appendix-d-the-vectorized-fit-evaluated-not-adopted).
+> Section numbers quoted inside Appendix D (§1–§15) refer to its own
+> sections D.1–D.15.
 
 ## Contents
 
 0. [Executive summary](#0-executive-summary)
-1. [What was replaced, and why](#1-what-was-replaced-and-why)
-2. [The method](#2-the-method)
-3. [Fidelity to the legacy `curve_fit` fit](#3-fidelity-to-the-legacy-curve_fit-fit)
-4. [Line-count changes under the pure-vectorized option (B), and why A ships](#4-line-count-changes-under-the-pure-vectorized-option-b-and-why-a-ships)
-5. [Worked examples](#5-worked-examples)
-6. [Saturated features and line identification](#6-saturated-features-and-line-identification)
-7. [Fallback rate, where the time goes, and the archive-sky FWHM cache](#7-fallback-rate-where-the-time-goes-and-the-archive-sky-fwhm-cache)
-8. [Dev-suite vetting](#8-dev-suite-vetting)
-9. [Re-profiling and the A+B+C totals](#9-re-profiling-and-the-abc-totals)
-10. [Known limitation: the `full_template` shift-and-stretch step](#10-known-limitation-the-full_template-shift-and-stretch-step)
-11. [Switches, options and remaining risks](#11-switches-options-and-remaining-risks)
-12. [Update: option B with a median-width floor is the default](#12-update-option-b-with-a-median-width-floor-is-the-default)
+1. [What PR C changes](#1-what-pr-c-changes)
+2. [Speed](#2-speed)
+3. [The median-width floor](#3-the-median-width-floor)
+4. [Saturated plateau edges: kept, with a follow-up issue](#4-saturated-plateau-edges-kept-with-a-follow-up-issue)
+5. [Dev-suite validation of R](#5-dev-suite-validation-of-r)
+6. [Fixes from the develop comparison (Q18)](#6-fixes-from-the-develop-comparison-q18)
+7. [Known limitation: fragile `full_template` identification](#7-known-limitation-fragile-full_template-identification)
+8. [Why the vectorized fit was not adopted](#8-why-the-vectorized-fit-was-not-adopted)
 - [Appendix A: files changed](#appendix-a-files-changed)
 - [Appendix B: tests](#appendix-b-tests)
-- [Appendix C: scripts and how to regenerate the figures](#appendix-c-scripts-and-how-to-regenerate-the-figures)
+- [Appendix C: scripts](#appendix-c-scripts)
+- [Appendix D: the vectorized fit (evaluated, not adopted)](#appendix-d-the-vectorized-fit-evaluated-not-adopted)
 
 ---
 
 ## 0. Executive summary
+
+- **What PR C ships.**
+  1. **Archive-sky FWHM cache.**  Spectral flexure measured the FWHM of the
+     *same* archived sky spectrum once per slit and science frame: 170 times
+     in a serial Keck/DEIMOS 600ZD run, 801 s.  It is now measured once per
+     sky file (`flexure._archive_sky_fwhm`, `functools.lru_cache`), with
+     bit-identical results.
+  2. **Median-width floor.**  `arc.detect_lines` now rejects lines whose
+     Gaussian σ is below **0.5 × the median σ** of the lines in the same
+     spectrum (new `min_frac_med_width` argument; skipped below
+     `min_nlines_med_width` = 5 lines).  Both are user parameters,
+     `[calibrations][wavelengths] min_frac_med_width` and
+     `min_nlines_med_width` (Q&A "Revert?", item 3), passed explicitly to the
+     wavelength calibration and the tilts.
+     Develop had no lower bound on σ, so single hot pixels, cosmic rays and
+     noise spikes were kept whenever `curve_fit` converged on them.  The floor
+     is off for peaks that are not arc or sky lines (slit edges, object
+     profiles, cross-correlation peaks) and for the synthetic arc that
+     `full_template`/`reidentify` cross-correlate.
+  3. **Hardening of `fit_arcspec`.**  Windows with non-finite pixels are
+     skipped instead of raising, and non-finite fits return −999 instead of
+     NaN (which slipped past `flexure.py`'s `== -999` check).
+  4. **Fixes found by the dev-suite comparison** (§6): one-copy MMIRS
+     templates; GNIRS 32/mm order-8 tilts at `spec_order = 2`.
+- **The line fit itself is develop's `curve_fit` loop.**  No module switch;
+  the only new parameters are the two floor settings.
+- **Speed** (§2).  Line fitting proper was never a large cost: in the legacy
+  serial DEIMOS 600ZD run it was ~180 s of 10 420 s, plus the 801 s of
+  repeated sky-FWHM measurement.  The cache removes the latter.  Estimated
+  R: **≈ 9 625 s, −7.6%**.  The vectorized fit would have saved a further
+  ~130 s (1.4%), comparable to run-to-run noise.
+- **Line lists** (§3).  The floor removes 2.0% of develop's arc lines
+  suite-wide (5 163 of 254 101), 681 of them in final fits; 143 of 249
+  setups are affected, most strongly the echelles.  Against the vectorized default it
+  replaces, R differs by 52 of ~33 000 lines on the 370 October arc spectra,
+  none in a final fit.
+- **Saturated plateau edges are kept** (§4), as in develop.  No 1D cut
+  separates them from real wide-slit lines; a 2D saturation/bleed mask is
+  proposed in a GitHub issue draft
+  ([`Issue_arc_saturation_bleed.md`](Issue_arc_saturation_bleed.md)).
+- **Validation** (§5).  PENDING.
+- **Known limitation** (§7).  Multislit `full_template` has no RMS or
+  monotonicity safeguard, so any change to a line list can flip a fragile
+  slit's identification without the pipeline flagging it.  Left to a
+  follow-up PR (Q18).
+- **Deferred** (Q19 (b)).  The remaining time in a DEIMOS reduction is in
+  B-spline fitting (flats, sky, extraction), tilt tracing (`robust_fit`) and
+  `full_template`'s `differential_evolution`; a later workstream.
+
+## 1. What PR C changes
+
+| change | where | effect |
+|---|---|---|
+| Archive-sky FWHM cache | `pypeit/core/flexure.py`: `_archive_sky_fwhm` (`lru_cache`), used by `get_archive_spectrum` | one `measure_fwhm` per sky file and process instead of one per slit/object; bit-identical |
+| Median-width floor | `pypeit/core/arc.py`: `detect_lines(..., min_frac_med_width=0.5, min_nlines_med_width=5)` | 0 disables; applied only if ≥ `min_nlines_med_width` lines pass the other cuts |
+| Floor parameters | `pypeit/par/pypeitpar.py`: `WavelengthSolutionPar.min_frac_med_width` (0.5, ≥ 0) and `min_nlines_med_width` (5, ≥ 1); `wvutils.med_width_kwargs(par)` | passed through `wvutils.arc_lines_from_spec`, `autoid.reidentify`, `match_to_arxiv`, `map_fwhm`, `measure_fwhm`, `full_template`, `echelle_wvcalib`, `ArchiveReid`, `HolyGrail`, `BuildWaveCalib`, `tracewave.tilts_find_lines` (via `BuildWaveTilts`) and `pypeit_identify`; spectral flexure's FWHM measurements use the function defaults |
+| Floor disabled for non-line peaks | `trace.peak_trace` (slit edges), `findobj_skymask.objs_in_slit` (objects), `flexure.spat_flexure_shift` and `wvutils.xcorr_shift` (cross-correlation peaks) | `min_frac_med_width=0`, as in develop |
+| Floor disabled for the synthetic arc | `wvutils.get_xcorr_arc` | `min_frac_med_width=0`: the synthetic arcs cross-correlated by `full_template` and `reidentify` are identical to develop's |
+| `fit_arcspec` hardening | `pypeit/core/arc.py` | non-finite windows skipped; non-finite fits → −999; undefined covariance → `inf` |
+| MMIRS templates | `pypeit/data/arc_lines/reid_arxiv/mmt_mmirs_{J_zJ,HK_zJ,K3000_Kspec}.fits` | one copy instead of three (§6) |
+| GNIRS 32/mm tilts | `pypeit/spectrographs/gemini_gnirs.py` | `spec_order = [2, 4, 4, 4, 4, 4]` (§6) |
+
+Where the floor applies, by caller: wavelength calibration (`arc_lines_from_spec`,
+`measure_fwhm`/`map_fwhm`), tilts (`tilts_find_lines`), and spectral flexure
+(`spec_flex_shift`, the archive-sky `measure_fwhm`).  This is the same scope
+as the vectorized default it replaces, so the floor's effects measured in
+the full dev-suite comparison (§5, Appendix D.14) carry over.
+
+## 2. Speed
+
+Serial `--ncpu 1` cProfiles of Keck/DEIMOS 600ZD_M_6500 (Oct 26; the
+artifacts are `keck_deimos_600zd_m_6500_C_*.prof`), attributed by caller with
+`pstats` (C.md Q&A "Speed" and "Revert?"):
+
+| | legacy (develop) | R (estimated) | vectorized B + cache (measured) |
+|---|---:|---:|---:|
+| wall | 10 420 s | ≈ 9 625 s | 9 495 s |
+| vs legacy | — | **≈ −7.6%** | −8.9% |
+| archive-sky `measure_fwhm` | 170 calls / 801 s | 1 call / ~5 s | 1 call / 1 s |
+| other `detect_lines` (wavecalib, tilts, flexure, xcorr) | ~180 s | ~180 s | ~75 s |
+
+- R is estimated as legacy − 801 s + one measurement.  It was not profiled
+  end to end; the floor is a single vectorized comparison and costs nothing
+  measurable.
+- The ~130 s between R and B is comparable to run-to-run noise: the
+  vectorized A + cache variant measured 9 462 s, faster than B + cache.
+- In isolation, `detect_lines` over the 370 October arc spectra takes 36.9 s
+  with `curve_fit` and 5.9 s with the vectorized fit, but that is 0.4–1.4% of
+  a reduction.
+- **The fit and the cache remove the same time.**  The 801 s of sky-FWHM
+  measurement *is* Gaussian line fitting, so either a faster fit or the cache
+  removes it.  Legacy → B alone: −866 s; the cache then adds −59 s.  Legacy
+  → cache alone: ≈ −795 s.  Once the cache is in, the fit is ~2% of the run.
+- **Where the time goes now** (B + cache profile, which R matches outside line
+  fitting): flat field 2 395 s, extraction 1 782 s (`local_skysub_extract`
+  1 536 s), tilts 1 727 s (88 642 `robust_fit` calls, 452 s), object finding
+  and global sky 1 332 s, image processing 1 069 s, wavelength calibration
+  694 s (`differential_evolution` in `full_template` 354 s).
+  `iterative_bspline_fit` is 1 599 s.  These are left to a later workstream
+  (Q19 (b)).
+
+## 3. The median-width floor
+
+**Why a relative floor** (Task 10, Q13; Appendix D.12.1).  On the 370 arc
+spectra of the October dev-suite run (Kast blue/red, DEIMOS, LRIS blue):
+
+| floor | develop lines removed | of those in final fits |
+|---|---:|---:|
+| σ > 0.85 px (FWHM > 2 px) | 341 | 84 (82 on Kast red, whose lines are 1.7–2.5 px FWHM) |
+| σ > 0.35 × fit half-width | 473 | 73 |
+| **σ > 0.5 × median σ of the spectrum** | **325** | **6, all DEIMOS** |
+
+Arc lines share the instrumental profile, so a relative floor removes
+sub-resolution features without touching instruments whose lines are
+intrinsically narrow.  (The R survey below, with the pipeline's exact cuts,
+counts 341 removed lines, 6 in final fits, all in 13 DEIMOS setups.)
+
+**What it does to the line lists** (`arcfit_revert_survey.py`, same 370
+spectra, pipeline fwhm per slit):
+
+| variant | lines accepted |
+|---|---:|
+| develop (`curve_fit`, no floor) | 33 368 |
+| **R (`curve_fit` + floor)** | **33 027** |
+| vectorized B (+ floor; the default until Nov 24) | 32 987 |
+
+- R and B share 32 981 lines, with centroids within 1.7e-4 px at the 99th
+  percentile.  46 lines are in R only (the saturated plateau edges, §4) and 6
+  in B only; none of the 52 is in a final fit.
+- The negative-σ fits that `curve_fit` produces on some spikes are rejected
+  by the existing `twid > 0` cut, as in develop.
+
+**Suite-wide** (`arcfit_revert_floor_suite.py` on every WaveCalib file of
+the full develop run, `REDUX_OUT_PR/develop`; pipeline fwhm and sigdetect per
+setup):
+- 321 files, 3 021 slits/orders, 254 101 lines;
+- the floor removes **5 163 lines (2.0%), 681 of them (0.3% of all lines) in
+  final fits**;
+- 143 of 249 setups have a different line list, 76 with final-fit lines
+  removed;
+- the largest effects are on echelle data: Keck/HIRES (up to 497 lines in a
+  setup), APF/Levy, VLT/UVES, Magellan/FIRE, VLT/SINFONI; then GMOS, KCWI,
+  MOSFIRE, X-shooter, Binospec, LDSS3 and DEIMOS.
+
+The other 106 setups should reproduce develop exactly under R.  The full
+per-setup list is in `REDUX_OUT_PR/revert_floor_suite.txt`.
+
+**Side effect on the measured FWHM.**  The narrow detections the floor
+removes used to pull `measure_fwhm`/`map_fwhm` down.  In the full comparison
+of the vectorized default, 213 slits got a measured FWHM more than 1% wider
+(companion report §3, §5.2).  The same happens under R.  Through FWHM-scaled
+tolerances this changes some fits, and on GNIRS 32_SB_SXD it pushed order 8
+over a tilt-fit cliff (§6).
+
+## 4. Saturated plateau edges: kept, with a follow-up issue
+
+In bright DEIMOS 600ZD arcs, regions of ~60 spectral pixels sit at ~39 900
+counts across the slit, with line cores at 79 503 counts (hard saturation)
+inside them.  The edges and flat tops of these plateaus pass every cut of
+`detect_lines` (Appendix D.5.1, Figure 1).
+- 46 such features in the 370 arc spectra (45 in 600ZD_M_6500, 1 in
+  1200G_M_5500);
+- none is used in a final wavelength fit;
+- their `curve_fit` centroids mark the plateau edge, not a line.
+
+The vectorized fit dropped them only because it does not converge on a step;
+`curve_fit` does.  Under R they are therefore kept, as in develop.  Losing
+them is what flipped several 600ZD `full_template` identifications under the
+vectorized default (Appendix D.4, D.6), so keeping them also keeps develop's
+identifications there.
+
+**No clean 1D cut exists** (C.md Q&A "Revert?", point 3):
+
+| cut (applied to R's lines) | of the 46 removed | final-fit lines removed |
+|---|---:|---:|
+| flat top: 3rd-highest / max > 0.98 | 38 | 4 314 |
+| vertical edge: adjacent-pixel jump > 2.5 × a Gaussian's | 46 | 954 |
+| poor fit: RMS residual / amplitude > 0.15 | 46 | 157 |
+| raw > 30 000, flat top > 0.995 and jump > 0.8 | 33 | 35 |
+
+Wide-slit DEIMOS lines are flat-topped and bright blends fit poorly, so in
+1D they look the same.  The plateaus are below `nonlinear_counts`, so that cut
+misses them too.  The issue draft
+[`Issue_arc_saturation_bleed.md`](Issue_arc_saturation_bleed.md) proposes
+flagging saturated pixels in the 2D arc, growing the flag along the bleed
+direction, and carrying it into `detect_lines`.
+
+## 5. Dev-suite validation of R
+
+PENDING.
+
+## 6. Fixes from the develop comparison (Q18)
+
+The full dev-suite comparison of the vectorized default against develop
+(Appendix D.14 and the companion report
+[`Speed_Up_Arcfit_DevSuite_Comparison.md`](Speed_Up_Arcfit_DevSuite_Comparison.md))
+traced four regressions, each exposing a weakness already in develop.  Three
+were fixed in this PR and stay in R:
+
+| fix | where | result |
+|---|---|---|
+| One copy per MMIRS template (`J_zJ`, `HK_zJ`, `K3000_Kspec`) | `pypeit/data/arc_lines/reid_arxiv/` | the three copies gave an exact tie in the global cross-correlation; nep_as1_MOS slit 18: RMS 23 → 0.114 px |
+| GNIRS 32/mm echelle tilts `spec_order = [2, 4, 4, 4, 4, 4]` | `gemini_gnirs.py` | order 8 monotonic; its 4th-order tilt fit could curl by tens of pixels |
+| `test_add_missing_slits` finds edges by position | dev suite `unit_tests/test_maskdesign_matching.py` | robust to which spurious edges are detected |
+| `test_gmos` R150_869 tolerance 0.25 → 0.30 px | dev suite `vet_tests/test_wavelengths.py` | RMS 0.272 px |
+
+Under R, `test_add_missing_slits` should pass even unchanged, because slit-edge
+peak finding is identical to develop (`curve_fit`, no floor): the Sobel spike
+that the vectorized fit kept gets σ = −0.66 and is rejected.  This was not
+re-run; the by-position version is kept because it is more robust.
+The GNIRS change addresses a cliff that the floor's wider FWHM can still
+reach.
+
+Follow-ups, not in PR C: the multislit `full_template` RMS and monotonicity
+safeguard; evaluating `map_fwhm` at each order's own spectral midpoint; a
+guard against extrapolation in the tilt fit; LDSS3 VPH-RED_mos slit 21 (wrong
+on develop too).
+
+## 7. Known limitation: fragile `full_template` identification
+
+`full_template` cross-correlates a synthetic arc built from the detected
+lines and refines the match with `differential_evolution` in
+`xcorr_shift_stretch`.  Appendix D.10 traces a 600ZD slit whose solution
+moved by 38 px at its blue end when the cross-correlation changed by 1.6e-8,
+because the optimiser landed in a different optimum (there, the new one was
+the correct one).  Multislit `full_template` applies no RMS threshold and no
+monotonicity check (companion report §5.5), so such flips pass unflagged.
+Any change to a line list can trigger one, including the floor, and equally
+future unrelated changes.  R limits the exposure by leaving the synthetic arc
+identical to develop's and by keeping the plateau edges.
+
+## 8. Why the vectorized fit was not adopted
+
+- **Little speed.**  With the cache in, the vectorized fit saves ~130 s of
+  ~9 500 s on serial DEIMOS (§2), within run-to-run noise.  Its large
+  apparent saving came from the repeated sky-FWHM measurement, which the
+  cache removes for both fits.
+- **Its line-list benefits do not depend on it.**  Its main finding, the
+  sub-resolution spikes, is handled by the floor, which works on `curve_fit`
+  output (§3).  Its other difference, dropping saturated plateau edges, was a
+  side effect of non-convergence; it destabilised 600ZD identifications and
+  is better addressed in 2D (§4).
+- **Cost.**  ~600 lines of numerical code in `core/arc.py` (log-parabola
+  seed, batched Gauss–Newton, moment-seeded rescue, `curve_fit` fallback and
+  hand-off rules, centroid variance), ~200 lines of tests, a user parameter
+  (`fast_line_fit`), a context manager and module switches, and a special
+  case for the synthetic arc.  Two fitting paths would need to be maintained
+  and kept in agreement.
+
+The study (method, fidelity, worked examples, profiles, the dev-suite
+comparison) is kept as Appendix D for reference.  The code is in the
+`speed_up_arcfit` history up to `fbbfa2c07`.
+
+---
+
+## Appendix A: files changed
+
+**PypeIt (`speed_up_arcfit`, relative to develop):**
+
+| file | change |
+|---|---|
+| `pypeit/core/arc.py` | `detect_lines(min_frac_med_width=0.5, min_nlines_med_width=5)` and the floor; `fit_arcspec` hardening |
+| `pypeit/par/pypeitpar.py`, `doc/pypeit_par.rst` | `WavelengthSolutionPar.min_frac_med_width`, `min_nlines_med_width` (validated) |
+| `pypeit/core/wavecal/autoid.py`, `pypeit/core/tracewave.py`, `pypeit/wavecalib.py`, `pypeit/wavetilts.py`, `pypeit/scripts/identify.py` | the two parameters threaded to every `detect_lines` call of the wavelength calibration and the tilts |
+| `pypeit/core/flexure.py` | `_archive_sky_fwhm` (`lru_cache`), used by `get_archive_spectrum`; `min_frac_med_width=0` for the slitmask cross-correlation peak |
+| `pypeit/core/trace.py`, `pypeit/core/findobj_skymask.py` | `min_frac_med_width=0` (slit-edge and object peaks) |
+| `pypeit/core/wavecal/wvutils.py` | `med_width_kwargs`; `arc_lines_from_spec` takes the two parameters; `get_xcorr_arc` and the `xcorr_shift` peak with `min_frac_med_width=0` |
+| `pypeit/spectrographs/gemini_gnirs.py` | 32/mm echelle tilts `spec_order = [2, 4, 4, 4, 4, 4]` |
+| `pypeit/data/arc_lines/reid_arxiv/mmt_mmirs_{J_zJ,HK_zJ,K3000_Kspec}.fits` | one copy of the template instead of three |
+| `pypeit/tests/test_arc.py`, `pypeit/tests/test_flexure.py` | tests (Appendix B) |
+| `doc/releases/2.1.0dev.rst` | Functionality (floor; flexure speed-up), Instrument-specific (MMIRS, GNIRS), Testing, Under-the-hood (floor; `fit_arcspec` hardening; cache) |
+
+`fast_line_fit` and the vectorized-fit switches are gone.  On a rebase onto
+develop 90c41e1a9, develop's `test_map_fwhm_without_arc_lines_uses_configured_values`
+needs its mock `detect_lines` to accept `**kwargs` (done in the `revert`
+worktree).
+
+**Dev suite (`dev_speed_up_C`):** `claude_prompts/speed_up/C.md`; this
+report, the companion comparison and the issue draft;
+`pypeitdev/speed_up/scripts/arcfit/*`; `vet_tests/test_arcfit.py`;
+`unit_tests/test_maskdesign_matching.py`; `vet_tests/test_wavelengths.py`.
+
+## Appendix B: tests
+
+`pytest pypeit/tests` (`pypeit14b`): **926 passed**, none failed, on
+`speed_up_arcfit` (revert `2a899824e` + the floor parameters, uncommitted);
+959 passed in the `revert` worktree (develop 90c41e1a9 + PR C).
+
+`pypeit/tests/test_arc.py` (10 tests):
+- `test_detect_lines`: Paranal sky, 3 307 lines with the floor (3 250–3 350),
+  every accepted σ above the floor, 3 748 without it (> 3 700);
+- `test_fit_arcspec_recovers_truth`;
+- `test_fit_arcspec_edge_cases` (truncated windows at both ends; all-negative
+  and zero windows → −999; NaN window skipped without raising; empty input);
+- `test_detect_lines_rejects_narrow_features` (σ = 0.4 px spikes: none
+  survives the floor, every arc line does; without the floor most spikes are
+  accepted);
+- `test_detect_lines_floor_needs_enough_lines`;
+- `test_detect_lines_floor_explicit_value`;
+- `test_get_xcorr_arc_no_floor`;
+- `test_med_width_pars` (defaults, config parsing, validation,
+  `med_width_kwargs`);
+- `test_tilts_find_lines_med_width` (the tilt line detection applies the
+  floor it is given).
+
+`pypeit/tests/test_flexure.py`: `test_archive_fwhm_cache`.
+
+Dev suite: `vet_tests/test_arcfit.py` (no final-fit line far below the
+floor, read from each reduction's `.par` file; DEIMOS 830G_L_8100 keeps RMS < 0.1 px and no duplicate
+identification).
+
+## Appendix C: scripts
+
+In `pypeitdev/speed_up/scripts/arcfit/`, run with the `pypeit14b`
+interpreter and `PYPEIT_DEV` set:
+- `arcfit_revert_survey.py`, `arcfit_revert_summary.py`: develop vs R vs B
+  line lists on the 370 October arc spectra (`REDUX_OUT_C/legacy`);
+- `arcfit_revert_jump.py`, `arcfit_revert_resid.py`: the plateau cuts of §4;
+- `arcfit_revert_floor_suite.py`: lines the floor removes per develop
+  WaveCalib file of the full suite (`REDUX_OUT_PR/develop`);
+- `arcfit_revert_run.sh`: the R dev-suite run (`REDUX_OUT_PR/revertR`) and
+  its vet tests;
+- the scripts of the vectorized-fit study are listed in Appendix D.18.
+
+---
+
+## Appendix D: the vectorized fit (evaluated, not adopted)
+
+This appendix is the report as it stood on 2026-11-24, before the revert,
+with headings renumbered (§N → D.N).  It describes the vectorized Gaussian
+fit, options A (hand-offs to `curve_fit`) and B (no hand-off, with the
+median-width floor), the "Bxa" exception, and the full dev-suite comparison
+of B with develop.  "Shipped default" and "PR C" in it refer to the
+vectorized fit, which is no longer in the PR.
+
+### D.0 Executive summary (vectorized default, as of 2026-11-24)
 
 - **What changed.**  `pypeit.core.arc.fit_arcspec` used to fit a Gaussian to
   every detected line with its own `scipy.optimize.curve_fit` call.  On a
@@ -47,41 +379,71 @@ stands alone.
   1. a weighted analytic log-parabola;
   2. a batched Gauss–Newton/Levenberg polish on `curve_fit`'s own objective;
   3. a moment-seeded rescue for the lines the analytic step cannot seed;
-  4. the old per-line `curve_fit` as the last resort.
-- **The shipped default is option A** (`ARCFIT_MATCH_CURVEFIT = True`).  A
-  line on which the vectorized fit is not confident goes back to `curve_fit`:
-  a polish or rescue that has not converged, or a fit narrower than 0.35 × the
-  window half-width.  With these hand-offs `detect_lines` accepts **exactly the
-  same lines as legacy on all 370 dev-suite arc spectra**, and their centroids
-  agree to better than 1e-3 px.
-- **Option B never calls `curve_fit` for a line it can fit.**  It is set by
-  `[calibrations][wavelengths] fast_line_fit = True` (wavelength calibration
-  only) or by `ARCFIT_MATCH_CURVEFIT = False` (all callers).  Its fit is 19×
-  faster than legacy on DEIMOS.  Over the 370 spectra it loses 56 lines
-  (saturated, flat-topped features) and gains 83 (sub-resolution spikes on
-  which `curve_fit` fails).  Those changes flip the line identification on a
-  handful of DEIMOS slits.
-- **The largest single saving came from a second change.**  The FWHM of the
-  archived sky spectrum in spectral flexure was re-measured 170 times per
-  DEIMOS run.  It is now cached, with bit-identical results, and that removes
-  568 s.
-- **Serial DEIMOS 600ZD on the same code: 10 420 s (legacy) → 9 462 s
-  (A + cache), −9.2%.**  Line fitting now costs 57 s, 0.6% of the run.  At
-  `--ncpu 4` the wall goes from 3 400 s to 3 255 s.  Across A+B+C, serial
-  DEIMOS went from 12 394 s (June baseline) to 9 462 s.
-- **Products are unchanged except for one slit.**  Every dev-suite vet test
-  has the same outcome as legacy.  37 of 38 WaveCalib files and every Tilts
-  file match legacy.  The one exception is a single DEIMOS slit, which moves
-  from a misidentified solution to the correct one through a known-fragile
-  step (§10).
-- **The "saturated lines" are not what the logs assumed.**  The features
-  option B rejects on DEIMOS 600ZD are mostly the vertical edges of extended,
-  flat-topped regions of saturated arc light, not saturated Gaussian lines
-  (§5.1).  Legacy fits them with an arbitrary narrow Gaussian.  None of them
-  enters a final wavelength fit, but they do steer the pattern-matching step,
-  which is why keeping them (option A) keeps the identifications stable (§6).
+  4. the old per-line `curve_fit` as the last resort, for the few lines the
+     vectorized steps cannot fit at all.
+- **The default is option B** (`ARCFIT_MATCH_CURVEFIT = False`,
+  `[calibrations][wavelengths] fast_line_fit = True`): the vectorized result
+  is used for every line it can fit, with **no hand-off to `curve_fit`**.
+  `detect_lines` then rejects lines whose σ is below **0.5 × the median σ** of
+  the lines in the same spectrum (single hot pixels, noise spikes; §12).
+  Slit-edge, object, flexure and cross-correlation peak finding skip that
+  floor.
+- **Option A is used only on request**, with one internal exception.
+  `fast_line_fit = False` restores A for the wavelength calibration and the
+  tilts: lines on which the vectorized fit is not confident go back to
+  `curve_fit`, there is no floor, and the line lists match legacy on all 370
+  dev-suite arc spectra (centroids within 1e-3 px; §3).  The exception is the
+  synthetic arc that `full_template` and `reidentify` cross-correlate, which
+  is always built with A, because those cross-correlations are very sensitive
+  to which lines enter it (§13).
+- **Why B is the default after all.**  B was first held back because losing
+  saturated plateau edges flipped the identification of a few DEIMOS
+  `full_template` slits (§4, §6).  Q14 judged those features junk and the
+  flips a symptom of an identification step that was already fragile (§10).
+  With the floor, B removes the 83 sub-resolution spikes that B alone kept and
+  that legacy kept by chance (§12.1).
+- **The fit and a second change remove the same time.**  In spectral
+  flexure the FWHM of the archived sky spectrum was re-measured 170 times per
+  DEIMOS run, and that accounted for 801 of the 851 s of legacy line fitting.
+  It is now cached, with bit-identical results.  B and the cache overlap, so
+  the credit depends on which is counted first:
 
-## 1. What was replaced, and why
+  | path | first step | then the other |
+  |---|---|---|
+  | B first | B alone: 10 420 → 9 554 s (−8.3%) | cache: −59 s |
+  | A first | A alone: −326 s | cache: −632 s |
+
+  Earlier versions of this report credited the cache with the largest saving;
+  that reads the A path.  Line fitting proper (wavelength calibration and
+  tilts) was only ~150 s, about 1.5% of the legacy run (C.md, Q&A "Speed").
+- **Speed.**  Serial DEIMOS 600ZD on the same code: 10 420 s (legacy) →
+  9 495 s (B + cache), −8.9%; A + cache is 9 462 s, the same within noise
+  (§9).  Under B, line fitting costs 44 s, 0.5% of the run; legacy line
+  fitting was 8.2% of the run, so no fit could save more than ~8%.  The
+  remaining time is in B-spline fitting (flats, sky, extraction), tilt
+  tracing and `full_template`'s `differential_evolution` search; speeding
+  those up is deferred to a later PR (Q19 (b)).  Across A+B+C, serial
+  DEIMOS went from 12 394 s (June baseline) to ~9 500 s.  These profiles
+  predate §12–§13.  The floor is a single vectorized comparison; the A fit
+  inside `get_xcorr_arc` (§13) was not re-profiled, but it is confined to the
+  synthetic arcs of `full_template`/`reidentify`.
+- **Full dev-suite comparison with `develop`** (§14,
+  [companion report](Speed_Up_Arcfit_DevSuite_Comparison.md)).  Over 2 780
+  slits and orders, 92% of the wavelength solutions agree with develop to
+  < 0.1 px and 98% to < 0.5 px; 37 move by ≥ 1 px.  The lines in the final
+  fits fall by 0.7%; the median RMS goes from 0.142 to 0.140 px.
+- **Four regressions were traced, and each exposes a weakness already in
+  develop** (Q17).  Three were fixed in this PR (§15): the tripled MMIRS
+  templates, the GNIRS 32/mm order-8 tilt fit, and a dev-suite test that
+  addressed edges by index.  After the fixes, the remaining reduction and
+  vet-test failures are develop's own, and one dev-suite tolerance was raised
+  from 0.25 to 0.30 px (GMOS R150_869).
+- **Known limitation.**  Multislit `full_template` has no RMS or
+  monotonicity check, so any change to a line list can flip a fragile slit's
+  identification without the pipeline flagging it (§10, §14).  A safeguard
+  would flag 54 develop slits too, so it is left to a follow-up PR.
+
+### D.1 What was replaced, and why
 
 `detect_lines` (`pypeit/core/arc.py`) is the peak finder behind:
 - the wavelength calibration;
@@ -118,7 +480,7 @@ The baseline reproduces.  Each window holds only a few pixels and only three
 parameters are fit, so the cost is almost all per-call overhead.  That makes
 it a natural target for vectorization.
 
-## 2. The method
+### D.2 The method
 
 All of the code is in `pypeit/core/arc.py`.  `fit_arcspec` keeps its
 signature `(ampl, cent, widt, centerr)` and its −999 sentinel for failed
@@ -126,7 +488,7 @@ fits.  It builds an `(nline, nwin)` array of window pixels, truncated at the
 spectrum edges exactly as the old loop truncated them, and applies the
 following cascade.
 
-### 2.1 Weighted log-parabola (the analytic seed)
+#### D.2.1 Weighted log-parabola (the analytic seed)
 
 For a Gaussian `y = A exp(−(u−u0)²/2σ²)`, `ln y` is a parabola in the
 window-centred coordinate `u = x − x[pixt]`:
@@ -167,7 +529,7 @@ A line is accepted as a seed only if all of the following hold:
 - `|u0|` is no larger than the window half-width, so that the centre is not
   extrapolated.
 
-### 2.2 Gauss–Newton / Levenberg polish
+#### D.2.2 Gauss–Newton / Levenberg polish
 
 `_gauss_newton_refine` runs batched Levenberg–Marquardt iterations on the
 exact `curve_fit` objective, Σ(y − A e^{−(u−u0)²/2σ²})².  It uses **all
@@ -190,7 +552,7 @@ arc, which the log fit cannot use.  This step is what makes the result track
 - After the polish the centroid is no longer confined to the window.
   `curve_fit` does not confine it either.
 
-### 2.3 Moment-seeded rescue
+#### D.2.3 Moment-seeded rescue
 
 Some lines cannot be seeded analytically:
 - fewer than 4 positive pixels;
@@ -207,14 +569,15 @@ The rescue was added in Task 3 (Q4(b)).  Without it, 6.7% of DEIMOS lines
 and 13.2% of sky lines fell back to `curve_fit`, which left the fit only
 ~2× faster.
 
-### 2.4 `curve_fit` fallback and the three hand-off rules
+#### D.2.4 `curve_fit` fallback and the three hand-off rules
 
 The legacy loop is kept verbatim as `_fit_arcspec_curvefit`.  It serves both
 as the last-resort fallback and as the reference implementation.  Every line
 that the vectorized steps attempt but do not accept goes to it.
 
-Under the **shipped default, `ARCFIT_MATCH_CURVEFIT = True` (option A)**,
-three further classes of line are handed to `curve_fit` as well:
+Under **option A** (`ARCFIT_MATCH_CURVEFIT = True`; the default when this
+section was written, now selected by `fast_line_fit = False`, §12), three
+further classes of line are handed to `curve_fit` as well:
 1. lines whose polish has **not converged** within `ARCFIT_GN_ITER`;
 2. lines whose rescue has **not converged** within `ARCFIT_RESCUE_ITER`;
 3. fits with **σ < `ARCFIT_MIN_WIDTH` × window half-width**, where
@@ -225,8 +588,9 @@ three further classes of line are handed to `curve_fit` as well:
 Rules 1–2 capture the saturated, flat-topped features and the blends.  Rule 3
 captures the sub-resolution spikes.  These are exactly the populations on
 which the vectorized and the legacy fits disagree about *acceptance* (§4).
-With `ARCFIT_MATCH_CURVEFIT = False` (**option B**) the vectorized result is
-used wherever it exists.
+With `ARCFIT_MATCH_CURVEFIT = False` (**option B, now the default**) the
+vectorized result is used wherever it exists, and `detect_lines` applies the
+median-width floor instead (§12).
 
 The fallback was also hardened:
 - windows that contain non-finite pixels are no longer sent to `curve_fit`,
@@ -236,7 +600,7 @@ The fallback was also hardened:
 - a non-finite `centerr` on a finite fit becomes `inf`, which is legacy's
   "covariance not estimated" value.
 
-### 2.5 `centerr`
+#### D.2.5 `centerr`
 
 `centerr` is the **variance** of the centre (legacy returns `fitcov[1,1]`),
 not an error.  No caller uses it numerically: every consumer discards it or
@@ -252,27 +616,30 @@ As decided in Q5:
   covariance `Cov(a) = s²(XᵀW²X)⁻¹` through `∂c/∂a1 = −1/(2a2)` and
   `∂c/∂a2 = a1/(2a2²)`.
 
-### 2.6 Controls (Q9)
+#### D.2.6 Controls (Q9; defaults as of Q15/Q16)
 
 | control | where | default | effect |
 |---|---|---|---|
 | `USE_VECTORIZED_ARCFIT` | `pypeit.core.arc` | `True` | `False` restores the legacy per-line loop for every line (kill switch) |
-| `ARCFIT_MATCH_CURVEFIT` | `pypeit.core.arc` | `True` (A) | `False` = option B, for **all** `detect_lines` callers |
-| `ARCFIT_GN_ITER`, `ARCFIT_RESCUE_ITER`, `ARCFIT_MIN_WIDTH`, `ARCFIT_MIN_GOODPIX` | `pypeit.core.arc` | 10, 20, 0.35, 4 | tuning constants |
-| `fast_line_fit` | `[calibrations][wavelengths]` (`WavelengthSolutionPar`) | `False` | `True` = option B inside the wavelength calibration only |
+| `ARCFIT_MATCH_CURVEFIT` | `pypeit.core.arc` | **`False` (B)** | `True` = option A, for **all** `detect_lines` callers |
+| `ARCFIT_MIN_FRAC_MED_WIDTH`, `ARCFIT_MIN_NLINES_MED_WIDTH` | `pypeit.core.arc` | 0.5, 5 | the median-width floor under B (§12); `detect_lines(min_frac_med_width=...)` overrides it per call |
+| `ARCFIT_GN_ITER`, `ARCFIT_RESCUE_ITER`, `ARCFIT_MIN_WIDTH`, `ARCFIT_MIN_GOODPIX` | `pypeit.core.arc` | 10, 20, 0.35, 4 | tuning constants (`ARCFIT_MIN_WIDTH` is used only under A) |
+| `fast_line_fit` | `[calibrations][wavelengths]` (`WavelengthSolutionPar`) | **`True`** | `False` = option A inside the wavelength calibration **and** the tilts |
 
-`fast_line_fit` is applied in `BuildWaveCalib.run` (`pypeit/wavecalib.py`).
-The whole body of `run` executes inside the context manager
+`fast_line_fit` is applied in `BuildWaveCalib.run` (`pypeit/wavecalib.py`)
+and, since §12, in `BuildWaveTilts.run` (`pypeit/wavetilts.py`).  The whole
+body of each `run` executes inside the context manager
 `arc.arcfit_options(match_curvefit=not fast_line_fit)`, which sets
-`ARCFIT_MATCH_CURVEFIT` and restores it in a `finally`.
+`ARCFIT_MATCH_CURVEFIT` and restores it in a `finally`.  `get_xcorr_arc`
+opens its own `arcfit_options(match_curvefit=True)` inside that (§13).
 
 A context manager was used because about 15 call sites in the wavelength
 calibration reach `fit_arcspec`, several of them without `par` at hand.  It
 also works unchanged in `--ncpu` workers, since each worker runs
-`BuildWaveCalib.run` itself.  Tilts, object finding and flexure keep the
-default.
+`BuildWaveCalib.run` itself.  Object finding, slit edges and flexure keep the
+module default (B), with the floor disabled (§12.2).
 
-## 3. Fidelity to the legacy `curve_fit` fit
+### D.3 Fidelity to the legacy `curve_fit` fit
 
 All numbers in this section compare `fit_arcspec` outputs on identical inputs
 (C.md Tasks 2–5, Q7, Q8).  "Accepted" means the line passes `detect_lines`'
@@ -318,7 +685,7 @@ Re-checked for this report with `report_fig_saturated.py --list` and
 
 The unit test `test_detect_lines_matches_curve_fit` pins the sky result.
 
-## 4. Line-count changes under the pure-vectorized option (B), and why A ships
+### D.4 Line-count changes under the pure-vectorized option (B), and why A shipped first
 
 Option B changes which lines are accepted for three reasons.  Centroids of
 the shared lines are unaffected (~1e-6 px).
@@ -366,9 +733,12 @@ the whole vectorized cascade, the tests and the kill switch, and it still
 removes most of the `curve_fit` calls (§7).  Once the cache of §7.2 is in,
 the remaining cost difference between A and B on DEIMOS is ~13 s.
 
-## 5. Worked examples
+> *Superseded by Q14–Q15 (§12):* B, with a median-width floor, became the
+> default.  The 600ZD and 830G flips above are discussed there and in §14.
 
-### 5.1 Saturated, flat-topped DEIMOS 600ZD features that B rejects and legacy keeps
+### D.5 Worked examples
+
+#### D.5.1 Saturated, flat-topped DEIMOS 600ZD features that B rejects and legacy keeps
 
 `report_fig_saturated.py --list` re-runs `detect_lines` on the arc spectra
 stored in the legacy dev-suite WaveCalib files.  It uses the per-slit
@@ -443,7 +813,7 @@ either a step or a flat top, not a Gaussian:
   non-convergence triggers hand-off rule 1, and `curve_fit` gives the legacy
   answer.
 
-### 5.2 A negative-σ line on the Paranal sky
+#### D.5.2 A negative-σ line on the Paranal sky
 
 ![negative sigma examples](figures/arcfit/negsigma_example.png)
 
@@ -466,7 +836,7 @@ layout is as in Figure 1, with a 7-pixel window (`fwhm = 4`).
   handed off by the convergence rules (not checked separately).  All of them go to `curve_fit`, receive its
   negative σ, and are rejected exactly as before.
 
-### 5.3 `830G_L_8100` under B: five spikes, RMS 0.051 → 0.27 px
+#### D.5.3 `830G_L_8100` under B: five spikes, RMS 0.051 → 0.27 px
 
 ![830G_L_8100 legacy vs B](figures/arcfit/arc1dfit_830g.png)
 
@@ -512,7 +882,7 @@ with two wrong line positions in the fit, not a misidentification of the
 spectrum.  This setup is not one of the vetted slits, so no tolerance would
 have caught it.
 
-### 5.4 `600ZD_M_6500` MSC01 slit 2 under B: one plateau edge, and the blue end flips
+#### D.5.4 `600ZD_M_6500` MSC01 slit 2 under B: one plateau edge, and the blue end flips
 
 ![600ZD MSC01 slit 2 legacy vs B](figures/arcfit/arc1dfit_msc01s2.png)
 
@@ -554,7 +924,7 @@ shows the fit window of the one line on which A and B differ.
   mechanism behind Q8's finding that the saturated features "anchor the
   pattern match", and it is why A defers these lines to `curve_fit`.
 
-### 5.5 Fitted σ across instruments and configurations
+#### D.5.5 Fitted σ across instruments and configurations
 
 ![sigma vs wavelength](figures/arcfit/sigma_vs_wave.png)
 
@@ -613,7 +983,7 @@ What to see:
   The hand-off does not remove narrow features; it only defers the decision
   to `curve_fit`, which is what makes A's line lists identical to legacy's.
 
-## 6. Saturated features and line identification
+### D.6 Saturated features and line identification
 
 The user asked how including the saturated features can improve the fit by
 giving more identifications.  The evidence is as follows.
@@ -645,8 +1015,11 @@ giving more identifications.  The evidence is as follows.
    measured.**  It gains ~13 s per serial DEIMOS reduction after the cache
    and costs identification flips on 600ZD, 830G_L_8100 and other multi-slit
    DEIMOS setups (§4).  Q6(b) assumed these lines were "not useful"; Q8
-   showed that premise was wrong for identification.  A ships for that
-   reason.
+   showed that premise was wrong for identification.  A shipped first for
+   that reason.  *Q14 later reversed this:* the flips were attributed to the
+   fragility of `full_template` (§10), not to the loss of useful anchors, and
+   B became the default (§12).  §13 keeps A where it matters most, in the
+   synthetic arc used for the cross-correlation.
 5. **A possible future improvement.**  Treat plateaus explicitly instead of
    letting `curve_fit` fit a Gaussian to them:
    - detect a flat-topped or stepped window (e.g. 3rd-highest/max > 0.95, or
@@ -659,9 +1032,9 @@ giving more identifications.  The evidence is as follows.
    That would remove the slowest `curve_fit` calls (§7) without changing the
    anchors.  It is outside PR C.
 
-## 7. Fallback rate, where the time goes, and the archive-sky FWHM cache
+### D.7 Fallback rate, where the time goes, and the archive-sky FWHM cache
 
-### 7.1 Fallback rate
+#### D.7.1 Fallback rate
 
 On clean arcs the vectorized path handles almost everything.  With the
 rescue, on the DEIMOS arcs only 5 of 10 170 lines (0.05%) reach `curve_fit`
@@ -693,7 +1066,7 @@ In the full serial DEIMOS profile **before the cache** (§9), A made
 `flexure.get_archive_spectrum`.  Blended sky lines often fail to converge and
 are handed off.
 
-### 7.2 The archive-sky FWHM cache (Q10)
+#### D.7.2 The archive-sky FWHM cache (Q10)
 
 `flexure.get_archive_spectrum` measured the spectral FWHM of the **same
 archived sky spectrum** (`paranal_sky.fits` for DEIMOS) on every call: once
@@ -720,7 +1093,7 @@ Effect on serial DEIMOS (A):
 | `fit_gauss` calls / cum | 319 k / 494 s | **14 k / 42 s** |
 | `fit_arcspec` cum | 526 s | **57 s** (0.6% of the run) |
 
-## 8. Dev-suite vetting
+### D.8 Dev-suite vetting
 
 Method:
 - `pypeit_test reduce -i shane_kast_blue shane_kast_red keck_deimos
@@ -786,7 +1159,7 @@ in px; "max |Δλ|" is over the pixel range covered by both variants' lines):
 **QA PNGs.**  Arc-fit QA PNGs are byte-identical or differ only at the
 anti-aliasing level, except for that slit.
 
-## 9. Re-profiling and the A+B+C totals
+### D.9 Re-profiling and the A+B+C totals
 
 All five serial profiles below are cProfile at `--ncpu 1` on the **same
 HEAD**.  Legacy is the kill switch set through the variant hook.  The numbers
@@ -825,8 +1198,10 @@ Caveats (from `speed_up_results.md`):
 - **Overlap with other work.**  The A + cache profile overlapped the unit
   tests and the doc build for ~15 min.
 - **Against the plan.**  §C.7 expected ~700–800 s off DEIMOS from the fit
-  alone.  The legacy-faithful default delivers 326 s from the fit, and the
-  cache a further 568 s.
+  alone.  The legacy-faithful A delivers 326 s from the fit, and the
+  cache a further 568 s.  B, the default since §12, delivers 866 s from the
+  fit alone, after which the cache adds only 59 s: the two remove the same
+  repeated sky-FWHM measurement (§0).
 
 **Kast blue 600_4310_d55, serial:**
 
@@ -866,7 +1241,7 @@ in the parallel extraction stage.
   totals are therefore indicative.
 - The like-for-like gain of C is −958 s serial (§9 table).
 
-## 10. Known limitation: the `full_template` shift-and-stretch step
+### D.10 Known limitation: the `full_template` shift-and-stretch step
 
 The single WaveCalib file where A differs from legacy, `600ZD_M_6500` MSC03,
 was traced to one slit, slit 11 (spat_id 1063).  The difference is not in the
@@ -919,18 +1294,19 @@ Any change in a `full_template` setup's line list, at any level, can flip
 such a slit.  This applies to PR C's tolerance-level differences, to
 `fast_line_fit`, and equally to future, unrelated changes.
 
-## 11. Switches, options and remaining risks
+### D.11 Switches, options and remaining risks
 
-**Switches:**
+**Switches (current defaults):**
 - **Kill switch:** `pypeit.core.arc.USE_VECTORIZED_ARCFIT = False` restores
   the previous per-line implementation for every line.  The unit test
   `test_fit_arcspec_kill_switch` checks that it is bit-identical to
   `_fit_arcspec_curvefit`.
-- **Options:** `ARCFIT_MATCH_CURVEFIT = False` gives option B for all callers;
-  `[calibrations][wavelengths] fast_line_fit = True` gives option B for the
-  wavelength calibration only.  After the cache, B buys ~13 s on serial
-  DEIMOS 600ZD.  It matters most on spectra with many lines that `curve_fit`
-  fails on.
+- **Options:** B with the floor is the default everywhere.
+  `[calibrations][wavelengths] fast_line_fit = False` gives option A (legacy
+  line lists, no floor) in the wavelength calibration and the tilts;
+  `ARCFIT_MATCH_CURVEFIT = True` gives A for all callers.  After the cache, B
+  buys ~13 s on serial DEIMOS 600ZD.  It matters most on spectra with many
+  lines that `curve_fit` fails on.
 
 **Remaining risks:**
 1. **Consumers of `fit_arcspec` beyond wavelengths.**  `detect_lines` also
@@ -940,6 +1316,9 @@ such a slit.  This applies to PR C's tolerance-level differences, to
    instruments above were reduced.  A full `./pypeit_test all` at the tip of
    `speed_up_arcfit` is still required before merging.  Echelle (order-ID
    cross-correlations) and IFU setups are the ones most worth watching.
+   *Done since (§14):* the full suite was run on develop and on PR C (B is
+   the default, so these consumers now see B), and the regressions it found
+   were traced (§15).
 2. **Identification fragility (§10).**  The shift-and-stretch step amplifies
    sub-0.001 px changes.  Multi-slit DEIMOS products are also not
    reproducible run to run (#2208, `EDGE_CEN` off by 1 ULP), so no
@@ -961,7 +1340,7 @@ such a slit.  This applies to PR C's tolerance-level differences, to
    (§6) while their legacy fit parameters are artefacts (§5.1).  A dedicated
    plateau model would be more principled.
 
-## 12. Update: option B with a median-width floor is the default
+### D.12 Update: option B with a median-width floor is the default
 
 **Decision (C.md, Q13–Q15, 2026-11-03).**
 - Reject lines narrower than **0.5 × the median σ of the lines in the same
@@ -972,7 +1351,7 @@ such a slit.  This applies to PR C's tolerance-level differences, to
 - Do it **in this PR**, keep legacy behaviour selectable, and make B the
   default (Q15).
 
-### 12.1 Why a relative floor
+#### D.12.1 Why a relative floor
 
 Task 10 measured candidate floors on all 370 dev-suite arc spectra (C.md,
 "Reject on sigma"; `arcfit_sigma_floor.py`).  PypeIt had **no lower bound on
@@ -988,7 +1367,7 @@ because `curve_fit` happened to converge on them.
 All three remove every one of the 83 spikes that B adds.  Only the relative
 floor leaves Kast and LRIS untouched.
 
-### 12.2 Implementation
+#### D.12.2 Implementation
 
 | item | change |
 |---|---|
@@ -1013,7 +1392,7 @@ rather than a narrow arc-line peak, so a relative floor is a much stronger
 cut there than on arc spectra.  No pipeline step fits lines in that spectrum
 other than the FWHM measurement above.
 
-### 12.3 Tests
+#### D.12.3 Tests
 
 **Unit tests** (`pypeit/tests/test_arc.py`, 17 tests, all pass; full suite
 934 passed):
@@ -1052,7 +1431,7 @@ A general "no duplicate identification" test was tried and dropped: legacy
 600ZD MSC01 already assigns one wavelength to two detections 1.5–2 px apart
 on several slits.
 
-### 12.4 Dev-suite vetting of the new default
+#### D.12.4 Dev-suite vetting of the new default
 
 `scripts/arcfit/arcfit_floor_vet.sh`, user service `pypeit-arcfit-floor`
 (`MemoryMax=120G`), 2026-11-03 08:37–11:16, PypeIt `a49e8678f` plus the
@@ -1101,42 +1480,189 @@ fragility of §10.
   (12 vs 13).  Both are edge effects of a changed tilt-line list; they were
   not investigated further.
 
-### 12.5 What this means for the earlier sections
+#### D.12.5 What this means for the earlier sections
 
-- §0's "products unchanged except one slit" applies to option A only.  The
-  default now changes DEIMOS identifications on the slits listed in §4 and
-  above, by design (Q14).
+- The original §0 (2026-10-26) said that products were unchanged except for
+  one slit; that applies to option A only.  The §12 default changed DEIMOS
+  identifications on the slits listed in §4 and above, by design (Q14).  §13
+  later restored develop's identification on most of the 600ZD slits by
+  keeping A in the synthetic cross-correlation arc.
 - The speed numbers for B in §3, §7 and §9 apply to the new default: the
   floor is a single vectorized comparison.
 - The variant hook (`variant_hook/sitecustomize.py`) now also neutralises
   `arcfit_options`, so `PYPEIT_ARCFIT_VARIANT=A` / `B` still apply to every
   caller despite the `fast_line_fit` parameter.
 
----
+### D.13 Update: the synthetic cross-correlation arc keeps option A (Q16, "Bxa")
 
-## Appendix A: files changed
+**Problem.**  The first full dev-suite run of the §12 default against
+`develop` (C.md, "PR" task 1) moved 60 of 2 547 slits in 29 setups by more
+than 1 px, with the RMS improving on 26 and worsening on 25.  Examples were
+KOSMOS C_2 slit 1 (325 px), FOCAS 300B slit 1 (210 px), GMOS GS_HAM_MULTI
+slits 18 and 37, and five 600ZD slits.
 
-**PypeIt (`speed_up_arcfit`, uncommitted at the time of writing):**
+**Cause.**  `wvutils.get_xcorr_arc` builds the synthetic arc that
+`full_template` (and `reidentify`) cross-correlates with the template, from
+every peak `detect_lines` fits.
+- Under A, a line whose `curve_fit` fails returns −999 and is left out of the
+  synthetic arc.
+- B returns a centroid for almost every peak, so 5–11 more blended or weak
+  lines per call enter the synthetic arc.
+- That is enough to change `full_template`'s shift and stretch (the
+  amplification of §10).  Forcing A inside `get_xcorr_arc` alone restores
+  develop exactly on KOSMOS.  The σ floor is not involved.
+
+**Decision (Q16 = (c), "Bxa").**  B everywhere, except that `get_xcorr_arc`
+runs `detect_lines` inside `arc.arcfit_options(match_curvefit=True)`.  The
+cross-correlation then sees the same synthetic arc as develop, whatever
+`fast_line_fit` is.  This confines PR C's changes to the line measurements.
+
+Tested with the `full_template` re-run harness on the 13 affected setups
+(slits moved = > 1 px from develop):
+
+| setup | B (§12 default) | Bxa |
+|---|---|---|
+| KOSMOS slit 1 | 325 px | identical to develop |
+| FOCAS slit 1 | 210 px | identical |
+| GMOS GS_HAM_MULTI slits 18 / 37 | 1 682 / 220 px | 0.0 / 0.0 px |
+| DEIMOS 600ZD MSC01 4/6/7/10, MSC02 2 | 32–98 px | ≤ 0.6 px |
+| DEIMOS 830G_L_8100 / 830G_LVM (RMS) | 0.034 / 0.053 | kept: 0.034 / 0.053 |
+| DEIMOS 1200G slit 3, 900ZD slit 9 | fixed | back to develop |
+
+Bxa keeps the gains that come from better line measurements (830G) and gives
+back those that were cross-correlation luck, together with the regressions,
+which were luck too.
+
+**Code.**  `pypeit/core/wavecal/wvutils.py` (`get_xcorr_arc` and its
+docstring); the `ARCFIT_MATCH_CURVEFIT` docstring; new unit test
+`test_get_xcorr_arc_uses_legacy_fit` (on the Paranal sky, A and B disagree on
+which fits fail, but the synthetic arc is identical under both, and the
+option is restored afterwards).
+
+This is the only place where PR C uses A without the user asking for it.
+
+### D.14 Full dev-suite comparison with `develop`
+
+The full comparison, with figures, is
+[`Speed_Up_Arcfit_DevSuite_Comparison.md`](Speed_Up_Arcfit_DevSuite_Comparison.md)
+(C.md "PR" tasks 1–3).  `./pypeit_test all` was run on `develop` (90c41e1a9)
+and on `develop` + PR C (Bxa), each at `-t 1` in a memory-capped scope; the
+method is in its
+[How the comparison was made](Speed_Up_Arcfit_DevSuite_Comparison.md#how-the-comparison-was-made).
+
+**Headline numbers** (before the §15 fixes; see the companion's
+[Summary](Speed_Up_Arcfit_DevSuite_Comparison.md#summary) and
+[§1 Metrics](Speed_Up_Arcfit_DevSuite_Comparison.md#1-metrics)):
+
+| | develop | PR C |
+|---|---|---|
+| Reduction / afterburner tests | 332 / 334 | 332 / 334 (the same two GNIRS failures) |
+| Slits/orders with a solution on both | 2 780 | 2 780 |
+| Lines in the final fits (sum) | 149 525 | 148 460 (−0.7%) |
+| Median RMS | 0.142 px | 0.140 px |
+| Median IDs_Wave_cov | 94.1% | 94.0% |
+| Median measured FWHM | 3.990 px | 4.004 px |
+
+- **Solutions**
+  ([§2](Speed_Up_Arcfit_DevSuite_Comparison.md#2-wavelength-solutions)):
+  77% of slits move < 0.01 px, 92% < 0.1 px, 98% < 0.5 px; 37 slits in 24
+  setups move ≥ 1 px, with the RMS improving on 20 and worsening on 17.
+  Control re-runs of develop moved 0 of 75 slits, so every difference comes
+  from the code.
+- **Line measurements**
+  ([§3](Speed_Up_Arcfit_DevSuite_Comparison.md#3-arc-line-measurements)):
+  223 636 → 218 838 detected lines (5 848 lost, mostly the floor and plateau
+  edges; 1 050 gained, mostly lines on which `curve_fit` gave up).  For the
+  217 788 matched lines the per-slit median centroid change is 1e-7–1e-6 px.
+  Because the removed narrow detections used to pull `measure_fwhm`/`map_fwhm`
+  down, 213 slits get a measured FWHM > 1% wider, which matters downstream
+  (§5.2 of the companion).
+- **Line fits**
+  ([§4](Speed_Up_Arcfit_DevSuite_Comparison.md#4-arc-line-fits)): Nlin is
+  unchanged on 2 136 of 2 780 slits and usually falls by 1–5 lines
+  elsewhere.  The fits differ through those 1–5 lines (a few per cent in
+  RMS, < 0.1 px in the solution), through FWHM-scaled tolerances, and through
+  discontinuous flips in `full_template`/`reidentify`.  `test_keck_hires`
+  fails on both branches, on different setups.
+- **Regressions traced (Q17,
+  [§5](Speed_Up_Arcfit_DevSuite_Comparison.md#5-the-traced-regressions))**.
+  Each exposes a weakness already present in develop:
+
+  | regression | cause | section |
+  |---|---|---|
+  | `test_add_missing_slits` | `curve_fit` returned σ = −0.66 on a Sobel spike, so develop rejected it by luck; B keeps it and the test's hard-coded edge indices shift.  Final slits identical. | [§5.1](Speed_Up_Arcfit_DevSuite_Comparison.md#51-test_maskdesign_matchingtest_add_missing_slits-deimos-1200g_cooper) |
+  | GNIRS 32_SB_SXD order 8 non-monotonic (`test_load_spec1d`) | The FWHM, evaluated off the order, goes 3.73 → 4.16 px; tilt tracing has a cliff at 4.03 px, past which the 4th-order tilt fit curls by 62 px.  Develop sits 0.3 px from the cliff. | [§5.2](Speed_Up_Arcfit_DevSuite_Comparison.md#52-gnirs-32_sb_sxd-order-8-test_specutilstest_load_spec1d) |
+  | MMIRS nep_as1_MOS slit 18, RMS 0.13 → 23 px | `mmt_mmirs_J_zJ.fits` (and `HK_zJ`, `K3000_Kspec`) held three identical copies, so the global cross-correlation had an exact tie broken by 1e-5 noise. | [§5.3](Speed_Up_Arcfit_DevSuite_Comparison.md#53-mmirs-nep_as1_mos-slit-18-rms-013--23-px) |
+  | LDSS3 VPH-RED_mos slit 21, coverage 102% → 1.7% | A 27-px box slit; develop's solution is also wrong (non-monotonic, ~1 100 Å too red). | [§5.4](Speed_Up_Arcfit_DevSuite_Comparison.md#54-ldss3-vph-red_mos-a_1-slit-21-ids_wave_cov-102--17) |
+
+- **Missing safeguard**
+  ([§5.5](Speed_Up_Arcfit_DevSuite_Comparison.md#55-the-missing-safeguard-in-multislit-full_template)):
+  multislit `full_template` applies no RMS threshold and no monotonicity
+  check, so a 23-px solution passes unflagged.  Adding them would flag 54
+  develop and 47 PR C slits of ~1 390; that is a behaviour change of its own,
+  left to a follow-up PR (Q18).
+
+### D.15 Fixes from the comparison (Q18)
+
+Q18 = (a): fix the three cheap, verified items in this PR and leave the
+safeguard and LDSS3 to follow-ups.  Details and verification are in the
+companion's
+[§7](Speed_Up_Arcfit_DevSuite_Comparison.md#7-fixes-applied-q18--a-2026-11-18).
+
+| fix | where | result |
+|---|---|---|
+| One copy per MMIRS template (`J_zJ`, `HK_zJ`, `K3000_Kspec`) | PypeIt `pypeit/data/arc_lines/reid_arxiv/` | slit 18: RMS 0.114 px, 110 lines, within 0.08 Å of develop; the other MMIRS slits unchanged |
+| GNIRS 32/mm echelle tilts `spec_order = [2, 4, 4, 4, 4, 4]` | PypeIt `gemini_gnirs.py` | order 8 monotonic, 8 233–9 466 Å (develop 8 238–9 463 Å); `test_load_spec1d` passes |
+| `test_add_missing_slits` finds edges by position | dev suite `unit_tests/test_maskdesign_matching.py` | passes |
+| `test_gmos` R150_869 tolerance 0.25 → 0.30 px | dev suite `vet_tests/test_wavelengths.py` | passes (RMS 0.272 px) |
+
+After the re-run (6 MMIRS setups and GNIRS 32_SB_SXD), the remaining
+reduction and vet failures are develop's own (GNIRS `coadd_2dspec`/`tellfit`,
+four `test_specutils` tests, `test_keck_hires`), plus two artefacts of
+re-running the vet tests on an already-vetted tree (Kast red spec2d
+overwritten by the `redoslit` vet test; a ginga start-up timeout).
+
+**Follow-ups, not in PR C:**
+- the multislit `full_template` RMS and monotonicity safeguard;
+- evaluating `map_fwhm` at each order's own spectral midpoint (the GNIRS
+  order-8 FWHM was measured off the order);
+- a guard against extrapolation in the tilt fit;
+- LDSS3 VPH-RED_mos slit 21, which is wrong on develop too.
+
+### D.16 Files changed (vectorized version, through `fbbfa2c07`)
+
+**PypeIt (`speed_up_arcfit`, relative to `speed_up_B`; committed through
+`fbbfa2c07`):**
 
 | file | change |
 |---|---|
-| `pypeit/core/arc.py` | module constants; `arcfit_options`; vectorized `fit_arcspec`; `_moment_seed`, `_gauss_model`, `_solve3`, `_gauss_newton_refine`, `_gauss_center_variance`, `_center_variance`; legacy loop kept as `_fit_arcspec_curvefit` |
-| `pypeit/core/flexure.py` | `_archive_sky_fwhm` (`lru_cache`), used by `get_archive_spectrum` |
-| `pypeit/par/pypeitpar.py` | `WavelengthSolutionPar.fast_line_fit` |
+| `pypeit/core/arc.py` | module constants (incl. `ARCFIT_MIN_FRAC_MED_WIDTH`, `ARCFIT_MIN_NLINES_MED_WIDTH`); `arcfit_options`; vectorized `fit_arcspec`; `_moment_seed`, `_gauss_model`, `_solve3`, `_gauss_newton_refine`, `_gauss_center_variance`, `_center_variance`; legacy loop kept as `_fit_arcspec_curvefit`; `detect_lines(min_frac_med_width=...)` and the floor (§12) |
+| `pypeit/core/flexure.py` | `_archive_sky_fwhm` (`lru_cache`), used by `get_archive_spectrum`; `min_frac_med_width=0` for the slitmask cross-correlation peak |
+| `pypeit/core/trace.py`, `pypeit/core/findobj_skymask.py` | `min_frac_med_width=0` (slit-edge and object peaks) |
+| `pypeit/core/wavecal/wvutils.py` | `get_xcorr_arc` under `arcfit_options(match_curvefit=True)` (§13); `xcorr_shift` peak with `min_frac_med_width=0` |
+| `pypeit/par/pypeitpar.py` | `WavelengthSolutionPar.fast_line_fit` (default `True`) |
 | `pypeit/wavecalib.py` | `BuildWaveCalib.run` wrapped in `arc.arcfit_options(...)` |
+| `pypeit/wavetilts.py` | `BuildWaveTilts.run` / `_run`, wrapped in `arc.arcfit_options(...)` |
+| `pypeit/spectrographs/gemini_gnirs.py` | 32/mm echelle tilts `spec_order = [2, 4, 4, 4, 4, 4]` (§15) |
+| `pypeit/data/arc_lines/reid_arxiv/mmt_mmirs_{J_zJ,HK_zJ,K3000_Kspec}.fits` | one copy of the template instead of three (§15) |
 | `pypeit/tests/test_arc.py`, `pypeit/tests/test_flexure.py` | new tests (Appendix B) |
 | `doc/pypeit_par.rst` | regenerated, one new row |
-| `doc/releases/2.1.0dev.rst` | Functionality, Under-the-hood (vectorized fit; known limitation; cache) and Testing bullets |
+| `doc/releases/2.1.0dev.rst` | Functionality, Instrument-specific (MMIRS templates, GNIRS tilts), Under-the-hood (vectorized fit; floor; Bxa; known limitation; cache) and Testing bullets |
 
-**Dev suite (`dev_speed_up`):**
+**Dev suite (`dev_speed_up_C`):**
 - `claude_prompts/speed_up/C.md`;
 - `pypeitdev/speed_up/Reports/speed_up_results.md` ("After workstream C");
-- this report;
-- `pypeitdev/speed_up/scripts/arcfit/*`.
+- this report and `Speed_Up_Arcfit_DevSuite_Comparison.md`;
+- `pypeitdev/speed_up/scripts/arcfit/*` (including `q17/`);
+- `vet_tests/test_arcfit.py` (new, §12.3);
+- `unit_tests/test_maskdesign_matching.py` (`test_add_missing_slits` by
+  position, §15);
+- `vet_tests/test_wavelengths.py` (`test_gmos` tolerance, §15).
 
-## Appendix B: tests
+### D.17 Tests (vectorized version)
 
-`pytest pypeit/tests` (`pypeit14b`): **930 passed**.
+`pytest pypeit/tests` (`pypeit14b`): **935 passed** on `speed_up_arcfit` at
+`fbbfa2c07` (2026-11-18).  `pypeit/tests/test_arc.py` has 18 tests.
 
 New in `pypeit/tests/test_arc.py`:
 - `test_fit_arcspec_recovers_truth`;
@@ -1154,14 +1680,22 @@ New in `pypeit/tests/test_arc.py`:
 - `test_fit_arcspec_no_curve_fit_on_clean_data`;
 - `test_arcfit_options`;
 - `test_fast_line_fit_par`;
-- `test_wavecalib_applies_fast_line_fit`.
+- `test_wavecalib_applies_fast_line_fit`;
+- `test_wavetilts_applies_fast_line_fit`,
+  `test_detect_lines_rejects_narrow_features`,
+  `test_detect_lines_floor_needs_enough_lines`,
+  `test_detect_lines_floor_explicit_value` (§12.3);
+- `test_get_xcorr_arc_uses_legacy_fit` (§13).
 
-`test_detect_lines` (`len(arx_w) > 3275`) is unchanged.  Under A it is 3 748,
-as with legacy.
+`test_detect_lines` now checks the default count on the Paranal sky
+(3 300–3 360) and the legacy count under A (> 3 700; 3 748, as with legacy).
+
+Dev suite: `vet_tests/test_arcfit.py` (§12.3); `test_add_missing_slits`
+rewritten to locate edges by position (§15).
 
 New in `pypeit/tests/test_flexure.py`: `test_archive_fwhm_cache`.
 
-## Appendix C: scripts and how to regenerate the figures
+### D.18 Scripts and how to regenerate the figures
 
 All scripts are in `pypeitdev/speed_up/scripts/arcfit/`.  Run them with the
 `pypeit14b` interpreter
@@ -1198,6 +1732,18 @@ Other analysis scripts used for the numbers in this report:
   `arcfit_q10_ncpu4.sh`;
 - the variant switch `variant_hook/sitecustomize.py` (`PYPEIT_ARCFIT_VARIANT`
   = `legacy` / `A` / `B` / `gn10` / `gn0`).
+
+For §13–§15 and the companion report (outputs in
+`$PYPEIT_DEV/REDUX_OUT_PR/`):
+- `arcfit_pr_bxa.sh` (full-suite run of PR C and the control runs);
+- `arcfit_pr_metrics.py` (per-slit metrics, `REDUX_OUT_PR/cmp_*/pr_metrics.*`);
+- `arcfit_pr_figs.py` → `figures/pr_compare_bxa/`;
+- `arcfit_q17_figs.py` → `figures/q17/`;
+- `q17/` (the trace harnesses: `ft.py`/`ftall.py` re-run `full_template` on
+  stored arcs, `gn6.py`/`gn7.py` the GNIRS tilts and FWHM, `mdm*.py`/`mos.py`/
+  `tmm_pos.py` the edge tracing, `guard.py` the safeguard count);
+- `arcfit_q18_fix.sh` (re-run of the setups touched by the §15 fixes, and the
+  vet tests on the merged tree).
 
 Some of these scripts read `REDUX_OUT/keck_deimos/600ZD_M_6500`.  That
 directory now holds the products of the last profile run, so point them at
