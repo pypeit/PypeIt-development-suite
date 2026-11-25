@@ -10,7 +10,7 @@
         method = full_template
    [[standardframe]]
         [[[process]]]
-        spat_flexure_correct = True
+        spat_flexure_method = detector
    [[slitedges]]
             minimum_slit_length = 120.0   # both of these parameters are necessary to 
             edge_thresh = 100.0   # reject AFC pinholes and choose only the long-slit.
@@ -23,7 +23,7 @@
         skip_final_global = True
 [scienceframe]
    [[process]]
-        spat_flexure_correct = True
+        spat_flexure_method = detector
 [flexure]
        spec_method = boxcar
        spectrum = model

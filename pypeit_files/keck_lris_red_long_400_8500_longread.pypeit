@@ -11,10 +11,10 @@ spectrograph = keck_lris_red
 [calibrations]
     [[standardframe]]
         [[[process]]]
-            spat_flexure_correct = False
+            spat_flexure_method = skip
 [scienceframe]
     [[process]]
-	spat_flexure_correct = False
+	spat_flexure_method = skip
 [reduce]
    [[findobj]]
          snr_thresh = 50.

@@ -6,7 +6,7 @@
     spectrograph = keck_esi
 [scienceframe]
     [[process]]
-	spat_flexure_correct = True
+	spat_flexure_method = detector
 	spat_flexure_maxlag = 10
 	spat_flexure_sigdetect = 0.1
 
