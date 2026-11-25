@@ -71,7 +71,7 @@ def test_skysub(redux_out):
     # Use the SkyRegions file
     pypeIt.par['reduce']['skysub']['user_regions'] = 'user'
     # This should *not* overwrite any existing spec2d or spec1d file
-    new_spec2d, new_spec1d = exposure.reduce_exposure(spec, pypeIt.fitstbl, pypeIt.par, std_frame, calib_id, calib_dir)
+    new_spec2d, new_spec1d = exposure.reduce_exposure(spec, pypeIt.fitstbl, pypeIt.par, std_frame, calib_id)
 
     # TODO: Would be nice to have tests that can tell whether or not the code
     # actually used the SkyRegions file...
@@ -80,7 +80,7 @@ def test_skysub(redux_out):
     # And try again using a directly defined region
     pypeIt.par['reduce']['skysub']['user_regions'] = region
     # This should *not* overwrite any existing spec2d or spec1d file
-    _new_spec2d, _new_spec1d = exposure.reduce_exposure(spec, pypeIt.fitstbl, pypeIt.par, std_frame, calib_id, calib_dir)
+    _new_spec2d, _new_spec1d = exposure.reduce_exposure(spec, pypeIt.fitstbl, pypeIt.par, std_frame, calib_id)
     assert len(_new_spec1d) == 1, 'Should extract 1 spectrum'
 
     # Result should be identical
