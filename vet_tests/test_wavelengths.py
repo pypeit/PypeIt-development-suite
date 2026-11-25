@@ -117,7 +117,7 @@ def test_redoslits_kastr(redux_out):
 
     new_pyp_file = Path(redux_out, 'shane_kast_red', setup, root_redoslit_file)
                              
-    raw_data_path =   Path(os.environ["PYPEIT_DEV"],"RAW_DATA", 'shane_kast_red', setup).absolute()
+    raw_data_path = Path(os.environ["PYPEIT_DEV"], "RAW_DATA", 'shane_kast_red', setup).absolute()
 
     pypeit_tests.fix_pypeit_file_directory(
         pyp_file, raw_data_path,

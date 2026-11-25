@@ -7,8 +7,8 @@
     slitspatnum = MSC01:1079 
 [calibrations]
     [[wavelengths]]
-        lamps=['OH_GMOS']
-        method = 'holy-grail'
+        lamps = OH_GMOS
+        method = holy-grail
         rms_thresh_frac_fwhm = 0.1
         sigdetect = 5.,5.,6.
     [[slitedges]]
