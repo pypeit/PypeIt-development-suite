@@ -4,7 +4,7 @@
 # User-defined execution parameters
 [coadd1d]
   coaddfile = J2255+0251_1dcoadd.fits
-flux_value = False # The JWST data is already fluxed BUT it would be in F_nu
+  flux_value = True # The JWST spectra are already flux calibrated (_FLAM filled without a sensfunc)
   wave_method = log10
    dv = 150.0 
    wave_grid_min = 26000.0
