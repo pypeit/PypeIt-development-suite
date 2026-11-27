@@ -20,7 +20,7 @@ def test_vista_4most_lrsb_red(redux_out):
     calib_dir = (setup / 'Calibrations').resolve()
     for name in ('Bias_A_0_DET01.fits', 'Arc_A_0_DET01.fits'):
         assert (calib_dir / name).is_file()
-    _, slits_calib_dir = CalibFrame.parse_key_dir(calib_dir / 'Slits_A_0_DET01.fits.gz')
+    _, slits_calib_dir = CalibFrame.parse_key_dir(str(calib_dir / 'Slits_A_0_DET01.fits.gz'))
     assert Path(slits_calib_dir) == calib_dir
 
     prefix = 'QMOST.2026-11-27T00:47:46.453-'
@@ -45,7 +45,8 @@ def test_vista_4most_lrsb_red(redux_out):
         assert np.count_nonzero((wave >= 8440) & (wave < 8860)) > 300
         assert np.count_nonzero((wave >= 9240) & (wave < 9300)) >= 50
         assert np.all(np.isfinite(spectrum['OPT_COUNTS'][good]))
-        assert np.all(spectrum['OPT_COUNTS_IVAR'][good] > 0)
+        ivar = spectrum['OPT_COUNTS_IVAR'][good]
+        assert np.all(np.isfinite(ivar) & (ivar > 0))
 
     with fits.open(spec2d) as hdus:
         assert hdus[0].header['PYP_SPEC'] == instrument

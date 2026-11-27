@@ -81,7 +81,7 @@ def unpack_seeds(archive, calib_dir, redux_dir):
                 for hdu in hdus:
                     if 'CALIBDIR' in hdu.header:
                         hdu.header['CALIBDIR'] = str(calib_dir)
-                hdus.writeto(calib_dir / name, overwrite=True)
+                hdus.writeto(calib_dir / name, overwrite=True, checksum=True)
 
         with seeds.open(f'portable_seed/{TRACE}') as stream, (redux_dir / TRACE).open('wb') as output:
             shutil.copyfileobj(stream, output)
