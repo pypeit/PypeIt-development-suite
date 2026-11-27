@@ -18,8 +18,9 @@ def grab_basename(specstr, rawfile):
     headarr = spec.get_headarr(rawfile)
     target = spec.get_meta_value(headarr, 'target')
     mjd = spec.get_meta_value(headarr, 'mjd')
-    return outputfiles.construct_basename(rawfile, target, spec.camera, mjd,
-                                          spec.allowed_extensions)
+    return outputfiles.construct_basename(
+        rawfile, spec.camera, spec.allowed_extensions, target=target, mjd=mjd
+    )
 
 
 def test_construct_basename_aat_uhrf():
