@@ -500,3 +500,39 @@ Additional Options
     -w, --show_warnings   Show warnings when running unit tests and vet tests.
                             (default: False)
 
+
+
+4MOST LRS-B red commissioning fixture
+--------------------------------------
+
+ESO OB 5148227 is an optional reduction fixture for the experimental
+``vista_4most_lrsb_red`` adapter in
+`PypeIt PR #2257 <https://github.com/pypeit/PypeIt/pull/2257>`_. Use a PypeIt
+installation containing that adapter and run the following from the root of
+the Development Suite checkout. The staging command downloads seven public ESO
+frames (about 481 MiB) and the pinned commissioning calibration archive,
+verifies their SHA-256 checksums, and builds the empirical profile flat from the
+day lamp frame. For offline staging, supply ``--raw-source /path/to/raw`` and
+``--seed-archive /path/to/reproduction.zip``.
+
+.. code-block:: bash
+
+    export PYPEIT_DEV="$PWD"
+    python -m test_scripts.stage_4most_lrsb
+    export PYPEIT_4MOST_FIXTURE=1
+    export PYPEIT_4MOST_TRACE="$PWD/REDUX_OUT/vista_4most_lrsb_red/OB5148227/qmost_trace.npz"
+    unset PYPEIT_4MOST_APERTURE_SCALE
+    python -m pytest unit_tests/test_load_images.py -k vista_4most_lrsb_red
+    ./pypeit_test reduce -s vista_4most_lrsb_red/OB5148227
+    python -m pytest vet_tests/test_4most_lrsb_red.py --redux_out REDUX_OUT
+
+Use a fresh output directory to rebuild the bias and arc from raw frames.
+If you choose a different root, use the same directory for staging
+(``--outputdir``), reduction (``-o``), and vetting (``--redux_out``), and
+point ``PYPEIT_4MOST_TRACE`` at the trace map in that directory. Leave
+calibration reuse enabled so PypeIt reads the imported trace, ThAr/Fabry–Pérot
+wavelength solution, and twilight throughput seeds. PypeIt processes the science
+frame, models the sky, and writes the 1D and 2D science products. The vet test
+checks the extracted fiber inventory and the presence of usable spectra through
+924–930 nm. Relative response, telluric calibration, and the optional aperture
+normalization are outside the scope of this fixture.

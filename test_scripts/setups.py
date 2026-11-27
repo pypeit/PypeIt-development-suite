@@ -1,5 +1,9 @@
 """ Test setups """
 
+import os
+
+from .stage_4most_lrsb import INSTRUMENT, SETUP
+
 
 # This dict specifies all the instruments and setups that are supported by the dev suite.
 #  The keys are the instruments and the values are a list of the supported setups.
@@ -391,3 +395,7 @@ all_setups = {
         'NIR_LTT3218',
     ],
 }
+
+# The commissioning reduction requires imported calibrations and an opt-in trace map.
+if os.environ.get('PYPEIT_4MOST_FIXTURE') == '1':
+    all_setups[INSTRUMENT] = [SETUP]

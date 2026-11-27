@@ -1,0 +1,24 @@
+# ESO OB 5148227, 4MOST commissioning. Requires the staged calibration seeds.
+[rdx]
+    spectrograph = vista_4most_lrsb_red
+[scienceframe]
+    [[process]]
+        mask_cr = False
+
+setup read
+Setup A:
+  binning: 1,1
+  dispname: CCDLRB
+setup end
+
+data read
+ path RAW_DATA/vista_4most_lrsb_red/OB5148227
+                            filename |       frametype | calib
+ QMOST.2026-11-27T00:47:46.453.fits.fz |         science |     0
+ QMOST.2026-11-27T08:43:26.164.fits.fz |            bias |     0
+ QMOST.2026-11-27T08:45:19.991.fits.fz |            bias |     0
+ QMOST.2026-11-27T08:47:14.979.fits.fz |            bias |     0
+ QMOST.2026-11-27T09:02:29.940.fits.fz |        arc,tilt |     0
+ QMOST.2026-11-27T09:05:01.781.fits.fz |        arc,tilt |     0
+ QMOST.2026-11-27T10:00:05.525.fits.fz | pixelflat,trace |     0
+data end

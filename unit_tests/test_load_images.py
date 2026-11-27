@@ -3,9 +3,11 @@ Module to run loading images for different images served using the
 RawImage class
 """
 import os
+from pathlib import Path
 
 from IPython import embed
 
+import numpy as np
 import pytest
 
 from pypeit.images.rawimage import RawImage
@@ -203,3 +205,26 @@ def test_load_mmt_binospec():
     except:
         pytest.fail('MMT Binospec test data section failed: {0}'.format(ifile))
 
+
+
+def test_load_vista_4most_lrsb_red():
+    instrument = 'vista_4most_lrsb_red'
+    raw_file = (Path(os.environ['PYPEIT_DEV']) / 'RAW_DATA' / instrument / 'OB5148227'
+                / 'QMOST.2026-11-27T00:47:46.453.fits.fz')
+    if not raw_file.is_file():
+        pytest.skip('The optional 4MOST commissioning fixture has not been staged.')
+
+    image = grab_img(instrument, str(raw_file))
+    try:
+        assert image.rawimage.shape == (1, 6288, 6272)
+        assert image.exptime == pytest.approx(1258.33224)
+        assert image.detector[0].numamplifiers == 4
+        np.testing.assert_array_equal(
+            image.rawdatasec_img[0, [32, 32, 3176, 3176], [32, 3168, 3168, 32]],
+            [1, 2, 3, 4])
+        np.testing.assert_array_equal(
+            np.bincount(image.rawdatasec_img.ravel())[1:], [3072 * 3080] * 4)
+        np.testing.assert_array_equal(
+            np.bincount(image.oscansec_img.ravel())[1:], [24 * 3080] * 4)
+    finally:
+        image.hdu.close()
