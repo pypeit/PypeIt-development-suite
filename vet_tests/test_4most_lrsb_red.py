@@ -7,6 +7,8 @@ from astropy.io import fits
 import numpy as np
 import pytest
 
+from pypeit.calibframe import CalibFrame
+
 
 def test_vista_4most_lrsb_red(redux_out):
     if os.environ.get('PYPEIT_4MOST_FIXTURE') != '1':
@@ -15,8 +17,11 @@ def test_vista_4most_lrsb_red(redux_out):
     instrument = 'vista_4most_lrsb_red'
     setup = Path(redux_out) / instrument / 'OB5148227'
     science_dir = setup / 'Science'
+    calib_dir = (setup / 'Calibrations').resolve()
     for name in ('Bias_A_0_DET01.fits', 'Arc_A_0_DET01.fits'):
-        assert (setup / 'Calibrations' / name).is_file()
+        assert (calib_dir / name).is_file()
+    _, slits_calib_dir = CalibFrame.parse_key_dir(calib_dir / 'Slits_A_0_DET01.fits.gz')
+    assert Path(slits_calib_dir) == calib_dir
 
     prefix = 'QMOST.2026-11-27T00:47:46.453-'
     spec1d, = science_dir.glob(f'spec1d_{prefix}*.fits')
@@ -46,4 +51,5 @@ def test_vista_4most_lrsb_red(redux_out):
         assert hdus[0].header['PYP_SPEC'] == instrument
         sky = hdus['DET01-SKYMODEL']
         assert sky.shape == (6144, 6160)
-        assert np.any(np.isfinite(sky.section[3072, :]) & (sky.section[3072, :] != 0))
+        row = sky.section[3072, :]
+        assert np.any(np.isfinite(row) & (row != 0))

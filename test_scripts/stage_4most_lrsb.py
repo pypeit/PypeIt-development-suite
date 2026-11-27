@@ -5,7 +5,7 @@ import hashlib
 import os
 from pathlib import Path
 import shutil
-from tempfile import NamedTemporaryFile
+from tempfile import NamedTemporaryFile, TemporaryDirectory
 from urllib.request import urlopen
 from zipfile import ZipFile
 
@@ -68,6 +68,25 @@ def stage_file(source, destination, expected_hash):
             pending.unlink(missing_ok=True)
 
 
+def unpack_seeds(archive, calib_dir, redux_dir):
+    from astropy.io import fits
+
+    with ZipFile(archive) as seeds, TemporaryDirectory() as temporary:
+        for name in CALIBRATIONS:
+            source = Path(temporary) / name
+            with seeds.open(f'portable_seed/{name}') as stream, source.open('wb') as output:
+                shutil.copyfileobj(stream, output)
+            with fits.open(source) as hdus:
+                # PypeIt locates the FiberFlat from the Slits CALIBDIR header.
+                for hdu in hdus:
+                    if 'CALIBDIR' in hdu.header:
+                        hdu.header['CALIBDIR'] = str(calib_dir)
+                hdus.writeto(calib_dir / name, overwrite=True)
+
+        with seeds.open(f'portable_seed/{TRACE}') as stream, (redux_dir / TRACE).open('wb') as output:
+            shutil.copyfileobj(stream, output)
+
+
 def build_lamp_flat(raw_flat, calib_dir):
     import numpy as np
     from pypeit import flatfield, slittrace
@@ -111,11 +130,7 @@ def main():
     redux_dir = args.outputdir.resolve() / INSTRUMENT / SETUP
     calib_dir = redux_dir / 'Calibrations'
     calib_dir.mkdir(parents=True, exist_ok=True)
-    with ZipFile(archive) as seeds:
-        for name in (*CALIBRATIONS, TRACE):
-            destination = (redux_dir if name == TRACE else calib_dir) / name
-            with seeds.open(f'portable_seed/{name}') as stream, destination.open('wb') as output:
-                shutil.copyfileobj(stream, output)
+    unpack_seeds(archive, calib_dir, redux_dir)
     build_lamp_flat(raw_dir / DAY_FLAT, calib_dir)
     print(f'{TRACE_ENV}={redux_dir / TRACE}')
 
