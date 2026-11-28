@@ -64,6 +64,8 @@ Attributes:
                             The 'setups' values are taken from the following private attributes of this module:
 
                             _pypeit_setup:      Test setups that run pypeit_setup to generate a .pypeit file.
+                            _no_reduce:         Test setups excluded from the default reduce test.
+                            _preprocess_jwst:   Test setups that run pypeit_preprocess_jwst.
                             _additional_reduce: Test setups that run additional reduce tests beyond the default test.
                             _ncpu_reduce:       Test setups that are reduced again with --ncpu > 1.
                             _sensfunc:          Test setups that run pypeit_sensfunc.
@@ -110,12 +112,34 @@ _raw_data_dirs = {
 }
 
 
+# Setups that are not reduced with run_pypeit (e.g., setups used only to test a
+# preprocessing script)
+_no_reduce = {
+    'jwst_nirspec': ['S200A2_G395M_F290LP_preprocess'],
+}
+
 # Tests for full reductions
 _reduce_setups = {}
 for instr in all_setups:
     _reduce_setups[instr] = {}
     for setup in all_setups[instr]:
+        if setup in _no_reduce.get(instr, []):
+            continue
         _reduce_setups[instr][setup] = [{}]
+
+# Setups that run pypeit_preprocess_jwst on raw (*_uncal.fits) JWST files.  Only
+# the first exposure of the NRS1 detector of the S200A2_G395M_F290LP data is
+# used to keep the run time short (~2 minutes).  The source type and the CRDS
+# context are those used to produce the input files of the S200A2_G395M_F290LP
+# setup, so that the products can be compared with those (see
+# vet_tests/test_preprocess_jwst.py).  The CRDS reference files are read from
+# the CRDS cache in the raw-data directory, which must contain the files of this
+# context (see PypeItPreprocessJWSTTest).
+_preprocess_jwst = {
+    'jwst_nirspec': {
+        'S200A2_G395M_F290LP_preprocess': [dict(crds_context='jwst_1584.pmap',
+                                                options=['--source_type', 'POINT'])]},
+}
 
 _pypeit_setup = {
     'shane_kast_blue': {
@@ -287,9 +311,10 @@ _coadd1d = {
     'gemini_gnirs_echelle': {
         '32_SB_SXD': [{}]},
     'gemini_gmos': {
-        'GS_HAM_R400_860': [{}]},
-    'gemini_gmos': {
+        'GS_HAM_R400_860': [{}],
         'GS_HAM_R400_700': [{}]},
+    'jwst_nirspec': {
+        'S200A2_G395M_F290LP': [{}]},
     }
 
 _coadd2d = {
@@ -301,13 +326,16 @@ _coadd2d = {
         'multi_600_4000_d560': [dict(coadd_file=True)]},
     'vlt_xshooter': {
         'VIS_manual': [dict(coadd_file=True)]},
+    'jwst_nirspec': {
+        'MSA_PRISM_nomosaic': [dict(coadd_file=True)],
+        'MSA_PRISM_2visits': [dict(coadd_file=True)],
+        'MSA_G395M_F290LP_mosaic': [dict(coadd_file=True)]},
     'keck_deimos': {
         '830G_M_9000_dither': [dict(coadd_file=True)]},
     'keck_mosfire': {
         'long2pos1_H': [dict(coadd_file=True)]},
     'keck_nires': {
-        'ABBA_wstandard': [dict(coadd_file=True)]},
-    'keck_nires': {
+        'ABBA_wstandard': [dict(coadd_file=True)],
         'ABBA_nostandard_faint': [dict(coadd_file=True)]},
     'ldt_deveny': {
         'DV1': [dict(coadd_file=True)]},
@@ -514,6 +542,9 @@ _quick_look = {
 all_tests = [{'factory': pypeit_tests.PypeItSetupTest,
               'type':    TestPhase.PREP,
               'setups':  _pypeit_setup},
+             {'factory': pypeit_tests.PypeItPreprocessJWSTTest,
+              'type':    TestPhase.REDUCE,
+              'setups':  _preprocess_jwst},
              {'factory': pypeit_tests.PypeItCalibStepByStep,
               'type':    TestPhase.REDUCE,
               'setups':  _calib_step_by_step},

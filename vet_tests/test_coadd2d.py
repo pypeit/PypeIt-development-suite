@@ -7,8 +7,11 @@ import numpy as np
 import pytest
 
 from IPython import embed
+from astropy.io import fits
 from pypeit import coadd2d
 from pypeit import inputfiles
+from pypeit import outputfiles
+from pypeit import spec2dobj
 from pypeit import specobjs
 from pypeit.spectrographs.util import load_spectrograph
 
@@ -238,3 +241,92 @@ def test_default_basename_multi_spec2d(redux_out):
     basename = coadd2d.CoAdd2D.default_basename(spec2d_files)
 
     assert basename == '20251027.0210-20251027.0212-2009HC', 'Wrong basename for ldt_deveny/DV1'
+
+
+def test_jwst_nirspec_offsets_two_visits(redux_out):
+    # JWST/NIRSpec MSA PRISM data of the bright source 178562 observed in two
+    # different visits of PID 1287: in slit 258 in visit 001 and in slit 260 in
+    # visit 003 (three nodded exposures per visit).  For JWST/NIRSpec, the dither
+    # offset recorded in the spec2d headers is measured from the center of the
+    # reduced slit, and the platescale is measured for each slit from its GWCS
+    # (this requires the stdatamodels package), so that `offsets = header` can
+    # align exposures taken in different visits, i.e., in different MSA slitlets.
+    spec_name = 'jwst_nirspec'
+    _redux_out = Path(redux_out).absolute() / spec_name / 'MSA_PRISM_2visits'
+    sci_dir = _redux_out / 'Science'
+
+    spec2d_files = [str(f) for f in sorted(sci_dir.glob('spec2d*.fits'))]
+    assert len(spec2d_files) == 6, 'Wrong number of exposures'
+    # The same source is in a different slit in the two visits
+    assert [outputfiles.parse_basename_slit(f) for f in spec2d_files] == ['258']*3 + ['260']*3, \
+        'Wrong slits for the two visits'
+
+    spectrograph = load_spectrograph(spec_name)
+    par = spectrograph.default_pypeit_par()
+    par['coadd2d']['offsets'] = 'header'
+    par['coadd2d']['weights'] = 'uniform'
+    head2d = fits.getheader(spec2d_files[0])
+
+    cdir = os.getcwd()
+    os.chdir(_redux_out)
+    try:
+        coadd = coadd2d.CoAdd2D.get_instance(spec2d_files, spectrograph, par, det=1,
+                                             bkg_redux=head2d['SKYSUB'] == 'DIFF',
+                                             find_negative=head2d['FINDOBJ'] == 'POS_NEG')
+    finally:
+        os.chdir(cdir)
+
+    # Platescale of each slit from the GWCS, instead of the nominal 0.105 arcsec/pixel
+    assert not np.any(np.isclose(coadd.pixscales, 0.105, atol=1e-4)), \
+        'Nominal NIRSpec platescale found: is the stdatamodels package installed?'
+    assert np.allclose(coadd.pixscales, [0.10407]*3 + [0.10408]*3, atol=5e-5), \
+        'Wrong slit platescale'
+
+    # Offsets from the header: the nodding pattern (about +/-0.53 arcsec) is
+    # repeated in the two visits, with a small (0.006 arcsec) shift between them
+    assert np.allclose(coadd.offsets, [0., -5.11, 5.11, -0.05, -5.16, 5.06], atol=0.05), \
+        'Wrong offsets from the header'
+
+    # The offsets from the header must match those computed from the measured
+    # position of the source in each exposure (relative to the slit center).
+    # The residuals are <0.4 pixels, while the offsets computed from YOFFSET
+    # (i.e., relative to the MSA pointing of each visit) would be off by ~5
+    # pixels in the second visit.
+    positions = []
+    for f in spec2d_files:
+        spec2d = spec2dobj.Spec2DObj.from_file(f, 'DET01', chk_version=False)
+        slit_cen = np.median(spec2d.slits.center[:, 0])
+        sobjs = specobjs.SpecObjs.from_fitsfile(f.replace('spec2d', 'spec1d'), chk_version=False)
+        positions.append(np.median(sobjs[np.argmax(sobjs.S2N)].TRACE_SPAT) - slit_cen)
+    obj_offsets = coadd.offsets_from_positions(positions)
+    assert np.allclose(coadd.offsets, obj_offsets, atol=0.5), \
+        'Offsets from the header do not match the position of the source in the exposures'
+
+    # Coadded data (produced by pypeit_coadd_2dspec with
+    # coadd2d_files/jwst_nirspec_msa_prism_2visits.coadd2d)
+    coadd_dir = _redux_out / 'Science_coadd'
+    spec2d_coadd_file = sorted(coadd_dir.glob('spec2d*.fits'))
+    spec1d_coadd_file = sorted(coadd_dir.glob('spec1d*.fits'))
+    assert len(spec2d_coadd_file) == 1 and len(spec1d_coadd_file) == 1, \
+        'Missing coadd2d output files'
+    spec2d_coadd = spec2dobj.Spec2DObj.from_file(str(spec2d_coadd_file[0]), 'DET01', chk_version=False)
+    sobjs_coadd = specobjs.SpecObjs.from_fitsfile(str(spec1d_coadd_file[0]), chk_version=False)
+    sobj_coadd = sobjs_coadd[np.argmax(sobjs_coadd.S2N)]
+
+    # The coadd is on the spatial grid of the first exposure
+    assert np.isclose(spec2d_coadd.detector.platescale, coadd.pixscales[0], rtol=1e-4), \
+        'Wrong platescale of the coadded data'
+    coadd_pos = np.median(sobj_coadd.TRACE_SPAT) - np.median(spec2d_coadd.slits.center[:, 0])
+    assert np.isclose(coadd_pos, positions[0], atol=0.5), \
+        'The source in the coadd is not at its position in the first exposure'
+
+    # The source must be well aligned in the coadd: its spatial profile is not
+    # much broader than in the individual exposures, and its S/N is higher
+    sobjs_exp = [specobjs.SpecObjs.from_fitsfile(f.replace('spec2d', 'spec1d'), chk_version=False)
+                 for f in spec2d_files]
+    sobjs_exp = [s[np.argmax(s.S2N)] for s in sobjs_exp]
+    fwhm_exp = np.median([np.median(s.FWHMFIT) for s in sobjs_exp])
+    s2n_exp = np.median([s.S2N for s in sobjs_exp])
+    assert np.median(sobj_coadd.FWHMFIT) < 1.5 * fwhm_exp, \
+        'The spatial profile of the source in the coadd is too broad'
+    assert sobj_coadd.S2N > 2 * s2n_exp, 'The S/N of the source in the coadd is too low'
