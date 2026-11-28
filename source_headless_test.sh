@@ -1,6 +1,7 @@
 # Source this file to enable running the dev suite in a headless linux environment
-# It requires the QT libraries, which on Ubuntu 20.04 can be done with apt install -y qt5-default
-# e.g. 
+# It requires a Qt backend; by default PypeIt installs pyqt6, whose wheels bundle
+# the Qt libraries.  See https://pypeit.readthedocs.io/en/latest/installing.html
+# e.g.
 #
 # $ source source_headless_test.sh
 # $ ./pypeit_test all
